@@ -89,6 +89,8 @@ export class PluginDataSourceManagerClient extends Plugin {
     this.app.pluginSettingsManager.add(NAMESPACE, {
       title: `{{t("Data sources", { ns: "${NAMESPACE}" })}}`,
       icon: 'ClusterOutlined',
+      isPinned: true,
+      sort: 100,
       showTabs: false,
       aclSnippet: 'pm.data-source-manager*',
     });

@@ -162,6 +162,6 @@ export const FlowModelsContext: WorkContextOptions = {
     if (!model) {
       return '';
     }
-    return JSON.stringify(await parseFlowModel(model), undefined, 2);
+    return await parseFlowModel(model);
   },
 };

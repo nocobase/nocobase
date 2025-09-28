@@ -108,7 +108,11 @@ export const FlowPageMenuItem = () => {
     insertPageSchema(getFlowPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
   }, [createRoute, insertPageSchema, options?.components, options?.scope, parentRoute?.id, t, theme]);
   return (
-    <SchemaInitializerItem title={t('Modern page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />
+    <SchemaInitializerItem
+      title={t('Modern page (v2)')}
+      onClick={handleClick}
+      className={`${componentCls} ${hashId}`}
+    />
   );
 };
 

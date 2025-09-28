@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 // CodeMirror imports
 import { autocompletion } from '@codemirror/autocomplete';
@@ -36,7 +36,8 @@ interface CodeEditorProps {
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
-  rightExtra?: ((editorRef: EditorRef) => React.ReactNode)[];
+  rightExtra?: ((editorRef: EditorRef, setActive: (key: string, active: boolean) => void) => React.ReactNode)[];
+  wrapperStyle?: React.CSSProperties;
 }
 
 export const CodeEditor: React.FC<CodeEditorProps & InjectableRendingEventTriggerProps> = (props) => {
@@ -52,12 +53,13 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
   value = '',
   onChange,
   placeholder = '',
-  height = '300px',
+  height = '100%',
   minHeight,
   theme = 'light',
   readonly = false,
   enableLinter = false,
   rightExtra,
+  wrapperStyle,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -83,20 +85,14 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
       }),
       EditorView.theme({
         '&': {
-          // 如果设置了 minHeight，则使用 minHeight，否则使用 height
-          ...(minHeight
-            ? {
-                minHeight: typeof minHeight === 'string' ? minHeight : `${minHeight}px`,
-              }
-            : {
-                height: typeof height === 'string' ? height : `${height}px`,
-              }),
+          height: typeof height === 'string' ? height || '100%' : `${height}px`,
         },
-        '.cm-editor': {
-          height: '100%',
+        '.cm-gutter,.cm-content': {
+          minHeight: typeof minHeight === 'string' ? minHeight : `${minHeight}px`,
         },
         '.cm-scroller': {
           fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
+          overflow: 'auto',
         },
         '.cm-tooltip-autocomplete': {
           border: '1px solid #d9d9d9',
@@ -221,18 +217,11 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
         border: '1px solid #d9d9d9',
         borderRadius: '6px',
         overflow: 'hidden',
+        ...wrapperStyle,
       }}
     >
-      {rightExtra ? (
-        <Flex
-          gap="middle"
-          justify="flex-end"
-          align="center"
-          style={{ padding: '8px', borderBottom: '1px solid #d9d9d9' }}
-        >
-          {<div>{rightExtra.map((fn) => fn(extraEditorRef))}</div>}
-        </Flex>
-      ) : null}
+      <RightExtra rightExtra={rightExtra} extraEditorRef={extraEditorRef} />
+      <div style={{ height: `calc(100% - ${rightExtra?.length ? '50px' : '0px'})` }} ref={editorRef} />
       <div ref={editorRef} />
       {placeholder && !value && (
         <div
@@ -249,5 +238,28 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
         </div>
       )}
     </div>
+  );
+};
+
+const RightExtra: React.FC<{
+  rightExtra?: ((editorRef: EditorRef, setActive: (key: string, active: boolean) => void) => React.ReactNode)[];
+  extraEditorRef: EditorRef;
+}> = ({ rightExtra, extraEditorRef }) => {
+  const [activeCount, setActiveCount] = useState<{ [key: string]: boolean }>({});
+  const setActive = (key: string, active: boolean) => {
+    setActiveCount((prev) => ({ ...prev, [key]: active }));
+  };
+
+  const style = { padding: '8px', borderBottom: '1px solid #d9d9d9' };
+  if (Object.entries(activeCount).filter(([_, v]) => v).length <= 0) {
+    style['display'] = 'none';
+  }
+
+  return (
+    rightExtra?.length && (
+      <Flex gap="middle" justify="flex-end" align="center" style={style}>
+        {<div>{rightExtra.map((fn) => fn(extraEditorRef, setActive))}</div>}
+      </Flex>
+    )
   );
 };

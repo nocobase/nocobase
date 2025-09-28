@@ -80,8 +80,8 @@ export function useDialog() {
       preventClose: !!config.preventClose,
       destroy: () => dialogRef.current?.destroy(),
       update: (newConfig) => dialogRef.current?.update(newConfig),
-      close: (result?: any) => {
-        if (config.preventClose) {
+      close: (result?: any, force?: boolean) => {
+        if (config.preventClose && !force) {
           return;
         }
         dialogRef.current?.destroy();

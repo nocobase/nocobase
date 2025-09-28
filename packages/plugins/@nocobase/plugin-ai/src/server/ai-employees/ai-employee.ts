@@ -106,7 +106,7 @@ export class AIEmployee {
     const { signal } = controller;
 
     try {
-      const stream = await provider.stream(chatContext, { signal });
+      const stream = await provider.stream(chatContext, { signal, version: 'v2' });
       this.plugin.aiEmployeesManager.conversationController.set(this.sessionId, controller);
       return { stream, controller, signal };
     } catch (error) {
@@ -130,8 +130,14 @@ export class AIEmployee {
     const { signal, messageId, model, service, provider, allowEmpty = false } = options;
 
     let gathered: any;
+    let errMsg = '';
     try {
-      for await (const chunk of stream) {
+      for await (const streamEvent of stream) {
+        if (streamEvent.event !== 'on_chat_model_stream') {
+          this.ctx.log.debug(`skip event: ${streamEvent.event}`);
+          continue;
+        }
+        const chunk = streamEvent.data.chunk;
         gathered = gathered !== undefined ? concat(gathered, chunk) : chunk;
         if (chunk.content) {
           this.ctx.res.write(
@@ -141,8 +147,13 @@ export class AIEmployee {
         if (chunk.tool_call_chunks) {
           this.ctx.res.write(`data: ${JSON.stringify({ type: 'tool_call_chunks', body: chunk.tool_call_chunks })}\n\n`);
         }
+        const webSearch = provider.parseWebSearchAction(chunk);
+        if (webSearch?.length) {
+          this.ctx.res.write(`data: ${JSON.stringify({ type: 'web_search', body: webSearch })}\n\n`);
+        }
       }
     } catch (err) {
+      errMsg = err.message;
       this.ctx.log.error(err);
     }
 
@@ -152,7 +163,7 @@ export class AIEmployee {
     const toolCalls = gathered?.tool_calls;
     const skills = this.employee.skillSettings?.skills;
     if (!message && !toolCalls?.length && !signal.aborted && !allowEmpty) {
-      this.ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: 'No content' })}\n\n`);
+      this.ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: errMsg })}\n\n`);
       this.ctx.res.end();
       return;
     }
@@ -785,7 +796,7 @@ export class AIEmployee {
       return true;
     } catch (err) {
       this.ctx.log.error(err);
-      this.sendErrorResponse('Chat error warning');
+      this.sendErrorResponse(err.message);
       return false;
     }
   }

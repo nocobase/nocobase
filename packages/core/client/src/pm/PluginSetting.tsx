@@ -7,12 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ApiOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { css } from '@emotion/css';
 import { Layout, Menu } from 'antd';
 import _ from 'lodash';
 import React, { createContext, useCallback, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Navigate, Outlet, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { useACLRoleContext } from '../acl';
 import { ADMIN_SETTINGS_PATH, PluginSettingsPageType, useApp } from '../application';
 import { AppNotFound } from '../common/AppNotFound';
 import { useDocumentTitle } from '../document-title';
@@ -23,7 +26,22 @@ export const SettingsCenterContext = createContext<any>({});
 SettingsCenterContext.displayName = 'SettingsCenterContext';
 
 function getMenuItems(list: PluginSettingsPageType[]) {
-  return list.map((item) => {
+  const pinnedList = list.filter((item) => item.isPinned && !item.hidden);
+  const otherList = list.filter((item) => !item.isPinned && !item.hidden);
+  const items: any[] = [];
+  if (pinnedList.length) {
+    items.push(...pinnedList, { type: 'divider' });
+  }
+  if (otherList.length) {
+    items.push(...otherList);
+  }
+  if (items.length === 0) {
+    return undefined;
+  }
+  return items.map((item: any) => {
+    if (item.type === 'divider') {
+      return { type: 'divider' };
+    }
     return {
       key: item.name,
       label: item.label,
@@ -64,6 +82,7 @@ export const AdminSettingsLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
+  const { t } = useTranslation();
   const compile = useCompile();
   const settings = useMemo(() => {
     const list = app.pluginSettingsManager.getList();
@@ -119,6 +138,7 @@ export const AdminSettingsLayout = () => {
   }, [settings]);
 
   const { setTitle: setDocumentTitle } = useDocumentTitle();
+  const { snippets = [] } = useACLRoleContext();
 
   const currentSetting = useMemo(
     () => matchRoute(settingsMapByPath, location.pathname),
@@ -140,7 +160,17 @@ export const AdminSettingsLayout = () => {
   }, [currentTopLevelSetting?.title, currentTopLevelSetting?.topLevelName, setDocumentTitle]);
 
   const sidebarMenus = useMemo(() => {
-    return getMenuItems(settings.filter((v) => v.isTopLevel !== false).map((item) => ({ ...item, children: null })));
+    return [
+      snippets.includes('pm') && {
+        key: 'plugin-manager',
+        icon: <ApiOutlined />,
+        label: t('Plugin manager'),
+      },
+      snippets.includes('pm') && {
+        type: 'divider',
+      },
+      ...getMenuItems(settings.filter((v) => v.isTopLevel !== false).map((item) => ({ ...item, children: null }))),
+    ].filter(Boolean) as any[];
   }, [settings]);
   if (!currentSetting || location.pathname === ADMIN_SETTINGS_PATH || location.pathname === ADMIN_SETTINGS_PATH + '/') {
     return <Navigate replace to={getFirstDeepChildPath(settings)} />;

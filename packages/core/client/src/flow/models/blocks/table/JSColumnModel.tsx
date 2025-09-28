@@ -23,10 +23,13 @@ import {
 } from '@nocobase/flow-engine';
 import { Tooltip } from 'antd';
 import React from 'react';
+import { observer } from '@formily/reactive-react';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
 import { CodeEditor } from '../../../components/code-editor';
 
 export class JSColumnModel extends TableCustomColumnModel {
+  // Stable per‑instance render component to avoid remounts across re-renders
+  private _RenderComponent?: React.ComponentType;
   renderHiddenInConfig() {
     return (
       <Tooltip title={this.context.t('该字段已被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。')}>
@@ -53,6 +56,8 @@ export class JSColumnModel extends TableCustomColumnModel {
   }
 
   getColumnProps() {
+    const self = this;
+    const TitleText = observer(() => <>{self.props.title}</>);
     const titleContent = (
       <Droppable model={this}>
         <FlowsFloatContextMenu
@@ -75,7 +80,7 @@ export class JSColumnModel extends TableCustomColumnModel {
               width: calc(${this.props.width}px - 16px);
             `}
           >
-            {this.props.title}
+            <TitleText />
           </div>
         </FlowsFloatContextMenu>
       </Droppable>
@@ -128,23 +133,35 @@ export class JSColumnModel extends TableCustomColumnModel {
   }
 
   render() {
-    const Component = () => {
-      const ref = this.context.ref;
-      React.useEffect(() => {
-        if (ref?.current) {
-          this.applyFlow('jsSettings');
-        }
-      }, [ref?.current]);
-      return <span ref={ref} style={{ display: 'inline-block', maxWidth: '100%' }} />;
-    };
-    return Component;
+    if (!this._RenderComponent) {
+      const self = this;
+      const StableComponent: React.FC = () => {
+        const ref = self.context.ref;
+        React.useEffect(() => {
+          const s: any = self as any;
+          if (!ref?.current) return;
+          if (s.__mountedOnce) {
+            self.rerender();
+          } else {
+            s.__mountedOnce = true;
+          }
+          // eslint-disable-next-line react-hooks/exhaustive-deps
+        }, [ref?.current]);
+        return <span ref={ref} style={{ display: 'inline-block', maxWidth: '100%' }} />;
+      };
+      StableComponent.displayName = 'JSColumnModelStableRenderer';
+      this._RenderComponent = StableComponent;
+    }
+    return this._RenderComponent;
   }
 
-  protected onMount() {
-    if (this.context.ref?.current) {
-      this.rerender();
-    }
+  async afterAddAsSubModel() {
+    await super.afterAddAsSubModel();
+    // Apply basic column settings right after adding (title/width), JS-specific only
+    await this.applyFlow('tableColumnSettings');
   }
+
+  // No onMount logic; StableComponent handles first-run and remount reruns
 }
 
 JSColumnModel.define({
@@ -175,10 +192,23 @@ JSColumnModel.registerFlow({
             minHeight: '320px',
             theme: 'light',
             enableLinter: true,
+            wrapperStyle: {
+              position: 'fixed',
+              inset: 8,
+            },
           },
         },
       },
-      uiMode: 'embed',
+      uiMode: {
+        type: 'embed',
+        props: {
+          styles: {
+            body: {
+              transform: 'translateX(0)',
+            },
+          },
+        },
+      },
       defaultParams() {
         return {
           code: `ctx.element.innerHTML = \`<span class="nb-js-column">JS column</span>\`;`,

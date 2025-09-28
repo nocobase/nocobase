@@ -8,7 +8,7 @@
  */
 
 import { create } from 'zustand';
-import { Message, Attachment, ContextItem, SkillSettings } from '../../types';
+import { Message, Attachment, ContextItem, SkillSettings, WebSearching } from '../../types';
 import { createSelectors } from './create-selectors';
 import { EditorRef } from '@nocobase/client';
 
@@ -21,6 +21,7 @@ type ChatMessagesState = {
   abortController?: AbortController;
   skillSettings?: SkillSettings;
   editorRef?: EditorRef;
+  webSearching?: WebSearching;
 };
 
 export interface ChatMessagesActions {
@@ -45,6 +46,7 @@ export interface ChatMessagesActions {
   setSkillSettings: (settings: SkillSettings | undefined) => void;
 
   setEditorRef: (editorRef: EditorRef) => void;
+  setWebSearching: (webSearching: WebSearching) => void;
 }
 
 const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
@@ -56,6 +58,7 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
   abortController: null,
   skillSettings: null,
   editorRef: null,
+  webSearching: null,
 
   setMessages: (messages) => {
     set((state) => {
@@ -140,6 +143,10 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
 
   setEditorRef(editorRef) {
     set({ editorRef });
+  },
+
+  setWebSearching(webSearching) {
+    set({ webSearching });
   },
 }));
 

@@ -28,18 +28,14 @@ const { Meta } = Card;
 type ShortcutProps = TriggerTaskOptions & {
   builtIn?: boolean;
   showNotice?: boolean;
-  size?: number;
-  animation?: boolean;
+  style: {
+    size?: number;
+    mask?: boolean;
+  };
 };
 
-const Shortcut: React.FC<ShortcutProps> = ({
-  aiEmployee: { username },
-  tasks,
-  showNotice,
-  size,
-  animation = true,
-  builtIn,
-}) => {
+const Shortcut: React.FC<ShortcutProps> = ({ aiEmployee: { username }, tasks, showNotice, builtIn, style = {} }) => {
+  const { size, mask } = style;
   const [focus, setFocus] = useState(false);
 
   const { loading, aiEmployeesMap } = useAIEmployeesData();
@@ -52,11 +48,6 @@ const Shortcut: React.FC<ShortcutProps> = ({
     if (!avatar) {
       return null;
     }
-    if (!animation) {
-      return avatars(avatar, {
-        mask: undefined,
-      });
-    }
     if (focus || showNotice) {
       return avatars(avatar, {
         mask: undefined,
@@ -65,9 +56,9 @@ const Shortcut: React.FC<ShortcutProps> = ({
     }
     return avatars(avatar, {
       mouth: undefined,
-      mask: ['dark'],
+      mask: mask !== false ? ['dark'] : undefined,
     });
-  }, [aiEmployee, focus, showNotice, animation]);
+  }, [aiEmployee, focus, showNotice, mask]);
 
   return (
     <Spin spinning={loading}>

@@ -23,12 +23,16 @@ import { NAMESPACE, tStr } from './locale';
 export class LowcodeBlockModel extends BlockModel {
   ref = createRef<HTMLDivElement>();
   declare resource: APIResource;
+  private _mountedOnce = false; // avoid first-mount double-run
 
   protected onMount(): void {
     // if having ref, should rerender to insert content to html again
-    if (this.ref.current) {
-      this.rerender();
+    if (this._mountedOnce) {
+      if (this.ref.current) {
+        this.rerender();
+      }
     }
+    this._mountedOnce = true;
   }
 
   render() {

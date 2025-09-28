@@ -124,7 +124,9 @@ export default class PluginWorkflowClient extends Plugin {
     this.app.pluginSettingsManager.add(NAMESPACE, {
       icon: 'PartitionOutlined',
       title: `{{t("Workflow", { ns: "${NAMESPACE}" })}}`,
+      isPinned: true,
       Component: WorkflowPane,
+      sort: 300,
       aclSnippet: 'pm.workflow.workflows',
     });
 

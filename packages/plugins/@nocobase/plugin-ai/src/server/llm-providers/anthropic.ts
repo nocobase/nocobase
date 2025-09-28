@@ -32,7 +32,7 @@ export class AnthropicProvider extends LLMProvider {
       ...this.modelOptions,
       model,
       anthropicApiUrl: baseURL || this.baseURL,
-      verbose: true,
+      verbose: false,
     });
   }
 

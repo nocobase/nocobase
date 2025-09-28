@@ -188,3 +188,8 @@ export type WorkContextOptions = {
   children?: Record<string, Omit<WorkContextOptions, 'children'>>;
   getContent?: (app: Application, item: ContextItem) => Promise<any>;
 };
+
+export type WebSearching = {
+  type: string;
+  query: string;
+};

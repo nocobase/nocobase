@@ -353,7 +353,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
       config: {
         items: {
           ui: { order: 100, component: 'DesignableSwitch', pin: true, snippet: 'ui.*' },
-          pm: { order: 200, component: 'PluginManagerLink', pin: true, snippet: 'pm' },
+          // pm: { order: 200, component: 'PluginManagerLink', pin: true, snippet: 'pm' },
           sc: { order: 300, component: 'SettingsCenterDropdown', pin: true, snippet: 'pm.*' },
         },
       },

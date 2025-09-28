@@ -21,6 +21,8 @@ import React from 'react';
 import { NAMESPACE } from './locale';
 
 export class JavaScriptBlockModel extends BlockModel {
+  // Avoid double-run on first mount: only rerender after initial mount
+  private _mountedOnce = false;
   render() {
     return (
       <Card id={`model-${this.uid}`} className="code-block">
@@ -29,10 +31,14 @@ export class JavaScriptBlockModel extends BlockModel {
     );
   }
   protected onMount() {
-    // if having ref, should rerender to insert content to html again
-    if (this.context.ref.current) {
-      this.rerender();
+    // If component has mounted before, rerun to refresh JS on remount
+    // Keep first mount single-run (handled by auto-flows + onRefReady)
+    if (this._mountedOnce) {
+      if (this.context.ref.current) {
+        this.rerender();
+      }
     }
+    this._mountedOnce = true;
   }
 }
 
@@ -56,10 +62,23 @@ JavaScriptBlockModel.registerFlow({
             minHeight: '400px',
             theme: 'light',
             enableLinter: true,
+            wrapperStyle: {
+              position: 'fixed',
+              inset: 8,
+            },
           },
         },
       },
-      uiMode: 'embed',
+      uiMode: {
+        type: 'embed',
+        props: {
+          styles: {
+            body: {
+              transform: 'translateX(0)',
+            },
+          },
+        },
+      },
       defaultParams(ctx) {
         return {
           code:

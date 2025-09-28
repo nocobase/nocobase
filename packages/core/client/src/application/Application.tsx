@@ -40,7 +40,12 @@ import { DataSourceApplicationProvider } from '../data-source/components/DataSou
 import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
 import { DataSourceManager, type DataSourceManagerOptions } from '../data-source/data-source/DataSourceManager';
 
-import { FlowEngine, FlowEngineGlobalsContextProvider, FlowEngineProvider } from '@nocobase/flow-engine';
+import {
+  FlowEngine,
+  FlowEngineContext,
+  FlowEngineGlobalsContextProvider,
+  FlowEngineProvider,
+} from '@nocobase/flow-engine';
 import type { CollectionFieldInterfaceFactory } from '../data-source';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
@@ -133,6 +138,10 @@ export class Application {
   public globalVarCtxs: Record<string, any> = {};
   public jsonLogic: JsonLogic;
   public flowEngine: FlowEngine;
+  public context: FlowEngineContext & {
+    pluginSettingsRouter: PluginSettingsManager;
+    pluginManager: PluginManager;
+  };
   loading = true;
   maintained = false;
   maintaining = false;
@@ -199,6 +208,13 @@ export class Application {
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
     this.dataSourceManager = new DataSourceManager(options.dataSourceManager, this);
     this.flowEngine = new FlowEngine();
+    this.context = this.flowEngine.context as any;
+    this.context.defineProperty('pluginManager', {
+      get: () => this.pluginManager,
+    });
+    this.context.defineProperty('pluginSettingsRouter', {
+      get: () => this.pluginSettingsManager,
+    });
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);

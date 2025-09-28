@@ -15,6 +15,7 @@ import axios from 'axios';
 import { AIChatContext } from '../types/ai-chat-conversation.type';
 import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
+import { AIMessageChunk } from '@langchain/core/messages';
 
 export interface LLMProviderOptions {
   app: Application;
@@ -46,9 +47,17 @@ export abstract class LLMProvider {
 
   prepareChain(context: AIChatContext) {
     let chain = this.chatModel;
-    if (context.tools?.length) {
+
+    if (this.builtInTools()?.length) {
+      const tools = [...this.builtInTools()];
+      if (!this.isToolConflict() && context.tools?.length) {
+        tools.push(...context.tools);
+      }
+      chain = chain.bindTools(tools);
+    } else if (context.tools?.length) {
       chain = chain.bindTools(context.tools);
     }
+
     if (context.structuredOutput) {
       const { schema, options } = this.getStructuredOutputOptions(context.structuredOutput) || {};
       if (schema) {
@@ -65,7 +74,7 @@ export abstract class LLMProvider {
 
   async stream(context: AIChatContext, options?: any) {
     const chain = this.prepareChain(context);
-    return chain.stream(context.messages, options);
+    return chain.streamEvents(context.messages, options);
   }
 
   async listModels(): Promise<{
@@ -170,6 +179,18 @@ export abstract class LLMProvider {
       status: 'success',
       code: 0,
     };
+  }
+
+  protected builtInTools(): any[] {
+    return [];
+  }
+
+  protected isToolConflict(): boolean {
+    return true;
+  }
+
+  parseWebSearchAction(chunk: AIMessageChunk): { type: string; query: string }[] {
+    return [];
   }
 }
 

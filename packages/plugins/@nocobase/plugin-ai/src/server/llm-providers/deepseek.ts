@@ -33,7 +33,7 @@ export class DeepSeekProvider extends LLMProvider {
       configuration: {
         baseURL: baseURL || this.baseURL,
       },
-      verbose: true,
+      verbose: false,
     });
   }
 }

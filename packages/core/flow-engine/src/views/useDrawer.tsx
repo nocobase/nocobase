@@ -80,8 +80,8 @@ export function useDrawer() {
       preventClose: !!config.preventClose,
       destroy: () => drawerRef.current?.destroy(),
       update: (newConfig) => drawerRef.current?.update(newConfig),
-      close: (result?: any) => {
-        if (config.preventClose) {
+      close: (result?: any, force?: boolean) => {
+        if (config.preventClose && !force) {
           return;
         }
         drawerRef.current?.destroy();

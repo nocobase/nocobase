@@ -36,15 +36,28 @@ JSFormActionModel.registerFlow({
             minHeight: '320px',
             theme: 'light',
             enableLinter: true,
+            wrapperStyle: {
+              position: 'fixed',
+              inset: 8,
+            },
           },
         },
       },
-      uiMode: 'embed',
+      uiMode: {
+        type: 'embed',
+        props: {
+          styles: {
+            body: {
+              transform: 'translateX(0)',
+            },
+          },
+        },
+      },
       defaultParams(ctx) {
         return {
           code: `
 const values = ctx.form?.getFieldsValue?.() || {};
-ctx.message.success('当前表单值：' + JSON.stringify(values));
+ctx.message.success('Current form values: ' + JSON.stringify(values));
 `,
         };
       },

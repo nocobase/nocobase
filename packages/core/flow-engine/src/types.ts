@@ -404,6 +404,12 @@ export type FlowModelMeta =
     // FlowModelMeta 独有的属性
     group?: string;
     /**
+     * 菜单展示形态：
+     * - 'group'：作为分组标题，子项平铺显示（默认）
+     * - 'submenu'：作为可点击的一级项，展开二级子菜单
+     */
+    menuType?: 'group' | 'submenu';
+    /**
      * 排序权重，数字越小排序越靠前，用于控制显示顺序和默认选择
      * 排序最靠前的将作为默认选择
      * @default 0
