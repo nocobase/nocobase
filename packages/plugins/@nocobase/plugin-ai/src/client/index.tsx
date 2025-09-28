@@ -88,6 +88,8 @@ export class PluginAIClient extends Plugin {
       icon: 'TeamOutlined',
       title: tval('AI employees', { ns: namespace }),
       aclSnippet: 'pm.ai',
+      isPinned: true,
+      sort: 400,
     });
     this.app.pluginSettingsManager.add('ai.employees', {
       icon: 'TeamOutlined',
