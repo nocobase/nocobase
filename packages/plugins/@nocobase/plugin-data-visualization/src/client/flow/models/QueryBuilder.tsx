@@ -301,25 +301,6 @@ export const QueryBuilder: React.FC = observer(() => {
             component={[
               function FilterGroupWrapper(props) {
                 const ctx = useFlowSettingsContext<any>();
-                const form = useForm();
-
-                // 注入 ctx.collection.meta：确保 VariableFilterItem 的字段变量树能取到可选项
-                React.useEffect(() => {
-                  const collectionPath: string[] | undefined = form?.values?.query?.collectionPath;
-                  const [dataSourceKey, collectionName] = collectionPath || [];
-                  const dsm = ctx?.model?.context?.dataSourceManager;
-                  if (!dsm || !dataSourceKey || !collectionName) return;
-
-                  // 定义 collection：提供 metaTree 的来源
-                  ctx.model.context.defineProperty('collection', {
-                    get: () => dsm.getCollection(dataSourceKey, collectionName),
-                    meta: createCollectionContextMeta(
-                      () => dsm.getCollection(dataSourceKey, collectionName),
-                      (ctx?.model?.context?.t && ctx.model.context.t('Current collection')) || 'Current collection',
-                    ),
-                  });
-                }, [ctx?.model, form?.values?.query?.collectionPath, form?.values?.query?.settings?.collection]);
-
                 return (
                   <FilterGroup
                     value={props.value}

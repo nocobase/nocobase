@@ -9,7 +9,7 @@
 
 import { useForm } from '@formily/react';
 import { DataBlockModel, SubPageModel } from '@nocobase/client';
-import { SQLResource, useFlowContext } from '@nocobase/flow-engine';
+import { createCollectionContextMeta, SQLResource, useFlowContext } from '@nocobase/flow-engine';
 import { Button, Badge } from 'antd';
 import React, { createRef } from 'react';
 import { useT } from '../../locale';
@@ -21,6 +21,7 @@ import { ChartResource } from '../resources/ChartResource';
 import _ from 'lodash';
 import { genRawByBuilder } from './ChartOptionsBuilder.service';
 import { configStore } from './config-store';
+import { useQueryBuilderLogic } from './queryBuilder.logic';
 
 type ChartBlockModelStructure = {
   subModels: {
@@ -78,6 +79,10 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     }
   }
 
+  getResourceSettingsInitParams() {
+    return this.getStepParams('chartSettings', 'configure');
+  }
+
   onInit(options) {
     super.onInit(options);
     this.context.defineProperty('chartRef', {
@@ -91,6 +96,19 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       get: () => convertDatasetFormats(this.resource.getData()),
       cache: false,
     });
+
+    this.context.defineProperty('collection', {
+      get: () => {
+        const stepParams = this.getResourceSettingsInitParams();
+        const [dataSourceKey, collectionName] = stepParams?.query?.collectionPath || [];
+        return this.context.dataSourceManager.getCollection(dataSourceKey, collectionName);
+      },
+      meta: createCollectionContextMeta(() => {
+        const stepParams = this.getResourceSettingsInitParams();
+        const [dataSourceKey, collectionName] = stepParams?.query?.collectionPath || [];
+        return this.context.dataSourceManager.getCollection(dataSourceKey, collectionName);
+      }, this.context.t('Current collection')),
+    });
   }
 
   renderComponent() {
@@ -98,25 +116,49 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     return <Chart {...this.props.chart} dataSource={this.resource.getData()} ref={this.context.chartRef as any} />;
   }
 
-  // TODO 暴露给外部筛选表单调用筛选项，需要重构
-  async getFilterFields(): Promise<{ name: string; title: string; target?: string }[]> {
-    const data = this.resource.getData();
-    if (!data) {
+  // 给外部筛选表单调用，获取图表可筛选字段
+  async getFilterFields(): Promise<
+    {
+      name: string;
+      title: string;
+      type: string;
+      interface: string;
+      target?: string;
+      filterable?: {
+        operators: {
+          label: string;
+          value: string;
+        }[];
+      };
+    }[]
+  > {
+    const stepParams = this.getResourceSettingsInitParams();
+    const query = stepParams?.query;
+    if (!query) {
       return [];
     }
-    const fields = Object.keys(data[0] || {}).map((field) => {
-      const fieldType = typeof data[0][field] === 'number' ? 'number' : 'string';
-      return {
-        name: field,
-        title: field,
-        type: fieldType,
-        interface: fieldType === 'number' ? 'number' : 'input',
-        getFirstSubclassNameOf() {
-          return fieldType === 'number' ? 'NumberFilterFieldModel' : 'InputFilterFieldModel';
-        },
-      };
-    });
-    return fields;
+    if (query?.mode === 'sql') {
+      // sql 模式：从查询数据结果解析 fields
+      const data = this.resource.getData();
+      if (!data) {
+        return [];
+      }
+      const fields = Object.keys(data[0] || {}).map((field) => {
+        const fieldType = typeof data[0][field] === 'number' ? 'number' : 'string';
+        return {
+          name: field,
+          title: field,
+          type: fieldType,
+          interface: fieldType === 'number' ? 'number' : 'input',
+          // getFirstSubclassNameOf() {
+          //   return fieldType === 'number' ? 'NumberFilterFieldModel' : 'InputFilterFieldModel';
+          // },
+        };
+      });
+      return fields;
+    } else {
+      return this.context.collection?.getFields().filter((field) => field.filterable) || [];
+    }
   }
 
   // 检查当前资源与查询模式是否匹配，不匹配则重新初始化
@@ -157,7 +199,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   // 预览，暂存预览前的 stepParams，并刷新图表
   async setParamsAndRerender(params) {
     if (!this._previousStepParams) {
-      this._previousStepParams = _.cloneDeep(this.stepParams.chartSettings?.configure);
+      this._previousStepParams = _.cloneDeep(this.getResourceSettingsInitParams());
     }
     this.setStepParams('chartSettings', 'configure', params);
     this.rerender();

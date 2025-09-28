@@ -9,6 +9,30 @@
 
 import { BaseRecordResource } from '@nocobase/flow-engine';
 import { parseField, removeUnparsableFilter, isEmptyFilterObject } from '../../utils';
+import lodash from 'lodash';
+import { transformFilter } from '@nocobase/utils/client';
+
+// FilterGroup -> server filter
+function transformFilterGroup(input: any): any {
+  if (!input || typeof input !== 'object') {
+    throw new Error('Invalid filter: filter must be an object');
+  }
+  // 处理错误混用的结构，最外面多了一层 $and 或 $or
+  if (Array.isArray(input.$and) && input.$and[0]?.logic) {
+    input = {
+      logic: '$and',
+      items: input.$and,
+    };
+  }
+  if (Array.isArray(input.$or) && input.$or[0]?.logic) {
+    input = {
+      logic: '$or',
+      items: input.$or,
+    };
+  }
+
+  return transformFilter(input);
+}
 
 export class ChartResource<TData = any> extends BaseRecordResource<TData> {
   resourceName = 'charts';
@@ -52,8 +76,8 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // 筛选条件写入请求参数，父类 addFilterGroup/removeFilterGroup --> resetFilter --> setFilter
   setFilter(filter: Record<string, any>) {
-    // 父类已将所有组聚合为 {$and: [...] } 或单对象；这里统一清洗与扁平化 $and
-    const cleanedRoot = removeUnparsableFilter(filter);
+    const normalizedInput = transformFilterGroup(filter);
+    const cleanedRoot = removeUnparsableFilter(normalizedInput);
 
     let merged = cleanedRoot;
     if (
