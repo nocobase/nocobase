@@ -48,7 +48,11 @@ type ViewProps = {
 
 type PopoverProps = AntdPopoverProps & {} & ViewProps & TargetProps;
 
+let zIndex = 0;
+
 export class FlowViewer {
+  public zIndex;
+
   constructor(
     protected ctx: FlowContext,
     protected types: {
@@ -57,10 +61,25 @@ export class FlowViewer {
       dialog: any;
       embed: any;
     },
-  ) {}
+  ) {
+    this.zIndex = zIndex + (ctx.themeToken.zIndexPopupBase || 1000);
+  }
+
+  getNextZIndex() {
+    return this.zIndex + 1;
+  }
+
   open(props: ViewProps & { type: ViewType } & TargetProps) {
     const { type, ...others } = props;
     if (this.types[type]) {
+      zIndex += 1;
+      const onClose = others.onClose;
+      const _zIndex = others.zIndex;
+      others.onClose = (...args) => {
+        onClose?.(...args);
+        zIndex -= 1;
+      };
+      others.zIndex = _zIndex ?? this.getNextZIndex();
       return this.types[type].open(others, this.ctx);
     } else {
       throw new Error(`Unknown view type: ${type}`);
