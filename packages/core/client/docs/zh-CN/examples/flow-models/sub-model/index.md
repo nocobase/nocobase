@@ -130,6 +130,13 @@ interface SubModelItem {
 - 所有继承 `subModelBaseClasses` 的 FlowModel 都会罗列出来
 - 自动按 `subModelBaseClasses` 分组并去重
 
+### 通过继承类 + menuType=submenu 实现二级菜单
+
+<code src="./demos/add-sub-model-submenu-base-class.tsx"></code>
+
+- 给基类通过 `Model.define({ menuType: 'submenu' })` 指定展示形态
+- 作为一级项出现，展开为二级菜单；可与其它分组按 `meta.sort` 混排排序
+
 ### 通过 Model.defineChildren() 的方式自定义子菜单
 
 <code src="./demos/add-sub-model-define-children.tsx"></code>
