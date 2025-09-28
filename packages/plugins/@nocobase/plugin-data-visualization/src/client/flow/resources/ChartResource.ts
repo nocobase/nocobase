@@ -17,18 +17,16 @@ function transformFilterGroup(input: any): any {
   if (!input || typeof input !== 'object') {
     throw new Error('Invalid filter: filter must be an object');
   }
-  // 处理错误混用的结构，最外面多了一层 $and 或 $or
-  if (Array.isArray(input.$and) && input.$and[0]?.logic) {
-    input = {
-      logic: '$and',
-      items: input.$and,
-    };
+  // 处理异常结构，最外面多了一层 $and 或 $or
+  if (Array.isArray(input.$and) && input.$and.length === 1 && input.$and[0]?.logic) {
+    input = input.$and[0];
   }
-  if (Array.isArray(input.$or) && input.$or[0]?.logic) {
-    input = {
-      logic: '$or',
-      items: input.$or,
-    };
+  if (Array.isArray(input.$or) && input.$or.length === 1 && input.$or[0]?.logic) {
+    input = input.$or[0];
+  }
+  // 处理异常结构，缺少 items 字段
+  if ((input?.logic === '$and' || input?.logic === '$or') && !Array.isArray(input.items)) {
+    input.items = [];
   }
 
   return transformFilter(input);

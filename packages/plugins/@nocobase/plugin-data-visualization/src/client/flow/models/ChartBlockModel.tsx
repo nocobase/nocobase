@@ -157,7 +157,8 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       });
       return fields;
     } else {
-      return this.context.collection?.getFields().filter((field) => field.filterable) || [];
+      const fields = this.context.collection?.getFields().filter((field) => field.filterable) || [];
+      return fields;
     }
   }
 
