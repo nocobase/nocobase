@@ -40,10 +40,23 @@ JSCollectionActionModel.registerFlow({
             minHeight: '320px',
             theme: 'light',
             enableLinter: true,
+            wrapperStyle: {
+              position: 'fixed',
+              inset: 8,
+            },
           },
         },
       },
-      uiMode: 'embed',
+      uiMode: {
+        type: 'embed',
+        props: {
+          styles: {
+            body: {
+              transform: 'translateX(0)',
+            },
+          },
+        },
+      },
       defaultParams(ctx) {
         return {
           code: `

@@ -42,7 +42,7 @@ function RemoteModelRenderer({ options }) {
   return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin: 16 }} />} />;
 }
 
-export function RecordPickerContent({ model, toOne }) {
+export function RecordPickerContent({ model, toOne = false }) {
   const ctx = useFlowContext();
   const { Header, Footer } = ctx.view;
   model._closeView = ctx.view.close;

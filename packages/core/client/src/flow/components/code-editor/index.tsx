@@ -37,6 +37,7 @@ interface CodeEditorProps {
   readonly?: boolean;
   enableLinter?: boolean;
   rightExtra?: ((editorRef: EditorRef, setActive: (key: string, active: boolean) => void) => React.ReactNode)[];
+  wrapperStyle?: React.CSSProperties;
 }
 
 export const CodeEditor: React.FC<CodeEditorProps & InjectableRendingEventTriggerProps> = (props) => {
@@ -52,12 +53,13 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
   value = '',
   onChange,
   placeholder = '',
-  height = '300px',
+  height = '100%',
   minHeight,
   theme = 'light',
   readonly = false,
   enableLinter = false,
   rightExtra,
+  wrapperStyle,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -82,12 +84,11 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
         }
       }),
       EditorView.theme({
+        '&': {
+          height: typeof height === 'string' ? height || '100%' : `${height}px`,
+        },
         '.cm-gutter,.cm-content': {
           minHeight: typeof minHeight === 'string' ? minHeight : `${minHeight}px`,
-          height: typeof height === 'string' ? height : `${height}px`,
-        },
-        '.cm-editor': {
-          height: '100%',
         },
         '.cm-scroller': {
           fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
@@ -216,8 +217,20 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
         border: '1px solid #d9d9d9',
         borderRadius: '6px',
         overflow: 'hidden',
+        ...wrapperStyle,
       }}
     >
+      {rightExtra?.length ? (
+        <Flex
+          gap="middle"
+          justify="flex-end"
+          align="center"
+          style={{ padding: '8px', borderBottom: '1px solid #d9d9d9' }}
+        >
+          {<div>{rightExtra.map((fn) => fn(extraEditorRef))}</div>}
+        </Flex>
+      ) : null}
+      <div style={{ height: `calc(100% - ${rightExtra?.length ? '50px' : '0px'})` }} ref={editorRef} />
       <RightExtra rightExtra={rightExtra} extraEditorRef={extraEditorRef} />
       <div ref={editorRef} />
       {placeholder && !value && (

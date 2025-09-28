@@ -1373,7 +1373,7 @@
   "Input": "文本框",
   "Content overflow display mode": "内容溢出显示方式",
   "Wrap": "换行",
-  "Save failed":" 保存失败",
+  "Save failed": " 保存失败",
   "Please select fields": "请选择字段",
   "Please select field": "请选择字段",
   "Please select state": "请选择状态",
@@ -1390,5 +1390,7 @@
   "Default operator": "默认操作符",
   "Collapse button": "折叠",
   "Expand button": "展开",
-  "Collapse settings": "折叠设置"
+  "Collapse settings": "折叠设置",
+  "Upload file settings": "文件上传设置",
+  "Allow selection of existing file": "允许选择已有文件"
 }
