@@ -60,6 +60,9 @@ const Shortcut: React.FC<ShortcutProps> = ({ aiEmployee: { username }, tasks, sh
     });
   }, [aiEmployee, focus, showNotice, mask]);
 
+  if (!aiEmployee) {
+    return null;
+  }
   return (
     <Spin spinning={loading}>
       <Popover content={<ProfileCard aiEmployee={aiEmployee} tasks={tasks} />}>

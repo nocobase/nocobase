@@ -204,6 +204,7 @@ const LocalPlugins = () => {
     'Actions',
     'Workflow',
     'Users & permissions',
+    'AI',
     'Authentication',
     'Notification',
     'System management',
