@@ -170,18 +170,34 @@ export function buildSubModelGroups(subModelBaseClasses: (string | ModelConstruc
       }
 
       if (!hasChildren) continue;
-      // 优先使用父类的 meta.label；若无则回退到传入的基类字符串，避免使用压缩后不稳定的类名
+      // 优先使用父类的 meta.label；若无则回退到传入的基类字符串
       const groupLabel =
         BaseClass?.meta?.label || (typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name);
-      items.push({
-        // 使用传入的字符串作为 key，避免使用类名在压缩后不稳定的问题
-        key: typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name,
-        type: 'group',
-        label: groupLabel,
-        children,
-      });
+
+      const baseKey = typeof subModelBaseClass === 'string' ? subModelBaseClass : BaseClass.name;
+      const menuType = BaseClass?.meta?.menuType || 'group';
+      const groupSort = BaseClass?.meta?.sort ?? 1000;
+      if (menuType === 'submenu') {
+        // 作为可点击的一级项，展开二级子菜单
+        items.push({
+          key: baseKey,
+          label: groupLabel,
+          sort: groupSort,
+          children,
+        });
+      } else {
+        // 默认作为分组标题，子项平铺显示
+        items.push({
+          key: baseKey,
+          type: 'group',
+          label: groupLabel,
+          sort: groupSort,
+          children,
+        });
+      }
     }
-    return items;
+    // 基于 meta.sort 对分组进行稳定排序（升序）；未指定时默认 1000
+    return items.sort((a: any, b: any) => (a?.sort ?? 1000) - (b?.sort ?? 1000));
   };
 }
 
