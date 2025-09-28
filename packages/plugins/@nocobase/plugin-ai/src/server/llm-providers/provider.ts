@@ -51,10 +51,13 @@ export abstract class LLMProvider {
     const tools = [];
     if (this.builtInTools()?.length) {
       tools.push(...this.builtInTools());
-    }
-    if (!this.isToolConflict() && context.tools?.length) {
+      if (!this.isToolConflict() && context.tools?.length) {
+        tools.push(...context.tools);
+      }
+    } else if (context.tools?.length) {
       tools.push(...context.tools);
     }
+
     if (tools.length) {
       chain = chain.bindTools(tools);
     }
