@@ -220,18 +220,8 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
         ...wrapperStyle,
       }}
     >
-      {rightExtra?.length ? (
-        <Flex
-          gap="middle"
-          justify="flex-end"
-          align="center"
-          style={{ padding: '8px', borderBottom: '1px solid #d9d9d9' }}
-        >
-          {<div>{rightExtra.map((fn) => fn(extraEditorRef))}</div>}
-        </Flex>
-      ) : null}
-      <div style={{ height: `calc(100% - ${rightExtra?.length ? '50px' : '0px'})` }} ref={editorRef} />
       <RightExtra rightExtra={rightExtra} extraEditorRef={extraEditorRef} />
+      <div style={{ height: `calc(100% - ${rightExtra?.length ? '50px' : '0px'})` }} ref={editorRef} />
       <div ref={editorRef} />
       {placeholder && !value && (
         <div
