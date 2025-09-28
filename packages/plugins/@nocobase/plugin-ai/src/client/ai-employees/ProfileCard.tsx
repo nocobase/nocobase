@@ -21,6 +21,7 @@ export const ProfileCard: React.FC<{
 }> = ({ aiEmployee, tasks }) => {
   const { token } = useToken();
   const t = useT();
+  tasks = tasks?.filter((task) => task.title) || [];
 
   const { triggerTask } = useChatBoxActions();
 
@@ -75,7 +76,7 @@ export const ProfileCard: React.FC<{
             {t('Bio')}
           </Divider>
           <Typography.Paragraph>{aiEmployee.bio}</Typography.Paragraph>
-          {tasks?.length > 1 && (
+          {tasks.length ? (
             <>
               <Divider
                 orientation="left"
@@ -108,7 +109,7 @@ export const ProfileCard: React.FC<{
                 ))}
               </Flex>
             </>
-          )}
+          ) : null}
         </>
       ) : null}
     </div>

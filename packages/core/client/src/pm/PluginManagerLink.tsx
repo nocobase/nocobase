@@ -48,8 +48,8 @@ export const SettingsCenterDropdown = () => {
   const app = useApp();
   const settingItems = useMemo(() => {
     const settings = app.pluginSettingsManager.getList();
-    return settings
-      .filter((v) => v.isTopLevel !== false)
+    const pinnedSettings = settings
+      .filter((v) => v.isPinned && v.isTopLevel !== false)
       .map((setting) => {
         return {
           key: setting.name,
@@ -61,6 +61,26 @@ export const SettingsCenterDropdown = () => {
           ),
         };
       });
+    const othersSettings = settings
+      .filter((v) => !v.isPinned && v.isTopLevel !== false)
+      .map((setting) => {
+        return {
+          key: setting.name,
+          icon: setting.icon,
+          label: setting.link ? (
+            <div onClick={() => window.open(setting.link)}>{compile(setting.title)}</div>
+          ) : (
+            <Link to={setting.path}>{compile(setting.title)}</Link>
+          ),
+        };
+      });
+    return [
+      ...pinnedSettings,
+      {
+        type: 'divider',
+      },
+      ...othersSettings,
+    ];
   }, [app, t]);
 
   useEffect(() => {

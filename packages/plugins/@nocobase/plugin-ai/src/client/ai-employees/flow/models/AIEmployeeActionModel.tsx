@@ -26,8 +26,10 @@ export class AIEmployeeButtonModel extends AIEmployeeShortcutModel {
     super(options);
     this.props = {
       ...this.props,
-      animation: false,
-      size: 40,
+      style: {
+        size: 40,
+        mask: false,
+      },
     };
   }
 }
@@ -48,6 +50,19 @@ export class AIEmployeeActionModel extends ActionModel {
           props: {
             aiEmployee: {
               username: aiEmployee.username,
+            },
+          },
+          stepParams: {
+            shortcutSettings: {
+              editTasks: {
+                tasks: [
+                  {
+                    message: {
+                      workContext: [{ type: 'flow-model', uid: ctx.model.uid }],
+                    },
+                  },
+                ],
+              },
             },
           },
         },

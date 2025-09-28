@@ -44,7 +44,7 @@ JSFormActionModel.registerFlow({
         return {
           code: `
 const values = ctx.form?.getFieldsValue?.() || {};
-ctx.message.success('当前表单值：' + JSON.stringify(values));
+ctx.message.success('Current form values: ' + JSON.stringify(values));
 `,
         };
       },

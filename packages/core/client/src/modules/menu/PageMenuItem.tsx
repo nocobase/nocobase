@@ -113,7 +113,11 @@ export const PageMenuItem = () => {
     insertPageSchema(getPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
   }, [createRoute, insertPageSchema, options?.components, options?.scope, parentRoute?.id, t, theme]);
   return (
-    <SchemaInitializerItem title={t('Classic page')} onClick={handleClick} className={`${componentCls} ${hashId}`} />
+    <SchemaInitializerItem
+      title={t('Classic page (v1)')}
+      onClick={handleClick}
+      className={`${componentCls} ${hashId}`}
+    />
   );
 };
 

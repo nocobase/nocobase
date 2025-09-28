@@ -13,7 +13,20 @@ import { Input } from 'antd';
 import { FieldModel } from '../base/FieldModel';
 import { CodeEditor } from '../../components/code-editor';
 
-const DEFAULT_CODE = `const v = ctx.getValue();\nctx.element.innerHTML = \`<input class="ant-input ant-input-outlined js-input" style="width:100%;padding:4px 8px" value="${'${'}v ?? ''}" />\`;\n// 使用容器查询子节点，避免 document.getElementById\nconst el = ctx.element.querySelector('.js-input');\n// 绑定输入事件，双向同步到表单值\nel?.addEventListener('input', (e) => ctx.setValue(e.target.value));\n// 监听外部值变更事件，反向更新输入框显示\nctx.element.addEventListener('js-field:value-change', (ev) => {\n  if (el) el.value = ev.detail ?? '';\n});\n`;
+const DEFAULT_CODE = `const v = ctx.getValue();
+ctx.element.innerHTML = \`<input class="ant-input ant-input-outlined js-input" style="width:100%;padding:4px 8px" value="${'${'}v ?? ''}" />\`;
+
+// Use container scoped query to avoid document.getElementById
+const el = ctx.element.querySelector('.js-input');
+
+// Bind input event to keep the form value in sync
+el?.addEventListener('input', (e) => ctx.setValue(e.target.value));
+
+// Listen for external value changes to update the input display
+ctx.element.addEventListener('js-field:value-change', (ev) => {
+  if (el) el.value = ev.detail ?? '';
+});
+`;
 
 const JSFormRuntime: React.FC<{
   model: JSEditableFieldModel;

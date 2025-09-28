@@ -17,7 +17,7 @@ import { DefaultSettingsIcon } from './components/settings/wrappers/contextual/D
 import { openStepSettingsDialog } from './components/settings/wrappers/contextual/StepSettingsDialog';
 import { Emitter } from './emitter';
 import { FlowRuntimeContext } from './flowContext';
-import { FlowEngine } from './flowEngine';
+import { FlowEngine, untracked } from '.';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
 import type { FlowModel } from './models';
 import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
@@ -30,6 +30,7 @@ import {
   resolveUiMode,
   setupRuntimeContextSteps,
 } from './utils';
+import { FlowStepContext } from './hooks/useFlowStep';
 
 const Panel = Collapse.Panel;
 
@@ -495,7 +496,7 @@ export class FlowSettings {
 
     return React.createElement(
       FormProviderWithForm,
-      { form, scopes, initialValues, onFormValuesChange },
+      { form, initialValues, onFormValuesChange },
       React.createElement(SchemaField as any, {
         schema: compiledSchema,
         components: flowEngine?.flowSettings?.components || {},
@@ -777,12 +778,21 @@ export class FlowSettings {
           return React.createElement(
             FlowSettingsContextProvider as any,
             { value: entry.ctx },
-            this.renderStepForm({
-              uiSchema: entry.mergedUiSchema,
-              initialValues: entry.initialValues,
-              flowEngine,
-              form,
-            }),
+            React.createElement(
+              FlowStepContext.Provider,
+              {
+                value: {
+                  params: untracked(() => ({ ...entry.initialValues, ...form.values })),
+                  path: `${model.uid}_${entry.flowKey}_${entry.stepKey}`,
+                },
+              },
+              this.renderStepForm({
+                uiSchema: entry.mergedUiSchema,
+                initialValues: entry.initialValues,
+                flowEngine,
+                form,
+              }),
+            ),
           );
         };
 
@@ -1012,13 +1022,11 @@ export class FlowSettings {
 function FormProviderWithForm({
   children,
   form,
-  scopes,
   initialValues,
   onFormValuesChange: _onFormValuesChange,
 }: {
   children?: React.ReactNode;
   form?: any;
-  scopes?: Record<string, any>;
   initialValues?: Record<string, any>;
   onFormValuesChange?: (form: any) => void;
 }) {
@@ -1026,7 +1034,7 @@ function FormProviderWithForm({
 
   if (!formInstanceRef.current) {
     formInstanceRef.current = createForm({
-      initialValues: compileUiSchema(scopes, initialValues),
+      initialValues,
       effects() {
         onFormValuesChange(_onFormValuesChange);
       },
