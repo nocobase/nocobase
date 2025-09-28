@@ -209,10 +209,30 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedMetaTreeNode]);
 
+  // Track IME composition input
+  const composingRef = useRef(false);
+  const handleComposition = useCallback(
+    (e: React.CompositionEvent<HTMLInputElement> | any) => {
+      if (e?.type === 'compositionend') {
+        composingRef.current = false;
+        // After composition ends, ensure latest value is emitted
+        const newValue = e?.target?.value !== undefined ? e.target.value : e;
+        setInnerValue(newValue);
+        emitChange(newValue);
+      } else {
+        composingRef.current = true;
+      }
+    },
+    [emitChange],
+  );
+
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement> | any) => {
       const newValue = e?.target?.value !== undefined ? e.target.value : e;
       setInnerValue(newValue);
+      // If currently composing, defer outer change until compositionend
+      const isComposing = composingRef.current || (e?.nativeEvent && (e.nativeEvent as any).isComposing);
+      if (isComposing) return;
       emitChange(newValue);
     },
     [emitChange],
@@ -267,11 +287,16 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     const props = {
       ...baseProps,
       ...restOthers,
+      // Ensure IME composition works correctly for text inputs
+      onCompositionStart: handleComposition,
+      onCompositionUpdate: handleComposition,
+      onCompositionEnd: handleComposition,
     };
     return props;
   }, [
     innerValue,
     handleInputChange,
+    handleComposition,
     disabled,
     handleClear,
     resolvedMetaTreeNode,
