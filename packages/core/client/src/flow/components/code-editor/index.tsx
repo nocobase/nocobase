@@ -37,6 +37,7 @@ interface CodeEditorProps {
   readonly?: boolean;
   enableLinter?: boolean;
   rightExtra?: ((editorRef: EditorRef) => React.ReactNode)[];
+  wrapperStyle?: React.CSSProperties;
 }
 
 export const CodeEditor: React.FC<CodeEditorProps & InjectableRendingEventTriggerProps> = (props) => {
@@ -58,6 +59,7 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
   readonly = false,
   enableLinter = false,
   rightExtra,
+  wrapperStyle,
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -87,6 +89,7 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
         },
         '.cm-gutter,.cm-content': {
           minHeight: typeof minHeight === 'string' ? minHeight : `${minHeight}px`,
+          height: typeof height === 'string' ? height : `${height}px`,
         },
         '.cm-scroller': {
           fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
@@ -215,9 +218,10 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
         border: '1px solid #d9d9d9',
         borderRadius: '6px',
         overflow: 'hidden',
+        ...wrapperStyle,
       }}
     >
-      {rightExtra ? (
+      {rightExtra?.length ? (
         <Flex
           gap="middle"
           justify="flex-end"
@@ -227,21 +231,7 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
           {<div>{rightExtra.map((fn) => fn(extraEditorRef))}</div>}
         </Flex>
       ) : null}
-      <div ref={editorRef} />
-      {placeholder && !value && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '12px',
-            left: '12px',
-            color: '#999',
-            pointerEvents: 'none',
-            fontSize: '14px',
-          }}
-        >
-          {placeholder}
-        </div>
-      )}
+      <div style={{ height: `calc(100% - ${rightExtra?.length ? '50px' : '0px'})` }} ref={editorRef} />
     </div>
   );
 };
