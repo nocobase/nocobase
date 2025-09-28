@@ -53,7 +53,7 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
   value = '',
   onChange,
   placeholder = '',
-  height = '300px',
+  height = '100%',
   minHeight,
   theme = 'light',
   readonly = false,
@@ -85,11 +85,10 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
       }),
       EditorView.theme({
         '&': {
-          height: '100%',
+          height: typeof height === 'string' ? height || '100%' : `${height}px`,
         },
         '.cm-gutter,.cm-content': {
           minHeight: typeof minHeight === 'string' ? minHeight : `${minHeight}px`,
-          height: typeof height === 'string' ? height : `${height}px`,
         },
         '.cm-scroller': {
           fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
