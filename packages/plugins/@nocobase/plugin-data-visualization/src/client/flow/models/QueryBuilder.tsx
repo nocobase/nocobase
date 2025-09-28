@@ -9,7 +9,8 @@
 
 import React from 'react';
 import { Field, ObjectField, ArrayField, observer, useForm } from '@formily/react';
-import { InputNumber, Filter } from '@nocobase/client';
+import { InputNumber, FilterGroup, VariableFilterItem } from '@nocobase/client';
+import { useFlowSettingsContext, createCollectionContextMeta } from '@nocobase/flow-engine';
 import { useQueryBuilderLogic } from './queryBuilder.logic';
 import { Space, Collapse, Cascader, Select, Input, Checkbox, Button, Divider } from 'antd';
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined } from '@ant-design/icons';
@@ -297,7 +298,37 @@ export const QueryBuilder: React.FC = observer(() => {
           <Field
             name="filter"
             decorator={[FormItemLite, { style: { overflow: 'auto' } }]}
-            component={[Filter, { options: filterOptions }]}
+            component={[
+              function FilterGroupWrapper(props) {
+                const ctx = useFlowSettingsContext<any>();
+                const form = useForm();
+
+                // 注入 ctx.collection.meta：确保 VariableFilterItem 的字段变量树能取到可选项
+                React.useEffect(() => {
+                  const collectionPath: string[] | undefined = form?.values?.query?.collectionPath;
+                  const [dataSourceKey, collectionName] = collectionPath || [];
+                  const dsm = ctx?.model?.context?.dataSourceManager;
+                  if (!dsm || !dataSourceKey || !collectionName) return;
+
+                  // 定义 collection：提供 metaTree 的来源
+                  ctx.model.context.defineProperty('collection', {
+                    get: () => dsm.getCollection(dataSourceKey, collectionName),
+                    meta: createCollectionContextMeta(
+                      () => dsm.getCollection(dataSourceKey, collectionName),
+                      (ctx?.model?.context?.t && ctx.model.context.t('Current collection')) || 'Current collection',
+                    ),
+                  });
+                }, [ctx?.model, form?.values?.query?.collectionPath, form?.values?.query?.settings?.collection]);
+
+                return (
+                  <FilterGroup
+                    value={props.value}
+                    onChange={props.onChange}
+                    FilterItem={(p) => <VariableFilterItem {...p} model={ctx.model} rightAsVariable />}
+                  />
+                );
+              },
+            ]}
           />
         </Collapse.Panel>
 
