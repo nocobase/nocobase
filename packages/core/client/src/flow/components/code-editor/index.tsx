@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // CodeMirror imports
 import { autocompletion } from '@codemirror/autocomplete';
@@ -25,6 +25,7 @@ import { Flex } from 'antd';
 export interface EditorRef {
   write(document: string): void;
   read(): string;
+  buttonGroupHeight?: number;
 }
 
 interface CodeEditorProps {
@@ -209,6 +210,8 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
     read() {
       return viewRef?.current.state.doc.toString() ?? '';
     },
+
+    buttonGroupHeight: 0,
   };
 
   return (
@@ -221,7 +224,7 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
       }}
     >
       <RightExtra rightExtra={rightExtra} extraEditorRef={extraEditorRef} />
-      <div style={{ height: `calc(100% - ${rightExtra?.length ? '50px' : '0px'})` }} ref={editorRef} />
+      <div style={{ height: `calc(100% - ${extraEditorRef.buttonGroupHeight}px)` }} ref={editorRef} />
       {placeholder && !value && (
         <div
           style={{
@@ -252,6 +255,9 @@ const RightExtra: React.FC<{
   const style = { padding: '8px', borderBottom: '1px solid #d9d9d9' };
   if (Object.entries(activeCount).filter(([_, v]) => v).length <= 0) {
     style['display'] = 'none';
+    extraEditorRef.buttonGroupHeight = 0;
+  } else {
+    extraEditorRef.buttonGroupHeight = 50;
   }
 
   return (
