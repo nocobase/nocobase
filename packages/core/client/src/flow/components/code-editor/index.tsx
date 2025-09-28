@@ -87,7 +87,6 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
         },
         '.cm-gutter,.cm-content': {
           minHeight: typeof minHeight === 'string' ? minHeight : `${minHeight}px`,
-          height: typeof height === 'string' ? height : `${height}px`,
         },
         '.cm-scroller': {
           fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
