@@ -37,28 +37,6 @@ export const CodeEditorContext: WorkContextOptions = {
       );
     },
   },
-  chatbox: {
-    Component: ({ item }) => {
-      const t = useT();
-      const content = item.content as Content;
-      return (
-        <div
-          className={css`
-            width: 350px;
-            margin-bottom: -1em;
-          `}
-        >
-          <ReactMarkdown
-            components={{
-              code: (props) => <Code {...props} />,
-            }}
-          >
-            {'```' + content.language + '\n' + content.code + '\n```'}
-          </ReactMarkdown>
-        </div>
-      );
-    },
-  },
   getContent: async (_app, { content }) => {
     return (content as Content)?.code;
   },

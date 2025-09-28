@@ -84,7 +84,8 @@ function createTempFieldClass(Base: any) {
       this.setPattern?.('editable');
       if (this.props.onChange) this.setProps({ onChange: this.props.onChange });
       const initialValueFromStep = this.getStepParams('formItemSettings', 'initialValue')?.defaultValue;
-      if (typeof initialValueFromStep !== 'undefined') this.setProps({ value: initialValueFromStep });
+      // 使用 defaultValue 避免受控，防止输入法（中文等）被频繁受控值覆盖
+      if (typeof initialValueFromStep !== 'undefined') this.setProps({ defaultValue: initialValueFromStep });
     }
 
     setProps(props: any) {
@@ -307,12 +308,36 @@ export const DefaultValue = connect((props: Props) => {
   // Right-side editor (the field component itself)
   const InputComponent = useMemo(() => {
     const ConstantValueEditor = (inputProps) => {
+      const initializedRef = React.useRef(false);
       React.useEffect(() => {
         const fieldModel = tempRoot?.subModels?.fields?.[0];
         if (!fieldModel) return;
         const { disabled, readOnly, readPretty, pattern, ...rest } = inputProps || {};
-        fieldModel.setProps({ ...rest, disabled: false });
+        // 将 VariableInput 提供的受控属性透传到临时字段模型上，确保受控生效
+        // - value: 由 VariableInput 控制
+        // - onChange: 回传给 VariableInput，从而驱动 Formily/外层表单值
+        // - 组合输入事件: 保障中文等输入法的正确行为
+        // - 其他样式/属性: 透传但不覆盖我们的可编辑设定
+        fieldModel.setProps({
+          disabled: false,
+          // 仅透传事件，避免把输入框变为完全受控，从而影响输入法
+          onChange: rest?.onChange ?? inputProps?.onChange,
+          onCompositionStart: rest?.onCompositionStart ?? inputProps?.onCompositionStart,
+          onCompositionUpdate: rest?.onCompositionUpdate ?? inputProps?.onCompositionUpdate,
+          onCompositionEnd: rest?.onCompositionEnd ?? inputProps?.onCompositionEnd,
+          style: { width: '100%', minWidth: 0, ...(rest?.style || inputProps?.style) },
+        });
+        // 始终保持可编辑
         fieldModel.setPattern?.('editable');
+
+        // 首次挂载时，将当前值作为默认显示值，确保重新打开能回显上次保存的常量
+        if (!initializedRef.current) {
+          initializedRef.current = true;
+          const initial = (rest?.value ?? inputProps?.value) as any;
+          if (typeof initial !== 'undefined') {
+            fieldModel.setProps({ defaultValue: initial });
+          }
+        }
       }, [inputProps]);
       return (
         <div style={{ flexGrow: 1 }}>
@@ -358,22 +383,11 @@ export const DefaultValue = connect((props: Props) => {
     };
   }, [propMetaTree, flowContext, InputComponent, NullComponent]);
 
-  // Pass value/handler to the temp field
+  // Ensure temp field is editable. Do not override value/onChange here to avoid racing with VariableInput
   React.useEffect(() => {
     const tempFieldModel: any = tempRoot.subModels.fields?.[0];
-    tempFieldModel?.setProps({
-      disabled: false,
-      value,
-      onChange: (eventOrValue: any) => {
-        const nextValue =
-          eventOrValue && typeof eventOrValue === 'object' && 'target' in eventOrValue
-            ? eventOrValue.target.value
-            : eventOrValue;
-        // 仅更新本组件的受控值；不要回填原始表单（等待“确定/保存”时机）
-        onChange?.(nextValue);
-      },
-    });
-  }, [tempRoot, onChange, value]);
+    tempFieldModel?.setProps({ disabled: false });
+  }, [tempRoot, value]);
 
   return (
     <VariableInput

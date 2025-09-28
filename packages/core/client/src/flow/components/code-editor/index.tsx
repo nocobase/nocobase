@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 // CodeMirror imports
 import { autocompletion } from '@codemirror/autocomplete';
@@ -36,7 +36,7 @@ interface CodeEditorProps {
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
-  rightExtra?: ((editorRef: EditorRef) => React.ReactNode)[];
+  rightExtra?: ((editorRef: EditorRef, setActive: (key: string, active: boolean) => void) => React.ReactNode)[];
   wrapperStyle?: React.CSSProperties;
 }
 
@@ -63,6 +63,7 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
 }) => {
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const [actionCount, setActionCount] = useState(0);
 
   useEffect(() => {
     if (!editorRef.current) return;
@@ -220,17 +221,50 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
         ...wrapperStyle,
       }}
     >
-      {rightExtra?.length ? (
-        <Flex
-          gap="middle"
-          justify="flex-end"
-          align="center"
-          style={{ padding: '8px', borderBottom: '1px solid #d9d9d9' }}
+      <RightExtra rightExtra={rightExtra} extraEditorRef={extraEditorRef} onActionCountChange={setActionCount} />
+      <div style={{ height: `calc(100% - ${actionCount > 0 ? 50 : 0}px)` }} ref={editorRef} />
+      {placeholder && !value && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '12px',
+            left: '12px',
+            color: '#999',
+            pointerEvents: 'none',
+            fontSize: '14px',
+          }}
         >
-          {<div>{rightExtra.map((fn) => fn(extraEditorRef))}</div>}
-        </Flex>
-      ) : null}
-      <div style={{ height: `calc(100% - ${rightExtra?.length ? '50px' : '0px'})` }} ref={editorRef} />
+          {placeholder}
+        </div>
+      )}
     </div>
+  );
+};
+
+const RightExtra: React.FC<{
+  rightExtra?: ((editorRef: EditorRef, setActive: (key: string, active: boolean) => void) => React.ReactNode)[];
+  extraEditorRef: EditorRef;
+  onActionCountChange?: (count: number) => void;
+}> = ({ rightExtra, extraEditorRef, onActionCountChange }) => {
+  const [activeCount, setActiveCount] = useState<{ [key: string]: boolean }>({});
+  const setActive = (key: string, active: boolean) => {
+    setActiveCount((prev) => {
+      const newState = { ...prev, [key]: active };
+      onActionCountChange?.(Object.entries(newState).filter(([_, v]) => v).length);
+      return newState;
+    });
+  };
+
+  const style = { padding: '8px', borderBottom: '1px solid #d9d9d9' };
+  if (Object.entries(activeCount).filter(([_, v]) => v).length <= 0) {
+    style['display'] = 'none';
+  }
+
+  return (
+    rightExtra?.length && (
+      <Flex gap="middle" justify="flex-end" align="center" style={style}>
+        {<div>{rightExtra.map((fn) => fn(extraEditorRef, setActive))}</div>}
+      </Flex>
+    )
   );
 };

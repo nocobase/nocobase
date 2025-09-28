@@ -72,7 +72,7 @@ export const Echarts: React.FC<{
   return (
     <ErrorBoundary
       FallbackComponent={ErrorFallback}
-      onError={(error) => console.error(error)}
+      onError={(error) => console.error(error, tool.args)}
       resetKeys={[tool.args.options]}
     >
       <ReactECharts

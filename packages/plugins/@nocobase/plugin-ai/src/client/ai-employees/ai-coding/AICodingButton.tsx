@@ -23,9 +23,10 @@ export interface AICodingButtonProps {
   scene: string;
   language: string;
   editorRef: EditorRef;
+  setActive: (key: string, active: boolean) => void;
 }
 
-export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, language, editorRef }) => {
+export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, language, editorRef, setActive }) => {
   const { aiEmployees } = useAIEmployeesData();
   const open = useChatBoxStore.use.open();
   const setOpen = useChatBoxStore.use.setOpen();
@@ -43,6 +44,14 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
       setEditorRef(null);
     };
   }, [editorRef, setEditorRef]);
+
+  useEffect(() => {
+    if (aiEmployee) {
+      setActive('AICodingButton', true);
+    } else {
+      setActive('AICodingButton', false);
+    }
+  }, [aiEmployee]);
 
   return aiEmployee ? (
     <Popover content={<ProfileCard aiEmployee={aiEmployee} />}>

@@ -77,7 +77,5 @@ const AIButton = () => {
         onMouseLeave={() => setFocus(false)}
       />
     </Popover>
-  ) : (
-    <></>
-  );
+  ) : null;
 };

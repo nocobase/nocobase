@@ -15,31 +15,36 @@ import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hlj
 import { css, useGlobalTheme } from '@nocobase/client';
 import { FlowModelContext, useFlowContext, useFlowViewContext } from '@nocobase/flow-engine';
 import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
+import { useT } from '../../../locale';
 
 export const CodeInternal: React.FC<{
   language: string;
   value: string;
   height?: string;
-}> = ({ language, value, height, ...rest }) => {
+  scrollToBottom?: boolean;
+}> = ({ language, value, height, scrollToBottom, ...rest }) => {
   const { isDarkTheme } = useGlobalTheme();
+  const bottomRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (scrollToBottom === true) {
+      bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+    }
+  }, [value, scrollToBottom]);
 
   return (
-    <SyntaxHighlighter
-      {...rest}
-      PreTag="div"
-      language={language}
-      style={isDarkTheme ? dark : defaultStyle}
-      className={css`
-        height: ${height ?? '500px'};
-      `}
-    >
-      {value}
-    </SyntaxHighlighter>
+    <div style={{ maxHeight: height ?? '500px', overflowY: 'auto' }}>
+      <SyntaxHighlighter {...rest} PreTag="div" language={language} style={isDarkTheme ? dark : defaultStyle}>
+        {value}
+      </SyntaxHighlighter>
+      <div ref={bottomRef} />
+    </div>
   );
 };
 
 export const Code = (props: any) => {
   const ctx = useFlowContext<FlowModelContext>();
+  const t = useT();
   const { children, className, node, message, ...rest } = props;
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
@@ -48,7 +53,7 @@ export const Code = (props: any) => {
   const { message: antdMessage } = App.useApp();
   const copy = () => {
     navigator.clipboard.writeText(value);
-    antdMessage.success(ctx.t('Copied'));
+    antdMessage.success(t('Copied'));
   };
 
   let isFullText = true;
@@ -71,11 +76,11 @@ export const Code = (props: any) => {
       }
       extra={
         <>
-          <Tooltip title={ctx.t('Copy')}>
+          <Tooltip title={t('Copy')}>
             <Button type="text" icon={<CopyOutlined />} onClick={copy} />
           </Tooltip>
           <Divider type="vertical" />
-          <Tooltip title={ctx.t('Expand')}>
+          <Tooltip title={t('Expand')}>
             <Button
               type="text"
               icon={<ExpandOutlined />}
@@ -100,17 +105,17 @@ export const Code = (props: any) => {
                 onClick={(e) => {
                   e.stopPropagation();
                   editorRef?.write(value);
-                  ctx.message.info(ctx.t('Applied'));
+                  ctx.message.info(t('Applied'));
                 }}
                 disabled={!isFullText}
               >
-                {ctx.t('Apply to editor')}
+                {t('Apply to editor')}
               </Button>,
             ]
           : []
       }
     >
-      <CodeInternal {...rest} language={language} value={value} />
+      <CodeInternal {...rest} language={language} value={value} scrollToBottom={!isFullText} />
     </Card>
   ) : (
     <Typography.Text code {...rest} className={className}>
