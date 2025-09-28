@@ -7,9 +7,21 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { UploadOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  UploadOutlined,
+  PlusOutlined,
+  DownloadOutlined,
+  LeftOutlined,
+  RightOutlined,
+  RotateLeftOutlined,
+  RotateRightOutlined,
+  SwapOutlined,
+  UndoOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined,
+} from '@ant-design/icons';
 import { Upload } from '@formily/antd-v5';
-import { Image } from 'antd';
+import { Image, Space, Button } from 'antd';
 import { castArray } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { largeField, escapeT, EditableItemModel, observable } from '@nocobase/flow-engine';
@@ -23,6 +35,7 @@ export const CardUpload = (props) => {
   const [fileList, setFileList] = useState(castArray(value || []));
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
+  const [currentImageIndex, setCurrentImageIndex] = useState(0); // 用来跟踪当前预览的图片索引
   const { t } = useTranslation();
   useEffect(() => {
     value && setFileList(castArray(value || []));
@@ -36,13 +49,45 @@ export const CardUpload = (props) => {
       reader.onerror = (error) => reject(error);
     });
   const handlePreview = async (file) => {
+    const index = +file.uid;
     if (!file.url && !file.preview) {
       file.preview = await getBase64(file.originFileObj);
     }
-
     setPreviewImage(file.url || (file.preview as string));
+    setCurrentImageIndex(index);
     setPreviewOpen(true);
   };
+
+  const goToPreviousImage = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : fileList.length - 1));
+    const file = fileList[currentImageIndex - 1];
+    setPreviewImage(file.url || (file.preview as string));
+  };
+
+  const goToNextImage = () => {
+    setCurrentImageIndex((prevIndex) => (prevIndex < fileList.length - 1 ? prevIndex + 1 : 0));
+    const file = fileList[currentImageIndex + 1];
+    setPreviewImage(file.url || (file.preview as string));
+  };
+  const onDownload = () => {
+    const url = previewImage;
+    const suffix = url.slice(url.lastIndexOf('.'));
+    const filename = Date.now() + suffix;
+    // eslint-disable-next-line promise/catch-or-return
+    fetch(url)
+      .then((response) => response.blob())
+      .then((blob) => {
+        const blobUrl = URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        URL.revokeObjectURL(blobUrl);
+        link.remove();
+      });
+  };
+  console.log(currentImageIndex);
   return (
     <FieldContext.Provider
       value={
@@ -79,6 +124,40 @@ export const CardUpload = (props) => {
               visible: previewOpen,
               onVisibleChange: (visible) => setPreviewOpen(visible),
               afterOpenChange: (visible) => !visible && setPreviewImage(''),
+              toolbarRender: (
+                _,
+                {
+                  transform: { scale },
+                  actions: { onFlipY, onFlipX, onRotateLeft, onRotateRight, onZoomOut, onZoomIn, onReset },
+                },
+              ) => (
+                <Space size={12} className="toolbar-wrapper">
+                  <LeftOutlined
+                    style={{
+                      cursor: currentImageIndex === 0 ? 'not-allowed' : 'pointer',
+                    }}
+                    disabled={currentImageIndex === 0}
+                    onClick={() => currentImageIndex !== 0 && goToPreviousImage()}
+                  />
+
+                  <RightOutlined
+                    style={{
+                      cursor: currentImageIndex === value.length - 1 ? 'not-allowed' : 'pointer',
+                    }}
+                    disabled={currentImageIndex === value.length - 1}
+                    onClick={() => currentImageIndex !== value.length - 1 && goToNextImage()}
+                  />
+
+                  <DownloadOutlined onClick={onDownload} />
+                  <SwapOutlined rotate={90} onClick={onFlipY} />
+                  <SwapOutlined onClick={onFlipX} />
+                  <RotateLeftOutlined onClick={onRotateLeft} />
+                  <RotateRightOutlined onClick={onRotateRight} />
+                  <ZoomOutOutlined disabled={scale === 1} onClick={onZoomOut} />
+                  <ZoomInOutlined disabled={scale === 50} onClick={onZoomIn} />
+                  <UndoOutlined onClick={onReset} />
+                </Space>
+              ),
             }}
             src={previewImage}
           />
