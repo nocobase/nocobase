@@ -7,16 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { buildWrapperFieldChildren, escapeT, FlowModelContext } from '@nocobase/flow-engine';
-import { FormCustomItemModel } from './FormCustomItemModel';
+import { buildWrapperFieldChildren, escapeT, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
 
 /**
  * “JavaScript 字段（可编辑）”菜单入口（表单）：
- * - 出现在 FormCustomItemModel 分组（Others）中；
+ * - 作为独立分组（在 FormGrid 的 subModelBaseClasses 中显式包含本类）；
  * - 子项列出集合字段；
  * - 点击后创建标准 FormItemModel，并将子字段设置为 JSEditableFieldModel。
  */
-export class FormJSFieldItemModel extends FormCustomItemModel {
+export class FormJSFieldItemModel extends FlowModel {
   static defineChildren(ctx: FlowModelContext) {
     const groups = buildWrapperFieldChildren(ctx, {
       useModel: 'FormItemModel',
@@ -32,5 +31,6 @@ FormJSFieldItemModel.define({
   label: escapeT('JS field'),
   searchable: true,
   searchPlaceholder: escapeT('Search fields'),
+  menuType: 'submenu',
   sort: 110,
 });

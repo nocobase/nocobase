@@ -82,21 +82,16 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
         }
       }),
       EditorView.theme({
-        '&': {
-          // 如果设置了 minHeight，则使用 minHeight，否则使用 height
-          ...(minHeight
-            ? {
-                minHeight: typeof minHeight === 'string' ? minHeight : `${minHeight}px`,
-              }
-            : {
-                height: typeof height === 'string' ? height : `${height}px`,
-              }),
+        '.cm-gutter,.cm-content': {
+          minHeight: typeof minHeight === 'string' ? minHeight : `${minHeight}px`,
+          height: typeof height === 'string' ? height : `${height}px`,
         },
         '.cm-editor': {
           height: '100%',
         },
         '.cm-scroller': {
           fontFamily: '"Fira Code", "Monaco", "Menlo", "Ubuntu Mono", monospace',
+          overflow: 'auto',
         },
         '.cm-tooltip-autocomplete': {
           border: '1px solid #d9d9d9',

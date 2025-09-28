@@ -74,7 +74,8 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
         return {
           key: fullName,
           label: field.title,
-          refreshTargets: ['FormCustomItemModel/FormJSFieldItemModel'],
+          // 同步刷新 JS 字段菜单的切换状态（兼容旧路径与新路径）
+          refreshTargets: ['FormItemModel/FormJSFieldItemModel'],
           toggleable: (subModel) => {
             const fieldPath = subModel.getStepParams('fieldSettings', 'init')?.fieldPath;
             return fieldPath === fullName;

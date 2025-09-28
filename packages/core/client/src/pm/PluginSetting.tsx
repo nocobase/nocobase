@@ -23,7 +23,19 @@ export const SettingsCenterContext = createContext<any>({});
 SettingsCenterContext.displayName = 'SettingsCenterContext';
 
 function getMenuItems(list: PluginSettingsPageType[]) {
-  return list.map((item) => {
+  const pinnedList = list.filter((item) => item.isPinned);
+  const otherList = list.filter((item) => !item.isPinned);
+  const items: any[] = [];
+  if (pinnedList.length) {
+    items.push(...pinnedList, { type: 'divider' });
+  }
+  if (otherList.length) {
+    items.push(...otherList);
+  }
+  return items.map((item: any) => {
+    if (item.type === 'divider') {
+      return { type: 'divider' };
+    }
     return {
       key: item.name,
       label: item.label,

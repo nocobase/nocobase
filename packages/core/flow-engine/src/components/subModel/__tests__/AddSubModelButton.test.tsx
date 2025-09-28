@@ -574,6 +574,70 @@ describe('AddSubModelButton - base class menu groups', () => {
     expect(screen.queryByText('Empty Group')).toBeNull();
   });
 
+  it('renders submenu base class with children and respects meta.sort', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+
+    class Parent extends FlowModel {}
+    class Leaf extends FlowModel {}
+    class SubmenuBase extends FlowModel {
+      static meta = {
+        label: 'JS Field',
+        menuType: 'submenu' as const,
+        sort: 110,
+        children: () => [{ key: 'submenu-leaf', label: 'Submenu Leaf', createModelOptions: { use: 'Leaf' } }],
+      };
+    }
+    class GroupBase extends FlowModel {
+      static meta = {
+        label: 'Group Base',
+        sort: 200,
+        children: () => [{ key: 'group-leaf', label: 'Group Leaf', createModelOptions: { use: 'Leaf' } }],
+      };
+    }
+
+    engine.registerModels({ Parent, Leaf, SubmenuBase, GroupBase });
+    const parent = engine.createModel<Parent>({ use: 'Parent', uid: 'parent-submenu' });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <AddSubModelButton
+              model={parent}
+              subModelKey="items"
+              subModelBaseClasses={[
+                // reversed on purpose; order should be controlled by meta.sort
+                'GroupBase',
+                'SubmenuBase',
+              ]}
+            >
+              Open Menu
+            </AddSubModelButton>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await act(async () => {
+      await userEvent.click(screen.getByText('Open Menu'));
+    });
+
+    // Both base entries should be visible
+    const submenu = await screen.findByText('JS Field');
+    const group = await screen.findByText('Group Base');
+    expect(submenu).toBeInTheDocument();
+    expect(group).toBeInTheDocument();
+
+    // submenu should appear before group due to sort: 110 < 200
+    const pos = submenu.compareDocumentPosition(group);
+    expect(pos & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    // Hover to open submenu children
+    await userEvent.hover(submenu);
+    await waitFor(() => expect(screen.getByText('Submenu Leaf')).toBeInTheDocument());
+  });
+
   it('merges explicit items with base class and grouped sources', async () => {
     const engine = new FlowEngine();
     engine.flowSettings.forceEnable();
