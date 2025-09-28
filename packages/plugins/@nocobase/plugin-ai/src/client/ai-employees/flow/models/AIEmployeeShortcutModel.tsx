@@ -22,6 +22,7 @@ import { ArrayField, ObjectField } from '@formily/core';
 import { ContextItem } from '../../chatbox/ContextItem';
 import { aiSelection } from '../../stores/ai-selection';
 import { dialogController } from '../../stores/dialog-controller';
+import { namespace } from '../../../locale';
 
 const { Meta } = Card;
 
@@ -202,10 +203,10 @@ const SkillSettings: React.FC<{
 
 AIEmployeeShortcutModel.registerFlow({
   key: 'shortcutSettings',
-  title: escapeT('Task settings'),
+  title: escapeT('Task settings', { ns: namespace }),
   steps: {
     editTasks: {
-      title: escapeT('Edit tasks'),
+      title: escapeT('Edit tasks', { ns: namespace }),
       uiMode(ctx) {
         return {
           type: 'dialog',
@@ -227,7 +228,7 @@ AIEmployeeShortcutModel.registerFlow({
           },
           tasks: {
             type: 'array',
-            title: escapeT('Task'),
+            title: escapeT('Task', { ns: namespace }),
             'x-component': 'ArrayTabs',
             'x-component-props': {
               size: 'small',
@@ -237,41 +238,42 @@ AIEmployeeShortcutModel.registerFlow({
               properties: {
                 title: {
                   type: 'string',
-                  title: escapeT('Title'),
+                  title: escapeT('Title', { ns: namespace }),
                   'x-decorator': 'FormItem',
                   'x-component': 'Input',
                   'x-decorator-props': {
-                    tooltip: escapeT('Label for task selection buttons when multiple tasks exist'),
+                    tooltip: escapeT('Label for task selection buttons when multiple tasks exist', { ns: namespace }),
                   },
                 },
                 message: {
                   type: 'object',
                   properties: {
                     system: {
-                      title: escapeT('Background'),
+                      title: escapeT('Background', { ns: namespace }),
                       type: 'string',
                       'x-decorator': 'FormItem',
                       'x-decorator-props': {
                         tooltip: escapeT(
                           'Additional system prompt appended to the AI employee’s definition, used to refine instructions',
+                          { ns: namespace },
                         ),
                       },
                       'x-component': 'Input.TextArea',
                     },
                     user: {
-                      title: escapeT('Default user message'),
+                      title: escapeT('Default user message', { ns: namespace }),
                       type: 'string',
                       'x-decorator': 'FormItem',
                       'x-component': 'Input.TextArea',
                     },
                     workContext: {
-                      title: escapeT('Work context'),
+                      title: escapeT('Work context', { ns: namespace }),
                       type: 'array',
                       'x-decorator': 'FormItem',
                       'x-component': WorkContext,
                     },
                     skillSettings: {
-                      title: '{{t("Skills")}}',
+                      title: escapeT('Skills', { ns: namespace }),
                       type: 'object',
                       nullable: true,
                       'x-decorator': 'FormItem',
@@ -281,7 +283,7 @@ AIEmployeeShortcutModel.registerFlow({
                 },
                 autoSend: {
                   type: 'boolean',
-                  'x-content': escapeT('Send default user message automatically'),
+                  'x-content': escapeT('Send default user message automatically', { ns: namespace }),
                   'x-decorator': 'FormItem',
                   'x-component': 'Checkbox',
                 },

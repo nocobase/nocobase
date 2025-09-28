@@ -139,7 +139,7 @@ export const FlowModelsContext: WorkContextOptions = {
     icon: <BuildOutlined />,
     Component: () => {
       const t = useT();
-      return <div>{t('Pick Block')}</div>;
+      return <div>{t('Pick block')}</div>;
     },
     onClick: ({ ctx, onAdd }) => handleSelect(ctx, onAdd),
   },

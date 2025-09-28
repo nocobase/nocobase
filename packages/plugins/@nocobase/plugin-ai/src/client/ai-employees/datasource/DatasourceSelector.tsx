@@ -73,7 +73,7 @@ export const InnerDatasourceSelector: React.FC<DatasourceSelectorProps> = observ
               <>
                 <Space>
                   {closeBtn}
-                  <span>{ctx.t('Select datasource')}</span>
+                  <span>{resourceCtx.t('Select datasource')}</span>
                 </Space>
               </>
             }
@@ -94,7 +94,7 @@ export const InnerDatasourceSelector: React.FC<DatasourceSelectorProps> = observ
             </Layout>
           ) : (
             <Flex style={{ height: '80vh' }} justify="center" align="center" vertical>
-              <Empty description={ctx.t('No datasource settings')} />
+              <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
             </Flex>
           )}
         </div>

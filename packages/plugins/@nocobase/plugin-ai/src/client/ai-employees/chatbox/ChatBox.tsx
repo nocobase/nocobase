@@ -125,7 +125,7 @@ export const ChatBox: React.FC = () => {
                 </Tooltip>
                 <UserPrompt />
                 {isEngineer(currentEmployee) && (
-                  <Tooltip arrow={false} title={t('Code History')}>
+                  <Tooltip arrow={false} title={t('Code history')}>
                     <Button
                       icon={<CodeOutlined />}
                       type="text"

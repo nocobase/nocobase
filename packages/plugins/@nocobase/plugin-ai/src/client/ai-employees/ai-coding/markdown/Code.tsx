@@ -15,6 +15,7 @@ import { dark, defaultStyle } from 'react-syntax-highlighter/dist/esm/styles/hlj
 import { css, useGlobalTheme } from '@nocobase/client';
 import { FlowModelContext, useFlowContext, useFlowViewContext } from '@nocobase/flow-engine';
 import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
+import { useT } from '../../../locale';
 
 export const CodeInternal: React.FC<{
   language: string;
@@ -43,6 +44,7 @@ export const CodeInternal: React.FC<{
 
 export const Code = (props: any) => {
   const ctx = useFlowContext<FlowModelContext>();
+  const t = useT();
   const { children, className, node, message, ...rest } = props;
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
@@ -51,7 +53,7 @@ export const Code = (props: any) => {
   const { message: antdMessage } = App.useApp();
   const copy = () => {
     navigator.clipboard.writeText(value);
-    antdMessage.success(ctx.t('Copied'));
+    antdMessage.success(t('Copied'));
   };
 
   let isFullText = true;
@@ -74,11 +76,11 @@ export const Code = (props: any) => {
       }
       extra={
         <>
-          <Tooltip title={ctx.t('Copy')}>
+          <Tooltip title={t('Copy')}>
             <Button type="text" icon={<CopyOutlined />} onClick={copy} />
           </Tooltip>
           <Divider type="vertical" />
-          <Tooltip title={ctx.t('Expand')}>
+          <Tooltip title={t('Expand')}>
             <Button
               type="text"
               icon={<ExpandOutlined />}
@@ -103,11 +105,11 @@ export const Code = (props: any) => {
                 onClick={(e) => {
                   e.stopPropagation();
                   editorRef?.write(value);
-                  ctx.message.info(ctx.t('Applied'));
+                  ctx.message.info(t('Applied'));
                 }}
                 disabled={!isFullText}
               >
-                {ctx.t('Apply to editor')}
+                {t('Apply to editor')}
               </Button>,
             ]
           : []

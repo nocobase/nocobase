@@ -175,8 +175,8 @@ export const SortFieldsTransfer: React.FC<{
                 defaultValue="asc"
                 value={record.direction}
                 options={[
-                  { value: 'asc', label: 'Asc' },
-                  { value: 'desc', label: 'Desc' },
+                  { value: 'asc', label: ctx.t('Asc') },
+                  { value: 'desc', label: ctx.t('Desc') },
                 ]}
                 onChange={(e) => {
                   e.stopPropagation();
