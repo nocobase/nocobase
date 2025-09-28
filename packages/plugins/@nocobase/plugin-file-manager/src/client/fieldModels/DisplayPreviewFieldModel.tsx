@@ -10,6 +10,17 @@
 import { EyeOutlined } from '@ant-design/icons';
 import { DetailsItemModel, FieldModel, TableColumnModel } from '@nocobase/client';
 import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
+import {
+  DownloadOutlined,
+  LeftOutlined,
+  RightOutlined,
+  RotateLeftOutlined,
+  RotateRightOutlined,
+  SwapOutlined,
+  UndoOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined,
+} from '@ant-design/icons';
 import { Image, Space, Tooltip } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
@@ -127,11 +138,59 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
 
 const Preview = (props) => {
   const { value = [], size = 28, showFileName } = props;
+  const [current, setCurrent] = React.useState(0);
+
+  const onDownload = () => {
+    const url = value[current].url;
+    const suffix = url.slice(url.lastIndexOf('.'));
+    const filename = Date.now() + suffix;
+    // eslint-disable-next-line promise/catch-or-return
+    fetch(url)
+      .then((response) => response.blob())
+      .then((blob) => {
+        const blobUrl = URL.createObjectURL(new Blob([blob]));
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        URL.revokeObjectURL(blobUrl);
+        link.remove();
+      });
+  };
   return (
-    <Space size={5} wrap={true}>
-      {Array.isArray(value) &&
-        value.map((file, index) => <FilePreview file={file} size={size} key={index} showFileName={showFileName} />)}
-    </Space>
+    <Image.PreviewGroup
+      preview={{
+        toolbarRender: (
+          _,
+          {
+            transform: { scale },
+            actions: { onActive, onFlipY, onFlipX, onRotateLeft, onRotateRight, onZoomOut, onZoomIn, onReset },
+          },
+        ) => (
+          <Space size={12} className="toolbar-wrapper">
+            <LeftOutlined disabled={current === 0} onClick={() => onActive?.(-1)} />
+            <RightOutlined disabled={current === value.length - 1} onClick={() => onActive?.(1)} />
+            <DownloadOutlined onClick={onDownload} />
+            <SwapOutlined rotate={90} onClick={onFlipY} />
+            <SwapOutlined onClick={onFlipX} />
+            <RotateLeftOutlined onClick={onRotateLeft} />
+            <RotateRightOutlined onClick={onRotateRight} />
+            <ZoomOutOutlined disabled={scale === 1} onClick={onZoomOut} />
+            <ZoomInOutlined disabled={scale === 50} onClick={onZoomIn} />
+            <UndoOutlined onClick={onReset} />
+          </Space>
+        ),
+        onChange: (index) => {
+          setCurrent(index);
+        },
+      }}
+    >
+      <Space size={5} wrap={true}>
+        {Array.isArray(value) &&
+          value.map((file, index) => <FilePreview file={file} size={size} key={index} showFileName={showFileName} />)}
+      </Space>
+    </Image.PreviewGroup>
   );
 };
 export class DisplayPreviewFieldModel extends FieldModel {
