@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-multi-app-manager",
-  "displayName": "Multi-app manager",
-  "displayName.zh-CN": "多应用管理器",
-  "description": "Dynamically create multiple apps without separate deployments.",
-  "description.zh-CN": "无需单独部署即可动态创建多个应用。",
+  "displayName": "Multi-app manager (deprecated)",
+  "displayName.zh-CN": "多应用管理器（已废弃）",
+  "description": "Multi-app runs applications in a process-sharing manner, suitable for testing and demo environments only. Do not use it in production.",
+  "description.zh-CN": "多应用以进程共享的方式运行，仅适合测试和演示环境，生产环境下请勿使用。",
   "version": "1.9.0-alpha.16",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",

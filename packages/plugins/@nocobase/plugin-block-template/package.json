@@ -1,7 +1,7 @@
 {
   "name": "@nocobase/plugin-block-template",
-  "displayName": "Block: template",
-  "displayName.zh-CN": "区块：模板",
+  "displayName": "Block: template (deprecated)",
+  "displayName.zh-CN": "区块：模板（已废弃）",
   "description": "Create and manage block templates for reuse on pages.",
   "description.zh-CN": "创建和管理区块模板，用于在页面中重复使用。",
   "version": "1.9.0-alpha.16",
