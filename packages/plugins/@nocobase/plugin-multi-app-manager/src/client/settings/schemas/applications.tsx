@@ -144,7 +144,7 @@ export const useMigrateData = () => {
         ),
         onOk: async () => {
           const { data } = await api.resource('pm').get({
-            filterByTk: 'multi-app2',
+            filterByTk: 'multi-app',
           });
           if (!data?.data?.enabled) {
             message.error(t('Multi-app is not enabled, please enable it first'));
