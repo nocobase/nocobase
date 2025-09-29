@@ -22,6 +22,8 @@ import {
   SchemaComponentOptions,
   useNocoBaseRoutes,
   useParentRoute,
+  zIndexContext,
+  ICON_POPUP_Z_INDEX,
 } from '../../schema-component';
 import { useStyles } from '../../schema-component/antd/menu/MenuItemInitializers';
 
@@ -55,23 +57,26 @@ export const FlowPageMenuItem = () => {
         return (
           <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
             <FormLayout layout={'vertical'}>
-              <SchemaComponent
-                schema={{
-                  properties: {
-                    title: {
-                      title: t('Menu item title'),
-                      required: true,
-                      'x-component': 'Input',
-                      'x-decorator': 'FormItem',
+              {/* 防止按钮的配置弹窗的图标弹窗被遮挡 */}
+              <zIndexContext.Provider value={ICON_POPUP_Z_INDEX}>
+                <SchemaComponent
+                  schema={{
+                    properties: {
+                      title: {
+                        title: t('Menu item title'),
+                        required: true,
+                        'x-component': 'Input',
+                        'x-decorator': 'FormItem',
+                      },
+                      icon: {
+                        title: t('Icon'),
+                        'x-component': 'IconPicker',
+                        'x-decorator': 'FormItem',
+                      },
                     },
-                    icon: {
-                      title: t('Icon'),
-                      'x-component': 'IconPicker',
-                      'x-decorator': 'FormItem',
-                    },
-                  },
-                }}
-              />
+                  }}
+                />
+              </zIndexContext.Provider>
             </FormLayout>
           </SchemaComponentOptions>
         );
