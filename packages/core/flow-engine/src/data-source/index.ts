@@ -382,6 +382,9 @@ export class Collection {
   get template() {
     return this.options.template;
   }
+  get storage() {
+    return this.options.storage || 'local';
+  }
   get title() {
     return this.options.title ? this.flowEngine.translate(this.options.title) : this.name;
   }
