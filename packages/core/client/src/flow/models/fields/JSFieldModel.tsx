@@ -97,6 +97,9 @@ export class JSFieldModel extends FieldModel {
 
 JSFieldModel.define({
   label: escapeT('JS field'),
+  createModelOptions: {
+    use: 'JSFieldModel',
+  },
 });
 
 JSFieldModel.registerFlow({
@@ -135,11 +138,12 @@ JSFieldModel.registerFlow({
       defaultParams(ctx) {
         const fieldTitle = ctx.collectionField?.title || 'field';
         return {
+          version: 'v1',
           code: DEFAULT_CODE,
         };
       },
       async handler(ctx, params) {
-        const { code = DEFAULT_CODE } = params || {};
+        const { code = DEFAULT_CODE, version = 'v1' } = params || {};
         // 暴露 element 与 value 到运行上下文
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
@@ -149,7 +153,7 @@ JSFieldModel.registerFlow({
             get: () => ctx.model.props?.value,
             cache: false,
           });
-          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
+          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
         });
       },
     },

@@ -23,6 +23,9 @@ export class JSCollectionActionModel extends ActionModel {
 JSCollectionActionModel.define({
   label: escapeT('JS action'),
   sort: 9999,
+  createModelOptions: {
+    use: 'JSCollectionActionModel',
+  },
 });
 
 JSCollectionActionModel.registerFlow({
@@ -59,6 +62,7 @@ JSCollectionActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
+          version: 'v1',
           code: `
 const rows = ctx.resource?.getSelectedRows?.() || [];
 if (!rows.length) {
@@ -70,8 +74,8 @@ if (!rows.length) {
         };
       },
       async handler(ctx, params) {
-        const { code = '' } = params || {};
-        await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
+        const { code = '', version = 'v1' } = params || {};
+        await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
       },
     },
   },

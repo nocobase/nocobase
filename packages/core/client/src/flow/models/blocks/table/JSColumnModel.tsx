@@ -211,16 +211,17 @@ JSColumnModel.registerFlow({
       },
       defaultParams() {
         return {
+          version: 'v1',
           code: `ctx.element.innerHTML = \`<span class="nb-js-column">JS column</span>\`;`,
         };
       },
       async handler(ctx, params) {
-        const { code = '' } = params || {};
+        const { code = '', version = 'v1' } = params || {};
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
-          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
+          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
         });
       },
     },

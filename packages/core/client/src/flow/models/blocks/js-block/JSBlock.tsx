@@ -38,6 +38,9 @@ export class JSBlockModel extends BlockModel {
 
 JSBlockModel.define({
   label: escapeT('JS block'),
+  createModelOptions: {
+    use: 'JSBlockModel',
+  },
 });
 
 JSBlockModel.registerFlow({
@@ -74,7 +77,7 @@ JSBlockModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          version: '1.0.0',
+          version: 'v1',
           code:
             `// Welcome to the JS block
 // Create powerful interactive components with JavaScript
@@ -139,14 +142,14 @@ ctx.element.innerHTML = \`
         };
       },
       handler(ctx, params) {
-        const { code = '' } = params;
+        const { code = '', version = 'v1' } = params;
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
 
           // 使用统一的安全 window 和 document 执行代码
-          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
+          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
         });
       },
     },
