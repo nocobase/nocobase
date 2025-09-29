@@ -88,6 +88,18 @@ export class GoogleGenAIProvider extends LLMProvider {
       const textMessage = content.content.find((msg) => msg.type === 'text');
       content.content = textMessage?.text;
     }
+    if (metadata?.response_metadata?.groundingMetadata?.groundingChunks?.length) {
+      content.reference = content.reference ?? [];
+      for (const groundingChunk of metadata?.response_metadata?.groundingMetadata?.groundingChunks ?? []) {
+        if (!groundingChunk.web) {
+          continue;
+        }
+        content.reference.push({
+          title: groundingChunk.web.title,
+          url: groundingChunk.web.uri,
+        });
+      }
+    }
 
     return {
       key: messageId,

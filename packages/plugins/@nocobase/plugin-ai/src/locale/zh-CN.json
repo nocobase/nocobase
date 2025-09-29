@@ -178,5 +178,7 @@
   "Others": "其他",
   "Other tools": "其他工具",
   "Auto usage": "自动使用",
-  "Use skills": "使用技能"
+  "Use skills": "使用技能",
+  "Cite {{count}} pieces of information as references": "引用 {{count}} 篇资料作为参考",
+  "references {{index}}": "参考资料 {{index}}"
 }

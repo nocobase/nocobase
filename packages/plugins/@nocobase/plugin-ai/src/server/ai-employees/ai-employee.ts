@@ -202,6 +202,9 @@ export class AIEmployee {
       if (gathered?.usage_metadata) {
         values.metadata.usage_metadata = gathered.usage_metadata;
       }
+      if (gathered?.response_metadata) {
+        values.metadata.response_metadata = gathered.response_metadata;
+      }
 
       const aiMessage = await this.aiChatConversation.withTransaction(async (conversation, transaction) => {
         if (messageId) {

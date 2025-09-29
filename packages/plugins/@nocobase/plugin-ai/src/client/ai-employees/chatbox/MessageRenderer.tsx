@@ -8,7 +8,7 @@
  */
 
 import React, { memo, useEffect, useMemo } from 'react';
-import { Button, Space, App, Alert, Flex } from 'antd';
+import { Button, Space, App, Alert, Flex, Collapse, Typography, Tooltip } from 'antd';
 import { CopyOutlined, ReloadOutlined, EditOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
 import { Attachments, Bubble } from '@ant-design/x';
 import { useT } from '../../locale';
@@ -26,6 +26,10 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import _ from 'lodash';
+import style from 'packages/plugins/@nocobase/plugin-calendar/src/client/calendar/style';
+import { color } from 'echarts';
+
+const { Link } = Typography;
 
 const MessageWrapper = React.forwardRef<
   HTMLDivElement,
@@ -166,10 +170,38 @@ export const AIMessage: React.FC<{
         )
       }
     >
+      {msg.reference?.length && <Reference references={msg.reference} />}
       <AIMessageRenderer msg={msg} />
     </MessageWrapper>
   );
 });
+
+export const Reference: React.FC<{ references: { title: string; url: string }[] }> = ({ references }) => {
+  const t = useT();
+  const items = [
+    {
+      key: '1',
+      label: t('Cite {{count}} pieces of information as references', { count: references.length }),
+      children: (
+        <Space style={{ width: '100%' }} direction="vertical">
+          {references.map((ref, index) => {
+            const url = ref.url;
+            const title = _.isEmpty(ref.title) ? t('references {{index}}', { index: index + 1 }) : ref.title;
+            const tooltip = _.isEmpty(ref.title) ? ref.url : ref.title;
+            return (
+              <Tooltip key={index} title={tooltip} arrow={false}>
+                <Link href={url} target="_blank" ellipsis>
+                  {title}
+                </Link>
+              </Tooltip>
+            );
+          })}
+        </Space>
+      ),
+    },
+  ];
+  return <Collapse items={items} bordered={false} size="small" style={{ marginBottom: 8 }} />;
+};
 
 export const UserMessage: React.FC<{
   msg: Message['content'];

@@ -14,6 +14,7 @@ import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { Model } from '@nocobase/database';
 import { stripToolCallTags } from '../utils';
 import { AIMessageChunk } from '@langchain/core/messages';
+import url from 'packages/core/client/src/schema-component/antd/input/demos/url';
 
 const OPENAI_URL = 'https://api.openai.com/v1';
 
@@ -77,6 +78,17 @@ export class OpenAIProvider extends LLMProvider {
     if (Array.isArray(content.content)) {
       const textMessage = content.content.find((msg) => msg.type === 'text');
       content.content = textMessage?.text;
+
+      // get web search results from openai response's annotations
+      if (textMessage?.annotations?.length) {
+        content.reference = content.reference ?? [];
+        for (const annotation of textMessage?.annotations ?? []) {
+          content.reference.push({
+            title: annotation.title,
+            url: annotation.url,
+          });
+        }
+      }
     }
 
     return {

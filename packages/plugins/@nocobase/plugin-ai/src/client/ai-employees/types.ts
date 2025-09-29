@@ -82,6 +82,10 @@ export type Message = Omit<BubbleProps, 'content'> & {
       };
       autoCallTools?: string[];
     };
+    reference?: {
+      title: string;
+      url: string;
+    }[];
   };
 };
 export type Action = {
