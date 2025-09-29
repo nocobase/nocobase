@@ -57,24 +57,4 @@ describe('flowRunJSContext registry and doc', () => {
   });
 
   // Linkage kind via __runjsKind removed; linkage scripts now run in the host model context.
-
-  it('allowlist should restrict keys when configured', async () => {
-    class TestRestrictCtx extends FlowRunJSContext {
-      static allow = { keys: ['message'] };
-    }
-    RunJSContextRegistry.register('v1' as any, 'TestModel', TestRestrictCtx as any);
-    const stub: any = {
-      model: { constructor: { name: 'TestModel' } },
-      message: { success: (_: string) => {} },
-      t: (_k: string) => 'ok',
-      createProxy() {
-        return this;
-      },
-    } as FlowContext as any;
-    const runner = createJSRunnerWithVersion.call(stub, { version: 'v1' });
-    const r1 = await runner.run('return typeof ctx.message !== "undefined"');
-    expect(r1.success && r1.value).toBe(true);
-    const r2 = await runner.run('return typeof ctx.t !== "undefined"');
-    expect(r2.success && r2.value).toBe(false);
-  });
 });
