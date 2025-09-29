@@ -1372,7 +1372,7 @@ export class FlowModelContext extends BaseFlowModelContext {
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
-    this.defineMethod('runjs', async (code, variables) => {
+    this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
       const runner = this.createJSRunner({
         globals: variables,
         version: options?.version,
@@ -1505,9 +1505,10 @@ export class FlowForkModelContext extends BaseFlowModelContext {
         return createRef<HTMLDivElement>();
       },
     });
-    this.defineMethod('runjs', async (code, variables) => {
+    this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
       const runner = this.createJSRunner({
         globals: variables,
+        version: options?.version,
       });
       return runner.run(code);
     });
