@@ -352,7 +352,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         `${this.collection.dataSourceKey}.${targetCollectionName}.${field2}`,
       ) as CollectionField;
 
-      if (collectionField.isAssociationField()) {
+      if (collectionField && collectionField.isAssociationField()) {
         (this.resource as BaseRecordResource).addAppends(fieldPath);
         if (refresh) {
           this.resource.refresh();
