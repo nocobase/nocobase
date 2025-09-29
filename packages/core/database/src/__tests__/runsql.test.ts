@@ -16,7 +16,7 @@ describe('runSQL', function () {
     db = await createMockDatabase();
     await db.clean({ drop: true });
 
-    // Create test table
+    // Create test table test
     const Test = db.collection({
       name: 'test',
       timestamps: false,
