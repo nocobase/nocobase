@@ -12,7 +12,27 @@ export default {
   prefix: 'sn-link-visibility',
   label: 'Toggle visible',
   content: `
-// Show or hide a field
-setProps(fieldModel, { visible: false });
+const targetFieldUid = 'FIELD_UID_OR_NAME';
+const shouldHide = true;
+
+const items = ctx.model?.subModels?.grid?.subModels?.items;
+const candidates: any[] = Array.isArray(items)
+  ? items
+  : Array.from(items?.values?.() || items || []);
+const fieldModel =
+  candidates.find((item) => item?.uid === targetFieldUid) ||
+  candidates.find((item) => item?.props?.name === targetFieldUid);
+
+if (!fieldModel) {
+  ctx.message?.warning?.(ctx.t('Field {{name}} not found', { name: targetFieldUid }));
+  return;
+}
+
+fieldModel.setProps({ hiddenModel: shouldHide });
+ctx.message?.success?.(
+  ctx.t(shouldHide ? 'Hidden field {{name}}' : 'Shown field {{name}}', {
+    name: fieldModel?.props?.label || targetFieldUid,
+  }),
+);
 `,
 };

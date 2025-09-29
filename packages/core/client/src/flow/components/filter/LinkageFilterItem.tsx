@@ -21,7 +21,12 @@ import {
 } from '@nocobase/flow-engine';
 import { NumberPicker } from '@formily/antd-v5';
 import { normalizeUiSchemaEnumToOptions } from '../../internal/utils/enumOptionsUtils';
-import { DateFilterDynamicComponent } from '../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent';
+import { lazy } from '../../../lazy-helper';
+
+const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
+  () => import('../../models/blocks/filter-form/fields/date-time/components/DateFilterDynamicComponent'),
+  'DateFilterDynamicComponent',
+);
 
 export interface LinkageFilterItemValue {
   path: string | null;
@@ -69,7 +74,7 @@ function createStaticInputRenderer(
       return <Select {...finalProps} {...rest} value={value} onChange={onChange} />;
     }
     if (xComponent === 'DateFilterDynamicComponent')
-      return <DateFilterDynamicComponent {...commonProps} {...rest} value={value} onChange={onChange} />;
+      return <DateFilterDynamicComponentLazy {...commonProps} {...rest} value={value} onChange={onChange} />;
     // 普通文本输入：透传组合输入事件，避免 IME 被中断
     return <Input {...commonProps} {...rest} value={value} onChange={(e) => onChange?.(e?.target?.value)} />;
   };

@@ -552,11 +552,13 @@ export const openView = defineAction({
     }
     const inputArgs = ctx.inputArgs || {};
 
-    inputArgs.filterByTk = inputArgs.filterByTk || params.filterByTk || ctx.view?.inputArgs.filterByTk;
+    const viewInputArgs = ctx.view?.inputArgs as Record<string, any> | undefined;
 
-    inputArgs.sourceId = inputArgs.sourceId || params.sourceId || ctx.view?.inputArgs.sourceId;
+    inputArgs.filterByTk = inputArgs.filterByTk || params.filterByTk || viewInputArgs?.filterByTk;
 
-    inputArgs.tabUid = inputArgs.tabuid || params.tabUid || ctx.view?.inputArgs.tabUid;
+    inputArgs.sourceId = inputArgs.sourceId || params.sourceId || viewInputArgs?.sourceId;
+
+    inputArgs.tabUid = inputArgs.tabuid || params.tabUid || viewInputArgs?.tabUid;
 
     const navigation = inputArgs.navigation ?? params.navigation;
 
@@ -610,7 +612,7 @@ export const openView = defineAction({
       embed: {},
     };
 
-    const pageModelClass = ctx.inputArgs.pageModelClass || params.pageModelClass;
+    const pageModelClass = ctx.inputArgs.pageModelClass || params.pageModelClass || 'ChildPageModel';
 
     const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
     const size = ctx.inputArgs.size || params.size || 'medium';
