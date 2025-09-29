@@ -137,6 +137,8 @@ export class Gateway extends EventEmitter {
   }
 
   destroy() {
+    process.off('SIGTERM', this.onTerminate);
+    process.off('SIGINT', this.onTerminate);
     this.reset();
     Gateway.instance = null;
   }
