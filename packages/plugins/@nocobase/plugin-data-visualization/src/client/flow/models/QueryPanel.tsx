@@ -8,7 +8,7 @@
  */
 
 import { ObjectField, Field, connect, useForm, observer } from '@formily/react';
-import React from 'react';
+import React, { useState } from 'react';
 import { SQLEditor } from './SQLEditor';
 import { Radio, Button, Space } from 'antd';
 import { useT } from '../../locale';
@@ -49,8 +49,8 @@ export const QueryPanel: React.FC = observer(() => {
   const ctx = useFlowSettingsContext<ChartBlockModel>();
   const mode = form?.values?.query?.mode || 'builder';
 
-  const [showResult, setShowResult] = React.useState(false);
-  const [running, setRunning] = React.useState(false);
+  const [showResult, setShowResult] = useState(false);
+  const [running, setRunning] = useState(false);
 
   const handleRun = async () => {
     try {

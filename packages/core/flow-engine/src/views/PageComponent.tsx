@@ -24,6 +24,7 @@ export const PageComponent = forwardRef((props: any, ref) => {
     hidden,
     title: _title,
     styles = {},
+    zIndex,
   } = mergedProps;
   const closedRef = useRef(false);
   const flowEngine = useFlowEngine();
@@ -58,8 +59,9 @@ export const PageComponent = forwardRef((props: any, ref) => {
       display: hidden ? 'none' : 'flex',
       flexDirection: 'column',
       height: '100%',
+      zIndex,
     }),
-    [hidden],
+    [hidden, zIndex],
   );
 
   // Header 组件

@@ -7,14 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Card } from 'antd';
-import { DatabaseOutlined } from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
+import { Card, Spin } from 'antd';
+import { DatabaseOutlined, ExclamationCircleTwoTone, LoadingOutlined } from '@ant-design/icons';
 import { useT } from '../../../locale';
 import { useToken } from '@nocobase/client';
 import { useChatToolsStore } from '../../chatbox/stores/chat-tools';
 import { ToolCall } from '../../types';
 import { CollectionDataType } from '../types';
+import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
 
 export const DataModelingCard: React.FC<{
   messageId: string;
@@ -25,11 +26,31 @@ export const DataModelingCard: React.FC<{
   const t = useT();
   const { token } = useToken();
 
+  const responseLoading = useChatMessagesStore.use.responseLoading();
+  const messages = useChatMessagesStore.use.messages();
   const setOpen = useChatToolsStore.use.setOpenToolModal();
   const setActiveTool = useChatToolsStore.use.setActiveTool();
   const setActiveMessageId = useChatToolsStore.use.setActiveMessageId();
   const toolsByMessageId = useChatToolsStore.use.toolsByMessageId();
   const version = toolsByMessageId[messageId]?.[tool.id]?.version;
+  const generating = responseLoading && messages[length - 1]?.content.messageId === messageId;
+
+  let description = <>{t('Please review and finish the process')}</>;
+  if (generating) {
+    description = (
+      <>
+        <Spin indicator={<LoadingOutlined spin />} size="small" /> {t('Generating...')}
+      </>
+    );
+  }
+  if (!tool.args.collections) {
+    console.error('Invalid definition', tool.args);
+    description = (
+      <>
+        <ExclamationCircleTwoTone twoToneColor="#eb2f96" /> {t('Invalid definition')}
+      </>
+    );
+  }
 
   return (
     <>
@@ -39,6 +60,9 @@ export const DataModelingCard: React.FC<{
           cursor: 'pointer',
         }}
         onClick={() => {
+          if (generating || !tool.args.collections) {
+            return;
+          }
           setActiveTool(tool);
           setActiveMessageId(messageId);
           setOpen(true);
@@ -64,7 +88,7 @@ export const DataModelingCard: React.FC<{
               ) : null}
             </>
           }
-          description={t('Please review and finish the process')}
+          description={description}
         />
       </Card>
     </>

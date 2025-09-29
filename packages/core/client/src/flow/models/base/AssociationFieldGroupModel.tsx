@@ -30,7 +30,10 @@ export class AssociationFieldGroupModel extends FlowModel {
                   .getFields()
                   .map((f) => {
                     const fp = `${fPath}.${f.name}`;
-                    const binding = DisplayItemModel.getDefaultBindingByField(ctx, f);
+                    const binding = DisplayItemModel.getDefaultBindingByField(ctx, f, {
+                      fallbackToTargetTitleField: true,
+                    });
+
                     if (!binding) {
                       return;
                     }

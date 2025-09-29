@@ -31,6 +31,7 @@ export * from './ElementProxy';
 export * from './flowContext';
 export * from './FlowContextProvider';
 export * from './JSRunner';
+export * from './runjs-context';
 
 export * from './views';
 

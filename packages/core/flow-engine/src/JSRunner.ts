@@ -12,6 +12,7 @@ import 'ses';
 export interface JSRunnerOptions {
   timeoutMs?: number;
   globals?: Record<string, any>;
+  version?: string;
 }
 
 export class JSRunner {
