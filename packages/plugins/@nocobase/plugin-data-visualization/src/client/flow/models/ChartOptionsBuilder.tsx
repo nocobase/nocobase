@@ -118,12 +118,8 @@ export const ChartOptionsBuilder: React.FC<{
           />
         </Form.Item>
 
-        <Divider style={{ margin: '8px 0' }} />
-
         {/* 图表属性 */}
         {getChartFormItems(type, { t, fieldOptions, builder })}
-
-        <Divider style={{ margin: '8px 0' }} />
 
         {/* 公共属性 */}
         {/* <Form.Item label={t('Height')} name="height">

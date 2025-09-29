@@ -7,29 +7,23 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseRecordResource } from '@nocobase/flow-engine';
+import { BaseRecordResource, FilterItem } from '@nocobase/flow-engine';
 import { parseField, removeUnparsableFilter, isEmptyFilterObject } from '../../utils';
-import lodash from 'lodash';
 import { transformFilter } from '@nocobase/utils/client';
 
-// FilterGroup -> server filter
-function transformFilterGroup(input: any): any {
-  if (!input || typeof input !== 'object') {
-    throw new Error('Invalid filter: filter must be an object');
-  }
+function fixWrongData(filter: any): any {
   // 处理异常结构，最外面多了一层 $and 或 $or
-  if (Array.isArray(input.$and) && input.$and.length === 1 && input.$and[0]?.logic) {
-    input = input.$and[0];
+  if (Array.isArray(filter.$and) && filter.$and.length === 1 && filter.$and[0]?.logic) {
+    filter = filter.$and[0];
   }
-  if (Array.isArray(input.$or) && input.$or.length === 1 && input.$or[0]?.logic) {
-    input = input.$or[0];
+  if (Array.isArray(filter.$or) && filter.$or.length === 1 && filter.$or[0]?.logic) {
+    filter = filter.$or[0];
   }
   // 处理异常结构，缺少 items 字段
-  if ((input?.logic === '$and' || input?.logic === '$or') && !Array.isArray(input.items)) {
-    input.items = [];
+  if ((filter?.logic === '$and' || filter?.logic === '$or') && !Array.isArray(filter.items)) {
+    filter.items = [];
   }
-
-  return transformFilter(input);
+  return filter;
 }
 
 export class ChartResource<TData = any> extends BaseRecordResource<TData> {
@@ -74,8 +68,15 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // 筛选条件写入请求参数，父类 addFilterGroup/removeFilterGroup --> resetFilter --> setFilter
   setFilter(filter: Record<string, any>) {
-    const normalizedInput = transformFilterGroup(filter);
-    const cleanedRoot = removeUnparsableFilter(normalizedInput);
+    console.log('---setFilter', filter);
+
+    // 入参为 undefined 或 null 时，直接清空已设置的筛选条件并返回
+    if (filter === undefined || filter === null) {
+      delete this.request.data.filter;
+      return this;
+    }
+
+    const cleanedRoot = removeUnparsableFilter(transformFilter(fixWrongData(filter)));
 
     let merged = cleanedRoot;
     if (
