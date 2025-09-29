@@ -11,6 +11,7 @@ export default {
   contexts: ['*'],
   prefix: 'sn-notify',
   label: '通知弹窗',
+  description: 'Open an AntD notification with custom content',
   content: `
 ctx.notification.open({
   message: ctx.t('Notification title'),

@@ -12,6 +12,7 @@ const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-log-record',
   label: '打印记录JSON',
+  description: 'Log current ctx.record as formatted JSON',
   content: `
 console.log(ctx.t('Current record JSON:'), JSON.stringify(ctx.record ?? {}, null, 2));
 ctx.message.success(ctx.t('Printed to console'));

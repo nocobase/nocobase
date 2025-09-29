@@ -10,7 +10,7 @@
 export default {
   contexts: ['*'],
   prefix: 'sn-link-disable',
-  label: '禁用控制',
+  label: 'Set disabled',
   content: `
 // Assume the target field model (fieldModel) is resolved
 setProps(fieldModel, { disabled: true });

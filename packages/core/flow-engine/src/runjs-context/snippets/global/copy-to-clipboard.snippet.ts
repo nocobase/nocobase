@@ -12,6 +12,7 @@ const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-copy',
   label: '复制文本',
+  description: 'Copy a string to clipboard and show a success message',
   content: `
 await ctx.copyToClipboard(ctx.t('Text to copy'));
 ctx.message.success(ctx.t('Copied to clipboard'));

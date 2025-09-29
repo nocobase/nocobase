@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-jsb-style',
-  label: '追加样式',
+  label: 'Append style',
   content: `
 // Append styles to container
 ctx.element.style.border = '1px dashed #999';

@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSRecordActionRunJSContext'],
   prefix: 'sn-act-record-id',
-  label: '显示记录ID',
+  label: 'Show record id',
   content: `
 if (!ctx.record) {
   ctx.message.error(ctx.t('Record not found'));

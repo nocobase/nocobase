@@ -11,6 +11,7 @@ export default {
   contexts: ['*'],
   prefix: 'sn-api-get',
   label: 'GET请求模板',
+  description: 'Basic template to send a GET request via ctx.api',
   content: `
 const res = await ctx.api.request({ url: '/your/api', method: 'get', params: { page: 1 } });
 ctx.message.success(ctx.t('GET request completed'));

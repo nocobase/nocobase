@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSItemRunJSContext'],
   prefix: 'sn-jsitem-basic',
-  label: '表单项渲染',
+  label: 'Render form item',
   content:
     `
 ctx.element.innerHTML = ` +

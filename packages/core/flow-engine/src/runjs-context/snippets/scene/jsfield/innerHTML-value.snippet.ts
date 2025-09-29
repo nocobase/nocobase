@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSFieldRunJSContext', 'FormJSFieldItemRunJSContext'],
   prefix: 'sn-jsf-value',
-  label: '显示字段值',
+  label: 'Render field value',
   content: `
 const v = String(ctx.value ?? '');
 ctx.element.innerHTML = \`<span class="nb-js-field-value" style="color:#1890ff;font-weight:600">\${v}</span>\`;

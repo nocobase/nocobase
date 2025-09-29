@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSFieldRunJSContext', 'FormJSFieldItemRunJSContext'],
   prefix: 'sn-jsf-num',
-  label: '数字格式化',
+  label: 'Format number',
   content: `
 // Format number using locale
 const n = Number(ctx.value ?? 0);

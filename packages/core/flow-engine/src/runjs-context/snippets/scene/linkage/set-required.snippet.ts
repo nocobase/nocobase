@@ -10,7 +10,7 @@
 export default {
   contexts: ['*'],
   prefix: 'sn-link-required',
-  label: '必填控制',
+  label: 'Set required',
   content: `
 // Set the field to required
 setProps(fieldModel, { required: true });

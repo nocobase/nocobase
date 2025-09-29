@@ -12,6 +12,7 @@ const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-copy-record',
   label: '复制记录JSON',
+  description: 'Copy current ctx.record JSON to clipboard',
   content: `
 await ctx.copyToClipboard(JSON.stringify(ctx.record ?? {}, null, 2));
 ctx.message.success(ctx.t('Record JSON copied to clipboard'));

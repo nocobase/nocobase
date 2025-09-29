@@ -10,11 +10,11 @@
 export default {
   contexts: ['JSFieldRunJSContext', 'FormJSFieldItemRunJSContext'],
   prefix: 'sn-jsf-color',
-  label: '正负着色',
+  label: 'Color by value',
   content: `
 // Colorize based on numeric sign
 const n = Number(ctx.value ?? 0);
 const color = Number.isFinite(n) ? (n > 0 ? 'green' : n < 0 ? 'red' : '#999') : '#555';
-ctx.element.innerHTML = '<span style="color:' + color + '">' + String(ctx.value ?? '') + '</span>';
+ctx.element.innerHTML = '<span style=' + JSON.stringify('color:' + color) + '>' + String(ctx.value ?? '') + '</span>';
 `,
 };

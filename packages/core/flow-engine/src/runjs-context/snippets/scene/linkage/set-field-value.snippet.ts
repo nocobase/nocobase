@@ -10,7 +10,7 @@
 export default {
   contexts: ['*'],
   prefix: 'sn-link-set',
-  label: '联动赋值',
+  label: 'Set field value',
   content: `
 // Assume the target field model (fieldModel) is resolved
 setProps(fieldModel, { value: 'new value' });

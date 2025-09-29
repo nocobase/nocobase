@@ -12,6 +12,7 @@ const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-msg',
   label: '消息提示',
+  description: 'Show a success toast message',
   content: `
 ctx.message.success(ctx.t('Operation succeeded'));
 `,

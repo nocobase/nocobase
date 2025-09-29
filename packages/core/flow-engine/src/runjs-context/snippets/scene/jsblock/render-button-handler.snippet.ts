@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-jsb-button',
-  label: '渲染按钮事件',
+  label: 'Render button handler',
   content: `
 const { React, ReactDOM, antd } = ctx;
 const { Button } = antd;

@@ -11,6 +11,7 @@ export default {
   contexts: ['*'],
   prefix: 'sn-sleep',
   label: '等待模板',
+  description: 'Pause execution for a given milliseconds',
   content: `
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const ms = 500;

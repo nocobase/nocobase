@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSCollectionActionRunJSContext'],
   prefix: 'sn-act-iterate',
-  label: '遍历选中行',
+  label: 'Iterate selected rows',
   content: `
 const rows = ctx.resource?.getSelectedRows?.() || [];
 for (const row of rows) {

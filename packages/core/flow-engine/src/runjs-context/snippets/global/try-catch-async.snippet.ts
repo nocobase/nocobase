@@ -11,6 +11,7 @@ export default {
   contexts: ['*'],
   prefix: 'sn-try',
   label: 'try/catch 模板',
+  description: 'Async try/catch template with toast message',
   content: `
 try {
   // await some async work

@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-jsb-html',
-  label: '插入HTML',
+  label: 'Render HTML',
   content:
     `
 ctx.element.innerHTML = ` +

@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-jsb-click',
-  label: '监听点击',
+  label: 'Add click listener',
   content:
     `
 // Render a button and bind a click handler

@@ -12,6 +12,7 @@ const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-msg-error',
   label: '错误提示',
+  description: 'Show an error toast message',
   content: `
 ctx.message.error(ctx.t('Operation failed'));
 `,

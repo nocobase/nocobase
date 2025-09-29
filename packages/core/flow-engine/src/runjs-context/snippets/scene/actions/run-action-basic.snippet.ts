@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSRecordActionRunJSContext', 'JSCollectionActionRunJSContext'],
   prefix: 'sn-act-run',
-  label: '动作调用',
+  label: 'Run action',
   content: `
 await ctx.runAction('someAction', { foo: 'bar' });
 ctx.message.success(ctx.t('Action executed'));

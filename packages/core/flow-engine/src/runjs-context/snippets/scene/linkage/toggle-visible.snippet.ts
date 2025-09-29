@@ -10,7 +10,7 @@
 export default {
   contexts: ['*'],
   prefix: 'sn-link-visibility',
-  label: '显隐控制',
+  label: 'Toggle visible',
   content: `
 // Show or hide a field
 setProps(fieldModel, { visible: false });

@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-jsb-react',
-  label: '插入React',
+  label: 'Render React',
   content: `
 // Render a React element into ctx.element via ReactDOM
 const { React, ReactDOM, antd } = ctx;

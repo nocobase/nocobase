@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSCollectionActionRunJSContext'],
   prefix: 'sn-act-selected-count',
-  label: '选中行计数',
+  label: 'Selected count',
   content: `
 const rows = ctx.resource?.getSelectedRows?.() || [];
 if (!rows.length) {

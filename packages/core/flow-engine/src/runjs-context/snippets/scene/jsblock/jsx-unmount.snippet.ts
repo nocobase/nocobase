@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-jsx-unmount',
-  label: 'JSX卸载',
+  label: 'JSX unmount',
   content: `
 if (ctx.__reactRoot?.unmount) { try { ctx.__reactRoot.unmount(); } catch(_) {} }
 ctx.__reactRoot = undefined;

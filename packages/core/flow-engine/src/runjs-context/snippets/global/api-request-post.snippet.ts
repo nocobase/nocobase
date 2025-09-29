@@ -11,6 +11,7 @@ export default {
   contexts: ['*'],
   prefix: 'sn-api-post',
   label: 'POST请求模板',
+  description: 'Basic template to send a POST request via ctx.api',
   content: `
 const res = await ctx.api.request({ url: '/your/api', method: 'post', data: { name: 'NocoBase' } });
 ctx.message.success(ctx.t('POST request completed'));

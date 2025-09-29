@@ -11,6 +11,7 @@ export default {
   contexts: ['*'],
   prefix: 'sn-require',
   label: '加载外部库',
+  description: 'Dynamically load an external JS via RequireJS',
   content: `
 // Load an external library (AMD/RequireJS)
 try {

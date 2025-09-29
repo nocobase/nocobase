@@ -11,6 +11,7 @@ export default {
   contexts: ['*'],
   prefix: 'sn-window-open',
   label: '打开新窗口',
+  description: 'Safely open a new browser window/tab',
   content: `
 // Open a new window/tab
 window.open('https://example.com', '_blank');

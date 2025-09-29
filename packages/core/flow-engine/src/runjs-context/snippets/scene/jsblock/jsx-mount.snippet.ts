@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-jsx-mount',
-  label: 'JSX挂载',
+  label: 'JSX mount',
   content: `
 // Render JSX (editor does not auto-transform)
 const { ReactDOM, antd } = ctx;
