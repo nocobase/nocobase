@@ -52,7 +52,7 @@ export const fieldComponent = defineAction({
       };
     }
   },
-  beforeParamsSave: async (ctx, params, previousParams) => {
+  beforeParamsSave: async (ctx: any, params, previousParams) => {
     let classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
     let titleFieldClasses = [];
 

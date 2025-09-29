@@ -48,16 +48,7 @@ describe('variables:resolve batch prefetch merges selects (integration)', () => 
 
   beforeAll(async () => {
     app = await createMockServer({
-      database: { dialect: 'sqlite', storage: ':memory:' },
-      plugins: [
-        'error-handler',
-        'auth',
-        'users',
-        'acl',
-        'data-source-manager',
-        'field-sort',
-        '@nocobase/plugin-flow-engine',
-      ],
+      plugins: ['error-handler', 'auth', 'users', 'acl', 'data-source-manager', 'field-sort', 'flow-engine'],
     });
   });
 

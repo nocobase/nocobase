@@ -38,11 +38,7 @@ describe('FlowModelContext.openView - navigation enforcement', () => {
   it('forces options.navigation=false when options.defineProperties exists', async () => {
     const { parent, child } = setup();
 
-    // capture the inputArgs assigned to child.context
-    let capturedInputArgs: any;
-    child.context.defineProperty.mockImplementation((key: string, opts: any) => {
-      if (key === 'inputArgs') capturedInputArgs = opts?.value;
-    });
+    // call and then assert via recorded defineProperty calls
 
     await (parent.context as any).openView('child-uid', {
       mode: 'drawer',
@@ -52,8 +48,10 @@ describe('FlowModelContext.openView - navigation enforcement', () => {
       },
     });
 
-    // verify inputArgs.navigation is forced false
-    expect(capturedInputArgs?.navigation).toBe(false);
+    // verify view.inputArgs.navigation is forced false (check the first set before it gets cleared)
+    const viewCalls = child.context.defineProperty.mock.calls.filter((args: any[]) => args?.[0] === 'view');
+    const firstView = viewCalls?.[0]?.[1]?.value;
+    expect(firstView?.inputArgs?.navigation).toBe(false);
     // verify the params passed to dispatchEvent carry navigation=false
     expect(child.dispatchEvent).toHaveBeenCalledTimes(1);
     const dispatchedParams = child.dispatchEvent.mock.calls[0][1];
@@ -63,11 +61,6 @@ describe('FlowModelContext.openView - navigation enforcement', () => {
   it('forces options.navigation=false when options.defineMethod exists', async () => {
     const { parent, child } = setup();
 
-    let capturedInputArgs: any;
-    child.context.defineProperty.mockImplementation((key: string, opts: any) => {
-      if (key === 'inputArgs') capturedInputArgs = opts?.value;
-    });
-
     await (parent.context as any).openView('child-uid', {
       navigation: true,
       defineMethod: {
@@ -75,7 +68,9 @@ describe('FlowModelContext.openView - navigation enforcement', () => {
       },
     });
 
-    expect(capturedInputArgs?.navigation).toBe(false);
+    const viewCalls = child.context.defineProperty.mock.calls.filter((args: any[]) => args?.[0] === 'view');
+    const firstView = viewCalls?.[0]?.[1]?.value;
+    expect(firstView?.inputArgs?.navigation).toBe(false);
     expect(child.dispatchEvent).toHaveBeenCalledTimes(1);
     const dispatchedParams = child.dispatchEvent.mock.calls[0][1];
     expect(dispatchedParams.navigation).toBe(false);

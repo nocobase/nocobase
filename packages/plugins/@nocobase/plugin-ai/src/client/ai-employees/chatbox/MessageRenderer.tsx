@@ -26,8 +26,6 @@ import { useChatBoxStore } from './stores/chat-box';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import _ from 'lodash';
-import style from 'packages/plugins/@nocobase/plugin-calendar/src/client/calendar/style';
-import { color } from 'echarts';
 
 const { Link } = Typography;
 

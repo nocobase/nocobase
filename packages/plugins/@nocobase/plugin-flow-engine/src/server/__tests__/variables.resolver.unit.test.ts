@@ -23,7 +23,6 @@ describe('variables resolver (no HTTP)', () => {
     process.env.INIT_ROOT_PASSWORD = '123456';
     process.env.INIT_ROOT_NICKNAME = 'Test';
     app = await createMockServer({
-      database: { dialect: 'sqlite', storage: ':memory:' },
       plugins: ['auth', 'users', 'acl', 'data-source-manager', 'field-sort'],
       skipStart: false,
     });

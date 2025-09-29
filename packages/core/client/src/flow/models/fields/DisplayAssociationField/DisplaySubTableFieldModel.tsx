@@ -42,9 +42,15 @@ export class DisplaySubTableFieldModel extends FieldModel {
     this.context.defineProperty('collection', {
       get: () => this.context.collectionField.targetCollection,
     });
+    this.context.defineProperty('prefixFieldPath', {
+      get: () => {
+        return this.context.fieldPath;
+      },
+    });
   }
 
   async afterAddAsSubModel() {
+    await super.afterAddAsSubModel();
     await this.applyAutoFlows();
   }
 

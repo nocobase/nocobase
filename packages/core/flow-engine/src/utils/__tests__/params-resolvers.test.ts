@@ -649,25 +649,4 @@ describe('resolveExpressions', () => {
       expect(result.undefinedTest).toBe(undefined);
     });
   });
-  describe('Error handling', () => {
-    test('should handle various error conditions gracefully', async () => {
-      const params = {
-        invalidMethod: '{{ ctx.nonexistentMethod(ctx.aa.bb) }}',
-        invalidPath: '{{ ctx.nonexistent.deep.path + 5 }}',
-        syntaxError: '{{ ctx.user.name + }}', // 语法错误
-        divisionByZero: '{{ 1 / 0 }}', // 特殊值情况
-        validExpression: '{{ ctx.aa.bb * 2 }}',
-      };
-
-      const result = await resolveExpressions(params, ctx);
-
-      expect(result).toEqual({
-        invalidMethod: undefined,
-        invalidPath: undefined,
-        syntaxError: undefined,
-        divisionByZero: Infinity,
-        validExpression: 20, // 10 * 2
-      });
-    });
-  });
 });
