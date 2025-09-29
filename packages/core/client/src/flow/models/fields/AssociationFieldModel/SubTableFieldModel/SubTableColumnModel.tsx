@@ -11,7 +11,6 @@ import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import {
-  buildWrapperFieldChildren,
   DisplayItemModel,
   DragHandler,
   Droppable,
@@ -50,7 +49,6 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 
     return <FieldModelRenderer model={model} {...rest} onChange={handelChange} />;
   };
-
   const handleClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -68,7 +66,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
           return (
             <FormComponent model={model}>
               <FormItem name={fieldPath} showLabel={false} initialValue={defaultValue}>
-                <FieldModelRendererCom model={model} />
+                <FieldModelRendererCom model={model} {...others} />
               </FormItem>
             </FormComponent>
           );
@@ -109,21 +107,61 @@ export class SubTableColumnModel<
     );
   }
 
-  static defineChildren(ctx: FlowModelContext) {
-    return buildWrapperFieldChildren(ctx, {
-      useModel: 'SubTableColumnModel',
-      fieldUseModel: (f) => {
-        const binding = FormItemModel.getDefaultBindingByField(ctx, f);
-        if (!binding) {
-          return;
-        }
-        const use = binding.modelName;
+  // static defineChildren(ctx: FlowModelContext) {
+  //   return buildWrapperFieldChildren(ctx, {
+  //     useModel: 'SubTableColumnModel',
+  //     fieldUseModel: (f) => {
+  //       const binding = FormItemModel.getDefaultBindingByField(ctx, f);
+  //       if (!binding) {
+  //         return;
+  //       }
+  //       const use = binding.modelName;
 
-        return ['CheckboxGroupEditableFieldModel', 'RadioGroupEditableFieldModel'].includes(use)
-          ? 'SelectEditableFieldModel'
-          : use;
-      },
-    });
+  //       return ['CheckboxGroupEditableFieldModel', 'RadioGroupEditableFieldModel'].includes(use)
+  //         ? 'SelectEditableFieldModel'
+  //         : use;
+  //     },
+  //   });
+  // }
+
+  static defineChildren(ctx: FlowModelContext) {
+    const collection = (ctx.model as any).collection || ctx.collection;
+    return collection
+      .getFields()
+      .map((field) => {
+        const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
+        if (!binding) return null;
+        const fieldModel = binding.modelName;
+        const fullName = ctx.fieldPath ? `${ctx.fieldPath}.${field.name}` : field.name;
+
+        return {
+          key: fullName,
+          label: field.title,
+          refreshTargets: ['SubTableColumnModel/TableJSFieldItemModel'],
+          toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === fullName,
+          useModel: this.name,
+          createModelOptions: () => ({
+            use: this.name,
+            stepParams: {
+              fieldSettings: {
+                init: {
+                  dataSourceKey: collection.dataSourceKey,
+                  collectionName: ctx.model.context.blockModel.collection.name,
+                  fieldPath: fullName,
+                },
+              },
+            },
+            subModels: {
+              field: {
+                use: fieldModel,
+                props:
+                  typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx, field) : binding.defaultProps,
+              },
+            },
+          }),
+        };
+      })
+      .filter(Boolean);
   }
   // 让子表列使用父级关联模型的目标集合
   get collection() {
@@ -141,6 +179,7 @@ export class SubTableColumnModel<
   }
 
   async afterAddAsSubModel() {
+    await super.afterAddAsSubModel();
     await this.applyAutoFlows();
   }
 
@@ -219,6 +258,8 @@ export class SubTableColumnModel<
           title={value}
         >
           {this.mapSubModels('field', (action: FieldModel) => {
+            const namePath = action.context.fieldPath.split('.').pop();
+
             const fork: any = action.createFork({}, `${id}`);
             if (this.props.readPretty) {
               fork.setProps({
@@ -230,7 +271,7 @@ export class SubTableColumnModel<
                 <FormItem
                   {...this.props}
                   key={id}
-                  name={[(this.parent as FieldModel).context.fieldPath, rowIdx, action.context.fieldPath]}
+                  name={[(this.parent as FieldModel).context.fieldPath, rowIdx, namePath]}
                   style={{ marginBottom: 0 }}
                   showLabel={false}
                 >
@@ -238,7 +279,7 @@ export class SubTableColumnModel<
                     <LargeFieldEdit
                       model={fork}
                       params={{
-                        fieldPath: [(this.parent as FieldModel).context.fieldPath, rowIdx, action.context.fieldPath],
+                        fieldPath: [(this.parent as FieldModel).context.fieldPath, rowIdx, namePath],
                         index: id,
                       }}
                       defaultValue={value}
@@ -281,7 +322,7 @@ SubTableColumnModel.registerFlow({
         ctx.model.setProps('dataIndex', collectionField.name);
         const currentBlockModel = ctx.model.context.blockModel;
         if (currentBlockModel instanceof EditFormModel) {
-          currentBlockModel.addAppends(`${(ctx.model.parent as FieldModel).context.fieldPath}.${ctx.model.fieldPath}`);
+          currentBlockModel.addAppends(ctx.model.fieldPath);
         }
       },
     },

@@ -39,7 +39,7 @@ export const CardUpload = (props) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // 用来跟踪当前预览的图片索引
   const { t } = useTranslation();
   useEffect(() => {
-    value && setFileList(castArray(value || []));
+    setFileList(castArray(value || []));
   }, [value]);
 
   const getBase64 = (file): Promise<string> =>
@@ -257,6 +257,7 @@ export class UploadFieldModel extends FieldModel {
     this.props.onChange(this.selectedRows.value);
   }
   render() {
+    console.log(this.props.value);
     return <CardUpload {...this.props} />;
   }
 }

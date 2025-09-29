@@ -56,12 +56,12 @@ export class TableColumnModel extends DisplayItemModel {
         const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
         if (!binding) return null;
         const fieldModel = binding.modelName;
-        const fieldPath = field.name;
+        const fieldPath = ctx.fieldPath ? `${ctx.fieldPath}.${field.name}` : field.name;
         return {
-          key: field.name,
+          key: fieldPath,
           label: field.title,
           refreshTargets: ['TableCustomColumnModel/TableJSFieldItemModel'],
-          toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === field.name,
+          toggleable: (subModel) => subModel.getStepParams('fieldSettings', 'init')?.fieldPath === fieldPath,
           useModel: this.name,
           createModelOptions: () => ({
             use: this.name,
@@ -69,7 +69,7 @@ export class TableColumnModel extends DisplayItemModel {
               fieldSettings: {
                 init: {
                   dataSourceKey: collection.dataSourceKey,
-                  collectionName: collection.name,
+                  collectionName: ctx.model.context.blockModel.collection.name,
                   fieldPath,
                 },
               },
@@ -193,7 +193,8 @@ export class TableColumnModel extends DisplayItemModel {
           fork.context.defineProperty('recordIndex', {
             get: () => index,
           });
-          const value = get(record, this.fieldPath);
+          const namePath = this.context.prefixFieldPath ? this.fieldPath.split('.').pop() : this.fieldPath;
+          const value = get(record, namePath);
           return (
             <FormItem key={field.uid} {...omit(this.props, 'title')} value={value} noStyle={true}>
               <FieldModelRenderer model={fork} />
