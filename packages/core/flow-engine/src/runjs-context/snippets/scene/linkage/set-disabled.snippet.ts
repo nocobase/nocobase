@@ -12,7 +12,27 @@ export default {
   prefix: 'sn-link-disable',
   label: 'Set disabled',
   content: `
-// Assume the target field model (fieldModel) is resolved
-setProps(fieldModel, { disabled: true });
+const targetFieldUid = 'FIELD_UID_OR_NAME';
+const disabled = true;
+
+const items = ctx.model?.subModels?.grid?.subModels?.items;
+const candidates: any[] = Array.isArray(items)
+  ? items
+  : Array.from(items?.values?.() || items || []);
+const fieldModel =
+  candidates.find((item) => item?.uid === targetFieldUid) ||
+  candidates.find((item) => item?.props?.name === targetFieldUid);
+
+if (!fieldModel) {
+  ctx.message?.warning?.(ctx.t('Field {{name}} not found', { name: targetFieldUid }));
+  return;
+}
+
+fieldModel.setProps({ disabled });
+ctx.message?.success?.(
+  ctx.t(disabled ? 'Disabled field {{name}}' : 'Enabled field {{name}}', {
+    name: fieldModel?.props?.label || targetFieldUid,
+  }),
+);
 `,
 };

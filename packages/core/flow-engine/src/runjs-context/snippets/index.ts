@@ -24,6 +24,9 @@ export const engineSnippets: EngineSnippetMap = {
   'global/notification-open': () => import('./global/notification-open.snippet'),
   'global/window-open': () => import('./global/window-open.snippet'),
   'global/console-log-ctx': () => import('./global/console-log-ctx.snippet'),
+  'global/open-view-drawer': () => import('./global/open-view-drawer.snippet'),
+  'global/open-view-dialog': () => import('./global/open-view-dialog.snippet'),
+  'global/view-navigation-push': () => import('./global/view-navigation-push.snippet'),
   // libs
   'libs/echarts-init': () => import('./libs/echarts-init.snippet'),
   // scene/jsblock
