@@ -89,18 +89,9 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   render() {
     const props = this.props;
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
-    // const linkStyle = props.type === 'link' ? { paddingLeft: 0, paddingRight: 0 } : {};
 
     return (
-      <Button
-        {...props}
-        onClick={this.onClick.bind(this)}
-        icon={icon}
-        // style={{
-        //   // ...linkStyle,
-        //   ...props.style,
-        // }}
-      >
+      <Button {...props} onClick={this.onClick.bind(this)} icon={icon}>
         {props.children || props.title}
       </Button>
     );

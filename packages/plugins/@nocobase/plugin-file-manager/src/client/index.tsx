@@ -18,8 +18,8 @@ import { AttachmentFieldInterface } from './interfaces/attachment';
 import { NAMESPACE } from './locale';
 import { storageTypes } from './schemas/storageTypes';
 import { FileCollectionTemplate } from './templates';
-import { DisplayPreviewFieldModel } from './fieldModels/DisplayPreviewFieldModel';
-
+import { DisplayPreviewFieldModel } from './models/DisplayPreviewFieldModel';
+import { UploadActionModel } from './models/UploadActionModel';
 export class PluginFileManagerClient extends Plugin {
   // refer by plugin-field-attachment-url
   static buildInStorage = [STORAGE_TYPE_LOCAL, STORAGE_TYPE_ALI_OSS, STORAGE_TYPE_S3, STORAGE_TYPE_TX_COS];
@@ -67,7 +67,7 @@ export class PluginFileManagerClient extends Plugin {
       FileSizeField,
     });
 
-    this.flowEngine.registerModels({ DisplayPreviewFieldModel });
+    this.flowEngine.registerModels({ DisplayPreviewFieldModel, UploadActionModel });
   }
 
   registerStorageType(name: string, options) {
