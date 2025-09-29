@@ -48,7 +48,7 @@ export const pattern = defineAction({
           : 'editable',
     };
   },
-  afterParamsSave: async (ctx, params, previousParams) => {
+  afterParamsSave: async (ctx: any, params, previousParams) => {
     const { model } = ctx;
 
     if (params.pattern === 'readPretty') {

@@ -31,7 +31,7 @@ export const SelectOptions = (props) => {
       value: field.name,
       label: compile(field.options.uiSchema?.title) || field.name,
     }));
-  return <Select {...props} options={options} />;
+  return (<Select {...props} options={options} />) as any;
 };
 
 export const titleField = defineAction({

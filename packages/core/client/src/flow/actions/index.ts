@@ -11,7 +11,7 @@ export * from './confirm';
 export * from './dataScope';
 export * from './openView';
 export * from './runjs';
-export * from './titleField';
+export { titleField } from './titleField';
 export * from './dateTimeFormat';
 export * from './sortingRules';
 export * from './dataLoadingMode';
@@ -34,5 +34,5 @@ export {
   linkageAssignField,
   linkageRunjs,
 } from './linkageRules';
-export * from './displayFieldComponent';
+export { displayFieldComponent } from './displayFieldComponent';
 export * from './overflowMode';

@@ -51,7 +51,7 @@ export const displayFieldComponent = defineAction({
     };
   },
 
-  beforeParamsSave: async (ctx, params, previousParams) => {
+  beforeParamsSave: async (ctx: any, params, previousParams) => {
     const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
     const { titleField } = ctx.model.props;
     let titleFieldClasses = [];
