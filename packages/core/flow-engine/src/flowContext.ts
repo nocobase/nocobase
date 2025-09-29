@@ -1219,7 +1219,17 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       });
     });
     this.defineMethod('createJSRunner', function (options?: JSRunnerOptions) {
-      return createJSRunnerWithVersion.call(this, options as any);
+      // return createJSRunnerWithVersion.call(this, options as any);
+      const runCtx = new FlowRunjsContext(this.createProxy());
+      return new JSRunner({
+        ...options,
+        globals: {
+          ctx: runCtx,
+          window: createSafeWindow(),
+          document: createSafeDocument(),
+          ...options?.globals,
+        },
+      });
     });
     // 复制文本到剪贴板（优先使用 Clipboard API，降级到 execCommand）
     this.defineMethod('copyToClipboard', async (text: string) => {
@@ -1389,8 +1399,9 @@ export class FlowModelContext extends BaseFlowModelContext {
       },
     });
     this.defineMethod('openView', async function (uid: string, options) {
-      if (options.defineProperties || options.defineMethod) {
-        options.navigation = false; // 强制不使用路由导航, 避免刷新页面时丢失上下文
+      const opts = { ...options };
+      if (opts.defineProperties || opts.defineMethod) {
+        opts.navigation = false; // 强制不使用路由导航, 避免刷新页面时丢失上下文
       }
       let model: FlowModel | null = null;
       model = await this.engine.loadModel({ uid });
@@ -1404,7 +1415,7 @@ export class FlowModelContext extends BaseFlowModelContext {
           stepParams: {
             popupSettings: {
               openView: {
-                ..._.pick(options, ['dataSourceKey', 'collectionName', 'associationName']),
+                ..._.pick(opts, ['dataSourceKey', 'collectionName', 'associationName']),
               },
             },
           },
@@ -1415,19 +1426,23 @@ export class FlowModelContext extends BaseFlowModelContext {
         model.setStepParams('popupSettings', {
           openView: {
             ...model.getStepParams('popupSettings')?.openView,
-            ..._.pick(options, ['dataSourceKey', 'collectionName', 'associationName']),
+            ..._.pick(opts, ['dataSourceKey', 'collectionName', 'associationName']),
           },
         });
         await model.save();
       }
 
-      // viewUid 如何确定? 如果是内嵌视图，则为父模型 uid，否则为子模型 uid
-      const viewUid = model.stepParams?.popupSettings?.openView ? model.uid : this.model.uid;
-      model.context.defineProperty('inputArgs', { value: { ...(options || {}), viewUid } });
+      // 路由层级的 viewUid：优先使用 routeViewUid（仅用于路由展示）；
+      // 否则回退到 opts.viewUid；再否则沿用原有规则（若子模型具备弹窗配置则使用子模型 uid，否则使用发起者 uid）。
+      const viewUid =
+        (opts as any)?.routeViewUid ??
+        opts?.viewUid ??
+        (model.stepParams?.popupSettings?.openView ? model.uid : this.model.uid);
+      // 不向子模型持久写入 context.inputArgs，避免后续“直接点击子模型按钮”读取到旧的 viewUid 造成路由污染。
       const parentView = this.view;
       // 统一语义：为即将打开的外部视图定义一个 PendingView（占位视图）
-      const pendingType = (options?.isMobileLayout ? 'embed' : options?.mode || 'drawer') as any;
-      const pendingInputArgs = { ...(options || {}), viewUid };
+      const pendingType = (opts?.isMobileLayout ? 'embed' : opts?.mode || 'drawer') as any;
+      const pendingInputArgs = { ...opts, viewUid, navigation: opts.navigation };
       pendingInputArgs.filterByTk = pendingInputArgs.filterByTk || this.inputArgs?.filterByTk;
       pendingInputArgs.sourceId = pendingInputArgs.sourceId || this.inputArgs?.sourceId;
 
@@ -1435,15 +1450,17 @@ export class FlowModelContext extends BaseFlowModelContext {
         type: pendingType,
         inputArgs: pendingInputArgs,
         navigation: parentView?.navigation,
-        preventClose: !!options?.preventClose,
+        preventClose: !!opts?.preventClose,
         engineCtx: this.engine.context,
       };
       model.context.defineProperty('view', { value: pendingView });
       await model.dispatchEvent('click', {
         // navigation: false, // TODO: 路由模式有bug，不支持多层同样viewId的弹窗，因此这里默认先用false
         // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
-        ...options,
+        ...opts,
       });
+      // 清理 pending view，避免污染子模型 context（例如后续直接点击该模型按钮时被遗留 viewUid 干扰）
+      model.context.defineProperty('view', { value: undefined });
     });
     this.defineMethod('getEvents', function (this: BaseFlowModelContext) {
       return this.model.getEvents();

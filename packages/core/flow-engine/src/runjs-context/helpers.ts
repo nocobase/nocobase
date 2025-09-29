@@ -33,8 +33,8 @@ export function createJSRunnerWithVersion(this: FlowContext, options?: JSRunnerO
   const version = (options?.version as RunJSVersion) || ('v1' as RunJSVersion);
   const modelClass = getModelClassName(this);
   const Ctor =
-    // RunJSContextRegistry.resolve(version, modelClass) ||
-    // RunJSContextRegistry.resolve('latest' as RunJSVersion, modelClass) ||
+    RunJSContextRegistry.resolve(version, modelClass) ||
+    RunJSContextRegistry.resolve('latest' as RunJSVersion, modelClass) ||
     FlowRunJSContext;
   const runCtx = new Ctor((this as any).createProxy ? (this as any).createProxy() : (this as any));
   const def = (Ctor as any).injectDefaultGlobals?.() || {};
