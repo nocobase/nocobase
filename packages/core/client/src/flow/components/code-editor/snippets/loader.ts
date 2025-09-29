@@ -24,8 +24,12 @@ function buildLocalModuleMap(): ModuleLoader {
     if (anyMeta && typeof anyMeta.glob === 'function') {
       return anyMeta.glob('./**/*.snippet.{ts,js}', { eager: false });
     }
-  } catch (_) {
-    //ignore
+  } catch (err) {
+    try {
+      console.debug?.('[snippets/loader] import.meta.glob not available', err);
+    } catch (_) {
+      void 0;
+    }
   }
   // Fallback: webpack/rspack require.context
   try {
@@ -37,8 +41,12 @@ function buildLocalModuleMap(): ModuleLoader {
       });
       return map;
     }
-  } catch (_) {
-    // ignore
+  } catch (err) {
+    try {
+      console.debug?.('[snippets/loader] require.context not available', err);
+    } catch (_) {
+      void 0;
+    }
   }
   return {} as ModuleLoader;
 }
@@ -78,7 +86,12 @@ export async function loadSnippets(snipastes: Record<string, any>): Promise<Reco
     if (def && typeof def === 'object' && typeof (def as any).$ref === 'string') {
       try {
         out[name] = { ...def, body: await loadOne((def as any).$ref) };
-      } catch (_) {
+      } catch (err) {
+        try {
+          console.debug?.('[snippets/loader] missing snippet ref', (def as any).$ref, err);
+        } catch (_) {
+          void 0;
+        }
         out[name] = def; // keep as is if missing
       }
     } else {
@@ -149,8 +162,12 @@ export async function loadSnippetsForContext(ctxClassName: string, version = 'v1
         const name = meta?.label || deriveNameFromKey(key);
         const prefix = meta?.prefix || name;
         entries.push({ name, prefix, description: meta?.description, body, ref: key, group: groupFromKey(key) });
-      } catch (_) {
-        // ignore single failure
+      } catch (err) {
+        try {
+          console.debug?.('[snippets/loader] load module failed', key, err);
+        } catch (_) {
+          void 0;
+        }
       }
     }),
   );

@@ -14,9 +14,14 @@ export const WRAPPER_PRELUDE_LINES = 2; // (async () => {\n  try {\n  // user co
 
 export function clearDiagnostics(view: EditorView | null | undefined) {
   try {
-    if (view) setDiagnostics(view as any, []);
-  } catch (_) {
-    // ignore
+    if (view) setDiagnostics(view.state, []);
+  } catch (err) {
+    // Debug: failed to clear diagnostics
+    try {
+      console.debug?.('[errorHelpers] clearDiagnostics failed', err);
+    } catch (_) {
+      void 0;
+    }
   }
 }
 
@@ -52,10 +57,15 @@ export function markErrorAt(
     const from = Math.min(lineInfo.from + Math.max(0, column - 1), lineInfo.to);
     const to = from;
     const diags: Diagnostic[] = [{ from, to, severity: 'error', message }];
-    setDiagnostics(view as any, diags);
+    setDiagnostics(view.state, diags);
     view.dispatch({ selection: { anchor: from }, scrollIntoView: true });
-  } catch (_) {
-    // ignore
+  } catch (err) {
+    // Debug: failed to mark diagnostics
+    try {
+      console.debug?.('[errorHelpers] markErrorAt failed', err);
+    } catch (_) {
+      void 0;
+    }
   }
 }
 
@@ -66,7 +76,12 @@ export function jumpTo(view: EditorView, line: number, column: number, wrapperPr
     const lineInfo = view.state.doc.line(Math.min(userLine, view.state.doc.lines));
     const from = Math.min(lineInfo.from + Math.max(0, column - 1), lineInfo.to);
     view.dispatch({ selection: { anchor: from }, scrollIntoView: true });
-  } catch (_) {
-    // ignore
+  } catch (err) {
+    // Debug: failed to jump to error position
+    try {
+      console.debug?.('[errorHelpers] jumpTo failed', err);
+    } catch (_) {
+      void 0;
+    }
   }
 }
