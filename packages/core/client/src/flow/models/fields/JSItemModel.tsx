@@ -126,6 +126,7 @@ JSItemModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
+          version: 'v1',
           code: `
 ctx.element.innerHTML = \`
   <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;">
@@ -136,12 +137,12 @@ ctx.element.innerHTML = \`
         };
       },
       async handler(ctx, params) {
-        const { code = '' } = params || {};
+        const { code = '', version = 'v1' } = params || {};
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
-          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
+          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
         });
       },
     },

@@ -55,6 +55,7 @@ JSFormActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
+          version: 'v1',
           code: `
 const values = ctx.form?.getFieldsValue?.() || {};
 ctx.message.success('Current form values: ' + JSON.stringify(values));
@@ -62,7 +63,7 @@ ctx.message.success('Current form values: ' + JSON.stringify(values));
         };
       },
       async handler(ctx, params) {
-        const { code = '' } = params || {};
+        const { code = '', version = 'v1' } = params || {};
         ctx.defineMethod('refresh', async () => {
           if (ctx.blockModel?.resource?.refresh) {
             await ctx.blockModel.resource.refresh();
@@ -70,7 +71,7 @@ ctx.message.success('Current form values: ' + JSON.stringify(values));
             await ctx.resource.refresh();
           }
         });
-        await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
+        await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
       },
     },
   },

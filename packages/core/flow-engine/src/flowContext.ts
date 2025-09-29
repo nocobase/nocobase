@@ -26,6 +26,7 @@ import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
 import { FlowI18n } from './flowI18n';
 import { JSRunner, JSRunnerOptions } from './JSRunner';
+import { createJSRunnerWithVersion } from './runjs-context';
 import { FlowModel, ForkFlowModel } from './models';
 import {
   APIResource,
@@ -929,7 +930,7 @@ class BaseFlowEngineContext extends FlowContext {
    */
   declare renderJson: (template: JSONValue) => Promise<any>;
   declare resolveJsonTemplate: (template: JSONValue) => Promise<any>;
-  declare runjs: (code: string, variables?: Record<string, any>) => Promise<any>;
+  declare runjs: (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) => Promise<any>;
   declare copyToClipboard: (text: string) => Promise<void>;
   declare getAction: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
     name: string,
@@ -1002,9 +1003,11 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     this.defineMethod('t', (keyOrTemplate: string, options?: any) => {
       return i18n.translate(keyOrTemplate, options);
     });
-    this.defineMethod('runjs', async (code, variables) => {
+    this.defineMethod('runjs', async (code, variables, options?: JSRunnerOptions) => {
+      const mergedGlobals = { ...(options?.globals || {}), ...(variables || {}) };
       const runner = this.createJSRunner({
-        globals: variables,
+        ...(options || {}),
+        globals: mergedGlobals,
       });
       return runner.run(code);
     });
@@ -1215,17 +1218,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         );
       });
     });
-    this.defineMethod('createJSRunner', function (options) {
-      const runCtx = new FlowRunjsContext(this.createProxy());
-      return new JSRunner({
-        ...options,
-        globals: {
-          ctx: runCtx,
-          window: createSafeWindow(),
-          document: createSafeDocument(),
-          ...options?.globals,
-        },
-      });
+    this.defineMethod('createJSRunner', function (options?: JSRunnerOptions) {
+      return createJSRunnerWithVersion.call(this, options as any);
     });
     // 复制文本到剪贴板（优先使用 Clipboard API，降级到 execCommand）
     this.defineMethod('copyToClipboard', async (text: string) => {
@@ -1570,9 +1564,10 @@ export class FlowRuntimeContext<
     this.defineMethod('onRefReady', (ref, cb, timeout) => {
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
-    this.defineMethod('runjs', async (code, variables) => {
+    this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
       const runner = this.createJSRunner({
         globals: variables,
+        version: options?.version,
       });
       return runner.run(code);
     });
