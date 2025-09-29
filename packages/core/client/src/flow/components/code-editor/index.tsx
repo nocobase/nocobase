@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import type { Completion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
@@ -36,6 +36,8 @@ interface CodeEditorProps {
   extraCompletions?: Completion[]; // 供外部注入的静态补全
   version?: string; // runjs 版本（默认 v1）
 }
+
+export * from './types';
 
 export const CodeEditor: React.FC<CodeEditorProps & InjectableRendingEventTriggerProps> = (props) => {
   const { mode, name, ...rest } = props;
