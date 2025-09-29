@@ -264,7 +264,7 @@ DetailsItemModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps({
           titleField: params.label,
-          ...ctx.collectionField.targetCollection.getField(params.label).getComponentProps(),
+          ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
         });
       },
     },
