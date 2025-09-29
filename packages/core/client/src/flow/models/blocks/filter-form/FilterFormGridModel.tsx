@@ -66,7 +66,7 @@ export class FilterFormGridModel extends GridModel {
       return;
     }
 
-    const { dataSourceKey, collectionName, fieldPath } = subModel.getFieldSettingsInitParams();
+    const { fieldPath } = subModel.getFieldSettingsInitParams();
     const allDataModels = getAllDataModels(subModel.context.blockGridModel);
 
     // 1. 通过 dataSourceKey 和 collectionName 找到对应的区块 Model
@@ -75,19 +75,17 @@ export class FilterFormGridModel extends GridModel {
         return false;
       }
 
-      if (!dataSourceKey || !collectionName) {
-        return model.uid === subModel.defaultTargetUid;
-      }
-
-      const collection = model.collection;
-      return collection && collection.dataSourceKey === dataSourceKey && collection.name === collectionName;
+      return model.uid === subModel.defaultTargetUid;
     });
 
     // 2. 将找到的 Model 的 uid 添加到 subModel 的 targets 中，包括 fieldPath
     if (matchingModels.length > 0) {
       const targets = matchingModels.map((model: CollectionBlockModel) => {
-        if (model.collection) {
-          const field = model.collection.getField(fieldPath);
+        // model.collection 是普通区块，model.context.collection 是图表区块
+        const collection = model.collection || model.context.collection;
+
+        if (collection) {
+          const field = collection.getField(fieldPath);
 
           // 如果是关系字段，需要把 targetKey 拼上，不然筛选时会报错
           if (field.target) {
