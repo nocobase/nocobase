@@ -134,7 +134,6 @@ EditFormModel.registerFlow({
 
           const currentRecord = {
             ...ctx.model.getCurrentRecord(),
-            ...omitBy(ctx.model.context.formValues, isUndefined),
           };
           if (!currentRecord) {
             return;

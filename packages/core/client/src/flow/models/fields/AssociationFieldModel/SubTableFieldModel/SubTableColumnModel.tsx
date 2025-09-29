@@ -272,7 +272,7 @@ SubTableColumnModel.registerFlow({
   steps: {
     init: {
       async handler(ctx, params) {
-        const collectionField = ctx.model.collectionField;
+        const collectionField = ctx.model.context.collectionField;
         if (!collectionField) {
           return;
         }

@@ -352,7 +352,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
       };
     } else {
       return {
-        showTotal: false,
+        // showTotal: false,
         simple: true,
         showTitle: false,
         showSizeChanger: true,
