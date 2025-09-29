@@ -14,7 +14,6 @@ import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { Model } from '@nocobase/database';
 import { stripToolCallTags } from '../utils';
 import { AIMessageChunk } from '@langchain/core/messages';
-import url from 'packages/core/client/src/schema-component/antd/input/demos/url';
 
 const OPENAI_URL = 'https://api.openai.com/v1';
 
