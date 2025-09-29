@@ -18,7 +18,7 @@ export class JSRecordActionRunJSContext extends FlowRunJSContext {
 }
 
 JSRecordActionRunJSContext.define({
-  label: 'JSRecordAction RunJS 上下文',
+  label: 'JSRecordAction RunJS context',
   properties: {
     record: '当前记录（只读）',
     filterByTk: '主键/过滤键（只读）',

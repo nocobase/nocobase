@@ -23,7 +23,7 @@ export class FormJSFieldItemRunJSContext extends FlowRunJSContext {
 }
 
 FormJSFieldItemRunJSContext.define({
-  label: 'FormJSFieldItem RunJS 上下文',
+  label: 'FormJSFieldItem RunJS context',
   properties: {
     element: 'ElementProxy，表单字段容器',
     value: '字段值（读/受控场景需通过 setProps 修改）',

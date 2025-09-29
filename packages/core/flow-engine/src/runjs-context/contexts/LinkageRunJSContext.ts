@@ -18,7 +18,7 @@ export class LinkageRunJSContext extends FlowRunJSContext {
 }
 
 LinkageRunJSContext.define({
-  label: 'Linkage RunJS 上下文',
+  label: 'Linkage RunJS context',
   properties: {
     model: '当前块/字段模型（只读访问）',
     fields: '可访问的字段集合（只读）',

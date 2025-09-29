@@ -23,7 +23,7 @@ export class JSItemRunJSContext extends FlowRunJSContext {
 }
 
 JSItemRunJSContext.define({
-  label: 'JSItem RunJS 上下文',
+  label: 'JSItem RunJS context',
   properties: {
     element: 'ElementProxy，表单项渲染容器',
     resource: '当前资源（只读）',

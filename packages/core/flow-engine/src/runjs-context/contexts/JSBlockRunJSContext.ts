@@ -24,7 +24,7 @@ export class JSBlockRunJSContext extends FlowRunJSContext {
 }
 
 JSBlockRunJSContext.define({
-  label: 'JSBlock RunJS 上下文',
+  label: 'JSBlock RunJS context',
   properties: {
     element: 'ElementProxy，安全 DOM 容器。支持 innerHTML/append 等',
     record: '当前记录（只读，存在于数据块/详情等场景）',

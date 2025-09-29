@@ -24,7 +24,7 @@ export class JSFieldRunJSContext extends FlowRunJSContext {
 }
 
 JSFieldRunJSContext.define({
-  label: 'JSField RunJS 上下文',
+  label: 'JSField RunJS context',
   properties: {
     element: 'ElementProxy，字段渲染容器',
     value: '字段当前值（只读）',

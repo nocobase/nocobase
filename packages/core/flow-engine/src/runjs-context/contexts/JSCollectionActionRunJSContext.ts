@@ -17,7 +17,7 @@ export class JSCollectionActionRunJSContext extends FlowRunJSContext {
 }
 
 JSCollectionActionRunJSContext.define({
-  label: 'JSCollectionAction RunJS 上下文',
+  label: 'JSCollectionAction RunJS context',
   properties: {
     resource: '列表资源（选中行/分页等）',
   },

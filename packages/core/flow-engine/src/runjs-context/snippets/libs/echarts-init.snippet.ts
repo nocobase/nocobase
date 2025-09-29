@@ -10,7 +10,7 @@
 export default {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-echarts',
-  label: '加载ECharts',
+  label: 'Init ECharts',
   content: `
 ctx.element.style.height = '400px';
 const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js');

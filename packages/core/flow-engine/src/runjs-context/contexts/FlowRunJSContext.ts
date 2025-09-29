@@ -163,7 +163,7 @@ export class FlowRunJSContext {
 
 // Define base doc on FlowRunJSContext itself
 FlowRunJSContext.define({
-  label: 'RunJS 基类',
+  label: 'RunJS base',
   properties: {
     t: "国际化函数。示例：`ctx.t('Hello {name}', { name: 'World' })`",
     logger: "Pino logger 子实例。`ctx.logger.info({ foo: 1 }, 'msg')`",
