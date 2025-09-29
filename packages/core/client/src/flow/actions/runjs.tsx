@@ -26,9 +26,9 @@ export const runjs = defineAction({
     },
   },
   async handler(ctx, params) {
-    // 仅手动触发的 click 事件才有 event 参数
-    if (ctx.inputArgs.event) {
-      ctx.runjs(params.code);
-    }
+    // 如果是 URL 触发的，则不执行代码
+    if (ctx.inputArgs?.navigation) return;
+
+    ctx.runjs(params.code);
   },
 });
