@@ -17,7 +17,7 @@ import {
 import { lintGutter } from '@codemirror/lint';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { basicSetup } from 'codemirror';
-import { EditorView } from '@codemirror/view';
+import { EditorView, tooltips } from '@codemirror/view';
 import { javascriptWithHtmlTemplates } from '../javascriptHtmlTemplate';
 import { createHtmlCompletion } from '../htmlCompletion';
 import { createJavascriptCompletion } from '../javascriptCompletion';
@@ -90,6 +90,13 @@ export const EditorCore: React.FC<{
         activateOnTyping: true,
       }),
       ...(enableLinter ? [lintGutter(), createJavaScriptLinter()] : []),
+      // Force CM tooltips to render under the app container that doesn't clip (closer to Edit event flows behavior)
+      tooltips({
+        parent:
+          (document.getElementById('nocobase-embed-container') as HTMLElement) ||
+          (editorRef.current?.closest('#nocobase-embed-container') as HTMLElement) ||
+          document.body,
+      }),
       EditorView.updateListener.of((update) => {
         if (update.docChanged && !readonly) {
           const newValue = update.state.doc.toString();
