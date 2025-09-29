@@ -14,7 +14,6 @@ import axios from 'axios';
 import { encodeFile, stripToolCallTags } from '../utils';
 import { Model } from '@nocobase/database';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
-import { LLM } from '@langchain/core/language_models/llms';
 
 export class AnthropicProvider extends LLMProvider {
   declare chatModel: ChatAnthropic;

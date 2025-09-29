@@ -151,6 +151,7 @@ export const openaiProviderOptions: LLMProviderMeta = {
   supportedModel: [SupportedModel.LLM, SupportedModel.EMBEDDING],
   models: {
     [SupportedModel.LLM]: [
+      'gpt-5',
       'gpt-4.1',
       'gpt-4o',
       'chatgpt-4o',

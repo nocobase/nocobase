@@ -140,7 +140,7 @@ export class GoogleGenAIProvider extends LLMProvider {
 
 export class GoogleGenAIEmbeddingProvider extends EmbeddingProvider {
   protected getDefaultUrl(): string {
-    return GOOGLE_GEN_AI_URL;
+    return 'https://generativelanguage.googleapis.com';
   }
 
   createEmbedding(): EmbeddingsInterface {
@@ -165,7 +165,7 @@ export const googleGenAIProviderOptions: LLMProviderMeta = {
       'models/gemini-1.5-pro',
       'models/gemini-1.5-flash',
     ],
-    [SupportedModel.EMBEDDING]: ['gemini-embedding-001', 'models/text-embedding-004'],
+    [SupportedModel.EMBEDDING]: ['gemini-embedding-001'],
   },
   provider: GoogleGenAIProvider,
   embedding: GoogleGenAIEmbeddingProvider,
