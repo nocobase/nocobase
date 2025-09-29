@@ -19,9 +19,9 @@ import {
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import { Pagination, Space } from 'antd';
+import { omitBy, isUndefined } from 'lodash';
 import React from 'react';
 import { BlockSceneEnum } from '../../base';
-import { FormActionModel } from './FormActionModel';
 import { FormBlockModel, FormComponent } from './FormBlockModel';
 
 export class EditFormModel extends FormBlockModel {
@@ -128,11 +128,14 @@ EditFormModel.registerFlow({
         }
         // 编辑表单需要监听refresh事件来加载现有数据
         ctx.resource.on('refresh', async () => {
-          if (ctx.form) {
-            await ctx.form.resetFields();
-          }
+          // if (ctx.form) {
+          //   await ctx.form.resetFields();
+          // }
 
-          const currentRecord = ctx.model.getCurrentRecord();
+          const currentRecord = {
+            ...ctx.model.getCurrentRecord(),
+            ...omitBy(ctx.model.context.formValues, isUndefined),
+          };
           if (!currentRecord) {
             return;
           }
