@@ -52,13 +52,13 @@ FilterFormJSActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          version: '1.0.0',
+          version: 'v1',
           code: '',
         };
       },
       async handler(ctx, params) {
-        const { code = '' } = params;
-        await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
+        const { code = '', version = 'v1' } = params;
+        await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
       },
     },
   },

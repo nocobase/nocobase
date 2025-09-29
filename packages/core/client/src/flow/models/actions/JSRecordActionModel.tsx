@@ -24,6 +24,9 @@ export class JSRecordActionModel extends RecordActionModel {
 JSRecordActionModel.define({
   label: escapeT('JS action'),
   sort: 9999,
+  createModelOptions: {
+    use: 'JSRecordActionModel',
+  },
 });
 
 JSRecordActionModel.registerFlow({
@@ -60,6 +63,7 @@ JSRecordActionModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
+          version: 'v1',
           code: `
 if (!ctx.record) {
   ctx.message.error('未获取到记录');
@@ -70,8 +74,8 @@ if (!ctx.record) {
         };
       },
       async handler(ctx, params) {
-        const { code = '' } = params || {};
-        await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
+        const { code = '', version = 'v1' } = params || {};
+        await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
       },
     },
   },
