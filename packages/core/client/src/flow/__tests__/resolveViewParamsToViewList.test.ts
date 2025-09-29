@@ -69,8 +69,8 @@ describe('resolveViewParamsToViewList', () => {
     expect(result[1].model).toBe(model2);
     expect(result[2].model).toBe(model3);
 
-    expect(mockFlowEngine.getModel).toHaveBeenCalledWith('view2');
-    expect(mockFlowEngine.getModel).toHaveBeenCalledWith('view3');
+    expect(mockFlowEngine.getModel).toHaveBeenCalledWith('view2', true);
+    expect(mockFlowEngine.getModel).toHaveBeenCalledWith('view3', true);
     expect(mockFlowEngine.loadModel).toHaveBeenCalledWith({ uid: 'view2' });
   });
 

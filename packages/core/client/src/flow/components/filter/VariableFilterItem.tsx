@@ -20,8 +20,13 @@ import {
   parseValueToPath,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
-import { DateFilterDynamicComponent } from '../../../schema-component';
 import { NumberPicker } from '@formily/antd-v5';
+import { lazy } from '../../../lazy-helper';
+
+const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
+  () => import('../../../schema-component'),
+  'DateFilterDynamicComponent',
+);
 
 export interface VariableFilterItemValue {
   path: string;
@@ -68,7 +73,7 @@ function createStaticInputRenderer(
     if (xComp === 'Switch') return <Switch {...commonProps} {...rest} checked={!!value} onChange={onChange} />;
     if (xComp === 'Select') return <Select {...commonProps} {...rest} value={value} onChange={onChange} />;
     if (xComp === 'DateFilterDynamicComponent')
-      return <DateFilterDynamicComponent {...commonProps} {...rest} value={value} onChange={onChange} />;
+      return <DateFilterDynamicComponentLazy {...commonProps} {...rest} value={value} onChange={onChange} />;
     // 普通文本输入：透传组合输入事件，避免 IME 被中断
     return <Input {...commonProps} {...rest} value={value} onChange={(e) => onChange?.(e?.target?.value)} />;
   };
