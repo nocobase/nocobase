@@ -11,6 +11,7 @@ import PluginAIServer from '../plugin';
 import dataModeling from '../ai-employees/built-in/data-modeling';
 import formFiller from '../ai-employees/built-in/form-filler';
 import aiCoding from '../ai-employees/built-in/ai-coding';
+import type { AIEmployee } from '../../collections/ai-employees';
 
 const DEFAULT_LANGUAGE = 'en-US';
 const DEFAULT_KNOWLEDGE_BASE = {
@@ -23,8 +24,25 @@ const DEFAULT_KNOWLEDGE_BASE_PROMPT =
 
 export class BuiltInManager {
   private builtInEmployees = [dataModeling, formFiller, aiCoding];
+  private builtInEmployeeMap = Object.fromEntries(this.builtInEmployees.map((x) => [x.username, x]));
 
   constructor(protected plugin: PluginAIServer) {}
+
+  setupBuiltInInfo(locale: string, aiEmployee: AIEmployee) {
+    const builtInEmployeeInfo = this.builtInEmployeeMap[aiEmployee.username];
+    if (!builtInEmployeeInfo) {
+      return;
+    }
+    const { profile } = builtInEmployeeInfo;
+    const { avatar, nickname, position, bio, greeting, about } = profile[locale] ?? profile[DEFAULT_LANGUAGE];
+    aiEmployee.avatar = avatar;
+    aiEmployee.nickname = nickname;
+    aiEmployee.position = position;
+    aiEmployee.bio = bio;
+    aiEmployee.greeting = greeting;
+    aiEmployee.about = about;
+    aiEmployee.skillSettings = builtInEmployeeInfo.skillSettings;
+  }
 
   async createOrUpdateAIEmployee(language = DEFAULT_LANGUAGE) {
     const aiEmployeesRepo = this.plugin.db.getRepository('aiEmployees');

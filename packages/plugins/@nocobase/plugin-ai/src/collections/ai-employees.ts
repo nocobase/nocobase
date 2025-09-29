@@ -98,3 +98,26 @@ export default {
     },
   ],
 };
+
+export type AIEmployee = {
+  username: string;
+  nickname?: string;
+  position?: string;
+  avatar?: string;
+  bio?: string;
+  about?: string;
+  greeting?: string;
+  chatSettings?: unknown;
+  skillSettings?: unknown;
+  modelSettings?: unknown;
+  dataSourceSettings?: unknown;
+  knowledgeBasePrompt?: string;
+  knowledgeBase?: {
+    topK: number;
+    score: string;
+    knowledgeBaseIds: string[];
+  };
+  enableKnowledgeBase: boolean;
+  enabled: boolean;
+  builtIn: boolean;
+};

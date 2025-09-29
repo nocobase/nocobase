@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { jsonrepair } from 'jsonrepair';
 import { Model, Transaction } from '@nocobase/database';
 import { Context } from '@nocobase/actions';
 import { LLMProvider } from '../llm-providers/provider';
@@ -17,13 +16,13 @@ import PluginAIServer from '../plugin';
 import { parseVariables } from '../utils';
 import { getSystemPrompt } from './prompts';
 import _ from 'lodash';
-import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput, WorkContextHandler } from '../types';
+import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput } from '../types';
 import { createAIChatConversation } from '../manager/ai-chat-conversation';
 import { DocumentSegmentedWithScore } from '../features';
 import { KnowledgeBaseGroup } from '../types';
 import { EEFeatures } from '../manager/ai-feature-manager';
 import { ChatPromptTemplate } from '@langchain/core/prompts';
-import { createWorkContextHandler } from '../manager/work-context-handler';
+import type { AIEmployee as AIEmployeeType } from '../../collections/ai-employees';
 
 type ToolMessage = {
   id: string;
@@ -65,6 +64,10 @@ export class AIEmployee {
     this.systemMessage = systemMessage;
     this.aiChatConversation = createAIChatConversation(this.ctx, this.sessionId);
     this.skillSettings = skillSettings;
+
+    const locale = this.ctx.getCurrentLocale();
+    const builtInManager = this.plugin.builtInManager;
+    builtInManager.setupBuiltInInfo(locale, this.employee as unknown as AIEmployeeType);
   }
 
   async getLLMService() {

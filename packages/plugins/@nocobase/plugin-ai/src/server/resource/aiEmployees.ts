@@ -7,14 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Context, Next } from '@nocobase/actions';
+import actions, { Context, Next } from '@nocobase/actions';
 import * as templates from '../ai-employees/templates';
+import PluginAIServer from '../plugin';
+import type { AIEmployee } from '../../collections/ai-employees';
+
+export const list = async (ctx: Context, next: Next) => {
+  const plugin = ctx.app.pm.get('ai') as PluginAIServer;
+  const builtInManager = plugin.builtInManager;
+
+  await actions.list(ctx as Context, () => {});
+
+  const locale = ctx.getCurrentLocale();
+  ctx.body.rows.forEach((row) => {
+    if (row.builtIn) {
+      builtInManager.setupBuiltInInfo(locale, row as AIEmployee);
+    }
+  });
+
+  await next();
+};
 
 export const listByUser = async (ctx: Context, next: Next) => {
+  const plugin = ctx.app.pm.get('ai') as PluginAIServer;
   const user = ctx.auth.user;
   const model = ctx.db.getModel('aiEmployees');
   const sequelize = ctx.db.sequelize;
   const roles = ctx.state.currentRoles;
+  const builtInManager = plugin.builtInManager;
   let where: any = {
     enabled: true,
   };
@@ -55,6 +75,14 @@ export const listByUser = async (ctx: Context, next: Next) => {
       [sequelize.fn('COALESCE', sequelize.col('userConfigs.sort'), sequelize.col('aiEmployees.sort')), 'ASC'],
     ],
   });
+
+  const locale = ctx.getCurrentLocale();
+  rows.forEach((row) => {
+    if (row.builtIn) {
+      builtInManager.setupBuiltInInfo(locale, row as unknown as AIEmployee);
+    }
+  });
+
   ctx.body = rows.map((row) => ({
     username: row.username,
     nickname: row.nickname,
