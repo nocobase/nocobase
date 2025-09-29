@@ -69,7 +69,7 @@ export class FilterFormGridModel extends GridModel {
     const { fieldPath } = subModel.getFieldSettingsInitParams();
     const allDataModels = getAllDataModels(subModel.context.blockGridModel);
 
-    // 1. 通过 dataSourceKey 和 collectionName 找到对应的区块 Model
+    // 1. 找到字段对应的区块 Model
     const matchingModels = allDataModels.filter((model: CollectionBlockModel) => {
       if (!model.resource?.supportsFilter) {
         return false;
