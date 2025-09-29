@@ -476,9 +476,6 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
               >
                 {tr('Run')}
               </Button>
-              <Button size="small" onClick={() => setLogs([])}>
-                {tr('Clear Logs')}
-              </Button>
             </>
           </div>
         }
@@ -509,7 +506,7 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
       >
         <div style={{ fontWeight: 600, marginBottom: 6 }}>{tr('Logs')}</div>
         {logs.length === 0 ? (
-          <div style={{ color: '#999' }}>{tr('No logs yet. Click Run to execute.')}</div>
+          <div style={{ color: '#999' }}>{tr('No logs yet. Click run to execute.')}</div>
         ) : (
           logs.map((l, i) => {
             const color = l.level === 'error' ? '#ff4d4f' : l.level === 'warn' ? '#faad14' : '#333';
@@ -666,8 +663,9 @@ const RightExtra: React.FC<{
   return (
     <Flex gap="middle" justify="flex-end" align="center" style={style}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        {rightExtra?.map((fn) => fn(extraEditorRef, setActive))}
+        {/* 内置按钮（Snippets / Run）优先渲染，第三方扩展按钮靠右侧 */}
         {extraContent}
+        {rightExtra?.map((fn) => fn(extraEditorRef, setActive))}
       </div>
     </Flex>
   );
