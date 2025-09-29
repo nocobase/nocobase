@@ -222,31 +222,32 @@ const PreviewButton = ({ style }) => {
   const ctx = useFlowContext();
   const form = useForm();
   return (
-    <Badge dot offset={[-8, 2]}>
-      <Button
-        type="default"
-        style={style}
-        icon={<EyeOutlined />}
-        onClick={async () => {
-          // 这里通过普通的 form.values 拿不到数据
-          const formValues = ctx.getStepFormValues('chartSettings', 'configure');
-          const query = formValues?.query || {};
+    // <Badge dot offset={[-8, 2]}>
+    <Button
+      color="primary"
+      variant="outlined"
+      style={style}
+      icon={<EyeOutlined />}
+      onClick={async () => {
+        // 这里通过普通的 form.values 拿不到数据
+        const formValues = ctx.getStepFormValues('chartSettings', 'configure');
+        const query = formValues?.query || {};
 
-          if (query.mode === 'builder') {
-            await form.submit();
-          }
+        if (query.mode === 'builder') {
+          await form.submit();
+        }
 
-          ctx.model.checkResource(query); // 保证 resource 正确
-          if (query?.mode === 'sql') {
-            // 开启 debug 模式，sql 查询不要走 runById
-            (ctx.model.resource as SQLResource).setDebug(true);
-          }
-          ctx.model.setParamsAndRerender(formValues || {});
-        }}
-      >
-        {t('Preview')}
-      </Button>
-    </Badge>
+        ctx.model.checkResource(query); // 保证 resource 正确
+        if (query?.mode === 'sql') {
+          // 开启 debug 模式，sql 查询不要走 runById
+          (ctx.model.resource as SQLResource).setDebug(true);
+        }
+        ctx.model.setParamsAndRerender(formValues || {});
+      }}
+    >
+      {t('Preview')}
+    </Button>
+    // </Badge>
   );
 };
 
@@ -284,8 +285,8 @@ ChartBlockModel.registerFlow({
           minWidth: '510px', // 最小宽度 支持 measures field 完整展示 6 个字不换行
           footer: (originNode, { OkBtn }) => (
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
-              <PreviewButton style={{ marginRight: 6 }} />
               <CancelButton style={{ marginRight: 6 }} />
+              <PreviewButton style={{ marginRight: 6 }} />
               <OkBtn />
             </div>
           ),

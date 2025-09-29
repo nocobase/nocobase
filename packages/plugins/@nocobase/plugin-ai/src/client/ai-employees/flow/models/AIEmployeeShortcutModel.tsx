@@ -215,8 +215,8 @@ AIEmployeeShortcutModel.registerFlow({
           type: 'dialog',
           props: {
             styles: {
-              mask: { zIndex: dialogController.shouldHide ? -1 : 1000 },
-              wrapper: { zIndex: dialogController.shouldHide ? -1 : 1000 },
+              mask: { zIndex: dialogController.shouldHide ? -1 : 9999 },
+              wrapper: { zIndex: dialogController.shouldHide ? -1 : 9999 },
             },
           },
         };

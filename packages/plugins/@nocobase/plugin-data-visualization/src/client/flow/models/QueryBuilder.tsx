@@ -116,7 +116,7 @@ export const QueryBuilder: React.FC = observer(() => {
         ]}
       />
 
-      <Divider style={{ margin: '8px 0' }} />
+      <div style={{ margin: '4px 0' }} />
 
       <Collapse
         size="small"
@@ -304,7 +304,10 @@ export const QueryBuilder: React.FC = observer(() => {
                 return (
                   <FilterGroup
                     value={props.value}
-                    onChange={props.onChange}
+                    onChange={(v) => {
+                      console.log('---onChange v', v);
+                      props.onChange(v);
+                    }}
                     FilterItem={(p) => <VariableFilterItem {...p} model={ctx.model} rightAsVariable />}
                   />
                 );
@@ -407,7 +410,7 @@ export const QueryBuilder: React.FC = observer(() => {
         </Collapse.Panel>
       </Collapse>
 
-      <Divider style={{ margin: '8px 0' }} />
+      <div style={{ margin: '4px 0' }} />
 
       {/* Limit */}
       <Field
