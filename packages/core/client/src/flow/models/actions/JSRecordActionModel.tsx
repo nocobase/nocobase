@@ -24,6 +24,9 @@ export class JSRecordActionModel extends RecordActionModel {
 JSRecordActionModel.define({
   label: escapeT('JS action'),
   sort: 9999,
+  createModelOptions: {
+    use: 'JSRecordActionModel',
+  },
 });
 
 JSRecordActionModel.registerFlow({

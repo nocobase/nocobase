@@ -23,6 +23,9 @@ export class JSCollectionActionModel extends ActionModel {
 JSCollectionActionModel.define({
   label: escapeT('JS action'),
   sort: 9999,
+  createModelOptions: {
+    use: 'JSCollectionActionModel',
+  },
 });
 
 JSCollectionActionModel.registerFlow({

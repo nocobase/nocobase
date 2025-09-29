@@ -50,5 +50,16 @@ export class RunJSContextRegistry {
 
 export function getModelClassName(ctx: any): string {
   const model = ctx?.model;
-  return model?.constructor?.name || '*';
+  if (!model) return '*';
+  // 1) 优先使用类 meta 中声明的 createModelOptions.use（构建后稳定，不受构造函数名压缩影响）
+  try {
+    const Ctor = model.constructor as any;
+    const use = Ctor?.meta?.createModelOptions?.use;
+    if (typeof use === 'string' && use) return use;
+  } catch (_) {
+    // ignore
+  }
+  // 2) 回退到构造函数名（开发模式可靠，生产模式可能被压缩）
+  const byName = model?.constructor?.name;
+  return byName || '*';
 }

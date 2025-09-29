@@ -97,6 +97,9 @@ export class JSFieldModel extends FieldModel {
 
 JSFieldModel.define({
   label: escapeT('JS field'),
+  createModelOptions: {
+    use: 'JSFieldModel',
+  },
 });
 
 JSFieldModel.registerFlow({

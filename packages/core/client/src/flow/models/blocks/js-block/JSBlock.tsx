@@ -38,6 +38,9 @@ export class JSBlockModel extends BlockModel {
 
 JSBlockModel.define({
   label: escapeT('JS block'),
+  createModelOptions: {
+    use: 'JSBlockModel',
+  },
 });
 
 JSBlockModel.registerFlow({
