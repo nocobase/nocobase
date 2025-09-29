@@ -163,7 +163,7 @@ export const getFormulaInterface = (type: string) => {
 };
 
 export const isEmptyFilterObject = (filter: any) => {
-  if (filter == null) return true;
+  if (!filter) return true;
   if (Array.isArray(filter)) return filter.length === 0;
   if (typeof filter === 'object') {
     const keys = Object.keys(filter);
