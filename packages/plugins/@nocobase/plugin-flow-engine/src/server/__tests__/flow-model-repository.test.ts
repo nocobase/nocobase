@@ -25,12 +25,12 @@ describe('ui_schema repository', () => {
   beforeEach(async () => {
     app = await createMockServer({
       registerActions: true,
-      plugins: ['ui-schema-storage'],
+      plugins: ['flow-engine'],
     });
 
     db = app.db;
-    repository = db.getCollection('uiSchemas').repository as FlowModelRepository;
-    treePathCollection = db.getCollection('uiSchemaTreePath');
+    repository = db.getCollection('flowModels').repository as FlowModelRepository;
+    treePathCollection = db.getCollection('flowModelTreePath');
   });
 
   it('should insert model', async () => {
