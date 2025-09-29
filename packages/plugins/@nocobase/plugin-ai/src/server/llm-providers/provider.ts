@@ -201,13 +201,20 @@ export interface EmbeddingProviderOptions {
 }
 
 export abstract class EmbeddingProvider {
-  constructor(protected opts: EmbeddingProviderOptions) {}
+  protected app: Application;
+  protected serviceOptions?: Record<string, any>;
+  protected modelOptions?: Record<string, any>;
+  constructor(protected opts: EmbeddingProviderOptions) {
+    const { app, serviceOptions, modelOptions } = this.opts;
+    this.app = app;
+    this.serviceOptions = app.environment.renderJsonTemplate(serviceOptions ?? {});
+    this.modelOptions = modelOptions;
+  }
   abstract createEmbedding(): EmbeddingsInterface;
   protected abstract getDefaultUrl(): string;
 
   protected get apiKey() {
-    const { serviceOptions } = this.opts;
-    const { apiKey } = serviceOptions ?? {};
+    const { apiKey } = this.serviceOptions ?? {};
     if (!apiKey) {
       throw new Error('apiKey is required');
     }
@@ -215,8 +222,7 @@ export abstract class EmbeddingProvider {
   }
 
   protected get baseUrl() {
-    const { serviceOptions } = this.opts;
-    const baseUrl = serviceOptions?.baseUrl ?? this.getDefaultUrl();
+    const baseUrl = this.serviceOptions?.baseUrl ?? this.getDefaultUrl();
     if (!baseUrl) {
       throw new Error('baseUrl is required');
     }
@@ -224,8 +230,7 @@ export abstract class EmbeddingProvider {
   }
 
   protected get model() {
-    const { modelOptions } = this.opts;
-    const { model } = modelOptions ?? {};
+    const { model } = this.modelOptions ?? {};
     if (!model) {
       throw new Error('Embedding model is required');
     }
