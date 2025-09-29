@@ -10,7 +10,7 @@
 export default {
   contexts: ['*'],
   prefix: 'sn-window-open',
-  label: '打开新窗口',
+  label: 'Open new window',
   description: 'Safely open a new browser window/tab',
   content: `
 // Open a new window/tab

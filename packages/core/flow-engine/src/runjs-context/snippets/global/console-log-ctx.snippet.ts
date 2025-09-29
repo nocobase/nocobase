@@ -10,7 +10,7 @@
 export default {
   contexts: ['*'],
   prefix: 'sn-log-ctx',
-  label: '打印上下文',
+  label: 'Log ctx',
   description: 'Log the whole ctx object to console',
   content: `
 console.log('ctx =>', ctx);

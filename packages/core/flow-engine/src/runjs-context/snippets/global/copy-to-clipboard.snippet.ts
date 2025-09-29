@@ -11,7 +11,7 @@ import type { SnippetModule } from '../types';
 const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-copy',
-  label: '复制文本',
+  label: 'Copy to clipboard',
   description: 'Copy a string to clipboard and show a success message',
   content: `
 await ctx.copyToClipboard(ctx.t('Text to copy'));

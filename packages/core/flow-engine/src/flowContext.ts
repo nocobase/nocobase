@@ -1375,6 +1375,7 @@ export class FlowModelContext extends BaseFlowModelContext {
     this.defineMethod('runjs', async (code, variables) => {
       const runner = this.createJSRunner({
         globals: variables,
+        version: options?.version,
       });
       return runner.run(code);
     });

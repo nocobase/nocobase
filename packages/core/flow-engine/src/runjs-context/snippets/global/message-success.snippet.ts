@@ -11,7 +11,7 @@ import type { SnippetModule } from '../types';
 const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-msg',
-  label: '消息提示',
+  label: 'Message success',
   description: 'Show a success toast message',
   content: `
 ctx.message.success(ctx.t('Operation succeeded'));

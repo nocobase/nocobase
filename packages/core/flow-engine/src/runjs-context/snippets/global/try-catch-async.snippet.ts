@@ -10,7 +10,7 @@
 export default {
   contexts: ['*'],
   prefix: 'sn-try',
-  label: 'try/catch 模板',
+  label: 'Try/catch template',
   description: 'Async try/catch template with toast message',
   content: `
 try {
