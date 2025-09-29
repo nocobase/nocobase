@@ -76,8 +76,8 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
   const wrapperRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const runtimeCtx = useFlowContext<any>();
-  const settingsCtx = useFlowSettingsContext?.() as any;
-  const hostCtx = runtimeCtx || settingsCtx;
+  // const settingsCtx = useFlowSettingsContext?.() as any;
+  const hostCtx = runtimeCtx; // || settingsCtx;
   const [dynamicCompletions, setDynamicCompletions] = useState<Completion[] | null>(null);
   const [logs, setLogs] = useState<
     { level: 'log' | 'info' | 'warn' | 'error'; msg: string; line?: number; column?: number }[]
