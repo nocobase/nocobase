@@ -45,8 +45,7 @@ function toValue(record: any | any[], fieldNames, multiple = false) {
 export function LabelByField(props) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
-  const field: any =
-    (currentModel.subModels?.field as FlowModel)?.subModels?.field || (currentModel.subModels.field as FlowModel);
+  const field: any = currentModel.subModels.field as FlowModel;
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {

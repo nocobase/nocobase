@@ -257,7 +257,6 @@ export class UploadFieldModel extends FieldModel {
     this.props.onChange(this.selectedRows.value);
   }
   render() {
-    console.log(this.props.value);
     return <CardUpload {...this.props} />;
   }
 }

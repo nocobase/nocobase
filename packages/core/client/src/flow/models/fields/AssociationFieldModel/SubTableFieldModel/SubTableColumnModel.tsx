@@ -107,28 +107,14 @@ export class SubTableColumnModel<
     );
   }
 
-  // static defineChildren(ctx: FlowModelContext) {
-  //   return buildWrapperFieldChildren(ctx, {
-  //     useModel: 'SubTableColumnModel',
-  //     fieldUseModel: (f) => {
-  //       const binding = FormItemModel.getDefaultBindingByField(ctx, f);
-  //       if (!binding) {
-  //         return;
-  //       }
-  //       const use = binding.modelName;
-
-  //       return ['CheckboxGroupEditableFieldModel', 'RadioGroupEditableFieldModel'].includes(use)
-  //         ? 'SelectEditableFieldModel'
-  //         : use;
-  //     },
-  //   });
-  // }
-
   static defineChildren(ctx: FlowModelContext) {
     const collection = (ctx.model as any).collection || ctx.collection;
     return collection
       .getFields()
       .map((field) => {
+        if (!field.interface) {
+          return null;
+        }
         const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
         if (!binding) return null;
         const fieldModel = binding.modelName;
@@ -358,10 +344,13 @@ SubTableColumnModel.registerFlow({
       defaultParams: (ctx) => {
         const model = DisplayItemModel.getDefaultBindingByField(ctx, ctx.model.collectionField);
         return {
-          use: model.modelName,
+          use: model?.modelName,
         };
       },
       async handler(ctx, params) {
+        if (!(ctx.model.subModels.field.constructor as any).isLargeField) {
+          return null;
+        }
         const field = ctx.model.collectionField;
         const use = params.use;
         const model = (ctx.model.subModels.field as FieldModel).setSubModel('readPrettyField', {
