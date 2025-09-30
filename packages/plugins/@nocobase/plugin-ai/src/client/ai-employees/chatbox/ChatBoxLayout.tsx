@@ -20,16 +20,12 @@ import { useChatToolsStore } from './stores/chat-tools';
 export const ChatBoxLayout: React.FC<{
   children: React.ReactNode;
 }> = (props) => {
-  const currentUserCtx = useContext(CurrentUserContext);
   const open = useChatBoxStore.use.open();
   const expanded = useChatBoxStore.use.expanded();
   const activeTool = useChatToolsStore.use.activeTool();
 
   useChatBoxEffect();
 
-  if (!currentUserCtx?.data?.data) {
-    return <>{props.children}</>;
-  }
   return (
     <div>
       {props.children}
