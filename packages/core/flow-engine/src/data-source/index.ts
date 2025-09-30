@@ -694,7 +694,7 @@ export class CollectionField {
     const { type, target } = this.options;
     const componentProps = _.omitBy(
       {
-        ...(this.options.uiSchema?.['x-component-props'] || {}),
+        ..._.omit(this.options.uiSchema?.['x-component-props'] || {}, 'fieldNames'),
         options: this.enum.length ? this.enum : undefined,
         mode: this.type === 'array' ? 'multiple' : undefined,
         multiple: target ? ['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) : undefined,
