@@ -1,6 +1,6 @@
 {
   "name": "@nocobase-example/plugin-nested-action",
-  "version": "2.0.0-alpha",
+  "version": "2.0.0-alpha.1",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
