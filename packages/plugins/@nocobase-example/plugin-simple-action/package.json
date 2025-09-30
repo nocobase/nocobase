@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "@nocobase-example/plugin-simple-action",
   "displayName": "Plugin example: Simple action",
   "version": "2.0.0-alpha.1",

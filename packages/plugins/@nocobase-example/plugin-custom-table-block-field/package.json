@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "@nocobase-example/plugin-custom-table-block-field",
   "displayName": "Plugin example: Custom field for table block",
   "version": "2.0.0-alpha.1",

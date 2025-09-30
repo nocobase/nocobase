@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "@nocobase-example/plugin-collection-block",
   "displayName": "Plugin example: Collection block",
   "version": "2.0.0-alpha.1",

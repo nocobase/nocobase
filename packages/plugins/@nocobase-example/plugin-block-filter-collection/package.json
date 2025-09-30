@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "@nocobase-example/plugin-block-filter-collection",
   "version": "2.0.0-alpha.1",
   "main": "dist/server/index.js",

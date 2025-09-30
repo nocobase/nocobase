@@ -1,4 +1,5 @@
 {
+  "private": true,
   "name": "@nocobase-example/plugin-action-group",
   "displayName": "Plugin example: Action group",
   "version": "2.0.0-alpha.1",
