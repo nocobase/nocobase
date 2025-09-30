@@ -40,7 +40,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
   };
 
   // 整体数据查询参数，内部 QueryBuilder 调用
-  setQueryParams(query: Record<string, any>) {
+  setQueryParams(query: Record<string, any>, mark?: string) {
     const { success, message } = this.validateQuery(query);
     if (!success) {
       // 这里过程性校验 不强制报错，只做提示
@@ -48,7 +48,8 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
       return this;
     }
     const parsed = this.parseQuery(query);
-    const { filter: qbFilter, ...rest } = parsed;
+    const { filter, ...rest } = parsed;
+    console.log('---setQueryParams parsed', parsed, mark);
 
     // 写入除 filter 以外的字段到请求体
     this.request.data = {
@@ -57,10 +58,10 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
     };
 
     // filter 通过统一处理后设置到请求体
-    if (isEmptyFilterObject(qbFilter)) {
+    if (isEmptyFilterObject(filter)) {
       this.removeFilterGroup('__qbFilter__');
     } else {
-      this.addFilterGroup('__qbFilter__', qbFilter);
+      this.addFilterGroup('__qbFilter__', filter);
     }
 
     return this;
@@ -76,7 +77,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
       return this;
     }
 
-    const cleanedRoot = removeUnparsableFilter(transformFilter(fixWrongData(filter)));
+    const cleanedRoot = removeUnparsableFilter(filter);
 
     let merged = cleanedRoot;
     if (
@@ -144,7 +145,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
         return dimension;
       }),
       // 过滤条件
-      filter: removeUnparsableFilter(query.filter),
+      filter: query.filter ? removeUnparsableFilter(transformFilter(query.filter)) : undefined,
       limit: query.limit,
       offset: query.offset,
     };

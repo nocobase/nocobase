@@ -57,8 +57,18 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     return this.context.resource as ChartResource<any> | SQLResource<any>;
   }
 
+  // 统一管理 refresh 监听引用，便于 off 解绑
+  private __onResourceRefresh = () => this.rerender();
+
   // 初始化注册 ChartResource | SQLResource
   initResource(mode = 'builder') {
+    // 1) 先拿旧实例并解绑，防止旧实例残留监听
+    const oldResource = this.resource;
+    if (oldResource instanceof ChartResource || oldResource instanceof SQLResource) {
+      oldResource.off('refresh', this.__onResourceRefresh);
+    }
+
+    // 2) 重定义 resource，创建并缓存新实例
     if (mode === 'sql') {
       this.context.defineProperty('resource', {
         get: () => {
@@ -72,10 +82,16 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       this.context.defineProperty('resource', {
         get: () => {
           const resource = this.context.createResource(ChartResource);
-          // resource.setFilterByTk(this.uid); // TDOO 是否必要？ 和 ctx.model.uid 区别？
           return resource;
         },
       });
+    }
+
+    // 3) 绑定新实例监听，确保仅绑定一次
+    const newResource = this.resource;
+    if (newResource instanceof ChartResource || newResource instanceof SQLResource) {
+      newResource.off('refresh', this.__onResourceRefresh);
+      newResource.on('refresh', this.__onResourceRefresh);
     }
   }
 
@@ -186,10 +202,18 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       if (query.mode === 'sql') {
         (this.resource as SQLResource).setSQL(query.sql);
       } else {
-        (this.resource as ChartResource).setQueryParams(query);
+        (this.resource as ChartResource).setQueryParams(query, 'from model runQueryAndUpdateResult');
       }
-      await this.resource.refresh();
-      const data = this.resource.getData();
+      // 改用 run()，拿到数据后手动写入，避免触发 refresh 事件
+      const res = await this.resource.run();
+      const { data, meta } = res || {};
+      if (data) {
+        this.resource.setData?.(data);
+      }
+      if (meta) {
+        this.resource.setMeta?.(meta);
+      }
+      const uid = this.uid;
       configStore.setResult(uid, data);
     } catch (error: any) {
       const message = error?.response?.data?.errors?.map?.((e: any) => e.message).join('\n') || error.message;
