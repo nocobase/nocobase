@@ -12,7 +12,14 @@ import { ArrayTable } from '@formily/antd-v5';
 import { onFieldValueChange } from '@formily/core';
 import { useForm, useFormEffects } from '@formily/react';
 import { Flex, Tag } from 'antd';
-import { joinCollectionName, useCompile, usePlugin, DataSourceProvider, RemoteSelect } from '@nocobase/client';
+import {
+  joinCollectionName,
+  useCompile,
+  usePlugin,
+  DataSourceProvider,
+  RemoteSelect,
+  parseCollectionName,
+} from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
 export function TriggerWorkflowSelect(props) {
@@ -20,9 +27,8 @@ export function TriggerWorkflowSelect(props) {
   const index = ArrayTable.useIndex();
   const { setValuesIn } = useForm();
   const compile = useCompile();
-  const dataSourceKey = props.collection?.dataSource.options.key;
-  const collectionName = props.collection?.options.name;
-  const [workflowCollection, setWorkflowCollection] = useState(joinCollectionName(dataSourceKey, collectionName));
+  const [dataSourceKey, collectionName] = parseCollectionName(props.collection);
+  const [workflowCollection, setWorkflowCollection] = useState(props.collection);
 
   const workflowPlugin = usePlugin('workflow') as any;
   const triggerOptions = workflowPlugin.useTriggersOptions();
