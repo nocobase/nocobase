@@ -22,6 +22,7 @@ import { BlockSchemaComponentPlugin } from '../block-provider';
 import { CollectionPlugin } from '../collection-manager';
 import { AppNotFound } from '../common/AppNotFound';
 import { RemoteDocumentTitlePlugin } from '../document-title';
+import { useAPIClient } from '../api-client';
 import { PluginFlowEngine } from '../flow';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
@@ -274,6 +275,19 @@ export class NocoBaseBuildInPlugin extends Plugin {
     await this.addPlugins();
   }
 
+  /**
+   * Redirect component for root path:
+   * - If there is a token, go to `/admin` (existing behavior)
+   * - If not logged in, go to `/signin?redirect=/admin`
+   * This avoids the race where `/` first jumps to `/admin` before auth check.
+   */
+  private static RootRedirect: FC = () => {
+    const api = useAPIClient();
+    const hasToken = !!api?.auth?.token;
+    const to = hasToken ? '/admin' : '/signin?redirect=/admin';
+    return <Navigate replace to={to} />;
+  };
+
   async load() {
     this.addComponents();
     this.addRoutes();
@@ -290,7 +304,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
   addRoutes() {
     this.router.add('root', {
       path: '/',
-      element: <Navigate replace to="/admin" />,
+      element: <NocoBaseBuildInPlugin.RootRedirect />,
     });
 
     this.router.add('not-found', {
