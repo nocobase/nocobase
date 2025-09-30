@@ -9,7 +9,12 @@
 
 import { FlowRunJSContext } from './FlowRunJSContext';
 
-export class JSCollectionActionRunJSContext extends FlowRunJSContext {}
+export class JSCollectionActionRunJSContext extends FlowRunJSContext {
+  constructor(delegate: any) {
+    super(delegate);
+    this.defineProperty('resource', { get: () => (this as any)._delegate['resource'] });
+  }
+}
 
 JSCollectionActionRunJSContext.define({
   label: 'JSCollectionAction RunJS context',

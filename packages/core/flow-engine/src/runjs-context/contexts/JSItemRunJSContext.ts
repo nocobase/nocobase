@@ -8,8 +8,19 @@
  */
 
 import { FlowRunJSContext } from './FlowRunJSContext';
+import { createSafeDocument, createSafeWindow } from '../../utils';
 
-export class JSItemRunJSContext extends FlowRunJSContext {}
+export class JSItemRunJSContext extends FlowRunJSContext {
+  static injectDefaultGlobals() {
+    return { window: createSafeWindow(), document: createSafeDocument() };
+  }
+  constructor(delegate: any) {
+    super(delegate);
+    this.defineProperty('element', { get: () => (this as any)._delegate['element'] });
+    this.defineProperty('record', { get: () => (this as any)._delegate['record'] });
+    this.defineProperty('resource', { get: () => (this as any)._delegate['resource'] });
+  }
+}
 
 JSItemRunJSContext.define({
   label: 'JSItem RunJS context',
