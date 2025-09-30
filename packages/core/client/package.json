@@ -6,6 +6,7 @@
   "module": "es/index.mjs",
   "types": "es/index.d.ts",
   "dependencies": {
+    
     "@ahooksjs/use-url-state": "3.5.1",
     "@ant-design/cssinjs": "^1.11.1",
     "@ant-design/icons": "^5.6.1",
@@ -13,6 +14,7 @@
     "@antv/g2plot": "^2.4.18",
     "@budibase/handlebars-helpers": "0.14.0",
     "@codemirror/lang-html": "^6.4.10",
+    "@codemirror/theme-one-dark": "^6.1.3",
     "@ctrl/tinycolor": "^3.6.0",
     "@dnd-kit/core": "^6.0.0",
     "@dnd-kit/sortable": "^7.0.0",
@@ -30,6 +32,7 @@
     "@nocobase/evaluators": "2.0.0-alpha.2",
     "@nocobase/sdk": "2.0.0-alpha.2",
     "@nocobase/utils": "2.0.0-alpha.2",
+    "@nocobase/flow-engine": "2.0.0-alpha.2",
     "@tanstack/react-table": "^8.21.3",
     "@types/tabulator-tables": "^6.2.6",
     "ahooks": "^3.7.2",
@@ -71,7 +74,10 @@
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.13.0",
     "tabulator-tables": "^6.3.1",
-    "use-deep-compare-effect": "^1.8.1"
+    "use-deep-compare-effect": "^1.8.1",
+    "antd-mobile": "^5.41.1",
+    "antd-mobile-icons": "^0.3.0",
+    "codemirror": "^6.0.2"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
