@@ -271,7 +271,9 @@ describe('Router', () => {
       expect(screen.getByText('HomeComponent')).toBeInTheDocument();
 
       await userEvent.click(screen.getByText('About'));
-      expect(screen.getByText('AboutComponent')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('AboutComponent')).toBeInTheDocument();
+      });
     });
 
     it('basename and type', async () => {
