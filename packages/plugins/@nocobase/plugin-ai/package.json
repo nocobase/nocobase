@@ -4,13 +4,13 @@
   "displayName.zh-CN": "AI 员工",
   "description": "Create AI employees with diverse skills to collaborate with humans, build systems, and handle business operations.",
   "description.zh-CN": "创建各种技能的 AI 员工，与人类协同，搭建系统，处理业务。",
-  "version": "1.9.0-alpha.17",
+  "version": "2.0.0-alpha",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/flow-engine": "1.x",
-    "@nocobase/plugin-workflow": "1.x",
     "@nocobase/plugin-data-source-manager": "1.x",
+    "@nocobase/plugin-workflow": "1.x",
     "@nocobase/server": "1.x",
     "@nocobase/test": "1.x"
   },
@@ -28,6 +28,7 @@
     "echarts": "^5.5.0",
     "echarts-for-react": "3.0.2",
     "elkjs": "^0.10.0",
+    "jsonrepair": "3.13.1",
     "nodejs-snowflake": "^2.0.1",
     "react-markdown": "^10.1.0",
     "react-syntax-highlighter": "^15.6.1",
@@ -35,8 +36,7 @@
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "use-context-selector": "^2.0.0",
-    "zustand": "^5.0.6",
-    "jsonrepair": "3.13.1"
+    "zustand": "^5.0.6"
   },
   "keywords": [
     "AI"
