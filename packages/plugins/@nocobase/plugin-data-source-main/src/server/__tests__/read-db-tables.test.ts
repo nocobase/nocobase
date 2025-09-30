@@ -7,19 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import Database from '@nocobase/database';
-import Application, { Plugin } from '@nocobase/server';
+import Database, { createMockDatabase } from '@nocobase/database';
+import { Plugin } from '@nocobase/server';
 import { createApp } from '.';
+import { DataTypes, Sequelize } from 'sequelize';
 
 describe('db2cm test', () => {
   let db: Database;
   let app: any;
 
-  afterEach(async () => {
-    await app.destroy();
-  });
-
   describe('uiManageable test', async () => {
+    afterEach(async () => {
+      await app.destroy();
+    });
     class Plugin1 extends Plugin {
       static collection = {
         name: 'hello',
@@ -85,6 +85,101 @@ describe('db2cm test', () => {
       expect(response.status).toBe(500);
       const fields = await db.getRepository('fields').find({ filter: { collectionName: 'hello' } });
       expect(fields.some((c) => c.name === 'name')).toBeTruthy();
+    });
+  });
+
+  describe.skipIf(process.env.DB_DIALECT === 'sqlite')('read db tables', async () => {
+    let queryInterface: any;
+    let schema: string;
+
+    beforeEach(async () => {
+      app = await createApp({
+        plugins: ['data-source-manager'],
+      });
+      db = app.db;
+
+      queryInterface = db.sequelize.getQueryInterface();
+      schema = db.options.schema;
+    });
+
+    afterEach(async () => {
+      await db.clean({ drop: true });
+      await app.destroy();
+    });
+
+    it('get available tables', async () => {
+      await queryInterface.createTable(
+        {
+          schema,
+          tableName: 'table',
+        },
+        {
+          id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+          },
+        },
+      );
+      const response = await app
+        .agent()
+        .resource('dataSources')
+        .readTables({
+          values: {
+            dataSourceKey: 'main',
+          },
+        });
+      expect(response.status).toBe(200);
+      expect(response.body.data.length).toBe(1);
+      expect(response.body.data[0].name).toBe('table');
+    });
+
+    it('load table', async () => {
+      await queryInterface.createTable(
+        {
+          schema,
+          tableName: 'table',
+        },
+        {
+          id: {
+            type: DataTypes.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          name: {
+            type: DataTypes.STRING,
+            allowNull: false,
+          },
+        },
+      );
+      const tables = ['table'];
+
+      let collections = await db.getRepository('collections').find({
+        filter: { name: tables },
+      });
+      expect(collections.length).toBe(0);
+
+      const response = await app
+        .agent()
+        .resource('dataSources')
+        .loadTables({
+          values: {
+            dataSourceKey: 'main',
+            tables,
+          },
+        });
+      expect(response.status).toBe(200);
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      collections = await db.getRepository('collections').find({
+        filter: { name: tables },
+      });
+
+      expect(collections.length).toBe(1);
     });
   });
 });

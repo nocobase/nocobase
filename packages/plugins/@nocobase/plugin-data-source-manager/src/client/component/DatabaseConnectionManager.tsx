@@ -32,7 +32,15 @@ export const DatabaseConnectionManagerPane = () => {
   const { t } = useTranslation();
   const plugin = usePlugin(PluginDatabaseConnectionsClient);
   const dm = useDataSourceManager();
-  const api = useAPIClient(); // 移到组件顶层
+  const api = useAPIClient();
+
+  const dataSourceListCallback = useCallback(
+    (data: any) => {
+      dm.setDataSources(data?.data || []);
+      dm.reload();
+    },
+    [dm],
+  );
 
   const types = [...plugin.types.keys()]
     .map((key) => {
@@ -64,14 +72,11 @@ export const DatabaseConnectionManagerPane = () => {
   );
 
   const dataSourceCreateCallback = useCallback(
-    async (data: any, collections) => {
-      if (!data.options?.addAllCollections) {
-        await addDatasourceCollections(api, data.key, { collections, dbOptions: data.options });
-      }
+    async (data: any) => {
       dm.addDataSource(ThirdDataSource, data);
       reloadKeys.current = [...reloadKeys.current, data.key];
     },
-    [api, dm],
+    [dm],
   );
 
   const useRefreshActionProps = () => {
@@ -120,6 +125,7 @@ export const DatabaseConnectionManagerPane = () => {
           useDestroyAction,
           dataSourceDeleteCallback,
           dataSourceCreateCallback,
+          dataSourceListCallback,
           useIsAbleDelete,
         }}
         schema={databaseConnectionSchema}
