@@ -48,6 +48,7 @@ export class AIEmployee {
   private systemMessage: string;
   private aiChatConversation: AIChatConversation;
   private skillSettings?: Record<string, any>;
+  private webSearch?: boolean;
 
   constructor(
     ctx: Context,
@@ -55,6 +56,7 @@ export class AIEmployee {
     sessionId: string,
     systemMessage?: string,
     skillSettings?: Record<string, any>,
+    webSearch?: boolean,
   ) {
     this.employee = employee;
     this.ctx = ctx;
@@ -68,6 +70,7 @@ export class AIEmployee {
     const locale = this.ctx.getCurrentLocale();
     const builtInManager = this.plugin.builtInManager;
     builtInManager.setupBuiltInInfo(locale, this.employee as unknown as AIEmployeeType);
+    this.webSearch = webSearch;
   }
 
   async getLLMService() {
@@ -729,6 +732,7 @@ export class AIEmployee {
       provider,
       getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
       tools: await this.getTools(),
+      webSearch: this.webSearch,
     });
 
     const { stream, signal } = await this.prepareChatStream(chatContext, provider);
@@ -761,6 +765,7 @@ export class AIEmployee {
         provider,
         getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
         tools: await this.getTools(),
+        webSearch: this.webSearch,
       });
       const { stream, signal } = await this.prepareChatStream(chatContext, provider);
 
@@ -788,6 +793,7 @@ export class AIEmployee {
         getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
         messageId,
         tools: await this.getTools(),
+        webSearch: this.webSearch,
       });
       const { stream, signal } = await this.prepareChatStream(chatContext, provider);
 

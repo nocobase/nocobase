@@ -58,7 +58,7 @@ export default {
 
     async create(ctx: Context, next: Next) {
       const userId = ctx.auth?.user.id;
-      const { aiEmployee, systemMessage, skillSettings } = ctx.action.params.values || {};
+      const { aiEmployee, systemMessage, skillSettings, conversationSettings } = ctx.action.params.values || {};
       const employee = await getAIEmployee(ctx, aiEmployee.username);
       if (!employee) {
         ctx.throw(400, 'AI employee not found');
@@ -72,6 +72,7 @@ export default {
           options: {
             systemMessage,
             skillSettings,
+            conversationSettings,
           },
         },
       });
@@ -92,6 +93,57 @@ export default {
           title,
         },
       });
+      await next();
+    },
+
+    async updateOptions(ctx: Context, next: Next) {
+      const userId = ctx.auth?.user.id;
+      if (!userId) {
+        return ctx.throw(403);
+      }
+
+      const { filterByTk: sessionId } = ctx.action.params;
+      if (!sessionId) {
+        return ctx.throw(400, 'invalid sessionId');
+      }
+
+      const { systemMessage, skillSettings, conversationSettings } = ctx.action.params.values || {};
+      if (!systemMessage && !skillSettings && !conversationSettings) {
+        return ctx.throw(400, 'invalid options');
+      }
+
+      const conversation = await ctx.db.getRepository('aiConversations').findOne({
+        filter: {
+          sessionId,
+          userId,
+        },
+      });
+
+      if (!conversation) {
+        ctx.throw(400, 'invalid sessionId');
+      }
+
+      const options = conversation.options ?? {};
+      if (systemMessage) {
+        options['systemMessage'] = systemMessage;
+      }
+      if (skillSettings) {
+        options['skillSettings'] = skillSettings;
+      }
+      if (conversationSettings) {
+        options['conversationSettings'] = conversationSettings;
+      }
+
+      ctx.body = await ctx.db.getRepository('aiConversations').update({
+        filter: {
+          userId,
+          sessionId,
+        },
+        values: {
+          options,
+        },
+      });
+
       await next();
     },
 
@@ -299,6 +351,7 @@ export default {
           sessionId,
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
+          conversation.options?.conversationSettings?.webSearch,
         );
         await aiEmployee.cancelToolCall();
         await aiEmployee.processMessages(messages, editingMessageId);
@@ -363,6 +416,7 @@ export default {
           sessionId,
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
+          conversation.options?.conversationSettings?.webSearch,
         );
         await aiEmployee.resendMessages(messageId);
       } catch (err) {
@@ -466,6 +520,7 @@ export default {
           sessionId,
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
+          conversation.options?.conversationSettings?.webSearch,
         );
         await aiEmployee.callTool(message.messageId, false);
       } catch (err) {
@@ -524,6 +579,7 @@ export default {
           sessionId,
           conversation.options?.systemMessage,
           conversation.options?.skillSettings,
+          conversation.options?.conversationSettings?.webSearch,
         );
         await aiEmployee.confirmToolCall(message.messageId, toolCallIds);
       } catch (err) {

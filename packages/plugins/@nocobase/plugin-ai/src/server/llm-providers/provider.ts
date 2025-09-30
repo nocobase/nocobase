@@ -23,6 +23,12 @@ export interface LLMProviderOptions {
   modelOptions?: Record<string, any>;
 }
 
+export type BuiltInToolOptions = {
+  filter: {
+    webSearch?: boolean;
+  };
+};
+
 export abstract class LLMProvider {
   app: Application;
   serviceOptions: Record<string, any>;
@@ -47,9 +53,12 @@ export abstract class LLMProvider {
 
   prepareChain(context: AIChatContext) {
     let chain = this.chatModel;
+    const filter = {
+      webSearch: context.webSearch,
+    };
 
-    if (this.builtInTools()?.length) {
-      const tools = [...this.builtInTools()];
+    if (this.builtInTools({ filter })?.length) {
+      const tools = [...this.builtInTools({ filter })];
       if (!this.isToolConflict() && context.tools?.length) {
         tools.push(...context.tools);
       }
@@ -68,6 +77,7 @@ export abstract class LLMProvider {
   }
 
   async invokeChat(context: AIChatContext, options?: any) {
+    context.webSearch = false;
     const chain = this.prepareChain(context);
     return chain.invoke(context.messages, options);
   }
@@ -181,7 +191,7 @@ export abstract class LLMProvider {
     };
   }
 
-  protected builtInTools(): any[] {
+  protected builtInTools(_options: BuiltInToolOptions): any[] {
     return [];
   }
 

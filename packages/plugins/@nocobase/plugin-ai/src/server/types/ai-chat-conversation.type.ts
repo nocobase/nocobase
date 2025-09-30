@@ -44,6 +44,7 @@ export type AIChatContext = {
     schema: any;
     strict?: boolean;
   };
+  webSearch?: boolean;
 };
 
 export type AIMessageInput = Omit<AIMessage, 'messageId' | 'sessionId'>;
@@ -61,4 +62,5 @@ export type AIChatContextOptions = {
   provider: LLMProvider;
   getSystemPrompt?: (aiMessages: AIMessage[]) => Promise<string>;
   tools?: any[];
+  webSearch?: boolean;
 } & AIMessageQuery;

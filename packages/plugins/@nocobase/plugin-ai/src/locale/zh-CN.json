@@ -180,5 +180,7 @@
   "Auto usage": "自动使用",
   "Use skills": "使用技能",
   "Cite {{count}} pieces of information as references": "引用 {{count}} 篇资料作为参考",
-  "references {{index}}": "参考资料 {{index}}"
+  "references {{index}}": "参考资料 {{index}}",
+  "Enable search": "启用搜索",
+  "Disable search": "禁用搜索"
 }
