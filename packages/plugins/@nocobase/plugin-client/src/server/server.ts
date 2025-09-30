@@ -197,16 +197,18 @@ export class PluginClientServer extends Plugin {
     });
     this.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
       const r = this.db.getRepository('flowModels');
-      await r.create({
-        transaction,
-        values: {
-          uid: instance.get('schemaUid'),
-          name: instance.get('schemaUid'),
-          schema: {
-            use: 'RouteModel',
+      if (r) {
+        await r.create({
+          transaction,
+          values: {
+            uid: instance.get('schemaUid'),
+            name: instance.get('schemaUid'),
+            schema: {
+              use: 'RouteModel',
+            },
           },
-        },
-      });
+        });
+      }
       const addNewMenuRoles = await this.app.db.getRepository('roles').find({
         filter: {
           allowNewMenu: true,
