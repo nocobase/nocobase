@@ -168,7 +168,7 @@ const Preview = (props) => {
             actions: { onActive, onFlipY, onFlipX, onRotateLeft, onRotateRight, onZoomOut, onZoomIn, onReset },
           },
         ) => (
-          <Space size={12} className="toolbar-wrapper">
+          <Space size={14} className="toolbar-wrapper" style={{ fontSize: '20px' }}>
             <LeftOutlined disabled={current === 0} onClick={() => onActive?.(-1)} />
             <RightOutlined disabled={current === value.length - 1} onClick={() => onActive?.(1)} />
             <DownloadOutlined onClick={onDownload} />

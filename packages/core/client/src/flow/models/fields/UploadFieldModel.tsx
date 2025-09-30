@@ -131,7 +131,7 @@ export const CardUpload = (props) => {
                   actions: { onFlipY, onFlipX, onRotateLeft, onRotateRight, onZoomOut, onZoomIn, onReset },
                 },
               ) => (
-                <Space size={12} className="toolbar-wrapper">
+                <Space size={14} className="toolbar-wrapper" style={{ fontSize: '20px' }}>
                   <LeftOutlined
                     style={{
                       cursor: currentImageIndex === 0 ? 'not-allowed' : 'pointer',
