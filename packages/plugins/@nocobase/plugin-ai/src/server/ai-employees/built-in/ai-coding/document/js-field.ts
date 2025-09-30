@@ -65,17 +65,17 @@ ctx.element.innerHTML = html;
 - 如需跨字段取值，可用 \`ctx.record\` 拼接显示；
 - 需要在表单中“可编辑”的 JS 字段，请使用 JSEditableFieldModel。
 
-## 跨区块弹窗（dispatchModelEvent）
-可通过 \`ctx.dispatchModelEvent(targetUid, eventName, args)\` 通知另一个区块模型处理事件，可以用于跨区块跨页面打开抽屉/对话框。
+## 跨区块弹窗（openView）
+可通过 \`ctx.openView(viewId, { ... })\` 打开视图，可以用于跨区块跨页面打开抽屉/对话框。
 
 示例
 \`\`\`javascript
 ctx.element.innerHTML = '<a href="javascript:;" style="color:#1677ff;">打开按钮弹窗</a>';
 ctx.element.querySelector('a')?.addEventListener('click', () => {
-  ctx.dispatchModelEvent('\${targetButton.uid}', 'click', {
+  ctx.openView('targetViewId', {
     from: 'JSFieldModel',
     time: new Date().toISOString(),
-    note: '通过 dispatchModelEvent 触发按钮的 click 事件',
+    note: '通过 openView 打开按钮的弹窗',
   });
 });
 \`\`\`
@@ -87,7 +87,11 @@ const targetUid = '<目标按钮UID>'; // 替换成目标按钮uid
 
 ctx.element.innerHTML = '<a href="javascript:;" style="color:#1677ff;">查看详情</a>';
 ctx.element.querySelector('a')?.addEventListener('click', async () => {
-  await ctx.dispatchModelEvent(targetUid, 'click');
+  await ctx.openView('targetViewId', {
+    from: 'JSFieldModel',
+    time: new Date().toISOString(),
+    note: '通过 openView 打开按钮的弹窗',
+  });
 });
 \`\`\`
 

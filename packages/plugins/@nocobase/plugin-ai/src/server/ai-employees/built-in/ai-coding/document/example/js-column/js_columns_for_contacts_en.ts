@@ -109,7 +109,10 @@ ctx.element.innerHTML = \`
 // Click company name to open account info dialog
 if (accountName) {
   ctx.element.querySelector('.account-link')?.addEventListener('click', async () => {
-    await ctx.dispatchModelEvent('c91bba4e338', 'click');
+    await ctx.openView('c91bba4e338', {
+      title: 'Account Info',
+      navigation: false,
+    });
   });
 }
 \`\`\`
