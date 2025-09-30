@@ -27,9 +27,9 @@
     "solarlunar-es": "^1.0.9"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/server": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/server": "2.x"
   },
   "repository": {
     "type": "git",

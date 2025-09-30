@@ -28,10 +28,10 @@
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/flow-engine": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "keywords": [
     "nocobase",

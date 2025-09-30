@@ -7,10 +7,10 @@
   "version": "2.0.0-alpha",
   "main": "dist/server/index.js",
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/plugin-error-handler": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-error-handler": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "dependencies": {
     "p-queue": "^6.6.2"

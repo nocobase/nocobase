@@ -15,12 +15,12 @@
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
-    "@nocobase/evaluators": "1.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
+    "@nocobase/evaluators": "2.x",
     "@nocobase/plugin-workflow": ">=0.17.0-alpha.3",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

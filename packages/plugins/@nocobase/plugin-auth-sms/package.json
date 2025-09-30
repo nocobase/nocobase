@@ -16,14 +16,14 @@
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
-    "@nocobase/actions": "1.x",
-    "@nocobase/auth": "1.x",
-    "@nocobase/client": "1.x",
-    "@nocobase/database": "1.x",
+    "@nocobase/actions": "2.x",
+    "@nocobase/auth": "2.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/database": "2.x",
     "@nocobase/plugin-auth": ">=0.17.0-alpha.7",
-    "@nocobase/plugin-verification": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/plugin-verification": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
   "keywords": [

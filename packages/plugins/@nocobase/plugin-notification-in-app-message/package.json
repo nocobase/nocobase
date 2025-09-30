@@ -20,10 +20,10 @@
   "peerDependencies": {
     "@formily/reactive": "2.x",
     "@formily/reactive-react": "^2",
-    "@nocobase/client": "1.x",
-    "@nocobase/plugin-notification-manager": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x",
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-notification-manager": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x",
     "react-router-dom": "^6.x"
   }
 }

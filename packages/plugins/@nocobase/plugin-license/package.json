@@ -10,8 +10,8 @@
     "@nocobase/license-kit": "^0.2.17"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   }
 }
