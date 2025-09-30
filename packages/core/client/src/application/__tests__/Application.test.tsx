@@ -341,7 +341,9 @@ describe('Application', () => {
         expect(screen.getByText('HomeComponent')).toBeInTheDocument();
       });
       await userEvent.click(screen.getByText('About'));
-      expect(screen.getByText('AboutComponent')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('AboutComponent')).toBeInTheDocument();
+      });
     });
 
     it('Root with children', async () => {
