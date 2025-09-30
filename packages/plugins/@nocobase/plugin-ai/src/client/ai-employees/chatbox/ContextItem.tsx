@@ -82,6 +82,7 @@ export const ContextItem: React.FC<{
         >
           <pre
             style={{
+              minHeight: '35vh',
               maxHeight: '70vh',
               overflowY: 'auto',
               marginTop: '24px',

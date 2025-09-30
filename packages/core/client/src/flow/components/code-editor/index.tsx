@@ -40,9 +40,10 @@ interface CodeEditorProps {
 export * from './types';
 
 export const CodeEditor: React.FC<CodeEditorProps & InjectableRendingEventTriggerProps> = (props) => {
-  const { mode, name, ...rest } = props;
+  const { mode, name, language, scene, ...rest } = props;
+  const triggerProps = { mode, name, language, scene };
   return (
-    <InjectableRendingEventTrigger mode={mode} name={name}>
+    <InjectableRendingEventTrigger {...triggerProps}>
       <InnerCodeEditor {...rest} />
     </InjectableRendingEventTrigger>
   );

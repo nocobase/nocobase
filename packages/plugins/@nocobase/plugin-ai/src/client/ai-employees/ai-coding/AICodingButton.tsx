@@ -34,16 +34,18 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
   const { switchAIEmployee } = useChatBoxActions();
   const addContextItems = useChatMessagesStore.use.addContextItems();
   const setEditorRef = useChatMessagesStore.use.setEditorRef();
-  const storedEditorRef = useChatMessagesStore.use.editorRef();
+  const setCurrentEditorRefUid = useChatMessagesStore.use.setCurrentEditorRefUid();
+  const editorRefMap = useChatMessagesStore.use.editorRef();
 
   const aiEmployee = aiEmployees.filter((e) => isEngineer(e))[0];
 
   useEffect(() => {
-    setEditorRef(editorRef);
+    setEditorRef(uid, editorRef);
+    setCurrentEditorRefUid(uid);
     return () => {
-      setEditorRef(null);
+      setEditorRef(uid, null);
     };
-  }, [editorRef, setEditorRef]);
+  }, [uid, editorRef, setEditorRef]);
 
   useEffect(() => {
     if (aiEmployee) {
@@ -73,6 +75,8 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
             }
           }
 
+          setCurrentEditorRefUid(uid);
+          const editor = editorRefMap[uid];
           addContextItems({
             type: 'code-editor',
             uid,
@@ -80,7 +84,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
             content: {
               scene,
               language,
-              code: storedEditorRef?.read(),
+              code: editor?.read(),
             },
           });
         }}

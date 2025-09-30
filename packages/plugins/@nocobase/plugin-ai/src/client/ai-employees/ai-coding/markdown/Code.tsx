@@ -62,7 +62,9 @@ export const Code = (props: any) => {
     isFullText = pattern.test(message.content);
   }
 
-  const editorRef = useChatMessagesStore.use.editorRef();
+  const editorRefMap = useChatMessagesStore.use.editorRef();
+  const currentEditorRefUid = useChatMessagesStore.use.currentEditorRefUid();
+  const editorRef = editorRefMap[currentEditorRefUid];
 
   return match ? (
     <Card
@@ -97,7 +99,7 @@ export const Code = (props: any) => {
       }
       styles={{ header: { padding: 0 }, body: { padding: 0 } }}
       actions={
-        editorRef !== null
+        editorRef
           ? [
               <Button
                 key="accept"

@@ -22,6 +22,7 @@ export const runjs = defineAction({
         enableLinter: true,
         height: '200px',
         mode: 'runtime',
+        scene: 'eventFlow',
       },
     },
   },

@@ -20,7 +20,8 @@ type ChatMessagesState = {
   responseLoading: boolean;
   abortController?: AbortController;
   skillSettings?: SkillSettings;
-  editorRef?: EditorRef;
+  editorRef?: Record<string, EditorRef>;
+  currentEditorRefUid?: string;
   webSearching?: WebSearching;
 };
 
@@ -45,7 +46,9 @@ export interface ChatMessagesActions {
 
   setSkillSettings: (settings: SkillSettings | undefined) => void;
 
-  setEditorRef: (editorRef: EditorRef) => void;
+  setEditorRef: (uid: string, editorRef: EditorRef) => void;
+  setCurrentEditorRefUid: (uid: string) => void;
+
   setWebSearching: (webSearching: WebSearching) => void;
 }
 
@@ -57,7 +60,8 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
   responseLoading: false,
   abortController: null,
   skillSettings: null,
-  editorRef: null,
+  editorRef: {},
+  currentEditorRefUid: null,
   webSearching: null,
 
   setMessages: (messages) => {
@@ -141,9 +145,9 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
 
   setSkillSettings: (settings) => set({ skillSettings: settings }),
 
-  setEditorRef(editorRef) {
-    set({ editorRef });
-  },
+  setEditorRef: (uid, editorRef) => set((state) => ({ editorRef: { ...state.editorRef, [uid]: editorRef } })),
+
+  setCurrentEditorRefUid: (uid) => set({ currentEditorRefUid: uid }),
 
   setWebSearching(webSearching) {
     set({ webSearching });

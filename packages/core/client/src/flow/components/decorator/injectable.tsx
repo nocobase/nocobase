@@ -22,6 +22,7 @@ export type InjectableRendingEventTriggerProps = {
   mode?: 'runtime' | 'settings';
   name?: string;
   language?: string;
+  scene?: string;
 };
 
 export const InjectableRendingEventTrigger: React.FC<PropsWithChildren<InjectableRendingEventTriggerProps>> = ({
@@ -44,9 +45,10 @@ export const SettingsTrigger: React.FC<PropsWithChildren<Omit<InjectableRendingE
   children,
   name,
   language,
+  scene,
 }) => {
   const ctx = useFlowSettingsContext();
-  const props = useInjectableProps(ctx, name, language, children);
+  const props = useInjectableProps(ctx, name, language, scene, children);
   return React.cloneElement(children, props);
 };
 
@@ -54,13 +56,14 @@ export const RuntimeTrigger: React.FC<PropsWithChildren<Omit<InjectableRendingEv
   children,
   name,
   language,
+  scene,
 }) => {
   const ctx = useFlowContext<FlowRuntimeContext>();
-  const props = useInjectableProps(ctx, name, language, children);
+  const props = useInjectableProps(ctx, name, language, scene, children);
   return React.cloneElement(children, props);
 };
 
-const useInjectableProps = (ctx: FlowRuntimeContext, name: string, language: string, children: any) => {
+const useInjectableProps = (ctx: FlowRuntimeContext, name: string, language: string, scene: string, children: any) => {
   const [props, setProps] = React.useState({});
 
   useEffect(() => {
@@ -69,11 +72,12 @@ const useInjectableProps = (ctx: FlowRuntimeContext, name: string, language: str
         ctx,
         name,
         language,
+        scene,
         children,
         setProps,
       });
     }
-  }, [ctx, name, language, children]);
+  }, [ctx, name, language, scene, children]);
 
   return props;
 };

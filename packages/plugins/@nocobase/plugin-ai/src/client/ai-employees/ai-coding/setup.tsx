@@ -19,6 +19,7 @@ import {
   JSItemModel,
   JSRecordActionModel,
 } from '@nocobase/client';
+import { uid } from '@nocobase/utils/client';
 
 export const setupAICoding = () => {
   FlowModel.registerFlow({
@@ -30,6 +31,7 @@ export const setupAICoding = () => {
           const settingContext = ctx.inputArgs.ctx;
           const name = ctx.inputArgs.name ?? 'code';
           const language = ctx.inputArgs.language ?? 'javascript';
+          const scene = ctx.inputArgs.scene;
           const setProps = ctx.inputArgs.setProps;
 
           setProps((prev) => ({
@@ -38,7 +40,7 @@ export const setupAICoding = () => {
               (editorRef, setActive) => {
                 const props = {
                   uid: getUid(settingContext, name),
-                  scene: getScene(settingContext),
+                  scene: scene ?? getScene(settingContext),
                   language,
                   editorRef,
                   setActive,
@@ -53,8 +55,9 @@ export const setupAICoding = () => {
   });
 };
 
-const getUid = (context: FlowRuntimeContext, name: string) =>
-  `${context.model.uid}-${context.flowKey}-${context.currentStep}-${name}`;
+const getUid = (context: FlowRuntimeContext, name: string) => {
+  return `${context.model.uid}-${context.flowKey ?? uid()}-${context.currentStep ?? uid()}-${name}`;
+};
 
 const getScene = (context: FlowRuntimeContext) => {
   const flowModel = context.model;

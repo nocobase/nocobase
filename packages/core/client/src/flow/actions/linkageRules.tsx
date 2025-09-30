@@ -487,7 +487,13 @@ export const linkageRunjs = defineAction({
               </div>
             </div> */}
             <div>
-              <CodeEditor value={value.script} onChange={handleScriptChange} height="200px" enableLinter={true} />
+              <CodeEditor
+                value={value.script}
+                onChange={handleScriptChange}
+                height="200px"
+                enableLinter={true}
+                scene="linkage"
+              />
             </div>
           </div>
         );
