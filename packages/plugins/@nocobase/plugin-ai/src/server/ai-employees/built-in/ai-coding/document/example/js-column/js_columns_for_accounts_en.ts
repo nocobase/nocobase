@@ -77,7 +77,7 @@ if (account_id) {
   if (nameLink && !nameLink._eventBound) {
     nameLink._eventBound = true;
     nameLink.addEventListener('click', async () => {
-      await ctx.dispatchModelEvent('c91bba4e338', 'click', {
+      await ctx.openView('c91bba4e338', {
         collectionName: 'accounts',
         dataSourceKey: 'main',
         filterByTk: account_id
@@ -399,7 +399,7 @@ if (hasOpportunities) {
     pipelineLink._eventBound = true;
     pipelineLink.addEventListener('click', async () => {
       // Open opportunities related to this account
-      await ctx.dispatchModelEvent('44be52bf4bb', 'click', {
+      await ctx.openView('44be52bf4bb', {
         collectionName: 'opportunities',
         dataSourceKey: 'main',
         filterByTk: ctx.record?.id  // Filter opportunities by account_id

@@ -69,6 +69,5 @@ ctx.element.querySelector('button')?.addEventListener('click', async () => {
 
 ## 进阶提示
 - 可用 `ctx.api` 预取数据做联动提示（例如唯一性校验前置提示等）；
-- 结合 `ctx.viewer.popover` 做轻量提示；
 - 如需可编辑的 JS 字段，请使用可编辑字段模型（例如 `JSEditableFieldModel`）。
-- 可用 `ctx.dispatchModelEvent` 做跨区块跨页面联动，可参考 JSFieldModel 文档示例。
+- 可用 `ctx.openView` 做跨区块跨页面联动，可参考 JSFieldModel 文档示例。

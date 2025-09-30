@@ -78,9 +78,8 @@ ctx.element.querySelector('button')?.addEventListener('click', async () => {
 
 ## 进阶提示
 - 可用 \`ctx.api\` 预取数据做联动提示（例如唯一性校验前置提示等）；
-- 结合 \`ctx.viewer.popover\` 做轻量提示；
 - 如需可编辑的 JS 字段，请使用可编辑字段模型（例如 \`JSEditableFieldModel\`）。
-- 可用 \`ctx.dispatchModelEvent\` 做跨区块跨页面联动，可参考 JSFieldModel 文档示例。
+- 可用 \`ctx.openView\` 做跨区块跨页面联动，可参考 JSFieldModel 文档示例。
 
 </nocobase-api-reference>
 
@@ -158,7 +157,6 @@ ctx.element.innerHTML = \`
 
 ## 进阶提示
 - 可通过 \`ctx.api\` 请求后端，动态刷新 \`ctx.element\` 内容；
-- 如需在表格中联动其他列或行操作，可结合 \`ctx.viewer.popover/dialog\` 做轻交互；
 - 对于“绑定字段值”的场景，请使用JS字段列，JSColumn 适合完全自定义展示与行为, 例如跨字段的汇总等场景。
-- 可用 \`ctx.dispatchModelEvent\` 做跨区块跨页面联动，可参考 JSFieldModel 文档示例。`,
+- 可用 \`ctx.openView\` 做跨区块跨页面联动，可参考 JSFieldModel 文档示例。`,
 };
