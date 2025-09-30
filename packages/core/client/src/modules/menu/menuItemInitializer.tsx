@@ -8,9 +8,10 @@
  */
 
 import { SchemaInitializer } from '../../application/schema-initializer/SchemaInitializer';
+import { FlowPageMenuItem } from './FlowPageMenuItem';
+import { GroupItem } from './GroupItem';
 import { LinkMenuItem } from './LinkMenuItem';
 import { PageMenuItem } from './PageMenuItem';
-import { GroupItem } from './GroupItem';
 
 /**
  * @deprecated
@@ -29,7 +30,11 @@ export const menuItemInitializer_deprecated = new SchemaInitializer({
       Component: GroupItem,
     },
     {
-      name: 'page',
+      name: 'page1',
+      Component: PageMenuItem,
+    },
+    {
+      name: 'page2',
       Component: PageMenuItem,
     },
     {
@@ -50,8 +55,12 @@ export const menuItemInitializer = new SchemaInitializer({
       Component: GroupItem,
     },
     {
-      name: 'page',
+      name: 'page1',
       Component: PageMenuItem,
+    },
+    {
+      name: 'page2',
+      Component: FlowPageMenuItem,
     },
     {
       name: 'link',

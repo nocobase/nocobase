@@ -22,6 +22,7 @@ import { BlockSchemaComponentPlugin } from '../block-provider';
 import { CollectionPlugin } from '../collection-manager';
 import { AppNotFound } from '../common/AppNotFound';
 import { RemoteDocumentTitlePlugin } from '../document-title';
+import { PluginFlowEngine } from '../flow';
 import { PinnedListPlugin } from '../plugin-manager';
 import { PMPlugin } from '../pm';
 import { AdminLayoutPlugin, RouteSchemaComponent } from '../route-switch';
@@ -305,17 +306,31 @@ export class NocoBaseBuildInPlugin extends Plugin {
       path: '/admin/:name',
       Component: 'AdminDynamicPage',
     });
-    this.router.add('admin.page.tab', {
+    this.router.add('admin.page.tabs', {
       path: '/admin/:name/tabs/:tabUid',
       Component: PageTabs as any,
     });
-    this.router.add('admin.page.popup', {
+    this.router.add('admin.page.popups', {
       path: '/admin/:name/popups/*',
       Component: PagePopups,
     });
-    this.router.add('admin.page.tab.popup', {
+    this.router.add('admin.page.tabs.popups', {
       path: '/admin/:name/tabs/:tabUid/popups/*',
       Component: PagePopups,
+    });
+
+    // 和 2.0 相关的路由
+    this.router.add('admin.page.tab', {
+      path: '/admin/:name/tab/:tabUid', // 为了和 2.0 的路由区分，这里使用 tab 而不是 tabs
+      Component: 'AdminDynamicPage',
+    });
+    this.router.add('admin.page.view', {
+      path: '/admin/:name/view/*',
+      Component: 'AdminDynamicPage',
+    });
+    this.router.add('admin.page.tab.view', {
+      path: '/admin/:name/tab/:tabUid/view/*',
+      Component: 'AdminDynamicPage',
     });
   }
 
@@ -328,6 +343,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
     });
   }
   async addPlugins() {
+    await this.app.pm.add(PluginFlowEngine);
     await this.app.pm.add(AssociationFilterPlugin);
     await this.app.pm.add(LocalePlugin, { name: 'builtin-locale' });
     await this.app.pm.add(AdminLayoutPlugin, { name: 'admin-layout' });
@@ -337,7 +353,7 @@ export class NocoBaseBuildInPlugin extends Plugin {
       config: {
         items: {
           ui: { order: 100, component: 'DesignableSwitch', pin: true, snippet: 'ui.*' },
-          pm: { order: 200, component: 'PluginManagerLink', pin: true, snippet: 'pm' },
+          // pm: { order: 200, component: 'PluginManagerLink', pin: true, snippet: 'pm' },
           sc: { order: 300, component: 'SettingsCenterDropdown', pin: true, snippet: 'pm.*' },
         },
       },

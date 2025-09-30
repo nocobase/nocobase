@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useCollectionManager_deprecated } from '@nocobase/client';
+import { useCollectionManager_deprecated, useCompile } from '@nocobase/client';
 
 const EXCLUDE_INTERFACES = [
   // 'icon',
@@ -26,13 +26,14 @@ const EXCLUDE_INTERFACES = [
 export const useFields = (collectionName: string) => {
   const { getCollectionFields } = useCollectionManager_deprecated();
   const fields = getCollectionFields(collectionName);
+  const compile = useCompile();
   const field2option = (field, depth) => {
     if (!field.interface || EXCLUDE_INTERFACES.includes(field.interface)) {
       return;
     }
     const option = {
       name: field.name,
-      title: field?.uiSchema?.title || field.name,
+      title: compile(field?.uiSchema?.title) || field.name,
       schema: field?.uiSchema,
     };
     if (!field.target || depth >= 2) {

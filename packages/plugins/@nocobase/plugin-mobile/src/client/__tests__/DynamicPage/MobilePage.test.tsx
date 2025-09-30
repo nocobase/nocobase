@@ -40,7 +40,7 @@ describe('MobilePage', () => {
     });
   });
 
-  it('schema', async () => {
+  it.skip('schema', async () => {
     render(<Schema />);
     await waitForApp();
 

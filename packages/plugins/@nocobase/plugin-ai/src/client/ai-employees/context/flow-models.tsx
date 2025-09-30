@@ -1,0 +1,168 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import React from 'react';
+import { ContextItem, WorkContextOptions } from '../types';
+import { BuildOutlined } from '@ant-design/icons';
+import { useT } from '../../locale';
+// @ts-ignore
+import { FlowModel, FlowModelContext, useFlowEngine } from '@nocobase/flow-engine';
+import _ from 'lodash';
+import { aiSelection } from '../stores/ai-selection';
+import { CollectionBlockModel, FormBlockModel, FormItemModel } from '@nocobase/client';
+import { FlowUtils } from '../flow';
+import { Space } from 'antd';
+import { dialogController } from '../stores/dialog-controller';
+
+type SimplifyComponentNode = {
+  uid: string;
+  title: string;
+  component: string;
+  props?: Record<string, unknown>;
+  children?: Record<string, SimplifyComponentNode[]>;
+};
+
+const parseFlowModel = async (model: FlowModel) => {
+  if (!model) {
+    return {};
+  }
+  if (model instanceof FormBlockModel) {
+    return toSimplifyForm(model);
+  } else if (model instanceof CollectionBlockModel) {
+    return await toCollectionWithData(model);
+  } else {
+    return toSimplifyComponentTree(model);
+  }
+};
+
+const toSimplifyForm = (model: FormBlockModel) => {
+  const result = {
+    uid: model.uid,
+    fields: [],
+  };
+  const duplicateFields = new Set();
+  FlowUtils.walkthrough(model, (model) => {
+    if (model instanceof FormItemModel && !duplicateFields.has(model.collectionField.name)) {
+      const collectionField = model.collectionField;
+      result.fields.push({
+        name: collectionField.name,
+        type: collectionField.type,
+        // title: collectionField.title,
+        enum: collectionField.enum,
+        readonly: collectionField.readonly,
+        defaultValue: collectionField.defaultValue,
+      });
+      duplicateFields.add(collectionField.name);
+    }
+  });
+  if (model.form) {
+    result['value'] = model.form.getFieldsValue();
+  }
+  return result;
+};
+
+const toCollectionWithData = async (model: CollectionBlockModel) => {
+  const collection = FlowUtils.getCollection(model);
+  const data = await FlowUtils.getResource(model);
+  return {
+    collection: {
+      ...collection,
+      data,
+    },
+  };
+};
+
+const toSimplifyComponentTree = (model: FlowModel) => {
+  const result: SimplifyComponentNode = {
+    uid: model.uid,
+    title: model.title,
+    component: model.use,
+  };
+
+  if (model instanceof FormItemModel) {
+    const collectionField = model.collectionField;
+    result.props = {
+      readonly: collectionField.readonly,
+      name: collectionField.name,
+      type: collectionField.type,
+      dataType: collectionField.dataType,
+      title: collectionField.title,
+      enum: collectionField.enum,
+      defaultValue: collectionField.defaultValue,
+    };
+  } else {
+    result.props = { ...model.props };
+  }
+
+  if (model.subModels) {
+    result.children = {};
+    for (const [key, value] of Object.entries(model.subModels)) {
+      result.children[key] = [];
+      const flowModels = _.isArray(value) ? value : [value];
+      for (const flowModel of flowModels) {
+        result.children[key].push(toSimplifyComponentTree(flowModel));
+      }
+    }
+  }
+
+  return result;
+};
+
+const handleSelect = (ctx: FlowModelContext, onAdd: (item: Omit<ContextItem, 'type'>) => void) => {
+  dialogController.hide();
+  aiSelection.startSelect('flow-model', {
+    onSelect: ({ uid }) => {
+      if (!uid) {
+        return;
+      }
+      const model = ctx.engine.getModel(uid, true);
+      if (!model) {
+        return;
+      }
+      onAdd({
+        uid,
+        title: model.title ?? '',
+      });
+    },
+  });
+};
+
+export const FlowModelsContext: WorkContextOptions = {
+  name: 'flow-model',
+  menu: {
+    icon: <BuildOutlined />,
+    Component: () => {
+      const t = useT();
+      return <div>{t('Pick block')}</div>;
+    },
+    onClick: ({ ctx, onAdd }) => handleSelect(ctx, onAdd),
+  },
+  tag: {
+    Component: ({ item }) => {
+      const flowEngine = useFlowEngine();
+      const model = flowEngine.getModel(item.uid, true);
+      return (
+        <Space>
+          <BuildOutlined />
+          <span>{model?.title || ''}</span>
+        </Space>
+      );
+    },
+  },
+  getContent: async (app, { uid, content }) => {
+    if (content) {
+      return content;
+    }
+    const model = app.flowEngine.getModel(uid, true);
+    if (!model) {
+      return '';
+    }
+    return await parseFlowModel(model);
+  },
+};

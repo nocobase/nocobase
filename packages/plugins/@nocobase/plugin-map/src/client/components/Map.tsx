@@ -14,6 +14,7 @@ import { AMapComponentProps } from './AMap';
 import Designer from './Designer';
 import { MapComponent } from './MapComponent';
 import ReadPretty from './ReadPretty';
+import { useMapHeight } from './hook';
 
 type MapProps = AMapComponentProps;
 
@@ -26,9 +27,10 @@ const className = css`
 `;
 
 const InternalMap = connect((props: MapProps) => {
+  const height = useMapHeight();
   return (
     <div className={className}>
-      <MapComponent {...props} />
+      <MapComponent {...props} height={height} />
     </div>
   );
 }, mapReadPretty(ReadPretty));
