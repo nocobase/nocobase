@@ -4,7 +4,7 @@
   "displayName.zh-CN": "区块：JavaScript",
   "description": "A block for executing custom JavaScript code and dynamically updating HTML content.",
   "description.zh-CN": "一个用于执行自定义 JavaScript 代码并动态更新 HTML 内容的区块。",
-  "version": "1.9.0-alpha.17",
+  "version": "2.0.0-alpha",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "types": "./dist/index.d.ts",
@@ -28,10 +28,10 @@
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/flow-engine": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "keywords": [
     "nocobase",
