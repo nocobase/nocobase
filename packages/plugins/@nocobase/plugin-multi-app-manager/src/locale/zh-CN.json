@@ -20,5 +20,6 @@
   "Port": "端口号",
   "When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate.": "迁移数据时，系统会基于该端口号自动为每个应用分配一个递增的端口号，您也可以在迁移后手动修改。",
   "Migrate data to new multi-app": "迁移数据至新多应用",
-  "Multi-app is not enabled, please enable it first": "多应用未启用，请先启用"
+  "Multi-app is not enabled, please enable it first": "多应用未启用，请先启用",
+  "Please enter the port": "请输入端口号"
 }
