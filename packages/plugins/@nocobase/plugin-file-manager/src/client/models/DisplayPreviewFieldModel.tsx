@@ -8,8 +8,9 @@
  */
 
 import { EyeOutlined } from '@ant-design/icons';
-import { DetailsItemModel, FieldModel, TableColumnModel } from '@nocobase/client';
+import { DetailsItemModel, FieldModel, TableColumnModel, matchMimetype } from '@nocobase/client';
 import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
+import { useTranslation } from 'react-i18next';
 import {
   DownloadOutlined,
   LeftOutlined,
@@ -21,7 +22,7 @@ import {
   ZoomInOutlined,
   ZoomOutOutlined,
 } from '@ant-design/icons';
-import { Image, Space, Tooltip } from 'antd';
+import { Image, Space, Tooltip, Alert } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
 function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'excel' | 'file' | 'unknown' {
@@ -99,7 +100,7 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
       fallback={fallback}
       width={size}
       height={size}
-      preview={type === 'image' && { mask: <EyeOutlined /> }}
+      preview={{ mask: <EyeOutlined /> }}
       style={{
         borderRadius: 4,
         objectFit: 'cover',
@@ -109,13 +110,7 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
   );
   return (
     <div style={{ textAlign: 'center', width: size, wordBreak: 'break-all' }}>
-      {type === 'image' ? (
-        imageNode
-      ) : (
-        <a href={src} target="_blank" rel="noopener noreferrer">
-          {imageNode}
-        </a>
-      )}
+      {imageNode}
       {showFileName && (
         <Tooltip title={fileName}>
           <div
@@ -139,6 +134,7 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
 const Preview = (props) => {
   const { value = [], size = 28, showFileName } = props;
   const [current, setCurrent] = React.useState(0);
+  const { t } = useTranslation();
 
   const onDownload = () => {
     const url = value[current].url;
@@ -182,7 +178,46 @@ const Preview = (props) => {
           </Space>
         ),
         onChange: (index) => {
+          console.log(index);
           setCurrent(index);
+        },
+        imageRender: (originalNode, info) => {
+          const file: any = info.image;
+          // 根据文件类型决定如何渲染预览
+          if (matchMimetype(file, 'application/pdf')) {
+            // PDF 文件的预览
+            return <iframe src={file.url || file.preview} width="100%" height="600px" style={{ border: 'none' }} />;
+          } else if (matchMimetype(file, 'audio/*')) {
+            // 音频文件的预览
+            return (
+              <audio controls>
+                <source src={file.url || file.preview} type={file.type} />
+                您的浏览器不支持音频标签。
+              </audio>
+            );
+          } else if (matchMimetype(file, 'video/*')) {
+            // 视频文件的预览
+            return (
+              <video controls width="100%">
+                <source src={file.url || file.preview} type={file.type} />
+                您的浏览器不支持视频标签。
+              </video>
+            );
+          } else if (matchMimetype(file, 'text/plain')) {
+            // 文本文件的预览
+            return <iframe src={file.url || file.preview} width="100%" height="600px" style={{ border: 'none' }} />;
+          } else if (matchMimetype(file, 'image/*')) {
+            // 图片文件的预览
+            return originalNode;
+          } else {
+            return (
+              <Alert
+                type="warning"
+                description={t('File type is not supported for previewing, please download it to preview.')}
+                showIcon
+              />
+            );
+          }
         },
       }}
     >
