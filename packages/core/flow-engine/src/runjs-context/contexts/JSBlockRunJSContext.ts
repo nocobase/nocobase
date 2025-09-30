@@ -8,20 +8,8 @@
  */
 
 import { FlowRunJSContext } from './FlowRunJSContext';
-import { createSafeDocument, createSafeWindow } from '../../utils';
 
-export class JSBlockRunJSContext extends FlowRunJSContext {
-  static injectDefaultGlobals() {
-    return { window: createSafeWindow(), document: createSafeDocument() };
-  }
-  constructor(delegate: any) {
-    super(delegate);
-    // 显式暴露本场景所需属性
-    this.defineProperty('element', { get: () => (this as any)._delegate['element'] });
-    this.defineProperty('record', { get: () => (this as any)._delegate['record'] });
-    this.defineProperty('value', { get: () => (this as any)._delegate['value'] });
-  }
-}
+export class JSBlockRunJSContext extends FlowRunJSContext {}
 
 JSBlockRunJSContext.define({
   label: 'JSBlock RunJS context',

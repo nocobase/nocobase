@@ -8,20 +8,8 @@
  */
 
 import { FlowRunJSContext } from './FlowRunJSContext';
-import { createSafeDocument, createSafeWindow } from '../../utils';
 
-export class JSFieldRunJSContext extends FlowRunJSContext {
-  static injectDefaultGlobals() {
-    return { window: createSafeWindow(), document: createSafeDocument() };
-  }
-  constructor(delegate: any) {
-    super(delegate);
-    this.defineProperty('element', { get: () => (this as any)._delegate['element'] });
-    this.defineProperty('value', { get: () => (this as any)._delegate['value'] });
-    this.defineProperty('record', { get: () => (this as any)._delegate['record'] });
-    this.defineProperty('collection', { get: () => (this as any)._delegate['collection'] });
-  }
-}
+export class JSFieldRunJSContext extends FlowRunJSContext {}
 
 JSFieldRunJSContext.define({
   label: 'JSField RunJS context',

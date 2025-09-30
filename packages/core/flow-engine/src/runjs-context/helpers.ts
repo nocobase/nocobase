@@ -37,8 +37,7 @@ export function createJSRunnerWithVersion(this: FlowContext, options?: JSRunnerO
     RunJSContextRegistry.resolve('latest' as RunJSVersion, modelClass) ||
     FlowRunJSContext;
   const runCtx = new Ctor((this as any).createProxy ? (this as any).createProxy() : (this as any));
-  const def = (Ctor as any).injectDefaultGlobals?.() || {};
-  const globals = { ctx: runCtx, ...def, ...(options?.globals || {}) };
+  const globals = { ctx: runCtx, ...(options?.globals || {}) };
   // 透传 JSRunnerOptions 其余配置（如 timeoutMs）
   const { timeoutMs } = options || {};
   return new JSRunner({ globals, timeoutMs });

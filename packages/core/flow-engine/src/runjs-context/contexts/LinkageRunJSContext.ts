@@ -9,13 +9,7 @@
 
 import { FlowRunJSContext } from './FlowRunJSContext';
 
-export class LinkageRunJSContext extends FlowRunJSContext {
-  constructor(delegate: any) {
-    super(delegate);
-    this.defineProperty('model', { get: () => (this as any)._delegate['model'] });
-    this.defineProperty('fields', { get: () => (this as any)._delegate['fields'] });
-  }
-}
+export class LinkageRunJSContext extends FlowRunJSContext {}
 
 LinkageRunJSContext.define({
   label: 'Linkage RunJS context',

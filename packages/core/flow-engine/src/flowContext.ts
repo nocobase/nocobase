@@ -11,7 +11,6 @@ import { ISchema } from '@formily/json-schema';
 import { observable } from '@formily/reactive';
 import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
-import * as antd from 'antd';
 import { MessageInstance } from 'antd/es/message/interface';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
@@ -26,21 +25,10 @@ import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
 import { FlowI18n } from './flowI18n';
 import { JSRunner, JSRunnerOptions } from './JSRunner';
-import { createJSRunnerWithVersion } from './runjs-context';
 import { FlowModel, ForkFlowModel } from './models';
-import {
-  APIResource,
-  BaseRecordResource,
-  FlowResource,
-  FlowSQLRepository,
-  MultiRecordResource,
-  SingleRecordResource,
-  SQLResource,
-} from './resources';
+import { FlowResource, FlowSQLRepository } from './resources';
 import type { ActionDefinition, EventDefinition, ResourceType } from './types';
 import {
-  createSafeDocument,
-  createSafeWindow,
   escapeT,
   extractPropertyPath,
   extractUsedVariablePaths,
@@ -53,6 +41,7 @@ import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { FlowView, FlowViewer } from './views/FlowView';
+import { createJSRunnerWithVersion } from './runjs-context';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -892,34 +881,6 @@ export class FlowContext {
   }
 }
 
-export class FlowRunjsContext extends FlowContext {
-  constructor(delegate: FlowContext) {
-    super();
-    this.addDelegate(delegate);
-    // Expose React and antd only within runjs context
-    // This keeps the scope minimal while enabling React/AntD rendering in scripts
-    this.defineProperty('React', { value: React });
-    this.defineProperty('antd', { value: antd });
-    this.defineMethod(
-      'dispatchModelEvent',
-      async (modelOrUid: FlowModel | string, eventName: string, inputArgs?: Record<string, any>) => {
-        let model: FlowModel | null = null;
-        if (typeof modelOrUid === 'string') {
-          model = await this.engine.loadModel({ uid: modelOrUid });
-        } else if (modelOrUid instanceof FlowModel) {
-          model = modelOrUid;
-        }
-        if (model) {
-          model.context.addDelegate(this);
-          model.dispatchEvent(eventName, { navigation: false, ...this.model?.['getInputArgs']?.(), ...inputArgs });
-        } else {
-          this.message.error(this.t('Model with ID {{uid}} not found', { uid: modelOrUid }));
-        }
-      },
-    );
-  }
-}
-
 class BaseFlowEngineContext extends FlowContext {
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
@@ -1219,17 +1180,17 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       });
     });
     this.defineMethod('createJSRunner', function (options?: JSRunnerOptions) {
-      // return createJSRunnerWithVersion.call(this, options as any);
-      const runCtx = new FlowRunjsContext(this.createProxy());
-      return new JSRunner({
-        ...options,
-        globals: {
-          ctx: runCtx,
-          window: createSafeWindow(),
-          document: createSafeDocument(),
-          ...options?.globals,
-        },
-      });
+      return createJSRunnerWithVersion.call(this, options);
+      // const runCtx = new FlowRunjsContext(this.createProxy());
+      // return new JSRunner({
+      //   ...options,
+      //   globals: {
+      //     ctx: runCtx,
+      //     window: createSafeWindow(),
+      //     document: createSafeDocument(),
+      //     ...options?.globals,
+      //   },
+      // });
     });
     // 复制文本到剪贴板（优先使用 Clipboard API，降级到 execCommand）
     this.defineMethod('copyToClipboard', async (text: string) => {
