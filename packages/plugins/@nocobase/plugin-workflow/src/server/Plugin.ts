@@ -8,21 +8,20 @@
  */
 
 import path from 'path';
-import { randomUUID } from 'crypto';
 
 import { Snowflake } from 'nodejs-snowflake';
-import { Transaction, Transactionable } from 'sequelize';
+import { Transactionable } from 'sequelize';
 import LRUCache from 'lru-cache';
 
 import { Op } from '@nocobase/database';
-import { Plugin, QueueEventOptions } from '@nocobase/server';
+import { Plugin } from '@nocobase/server';
 import { Registry, uid } from '@nocobase/utils';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Logger, LoggerOptions } from '@nocobase/logger';
 
+import Dispatcher, { EventOptions, WORKER_JOB_WORKFLOW_PROCESS } from './Dispatcher';
 import Processor from './Processor';
 import initActions from './actions';
-import { EXECUTION_STATUS } from './constants';
 import initFunctions, { CustomFunction } from './functions';
 import Trigger from './triggers';
 import CollectionTrigger from './triggers/CollectionTrigger';
@@ -36,27 +35,10 @@ import DestroyInstruction from './instructions/DestroyInstruction';
 import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
 
-import type { ExecutionModel, JobModel, WorkflowModel } from './types';
+import type { ExecutionModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
 
 type ID = number | string;
-
-type Pending = { execution: ExecutionModel; job?: JobModel; force?: boolean };
-
-export type EventOptions = {
-  eventKey?: string;
-  context?: any;
-  deferred?: boolean;
-  manually?: boolean;
-  force?: boolean;
-  stack?: Array<ID>;
-  onTriggerFail?: Function;
-  [key: string]: any;
-} & Transactionable;
-
-type CachedEvent = [WorkflowModel, any, EventOptions];
-
-const WORKER_JOB_WORKFLOW_PROCESS = 'workflow:process';
 
 export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
@@ -65,32 +47,11 @@ export default class PluginWorkflowServer extends Plugin {
   enabledCache: Map<number, WorkflowModel> = new Map();
   snowflake: Snowflake;
 
-  private ready = false;
-  private executing: Promise<any> | null = null;
-  private pending: Pending[] = [];
-  private events: CachedEvent[] = [];
-  private eventsCount = 0;
+  private dispatcher = new Dispatcher(this);
 
   private loggerCache: LRUCache<string, Logger>;
   private meter = null;
   private checker: NodeJS.Timeout = null;
-
-  private onQueueExecution: QueueEventOptions['process'] = async (event) => {
-    const ExecutionRepo = this.db.getRepository('executions');
-    const execution: ExecutionModel = await ExecutionRepo.findOne({
-      filterByTk: event.executionId,
-    });
-    if (!execution || execution.status !== EXECUTION_STATUS.QUEUEING) {
-      this.getLogger('dispatcher').info(
-        `execution (${event.executionId}) from queue not found or not in queueing status, skip`,
-      );
-      return;
-    }
-    this.getLogger(execution.workflowId).info(
-      `execution (${execution.id}) received from queue, adding to pending list`,
-    );
-    this.run({ execution });
-  };
 
   private onBeforeSave = async (instance: WorkflowModel, { transaction, cycling }) => {
     if (cycling) {
@@ -172,7 +133,7 @@ export default class PluginWorkflowServer extends Plugin {
   //   * add all hooks for enabled workflows
   //   * add hooks for create/update[enabled]/delete workflow to add/remove specific hooks
   private onAfterStart = async () => {
-    this.ready = true;
+    this.dispatcher.setReady(true);
 
     const collection = this.db.getCollection('workflows');
     const workflows = await collection.repository.find({
@@ -199,19 +160,19 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.checker = setInterval(() => {
       this.getLogger('dispatcher').debug(`(cycling) check for queueing executions`);
-      this.dispatch();
+      this.dispatcher.dispatch();
     }, 300_000);
 
     this.app.on('workflow:dispatch', () => {
       this.app.logger.info('workflow:dispatch');
-      this.dispatch();
+      this.dispatcher.dispatch();
     });
 
     // check for queueing executions
     this.getLogger('dispatcher').info('(starting) check for queueing executions');
-    this.dispatch();
+    this.dispatcher.dispatch();
 
-    this.ready = true;
+    this.dispatcher.setReady(true);
   };
 
   private onBeforeStop = async () => {
@@ -220,13 +181,7 @@ export default class PluginWorkflowServer extends Plugin {
       this.toggle(workflow, false, { silent: true });
     }
 
-    this.ready = false;
-    if (this.events.length) {
-      await this.prepare();
-    }
-    if (this.executing) {
-      await this.executing;
-    }
+    await this.dispatcher.beforeStop();
 
     if (this.checker) {
       clearInterval(this.checker);
@@ -352,9 +307,8 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     this.app.backgroundJobManager.subscribe(`${this.name}.pendingExecution`, {
-      idle: () =>
-        this.app.serving(WORKER_JOB_WORKFLOW_PROCESS) && !this.executing && !this.pending.length && !this.events.length,
-      process: this.onQueueExecution,
+      idle: () => this.app.serving(WORKER_JOB_WORKFLOW_PROCESS) && this.dispatcher.idle,
+      process: this.dispatcher.onQueueExecution,
     });
   }
 
@@ -380,7 +334,7 @@ export default class PluginWorkflowServer extends Plugin {
     this.meter = this.app.telemetry.metric.getMeter();
     const counter = this.meter.createObservableGauge('workflow.events.counter');
     counter.addCallback((result) => {
-      result.observe(this.eventsCount);
+      result.observe(this.dispatcher.getEventsCount());
     });
 
     this.app.acl.registerSnippet({
@@ -463,88 +417,15 @@ export default class PluginWorkflowServer extends Plugin {
     context: object,
     options: EventOptions = {},
   ): void | Promise<Processor | null> {
-    const logger = this.getLogger(workflow.id);
-    if (!this.ready) {
-      logger.warn(`app is not ready, event of workflow ${workflow.id} will be ignored`);
-      logger.debug(`ignored event data:`, context);
-      return;
-    }
-    if (!options.force && !options.manually && !workflow.enabled) {
-      logger.warn(`workflow ${workflow.id} is not enabled, event will be ignored`);
-      return;
-    }
-    const duplicated = this.events.find(([w, c, { eventKey }]) => {
-      if (eventKey && options.eventKey) {
-        return eventKey === options.eventKey;
-      }
-    });
-    if (duplicated) {
-      logger.warn(`event of workflow ${workflow.id} is duplicated (${options.eventKey}), event will be ignored`);
-      return;
-    }
-    // `null` means not to trigger
-    if (context == null) {
-      logger.warn(`workflow ${workflow.id} event data context is null, event will be ignored`);
-      return;
-    }
-
-    if (options.manually || this.isWorkflowSync(workflow)) {
-      return this.triggerSync(workflow, context, options);
-    }
-
-    const { transaction, ...rest } = options;
-    this.events.push([workflow, context, rest]);
-    this.eventsCount = this.events.length;
-
-    logger.info(`new event triggered, now events: ${this.events.length}`);
-    logger.debug(`event data:`, { context });
-
-    if (this.events.length > 1) {
-      logger.info(`new event is pending to be prepared after previous preparation is finished`);
-      return;
-    }
-
-    // NOTE: no await for quick return
-    setImmediate(this.prepare);
+    return this.dispatcher.trigger(workflow, context, options);
   }
 
-  private async triggerSync(
-    workflow: WorkflowModel,
-    context: object,
-    { deferred, ...options }: EventOptions = {},
-  ): Promise<Processor | null> {
-    let execution;
-    try {
-      execution = await this.createExecution(workflow, context, options);
-    } catch (err) {
-      this.getLogger(workflow.id).error(`creating execution failed: ${err.message}`, err);
-      return null;
-    }
-
-    try {
-      return this.process(execution, null, options);
-    } catch (err) {
-      this.getLogger(execution.workflowId).error(`execution (${execution.id}) error: ${err.message}`, err);
-    }
-    return null;
-  }
-
-  async run(pending: Pending): Promise<void> {
-    this.pending.push(pending);
-
-    this.dispatch();
+  public async run(pending: Parameters<Dispatcher['run']>[0]): Promise<void> {
+    return this.dispatcher.run(pending);
   }
 
   public async resume(job) {
-    let { execution } = job;
-    if (!execution) {
-      execution = await job.getExecution();
-    }
-    this.getLogger(execution.workflowId).info(
-      `execution (${execution.id}) resuming from job (${job.id}) added to pending list`,
-    );
-
-    this.run({ execution, job, force: true });
+    return this.dispatcher.resume(job);
   }
 
   /**
@@ -552,302 +433,11 @@ export default class PluginWorkflowServer extends Plugin {
    * @experimental
    */
   public async start(execution: ExecutionModel) {
-    if (execution.status !== EXECUTION_STATUS.STARTED) {
-      return;
-    }
-    this.getLogger(execution.workflowId).info(`starting deferred execution (${execution.id})`);
-
-    this.run({ execution, force: true });
-  }
-
-  private async validateEvent(workflow: WorkflowModel, context: any, options: EventOptions) {
-    const trigger = this.triggers.get(workflow.type);
-    const triggerValid = await trigger.validateEvent(workflow, context, options);
-    if (!triggerValid) {
-      return false;
-    }
-
-    const { stack } = options;
-    let valid = true;
-    if (stack?.length > 0) {
-      const existed = await workflow.countExecutions({
-        where: {
-          id: stack,
-        },
-        transaction: options.transaction,
-      });
-
-      const limitCount = workflow.options.stackLimit || 1;
-      if (existed >= limitCount) {
-        this.getLogger(workflow.id).warn(
-          `workflow ${workflow.id} has already been triggered in stacks executions (${stack}), and max call coont is ${limitCount}, newly triggering will be skipped.`,
-        );
-
-        valid = false;
-      }
-    }
-    return valid;
-  }
-  private async createExecution(
-    workflow: WorkflowModel,
-    context,
-    options: EventOptions,
-  ): Promise<ExecutionModel | null> {
-    const { deferred } = options;
-    const transaction = await this.useDataSourceTransaction('main', options.transaction, true);
-    const sameTransaction = options.transaction === transaction;
-    const valid = await this.validateEvent(workflow, context, { ...options, transaction });
-    if (!valid) {
-      if (!sameTransaction) {
-        await transaction.commit();
-      }
-      options.onTriggerFail?.(workflow, context, options);
-      return Promise.reject(new Error('event is not valid'));
-    }
-
-    let execution: ExecutionModel;
-    try {
-      execution = await workflow.createExecution(
-        {
-          context,
-          key: workflow.key,
-          eventKey: options.eventKey ?? randomUUID(),
-          stack: options.stack,
-          status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
-        },
-        { transaction },
-      );
-    } catch (err) {
-      if (!sameTransaction) {
-        await transaction.rollback();
-      }
-      throw err;
-    }
-
-    this.getLogger(workflow.id).info(`execution of workflow ${workflow.id} created as ${execution.id}`);
-
-    if (!workflow.stats) {
-      workflow.stats = await workflow.getStats({ transaction });
-    }
-    await workflow.stats.increment('executed', { transaction });
-    // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
-    if (this.db.options.dialect !== 'postgres') {
-      await workflow.stats.reload({ transaction });
-    }
-    if (!workflow.versionStats) {
-      workflow.versionStats = await workflow.getVersionStats({ transaction });
-    }
-    await workflow.versionStats.increment('executed', { transaction });
-    if (this.db.options.dialect !== 'postgres') {
-      await workflow.versionStats.reload({ transaction });
-    }
-
-    if (!sameTransaction) {
-      await transaction.commit();
-    }
-
-    execution.workflow = workflow;
-
-    return execution;
-  }
-
-  private prepare = async () => {
-    if (this.executing && this.db.options.dialect === 'sqlite') {
-      await this.executing;
-    }
-
-    const event = this.events.shift();
-    this.eventsCount = this.events.length;
-    if (!event) {
-      this.getLogger('dispatcher').info(`events queue is empty, no need to prepare`);
-      return;
-    }
-
-    const logger = this.getLogger(event[0].id);
-    logger.info(`preparing execution for event`);
-
-    try {
-      const execution = await this.createExecution(...event);
-      // NOTE: cache first execution for most cases
-      if (execution?.status === EXECUTION_STATUS.QUEUEING) {
-        if (!this.executing && !this.pending.length) {
-          logger.info(`local pending list is empty, adding execution (${execution.id}) to pending list`);
-          this.pending.push({ execution });
-        } else {
-          logger.info(`local pending list is not empty, sending execution (${execution.id}) to queue`);
-          if (this.ready) {
-            this.app.backgroundJobManager.publish(`${this.name}.pendingExecution`, { executionId: execution.id });
-          }
-        }
-      }
-    } catch (error) {
-      logger.error(`failed to create execution:`, { error });
-      // this.events.push(event); // NOTE: retry will cause infinite loop
-    }
-
-    if (this.events.length) {
-      await this.prepare();
-    } else {
-      this.getLogger('dispatcher').info('no more events need to be prepared, dispatching...');
-      if (this.executing) {
-        await this.executing;
-      }
-      this.dispatch();
-    }
-  };
-
-  private dispatch() {
-    if (!this.ready) {
-      this.getLogger('dispatcher').warn(`app is not ready, new dispatching will be ignored`);
-      return;
-    }
-
-    if (!this.app.serving(WORKER_JOB_WORKFLOW_PROCESS)) {
-      this.getLogger('dispatcher').warn(
-        `${WORKER_JOB_WORKFLOW_PROCESS} is not serving, new dispatching will be ignored`,
-      );
-      return;
-    }
-
-    if (this.executing) {
-      this.getLogger('dispatcher').warn(`workflow executing is not finished, new dispatching will be ignored`);
-      return;
-    }
-
-    if (this.events.length) {
-      return this.prepare();
-    }
-
-    this.executing = (async () => {
-      let next: [ExecutionModel, JobModel?] | null = null;
-      let execution: ExecutionModel | null = null;
-      // resuming has high priority
-      if (this.pending.length) {
-        const pending = this.pending.shift() as Pending;
-        execution = pending.force ? pending.execution : await this.acquirePendingExecution(pending.execution);
-        if (execution) {
-          next = [execution, pending.job];
-          this.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
-        }
-      } else {
-        execution = await this.acquireQueueingExecution();
-        if (execution) {
-          next = [execution];
-        }
-      }
-      if (next) {
-        await this.process(...next);
-      }
-      this.executing = null;
-
-      if (next || this.pending.length) {
-        this.getLogger('dispatcher').debug(`last process finished, will do another dispatch`);
-        this.dispatch();
-      }
-    })();
-  }
-
-  private async acquirePendingExecution(execution: ExecutionModel): Promise<ExecutionModel | null> {
-    const logger = this.getLogger(execution.workflowId);
-    const isolationLevel = this.db.options.dialect === 'sqlite' ? [][0] : Transaction.ISOLATION_LEVELS.REPEATABLE_READ;
-    let fetched = execution;
-    try {
-      await this.db.sequelize.transaction({ isolationLevel }, async (transaction) => {
-        const ExecutionModelClass = this.db.getModel('executions');
-        const [affected] = await ExecutionModelClass.update(
-          { status: EXECUTION_STATUS.STARTED },
-          {
-            where: {
-              id: execution.id,
-              status: {
-                [Op.is]: EXECUTION_STATUS.QUEUEING,
-              },
-            },
-            transaction,
-          },
-        );
-        if (!affected) {
-          fetched = null;
-          return;
-        }
-        await execution.reload({ transaction });
-      });
-    } catch (error) {
-      logger.error(`acquiring pending execution failed: ${error.message}`, { error });
-    }
-    return fetched;
-  }
-
-  private async acquireQueueingExecution(): Promise<ExecutionModel | null> {
-    const isolationLevel = this.db.options.dialect === 'sqlite' ? [][0] : Transaction.ISOLATION_LEVELS.REPEATABLE_READ;
-    let fetched: ExecutionModel | null = null;
-    try {
-      await this.db.sequelize.transaction(
-        {
-          isolationLevel,
-        },
-        async (transaction) => {
-          const execution = (await this.db.getRepository('executions').findOne({
-            filter: {
-              status: {
-                [Op.is]: EXECUTION_STATUS.QUEUEING,
-              },
-              'workflow.enabled': true,
-            },
-            sort: 'id',
-            transaction,
-          })) as ExecutionModel;
-          if (execution) {
-            this.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
-            await execution.update(
-              {
-                status: EXECUTION_STATUS.STARTED,
-              },
-              { transaction },
-            );
-            execution.workflow = this.enabledCache.get(execution.workflowId);
-            fetched = execution;
-          } else {
-            this.getLogger('dispatcher').debug(`no execution in db queued to process`);
-          }
-        },
-      );
-    } catch (error) {
-      this.getLogger('dispatcher').error(`fetching execution from db failed: ${error.message}`, { error });
-    }
-    return fetched;
+    return this.dispatcher.start(execution);
   }
 
   public createProcessor(execution: ExecutionModel, options = {}): Processor {
     return new Processor(execution, { ...options, plugin: this });
-  }
-
-  private async process(execution: ExecutionModel, job?: JobModel, options: Transactionable = {}): Promise<Processor> {
-    const logger = this.getLogger(execution.workflowId);
-    if (execution.status === EXECUTION_STATUS.QUEUEING) {
-      const transaction = await this.useDataSourceTransaction('main', options.transaction);
-      await execution.update({ status: EXECUTION_STATUS.STARTED }, { transaction });
-      logger.info(`execution (${execution.id}) from pending list updated to started`);
-    }
-    const processor = this.createProcessor(execution, options);
-
-    logger.info(`execution (${execution.id}) ${job ? 'resuming' : 'starting'}...`);
-
-    // this.emit('beforeProcess', processor);
-
-    try {
-      await (job ? processor.resume(job) : processor.start());
-      logger.info(`execution (${execution.id}) finished with status: ${execution.status}`, { execution });
-      if (execution.status && execution.workflow.options?.deleteExecutionOnStatus?.includes(execution.status)) {
-        await execution.destroy({ transaction: processor.mainTransaction });
-      }
-    } catch (err) {
-      logger.error(`execution (${execution.id}) error: ${err.message}`, err);
-    }
-
-    // this.emit('afterProcess', processor);
-
-    return processor;
   }
 
   async execute(workflow: WorkflowModel, values, options: EventOptions = {}) {
