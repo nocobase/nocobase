@@ -15,7 +15,7 @@ import { parseDateWithoutMs, SCHEDULE_MODE } from './utils';
 import { parseCollectionName, SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 import { pick } from 'lodash';
 import { toJSON } from '../../utils';
-import { EventOptions } from '../../Plugin';
+import { EventOptions } from '../../Dispatcher';
 
 export type ScheduleOnField = {
   field: string;
