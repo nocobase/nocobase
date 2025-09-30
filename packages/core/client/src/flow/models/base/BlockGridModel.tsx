@@ -8,13 +8,25 @@
  */
 
 import { PlusOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowSettingsButton } from '@nocobase/flow-engine';
-import _ from 'lodash';
+import { AddSubModelButton, FlowSettingsButton, DragOverlayConfig } from '@nocobase/flow-engine';
 import React from 'react';
 import { FilterManager } from '../blocks/filter-manager/FilterManager';
 import { GridModel } from './GridModel';
 
 export class BlockGridModel extends GridModel {
+  dragOverlayConfig: DragOverlayConfig = {
+    // 列内插入
+    columnInsert: {
+      before: { offsetTop: -24 },
+      after: { offsetTop: 24 },
+    },
+    // 列边缘
+    columnEdge: {
+      left: { offsetLeft: -5 },
+      right: { offsetLeft: 6 },
+    },
+  };
+
   onInit(options: any) {
     super.onInit(options);
     this.context.defineProperty('blockGridModel', {

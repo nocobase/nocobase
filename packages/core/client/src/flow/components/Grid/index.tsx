@@ -9,24 +9,37 @@
 
 import { EMPTY_COLUMN_UID } from '@nocobase/flow-engine';
 import { Col, Row } from 'antd';
-import _ from 'lodash';
 import React from 'react';
 
-export function Grid(props: {
-  rows: Record<string, string[][]>;
-  sizes?: Record<string, number[]>;
-  renderItem: (uid: string) => React.ReactNode;
-  rowGap?: number;
-  colGap?: number;
-}) {
-  const { rows, sizes = {}, renderItem, rowGap = 16, colGap = 16 } = props;
+interface DragOverlayRect {
+  readonly top: number;
+  readonly left: number;
+  readonly width: number;
+  readonly height: number;
+  readonly type: 'column' | 'column-edge' | 'row-gap' | 'empty-row' | 'empty-column';
+}
 
+interface GridProps {
+  readonly rows: Record<string, string[][]>;
+  readonly sizes?: Record<string, number[]>;
+  readonly renderItem: (uid: string) => React.ReactNode;
+  readonly rowGap?: number;
+  readonly colGap?: number;
+  readonly dragOverlayRect?: DragOverlayRect | null;
+}
+
+export function Grid({ rows, sizes = {}, renderItem, rowGap = 16, colGap = 16, dragOverlayRect }: GridProps) {
   if (Object.keys(rows || {}).length === 0) {
-    return null;
+    return (
+      <div style={{ position: 'relative' }} data-grid-empty-container>
+        {dragOverlayRect && <GridDragOverlay rect={dragOverlayRect} />}
+      </div>
+    );
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: rowGap }}>
+      {dragOverlayRect && <GridDragOverlay rect={dragOverlayRect} />}
       {Object.entries(rows).map(([rowKey, cells]) => {
         const colCount = cells.length;
         const rowSizes = sizes[rowKey] || [];
@@ -45,22 +58,101 @@ export function Grid(props: {
         });
 
         return (
-          <Row key={rowKey} gutter={colGap}>
+          <Row key={rowKey} gutter={colGap} data-grid-row-id={rowKey}>
             {cells.map((cell, cellIdx) => (
-              <Col key={cellIdx} span={spans[cellIdx]}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
-                  {cell.map((uid) => {
-                    if (uid === EMPTY_COLUMN_UID) {
-                      return null;
-                    }
-                    return <React.Fragment key={uid}>{renderItem(uid)}</React.Fragment>;
-                  })}
-                </div>
-              </Col>
+              <GridColumn
+                key={`${rowKey}:${cell.join('|') || 'empty'}`}
+                rowKey={rowKey}
+                columnIndex={cellIdx}
+                span={spans[cellIdx]}
+                rowGap={rowGap}
+                cell={cell}
+                renderItem={renderItem}
+              />
             ))}
           </Row>
         );
       })}
     </div>
   );
+}
+
+interface GridColumnProps {
+  readonly rowKey: string;
+  readonly columnIndex: number;
+  readonly span: number;
+  readonly rowGap: number;
+  readonly cell: readonly string[];
+  readonly renderItem: (uid: string) => React.ReactNode;
+}
+
+const GridColumn = React.memo(function GridColumn({
+  rowKey,
+  columnIndex,
+  span,
+  rowGap,
+  cell,
+  renderItem,
+}: GridColumnProps) {
+  return (
+    <Col span={span} data-grid-column-row-id={rowKey} data-grid-column-index={columnIndex}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: rowGap }}>
+        {cell.map((uid, itemIdx) => {
+          if (uid === EMPTY_COLUMN_UID) {
+            return null;
+          }
+          return (
+            <div
+              key={uid}
+              data-grid-item-row-id={rowKey}
+              data-grid-column-index={columnIndex}
+              data-grid-item-index={itemIdx}
+              data-grid-item-uid={uid}
+            >
+              {renderItem(uid)}
+            </div>
+          );
+        })}
+      </div>
+    </Col>
+  );
+});
+GridColumn.displayName = 'GridColumn';
+function GridDragOverlay({ rect }: Readonly<{ rect: DragOverlayRect }>) {
+  const baseStyle: React.CSSProperties = {
+    position: 'absolute',
+    top: rect.top,
+    left: rect.left,
+    width: rect.width,
+    height: rect.height,
+    borderRadius: 6,
+    pointerEvents: 'none',
+    transition: 'all 60ms ease-out',
+    zIndex: 100,
+  };
+
+  const typeStyles: Record<DragOverlayRect['type'], React.CSSProperties> = {
+    column: {
+      border: '2px dashed var(--colorPrimary)',
+      backgroundColor: 'rgba(22, 119, 255, 0.08)',
+    },
+    'column-edge': {
+      border: '2px solid var(--colorPrimary)',
+      backgroundColor: 'rgba(22, 119, 255, 0.12)',
+    },
+    'row-gap': {
+      border: '2px dashed var(--colorPrimary)',
+      backgroundColor: 'rgba(22, 119, 255, 0.05)',
+    },
+    'empty-row': {
+      border: '2px dashed var(--colorPrimary)',
+      backgroundColor: 'rgba(22, 119, 255, 0.04)',
+    },
+    'empty-column': {
+      border: '2px dashed var(--colorPrimary)',
+      backgroundColor: 'rgba(22, 119, 255, 0.04)',
+    },
+  };
+
+  return <div style={{ ...baseStyle, ...typeStyles[rect.type] }} />;
 }
