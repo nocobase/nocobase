@@ -186,12 +186,14 @@ export class PluginClientServer extends Plugin {
     });
     this.db.on('desktopRoutes.afterDestroy', async (instance: Model, { transaction }) => {
       const r = this.db.getRepository('flowModels');
-      await r.destroy({
-        filter: {
-          uid: instance.get('schemaUid'),
-        },
-        transaction,
-      });
+      if (r) {
+        await r.destroy({
+          filter: {
+            uid: instance.get('schemaUid'),
+          },
+          transaction,
+        });
+      }
     });
     this.db.on('desktopRoutes.afterCreate', async (instance: Model, { transaction }) => {
       const r = this.db.getRepository('flowModels');
