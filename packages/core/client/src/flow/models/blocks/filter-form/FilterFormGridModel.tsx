@@ -8,7 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowSettingsButton, observable } from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowSettingsButton, observable, DragOverlayConfig } from '@nocobase/flow-engine';
 import React from 'react';
 import { CollectionBlockModel, GridModel } from '../../base';
 import { getAllDataModels } from '../filter-manager/utils';
@@ -22,6 +22,23 @@ export class FilterFormGridModel extends GridModel {
       left: -6,
       right: -6,
       bottom: -6,
+    },
+  };
+  dragOverlayConfig: DragOverlayConfig = {
+    // 列内插入
+    columnInsert: {
+      before: { offsetTop: -12, height: 24 },
+      after: { offsetTop: 7, height: 24 },
+    },
+    // 列边缘
+    columnEdge: {
+      left: { offsetLeft: -5, width: 24 },
+      right: { offsetLeft: 8, width: 24 },
+    },
+    // 行间隙
+    rowGap: {
+      above: { offsetTop: 0, height: 24 },
+      below: { offsetTop: -14, height: 24 },
     },
   };
 
