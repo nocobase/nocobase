@@ -41,7 +41,19 @@ import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { FlowView, FlowViewer } from './views/FlowView';
-import { createJSRunnerWithVersion } from './runjs-context';
+type CreateJSRunnerWithVersion = (typeof import('./runjs-context'))['createJSRunnerWithVersion'];
+
+let cachedCreateJSRunnerWithVersion: CreateJSRunnerWithVersion | null = null;
+
+function getCreateJSRunnerWithVersion(): CreateJSRunnerWithVersion {
+  if (!cachedCreateJSRunnerWithVersion) {
+    // Defer loading runjs-context until runtime to avoid circular dependency during module init
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const mod = require('./runjs-context');
+    cachedCreateJSRunnerWithVersion = mod.createJSRunnerWithVersion;
+  }
+  return cachedCreateJSRunnerWithVersion;
+}
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -1180,6 +1192,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       });
     });
     this.defineMethod('createJSRunner', function (options?: JSRunnerOptions) {
+      const createJSRunnerWithVersion = getCreateJSRunnerWithVersion();
       return createJSRunnerWithVersion.call(this, options);
       // const runCtx = new FlowRunjsContext(this.createProxy());
       // return new JSRunner({
