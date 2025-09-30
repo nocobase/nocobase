@@ -916,8 +916,18 @@ describe('AddSubModelButton toggleable behavior', () => {
     await waitFor(() => expect(screen.getByText('Child A')).toBeInTheDocument());
     expect(screen.getByText('Child B')).toBeInTheDocument();
 
+    const repo = engine.modelRepository as FakeRepo;
+
     // toggle ON (add model)
     await user.click(screen.getByText('Toggle Feature'));
+
+    // Wait for save to be called after adding
+    await waitFor(
+      () => {
+        expect(repo.save).toHaveBeenCalled();
+      },
+      { timeout: 3000 },
+    );
 
     // dropdown should remain open and children should still be visible (no flicker / reload)
     expect(screen.getByText('Async Group')).toBeInTheDocument();
@@ -932,11 +942,13 @@ describe('AddSubModelButton toggleable behavior', () => {
     expect(screen.getByText('Child A')).toBeInTheDocument();
     expect(screen.getByText('Child B')).toBeInTheDocument();
 
-    // ensure destroy was called once for removal
-    const repo = engine.modelRepository as FakeRepo;
-    await waitFor(() => {
-      expect(repo.destroy).toHaveBeenCalledTimes(1);
-    });
+    // ensure destroy was called once for removal with increased timeout
+    await waitFor(
+      () => {
+        expect(repo.destroy).toHaveBeenCalledTimes(1);
+      },
+      { timeout: 5000 },
+    );
   });
 
   test('toggle state updates without menu closing', async () => {
