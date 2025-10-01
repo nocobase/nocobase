@@ -9,13 +9,7 @@
 
 import { FlowRunJSContext } from './FlowRunJSContext';
 
-export class JSRecordActionRunJSContext extends FlowRunJSContext {
-  constructor(delegate: any) {
-    super(delegate);
-    this.defineProperty('record', { get: () => (this as any)._delegate['record'] });
-    this.defineProperty('filterByTk', { get: () => (this as any)._delegate['filterByTk'] });
-  }
-}
+export class JSRecordActionRunJSContext extends FlowRunJSContext {}
 
 JSRecordActionRunJSContext.define({
   label: 'JSRecordAction RunJS context',

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowContext } from '../../flowContext';
+import { FlowContext } from '../../flowContext';
 import * as antd from 'antd';
 import React from 'react';
 import * as ReactDOMClient from 'react-dom/client';
@@ -39,105 +39,15 @@ function deepMerge(base: any, patch: any) {
   return out;
 }
 
-export class FlowRunJSContext {
-  protected _delegate: FlowContext;
-  [key: string]: any;
-  static allow?: { keys?: ReadonlyArray<string>; facades?: Record<string, ReadonlyArray<string>> };
-
+export class FlowRunJSContext extends FlowContext {
   constructor(delegate: FlowContext) {
-    this._delegate = delegate;
-    const self = this as any;
-    // 常用前端依赖直接注入
-    self.React = React;
-    self.react = React;
-    self.antd = antd;
-    self.ReactDOM = ReactDOMClient;
-    // 公共方法：分发模型事件
-    self.dispatchModelEvent = async (modelOrUid: any, eventName: string, inputArgs?: Record<string, any>) => {
-      let model: any = null;
-      const engine = (this._delegate as any).engine;
-      if (typeof modelOrUid === 'string') {
-        model = await engine?.loadModel?.({ uid: modelOrUid });
-      } else if (modelOrUid && typeof modelOrUid === 'object' && typeof modelOrUid.dispatchEvent === 'function') {
-        model = modelOrUid;
-      }
-      if (model) {
-        model.context?.addDelegate?.(self);
-        model.dispatchEvent(eventName, {
-          navigation: false,
-          ...(self.model?.['getInputArgs']?.() || {}),
-          ...(inputArgs || {}),
-        });
-      } else {
-        self.message?.error?.(
-          self.t?.('Model with ID {{uid}} not found', { uid: String(modelOrUid) }) || 'Model not found',
-        );
-      }
-    };
-
-    // 显式暴露：基础属性（只读 getter 映射到委托）
-    this.#exposeProps([
-      'message',
-      'notification',
-      'logger',
-      'resource',
-      'urlSearchParams',
-      'token',
-      'role',
-      'auth',
-      'api',
-      'ref',
-      'model',
-    ]);
-    // 显式暴露：基础方法（绑定到委托）
-    this.#exposeMethods(['t', 'requireAsync', 'copyToClipboard', 'resolveJsonTemplate', 'runAction', 'onRefReady']);
+    super();
+    this.addDelegate(delegate);
+    // 常用依赖直接注入到运行环境
+    this.defineProperty('React', { value: React });
+    this.defineProperty('antd', { value: antd });
+    this.defineProperty('ReactDOM', { value: ReactDOMClient });
   }
-
-  // 供子类/外部一致使用的定义 API（与 FlowContext 的接口保持一致风格）
-  defineProperty(key: string, options: { get?: (ctx: any) => any; value?: any }) {
-    if (options && typeof options.get === 'function') {
-      Object.defineProperty(this, key, {
-        configurable: true,
-        enumerable: true,
-        get: () => options.get?.(this),
-      });
-      return;
-    }
-    Object.defineProperty(this, key, {
-      configurable: true,
-      enumerable: true,
-      writable: false,
-      value: options?.value,
-    });
-  }
-  defineMethod(name: string, fn: (...args: any[]) => any) {
-    Object.defineProperty(this, name, {
-      configurable: true,
-      enumerable: false,
-      writable: false,
-      value: fn.bind(this),
-    });
-  }
-
-  // 工具：将委托上的属性以 getter 暴露
-  #exposeProps(names: string[]) {
-    for (const k of names) {
-      if (Object.prototype.hasOwnProperty.call(this, k)) continue;
-      this.defineProperty(k, { get: () => (this._delegate as any)[k] });
-    }
-  }
-  // 工具：将委托上的同名方法绑定暴露
-  #exposeMethods(names: string[]) {
-    for (const k of names) {
-      if (Object.prototype.hasOwnProperty.call(this, k)) continue;
-      const src = (this._delegate as any)[k];
-      if (typeof src === 'function') {
-        this.defineMethod(k, src.bind(this._delegate));
-      }
-    }
-  }
-
-  static injectDefaultGlobals?(): { window?: any; document?: any } | void;
 
   static define(meta: RunJSDocMeta) {
     const prev = classMeta.get(this) || {};
@@ -185,6 +95,6 @@ FlowRunJSContext.define({
     antd: 'AntD 组件库（RunJS 环境可用）',
   },
   methods: {
-    dispatchModelEvent: "触发模型事件：`await ctx.dispatchModelEvent(modelUid, 'click', { ... })`",
+    openView: '打开视图：`await ctx.openView(viewId, { ... })`',
   },
 });
