@@ -268,7 +268,9 @@ export async function getPluginInfoByNpm(options: GetPluginInfoOptions) {
     version = await getLatestVersion(packageName, registry, authToken);
   }
 
-  const compressedFileUrl = `${registry}/${packageName}/-/${packageName.split('/').pop()}-${version}.tgz`;
+  const npmInfo = await getNpmInfo(packageName, registry, authToken);
+
+  const compressedFileUrl = npmInfo.versions[version].dist.tarball;
 
   return { compressedFileUrl, version };
 }
