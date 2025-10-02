@@ -41,7 +41,9 @@ import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { FlowView, FlowViewer } from './views/FlowView';
-type CreateJSRunnerWithVersion = (typeof import('./runjs-context'))['createJSRunnerWithVersion'];
+// 避免在类型层面触发对 runjs-context 的动态导入，防止模块初始化时出现循环依赖
+// 直接声明函数签名以满足类型需求
+type CreateJSRunnerWithVersion = (this: FlowContext, options?: JSRunnerOptions) => JSRunner;
 
 let cachedCreateJSRunnerWithVersion: CreateJSRunnerWithVersion | null = null;
 
@@ -978,10 +980,10 @@ export class FlowEngineContext extends BaseFlowEngineContext {
     });
     this.defineMethod('runjs', async (code, variables, options?: JSRunnerOptions) => {
       const mergedGlobals = { ...(options?.globals || {}), ...(variables || {}) };
-      const runner = this.createJSRunner({
+      const runner = (await (this as any).createJSRunner({
         ...(options || {}),
         globals: mergedGlobals,
-      });
+      })) as JSRunner;
       return runner.run(code);
     });
     this.defineMethod('renderJson', function (template: any) {
@@ -1192,18 +1194,14 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       });
     });
     this.defineMethod('createJSRunner', function (options?: JSRunnerOptions) {
-      const createJSRunnerWithVersion = getCreateJSRunnerWithVersion();
-      return createJSRunnerWithVersion.call(this, options);
-      // const runCtx = new FlowRunjsContext(this.createProxy());
-      // return new JSRunner({
-      //   ...options,
-      //   globals: {
-      //     ctx: runCtx,
-      //     window: createSafeWindow(),
-      //     document: createSafeDocument(),
-      //     ...options?.globals,
-      //   },
-      // });
+      try {
+        const createJSRunnerWithVersion = getCreateJSRunnerWithVersion();
+        return createJSRunnerWithVersion.call(this, options);
+      } catch (e) {
+        // 兼容 ESM 环境下 require 失败的情况，动态导入模块
+        const self = this as any;
+        return import('./runjs-context').then((mod) => mod.createJSRunnerWithVersion.call(self, options));
+      }
     });
     // 复制文本到剪贴板（优先使用 Clipboard API，降级到 execCommand）
     this.defineMethod('copyToClipboard', async (text: string) => {
@@ -1357,7 +1355,7 @@ export class FlowModelContext extends BaseFlowModelContext {
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
     this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
-      const runner = this.createJSRunner({
+      const runner = await (this as any).createJSRunner({
         globals: variables,
         version: options?.version,
       });
@@ -1497,7 +1495,7 @@ export class FlowForkModelContext extends BaseFlowModelContext {
       },
     });
     this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
-      const runner = this.createJSRunner({
+      const runner = await (this as any).createJSRunner({
         globals: variables,
         version: options?.version,
       });
@@ -1558,7 +1556,7 @@ export class FlowRuntimeContext<
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
     this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
-      const runner = this.createJSRunner({
+      const runner = await (this as any).createJSRunner({
         globals: variables,
         version: options?.version,
       });

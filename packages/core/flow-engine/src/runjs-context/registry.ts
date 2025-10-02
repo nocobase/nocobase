@@ -7,43 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSVersion, RunJSContextCtor } from './contexts/FlowRunJSContext';
-import { FlowRunJSContext } from './contexts/FlowRunJSContext';
-import { JSBlockRunJSContext } from './contexts/JSBlockRunJSContext';
-import { JSFieldRunJSContext } from './contexts/JSFieldRunJSContext';
-import { JSItemRunJSContext } from './contexts/JSItemRunJSContext';
-import { FormJSFieldItemRunJSContext } from './contexts/FormJSFieldItemRunJSContext';
-import { JSRecordActionRunJSContext } from './contexts/JSRecordActionRunJSContext';
-import { JSCollectionActionRunJSContext } from './contexts/JSCollectionActionRunJSContext';
+// 为避免在模块初始化阶段引入 FlowContext（从而触发循环依赖），不要在顶层导入各类 RunJSContext。
+// 在需要默认映射时（首次 resolve）再使用 createRequire 同步加载对应模块。
+import { createRequire } from 'module';
+
+export type RunJSVersion = 'v1' | (string & {});
+export type RunJSContextCtor = new (delegate: any) => any;
 
 export class RunJSContextRegistry {
   private static map = new Map<string, RunJSContextCtor>();
-  private static defaultsRegistered = false;
-  private static ensureDefaults() {
-    if (this.defaultsRegistered) return;
-    // v1 默认映射（延迟注册：首次访问时再注册）
-    const v = 'v1' as RunJSVersion;
-    try {
-      const ensure = (model: string, ctor: RunJSContextCtor) => {
-        const key = `${v}:${model}`;
-        if (!this.map.has(key)) this.map.set(key, ctor);
-      };
-      ensure('JSBlockModel', JSBlockRunJSContext as any);
-      ensure('JSFieldModel', JSFieldRunJSContext as any);
-      ensure('JSItemModel', JSItemRunJSContext as any);
-      ensure('FormJSFieldItemModel', FormJSFieldItemRunJSContext as any);
-      ensure('JSRecordActionModel', JSRecordActionRunJSContext as any);
-      ensure('JSCollectionActionModel', JSCollectionActionRunJSContext as any);
-      ensure('*', FlowRunJSContext as any);
-    } finally {
-      this.defaultsRegistered = true;
-    }
-  }
   static register(version: RunJSVersion, modelClass: string, ctor: RunJSContextCtor) {
     this.map.set(`${version}:${modelClass}`, ctor);
   }
   static resolve(version: RunJSVersion, modelClass: string) {
-    this.ensureDefaults();
     return this.map.get(`${version}:${modelClass}`) || this.map.get(`${version}:*`);
   }
 }

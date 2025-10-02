@@ -21,6 +21,8 @@ import { JSCollectionActionRunJSContext } from './contexts/JSCollectionActionRun
 import { LinkageRunJSContext } from './contexts/LinkageRunJSContext';
 
 export function getRunJSDocFor(ctx: FlowContext, { version = 'v1' as RunJSVersion } = {}) {
+  // 确保默认映射已注册（幂等）
+  registerDefaultMappings();
   const modelClass = getModelClassName(ctx);
   const ctor =
     RunJSContextRegistry.resolve(version, modelClass) ||
@@ -30,6 +32,8 @@ export function getRunJSDocFor(ctx: FlowContext, { version = 'v1' as RunJSVersio
 }
 
 export function createJSRunnerWithVersion(this: FlowContext, options?: JSRunnerOptions) {
+  // 确保默认映射已注册（幂等）
+  registerDefaultMappings();
   const version = (options?.version as RunJSVersion) || ('v1' as RunJSVersion);
   const modelClass = getModelClassName(this);
   const Ctor =
@@ -37,7 +41,12 @@ export function createJSRunnerWithVersion(this: FlowContext, options?: JSRunnerO
     RunJSContextRegistry.resolve('latest' as RunJSVersion, modelClass) ||
     FlowRunJSContext;
   const runCtx = new Ctor((this as any).createProxy ? (this as any).createProxy() : (this as any));
-  const globals = { ctx: runCtx, ...(options?.globals || {}) };
+  const globals: Record<string, any> = { ctx: runCtx, ...(options?.globals || {}) };
+  // 对字段/区块类上下文，默认注入 window/document 以支持在沙箱中访问 DOM API
+  if (modelClass === 'JSFieldModel' || modelClass === 'JSBlockModel') {
+    if (typeof window !== 'undefined') globals.window = window;
+    if (typeof document !== 'undefined') globals.document = document;
+  }
   // 透传 JSRunnerOptions 其余配置（如 timeoutMs）
   const { timeoutMs } = options || {};
   return new JSRunner({ globals, timeoutMs });
