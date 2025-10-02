@@ -10,6 +10,7 @@
 import { createSafeDocument, createSafeWindow, escapeT } from '@nocobase/flow-engine';
 import { CodeEditor } from '../../../components/code-editor';
 import { FilterFormActionModel } from './FilterFormActionModel';
+import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 
 export class FilterFormJSActionModel extends FilterFormActionModel {}
 
@@ -57,7 +58,7 @@ FilterFormJSActionModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        const { code = '', version = 'v1' } = params;
+        const { code, version } = resolveRunJsParams(ctx, params);
         await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
       },
     },

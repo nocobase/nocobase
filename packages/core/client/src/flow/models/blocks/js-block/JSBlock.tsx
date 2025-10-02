@@ -11,6 +11,7 @@ import { ElementProxy, escapeT, createSafeDocument, createSafeWindow } from '@no
 import { Card } from 'antd';
 import React from 'react';
 import { BlockModel } from '../../base';
+import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 import { CodeEditor } from '../../../components/code-editor';
 
 const NAMESPACE = 'client';
@@ -142,13 +143,11 @@ ctx.element.innerHTML = \`
         };
       },
       handler(ctx, params) {
-        const { code = '', version = 'v1' } = params;
+        const { code, version } = resolveRunJsParams(ctx, params);
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
-
-          // 使用统一的安全 window 和 document 执行代码
           await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
         });
       },
