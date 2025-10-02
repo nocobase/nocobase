@@ -1,0 +1,13 @@
+{
+  "License key saved successfully, please re-run the plugin installation.": "ライセンスキーが正常に保存されました。プラグインのインストールを再実行してください",
+  "License settings": "ライセンス設定",
+  "Instance ID": "インスタンスID",
+  "License key": "ライセンスキー",
+  "Enter license key": "ライセンスキーを入力",
+  "Invalid license key": "無効なライセンスキー",
+  "Change key": "キーを変更",
+  "License key has been set": "ライセンスキーが設定されました",
+  "Copied": "コピーしました",
+  "Copy": "コピー",
+  "Failed to copy, please open ./storage/.license/instance-id and copy it": "コピーに失敗しました。./storage/.license/instance-idを開いてコピーしてください"
+}
