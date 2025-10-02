@@ -36,11 +36,19 @@ export function createJSRunnerWithVersion(this: FlowContext, options?: JSRunnerO
   registerDefaultMappings();
   const version = (options?.version as RunJSVersion) || ('v1' as RunJSVersion);
   const modelClass = getModelClassName(this);
+  const ensureFlowContext = (obj: any): FlowContext => {
+    // 若调用者本身就是 FlowContext，直接使用
+    // 不能直接 import FlowContext，避免在模块初始化期引入循环；
+    // 通过 FlowRunJSContext 的原型链获取基类构造函数（即 FlowContext）。
+    const baseCtor = Object.getPrototypeOf(FlowRunJSContext.prototype)?.constructor as new () => FlowContext;
+    if (baseCtor && obj instanceof baseCtor) return obj as FlowContext;
+    return new baseCtor();
+  };
   const Ctor =
     RunJSContextRegistry.resolve(version, modelClass) ||
     RunJSContextRegistry.resolve('latest' as RunJSVersion, modelClass) ||
     FlowRunJSContext;
-  const runCtx = new Ctor((this as any).createProxy ? (this as any).createProxy() : (this as any));
+  const runCtx = new Ctor(ensureFlowContext(this));
   const globals: Record<string, any> = { ctx: runCtx, ...(options?.globals || {}) };
   // 对字段/区块类上下文，默认注入 window/document 以支持在沙箱中访问 DOM API
   if (modelClass === 'JSFieldModel' || modelClass === 'JSBlockModel') {
