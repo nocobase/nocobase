@@ -10,6 +10,7 @@
 import { ElementProxy, escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
 import React, { useEffect, useRef } from 'react';
 import { FieldModel } from '../base/FieldModel';
+import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 import { CodeEditor } from '../../components/code-editor';
 
 const DEFAULT_CODE = `const value = ctx.value;\nctx.element.innerHTML = \`<span class="nb-js-field-value">${'${'}String(value ?? '')}</span>\`;\n\n`;
@@ -136,14 +137,13 @@ JSFieldModel.registerFlow({
         },
       },
       defaultParams(ctx) {
-        const fieldTitle = ctx.collectionField?.title || 'field';
         return {
           version: 'v1',
           code: DEFAULT_CODE,
         };
       },
       async handler(ctx, params) {
-        const { code = DEFAULT_CODE, version = 'v1' } = params || {};
+        const { code, version } = resolveRunJsParams(ctx, params);
         // 暴露 element 与 value 到运行上下文
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {

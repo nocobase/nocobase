@@ -13,6 +13,7 @@
 import { escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
 import { CodeEditor } from '../../../components/code-editor';
 import { FormActionModel } from './FormActionModel';
+import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 
 export class JSFormActionModel extends FormActionModel {}
 
@@ -63,7 +64,7 @@ ctx.message.success('Current form values: ' + JSON.stringify(values));
         };
       },
       async handler(ctx, params) {
-        const { code = '', version = 'v1' } = params || {};
+        const { code, version } = resolveRunJsParams(ctx, params);
         ctx.defineMethod('refresh', async () => {
           if (ctx.blockModel?.resource?.refresh) {
             await ctx.blockModel.resource.refresh();

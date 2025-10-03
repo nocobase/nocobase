@@ -11,6 +11,7 @@ import { ElementProxy, FormItem, createSafeDocument, createSafeWindow, escapeT }
 import React from 'react';
 import { CodeEditor } from '../../components/code-editor';
 import { CommonItemModel } from '../base/CommonItemModel';
+import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 
 /**
  * JSItemModel：表单里的自定义项（非字段绑定），可执行 JS 并渲染到容器中
@@ -137,7 +138,7 @@ ctx.element.innerHTML = \`
         };
       },
       async handler(ctx, params) {
-        const { code = '', version = 'v1' } = params || {};
+        const { code, version } = resolveRunJsParams(ctx, params);
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
