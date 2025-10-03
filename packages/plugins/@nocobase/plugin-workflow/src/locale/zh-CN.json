@@ -213,6 +213,8 @@
   "Multiple records": "多条数据",
   "The result will be an object of the first matching record only, or null if no matched record.": "结果是一个对象，仅为首条匹配的记录，或空值。",
   "The result will be an array containing matched records, or an empty one if no matching records. This can be used to be processed in a loop node.": "结果会是一个数组，包含匹配条件的记录，没有匹配记录则为空数组。可以通过循环节点逐个处理。",
+  "No pagination": "不使用分页",
+  "When checked, will fetch all matched records at once, use with caution.": "选中后，将一次性获取所有匹配的记录，请谨慎使用。",
   "Exit when query result is null": "查询结果为空时，退出流程",
   "Please select collection first": "请先选择数据表",
   "Only update records matching conditions": "只更新满足条件的数据",
@@ -236,6 +238,7 @@
   "Test run": "测试执行",
   "Test run will do the actual data manipulating or API calling, please use with caution.": "测试执行会进行实际的数据操作或 API 调用，请谨慎使用。",
   "No variable": "无变量",
+  "Run": "执行",
 
   "Add node": "添加节点",
   "Move all downstream nodes to": "将所有下游节点移至",

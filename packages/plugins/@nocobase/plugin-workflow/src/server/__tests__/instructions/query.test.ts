@@ -348,6 +348,34 @@ describe('workflow > instructions > query', () => {
     });
   });
 
+  describe('noPagenation', () => {
+    it('ignores pagination when flag enabled', async () => {
+      await workflow.createNode({
+        type: 'query',
+        config: {
+          collection: 'posts',
+          multiple: true,
+          noPagenation: true,
+          params: {
+            sort: [{ field: 'id', direction: 'asc' }],
+            page: 2,
+            pageSize: 1,
+          },
+        },
+      });
+
+      await PostCollection.model.bulkCreate([{ title: 't1' }, { title: 't2' }, { title: 't3' }]);
+      await PostRepo.create({ values: { title: 't4' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result.length).toBe(4);
+      expect(job.result.map((item) => item.title)).toEqual(['t1', 't2', 't3', 't4']);
+    });
+  });
+
   describe('failOnEmpty', () => {
     it('failOnEmpty', async () => {
       const n1 = await workflow.createNode({

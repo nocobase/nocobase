@@ -16,21 +16,57 @@ import type { FlowNodeModel } from '../types';
 import { toJSON } from '../utils';
 import { Instruction } from '.';
 
+type QueryParams = {
+  filter?: Record<string, any>;
+  sort?: { field: string; direction: 'ASC' | 'DESC' }[];
+  page?: number;
+  pageSize?: number;
+  appends?: string[];
+};
+
+type QueryInstructionConfig = {
+  collection: string;
+  multiple: boolean;
+  params?: QueryParams;
+  noPagenation?: boolean;
+  failOnEmpty?: boolean;
+};
+
 export class QueryInstruction extends Instruction {
   async run(node: FlowNodeModel, input, processor: Processor) {
-    const { collection, multiple, params = {}, failOnEmpty = false } = node.config;
+    const { collection, multiple, params = {}, noPagenation = false, failOnEmpty = false } = node.config;
+    const [dataSourceName] = parseCollectionName(collection);
 
+    return this.execute({
+      collection,
+      multiple,
+      params: processor.getParsedValue(params, node.id),
+      noPagenation,
+      failOnEmpty,
+      transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
+    });
+  }
+
+  async test({ collection, multiple, params = {}, noPagenation = false, failOnEmpty = false }: QueryInstructionConfig) {
+    return this.execute({ collection, multiple, params, noPagenation, failOnEmpty });
+  }
+
+  private async execute({
+    collection,
+    multiple,
+    params = {},
+    noPagenation = false,
+    failOnEmpty = false,
+    transaction,
+  }: QueryInstructionConfig & { transaction?: any }) {
     const [dataSourceName, collectionName] = parseCollectionName(collection);
 
     const { repository } = this.workflow.app.dataSourceManager.dataSources
       .get(dataSourceName)
       .collectionManager.getCollection(collectionName);
-    const {
-      page = DEFAULT_PAGE,
-      pageSize = DEFAULT_PER_PAGE,
-      sort = [],
-      ...options
-    } = processor.getParsedValue(params, node.id);
+
+    const { page, pageSize, sort = [], ...options } = params;
+    const sortParams = Array.isArray(sort) ? sort : [];
     const appends = options.appends
       ? Array.from(
           options.appends.reduce((set, field) => {
@@ -40,14 +76,15 @@ export class QueryInstruction extends Instruction {
           }, new Set()),
         )
       : options.appends;
+
     const result = await (multiple ? repository.find : repository.findOne).call(repository, {
       ...options,
-      ...utils.pageArgsToLimitArgs(page, pageSize),
-      sort: sort
+      ...(noPagenation ? {} : utils.pageArgsToLimitArgs(page ?? DEFAULT_PAGE, pageSize ?? DEFAULT_PER_PAGE)),
+      sort: sortParams
         .filter((item) => item.field)
         .map((item) => `${item.direction?.toLowerCase() === 'desc' ? '-' : ''}${item.field}`),
       appends,
-      transaction: this.workflow.useDataSourceTransaction(dataSourceName, processor.transaction),
+      transaction,
     });
 
     if (failOnEmpty && (multiple ? !result.length : !result)) {

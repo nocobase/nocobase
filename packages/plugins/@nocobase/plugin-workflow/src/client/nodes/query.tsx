@@ -105,15 +105,65 @@ export default class extends Instruction {
       required: true,
       default: false,
     },
-    params: {
-      type: 'object',
-      'x-component': 'fieldset',
-      properties: {
-        filter,
-        sort,
-        pagination,
-        appends,
-      },
+    'params.filter': {
+      ...filter,
+      'x-reactions': [
+        {
+          dependencies: ['collection'],
+          fulfill: {
+            state: {
+              visible: '{{$deps[0] != null}}',
+            },
+          },
+        },
+      ],
+    },
+    'params.sort': {
+      ...sort,
+      'x-reactions': [
+        {
+          dependencies: ['collection'],
+          fulfill: {
+            state: {
+              visible: '{{$deps[0] != null}}',
+            },
+          },
+        },
+      ],
+    },
+    noPagenation: {
+      type: 'boolean',
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+      'x-content': `{{t("No pagination", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("When checked, will fetch all matched records at once, use with caution.", { ns: "${NAMESPACE}" })}}`,
+      default: false,
+      'x-reactions': [
+        {
+          dependencies: ['collection'],
+          fulfill: {
+            state: {
+              visible: '{{$deps[0] != null}}',
+            },
+          },
+        },
+      ],
+    },
+    'params.pagination': {
+      ...pagination,
+      'x-reactions': [
+        {
+          dependencies: ['collection', 'noPagenation'],
+          fulfill: {
+            state: {
+              visible: '{{$deps[0] != null && !$deps[1]}}',
+            },
+          },
+        },
+      ],
+    },
+    'params.appends': {
+      ...appends,
       'x-reactions': [
         {
           dependencies: ['collection'],
@@ -185,4 +235,5 @@ export default class extends Instruction {
       dataPath: `$jobsMapByNodeKey.${node.key}`,
     };
   }
+  testable = true;
 }
