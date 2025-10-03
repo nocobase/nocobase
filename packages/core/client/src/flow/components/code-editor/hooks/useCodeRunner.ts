@@ -9,7 +9,7 @@
 
 import { useCallback, useState } from 'react';
 import { parseErrorLineColumn } from '../errorHelpers';
-import { FlowModelContext, JSRunner, useFlowStep } from '@nocobase/flow-engine';
+import { FlowModelContext, JSRunner } from '@nocobase/flow-engine';
 
 export type RunLog = { level: 'log' | 'info' | 'warn' | 'error'; msg: string; line?: number; column?: number };
 
@@ -38,8 +38,6 @@ function createConsoleCapture(push: (level: RunLog['level'], args: any[]) => voi
 export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
   const [logs, setLogs] = useState<RunLog[]>([]);
   const [running, setRunning] = useState(false);
-  const stepInfo = useFlowStep();
-
   const clearLogs = useCallback(() => setLogs([]), []);
   const run = useCallback(
     async (code: string): Promise<Awaited<ReturnType<JSRunner['run']>> | undefined> => {
@@ -48,6 +46,8 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
       try {
         const model = hostCtx?.model;
         if (!model) throw new Error('No model in FlowContext');
+        const engine = hostCtx.engine;
+        const runtimeModel = engine.getModel(model.uid, true) || model;
 
         const nativeConsole: Record<RunLog['level'], (...args: any[]) => void> = {
           log: (...args) => console.log(...args),
@@ -62,11 +62,7 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         };
         const captureConsole = createConsoleCapture(push);
 
-        const path = stepInfo?.path || '';
-        const parts = path.split('_');
-        const parsedStepKey = parts.pop();
-        const parsedFlowKey = parts.pop();
-        if (!parsedFlowKey) throw new Error('No flow/step context (useFlowStep.path)');
+        runtimeModel.setStepParams?.('jsSettings', 'runJs', { code, version });
 
         // Monkey-patch JSRunner.run to inject captureConsole into globals for all runjs calls during preview
         type JSRunnerPrototype = { run: JSRunner['run'] };
@@ -104,17 +100,17 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
           }
         } as JSRunner['run'];
 
-        let stepResults: any;
-        try {
-          stepResults = await model.applyFlow(parsedFlowKey, { preview: { code, version } });
-        } finally {
-          // restore prototype
-          try {
-            (JSRunner.prototype as unknown as JSRunnerPrototype).run = originalRun;
-          } catch (e) {
-            console.warn('[useCodeRunner] restore JSRunner.run failed:', e);
+        const runOnModel = async (m) => {
+          const flow = m?.getFlow?.('jsSettings');
+          const isManual = flow?.manual === true;
+          if (isManual) {
+            await m.applyFlow('jsSettings', { preview: { code, version } });
+          } else {
+            await m.applyAutoFlows({ preview: { code, version } }, false);
           }
-        }
+        };
+
+        await runOnModel(runtimeModel);
         const timeoutMs = 12000;
         const runResult = await Promise.race([
           deferred,
@@ -125,6 +121,7 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
             ),
           ),
         ]);
+        (JSRunner.prototype as unknown as JSRunnerPrototype).run = originalRun;
         if (!runResult?.success) {
           const errText = runResult?.timeout ? 'Execution timed out' : String(runResult?.error || 'Unknown error');
           const pos = parseErrorLineColumn(runResult?.error);
@@ -140,13 +137,12 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
       } catch (err: any) {
         const msg = err?.message || String(err) || 'Run preview failed';
         setLogs((prev) => [...prev, { level: 'error', msg }]);
-        console.warn('[useCodeRunner] preview failed:', err);
         return { success: false, error: err } as Awaited<ReturnType<JSRunner['run']>>;
       } finally {
         setRunning(false);
       }
     },
-    [hostCtx, version, stepInfo?.path],
+    [hostCtx, version],
   );
 
   return { run, logs, clearLogs, running };

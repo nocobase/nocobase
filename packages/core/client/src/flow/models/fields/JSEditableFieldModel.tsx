@@ -36,57 +36,20 @@ const JSFormRuntime: React.FC<{
   readOnly?: boolean;
 }> = ({ model, value, onChange, disabled, readOnly }) => {
   const containerRef = useRef<HTMLSpanElement>(null);
-  // 统一获取&裁剪脚本代码，避免重复 trim 判定
+  const externalRef = model.context?.ref as React.RefObject<HTMLSpanElement>;
+  const assignRefs = (el: HTMLSpanElement | null) => {
+    (containerRef as any).current = el as any;
+    if (externalRef && typeof externalRef === 'object') {
+      (externalRef as any).current = el as any;
+    }
+  };
+  // 统一获取&裁剪脚本代码，直接依赖具体 code 字符串，避免顶层 stepParams 引用未变化导致不更新
+  const codeParam = model.getStepParams('jsSettings', 'runJs')?.code as string | undefined;
   const scriptCode = useMemo(() => {
-    const raw = model.getStepParams('jsSettings', 'runJs')?.code || DEFAULT_CODE;
+    const raw = codeParam ?? DEFAULT_CODE;
     return typeof raw === 'string' ? raw.trim() : '';
-  }, [model, model.stepParams]);
+  }, [codeParam]);
 
-  // 1) 每次渲染仅更新 ctx 能力（元素/读写/状态），不执行脚本
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const element = containerRef.current;
-    const ctx = model.context;
-
-    // 暴露 element / value 读写能力（getValue 始终返回最新值）
-    ctx.defineProperty('element', { get: () => new ElementProxy(element) });
-    ctx.defineProperty('getValue', {
-      value: () => value,
-    });
-    ctx.defineProperty('setValue', {
-      value: (v) => {
-        try {
-          onChange?.(v);
-          // 同步表单上下文（双保险）
-          const name = model.props?.name;
-          if (name && Array.isArray(name)) {
-            model.context.form?.setFieldValue?.(name, v);
-          }
-        } catch (e) {
-          // ignore
-        }
-      },
-    });
-    ctx.defineProperty('namePath', { get: () => model.props?.name });
-    ctx.defineProperty('disabled', { get: () => !!disabled });
-    ctx.defineProperty('readOnly', { get: () => !!readOnly });
-  }, [value, disabled, readOnly, model, model.context, onChange]);
-
-  // 2) 仅在代码变化时执行脚本，避免输入引发的 DOM 重建导致失焦
-  useEffect(() => {
-    if (!containerRef.current || !scriptCode) return;
-    const ctx = model.context;
-    (async () => {
-      try {
-        await ctx.runjs(scriptCode, { window: createSafeWindow(), document: createSafeDocument() });
-      } catch (e) {
-        // 控制台输出，避免影响表单渲染
-        console.error('JSEditableFieldModel runjs error:', e);
-      }
-    })();
-  }, [scriptCode, model.context]);
-
-  // 3) 值变化时派发事件，供脚本按需增量更新 UI
   useEffect(() => {
     if (!containerRef.current || !scriptCode) return;
     const event = new CustomEvent('js-field:value-change', { detail: value });
@@ -106,7 +69,7 @@ const JSFormRuntime: React.FC<{
     );
   }
 
-  return <span ref={containerRef} style={{ display: 'inline-block', width: '100%' }} />;
+  return <span ref={assignRefs} style={{ display: 'inline-block', width: '100%' }} />;
 };
 
 /**
@@ -173,12 +136,29 @@ JSEditableFieldModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        // 运行期逻辑在 runtime 组件中处理；此处保持空实现，以兼容设置态预览
         const { code = '' } = params || {};
         ctx.onRefReady(ctx.ref, async (element) => {
+          // 暴露容器与读写能力（使用动态 getter 绑定 ref.current，避免容器变更失效）
           ctx.defineProperty('element', {
-            get: () => new ElementProxy(element),
+            get: () => new ElementProxy((ctx.ref as any)?.current || element),
+            cache: false,
           });
+          ctx.defineMethod('getValue', () => ctx.model.props?.value);
+          ctx.defineMethod('setValue', (v) => {
+            try {
+              // 同步到字段 props 与表单
+              ctx.model.setProps('value', v);
+              const name = ctx.model.props?.name;
+              if (name && Array.isArray(name)) {
+                ctx.form?.setFieldValue?.(name, v);
+              }
+            } catch (e) {
+              // ignore
+            }
+          });
+          ctx.defineProperty('namePath', { get: () => ctx.model.props?.name, cache: false });
+          ctx.defineProperty('disabled', { get: () => !!ctx.model.props?.disabled, cache: false });
+          ctx.defineProperty('readOnly', { get: () => !!ctx.model.props?.readOnly, cache: false });
           await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
         });
       },
