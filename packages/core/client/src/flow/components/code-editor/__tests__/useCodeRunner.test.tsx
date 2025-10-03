@@ -7,58 +7,65 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react-hooks';
-import { useCodeRunner } from '../hooks/useCodeRunner';
-import { FlowEngine, FlowModel, FlowStepContext } from '@nocobase/flow-engine';
 import React from 'react';
+import { describe, it, expect } from 'vitest';
+import { renderHook, act } from '@testing-library/react-hooks';
+import { render, waitFor } from '@testing-library/react';
+import { App, ConfigProvider } from 'antd';
+import { useCodeRunner } from '../hooks/useCodeRunner';
+import { FlowEngine, FlowModel, FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
+import { JSEditableFieldModel } from '../../../models/fields/JSEditableFieldModel';
 
-describe('useCodeRunner', () => {
-  let engine: FlowEngine;
-  let model: FlowModel;
+// Minimal auto-flow model that executes preview code
+class DummyJsAutoModel extends FlowModel {
+  render() {
+    return null;
+  }
+}
 
-  // 包装器：提供 FlowStepContext（flowKey_stepKey）
-  const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <FlowStepContext.Provider value={{ path: 'testFlow_testStep', params: {} }}>{children}</FlowStepContext.Provider>
-  );
-
-  beforeEach(() => {
-    engine = new FlowEngine();
-    model = engine.createModel<FlowModel>({ use: FlowModel, uid: 'test-model' });
-
-    // 在实例上注册一个真实的 flow，step 使用 ctx.runjs 执行预览代码
-    model.registerFlow('testFlow', {
+describe('useCodeRunner (auto flow)', () => {
+  it('logs success and captures console output', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ DummyJsAutoModel });
+    const model = engine.createModel<DummyJsAutoModel>({ use: 'DummyJsAutoModel', uid: 'm-run' });
+    model.registerFlow('jsSettings', {
       steps: {
-        testStep: {
-          // 直接调用 ctx.runjs，使用 applyFlow(inputArgs) 注入的 preview.code / version
-          handler: async (ctx) => {
+        runJs: {
+          async handler(ctx) {
             const code = ctx?.inputArgs?.preview?.code || '';
-            const version = ctx?.inputArgs?.preview?.version;
-            return ctx.runjs(code, {}, { version });
+            return ctx.runjs(code);
           },
         },
       },
     });
-  });
 
-  it('logs success result', async () => {
-    const { result } = renderHook(() => useCodeRunner(model.context, 'v1'), {
-      wrapper: TestWrapper,
-    });
+    const { result } = renderHook(() => useCodeRunner(model.context, 'v1'));
 
     await act(async () => {
-      await result.current.run('return 123');
+      await result.current.run('console.log("hello"); return 1');
     });
 
     expect(result.current.logs.some((l) => l.msg?.includes('Execution succeeded'))).toBe(true);
+    expect(result.current.logs.some((l) => l.level === 'log' && l.msg.includes('hello'))).toBe(true);
     expect(result.current.running).toBe(false);
   });
 
   it('logs error message on failure', async () => {
-    const { result } = renderHook(() => useCodeRunner(model.context, 'v1'), {
-      wrapper: TestWrapper,
+    const engine = new FlowEngine();
+    engine.registerModels({ DummyJsAutoModel });
+    const model = engine.createModel<DummyJsAutoModel>({ use: 'DummyJsAutoModel', uid: 'm-err' });
+    model.registerFlow('jsSettings', {
+      steps: {
+        runJs: {
+          async handler(ctx) {
+            const code = ctx?.inputArgs?.preview?.code || '';
+            return ctx.runjs(code);
+          },
+        },
+      },
     });
 
+    const { result } = renderHook(() => useCodeRunner(model.context, 'v1'));
     await act(async () => {
       await result.current.run('throw new Error("boom")');
     });
@@ -67,15 +74,73 @@ describe('useCodeRunner', () => {
     expect(result.current.running).toBe(false);
   });
 
-  it('captures console.log output', async () => {
-    const { result } = renderHook(() => useCodeRunner(model.context, 'v1'), {
-      wrapper: TestWrapper,
-    });
+  it('previews and updates DOM for JSEditable (auto flow)', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ JSEditableFieldModel });
+    const field = engine.createModel<JSEditableFieldModel>({ use: 'JSEditableFieldModel', uid: 'f1' });
+    field.setProps('value', 'INIT');
 
+    render(
+      <ConfigProvider>
+        <App>
+          <FlowEngineProvider engine={engine}>
+            <FlowModelRenderer model={field} />
+          </FlowEngineProvider>
+        </App>
+      </ConfigProvider>,
+    );
+
+    const { result } = renderHook(() => useCodeRunner(field.context, 'v1'));
     await act(async () => {
-      await result.current.run('console.log("test message"); return 42');
+      await result.current.run(
+        'ctx.element.innerHTML = `<span id="out">${ctx.getValue ? ctx.getValue() : "NO"}</span>`; ctx.setValue && ctx.setValue("NEW");',
+      );
     });
 
-    expect(result.current.logs.some((l) => l.level === 'log' && l.msg.includes('test message'))).toBe(true);
+    await waitFor(() => {
+      expect(document.querySelector('#out')?.textContent).toBe('INIT');
+    });
+    expect(field.getProps().value).toBe('NEW');
+  });
+
+  it('previews on a forked view updates the fork DOM', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ DummyJsAutoModel });
+    const master = engine.createModel<DummyJsAutoModel>({ use: 'DummyJsAutoModel', uid: 'm2' });
+    master.registerFlow('jsSettings', {
+      steps: {
+        runJs: {
+          async handler(ctx) {
+            const code = ctx?.inputArgs?.preview?.code || '';
+            ctx.onRefReady(ctx.ref, async () => {
+              await ctx.runjs(code);
+            });
+          },
+        },
+      },
+    });
+    const fork = master.createFork({}, 'row-1');
+
+    render(
+      <ConfigProvider>
+        <App>
+          <FlowEngineProvider engine={engine}>
+            <FlowModelRenderer model={fork as any} />
+          </FlowEngineProvider>
+        </App>
+      </ConfigProvider>,
+    );
+
+    const { result } = renderHook(() => useCodeRunner(master.context, 'v1'));
+    await act(async () => {
+      await result.current.run('ctx.element.innerHTML = "FORKED";');
+    });
+
+    await waitFor(() => {
+      const inDom = Array.from(document.querySelectorAll('[data-testid^="dummy-" ]')).some((el) =>
+        (el as HTMLElement).innerHTML.includes('FORKED'),
+      );
+      expect(inDom).toBe(true);
+    });
   });
 });
