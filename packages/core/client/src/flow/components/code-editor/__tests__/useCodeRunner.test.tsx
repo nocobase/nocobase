@@ -13,13 +13,21 @@ import { renderHook, act } from '@testing-library/react-hooks';
 import { render, waitFor } from '@testing-library/react';
 import { App, ConfigProvider } from 'antd';
 import { useCodeRunner } from '../hooks/useCodeRunner';
-import { FlowEngine, FlowModel, FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
+import {
+  FlowEngine,
+  FlowModel,
+  FlowEngineProvider,
+  FlowModelRenderer,
+  ElementProxy,
+  createSafeWindow,
+  createSafeDocument,
+} from '@nocobase/flow-engine';
 import { JSEditableFieldModel } from '../../../models/fields/JSEditableFieldModel';
 
 // Minimal auto-flow model that executes preview code
 class DummyJsAutoModel extends FlowModel {
   render() {
-    return null;
+    return <span data-testid={`dummy-${this.uid}`} ref={this.context.ref as any} />;
   }
 }
 
@@ -112,8 +120,9 @@ describe('useCodeRunner (auto flow)', () => {
         runJs: {
           async handler(ctx) {
             const code = ctx?.inputArgs?.preview?.code || '';
-            ctx.onRefReady(ctx.ref, async () => {
-              await ctx.runjs(code);
+            ctx.onRefReady(ctx.ref, async (el) => {
+              ctx.defineProperty('element', { get: () => new ElementProxy(el as any) });
+              await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() });
             });
           },
         },
@@ -125,22 +134,28 @@ describe('useCodeRunner (auto flow)', () => {
       <ConfigProvider>
         <App>
           <FlowEngineProvider engine={engine}>
-            <FlowModelRenderer model={fork as any} />
+            <>
+              <FlowModelRenderer model={master} />
+              <FlowModelRenderer model={fork as any} />
+            </>
           </FlowEngineProvider>
         </App>
       </ConfigProvider>,
     );
 
+    // ensure both master and fork containers are mounted
+    await waitFor(() => {
+      const nodes = document.querySelectorAll('[data-testid="dummy-m2"]');
+      expect(nodes.length).toBeGreaterThanOrEqual(2);
+    });
     const { result } = renderHook(() => useCodeRunner(master.context, 'v1'));
     await act(async () => {
-      await result.current.run('ctx.element.innerHTML = "FORKED";');
+      await result.current.run('ctx.element.setAttribute("data-preview", "FORKED")');
     });
 
     await waitFor(() => {
-      const inDom = Array.from(document.querySelectorAll('[data-testid^="dummy-" ]')).some((el) =>
-        (el as HTMLElement).innerHTML.includes('FORKED'),
-      );
-      expect(inDom).toBe(true);
+      const nodes = Array.from(document.querySelectorAll('[data-testid="dummy-m2"]')) as HTMLElement[];
+      expect(nodes.some((el) => el.getAttribute('data-preview') === 'FORKED')).toBe(true);
     });
   });
 });
