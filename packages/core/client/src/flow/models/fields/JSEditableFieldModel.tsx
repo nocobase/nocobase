@@ -140,19 +140,25 @@ JSEditableFieldModel.registerFlow({
         ctx.onRefReady(ctx.ref, async (element) => {
           // 暴露容器与读写能力（使用动态 getter 绑定 ref.current，避免容器变更失效）
           ctx.defineProperty('element', {
-            get: () => new ElementProxy((ctx.ref as any)?.current || element),
+            get: () => new ElementProxy((ctx.ref?.current as HTMLSpanElement | null) || element),
             cache: false,
           });
-          ctx.defineMethod('getValue', () => ctx.model.props?.value);
+          ctx.defineMethod('getValue', () => {
+            const name = ctx.model.props?.name;
+            if (name !== undefined && name !== null) {
+              const fv = ctx.form?.getFieldValue?.(name);
+              return fv !== undefined ? fv : ctx.model.props?.value;
+            }
+            return ctx.model.props?.value;
+          });
           ctx.defineMethod('setValue', (v) => {
             try {
-              // 同步到字段 props 与表单
               ctx.model.setProps('value', v);
               const name = ctx.model.props?.name;
-              if (name && Array.isArray(name)) {
+              if (name !== undefined && name !== null) {
                 ctx.form?.setFieldValue?.(name, v);
               }
-            } catch (e) {
+            } catch (_) {
               // ignore
             }
           });
