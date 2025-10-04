@@ -16,12 +16,25 @@ export async function create(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context) as MultipleRelationRepository;
   const { whitelist, blacklist, updateAssociationValues, values, associatedIndex: workflowId } = context.action.params;
+  const workflowPlugin = context.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
 
   context.body = await db.sequelize.transaction(async (transaction) => {
-    const workflow = (await repository.getSourceModel(transaction)) as WorkflowModel;
-    workflow.versionStats = await workflow.getVersionStats({ transaction });
+    const workflow =
+      workflowPlugin.enabledCache.get(Number.parseInt(workflowId, 10)) ||
+      ((await repository.getSourceModel(transaction)) as WorkflowModel);
+    if (!workflow.versionStats) {
+      workflow.versionStats = await workflow.getVersionStats({ transaction });
+    }
     if (workflow.versionStats.executed > 0) {
       context.throw(400, 'Node could not be created in executed workflow');
+    }
+
+    const NODES_LIMIT = process.env.WORKFLOW_NODES_LIMIT ? parseInt(process.env.WORKFLOW_NODES_LIMIT, 10) : null;
+    if (NODES_LIMIT) {
+      const nodesCount = await workflow.countNodes({ transaction });
+      if (nodesCount >= NODES_LIMIT) {
+        context.throw(400, `The number of nodes in a workflow cannot exceed ${NODES_LIMIT}`);
+      }
     }
 
     const instance = await repository.create({
