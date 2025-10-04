@@ -31,6 +31,8 @@ export * from './ElementProxy';
 export * from './flowContext';
 export * from './FlowContextProvider';
 export * from './JSRunner';
+export { getRunJSDocFor, createJSRunnerWithVersion } from './runjs-context/helpers';
+export { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
 
 export * from './views';
 

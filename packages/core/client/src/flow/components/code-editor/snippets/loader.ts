@@ -14,9 +14,10 @@ type ModuleLoader = Record<string, () => Promise<any>>;
 // declare for webpack/rspack fallback
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 declare const require: any;
+// optional engine-provided snippet module map (injected at build time)
+declare const engineModules: ModuleLoader | undefined;
 
 // Engine-provided snippets map (normalized keys like 'global/message-success')
-import { engineSnippets as engineModules } from '@nocobase/flow-engine';
 
 function buildLocalModuleMap(): ModuleLoader {
   try {
@@ -64,7 +65,13 @@ function buildUnifiedMap(): ModuleLoader {
     out[normalizeKey(k)] = (locals as any)[k];
   });
   // Engine snippets (already normalized keys)
-  Object.assign(out, engineModules);
+  try {
+    if (typeof engineModules !== 'undefined' && engineModules) {
+      Object.assign(out, engineModules as any);
+    }
+  } catch (_) {
+    // ignore if engineModules is not injected
+  }
   return out;
 }
 
@@ -80,9 +87,9 @@ export async function loadOne(ref: string): Promise<string> {
   return typeof val === 'string' ? val : String(val ?? '');
 }
 
-export async function loadSnippets(snipastes: Record<string, any>): Promise<Record<string, any>> {
+export async function loadSnippets(snippets: Record<string, any>): Promise<Record<string, any>> {
   const out: Record<string, any> = {};
-  for (const [name, def] of Object.entries(snipastes || {})) {
+  for (const [name, def] of Object.entries(snippets || {})) {
     if (def && typeof def === 'object' && typeof (def as any).$ref === 'string') {
       try {
         out[name] = { ...def, body: await loadOne((def as any).$ref) };

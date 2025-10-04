@@ -14,7 +14,7 @@ vi.mock('@nocobase/flow-engine', () => {
   const doc = {
     properties: { foo: 'foo prop' },
     methods: { bar: 'bar method' },
-    snipastes: {
+    snippets: {
       'Test Snippet': { body: 'console.log(1)', prefix: 'sn-one', description: 'desc' },
     },
   };
@@ -27,7 +27,7 @@ vi.mock('@nocobase/flow-engine', () => {
 // Mock loader to avoid dynamic imports
 vi.mock('../snippets/loader', () => {
   return {
-    loadSnippets: async (snipastes: any) => snipastes,
+    loadSnippets: async (snippets: any) => snippets,
     loadSnippetsForContext: async () => [
       {
         name: 'Class Snippet',

@@ -9,7 +9,7 @@
 
 import { Completion, snippetCompletion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
-import { getRunJSDocFor, FlowRunJSContext } from '@nocobase/flow-engine';
+import { getRunJSDocFor } from '@nocobase/flow-engine';
 import { loadSnippets, loadSnippetsForContext } from './snippets/loader';
 
 export type SnippetEntry = {
@@ -28,8 +28,9 @@ export async function buildRunJSCompletions(
   completions: Completion[];
   entries: SnippetEntry[];
 }> {
-  const doc = hostCtx ? getRunJSDocFor(hostCtx as any, { version }) : FlowRunJSContext.getDoc();
-  const sn = await loadSnippets(doc?.snipastes || {});
+  // 当 hostCtx 不存在时，传入空对象以获取通用（*）上下文的文档
+  const doc = getRunJSDocFor((hostCtx as any) || ({} as any), { version });
+  const sn = await loadSnippets(doc?.snippets || {});
   const completions: Completion[] = [];
   const toMd = (v: any) => (typeof v === 'string' ? v : JSON.stringify(v));
 

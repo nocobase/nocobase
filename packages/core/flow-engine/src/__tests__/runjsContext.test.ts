@@ -8,19 +8,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  RunJSContextRegistry,
-  registerDefaultMappings,
-  getRunJSDocFor,
-  createJSRunnerWithVersion,
-  FlowRunJSContext,
-} from '../runjs-context';
+import { RunJSContextRegistry, getRunJSDocFor, createJSRunnerWithVersion } from '..';
+import { setupRunJSContexts } from '../runjs-context/setup';
+import { FlowContext } from '../flowContext';
 import { JSRunner } from '../JSRunner';
-import type { FlowContext } from '../flowContext';
 
 describe('flowRunJSContext registry and doc', () => {
-  it('registerDefaultMappings should register v1 mapping', () => {
-    registerDefaultMappings();
+  it('setupRunJSContexts should register v1 mapping', () => {
+    setupRunJSContexts();
     expect(RunJSContextRegistry['resolve']('v1' as any, '*')).toBeTruthy();
   });
 

@@ -12,12 +12,14 @@ import { observable } from '@formily/reactive';
 import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import { MessageInstance } from 'antd/es/message/interface';
+import * as antd from 'antd';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import _ from 'lodash';
 import pino from 'pino';
 import qs from 'qs';
 import React, { createRef } from 'react';
+import * as ReactDOMClient from 'react-dom/client';
 import type { Location } from 'react-router-dom';
 import { ACL } from './acl/Acl';
 import { ContextPathProxy } from './ContextPathProxy';
@@ -25,7 +27,8 @@ import { DataSource, DataSourceManager } from './data-source';
 import { FlowEngine } from './flowEngine';
 import { FlowI18n } from './flowI18n';
 import { JSRunner, JSRunnerOptions } from './JSRunner';
-import { FlowModel, ForkFlowModel } from './models';
+import type { FlowModel } from './models/flowModel';
+import type { ForkFlowModel } from './models/forkFlowModel';
 import { FlowResource, FlowSQLRepository } from './resources';
 import type { ActionDefinition, EventDefinition, ResourceType } from './types';
 import {
@@ -41,21 +44,7 @@ import { enqueueVariablesResolve, JSONValue } from './utils/params-resolvers';
 import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { FlowView, FlowViewer } from './views/FlowView';
-// 避免在类型层面触发对 runjs-context 的动态导入，防止模块初始化时出现循环依赖
-// 直接声明函数签名以满足类型需求
-type CreateJSRunnerWithVersion = (this: FlowContext, options?: JSRunnerOptions) => JSRunner;
-
-let cachedCreateJSRunnerWithVersion: CreateJSRunnerWithVersion | null = null;
-
-function getCreateJSRunnerWithVersion(): CreateJSRunnerWithVersion {
-  if (!cachedCreateJSRunnerWithVersion) {
-    // Defer loading runjs-context until runtime to avoid circular dependency during module init
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const mod = require('./runjs-context');
-    cachedCreateJSRunnerWithVersion = mod.createJSRunnerWithVersion;
-  }
-  return cachedCreateJSRunnerWithVersion;
-}
+import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -1194,14 +1183,21 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       });
     });
     this.defineMethod('createJSRunner', function (options?: JSRunnerOptions) {
-      try {
-        const createJSRunnerWithVersion = getCreateJSRunnerWithVersion();
-        return createJSRunnerWithVersion.call(this, options);
-      } catch (e) {
-        // 兼容 ESM 环境下 require 失败的情况，动态导入模块
-        const self = this as any;
-        return import('./runjs-context').then((mod) => mod.createJSRunnerWithVersion.call(self, options));
+      const version = (options?.version as any) || 'v1';
+      const modelClass = getModelClassName(this);
+      const Ctor =
+        (RunJSContextRegistry.resolve(version, modelClass) as any) ||
+        (RunJSContextRegistry.resolve('latest' as any, modelClass) as any) ||
+        (RunJSContextRegistry.resolve(version, '*') as any) ||
+        (RunJSContextRegistry.resolve('latest' as any, '*') as any) ||
+        FlowRunJSContext;
+      let runCtx: any;
+      if (Ctor) {
+        runCtx = new Ctor(this);
       }
+      const globals: Record<string, any> = { ctx: runCtx, ...(options?.globals || {}) };
+      const { timeoutMs } = options || {};
+      return new JSRunner({ globals, timeoutMs });
     });
     // 复制文本到剪贴板（优先使用 Clipboard API，降级到 execCommand）
     this.defineMethod('copyToClipboard', async (text: string) => {
@@ -1346,7 +1342,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
 export class FlowModelContext extends BaseFlowModelContext {
   constructor(model: FlowModel) {
-    if (!(model instanceof FlowModel)) {
+    if (!model || typeof model !== 'object') {
       throw new Error('Invalid FlowModel instance');
     }
     super();
@@ -1355,7 +1351,7 @@ export class FlowModelContext extends BaseFlowModelContext {
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
     this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
-      const runner = await (this as any).createJSRunner({
+      const runner = await this.createJSRunner({
         globals: variables,
         version: options?.version,
       });
@@ -1477,7 +1473,7 @@ export class FlowForkModelContext extends BaseFlowModelContext {
     public master: FlowModel,
     public fork: ForkFlowModel,
   ) {
-    if (!(master instanceof FlowModel)) {
+    if (!master || typeof master !== 'object') {
       throw new Error('Invalid FlowModel instance');
     }
     super();
@@ -1495,7 +1491,7 @@ export class FlowForkModelContext extends BaseFlowModelContext {
       },
     });
     this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
-      const runner = await (this as any).createJSRunner({
+      const runner = await this.createJSRunner({
         globals: variables,
         version: options?.version,
       });
@@ -1556,7 +1552,7 @@ export class FlowRuntimeContext<
       this.engine.reactView.onRefReady(ref, cb, timeout);
     });
     this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {
-      const runner = await (this as any).createJSRunner({
+      const runner = await this.createJSRunner({
         globals: variables,
         version: options?.version,
       });
@@ -1609,3 +1605,55 @@ export class FlowRuntimeContext<
 
 // 类型别名，方便使用
 export type FlowSettingsContext<TModel extends FlowModel = FlowModel> = FlowRuntimeContext<TModel, 'settings'>;
+
+export type RunJSDocMeta = {
+  label?: string;
+  properties?: Record<string, any>;
+  methods?: Record<string, any>;
+  snippets?: Record<string, any>;
+};
+
+const __runjsClassMeta = new WeakMap<Function, RunJSDocMeta>();
+const __runjsDocCache = new WeakMap<Function, RunJSDocMeta>();
+
+function __runjsDeepMerge(base: any, patch: any) {
+  if (patch === null) return undefined;
+  if (Array.isArray(base) || Array.isArray(patch) || typeof base !== 'object' || typeof patch !== 'object') {
+    return patch ?? base;
+  }
+  const out: any = { ...base };
+  for (const k of Object.keys(patch)) {
+    const v = __runjsDeepMerge(base?.[k], patch[k]);
+    if (typeof v === 'undefined') delete out[k];
+    else out[k] = v;
+  }
+  return out;
+}
+export class FlowRunJSContext extends FlowContext {
+  constructor(delegate: FlowContext) {
+    super();
+    this.addDelegate(delegate);
+    this.defineProperty('React', { value: React });
+    this.defineProperty('antd', { value: antd });
+    this.defineProperty('ReactDOM', { value: ReactDOMClient });
+  }
+  static define(meta: RunJSDocMeta) {
+    const prev = __runjsClassMeta.get(this) || {};
+    __runjsClassMeta.set(this, __runjsDeepMerge(prev, meta));
+    __runjsDocCache.delete(this);
+  }
+  static getDoc(): RunJSDocMeta {
+    const self = this as any;
+    if (__runjsDocCache.has(self)) return __runjsDocCache.get(self)!;
+    const chain: Function[] = [];
+    let cur: any = self;
+    while (cur && cur.prototype) {
+      chain.unshift(cur);
+      cur = Object.getPrototypeOf(cur);
+    }
+    let merged: RunJSDocMeta = {};
+    for (const cls of chain) merged = __runjsDeepMerge(merged, __runjsClassMeta.get(cls) || {});
+    __runjsDocCache.set(self, merged);
+    return merged;
+  }
+}
