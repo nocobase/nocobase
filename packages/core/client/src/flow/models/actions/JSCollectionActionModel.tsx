@@ -11,6 +11,7 @@ import { createSafeDocument, createSafeWindow, escapeT } from '@nocobase/flow-en
 import type { ButtonProps } from 'antd/es/button';
 import { CodeEditor } from '../../components/code-editor';
 import { ActionModel, ActionSceneEnum } from '../base';
+import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 
 export class JSCollectionActionModel extends ActionModel {
   static scene = ActionSceneEnum.collection;
@@ -74,7 +75,7 @@ if (!rows.length) {
         };
       },
       async handler(ctx, params) {
-        const { code = '', version = 'v1' } = params || {};
+        const { code, version } = resolveRunJsParams(ctx, params);
         await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
       },
     },

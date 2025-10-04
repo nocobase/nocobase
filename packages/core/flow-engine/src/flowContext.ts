@@ -1360,10 +1360,12 @@ export class FlowModelContext extends BaseFlowModelContext {
     this.defineProperty('model', {
       value: model,
     });
+    // 提供稳定的 ref 实例，确保渲染端与运行时上下文使用同一对象
+    const stableRef = createRef<HTMLDivElement>();
     this.defineProperty('ref', {
       get: () => {
         this.model['_refCreated'] = true;
-        return createRef<HTMLDivElement>();
+        return stableRef;
       },
     });
     this.defineMethod('openView', async function (uid: string, options) {
@@ -1484,10 +1486,12 @@ export class FlowForkModelContext extends BaseFlowModelContext {
     this.defineProperty('model', {
       get: () => this.fork,
     });
+    // 提供稳定的 ref 实例，确保渲染端与运行时上下文使用同一对象
+    const stableRef = createRef<HTMLDivElement>();
     this.defineProperty('ref', {
       get: () => {
         this.fork['_refCreated'] = true;
-        return createRef<HTMLDivElement>();
+        return stableRef;
       },
     });
     this.defineMethod('runjs', async (code, variables, options?: { version?: string }) => {

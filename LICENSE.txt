@@ -1,8 +1,8 @@
-Updated Date: April 1, 2025
+Updated Date: October 2, 2025
 
 NocoBase License Agreement
 
-NOCOBASE PTE. LTD.，a Singaporean Exempt Private Company Limited by Shares with its principal place of business located at #03-01 ROBINSON 112 ("The Company") https://www.nocobase.com/ issues this License Agreement ("Agreement") to you. You, as an individual or a company ("the User"), will be deemed to voluntarily accept all terms of this Agreement by using NocoBase (including but not limited to obtaining NocoBase source code or installation package in any form, installing and using NocoBase, purchasing NocoBase commercial license and services, purchasing NocoBase commercial plugins). If the User does not agree to any term of this Agreement, or cannot accurately understand our interpretation of the relevant terms, please stop using it immediately.
+NOCOBASE PTE. LTD.，a Singaporean Exempt Private Company Limited by Shares with its principal place of business located at 112 ROBINSON ROAD, #03-01, SINGAPORE ("The Company") https://www.nocobase.com/ issues this License Agreement ("Agreement") to you. You, as an individual or a company ("The User"), will be deemed to voluntarily accept all terms of this Agreement by using NocoBase (including but not limited to obtaining NocoBase source code or installation package in any form, installing and using NocoBase, purchasing NocoBase commercial license and services, purchasing NocoBase commercial plugins). If the User does not agree to any term of this Agreement, or cannot accurately understand our interpretation of the relevant terms, please stop using it immediately.
 
 This Agreement applies to any use, quotation, contract, invoice, and all software delivered by the Company. The User and the Company or NocoBase's agents can no longer sign a separate license agreement for the sale and delivery of the software.
 
@@ -38,7 +38,7 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 3. Disclaimer
 =============
 
-3.1 The User shall not use the Software and Commercial Plugins to engage in activities that violate local laws and regulations, religious beliefs. All legal responsibilities and legal consequences arising from the use of Software and Commercial Plugins shall be borne by the User.
+3.1 The User shall not use the Software and Commercial Plugins to engage in activities that contravene applicable laws and regulations or offend against public order or religious prohibitions. All legal liabilities and consequences arising from the User’s use shall be borne by the User.
 
 3.2 The Company shall not be liable for any direct, indirect, special, incidental, or consequential damages (including but not limited to loss of profits, business interruption, data loss, or business information disclosure) caused by the User's use of the Software and Commercial Plugins, even if it has been previously informed of the possibility of such damages.
 
@@ -46,13 +46,13 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 4. License Type
 ===============
 
-4.1 The Software uses a dual license type of AGPL-3.0 Open Source License https://www.gnu.org/licenses/agpl-3..en.htm and Commercial License.
+4.1 This Agreement serves as the unified license agreement for NocoBase Software, applying to both the Community Edition and the Commercial Editions.
 
-4.2 The Community Edition uses the AGPL-3.0 Open Source License https://www.gnu.org/licenses/agpl-3.0.en.html.
+4.2 For the Community Edition, this Agreement incorporates and references the full text of the GNU Affero General Public License v3.0 (“AGPL-3.0”, available at: https://www.gnu.org/licenses/agpl-3.0.html ). Community Edition users must comply with the AGPL-3.0 License as well as the supplementary terms set forth in this Agreement. In case of any inconsistency between AGPL-3.0 and this Agreement, the supplementary terms of this Agreement shall prevail.
 
-4.3 The Commercial Edition (including Standard, Professional, and Enterprise Editions) uses the Commercial License.
+4.3 For the Commercial Edition (including Standard, Professional, and Enterprise Editions), only the Commercial License terms contained in this Agreement apply. Commercial Edition users are not subject to AGPL-3.0 obligations.
 
-4.4 Commercial Plugins use the Commercial Plugin License.
+4.4 For Commercial Plugins, only the Commercial Plugin License terms contained in this Agreement apply.
 
 ================================================
 5. Rights and Obligations of Open Source License
@@ -68,9 +68,13 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 5.5 It is not allowed to remove or change all intellectual property statements about NocoBase in the code.
 
-5.6 It is not allowed to provide any form of no-code, zero-code, low-code platform SaaS products to the public using the original or modified Software.
+5.6 It is not allowed to provide to the public any form of no-code, zero-code, or low-code platform SaaS/PaaS products using the original or modified Software.
 
-5.7 Comply with all requirements of the AGPL-3.0 agreement.
+5.7 Comply with all requirements of the AGPL-3.0 License, including but not limited to:  
+(a) Any modifications, extensions, or derivative works of the Software must be released under the AGPL-3.0 License;  
+(b) If Upper Layer Applications are provided as a network service (including SaaS or PaaS), the complete corresponding source code must be made available to all users of the service;  
+(c) The Software may not be combined with other software under incompatible licenses in a manner that would violate the AGPL-3.0 License;  
+(d) No additional contractual restrictions may be imposed when redistributing the Software.  
 
 ===============================
 6. Rights of Commercial License
@@ -88,9 +92,14 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 6.6 Can sell plugins developed for Software in the Marketplace.
 
-6.7 The User with a Professional or Enterprise Edition License can sell Upper Layer Application to their clients.
+6.7 The User holding a Professional or Enterprise Edition License can sell Upper Layer Application to its Customers.
 
-6.8 Not restricted by the AGPL-3.0 agreement.
+6.8 Exemption from AGPL-3.0 obligations, including but not limited to:  
+(a) the requirement to release source code of modifications, extensions, or derivative works;  
+(b) the requirement to provide source code when offering the Software as a network service;  
+(c) restrictions on combining the Software with other software under different license terms; and  
+(d) limitations on adding contractual terms for redistribution.  
+The User remains bound by this Agreement and by its commercial license contract.
 
 6.9 If there are other agreements in the contract for the above rights, the contract agreement shall prevail.
 
@@ -100,15 +109,15 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 7.1 It is not allowed to remove or change all intellectual property statements about NocoBase in the code.
 
-7.2 It is not allowed to sell, transfer, lease, share, or distribute the Commercial License.
+7.2 It is not allowed to sell, transfer, lease, share, gift, or distribute the Commercial License.
 
 7.3 It is not allowed to sell, transfer, lease, share, or distribute any form of no-code, zero-code, low-code platform, or developer tools developed based on Software.
 
-7.4 It is not allowed to provide any form of no-code, zero-code, low-code platform SaaS products to the public using the original or modified Software.
+7.4 It is not allowed to provide any form of no-code, zero-code, low-code platform SaaS/PaaS products to the public using the original or modified Software.
 
-7.5 It is not allowed for the User withot a Professional or Enterprise Edition license to sell Upper Layer Application to clients without a Commercial license.
+7.5 It is not allowed for the User holding a Standard Edition license to sell Upper Layer Application to Customers without a Commercial license.
 
-7.6 It is not allowed for the User with a Professional or Enterprise Edition license to sell Upper Layer Application to clients without a Commercial license with access to further development and configuration.
+7.6 It is not allowed for the User holding a Professional or Enterprise Edition license to sell Upper Layer Application to Customers without a Commercial license with access to further development and configuration.
 
 7.7 It is not allowed to publicly sell plugins developed for Software outside of the Marketplace.
 
@@ -122,13 +131,13 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 8.1 Obtain a permanent Commercial Plugin License for the Commercial Plugin.
 
-8.2 Get plugins upgrades and exclusive technical support during the upgrade validity period.
+8.2 Receive plugin upgrades and exclusive technical support during the upgrade validity period.
 
 8.3 Can be used for commercial purposes without restrictions on the number of applications or users.
 
-8.4 The User with an Enterprise Edition License can use the Commercial Plugin in Upper Layer Applications sold to their customers.
+8.4 The User holding a Professional or Enterprise Edition License can use the Commercial Plugin in Upper Layer Applications sold to its customers.
 
-8.5 Not restricted by the AGPL-3.0 agreement.
+8.5 Exemption from AGPL-3.0 obligations. 
 
 8.6 If there are other agreements in the contract regarding the above rights, the contract agreement shall prevail.
 
@@ -144,9 +153,11 @@ Except for Third-Party Open Source Software, the Company owns all copyrights, tr
 
 9.4 It is not allowed to disclose the source code of Commercial Plugins to any third party.
 
-9.5 If there is any violation of the above obligations or the terms of this Agreement, the rights owned by the User will be immediately terminated, the paid fees will not be refunded, and the Company reserves the right to pursue the User's legal responsibility.
+9.5 It is not allowed for the User holding a Community or Standard Edition license to use Commercial Plugins in Upper Layer Applications sold to its customers. Such Commercial Plugins are limited to internal use within the licensed company only.  
 
-9.6 If there are other agreements in the contract regarding the above obligations, the contract agreement shall prevail.
+9.6 If there is any violation of the above obligations or the terms of this Agreement, the rights owned by the User will be immediately terminated, the paid fees will not be refunded, and the Company reserves the right to pursue the User's legal responsibility.
+
+9.7 If there are other agreements in the contract regarding the above obligations, the contract agreement shall prevail.
 
 =============================================================
 10. Legal Jurisdiction, Interpretation, and Dispute Resolution
