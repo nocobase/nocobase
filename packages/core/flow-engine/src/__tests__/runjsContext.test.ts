@@ -26,13 +26,14 @@ describe('flowRunJSContext registry and doc', () => {
   });
 
   it('createJSRunnerWithVersion returns a JSRunner', async () => {
-    const stubCtx: any = {
-      model: { constructor: { name: 'JSFieldModel' } },
-      createProxy() {
-        return this;
-      },
-    };
-    const runner = createJSRunnerWithVersion.call(stubCtx, { version: 'v1' });
+    const ctx = new FlowContext();
+    ctx.defineProperty('model', {
+      value: { constructor: { name: 'JSFieldModel' } },
+    });
+    ctx.defineMethod('createProxy', function () {
+      return this;
+    });
+    const runner = createJSRunnerWithVersion.call(ctx, { version: 'v1' });
     expect(runner).toBeInstanceOf(JSRunner);
     const result = await runner.run('return 1 + 1');
     expect(result?.success).toBe(true);
@@ -40,16 +41,15 @@ describe('flowRunJSContext registry and doc', () => {
   });
 
   it('default globals (window/document) should be injected for field/block contexts', async () => {
-    const stubCtx: any = {
-      model: { constructor: { name: 'JSFieldModel' } },
-      createProxy() {
-        return this;
-      },
-    };
-    const runner = createJSRunnerWithVersion.call(stubCtx, { version: 'v1' });
+    const ctx = new FlowContext();
+    ctx.defineProperty('model', {
+      value: { constructor: { name: 'JSFieldModel' } },
+    });
+    ctx.defineMethod('createProxy', function () {
+      return this;
+    });
+    const runner = createJSRunnerWithVersion.call(ctx, { version: 'v1' });
     const r = await runner.run('return typeof window !== "undefined" && typeof document !== "undefined"');
     expect(r.success && r.value).toBe(true);
   });
-
-  // Linkage kind via __runjsKind removed; linkage scripts now run in the host model context.
 });
