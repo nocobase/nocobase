@@ -122,6 +122,7 @@ describe('empty operator', () => {
 
   test('string not empty with association', async () => {
     const u1 = await User.repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         name: 'u1',
         profile: {
@@ -131,6 +132,7 @@ describe('empty operator', () => {
     });
 
     const u2 = await User.repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         name: 'u2',
         profile: {

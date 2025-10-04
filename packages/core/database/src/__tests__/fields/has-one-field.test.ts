@@ -53,6 +53,7 @@ describe('has many field', () => {
 
     await expect(
       User.repository.create({
+        updateAssociationValues: ['profile'],
         values: {
           profile: {
             address: 'address1',
