@@ -14,15 +14,20 @@ export class FormJSFieldItemRunJSContext extends FlowRunJSContext {}
 FormJSFieldItemRunJSContext.define({
   label: 'FormJSFieldItem RunJS context',
   properties: {
-    element: 'ElementProxy，表单字段容器',
-    value: '字段值（读/受控场景需通过 setProps 修改）',
-    record: '当前记录（只读）',
+    element: `ElementProxy instance providing a safe DOM container for form field rendering.
+      Supports innerHTML, append, and other DOM manipulation methods.`,
+    value: `Current field value (read-only in display mode; in controlled scenarios, use setProps to modify).`,
+    record: `Current record data object (read-only).
+      Contains all field values of the parent record.`,
   },
   methods: {
-    onRefReady: '容器就绪回调',
-    setProps: '设置表单项属性：`setProps(fieldModel, { value })`（由联动/表单上下文提供）',
+    onRefReady: `Wait for form field container DOM element to be ready before executing callback.
+      Parameters: (ref: React.RefObject, callback: (element: HTMLElement) => void, timeout?: number) => void`,
+    setProps: `Set form field properties programmatically.
+      Parameters: (fieldModel: any, props: { value?: any, disabled?: boolean, visible?: boolean }) => void
+      Example: ctx.setProps(fieldModel, { value: "new value" })`,
   },
   snippets: {
-    显示字段值: { $ref: 'scene/jsfield/innerHTML-value', prefix: 'sn-form-value' },
+    'Display field value': { $ref: 'scene/jsfield/innerHTML-value', prefix: 'sn-form-value' },
   },
 });

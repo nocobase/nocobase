@@ -1612,10 +1612,10 @@ export class FlowRunJSContext extends FlowContext {
     __runjsDocCache.delete(this);
   }
   static getDoc(): RunJSDocMeta {
-    const self = this as any;
+    const self = this;
     if (__runjsDocCache.has(self)) return __runjsDocCache.get(self)!;
     const chain: Function[] = [];
-    let cur: any = self;
+    let cur = self;
     while (cur && cur.prototype) {
       chain.unshift(cur);
       cur = Object.getPrototypeOf(cur);

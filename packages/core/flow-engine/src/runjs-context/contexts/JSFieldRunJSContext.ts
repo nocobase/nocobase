@@ -14,13 +14,19 @@ export class JSFieldRunJSContext extends FlowRunJSContext {}
 JSFieldRunJSContext.define({
   label: 'JSField RunJS context',
   properties: {
-    element: 'ElementProxy，字段渲染容器',
-    value: '字段当前值（只读）',
-    record: '当前记录（只读）',
-    collection: '集合定义（只读）',
+    element: `ElementProxy instance providing a safe DOM container for field rendering.
+      Supports innerHTML, append, and other DOM manipulation methods.`,
+    value: `Current value of the field (read-only).
+      Contains the data value stored in this field.`,
+    record: `Current record data object (read-only).
+      Contains all field values of the parent record.`,
+    collection: `Collection definition metadata (read-only).
+      Provides schema information about the collection this field belongs to.`,
   },
   methods: {
-    onRefReady: 'Container ready callback',
+    onRefReady: `Wait for field container DOM element to be ready before executing callback.
+      Parameters: (ref: React.RefObject, callback: (element: HTMLElement) => void, timeout?: number) => void
+      Example: ctx.onRefReady(ctx.ref, (el) => { el.innerHTML = ctx.value })`,
   },
   snippets: {
     'Render value': { $ref: 'scene/jsfield/innerHTML-value', prefix: 'sn-jsf-value' },

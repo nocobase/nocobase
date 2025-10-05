@@ -24,14 +24,14 @@ import { LinkageRunJSContext } from './contexts/LinkageRunJSContext';
 let done = false;
 export function setupRunJSContexts() {
   if (done) return;
-  const v1: any = 'v1';
-  RunJSContextRegistry.register(v1, '*', FlowRunJSContext as any);
-  RunJSContextRegistry.register(v1, 'JSBlockModel', JSBlockRunJSContext as any);
-  RunJSContextRegistry.register(v1, 'JSFieldModel', JSFieldRunJSContext as any);
-  RunJSContextRegistry.register(v1, 'JSItemModel', JSItemRunJSContext as any);
-  RunJSContextRegistry.register(v1, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext as any);
-  RunJSContextRegistry.register(v1, 'JSRecordActionModel', JSRecordActionRunJSContext as any);
-  RunJSContextRegistry.register(v1, 'JSCollectionActionModel', JSCollectionActionRunJSContext as any);
-  RunJSContextRegistry.register(v1, 'LinkageModel', LinkageRunJSContext as any);
+  const v1 = 'v1';
+  RunJSContextRegistry.register(v1, '*', FlowRunJSContext);
+  RunJSContextRegistry.register(v1, 'JSBlockModel', JSBlockRunJSContext);
+  RunJSContextRegistry.register(v1, 'JSFieldModel', JSFieldRunJSContext);
+  RunJSContextRegistry.register(v1, 'JSItemModel', JSItemRunJSContext);
+  RunJSContextRegistry.register(v1, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext);
+  RunJSContextRegistry.register(v1, 'JSRecordActionModel', JSRecordActionRunJSContext);
+  RunJSContextRegistry.register(v1, 'JSCollectionActionModel', JSCollectionActionRunJSContext);
+  RunJSContextRegistry.register(v1, 'LinkageModel', LinkageRunJSContext);
   done = true;
 }

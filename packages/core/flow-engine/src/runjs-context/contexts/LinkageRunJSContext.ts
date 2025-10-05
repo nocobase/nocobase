@@ -14,11 +14,10 @@ export class LinkageRunJSContext extends FlowRunJSContext {}
 LinkageRunJSContext.define({
   label: 'Linkage RunJS context',
   properties: {
-    model: '当前块/字段模型（只读访问）',
-    fields: '可访问的字段集合（只读）',
-  },
-  methods: {
-    message: 'Message API',
+    model: `Current block or field model (read-only access).
+      Provides access to the Formily form model for the current context.`,
+    fields: `Collection of accessible fields in the current form (read-only).
+      Use this to access and manipulate other fields in linkage rules.`,
   },
   snippets: {
     'Set field value': { $ref: 'scene/linkage/set-field-value', prefix: 'sn-link-set' },

@@ -14,15 +14,17 @@ export class JSBlockRunJSContext extends FlowRunJSContext {}
 JSBlockRunJSContext.define({
   label: 'JSBlock RunJS context',
   properties: {
-    element: 'ElementProxy，安全 DOM 容器。支持 innerHTML/append 等',
-    record: '当前记录（只读，存在于数据块/详情等场景）',
-    value: '当前值（若存在）',
-    React: 'React（已注入）',
-    antd: 'AntD（已注入）',
+    element: `ElementProxy instance providing a safe DOM container.
+      Supports innerHTML, append, and other DOM manipulation methods.
+      Use this to render content in the JS block.`,
+    record: `Current record data object (read-only).
+      Available when the JS block is within a data block or detail view context.`,
+    value: 'Current value of the field or component, if available in the current context.',
   },
   methods: {
-    onRefReady: 'Container ref ready callback:\n```js\nctx.onRefReady(ctx.ref, el => { /* ... */ })\n```',
-    requireAsync: 'Load external library: `const lib = await ctx.requireAsync(url)`',
+    onRefReady: `Wait for container DOM element to be ready before executing callback.
+      Parameters: (ref: React.RefObject, callback: (element: HTMLElement) => void, timeout?: number) => void
+      Example: ctx.onRefReady(ctx.ref, (el) => { el.innerHTML = "Ready!" })`,
   },
   snippets: {
     'Render HTML': { $ref: 'scene/jsblock/render-basic', prefix: 'sn-jsb-html' },

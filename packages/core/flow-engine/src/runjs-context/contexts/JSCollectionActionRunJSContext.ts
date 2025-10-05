@@ -14,11 +14,9 @@ export class JSCollectionActionRunJSContext extends FlowRunJSContext {}
 JSCollectionActionRunJSContext.define({
   label: 'JSCollectionAction RunJS context',
   properties: {
-    resource: '列表资源（选中行/分页等）',
-  },
-  methods: {
-    runAction: 'Run action',
-    message: 'Message API',
+    resource: `Collection resource instance providing access to selected rows, pagination, and data operations.
+      Use ctx.resource.selectedRows to get selected records.
+      Use ctx.resource.pagination for page info.`,
   },
   snippets: {
     'Selected count': { $ref: 'scene/actions/collection-selected-count', prefix: 'sn-act-selected-count' },

@@ -12,25 +12,43 @@ import { FlowRunJSContext } from '../../flowContext';
 FlowRunJSContext.define({
   label: 'RunJS base',
   properties: {
-    t: "国际化函数。示例：`ctx.t('Hello {name}', { name: 'World' })`",
-    logger: "Pino logger 子实例。`ctx.logger.info({ foo: 1 }, 'msg')`",
-    message: "AntD 全局消息。`ctx.message.success('done')`",
-    notification: "AntD 通知。`ctx.notification.open({ message: 'Hi' })`",
-    requireAsync: '异步加载外部库。`const x = await ctx.requireAsync(url)`',
-    resolveJsonTemplate: '解析含 {{ }} 的模板/表达式',
-    runAction: '运行当前模型动作。`await ctx.runAction(name, params)`',
-    resource: '数据资源（按委托可见）',
-    urlSearchParams: 'URL 查询参数对象',
-    token: 'API Token',
-    role: '当前角色',
-    auth: '认证信息（locale/role/user/token）',
-    api: 'APIClient 实例',
-    React: 'React 命名空间（RunJS 环境可用）',
-    react: 'React 别名（小写）',
-    ReactDOM: 'ReactDOM 客户端（含 createRoot）',
-    antd: 'AntD 组件库（RunJS 环境可用）',
+    logger: 'Pino logger instance for structured logging. Example: `ctx.logger.info({ foo: 1 }, "message")`',
+    message:
+      'Ant Design global message API for displaying temporary messages. Example: `ctx.message.success("Operation completed")`',
+    notification:
+      'Ant Design notification API for displaying notification boxes. Example: `ctx.notification.open({ message: "Title", description: "Content" })`',
+    resource: 'Data resource accessible based on current user permissions',
+    urlSearchParams: 'URLSearchParams object containing query parameters from the current URL',
+    token: 'API authentication token for the current session',
+    role: 'Current user role information',
+    auth: 'Authentication context containing locale, role, user, and token information',
+    api: 'APIClient instance for making API requests to NocoBase server',
+    React: 'React namespace providing React library functions and hooks (available in RunJS environment)',
+    ReactDOM: 'ReactDOM client API including createRoot for rendering React components',
+    antd: 'Ant Design component library',
   },
   methods: {
-    openView: '打开视图：`await ctx.openView(viewId, { ... })`',
+    t: 'Internationalization function for translating text. Parameters: (key: string, variables?: object) => string. Example: `ctx.t("Hello {name}", { name: "World" })`',
+    requireAsync:
+      'Asynchronously load external libraries from URL. Parameters: (url: string) => Promise<any>. Example: `const lodash = await ctx.requireAsync("https://cdn.jsdelivr.net/npm/lodash")`',
+    resolveJsonTemplate:
+      'Resolve JSON templates containing variable expressions with {{ }} syntax. Parameters: (template: any, context?: object) => any',
+    runAction:
+      'Execute a data action on the current resource. Parameters: (actionName: string, params: object) => Promise<any>. Example: `await ctx.runAction("create", { values: { name: "test" } })`',
+    openView: `Open a view component (page, modal, or drawer) by its unique identifier.
+      Parameters: (viewId: string, options?: OpenViewOptions) => Promise<void>
+      Options:
+        - params: Record<string, any> - Parameters passed to the view component
+        - mode: "page" | "modal" | "drawer" - Display mode (default: "drawer")
+        - title: string - Modal/drawer title
+        - width: number | string - Modal/drawer width
+        - navigation: boolean - Whether to use route navigation
+        - preventClose: boolean - Prevent closing the view
+        - viewUid: string - Custom view UID for routing
+        - isMobileLayout: boolean - Use mobile layout (displays as embed)
+      Examples:
+        - Modal with params: await ctx.openView("user-detail", { params: { id: 123 }, mode: "modal", title: "User Details", width: 800 })
+        - Drawer (default): await ctx.openView("settings-page")
+        - Page navigation: await ctx.openView("dashboard", { mode: "page" })`,
   },
 });
