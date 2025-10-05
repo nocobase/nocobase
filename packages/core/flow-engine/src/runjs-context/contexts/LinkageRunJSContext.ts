@@ -19,10 +19,15 @@ LinkageRunJSContext.define({
     fields: `Collection of accessible fields in the current form (read-only).
       Use this to access and manipulate other fields in linkage rules.`,
   },
-  snippets: {
-    'Set field value': { $ref: 'scene/linkage/set-field-value', prefix: 'sn-link-set' },
-    'Toggle visible': { $ref: 'scene/linkage/toggle-visible', prefix: 'sn-link-visibility' },
-    'Set disabled': { $ref: 'scene/linkage/set-disabled', prefix: 'sn-link-disable' },
-    'Set required': { $ref: 'scene/linkage/set-required', prefix: 'sn-link-required' },
-  },
 });
+
+LinkageRunJSContext.define(
+  {
+    label: '联动 RunJS 上下文',
+    properties: {
+      model: '当前块/字段模型（只读）',
+      fields: '可访问的字段集合（只读）',
+    },
+  },
+  { locale: 'zh-CN' },
+);

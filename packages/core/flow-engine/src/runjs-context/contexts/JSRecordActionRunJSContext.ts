@@ -19,8 +19,15 @@ JSRecordActionRunJSContext.define({
     filterByTk: `Primary key or filter key of the current record (read-only).
       Used to identify the specific record in database operations.`,
   },
-  snippets: {
-    'Show record id': { $ref: 'scene/actions/record-id-message', prefix: 'sn-act-record-id' },
-    'Run action': { $ref: 'scene/actions/run-action-basic', prefix: 'sn-act-run' },
-  },
 });
+
+JSRecordActionRunJSContext.define(
+  {
+    label: 'JS 记录动作 RunJS 上下文',
+    properties: {
+      record: '当前记录（只读）',
+      filterByTk: '主键/过滤键（只读）',
+    },
+  },
+  { locale: 'zh-CN' },
+);

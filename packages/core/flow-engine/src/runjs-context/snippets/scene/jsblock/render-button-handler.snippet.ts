@@ -7,10 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../../types';
+
+const snippet: SnippetModule = {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-jsb-button',
   label: 'Render button handler',
+  description: 'Render a button and handle click events inside the block',
+  locales: {
+    'zh-CN': {
+      label: '按钮事件处理',
+      description: '在区块中渲染按钮并绑定点击处理逻辑',
+    },
+  },
   content: `
 const { React, ReactDOM, antd } = ctx;
 const { Button } = antd;
@@ -22,3 +31,5 @@ root.render(node);
 ctx.__reactRoot = root;
 `,
 };
+
+export default snippet;

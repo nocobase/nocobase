@@ -27,7 +27,20 @@ FormJSFieldItemRunJSContext.define({
       Parameters: (fieldModel: any, props: { value?: any, disabled?: boolean, visible?: boolean }) => void
       Example: ctx.setProps(fieldModel, { value: "new value" })`,
   },
-  snippets: {
-    'Display field value': { $ref: 'scene/jsfield/innerHTML-value', prefix: 'sn-form-value' },
-  },
 });
+
+FormJSFieldItemRunJSContext.define(
+  {
+    label: '表单 JS 字段项 RunJS 上下文',
+    properties: {
+      element: 'ElementProxy，表单字段容器',
+      value: '字段值（展示模式为只读；受控场景用 setProps 修改）',
+      record: '当前记录（只读）',
+    },
+    methods: {
+      onRefReady: '容器就绪回调',
+      setProps: '设置表单项属性：`setProps(fieldModel, { value })`（由联动/表单上下文提供）',
+    },
+  },
+  { locale: 'zh-CN' },
+);

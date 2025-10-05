@@ -7,11 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../types';
+
+const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-try',
   label: 'Try/catch template',
   description: 'Async try/catch template with toast message',
+  locales: {
+    'zh-CN': {
+      label: '异步 try/catch 模板',
+      description: '带消息提示的异步 try/catch 模板',
+    },
+  },
   content: `
 try {
   // await some async work
@@ -20,3 +28,5 @@ try {
 }
 `,
 };
+
+export default snippet;

@@ -12,23 +12,40 @@
  */
 import { RunJSContextRegistry } from './registry';
 import { FlowRunJSContext } from '../flowContext';
-import './contexts/base';
-import { JSBlockRunJSContext } from './contexts/JSBlockRunJSContext';
-import { JSFieldRunJSContext } from './contexts/JSFieldRunJSContext';
-import { JSItemRunJSContext } from './contexts/JSItemRunJSContext';
-import { FormJSFieldItemRunJSContext } from './contexts/FormJSFieldItemRunJSContext';
-import { JSRecordActionRunJSContext } from './contexts/JSRecordActionRunJSContext';
-import { JSCollectionActionRunJSContext } from './contexts/JSCollectionActionRunJSContext';
-import { LinkageRunJSContext } from './contexts/LinkageRunJSContext';
+import { defineBaseContextMeta } from './contexts/base';
 
 let done = false;
-export function setupRunJSContexts() {
+export async function setupRunJSContexts() {
   if (done) return;
+  defineBaseContextMeta();
+
+  // Lazy import to avoid circular dependencies during module initialization
+  const [
+    { JSBlockRunJSContext },
+    { JSFieldRunJSContext },
+    { JSItemRunJSContext },
+    { JSColumnRunJSContext },
+    { FormJSFieldItemRunJSContext },
+    { JSRecordActionRunJSContext },
+    { JSCollectionActionRunJSContext },
+    { LinkageRunJSContext },
+  ] = await Promise.all([
+    import('./contexts/JSBlockRunJSContext'),
+    import('./contexts/JSFieldRunJSContext'),
+    import('./contexts/JSItemRunJSContext'),
+    import('./contexts/JSColumnRunJSContext'),
+    import('./contexts/FormJSFieldItemRunJSContext'),
+    import('./contexts/JSRecordActionRunJSContext'),
+    import('./contexts/JSCollectionActionRunJSContext'),
+    import('./contexts/LinkageRunJSContext'),
+  ]);
+
   const v1 = 'v1';
   RunJSContextRegistry.register(v1, '*', FlowRunJSContext);
   RunJSContextRegistry.register(v1, 'JSBlockModel', JSBlockRunJSContext);
   RunJSContextRegistry.register(v1, 'JSFieldModel', JSFieldRunJSContext);
   RunJSContextRegistry.register(v1, 'JSItemModel', JSItemRunJSContext);
+  RunJSContextRegistry.register(v1, 'JSColumnModel', JSColumnRunJSContext);
   RunJSContextRegistry.register(v1, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext);
   RunJSContextRegistry.register(v1, 'JSRecordActionModel', JSRecordActionRunJSContext);
   RunJSContextRegistry.register(v1, 'JSCollectionActionModel', JSCollectionActionRunJSContext);

@@ -18,8 +18,14 @@ JSCollectionActionRunJSContext.define({
       Use ctx.resource.selectedRows to get selected records.
       Use ctx.resource.pagination for page info.`,
   },
-  snippets: {
-    'Selected count': { $ref: 'scene/actions/collection-selected-count', prefix: 'sn-act-selected-count' },
-    'Iterate selected rows': { $ref: 'scene/actions/iterate-selected-rows', prefix: 'sn-act-iterate' },
-  },
 });
+
+JSCollectionActionRunJSContext.define(
+  {
+    label: 'JS 集合动作 RunJS 上下文',
+    properties: {
+      resource: '列表资源（包含选中行/分页信息等）',
+    },
+  },
+  { locale: 'zh-CN' },
+);

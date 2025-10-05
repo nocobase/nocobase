@@ -26,17 +26,22 @@ JSBlockRunJSContext.define({
       Parameters: (ref: React.RefObject, callback: (element: HTMLElement) => void, timeout?: number) => void
       Example: ctx.onRefReady(ctx.ref, (el) => { el.innerHTML = "Ready!" })`,
   },
-  snippets: {
-    'Render HTML': { $ref: 'scene/jsblock/render-basic', prefix: 'sn-jsb-html' },
-    'Render React': { $ref: 'scene/jsblock/render-react', prefix: 'sn-jsb-react' },
-    'Init ECharts': { $ref: 'libs/echarts-init', prefix: 'sn-echarts' },
-    'Render card': { $ref: 'scene/jsblock/render-card', prefix: 'sn-jsb-card' },
-    'Button handler': { $ref: 'scene/jsblock/render-button-handler', prefix: 'sn-jsb-button' },
-    'JSX mount': { $ref: 'scene/jsblock/jsx-mount', prefix: 'sn-jsx-mount' },
-    'JSX unmount': { $ref: 'scene/jsblock/jsx-unmount', prefix: 'sn-jsx-unmount' },
-    Notification: { $ref: 'global/notification-open', prefix: 'sn-notify' },
-    'Window open': { $ref: 'global/window-open', prefix: 'sn-window-open' },
-    'Add click listener': { $ref: 'scene/jsblock/add-event-listener', prefix: 'sn-jsb-click' },
-    'Append style': { $ref: 'scene/jsblock/append-style', prefix: 'sn-jsb-style' },
-  },
 });
+
+JSBlockRunJSContext.define(
+  {
+    label: 'JS 区块 RunJS 上下文',
+    properties: {
+      element: 'ElementProxy，安全的 DOM 容器，支持 innerHTML/append 等',
+      record: '当前记录（只读，用于数据区块/详情等场景）',
+      value: '当前值（若存在）',
+      React: 'React（已注入）',
+      antd: 'Ant Design（已注入）',
+    },
+    methods: {
+      onRefReady: '容器 ref 就绪回调：\n```js\nctx.onRefReady(ctx.ref, el => { /* ... */ })\n```',
+      requireAsync: '加载外部库：`const lib = await ctx.requireAsync(url)`',
+    },
+  },
+  { locale: 'zh-CN' },
+);

@@ -14,18 +14,20 @@ import { FlowContext } from '../flowContext';
 import { JSRunner } from '../JSRunner';
 
 describe('flowRunJSContext registry and doc', () => {
-  it('setupRunJSContexts should register v1 mapping', () => {
-    setupRunJSContexts();
+  it('setupRunJSContexts should register v1 mapping', async () => {
+    await setupRunJSContexts();
     expect(RunJSContextRegistry['resolve']('v1' as any, '*')).toBeTruthy();
   });
 
-  it('getRunJSDocFor should pick subclass by model class name', () => {
+  it('getRunJSDocFor should pick subclass by model class name', async () => {
+    await setupRunJSContexts();
     const ctx: any = { model: { constructor: { name: 'JSBlockModel' } } };
     const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
     expect(doc?.label).toMatch(/JSBlock RunJS/);
   });
 
   it('createJSRunnerWithVersion returns a JSRunner', async () => {
+    await setupRunJSContexts();
     const ctx = new FlowContext();
     ctx.defineProperty('model', {
       value: { constructor: { name: 'JSFieldModel' } },
@@ -41,6 +43,7 @@ describe('flowRunJSContext registry and doc', () => {
   });
 
   it('default globals (window/document) should be injected for field/block contexts', async () => {
+    await setupRunJSContexts();
     const ctx = new FlowContext();
     ctx.defineProperty('model', {
       value: { constructor: { name: 'JSFieldModel' } },

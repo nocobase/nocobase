@@ -13,6 +13,13 @@ const snippet: SnippetModule = {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-jsb-card',
   label: 'Render card',
+  description: 'Render a styled card layout inside the block',
+  locales: {
+    'zh-CN': {
+      label: '渲染卡片',
+      description: '在区块中渲染带样式的卡片布局',
+    },
+  },
   content:
     `
 ctx.element.innerHTML = ` +

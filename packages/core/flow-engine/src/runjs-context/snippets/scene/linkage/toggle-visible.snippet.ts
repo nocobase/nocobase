@@ -7,10 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../../types';
+
+const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-link-visibility',
   label: 'Toggle visible',
+  description: 'Show or hide another field within linkage scripts',
+  locales: {
+    'zh-CN': {
+      label: '切换可见性',
+      description: '在联动脚本中设置字段显示或隐藏',
+    },
+  },
   content: `
 const targetFieldUid = 'FIELD_UID_OR_NAME';
 const shouldHide = true;
@@ -36,3 +45,5 @@ ctx.message?.success?.(
 );
 `,
 };
+
+export default snippet;

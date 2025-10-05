@@ -13,9 +13,18 @@ import type { JSRunnerOptions } from '../JSRunner';
 import type { RunJSVersion } from './registry';
 import { RunJSContextRegistry, getModelClassName } from './registry';
 
+function getLocale(ctx: any): string | undefined {
+  return ctx?.api?.auth?.locale || ctx?.i18n?.language || ctx?.locale;
+}
+
 export function getRunJSDocFor(ctx: FlowContext, { version = 'v1' as RunJSVersion } = {}) {
   const modelClass = getModelClassName(ctx);
   const ctor = RunJSContextRegistry.resolve(version, modelClass) || RunJSContextRegistry.resolve(version, '*');
+  const locale = getLocale(ctx);
+  if ((ctor as any)?.getDoc?.length) {
+    // prefer getDoc(locale)
+    return (ctor as any).getDoc(locale) || {};
+  }
   return (ctor as any)?.getDoc?.() || {};
 }
 

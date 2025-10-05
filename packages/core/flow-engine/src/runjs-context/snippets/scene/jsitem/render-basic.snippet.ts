@@ -7,10 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../../types';
+
+const snippet: SnippetModule = {
   contexts: ['JSItemRunJSContext'],
   prefix: 'sn-jsitem-basic',
   label: 'Render form item',
+  description: 'Render custom content inside a form item container',
+  locales: {
+    'zh-CN': {
+      label: '渲染表单项',
+      description: '在表单项容器中渲染自定义内容',
+    },
+  },
   content:
     `
 ctx.element.innerHTML = ` +
@@ -25,3 +34,5 @@ ctx.element.innerHTML = ` +
     `;
 `,
 };
+
+export default snippet;

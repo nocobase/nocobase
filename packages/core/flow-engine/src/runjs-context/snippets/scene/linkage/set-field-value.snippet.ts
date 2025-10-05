@@ -7,10 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../../types';
+
+const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-link-set',
   label: 'Set field value',
+  description: 'Programmatically update another field in linkage scripts',
+  locales: {
+    'zh-CN': {
+      label: '设置字段值',
+      description: '在联动脚本中为其他字段设置值',
+    },
+  },
   content: `
 // Update another field in the same form/block
 const targetFieldUid = 'FIELD_UID_OR_NAME';
@@ -35,3 +44,5 @@ ctx.message?.success?.(
 );
 `,
 };
+
+export default snippet;

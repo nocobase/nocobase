@@ -28,10 +28,21 @@ JSFieldRunJSContext.define({
       Parameters: (ref: React.RefObject, callback: (element: HTMLElement) => void, timeout?: number) => void
       Example: ctx.onRefReady(ctx.ref, (el) => { el.innerHTML = ctx.value })`,
   },
-  snippets: {
-    'Render value': { $ref: 'scene/jsfield/innerHTML-value', prefix: 'sn-jsf-value' },
-    'Message success': { $ref: 'global/message-success', prefix: 'sn-msg-ok' },
-    'Format number': { $ref: 'scene/jsfield/format-number', prefix: 'sn-jsf-num' },
-    'Color by value': { $ref: 'scene/jsfield/color-by-value', prefix: 'sn-jsf-color' },
-  },
 });
+
+JSFieldRunJSContext.define(
+  {
+    label: 'JS 字段 RunJS 上下文',
+    properties: {
+      element: 'ElementProxy，字段渲染容器，支持 innerHTML/append 等 DOM 操作',
+      value: '字段当前值（只读）',
+      record: '当前记录对象（只读，包含父记录全部字段值）',
+      collection: '集合定义元数据（只读，描述字段所属集合的 Schema）',
+    },
+    methods: {
+      onRefReady:
+        '在字段容器 DOM 就绪后执行回调。参数：(ref, callback, timeout?)；示例：ctx.onRefReady(ctx.ref, el => { el.innerHTML = ctx.value })',
+    },
+  },
+  { locale: 'zh-CN' },
+);

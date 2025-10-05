@@ -7,10 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../types';
+
+const snippet: SnippetModule = {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-echarts',
   label: 'Init ECharts',
+  description: 'Load ECharts and render a simple chart inside the block',
+  locales: {
+    'zh-CN': {
+      label: '初始化 ECharts',
+      description: '加载 ECharts 并在区块内渲染示例图表',
+    },
+  },
   content: `
 ctx.element.style.height = '400px';
 const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js');
@@ -22,3 +31,5 @@ if (!echarts) {
 }
 `,
 };
+
+export default snippet;

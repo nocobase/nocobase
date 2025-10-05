@@ -7,11 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../types';
+
+const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-require',
   label: 'Load external library',
   description: 'Dynamically load an external JS via RequireJS',
+  locales: {
+    'zh-CN': {
+      label: '加载外部库',
+      description: '通过 RequireJS 动态加载外部脚本',
+    },
+  },
   content: `
 // Load an external library (AMD/RequireJS)
 try {
@@ -22,3 +30,5 @@ try {
 }
 `,
 };
+
+export default snippet;

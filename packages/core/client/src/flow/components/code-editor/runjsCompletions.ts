@@ -9,8 +9,7 @@
 
 import { Completion, snippetCompletion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
-import { getRunJSDocFor } from '@nocobase/flow-engine';
-import { loadSnippets, loadSnippetsForContext } from './snippets/loader';
+import { getRunJSDocFor, setupRunJSContexts, listSnippetsForContext } from '@nocobase/flow-engine';
 
 export type SnippetEntry = {
   name: string;
@@ -28,9 +27,14 @@ export async function buildRunJSCompletions(
   completions: Completion[];
   entries: SnippetEntry[];
 }> {
+  // Ensure RunJS contexts are registered (lazy, avoids static cycles)
+  try {
+    await setupRunJSContexts();
+  } catch (_) {
+    // ignore if setup fails
+  }
   // 当 hostCtx 不存在时，传入空对象以获取通用（*）上下文的文档
   const doc = getRunJSDocFor((hostCtx as any) || ({} as any), { version });
-  const sn = await loadSnippets(doc?.snippets || {});
   const completions: Completion[] = [];
   const toMd = (v: any) => (typeof v === 'string' ? v : JSON.stringify(v));
 
@@ -50,54 +54,23 @@ export async function buildRunJSCompletions(
       },
     });
   }
-
-  const entries: SnippetEntry[] = [];
-  for (const [name, def] of Object.entries<any>(sn || {})) {
-    const body = typeof def === 'string' ? def : def.body;
-    const label = (def && def.prefix) || name;
-    if (!body) continue;
-    const text = Array.isArray(body) ? body.join('\n') : String(body);
-    completions.push(
-      snippetCompletion(text, {
-        label,
-        detail: name,
-        info: (def && def.description) || name,
-      }) as any,
-    );
-    const ref = (def && def.$ref) || '';
-    const group =
-      typeof ref === 'string'
-        ? ref
-            .replace(/^\.\/?/, '')
-            .split('/')
-            .slice(0, 2)
-            .join('/')
-        : undefined;
-    entries.push({ name, prefix: def?.prefix, description: def?.description, body: text, ref, group });
-  }
-
+  let entries: SnippetEntry[] = [];
   try {
     const ctxClassName = (hostCtx as any)?.model?.constructor?.name || '*';
-    const classSnippets = await loadSnippetsForContext(ctxClassName, version);
-    for (const s of classSnippets) {
-      completions.push(
-        snippetCompletion(s.body, {
-          label: s.prefix || s.name,
-          detail: s.name,
-          info: s.description || s.ref,
-        }) as any,
-      );
-      entries.push({
-        name: s.name,
-        prefix: s.prefix,
-        description: s.description,
-        body: s.body,
-        ref: s.ref,
-        group: s.group,
-      });
-    }
+    const locale = (hostCtx as any)?.api?.auth?.locale || (hostCtx as any)?.i18n?.language;
+    entries = await listSnippetsForContext(ctxClassName, version, locale);
   } catch (_) {
-    // ignore single failure
+    entries = [];
+  }
+
+  for (const s of entries) {
+    completions.push(
+      snippetCompletion(s.body, {
+        label: s.prefix || s.name,
+        detail: s.name,
+        info: s.description || s.ref,
+      }) as any,
+    );
   }
 
   return { completions, entries };

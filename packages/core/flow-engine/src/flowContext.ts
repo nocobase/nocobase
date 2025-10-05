@@ -1181,7 +1181,13 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         );
       });
     });
-    this.defineMethod('createJSRunner', function (options?: JSRunnerOptions) {
+    this.defineMethod('createJSRunner', async function (options?: JSRunnerOptions) {
+      try {
+        const mod: any = await import('./runjs-context/setup');
+        if (typeof mod?.setupRunJSContexts === 'function') await mod.setupRunJSContexts();
+      } catch (_) {
+        // ignore if setup is not available
+      }
       const version = (options?.version as any) || 'v1';
       const modelClass = getModelClassName(this);
       const Ctor =
@@ -1582,8 +1588,9 @@ export type RunJSDocMeta = {
   snippets?: Record<string, any>;
 };
 
-const __runjsClassMeta = new WeakMap<Function, RunJSDocMeta>();
-const __runjsDocCache = new WeakMap<Function, RunJSDocMeta>();
+const __runjsClassDefaultMeta = new WeakMap<Function, RunJSDocMeta>();
+const __runjsClassLocaleMeta = new WeakMap<Function, Map<string, RunJSDocMeta>>();
+const __runjsDocCache = new WeakMap<Function, Map<string, RunJSDocMeta>>();
 
 function __runjsDeepMerge(base: any, patch: any) {
   if (patch === null) return undefined;
@@ -1606,23 +1613,47 @@ export class FlowRunJSContext extends FlowContext {
     this.defineProperty('antd', { value: antd });
     this.defineProperty('ReactDOM', { value: ReactDOMClient });
   }
-  static define(meta: RunJSDocMeta) {
-    const prev = __runjsClassMeta.get(this) || {};
-    __runjsClassMeta.set(this, __runjsDeepMerge(prev, meta));
+  static define(meta: RunJSDocMeta, options?: { locale?: string }) {
+    const locale = options?.locale;
+    if (locale) {
+      const map = __runjsClassLocaleMeta.get(this) || new Map<string, RunJSDocMeta>();
+      const prev = map.get(locale) || {};
+      map.set(locale, __runjsDeepMerge(prev, meta));
+      __runjsClassLocaleMeta.set(this, map);
+    } else {
+      const prev = __runjsClassDefaultMeta.get(this) || {};
+      __runjsClassDefaultMeta.set(this, __runjsDeepMerge(prev, meta));
+    }
     __runjsDocCache.delete(this);
   }
-  static getDoc(): RunJSDocMeta {
-    const self = this;
-    if (__runjsDocCache.has(self)) return __runjsDocCache.get(self)!;
+  static getDoc(locale?: string): RunJSDocMeta {
+    const self = this as any as Function;
+    let cacheForClass = __runjsDocCache.get(self);
+    const cacheKey = String(locale || 'default');
+    if (cacheForClass && cacheForClass.has(cacheKey)) return cacheForClass.get(cacheKey)!;
     const chain: Function[] = [];
-    let cur = self;
+    let cur: any = self;
     while (cur && cur.prototype) {
       chain.unshift(cur);
       cur = Object.getPrototypeOf(cur);
     }
     let merged: RunJSDocMeta = {};
-    for (const cls of chain) merged = __runjsDeepMerge(merged, __runjsClassMeta.get(cls) || {});
-    __runjsDocCache.set(self, merged);
+    for (const cls of chain) {
+      merged = __runjsDeepMerge(merged, __runjsClassDefaultMeta.get(cls) || {});
+    }
+    if (locale) {
+      for (const cls of chain) {
+        const lmap = __runjsClassLocaleMeta.get(cls);
+        if (lmap && lmap.has(locale)) {
+          merged = __runjsDeepMerge(merged, lmap.get(locale));
+        }
+      }
+    }
+    if (!cacheForClass) {
+      cacheForClass = new Map<string, RunJSDocMeta>();
+      __runjsDocCache.set(self, cacheForClass);
+    }
+    cacheForClass.set(cacheKey, merged);
     return merged;
   }
 }

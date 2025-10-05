@@ -7,10 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../../types';
+
+const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-link-disable',
   label: 'Set disabled',
+  description: 'Enable or disable another field in linkage scripts',
+  locales: {
+    'zh-CN': {
+      label: '设置禁用',
+      description: '在联动脚本中启用或禁用字段',
+    },
+  },
   content: `
 const targetFieldUid = 'FIELD_UID_OR_NAME';
 const disabled = true;
@@ -36,3 +45,5 @@ ctx.message?.success?.(
 );
 `,
 };
+
+export default snippet;

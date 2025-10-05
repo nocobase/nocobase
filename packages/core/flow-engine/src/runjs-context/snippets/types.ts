@@ -14,4 +14,5 @@ export type SnippetModule = {
   prefix?: string; // completion trigger text
   label?: string; // display name in snippets list
   description?: string; // optional longer description
+  locales?: Record<string, { label?: string; description?: string }>;
 };

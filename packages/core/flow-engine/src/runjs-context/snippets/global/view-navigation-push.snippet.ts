@@ -14,6 +14,12 @@ const snippet: SnippetModule = {
   prefix: 'sn-nav-push',
   label: 'View navigation: push',
   description: 'Navigate within current view (if supported)',
+  locales: {
+    'zh-CN': {
+      label: '视图导航：push',
+      description: '在当前视图中执行导航（若可用）',
+    },
+  },
   content: `
 // Push a new sub-view (if navigation is available)
 ctx.view?.navigation?.push({ viewUid: 'detail', filterByTk: 1 });

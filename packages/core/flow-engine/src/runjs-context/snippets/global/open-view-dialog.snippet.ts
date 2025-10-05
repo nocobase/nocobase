@@ -14,6 +14,12 @@ const snippet: SnippetModule = {
   prefix: 'sn-open-dialog',
   label: 'Open view (dialog)',
   description: 'Open a view in dialog via ctx.openView',
+  locales: {
+    'zh-CN': {
+      label: '打开视图（对话框）',
+      description: '通过 ctx.openView 以对话框方式打开视图',
+    },
+  },
   content: `
 const popupUid = 'your-popup-uid';
 await ctx.openView(popupUid, {

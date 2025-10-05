@@ -7,10 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../../types';
+
+const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-link-required',
   label: 'Set required',
+  description: 'Toggle required rule for another field within linkage',
+  locales: {
+    'zh-CN': {
+      label: '设置必填',
+      description: '在联动脚本中控制字段是否必填',
+    },
+  },
   content: `
 const targetFieldUid = 'FIELD_UID_OR_NAME';
 const required = true;
@@ -36,3 +45,5 @@ ctx.message?.success?.(
 );
 `,
 };
+
+export default snippet;

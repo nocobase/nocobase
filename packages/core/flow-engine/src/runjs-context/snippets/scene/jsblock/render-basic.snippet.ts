@@ -7,10 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../../types';
+
+const snippet: SnippetModule = {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-jsb-html',
   label: 'Render HTML',
+  description: 'Render simple HTML into the block container',
+  locales: {
+    'zh-CN': {
+      label: '渲染 HTML',
+      description: '在区块容器中渲染简单 HTML 内容',
+    },
+  },
   content:
     `
 ctx.element.innerHTML = ` +
@@ -22,3 +31,5 @@ ctx.element.innerHTML = ` +
     `;
 `,
 };
+
+export default snippet;

@@ -7,10 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../../types';
+
+const snippet: SnippetModule = {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-jsx-mount',
   label: 'JSX mount',
+  description: 'Render JSX via ReactDOM.createRoot in the block',
+  locales: {
+    'zh-CN': {
+      label: 'JSX 挂载',
+      description: '在区块中使用 ReactDOM.createRoot 渲染 JSX',
+    },
+  },
   content: `
 // Render JSX (editor does not auto-transform)
 const { ReactDOM, antd } = ctx;
@@ -22,3 +31,5 @@ root.render(<Button type="primary" onClick={() => ctx.message.success(ctx.t('Cli
 ctx.__reactRoot = root;
 `,
 };
+
+export default snippet;

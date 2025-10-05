@@ -7,10 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../../types';
+
+const snippet: SnippetModule = {
   contexts: ['JSBlockRunJSContext'],
   prefix: 'sn-jsb-react',
   label: 'Render React',
+  description: 'Render a React element inside the block container',
+  locales: {
+    'zh-CN': {
+      label: '渲染 React',
+      description: '在区块容器中渲染 React 组件',
+    },
+  },
   content: `
 // Render a React element into ctx.element via ReactDOM
 const { React, ReactDOM, antd } = ctx;
@@ -32,3 +41,5 @@ root.render(node);
 ctx.__reactRoot = root;
 `,
 };
+
+export default snippet;

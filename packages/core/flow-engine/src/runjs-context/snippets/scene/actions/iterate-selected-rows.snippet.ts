@@ -7,10 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../../types';
+
+const snippet: SnippetModule = {
   contexts: ['JSCollectionActionRunJSContext'],
   prefix: 'sn-act-iterate',
   label: 'Iterate selected rows',
+  description: 'Loop through selected rows and process each record',
+  locales: {
+    'zh-CN': {
+      label: '遍历选中行',
+      description: '遍历选中行并处理每条记录',
+    },
+  },
   content: `
 const rows = ctx.resource?.getSelectedRows?.() || [];
 for (const row of rows) {
@@ -19,3 +28,5 @@ for (const row of rows) {
 ctx.message.success(ctx.t('Processed {{count}} rows', { count: rows.length }));
 `,
 };
+
+export default snippet;

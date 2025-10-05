@@ -14,6 +14,12 @@ const snippet: SnippetModule = {
   prefix: 'sn-open-drawer',
   label: 'Open view (drawer)',
   description: 'Open a view in drawer via ctx.openView',
+  locales: {
+    'zh-CN': {
+      label: '打开视图（抽屉）',
+      description: '通过 ctx.openView 以抽屉方式打开视图',
+    },
+  },
   content: `
 const popupUid = 'your-popup-uid';
 await ctx.openView(popupUid, {

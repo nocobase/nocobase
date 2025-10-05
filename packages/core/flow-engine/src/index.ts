@@ -33,6 +33,8 @@ export * from './FlowContextProvider';
 export * from './JSRunner';
 export { getRunJSDocFor, createJSRunnerWithVersion } from './runjs-context/helpers';
 export { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
+export { setupRunJSContexts } from './runjs-context/setup';
+export { getSnippetBody, listSnippetsForContext } from './runjs-context/snippets';
 
 export * from './views';
 

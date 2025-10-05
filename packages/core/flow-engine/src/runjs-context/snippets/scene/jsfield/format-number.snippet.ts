@@ -7,13 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../../types';
+
+const snippet: SnippetModule = {
   contexts: ['JSFieldRunJSContext', 'FormJSFieldItemRunJSContext'],
   prefix: 'sn-jsf-num',
   label: 'Format number',
+  description: 'Format numeric value with locale-aware separators',
+  locales: {
+    'zh-CN': {
+      label: '格式化数字',
+      description: '按本地化格式输出数值',
+    },
+  },
   content: `
 // Format number using locale
 const n = Number(ctx.value ?? 0);
 ctx.element.innerHTML = String(Number.isFinite(n) ? n.toLocaleString() : ctx.value ?? '');
 `,
 };
+
+export default snippet;
