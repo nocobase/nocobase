@@ -7,9 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+export type SnippetContextSpecifier = string | { name: string } | (new (...args: any[]) => any);
+
 export type SnippetModule = {
   content: string;
-  contexts?: string[]; // e.g., ['JSBlockRunJSContext'] or ['*']
+  contexts?: SnippetContextSpecifier[]; // e.g., [JSBlockRunJSContext] or ['*']
   versions?: string[]; // e.g., ['v1'] or ['*']
   prefix?: string; // completion trigger text
   label?: string; // display name in snippets list

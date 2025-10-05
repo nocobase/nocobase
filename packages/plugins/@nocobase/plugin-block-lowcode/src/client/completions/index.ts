@@ -30,18 +30,30 @@ const buildLowcodeCompletions = (): Completion[] => {
         const depth = path.length;
         let description: any = value;
         let detail: string | undefined;
+        let completionSpec: any;
         let children: Record<string, any> | undefined;
         if (value && typeof value === 'object' && !Array.isArray(value)) {
           description = value.description ?? value.detail ?? value.type ?? value;
           detail = value.detail ?? value.type ?? 'ctx property';
+          completionSpec = value.completion;
           children = value.properties as Record<string, any> | undefined;
         }
+        const apply = completionSpec?.insertText
+          ? (view: any, _completion: any, from: number, to: number) => {
+              view.dispatch({
+                changes: { from, to, insert: completionSpec.insertText },
+                selection: { anchor: from + completionSpec.insertText.length },
+                scrollIntoView: true,
+              });
+            }
+          : undefined;
         completions.push({
           label: ctxLabel,
           type: 'property',
           detail: detail || 'ctx property',
           info: toInfo(description),
           boost: Math.max(90 - depth * 5, 10),
+          apply,
         } as Completion);
         if (children) collectProperties(children, path);
       }
@@ -50,14 +62,28 @@ const buildLowcodeCompletions = (): Completion[] => {
     collectProperties(doc?.properties || {});
     const methods = doc?.methods || {};
     for (const key of Object.keys(methods)) {
+      const methodDoc = methods[key];
+      let description: any = methodDoc;
+      let detail = 'ctx method';
+      let completionSpec: any;
+      if (methodDoc && typeof methodDoc === 'object' && !Array.isArray(methodDoc)) {
+        description = methodDoc.description ?? methodDoc.detail ?? methodDoc;
+        detail = methodDoc.detail ?? detail;
+        completionSpec = methodDoc.completion;
+      }
+      const insertText = completionSpec?.insertText ?? `ctx.${key}()`;
       completions.push({
         label: `ctx.${key}()` as any,
         type: 'function',
-        detail: 'ctx method',
-        info: toInfo(methods[key]),
+        detail,
+        info: toInfo(description),
         boost: 95,
         apply: (view: any, _completion: any, from: number, to: number) => {
-          view.dispatch({ changes: { from, to, insert: `ctx.${key}()` } });
+          view.dispatch({
+            changes: { from, to, insert: insertText },
+            selection: { anchor: from + insertText.length },
+            scrollIntoView: true,
+          });
         },
       } as Completion);
     }

@@ -16,12 +16,21 @@ vi.mock('@nocobase/flow-engine', () => {
       foo: 'foo prop',
       api: {
         description: 'api client',
+        completion: { insertText: 'ctx.api' },
         properties: {
-          request: 'send request',
+          request: {
+            description: 'send request',
+            completion: { insertText: "await ctx.api.request({ url: '', method: 'get' })" },
+          },
         },
       },
     },
-    methods: { bar: 'bar method' },
+    methods: {
+      bar: {
+        description: 'bar method',
+        completion: { insertText: "ctx.bar('value')" },
+      },
+    },
   };
   return {
     getRunJSDocFor: () => doc,
@@ -61,5 +70,14 @@ describe('buildRunJSCompletions', () => {
     expect(completions.some((c: any) => c.label === 'Class Snippet')).toBe(true);
     // entries produced for drawer
     expect(entries.some((e) => e.name === 'Class Snippet')).toBe(true);
+    const apiReq = completions.find((c: any) => c.label === 'ctx.api.request');
+    expect(apiReq).toBeTruthy();
+    const mockView = {
+      dispatch: vi.fn(),
+    };
+    (apiReq as any).apply(mockView, apiReq, 0, 0);
+    expect(mockView.dispatch).toHaveBeenCalled();
+    const inserted = (mockView.dispatch.mock.calls[0] ?? [])[0]?.changes?.insert;
+    expect(inserted).toContain('ctx.api.request');
   });
 });

@@ -128,7 +128,14 @@ export async function listSnippetsForContext(
         // contexts filter: supports '*' or specific RunJSContext class name
         let ok = true;
         if (Array.isArray(def?.contexts) && def.contexts.length) {
-          ok = def.contexts.includes('*') || def.contexts.includes(ctxClassName);
+          const ctxNames = def.contexts.map((item: any) => {
+            if (item === '*') return '*';
+            if (typeof item === 'string') return item;
+            if (typeof item === 'function') return item.name || '*';
+            if (item && typeof item === 'object' && typeof item.name === 'string') return item.name;
+            return String(item ?? '');
+          });
+          ok = ctxNames.includes('*') || ctxNames.includes(ctxClassName);
         }
         // versions filter
         if (ok && Array.isArray(def?.versions) && def.versions.length) {

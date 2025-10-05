@@ -51,9 +51,16 @@ export function defineBaseContextMeta() {
         'Asynchronously load external libraries from URL. Parameters: (url: string) => Promise<any>. Example: `const lodash = await ctx.requireAsync("https://cdn.jsdelivr.net/npm/lodash")`',
       resolveJsonTemplate:
         'Resolve JSON templates containing variable expressions with {{ }} syntax. Parameters: (template: any, context?: object) => any',
-      runAction:
-        'Execute a data action on the current resource. Parameters: (actionName: string, params: object) => Promise<any>. Example: `await ctx.runAction("create", { values: { name: "test" } })`',
-      openView: `Open a view component (page, modal, or drawer) by its unique identifier.
+      runAction: {
+        description:
+          'Execute a data action on the current resource. Parameters: (actionName: string, params: object) => Promise<any>. Example: `await ctx.runAction("create", { values: { name: "test" } })`',
+        detail: 'Promise<any>',
+        completion: {
+          insertText: `await ctx.runAction('create', { values: {} })`,
+        },
+      },
+      openView: {
+        description: `Open a view component (page, modal, or drawer) by its unique identifier.
       Parameters: (viewId: string, options?: OpenViewOptions) => Promise<void>
       Options:
         - params: Record<string, any> - Parameters passed to the view component
@@ -65,9 +72,14 @@ export function defineBaseContextMeta() {
         - viewUid: string - Custom view UID for routing
         - isMobileLayout: boolean - Use mobile layout (displays as embed)
       Examples:
-        - Modal with params: await ctx.openView("user-detail", { params: { id: 123 }, mode: "modal", title: "User Details", width: 800 })
-        - Drawer (default): await ctx.openView("settings-page")
+       - Modal with params: await ctx.openView("user-detail", { params: { id: 123 }, mode: "modal", title: "User Details", width: 800 })
+       - Drawer (default): await ctx.openView("settings-page")
         - Page navigation: await ctx.openView("dashboard", { mode: "page" })`,
+        detail: 'Promise<void>',
+        completion: {
+          insertText: `await ctx.openView('view-id', { mode: 'drawer', params: {} })`,
+        },
+      },
     },
   });
 
@@ -110,10 +122,22 @@ export function defineBaseContextMeta() {
         requireAsync:
           '按 URL 异步加载外部库。参数：(url: string) => Promise<any>。示例：`const lodash = await ctx.requireAsync("https://cdn.jsdelivr.net/npm/lodash")`',
         resolveJsonTemplate: '解析含 {{ }} 变量表达式的 JSON 模板。参数：(template: any, context?: object) => any',
-        runAction:
-          '对当前资源执行数据动作。参数：(actionName: string, params: object) => Promise<any>。示例：`await ctx.runAction("create", { values: { name: "test" } })`',
-        openView:
-          '根据唯一标识打开视图（页面/弹窗/抽屉）。参数：(viewId: string, options?: OpenViewOptions) => Promise<void>`，常用选项：params、mode、title、width、navigation、preventClose、viewUid、isMobileLayout。',
+        runAction: {
+          description:
+            '对当前资源执行数据动作。参数：(actionName: string, params: object) => Promise<any>。示例：`await ctx.runAction("create", { values: { name: "test" } })`',
+          detail: 'Promise<any>',
+          completion: {
+            insertText: `await ctx.runAction('create', { values: {} })`,
+          },
+        },
+        openView: {
+          description:
+            '根据唯一标识打开视图（页面/弹窗/抽屉）。参数：(viewId: string, options?: OpenViewOptions) => Promise<void>`，常用选项：params、mode、title、width、navigation、preventClose、viewUid、isMobileLayout。',
+          detail: 'Promise<void>',
+          completion: {
+            insertText: `await ctx.openView('view-id', { mode: 'drawer', params: {} })`,
+          },
+        },
       },
     },
     { locale: 'zh-CN' },

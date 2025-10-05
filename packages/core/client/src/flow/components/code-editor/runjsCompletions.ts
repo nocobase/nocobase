@@ -57,17 +57,29 @@ export async function buildRunJSCompletions(
       let description: any = value;
       let detail: string | undefined;
       let children: Record<string, any> | undefined;
+      let completionSpec: any;
       if (value && typeof value === 'object' && !Array.isArray(value)) {
         description = value.description ?? value.detail ?? value.type ?? value;
         detail = value.detail ?? value.type ?? 'ctx property';
+        completionSpec = value.completion;
         children = value.properties as Record<string, any> | undefined;
       }
+      const apply = completionSpec?.insertText
+        ? (view: EditorView, _completion: Completion, from: number, to: number) => {
+            view.dispatch({
+              changes: { from, to, insert: completionSpec.insertText },
+              selection: { anchor: from + completionSpec.insertText.length },
+              scrollIntoView: true,
+            });
+          }
+        : undefined;
       completions.push({
         label: ctxLabel,
         type: 'property',
         info: toMd(description),
         detail: detail || 'ctx property',
         boost: Math.max(90 - depth * 5, 10),
+        apply,
       } as Completion);
       if (children) {
         collectProperties(children, path);
@@ -78,13 +90,28 @@ export async function buildRunJSCompletions(
   collectProperties(doc?.properties || {});
   const methods = doc?.methods || {};
   for (const k of Object.keys(methods)) {
+    const methodDoc = methods[k];
+    let description: any = methodDoc;
+    let detail = 'ctx method';
+    let completionSpec: any;
+    if (methodDoc && typeof methodDoc === 'object' && !Array.isArray(methodDoc)) {
+      description = methodDoc.description ?? methodDoc.detail ?? methodDoc;
+      detail = methodDoc.detail ?? detail;
+      completionSpec = methodDoc.completion;
+    }
+    const insertText = completionSpec?.insertText ?? `ctx.${k}()`;
     completions.push({
       label: `ctx.${k}()` as any,
       type: 'function',
-      info: toMd(methods[k]),
-      detail: 'ctx method',
+      info: toMd(description),
+      detail,
+      boost: 95,
       apply: (view: EditorView, _c: Completion, from: number, to: number) => {
-        view.dispatch({ changes: { from, to, insert: `ctx.${k}()` } });
+        view.dispatch({
+          changes: { from, to, insert: insertText },
+          selection: { anchor: from + insertText.length },
+          scrollIntoView: true,
+        });
       },
     });
   }

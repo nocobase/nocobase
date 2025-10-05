@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { JSBlockRunJSContext } from '../../../contexts/JSBlockRunJSContext';
 import type { SnippetModule } from '../../types';
 
 const snippet: SnippetModule = {
-  contexts: ['JSBlockRunJSContext'],
+  contexts: [JSBlockRunJSContext],
   prefix: 'sn-resource-example',
   label: 'Resource example',
   description: 'Use ctx.useResource to load data and render JSON output',

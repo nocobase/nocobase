@@ -1581,6 +1581,10 @@ export class FlowRuntimeContext<
 // 类型别名，方便使用
 export type FlowSettingsContext<TModel extends FlowModel = FlowModel> = FlowRuntimeContext<TModel, 'settings'>;
 
+export type RunJSDocCompletionDoc = {
+  insertText?: string;
+};
+
 export type RunJSDocPropertyDoc =
   | string
   | {
@@ -1588,13 +1592,23 @@ export type RunJSDocPropertyDoc =
       detail?: string;
       type?: string;
       examples?: string[];
+      completion?: RunJSDocCompletionDoc;
       properties?: Record<string, RunJSDocPropertyDoc>;
+    };
+
+export type RunJSDocMethodDoc =
+  | string
+  | {
+      description?: string;
+      detail?: string;
+      examples?: string[];
+      completion?: RunJSDocCompletionDoc;
     };
 
 export type RunJSDocMeta = {
   label?: string;
   properties?: Record<string, RunJSDocPropertyDoc>;
-  methods?: Record<string, any>;
+  methods?: Record<string, RunJSDocMethodDoc>;
   snippets?: Record<string, any>;
 };
 
