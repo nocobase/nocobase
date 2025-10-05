@@ -7,16 +7,80 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CompletionContext, CompletionResult } from '@codemirror/autocomplete';
-import completions from './completions';
+import { CompletionContext, CompletionResult, Completion } from '@codemirror/autocomplete';
+import { FlowRunJSContext } from '@nocobase/flow-engine';
 import { isHtmlTemplateContext } from './htmlCompletion';
+
+function buildBaseCompletions(): Completion[] {
+  try {
+    const doc = typeof (FlowRunJSContext as any)?.getDoc === 'function' ? (FlowRunJSContext as any).getDoc() : {};
+    const options: Completion[] = [];
+    const toInfo = (value: any) => (typeof value === 'string' ? value : JSON.stringify(value));
+    if (doc?.label || doc?.properties || doc?.methods) {
+      options.push({
+        label: 'ctx',
+        type: 'class',
+        detail: 'FlowRunJSContext',
+        info: doc?.label || 'RunJS context',
+        boost: 115,
+      } as Completion);
+    }
+    const collectProperties = (props: Record<string, any> | undefined, parentPath: string[] = []) => {
+      if (!props) return;
+      for (const [key, value] of Object.entries(props)) {
+        const path = [...parentPath, key];
+        const ctxLabel = `ctx.${path.join('.')}`;
+        const depth = path.length;
+        let description: any = value;
+        let detail: string | undefined;
+        let children: Record<string, any> | undefined;
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          description = value.description ?? value.detail ?? value.type ?? value;
+          detail = value.detail ?? value.type ?? 'ctx property';
+          children = value.properties as Record<string, any> | undefined;
+        }
+        options.push({
+          label: ctxLabel,
+          type: 'property',
+          detail: detail || 'ctx property',
+          info: toInfo(description),
+          boost: Math.max(90 - depth * 5, 10),
+        } as Completion);
+        if (children) collectProperties(children, path);
+      }
+    };
+
+    collectProperties(doc?.properties || {});
+    const methods = doc?.methods || {};
+    for (const key of Object.keys(methods)) {
+      options.push({
+        label: `ctx.${key}()` as any,
+        type: 'function',
+        detail: 'ctx method',
+        info: toInfo(methods[key]),
+        boost: 95,
+        apply: (view: any, _completion: any, from: number, to: number) => {
+          view.dispatch({ changes: { from, to, insert: `ctx.${key}()` } });
+        },
+      } as Completion);
+    }
+    return options;
+  } catch (_) {
+    return [];
+  }
+}
+
+const baseCompletions = buildBaseCompletions();
 
 export const javascriptCompletionSource = (context: CompletionContext): CompletionResult | null => {
   if (isHtmlTemplateContext(context)) {
     return null;
   }
 
-  const word = context.matchBefore(/[a-zA-Z_][\w.]*/);
+  const word = context.matchBefore(/[$_\p{Letter}][$_\p{Letter}\p{Number}.-]*/u);
+  if (!word && context.explicit) {
+    return { from: context.pos, to: context.pos, options: baseCompletions };
+  }
   if (!word || (word.from === word.to && !context.explicit)) return null;
 
   const from = word.from;
@@ -25,7 +89,7 @@ export const javascriptCompletionSource = (context: CompletionContext): Completi
   return {
     from,
     to,
-    options: completions,
+    options: baseCompletions,
   };
 };
 

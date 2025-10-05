@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Completion, snippetCompletion } from '@codemirror/autocomplete';
+import { Completion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
 import { getRunJSDocFor, setupRunJSContexts, listSnippetsForContext } from '@nocobase/flow-engine';
 
@@ -38,10 +38,44 @@ export async function buildRunJSCompletions(
   const completions: Completion[] = [];
   const toMd = (v: any) => (typeof v === 'string' ? v : JSON.stringify(v));
 
-  const props = doc?.properties || {};
-  for (const k of Object.keys(props)) {
-    completions.push({ label: `ctx.${k}`, type: 'property', info: toMd(props[k]), detail: 'ctx property' });
+  if (doc?.label || doc?.properties || doc?.methods) {
+    completions.push({
+      label: 'ctx',
+      type: 'class',
+      detail: 'FlowRunJSContext',
+      info: doc?.label || 'RunJS context',
+      boost: 115,
+    } as Completion);
   }
+
+  const collectProperties = (props: Record<string, any> | undefined, parentPath: string[] = []) => {
+    if (!props) return;
+    for (const [key, value] of Object.entries(props)) {
+      const path = [...parentPath, key];
+      const ctxLabel = `ctx.${path.join('.')}`;
+      const depth = path.length;
+      let description: any = value;
+      let detail: string | undefined;
+      let children: Record<string, any> | undefined;
+      if (value && typeof value === 'object' && !Array.isArray(value)) {
+        description = value.description ?? value.detail ?? value.type ?? value;
+        detail = value.detail ?? value.type ?? 'ctx property';
+        children = value.properties as Record<string, any> | undefined;
+      }
+      completions.push({
+        label: ctxLabel,
+        type: 'property',
+        info: toMd(description),
+        detail: detail || 'ctx property',
+        boost: Math.max(90 - depth * 5, 10),
+      } as Completion);
+      if (children) {
+        collectProperties(children, path);
+      }
+    }
+  };
+
+  collectProperties(doc?.properties || {});
   const methods = doc?.methods || {};
   for (const k of Object.keys(methods)) {
     completions.push({
@@ -64,13 +98,25 @@ export async function buildRunJSCompletions(
   }
 
   for (const s of entries) {
-    completions.push(
-      snippetCompletion(s.body, {
-        label: s.prefix || s.name,
-        detail: s.name,
-        info: s.description || s.ref,
-      }) as any,
-    );
+    const text = s.body;
+    const filterText = [s.name, s.prefix, s.description, s.ref, s.body]
+      .filter((v) => typeof v === 'string' && v.trim().length > 0)
+      .join(' ');
+    completions.push({
+      label: s.name,
+      detail: s.prefix || s.name,
+      type: 'snippet',
+      info: s.description || s.ref,
+      filterText: filterText || s.name,
+      boost: 80,
+      apply: (view: EditorView, _completion: Completion, from: number, to: number) => {
+        view.dispatch({
+          changes: { from, to, insert: text },
+          selection: { anchor: from + text.length },
+          scrollIntoView: true,
+        });
+      },
+    });
   }
 
   return { completions, entries };

@@ -12,7 +12,15 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 // Mock engine api provider
 vi.mock('@nocobase/flow-engine', () => {
   const doc = {
-    properties: { foo: 'foo prop' },
+    properties: {
+      foo: 'foo prop',
+      api: {
+        description: 'api client',
+        properties: {
+          request: 'send request',
+        },
+      },
+    },
     methods: { bar: 'bar method' },
   };
   return {
@@ -42,13 +50,15 @@ describe('buildRunJSCompletions', () => {
     expect(Array.isArray(completions)).toBe(true);
     // property
     expect(completions.some((c: any) => c.label === 'ctx.foo')).toBe(true);
+    expect(completions.some((c: any) => c.label === 'ctx.api')).toBe(true);
+    expect(completions.some((c: any) => c.label === 'ctx.api.request')).toBe(true);
     // method (with parentheses)
     const method = completions.find((c: any) => c.label === 'ctx.bar()');
     expect(method).toBeTruthy();
     // method completion should provide an apply function to insert parentheses
     expect(typeof (method as any).apply).toBe('function');
     // snippet from class loader
-    expect(completions.some((c: any) => c.label === 'sn-class')).toBe(true);
+    expect(completions.some((c: any) => c.label === 'Class Snippet')).toBe(true);
     // entries produced for drawer
     expect(entries.some((e) => e.name === 'Class Snippet')).toBe(true);
   });

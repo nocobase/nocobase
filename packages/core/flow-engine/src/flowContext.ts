@@ -1581,9 +1581,19 @@ export class FlowRuntimeContext<
 // 类型别名，方便使用
 export type FlowSettingsContext<TModel extends FlowModel = FlowModel> = FlowRuntimeContext<TModel, 'settings'>;
 
+export type RunJSDocPropertyDoc =
+  | string
+  | {
+      description?: string;
+      detail?: string;
+      type?: string;
+      examples?: string[];
+      properties?: Record<string, RunJSDocPropertyDoc>;
+    };
+
 export type RunJSDocMeta = {
   label?: string;
-  properties?: Record<string, any>;
+  properties?: Record<string, RunJSDocPropertyDoc>;
   methods?: Record<string, any>;
   snippets?: Record<string, any>;
 };

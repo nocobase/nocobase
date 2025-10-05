@@ -23,7 +23,24 @@ export function defineBaseContextMeta() {
       token: 'API authentication token for the current session',
       role: 'Current user role information',
       auth: 'Authentication context containing locale, role, user, and token information',
-      api: 'APIClient instance for making API requests to NocoBase server',
+      api: {
+        description: 'APIClient instance for making HTTP requests.',
+        detail: 'APIClient',
+        properties: {
+          request: {
+            description:
+              'Make an HTTP request using the APIClient instance. Parameters: (options: RequestOptions) => Promise<any>.',
+            detail: 'Promise<any>',
+          },
+        },
+      },
+      i18n: {
+        description: 'An instance of i18next for managing internationalization.',
+        detail: 'i18next',
+        properties: {
+          language: 'Current active language code.',
+        },
+      },
       React: 'React namespace providing React library functions and hooks (available in RunJS environment)',
       ReactDOM: 'ReactDOM client API including createRoot for rendering React components',
       antd: 'Ant Design component library',
@@ -67,7 +84,23 @@ export function defineBaseContextMeta() {
         token: '当前会话的 API 认证 token',
         role: '当前用户角色信息',
         auth: '认证上下文，包含 locale、role、user、token 等信息',
-        api: '与 NocoBase 服务端交互的 APIClient 实例',
+        api: {
+          description: '用于发起 HTTP 请求的 APIClient 实例',
+          detail: 'APIClient',
+          properties: {
+            request: {
+              description: '通过 ctx.api.request 发起 HTTP 请求，入参为 RequestOptions，返回 Promise。',
+              detail: 'Promise<any>',
+            },
+          },
+        },
+        i18n: {
+          description: 'i18next 实例，可用于管理国际化',
+          detail: 'i18next',
+          properties: {
+            language: '当前激活的语言代码',
+          },
+        },
         React: 'React 命名空间，提供 React 函数与 hooks（RunJS 环境中可用）',
         ReactDOM: 'ReactDOM 客户端 API，含 createRoot 等渲染方法',
         antd: 'Ant Design 组件库（RunJS 环境中可用）',

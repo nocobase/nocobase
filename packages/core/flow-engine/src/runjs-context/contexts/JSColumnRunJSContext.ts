@@ -25,10 +25,13 @@ JSColumnRunJSContext.define({
     collection: 'Collection definition metadata (read-only).',
     viewer:
       'View controller providing dialog/drawer/embed helpers for interactions initiated from the cell (e.g., open details).',
+    React: 'React library',
+    antd: 'Ant Design library',
   },
   methods: {
     onRefReady:
       'Wait for cell DOM element to be ready before executing callback. Parameters: (ref, callback, timeout?) => void',
+    requireAsync: 'Load external library by URL: `const lib = await ctx.requireAsync(url)`',
   },
 });
 
@@ -41,8 +44,8 @@ JSColumnRunJSContext.define(
       recordIndex: '当前行索引（从 0 开始）',
       collection: '集合定义元数据（只读）',
       viewer: '视图控制器，可用于在单元格中触发抽屉/对话框/内嵌等交互',
-      React: 'React（已注入）',
-      antd: 'Ant Design（已注入）',
+      React: 'React 库',
+      antd: 'Ant Design 库',
     },
     methods: {
       onRefReady: '等待单元格 DOM 就绪后执行回调。参数：(ref, callback, timeout?)',

@@ -15,6 +15,7 @@ const snippets: Record<string, () => Promise<any>> = {
   'global/log-json-record': () => import('./global/log-json-record.snippet'),
   'global/api-request-get': () => import('./global/api-request-get.snippet'),
   'global/api-request-post': () => import('./global/api-request-post.snippet'),
+  'global/api-request-basic': () => import('./global/api-request-basic.snippet'),
   'global/requireAsync': () => import('./global/requireAsync.snippet'),
   'global/try-catch-async': () => import('./global/try-catch-async.snippet'),
   'global/sleep': () => import('./global/sleep.snippet'),
@@ -24,6 +25,8 @@ const snippets: Record<string, () => Promise<any>> = {
   'global/open-view-drawer': () => import('./global/open-view-drawer.snippet'),
   'global/open-view-dialog': () => import('./global/open-view-dialog.snippet'),
   'global/view-navigation-push': () => import('./global/view-navigation-push.snippet'),
+  'global/api-response': () => import('./global/api-response.snippet'),
+  'global/i18n-example': () => import('./global/i18n-example.snippet'),
   // libs
   'libs/echarts-init': () => import('./libs/echarts-init.snippet'),
   // scene/jsblock
@@ -35,6 +38,10 @@ const snippets: Record<string, () => Promise<any>> = {
   'scene/jsblock/jsx-unmount': () => import('./scene/jsblock/jsx-unmount.snippet'),
   'scene/jsblock/add-event-listener': () => import('./scene/jsblock/add-event-listener.snippet'),
   'scene/jsblock/append-style': () => import('./scene/jsblock/append-style.snippet'),
+  'scene/jsblock/basic-html-template': () => import('./scene/jsblock/basic-html-template.snippet'),
+  'scene/jsblock/echarts-random': () => import('./scene/jsblock/echarts-random.snippet'),
+  'scene/jsblock/query-selector': () => import('./scene/jsblock/query-selector.snippet'),
+  'scene/jsblock/resource-example': () => import('./scene/jsblock/resource-example.snippet'),
   // scene/jsfield
   'scene/jsfield/innerHTML-value': () => import('./scene/jsfield/innerHTML-value.snippet'),
   'scene/jsfield/format-number': () => import('./scene/jsfield/format-number.snippet'),
