@@ -59,25 +59,28 @@ describe('buildRunJSCompletions', () => {
     expect(Array.isArray(completions)).toBe(true);
     // property
     expect(completions.some((c: any) => c.label === 'ctx.foo')).toBe(true);
-    expect(completions.some((c: any) => c.label === 'ctx.api')).toBe(true);
-    expect(completions.some((c: any) => c.label === 'ctx.api.request')).toBe(true);
+    const apiProp = completions.find((c: any) => c.label === 'ctx.api');
+    expect(apiProp).toBeTruthy();
+    const apiReq = completions.find((c: any) => c.label === 'ctx.api.request');
+    expect(apiReq).toBeTruthy();
+    const mockView = { dispatch: vi.fn() } as any;
+    (apiReq as any).apply?.(mockView, apiReq, 0, 0);
+    expect(mockView.dispatch).toHaveBeenCalled();
+    const inserted = mockView.dispatch.mock.calls[0][0]?.changes?.insert;
+    expect(inserted).toContain('ctx.api.request');
     // method (with parentheses)
     const method = completions.find((c: any) => c.label === 'ctx.bar()');
     expect(method).toBeTruthy();
     // method completion should provide an apply function to insert parentheses
     expect(typeof (method as any).apply).toBe('function');
+    const mockViewMethod = { dispatch: vi.fn() } as any;
+    (method as any).apply?.(mockViewMethod, method, 0, 0);
+    expect(mockViewMethod.dispatch).toHaveBeenCalled();
+    const methodInserted = mockViewMethod.dispatch.mock.calls[0][0]?.changes?.insert;
+    expect(methodInserted).toContain('ctx.bar');
     // snippet from class loader
     expect(completions.some((c: any) => c.label === 'Class Snippet')).toBe(true);
     // entries produced for drawer
     expect(entries.some((e) => e.name === 'Class Snippet')).toBe(true);
-    const apiReq = completions.find((c: any) => c.label === 'ctx.api.request');
-    expect(apiReq).toBeTruthy();
-    const mockView = {
-      dispatch: vi.fn(),
-    };
-    (apiReq as any).apply(mockView, apiReq, 0, 0);
-    expect(mockView.dispatch).toHaveBeenCalled();
-    const inserted = (mockView.dispatch.mock.calls[0] ?? [])[0]?.changes?.insert;
-    expect(inserted).toContain('ctx.api.request');
   });
 });

@@ -31,6 +31,9 @@ export function defineBaseContextMeta() {
             description:
               'Make an HTTP request using the APIClient instance. Parameters: (options: RequestOptions) => Promise<any>.',
             detail: 'Promise<any>',
+            completion: {
+              insertText: `await ctx.api.request({ url: '', method: 'get', params: {} })`,
+            },
           },
         },
       },
@@ -103,6 +106,9 @@ export function defineBaseContextMeta() {
             request: {
               description: '通过 ctx.api.request 发起 HTTP 请求，入参为 RequestOptions，返回 Promise。',
               detail: 'Promise<any>',
+              completion: {
+                insertText: `await ctx.api.request({ url: '', method: 'get', params: {} })`,
+              },
             },
           },
         },
