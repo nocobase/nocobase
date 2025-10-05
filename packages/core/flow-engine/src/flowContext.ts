@@ -895,7 +895,6 @@ class BaseFlowEngineContext extends FlowContext {
   declare renderJson: (template: JSONValue) => Promise<any>;
   declare resolveJsonTemplate: (template: JSONValue) => Promise<any>;
   declare runjs: (code: string, variables?: Record<string, any>, options?: JSRunnerOptions) => Promise<any>;
-  declare copyToClipboard: (text: string) => Promise<void>;
   declare getAction: <TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext>(
     name: string,
   ) => ActionDefinition<TModel, TCtx> | undefined;
@@ -1196,38 +1195,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const globals: Record<string, any> = { ctx: runCtx, ...(options?.globals || {}) };
       const { timeoutMs } = options || {};
       return new JSRunner({ globals, timeoutMs });
-    });
-    // 复制文本到剪贴板（优先使用 Clipboard API，降级到 execCommand）
-    this.defineMethod('copyToClipboard', async (text: string) => {
-      const content = String(text ?? '');
-      try {
-        if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(content);
-          return;
-        }
-      } catch (e) {
-        // 忽略，尝试降级方案
-      }
-
-      // 降级方案：创建临时 textarea + execCommand('copy')
-      return new Promise<void>((resolve, reject) => {
-        try {
-          const ta = document.createElement('textarea');
-          ta.value = content;
-          ta.setAttribute('readonly', '');
-          ta.style.position = 'fixed';
-          ta.style.top = '-9999px';
-          document.body.appendChild(ta);
-          ta.focus();
-          ta.select();
-          const ok = document.execCommand('copy');
-          document.body.removeChild(ta);
-          if (ok) resolve();
-          else reject(new Error('execCommand copy failed'));
-        } catch (err) {
-          reject(err);
-        }
-      });
     });
     // Helper: build server contextParams for variables:resolve
     this.defineMethod('buildServerContextParams', function (this: BaseFlowEngineContext, input?: any) {

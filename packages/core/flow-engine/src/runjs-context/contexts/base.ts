@@ -17,7 +17,6 @@ FlowRunJSContext.define({
     message: "AntD 全局消息。`ctx.message.success('done')`",
     notification: "AntD 通知。`ctx.notification.open({ message: 'Hi' })`",
     requireAsync: '异步加载外部库。`const x = await ctx.requireAsync(url)`',
-    copyToClipboard: '复制文本到剪贴板。`await ctx.copyToClipboard(text)`',
     resolveJsonTemplate: '解析含 {{ }} 的模板/表达式',
     runAction: '运行当前模型动作。`await ctx.runAction(name, params)`',
     resource: '数据资源（按委托可见）',
