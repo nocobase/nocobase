@@ -1187,9 +1187,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const modelClass = getModelClassName(this);
       const Ctor =
         (RunJSContextRegistry.resolve(version, modelClass) as any) ||
-        (RunJSContextRegistry.resolve('latest' as any, modelClass) as any) ||
         (RunJSContextRegistry.resolve(version, '*') as any) ||
-        (RunJSContextRegistry.resolve('latest' as any, '*') as any) ||
         FlowRunJSContext;
       let runCtx: any;
       if (Ctor) {

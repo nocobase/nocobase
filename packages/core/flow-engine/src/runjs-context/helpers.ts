@@ -15,11 +15,7 @@ import { RunJSContextRegistry, getModelClassName } from './registry';
 
 export function getRunJSDocFor(ctx: FlowContext, { version = 'v1' as RunJSVersion } = {}) {
   const modelClass = getModelClassName(ctx);
-  const ctor =
-    RunJSContextRegistry.resolve(version, modelClass) ||
-    RunJSContextRegistry.resolve('latest' as RunJSVersion, modelClass) ||
-    RunJSContextRegistry.resolve(version, '*') ||
-    RunJSContextRegistry.resolve('latest' as RunJSVersion, '*');
+  const ctor = RunJSContextRegistry.resolve(version, modelClass) || RunJSContextRegistry.resolve(version, '*');
   return (ctor as any)?.getDoc?.() || {};
 }
 
@@ -27,11 +23,7 @@ export function createJSRunnerWithVersion(this: FlowContext, options?: JSRunnerO
   const version = (options?.version as RunJSVersion) || ('v1' as RunJSVersion);
   const modelClass = getModelClassName(this);
   const ensureFlowContext = (obj: any): FlowContext => obj as FlowContext;
-  const Ctor =
-    RunJSContextRegistry.resolve(version, modelClass) ||
-    RunJSContextRegistry.resolve('latest' as RunJSVersion, modelClass) ||
-    RunJSContextRegistry.resolve(version, '*') ||
-    RunJSContextRegistry.resolve('latest' as RunJSVersion, '*');
+  const Ctor = RunJSContextRegistry.resolve(version, modelClass) || RunJSContextRegistry.resolve(version, '*');
   if (!Ctor) {
     throw new Error('[RunJS] No RunJSContext registered for version/model.');
   }

@@ -12,37 +12,26 @@
  */
 import { RunJSContextRegistry } from './registry';
 import { FlowRunJSContext } from '../flowContext';
-import {
-  JSBlockRunJSContext,
-  JSFieldRunJSContext,
-  JSItemRunJSContext,
-  FormJSFieldItemRunJSContext,
-  JSRecordActionRunJSContext,
-  JSCollectionActionRunJSContext,
-  LinkageRunJSContext,
-} from './flowRunJSContext';
-import './docs';
+import './contexts/base';
+import { JSBlockRunJSContext } from './contexts/JSBlockRunJSContext';
+import { JSFieldRunJSContext } from './contexts/JSFieldRunJSContext';
+import { JSItemRunJSContext } from './contexts/JSItemRunJSContext';
+import { FormJSFieldItemRunJSContext } from './contexts/FormJSFieldItemRunJSContext';
+import { JSRecordActionRunJSContext } from './contexts/JSRecordActionRunJSContext';
+import { JSCollectionActionRunJSContext } from './contexts/JSCollectionActionRunJSContext';
+import { LinkageRunJSContext } from './contexts/LinkageRunJSContext';
 
 let done = false;
 export function setupRunJSContexts() {
   if (done) return;
   const v1: any = 'v1';
-  const latest: any = 'latest';
   RunJSContextRegistry.register(v1, '*', FlowRunJSContext as any);
-  RunJSContextRegistry.register(latest, '*', FlowRunJSContext as any);
   RunJSContextRegistry.register(v1, 'JSBlockModel', JSBlockRunJSContext as any);
-  RunJSContextRegistry.register(latest, 'JSBlockModel', JSBlockRunJSContext as any);
   RunJSContextRegistry.register(v1, 'JSFieldModel', JSFieldRunJSContext as any);
-  RunJSContextRegistry.register(latest, 'JSFieldModel', JSFieldRunJSContext as any);
   RunJSContextRegistry.register(v1, 'JSItemModel', JSItemRunJSContext as any);
-  RunJSContextRegistry.register(latest, 'JSItemModel', JSItemRunJSContext as any);
   RunJSContextRegistry.register(v1, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext as any);
-  RunJSContextRegistry.register(latest, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext as any);
   RunJSContextRegistry.register(v1, 'JSRecordActionModel', JSRecordActionRunJSContext as any);
-  RunJSContextRegistry.register(latest, 'JSRecordActionModel', JSRecordActionRunJSContext as any);
   RunJSContextRegistry.register(v1, 'JSCollectionActionModel', JSCollectionActionRunJSContext as any);
-  RunJSContextRegistry.register(latest, 'JSCollectionActionModel', JSCollectionActionRunJSContext as any);
   RunJSContextRegistry.register(v1, 'LinkageModel', LinkageRunJSContext as any);
-  RunJSContextRegistry.register(latest, 'LinkageModel', LinkageRunJSContext as any);
   done = true;
 }
