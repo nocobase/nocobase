@@ -16,7 +16,7 @@ describe('SnippetsDrawer', () => {
   it('renders entries and calls onInsert', async () => {
     const entries = [
       { name: 'A', prefix: 'a', body: 'console.log(1)', ref: 'global/test', group: 'global' },
-      { name: 'B', prefix: 'b', body: 'console.log(2)', ref: 'scene/jsblock/test', group: 'scene/jsblock' },
+      { name: 'B', prefix: 'b', body: 'console.log(2)', ref: 'scene/block/test', group: 'scene/block' },
     ];
     const onInsert = vi.fn();
     render(

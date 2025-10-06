@@ -37,11 +37,10 @@ export const SnippetsDrawer: React.FC<{
     const map: Record<string, string> = {
       global: tr('Common'),
       libs: tr('Libs'),
-      'scene/jsblock': tr('Block'),
-      'scene/jsfield': tr('Field'),
-      'scene/jsitem': tr('Form Item'),
-      'scene/actions': tr('Actions'),
-      'scene/linkage': tr('Linkage'),
+      'scene/block': tr('Block'),
+      'scene/detail': tr('Detail'),
+      'scene/form': tr('Form'),
+      'scene/table': tr('Table'),
     };
     return (group?: string) => (group ? map[group] || group : '');
   }, [tr]);

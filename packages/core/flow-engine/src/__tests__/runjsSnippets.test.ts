@@ -25,8 +25,8 @@ describe('RunJS Snippets', () => {
       expect(body).toContain('ctx.api.request');
     });
 
-    it('should return snippet body for scene/jsblock/render-basic', async () => {
-      const body = await getSnippetBody('scene/jsblock/render-basic');
+    it('should return snippet body for scene/block/render-basic', async () => {
+      const body = await getSnippetBody('scene/block/render-basic');
       expect(body).toBeTruthy();
       expect(body).toContain('element');
     });
@@ -95,9 +95,9 @@ describe('RunJS Snippets', () => {
         expect(globalSnippet.group).toBe('global');
       }
 
-      const sceneSnippet = snippets.find((s) => s.ref.startsWith('scene/jsblock/'));
+      const sceneSnippet = snippets.find((s) => s.ref.startsWith('scene/block/'));
       if (sceneSnippet) {
-        expect(sceneSnippet.group).toBe('scene/jsblock');
+        expect(sceneSnippet.group).toBe('scene/block');
       }
 
       // At least one should have a group
@@ -129,25 +129,25 @@ describe('RunJS Snippets', () => {
     });
 
     it('should include basic-html-template snippet', async () => {
-      const body = await getSnippetBody('scene/jsblock/basic-html-template');
+      const body = await getSnippetBody('scene/block/basic-html-template');
       expect(body).toBeTruthy();
       expect(body).toContain('innerHTML');
     });
 
     it('should include echarts-random snippet', async () => {
-      const body = await getSnippetBody('scene/jsblock/echarts-random');
+      const body = await getSnippetBody('scene/block/echarts-random');
       expect(body).toBeTruthy();
       expect(body).toContain('echarts');
     });
 
     it('should include query-selector snippet', async () => {
-      const body = await getSnippetBody('scene/jsblock/query-selector');
+      const body = await getSnippetBody('scene/block/query-selector');
       expect(body).toBeTruthy();
       expect(body).toContain('querySelector');
     });
 
     it('should include resource-example snippet', async () => {
-      const body = await getSnippetBody('scene/jsblock/resource-example');
+      const body = await getSnippetBody('scene/block/resource-example');
       expect(body).toBeTruthy();
       expect(body).toContain('resource');
     });
