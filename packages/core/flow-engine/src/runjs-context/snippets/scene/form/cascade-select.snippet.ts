@@ -28,41 +28,32 @@ if (!parentRoleId) {
   return;
 }
 
-try {
-  // Fetch child roles from API
-  const res = await ctx.api.request({
-    url: 'roles:list',
-    method: 'get',
-    params: {
-      pageSize: 100,
-      filter: {
-        parentId: parentRoleId,
-      },
+const res = await ctx.api.request({
+  url: 'roles:list',
+  method: 'get',
+  params: {
+    pageSize: 100,
+    filter: {
+      parentId: parentRoleId,
     },
+  },
+});
+
+const childRoles = res?.data?.data || [];
+
+const items = ctx.model?.subModels?.grid?.subModels?.items;
+const candidates = Array.isArray(items) ? items : Array.from(items?.values?.() || items || []);
+
+const roleField = candidates.find((item) => item?.props?.name === 'role');
+
+if (roleField) {
+  roleField.setProps({
+    dataSource: childRoles.map((role) => ({
+      value: role.id,
+      label: role.name,
+    })),
+    value: undefined,
   });
-
-  const childRoles = res?.data?.data || [];
-
-  // Find the role select field and update its options
-  const items = ctx.model?.subModels?.grid?.subModels?.items;
-  const candidates = Array.isArray(items) ? items : Array.from(items?.values?.() || items || []);
-
-  const roleField = candidates.find((item) => item?.props?.name === 'role');
-
-  if (roleField) {
-    // Update field options
-    roleField.setProps({
-      dataSource: childRoles.map((role) => ({
-        value: role.id,
-        label: role.name,
-      })),
-      // Clear current value if it's not in new options
-      value: undefined,
-    });
-  }
-} catch (e) {
-  console.error('[Form snippet] Failed to load roles:', e);
-  ctx.message?.error?.(ctx.t('Failed to load roles'));
 }
 `,
 };

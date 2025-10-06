@@ -22,8 +22,7 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-if (ctx.__reactRoot?.unmount) { try { ctx.__reactRoot.unmount(); } catch(_) {} }
-ctx.__reactRoot = undefined;
+ctx.element.innerHTML = '';
 ctx.element.innerHTML = '';
 `,
 };

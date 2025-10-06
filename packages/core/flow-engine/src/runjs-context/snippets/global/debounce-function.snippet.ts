@@ -37,21 +37,17 @@ const debounce = (func, wait) => {
 // Example usage: Debounced search function
 const debouncedSearch = debounce(async (searchTerm) => {
   console.log(ctx.t('Searching for:'), searchTerm);
-  try {
-    const res = await ctx.api.request({
-      url: 'users:list',
-      method: 'get',
-      params: {
-        pageSize: 10,
-        filter: {
-          nickname: { $includes: searchTerm },
-        },
+  const res = await ctx.api.request({
+    url: 'users:list',
+    method: 'get',
+    params: {
+      pageSize: 10,
+      filter: {
+        nickname: { $includes: searchTerm },
       },
-    });
-    console.log(ctx.t('Search results:'), res?.data?.data);
-  } catch (e) {
-    ctx.message.error(ctx.t('Search failed: {{msg}}', { msg: String(e?.message || e) }));
-  }
+    },
+  });
+  console.log(ctx.t('Search results:'), res?.data?.data);
 }, 500); // Wait 500ms after user stops typing
 
 // Trigger the debounced function

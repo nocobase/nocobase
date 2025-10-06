@@ -22,12 +22,8 @@ const snippet: SnippetModule = {
   },
   content: `
 // Load an external library (AMD/RequireJS)
-try {
-  const dayjs = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js');
-  console.log('dayjs loaded:', dayjs?.default || dayjs);
-} catch (e) {
-  ctx.message.error(ctx.t('Failed to load external library: {{msg}}', { msg: String(e?.message || e) }));
-}
+const dayjs = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js');
+console.log('dayjs loaded:', dayjs?.default || dayjs);
 `,
 };
 

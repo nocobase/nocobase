@@ -26,20 +26,12 @@ const snippet: SnippetModule = {
 const { React, ReactDOM, antd } = ctx;
 const { Button } = antd;
 
-// Unmount previous render to allow repeated runs
-if (ctx.__reactRoot?.unmount) {
-  try { ctx.__reactRoot.unmount(); } catch(_) {}
-  ctx.__reactRoot = undefined;
-}
-
 const node = React.createElement(
   'div',
   { style: { padding: 12 } },
   React.createElement(Button, { type: 'primary', onClick: () => ctx.message.success(ctx.t('Clicked!')) }, ctx.t('Click')),
 );
-const root = ReactDOM.createRoot(ctx.element);
-root.render(node);
-ctx.__reactRoot = root;
+ReactDOM.createRoot(ctx.element).render(node);
 `,
 };
 

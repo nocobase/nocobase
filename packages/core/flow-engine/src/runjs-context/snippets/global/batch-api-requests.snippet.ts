@@ -24,27 +24,23 @@ const snippet: SnippetModule = {
 // Example: Fetch multiple users by primary key in parallel
 const ids = [1, 2, 3, 4, 5];
 
-try {
-  const results = await Promise.all(
-    ids.map((id) =>
-      ctx.api.request({
-        url: 'users:get',
-        method: 'get',
-        params: { filterByTk: id },
-      })
-    )
-  );
+const results = await Promise.all(
+  ids.map((id) =>
+    ctx.api.request({
+      url: 'users:get',
+      method: 'get',
+      params: { filterByTk: id },
+    })
+  )
+);
 
-  const records = results.map((res) => res?.data?.data).filter(Boolean);
+const records = results.map((res) => res?.data?.data).filter(Boolean);
 
-  ctx.message.success(
-    ctx.t('Successfully fetched {{count}} records', { count: records.length })
-  );
+ctx.message.success(
+  ctx.t('Successfully fetched {{count}} records', { count: records.length })
+);
 
-  console.log(ctx.t('Fetched records:'), records);
-} catch (e) {
-  ctx.message.error(ctx.t('Batch request failed: {{msg}}', { msg: String(e?.message || e) }));
-}
+console.log(ctx.t('Fetched records:'), records);
 `,
 };
 

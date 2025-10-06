@@ -28,25 +28,19 @@ if (!rows.length) {
   return;
 }
 
-try {
-  // Update status field to 'approved' for all selected rows
-  await Promise.all(
-    rows.map((row) =>
-      ctx.api.request({
-        url: \`\${ctx.resource.collectionName}:update\`,
-        method: 'post',
-        params: { filterByTk: row.id },
-        data: { status: 'approved' },
-      })
-    )
-  );
+await Promise.all(
+  rows.map((row) =>
+    ctx.api.request({
+      url: \`\${ctx.resource.collectionName}:update\`,
+      method: 'post',
+      params: { filterByTk: row.id },
+      data: { status: 'approved' },
+    })
+  )
+);
 
-  ctx.message.success(ctx.t('Successfully updated {{count}} records', { count: rows.length }));
-  // Refresh the table
-  await ctx.resource?.refresh?.();
-} catch (e) {
-  ctx.message.error(ctx.t('Update failed: {{msg}}', { msg: String(e?.message || e) }));
-}
+ctx.message.success(ctx.t('Successfully updated {{count}} records', { count: rows.length }));
+await ctx.resource?.refresh?.();
 `,
 };
 

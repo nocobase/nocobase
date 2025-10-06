@@ -47,18 +47,14 @@ if (!dateStr) {
   return;
 }
 
-try {
-  const relativeTime = formatRelativeTime(dateStr);
-  const fullDate = new Date(dateStr).toLocaleString();
+const relativeTime = formatRelativeTime(dateStr);
+const fullDate = new Date(dateStr).toLocaleString();
 
-  ctx.element.innerHTML = \`
-    <span title="\${fullDate}" style="cursor: help; color: #666;">
-      \${relativeTime}
-    </span>
-  \`;
-} catch (e) {
-  ctx.element.innerHTML = String(dateStr);
-}
+ctx.element.innerHTML = \`
+  <span title="\${fullDate}" style="cursor: help; color: #666;">
+    \${relativeTime}
+  </span>
+\`;
 `,
 };
 

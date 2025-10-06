@@ -35,21 +35,17 @@ ctx.modal.confirm({
     count: rows.length,
   }),
   onOk: async () => {
-    try {
-      await Promise.all(
-        rows.map((row) =>
-          ctx.api.request({
-            url: \`\${ctx.resource.collectionName}:destroy\`,
-            method: 'post',
-            params: { filterByTk: row.id },
-          })
-        )
-      );
-      ctx.message.success(ctx.t('Successfully deleted {{count}} records', { count: rows.length }));
-      await ctx.resource?.refresh?.();
-    } catch (e) {
-      ctx.message.error(ctx.t('Delete failed: {{msg}}', { msg: String(e?.message || e) }));
-    }
+    await Promise.all(
+      rows.map((row) =>
+        ctx.api.request({
+          url: \`\${ctx.resource.collectionName}:destroy\`,
+          method: 'post',
+          params: { filterByTk: row.id },
+        })
+      )
+    );
+    ctx.message.success(ctx.t('Successfully deleted {{count}} records', { count: rows.length }));
+    await ctx.resource?.refresh?.();
   },
 });
 `,

@@ -26,11 +26,9 @@ const container = document.createElement('div');
 container.style.height = '400px';
 container.style.width = '100%';
 ctx.element.replaceChildren(container);
-
 const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js');
 if (!echarts) {
-  ctx.message.error?.(ctx.t('Failed to load ECharts'));
-  return;
+  throw new Error('ECharts library not loaded');
 }
 
 const chart = echarts.init(container);
@@ -45,14 +43,7 @@ chart.setOption({
   series: [{ name: ctx.t('Sales'), type: 'bar', data: randomData }],
 });
 
-const resize = () => chart.resize();
 chart.resize();
-
-if (ctx.element.__echartsResize) {
-  window.removeEventListener('resize', ctx.element.__echartsResize);
-}
-window.addEventListener('resize', resize);
-ctx.element.__echartsResize = resize;
 `,
 };
 

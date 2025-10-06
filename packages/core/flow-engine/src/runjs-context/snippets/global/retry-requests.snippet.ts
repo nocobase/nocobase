@@ -42,24 +42,20 @@ const retry = async (fn, maxRetries = 3, delay = 1000) => {
 };
 
 // Example usage
-try {
-  const result = await retry(
-    async () => {
-      const res = await ctx.api.request({
-        url: 'users:list',
-        method: 'get',
-      });
-      return res?.data?.data;
-    },
-    3, // Max 3 retries
-    1000 // Initial delay 1s
-  );
+const result = await retry(
+  async () => {
+    const res = await ctx.api.request({
+      url: 'users:list',
+      method: 'get',
+    });
+    return res?.data?.data;
+  },
+  3, // Max 3 retries
+  1000 // Initial delay 1s
+);
 
-  ctx.message.success(ctx.t('Request succeeded with {{count}} records', { count: Array.isArray(result) ? result.length : 0 }));
-  console.log(ctx.t('Result:'), result);
-} catch (e) {
-  ctx.message.error(ctx.t('Request failed after retries: {{msg}}', { msg: String(e?.message || e) }));
-}
+ctx.message.success(ctx.t('Request succeeded with {{count}} records', { count: Array.isArray(result) ? result.length : 0 }));
+console.log(ctx.t('Result:'), result);
 `,
 };
 
