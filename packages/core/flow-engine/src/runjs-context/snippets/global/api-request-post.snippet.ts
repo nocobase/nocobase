@@ -21,9 +21,19 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-const res = await ctx.api.request({ url: '/your/api', method: 'post', data: { name: 'NocoBase' } });
+// POST example using a public JSON placeholder API
+const res = await ctx.api.request({
+  url: 'https://jsonplaceholder.typicode.com/posts',
+  method: 'post',
+  data: {
+    title: 'NocoBase demo',
+    body: 'Hello from NocoBase',
+    userId: 1,
+  },
+});
+
 ctx.message.success(ctx.t('POST request completed'));
-console.log(ctx.t('POST result:'), res);
+console.log(ctx.t('POST result:'), res?.data);
 `,
 };
 

@@ -21,10 +21,10 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-// 在当前视图中追加导航（若支持）
+// Navigate within the current view when navigation is available
 if (ctx.view?.navigation) {
   ctx.view.navigation.navigateTo({ viewUid: 'detail', filterByTk: 1 });
-  // 返回上一层：
+  // To go back:
   // ctx.view.navigation.back();
 } else {
   ctx.message?.warning?.(ctx.t('Navigation is not available in this view'));

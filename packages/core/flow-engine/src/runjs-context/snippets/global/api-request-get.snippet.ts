@@ -21,9 +21,19 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-const res = await ctx.api.request({ url: '/your/api', method: 'get', params: { page: 1 } });
-ctx.message.success(ctx.t('GET request completed'));
-console.log(ctx.t('GET result:'), res);
+// Fetch a few users with their roles
+const res = await ctx.api.request({
+  url: 'users:list',
+  method: 'get',
+  params: {
+    pageSize: 5,
+    appends: ['roles'],
+  },
+});
+
+const users = Array.isArray(res?.data?.data) ? res.data.data : [];
+ctx.message.success(ctx.t('Loaded {{count}} users', { count: users.length }));
+console.log(ctx.t('GET result:'), users);
 `,
 };
 

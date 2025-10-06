@@ -39,10 +39,13 @@ const debouncedSearch = debounce(async (searchTerm) => {
   console.log(ctx.t('Searching for:'), searchTerm);
   try {
     const res = await ctx.api.request({
-      url: 'collection:list',
+      url: 'users:list',
       method: 'get',
       params: {
-        filter: { name: { $includes: searchTerm } },
+        pageSize: 10,
+        filter: {
+          nickname: { $includes: searchTerm },
+        },
       },
     });
     console.log(ctx.t('Search results:'), res?.data?.data);
@@ -51,7 +54,7 @@ const debouncedSearch = debounce(async (searchTerm) => {
   }
 }, 500); // Wait 500ms after user stops typing
 
-// Use it
+// Trigger the debounced function
 debouncedSearch('example');
 `,
 };

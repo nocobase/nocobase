@@ -12,52 +12,57 @@ import type { SnippetModule } from '../../types';
 const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-link-cascade',
-  label: 'Cascade select (load subcategory)',
-  description: 'Load subcategories based on selected category',
+  label: 'Cascade select (load child roles)',
+  description: 'Load child roles based on the selected parent role',
   locales: {
     'zh-CN': {
-      label: '级联选择（加载子分类）',
-      description: '根据选择的分类加载对应的子分类',
+      label: '级联选择（加载子角色）',
+      description: '根据选择的父角色加载对应子角色',
     },
   },
   content: `
-// Get selected category
-const categoryId = ctx.record?.category?.id;
+// Get selected parent role (adjust field name to match your form)
+const parentRoleId = ctx.record?.parentRole?.id;
 
-if (!categoryId) {
+if (!parentRoleId) {
   return;
 }
 
 try {
-  // Fetch subcategories from API
+  // Fetch child roles from API
   const res = await ctx.api.request({
-    url: 'subcategories:list',
+    url: 'roles:list',
     method: 'get',
     params: {
-      filter: { categoryId },
       pageSize: 100,
+      filter: {
+        parentId: parentRoleId,
+      },
     },
   });
 
-  const subcategories = res?.data?.data || [];
+  const childRoles = res?.data?.data || [];
 
-  // Find subcategory field and update its options
+  // Find the role select field and update its options
   const items = ctx.model?.subModels?.grid?.subModels?.items;
   const candidates = Array.isArray(items) ? items : Array.from(items?.values?.() || items || []);
 
-  const subcategoryField = candidates.find((item) => item?.props?.name === 'subcategory');
+  const roleField = candidates.find((item) => item?.props?.name === 'role');
 
-  if (subcategoryField) {
+  if (roleField) {
     // Update field options
-    subcategoryField.setProps({
-      dataSource: subcategories,
+    roleField.setProps({
+      dataSource: childRoles.map((role) => ({
+        value: role.id,
+        label: role.name,
+      })),
       // Clear current value if it's not in new options
       value: undefined,
     });
   }
 } catch (e) {
-  console.error('[Form snippet] Failed to load subcategories:', e);
-  ctx.message?.error?.(ctx.t('Failed to load subcategories'));
+  console.error('[Form snippet] Failed to load roles:', e);
+  ctx.message?.error?.(ctx.t('Failed to load roles'));
 }
 `,
 };

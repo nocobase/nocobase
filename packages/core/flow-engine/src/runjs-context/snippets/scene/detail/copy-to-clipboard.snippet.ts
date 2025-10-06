@@ -31,7 +31,7 @@ ctx.element.querySelector('.nb-copy')?.addEventListener('click', async () => {
     if (navigator?.clipboard?.writeText) {
       await navigator.clipboard.writeText(text);
     } else {
-      // 退化方案
+      // Fallback for legacy browsers
       const ta = document.createElement('textarea');
       ta.value = text;
       document.body.appendChild(ta);

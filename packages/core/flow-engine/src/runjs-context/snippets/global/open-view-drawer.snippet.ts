@@ -21,7 +21,7 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-// 以抽屉模式打开视图，并传递参数（注意：参数直接放在对象顶层）
+// Open a view as drawer and pass arguments at top-level
 const popupUid = 'your-popup-uid';
 await ctx.openView(popupUid, {
   mode: 'drawer',

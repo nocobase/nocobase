@@ -14,7 +14,7 @@ import { JSItemRunJSContext } from '../../contexts/JSItemRunJSContext';
 import { JSColumnRunJSContext } from '../../contexts/JSColumnRunJSContext';
 
 const snippet: SnippetModule = {
-  // 需要具备 ctx.element 的上下文
+  // Requires contexts that expose ctx.element
   contexts: [JSBlockRunJSContext, JSFieldRunJSContext, JSItemRunJSContext, JSColumnRunJSContext],
   prefix: 'sn-api-display',
   label: 'API response display',
@@ -27,17 +27,19 @@ const snippet: SnippetModule = {
   },
   content:
     `
+// Fetch users and dump JSON into the container
 const response = await ctx.api.request({
-  url: '/users',
+  url: 'users:list',
   method: 'get',
-  params: { page: 1, pageSize: 10 },
+  params: { pageSize: 10 },
 });
 
+// Render JSON string inside the element
 ctx.element.innerHTML = ` +
     '`' +
     `
   <pre style="padding: 12px; background: #f5f5f5; border-radius: 6px;">
-    \${JSON.stringify(response?.data ?? {}, null, 2)}
+    \${JSON.stringify(response?.data?.data ?? [], null, 2)}
   </pre>
 ` +
     '`' +

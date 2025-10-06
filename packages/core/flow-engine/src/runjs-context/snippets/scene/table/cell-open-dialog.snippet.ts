@@ -22,7 +22,7 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-// 在单元格渲染一个按钮
+// Render a button inside the cell
 ctx.element.innerHTML = '<button class="nb-cell-btn" style="padding:4px 8px">' + ctx.t('View') + '</button>';
 ctx.element.querySelector('.nb-cell-btn')?.addEventListener('click', () => {
   ctx.viewer.dialog({

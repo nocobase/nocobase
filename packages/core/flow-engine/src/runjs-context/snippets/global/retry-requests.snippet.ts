@@ -46,7 +46,7 @@ try {
   const result = await retry(
     async () => {
       const res = await ctx.api.request({
-        url: 'collection:list',
+        url: 'users:list',
         method: 'get',
       });
       return res?.data?.data;
@@ -55,7 +55,7 @@ try {
     1000 // Initial delay 1s
   );
 
-  ctx.message.success(ctx.t('Request succeeded'));
+  ctx.message.success(ctx.t('Request succeeded with {{count}} records', { count: Array.isArray(result) ? result.length : 0 }));
   console.log(ctx.t('Result:'), result);
 } catch (e) {
   ctx.message.error(ctx.t('Request failed after retries: {{msg}}', { msg: String(e?.message || e) }));

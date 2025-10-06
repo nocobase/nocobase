@@ -23,11 +23,11 @@ const snippet: SnippetModule = {
   },
   content:
     `
-// 创建资源并加载单条记录数据
+// Create a resource and load a single record
 const resource = ctx.createResource('SingleRecordResource');
 resource.setDataSourceKey('main');
 resource.setResourceName('users');
-// 可按需设置 filterByTk 指定具体记录：
+// Optionally set filterByTk to target a specific record:
 // resource.setRequestOptions('params', { filterByTk: 1 });
 await resource.refresh();
 

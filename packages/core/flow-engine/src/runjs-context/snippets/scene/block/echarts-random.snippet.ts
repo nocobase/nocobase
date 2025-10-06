@@ -22,14 +22,18 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-ctx.element.style.height = '400px';
+const container = document.createElement('div');
+container.style.height = '400px';
+container.style.width = '100%';
+ctx.element.replaceChildren(container);
+
 const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js');
 if (!echarts) {
   ctx.message.error?.(ctx.t('Failed to load ECharts'));
   return;
 }
 
-const chart = echarts.init(ctx.element);
+const chart = echarts.init(container);
 const categories = ['A', 'B', 'C', 'D', 'E', 'F'];
 const randomData = categories.map(() => Math.floor(Math.random() * 50) + 1);
 
@@ -42,13 +46,13 @@ chart.setOption({
 });
 
 const resize = () => chart.resize();
-resize();
-window.addEventListener('resize', resize);
+chart.resize();
 
-ctx.__dispose = () => {
-  window.removeEventListener('resize', resize);
-  chart.dispose?.();
-};
+if (ctx.element.__echartsResize) {
+  window.removeEventListener('resize', ctx.element.__echartsResize);
+}
+window.addEventListener('resize', resize);
+ctx.element.__echartsResize = resize;
 `,
 };
 

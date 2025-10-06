@@ -21,7 +21,7 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-// 以对话框模式打开视图，顶层传参
+// Open a view as dialog and pass arguments at top-level
 const popupUid = 'your-popup-uid';
 await ctx.openView(popupUid, {
   mode: 'dialog',

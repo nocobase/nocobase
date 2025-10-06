@@ -33,7 +33,11 @@ if (!ctx.record) {
 const record = ctx.record;
 
 // Render card with record information
-const root = ctx.ReactDOM.createRoot(ctx.element);
+let root = ctx.element.__reactRoot;
+if (!root) {
+  root = ctx.ReactDOM.createRoot(ctx.element);
+  ctx.element.__reactRoot = root;
+}
 root.render(
   h(Card, { title: ctx.t('Record Details'), bordered: true, style: { margin: 0 } },
     h(Descriptions, { column: 2, size: 'small' },
@@ -49,7 +53,6 @@ root.render(
   )
 );
 
-ctx.__dispose = () => root.unmount?.();
 `,
 };
 

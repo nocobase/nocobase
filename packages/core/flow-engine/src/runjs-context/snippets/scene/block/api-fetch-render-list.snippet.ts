@@ -22,16 +22,20 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-// 拉取数据（根据你的集合调整 URL 与参数）
-const { data } = await ctx.api.request({ url: '/users', method: 'get', params: { page: 1, pageSize: 5 } });
+// Fetch users
+const { data } = await ctx.api.request({
+  url: 'users:list',
+  method: 'get',
+  params: { pageSize: 5 },
+});
 const rows = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
 
-// 渲染为简单列表
+// Render as a simple HTML list
 ctx.element.innerHTML = [
   '<div style="padding:12px">',
   '<h4 style="margin:0 0 8px">' + ctx.t('Users') + '</h4>',
   '<ul style="margin:0; padding-left:20px">',
-  ...rows.map((r, i) => '<li>#' + (i + 1) + ': ' + String((r && (r.name ?? r.id)) ?? '') + '</li>'),
+  ...rows.map((r, i) => '<li>#' + (i + 1) + ': ' + String((r && (r.nickname ?? r.username ?? r.id)) ?? '') + '</li>'),
   '</ul>',
   '</div>'
 ].join('');

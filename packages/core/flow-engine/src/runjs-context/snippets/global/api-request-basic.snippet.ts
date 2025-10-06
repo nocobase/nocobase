@@ -21,15 +21,17 @@ const snippet: SnippetModule = {
     },
   },
   content: `
+// Basic example: list users
 const response = await ctx.api.request({
-  url: '/your/api',
+  url: 'users:list',
   method: 'get',
-  params: {},
+  params: {
+    pageSize: 10,
+  },
 });
 
-if (response?.data) {
-  console.log(ctx.t('API response'), response.data);
-}
+const users = Array.isArray(response?.data?.data) ? response.data.data : [];
+console.log(ctx.t('API response'), users);
 `,
 };
 

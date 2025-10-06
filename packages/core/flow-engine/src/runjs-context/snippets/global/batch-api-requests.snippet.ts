@@ -21,14 +21,14 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-// Example: Fetch multiple records by their IDs in parallel
+// Example: Fetch multiple users by primary key in parallel
 const ids = [1, 2, 3, 4, 5];
 
 try {
   const results = await Promise.all(
     ids.map((id) =>
       ctx.api.request({
-        url: \`collection:get\`,
+        url: 'users:get',
         method: 'get',
         params: { filterByTk: id },
       })

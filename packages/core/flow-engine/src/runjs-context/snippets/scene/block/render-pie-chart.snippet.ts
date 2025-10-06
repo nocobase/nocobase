@@ -22,37 +22,50 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-ctx.element.style.height = '400px';
+const container = document.createElement('div');
+container.style.height = '400px';
+container.style.width = '100%';
+ctx.element.replaceChildren(container);
 
 try {
-  // Fetch data from API
+  // Fetch users with roles
   const res = await ctx.api.request({
-    url: 'your-collection:list',
+    url: 'users:list',
     method: 'get',
-    params: { pageSize: 100 },
+    params: {
+      pageSize: 100,
+      appends: ['roles'],
+    },
   });
 
   const records = res?.data?.data || [];
 
-  // Group by status and count
-  const statusCount = records.reduce((acc, item) => {
-    const status = item.status || 'unknown';
-    acc[status] = (acc[status] || 0) + 1;
-    return acc;
-  }, {});
+  // Group users by role name
+  const roleCount = new Map();
+  records.forEach((user) => {
+    const roles = Array.isArray(user?.roles) && user.roles.length ? user.roles : [{ name: ctx.t('No role') }];
+    roles.forEach((role) => {
+      const key = role?.name || ctx.t('Unknown');
+      roleCount.set(key, (roleCount.get(key) || 0) + 1);
+    });
+  });
 
-  // Prepare chart data
-  const chartData = Object.entries(statusCount).map(([name, value]) => ({
-    name: ctx.t(name),
+  const chartData = Array.from(roleCount.entries()).map(([name, value]) => ({
+    name,
     value,
   }));
 
+  if (!chartData.length) {
+    container.innerHTML = '<div style="padding:16px;color:#999;">' + ctx.t('No users found') + '</div>';
+    return;
+  }
+
   // Load ECharts and render
   const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js');
-  const chart = echarts.init(ctx.element);
+  const chart = echarts.init(container);
 
   chart.setOption({
-    title: { text: ctx.t('Status Distribution'), left: 'center' },
+    title: { text: ctx.t('User Roles'), left: 'center' },
     tooltip: { trigger: 'item' },
     legend: { orient: 'vertical', left: 'left' },
     series: [{
@@ -71,13 +84,19 @@ try {
   });
 
   const resize = () => chart.resize();
-  window.addEventListener('resize', resize);
+  chart.resize();
 
-  ctx.__dispose = () => {
-    window.removeEventListener('resize', resize);
-    chart.dispose?.();
-  };
+  if (ctx.element.__echartsResize) {
+    window.removeEventListener('resize', ctx.element.__echartsResize);
+  }
+  window.addEventListener('resize', resize);
+  ctx.element.__echartsResize = resize;
 } catch (e) {
+  container.remove?.();
+  if (ctx.element.__echartsResize) {
+    window.removeEventListener('resize', ctx.element.__echartsResize);
+    ctx.element.__echartsResize = undefined;
+  }
   ctx.element.innerHTML = '<div style="padding:16px;color:red;">' +
     ctx.t('Failed to load chart: {{msg}}', { msg: String(e?.message || e) }) +
     '</div>';

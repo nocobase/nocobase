@@ -26,47 +26,57 @@ const { Card, Statistic, Row, Col } = ctx.antd;
 const { createElement: h } = ctx.React;
 
 try {
-  // Fetch statistics from API
+  // Fetch users with role information
   const res = await ctx.api.request({
-    url: 'your-collection:list',
+    url: 'users:list',
     method: 'get',
-    params: { pageSize: 9999 },
+    params: {
+      pageSize: 100,
+      appends: ['roles'],
+    },
   });
 
-  const records = res?.data?.data || [];
+  const users = res?.data?.data || [];
 
-  // Calculate statistics
-  const total = records.length;
-  const active = records.filter(r => r.status === 'active').length;
-  const pending = records.filter(r => r.status === 'pending').length;
-  const totalAmount = records.reduce((sum, r) => sum + (Number(r.amount) || 0), 0);
+  const total = users.length;
+  const adminCount = users.filter((user) =>
+    Array.isArray(user?.roles) && user.roles.some((role) => role?.name === 'admin')
+  ).length;
+  const withEmail = users.filter((user) => !!user?.email).length;
+  const distinctRoles = new Set(
+    users
+      .flatMap((user) => (Array.isArray(user?.roles) ? user.roles.map((role) => role?.name) : []))
+      .filter(Boolean),
+  ).size;
 
   // Render statistics cards
-  const root = ctx.ReactDOM.createRoot(ctx.element);
+  let root = ctx.element.__reactRoot;
+  if (!root) {
+    root = ctx.ReactDOM.createRoot(ctx.element);
+    ctx.element.__reactRoot = root;
+  }
   root.render(
     h(Row, { gutter: 16 },
       h(Col, { span: 6 },
         h(Card, {},
-          h(Statistic, { title: ctx.t('Total Records'), value: total, valueStyle: { color: '#3f8600' } })
+          h(Statistic, { title: ctx.t('Total users'), value: total, valueStyle: { color: '#3f8600' } })
         )
       ),
       h(Col, { span: 6 },
         h(Card, {},
-          h(Statistic, { title: ctx.t('Active'), value: active, valueStyle: { color: '#1890ff' } })
+          h(Statistic, { title: ctx.t('Administrators'), value: adminCount, valueStyle: { color: '#1890ff' } })
         )
       ),
       h(Col, { span: 6 },
         h(Card, {},
-          h(Statistic, { title: ctx.t('Pending'), value: pending, valueStyle: { color: '#faad14' } })
+          h(Statistic, { title: ctx.t('Users with email'), value: withEmail, valueStyle: { color: '#faad14' } })
         )
       ),
       h(Col, { span: 6 },
         h(Card, {},
           h(Statistic, {
-            title: ctx.t('Total Amount'),
-            value: totalAmount,
-            precision: 2,
-            prefix: '$',
+            title: ctx.t('Distinct roles'),
+            value: distinctRoles,
             valueStyle: { color: '#cf1322' },
           })
         )
@@ -74,7 +84,6 @@ try {
     )
   );
 
-  ctx.__dispose = () => root.unmount?.();
 } catch (e) {
   ctx.element.innerHTML = '<div style="padding:16px;color:red;">' +
     ctx.t('Failed to load statistics: {{msg}}', { msg: String(e?.message || e) }) +

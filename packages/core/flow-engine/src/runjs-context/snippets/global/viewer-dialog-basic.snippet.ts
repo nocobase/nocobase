@@ -21,14 +21,14 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-// 打开一个简单的对话框
+// Open a simple viewer dialog
 const dialog = ctx.viewer.dialog({
   title: ctx.t('Quick Dialog'),
   content: '<div style="padding:12px">' + ctx.t('Hello from dialog') + '</div>',
   inputArgs: { from: 'runjs' },
 });
 
-// 2 秒后自动关闭（可删除）
+// Auto close after 2 seconds (optional)
 setTimeout(() => dialog.close(), 2000);
 `,
 };

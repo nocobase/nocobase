@@ -22,17 +22,17 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-const { Timeline, Card, Tag } = ctx.antd;
+const { Timeline, Card } = ctx.antd;
 const { createElement: h } = ctx.React;
 
 try {
-  // Fetch timeline data
+  // Fetch latest users
   const res = await ctx.api.request({
-    url: 'your-collection:list',
+    url: 'users:list',
     method: 'get',
     params: {
       pageSize: 20,
-      sort: ['-createdAt'], // Sort by creation time descending
+      sort: ['-createdAt'],
     },
   });
 
@@ -44,7 +44,11 @@ try {
   }
 
   // Render timeline
-  const root = ctx.ReactDOM.createRoot(ctx.element);
+  let root = ctx.element.__reactRoot;
+  if (!root) {
+    root = ctx.ReactDOM.createRoot(ctx.element);
+    ctx.element.__reactRoot = root;
+  }
   root.render(
     h(Card, { title: ctx.t('Activity Timeline'), bordered: true },
       h(Timeline, { mode: 'left' },
@@ -54,12 +58,10 @@ try {
             label: record.createdAt ? new Date(record.createdAt).toLocaleString() : '',
           },
             h('div', {},
-              h('strong', {}, record.title || ctx.t('Untitled')),
-              ' ',
-              h(Tag, { color: record.status === 'success' ? 'green' : 'blue' }, record.status || '-'),
-              h('div', { style: { color: '#999', fontSize: '12px', marginTop: '4px' } },
-                record.description || ''
-              )
+              h('strong', {}, record.nickname || record.username || ctx.t('Unnamed user')),
+              record.email
+                ? h('div', { style: { color: '#999', fontSize: '12px', marginTop: '4px' } }, record.email)
+                : null,
             )
           )
         )
@@ -67,7 +69,6 @@ try {
     )
   );
 
-  ctx.__dispose = () => root.unmount?.();
 } catch (e) {
   ctx.element.innerHTML = '<div style="padding:16px;color:red;">' +
     ctx.t('Failed to load timeline: {{msg}}', { msg: String(e?.message || e) }) +
