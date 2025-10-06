@@ -23,7 +23,6 @@ const snippets: Record<string, () => Promise<any>> = {
   'global/sleep': () => import('./global/sleep.snippet'),
   'global/notification-open': () => import('./global/notification-open.snippet'),
   'global/window-open': () => import('./global/window-open.snippet'),
-  'global/console-log-ctx': () => import('./global/console-log-ctx.snippet'),
   'global/open-view-drawer': () => import('./global/open-view-drawer.snippet'),
   'global/open-view-dialog': () => import('./global/open-view-dialog.snippet'),
   'global/view-navigation-push': () => import('./global/view-navigation-push.snippet'),
@@ -177,55 +176,45 @@ export async function listSnippetsForContext(
   }
   await Promise.all(
     Object.entries(snippets).map(async ([key, loader]) => {
-      try {
-        const mod = await (loader as any)();
-        const def = mod?.default || {};
-        const body: any = def?.content ?? mod?.content;
-        if (typeof body !== 'string') return;
-        // contexts filter: supports '*' or specific RunJSContext class name
-        let ok = true;
-        if (Array.isArray(def?.contexts) && def.contexts.length) {
-          const ctxNames = def.contexts.map((item: any) => {
-            if (item === '*') return '*';
-            if (typeof item === 'string') return item;
-            if (typeof item === 'function') return item.name || '*';
-            if (item && typeof item === 'object' && typeof item.name === 'string') return item.name;
-            return String(item ?? '');
-          });
-          if (ctxClassName === '*') {
-            ok = ctxNames.includes('*') || ctxNames.length === 0;
-          } else {
-            ok = ctxNames.includes('*') || ctxNames.some((name: string) => allowedContextNames.has(name));
-          }
-        }
-        // versions filter
-        if (ok && Array.isArray(def?.versions) && def.versions.length) {
-          ok = def.versions.includes('*') || def.versions.includes(version);
-        }
-        if (!ok) return;
-        const localeMeta = resolveLocaleMeta(def, locale);
-        const name = localeMeta.label || def?.label || deriveNameFromKey(key);
-        const description = localeMeta.description ?? def?.description;
-        const prefix = def?.prefix || name;
-        const groups = computeGroups(def, key);
-        const scenes = normalizeScenes(def, key);
-        entries.push({
-          name,
-          prefix,
-          description,
-          body,
-          ref: key,
-          group: groups[0],
-          groups,
-          scenes,
+      const mod = await (loader as any)();
+      const def = mod?.default || {};
+      const body: any = def?.content ?? mod?.content;
+      if (typeof body !== 'string') return;
+      let ok = true;
+      if (Array.isArray(def?.contexts) && def.contexts.length) {
+        const ctxNames = def.contexts.map((item: any) => {
+          if (item === '*') return '*';
+          if (typeof item === 'string') return item;
+          if (typeof item === 'function') return item.name || '*';
+          if (item && typeof item === 'object' && typeof item.name === 'string') return item.name;
+          return String(item ?? '');
         });
-      } catch (err) {
-        try {
-          console.debug?.('[flow-engine] load snippet fail', key, err);
-        } catch (_) {
-          // noop
+        if (ctxClassName === '*') {
+          ok = ctxNames.includes('*') || ctxNames.length === 0;
+        } else {
+          ok = ctxNames.includes('*') || ctxNames.some((name: string) => allowedContextNames.has(name));
         }
       }
+      if (ok && Array.isArray(def?.versions) && def.versions.length) {
+        ok = def.versions.includes('*') || def.versions.includes(version);
+      }
+      if (!ok) return;
+      const localeMeta = resolveLocaleMeta(def, locale);
+      const name = localeMeta.label || def?.label || deriveNameFromKey(key);
+      const description = localeMeta.description ?? def?.description;
+      const prefix = def?.prefix || name;
+      const groups = computeGroups(def, key);
+      const scenes = normalizeScenes(def, key);
+      entries.push({
+        name,
+        prefix,
+        description,
+        body,
+        ref: key,
+        group: groups[0],
+        groups,
+        scenes,
+      });
     }),
   );
   return entries;

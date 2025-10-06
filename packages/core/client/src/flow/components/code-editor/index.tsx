@@ -116,8 +116,8 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
   // 合并外部注入与动态构建的 completions
   const finalExtra = useMemo(() => {
     const arr: Completion[] = [];
-    if (Array.isArray(extraCompletions)) arr.push(...extraCompletions);
     if (Array.isArray(dynamicCompletions)) arr.push(...dynamicCompletions);
+    if (Array.isArray(extraCompletions)) arr.push(...extraCompletions);
     return arr;
   }, [extraCompletions, dynamicCompletions]);
 

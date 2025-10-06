@@ -148,17 +148,25 @@ export async function buildRunJSCompletions(
       })
     : entries;
 
+  const snippetLabelSet = new Set<string>();
+
   for (const s of filteredEntries) {
     const text = s.body;
-    const filterText = [s.name, s.prefix, s.description, s.ref, s.body]
-      .filter((v) => typeof v === 'string' && v.trim().length > 0)
-      .join(' ');
+    const baseLabel = String(s.name ?? '').trim();
+    const prefixLabel = typeof s.prefix === 'string' ? s.prefix.trim() : '';
+    const matchLabelParts = [baseLabel, prefixLabel].filter(Boolean);
+    const label = matchLabelParts.join(' ');
+    const displayLabel = baseLabel || prefixLabel;
+    const detail = baseLabel && prefixLabel && prefixLabel !== displayLabel ? prefixLabel : undefined;
+    const dedupeKey = s.ref || `${label}|${detail ?? ''}`;
+    if (!displayLabel || snippetLabelSet.has(dedupeKey)) continue;
+    snippetLabelSet.add(dedupeKey);
     completions.push({
-      label: s.name,
-      detail: s.prefix || s.name,
+      label,
+      displayLabel,
+      detail,
       type: 'snippet',
       info: s.description || s.ref,
-      filterText: filterText || s.name,
       boost: 80,
       apply: (view: EditorView, _completion: Completion, from: number, to: number) => {
         view.dispatch({
