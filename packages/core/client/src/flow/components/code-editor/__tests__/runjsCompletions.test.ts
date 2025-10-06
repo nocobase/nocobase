@@ -44,6 +44,7 @@ vi.mock('@nocobase/flow-engine', () => {
         body: 'alert(1)',
         ref: 'scene/block/x',
         group: 'scene/block',
+        groups: ['scene/block'],
       },
     ],
     setupRunJSContexts: () => void 0,

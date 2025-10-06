@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSCollectionActionRunJSContext } from '../../../contexts/JSCollectionActionRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSCollectionActionRunJSContext'],
+  contexts: [JSCollectionActionRunJSContext],
   prefix: 'sn-act-iterate',
   label: 'Iterate selected rows',
   description: 'Loop through selected rows and process each record',

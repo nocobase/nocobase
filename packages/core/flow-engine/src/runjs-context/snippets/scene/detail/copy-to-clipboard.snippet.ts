@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSFieldRunJSContext } from '../../../contexts/JSFieldRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSFieldRunJSContext'],
+  contexts: [JSFieldRunJSContext],
   prefix: 'sn-jsf-copy',
   label: 'Copy field value',
   description: 'Click to copy current field value to clipboard',

@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSColumnRunJSContext } from '../../../contexts/JSColumnRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSColumnRunJSContext'],
+  contexts: [JSColumnRunJSContext],
   prefix: 'sn-col-open-dialog',
   label: 'Cell dialog with row data',
   description: 'Render a button in cell to open dialog showing current row JSON',

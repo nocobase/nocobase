@@ -98,15 +98,25 @@ describe('RunJS Snippets', () => {
       const sceneSnippet = snippets.find((s) => s.ref.startsWith('scene/block/'));
       if (sceneSnippet) {
         expect(sceneSnippet.group).toBe('scene/block');
+        expect(sceneSnippet.groups?.[0]).toBe('scene/block');
       }
 
       // At least one should have a group
       expect(snippets.some((s) => s.group)).toBe(true);
+      expect(snippets.some((s) => Array.isArray(s.groups) && s.groups.length)).toBe(true);
     });
 
     it('should handle empty context gracefully', async () => {
       const snippets = await listSnippetsForContext('', 'v1', 'en-US');
       expect(Array.isArray(snippets)).toBe(true);
+    });
+
+    it('should respect scenes metadata when provided', async () => {
+      const snippets = await listSnippetsForContext('*', 'v1', 'en-US');
+      const multiScene = snippets.find((s) => s.ref === 'scene/detail/status-tag');
+      expect(multiScene).toBeTruthy();
+      expect(multiScene?.scenes).toEqual(expect.arrayContaining(['detail', 'table']));
+      expect(multiScene?.groups).toEqual(expect.arrayContaining(['scene/detail', 'scene/table']));
     });
   });
 

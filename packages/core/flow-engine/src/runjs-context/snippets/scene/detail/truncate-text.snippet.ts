@@ -8,9 +8,11 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSFieldRunJSContext } from '../../../contexts/JSFieldRunJSContext';
+import { FormJSFieldItemRunJSContext } from '../../../contexts/FormJSFieldItemRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSFieldRunJSContext', 'FormJSFieldItemRunJSContext'],
+  contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext],
   prefix: 'sn-jsf-truncate',
   label: 'Truncate long text with tooltip',
   description: 'Display truncated text with "..." and show full text on hover',

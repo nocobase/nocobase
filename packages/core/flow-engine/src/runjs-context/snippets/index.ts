@@ -100,6 +100,8 @@ type EngineSnippetEntry = {
   body: string;
   ref: string;
   group?: string;
+  groups?: string[];
+  scenes?: string[];
 };
 
 function deriveNameFromKey(key: string): string {
@@ -107,14 +109,29 @@ function deriveNameFromKey(key: string): string {
   return parts[parts.length - 1] || key;
 }
 
-function groupFromKey(key: string): string | undefined {
+function normalizeScenes(def: any, key: string): string[] {
+  if (Array.isArray(def?.scenes) && def.scenes.length) {
+    return def.scenes.map((scene: any) => String(scene).trim()).filter((scene: string) => scene.length > 0);
+  }
   const parts = key.split('/');
-  if (!parts.length) return undefined;
+  if (parts[0] === 'scene' && parts[1]) {
+    return [parts[1]];
+  }
+  return [];
+}
+
+function computeGroups(def: any, key: string): string[] {
+  const scenes = normalizeScenes(def, key);
+  if (scenes.length) {
+    return scenes.map((scene) => `scene/${scene}`);
+  }
+  const parts = key.split('/');
+  if (!parts.length) return [];
   const first = parts[0];
-  if (first === 'global' || first === 'libs') return first;
-  if (first === 'scene' && parts.length >= 2) return `${first}/${parts[1]}`;
-  if (parts.length >= 2) return `${parts[0]}/${parts[1]}`;
-  return parts[0];
+  if (first === 'global' || first === 'libs') return [first];
+  if (first === 'scene' && parts.length >= 2) return [`${first}/${parts[1]}`];
+  if (parts.length >= 2) return [`${parts[0]}/${parts[1]}`];
+  return [parts[0]];
 }
 
 function resolveLocaleMeta(def: any, locale?: string) {
@@ -165,7 +182,7 @@ export async function listSnippetsForContext(
             if (item && typeof item === 'object' && typeof item.name === 'string') return item.name;
             return String(item ?? '');
           });
-          ok = ctxNames.includes('*') || ctxNames.includes(ctxClassName);
+          ok = ctxClassName === '*' || ctxNames.includes('*') || ctxNames.includes(ctxClassName);
         }
         // versions filter
         if (ok && Array.isArray(def?.versions) && def.versions.length) {
@@ -176,7 +193,18 @@ export async function listSnippetsForContext(
         const name = localeMeta.label || def?.label || deriveNameFromKey(key);
         const description = localeMeta.description ?? def?.description;
         const prefix = def?.prefix || name;
-        entries.push({ name, prefix, description, body, ref: key, group: groupFromKey(key) });
+        const groups = computeGroups(def, key);
+        const scenes = normalizeScenes(def, key);
+        entries.push({
+          name,
+          prefix,
+          description,
+          body,
+          ref: key,
+          group: groups[0],
+          groups,
+          scenes,
+        });
       } catch (err) {
         try {
           console.debug?.('[flow-engine] load snippet fail', key, err);

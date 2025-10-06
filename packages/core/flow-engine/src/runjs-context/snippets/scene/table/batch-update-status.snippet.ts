@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSCollectionActionRunJSContext } from '../../../contexts/JSCollectionActionRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSCollectionActionRunJSContext'],
+  contexts: [JSCollectionActionRunJSContext],
   prefix: 'sn-act-batch-update',
   label: 'Batch update selected rows',
   description: 'Update a specific field for all selected rows',

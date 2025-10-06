@@ -8,9 +8,10 @@
  */
 
 import { SnippetModule } from '../../types';
+import { JSBlockRunJSContext } from '../../../contexts/JSBlockRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSBlockRunJSContext'],
+  contexts: [JSBlockRunJSContext],
   prefix: 'sn-jsb-card',
   label: 'Render card',
   description: 'Render a styled card layout inside the block',

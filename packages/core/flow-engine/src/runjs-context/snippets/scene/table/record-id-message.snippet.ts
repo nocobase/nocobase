@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSRecordActionRunJSContext } from '../../../contexts/JSRecordActionRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSRecordActionRunJSContext'],
+  contexts: [JSRecordActionRunJSContext],
   prefix: 'sn-act-record-id',
   label: 'Show record id',
   description: 'Display current record primary key in a toast',

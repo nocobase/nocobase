@@ -8,10 +8,14 @@
  */
 
 import type { SnippetModule } from '../types';
+import { JSBlockRunJSContext } from '../../contexts/JSBlockRunJSContext';
+import { JSFieldRunJSContext } from '../../contexts/JSFieldRunJSContext';
+import { JSItemRunJSContext } from '../../contexts/JSItemRunJSContext';
+import { JSColumnRunJSContext } from '../../contexts/JSColumnRunJSContext';
 
 const snippet: SnippetModule = {
   // 需要具备 ctx.element 的上下文
-  contexts: ['JSBlockRunJSContext', 'JSFieldRunJSContext', 'JSItemRunJSContext', 'JSColumnRunJSContext'],
+  contexts: [JSBlockRunJSContext, JSFieldRunJSContext, JSItemRunJSContext, JSColumnRunJSContext],
   prefix: 'sn-api-display',
   label: 'API response display',
   description: 'Fetch data and render the JSON result inside ctx.element',

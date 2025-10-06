@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSItemRunJSContext } from '../../../contexts/JSItemRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSItemRunJSContext'],
+  contexts: [JSItemRunJSContext],
   prefix: 'sn-jsitem-basic',
   label: 'Render form item',
   description: 'Render custom content inside a form item container',

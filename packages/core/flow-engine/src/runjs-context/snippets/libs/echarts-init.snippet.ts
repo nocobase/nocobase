@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../types';
+import { JSBlockRunJSContext } from '../../contexts/JSBlockRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSBlockRunJSContext'],
+  contexts: [JSBlockRunJSContext],
   prefix: 'sn-echarts',
   label: 'Init ECharts',
   description: 'Load ECharts and render a simple chart inside the block',

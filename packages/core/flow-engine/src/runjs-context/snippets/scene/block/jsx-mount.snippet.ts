@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSBlockRunJSContext } from '../../../contexts/JSBlockRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSBlockRunJSContext'],
+  contexts: [JSBlockRunJSContext],
   prefix: 'sn-jsx-mount',
   label: 'JSX mount',
   description: 'Render JSX via ReactDOM.createRoot in the block',

@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSCollectionActionRunJSContext } from '../../../contexts/JSCollectionActionRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSCollectionActionRunJSContext'],
+  contexts: [JSCollectionActionRunJSContext],
   prefix: 'sn-act-del-confirm',
   label: 'Batch delete with confirmation',
   description: 'Delete selected rows after user confirmation',

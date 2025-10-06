@@ -28,7 +28,7 @@ export const SnippetsDrawer: React.FC<{
         s.name.toLowerCase().includes(q) ||
         (s.prefix || '').toLowerCase().includes(q) ||
         (s.description || '').toLowerCase().includes(q) ||
-        (s.group || '').toLowerCase().includes(q) ||
+        ([...(s.groups || []), s.group].filter(Boolean).join(' ') || '').toLowerCase().includes(q) ||
         s.body.toLowerCase().includes(q),
     );
   }, [entries, query]);
@@ -63,38 +63,41 @@ export const SnippetsDrawer: React.FC<{
       />
       <List
         dataSource={filtered}
-        renderItem={(item) => (
-          <List.Item
-            actions={[
-              <Button
-                key="insert"
-                size="small"
-                type="primary"
-                onClick={() => {
-                  const text = item.body.endsWith('\n') ? item.body : item.body + '\n';
-                  onInsert(text);
-                }}
-              >
-                {tr('Insert')}
-              </Button>,
-            ]}
-          >
-            <List.Item.Meta
-              title={
-                <>
-                  <span>{item.name}</span>
-                  {item.prefix ? <Tag style={{ marginLeft: 8 }}>{item.prefix}</Tag> : null}
-                  {item.group ? (
-                    <Tag color="blue" style={{ marginLeft: 8 }}>
-                      {groupDisplay(item.group)}
-                    </Tag>
-                  ) : null}
-                </>
-              }
-              description={item.description || groupDisplay(item.group) || item.ref || ''}
-            />
-          </List.Item>
-        )}
+        renderItem={(item) => {
+          const groups = item.groups?.length ? item.groups : item.group ? [item.group] : [];
+          return (
+            <List.Item
+              actions={[
+                <Button
+                  key="insert"
+                  size="small"
+                  type="primary"
+                  onClick={() => {
+                    const text = item.body.endsWith('\n') ? item.body : item.body + '\n';
+                    onInsert(text);
+                  }}
+                >
+                  {tr('Insert')}
+                </Button>,
+              ]}
+            >
+              <List.Item.Meta
+                title={
+                  <>
+                    <span>{item.name}</span>
+                    {item.prefix ? <Tag style={{ marginLeft: 8 }}>{item.prefix}</Tag> : null}
+                    {groups.map((grp) => (
+                      <Tag color="blue" style={{ marginLeft: 8 }} key={grp}>
+                        {groupDisplay(grp)}
+                      </Tag>
+                    ))}
+                  </>
+                }
+                description={item.description || groupDisplay(groups[0]) || item.ref || ''}
+              />
+            </List.Item>
+          );
+        }}
       />
     </Drawer>
   );

@@ -8,9 +8,13 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSFieldRunJSContext } from '../../../contexts/JSFieldRunJSContext';
+import { FormJSFieldItemRunJSContext } from '../../../contexts/FormJSFieldItemRunJSContext';
+import { JSColumnRunJSContext } from '../../../contexts/JSColumnRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSFieldRunJSContext', 'FormJSFieldItemRunJSContext'],
+  contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext, JSColumnRunJSContext],
+  scenes: ['detail', 'table'],
   prefix: 'sn-jsf-status-tag',
   label: 'Render status tag with color',
   description: 'Display value as a colored tag based on status',

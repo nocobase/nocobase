@@ -13,6 +13,7 @@ export type SnippetModule = {
   content: string;
   contexts?: SnippetContextSpecifier[]; // e.g., [JSBlockRunJSContext] or ['*']
   versions?: string[]; // e.g., ['v1'] or ['*']
+  scenes?: string[]; // logical placement hints like ['form', 'table']
   prefix?: string; // completion trigger text
   label?: string; // display name in snippets list
   description?: string; // optional longer description

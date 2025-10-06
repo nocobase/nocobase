@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSCollectionActionRunJSContext } from '../../../contexts/JSCollectionActionRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSCollectionActionRunJSContext'],
+  contexts: [JSCollectionActionRunJSContext],
   prefix: 'sn-act-selected-count',
   label: 'Selected count',
   description: 'Show number of selected rows in list action',

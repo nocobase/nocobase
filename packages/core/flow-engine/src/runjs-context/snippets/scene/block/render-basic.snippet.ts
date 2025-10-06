@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSBlockRunJSContext } from '../../../contexts/JSBlockRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSBlockRunJSContext'],
+  contexts: [JSBlockRunJSContext],
   prefix: 'sn-jsb-html',
   label: 'Render HTML',
   description: 'Render simple HTML into the block container',

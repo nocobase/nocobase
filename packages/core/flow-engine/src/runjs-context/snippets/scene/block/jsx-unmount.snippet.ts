@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSBlockRunJSContext } from '../../../contexts/JSBlockRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSBlockRunJSContext'],
+  contexts: [JSBlockRunJSContext],
   prefix: 'sn-jsx-unmount',
   label: 'JSX unmount',
   description: 'Unmount previously mounted React content from the block',

@@ -18,6 +18,8 @@ export type SnippetEntry = {
   body: string;
   ref?: string;
   group?: string;
+  groups?: string[];
+  scenes?: string[];
 };
 
 export async function buildRunJSCompletions(

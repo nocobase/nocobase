@@ -8,9 +8,11 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSRecordActionRunJSContext } from '../../../contexts/JSRecordActionRunJSContext';
+import { JSCollectionActionRunJSContext } from '../../../contexts/JSCollectionActionRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['JSRecordActionRunJSContext', 'JSCollectionActionRunJSContext'],
+  contexts: [JSRecordActionRunJSContext, JSCollectionActionRunJSContext],
   prefix: 'sn-act-run',
   label: 'Run action',
   description: 'Invoke ctx.runAction with basic parameters',
