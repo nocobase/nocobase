@@ -28,7 +28,6 @@ export async function setupRunJSContexts() {
     { FormJSFieldItemRunJSContext },
     { JSRecordActionRunJSContext },
     { JSCollectionActionRunJSContext },
-    { LinkageRunJSContext },
   ] = await Promise.all([
     import('./contexts/JSBlockRunJSContext'),
     import('./contexts/JSFieldRunJSContext'),
@@ -37,7 +36,6 @@ export async function setupRunJSContexts() {
     import('./contexts/FormJSFieldItemRunJSContext'),
     import('./contexts/JSRecordActionRunJSContext'),
     import('./contexts/JSCollectionActionRunJSContext'),
-    import('./contexts/LinkageRunJSContext'),
   ]);
 
   const v1 = 'v1';
@@ -49,6 +47,5 @@ export async function setupRunJSContexts() {
   RunJSContextRegistry.register(v1, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext);
   RunJSContextRegistry.register(v1, 'JSRecordActionModel', JSRecordActionRunJSContext);
   RunJSContextRegistry.register(v1, 'JSCollectionActionModel', JSCollectionActionRunJSContext);
-  RunJSContextRegistry.register(v1, 'LinkageModel', LinkageRunJSContext);
   done = true;
 }

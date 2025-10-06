@@ -10,7 +10,8 @@
 import type { SnippetModule } from '../types';
 
 const snippet: SnippetModule = {
-  contexts: ['*'],
+  // 需要具备 ctx.element 的上下文
+  contexts: ['JSBlockRunJSContext', 'JSFieldRunJSContext', 'JSItemRunJSContext', 'JSColumnRunJSContext'],
   prefix: 'sn-api-display',
   label: 'API response display',
   description: 'Fetch data and render the JSON result inside ctx.element',

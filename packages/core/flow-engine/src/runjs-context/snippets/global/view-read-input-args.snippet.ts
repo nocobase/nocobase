@@ -8,26 +8,23 @@
  */
 
 import type { SnippetModule } from '../types';
+
 const snippet: SnippetModule = {
   contexts: ['*'],
-  versions: ['*'],
-  prefix: 'sn-open-dialog',
-  label: 'Open view (dialog)',
-  description: 'Open a view in dialog via ctx.openView',
+  prefix: 'sn-view-inputArgs',
+  label: 'Read view inputArgs',
+  description: 'Read parameters passed to current view via ctx.view.inputArgs',
   locales: {
     'zh-CN': {
-      label: '打开视图（对话框）',
-      description: '通过 ctx.openView 以对话框方式打开视图',
+      label: '读取视图参数 inputArgs',
+      description: '在子视图中通过 ctx.view.inputArgs 读取父视图传入的参数',
     },
   },
   content: `
-// 以对话框模式打开视图，顶层传参
-const popupUid = 'your-popup-uid';
-await ctx.openView(popupUid, {
-  mode: 'dialog',
-  viewUid: 'detail',
-  foo: 'bar',
-});
+const args = ctx.view?.inputArgs || {};
+console.log('inputArgs:', args);
+ctx.message?.success?.(ctx.t('Received: {{keys}}', { keys: Object.keys(args).join(', ') }));
 `,
 };
+
 export default snippet;

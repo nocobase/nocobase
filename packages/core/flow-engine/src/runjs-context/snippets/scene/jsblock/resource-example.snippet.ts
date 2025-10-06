@@ -14,7 +14,7 @@ const snippet: SnippetModule = {
   contexts: [JSBlockRunJSContext],
   prefix: 'sn-resource-example',
   label: 'Resource example',
-  description: 'Use ctx.useResource to load data and render JSON output',
+  description: 'Create a resource via ctx.createResource and render JSON output',
   locales: {
     'zh-CN': {
       label: '资源示例',
@@ -23,10 +23,12 @@ const snippet: SnippetModule = {
   },
   content:
     `
-ctx.useResource('SingleRecordResource');
-const resource = ctx.resource;
+// 创建资源并加载单条记录数据
+const resource = ctx.createResource('SingleRecordResource');
 resource.setDataSourceKey('main');
 resource.setResourceName('users');
+// 可按需设置 filterByTk 指定具体记录：
+// resource.setRequestOptions('params', { filterByTk: 1 });
 await resource.refresh();
 
 ctx.element.innerHTML = ` +

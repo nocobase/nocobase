@@ -11,19 +11,24 @@ import type { SnippetModule } from '../types';
 const snippet: SnippetModule = {
   contexts: ['*'],
   versions: ['*'],
-  prefix: 'sn-nav-push',
-  label: 'View navigation: push',
-  description: 'Navigate within current view (if supported)',
+  prefix: 'sn-nav-navigate',
+  label: 'View navigation: navigate',
+  description: 'Navigate within current view using navigation.navigateTo/back',
   locales: {
     'zh-CN': {
-      label: '视图导航：push',
-      description: '在当前视图中执行导航（若可用）',
+      label: '视图导航：navigate',
+      description: '使用 navigation.navigateTo/back 在当前视图内导航',
     },
   },
   content: `
-// Push a new sub-view (if navigation is available)
-ctx.view?.navigation?.push({ viewUid: 'detail', filterByTk: 1 });
-// To go back: ctx.view?.navigation?.back();
+// 在当前视图中追加导航（若支持）
+if (ctx.view?.navigation) {
+  ctx.view.navigation.navigateTo({ viewUid: 'detail', filterByTk: 1 });
+  // 返回上一层：
+  // ctx.view.navigation.back();
+} else {
+  ctx.message?.warning?.(ctx.t('Navigation is not available in this view'));
+}
 `,
 };
 export default snippet;

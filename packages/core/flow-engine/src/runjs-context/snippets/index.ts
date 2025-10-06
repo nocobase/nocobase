@@ -25,8 +25,11 @@ const snippets: Record<string, () => Promise<any>> = {
   'global/open-view-drawer': () => import('./global/open-view-drawer.snippet'),
   'global/open-view-dialog': () => import('./global/open-view-dialog.snippet'),
   'global/view-navigation-push': () => import('./global/view-navigation-push.snippet'),
+  'global/open-view-page-or-drawer': () => import('./global/open-view-page-or-drawer.snippet'),
+  'global/view-read-input-args': () => import('./global/view-read-input-args.snippet'),
   'global/api-response': () => import('./global/api-response.snippet'),
   'global/i18n-example': () => import('./global/i18n-example.snippet'),
+  'global/viewer-dialog-basic': () => import('./global/viewer-dialog-basic.snippet'),
   // libs
   'libs/echarts-init': () => import('./libs/echarts-init.snippet'),
   // scene/jsblock
@@ -42,10 +45,12 @@ const snippets: Record<string, () => Promise<any>> = {
   'scene/jsblock/echarts-random': () => import('./scene/jsblock/echarts-random.snippet'),
   'scene/jsblock/query-selector': () => import('./scene/jsblock/query-selector.snippet'),
   'scene/jsblock/resource-example': () => import('./scene/jsblock/resource-example.snippet'),
+  'scene/jsblock/api-fetch-render-list': () => import('./scene/jsblock/api-fetch-render-list.snippet'),
   // scene/jsfield
   'scene/jsfield/innerHTML-value': () => import('./scene/jsfield/innerHTML-value.snippet'),
   'scene/jsfield/format-number': () => import('./scene/jsfield/format-number.snippet'),
   'scene/jsfield/color-by-value': () => import('./scene/jsfield/color-by-value.snippet'),
+  'scene/jsfield/copy-to-clipboard': () => import('./scene/jsfield/copy-to-clipboard.snippet'),
   // scene/jsitem
   'scene/jsitem/render-basic': () => import('./scene/jsitem/render-basic.snippet'),
   // scene/actions
@@ -53,6 +58,7 @@ const snippets: Record<string, () => Promise<any>> = {
   'scene/actions/run-action-basic': () => import('./scene/actions/run-action-basic.snippet'),
   'scene/actions/collection-selected-count': () => import('./scene/actions/collection-selected-count.snippet'),
   'scene/actions/iterate-selected-rows': () => import('./scene/actions/iterate-selected-rows.snippet'),
+  'scene/actions/destroy-selected': () => import('./scene/actions/destroy-selected.snippet'),
   // scene/linkage
   'scene/linkage/set-field-value': () => import('./scene/linkage/set-field-value.snippet'),
   'scene/linkage/toggle-visible': () => import('./scene/linkage/toggle-visible.snippet'),
