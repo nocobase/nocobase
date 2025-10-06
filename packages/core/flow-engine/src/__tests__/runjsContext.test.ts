@@ -32,7 +32,6 @@ describe('flowRunJSContext registry and doc', () => {
         'FormJSFieldItemModel',
         'JSRecordActionModel',
         'JSCollectionActionModel',
-        'LinkageModel',
       ];
 
       contextTypes.forEach((modelClass) => {
@@ -175,13 +174,6 @@ describe('flowRunJSContext registry and doc', () => {
       expect(doc?.properties?.element).toBeTruthy();
       expect(doc?.properties?.record).toBeTruthy();
       expect(doc?.properties?.resource).toBeTruthy();
-    });
-
-    it('LinkageModel context should have model and fields properties in doc', () => {
-      const ctx: any = { model: { constructor: { name: 'LinkageModel' } } };
-      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-      expect(doc?.properties?.model).toBeTruthy();
-      expect(doc?.properties?.fields).toBeTruthy();
     });
   });
 

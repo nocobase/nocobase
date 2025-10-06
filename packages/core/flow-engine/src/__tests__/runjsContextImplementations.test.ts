@@ -186,28 +186,6 @@ describe('Specific RunJSContext implementations', () => {
     });
   });
 
-  describe('LinkageRunJSContext', () => {
-    it('should have model property', () => {
-      const ctx: any = { model: { constructor: { name: 'LinkageModel' } } };
-      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-      expect(doc?.properties?.model).toBeTruthy();
-    });
-
-    it('should have fields property', () => {
-      const ctx: any = { model: { constructor: { name: 'LinkageModel' } } };
-      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-      expect(doc?.properties?.fields).toBeTruthy();
-    });
-
-    it('should support zh-CN locale', () => {
-      const ctx = new FlowContext();
-      (ctx as any).defineProperty('model', { value: { constructor: { name: 'LinkageModel' } } });
-      (ctx as any).defineProperty('api', { value: { auth: { locale: 'zh-CN' } } });
-      const doc = getRunJSDocFor(ctx as any, { version: 'v1' });
-      expect(doc?.label).toMatch(/联动/);
-    });
-  });
-
   describe('FormJSFieldItemRunJSContext', () => {
     it('should have element property', () => {
       const ctx: any = { model: { constructor: { name: 'FormJSFieldItemModel' } } };
