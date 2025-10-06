@@ -8,7 +8,13 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { RunJSContextRegistry, getRunJSDocFor, createJSRunnerWithVersion } from '..';
+import {
+  RunJSContextRegistry,
+  getRunJSDocFor,
+  createJSRunnerWithVersion,
+  getRunJSScenesForModel,
+  getRunJSScenesForContext,
+} from '..';
 import { setupRunJSContexts } from '../runjs-context/setup';
 import { FlowContext } from '../flowContext';
 import { JSRunner } from '../JSRunner';
@@ -38,6 +44,12 @@ describe('flowRunJSContext registry and doc', () => {
         const ctor = RunJSContextRegistry['resolve']('v1' as any, modelClass);
         expect(ctor).toBeTruthy();
       });
+    });
+
+    it('should expose scene metadata for contexts', () => {
+      expect(getRunJSScenesForModel('JSBlockModel', 'v1')).toEqual(['block']);
+      expect(getRunJSScenesForModel('JSFieldModel', 'v1')).toEqual(['detail']);
+      expect(getRunJSScenesForModel('UnknownModel', 'v1')).toEqual([]);
     });
 
     it('should only execute once (idempotent)', async () => {
@@ -154,6 +166,12 @@ describe('flowRunJSContext registry and doc', () => {
       const ctx = new FlowContext();
       const instance = new (ctor as any)(ctx);
       expect(instance).toBeTruthy();
+    });
+
+    it('should resolve scenes from context instance', () => {
+      const ctx = new FlowContext();
+      ctx.defineProperty('model', { value: { constructor: { name: 'JSColumnModel' } } });
+      expect(getRunJSScenesForContext(ctx as any, { version: 'v1' })).toEqual(['table']);
     });
 
     it('JSBlockModel context should have element property in doc', () => {

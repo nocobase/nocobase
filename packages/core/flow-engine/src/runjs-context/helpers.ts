@@ -10,8 +10,7 @@
 import type { FlowContext } from '../flowContext';
 import { JSRunner } from '../JSRunner';
 import type { JSRunnerOptions } from '../JSRunner';
-import type { RunJSVersion } from './registry';
-import { RunJSContextRegistry, getModelClassName } from './registry';
+import { RunJSContextRegistry, getModelClassName, type RunJSVersion } from './registry';
 
 function getLocale(ctx: any): string | undefined {
   return ctx?.api?.auth?.locale || ctx?.i18n?.language || ctx?.locale;
@@ -46,4 +45,14 @@ export function createJSRunnerWithVersion(this: FlowContext, options?: JSRunnerO
   // 透传 JSRunnerOptions 其余配置（如 timeoutMs）
   const { timeoutMs } = options || {};
   return new JSRunner({ globals, timeoutMs });
+}
+
+export function getRunJSScenesForModel(modelClass: string, version: RunJSVersion = 'v1'): string[] {
+  const meta = RunJSContextRegistry.getMeta(version, modelClass);
+  return Array.isArray(meta?.scenes) ? [...meta!.scenes!] : [];
+}
+
+export function getRunJSScenesForContext(ctx: FlowContext, { version = 'v1' as RunJSVersion } = {}): string[] {
+  const modelClass = getModelClassName(ctx);
+  return getRunJSScenesForModel(modelClass, version);
 }

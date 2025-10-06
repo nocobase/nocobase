@@ -37,6 +37,7 @@ export const createJavaScriptLinter = () => {
         ecmaVersion: 2022,
         sourceType: 'script',
         allowAwaitOutsideFunction: true,
+        allowReturnOutsideFunction: true,
         locations: true,
       });
     } catch (error) {

@@ -40,12 +40,12 @@ export async function setupRunJSContexts() {
 
   const v1 = 'v1';
   RunJSContextRegistry.register(v1, '*', FlowRunJSContext);
-  RunJSContextRegistry.register(v1, 'JSBlockModel', JSBlockRunJSContext);
-  RunJSContextRegistry.register(v1, 'JSFieldModel', JSFieldRunJSContext);
-  RunJSContextRegistry.register(v1, 'JSItemModel', JSItemRunJSContext);
-  RunJSContextRegistry.register(v1, 'JSColumnModel', JSColumnRunJSContext);
-  RunJSContextRegistry.register(v1, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext);
-  RunJSContextRegistry.register(v1, 'JSRecordActionModel', JSRecordActionRunJSContext);
-  RunJSContextRegistry.register(v1, 'JSCollectionActionModel', JSCollectionActionRunJSContext);
+  RunJSContextRegistry.register(v1, 'JSBlockModel', JSBlockRunJSContext, { scenes: ['block'] });
+  RunJSContextRegistry.register(v1, 'JSFieldModel', JSFieldRunJSContext, { scenes: ['detail'] });
+  RunJSContextRegistry.register(v1, 'JSItemModel', JSItemRunJSContext, { scenes: ['form'] });
+  RunJSContextRegistry.register(v1, 'JSColumnModel', JSColumnRunJSContext, { scenes: ['table'] });
+  RunJSContextRegistry.register(v1, 'FormJSFieldItemModel', FormJSFieldItemRunJSContext, { scenes: ['form'] });
+  RunJSContextRegistry.register(v1, 'JSRecordActionModel', JSRecordActionRunJSContext, { scenes: ['table'] });
+  RunJSContextRegistry.register(v1, 'JSCollectionActionModel', JSCollectionActionRunJSContext, { scenes: ['table'] });
   done = true;
 }

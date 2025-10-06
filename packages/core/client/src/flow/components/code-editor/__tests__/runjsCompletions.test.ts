@@ -45,6 +45,7 @@ vi.mock('@nocobase/flow-engine', () => {
         ref: 'scene/block/x',
         group: 'scene/block',
         groups: ['scene/block'],
+        scenes: ['block'],
       },
     ],
     setupRunJSContexts: () => void 0,
@@ -56,7 +57,7 @@ import { buildRunJSCompletions } from '../runjsCompletions';
 describe('buildRunJSCompletions', () => {
   it('builds ctx property/method completions and snippets', async () => {
     const hostCtx = {}; // not used since engine doc is mocked
-    const { completions, entries } = await buildRunJSCompletions(hostCtx, 'v1');
+    const { completions, entries } = await buildRunJSCompletions(hostCtx, 'v1', 'block');
     expect(Array.isArray(completions)).toBe(true);
     // property
     expect(completions.some((c: any) => c.label === 'ctx.foo')).toBe(true);
@@ -83,5 +84,12 @@ describe('buildRunJSCompletions', () => {
     expect(completions.some((c: any) => c.label === 'Class Snippet')).toBe(true);
     // entries produced for drawer
     expect(entries.some((e) => e.name === 'Class Snippet')).toBe(true);
+  });
+
+  it('filters snippets by scene when provided', async () => {
+    const hostCtx = {};
+    const { completions, entries } = await buildRunJSCompletions(hostCtx, 'v1', 'form');
+    expect(entries.length).toBe(0);
+    expect(completions.some((c: any) => c.label === 'Class Snippet')).toBe(false);
   });
 });

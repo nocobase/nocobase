@@ -12,14 +12,20 @@
 
 export type RunJSVersion = 'v1' | (string & {});
 export type RunJSContextCtor = new (delegate: any) => any;
+export type RunJSContextMeta = {
+  scenes?: string[];
+};
 
 export class RunJSContextRegistry {
-  private static map = new Map<string, RunJSContextCtor>();
-  static register(version: RunJSVersion, modelClass: string, ctor: RunJSContextCtor) {
-    this.map.set(`${version}:${modelClass}`, ctor);
+  private static map = new Map<string, { ctor: RunJSContextCtor; meta?: RunJSContextMeta }>();
+  static register(version: RunJSVersion, modelClass: string, ctor: RunJSContextCtor, meta?: RunJSContextMeta) {
+    this.map.set(`${version}:${modelClass}`, { ctor, meta });
   }
   static resolve(version: RunJSVersion, modelClass: string) {
-    return this.map.get(`${version}:${modelClass}`) || this.map.get(`${version}:*`);
+    return this.map.get(`${version}:${modelClass}`)?.ctor || this.map.get(`${version}:*`)?.ctor;
+  }
+  static getMeta(version: RunJSVersion, modelClass: string): RunJSContextMeta | undefined {
+    return this.map.get(`${version}:${modelClass}`)?.meta || this.map.get(`${version}:*`)?.meta;
   }
 }
 

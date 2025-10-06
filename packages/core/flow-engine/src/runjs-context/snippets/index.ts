@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { RunJSContextRegistry } from '../registry';
+
 // Simple manual exports - no build-time magic needed
 const snippets: Record<string, () => Promise<any>> = {
   // global
@@ -165,6 +167,14 @@ export async function listSnippetsForContext(
   locale?: string,
 ): Promise<EngineSnippetEntry[]> {
   const entries: EngineSnippetEntry[] = [];
+  const allowedContextNames = new Set<string>();
+  if (typeof ctxClassName === 'string' && ctxClassName) allowedContextNames.add(ctxClassName);
+  try {
+    const resolvedCtor = RunJSContextRegistry['resolve'](version as any, ctxClassName);
+    if (resolvedCtor?.name) allowedContextNames.add(resolvedCtor.name);
+  } catch (_) {
+    // ignore resolution failure
+  }
   await Promise.all(
     Object.entries(snippets).map(async ([key, loader]) => {
       try {
@@ -182,7 +192,11 @@ export async function listSnippetsForContext(
             if (item && typeof item === 'object' && typeof item.name === 'string') return item.name;
             return String(item ?? '');
           });
-          ok = ctxClassName === '*' || ctxNames.includes('*') || ctxNames.includes(ctxClassName);
+          if (ctxClassName === '*') {
+            ok = ctxNames.includes('*') || ctxNames.length === 0;
+          } else {
+            ok = ctxNames.includes('*') || ctxNames.some((name: string) => allowedContextNames.has(name));
+          }
         }
         // versions filter
         if (ok && Array.isArray(def?.versions) && def.versions.length) {

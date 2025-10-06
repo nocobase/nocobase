@@ -25,6 +25,7 @@ export type SnippetEntry = {
 export async function buildRunJSCompletions(
   hostCtx: any,
   version = 'v1',
+  scene?: string | string[],
 ): Promise<{
   completions: Completion[];
   entries: SnippetEntry[];
@@ -126,7 +127,28 @@ export async function buildRunJSCompletions(
     entries = [];
   }
 
-  for (const s of entries) {
+  const requestedScenes = Array.isArray(scene)
+    ? scene.filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+    : scene
+      ? [scene]
+      : [];
+
+  const filteredEntries = requestedScenes.length
+    ? entries.filter((entry) => {
+        if (entry.scenes?.length) {
+          return entry.scenes.some((sceneName) => requestedScenes.includes(sceneName));
+        }
+        const group = entry.group || '';
+        if (!group.startsWith('scene/')) return true; // global/libs snippets
+        const [_, inferredScene] = group.split('/');
+        if (inferredScene) {
+          return requestedScenes.includes(inferredScene);
+        }
+        return false;
+      })
+    : entries;
+
+  for (const s of filteredEntries) {
     const text = s.body;
     const filterText = [s.name, s.prefix, s.description, s.ref, s.body]
       .filter((v) => typeof v === 'string' && v.trim().length > 0)
@@ -148,5 +170,5 @@ export async function buildRunJSCompletions(
     });
   }
 
-  return { completions, entries };
+  return { completions, entries: filteredEntries };
 }

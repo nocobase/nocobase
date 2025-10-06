@@ -12,7 +12,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import type { Completion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
 import { InjectableRendingEventTrigger, InjectableRendingEventTriggerProps } from '../decorator';
-import { useFlowContext } from '@nocobase/flow-engine';
+import { useFlowContext, getRunJSScenesForContext } from '@nocobase/flow-engine';
 import { useRunJSDocCompletions } from './hooks/useRunJSDocCompletions';
 import { clearDiagnostics, parseErrorLineColumn, markErrorAt, jumpTo } from './errorHelpers';
 import { Button } from 'antd';
@@ -35,6 +35,7 @@ interface CodeEditorProps {
   wrapperStyle?: React.CSSProperties;
   extraCompletions?: Completion[]; // 供外部注入的静态补全
   version?: string; // runjs 版本（默认 v1）
+  scene?: string | string[];
 }
 
 export * from './types';
@@ -44,7 +45,7 @@ export const CodeEditor: React.FC<CodeEditorProps & InjectableRendingEventTrigge
   const triggerProps = { mode, name, language, scene };
   return (
     <InjectableRendingEventTrigger {...triggerProps}>
-      <InnerCodeEditor {...rest} />
+      <InnerCodeEditor {...rest} scene={scene} />
     </InjectableRendingEventTrigger>
   );
 };
@@ -62,13 +63,28 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
   wrapperStyle,
   extraCompletions,
   version = 'v1',
+  scene,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const runtimeCtx = useFlowContext<any>();
   // const settingsCtx = useFlowSettingsContext?.() as any;
   const hostCtx = runtimeCtx; // || settingsCtx;
-  const { completions: dynamicCompletions, entries: snippetEntries } = useRunJSDocCompletions(hostCtx, version);
+  const resolvedScene = useMemo(() => {
+    if (scene && (Array.isArray(scene) ? scene.length : true)) return scene;
+    if (!hostCtx) return undefined;
+    try {
+      const autoScenes = getRunJSScenesForContext(hostCtx, { version: version as any });
+      return autoScenes.length ? autoScenes : undefined;
+    } catch (_) {
+      return undefined;
+    }
+  }, [scene, hostCtx, version]);
+  const { completions: dynamicCompletions, entries: snippetEntries } = useRunJSDocCompletions(
+    hostCtx,
+    version,
+    resolvedScene,
+  );
   const { run, logs, running } = useCodeRunner(hostCtx, version);
   const [snippetOpen, setSnippetOpen] = useState(false);
   const getSnippetsContainer = useCallback(() => {

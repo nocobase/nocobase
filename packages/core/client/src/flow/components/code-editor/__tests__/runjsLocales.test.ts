@@ -16,7 +16,7 @@ describe('RunJS snippets locales (client completions)', () => {
       model: { constructor: { name: 'JSBlockModel' } },
       api: { auth: { locale: 'zh-CN' } },
     } as any;
-    const { entries } = await buildRunJSCompletions(hostCtx, 'v1');
+    const { entries } = await buildRunJSCompletions(hostCtx, 'v1', 'block');
     // expect at least one well-known snippet description (from doc) to be Chinese
     const hasDialog = entries.some((e) => /对话框/.test(e.description || ''));
     expect(hasDialog).toBe(true);
