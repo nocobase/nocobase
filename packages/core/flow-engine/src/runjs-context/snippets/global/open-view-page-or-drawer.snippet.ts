@@ -21,7 +21,7 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-const uid = 'your-popup-uid';
+const uid = ctx.model.uid + '-1'; // popupUid should be stable and better bound to ctx.model.uid
 const args = { viewUid: 'detail', foo: 'bar' };
 
 if (ctx.view?.navigation) {

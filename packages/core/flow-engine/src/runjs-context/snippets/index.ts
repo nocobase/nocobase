@@ -30,7 +30,6 @@ const snippets: Record<string, () => Promise<any>> = {
   'global/view-read-input-args': () => import('./global/view-read-input-args.snippet'),
   'global/api-response': () => import('./global/api-response.snippet'),
   'global/i18n-example': () => import('./global/i18n-example.snippet'),
-  'global/viewer-dialog-basic': () => import('./global/viewer-dialog-basic.snippet'),
   'global/batch-api-requests': () => import('./global/batch-api-requests.snippet'),
   'global/array-operations': () => import('./global/array-operations.snippet'),
   'global/debounce-function': () => import('./global/debounce-function.snippet'),
@@ -40,7 +39,6 @@ const snippets: Record<string, () => Promise<any>> = {
   // libs
   'libs/echarts-init': () => import('./libs/echarts-init.snippet'),
   // scene/block
-  'scene/block/render-basic': () => import('./scene/block/render-basic.snippet'),
   'scene/block/render-react': () => import('./scene/block/render-react.snippet'),
   'scene/block/render-card': () => import('./scene/block/render-card.snippet'),
   'scene/block/render-button-handler': () => import('./scene/block/render-button-handler.snippet'),
@@ -49,14 +47,19 @@ const snippets: Record<string, () => Promise<any>> = {
   'scene/block/add-event-listener': () => import('./scene/block/add-event-listener.snippet'),
   'scene/block/append-style': () => import('./scene/block/append-style.snippet'),
   'scene/block/basic-html-template': () => import('./scene/block/basic-html-template.snippet'),
+  'scene/block/fetch-with-loading': () => import('./scene/block/fetch-with-loading.snippet'),
   'scene/block/echarts-random': () => import('./scene/block/echarts-random.snippet'),
+  'scene/block/openview-refresh': () => import('./scene/block/openview-refresh.snippet'),
   'scene/block/query-selector': () => import('./scene/block/query-selector.snippet'),
+  'scene/block/require-dayjs': () => import('./scene/block/require-dayjs.snippet'),
   'scene/block/resource-example': () => import('./scene/block/resource-example.snippet'),
+  'scene/block/search-api-list': () => import('./scene/block/search-api-list.snippet'),
   'scene/block/api-fetch-render-list': () => import('./scene/block/api-fetch-render-list.snippet'),
   'scene/block/render-info-card': () => import('./scene/block/render-info-card.snippet'),
   'scene/block/render-pie-chart': () => import('./scene/block/render-pie-chart.snippet'),
   'scene/block/render-statistics': () => import('./scene/block/render-statistics.snippet'),
   'scene/block/render-timeline': () => import('./scene/block/render-timeline.snippet'),
+  'scene/block/render-iframe': () => import('./scene/block/render-iframe.snippet'),
   // scene/detail
   'scene/detail/innerHTML-value': () => import('./scene/detail/innerHTML-value.snippet'),
   'scene/detail/format-number': () => import('./scene/detail/format-number.snippet'),
@@ -190,7 +193,8 @@ export async function listSnippetsForContext(
           return String(item ?? '');
         });
         if (ctxClassName === '*') {
-          ok = ctxNames.includes('*') || ctxNames.length === 0;
+          // '*' means return all snippets without filtering by context
+          ok = true;
         } else {
           ok = ctxNames.includes('*') || ctxNames.some((name: string) => allowedContextNames.has(name));
         }

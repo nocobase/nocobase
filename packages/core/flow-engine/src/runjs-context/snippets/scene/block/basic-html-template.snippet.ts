@@ -12,24 +12,25 @@ import { JSBlockRunJSContext } from '../../../contexts/JSBlockRunJSContext';
 
 const snippet: SnippetModule = {
   contexts: [JSBlockRunJSContext],
-  prefix: 'sn-jsb-basic-html',
-  label: 'Basic HTML template',
-  description: 'Render a simple HTML structure into the block element',
+  prefix: 'sn-jsb-html',
+  label: 'Render HTML template',
+  description: 'Render a simple HTML layout into the block element',
   locales: {
     'zh-CN': {
-      label: '基础 HTML 模板',
-      description: '在区块容器中渲染简单的 HTML 结构',
+      label: '渲染 HTML 模板',
+      description: '在区块中渲染简单的 HTML 布局',
     },
   },
   content:
     `
+// Render a basic HTML template inside the block container
 ctx.element.innerHTML = ` +
     '`' +
     `
-  <div style="padding: 20px;">
-    <h2>\${ctx.t('Hello World')}</h2>
-    <p>\${ctx.t('This is a basic HTML template.')}</p>
-  </div>
+  <section style="padding: 20px; border-radius: 8px; background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+    <h2 style="margin: 0 0 12px;">\${ctx.t('Welcome title')}</h2>
+    <p style="margin: 0; color: #555;">\${ctx.t('Describe your block content here.')}</p>
+  </section>
 ` +
     '`' +
     `;

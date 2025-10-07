@@ -14,21 +14,29 @@ const snippet: SnippetModule = {
   contexts: [JSColumnRunJSContext],
   prefix: 'sn-col-open-dialog',
   label: 'Cell dialog with row data',
-  description: 'Render a button in cell to open dialog showing current row JSON',
+  description: 'Render a button in cell to open dialog via ctx.openView with current row context',
   locales: {
     'zh-CN': {
       label: '单元格对话框（显示行数据）',
-      description: '在单元格渲染按钮，点击后弹出对话框展示当前行 JSON',
+      description: '在单元格渲染按钮，点击后通过 ctx.openView 打开弹窗并传入当前行上下文',
     },
   },
   content: `
 // Render a button inside the cell
 ctx.element.innerHTML = '<button class="nb-cell-btn" style="padding:4px 8px">' + ctx.t('View') + '</button>';
-ctx.element.querySelector('.nb-cell-btn')?.addEventListener('click', () => {
-  ctx.viewer.dialog({
+
+const button = ctx.element.querySelector('.nb-cell-btn');
+const popupUid = ctx.model.uid + '-1'; // popupUid should be stable and better bound to ctx.model.uid
+const primaryKey = ctx.collection?.primaryKey || 'id';
+
+button?.addEventListener('click', async () => {
+  await ctx.openView(popupUid, {
+    mode: 'dialog',
     title: ctx.t('Row detail'),
-    content: '<pre style="padding:12px;white-space:pre-wrap">' +
-      JSON.stringify(ctx.record ?? {}, null, 2) + '</pre>',
+    params: {
+      filterByTk: ctx.record?.[primaryKey],
+      record: ctx.record,
+    },
   });
 });
 `,
