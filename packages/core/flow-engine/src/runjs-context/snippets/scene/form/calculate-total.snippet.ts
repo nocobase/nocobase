@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSItemRunJSContext } from '../../../contexts/JSItemRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['*'],
+  contexts: [JSItemRunJSContext],
   prefix: 'sn-link-calc',
   label: 'Calculate total price (quantity × price)',
   description: 'Automatically calculate total when quantity or unit price changes',

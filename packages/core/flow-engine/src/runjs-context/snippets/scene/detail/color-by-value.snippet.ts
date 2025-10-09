@@ -14,11 +14,11 @@ import { FormJSFieldItemRunJSContext } from '../../../contexts/FormJSFieldItemRu
 const snippet: SnippetModule = {
   contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext],
   prefix: 'sn-jsf-color',
-  label: 'Color by value',
-  description: 'Display numbers with colors based on their sign',
+  label: 'Display number field as colored text',
+  description: 'Display numeric values using colors based on their sign',
   locales: {
     'zh-CN': {
-      label: '按值设色',
+      label: '将数字字段显示为彩色文本',
       description: '根据数值正负设置显示颜色',
     },
   },

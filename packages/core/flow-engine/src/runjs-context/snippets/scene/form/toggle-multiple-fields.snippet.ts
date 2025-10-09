@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSItemRunJSContext } from '../../../contexts/JSItemRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['*'],
+  contexts: [JSItemRunJSContext],
   prefix: 'sn-link-show-hide',
   label: 'Show/hide fields based on condition',
   description: 'Toggle multiple fields visibility based on a condition',

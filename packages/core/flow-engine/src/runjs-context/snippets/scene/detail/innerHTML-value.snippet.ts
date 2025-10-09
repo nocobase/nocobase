@@ -14,12 +14,12 @@ import { FormJSFieldItemRunJSContext } from '../../../contexts/FormJSFieldItemRu
 const snippet: SnippetModule = {
   contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext],
   prefix: 'sn-jsf-value',
-  label: 'Render field value',
-  description: 'Render current field value with simple styling',
+  label: 'Display text field as highlighted text',
+  description: 'Render the current text field value with simple highlight styling',
   locales: {
     'zh-CN': {
-      label: '渲染字段值',
-      description: '将字段值写入容器并添加基础样式',
+      label: '将文本字段显示为高亮文本',
+      description: '将字段值写入容器并添加高亮样式',
     },
   },
   content: `

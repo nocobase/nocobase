@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSItemRunJSContext } from '../../../contexts/JSItemRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['*'],
+  contexts: [JSItemRunJSContext],
   prefix: 'sn-link-cascade',
   label: 'Cascade select (load child roles)',
   description: 'Load child roles based on the selected parent role',

@@ -14,12 +14,12 @@ import { FormJSFieldItemRunJSContext } from '../../../contexts/FormJSFieldItemRu
 const snippet: SnippetModule = {
   contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext],
   prefix: 'sn-jsf-relative-time',
-  label: 'Format date as relative time',
-  description: 'Display date as "3 days ago", "just now", etc.',
+  label: 'Display date field as relative time',
+  description: 'Render date values as “3 days ago”, “just now”, etc.',
   locales: {
     'zh-CN': {
-      label: '相对时间格式化',
-      description: '将日期显示为"3天前"、"刚刚"等相对时间',
+      label: '将日期字段显示为相对时间',
+      description: '将日期显示为“3天前”、“刚刚”等相对时间',
     },
   },
   content: `

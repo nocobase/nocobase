@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSItemRunJSContext } from '../../../contexts/JSItemRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['*'],
+  contexts: [JSItemRunJSContext],
   prefix: 'sn-link-require',
   label: 'Conditional required field',
   description: "Make a field required based on another field's value",

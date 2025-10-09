@@ -8,9 +8,10 @@
  */
 
 import type { SnippetModule } from '../../types';
+import { JSItemRunJSContext } from '../../../contexts/JSItemRunJSContext';
 
 const snippet: SnippetModule = {
-  contexts: ['*'],
+  contexts: [JSItemRunJSContext],
   prefix: 'sn-link-visibility',
   label: 'Toggle visible',
   description: 'Show or hide another field within linkage scripts',
@@ -25,7 +26,7 @@ const targetFieldUid = 'FIELD_UID_OR_NAME';
 const shouldHide = true;
 
 const items = ctx.model?.subModels?.grid?.subModels?.items;
-const candidates: any[] = Array.isArray(items)
+const candidates = Array.isArray(items)
   ? items
   : Array.from(items?.values?.() || items || []);
 const fieldModel =

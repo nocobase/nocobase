@@ -14,11 +14,11 @@ import { FormJSFieldItemRunJSContext } from '../../../contexts/FormJSFieldItemRu
 const snippet: SnippetModule = {
   contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext],
   prefix: 'sn-jsf-percent',
-  label: 'Format number as percentage',
-  description: 'Display number as percentage with progress bar',
+  label: 'Display number field as percentage bar',
+  description: 'Render numeric values as a percentage progress bar',
   locales: {
     'zh-CN': {
-      label: '百分比格式化',
+      label: '将数字字段显示为百分比进度条',
       description: '将数字格式化为百分比并显示进度条',
     },
   },

@@ -14,11 +14,11 @@ import { FormJSFieldItemRunJSContext } from '../../../contexts/FormJSFieldItemRu
 const snippet: SnippetModule = {
   contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext],
   prefix: 'sn-jsf-num',
-  label: 'Format number',
-  description: 'Format numeric value with locale-aware separators',
+  label: 'Display number field as localized number',
+  description: 'Format numeric values with locale-aware separators before rendering',
   locales: {
     'zh-CN': {
-      label: '格式化数字',
+      label: '将数字字段显示为本地化格式',
       description: '按本地化格式输出数值',
     },
   },

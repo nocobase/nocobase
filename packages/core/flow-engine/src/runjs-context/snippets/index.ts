@@ -44,7 +44,6 @@ const snippets: Record<string, () => Promise<any>> = {
   'scene/detail/status-tag': () => import('./scene/detail/status-tag.snippet'),
   'scene/detail/relative-time': () => import('./scene/detail/relative-time.snippet'),
   'scene/detail/percentage-bar': () => import('./scene/detail/percentage-bar.snippet'),
-  'scene/detail/truncate-text': () => import('./scene/detail/truncate-text.snippet'),
   // scene/form
   'scene/form/render-basic': () => import('./scene/form/render-basic.snippet'),
   'scene/form/set-field-value': () => import('./scene/form/set-field-value.snippet'),
@@ -62,10 +61,7 @@ const snippets: Record<string, () => Promise<any>> = {
   'scene/table/collection-selected-count': () => import('./scene/table/collection-selected-count.snippet'),
   'scene/table/iterate-selected-rows': () => import('./scene/table/iterate-selected-rows.snippet'),
   'scene/table/destroy-selected': () => import('./scene/table/destroy-selected.snippet'),
-  'scene/table/batch-update-status': () => import('./scene/table/batch-update-status.snippet'),
   'scene/table/export-selected-json': () => import('./scene/table/export-selected-json.snippet'),
-  'scene/table/calculate-sum': () => import('./scene/table/calculate-sum.snippet'),
-  'scene/table/batch-delete-confirm': () => import('./scene/table/batch-delete-confirm.snippet'),
 };
 
 export default snippets;

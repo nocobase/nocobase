@@ -16,11 +16,11 @@ const snippet: SnippetModule = {
   contexts: [JSFieldRunJSContext, FormJSFieldItemRunJSContext, JSColumnRunJSContext],
   scenes: ['detail', 'table'],
   prefix: 'sn-jsf-status-tag',
-  label: 'Render status tag with color',
-  description: 'Display value as a colored tag based on status',
+  label: 'Display status field as colored tag',
+  description: 'Display status values using colored tags',
   locales: {
     'zh-CN': {
-      label: '状态标签（带颜色）',
+      label: '将状态字段显示为彩色标签',
       description: '根据状态值显示不同颜色的标签',
     },
   },

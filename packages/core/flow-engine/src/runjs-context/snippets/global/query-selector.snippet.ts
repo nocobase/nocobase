@@ -7,10 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { SnippetModule } from '../../types';
-import { JSBlockRunJSContext } from '../../../contexts/JSBlockRunJSContext';
-import { JSFieldRunJSContext } from '../../../contexts/JSFieldRunJSContext';
-import { FormJSFieldItemRunJSContext } from '../../../contexts/FormJSFieldItemRunJSContext';
+import type { SnippetModule } from '../types';
+import { JSBlockRunJSContext } from '../../contexts/JSBlockRunJSContext';
+import { JSFieldRunJSContext } from '../../contexts/JSFieldRunJSContext';
+import { FormJSFieldItemRunJSContext } from '../../contexts/FormJSFieldItemRunJSContext';
 
 const snippet: SnippetModule = {
   contexts: [JSBlockRunJSContext, JSFieldRunJSContext, FormJSFieldItemRunJSContext],

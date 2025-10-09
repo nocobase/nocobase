@@ -22,8 +22,8 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-// demo helper：根据当前列在 columns 中的位置，尝试获取前两个列的 dataIndex
-// 实际使用时建议直接写死字段名，避免因为列顺序变化导致取值异常
+// Demo helper: infer previous columns' dataIndex values based on the current column position
+// In production, hardcode field names to avoid surprises when columns are reordered
 function resolvePreviousDataIndexes() {
   const parent = ctx.model?.parent;
   const list = parent?.subModels?.columns;

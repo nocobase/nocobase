@@ -13,12 +13,12 @@ import { JSFieldRunJSContext } from '../../../contexts/JSFieldRunJSContext';
 const snippet: SnippetModule = {
   contexts: [JSFieldRunJSContext],
   prefix: 'sn-jsf-copy',
-  label: 'Copy field value',
-  description: 'Click to copy current field value to clipboard',
+  label: 'Display text field with copy button',
+  description: 'Render the text field value with a copy-to-clipboard button',
   locales: {
     'zh-CN': {
-      label: '复制字段值',
-      description: '点击复制当前字段值到剪贴板',
+      label: '将文本字段显示为复制按钮',
+      description: '展示字段值并提供快捷复制到剪贴板的按钮',
     },
   },
   content: `
