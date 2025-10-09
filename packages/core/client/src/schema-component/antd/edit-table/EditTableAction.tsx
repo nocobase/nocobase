@@ -11,13 +11,12 @@ import { css } from '@emotion/css';
 import { createForm, Field, Form } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import { Checkbox, ConfigProvider, Typography } from 'antd';
-import { Popup } from 'antd-mobile';
-import { CloseOutline } from 'antd-mobile-icons';
 import React, { createContext, useCallback, useEffect, useMemo, useState } from 'react';
 import { isDesktop } from 'react-device-detect';
 import { useTranslation } from 'react-i18next';
 import { useNiceDropdownMaxHeight } from '../../../common/useNiceDropdownHeight';
 import { withDynamicSchemaProps } from '../../../hoc/withDynamicSchemaProps';
+import { lazy } from '../../../lazy-helper';
 import { useMobileLayout } from '../../../route-switch/antd/admin-layout';
 import { useToken } from '../../../style';
 import { FormProvider, SchemaComponent } from '../../core';
@@ -26,6 +25,9 @@ import { useProps } from '../../hooks/useProps';
 import { Action, ActionProps } from '../action';
 import { useZIndexContext } from '../action/zIndexContext';
 import { StablePopover } from '../popover';
+
+const { Popup } = lazy(() => import('antd-mobile'), 'Popup');
+const { CloseOutline } = lazy(() => import('antd-mobile-icons'), 'CloseOutline');
 
 // Mobile container component
 const EditTableActionMobileContainer = (props: {
@@ -129,7 +131,6 @@ const EditTableActionMobileContainer = (props: {
     </ConfigProvider>
   );
 };
-
 export const EditTableActionContext = createContext<any>(null);
 EditTableActionContext.displayName = 'EditTableActionContext';
 

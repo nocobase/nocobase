@@ -7,20 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DragMoveEvent } from '@dnd-kit/core';
+import { DragCancelEvent, DragEndEvent, DragMoveEvent, DragStartEvent } from '@dnd-kit/core';
 import { uid } from '@formily/shared';
 import {
   DndProvider,
   DragHandler,
   Droppable,
+  DragOverlayConfig,
   EMPTY_COLUMN_UID,
   escapeT,
   findModelUidPosition,
   FlowModel,
   MemoFlowModelRenderer,
-  getMousePositionOnElement,
-  moveBlock,
-  positionToDirection,
+  buildLayoutSnapshot,
+  getSlotKey,
+  GridLayoutData,
+  LayoutSlot,
+  Rect,
+  resolveDropIntent,
+  simulateLayoutForSlot,
 } from '@nocobase/flow-engine';
 import type { FlowModelRendererProps } from '@nocobase/flow-engine';
 import { Space } from 'antd';
@@ -40,6 +45,47 @@ interface DefaultStructure {
   };
 }
 
+interface DragOverlayState {
+  top: number;
+  left: number;
+  width: number;
+  height: number;
+  type: LayoutSlot['type'];
+}
+
+interface DragState {
+  sourceUid: string;
+  snapshot: GridLayoutData;
+  slots: LayoutSlot[];
+  containerRect: Rect;
+  pointerOrigin?: { x: number; y: number };
+  activeSlotKey: string | null;
+  previewLayout?: GridLayoutData;
+  refreshTimer?: ReturnType<typeof setTimeout> | null;
+}
+
+const getClientPoint = (event: any): { x: number; y: number } | null => {
+  if (!event) {
+    return null;
+  }
+
+  if (typeof event.clientX === 'number' && typeof event.clientY === 'number') {
+    return { x: event.clientX, y: event.clientY };
+  }
+
+  if (event.touches && event.touches.length > 0) {
+    const touch = event.touches[0];
+    return { x: touch.clientX, y: touch.clientY };
+  }
+
+  if (event.changedTouches && event.changedTouches.length > 0) {
+    const touch = event.changedTouches[0];
+    return { x: touch.clientX, y: touch.clientY };
+  }
+
+  return null;
+};
+
 export class GridModel<T extends { subModels: { items: FlowModel[] } } = DefaultStructure> extends FlowModel<T> {
   subModelBaseClass = 'BlockModel';
   gridContainerRef = React.createRef<HTMLDivElement>();
@@ -47,15 +93,18 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   // 设置项菜单的层级，默认为 1
   itemSettingsMenuLevel = 1;
   itemFlowSettings: Exclude<FlowModelRendererProps['showFlowSettings'], boolean> = {};
+  // 拖拽高亮区域的配置，子类可以覆盖此属性来自定义偏移
+  dragOverlayConfig?: DragOverlayConfig;
   // 通过稳定引用减少子项不必要的重渲染
-  private itemFallback = (<SkeletonFallback />);
-  private itemExtraToolbarItems = [
+  private readonly itemFallback = (<SkeletonFallback />);
+  private readonly itemExtraToolbarItems = [
     {
       key: 'drag-handler',
       component: DragHandler,
       sort: 1,
     },
   ];
+  private dragState?: DragState;
   private _memoItemFlowSettings?: Exclude<FlowModelRendererProps['showFlowSettings'], boolean>;
   private getItemFlowSettings(): Exclude<FlowModelRendererProps['showFlowSettings'], boolean> {
     if (!this._memoItemFlowSettings) {
@@ -170,10 +219,12 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     });
   }
 
-  saveGridLayout() {
+  saveGridLayout(layout?: GridLayoutData) {
+    const rows = layout?.rows ?? this.props.rows ?? {};
+    const sizes = layout?.sizes ?? this.props.sizes ?? {};
     this.setStepParams(GRID_FLOW_KEY, GRID_STEP, {
-      rows: this.props.rows || {},
-      sizes: this.props.sizes || {},
+      rows,
+      sizes,
     });
     this.saveStepParams();
   }
@@ -227,53 +278,242 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     }
   }
 
-  handleDragMove(event: DragMoveEvent) {
-    const active = event.active;
-    const over = event.over;
-
-    if (active?.id === over?.id) {
-      return;
+  private computePointerPosition(event: DragMoveEvent | DragEndEvent): { x: number; y: number } | null {
+    if (!this.dragState) {
+      return null;
+    }
+    const origin = this.dragState.pointerOrigin;
+    if (origin) {
+      return {
+        x: origin.x + event.delta.x,
+        y: origin.y + event.delta.y,
+      };
     }
 
-    const position = getMousePositionOnElement({
-      initialMousePos: {
-        // @ts-ignore
-        x: event.activatorEvent.x ?? 0,
-        // @ts-ignore
-        y: event.activatorEvent.y ?? 0,
-      },
-      mouseOffset: {
-        x: event.delta.x,
-        y: event.delta.y,
-      },
-      elementBounds: {
-        x: over?.rect.left ?? 0,
-        y: over?.rect.top ?? 0,
-        width: over?.rect.width ?? 0,
-        height: over?.rect.height ?? 0,
-      },
-    });
+    const activatorPoint = getClientPoint((event as any).activatorEvent);
+    if (activatorPoint) {
+      this.dragState.pointerOrigin = activatorPoint;
+      return {
+        x: activatorPoint.x + event.delta.x,
+        y: activatorPoint.y + event.delta.y,
+      };
+    }
 
-    const layoutData = {
-      rows: this.props.rows || {},
-      sizes: this.props.sizes || {},
-    };
+    const overRect = event.over?.rect;
+    if (overRect) {
+      return {
+        x: overRect.left + overRect.width / 2,
+        y: overRect.top + overRect.height / 2,
+      };
+    }
 
-    const result = moveBlock({
-      sourceUid: active?.id as string,
-      targetUid: over?.id as string,
-      direction: positionToDirection(position),
-      layoutData,
-    });
+    return null;
+  }
 
-    if (JSON.stringify(layoutData) !== JSON.stringify(result)) {
-      this.setProps('rows', result.rows);
-      this.setProps('sizes', result.sizes);
+  private updateLayoutSnapshot() {
+    if (!this.dragState) {
+      return;
+    }
+    const snapshot = buildLayoutSnapshot({ container: this.gridContainerRef.current });
+    this.dragState.slots = snapshot.slots;
+    this.dragState.containerRect = snapshot.containerRect;
+  }
+
+  private scheduleSnapshotRefresh() {
+    if (!this.dragState) {
+      return;
+    }
+    if (this.dragState.refreshTimer) {
+      clearTimeout(this.dragState.refreshTimer);
+    }
+    this.dragState.refreshTimer = setTimeout(() => {
+      if (!this.dragState) {
+        return;
+      }
+      this.dragState.refreshTimer = null;
+      this.updateLayoutSnapshot();
+    }, 16);
+  }
+
+  /**
+   * 根据 slot 类型、位置和配置计算最终的 overlay 尺寸和位置
+   */
+  private computeOverlayRect(slot: LayoutSlot): { top: number; left: number; width: number; height: number } {
+    const config = this.dragOverlayConfig;
+    const baseRect = slot.rect;
+
+    switch (slot.type) {
+      case 'column': {
+        const columnConfig = config?.columnInsert?.[slot.position];
+        const height = columnConfig?.height ?? baseRect.height;
+        const offsetTop = columnConfig?.offsetTop ?? 0;
+        return {
+          top: baseRect.top + offsetTop,
+          left: baseRect.left,
+          width: baseRect.width,
+          height,
+        };
+      }
+      case 'column-edge': {
+        const edgeConfig = config?.columnEdge?.[slot.direction];
+        const width = edgeConfig?.width ?? baseRect.width;
+        const offsetLeft = edgeConfig?.offsetLeft ?? 0;
+        return {
+          top: baseRect.top,
+          left: baseRect.left + offsetLeft,
+          width,
+          height: baseRect.height,
+        };
+      }
+      case 'row-gap': {
+        const gapConfig = config?.rowGap?.[slot.position];
+        const height = gapConfig?.height ?? baseRect.height;
+        const offsetTop = gapConfig?.offsetTop ?? 0;
+        return {
+          top: baseRect.top + offsetTop,
+          left: baseRect.left,
+          width: baseRect.width,
+          height,
+        };
+      }
+      case 'empty-column':
+      case 'empty-row': {
+        // 空列和空容器不应用任何配置，使用默认尺寸
+        return {
+          top: baseRect.top,
+          left: baseRect.left,
+          width: baseRect.width,
+          height: baseRect.height,
+        };
+      }
+      default:
+        return {
+          top: baseRect.top,
+          left: baseRect.left,
+          width: baseRect.width,
+          height: baseRect.height,
+        };
     }
   }
 
-  handleDragEnd(event: any) {
-    this.saveGridLayout();
+  private applyPreview(slot: LayoutSlot | null) {
+    if (!this.dragState) {
+      return;
+    }
+
+    if (!slot) {
+      if (this.dragState.activeSlotKey !== null) {
+        this.dragState.activeSlotKey = null;
+        this.dragState.previewLayout = undefined;
+        this.setProps('dragOverlayRect', null);
+      }
+      return;
+    }
+
+    const slotKey = getSlotKey(slot);
+    if (this.dragState.activeSlotKey === slotKey && this.dragState.previewLayout) {
+      return;
+    }
+
+    const preview = simulateLayoutForSlot({
+      slot,
+      sourceUid: this.dragState.sourceUid,
+      layout: this.dragState.snapshot,
+      generateRowId: uid,
+    });
+
+    this.dragState.previewLayout = {
+      rows: _.cloneDeep(preview.rows),
+      sizes: _.cloneDeep(preview.sizes),
+    };
+
+    const container = this.gridContainerRef.current;
+    const scrollTop = container?.scrollTop ?? 0;
+    const scrollLeft = container?.scrollLeft ?? 0;
+
+    // 计算最终的 overlay 矩形
+    const rect = this.computeOverlayRect(slot);
+
+    const overlay: DragOverlayState = {
+      top: rect.top - this.dragState.containerRect.top + scrollTop,
+      left: rect.left - this.dragState.containerRect.left + scrollLeft,
+      width: rect.width,
+      height: rect.height,
+      type: slot.type,
+    };
+    this.setProps('dragOverlayRect', overlay);
+    this.dragState.activeSlotKey = slotKey;
+  }
+
+  handleDragStart(event: DragStartEvent) {
+    const sourceUid = event.active.id as string;
+    this.dragState = {
+      sourceUid,
+      snapshot: {
+        rows: _.cloneDeep(this.props.rows || {}),
+        sizes: _.cloneDeep(this.props.sizes || {}),
+      },
+      slots: [],
+      containerRect: { top: 0, left: 0, width: 0, height: 0 },
+      pointerOrigin: getClientPoint((event as any).activatorEvent) ?? undefined,
+      activeSlotKey: null,
+      previewLayout: undefined,
+      refreshTimer: null,
+    };
+    this.setProps('dragOverlayRect', null);
+    this.updateLayoutSnapshot();
+    this.scheduleSnapshotRefresh();
+  }
+
+  handleDragMove(event: DragMoveEvent) {
+    if (!this.dragState) {
+      return;
+    }
+
+    if (!this.dragState.slots.length) {
+      this.updateLayoutSnapshot();
+    }
+
+    const point = this.computePointerPosition(event);
+    if (!point) {
+      this.applyPreview(null);
+      return;
+    }
+
+    const slot = resolveDropIntent(point, this.dragState.slots);
+    this.applyPreview(slot);
+  }
+
+  private finishDrag() {
+    if (!this.dragState) {
+      return;
+    }
+
+    if (this.dragState.refreshTimer) {
+      clearTimeout(this.dragState.refreshTimer);
+    }
+
+    this.dragState = undefined;
+    this.setProps('dragOverlayRect', null);
+  }
+
+  handleDragEnd(_event: DragEndEvent) {
+    if (!this.dragState) {
+      return;
+    }
+
+    const previewLayout = this.dragState.previewLayout;
+    if (previewLayout) {
+      this.setProps('rows', _.cloneDeep(previewLayout.rows));
+      this.setProps('sizes', _.cloneDeep(previewLayout.sizes));
+      this.saveGridLayout(previewLayout);
+    }
+
+    this.finishDrag();
+  }
+
+  handleDragCancel(_event: DragCancelEvent) {
+    this.finishDrag();
   }
 
   renderAddSubModelButton(): JSX.Element {
@@ -305,12 +545,18 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
             style={{ width: '100%', marginBottom: this.props.rowGap }}
             size={this.props.rowGap}
           >
-            <DndProvider onDragMove={this.handleDragMove.bind(this)} onDragEnd={this.handleDragEnd.bind(this)}>
+            <DndProvider
+              onDragStart={this.handleDragStart.bind(this)}
+              onDragMove={this.handleDragMove.bind(this)}
+              onDragEnd={this.handleDragEnd.bind(this)}
+              onDragCancel={this.handleDragCancel.bind(this)}
+            >
               <Grid
                 rowGap={this.props.rowGap}
                 colGap={this.props.colGap}
                 rows={this.getRows()}
                 sizes={this.getSizes()}
+                dragOverlayRect={this.props.dragOverlayRect}
                 renderItem={(uid) => {
                   const baseItem = this.flowEngine.getModel(uid);
                   const rowIndex = this.context.fieldIndex;
@@ -458,9 +704,7 @@ function recalculateGridSizes({
     return { newRows, newSizes, moveDistance: currentMoveDistance };
   }
 
-  if (newSizes[position.rowId] === undefined) {
-    newSizes[position.rowId] = [columnCount];
-  }
+  newSizes[position.rowId] ??= [columnCount];
 
   newSizes[position.rowId][position.columnIndex] += currentMoveDistance - prevMoveDistance;
 
@@ -547,7 +791,7 @@ function addEmptyColumnToRow({
 
   if (direction === 'left') {
     const leftColumn = currentRow[position.columnIndex - 1];
-    if (leftColumn && leftColumn.includes(EMPTY_COLUMN_UID)) {
+    if (leftColumn?.includes(EMPTY_COLUMN_UID)) {
       // 如果左侧已经有空白列，则不再添加
       return;
     }
@@ -557,7 +801,7 @@ function addEmptyColumnToRow({
 
   if (direction === 'right') {
     const rightColumn = currentRow[position.columnIndex + 1];
-    if (rightColumn && rightColumn.includes(EMPTY_COLUMN_UID)) {
+    if (rightColumn?.includes(EMPTY_COLUMN_UID)) {
       // 如果右侧已经有空白列，则不再添加
       return;
     }
@@ -586,7 +830,7 @@ function removeEmptyColumnFromRow({
 
   if (direction === 'left') {
     const leftColumn = currentRow[position.columnIndex - 1];
-    if (!leftColumn || !leftColumn.includes(EMPTY_COLUMN_UID)) {
+    if (!leftColumn?.includes(EMPTY_COLUMN_UID)) {
       // 如果左侧没有空白列，则不进行删除
       return;
     }
@@ -596,7 +840,7 @@ function removeEmptyColumnFromRow({
 
   if (direction === 'right') {
     const rightColumn = currentRow[position.columnIndex + 1];
-    if (!rightColumn || !rightColumn.includes(EMPTY_COLUMN_UID)) {
+    if (!rightColumn?.includes(EMPTY_COLUMN_UID)) {
       // 如果右侧没有空白列，则不进行删除
       return;
     }

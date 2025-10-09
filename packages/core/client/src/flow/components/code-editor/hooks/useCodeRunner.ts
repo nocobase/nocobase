@@ -9,6 +9,7 @@
 
 import { useCallback, useState } from 'react';
 import { parseErrorLineColumn } from '../errorHelpers';
+import { FlowModelContext, JSRunner } from '@nocobase/flow-engine';
 
 export type RunLog = { level: 'log' | 'info' | 'warn' | 'error'; msg: string; line?: number; column?: number };
 
@@ -34,83 +35,20 @@ function createConsoleCapture(push: (level: RunLog['level'], args: any[]) => voi
   };
 }
 
-async function ensureElementInjection(hostCtx: any) {
-  // Inject ctx.element if accessible
-  let injected = false;
-  try {
-    const direct = hostCtx?.blockModel?.context?.ref?.current as HTMLElement | undefined;
-    if (direct instanceof HTMLElement) {
-      hostCtx.defineProperty('element', { get: () => direct });
-      injected = true;
-    }
-  } catch (err) {
-    // Debug note: failed to inject element via blockModel.context.ref.current
-    try {
-      console.debug?.('[useCodeRunner] ref injection failed', err);
-    } catch (_) {
-      void 0;
-    }
-  }
-  if (!injected) {
-    try {
-      const uid = hostCtx?.model?.uid || hostCtx?.blockModel?.uid;
-      if (uid) {
-        const container = document.getElementById(`model-${uid}`);
-        const mount = container?.querySelector('div') as HTMLElement | null;
-        if (mount instanceof HTMLElement) {
-          hostCtx.defineProperty('element', { get: () => mount });
-          injected = true;
-        }
-      }
-    } catch (err) {
-      // Debug note: failed to inject element via #model-<uid>
-      try {
-        console.debug?.('[useCodeRunner] container injection failed', err);
-      } catch (_) {
-        void 0;
-      }
-    }
-  }
-  if (!injected && hostCtx?.onRefReady && hostCtx?.ref) {
-    await new Promise<void>((resolve) => {
-      try {
-        hostCtx.onRefReady(hostCtx.ref, (el: HTMLElement) => {
-          try {
-            hostCtx.defineProperty('element', { get: () => el });
-          } catch (err) {
-            try {
-              console.debug?.('[useCodeRunner] onRefReady defineProperty failed', err);
-            } catch (_) {
-              void 0;
-            }
-          }
-          resolve();
-        });
-      } catch (err) {
-        try {
-          console.debug?.('[useCodeRunner] onRefReady failed to attach', err);
-        } catch (_) {
-          void 0;
-        }
-        resolve();
-      }
-    });
-  }
-}
-
-export function useCodeRunner(hostCtx: any, version = 'v1') {
+export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
   const [logs, setLogs] = useState<RunLog[]>([]);
   const [running, setRunning] = useState(false);
-
   const clearLogs = useCallback(() => setLogs([]), []);
   const run = useCallback(
-    async (code: string) => {
+    async (code: string): Promise<Awaited<ReturnType<JSRunner['run']>> | undefined> => {
+      setRunning(true);
+      setLogs([]);
       try {
-        setRunning(true);
-        setLogs([]);
-        if (!hostCtx?.createJSRunner) {
-          return { success: false, error: new Error('Runner not available') };
-        }
+        const model = hostCtx?.model;
+        if (!model) throw new Error('No model in FlowContext');
+        const engine = hostCtx.engine;
+        const runtimeModel = engine.getModel(model.uid, true) || model;
+
         const nativeConsole: Record<RunLog['level'], (...args: any[]) => void> = {
           log: (...args) => console.log(...args),
           info: (...args) => console.info(...args),
@@ -120,38 +58,86 @@ export function useCodeRunner(hostCtx: any, version = 'v1') {
         const push = (level: RunLog['level'], args: any[]) => {
           const msg = args.map((x: any) => safeToString(x)).join(' ');
           setLogs((prev) => [...prev, { level, msg }]);
-          try {
-            nativeConsole[level]?.(...args);
-          } catch (_) {
-            void 0;
-          }
+          nativeConsole[level]?.(...args);
         };
         const captureConsole = createConsoleCapture(push);
-        const runner = hostCtx.createJSRunner({ version, globals: { console: captureConsole } });
-        try {
-          if (/\bctx\.element\b/.test(code)) {
-            await ensureElementInjection(hostCtx);
-          }
-        } catch (err) {
+
+        runtimeModel.setStepParams?.('jsSettings', 'runJs', { code, version });
+
+        // Monkey-patch JSRunner.run to inject captureConsole into globals for all runjs calls during preview
+        type JSRunnerPrototype = { run: JSRunner['run'] };
+        const proto = JSRunner.prototype as unknown as JSRunnerPrototype;
+        const originalRun = proto.run;
+        let firstResolved = false;
+        let resolveDeferred: (res: any) => void = () => {};
+        const deferred = new Promise<any>((resolve) => (resolveDeferred = resolve));
+        proto.run = async function patchedRun(this: any, jsCode: string) {
+          const prevConsole = this?.globals?.console;
           try {
-            console.debug?.('[useCodeRunner] ensureElementInjection failed', err);
-          } catch (_) {
-            void 0;
+            if (!this.globals) this.globals = {};
+            this.globals.console = captureConsole;
+          } catch (e) {
+            console.warn('[useCodeRunner] inject console failed:', e);
           }
-        }
-        const res = await runner.run(code);
-        if (!res?.success) {
-          const errText = res?.timeout ? 'Execution timed out' : String(res?.error || 'Unknown error');
-          const pos = parseErrorLineColumn(res?.error);
+          try {
+            const res = await originalRun.call(this, jsCode);
+            if (!firstResolved) {
+              firstResolved = true;
+              try {
+                resolveDeferred(res);
+              } catch (e) {
+                console.warn('[useCodeRunner] resolve deferred failed:', e);
+              }
+            }
+            return res;
+          } finally {
+            try {
+              if (typeof prevConsole === 'undefined') delete this.globals.console;
+              else this.globals.console = prevConsole;
+            } catch (e) {
+              console.warn('[useCodeRunner] restore console failed:', e);
+            }
+          }
+        } as JSRunner['run'];
+
+        const runOnModel = async (m) => {
+          const flow = m?.getFlow?.('jsSettings');
+          const isManual = flow?.manual === true;
+          if (isManual) {
+            await m.applyFlow('jsSettings', { preview: { code, version } });
+          } else {
+            await m.applyAutoFlows({ preview: { code, version } }, false);
+          }
+        };
+
+        await runOnModel(runtimeModel);
+        const timeoutMs = 12000;
+        const runResult = await Promise.race([
+          deferred,
+          new Promise((resolve) =>
+            setTimeout(
+              () => resolve({ success: false, timeout: true, error: new Error('Preview timed out') }),
+              timeoutMs,
+            ),
+          ),
+        ]);
+        (JSRunner.prototype as unknown as JSRunnerPrototype).run = originalRun;
+        if (!runResult?.success) {
+          const errText = runResult?.timeout ? 'Execution timed out' : String(runResult?.error || 'Unknown error');
+          const pos = parseErrorLineColumn(runResult?.error);
           if (pos && typeof pos.line === 'number' && typeof pos.column === 'number') {
             setLogs((prev) => [...prev, { level: 'error', msg: errText, line: pos.line, column: pos.column }]);
           } else {
             push('error', [errText]);
           }
         } else {
-          push('info', [`Result: ${JSON.stringify(res.value)}`]);
+          push('info', ['Execution succeeded']);
         }
-        return res;
+        return runResult as Awaited<ReturnType<JSRunner['run']>>;
+      } catch (err: any) {
+        const msg = err?.message || String(err) || 'Run preview failed';
+        setLogs((prev) => [...prev, { level: 'error', msg }]);
+        return { success: false, error: err } as Awaited<ReturnType<JSRunner['run']>>;
       } finally {
         setRunning(false);
       }
