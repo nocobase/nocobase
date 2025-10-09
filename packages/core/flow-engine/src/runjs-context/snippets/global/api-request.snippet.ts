@@ -11,29 +11,27 @@ import type { SnippetModule } from '../types';
 
 const snippet: SnippetModule = {
   contexts: ['*'],
-  prefix: 'sn-api-get',
-  label: 'GET request template',
-  description: 'Basic template to send a GET request via ctx.api',
+  prefix: 'sn-api-request',
+  label: 'API request template',
+  description: 'Basic template to send HTTP requests via ctx.api.request',
   locales: {
     'zh-CN': {
-      label: 'GET 请求模板',
-      description: '使用 ctx.api 发送 GET 请求的基础模板',
+      label: 'API 请求模板',
+      description: '使用 ctx.api.request 发送 HTTP 请求的基础模板',
     },
   },
   content: `
-// Fetch a few users with their roles
-const res = await ctx.api.request({
+// Replace url/method/params/data as needed
+const response = await ctx.api.request({
   url: 'users:list',
   method: 'get',
   params: {
-    pageSize: 5,
-    appends: ['roles'],
+    pageSize: 10,
   },
 });
 
-const users = Array.isArray(res?.data?.data) ? res.data.data : [];
-ctx.message.success(ctx.t('Loaded {{count}} users', { count: users.length }));
-console.log(ctx.t('GET result:'), users);
+ctx.message.success(ctx.t('Request finished'));
+console.log(ctx.t('Response data:'), response?.data);
 `,
 };
 

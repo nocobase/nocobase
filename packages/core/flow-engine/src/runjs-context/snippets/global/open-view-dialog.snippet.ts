@@ -25,8 +25,8 @@ const snippet: SnippetModule = {
 const popupUid = ctx.model.uid + '-1'; // popupUid should be stable and better bound to ctx.model.uid
 await ctx.openView(popupUid, {
   mode: 'dialog',
-  viewUid: 'detail',
-  foo: 'bar',
+  title: ctx.t('Sample dialog'),
+  size: 'medium',
 });
 `,
 };

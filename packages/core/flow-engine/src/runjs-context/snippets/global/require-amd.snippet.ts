@@ -8,20 +8,23 @@
  */
 
 import type { SnippetModule } from '../types';
+
 const snippet: SnippetModule = {
   contexts: ['*'],
-  prefix: 'sn-log-record',
-  label: 'Log record JSON',
-  description: 'Log current ctx.record as formatted JSON',
+  prefix: 'sn-require',
+  label: 'Load AMD module',
+  description: 'Dynamically load an AMD/RequireJS module by URL',
   locales: {
     'zh-CN': {
-      label: '打印记录 JSON',
-      description: '将 ctx.record 以 JSON 格式输出到控制台',
+      label: '加载 AMD 模块',
+      description: '通过 RequireJS 按 URL 动态加载 AMD 模块',
     },
   },
   content: `
-console.log(ctx.t('Current record JSON:'), JSON.stringify(ctx.record ?? {}, null, 2));
-ctx.message.success(ctx.t('Printed to console'));
+// Load an external library (AMD/RequireJS)
+const dayjs = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/dayjs@1/dayjs.min.js');
+console.log('dayjs loaded:', dayjs?.default || dayjs);
 `,
 };
+
 export default snippet;
