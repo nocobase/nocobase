@@ -89,10 +89,6 @@ FormSubmitActionModel.registerFlow({
 
         ctx.message.success(ctx.t('Saved successfully'));
 
-        const parentBlockModel = ctx.currentFlow?.blockModel as CollectionBlockModel;
-        if (parentBlockModel) {
-          parentBlockModel.resource.refresh();
-        }
         if (ctx.view) {
           ctx.view.close();
         }

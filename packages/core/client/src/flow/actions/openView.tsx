@@ -731,5 +731,8 @@ export const openView = defineAction({
       },
       onOpen: ctx.inputArgs.onOpen,
     });
+
+    // 当弹窗关闭时，自动刷新一次当前区块的数据
+    await ctx.resource?.refresh();
   },
 });
