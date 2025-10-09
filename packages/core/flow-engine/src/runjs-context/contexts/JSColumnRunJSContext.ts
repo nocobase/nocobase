@@ -32,6 +32,7 @@ JSColumnRunJSContext.define({
     onRefReady:
       'Wait for cell DOM element to be ready before executing callback. Parameters: (ref, callback, timeout?) => void',
     requireAsync: 'Load external library by URL: `const lib = await ctx.requireAsync(url)`',
+    importAsync: 'Dynamically import ESM module by URL: `const mod = await ctx.importAsync(url)`',
   },
 });
 
@@ -50,6 +51,7 @@ JSColumnRunJSContext.define(
     methods: {
       onRefReady: '等待单元格 DOM 就绪后执行回调。参数：(ref, callback, timeout?)',
       requireAsync: '按 URL 异步加载外部库：`const lib = await ctx.requireAsync(url)`',
+      importAsync: '按 URL 动态导入 ESM 模块：`const mod = await ctx.importAsync(url)`',
     },
   },
   { locale: 'zh-CN' },

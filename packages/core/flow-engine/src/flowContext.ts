@@ -888,6 +888,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare router: Router;
   declare dataSourceManager: DataSourceManager;
   declare requireAsync: (url: string) => Promise<any>;
+  declare importAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
   /**
    * @deprecated use `resolveJsonTemplate` instead
@@ -1181,6 +1182,40 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         );
       });
     });
+    // 动态按 URL 加载 ESM 模块
+    // - 使用 Vite / Webpack ignore 注释，避免被预打包或重写
+    // - 返回模块命名空间对象（包含 default 与命名导出）
+    this.defineMethod('importAsync', async (url: string) => {
+      if (!url || typeof url !== 'string') {
+        throw new Error('invalid url');
+      }
+      const u = url.trim();
+      const g = globalThis as any;
+      g.__nocobaseImportAsyncCache = g.__nocobaseImportAsyncCache || new Map<string, Promise<any>>();
+      const cache: Map<string, Promise<any>> = g.__nocobaseImportAsyncCache;
+      if (cache.has(u)) return cache.get(u)!;
+      // 尝试使用原生 dynamic import（加上 vite/webpack 的 ignore 注释）
+      const nativeImport = () => import(/* @vite-ignore */ /* webpackIgnore: true */ u);
+      // 兜底方案：通过 eval 在运行时构造 import，避免被打包器接管
+      const evalImport = () => {
+        const importer = (0, eval)('u => import(u)');
+        return importer(u);
+      };
+      const p = (async () => {
+        try {
+          return await nativeImport();
+        } catch (err: any) {
+          // 常见于打包产物仍然拦截了 dynamic import 或开发态插件未识别 ignore 注释
+          try {
+            return await evalImport();
+          } catch (err2) {
+            throw err2 || err;
+          }
+        }
+      })();
+      cache.set(u, p);
+      return p;
+    });
     this.defineMethod('createJSRunner', async function (options?: JSRunnerOptions) {
       try {
         const mod: any = await import('./runjs-context/setup');
@@ -1308,6 +1343,19 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         context: this.createProxy(),
       });
     });
+    // Provide useResource in base engine context so RunJS can call it directly
+    this.defineMethod(
+      'useResource',
+      function (
+        this: BaseFlowEngineContext,
+        className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource',
+      ) {
+        if (this.has('resource')) return;
+        this.defineProperty('resource', {
+          get: () => this.createResource(className),
+        });
+      },
+    );
   }
 }
 

@@ -52,6 +52,8 @@ export function defineBaseContextMeta() {
       t: 'Internationalization function for translating text. Parameters: (key: string, variables?: object) => string. Example: `ctx.t("Hello {name}", { name: "World" })`',
       requireAsync:
         'Asynchronously load external libraries from URL. Parameters: (url: string) => Promise<any>. Example: `const lodash = await ctx.requireAsync("https://cdn.jsdelivr.net/npm/lodash")`',
+      importAsync:
+        'Dynamically import ESM module by URL. Parameters: (url: string) => Promise<Module>. Example: `const mod = await ctx.importAsync("https://cdn.jsdelivr.net/npm/lit-html@2/+esm")`',
       resolveJsonTemplate:
         'Resolve JSON templates containing variable expressions with {{ }} syntax. Parameters: (template: any, context?: object) => any',
       runAction: {
@@ -127,6 +129,8 @@ export function defineBaseContextMeta() {
         t: '国际化函数，用于翻译文案。参数：(key: string, variables?: object) => string。示例：`ctx.t("你好 {name}", { name: "世界" })`',
         requireAsync:
           '按 URL 异步加载外部库。参数：(url: string) => Promise<any>。示例：`const lodash = await ctx.requireAsync("https://cdn.jsdelivr.net/npm/lodash")`',
+        importAsync:
+          '按 URL 动态导入 ESM 模块（开发/生产均可用）。参数：(url: string) => Promise<Module>。示例：`const mod = await ctx.importAsync("https://cdn.jsdelivr.net/npm/lit-html@2/+esm")`',
         resolveJsonTemplate: '解析含 {{ }} 变量表达式的 JSON 模板。参数：(template: any, context?: object) => any',
         runAction: {
           description:

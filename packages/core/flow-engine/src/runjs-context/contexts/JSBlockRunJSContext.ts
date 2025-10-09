@@ -34,6 +34,7 @@ JSBlockRunJSContext.define({
       Parameters: (ref: React.RefObject, callback: (element: HTMLElement) => void, timeout?: number) => void
       Example: ctx.onRefReady(ctx.ref, (el) => { el.innerHTML = "Ready!" })`,
     requireAsync: 'Load external library: `const lib = await ctx.requireAsync(url)`',
+    importAsync: 'Dynamically import ESM module: `const mod = await ctx.importAsync(url)`',
   },
 });
 
@@ -56,6 +57,7 @@ JSBlockRunJSContext.define(
     methods: {
       onRefReady: '容器 ref 就绪回调：\n```js\nctx.onRefReady(ctx.ref, el => { /* ... */ })\n```',
       requireAsync: '加载外部库：`const lib = await ctx.requireAsync(url)`',
+      importAsync: '按 URL 动态导入 ESM 模块：`const mod = await ctx.importAsync(url)`',
     },
   },
   { locale: 'zh-CN' },
