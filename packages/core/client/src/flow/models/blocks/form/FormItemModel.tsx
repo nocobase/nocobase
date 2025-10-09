@@ -169,11 +169,11 @@ FormItemModel.registerFlow({
       },
       defaultParams: (ctx) => {
         return {
-          label: ctx.collectionField.title,
+          label: ctx.collectionField?.title,
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ label: params.label || ctx.collectionField.title });
+        ctx.model.setProps({ label: params.label || ctx.collectionField?.title });
       },
     },
     aclCheck: {

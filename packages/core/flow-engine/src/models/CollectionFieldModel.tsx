@@ -9,9 +9,11 @@
 
 import { Card, Form } from 'antd';
 import _ from 'lodash';
-import React from 'react';
+import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { CollectionField } from '../data-source';
 import { FlowEngineContext } from '../flowContext';
+import { useFlowModel } from '../hooks';
 import { DefaultStructure } from '../types';
 import { escapeT } from '../utils';
 import { FlowModel } from './flowModel';
@@ -33,6 +35,34 @@ export function FieldPlaceholder() {
   );
 }
 
+export function FieldDeletePlaceholder() {
+  const { t } = useTranslation();
+  const model: any = useFlowModel();
+  const blockModel = model.context.blockModel;
+  const dataSource = blockModel.collection.dataSource;
+  const collection = blockModel.collection;
+  const name = model.fieldPath;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}${name}`;
+  }, []);
+  return (
+    <Form.Item>
+      <div
+        style={{
+          color: 'rgba(0,0,0,0.45)',
+        }}
+      >
+        {t(`The {{type}} "{{name}}" may have been deleted. Please remove this {{blockType}}.`, {
+          type: t('Field'),
+          name: nameValue,
+          blockType: t('Field'),
+        }).replaceAll('&gt;', '>')}
+      </div>
+    </Form.Item>
+  );
+}
 export interface FieldSettingsInitParams {
   dataSourceKey: string;
   collectionName: string;
@@ -51,8 +81,12 @@ const defaultWhen = () => true;
 
 export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   private static _bindings = new Map();
+  fieldDeleted = false;
 
   renderHiddenInConfig(): React.ReactNode | undefined {
+    if (this.fieldDeleted) {
+      return <FieldDeletePlaceholder />;
+    }
     return <FieldPlaceholder />;
   }
 
