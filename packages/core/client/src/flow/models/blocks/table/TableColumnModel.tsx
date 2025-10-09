@@ -325,7 +325,7 @@ TableColumnModel.registerFlow({
       title: escapeT('Label field'),
 
       beforeParamsSave: async (ctx, params, previousParams) => {
-        if (!ctx.collectionField.isAssociationField()) {
+        if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
           return null;
         }
         if (params.label !== previousParams.label) {
@@ -356,6 +356,9 @@ TableColumnModel.registerFlow({
         }
       },
       handler(ctx, params) {
+        if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
+          return null;
+        }
         ctx.model.setProps({
           titleField: params.label,
           ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
