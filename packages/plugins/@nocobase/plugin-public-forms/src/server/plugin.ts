@@ -32,13 +32,12 @@ export class PluginPublicFormsServer extends Plugin {
       appends.map((v) => {
         const targetCollection = this.db.getCollection(v);
         return {
-          name: targetCollection.name,
+          ...targetCollection.options,
           fields: targetCollection.getFields().map((v) => {
             return {
               ...v.options,
             };
           }),
-          template: targetCollection.options.template,
         };
       }),
     );
