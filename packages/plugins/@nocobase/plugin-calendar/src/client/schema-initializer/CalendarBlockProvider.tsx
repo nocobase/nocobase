@@ -20,6 +20,7 @@ const InternalCalendarBlockProvider = (props) => {
   const { fieldNames, showLunar, defaultView, enableQuickCreateEvent, weekStart } = props;
   const field = useField();
   const { resource, service } = useBlockRequestContext();
+  const collection = useCollection();
 
   return (
     <CalendarBlockContext.Provider
@@ -27,7 +28,7 @@ const InternalCalendarBlockProvider = (props) => {
         field,
         service,
         resource,
-        fieldNames,
+        fieldNames: { ...fieldNames, id: collection.filterTargetKey },
         showLunar,
         defaultView,
         enableQuickCreateEvent: enableQuickCreateEvent ?? true,
