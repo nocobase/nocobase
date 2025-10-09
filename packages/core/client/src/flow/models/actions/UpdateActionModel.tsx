@@ -10,8 +10,10 @@
 import { escapeT, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Alert, ButtonProps } from 'antd';
 import React, { useEffect, useRef } from 'react';
-import { ActionModel, ActionSceneEnum, CollectionActionModel, RecordActionModel } from '../base';
-import { AssignFormModel } from '../blocks';
+import { ActionModel, ActionSceneEnum } from '../base/ActionModel';
+import { CollectionActionModel } from '../base/CollectionActionModel';
+import { RecordActionModel } from '../base/RecordActionModel';
+import { AssignFormModel } from '../blocks/assign-form/AssignFormModel';
 // import { RemoteFlowModelRenderer } from '../../FlowPage';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
