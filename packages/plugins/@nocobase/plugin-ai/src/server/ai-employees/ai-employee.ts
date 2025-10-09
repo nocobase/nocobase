@@ -80,6 +80,14 @@ export class AIEmployee {
       throw new Error('LLM service not configured');
     }
 
+    if (modelSettings?.builtIn?.webSearch === true) {
+      if (this.webSearch !== false) {
+        modelSettings.builtIn.webSearch = true;
+      } else {
+        modelSettings.builtIn.webSearch = false;
+      }
+    }
+
     const service = await this.db.getRepository('llmServices').findOne({
       filter: {
         name: modelSettings.llmService,
@@ -732,7 +740,6 @@ export class AIEmployee {
       provider,
       getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
       tools: await this.getTools(),
-      webSearch: this.webSearch,
     });
 
     const { stream, signal } = await this.prepareChatStream(chatContext, provider);
@@ -765,7 +772,6 @@ export class AIEmployee {
         provider,
         getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
         tools: await this.getTools(),
-        webSearch: this.webSearch,
       });
       const { stream, signal } = await this.prepareChatStream(chatContext, provider);
 
@@ -793,7 +799,6 @@ export class AIEmployee {
         getSystemPrompt: async (aiMessages) => await this.getSystemPrompt(aiMessages),
         messageId,
         tools: await this.getTools(),
-        webSearch: this.webSearch,
       });
       const { stream, signal } = await this.prepareChatStream(chatContext, provider);
 

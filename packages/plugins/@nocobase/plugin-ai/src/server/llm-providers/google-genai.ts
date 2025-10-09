@@ -8,7 +8,7 @@
  */
 
 import { ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings } from '@langchain/google-genai';
-import { BuiltInToolOptions, EmbeddingProvider, LLMProvider } from './provider';
+import { EmbeddingProvider, LLMProvider } from './provider';
 import axios from 'axios';
 import { Model } from '@nocobase/database';
 import { encodeFile } from '../utils';
@@ -127,8 +127,8 @@ export class GoogleGenAIProvider extends LLMProvider {
     }
   }
 
-  protected builtInTools(options: BuiltInToolOptions): any[] {
-    if (this.modelOptions?.builtIn?.webSearch === true && options?.filter?.webSearch !== false) {
+  protected builtInTools(): any[] {
+    if (this.modelOptions?.builtIn?.webSearch === true) {
       const groundingTool = {
         googleSearch: {},
       };

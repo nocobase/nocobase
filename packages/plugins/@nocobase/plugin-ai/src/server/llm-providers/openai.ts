@@ -8,7 +8,7 @@
  */
 
 import { ChatOpenAI, OpenAIEmbeddings } from '@langchain/openai';
-import { LLMProvider, EmbeddingProvider, BuiltInToolOptions } from './provider';
+import { LLMProvider, EmbeddingProvider } from './provider';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { Model } from '@nocobase/database';
@@ -97,8 +97,8 @@ export class OpenAIProvider extends LLMProvider {
     };
   }
 
-  protected builtInTools(options: BuiltInToolOptions): any[] {
-    if (this.modelOptions?.builtIn?.webSearch === true && options?.filter?.webSearch !== false) {
+  protected builtInTools(): any[] {
+    if (this.modelOptions?.builtIn?.webSearch === true) {
       const webSearchTool = {
         type: 'web_search_preview',
       };
