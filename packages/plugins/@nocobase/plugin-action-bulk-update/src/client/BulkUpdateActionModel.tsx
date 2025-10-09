@@ -64,15 +64,6 @@ function AssignFieldsEditor() {
     //               action.context.t('Current record'),
     //             ),
     // });
-    const grid = formModel?.subModels?.grid;
-    const items = grid?.subModels?.items || [];
-    for (const it of items) {
-      const saved =
-        typeof it?.getStepParams === 'function' ? it.getStepParams('fieldSettings', 'assignValue')?.value : undefined;
-      if (typeof saved !== 'undefined') {
-        (it as any).assignValue = saved;
-      }
-    }
     initializedRef.current = true;
   }, [action, blockModel?.collection, formModel]);
 
@@ -158,23 +149,11 @@ BulkUpdateActionModel.registerFlow({
       },
       async beforeParamsSave(ctx) {
         const m = ctx.model as BulkUpdateActionModel;
-        let form: AssignFormModel = (m?.assignFormUid && (ctx.engine.getModel?.(m.assignFormUid) as any)) as any;
-        if (!form && ctx.engine) {
-          form = (await ctx.engine.loadModel({
-            uid: m.assignFormUid || undefined,
-            parentId: ctx.model.uid,
-            subKey: 'assignForm',
-          })) as any;
-        }
+        // 跨视图栈按 uid 定位到设置面板中的真实 AssignForm 实例
+        const form: AssignFormModel = (m?.assignFormUid &&
+          (ctx.engine.getModel?.(m.assignFormUid, true) as any)) as any;
         if (!form) return;
         const assignedValues = form?.getAssignedValues?.() || {};
-        const grid = (form as any)?.subModels?.grid;
-        const items = grid?.subModels?.items || [];
-        for (const it of items) {
-          if (typeof it?.setStepParams === 'function') {
-            it.setStepParams('fieldSettings', 'assignValue', { value: (it as any).assignValue });
-          }
-        }
         ctx.model.setStepParams(SETTINGS_FLOW_KEY, 'assignFieldValues', { assignedValues });
       },
     },
