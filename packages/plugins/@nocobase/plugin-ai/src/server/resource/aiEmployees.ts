@@ -13,15 +13,20 @@ import PluginAIServer from '../plugin';
 import type { AIEmployee } from '../../collections/ai-employees';
 
 export const list = async (ctx: Context, next: Next) => {
+  const { paginate } = ctx.action.params || {};
   const plugin = ctx.app.pm.get('ai') as PluginAIServer;
   const builtInManager = plugin.builtInManager;
 
   await actions.list(ctx as Context, () => {});
 
   const locale = ctx.getCurrentLocale();
-  ctx.body.rows.forEach((row) => {
+  let data = ctx.body.rows;
+  if (paginate === 'false' || paginate === false) {
+    data = ctx.body;
+  }
+  data.forEach((row: AIEmployee) => {
     if (row.builtIn) {
-      builtInManager.setupBuiltInInfo(locale, row as AIEmployee);
+      builtInManager.setupBuiltInInfo(locale, row);
     }
   });
 
