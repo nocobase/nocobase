@@ -732,7 +732,7 @@ export const openView = defineAction({
       onOpen: ctx.inputArgs.onOpen,
     });
 
-    // 当弹窗关闭时，自动刷新一次当前区块的数据
+    // Automatically refresh the current block's data when the popup is closed
     await ctx.resource?.refresh();
   },
 });
