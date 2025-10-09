@@ -120,27 +120,25 @@ export const useMigrateData = () => {
   const port = React.useRef<any>();
   const api = useAPIClient();
   const { t } = usePluginUtils();
+  const [form] = Form.useForm();
   return {
     async run() {
-      console.log('migrateData');
+      form.resetFields();
       await Modal.confirm({
         title: t('Migrate data'),
         content: (
-          <Form.Item
-            label={t('Port')}
-            tooltip={t(
-              'When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate.',
-            )}
-          >
-            <InputNumber
-              onChange={(value) => {
-                port.current = value as number;
-              }}
-              defaultValue={port.current}
-              style={{ width: '100%' }}
-              min={1}
-            />
-          </Form.Item>
+          <Form form={form}>
+            <Form.Item
+              label={t('Port')}
+              tooltip={t(
+                'When migrate data, the system automatically assigns an incrementing port number to each application based on this port number. You can also manually modify port number after the migrate.',
+              )}
+              rules={[{ required: true, message: t('Port is required') }]}
+              name="port"
+            >
+              <InputNumber style={{ width: '100%' }} min={1} />
+            </Form.Item>
+          </Form>
         ),
         onOk: async () => {
           const { data } = await api.resource('pm').get({
@@ -150,11 +148,12 @@ export const useMigrateData = () => {
             message.error(t('Multi-app is not enabled, please enable it first'));
             return;
           }
+          const values = await form.validateFields();
           await api.request({
             url: 'multiApplications:importFromMultiappManager',
             method: 'post',
             data: {
-              port: port.current,
+              port: values.port,
             },
           });
           message.success(t('Migrate successfully'));
