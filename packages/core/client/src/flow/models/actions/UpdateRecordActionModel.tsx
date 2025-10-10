@@ -71,7 +71,20 @@ function AssignFieldsEditor() {
   return formModel ? <FlowModelRenderer model={formModel} showFlowSettings={false} /> : null;
 }
 
-export class UpdateActionModel extends ActionModel<{
+function Info() {
+  const ctx = useFlowSettingsContext();
+  return (
+    <Alert
+      type="info"
+      showIcon
+      message={ctx.t(
+        'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
+      )}
+    />
+  );
+}
+
+export class UpdateRecordActionModel extends ActionModel<{
   subModels: {
     assignForm: AssignFormModel;
   };
@@ -81,7 +94,7 @@ export class UpdateActionModel extends ActionModel<{
   assignFormUid?: string;
 
   defaultProps: ButtonProps = {
-    title: escapeT('Update'),
+    title: escapeT('Update record'),
     type: 'link',
   };
 
@@ -90,8 +103,8 @@ export class UpdateActionModel extends ActionModel<{
   }
 }
 
-UpdateActionModel.define({
-  label: escapeT('Update'),
+UpdateRecordActionModel.define({
+  label: escapeT('Update record'),
   // 使用函数型 createModelOptions，从父级上下文提取资源信息，直接注入到子模型的 resourceSettings.init
   createModelOptions: (ctx) => {
     const dsKey = ctx.collection.dataSourceKey;
@@ -109,7 +122,7 @@ UpdateActionModel.define({
   },
 });
 
-UpdateActionModel.registerFlow({
+UpdateRecordActionModel.registerFlow({
   key: SETTINGS_FLOW_KEY,
   title: escapeT('Action settings'),
   // 配置流仅用于收集参数，避免作为自动流程执行
@@ -131,9 +144,7 @@ UpdateActionModel.registerFlow({
         return {
           tip: {
             'x-decorator': 'FormItem',
-            'x-component': () => (
-              <Alert type="info" showIcon message={'点击当前自定义按钮时，当前数据以下字段将按照以下表单保存。'} />
-            ),
+            'x-component': () => <Info />,
           },
           editor: {
             'x-decorator': 'FormItem',
@@ -142,7 +153,7 @@ UpdateActionModel.registerFlow({
         };
       },
       async beforeParamsSave(ctx) {
-        const m = ctx.model as UpdateActionModel;
+        const m = ctx.model as UpdateRecordActionModel;
         // 跨视图栈按 uid 定位到设置面板中的真实 AssignForm 实例
         const form: AssignFormModel = m?.assignFormUid && ctx.engine.getModel?.(m.assignFormUid, true);
         if (!form) return;
@@ -155,7 +166,7 @@ UpdateActionModel.registerFlow({
   },
 });
 
-UpdateActionModel.registerFlow({
+UpdateRecordActionModel.registerFlow({
   key: 'apply',
   on: 'click',
   steps: {

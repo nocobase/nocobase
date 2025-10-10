@@ -57,13 +57,9 @@ function AssignFieldsEditor() {
     formModel.setInitialAssignedValues(prev?.assignedValues || {});
     // 批量配置态：移除 ctx.record（Action 为区块级，不具备单条记录上下文）
     // formModel.context.defineProperty('formValues', { get: () => undefined });
-    // formModel.context.defineProperty('record', {
-    //   get: () => action.context.record,
-    //   meta: createCollectionContextMeta(
-    //               () => action.context.dataSourceManager.getDataSource(dsKey).getCollection(collName),
-    //               action.context.t('Current record'),
-    //             ),
-    // });
+    formModel.context.defineProperty('record', {
+      get: () => undefined,
+    });
     initializedRef.current = true;
   }, [action, blockModel?.collection, formModel]);
 
@@ -119,7 +115,7 @@ BulkUpdateActionModel.registerFlow({
       defaultParams: {
         enable: false,
         title: escapeT('Bulk update'),
-        content: 'Are you sure you want to proceed with this action?',
+        content: escapeT('Are you sure you want to perform the Update record action?'),
       },
     },
     updateMode: {

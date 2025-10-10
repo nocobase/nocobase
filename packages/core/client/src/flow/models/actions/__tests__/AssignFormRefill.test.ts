@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { UpdateActionModel } from '../UpdateActionModel';
+import { UpdateRecordActionModel } from '../UpdateRecordActionModel';
 
 /**
  * 精简版 AssignFormModel（仅用于单测）：
@@ -26,13 +26,13 @@ class TestAssignFormModel extends FlowModel {
 }
 
 describe('AssignForm value refill and save (beforeParamsSave)', () => {
-  it('UpdateActionModel: saves non-empty assignedValues from AssignForm', async () => {
+  it('UpdateRecordActionModel: saves non-empty assignedValues from AssignForm', async () => {
     const root = new FlowEngine();
 
     // 仅 root 引擎：真实场景视图作用域引擎由弹窗创建，此处不需 link 模拟
-    root.registerModels({ UpdateActionModel, AssignFormModel: TestAssignFormModel });
+    root.registerModels({ UpdateRecordActionModel, AssignFormModel: TestAssignFormModel });
 
-    const action = root.createModel<UpdateActionModel>({ use: 'UpdateActionModel', uid: 'act-u' });
+    const action = root.createModel<UpdateRecordActionModel>({ use: 'UpdateRecordActionModel', uid: 'act-u' });
 
     const form = root.createModel<TestAssignFormModel>({
       use: 'AssignFormModel',

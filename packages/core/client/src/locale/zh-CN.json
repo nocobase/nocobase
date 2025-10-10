@@ -1392,5 +1392,6 @@
   "Expand button": "展开",
   "Collapse settings": "折叠设置",
   "Upload file settings": "文件上传设置",
-  "Allow selection of existing file": "允许选择已有文件"
+  "Allow selection of existing file": "允许选择已有文件",
+  "No assigned fields configured": "未配置字段"
 }
