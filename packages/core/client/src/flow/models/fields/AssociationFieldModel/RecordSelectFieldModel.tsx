@@ -351,7 +351,7 @@ RecordSelectFieldModel.registerFlow({
     allowMultiple: {
       title: escapeT('Allow multiple'),
       uiSchema(ctx) {
-        if (['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.model.context.collectionField.type)) {
+        if (ctx.collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)) {
           return {
             allowMultiple: {
               'x-component': 'Switch',
@@ -365,9 +365,9 @@ RecordSelectFieldModel.registerFlow({
       },
       defaultParams(ctx) {
         return {
-          allowMultiple: ['belongsToMany', 'hasMany', 'belongsToArray'].includes(
-            ctx.model.context.collectionField.type,
-          ),
+          allowMultiple:
+            ctx.collectionField &&
+            ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.model.context.collectionField.type),
         };
       },
       handler(ctx, params) {

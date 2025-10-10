@@ -18,7 +18,11 @@ export const aclCheck = defineAction({
       actionName: ctx.model.context.actionName,
       fields: ctx.model.context?.collectionField && [ctx.model.context.collectionField.name],
     });
-
+    if (ctx.fieldPath && !ctx.collectionField) {
+      ctx.model.fieldDeleted = true;
+      ctx.model.hidden = true;
+      ctx.exitAll();
+    }
     if (!result) {
       ctx.model.hidden = true;
       ctx.exitAll();

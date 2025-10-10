@@ -490,6 +490,7 @@ export class Collection {
   }
 
   getField(fieldName: string): CollectionField | undefined {
+    this.setFields(this.options.fields); //数据表字段被删除
     return this.fields.get(fieldName);
   }
 

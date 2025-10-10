@@ -141,7 +141,7 @@ ClickableFieldModel.registerFlow({
     displayStyle: {
       title: escapeT('Display style'),
       uiSchema: (ctx) => {
-        if (['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'].includes(ctx.collectionField.interface)) {
+        if (['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'].includes(ctx.collectionField?.interface)) {
           return null;
         }
 
