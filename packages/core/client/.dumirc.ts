@@ -14,13 +14,15 @@ export default defineConfig({
   alias: {
     ...umiConfig.alias,
   },
+  publicPath: process.env.DEPLOY_SITE === 'local' ? '/' : '/flow-engine/',
+  base: process.env.DEPLOY_SITE === 'local' ? '/' : '/flow-engine',
   fastRefresh: false, // 热更新会导致 Context 丢失，不开启
   // ssr: {},
   // exportStatic: {
   //   ignorePreRenderError: true
   // },
   cacheDirectoryPath: `node_modules/.docs-client-${lang}-cache`,
-  outputPath: `./dist/${lang}`,
+  outputPath: `./dist/flow-engine`,
   resolve: {
     docDirs: [`./docs/${lang}`],
     atomDirs: [
