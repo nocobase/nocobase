@@ -88,38 +88,40 @@ export const WorkbenchAction = withDynamicSchemaProps((props) => {
 
     return (
       <ACLActionProvider>
-        <div
-          className={css`
-            .ant-btn > span {
-              width: 100%;
-            }
-          `}
-        >
-          <Component
-            className={cx(className, styles.action, 'nb-action-panel')}
-            {...others}
-            onlyIcon={false}
-            type="text"
-            icon={null}
-            title={
-              <List.Item
-                prefix={<Avatar style={{ backgroundColor }} icon={<Icon type={icon} />} />}
-                onClick={() => {}}
-                style={{ marginTop: '5px' }}
-              >
-                <Button onlyIcon={others?.onlyIcon} />
-              </List.Item>
-            }
-            confirmTitle={fieldSchema.title}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '100%',
-              backgroundColor: 'rgb(255, 255, 255)',
-            }}
-          />
-        </div>
+        <Component
+          className={cx(
+            className,
+            styles.action,
+            'nb-action-panel',
+            css`
+              > span {
+                width: 100%;
+              }
+              padding-top: 0px !important;
+            `,
+          )}
+          {...others}
+          onlyIcon={false}
+          type="text"
+          icon={null}
+          title={
+            <List.Item
+              prefix={<Avatar style={{ backgroundColor }} icon={<Icon type={icon} />} />}
+              onClick={() => {}}
+              style={{ marginTop: '5px' }}
+            >
+              <Button onlyIcon={others?.onlyIcon} />
+            </List.Item>
+          }
+          confirmTitle={fieldSchema.title}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: '100%',
+            backgroundColor: 'rgb(255, 255, 255)',
+          }}
+        />
       </ACLActionProvider>
     );
   } else {

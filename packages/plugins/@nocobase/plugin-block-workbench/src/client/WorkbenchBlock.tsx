@@ -134,6 +134,10 @@ const useStyles = createStyles(({ token, css }) => ({
         margin-bottom: ${token.paddingLG}px;
         margin-left: ${token.paddingLG}px;
       }
+      .adm-list-body-inner {
+        margin-top: 6px;
+        margin-bottom: 3px;
+      }
     }
   `,
 }));
