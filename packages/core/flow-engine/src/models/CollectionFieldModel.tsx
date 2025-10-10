@@ -115,7 +115,7 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
   }
 
   getFieldSettingsInitParams(): FieldSettingsInitParams {
-    return this.getStepParams('fieldSettings', 'init');
+    return this.getStepParams('fieldSettings', 'init') || {};
   }
 
   get fieldPath(): string {

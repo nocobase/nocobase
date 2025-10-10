@@ -338,7 +338,6 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   }
 
   addAppends(fieldPath: string, refresh = false) {
-    console.log(fieldPath);
     if (!fieldPath) {
       return;
     }
