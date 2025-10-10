@@ -42,6 +42,7 @@ import { useGetAriaLabelOfAddButton, useWorkflowExecuted } from '../hooks';
 import { lang } from '../locale';
 import useStyles from '../style';
 import { UseVariableOptions, VariableOption, WorkflowVariableInput } from '../variable';
+import { useRemoveNodeContext } from '../RemoveNodeContext';
 
 export type NodeAvailableContext = {
   engine: WorkflowPlugin;
@@ -197,15 +198,14 @@ export function RemoveButton() {
   const current = useNodeContext();
   const { modal } = App.useApp();
   const executed = useWorkflowExecuted();
-
-  const resource = api.resource('flow_nodes');
+  const removeNodeContext = useRemoveNodeContext();
 
   const onOk = useCallback(async () => {
-    await resource.destroy?.({
+    await api.resource('flow_nodes').destroy?.({
       filterByTk: current.id,
     });
     refresh();
-  }, [current.id, refresh, resource]);
+  }, [current.id, refresh, api]);
 
   const onRemove = useCallback(async () => {
     const usingNodes = nodes.filter((node) => {
@@ -231,23 +231,23 @@ export function RemoveButton() {
       return;
     }
 
-    const hasBranches = !nodes.find((item) => item.upstream === current && item.branchIndex != null);
-    const message = hasBranches
-      ? t('Are you sure you want to delete it?')
-      : lang('This node contains branches, deleting will also be preformed to them, are you sure?');
+    const branches = nodes.filter((item) => item.upstream === current && item.branchIndex != null);
+    if (!branches.length) {
+      modal.confirm({
+        title: t('Delete'),
+        content: t('Are you sure you want to delete it?'),
+        onOk,
+      });
+    } else {
+      removeNodeContext?.setDeletingNode(current);
+    }
+  }, [current, modal, nodes, onOk, removeNodeContext, t]);
 
-    modal.confirm({
-      title: t('Delete'),
-      content: message,
-      onOk,
-    });
-  }, [current, modal, nodes, onOk, t]);
-
-  if (!workflow) {
+  if (!workflow || executed) {
     return null;
   }
 
-  return executed ? null : (
+  return (
     <Button
       type="text"
       shape="circle"

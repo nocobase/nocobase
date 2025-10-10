@@ -42,9 +42,12 @@ export function AddButton(props: AddButtonProps) {
   const { upstream, branchIndex = null } = props;
   const { workflow } = useFlowContext() ?? {};
   const { styles } = useStyles();
-  const { anchor, creating, onMenuOpen } = useAddNodeContext();
+  const addNodeContext = useAddNodeContext();
   const executed = useWorkflowExecuted();
-  const onOpen = useCallback(() => onMenuOpen({ upstream, branchIndex }), [onMenuOpen, upstream, branchIndex]);
+  const onOpen = useCallback(
+    () => addNodeContext.onMenuOpen({ upstream, branchIndex }),
+    [addNodeContext, upstream, branchIndex],
+  );
 
   if (!workflow) {
     return null;
@@ -59,10 +62,15 @@ export function AddButton(props: AddButtonProps) {
           aria-label={props['aria-label'] || 'add-button'}
           shape="circle"
           icon={<PlusOutlined />}
-          loading={creating?.upstreamId == upstream?.id && creating?.branchIndex === branchIndex}
+          loading={
+            addNodeContext.creating?.upstreamId == upstream?.id && addNodeContext.creating?.branchIndex === branchIndex
+          }
           size="small"
           onClick={onOpen}
-          className={cx({ anchoring: anchor?.upstream === upstream && anchor?.branchIndex === branchIndex })}
+          className={cx({
+            anchoring:
+              addNodeContext.anchor?.upstream === upstream && addNodeContext.anchor?.branchIndex === branchIndex,
+          })}
         />
       )}
     </div>
@@ -109,6 +117,7 @@ function useAddNodeSubmitAction() {
         }
         ctx.setVisible(false);
         setPresetting(null);
+        form.reset();
         refresh();
       } catch (err) {
         console.error(err);

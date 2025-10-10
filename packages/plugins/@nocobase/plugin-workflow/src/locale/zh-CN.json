@@ -235,7 +235,10 @@
   "Succeeded": "成功",
   "Test run": "测试执行",
   "Test run will do the actual data manipulating or API calling, please use with caution.": "测试执行会进行实际的数据操作或 API 调用，请谨慎使用。",
+  "Replace variables": "替换变量",
   "No variable": "无变量",
+  "Result": "结果",
+  "Log": "日志",
 
   "Add node": "添加节点",
   "Move all downstream nodes to": "将所有下游节点移至",
@@ -245,6 +248,12 @@
   "Workflow todos": "流程待办",
   "New version enabled": "已启用新版本",
   "Workflow is not exists": "工作流不存在",
+
+  "Delete node": "删除节点",
+  "Branch to keep": "保留分支",
+  "Delete all": "删除全部",
+  "Keep one of the branches": "保留其中一个分支",
+  "Keep the branch": "保留分支",
 
   "Select users": "选择用户",
   "Query users": "查询用户",
