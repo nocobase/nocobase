@@ -338,6 +338,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   }
 
   addAppends(fieldPath: string, refresh = false) {
+    console.log(fieldPath);
     if (!fieldPath) {
       return;
     }
@@ -366,6 +367,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         return;
       }
       if (field.isAssociationField()) {
+        console.log(field.name);
         (this.resource as BaseRecordResource).addAppends(field.name);
         if (refresh) {
           this.resource.refresh();

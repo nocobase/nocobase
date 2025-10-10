@@ -317,6 +317,9 @@ TableColumnModel.registerFlow({
     quickEdit: {
       title: escapeT('Enable quick edit'),
       uiSchema: (ctx) => {
+        if (!ctx.model.collectionField) {
+          return;
+        }
         const blockCollectionName = ctx.model.context.blockModel.collection.name;
         const fieldCollectionName = ctx.model.collectionField.collectionName;
         if (blockCollectionName !== fieldCollectionName) {
