@@ -137,6 +137,9 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
   }
 
   static getBindingsByField(ctx: FlowEngineContext, collectionField: CollectionField): BindingOptions[] {
+    if (!collectionField) {
+      return;
+    }
     const interfaceName = collectionField.interface;
 
     // Check if the interface exists in the map

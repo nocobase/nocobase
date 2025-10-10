@@ -181,10 +181,6 @@ FormItemModel.registerFlow({
     },
     init: {
       async handler(ctx) {
-        // const collectionField = ctx.model.collectionField;
-        // if (collectionField) {
-        //   ctx.model.setProps(collectionField.getComponentProps());
-        // }
         const fieldPath = ctx.model.fieldPath;
         const fullName = fieldPath.includes('.') ? fieldPath.split('.') : fieldPath;
         ctx.model.setProps({
@@ -306,6 +302,9 @@ FormItemModel.registerFlow({
     fieldNames: {
       use: 'titleField',
       uiSchema: async (ctx) => {
+        if (!ctx.collectionField) {
+          return;
+        }
         const isAssociationReadPretty = ctx.collectionField.isAssociationField() && ctx.model.getProps().titleField;
         if (!isAssociationReadPretty) {
           return null;
