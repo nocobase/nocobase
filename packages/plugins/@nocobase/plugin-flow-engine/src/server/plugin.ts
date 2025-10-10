@@ -13,7 +13,7 @@ import { Plugin } from '@nocobase/server';
 import PluginUISchemaStorageServer from './server';
 import { GlobalContext, HttpRequestContext } from './template/contexts';
 import { JSONValue, resolveJsonTemplate } from './template/resolver';
-import { variables } from './variables/registry';
+import { variables, inferSelectsFromUsage } from './variables/registry';
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   private globalContext!: GlobalContext;
@@ -38,6 +38,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     items: Array<{ template: JSONValue; contextParams?: Record<string, unknown> }>,
   ) {
     try {
+      const log = koaCtx.app?.logger?.child({ module: 'plugin-flow-engine', submodule: 'variables.prefetch' });
       const groupMap = new Map<
         string,
         { dataSourceKey: string; collection: string; filterByTk: unknown; fields: Set<string>; appends: Set<string> }
@@ -52,12 +53,6 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
         return group;
       };
       const normalizeNestedSeg = (segment: string): string => (/^\d+$/.test(segment) ? `[${segment}]` : segment);
-      const toFirstSeg = (path: string): { segment: string; hasDeep: boolean } => {
-        const m = path.match(/^([^.[]+|\[[^\]]+\])([\s\S]*)$/);
-        const segment = m ? m[1] : '';
-        const rest = m ? m[2] : '';
-        return { segment, hasDeep: rest.includes('.') || rest.includes('[') || rest.length > 0 };
-      };
       for (const it of items) {
         const template = it?.template ?? {};
         const contextParams = (it?.contextParams || {}) as Record<string, any>;
@@ -82,12 +77,12 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
           const filterByTk = (recordParams as any)?.filterByTk;
           if (!collection || typeof filterByTk === 'undefined') continue;
           const group = ensureGroup(dataSourceKey, collection, filterByTk);
-          for (const r of remainders) {
-            const { segment, hasDeep } = toFirstSeg(r);
-            if (!segment) continue;
-            const key = segment.replace(/^\[(.+)\]$/, '$1');
-            if (hasDeep) group.appends.add(key);
-            else group.fields.add(key);
+          const { generatedAppends, generatedFields } = inferSelectsFromUsage(remainders);
+          if (generatedFields?.length) {
+            generatedFields.forEach((f) => group.fields.add(f));
+          }
+          if (generatedAppends?.length) {
+            generatedAppends.forEach((a) => group.appends.add(a));
           }
         }
       }
@@ -111,12 +106,22 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
             const key = JSON.stringify({ ds: dataSourceKey, c: collection, tk: filterByTk, f: fld, a: app });
             cache.set(key, json);
           }
-        } catch {
-          // ignore prefetch error
+          // only log on exception, skip normal path logs
+        } catch (e: any) {
+          // ignore prefetch error, but log as debug
+          log?.debug('[variables.resolve] prefetch query error', {
+            ds: dataSourceKey,
+            collection,
+            tk: filterByTk,
+            error: e?.message || String(e),
+          });
         }
       }
-    } catch {
-      // ignore prefetch failure entirely
+    } catch (e: any) {
+      // ignore prefetch failure entirely, but log as debug
+      koaCtx.app?.logger
+        ?.child({ module: 'plugin-flow-engine', submodule: 'variables.prefetch' })
+        ?.debug('[variables.resolve] prefetch fatal error', { error: e?.message || String(e) });
     }
   }
 

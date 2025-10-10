@@ -17,6 +17,7 @@
 import _ from 'lodash';
 import { HttpRequestContext, ServerBaseContext } from '../template/contexts';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import type { TargetKey } from '@nocobase/database';
 import { ResourcerContext } from '@nocobase/resourcer';
 import { extractUsedVariablePaths } from '@nocobase/utils';
 
@@ -101,7 +102,7 @@ class VariableRegistry {
 
 /** 变量注册表（全局单例，确保 src/dist 共享同一实例） */
 const GLOBAL_KEY = '__ncbVarRegistry__';
-const g: any = typeof globalThis !== 'undefined' ? globalThis : (global as any);
+const g = (typeof globalThis !== 'undefined' ? globalThis : (global as unknown)) as Record<string, unknown>;
 if (!g[GLOBAL_KEY]) {
   g[GLOBAL_KEY] = new VariableRegistry();
 }
@@ -115,7 +116,10 @@ export const variables: VariableRegistry = g[GLOBAL_KEY] as VariableRegistry;
  * @param paths 使用到的子路径数组
  * @param params 显式参数（仅用于兼容签名）
  */
-function inferSelectsFromUsage(paths: string[] = [], params?: any) {
+export function inferSelectsFromUsage(
+  paths: string[] = [],
+  _params?: unknown,
+): { generatedAppends?: string[]; generatedFields?: string[] } {
   if (!Array.isArray(paths) || paths.length === 0) {
     return { generatedAppends: undefined, generatedFields: undefined };
   }
@@ -123,31 +127,50 @@ function inferSelectsFromUsage(paths: string[] = [], params?: any) {
   const appendSet = new Set<string>();
   const fieldSet = new Set<string>();
 
+  // 规范化：
+  // - 将 ["name"] / ['name'] 转成 .name
+  // - 去除任意位置的数字索引 [0]
+  // - 折叠重复 '.' 并去除首尾 '.'
+  const normalizePath = (raw: string): string => {
+    if (!raw) return '';
+    let s = String(raw);
+    // 去掉所有数字索引（包括中间）
+    s = s.replace(/\[(?:\d+)\]/g, '');
+    // 将字符串索引标准化为点路径
+    s = s.replace(/\[(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\]/g, (_m, g1, g2) => `.${(g1 || g2) as string}`);
+    // 折叠多余点
+    s = s.replace(/\.\.+/g, '.');
+    // 去除起始/结尾点
+    s = s.replace(/^\./, '').replace(/\.$/, '');
+    return s;
+  };
+
   for (let path of paths) {
     if (!path) continue;
-    // 若以数字索引开头（如 [0].name），去掉前导的 [n].，用于推断字段/关联
-    // 这样 record[0].name 的子路径（传入本函数时为 [0].name）会被识别为字段 name，而非关联
+    // 兼容开头是数字索引（如 [0].name）：移除前导 [n].
     while (/^\[(\d+)\](\.|$)/.test(path)) {
       path = path.replace(/^\[(\d+)\]\.?/, '');
     }
-    if (!path) continue;
-    // 若以字符串括号开头（如 ['name'] 或 ["name"])，将其作为首段字段名处理
-    let first = '';
-    let rest = '';
-    const mStr = path.match(/^\[(?:"((?:[^"\\]|\\.)*)"|'((?:[^'\\]|\\.)*)')\](.*)$/);
-    if (mStr) {
-      first = (mStr[1] ?? mStr[2]) || '';
-      rest = mStr[3] || '';
-    } else {
-      // 字符类中 '.' 和 '[' 无需转义，避免 no-useless-escape
-      const m = path.match(/^([^.[]+)([\s\S]*)$/);
-      first = m?.[1] ?? '';
-      rest = m?.[2] ?? '';
+    const norm = normalizePath(path);
+    if (!norm) continue;
+    const segments = norm.split('.').filter(Boolean);
+    if (segments.length === 0) continue;
+
+    if (segments.length === 1) {
+      // 只有一段：表示顶层字段，加入 fields
+      fieldSet.add(segments[0]);
+      continue;
     }
-    if (!first) continue;
-    const hasDeep = rest.includes('.') || rest.includes('[');
-    if (hasDeep) appendSet.add(first);
-    else fieldSet.add(first);
+
+    // 多段：逐级生成 appends（不包含最后一个字段段）
+    // 例：roles.users.nickname -> ['roles', 'roles.users']
+    for (let i = 0; i < segments.length - 1; i++) {
+      appendSet.add(segments.slice(0, i + 1).join('.'));
+    }
+
+    // 同时将叶子字段完整路径加入 fields，减少关联载荷
+    // 例：roles.users.nickname -> fields: ['roles.users.nickname']
+    fieldSet.add(segments.join('.'));
   }
 
   const generatedAppends = appendSet.size ? Array.from(appendSet) : undefined;
@@ -168,6 +191,11 @@ async function fetchRecordWithRequestCache(
   appends?: string[],
 ): Promise<unknown> {
   try {
+    const log = koaCtx.app?.logger?.child({
+      module: 'plugin-flow-engine',
+      submodule: 'variables.resolve',
+      method: 'fetchRecordWithRequestCache',
+    });
     // 确保 state 与 __varResolveBatchCache 始终存在
     const kctx = koaCtx as ResourcerContext & { state?: Record<string, unknown> };
     if (!kctx.state) kctx.state = {};
@@ -190,11 +218,12 @@ async function fetchRecordWithRequestCache(
     const key = JSON.stringify(keyObj);
     if (cache) {
       // 精确命中
-      if (cache.has(key)) return cache.get(key);
+      if (cache.has(key)) {
+        return cache.get(key);
+      }
       // 仅当缓存项是本次请求所需 selects 的“超集”时才复用（避免缺字段/关联）
       const needFields = Array.isArray(fields) ? new Set(fields) : undefined;
       const needAppends = Array.isArray(appends) ? new Set(appends) : undefined;
-      let fallbackAny: unknown = undefined;
       for (const [cacheKey, cacheVal] of cache.entries()) {
         const parsed = JSON.parse(cacheKey) as { ds: string; c: string; tk: unknown; f?: string[]; a?: string[] };
         if (!parsed || parsed.ds !== keyObj.ds || parsed.c !== keyObj.c || parsed.tk !== keyObj.tk) continue;
@@ -202,27 +231,38 @@ async function fetchRecordWithRequestCache(
         const cachedAppends = Array.isArray(parsed.a) ? new Set(parsed.a) : undefined;
         const fieldsOk = !needFields || (cachedFields && [...needFields].every((x) => cachedFields.has(x)));
         const appendsOk = !needAppends || (cachedAppends && [...needAppends].every((x) => cachedAppends.has(x)));
-        if (fieldsOk && appendsOk) return cacheVal;
-        // 兜底：记住同 ds/c/tk 的任意缓存，若无“超集”匹配则使用它（prefetch 已保证并集）
-        if (typeof fallbackAny === 'undefined') fallbackAny = cacheVal;
+        if (fieldsOk && appendsOk) {
+          return cacheVal;
+        }
       }
-      if (typeof fallbackAny !== 'undefined') return fallbackAny;
     }
-    const tk: any = filterByTk as any;
     const rec = await repo.findOne({
-      filterByTk: tk,
+      filterByTk: filterByTk as TargetKey,
       fields,
       appends,
     });
     const json = rec ? rec.toJSON() : undefined;
     if (cache) cache.set(key, json);
     return json;
-  } catch (_) {
+  } catch (e: any) {
+    const log = koaCtx.app?.logger?.child({
+      module: 'plugin-flow-engine',
+      submodule: 'variables.resolve',
+      method: 'fetchRecordWithRequestCache',
+    });
+    log?.debug('[variables.resolve] fetchRecordWithRequestCache error', {
+      ds: dataSourceKey,
+      collection,
+      tk: filterByTk,
+      fields,
+      appends,
+      error: e?.message || String(e),
+    });
     return undefined;
   }
 }
 
-function isRecordParams(val: any): val is { collection: string; filterByTk: any; dataSourceKey?: string } {
+function isRecordParams(val: unknown): val is { collection: string; filterByTk: unknown; dataSourceKey?: string } {
   return val && typeof val === 'object' && 'collection' in val && 'filterByTk' in val;
 }
 
