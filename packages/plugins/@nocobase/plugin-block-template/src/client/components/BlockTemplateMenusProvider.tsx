@@ -94,7 +94,7 @@ export const BlockTemplateMenusProvider = ({ children }) => {
     if (user?.data) {
       refresh();
     }
-  }, [user, refresh]);
+  }, [user?.data, refresh]);
 
   const handleTemplateClick = useMemoizedFn(async ({ item }, options?: any, insert?: any) => {
     const { uid } = item;
