@@ -9,7 +9,7 @@
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Button, Drawer, Transfer, Input, message, App, Spin } from 'antd';
-import { useAPIClient } from '@nocobase/client';
+import { useAPIClient, useDataSource } from '@nocobase/client';
 import { useResourceActionContext, useResourceContext } from '@nocobase/client';
 import { useDSMTranslation } from '../../../../locale';
 
@@ -38,6 +38,7 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
   const { resource } = useResourceContext();
   const { refresh } = useResourceActionContext();
   const { modal } = App.useApp();
+  const ds = useDataSource();
 
   const getSelectableCollections = useCallback(async () => {
     try {
@@ -108,6 +109,7 @@ export const LoadCollection: React.FC<LoadCollectionProps> = (props) => {
             setSelectedKeys([]);
             setSearchValue('');
             refresh();
+            ds.reload();
           } catch (error) {
             console.error('Failed to load tables:', error);
             message.error(t('Failed to load tables'));
