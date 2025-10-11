@@ -17,7 +17,7 @@ import {
   AddSubModelButton,
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
-import { EditOutlined, SettingOutlined } from '@ant-design/icons';
+import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, ActionModel } from '@nocobase/client';
 import React from 'react';
 import { List, Space } from 'antd';
@@ -169,7 +169,7 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
           loading={this.resource?.loading}
           dataSource={this.resource.getData()}
           renderItem={(item, index) => {
-            const model = this.subModels.item.createFork({}, `${index}`);
+            const model = this.subModels.item;
             model.context.defineProperty('record', {
               get: () => item,
               cache: false,
@@ -180,8 +180,9 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
               cache: false,
               resolveOnServer: true,
             });
+            console.log(model);
             return (
-              <List.Item>
+              <List.Item key={index}>
                 <FlowModelRenderer model={model} />
               </List.Item>
             );
