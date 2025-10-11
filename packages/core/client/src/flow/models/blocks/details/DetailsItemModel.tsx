@@ -109,7 +109,6 @@ export class DetailsItemModel extends DisplayItemModel<{
 
   render() {
     const fieldModel = this.subModels.field as FieldModel;
-    console.log(111, this.context.record.id);
     const idx = this.context.fieldIndex;
     // 嵌套场景下继续传透，为字段子模型创建 fork
     const modelForRender =

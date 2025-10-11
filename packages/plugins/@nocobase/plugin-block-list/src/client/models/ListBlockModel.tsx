@@ -169,7 +169,7 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
           loading={this.resource?.loading}
           dataSource={this.resource.getData()}
           renderItem={(item, index) => {
-            const model = this.subModels.item;
+            const model = this.subModels.item.createFork({}, `${index}`);
             model.context.defineProperty('record', {
               get: () => item,
               cache: false,
@@ -180,7 +180,6 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
               cache: false,
               resolveOnServer: true,
             });
-            console.log(model);
             return (
               <List.Item key={index}>
                 <FlowModelRenderer model={model} />
@@ -236,7 +235,6 @@ ListBlockModel.registerFlow({
       use: 'sortingRule',
       title: escapeT('Default sorting'),
     },
-
     refreshData: {
       title: escapeT('Refresh data'),
       async handler(ctx, params) {

@@ -12,7 +12,7 @@ import {
   FlowModelContext,
   ModelRenderMode,
   FormItem,
-  FieldModelRenderer,
+  escapeT,
   DndProvider,
   Droppable,
   FlowModelRenderer,
@@ -23,7 +23,6 @@ import {
 } from '@nocobase/flow-engine';
 import React from 'react';
 import { SettingOutlined } from '@ant-design/icons';
-import type { CollectionField, PropertyMetaFactory, Collection } from '@nocobase/flow-engine';
 import { FieldModel, DetailsGridModel, FormComponent, ActionModel } from '@nocobase/client';
 import { Space, List } from 'antd';
 
@@ -53,18 +52,30 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
       </AddSubModelButton>
     );
   }
+  getRecordData(index) {
+    const data = this.context.blockModel.resource.getData();
+    console.log(index);
+    return data[index];
+  }
 
   render() {
-    const model = this.subModels.grid.createFork({}, `${this.context.index}`);
-    model.context.defineProperty('record', {
-      get: () => this.context.record,
+    const index = this.context.index;
+    const record = this.context.record;
+    const grid = this.subModels.grid.createFork({}, `grid-${index}`);
+
+    grid.context.defineProperty('fieldIndex', {
+      get: () => index,
       cache: false,
-      resolveOnServer: true,
     });
+    grid.context.defineProperty('record', {
+      get: () => record,
+      cache: false,
+    });
+    const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     return (
       <div key={this.context.index} style={{ width: '100%' }}>
-        <FormComponent model={this}>
-          <FlowModelRenderer model={model as any} showFlowSettings={false} />
+        <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
+          <FlowModelRenderer model={grid as any} showFlowSettings={false} />
         </FormComponent>
         <div>
           <DndProvider>
@@ -102,6 +113,17 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
   }
 }
 
+ListItemModel.registerFlow({
+  key: 'listItemSettings',
+  sort: 600,
+  title: escapeT('List layout settings'),
+  steps: {
+    layout: {
+      use: 'layout',
+      title: escapeT('Layout'),
+    },
+  },
+});
 ListItemModel.define({
   createModelOptions: {
     use: 'ListItemModel',

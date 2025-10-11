@@ -560,6 +560,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                 renderItem={(uid) => {
                   const baseItem = this.flowEngine.getModel(uid);
                   const rowIndex = this.context.fieldIndex;
+                  const record = this.context.record;
                   // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
                   const item =
                     rowIndex == null
@@ -568,6 +569,9 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                           const fork = baseItem.createFork({}, `${rowIndex}:${uid}`);
                           fork.context.defineProperty('fieldIndex', {
                             get: () => rowIndex,
+                          });
+                          fork.context.defineProperty('record', {
+                            get: () => record,
                           });
                           fork.setProps({ disabled: this.props.disabled });
                           return fork;
