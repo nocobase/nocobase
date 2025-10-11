@@ -62,9 +62,7 @@ export default class extends Migration {
         } else {
           await queryInterface.changeColumn(tableName, 'id', {
             type: DataTypes.BIGINT,
-            primaryKey: true,
             allowNull: false,
-            autoIncrement: false,
           });
         }
       }

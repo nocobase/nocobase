@@ -3408,7 +3408,7 @@
   dependencies:
     "@marijn/find-cluster-break" "^1.0.0"
 
-"@codemirror/theme-one-dark@^6.0.0", "@codemirror/theme-one-dark@^6.0.1":
+"@codemirror/theme-one-dark@^6.0.0", "@codemirror/theme-one-dark@^6.0.1", "@codemirror/theme-one-dark@^6.1.3":
   version "6.1.3"
   resolved "https://registry.npmjs.org/@codemirror/theme-one-dark/-/theme-one-dark-6.1.3.tgz#1dbb73f6e73c53c12ad2aed9f48c263c4e63ea37"
   integrity sha512-NzBdIvEJmx6fjeremiGp3t/okrLPYT0d9orIc7AFun8oZcRk58aejkqhv6spnz4MLAevrKNPMQYXEWMg4s+sKA==
@@ -11297,6 +11297,32 @@ antd-mobile@^5.38:
     tslib "^2.5.0"
     use-sync-external-store "^1.2.0"
 
+antd-mobile@^5.41.1:
+  version "5.41.1"
+  resolved "https://registry.npmmirror.com/antd-mobile/-/antd-mobile-5.41.1.tgz#77053503436c4576b140b1170454b38efa211d48"
+  integrity sha512-fS5sTRLKHca5qryEYLGiPDLANK0rbhx8f8xk0Olu6ef00tLe0P9iqHQm0U3UtEBd8S454cilw5uv2J3I79Tbgg==
+  dependencies:
+    "@floating-ui/dom" "^1.4.2"
+    "@rc-component/mini-decimal" "^1.1.0"
+    "@react-spring/web" "~9.6.1"
+    "@use-gesture/react" "10.3.0"
+    ahooks "^3.7.6"
+    antd-mobile-icons "^0.3.0"
+    antd-mobile-v5-count "^1.0.1"
+    classnames "^2.3.2"
+    dayjs "^1.11.7"
+    deepmerge "^4.3.1"
+    nano-memoize "^3.0.16"
+    rc-field-form "^1.34.2"
+    rc-segmented "~2.4.1"
+    rc-util "^5.44.4"
+    react-fast-compare "^3.2.2"
+    react-is "^18.2.0"
+    runes2 "^1.1.2"
+    staged-components "^1.1.3"
+    tslib "^2.5.0"
+    use-sync-external-store "^1.2.0"
+
 antd-style@3.7.1, antd-style@3.x:
   version "3.7.1"
   resolved "https://registry.npmmirror.com/antd-style/-/antd-style-3.7.1.tgz#59f35e04c6b4b0082774f9de748d3e946188ba87"
@@ -13678,7 +13704,7 @@ code-point-at@^1.0.0:
   resolved "https://registry.npmmirror.com/code-point-at/-/code-point-at-1.1.0.tgz#0d070b4d043a5bea33a2f1a40e2edb3d9a4ccf77"
   integrity sha512-RpAVKQA5T63xEj6/giIbUEtZwJ4UFIc3ZtvEkiaUERylqe8xb5IvqcgOurZLahv93CLKfxcw5YI+DZcUBRyLXA==
 
-codemirror@^6.0.0, codemirror@^6.0.1:
+codemirror@^6.0.0, codemirror@^6.0.1, codemirror@^6.0.2:
   version "6.0.2"
   resolved "https://registry.npmjs.org/codemirror/-/codemirror-6.0.2.tgz#4d3fea1ad60b6753f97ca835f2f48c6936a8946e"
   integrity sha512-VhydHotNW5w1UGK0Qj96BwSk/Zqbp9WbnyK2W/eVMv4QyF41INRGpjUhFJY7/uDNuudSc33a/PKr4iDqRduvHw==

@@ -57,7 +57,7 @@ export const CurrentUserProvider = (props) => {
         skipAuth: true,
       })
       .then((res) => {
-        if (!res?.data?.data?.id) {
+        if (res?.data?.data?.id == null) {
           navigate('/signin?redirect=' + location.pathname + location.search);
         }
         const userMeta = createCollectionContextMeta(

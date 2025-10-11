@@ -20,7 +20,7 @@ export const fieldComponent = defineAction({
     if (ctx.model.getProps().pattern === 'readPretty') {
       const { titleField } = ctx.model.props;
       const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
-      if (classes.length === 1 && !titleField) return null;
+      if (!classes || (classes.length === 1 && !titleField)) return null;
 
       const options = buildAssociationOptions(ctx, DetailsItemModel, titleField);
       return {
@@ -33,7 +33,7 @@ export const fieldComponent = defineAction({
       };
     } else {
       const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
-      if (classes.length === 1) {
+      if (!classes || classes.length === 1) {
         return null;
       }
       return {

@@ -11,6 +11,11 @@ import evaluators from '@nocobase/evaluators';
 import { Processor, Instruction, JOB_STATUS, FlowNodeModel, JobModel, logicCalculate } from '@nocobase/plugin-workflow';
 import { EXIT } from '../constants';
 
+function getLoopLimit() {
+  const limit = process.env.WORKFLOW_LOOP_LIMIT;
+  return limit ? parseInt(limit, 10) : null;
+}
+
 export type LoopInstructionConfig = {
   target: any;
   condition?:
@@ -160,8 +165,15 @@ export default class extends Instruction {
       job.changed('result', true);
       processor.saveJob(job);
       if (result.looped < length) {
-        await processor.run(branch, job);
-        return;
+        const loopLimit = getLoopLimit();
+        if (!loopLimit || result.done < loopLimit) {
+          await processor.run(branch, job);
+          return;
+        }
+        job.set({
+          status: JOB_STATUS.ERROR,
+          result: { ...result, exceeded: true },
+        });
       } else {
         job.set({
           status: JOB_STATUS.RESOLVED,

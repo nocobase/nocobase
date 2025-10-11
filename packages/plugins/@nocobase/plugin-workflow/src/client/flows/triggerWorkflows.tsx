@@ -97,7 +97,7 @@ export function createTriggerWorkflowsSchema({
                     filter,
                     ...(usingContext
                       ? {
-                          collection: collectionModel,
+                          collection: workflowCollection,
                         }
                       : {}),
                     scope: 'form',

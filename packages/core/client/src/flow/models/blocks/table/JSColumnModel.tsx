@@ -26,6 +26,7 @@ import React from 'react';
 import { observer } from '@formily/reactive-react';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
 import { CodeEditor } from '../../../components/code-editor';
+import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 
 export class JSColumnModel extends TableCustomColumnModel {
   // Stable per‑instance render component to avoid remounts across re-renders
@@ -216,7 +217,7 @@ JSColumnModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        const { code = '', version = 'v1' } = params || {};
+        const { code, version } = resolveRunJsParams(ctx, params);
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),

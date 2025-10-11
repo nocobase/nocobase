@@ -11,6 +11,7 @@ import { observable } from '@formily/reactive';
 import _ from 'lodash';
 import { FlowEngine } from '../flowEngine';
 import { jioToJoiSchema } from './jioToJoiSchema';
+import { sortCollectionsByInherits } from './sortCollectionsByInherits';
 export interface DataSourceOptions extends Record<string, any> {
   key: string;
   displayName?: string;
@@ -227,7 +228,7 @@ export class CollectionManager {
   }
 
   upsertCollections(collections: CollectionOptions[]) {
-    for (const collection of this.sortCollectionsByInherits(collections)) {
+    for (const collection of sortCollectionsByInherits(collections)) {
       if (this.collections.has(collection.name)) {
         this.updateCollection(collection);
       } else {
@@ -400,7 +401,8 @@ export class Collection {
     for (const inherit of this.options.inherits || []) {
       const collection = this.collectionManager.getCollection(inherit);
       if (!collection) {
-        throw new Error(`Collection ${inherit} not found`);
+        console.warn(`Warning: Collection ${inherit} not found for collection ${this.name}`);
+        continue;
       }
       this.inherits.set(inherit, collection);
     }
@@ -488,6 +490,7 @@ export class Collection {
   }
 
   getField(fieldName: string): CollectionField | undefined {
+    this.setFields(this.options.fields); //数据表字段被删除
     return this.fields.get(fieldName);
   }
 

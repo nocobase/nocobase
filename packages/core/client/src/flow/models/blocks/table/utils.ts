@@ -16,3 +16,21 @@ export function extractIndex(str) {
   });
   return numbers.join('.');
 }
+
+export function adjustColumnOrder(columns) {
+  const leftFixedColumns = [];
+  const normalColumns = [];
+  const rightFixedColumns = [];
+
+  columns.forEach((column) => {
+    if (column.fixed === 'left') {
+      leftFixedColumns.push(column);
+    } else if (column.fixed === 'right') {
+      rightFixedColumns.push(column);
+    } else {
+      normalColumns.push(column);
+    }
+  });
+
+  return [...leftFixedColumns, ...normalColumns, ...rightFixedColumns];
+}

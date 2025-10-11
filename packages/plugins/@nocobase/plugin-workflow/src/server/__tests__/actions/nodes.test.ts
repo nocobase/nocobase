@@ -193,6 +193,43 @@ describe('workflow > actions > workflows', () => {
       expect(nodes[0].downstreamId).toBeNull();
       expect(nodes[1].upstreamId).toBe(nodes[0].id);
     });
+
+    it('create with nodes limit', async () => {
+      const NODES_LIMIT = process.env.WORKFLOW_NODES_LIMIT ? parseInt(process.env.WORKFLOW_NODES_LIMIT, 10) : null;
+      process.env.WORKFLOW_NODES_LIMIT = '2';
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'asyncTrigger',
+      });
+
+      const res1 = await agent.resource('workflows.nodes', workflow.id).create({
+        values: {
+          type: 'echo',
+        },
+      });
+      expect(res1.status).toBe(200);
+
+      const res2 = await agent.resource('workflows.nodes', workflow.id).create({
+        values: {
+          type: 'echo',
+        },
+      });
+      expect(res2.status).toBe(200);
+
+      const res3 = await agent.resource('workflows.nodes', workflow.id).create({
+        values: {
+          type: 'echo',
+        },
+      });
+      expect(res3.status).toBe(400);
+
+      if (NODES_LIMIT) {
+        process.env.WORKFLOW_NODES_LIMIT = NODES_LIMIT.toString();
+      } else {
+        delete process.env.WORKFLOW_NODES_LIMIT;
+      }
+    });
   });
 
   describe('destroy', () => {

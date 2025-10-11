@@ -14,6 +14,9 @@ export const validation = defineAction({
   title: escapeT('Validation'),
   name: 'validation',
   uiSchema: (ctx) => {
+    if (!ctx.model.collectionField) {
+      return;
+    }
     const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
       ctx.model.collectionField.interface,
     );

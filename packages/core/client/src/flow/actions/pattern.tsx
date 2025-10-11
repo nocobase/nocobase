@@ -14,6 +14,9 @@ export const pattern = defineAction({
   name: 'pattern',
   title: escapeT('Display mode'),
   uiSchema: (ctx) => {
+    if (!ctx.model.collectionField) {
+      return;
+    }
     return {
       pattern: {
         'x-component': 'Select',
