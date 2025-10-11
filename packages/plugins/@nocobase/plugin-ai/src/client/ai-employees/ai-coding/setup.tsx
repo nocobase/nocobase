@@ -8,9 +8,10 @@
  */
 
 import React from 'react';
-import { FlowModel, FlowRuntimeContext } from '@nocobase/flow-engine';
+import { FlowRuntimeContext, useFlowContext } from '@nocobase/flow-engine';
 import { AICodingButton } from './AICodingButton';
 import {
+  CodeEditorExtension,
   JSBlockModel,
   JSCollectionActionModel,
   JSColumnModel,
@@ -22,39 +23,18 @@ import {
 import { uid } from '@nocobase/utils/client';
 
 export const setupAICoding = () => {
-  FlowModel.registerFlow({
-    key: 'AIEmployeeHandleInjectableRending',
-    on: 'InjectableRending',
-    steps: {
-      injectAIEmployeeShortcut: {
-        handler(ctx) {
-          const settingContext = ctx.inputArgs.ctx;
-          const name = ctx.inputArgs.name ?? 'code';
-          const language = ctx.inputArgs.language ?? 'javascript';
-          const scene = ctx.inputArgs.scene;
-          const setProps = ctx.inputArgs.setProps;
-
-          setProps((prev) => ({
-            ...prev,
-            rightExtra: [
-              (editorRef, setActive) => {
-                const props = {
-                  uid: getUid(settingContext, name),
-                  scene: scene ?? getScene(settingContext),
-                  language,
-                  editorRef,
-                  setActive,
-                };
-                return <AICodingButton key="plugin-ai-button-ai-coding" {...props} />;
-              },
-            ],
-          }));
-        },
-      },
-    },
+  CodeEditorExtension.registerRightExtra({
+    name: 'ai-coding-button',
+    extra: AICodingExtra,
   });
 };
 
+const AICodingExtra = (props) => {
+  const ctx = useFlowContext<FlowRuntimeContext>();
+  const uid = getUid(ctx, props.name);
+  const scene = props.scene ?? getScene(ctx);
+  return <AICodingButton {...props} uid={uid} scene={scene} />;
+};
 const getUid = (context: FlowRuntimeContext, name: string) => {
   return `${context.model.uid}-${context.flowKey ?? uid()}-${context.currentStep ?? uid()}-${name}`;
 };

@@ -10,13 +10,17 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import type { EditorRef } from '../types';
 import { Flex } from 'antd';
+import { CodeEditorExtension } from '../extension/CodeEditorExtension';
 
 export const RightExtra: React.FC<{
-  rightExtra?: ((editorRef: EditorRef, setActive: (key: string, active: boolean) => void) => React.ReactNode)[];
+  name?: string;
+  language?: string;
+  scene?: string;
   extraEditorRef: EditorRef;
   onActionCountChange?: (count: number) => void;
   extraContent?: React.ReactNode;
-}> = ({ rightExtra, extraEditorRef, onActionCountChange, extraContent }) => {
+}> = ({ name = 'code', language = 'javascript', scene, extraEditorRef, onActionCountChange, extraContent }) => {
+  const extras = CodeEditorExtension.getRightExtras();
   const [activeCount, setActiveCount] = useState<{ [key: string]: boolean }>({});
   const setActive = (key: string, active: boolean) => {
     setActiveCount((prev) => {
@@ -30,10 +34,10 @@ export const RightExtra: React.FC<{
   const baseStyle: React.CSSProperties = { padding: '8px', borderBottom: '1px solid #d9d9d9' };
   const { visible } = useMemo(() => {
     const hasActive = Object.values(activeCount).some(Boolean);
-    const hasRight = Array.isArray(rightExtra) && rightExtra.length > 0;
+    const hasRight = Array.isArray(extras) && extras.length > 0;
     const hasExtra = !!extraContent;
     return { visible: hasActive || hasRight || hasExtra };
-  }, [activeCount, rightExtra, extraContent]);
+  }, [activeCount, extras, extraContent]);
 
   useEffect(() => {
     // Avoid side-effect during render; update ref after render pass
@@ -45,7 +49,19 @@ export const RightExtra: React.FC<{
     <Flex gap="middle" justify="flex-end" align="center" style={baseStyle}>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         {extraContent}
-        {rightExtra?.map((fn) => fn(extraEditorRef, setActive))}
+        {extras.map((extra) => {
+          const Extra = extra;
+          return (
+            <Extra
+              name={name}
+              language={language}
+              scene={scene}
+              editorRef={extraEditorRef}
+              setActive={setActive}
+              key={extra.name}
+            />
+          );
+        })}
       </div>
     </Flex>
   );

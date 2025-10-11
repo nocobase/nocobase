@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ComponentType } from 'react';
+
 /**
  * Shared types for CodeEditor components
  */
@@ -15,3 +17,16 @@ export interface EditorRef {
   read(): string;
   buttonGroupHeight?: number;
 }
+
+export type CodeEditorExtra = ComponentType<{
+  name?: string;
+  language?: string;
+  scene?: string;
+  editorRef: EditorRef;
+  setActive: (key: string, active: boolean) => void;
+}>;
+
+export type CodeEditorExtraRegistry = {
+  name: string;
+  extra: CodeEditorExtra;
+};

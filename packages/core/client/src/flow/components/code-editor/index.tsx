@@ -11,7 +11,6 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import type { Completion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
-import { InjectableRendingEventTrigger, InjectableRendingEventTriggerProps } from '../decorator';
 import { useFlowContext } from '@nocobase/flow-engine';
 import { useRunJSDocCompletions } from './hooks/useRunJSDocCompletions';
 import { clearDiagnostics, parseErrorLineColumn, markErrorAt, jumpTo } from './errorHelpers';
@@ -31,25 +30,18 @@ interface CodeEditorProps {
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
-  rightExtra?: ((editorRef: EditorRef, setActive: (key: string, active: boolean) => void) => React.ReactNode)[];
   wrapperStyle?: React.CSSProperties;
   extraCompletions?: Completion[]; // 供外部注入的静态补全
   version?: string; // runjs 版本（默认 v1）
+  name?: string;
+  language?: string;
+  scene?: string;
 }
 
 export * from './types';
+export * from './extension';
 
-export const CodeEditor: React.FC<CodeEditorProps & InjectableRendingEventTriggerProps> = (props) => {
-  const { mode, name, language, scene, ...rest } = props;
-  const triggerProps = { mode, name, language, scene };
-  return (
-    <InjectableRendingEventTrigger {...triggerProps}>
-      <InnerCodeEditor {...rest} />
-    </InjectableRendingEventTrigger>
-  );
-};
-
-const InnerCodeEditor: React.FC<CodeEditorProps> = ({
+export const CodeEditor: React.FC<CodeEditorProps> = ({
   value = '',
   onChange,
   placeholder = '',
@@ -58,10 +50,12 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
   theme = 'light',
   readonly = false,
   enableLinter = false,
-  rightExtra,
   wrapperStyle,
   extraCompletions,
   version = 'v1',
+  name,
+  language,
+  scene,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
@@ -144,7 +138,9 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
       ref={wrapperRef}
     >
       <RightExtraPanel
-        rightExtra={rightExtra}
+        name={name}
+        language={language}
+        scene={scene}
         extraEditorRef={extraEditorRef.current}
         extraContent={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
