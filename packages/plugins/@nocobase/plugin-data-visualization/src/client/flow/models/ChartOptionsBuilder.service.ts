@@ -24,20 +24,19 @@ export function stripInvalidColumns(builder: any = {}, columns: string[] = []) {
 
 // 纯函数：按图表类型规范化（补默认、删无关字段）
 export function normalizeBuilder(builder: any = {}, columns: string[] = []) {
-  const cols = columns || [];
-  const next: any = stripInvalidColumns(builder, cols);
+  const next: any = stripInvalidColumns(builder, columns);
   const type: 'line' | 'bar' | 'pie' = next.type ?? 'line';
 
   if (type === 'pie') {
-    if (!next.pieCategory && cols[0]) next.pieCategory = cols[0];
-    if (!next.pieValue && cols[1]) next.pieValue = cols[1];
+    if (!next.pieCategory && columns[0]) next.pieCategory = columns[0];
+    if (!next.pieValue && columns[1]) next.pieValue = columns[1];
     if (next.pieRadiusInner == null) next.pieRadiusInner = 0;
     if (next.pieRadiusOuter == null) next.pieRadiusOuter = 70;
     delete next.xField;
     delete next.yField;
   } else {
-    if (!next.xField && cols[0]) next.xField = cols[0];
-    if (!next.yField && cols[1]) next.yField = cols[1];
+    if (!next.xField && columns[0]) next.xField = columns[0];
+    if (!next.yField && columns[1]) next.yField = columns[1];
     delete next.pieCategory;
     delete next.pieValue;
     delete next.pieRadiusInner;
@@ -49,14 +48,13 @@ export function normalizeBuilder(builder: any = {}, columns: string[] = []) {
 
 // 纯函数：切换图表类型时的 builder 变换
 export function applyTypeChange(builder: any = {}, nextType: 'line' | 'bar' | 'pie', columns: string[] = []) {
-  const cols = columns || [];
   const next: any = { ...builder, type: nextType };
 
   if (nextType === 'pie') {
     delete next.xField;
     delete next.yField;
-    if (!next.pieCategory && cols[0]) next.pieCategory = cols[0];
-    if (!next.pieValue && cols[1]) next.pieValue = cols[1];
+    if (!next.pieCategory && columns[0]) next.pieCategory = columns[0];
+    if (!next.pieValue && columns[1]) next.pieValue = columns[1];
     if (next.pieRadiusInner == null) next.pieRadiusInner = 0;
     if (next.pieRadiusOuter == null) next.pieRadiusOuter = 70;
   } else {
@@ -64,8 +62,8 @@ export function applyTypeChange(builder: any = {}, nextType: 'line' | 'bar' | 'p
     delete next.pieValue;
     delete next.pieRadiusInner;
     delete next.pieRadiusOuter;
-    if (!next.xField && cols[0]) next.xField = cols[0];
-    if (!next.yField && cols[1]) next.yField = cols[1];
+    if (!next.xField && columns[0]) next.xField = columns[0];
+    if (!next.yField && columns[1]) next.yField = columns[1];
   }
 
   return next;

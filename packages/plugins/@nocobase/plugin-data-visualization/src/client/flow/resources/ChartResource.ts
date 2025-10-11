@@ -49,7 +49,6 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
     }
     const parsed = this.parseQuery(query);
     const { filter, ...rest } = parsed;
-    console.log('---setQueryParams parsed', parsed, mark);
 
     // 写入除 filter 以外的字段到请求体
     this.request.data = {
@@ -69,8 +68,6 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // 筛选条件写入请求参数，父类 addFilterGroup/removeFilterGroup --> resetFilter --> setFilter
   setFilter(filter: Record<string, any>) {
-    console.log('---setFilter', filter);
-
     // 入参为 undefined 或 null 时，直接清空已设置的筛选条件并返回
     if (filter === undefined || filter === null) {
       delete this.request.data.filter;
@@ -78,7 +75,6 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
     }
 
     const cleanedRoot = removeUnparsableFilter(filter);
-
     let merged = cleanedRoot;
     if (
       cleanedRoot &&

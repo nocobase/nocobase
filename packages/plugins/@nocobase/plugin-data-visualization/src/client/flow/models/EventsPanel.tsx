@@ -8,11 +8,23 @@
  */
 
 import React from 'react';
-import { Radio } from 'antd';
-import { ObjectField, Field, connect } from '@formily/react';
-import { ChartEventsEditor } from './ChartEventsEditor';
+import { Button, Radio } from 'antd';
+import { ObjectField, Field, connect, useForm, observer } from '@formily/react';
+import EventsEditor from './EventsEditor';
 import { useT } from '../../locale';
 import { FunctionOutlined, InteractionOutlined } from '@ant-design/icons';
+import { useFlowSettingsContext } from '@nocobase/flow-engine';
+
+const DEFAULT_EVENTS_RAW = `
+// chart.off('click');
+// chart.on('click', 'series', function() {
+//   ctx.openView(ctx.model.uid + '-1', {
+//     mode: 'dialog',
+//     size: 'large',
+//     defineProperties: {}, // 打开新视图传递数据
+//   });
+// });
+`;
 
 const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
   const t = useT();
@@ -33,44 +45,41 @@ const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
   );
 });
 
-export const EventsPanel: React.FC = () => {
+export const EventsPanel: React.FC = observer(() => {
+  const t = useT();
+  const form = useForm();
+  const ctx = useFlowSettingsContext<any>();
+  const mode = form?.values?.chart?.events?.mode || 'custom';
+  const rawValue = form?.values?.chart?.events?.raw;
+
   return (
     <ObjectField name="chart.events">
-      {/* <div
+      <div
         style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
           marginBottom: '8px',
+          padding: 1,
         }}
       >
-        <Field
-          name="mode"
-          component={[OptionsMode]}
-          reactions={(field) => {
-            const basic = field.query('.basic').take();
-            if (basic) {
-              basic.setState({
-                visible: field.value === 'basic',
-              });
-            }
-            const raw = field.query('.raw').take();
-            if (raw) {
-              raw.setState({
-                visible: field.value === 'custom',
-              });
-            }
-          }}
-          initialValue="custom"
-        />
+        <Field name="mode" component={[OptionsMode]} initialValue="custom" />
+        {mode === 'custom' ? (
+          <Button
+            color="primary"
+            variant="outlined"
+            onClick={async () => {
+              // 写入事件参数，统一走 onPreview 方便回滚
+              await ctx.model.onPreview(form.values);
+            }}
+          >
+            {t('Preview')}
+          </Button>
+        ) : null}
       </div>
-      <Field name="basic" /> */}
-      <Field
-        name="raw"
-        component={[ChartEventsEditor]}
-        initialValue={`// chart.off('click');
-// chart.on('click', 'series', function() {
-//  ctx.openView({ mode: 'dialog', size: 'large '});
-// });
-`}
-      />
+
+      {/* 保持原有编辑器 */}
+      <Field name="raw" component={[EventsEditor]} initialValue={DEFAULT_EVENTS_RAW} />
     </ObjectField>
   );
-};
+});

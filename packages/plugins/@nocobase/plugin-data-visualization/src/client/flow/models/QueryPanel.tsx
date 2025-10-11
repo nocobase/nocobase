@@ -14,12 +14,10 @@ import { Radio, Button, Space } from 'antd';
 import { useT } from '../../locale';
 import { BuildOutlined, ConsoleSqlOutlined, RightOutlined, DownOutlined } from '@ant-design/icons';
 import { QueryBuilder } from './QueryBuilder';
-import { useAPIClient } from '@nocobase/client';
-import { configStore } from './config-store';
 import { ResultPanel } from './ResultPanel';
 import { ChartBlockModel } from './ChartBlockModel';
-import { ChartResource } from '../resources/ChartResource';
-import { SQLResource, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { useFlowSettingsContext } from '@nocobase/flow-engine';
+import { sleep } from '../utils';
 
 const QueryMode: React.FC = connect(({ value = 'builder', onChange, onClick }) => {
   const t = useT();
@@ -45,7 +43,6 @@ const QueryMode: React.FC = connect(({ value = 'builder', onChange, onClick }) =
 export const QueryPanel: React.FC = observer(() => {
   const t = useT();
   const form = useForm();
-  const api = useAPIClient();
   const ctx = useFlowSettingsContext<ChartBlockModel>();
   const mode = form?.values?.query?.mode || 'builder';
 
@@ -95,25 +92,16 @@ export const QueryPanel: React.FC = observer(() => {
   const [showResult, setShowResult] = useState(false);
   const [running, setRunning] = useState(false);
 
-  const handleRun = async () => {
+  const handleRunQuery = async () => {
     try {
       setRunning(true);
-
-      const query = form.values?.query;
-
-      // builder 模式需要先提交表单做校验；sql 模式不需要
-      if (query?.mode === 'builder') {
+      // builder 模式先提交表单做校验；sql 模式不需要校验
+      if (form.values?.mode === 'builder') {
         await form.submit();
       }
-
-      ctx.model.checkResource(query); // 保证 resource 正确
-      if (query?.mode === 'sql') {
-        // 开启 debug 模式，sql 查询不要走 runById
-        (ctx.model.resource as SQLResource).setDebug(true);
-      }
-
-      await ctx.model.runQueryAndUpdateResult(query);
-
+      // 写入查询参数，统一走 onPreview 方便回滚
+      await ctx.model.onPreview(form.values, true);
+      // 显示数据结果面板
       setShowResult(true);
     } catch (error: any) {
       console.error(error);
@@ -140,7 +128,7 @@ export const QueryPanel: React.FC = observer(() => {
           <Field name="mode" component={[QueryMode, { onClick: () => setShowResult(false) }]} />
           {/* 右边： 运行查询、结果 */}
           <Space size={8}>
-            <Button type="link" loading={running} onClick={handleRun}>
+            <Button type="link" loading={running} onClick={handleRunQuery}>
               {t('Run query')}
             </Button>
             <Button type="link" aria-expanded={showResult} onClick={() => setShowResult((v) => !v)}>
