@@ -176,7 +176,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }
 
       if (this.flowEngine) {
-        this.invalidateAutoFlowCache();
+        this.invalidateFlowCache('beforeRender');
       }
       this._rerunLastAutoRun();
       this.forks.forEach((fork) => {
@@ -387,13 +387,45 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     });
   }
 
-  public invalidateAutoFlowCache(deep = false) {
+  /**
+   * 失效指定事件的流程缓存；未指定 eventName 时，失效当前模型全部事件缓存。
+   * - 默认 beforeRender 与其它事件共享同一缓存体系：prefix=`event:${scope}`，flowKey=`eventName`，uid=`model.uid`
+   */
+  public invalidateFlowCache(eventName?: string, deep = false) {
     if (this.flowEngine) {
-      const cacheKey = FlowEngine.generateApplyFlowCacheKey('autoFlow', 'all', this.uid);
-      this.flowEngine.applyFlowCache.delete(cacheKey);
+      const scope = `event:${this.getAutoFlowCacheScope()}`;
+      const deleteKey = (name: string) => {
+        const key = FlowEngine.generateApplyFlowCacheKey(scope, name, this.uid);
+        this.flowEngine.applyFlowCache.delete(key);
+      };
+
+      if (eventName) {
+        deleteKey(eventName);
+      } else {
+        // 粗粒度：扫描并删除当前模型 uid 相关的事件缓存
+        for (const key of this.flowEngine.applyFlowCache.keys()) {
+          if (key.endsWith(`:${this.uid}`) && key.startsWith(`${scope}:`)) {
+            this.flowEngine.applyFlowCache.delete(key);
+          }
+        }
+      }
+
+      // 同步失效所有 fork 的缓存
       this.forks.forEach((fork) => {
-        const forkCacheKey = FlowEngine.generateApplyFlowCacheKey(`${fork['forkId']}`, 'all', this.uid);
-        this.flowEngine.applyFlowCache.delete(forkCacheKey);
+        const forkScope = `event:${fork['forkId']}`;
+        const deleteForkKey = (name: string) => {
+          const k = FlowEngine.generateApplyFlowCacheKey(forkScope, name, this.uid);
+          this.flowEngine.applyFlowCache.delete(k);
+        };
+        if (eventName) {
+          deleteForkKey(eventName);
+        } else {
+          for (const key of this.flowEngine.applyFlowCache.keys()) {
+            if (key.endsWith(`:${this.uid}`) && key.startsWith(`${forkScope}:`)) {
+              this.flowEngine.applyFlowCache.delete(key);
+            }
+          }
+        }
       });
     }
     if (deep) {
@@ -402,10 +434,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         const subModelValue = this.subModels[subModelKey];
         if (Array.isArray(subModelValue)) {
           for (const subModel of subModelValue) {
-            subModel.invalidateAutoFlowCache(deep);
+            subModel.invalidateFlowCache(eventName, deep);
           }
         } else if (subModelValue instanceof FlowModel) {
-          subModelValue.invalidateAutoFlowCache(deep);
+          subModelValue.invalidateFlowCache(eventName, deep);
         }
       }
     }
@@ -673,35 +705,35 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     } & DispatchEventOptions,
   ): Promise<void> {
     if (options?.debounce) {
-      return this._dispatchEventWithDebounce(eventName, inputArgs, { sequential: options?.sequential });
+      return this._dispatchEventWithDebounce(eventName, inputArgs, {
+        sequential: options?.sequential,
+        useCache: options?.useCache,
+      });
     }
-    return this._dispatchEvent(eventName, inputArgs, { sequential: options?.sequential });
+    return this._dispatchEvent(eventName, inputArgs, {
+      sequential: options?.sequential,
+      useCache: options?.useCache,
+    });
   }
 
   /**
-   * 获取所有自动应用流程定义（保持 getFlows 的顺序，即按 sort 排序）
-   * @returns {FlowDefinition[]} 自动应用流程定义数组（已按 sort 排序）
+   * 按事件名获取对应的流程集合（保持 getFlows 的顺序，即按 sort 排序）。
+   * - beforeRender 兼容：除显式 on: 'beforeRender' 外，包含未声明 on 且 manual !== true 的流程。
    */
-  public getAutoFlows(): FlowDefinition[] {
+  public getEventFlows(eventName: string): FlowDefinition[] {
     const allFlows = this.getFlows();
-
-    // 统一语义：
-    // - 显式 on: 'beforeRender'（或 { eventName: 'beforeRender' }）的流参与自动执行
-    // - 未配置 on 且 manual !== true 的流也参与自动执行（兼容旧“自动流”）
-    const isBeforeRenderOn = (on: FlowEvent | undefined) =>
-      typeof on === 'string' ? on === 'beforeRender' : on?.eventName === 'beforeRender';
-
-    const autoFlows = Array.from(allFlows.values()).filter((flow) => {
-      // 明确 manual: true 的流程不参与自动执行
-      if (flow.manual === true) return false;
-      if (flow.on) {
-        return isBeforeRenderOn(flow.on);
+    const beforeRender = eventName === 'beforeRender';
+    const isMatch = (flow: FlowDefinition) => {
+      if (beforeRender) {
+        if (flow.manual === true) return false;
+        if (!flow.on) return true; // 兼容历史自动流
+        return typeof flow.on === 'string' ? flow.on === 'beforeRender' : flow.on?.eventName === 'beforeRender';
       }
-      // 无 on 且非 manual:true，默认作为 beforeRender 自动流
-      return true;
-    });
-
-    return autoFlows;
+      const on = flow.on;
+      if (!on) return false;
+      return typeof on === 'string' ? on === eventName : on?.eventName === eventName;
+    };
+    return Array.from(allFlows.values()).filter(isMatch);
   }
 
   /**
@@ -748,11 +780,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   async applyAutoFlows(inputArgs?: Record<string, any>, useCache?: boolean): Promise<any[]>;
   async applyAutoFlows(...args: [Record<string, any> | undefined, boolean?]): Promise<any[]> {
     const [inputArgs, useCache = true] = args;
-    const cacheKey = useCache
-      ? FlowEngine.generateApplyFlowCacheKey(this.getAutoFlowCacheScope(), 'all', this.uid)
-      : null;
-    if (!_.isEqual(inputArgs, this._lastAutoRunParams?.[0]) && cacheKey) {
-      this.flowEngine.applyFlowCache.delete(cacheKey);
+    // 输入参数变化时，失效 beforeRender 事件缓存
+    if (!_.isEqual(inputArgs, this._lastAutoRunParams?.[0]) && useCache) {
+      this.invalidateFlowCache('beforeRender');
     }
     this._lastAutoRunParams = args;
 
@@ -772,10 +802,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       throw error;
     }
 
-    // 执行自动流程（内部可能命中缓存）
+    // 执行 beforeRender 事件（内部可能命中缓存）
     let results: any[] = [];
     try {
-      results = await this.flowEngine.executor.runAutoFlows(this, inputArgs, useCache);
+      const out = await this.flowEngine.executor.dispatchEvent(this, 'beforeRender', inputArgs, {
+        sequential: true,
+        useCache,
+      });
+      results = Array.isArray(out) ? out : [];
     } catch (error) {
       try {
         await this.onAutoFlowsError(error as Error, inputArgs);
@@ -1214,7 +1248,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before saving.');
     }
     this.observerDispose();
-    this.invalidateAutoFlowCache(true);
+    this.invalidateFlowCache('beforeRender', true);
     return this.flowEngine.removeModel(this.uid);
   }
 
@@ -1234,7 +1268,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       throw new Error('FlowEngine is not set on this model. Please set flowEngine before deleting.');
     }
     this.observerDispose();
-    this.invalidateAutoFlowCache(true);
+    this.invalidateFlowCache('beforeRender', true);
     // 从 FlowEngine 中销毁模型
     return this.flowEngine.destroyModel(this.uid);
   }

@@ -787,7 +787,7 @@ describe('FlowModel', () => {
         TestM.registerFlow({ key: 'otherEvent', on: 'click', steps: { s: { handler: vi.fn() } } });
 
         const m = new TestM(modelOptions);
-        const autoKeys = m.getAutoFlows().map((f) => f.key);
+        const autoKeys = m.getEventFlows('beforeRender').map((f) => f.key);
 
         // sort 按 1,2 排序：noOnB -> beforeA
         expect(autoKeys).toEqual(['noOnB', 'beforeA']);
@@ -816,13 +816,40 @@ describe('FlowModel', () => {
         expect(calls).toEqual(['noOn1', 'before2', 'noOn3']);
       });
 
-      test("model.dispatchEvent('beforeRender') delegates to applyAutoFlows", async () => {
+      test("model.dispatchEvent('beforeRender') uses cache keyed by eventName", async () => {
         const TestM = class extends FlowModel {};
-        const m = new TestM(modelOptions);
-        const spy = vi.spyOn(m as any, 'applyAutoFlows').mockResolvedValue([]);
+        const handler = vi.fn();
+        TestM.registerFlow({ key: 'autoA', steps: { s: { handler } } });
 
+        const m = new TestM(modelOptions);
         await m.dispatchEvent('beforeRender');
-        expect(spy).toHaveBeenCalledTimes(1);
+        await m.dispatchEvent('beforeRender');
+        expect(handler).toHaveBeenCalledTimes(1);
+      });
+
+      test('invalidFlowCache should clear specific event cache', async () => {
+        const TestM = class extends FlowModel {};
+        const h1 = vi.fn();
+        const h2 = vi.fn();
+        TestM.registerFlow({ key: 'onFoo', on: 'foo', steps: { s: { handler: h1 } } });
+        TestM.registerFlow({ key: 'onBar', on: 'bar', steps: { s: { handler: h2 } } });
+
+        const m = new TestM(modelOptions);
+        await m.dispatchEvent('foo', {}, { useCache: true });
+        await m.dispatchEvent('bar', {}, { useCache: true });
+
+        // cached
+        await m.dispatchEvent('foo', {}, { useCache: true });
+        await m.dispatchEvent('bar', {}, { useCache: true });
+        expect(h1).toHaveBeenCalledTimes(1);
+        expect(h2).toHaveBeenCalledTimes(1);
+
+        // invalidate foo only
+        m.invalidateFlowCache('foo');
+        await m.dispatchEvent('foo', {}, { useCache: true });
+        await m.dispatchEvent('bar', {}, { useCache: true });
+        expect(h1).toHaveBeenCalledTimes(2);
+        expect(h2).toHaveBeenCalledTimes(1);
       });
       test('should handle multiple flows for same event', async () => {
         const eventFlow1 = { ...createEventFlowDefinition('sharedEvent'), key: 'event1' };
@@ -2133,7 +2160,7 @@ describe('FlowModel', () => {
           promise: Promise.resolve([]),
         });
 
-        model.invalidateAutoFlowCache();
+        model.invalidateFlowCache('beforeRender');
 
         expect(deleteSpy).toHaveBeenCalledWith(expectedCacheKey);
       });
@@ -2156,7 +2183,7 @@ describe('FlowModel', () => {
           promise: Promise.resolve([]),
         });
 
-        model.invalidateAutoFlowCache();
+        model.invalidateFlowCache('beforeRender');
 
         expect(deleteSpy).toHaveBeenCalledWith(fork1CacheKey);
         expect(deleteSpy).toHaveBeenCalledWith(fork2CacheKey);
@@ -2172,7 +2199,7 @@ describe('FlowModel', () => {
         model.addSubModel('children', childModel1);
         model.addSubModel('children', childModel2);
 
-        model.invalidateAutoFlowCache(true);
+        model.invalidateFlowCache('beforeRender', true);
 
         expect(child1Spy).toHaveBeenCalledWith(true);
         expect(child2Spy).toHaveBeenCalledWith(true);
@@ -2184,7 +2211,7 @@ describe('FlowModel', () => {
 
         model.setSubModel('child', childModel);
 
-        model.invalidateAutoFlowCache(true);
+        model.invalidateFlowCache('beforeRender', true);
 
         expect(childSpy).toHaveBeenCalledWith(true);
       });
@@ -2202,7 +2229,7 @@ describe('FlowModel', () => {
         model.addSubModel('arrayChildren', arrayChild2);
         model.setSubModel('objectChild', objectChild);
 
-        model.invalidateAutoFlowCache(true);
+        model.invalidateFlowCache('beforeRender', true);
 
         expect(array1Spy).toHaveBeenCalledWith(true);
         expect(array2Spy).toHaveBeenCalledWith(true);
@@ -2210,7 +2237,7 @@ describe('FlowModel', () => {
       });
 
       test('should handle empty subModels without error', () => {
-        model.invalidateAutoFlowCache();
+        model.invalidateFlowCache('beforeRender');
 
         expect(deleteSpy).toHaveBeenCalledWith('autoFlow-all-test-model-uid');
       });
@@ -2220,7 +2247,7 @@ describe('FlowModel', () => {
         modelWithValidEngine.flowEngine = null;
 
         expect(() => {
-          modelWithValidEngine.invalidateAutoFlowCache();
+          modelWithValidEngine.invalidateFlowCache('beforeRender');
         }).not.toThrow();
       });
 
@@ -2230,7 +2257,7 @@ describe('FlowModel', () => {
 
         model.setSubModel('child', childModel);
 
-        model.invalidateAutoFlowCache(true);
+        model.invalidateFlowCache('beforeRender', true);
 
         expect(childSpy).toHaveBeenCalledWith(true);
       });

@@ -297,7 +297,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.associationName || params.collectionName);
         resource.on('refresh', () => {
-          this.invalidateAutoFlowCache();
+          this.invalidateFlowCache('beforeRender');
         });
         return resource;
       },

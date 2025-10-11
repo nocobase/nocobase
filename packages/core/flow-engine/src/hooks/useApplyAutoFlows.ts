@@ -35,7 +35,8 @@ export function useApplyAutoFlows(
 
   const { loading, error } = useRequest(
     async () => {
-      await model.applyAutoFlows(inputArgs);
+      if (!model) return;
+      await model.dispatchEvent('beforeRender', inputArgs, { sequential: true, useCache: true });
     },
     {
       refreshDeps: [model, inputArgs],

@@ -124,7 +124,7 @@ export class RootPageTabModel extends BasePageTabModel {
 
   async destroy() {
     this.observerDispose();
-    this.invalidateAutoFlowCache(true);
+    this.invalidateFlowCache('beforeRender', true);
     this.flowEngine.removeModel(this.uid);
     await this.context.api.request({
       method: 'post',

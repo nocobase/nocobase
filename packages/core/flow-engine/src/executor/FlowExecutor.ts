@@ -171,73 +171,7 @@ export class FlowExecutor {
     return Promise.resolve(stepResults);
   }
 
-  /**
-   * Execute all auto-apply flows for model.
-   */
-  async runAutoFlows(model: FlowModel, inputArgs?: Record<string, any>, useCache = true): Promise<any[]> {
-    const autoApplyFlows = model.getAutoFlows();
-
-    if (autoApplyFlows.length === 0) {
-      model.context.logger.warn(`FlowModel: No auto-apply flows found for model '${model.uid}'`);
-      return [];
-    }
-
-    const cacheKey = useCache
-      ? FlowEngine.generateApplyFlowCacheKey(model.getAutoFlowCacheScope(), 'all', model.uid)
-      : null;
-
-    if (cacheKey && this.engine) {
-      const cachedEntry = this.engine.applyFlowCache.get(cacheKey);
-      if (cachedEntry) {
-        if (cachedEntry.status === 'resolved') {
-          model.context.logger.debug(`[FlowEngine.applyAutoFlows] Using cached result for model: ${model.uid}`);
-          return cachedEntry.data;
-        }
-        if (cachedEntry.status === 'rejected') throw cachedEntry.error;
-        if (cachedEntry.status === 'pending') return await cachedEntry.promise;
-      }
-    }
-
-    const executeAutoFlows = async (): Promise<any[]> => {
-      const results: any[] = [];
-      const runId = `${model.uid}-autoFlow-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
-      const logger = model.context.logger.child({ module: 'flow-engine', component: 'FlowExecutor', runId });
-      logger.debug(
-        `[FlowExecutor] runAutoFlows: uid=${model.uid}, isFork=${
-          (model as any)?.isFork === true
-        }, useCache=${useCache}, runId=${runId}, flows=${autoApplyFlows.map((f) => f.key).join(',')}`,
-      );
-      try {
-        if (autoApplyFlows.length === 0) {
-          logger.warn(`FlowModel: No auto-apply flows found for model '${model.uid}'`);
-        } else {
-          for (const flow of autoApplyFlows) {
-            try {
-              logger.debug(`[FlowExecutor] runFlow: uid=${model.uid}, flowKey=${flow.key}`);
-              const result = await this.runFlow(model, flow.key, inputArgs, runId);
-              if (result instanceof FlowExitAllException) {
-                logger.debug(`[FlowEngine.applyAutoFlows] ${result.message}`);
-                break; // 终止后续流程执行
-              }
-              results.push(result);
-            } catch (error) {
-              logger.error({ err: error }, `FlowModel.applyAutoFlows: Error executing auto-apply flow '${flow.key}':`);
-              throw error;
-            }
-          }
-        }
-        return results;
-      } catch (error) {
-        if (error instanceof FlowExitException) {
-          logger.debug(`[FlowEngine.applyAutoFlows] ${error.message}`);
-          return results;
-        }
-        throw error;
-      }
-    };
-
-    return await this.withApplyFlowCache(cacheKey, executeAutoFlows);
-  }
+  // runAutoFlows 已移除：统一通过 dispatchEvent('beforeRender') + useCache 控制
 
   /**
    * Dispatch an event to flows bound via flow.on and execute them.
@@ -247,65 +181,83 @@ export class FlowExecutor {
     eventName: string,
     inputArgs?: Record<string, any>,
     options?: DispatchEventOptions,
-  ): Promise<void> {
-    // 统一 beforeRender：直接复用自动流执行逻辑（顺序 + 缓存 + 退出控制）。
-    if (eventName === 'beforeRender') {
-      try {
-        // 走模型层以触发 onBefore/After/OnError 钩子，并复用缓存
-        await model.applyAutoFlows(inputArgs, true);
-      } catch (error) {
-        // 与事件分发语义保持一致：记录错误，不中断调用方
-        model.context.logger.error(
-          { err: error },
-          `BaseModel.dispatchEvent: Error executing beforeRender auto flows for model '${model.uid}':`,
-        );
-      }
-      return;
-    }
+  ): Promise<any> {
+    const isBeforeRender = eventName === 'beforeRender';
+    const sequential = isBeforeRender || !!options?.sequential;
+    const useCache = isBeforeRender || !!options?.useCache;
 
-    const flows = Array.from(model.getFlows().values()).filter((flow) => {
-      const on = flow.on;
-      if (!on) return false;
-      if (typeof on === 'string') return on === eventName;
-      if (typeof on === 'object') return on.eventName === eventName;
-      return false;
-    });
     const runId = `${model.uid}-${eventName}-${Date.now()}`;
     const logger = model.context.logger;
 
-    // 顺序/并行两种策略（默认并行）
-    if (options?.sequential) {
-      // 按 sort 升序串行执行
-      const ordered = flows.slice().sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
-      for (const flow of ordered) {
-        try {
-          logger.debug(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}' (sequential).`);
-          const result = await this.runFlow(model, flow.key, inputArgs, runId);
-          if (result instanceof FlowExitAllException) {
-            logger.debug(`[FlowEngine.dispatchEvent] ${result.message}`);
-            break; // 顺序模式下，允许 exitAll 终止后续执行
+    // 构造待执行的 flows 列表
+    const flows = isBeforeRender
+      ? model.getEventFlows('beforeRender') // 统一：beforeRender 运行自动流集合（含无 on 的流）
+      : Array.from(model.getFlows().values()).filter((flow) => {
+          const on = flow.on;
+          if (!on) return false;
+          if (typeof on === 'string') return on === eventName;
+          if (typeof on === 'object') return on.eventName === eventName;
+          return false;
+        });
+
+    // 组装执行函数（返回值用于缓存；beforeRender 返回 results:any[]，其它返回 true）
+    const execute = async () => {
+      if (sequential) {
+        const ordered = flows.slice().sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+        const results: any[] = [];
+        for (const flow of ordered) {
+          try {
+            logger.debug(
+              `BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}' (sequential).`,
+            );
+            const result = await this.runFlow(model, flow.key, inputArgs, runId);
+            if (result instanceof FlowExitAllException) {
+              logger.debug(`[FlowEngine.dispatchEvent] ${result.message}`);
+              break; // 终止后续
+            }
+            if (isBeforeRender) results.push(result);
+          } catch (error) {
+            logger.error(
+              { err: error },
+              `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}' (sequential):`,
+            );
+            // 顺序模式不中断其它 flow
           }
-        } catch (error) {
+        }
+        return isBeforeRender ? results : true;
+      }
+
+      // 并行
+      const promises = flows.map((flow) => {
+        logger.debug(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
+        return this.runFlow(model, flow.key, inputArgs, runId).catch((error) => {
           logger.error(
             { err: error },
-            `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}' (sequential):`,
+            `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
           );
-          // 不中断其它 flow，继续执行
-        }
-      }
-      return;
-    }
-
-    // 默认并行执行
-    const promises = flows.map((flow) => {
-      logger.debug(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
-      return this.runFlow(model, flow.key, inputArgs, runId).catch((error) => {
-        logger.error(
-          { err: error },
-          `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
-        );
+        });
       });
-    });
-    await Promise.all(promises);
+      await Promise.all(promises);
+      return isBeforeRender ? [] : true;
+    };
+
+    // 缓存键：beforeRender 与自动流共用同一键；其它事件按 event + scope 缓存（默认关闭）
+    const cacheKey = useCache
+      ? FlowEngine.generateApplyFlowCacheKey(
+          `event:${model.getAutoFlowCacheScope()}`,
+          isBeforeRender ? 'beforeRender' : eventName,
+          model.uid,
+        )
+      : null;
+
+    try {
+      return await this.withApplyFlowCache(cacheKey, execute);
+    } catch (error) {
+      // 与事件分发语义保持一致：记录错误，不抛给调用方
+      model.context.logger.error(
+        { err: error },
+        `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`,
+      );
+    }
   }
 }

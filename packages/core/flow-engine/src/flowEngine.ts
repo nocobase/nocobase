@@ -803,7 +803,7 @@ export class FlowEngine {
     // 7. 触发事件以通知其他部分模型已替换
     if (currentParent) {
       currentParent.emitter.setPaused(false);
-      currentParent.parent.invalidateAutoFlowCache(true);
+      currentParent.parent.invalidateFlowCache('beforeRender', true);
       currentParent.parent?.rerender();
       currentParent.emitter.emit('onSubModelReplaced', { oldModel, newModel });
     }
