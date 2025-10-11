@@ -76,7 +76,7 @@ export const FlowRoute = () => {
         interface: 'select',
         uiSchema: {
           enum: [
-            { label: flowEngine.translate('Desktop'), value: 'browser' },
+            { label: flowEngine.translate('Computer'), value: 'browser' },
             { label: flowEngine.translate('Mobile'), value: 'mobile' },
             { label: flowEngine.translate('Tablet'), value: 'tablet' },
             { label: flowEngine.translate('SmartTv'), value: 'smarttv' },
