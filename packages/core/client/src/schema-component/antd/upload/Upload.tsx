@@ -15,6 +15,8 @@ import {
   PlusOutlined,
   RedoOutlined,
   UndoOutlined,
+  ZoomInOutlined,
+  ZoomOutOutlined,
 } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { Field } from '@formily/core';
@@ -71,6 +73,7 @@ attachmentFileTypes.add({
   },
   Previewer({ index, list, onSwitchIndex }) {
     const [angle, setAngle] = useState(0);
+    const [zoom, setZoom] = useState(1);
     const onDownload = useCallback(
       (e) => {
         e.preventDefault();
@@ -85,22 +88,21 @@ attachmentFileTypes.add({
     const onRotateRight = useCallback(() => {
       setAngle((prev) => (prev + 90) % 360);
     }, []);
+    const onZoomIn = useCallback(() => {
+      setZoom((prev) => Math.min(prev + 0.5, 2));
+    }, []);
+    const onZoomOut = useCallback(() => {
+      setZoom((prev) => Math.max(prev - 0.5, 1));
+    }, []);
 
     useEffect(() => {
       const el = document.querySelector('.ril-image-current') as HTMLElement;
       if (!el) {
         return;
       }
-      let { transform } = el.style || {};
       const nextRotate = `rotate(${angle}deg)`;
-      const rotateMatch = transform?.match(/rotate\(-?(\d+)deg\)/);
-      if (rotateMatch) {
-        transform = transform.replace(/rotate\(-?(\d+)deg\)/, nextRotate);
-      } else {
-        transform = `${transform} ${nextRotate}`;
-      }
-      el.style.transform = transform;
-    }, [angle]);
+      el.style.transform = [angle ? nextRotate : '', `scale(${zoom})`].filter(Boolean).join(' ');
+    }, [angle, zoom]);
     return (
       <>
         <LightBoxGlobalStyle />
@@ -113,6 +115,7 @@ attachmentFileTypes.add({
           onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
           onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
           imageTitle={list[index]?.title}
+          enableZoom={false}
           toolbarButtons={[
             <button
               key="preview-img"
@@ -128,7 +131,7 @@ attachmentFileTypes.add({
             <button
               key="rotate-left"
               type="button"
-              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+              className="ril-rotate-left ril__toolbarItemChild ril__builtinButton"
               style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
               onClick={onRotateLeft}
             >
@@ -137,11 +140,31 @@ attachmentFileTypes.add({
             <button
               key="rotate-right"
               type="button"
-              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+              className="ril-rotate-right ril__toolbarItemChild ril__builtinButton"
               style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
               onClick={onRotateRight}
             >
               <RedoOutlined />
+            </button>,
+            <button
+              key="zoom-in"
+              type="button"
+              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
+              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+              onClick={onZoomIn}
+              disabled={zoom >= 2}
+            >
+              <ZoomInOutlined />
+            </button>,
+            <button
+              key="rotate-right"
+              type="button"
+              className="ril-zoom-out ril__toolbarItemChild ril__builtinButton"
+              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
+              onClick={onZoomOut}
+              disabled={zoom <= 1}
+            >
+              <ZoomOutOutlined />
             </button>,
           ]}
         />
