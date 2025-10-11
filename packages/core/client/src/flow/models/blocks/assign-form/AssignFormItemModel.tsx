@@ -133,7 +133,7 @@ export class AssignFormItemModel extends FormItemModel {
         });
         if (!created) return;
 
-        // 将集合/数据源/字段/区块/资源注入临时根，保证字段组件行为一致
+        // 将集合/数据源/字段/区块/资源/表单注入临时根，保证字段组件行为一致
         created.context?.defineProperty?.('collection', { value: collection });
         const ds = ctx?.dataSource;
         if (ds) created.context?.defineProperty?.('dataSource', { value: ds });
@@ -141,6 +141,10 @@ export class AssignFormItemModel extends FormItemModel {
         if (cf2) created.context?.defineProperty?.('collectionField', { value: cf2 });
         const block = ctx?.blockModel;
         if (block) created.context?.defineProperty?.('blockModel', { value: block });
+        const parentForm = ctx.form;
+        if (parentForm) {
+          created.context?.defineProperty?.('form', { value: parentForm });
+        }
         if (created.context) {
           Object.defineProperty(created.context, 'resource', {
             configurable: true,
@@ -267,6 +271,7 @@ export class AssignFormItemModel extends FormItemModel {
             }}
             metaTree={mergedMetaTree}
             converters={converters}
+            clearValue={''}
           />
         </FormItem>
       );
