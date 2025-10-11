@@ -9,7 +9,14 @@
 
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { createForm } from '@formily/core';
-import { ActionContextProvider, SchemaComponent, useAPIClient, useCancelAction, usePlugin } from '@nocobase/client';
+import {
+  ActionContextProvider,
+  SchemaComponent,
+  useAPIClient,
+  useCancelAction,
+  useCompile,
+  usePlugin,
+} from '@nocobase/client';
 
 import { lang, NAMESPACE } from './locale';
 import { Radio, Select, Space } from 'antd';
@@ -28,7 +35,30 @@ function KeepBranchRadioGroup(props) {
   const type = typeof value === 'number' ? 1 : 0;
   const { deletingNode, deletingBranches } = useRemoveNodeContext();
   const plugin = usePlugin(PluginWorkflowClient) as PluginWorkflowClient;
-  const instruction = plugin.instructions.get(deletingNode?.type);
+  const compile = useCompile();
+  const branchOptions = useMemo(() => {
+    if (!deletingNode || deletingBranches.length === 0) {
+      return [];
+    }
+    const instruction = plugin.instructions.get(deletingNode?.type);
+    const branching =
+      typeof instruction.branching === 'function'
+        ? instruction.branching(deletingNode.config ?? {})
+        : instruction.branching;
+    return branching
+      ? deletingBranches.map((item, index) => {
+          const { label } = Array.isArray(branching)
+            ? branching.find((branch) => branch.value === item.branchIndex)
+            : {};
+          return {
+            label: label
+              ? lang('"{{branchName}}" branch', { branchName: compile(label) })
+              : lang('Branch {{index}}', { index: index + 1 }),
+            value: item.branchIndex,
+          };
+        })
+      : [];
+  }, [deletingNode, deletingBranches, plugin.instructions, compile]);
 
   return (
     <>
@@ -50,14 +80,7 @@ function KeepBranchRadioGroup(props) {
             <Radio key="1" value={1}>
               {lang('Keep')}
             </Radio>
-
-            {type && deletingBranches.length > 1 ? (
-              <Select
-                options={deletingBranches.map((branch) => ({ label: branch.title, value: branch.branchIndex }))}
-                value={value}
-                onChange={onChange}
-              />
-            ) : null}
+            <Select options={branchOptions} onChange={onChange} defaultValue={deletingBranches[0]?.branchIndex} />
           </Space>
         </Space>
       </Radio.Group>

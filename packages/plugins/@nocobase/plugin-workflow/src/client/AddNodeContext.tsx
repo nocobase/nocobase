@@ -136,7 +136,6 @@ export function useAddNodeContext() {
 
 const defaultBranchingOptions = [
   {
-    label: `{{t('Inside of branch', { ns: "${NAMESPACE}" })}}`,
     value: 0,
   },
 ];
@@ -145,6 +144,7 @@ const DownstreamBranchIndex = observer((props) => {
   const { presetting } = useAddNodeContext();
   const { nodes } = useFlowContext();
   const { values } = useForm();
+  const compile = useCompile();
   const options = useMemo(() => {
     if (!presetting?.instruction) {
       return [];
@@ -164,12 +164,17 @@ const DownstreamBranchIndex = observer((props) => {
     const br = branching === true ? defaultBranchingOptions : branching;
     return [
       {
-        label: `{{t('After end of branches', { ns: "${NAMESPACE}" })}}`,
+        label: lang('After end of branches'),
         value: false,
       },
-      ...br,
+      ...br.map((item) => ({
+        ...item,
+        label: item.label
+          ? lang('Inside of "{{branchName}}" branch', { branchName: compile(item.label) })
+          : lang('Inside of branch'),
+      })),
     ];
-  }, [presetting, nodes, values.config]);
+  }, [presetting, nodes, values.config, compile]);
 
   if (!options.length) {
     return null;
