@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-source-manager",
-  "version": "1.9.0-alpha.14",
+  "version": "2.0.0-alpha.5",
   "main": "dist/server/index.js",
   "displayName": "Data source manager",
   "displayName.zh-CN": "数据源管理",
@@ -9,10 +9,10 @@
   "homepage": "https://docs.nocobase.com/handbook/data-source-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-source-manager",
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/plugin-acl": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/plugin-acl": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "keywords": [
     "Data model tools"

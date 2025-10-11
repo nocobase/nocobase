@@ -27,6 +27,7 @@ import { CreateDatabaseConnectAction } from './CreateDatabaseConnectAction';
 import { EditDatabaseConnectionAction } from './EditDatabaseConnectionAction';
 import { ViewDatabaseConnectionAction } from './ViewDatabaseConnectionAction';
 import { addDatasourceCollections } from '../hooks';
+import _ from 'lodash';
 
 export const DatabaseConnectionManagerPane = () => {
   const { t } = useTranslation();
@@ -110,6 +111,7 @@ export const DatabaseConnectionManagerPane = () => {
     const { key } = useRecord();
     $self.visible = key !== 'main';
   };
+
   return (
     <Card bordered={false}>
       <SchemaComponent

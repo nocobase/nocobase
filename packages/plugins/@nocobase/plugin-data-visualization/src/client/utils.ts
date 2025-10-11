@@ -161,3 +161,15 @@ export const getFormulaInterface = (type: string) => {
     string: 'input',
   }[type];
 };
+
+export const isEmptyFilterObject = (filter: any) => {
+  if (!filter) return true;
+  if (Array.isArray(filter)) return filter.length === 0;
+  if (typeof filter === 'object') {
+    const keys = Object.keys(filter);
+    if (keys.length === 0) return true;
+    if (Array.isArray((filter as any).$and) && (filter as any).$and.length === 0) return true;
+    if (Array.isArray((filter as any).$or) && (filter as any).$or.length === 0) return true;
+  }
+  return false;
+};

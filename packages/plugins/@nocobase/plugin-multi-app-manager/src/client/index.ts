@@ -20,9 +20,10 @@ export class PluginMultiAppManagerClient extends Plugin {
     this.app.use(MultiAppManagerProvider);
 
     this.app.pluginSettingsManager.add(NAMESPACE, {
-      title: `{{t("Multi-app manager", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Multi-app manager (deprecated)", { ns: "${NAMESPACE}" })}}`,
       icon: 'AppstoreOutlined',
       Component: AppManager,
+      sort: 1000,
       aclSnippet: 'pm.multi-app-manager.applications',
     });
   }

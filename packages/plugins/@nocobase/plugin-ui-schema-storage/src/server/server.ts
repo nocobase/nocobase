@@ -8,10 +8,9 @@
  */
 
 import { MagicAttributeModel } from '@nocobase/database';
-import { Plugin } from '@nocobase/server';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
-import { tval } from '@nocobase/utils';
-import { uid } from '@nocobase/utils';
+import { Plugin } from '@nocobase/server';
+import { tval, uid } from '@nocobase/utils';
 import path, { resolve } from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
 import { UiSchemaModel } from './model';
@@ -27,6 +26,8 @@ function extractFields(obj) {
     obj.description,
     obj['x-component-props']?.title,
     obj['x-component-props']?.description,
+    obj['x-component-props']?.tooltip,
+    obj['x-component-props']?.children,
     obj['x-decorator-props']?.title,
     obj['x-decorator-props']?.description,
   ];
@@ -114,7 +115,7 @@ export class PluginUISchemaStorageServer extends Plugin {
       });
     });
 
-    this.app.resourcer.define({
+    this.app.resourceManager.define({
       name: 'uiSchemas',
       actions: uiSchemaActions,
     });

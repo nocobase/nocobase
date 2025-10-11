@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/client",
-  "version": "1.9.0-alpha.14",
+  "version": "2.0.0-alpha.5",
   "license": "AGPL-3.0",
   "main": "lib/index.js",
   "module": "es/index.mjs",
@@ -12,6 +12,8 @@
     "@ant-design/pro-layout": "^7.22.1",
     "@antv/g2plot": "^2.4.18",
     "@budibase/handlebars-helpers": "0.14.0",
+    "@codemirror/lang-html": "^6.4.10",
+    "@codemirror/theme-one-dark": "^6.1.3",
     "@ctrl/tinycolor": "^3.6.0",
     "@dnd-kit/core": "^6.0.0",
     "@dnd-kit/sortable": "^7.0.0",
@@ -26,15 +28,21 @@
     "@formily/reactive-react": "^2.2.27",
     "@formily/shared": "^2.2.27",
     "@formily/validator": "^2.2.27",
-    "@nocobase/evaluators": "1.9.0-alpha.14",
-    "@nocobase/sdk": "1.9.0-alpha.14",
-    "@nocobase/utils": "1.9.0-alpha.14",
+    "@nocobase/evaluators": "2.0.0-alpha.5",
+    "@nocobase/flow-engine": "2.0.0-alpha.5",
+    "@nocobase/sdk": "2.0.0-alpha.5",
+    "@nocobase/utils": "2.0.0-alpha.5",
+    "@tanstack/react-table": "^8.21.3",
+    "@types/tabulator-tables": "^6.2.6",
     "ahooks": "^3.7.2",
     "antd": "5.24.2",
+    "antd-mobile": "^5.41.1",
+    "antd-mobile-icons": "^0.3.0",
     "antd-style": "3.7.1",
     "axios": "^1.7.0",
     "bignumber.js": "^9.1.2",
     "classnames": "^2.3.1",
+    "codemirror": "^6.0.2",
     "cronstrue": "^2.11.0",
     "file-saver": "^2.0.5",
     "filesize": "9.0.11",
@@ -64,9 +72,10 @@
     "react-intersection-observer": "9.14.0",
     "react-js-cron": "^3.1.0",
     "react-quill": "^2.0.0",
-    "react-router-dom": "^6.11.2",
+    "react-router-dom": "^6.30.1",
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.13.0",
+    "tabulator-tables": "^6.3.1",
     "use-deep-compare-effect": "^1.8.1"
   },
   "peerDependencies": {
@@ -81,6 +90,6 @@
     "@types/react-big-calendar": "^1.6.4",
     "axios-mock-adapter": "^1.20.0",
     "dumi": "2.2.14",
-    "dumi-theme-nocobase": "^0.2.28"
+    "dumi-theme-nocobase": "^0.2.32"
   }
 }

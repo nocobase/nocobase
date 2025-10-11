@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-license",
-  "version": "1.9.0-alpha.14",
+  "version": "2.0.0-alpha.5",
   "main": "dist/server/index.js",
   "displayName": "License settings",
   "displayName.zh-CN": "授权设置",
@@ -10,8 +10,8 @@
     "@nocobase/license-kit": "^0.2.17"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   }
 }

@@ -36,6 +36,7 @@ import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { CollectionFactory } from './collection-factory';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import DatabaseUtils from './database-utils';
+import { BaseDialect } from './dialects/base-dialect';
 import ReferencesMap from './features/references-map';
 import { referentialIntegrityCheck } from './features/referential-integrity-check';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
@@ -85,7 +86,6 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
-import { BaseDialect } from './dialects/base-dialect';
 
 export type MergeOptions = merge.Options;
 
@@ -130,6 +130,12 @@ export type AddMigrationsOptions = {
 };
 
 type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
+
+type RunSQLOptions = {
+  filter?: Record<string, any>;
+  bind?: Record<string, any> | Array<any>;
+  type?: 'selectVar' | 'selectRow' | 'selectRows';
+} & Transactionable;
 
 export class Database extends EventEmitter implements AsyncEmitter {
   static dialects = new Map<string, typeof BaseDialect>();
@@ -836,8 +842,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   /* istanbul ignore next -- @preserve */
   async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
-    const { retry = 9, ...others } = options;
-    const startingDelay = 200;
+    const { retry = 10, ...others } = options;
+    const startingDelay = 1000;
     const timeMultiple = 2;
 
     let attemptNumber = 1; // To track the current attempt number
@@ -864,6 +870,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         numOfAttempts: retry as number,
         startingDelay: startingDelay,
         timeMultiple: timeMultiple,
+        maxDelay: 30 * 1000,
       });
     } catch (error) {
       throw new Error(`Unable to connect to the database`, { cause: error });
@@ -1043,6 +1050,62 @@ export class Database extends EventEmitter implements AsyncEmitter {
         return;
       },
     });
+  }
+
+  // 如果需要手动引用标识符，可以添加辅助方法
+  quoteIdentifier(identifier: string): string {
+    return this.sequelize.getQueryInterface().queryGenerator['quoteIdentifier'](identifier);
+  }
+
+  quoteTable(tableName: string): string {
+    return this.sequelize.getQueryInterface().quoteIdentifiers(tableName);
+  }
+
+  async runSQL(sql: string, options: RunSQLOptions = {}) {
+    const { filter, bind, type, transaction } = options;
+    let finalSQL = sql;
+    if (!finalSQL.replace(/\s+/g, ' ').trim()) {
+      throw new Error('SQL cannot be empty');
+    }
+    if (filter) {
+      let where = {};
+      const tmpCollection = new Collection({ name: 'tmp', underscored: false }, { database: this });
+      const r = tmpCollection.repository;
+      where = r.buildQueryOptions({ filter }).where;
+      const queryGenerator = this.sequelize.getQueryInterface().queryGenerator as any;
+      const wSQL = queryGenerator.getWhereConditions(where, null, null, { bindParam: true });
+
+      if (wSQL) {
+        // 标准化 SQL，去除多余空格
+        let normalizedSQL = sql.replace(/\s+/g, ' ').trim();
+        if (normalizedSQL.endsWith(';')) {
+          normalizedSQL = normalizedSQL.slice(0, -1).trim();
+        }
+        finalSQL = `SELECT * FROM (${normalizedSQL}) AS tmp WHERE ${wSQL}`;
+      }
+    }
+    this.logger.debug('runSQL', { finalSQL });
+    const result = await this.sequelize.query(finalSQL, { bind, transaction });
+    let data: any = result[0];
+    if (type === 'selectVar') {
+      if (Array.isArray(data)) {
+        data = data[0];
+      }
+      return Object.values(data || {}).shift();
+    }
+    if (type === 'selectRow') {
+      if (Array.isArray(data)) {
+        data = data[0];
+      }
+      return data || null;
+    }
+    if (type === 'selectRows') {
+      if (!Array.isArray(data)) {
+        return [data].filter(Boolean);
+      }
+      return data;
+    }
+    return data;
   }
 }
 

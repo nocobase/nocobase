@@ -10,7 +10,7 @@
 export * from './PluginManagerLink';
 import { PageHeader } from '@ant-design/pro-layout';
 import { useDebounce } from 'ahooks';
-import { Button, Col, Divider, Input, List, Modal, Row, Space, Spin, Table, TableProps, Tabs } from 'antd';
+import { Button, Card, Col, Divider, Input, List, Modal, Row, Space, Spin, Table, TableProps, Tabs } from 'antd';
 import _ from 'lodash';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -204,6 +204,7 @@ const LocalPlugins = () => {
     'Actions',
     'Workflow',
     'Users & permissions',
+    'AI',
     'Authentication',
     'Notification',
     'System management',
@@ -309,23 +310,25 @@ const LocalPlugins = () => {
             </Space>
           </div>
         </div>
-        <Row style={{ width: '100%' }} wrap={false}>
+        <Row gutter={8} style={{ width: 'calc(100% + 8px)' }} wrap={false}>
           <Col flex="200px">
-            <List
-              size="small"
-              dataSource={keyWordsfilterList}
-              split={false}
-              renderItem={(item) => {
-                return (
-                  <List.Item
-                    style={{ padding: '3px 0' }}
-                    onClick={() => (item.key !== keyword ? setKeyword(item.key) : setKeyword(null))}
-                  >
-                    <a style={{ fontWeight: keyword === item.key ? 'bold' : 'normal' }}>{t(item.key)}</a>
-                  </List.Item>
-                );
-              }}
-            />
+            <Card>
+              <List
+                size="small"
+                dataSource={keyWordsfilterList}
+                split={false}
+                renderItem={(item) => {
+                  return (
+                    <List.Item
+                      style={{ padding: '3px 0' }}
+                      onClick={() => (item.key !== keyword ? setKeyword(item.key) : setKeyword(null))}
+                    >
+                      <a style={{ fontWeight: keyword === item.key ? 'bold' : 'normal' }}>{t(item.key)}</a>
+                    </List.Item>
+                  );
+                }}
+              />
+            </Card>
           </Col>
           <Col flex="auto">
             <div
@@ -357,58 +360,4 @@ const MarketplacePlugins = () => {
   return <div style={{ fontSize: token.fontSizeXL, color: token.colorText }}>{t('Coming soon...')}</div>;
 };
 
-export const PluginManager = () => {
-  const params = useParams();
-  const navigate = useNavigate();
-  const { tabName = 'local' } = params;
-  const { t } = useTranslation();
-  const { snippets = [] } = useACLRoleContext();
-  const { styles } = useStyles();
-  const { setTitle: setDocumentTitle } = useDocumentTitle();
-
-  useEffect(() => {
-    const { tabName } = params;
-    if (!tabName) {
-      navigate(`/admin/pm/list/local/`, { replace: true });
-    }
-    setDocumentTitle(t('Plugin manager'));
-  }, []);
-
-  return snippets.includes('pm') ? (
-    <div>
-      <PageHeader
-        className={styles.pageHeader}
-        ghost={false}
-        title={t('Plugin manager')}
-        footer={
-          <Tabs
-            activeKey={tabName}
-            onChange={(activeKey) => {
-              navigate(`/admin/pm/list/${activeKey}`);
-            }}
-            items={[
-              {
-                key: 'local',
-                label: t('Local'),
-              },
-              {
-                key: 'marketplace',
-                label: t('Marketplace'),
-              },
-            ]}
-          />
-        }
-      />
-      <div className={styles.pageContent} style={{ display: 'flex', flexFlow: 'row wrap' }}>
-        {React.createElement(
-          {
-            local: LocalPlugins,
-            marketplace: MarketplacePlugins,
-          }[tabName],
-        )}
-      </div>
-    </div>
-  ) : (
-    <AppNotFound />
-  );
-};
+export const PluginManager = LocalPlugins;
