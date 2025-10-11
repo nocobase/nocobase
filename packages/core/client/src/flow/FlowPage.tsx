@@ -68,7 +68,7 @@ export const FlowRoute = () => {
       get: () => isMobileLayout,
     });
     flowEngine.context.defineProperty('deviceType', {
-      get: () => deviceType,
+      get: () => (deviceType === 'browser' ? 'computer' : deviceType),
       cache: false,
       meta: {
         type: 'string',
@@ -76,7 +76,7 @@ export const FlowRoute = () => {
         interface: 'select',
         uiSchema: {
           enum: [
-            { label: flowEngine.translate('Computer'), value: 'browser' },
+            { label: flowEngine.translate('Computer'), value: 'computer' },
             { label: flowEngine.translate('Mobile'), value: 'mobile' },
             { label: flowEngine.translate('Tablet'), value: 'tablet' },
             { label: flowEngine.translate('SmartTv'), value: 'smarttv' },
