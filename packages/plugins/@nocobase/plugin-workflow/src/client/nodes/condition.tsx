@@ -140,10 +140,6 @@ export default class extends Instruction {
       ? false
       : [
           {
-            label: `{{t('After end of branches', { ns: "${NAMESPACE}" })}}`,
-            value: false,
-          },
-          {
             label: `{{t('Inside of "Yes" branch', { ns: "${NAMESPACE}" })}}`,
             value: BRANCH_INDEX.ON_TRUE,
           },

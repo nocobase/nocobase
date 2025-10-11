@@ -136,10 +136,6 @@ export function useAddNodeContext() {
 
 const defaultBranchingOptions = [
   {
-    label: `{{t('After end of branches', { ns: "${NAMESPACE}" })}}`,
-    value: false,
-  },
-  {
     label: `{{t('Inside of branch', { ns: "${NAMESPACE}" })}}`,
     value: 0,
   },
@@ -165,7 +161,14 @@ const DownstreamBranchIndex = observer((props) => {
     if (!branching) {
       return [];
     }
-    return branching === true ? defaultBranchingOptions : branching;
+    const br = branching === true ? defaultBranchingOptions : branching;
+    return [
+      {
+        label: `{{t('After end of branches', { ns: "${NAMESPACE}" })}}`,
+        value: false,
+      },
+      ...br,
+    ];
   }, [presetting, nodes, values.config]);
 
   if (!options.length) {

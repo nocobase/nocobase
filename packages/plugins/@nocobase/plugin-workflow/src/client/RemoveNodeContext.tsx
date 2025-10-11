@@ -9,12 +9,13 @@
 
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { createForm } from '@formily/core';
-import { ActionContextProvider, SchemaComponent, useAPIClient, useCancelAction } from '@nocobase/client';
+import { ActionContextProvider, SchemaComponent, useAPIClient, useCancelAction, usePlugin } from '@nocobase/client';
 
 import { lang, NAMESPACE } from './locale';
 import { Radio, Select, Space } from 'antd';
 import { useFlowContext } from './FlowContext';
 import { useForm } from '@formily/react';
+import PluginWorkflowClient from '.';
 
 const RemoveNodeContext = createContext(null);
 
@@ -25,7 +26,10 @@ export function useRemoveNodeContext() {
 function KeepBranchRadioGroup(props) {
   const { value, onChange } = props;
   const type = typeof value === 'number' ? 1 : 0;
-  const { deletingBranches } = useRemoveNodeContext();
+  const { deletingNode, deletingBranches } = useRemoveNodeContext();
+  const plugin = usePlugin(PluginWorkflowClient) as PluginWorkflowClient;
+  const instruction = plugin.instructions.get(deletingNode?.type);
+
   return (
     <>
       <Radio.Group
@@ -44,7 +48,7 @@ function KeepBranchRadioGroup(props) {
           </Radio>
           <Space>
             <Radio key="1" value={1}>
-              {deletingBranches.length > 1 ? lang('Keep one of the branches') : lang('Keep the branch')}
+              {lang('Keep')}
             </Radio>
 
             {type && deletingBranches.length > 1 ? (
