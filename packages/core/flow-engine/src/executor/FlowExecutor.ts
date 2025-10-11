@@ -11,6 +11,7 @@ import _ from 'lodash';
 import { FlowRuntimeContext } from '../flowContext';
 import { FlowEngine } from '../flowEngine';
 import type { FlowModel } from '../models';
+import type { DispatchEventOptions } from '../types';
 import type { ActionDefinition, ApplyFlowCacheEntry, StepDefinition } from '../types';
 import { FlowExitException, resolveDefaultParams } from '../utils';
 import { FlowExitAllException } from '../utils/exceptions';
@@ -18,6 +19,39 @@ import { setupRuntimeContextSteps } from '../utils/setupRuntimeContextSteps';
 
 export class FlowExecutor {
   constructor(private readonly engine: FlowEngine) {}
+
+  /** Cache wrapper for applyFlow cache lifecycle */
+  private async withApplyFlowCache<T>(cacheKey: string | null, executor: () => Promise<T>): Promise<T> {
+    if (!cacheKey || !this.engine) return await executor();
+
+    const cachedEntry = this.engine.applyFlowCache.get(cacheKey);
+    if (cachedEntry) {
+      if (cachedEntry.status === 'resolved') return cachedEntry.data as T;
+      if (cachedEntry.status === 'rejected') throw cachedEntry.error;
+      if (cachedEntry.status === 'pending') return await cachedEntry.promise;
+    }
+
+    const promise = executor()
+      .then((result) => {
+        this.engine.applyFlowCache.set(cacheKey, {
+          status: 'resolved',
+          data: result,
+          promise: Promise.resolve(result),
+        } as ApplyFlowCacheEntry);
+        return result;
+      })
+      .catch((err) => {
+        this.engine.applyFlowCache.set(cacheKey, {
+          status: 'rejected',
+          error: err,
+          promise: Promise.reject(err),
+        } as ApplyFlowCacheEntry);
+        throw err;
+      });
+
+    this.engine.applyFlowCache.set(cacheKey, { status: 'pending', promise } as ApplyFlowCacheEntry);
+    return await promise;
+  }
 
   /**
    * Execute a single flow on model.
@@ -46,29 +80,31 @@ export class FlowExecutor {
 
     let lastResult: any;
     const stepResults: Record<string, any> = flowContext.stepResults;
+
+    // Build steps with optional eventStep injection (when flow.on is configured)
     let eventStep = model.getEvent(typeof flow.on === 'string' ? flow.on : (flow.on as any)?.eventName);
     if (eventStep) {
-      eventStep = { ...eventStep }; // clone to avoid side effects
-      eventStep.defaultParams = { ..._.get(flow, 'on.defaultParams', {}), ...eventStep.defaultParams };
+      eventStep = { ...eventStep } as any; // clone to avoid side effects
+      (eventStep as any).defaultParams = {
+        ..._.get(flow, 'on.defaultParams', {}),
+        ...(eventStep as any).defaultParams,
+      };
     }
-    // Execute the event step first since it's usually the trigger condition - if the condition is not met, subsequent steps don't need to execute
-    const stepDefs = eventStep ? { eventStep, ...flow.steps } : flow.steps; // Record<string, StepDefinition>
+    const stepDefs: Record<string, StepDefinition> = eventStep
+      ? { eventStep: eventStep as any, ...flow.steps }
+      : flow.steps;
 
     // Setup steps meta and runtime mapping
     setupRuntimeContextSteps(flowContext, stepDefs, model, flowKey);
     const stepsRuntime = flowContext.steps as Record<string, { params: any; uiSchema?: any; result?: any }>;
 
-    for (const stepKey in stepDefs) {
-      if (!Object.prototype.hasOwnProperty.call(stepDefs, stepKey)) continue;
-      const step: StepDefinition = stepDefs[stepKey];
+    for (const [stepKey, step] of Object.entries(stepDefs) as [string, StepDefinition][]) {
+      // Resolve handler and params
       let handler: ActionDefinition['handler'] | undefined;
       let combinedParams: Record<string, any> = {};
-      let actionDefinition: ActionDefinition | undefined;
       let useRawParams: StepDefinition['useRawParams'] = step.useRawParams;
-
       if (step.use) {
-        // Step references a registered action
-        actionDefinition = model.getAction(step.use);
+        const actionDefinition = model.getAction(step.use);
         if (!actionDefinition) {
           flowContext.logger.error(
             `BaseModel.applyFlow: Action '${step.use}' not found for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
@@ -102,7 +138,6 @@ export class FlowExecutor {
       if (!useRawParams) {
         combinedParams = await flowContext.resolveJsonTemplate(combinedParams);
       }
-
       try {
         if (!handler) {
           flowContext.logger.error(
@@ -114,9 +149,8 @@ export class FlowExecutor {
         const isAwait = step.isAwait !== false;
         lastResult = isAwait ? await currentStepResult : currentStepResult;
 
-        // Store step result
+        // Store step result and update context
         stepResults[stepKey] = lastResult;
-        // update the context
         stepsRuntime[stepKey].result = stepResults[stepKey];
       } catch (error) {
         if (error instanceof FlowExitException) {
@@ -125,7 +159,6 @@ export class FlowExecutor {
         }
         if (error instanceof FlowExitAllException) {
           flowContext.logger.info(`[FlowEngine] ${error.message}`);
-          // 传递特殊控制信号，让上层可中止后续流程
           return Promise.resolve(error);
         }
         flowContext.logger.error(
@@ -203,36 +236,33 @@ export class FlowExecutor {
       }
     };
 
-    if (!cacheKey || !this.engine) {
-      return await executeAutoFlows();
-    }
-
-    const promise = executeAutoFlows()
-      .then((result) => {
-        this.engine.applyFlowCache.set(cacheKey, {
-          status: 'resolved',
-          data: result,
-          promise: Promise.resolve(result),
-        } as ApplyFlowCacheEntry);
-        return result;
-      })
-      .catch((err) => {
-        this.engine.applyFlowCache.set(cacheKey, {
-          status: 'rejected',
-          error: err,
-          promise: Promise.reject(err),
-        } as ApplyFlowCacheEntry);
-        throw err;
-      });
-
-    this.engine.applyFlowCache.set(cacheKey, { status: 'pending', promise } as ApplyFlowCacheEntry);
-    return await promise;
+    return await this.withApplyFlowCache(cacheKey, executeAutoFlows);
   }
 
   /**
    * Dispatch an event to flows bound via flow.on and execute them.
    */
-  async dispatchEvent(model: FlowModel, eventName: string, inputArgs?: Record<string, any>): Promise<void> {
+  async dispatchEvent(
+    model: FlowModel,
+    eventName: string,
+    inputArgs?: Record<string, any>,
+    options?: DispatchEventOptions,
+  ): Promise<void> {
+    // 统一 beforeRender：直接复用自动流执行逻辑（顺序 + 缓存 + 退出控制）。
+    if (eventName === 'beforeRender') {
+      try {
+        // 走模型层以触发 onBefore/After/OnError 钩子，并复用缓存
+        await model.applyAutoFlows(inputArgs, true);
+      } catch (error) {
+        // 与事件分发语义保持一致：记录错误，不中断调用方
+        model.context.logger.error(
+          { err: error },
+          `BaseModel.dispatchEvent: Error executing beforeRender auto flows for model '${model.uid}':`,
+        );
+      }
+      return;
+    }
+
     const flows = Array.from(model.getFlows().values()).filter((flow) => {
       const on = flow.on;
       if (!on) return false;
@@ -242,6 +272,31 @@ export class FlowExecutor {
     });
     const runId = `${model.uid}-${eventName}-${Date.now()}`;
     const logger = model.context.logger;
+
+    // 顺序/并行两种策略（默认并行）
+    if (options?.sequential) {
+      // 按 sort 升序串行执行
+      const ordered = flows.slice().sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+      for (const flow of ordered) {
+        try {
+          logger.debug(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}' (sequential).`);
+          const result = await this.runFlow(model, flow.key, inputArgs, runId);
+          if (result instanceof FlowExitAllException) {
+            logger.debug(`[FlowEngine.dispatchEvent] ${result.message}`);
+            break; // 顺序模式下，允许 exitAll 终止后续执行
+          }
+        } catch (error) {
+          logger.error(
+            { err: error },
+            `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}' (sequential):`,
+          );
+          // 不中断其它 flow，继续执行
+        }
+      }
+      return;
+    }
+
+    // 默认并行执行
     const promises = flows.map((flow) => {
       logger.debug(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
       return this.runFlow(model, flow.key, inputArgs, runId).catch((error) => {

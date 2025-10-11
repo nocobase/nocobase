@@ -7,18 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { autorun, observable, reaction, reactive } from '@nocobase/flow-engine';
-import { APIClient } from '@nocobase/sdk';
-import { render, waitFor } from '@testing-library/react';
+import { reaction } from '@nocobase/flow-engine';
+import { render } from '@testing-library/react';
 import React from 'react';
 import { vi } from 'vitest';
 import { FlowModelRenderer } from '../../components/FlowModelRenderer';
 import { FlowEngine } from '../../flowEngine';
-import type { DefaultStructure, FlowDefinitionOptions, FlowModelOptions, ModelConstructor } from '../../types';
+import type { DefaultStructure, FlowDefinitionOptions, FlowModelOptions } from '../../types';
 import { FlowExitException } from '../../utils';
 import { FlowExitAllException } from '../../utils/exceptions';
-import { defineFlow, FlowModel, ModelRenderMode } from '../flowModel';
-import { ForkFlowModel } from '../forkFlowModel';
+import { FlowModel, ModelRenderMode } from '../flowModel';
 
 // 全局处理测试中的未处理 Promise rejection
 const originalUnhandledRejection = process.listeners('unhandledRejection');
@@ -777,6 +775,55 @@ describe('FlowModel', () => {
         }
       });
 
+      test('getAutoFlows includes beforeRender and no-on flows; excludes manual and other events', async () => {
+        const TestM = class extends FlowModel {};
+        const beforeHandler = vi.fn();
+        const noOnHandler = vi.fn();
+        const manualHandler = vi.fn();
+
+        TestM.registerFlow({ key: 'beforeA', on: 'beforeRender', sort: 2, steps: { s: { handler: beforeHandler } } });
+        TestM.registerFlow({ key: 'noOnB', sort: 1, steps: { s: { handler: noOnHandler } } });
+        TestM.registerFlow({ key: 'manualSkip', manual: true, steps: { s: { handler: manualHandler } } });
+        TestM.registerFlow({ key: 'otherEvent', on: 'click', steps: { s: { handler: vi.fn() } } });
+
+        const m = new TestM(modelOptions);
+        const autoKeys = m.getAutoFlows().map((f) => f.key);
+
+        // sort 按 1,2 排序：noOnB -> beforeA
+        expect(autoKeys).toEqual(['noOnB', 'beforeA']);
+
+        // applyAutoFlows 会运行两者
+        await m.applyAutoFlows();
+        expect(beforeHandler).toHaveBeenCalledTimes(1);
+        expect(noOnHandler).toHaveBeenCalledTimes(1);
+        expect(manualHandler).not.toHaveBeenCalled();
+      });
+
+      test('applyAutoFlows executes in sort order mixing no-on and beforeRender', async () => {
+        const TestM = class extends FlowModel {};
+        const calls: string[] = [];
+        TestM.registerFlow({ key: 'noOn1', sort: 1, steps: { s: { handler: () => calls.push('noOn1') } } });
+        TestM.registerFlow({
+          key: 'before2',
+          on: 'beforeRender',
+          sort: 2,
+          steps: { s: { handler: () => calls.push('before2') } },
+        });
+        TestM.registerFlow({ key: 'noOn3', sort: 3, steps: { s: { handler: () => calls.push('noOn3') } } });
+
+        const m = new TestM(modelOptions);
+        await m.applyAutoFlows();
+        expect(calls).toEqual(['noOn1', 'before2', 'noOn3']);
+      });
+
+      test("model.dispatchEvent('beforeRender') delegates to applyAutoFlows", async () => {
+        const TestM = class extends FlowModel {};
+        const m = new TestM(modelOptions);
+        const spy = vi.spyOn(m as any, 'applyAutoFlows').mockResolvedValue([]);
+
+        await m.dispatchEvent('beforeRender');
+        expect(spy).toHaveBeenCalledTimes(1);
+      });
       test('should handle multiple flows for same event', async () => {
         const eventFlow1 = { ...createEventFlowDefinition('sharedEvent'), key: 'event1' };
         const eventFlow2 = { ...createEventFlowDefinition('sharedEvent'), key: 'event2' };
@@ -802,9 +849,13 @@ describe('FlowModel', () => {
           const _dispatchEventWithDebounceSpy = vi.spyOn(model as any, '_dispatchEventWithDebounce');
 
           // Test with debounce enabled
-          await model.dispatchEvent('debouncedEvent', { data: 'test' }, { debounce: true });
+          await model.dispatchEvent('debouncedEvent', { data: 'test' }, { debounce: true, sequential: true });
 
-          expect(_dispatchEventWithDebounceSpy).toHaveBeenCalledWith('debouncedEvent', { data: 'test' });
+          expect(_dispatchEventWithDebounceSpy).toHaveBeenCalledWith(
+            'debouncedEvent',
+            { data: 'test' },
+            expect.objectContaining({ sequential: true }),
+          );
           expect(_dispatchEventSpy).not.toHaveBeenCalled();
 
           _dispatchEventSpy.mockRestore();
@@ -821,7 +872,11 @@ describe('FlowModel', () => {
           // Test with debounce disabled
           await model.dispatchEvent('normalEvent', { data: 'test' }, { debounce: false });
 
-          expect(_dispatchEventSpy).toHaveBeenCalledWith('normalEvent', { data: 'test' });
+          expect(_dispatchEventSpy).toHaveBeenCalledWith(
+            'normalEvent',
+            { data: 'test' },
+            expect.objectContaining({ sequential: undefined }),
+          );
           expect(_dispatchEventWithDebounceSpy).not.toHaveBeenCalled();
 
           _dispatchEventSpy.mockRestore();
@@ -838,7 +893,11 @@ describe('FlowModel', () => {
           // Test without debounce option
           await model.dispatchEvent('defaultEvent', { data: 'test' });
 
-          expect(_dispatchEventSpy).toHaveBeenCalledWith('defaultEvent', { data: 'test' });
+          expect(_dispatchEventSpy).toHaveBeenCalledWith(
+            'defaultEvent',
+            { data: 'test' },
+            expect.objectContaining({ sequential: undefined }),
+          );
           expect(_dispatchEventWithDebounceSpy).not.toHaveBeenCalled();
 
           _dispatchEventSpy.mockRestore();
@@ -855,7 +914,11 @@ describe('FlowModel', () => {
           // Test with undefined options
           await model.dispatchEvent('undefinedOptionsEvent', { data: 'test' }, undefined);
 
-          expect(_dispatchEventSpy).toHaveBeenCalledWith('undefinedOptionsEvent', { data: 'test' });
+          expect(_dispatchEventSpy).toHaveBeenCalledWith(
+            'undefinedOptionsEvent',
+            { data: 'test' },
+            expect.objectContaining({ sequential: undefined }),
+          );
           expect(_dispatchEventWithDebounceSpy).not.toHaveBeenCalled();
 
           _dispatchEventSpy.mockRestore();
@@ -1300,6 +1363,28 @@ describe('FlowModel', () => {
 
         test('should handle empty subModels gracefully', async () => {
           await expect(parentModel.applySubModelsAutoFlows('nonExistent')).resolves.not.toThrow();
+        });
+      });
+
+      describe('applyAutoFlows cache invalidation on inputArgs change', () => {
+        test('should rerun when inputArgs changed and reuse when equal', async () => {
+          const TestM = class extends FlowModel {};
+          const handler = vi.fn();
+          TestM.registerFlow({ key: 'auto1', steps: { s: { handler } } });
+
+          const m = new TestM(modelOptions);
+
+          // First run with {a:1}
+          await m.applyAutoFlows({ a: 1 });
+          expect(handler).toHaveBeenCalledTimes(1);
+
+          // Second run with same args should hit cache -> no extra handler calls
+          await m.applyAutoFlows({ a: 1 });
+          expect(handler).toHaveBeenCalledTimes(1);
+
+          // Different args invalidate cache -> handler called again
+          await m.applyAutoFlows({ a: 2 });
+          expect(handler).toHaveBeenCalledTimes(2);
         });
       });
 

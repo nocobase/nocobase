@@ -186,6 +186,16 @@ export type FlowEvent<TModel extends FlowModel = FlowModel> =
   | { eventName: FlowEventName; defaultParams?: Record<string, any> };
 
 /**
+ * 事件分发选项。
+ */
+export interface DispatchEventOptions {
+  /** 是否顺序执行（默认并行） */
+  sequential?: boolean;
+  /** 是否使用缓存（默认 false；beforeRender 强制为 true） */
+  useCache?: boolean;
+}
+
+/**
  * 事件定义：用于事件注册表（全局/模型类级）。
  */
 export type EventDefinition<

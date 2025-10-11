@@ -50,7 +50,7 @@ import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
 import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
 import { FlowDefinition } from '../FlowDefinition';
 import { FlowSettingsOpenOptions } from '../flowSettings';
-import type { EventDefinition } from '../types';
+import type { EventDefinition, FlowEvent, DispatchEventOptions } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
@@ -105,7 +105,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   /**
    * 上一次 applyAutoFlows 的执行参数
    */
-  private _lastAutoRunParams: any[] | null = null;
+  private _lastAutoRunParams: [Record<string, any> | undefined, boolean?] | null = null;
   protected observerDispose: () => void;
   #flowContext: FlowModelContext;
 
@@ -637,7 +637,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return currentFlowEngine.executor.runFlow(target, flowKey, inputArgs, runId);
   }
 
-  private async _dispatchEvent(eventName: string, inputArgs?: Record<string, any>): Promise<void> {
+  private async _dispatchEvent(
+    eventName: string,
+    inputArgs?: Record<string, any>,
+    options?: DispatchEventOptions,
+  ): Promise<void> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
       console.warn('FlowEngine not available on this model for dispatchEvent. Please set flowEngine on the model.');
@@ -650,28 +654,28 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         this.cleanRun
       }, targetIsFork=${(target as any)?.isFork === true}`,
     );
-    await currentFlowEngine.executor.dispatchEvent(target, eventName, inputArgs);
+    await currentFlowEngine.executor.dispatchEvent(target, eventName, inputArgs, options);
   }
 
-  private _dispatchEventWithDebounce = _.debounce(async (eventName: string, inputArgs?: Record<string, any>) => {
-    return this._dispatchEvent(eventName, inputArgs);
-  }, 100);
+  private _dispatchEventWithDebounce = _.debounce(
+    async (eventName: string, inputArgs?: Record<string, any>, options?: DispatchEventOptions) => {
+      return this._dispatchEvent(eventName, inputArgs, options);
+    },
+    100,
+  );
 
   async dispatchEvent(
     eventName: string,
     inputArgs?: Record<string, any>,
     options?: {
-      /**
-       * 是否要开启防抖功能
-       */
-      debounce: boolean;
-    },
+      /** 是否要开启防抖功能 */
+      debounce?: boolean;
+    } & DispatchEventOptions,
   ): Promise<void> {
     if (options?.debounce) {
-      return this._dispatchEventWithDebounce(eventName, inputArgs);
+      return this._dispatchEventWithDebounce(eventName, inputArgs, { sequential: options?.sequential });
     }
-
-    return this._dispatchEvent(eventName, inputArgs);
+    return this._dispatchEvent(eventName, inputArgs, { sequential: options?.sequential });
   }
 
   /**
@@ -681,18 +685,19 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public getAutoFlows(): FlowDefinition[] {
     const allFlows = this.getFlows();
 
-    // 过滤出自动流程（保持 Map 的原有顺序）
-    // 没有 on 属性且没有 manual: true 的流程默认自动执行
+    // 统一语义：
+    // - 显式 on: 'beforeRender'（或 { eventName: 'beforeRender' }）的流参与自动执行
+    // - 未配置 on 且 manual !== true 的流也参与自动执行（兼容旧“自动流”）
+    const isBeforeRenderOn = (on: FlowEvent | undefined) =>
+      typeof on === 'string' ? on === 'beforeRender' : on?.eventName === 'beforeRender';
+
     const autoFlows = Array.from(allFlows.values()).filter((flow) => {
-      // 如果有 on 属性，说明是事件触发流程，不自动执行
+      // 明确 manual: true 的流程不参与自动执行
+      if (flow.manual === true) return false;
       if (flow.on) {
-        return false;
+        return isBeforeRenderOn(flow.on);
       }
-      // 如果明确设置了 manual: true，不自动执行
-      if (flow.manual === true) {
-        return false;
-      }
-      // 其他情况默认自动执行
+      // 无 on 且非 manual:true，默认作为 beforeRender 自动流
       return true;
     });
 
@@ -741,10 +746,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * @returns {Promise<any[]>} 所有自动应用流程的执行结果数组
    */
   async applyAutoFlows(inputArgs?: Record<string, any>, useCache?: boolean): Promise<any[]>;
-  async applyAutoFlows(...args: any[]): Promise<any[]> {
+  async applyAutoFlows(...args: [Record<string, any> | undefined, boolean?]): Promise<any[]> {
     const [inputArgs, useCache = true] = args;
     const cacheKey = useCache
-      ? FlowEngine.generateApplyFlowCacheKey(this['forkId'] ?? 'autoFlow', 'all', this.uid)
+      ? FlowEngine.generateApplyFlowCacheKey(this.getAutoFlowCacheScope(), 'all', this.uid)
       : null;
     if (!_.isEqual(inputArgs, this._lastAutoRunParams?.[0]) && cacheKey) {
       this.flowEngine.applyFlowCache.delete(cacheKey);
