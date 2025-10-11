@@ -15,8 +15,7 @@ import { useT } from '../../locale';
 import { FunctionOutlined, InteractionOutlined } from '@ant-design/icons';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 
-const DEFAULT_EVENTS_RAW = `
-// chart.off('click');
+const DEFAULT_EVENTS_RAW = `// chart.off('click');
 // chart.on('click', 'series', function() {
 //   ctx.openView(ctx.model.uid + '-1', {
 //     mode: 'dialog',
@@ -35,9 +34,9 @@ const OptionsMode: React.FC = connect(({ value = 'custom', onChange }) => {
         onChange(value);
       }}
     >
-      <Radio.Button disabled value="basic">
+      {/* <Radio.Button disabled value="basic">
         <InteractionOutlined /> {t('Basic')}
-      </Radio.Button>
+      </Radio.Button> */}
       <Radio.Button value="custom">
         <FunctionOutlined /> {t('Custom')}
       </Radio.Button>
@@ -66,8 +65,7 @@ export const EventsPanel: React.FC = observer(() => {
         <Field name="mode" component={[OptionsMode]} initialValue="custom" />
         {mode === 'custom' ? (
           <Button
-            color="primary"
-            variant="outlined"
+            type="link"
             onClick={async () => {
               // 写入事件参数，统一走 onPreview 方便回滚
               await ctx.model.onPreview(form.values);

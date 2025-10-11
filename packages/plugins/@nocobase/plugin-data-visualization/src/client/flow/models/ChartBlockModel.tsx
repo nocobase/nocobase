@@ -9,11 +9,11 @@
 
 import { useForm } from '@formily/react';
 import { ChildPageModel, DataBlockModel } from '@nocobase/client';
-import { createCollectionContextMeta, SQLResource, useFlowContext } from '@nocobase/flow-engine';
+import { createCollectionContextMeta, escapeT, SQLResource, useFlowContext } from '@nocobase/flow-engine';
 import React, { createRef } from 'react';
 import _ from 'lodash';
 import { Button, Badge } from 'antd';
-import { useT } from '../../locale';
+import { useT, tStr } from '../../locale';
 import { EyeOutlined } from '@ant-design/icons';
 import { convertDatasetFormats, sleep } from '../utils';
 import { Chart, ChartOptions } from './Chart';
@@ -292,7 +292,6 @@ const PreviewButton = ({ style }) => {
       color="primary"
       variant="outlined"
       style={style}
-      icon={<EyeOutlined />}
       onClick={async () => {
         // 先提交以确保 form.values 最新且通过校验
         await form.submit();
@@ -332,10 +331,10 @@ ChartBlockModel.define({
 
 ChartBlockModel.registerFlow({
   key: 'chartSettings',
-  title: 'Chart settings',
+  title: tStr('Chart settings'),
   steps: {
     configure: {
-      title: 'Configure chart',
+      title: tStr('Configure chart'),
       uiMode: {
         type: 'embed',
         props: {

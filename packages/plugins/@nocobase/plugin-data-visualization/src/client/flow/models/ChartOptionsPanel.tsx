@@ -93,8 +93,7 @@ export const ChartOptionsPanel: React.FC = observer(() => {
         {/* 仅在 custom 模式下显示右侧预览按钮，手动应用图表配置更新预览 */}
         {mode === 'custom' ? (
           <Button
-            color="primary"
-            variant="outlined"
+            type="link"
             style={{ marginRight: '8px' }}
             onClick={async () => {
               // 写入图表参数，统一走 onPreview 方便回滚

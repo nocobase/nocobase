@@ -12,7 +12,7 @@ import React, { useState } from 'react';
 import { SQLEditor } from './SQLEditor';
 import { Radio, Button, Space } from 'antd';
 import { useT } from '../../locale';
-import { BuildOutlined, ConsoleSqlOutlined, RightOutlined, DownOutlined } from '@ant-design/icons';
+import { BuildOutlined, ConsoleSqlOutlined, RightOutlined, DownOutlined, RightSquareOutlined } from '@ant-design/icons';
 import { QueryBuilder } from './QueryBuilder';
 import { ResultPanel } from './ResultPanel';
 import { ChartBlockModel } from './ChartBlockModel';
@@ -127,12 +127,13 @@ export const QueryPanel: React.FC = observer(() => {
           {/* 左边：模式切换，点击时收起数据结果预览 */}
           <Field name="mode" component={[QueryMode, { onClick: () => setShowResult(false) }]} />
           {/* 右边： 运行查询、结果 */}
-          <Space size={8}>
+          <Space>
             <Button type="link" loading={running} onClick={handleRunQuery}>
+              <RightSquareOutlined />
               {t('Run query')}
             </Button>
             <Button type="link" aria-expanded={showResult} onClick={() => setShowResult((v) => !v)}>
-              {t('Preview Data')}
+              {t('Data result')}
               {showResult ? <DownOutlined /> : <RightOutlined />}
             </Button>
           </Space>
