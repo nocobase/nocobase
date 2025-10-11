@@ -10,8 +10,8 @@
 import {
   DisplayItemModel,
   FlowModelContext,
-  ModelRenderMode,
-  FormItem,
+  PropertyMetaFactory,
+  createRecordMetaFactory,
   escapeT,
   DndProvider,
   Droppable,
@@ -82,26 +82,42 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <Space>
                 {this.mapSubModels('actions', (action) => {
-                  // @ts-ignore
-                  if (action.props.position !== 'left') {
-                    return (
-                      <Droppable model={action} key={action.uid}>
-                        <FlowModelRenderer
-                          model={action}
-                          showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                          extraToolbarItems={[
-                            {
-                              key: 'drag-handler',
-                              component: DragHandler,
-                              sort: 1,
-                            },
-                          ]}
-                        />
-                      </Droppable>
-                    );
-                  }
+                  const fork = action.createFork({}, `${index}`);
+                  const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
+                    () => (fork.context as any).collection,
+                    fork.context.t('Current record'),
+                    (ctx) => {
+                      const coll = ctx.collection;
+                      const rec = ctx.record;
+                      const name = coll?.name;
+                      const dataSourceKey = coll?.dataSourceKey;
+                      const filterByTk = coll?.getFilterByTK?.(rec);
+                      console.log(ctx.record.id);
+                      if (!name || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
+                      return { collection: name, dataSourceKey, filterByTk };
+                    },
+                  );
+                  fork.context.defineProperty('record', {
+                    get: () => this.context.record,
+                    resolveOnServer: true,
+                    meta: recordMeta,
+                  });
 
-                  return null;
+                  return (
+                    <Droppable model={fork} key={fork.uid}>
+                      <FlowModelRenderer
+                        model={fork}
+                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                        extraToolbarItems={[
+                          {
+                            key: 'drag-handler',
+                            component: DragHandler,
+                            sort: 1,
+                          },
+                        ]}
+                      />
+                    </Droppable>
+                  );
                 })}
                 {this.renderConfiguireActions()}
               </Space>
