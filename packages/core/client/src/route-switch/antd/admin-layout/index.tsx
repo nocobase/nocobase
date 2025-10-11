@@ -679,7 +679,12 @@ export const useMobileLayout = () => {
 };
 
 const rootStyle: React.CSSProperties = { display: 'flex', height: '100vh' };
-const appContainerStyle: React.CSSProperties = { flex: 1, transform: 'translateZ(0)', overflow: 'hidden' };
+const appContainerStyle: React.CSSProperties = {
+  flex: 1,
+  transform: 'translateZ(0)',
+  overflow: 'hidden',
+  scrollPaddingTop: 'var(--nb-header-height)', // 解决调用 scrollIntoView 时顶部菜单被遮挡的问题
+};
 const embedContainerStyle: React.CSSProperties = { width: 'fit-content', position: 'relative' };
 
 export const InternalAdminLayout = () => {
