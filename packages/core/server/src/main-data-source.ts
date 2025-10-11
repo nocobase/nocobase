@@ -117,7 +117,8 @@ export class MainDataSource extends SequelizeDataSource {
     const collections = loadedCollections.filter((collection: Model) => collection.options?.from !== 'db2cm');
     const loadedData = {};
     for (const collection of collections) {
-      loadedData[collection.name] = {
+      const c = db.getCollection(collection.name);
+      loadedData[c.tableName()] = {
         ...collection.toJSON(),
         fields: collection.fields.map((field: Model) => field.toJSON()),
       };
@@ -134,8 +135,8 @@ export class MainDataSource extends SequelizeDataSource {
     }
     const db = this.collectionManager.db;
     const loadedCollections = await this.getLoadedCollections(filter);
-    const tableNames = Object.keys(loadedCollections).map((collectionName: string) => {
-      const collection = db.getCollection(collectionName);
+    const tableNames = Object.values(loadedCollections).map(({ name }) => {
+      const collection = db.getCollection(name);
       return collection.getTableNameWithSchema();
     });
     let collections = [];
@@ -147,7 +148,7 @@ export class MainDataSource extends SequelizeDataSource {
     const toLoadCollections = this.mergeWithLoadedCollections(collections, loadedCollections);
 
     for (const values of toLoadCollections) {
-      const existsFields = loadedCollections[values.name].fields;
+      const existsFields = loadedCollections[values.tableName].fields;
       const deletedFields = existsFields.filter((field: any) => !values.fields.find((f) => f.name === field.name));
 
       await db.sequelize.transaction(async (transaction) => {

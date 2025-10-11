@@ -44,8 +44,6 @@ interface DatabaseIntrospectorOptions {
 
 export class DatabaseIntrospector extends EventEmitter {
   db: Database;
-  invalidCollectionNamePattern = /[\s.]/g;
-  invalidFieldNamePattern = /[\s]/g;
 
   constructor(options: DatabaseIntrospectorOptions) {
     super();
@@ -173,7 +171,7 @@ export class DatabaseIntrospector extends EventEmitter {
       name = tableName.replace(this.db.options.tablePrefix, '');
     }
     //replace dot to underscore
-    name = name.replace(this.invalidCollectionNamePattern, '_');
+    name = name.replace(/\./g, '_');
 
     return {
       name,
@@ -232,10 +230,7 @@ export class DatabaseIntrospector extends EventEmitter {
   ): FieldInferResult {
     const columnInfo = columnsInfo[columnName];
 
-    let name = columnName;
-    if (this.invalidFieldNamePattern) {
-      name = columnName.replace(this.invalidFieldNamePattern, '_');
-    }
+    const name = columnName;
     let fieldOptions: FieldOptions = {
       ...this.columnAttribute(columnsInfo, columnName, indexes),
       ...this.inferFieldTypeByRawType(columnInfo.type),
