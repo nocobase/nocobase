@@ -261,10 +261,10 @@ export class FlowExecutor {
       return isBeforeRender ? [] : true;
     };
 
-    // 缓存键：beforeRender 与自动流共用同一键；其它事件按 event + scope 缓存（默认关闭）
+    // 缓存键：按事件+scope 统一管理（beforeRender 也使用事件名 beforeRender）
     const cacheKey = useCache
       ? FlowEngine.generateApplyFlowCacheKey(
-          `event:${model.getAutoFlowCacheScope()}`,
+          `event:${model.getFlowCacheScope(eventName)}`,
           isBeforeRender ? 'beforeRender' : eventName,
           model.uid,
         )

@@ -224,10 +224,10 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   }
 
   /**
-   * 自动流程缓存的作用域标识（fork 专用）。
+   * 事件缓存的作用域标识（fork 专用）。
    */
-  public getAutoFlowCacheScope(): string {
-    return String(this.forkId);
+  public getFlowCacheScope(eventName: string): string {
+    return `${String(eventName)}:${String(this.forkId)}`;
   }
 
   // onUnmount() {

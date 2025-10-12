@@ -393,7 +393,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    */
   public invalidateFlowCache(eventName?: string, deep = false) {
     if (this.flowEngine) {
-      const scope = `event:${this.getAutoFlowCacheScope()}`;
+      const scope = `event:${this.getFlowCacheScope(eventName || 'beforeRender')}`;
       const deleteKey = (name: string) => {
         const key = FlowEngine.generateApplyFlowCacheKey(scope, name, this.uid);
         this.flowEngine.applyFlowCache.delete(key);
@@ -412,7 +412,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
       // 同步失效所有 fork 的缓存
       this.forks.forEach((fork) => {
-        const forkScope = `event:${fork['forkId']}`;
+        const forkScope = `event:${
+          (fork as any).getFlowCacheScope?.(eventName || 'beforeRender') ?? String((fork as any)['forkId'])
+        }`;
         const deleteForkKey = (name: string) => {
           const k = FlowEngine.generateApplyFlowCacheKey(forkScope, name, this.uid);
           this.flowEngine.applyFlowCache.delete(k);
@@ -981,14 +983,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   async rerender() {
-    await this.applyAutoFlows(this._lastAutoRunParams?.[0], false);
+    await this.dispatchEvent('beforeRender', this._lastAutoRunParams?.[0], { sequential: true, useCache: false });
   }
 
   /**
-   * 自动流程缓存的作用域标识；fork 实例可覆盖以区分缓存。
+   * 事件缓存的作用域标识；可按事件区分（默认与事件无关的 scope 返回 'default'）。
    */
-  public getAutoFlowCacheScope(): string {
-    return 'autoFlow';
+  public getFlowCacheScope(eventName: string): string {
+    return String(eventName);
   }
 
   setParent(parent: FlowModel): void {
@@ -1154,7 +1156,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   ) {
     await Promise.all(
       this.mapSubModels(subKey, async (sub) => {
-        await sub.applyAutoFlows(inputArgs);
+        await sub.dispatchEvent('beforeRender', inputArgs, { sequential: true, useCache: true });
       }),
     );
   }

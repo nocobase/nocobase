@@ -59,7 +59,7 @@ describe('ViewScopedFlowEngine', () => {
     expect(child.getModel(uid)).toBe(cm);
   });
 
-  it('isolates auto flow cache across engines with identical model uid', async () => {
+  it('isolates beforeRender event cache across engines with identical model uid', async () => {
     const parent = new FlowEngine();
     const child = createViewScopedEngine(parent);
 
@@ -81,11 +81,11 @@ describe('ViewScopedFlowEngine', () => {
     const pm = parent.createModel<CounterModel>({ use: CounterModel, uid });
     const cm = child.createModel<CounterModel>({ use: CounterModel, uid });
 
-    await pm.applyAutoFlows();
+    await pm.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
     expect(count).toBe(1);
 
     // If cache was shared, the next call would hit cache and not increment.
-    await cm.applyAutoFlows();
+    await cm.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
     expect(count).toBe(2);
   });
 
