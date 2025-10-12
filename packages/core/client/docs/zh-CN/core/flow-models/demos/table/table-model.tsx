@@ -41,7 +41,7 @@ export class TableModel extends FlowModel<S> {
                   },
                 },
               });
-              model.applyAutoFlows();
+              model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
             },
             items: this.collection.mapFields((field) => {
               return {

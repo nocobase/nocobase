@@ -390,7 +390,7 @@ describe('FlowModel', () => {
         TestFlowModel.registerFlow(exitFlow2);
         const loggerSpy = vi.spyOn(model.context.logger, 'info').mockImplementation(() => {});
 
-        await model.applyAutoFlows();
+        await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
 
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
         expect(exitFlow2.steps.step2.handler).toHaveBeenCalled();
@@ -428,7 +428,7 @@ describe('FlowModel', () => {
         TestFlowModel.registerFlow(exitFlow2);
         const loggerSpy = vi.spyOn(model.context.logger, 'info').mockImplementation(() => {});
 
-        await model.applyAutoFlows();
+        await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
 
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
         expect(exitFlow2.steps.step2.handler).not.toHaveBeenCalled();
@@ -538,7 +538,7 @@ describe('FlowModel', () => {
         TestFlowModel.registerFlow(autoFlow2);
         TestFlowModel.registerFlow(manualFlow);
 
-        const results = await model.applyAutoFlows();
+        const results = await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
 
         expect(results).toHaveLength(2);
         expect(autoFlow1.steps.autoStep.handler).toHaveBeenCalled();
@@ -592,13 +592,13 @@ describe('FlowModel', () => {
         TestFlowModel.registerFlow(autoFlow2);
         TestFlowModel.registerFlow(autoFlow3);
 
-        await model.applyAutoFlows();
+        await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
 
         expect(executionOrder).toEqual(['auto2', 'auto3', 'auto1']);
       });
 
       test('should no results when no auto flows found', async () => {
-        const results = await model.applyAutoFlows();
+        const results = await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
 
         expect(results).toEqual([]);
         // Note: Log output may be captured in stderr, not console.log
@@ -732,7 +732,7 @@ describe('FlowModel', () => {
           TestFlowModelWithHooks.registerFlow(autoFlow2);
 
           const modelWithHooks = new TestFlowModelWithHooks(modelOptions);
-          await modelWithHooks.applyAutoFlows();
+          await modelWithHooks.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
 
           expect(afterHookSpy).toHaveBeenCalledTimes(1);
 
@@ -776,7 +776,7 @@ describe('FlowModel', () => {
         }
       });
 
-      test('getAutoFlows includes beforeRender and no-on flows; excludes manual and other events', async () => {
+      test('getFlows includes beforeRender and no-on flows; excludes manual and other events', async () => {
         const TestM = class extends FlowModel {};
         const beforeHandler = vi.fn();
         const noOnHandler = vi.fn();
@@ -794,7 +794,7 @@ describe('FlowModel', () => {
         expect(autoKeys).toEqual(['noOnB', 'beforeA']);
 
         // applyAutoFlows 会运行两者
-        await m.applyAutoFlows();
+        await m.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
         expect(beforeHandler).toHaveBeenCalledTimes(1);
         expect(noOnHandler).toHaveBeenCalledTimes(1);
         expect(manualHandler).not.toHaveBeenCalled();
@@ -813,7 +813,7 @@ describe('FlowModel', () => {
         TestM.registerFlow({ key: 'noOn3', sort: 3, steps: { s: { handler: () => calls.push('noOn3') } } });
 
         const m = new TestM(modelOptions);
-        await m.applyAutoFlows();
+        await m.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
         expect(calls).toEqual(['noOn1', 'before2', 'noOn3']);
       });
 
@@ -1403,15 +1403,15 @@ describe('FlowModel', () => {
           const m = new TestM(modelOptions);
 
           // First run with {a:1}
-          await m.applyAutoFlows({ a: 1 });
+          await m.dispatchEvent('beforeRender', { a: 1 }, { sequential: true, useCache: true });
           expect(handler).toHaveBeenCalledTimes(1);
 
           // Second run with same args should hit cache -> no extra handler calls
-          await m.applyAutoFlows({ a: 1 });
+          await m.dispatchEvent('beforeRender', { a: 1 }, { sequential: true, useCache: true });
           expect(handler).toHaveBeenCalledTimes(1);
 
           // Different args invalidate cache -> handler called again
-          await m.applyAutoFlows({ a: 2 });
+          await m.dispatchEvent('beforeRender', { a: 2 }, { sequential: true, useCache: true });
           expect(handler).toHaveBeenCalledTimes(2);
         });
       });
@@ -2307,7 +2307,7 @@ describe('FlowModel', () => {
         });
 
         const handlerSpy = flow.steps.testStep.handler as any;
-        await model.applyAutoFlows();
+        await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
         expect(handlerSpy).toHaveBeenCalled();
       });
 
@@ -2354,7 +2354,7 @@ describe('FlowModel', () => {
         });
 
         const handlerSpy = flow.steps.nestedStep.handler as any;
-        await model.applyAutoFlows();
+        await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
         expect(handlerSpy).toHaveBeenCalled();
       });
     });

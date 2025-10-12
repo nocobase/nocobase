@@ -746,7 +746,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   private _rerunLastAutoRun = _.debounce(async () => {
     if (this._lastAutoRunParams) {
       try {
-        await this.applyAutoFlows(...this._lastAutoRunParams);
+        const [inputArgs] = this._lastAutoRunParams as any[];
+        await this.dispatchEvent('beforeRender', inputArgs, { sequential: true, useCache: true });
       } catch (error) {
         console.error('FlowModel._rerunLastAutoRun: Error during rerun:', error);
       }
@@ -786,28 +787,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   ): Promise<void> {}
 
   useHooksBeforeRender() {}
-
-  /**
-   * 执行所有自动应用流程
-   * @param {Record<string, any>} [inputArgs] 可选的运行时参数
-   * @param {boolean} [useCache=true] 是否使用缓存机制，默认为 true
-   * @returns {Promise<any[]>} 所有自动应用流程的执行结果数组
-   */
-  async applyAutoFlows(inputArgs?: Record<string, any>, useCache?: boolean): Promise<any[]>;
-  async applyAutoFlows(...args: [Record<string, any> | undefined, boolean?]): Promise<any[]> {
-    const [inputArgs, useCache = true] = args;
-    // 输入参数变化时，失效 beforeRender 事件缓存
-    if (!_.isEqual(inputArgs, this._lastAutoRunParams?.[0]) && useCache) {
-      this.invalidateFlowCache('beforeRender');
-    }
-    this._lastAutoRunParams = args;
-
-    const out = await this.flowEngine.executor.dispatchEvent(this, 'beforeRender', inputArgs, {
-      sequential: true,
-      useCache,
-    });
-    return Array.isArray(out) ? out : [];
-  }
 
   /**
    * 智能检测是否应该跳过响应式包装
