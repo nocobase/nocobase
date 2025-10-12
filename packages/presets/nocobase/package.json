@@ -109,6 +109,7 @@
     "@nocobase/plugin-block-iframe",
     "@nocobase/plugin-block-lowcode",
     "@nocobase/plugin-block-workbench",
+    "@nocobase/plugin-block-list",
     "@nocobase/plugin-calendar",
     "@nocobase/plugin-client",
     "@nocobase/plugin-collection-sql",
