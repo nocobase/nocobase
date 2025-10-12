@@ -31,7 +31,7 @@ const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
 export interface VariableFilterItemValue {
   path: string;
   operator: string;
-  value: string;
+  value: string | boolean;
 }
 
 export interface VariableFilterItemProps {
@@ -151,7 +151,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         value.operator = operatorValue;
         const cur = operatorMetaList.find((op) => op.value === operatorValue);
         if (cur?.noValue) {
-          value.value = '';
+          value.value = true;
         }
       },
       [operatorMetaList, value],
