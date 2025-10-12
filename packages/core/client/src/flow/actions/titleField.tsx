@@ -38,7 +38,7 @@ export const titleField = defineAction({
   name: 'titleField',
   title: tval('Label field'),
   uiSchema: (ctx) => {
-    if (!ctx.collectionField.isAssociationField()) {
+    if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
       return null;
     }
     return {

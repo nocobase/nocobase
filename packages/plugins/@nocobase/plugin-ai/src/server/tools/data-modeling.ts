@@ -9,6 +9,7 @@
 import { ToolOptions } from '../manager/tool-manager';
 import { Context } from '@nocobase/actions';
 import _ from 'lodash';
+import { z } from 'zod';
 
 const idField = {
   name: 'id',
@@ -220,21 +221,13 @@ export const defineCollections: ToolOptions = {
   name: 'defineCollections',
   title: '{{t("Define collections")}}',
   description: '{{t("Create or edit collections")}}',
-  schema: {
-    type: 'object',
-    properties: {
-      collections: {
-        type: 'array',
-        description: 'An array of collections to be defined or edited.',
-        items: {
-          type: 'object',
-          additionalProperties: true,
-        },
-      },
-    },
-    required: ['collections'],
-    additionalProperties: false,
-  },
+  schema: z.object({
+    collections: z
+      .array(
+        z.object({}).catchall(z.any()).describe('Valid collection object which defined in collection_type_definition'),
+      )
+      .describe('An array of collections to be defined or edited.'),
+  }),
   invoke: async (ctx: Context) => {
     const {
       args: { collections },

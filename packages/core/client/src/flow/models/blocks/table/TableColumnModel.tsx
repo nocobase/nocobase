@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { LockOutlined, QuestionCircleOutlined, ExclamationCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import type { CollectionField, PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
@@ -19,23 +19,51 @@ import {
   escapeT,
   FieldModelRenderer,
   FlowErrorFallback,
-  FlowModel,
   FlowModelContext,
   FlowModelProvider,
   FlowsFloatContextMenu,
   FormItem,
   ModelRenderMode,
+  useFlowModel,
 } from '@nocobase/flow-engine';
+import { useTranslation } from 'react-i18next';
 import { TableColumnProps, Tooltip } from 'antd';
 import { get, omit } from 'lodash';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+
+function FieldDeletePlaceholder() {
+  const { t } = useTranslation();
+  const model: any = useFlowModel();
+  const blockModel = model.context.blockModel;
+  const dataSource = blockModel.collection.dataSource;
+  const collection = blockModel.collection;
+  const name = model.fieldPath;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}${name}`;
+  }, []);
+  const content = t(`The {{type}} "{{name}}" may have been deleted. Please remove this {{blockType}}.`, {
+    type: t('Field'),
+    name: nameValue,
+    blockType: t('Field'),
+  }).replaceAll('&gt;', '>');
+  return (
+    <Tooltip title={content}>
+      <ExclamationCircleOutlined style={{ opacity: '0.45' }} />
+    </Tooltip>
+  );
+}
 
 export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
   renderHiddenInConfig() {
+    if (this.fieldDeleted) {
+      return <FieldDeletePlaceholder />;
+    }
     return (
       <Tooltip title={this.context.t('该字段已被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。')}>
         <LockOutlined style={{ opacity: '0.45' }} />
@@ -289,6 +317,9 @@ TableColumnModel.registerFlow({
     quickEdit: {
       title: escapeT('Enable quick edit'),
       uiSchema: (ctx) => {
+        if (!ctx.model.collectionField) {
+          return;
+        }
         const blockCollectionName = ctx.model.context.blockModel.collection.name;
         const fieldCollectionName = ctx.model.collectionField.collectionName;
         if (blockCollectionName !== fieldCollectionName) {
@@ -364,6 +395,10 @@ TableColumnModel.registerFlow({
           ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
         });
       },
+    },
+    fixed: {
+      title: escapeT('Fixed'),
+      use: 'fixed',
     },
   },
 });

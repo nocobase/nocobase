@@ -161,7 +161,7 @@ DetailsItemModel.registerFlow({
       },
       defaultParams: (ctx) => {
         return {
-          title: ctx.collectionField.title,
+          title: ctx.collectionField?.title,
         };
       },
       handler(ctx, params) {

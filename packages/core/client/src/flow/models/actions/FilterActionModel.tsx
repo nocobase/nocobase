@@ -117,7 +117,7 @@ FilterActionModel.registerFlow({
             return (
               <FilterGroup
                 value={props.value || {}}
-                FilterItem={(props) => <FilterItem {...props} model={modelInstance} />}
+                FilterItem={(props) => <VariableFilterItem {...props} model={modelInstance} />}
               />
             );
           },
