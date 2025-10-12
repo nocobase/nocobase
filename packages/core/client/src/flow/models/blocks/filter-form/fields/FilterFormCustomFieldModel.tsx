@@ -7,20 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { FilterFormCustomItemModel } from '../FilterFormCustomItemModel';
-import {
-  escapeT,
-  FieldModelRenderer,
-  FilterableItemModel,
-  FormItem,
-  useFlowContext,
-  useFlowEngine,
-} from '@nocobase/flow-engine';
+import { escapeT, FieldModelRenderer, FormItem } from '@nocobase/flow-engine';
 import { FieldComponentProps } from './FieldComponentProps';
 import { debounce } from 'lodash';
 import { SourceCascader } from '../SourceCascader';
-import { Select } from '@formily/antd-v5';
+import { FieldModelSelect } from '../FieldModelSelect';
 
 export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
   fieldModelInstance = null;
@@ -198,22 +191,3 @@ FilterFormCustomFieldModel.registerFlow({
     },
   },
 });
-
-function FieldModelSelect(props) {
-  const { source = [], onChange } = props;
-  const flowEngine = useFlowEngine();
-  const ctx = useFlowContext();
-
-  const defaultValue = useMemo(() => {
-    if (!source.length) return undefined;
-    const collectionField = flowEngine.dataSourceManager.getCollectionField(source.join('.'));
-    const binding = FilterableItemModel.getDefaultBindingByField(ctx.model.context, collectionField);
-    if (!binding) {
-      return;
-    }
-    onChange(binding.modelName);
-    return binding.modelName;
-  }, [source, flowEngine.dataSourceManager, ctx.model.context, onChange]);
-
-  return <Select allowClear {...props} value={props.value || defaultValue} />;
-}
