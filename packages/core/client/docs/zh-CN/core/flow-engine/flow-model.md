@@ -81,8 +81,9 @@
   - `useCache`: 是否启用事件级缓存（默认 false）；beforeRender 强制为 true
   - `debounce`: 是否启用防抖（默认 false）
 
-- **applySubModelsAutoFlows(subKey: string, extra?: Record\<string, any\>): Promise\<void\>**  
-  执行指定子模型的自动流。
+- **applySubModelsBeforeRenderFlows(subKey: string, inputArgs?: Record\<string, any\>): Promise\<void\>**  
+  对指定子模型派发 `beforeRender` 事件（内部顺序执行并使用缓存）。
+  兼容：`applySubModelsAutoFlows` 作为别名保留，后续将弃用。
 
 - **getFlow(key: string): FlowDefinition \| undefined**  
   获取指定 key 的流配置。
@@ -96,13 +97,11 @@
 
 ---
 
-### 事件分发钩子（推荐）
+### 事件分发钩子
 
 - **async onDispatchEventStart(eventName: string, options?: DispatchEventOptions, inputArgs?: Record<string, any>)**
 - **async onDispatchEventEnd(eventName: string, options?: DispatchEventOptions, inputArgs?: Record<string, any>, results?: any[])**
 - **async onDispatchEventError(eventName: string, options?: DispatchEventOptions, inputArgs?: Record<string, any>, error?: Error)**
-
-兼容：beforeRender 的旧钩子 `onBeforeAutoFlows`、`onAfterAutoFlows`、`onAutoFlowsError` 仍可工作，但建议迁移到上述通用钩子。
 
 ---
 

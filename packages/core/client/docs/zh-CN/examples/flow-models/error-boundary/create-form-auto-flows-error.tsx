@@ -3,15 +3,7 @@
  * title: 错误回退 - CreateForm 自动流异常
  */
 
-import {
-  Application,
-  CreateFormModel,
-  FilterManager,
-  FormFieldModel,
-  FormGridModel,
-  FormItemModel,
-  Plugin,
-} from '@nocobase/client';
+import { Application, CreateFormModel, FilterManager, FormGridModel, FormItemModel, Plugin } from '@nocobase/client';
 import { FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
 import { APIClient } from '@nocobase/sdk';
 import { Card } from 'antd';
@@ -45,7 +37,6 @@ class DemoPlugin extends Plugin {
       CreateFormModel,
       FormGridModel,
       FormItemModel,
-      FormFieldModel,
     });
 
     this.form = this.flowEngine.createModel({
@@ -97,7 +88,7 @@ class DemoPlugin extends Plugin {
       element: (
         <FlowEngineProvider engine={this.flowEngine}>
           <div style={{ padding: 16 }}>
-            <Card title="CreateForm 自动流异常演示" style={{ marginTop: 12 }}>
+            <Card title="CreateForm beforeRender事件流异常演示" style={{ marginTop: 12 }}>
               <FlowModelRenderer model={this.form} showFlowSettings showErrorFallback />
             </Card>
           </div>

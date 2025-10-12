@@ -81,8 +81,9 @@
   - `useCache`: 为 `true` 时启用事件层面的缓存（默认 `false`）；特殊事件 `beforeRender` 强制使用缓存。
   - 特殊事件 `beforeRender` 始终按 `sort` 顺序串行执行。
 
-- **applySubModelsAutoFlows(subKey: string, extra?: Record\<string, any\>): Promise\<void\>**  
-  执行指定子模型的自动流。
+- **applySubModelsBeforeRenderFlows(subKey: string, inputArgs?: Record\<string, any\>): Promise\<void\>**  
+  对指定子模型派发 `beforeRender` 事件（内部顺序执行并使用缓存）。
+  兼容：`applySubModelsAutoFlows` 作为别名保留，后续将弃用。
 
 - **getFlow(key: string): FlowDefinition \| undefined**  
   获取指定 key 的流配置。
@@ -92,13 +93,13 @@
 
 - **getEventFlows(eventName: string): FlowDefinition[]**  
   按事件名获取流程集合并按 sort 排序。
-  - 特殊事件 `beforeRender`: 兼容包含“未声明 on 且 manual !== true”的流程（等价历史自动流）。
+  - 特殊事件 `beforeRender`: 兼容包含“未声明 on 且 manual !== true”的流程。
 
 ---
 
-### 事件分发钩子（推荐）
+### 事件分发钩子
 
-为统一各类事件流程（含 beforeRender），提供以下通用钩子：
+为统一各类事件流程，提供以下通用钩子：
 
 - **async onDispatchEventStart(eventName: string, options?: DispatchEventOptions, inputArgs?: Record<string, any>)**
   事件执行前调用；beforeRender 可通过抛出 `FlowExitException` 终止执行。
@@ -108,8 +109,6 @@
 
 - **async onDispatchEventError(eventName: string, options?: DispatchEventOptions, inputArgs?: Record<string, any>, error?: Error)**
   事件执行或生命周期钩子出错时调用。
-
-兼容：beforeRender 的旧钩子 `onBeforeAutoFlows`、`onAfterAutoFlows`、`onAutoFlowsError` 仍可工作，但建议迁移到上述通用钩子。
 
 ---
 

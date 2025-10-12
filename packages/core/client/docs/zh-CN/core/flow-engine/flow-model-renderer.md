@@ -132,14 +132,7 @@ interface FlowModelRendererProps {
 ```
 
 ### 4. 自定义流控制
-当需要手动控制流应用时，可以跳过自动流：
-
-```tsx | pure
-<FlowModelRenderer 
-  model={flowModel} 
-  skipApplyAutoFlows={true}
-/>
-```
+当需要手动控制时，可以选择不传 `inputArgs` 或通过模型上的自定义逻辑控制时机；渲染器内部会统一在渲染前触发 `beforeRender` 事件。
 
 ### 5. 传递自定义上下文
 当需要向流传递特定上下文数据时：

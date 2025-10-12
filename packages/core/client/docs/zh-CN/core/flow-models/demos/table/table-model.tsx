@@ -128,7 +128,7 @@ TableModel.registerFlow({
         resource.setAPIClient(api);
         ctx.model.resource = resource;
         await resource.refresh();
-        await ctx.model.applySubModelsAutoFlows('columns');
+        await ctx.model.applySubModelsBeforeRenderFlows('columns');
       },
     },
   },

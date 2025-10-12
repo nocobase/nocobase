@@ -119,7 +119,7 @@ MyFlowModel.registerFlow(myFlow); // 注册流
 class MyFlowDefinition implements FlowDefinition {
   key = 'MyFlowDefinition';
   title = '我的复杂流程';
-  // 推荐显式声明 beforeRender 生命周期事件（等价于未声明 on 且 manual !== true 的自动流）
+  // 推荐显式声明 beforeRender 生命周期事件（等价于未声明 on 且 manual !== true 的流）
   on = { eventName: 'beforeRender' };
   sort = 0;
 

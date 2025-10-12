@@ -103,7 +103,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   private forkCache: Map<string, ForkFlowModel<any>> = new Map();
 
   /**
-   * 上一次 applyAutoFlows 的执行参数
+   * 上一次 beforeRender 的执行参数
    */
   private _lastAutoRunParams: [Record<string, any> | undefined, boolean?] | null = null;
   protected observerDispose: () => void;
@@ -728,7 +728,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const isMatch = (flow: FlowDefinition) => {
       if (beforeRender) {
         if (flow.manual === true) return false;
-        if (!flow.on) return true; // 兼容历史自动流
+        if (!flow.on) return true;
         return typeof flow.on === 'string' ? flow.on === 'beforeRender' : flow.on?.eventName === 'beforeRender';
       }
       const on = flow.on;
@@ -739,7 +739,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
-   * 重新执行上一次的 applyAutoFlows，保持参数一致
+   * 重新执行上一次的 beforeRender，保持参数一致
    * 如果之前没有执行过，则直接跳过
    * 使用 lodash debounce 避免频繁调用
    */
@@ -1121,7 +1121,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return this.flowEngine.createModel(options);
   }
 
-  async applySubModelsAutoFlows<K extends keyof Structure['subModels']>(
+  /**
+   * 对指定子模型派发 beforeRender 事件（顺序执行并使用缓存）。
+   */
+  async applySubModelsBeforeRenderFlows<K extends keyof Structure['subModels']>(
     subKey: K,
     inputArgs?: Record<string, any>,
     shared?: Record<string, any>,
@@ -1131,6 +1134,17 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         await sub.dispatchEvent('beforeRender', inputArgs, { sequential: true, useCache: true });
       }),
     );
+  }
+
+  /**
+   * @deprecated 请改用 applySubModelsBeforeRenderFlows
+   */
+  async applySubModelsAutoFlows<K extends keyof Structure['subModels']>(
+    subKey: K,
+    inputArgs?: Record<string, any>,
+    shared?: Record<string, any>,
+  ) {
+    return this.applySubModelsBeforeRenderFlows(subKey, inputArgs, shared);
   }
 
   /**

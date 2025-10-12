@@ -528,7 +528,7 @@ describe('FlowModel', () => {
       });
     });
 
-    describe('applyAutoFlows', () => {
+    describe('beforeRender flows', () => {
       test('should execute all auto flows', async () => {
         const autoFlow1 = { ...createAutoFlowDefinition(), key: 'auto1', sort: 1 };
         const autoFlow2 = { ...createAutoFlowDefinition(), key: 'auto2', sort: 2 };
@@ -682,7 +682,7 @@ describe('FlowModel', () => {
             useCache: true,
           });
 
-          // Should have called onBeforeAutoFlows but not onAfterAutoFlows
+          // Should have called onDispatchEventStart but not onDispatchEventEnd
           expect(beforeHookSpy).toHaveBeenCalledTimes(1);
           expect(afterHookSpy).not.toHaveBeenCalled();
           expect(errorHookSpy).not.toHaveBeenCalled();
@@ -725,7 +725,7 @@ describe('FlowModel', () => {
           );
         });
 
-        test('should provide access to step results in onAfterAutoFlows', async () => {
+        test('should provide access to step results in onDispatchEventEnd(beforeRender)', async () => {
           const autoFlow1 = { ...createAutoFlowDefinition(), key: 'auto1' };
           const autoFlow2 = { ...createAutoFlowDefinition(), key: 'auto2' };
           TestFlowModelWithHooks.registerFlow(autoFlow1);
@@ -793,14 +793,14 @@ describe('FlowModel', () => {
         // sort 按 1,2 排序：noOnB -> beforeA
         expect(autoKeys).toEqual(['noOnB', 'beforeA']);
 
-        // applyAutoFlows 会运行两者
+        // beforeRender 会运行两者
         await m.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
         expect(beforeHandler).toHaveBeenCalledTimes(1);
         expect(noOnHandler).toHaveBeenCalledTimes(1);
         expect(manualHandler).not.toHaveBeenCalled();
       });
 
-      test('applyAutoFlows executes in sort order mixing no-on and beforeRender', async () => {
+      test('beforeRender executes in sort order mixing no-on and beforeRender', async () => {
         const TestM = class extends FlowModel {};
         const calls: string[] = [];
         TestM.registerFlow({ key: 'noOn1', sort: 1, steps: { s: { handler: () => calls.push('noOn1') } } });
@@ -1356,45 +1356,54 @@ describe('FlowModel', () => {
         });
       });
 
-      describe('applySubModelsAutoFlows', () => {
+      describe('applySubModelsBeforeRenderFlows', () => {
         test('should apply auto flows to all array subModels', async () => {
           const child1 = new FlowModel({ uid: 'child1', flowEngine });
           const child2 = new FlowModel({ uid: 'child2', flowEngine });
 
-          child1.applyAutoFlows = vi.fn().mockResolvedValue([]);
-          child2.applyAutoFlows = vi.fn().mockResolvedValue([]);
+          child1.dispatchEvent = vi.fn().mockResolvedValue(undefined) as any;
+          child2.dispatchEvent = vi.fn().mockResolvedValue(undefined) as any;
 
           parentModel.addSubModel('children', child1);
           parentModel.addSubModel('children', child2);
 
           const runtimeData = { test: 'extra' };
 
-          await parentModel.applySubModelsAutoFlows('children', runtimeData);
+          await parentModel.applySubModelsBeforeRenderFlows('children', runtimeData);
 
-          expect(child1.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
-          expect(child2.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
+          expect(child1.dispatchEvent).toHaveBeenCalledWith('beforeRender', runtimeData, {
+            sequential: true,
+            useCache: true,
+          });
+          expect(child2.dispatchEvent).toHaveBeenCalledWith('beforeRender', runtimeData, {
+            sequential: true,
+            useCache: true,
+          });
         });
 
         test('should apply auto flows to single subModel', async () => {
           const child = new FlowModel({ uid: 'child', flowEngine });
 
-          child.applyAutoFlows = vi.fn().mockResolvedValue([]);
+          child.dispatchEvent = vi.fn().mockResolvedValue(undefined) as any;
 
           parentModel.setSubModel('child', child);
 
           const runtimeData = { test: 'extra' };
 
-          await parentModel.applySubModelsAutoFlows('child', runtimeData);
+          await parentModel.applySubModelsBeforeRenderFlows('child', runtimeData);
 
-          expect(child.applyAutoFlows).toHaveBeenCalledWith(runtimeData);
+          expect(child.dispatchEvent).toHaveBeenCalledWith('beforeRender', runtimeData, {
+            sequential: true,
+            useCache: true,
+          });
         });
 
         test('should handle empty subModels gracefully', async () => {
-          await expect(parentModel.applySubModelsAutoFlows('nonExistent')).resolves.not.toThrow();
+          await expect(parentModel.applySubModelsBeforeRenderFlows('nonExistent')).resolves.not.toThrow();
         });
       });
 
-      describe('applyAutoFlows cache invalidation on inputArgs change', () => {
+      describe('beforeRender cache invalidation on inputArgs change', () => {
         test('should rerun when inputArgs changed and reuse when equal', async () => {
           const TestM = class extends FlowModel {};
           const handler = vi.fn();
@@ -1799,13 +1808,16 @@ describe('FlowModel', () => {
         expect(result.type.displayName).toBe('ReactiveWrapper(FlowModel)');
       });
 
-      test('should rerender with previous auto flows', async () => {
+      test('should rerender triggers beforeRender without cache', async () => {
         const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-        model.applyAutoFlows = vi.fn().mockResolvedValue([]);
+        model.dispatchEvent = vi.fn().mockResolvedValue(undefined) as any;
 
         try {
           await expect(model.rerender()).resolves.not.toThrow();
-          expect(model.applyAutoFlows).toHaveBeenCalled();
+          expect(model.dispatchEvent).toHaveBeenCalledWith('beforeRender', undefined, {
+            sequential: true,
+            useCache: false,
+          });
         } finally {
           consoleSpy.mockRestore();
         }

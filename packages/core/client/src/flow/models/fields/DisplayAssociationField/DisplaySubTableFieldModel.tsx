@@ -105,7 +105,7 @@ DisplaySubTableFieldModel.registerFlow({
   steps: {
     init: {
       async handler(ctx) {
-        await ctx.model.applySubModelsAutoFlows('columns');
+        await ctx.model.applySubModelsBeforeRenderFlows('columns');
       },
     },
   },
