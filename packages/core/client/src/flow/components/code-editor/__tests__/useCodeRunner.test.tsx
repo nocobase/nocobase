@@ -24,7 +24,7 @@ import {
 } from '@nocobase/flow-engine';
 import { JSEditableFieldModel } from '../../../models/fields/JSEditableFieldModel';
 
-// Minimal auto-flow model that executes preview code
+// Minimal beforeRender event model that executes preview code
 class DummyJsAutoModel extends FlowModel {
   render() {
     return <span data-testid={`dummy-${this.uid}`} ref={this.context.ref as any} />;

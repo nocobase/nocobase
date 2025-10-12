@@ -191,10 +191,7 @@ export class FlowExecutor {
 
     // 统一：事件开始钩子（beforeRender 兼容旧钩子）
     try {
-      await (model as any).onDispatchEventStart?.(eventName, options, inputArgs);
-      if (isBeforeRender && (model as any).onBeforeAutoFlows) {
-        await (model as any).onBeforeAutoFlows(inputArgs);
-      }
+      await model.onDispatchEventStart?.(eventName, options, inputArgs);
     } catch (err) {
       if (isBeforeRender && err instanceof FlowExitException) {
         logger.debug(`[FlowModel.dispatchEvent] ${err.message}`);
@@ -211,7 +208,7 @@ export class FlowExecutor {
 
     // 构造待执行的 flows 列表
     const flows = isBeforeRender
-      ? model.getEventFlows('beforeRender') // 统一：beforeRender 运行自动流集合（含无 on 的流）
+      ? model.getEventFlows('beforeRender') // beforeRender 事件集合（兼容未声明 on 且非 manual 的定义）
       : Array.from(model.getFlows().values()).filter((flow) => {
           const on = flow.on;
           if (!on) return false;
@@ -235,7 +232,7 @@ export class FlowExecutor {
               logger.debug(`[FlowEngine.dispatchEvent] ${result.message}`);
               break; // 终止后续
             }
-            if (isBeforeRender) results.push(result);
+            results.push(result);
           } catch (error) {
             logger.error(
               { err: error },
@@ -244,21 +241,25 @@ export class FlowExecutor {
             // 顺序模式不中断其它 flow
           }
         }
-        return isBeforeRender ? results : true;
+        return results;
       }
 
       // 并行
-      const promises = flows.map((flow) => {
-        logger.debug(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
-        return this.runFlow(model, flow.key, inputArgs, runId).catch((error) => {
-          logger.error(
-            { err: error },
-            `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
-          );
-        });
-      });
-      await Promise.all(promises);
-      return isBeforeRender ? [] : true;
+      const results = await Promise.all(
+        flows.map(async (flow) => {
+          logger.debug(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
+          try {
+            return await this.runFlow(model, flow.key, inputArgs, runId);
+          } catch (error) {
+            logger.error(
+              { err: error },
+              `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
+            );
+            return undefined;
+          }
+        }),
+      );
+      return results.filter((x) => x !== undefined);
     };
 
     // 缓存键：按事件+scope 统一管理（beforeRender 也使用事件名 beforeRender）
@@ -272,12 +273,9 @@ export class FlowExecutor {
 
     try {
       const result = await this.withApplyFlowCache(cacheKey, execute);
-      // 统一：事件结束钩子（beforeRender 兼容旧钩子）
+      // 事件结束钩子
       try {
-        await (model as any).onDispatchEventEnd?.(eventName, options, inputArgs, result);
-        if (isBeforeRender && (model as any).onAfterAutoFlows) {
-          await (model as any).onAfterAutoFlows(result, inputArgs);
-        }
+        await model.onDispatchEventEnd?.(eventName, options, inputArgs, result);
       } catch (hookErr) {
         logger.error({ err: hookErr }, `BaseModel.dispatchEvent: End hook error for event '${eventName}'`);
       }
@@ -286,9 +284,6 @@ export class FlowExecutor {
       // 与事件分发语义保持一致：记录错误，不抛给调用方
       try {
         await (model as any).onDispatchEventError?.(eventName, options, inputArgs, error as Error);
-        if (isBeforeRender && (model as any).onAutoFlowsError) {
-          await (model as any).onAutoFlowsError(error as Error, inputArgs);
-        }
       } catch (_) {
         // swallow secondary hook error
       }

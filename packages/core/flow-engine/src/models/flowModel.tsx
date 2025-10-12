@@ -771,7 +771,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     eventName: string,
     options?: DispatchEventOptions,
     inputArgs?: Record<string, any>,
-    result?: any,
+    results?: any[],
   ): Promise<void> {}
 
   /**
@@ -784,13 +784,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     inputArgs?: Record<string, any>,
     error?: Error,
   ): Promise<void> {}
-
-  /**
-   * 兼容钩子（建议迁移到 onDispatchEvent*）：beforeRender 专用旧钩子
-   */
-  public async onBeforeAutoFlows(inputArgs?: Record<string, any>): Promise<void> {}
-  public async onAfterAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise<void> {}
-  public async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise<void> {}
 
   useHooksBeforeRender() {}
 

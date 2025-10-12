@@ -211,7 +211,7 @@ const FlowModelRendererCore: React.FC<{
     const ContentOrError: React.FC = () => {
       const autoError = getAutoFlowError(model);
       if (autoError) {
-        // 把自动流的错误转化为内容区错误，由内层边界兜住
+        // 将 beforeRender 事件错误转化为内容区错误，由内层边界兜住
         throw autoError;
       }
       const rendered = model.render();

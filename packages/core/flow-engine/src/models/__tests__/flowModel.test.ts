@@ -615,16 +615,14 @@ describe('FlowModel', () => {
           afterHookSpy = vi.fn();
           errorHookSpy = vi.fn();
           TestFlowModelWithHooks = class extends TestFlowModel {
-            async onBeforeAutoFlows(inputArgs?: Record<string, any>) {
-              beforeHookSpy(inputArgs);
+            async onDispatchEventStart(eventName: string, _opts?: any, inputArgs?: Record<string, any>) {
+              if (eventName === 'beforeRender') beforeHookSpy(inputArgs);
             }
-
-            async onAfterAutoFlows(results: any[], inputArgs?: Record<string, any>) {
-              afterHookSpy(results, inputArgs);
+            async onDispatchEventEnd(eventName: string, _opts?: any, inputArgs?: Record<string, any>, results?: any[]) {
+              if (eventName === 'beforeRender') afterHookSpy(results, inputArgs);
             }
-
-            async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
-              errorHookSpy(error, inputArgs);
+            async onDispatchEventError(eventName: string, _opts?: any, inputArgs?: Record<string, any>, error?: Error) {
+              if (eventName === 'beforeRender') errorHookSpy(error, inputArgs);
             }
           };
         });
@@ -636,7 +634,10 @@ describe('FlowModel', () => {
           const modelWithHooks = new TestFlowModelWithHooks(modelOptions);
           const inputArgs = { test: 'value' };
 
-          const results = await modelWithHooks.applyAutoFlows(inputArgs);
+          const results = await modelWithHooks.dispatchEvent('beforeRender', inputArgs, {
+            sequential: true,
+            useCache: true,
+          });
 
           // Verify hooks were called
           expect(beforeHookSpy).toHaveBeenCalledTimes(1);
@@ -652,22 +653,22 @@ describe('FlowModel', () => {
           );
         });
 
-        test('should allow onBeforeAutoFlows to terminate flow via ctx.exit()', async () => {
+        test("should allow onDispatchEventStart('beforeRender') to terminate flow via ctx.exit()", async () => {
           const autoFlow1 = { ...createAutoFlowDefinition(), key: 'auto1' };
           const autoFlow2 = { ...createAutoFlowDefinition(), key: 'auto2' };
 
           const TestFlowModelWithExitHooks = class extends TestFlowModel {
-            async onBeforeAutoFlows(inputArgs?: Record<string, any>) {
-              beforeHookSpy(inputArgs);
-              throw new FlowExitException('autoFlows', this.uid);
+            async onDispatchEventStart(eventName: string, _opts?: any, inputArgs?: Record<string, any>) {
+              if (eventName === 'beforeRender') {
+                beforeHookSpy(inputArgs);
+                throw new FlowExitException('beforeRender', this.uid);
+              }
             }
-
-            async onAfterAutoFlows(results: any[], inputArgs?: Record<string, any>) {
-              afterHookSpy(results, inputArgs);
+            async onDispatchEventEnd(eventName: string, _o?: any, _i?: any, _r?: any[]) {
+              if (eventName === 'beforeRender') afterHookSpy(_r, _i);
             }
-
-            async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>) {
-              errorHookSpy(error, inputArgs);
+            async onDispatchEventError(eventName: string, _o?: any, i?: any, e?: Error) {
+              if (eventName === 'beforeRender') errorHookSpy(e, i);
             }
           };
 
@@ -676,7 +677,10 @@ describe('FlowModel', () => {
           TestFlowModelWithExitHooks.registerFlow(autoFlow2);
 
           const modelWithHooks = new TestFlowModelWithExitHooks(modelOptions);
-          const results = await modelWithHooks.applyAutoFlows();
+          const results = await modelWithHooks.dispatchEvent('beforeRender', undefined, {
+            sequential: true,
+            useCache: true,
+          });
 
           // Should have called onBeforeAutoFlows but not onAfterAutoFlows
           expect(beforeHookSpy).toHaveBeenCalledTimes(1);
@@ -686,12 +690,12 @@ describe('FlowModel', () => {
           // Should return empty results since flow was terminated early
           expect(results).toEqual([]);
 
-          // Auto flows should not have been executed
+          // flows should not have been executed
           expect(autoFlow1.steps.autoStep.handler).not.toHaveBeenCalled();
           expect(autoFlow2.steps.autoStep.handler).not.toHaveBeenCalled();
         });
 
-        test('should call onAutoFlowsError when flow execution fails', async () => {
+        test("should call onDispatchEventError('beforeRender') when flow execution fails", async () => {
           const errorFlow = {
             key: 'errorFlow',
 
@@ -706,11 +710,8 @@ describe('FlowModel', () => {
           TestFlowModelWithHooks.registerFlow(errorFlow);
 
           const modelWithHooks = new TestFlowModelWithHooks(modelOptions);
-
-          // 测试错误处理钩子功能
-          await expect(modelWithHooks.applyAutoFlows()).rejects.toThrow('Test error');
-
-          // Verify hooks were called
+          await modelWithHooks.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+          // Verify hooks were called (error path)
           expect(beforeHookSpy).toHaveBeenCalledTimes(1);
           expect(afterHookSpy).not.toHaveBeenCalled();
           expect(errorHookSpy).toHaveBeenCalledTimes(1);

@@ -130,7 +130,7 @@ export class FlowEngine {
    */
   public reactView: ReactView;
   /**
-   * Flow executor that runs flows and auto-flows.
+   * Flow executor that runs event flows.
    */
   public executor: FlowExecutor;
 
