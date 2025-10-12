@@ -265,19 +265,29 @@ export function useBeforeUpload(rules) {
   const { t } = useTranslation();
 
   return useCallback(
-    (file) => {
-      const error = validate(file, rules);
-
-      if (error) {
-        file.status = 'error';
-        file.response = t(error);
-      } else {
-        if (file.status === 'error') {
-          delete file.status;
-          delete file.response;
+    (file, fileList) => {
+      let proxiedFile = file;
+      if (!file.type) {
+        const extname = file.name?.match(/\.[^.]+$/)?.[0];
+        if (extname) {
+          proxiedFile = new File([file], file.name, {
+            type: mime.getType(extname) || 'application/octet-stream',
+            lastModified: file.lastModified,
+          });
         }
       }
-      return !error;
+      const error = validate(proxiedFile, rules);
+
+      if (error) {
+        proxiedFile.status = 'error';
+        proxiedFile.response = t(error);
+      } else {
+        if (proxiedFile.status === 'error') {
+          delete proxiedFile.status;
+          delete proxiedFile.response;
+        }
+      }
+      return error ? false : proxiedFile;
     },
     [rules],
   );
