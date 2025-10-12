@@ -7,6 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './FilterFormFieldModel';
-export * from './date-time';
-export * from './FilterFormCustomFieldModel';
+import { FilterFormCustomItemModel } from '../FilterFormCustomItemModel';
+
+export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
+  static defineChildren = null;
+}
+
+FilterFormCustomFieldModel.define({
+  label: '{{t("Custom field")}}',
+  sort: 1,
+});
