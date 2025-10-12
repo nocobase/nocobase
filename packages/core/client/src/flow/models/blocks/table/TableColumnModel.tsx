@@ -73,7 +73,7 @@ export class TableColumnModel extends DisplayItemModel {
 
   async afterAddAsSubModel() {
     await super.afterAddAsSubModel();
-    await this.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+    await this.dispatchEvent('beforeRender');
   }
 
   static defineChildren(ctx: FlowModelContext) {

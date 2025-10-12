@@ -88,7 +88,7 @@ const AddActionToolbarComponent = ({ model }) => {
 
 export class TableActionsColumnModel extends TableCustomColumnModel {
   async afterAddAsSubModel() {
-    await this.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+    await this.dispatchEvent('beforeRender');
   }
 
   getColumnProps() {

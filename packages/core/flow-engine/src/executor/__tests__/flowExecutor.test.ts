@@ -81,7 +81,7 @@ describe('FlowExecutor', () => {
     expect(result.step2).toBe('step2-ok');
   });
 
-  it("dispatchEvent('beforeRender') executes flows in sort order and caches result", async () => {
+  it("dispatchEvent('beforeRender') executes flows in sort order and caches result (when options specify)", async () => {
     const calls: string[] = [];
     const mkFlow = (key: string, sort: number) => ({
       sort,
@@ -104,14 +104,20 @@ describe('FlowExecutor', () => {
 
     const model = createModelWithFlows('m-auto', flows);
 
-    const r1 = await engine.executor.dispatchEvent(model, 'beforeRender');
+    const r1 = await engine.executor.dispatchEvent(model, 'beforeRender', undefined, {
+      sequential: true,
+      useCache: true,
+    });
     expect(Array.isArray(r1)).toBe(true);
     // sort order: f1 then f2
     expect(calls).toEqual(['f1', 'f2']);
 
     // second run should hit cache and not execute handlers again
     const prevCount = calls.length;
-    const r2 = await engine.executor.dispatchEvent(model, 'beforeRender');
+    const r2 = await engine.executor.dispatchEvent(model, 'beforeRender', undefined, {
+      sequential: true,
+      useCache: true,
+    });
     expect(Array.isArray(r2)).toBe(true);
     expect(calls.length).toBe(prevCount);
   });
@@ -200,7 +206,7 @@ describe('FlowExecutor', () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
-  it("dispatchEvent('beforeRender') runs beforeRender flows once due to cache", async () => {
+  it("dispatchEvent('beforeRender') runs once due to cache (when options specify)", async () => {
     const handler = vi.fn();
     const flows = {
       auto1: { steps: { s: { handler } } }, // 无 on → 视为 beforeRender
@@ -209,8 +215,8 @@ describe('FlowExecutor', () => {
 
     const model = createModelWithFlows('m-br-cache', flows);
 
-    await engine.executor.dispatchEvent(model, 'beforeRender');
-    await engine.executor.dispatchEvent(model, 'beforeRender');
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
 
     // 两次触发但步骤处理只执行一次（命中缓存）
     expect(handler).toHaveBeenCalledTimes(2); // 每个 flow 各 1 次，共 2 次
@@ -244,15 +250,15 @@ describe('FlowExecutor', () => {
     expect(calls).toEqual(['f1']);
   });
 
-  it("dispatchEvent('beforeRender') caches results (key includes eventName)", async () => {
+  it("dispatchEvent('beforeRender') caches results (key includes eventName) when options specify", async () => {
     const handler = vi.fn().mockResolvedValue('ok');
     const flows = {
       f1: { steps: { s: { handler } } },
     } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
     const model = createModelWithFlows('m-br', flows);
 
-    await engine.executor.dispatchEvent(model, 'beforeRender');
-    await engine.executor.dispatchEvent(model, 'beforeRender');
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
+    await engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true, useCache: true });
 
     // handler only executed once because of cache
     expect(handler).toHaveBeenCalledTimes(1);

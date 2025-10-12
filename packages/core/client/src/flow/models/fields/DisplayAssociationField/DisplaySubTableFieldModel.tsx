@@ -52,7 +52,7 @@ export class DisplaySubTableFieldModel extends FieldModel {
 
   async afterAddAsSubModel() {
     await super.afterAddAsSubModel();
-    await this.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+    await this.dispatchEvent('beforeRender');
   }
 
   getColumns() {

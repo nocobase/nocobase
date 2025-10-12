@@ -166,7 +166,7 @@ export class SubTableColumnModel<
 
   async afterAddAsSubModel() {
     await super.afterAddAsSubModel();
-    await this.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+    await this.dispatchEvent('beforeRender');
   }
 
   getColumnProps(): TableColumnProps {
@@ -365,7 +365,7 @@ SubTableColumnModel.registerFlow({
             },
           },
         });
-        await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+        await model.dispatchEvent('beforeRender');
       },
     },
     title: {

@@ -81,11 +81,11 @@ describe('ViewScopedFlowEngine', () => {
     const pm = parent.createModel<CounterModel>({ use: CounterModel, uid });
     const cm = child.createModel<CounterModel>({ use: CounterModel, uid });
 
-    await pm.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+    await pm.dispatchEvent('beforeRender');
     expect(count).toBe(1);
 
     // If cache was shared, the next call would hit cache and not increment.
-    await cm.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+    await cm.dispatchEvent('beforeRender');
     expect(count).toBe(2);
   });
 

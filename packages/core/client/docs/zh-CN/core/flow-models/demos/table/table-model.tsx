@@ -41,7 +41,7 @@ export class TableModel extends FlowModel<S> {
                   },
                 },
               });
-              model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+              model.dispatchEvent('beforeRender');
             },
             items: this.collection.mapFields((field) => {
               return {

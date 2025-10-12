@@ -76,7 +76,7 @@ export const titleField = defineAction({
         },
       });
       await model.save();
-      await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+      await model.dispatchEvent('beforeRender');
       // 持久化
       await ctx.model.save();
     }
@@ -109,7 +109,7 @@ export const titleField = defineAction({
         },
       });
       // await model.save();
-      await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+      await model.dispatchEvent('beforeRender');
     }
   },
 });

@@ -103,7 +103,7 @@ class PluginDynamicDefaultParams extends Plugin {
       props: { name: '示例产品', category: 'electronics', price: 0 },
     });
 
-    await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+    await model.dispatchEvent('beforeRender');
 
     this.router.add('root', {
       path: '/',

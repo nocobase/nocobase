@@ -75,11 +75,11 @@
 - **applyFlow(flowKey: string, inputArgs?: Record<string, any>): Promise\<any\>**  
   执行指定流。
 
-- **dispatchEvent(eventName: string, inputArgs?: Record<string, any>, options?: { debounce?: boolean; sequential?: boolean; useCache?: boolean }): void**  
-  触发事件，自动匹配并执行相关流；支持顺序或并行执行。
-  - `sequential`: 为 `true` 时按 `sort` 顺序串行执行（默认并行）。
-  - `useCache`: 为 `true` 时启用事件层面的缓存（默认 `false`）；特殊事件 `beforeRender` 强制使用缓存。
-  - 特殊事件 `beforeRender` 始终按 `sort` 顺序串行执行。
+- **dispatchEvent(eventName: string, inputArgs?: Record<string, any>, options?: { debounce?: boolean; sequential?: boolean; useCache?: boolean }): Promise<any[]>**  
+  触发事件并执行匹配的流；支持顺序或并行执行。
+  - `sequential`: 是否顺序执行（默认并行）；beforeRender 的默认值为顺序执行（可覆盖）。
+  - `useCache`: 是否启用事件层面的缓存（默认 `false`）；beforeRender 的默认值为启用缓存（可覆盖）。
+  - `debounce`: 是否启用防抖（默认 `false`）。
 
 - **applySubModelsBeforeRenderFlows(subKey: string, inputArgs?: Record\<string, any\>): Promise\<void\>**  
   对指定子模型派发 `beforeRender` 事件（内部顺序执行并使用缓存）。
@@ -209,7 +209,7 @@ await model.save();
 
 // 执行流
 await model.applyFlow('default');
-await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+await model.dispatchEvent('beforeRender');
 await model.dispatchEvent('event');
 ```
 

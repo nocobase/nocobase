@@ -209,7 +209,7 @@ myModel.setStepParams('myFlow', 'step1', { name: '小明' });
 ```ts
 await myModel.applyFlow('myFlow'); // 主动执行指定流
 myModel.dispatchEvent('user.created'); // 分发事件触发流（如流配置了 on.eventName）
-await myModel.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true }); // 执行所有 beforeRender 事件流（含兼容未声明 on 且非 manual 的流），按 sort 顺序
+await myModel.dispatchEvent('beforeRender'); // beforeRender 默认顺序执行并使用缓存（可覆盖）
 ```
 
 ---

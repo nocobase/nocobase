@@ -110,7 +110,7 @@ class PluginDynamicUiSchema extends Plugin {
       props: { formType: 'user', advancedMode: false },
     });
 
-    await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+    await model.dispatchEvent('beforeRender');
 
     this.router.add('root', {
       path: '/',

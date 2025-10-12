@@ -183,13 +183,13 @@ export class FlowExecutor {
     options?: DispatchEventOptions,
   ): Promise<any> {
     const isBeforeRender = eventName === 'beforeRender';
-    const sequential = isBeforeRender || !!options?.sequential;
-    const useCache = isBeforeRender || !!options?.useCache;
+    // 由模型层决定缺省值；执行器仅按显式 options 执行
+    const sequential = !!options?.sequential;
+    const useCache = !!options?.useCache;
 
     const runId = `${model.uid}-${eventName}-${Date.now()}`;
     const logger = model.context.logger;
 
-    // 统一：事件开始钩子（beforeRender 兼容旧钩子）
     try {
       await model.onDispatchEventStart?.(eventName, options, inputArgs);
     } catch (err) {
@@ -199,7 +199,7 @@ export class FlowExecutor {
       }
       // 其他事件抛错：进入错误钩子并记录
       try {
-        await (model as any).onDispatchEventError?.(eventName, err as Error, options, inputArgs);
+        await model.onDispatchEventError?.(eventName, options, inputArgs, err as Error);
       } finally {
         logger.error({ err }, `BaseModel.dispatchEvent: Start hook error for event '${eventName}'`);
       }
@@ -238,7 +238,7 @@ export class FlowExecutor {
               { err: error },
               `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}' (sequential):`,
             );
-            // 顺序模式不中断其它 flow
+            throw error;
           }
         }
         return results;
@@ -263,10 +263,11 @@ export class FlowExecutor {
     };
 
     // 缓存键：按事件+scope 统一管理（beforeRender 也使用事件名 beforeRender）
+    const argsKey = useCache ? JSON.stringify(inputArgs ?? {}) : '';
     const cacheKey = useCache
       ? FlowEngine.generateApplyFlowCacheKey(
-          `event:${model.getFlowCacheScope(eventName)}`,
-          isBeforeRender ? 'beforeRender' : eventName,
+          `event:${model.getFlowCacheScope(eventName)}:${argsKey}`,
+          eventName,
           model.uid,
         )
       : null;

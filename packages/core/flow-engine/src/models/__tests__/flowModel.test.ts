@@ -8,10 +8,11 @@
  */
 
 import { reaction } from '@nocobase/flow-engine';
-import { render } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { vi } from 'vitest';
 import { FlowModelRenderer } from '../../components/FlowModelRenderer';
+import { FlowEngineProvider } from '../../provider';
 import { FlowEngine } from '../../flowEngine';
 import type { DefaultStructure, FlowDefinitionOptions, FlowModelOptions } from '../../types';
 import { FlowExitException } from '../../utils';
@@ -390,7 +391,7 @@ describe('FlowModel', () => {
         TestFlowModel.registerFlow(exitFlow2);
         const loggerSpy = vi.spyOn(model.context.logger, 'info').mockImplementation(() => {});
 
-        await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+        await model.dispatchEvent('beforeRender');
 
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
         expect(exitFlow2.steps.step2.handler).toHaveBeenCalled();
@@ -428,7 +429,7 @@ describe('FlowModel', () => {
         TestFlowModel.registerFlow(exitFlow2);
         const loggerSpy = vi.spyOn(model.context.logger, 'info').mockImplementation(() => {});
 
-        await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+        await model.dispatchEvent('beforeRender');
 
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
         expect(exitFlow2.steps.step2.handler).not.toHaveBeenCalled();
@@ -538,7 +539,7 @@ describe('FlowModel', () => {
         TestFlowModel.registerFlow(autoFlow2);
         TestFlowModel.registerFlow(manualFlow);
 
-        const results = await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+        const results = await model.dispatchEvent('beforeRender');
 
         expect(results).toHaveLength(2);
         expect(autoFlow1.steps.autoStep.handler).toHaveBeenCalled();
@@ -592,13 +593,13 @@ describe('FlowModel', () => {
         TestFlowModel.registerFlow(autoFlow2);
         TestFlowModel.registerFlow(autoFlow3);
 
-        await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+        await model.dispatchEvent('beforeRender');
 
         expect(executionOrder).toEqual(['auto2', 'auto3', 'auto1']);
       });
 
       test('should no results when no auto flows found', async () => {
-        const results = await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+        const results = await model.dispatchEvent('beforeRender');
 
         expect(results).toEqual([]);
         // Note: Log output may be captured in stderr, not console.log
@@ -634,10 +635,7 @@ describe('FlowModel', () => {
           const modelWithHooks = new TestFlowModelWithHooks(modelOptions);
           const inputArgs = { test: 'value' };
 
-          const results = await modelWithHooks.dispatchEvent('beforeRender', inputArgs, {
-            sequential: true,
-            useCache: true,
-          });
+          const results = await modelWithHooks.dispatchEvent('beforeRender', inputArgs);
 
           // Verify hooks were called
           expect(beforeHookSpy).toHaveBeenCalledTimes(1);
@@ -677,10 +675,7 @@ describe('FlowModel', () => {
           TestFlowModelWithExitHooks.registerFlow(autoFlow2);
 
           const modelWithHooks = new TestFlowModelWithExitHooks(modelOptions);
-          const results = await modelWithHooks.dispatchEvent('beforeRender', undefined, {
-            sequential: true,
-            useCache: true,
-          });
+          const results = await modelWithHooks.dispatchEvent('beforeRender');
 
           // Should have called onDispatchEventStart but not onDispatchEventEnd
           expect(beforeHookSpy).toHaveBeenCalledTimes(1);
@@ -710,7 +705,7 @@ describe('FlowModel', () => {
           TestFlowModelWithHooks.registerFlow(errorFlow);
 
           const modelWithHooks = new TestFlowModelWithHooks(modelOptions);
-          await modelWithHooks.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+          await modelWithHooks.dispatchEvent('beforeRender');
           // Verify hooks were called (error path)
           expect(beforeHookSpy).toHaveBeenCalledTimes(1);
           expect(afterHookSpy).not.toHaveBeenCalled();
@@ -732,7 +727,7 @@ describe('FlowModel', () => {
           TestFlowModelWithHooks.registerFlow(autoFlow2);
 
           const modelWithHooks = new TestFlowModelWithHooks(modelOptions);
-          await modelWithHooks.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+          await modelWithHooks.dispatchEvent('beforeRender');
 
           expect(afterHookSpy).toHaveBeenCalledTimes(1);
 
@@ -794,7 +789,7 @@ describe('FlowModel', () => {
         expect(autoKeys).toEqual(['noOnB', 'beforeA']);
 
         // beforeRender 会运行两者
-        await m.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+        await m.dispatchEvent('beforeRender');
         expect(beforeHandler).toHaveBeenCalledTimes(1);
         expect(noOnHandler).toHaveBeenCalledTimes(1);
         expect(manualHandler).not.toHaveBeenCalled();
@@ -813,7 +808,7 @@ describe('FlowModel', () => {
         TestM.registerFlow({ key: 'noOn3', sort: 3, steps: { s: { handler: () => calls.push('noOn3') } } });
 
         const m = new TestM(modelOptions);
-        await m.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+        await m.dispatchEvent('beforeRender');
         expect(calls).toEqual(['noOn1', 'before2', 'noOn3']);
       });
 
@@ -1371,14 +1366,8 @@ describe('FlowModel', () => {
 
           await parentModel.applySubModelsBeforeRenderFlows('children', runtimeData);
 
-          expect(child1.dispatchEvent).toHaveBeenCalledWith('beforeRender', runtimeData, {
-            sequential: true,
-            useCache: true,
-          });
-          expect(child2.dispatchEvent).toHaveBeenCalledWith('beforeRender', runtimeData, {
-            sequential: true,
-            useCache: true,
-          });
+          expect(child1.dispatchEvent).toHaveBeenCalledWith('beforeRender', runtimeData);
+          expect(child2.dispatchEvent).toHaveBeenCalledWith('beforeRender', runtimeData);
         });
 
         test('should apply auto flows to single subModel', async () => {
@@ -1392,10 +1381,7 @@ describe('FlowModel', () => {
 
           await parentModel.applySubModelsBeforeRenderFlows('child', runtimeData);
 
-          expect(child.dispatchEvent).toHaveBeenCalledWith('beforeRender', runtimeData, {
-            sequential: true,
-            useCache: true,
-          });
+          expect(child.dispatchEvent).toHaveBeenCalledWith('beforeRender', runtimeData);
         });
 
         test('should handle empty subModels gracefully', async () => {
@@ -1412,15 +1398,15 @@ describe('FlowModel', () => {
           const m = new TestM(modelOptions);
 
           // First run with {a:1}
-          await m.dispatchEvent('beforeRender', { a: 1 }, { sequential: true, useCache: true });
+          await m.dispatchEvent('beforeRender', { a: 1 });
           expect(handler).toHaveBeenCalledTimes(1);
 
           // Second run with same args should hit cache -> no extra handler calls
-          await m.dispatchEvent('beforeRender', { a: 1 }, { sequential: true, useCache: true });
+          await m.dispatchEvent('beforeRender', { a: 1 });
           expect(handler).toHaveBeenCalledTimes(1);
 
           // Different args invalidate cache -> handler called again
-          await m.dispatchEvent('beforeRender', { a: 2 }, { sequential: true, useCache: true });
+          await m.dispatchEvent('beforeRender', { a: 2 });
           expect(handler).toHaveBeenCalledTimes(2);
         });
       });
@@ -1749,7 +1735,7 @@ describe('FlowModel', () => {
     });
 
     describe('rendering operations', () => {
-      test('should not pre-call render for RenderFunction mode and call exactly once on render', () => {
+      test('should not pre-call render for RenderFunction mode and call exactly once on render', async () => {
         const renderSpy = vi.fn(() => vi.fn());
 
         class CallbackRenderModel extends FlowModel {
@@ -1766,16 +1752,21 @@ describe('FlowModel', () => {
 
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         try {
-          const { unmount } = render(React.createElement(FlowModelRenderer, { model: callbackModel }));
-
-          expect(renderSpy).toHaveBeenCalledTimes(1);
+          const { unmount } = render(
+            React.createElement(
+              FlowEngineProvider,
+              { engine: callbackModel.flowEngine },
+              React.createElement(FlowModelRenderer, { model: callbackModel }),
+            ),
+          );
+          await waitFor(() => expect(renderSpy).toHaveBeenCalledTimes(1));
           unmount();
         } finally {
           warnSpy.mockRestore();
         }
       });
 
-      test('should not pre-call render for ReactElement mode and call exactly once on actual render', () => {
+      test('should not pre-call render for ReactElement mode and call exactly once on actual render', async () => {
         const renderSpy = vi.fn(() => React.createElement('div', { 'data-testid': 'elt' }, 'Elt'));
 
         class ElementRenderModel extends FlowModel {
@@ -1789,10 +1780,16 @@ describe('FlowModel', () => {
         // Constructor should not trigger any render pre-call
         expect(renderSpy).toHaveBeenCalledTimes(0);
 
-        const { getByTestId, unmount } = render(React.createElement(FlowModelRenderer, { model: elementModel }));
+        const { getByTestId, unmount } = render(
+          React.createElement(
+            FlowEngineProvider,
+            { engine: elementModel.flowEngine },
+            React.createElement(FlowModelRenderer, { model: elementModel }),
+          ),
+        );
 
         // Render should be called exactly once during mount
-        expect(renderSpy).toHaveBeenCalledTimes(1);
+        await waitFor(() => expect(renderSpy).toHaveBeenCalledTimes(1));
         expect(getByTestId('elt')).toBeTruthy();
 
         unmount();
@@ -1815,7 +1812,6 @@ describe('FlowModel', () => {
         try {
           await expect(model.rerender()).resolves.not.toThrow();
           expect(model.dispatchEvent).toHaveBeenCalledWith('beforeRender', undefined, {
-            sequential: true,
             useCache: false,
           });
         } finally {
@@ -2162,7 +2158,7 @@ describe('FlowModel', () => {
 
     describe('invalidateFlowCache', () => {
       test('should delete auto flow cache for current model', () => {
-        const expectedCacheKey = 'autoFlow-all-test-model-uid';
+        const expectedCacheKey = 'event:beforeRender-beforeRender-test-model-uid';
         realFlowEngine.applyFlowCache.set(expectedCacheKey, {
           status: 'resolved',
           data: [],
@@ -2178,8 +2174,8 @@ describe('FlowModel', () => {
         const fork1 = model.createFork();
         const fork2 = model.createFork();
 
-        const fork1CacheKey = `${fork1.forkId}-all-test-model-uid`;
-        const fork2CacheKey = `${fork2.forkId}-all-test-model-uid`;
+        const fork1CacheKey = `event:beforeRender:${fork1.forkId}-beforeRender-test-model-uid`;
+        const fork2CacheKey = `event:beforeRender:${fork2.forkId}-beforeRender-test-model-uid`;
 
         realFlowEngine.applyFlowCache.set(fork1CacheKey, {
           status: 'resolved',
@@ -2210,8 +2206,8 @@ describe('FlowModel', () => {
 
         model.invalidateFlowCache('beforeRender', true);
 
-        expect(child1Spy).toHaveBeenCalledWith(true);
-        expect(child2Spy).toHaveBeenCalledWith(true);
+        expect(child1Spy).toHaveBeenCalledWith('beforeRender', true);
+        expect(child2Spy).toHaveBeenCalledWith('beforeRender', true);
       });
 
       test('should recursively invalidate cache for object subModels', () => {
@@ -2222,7 +2218,7 @@ describe('FlowModel', () => {
 
         model.invalidateFlowCache('beforeRender', true);
 
-        expect(childSpy).toHaveBeenCalledWith(true);
+        expect(childSpy).toHaveBeenCalledWith('beforeRender', true);
       });
 
       test('should handle mixed array and object subModels', () => {
@@ -2240,15 +2236,21 @@ describe('FlowModel', () => {
 
         model.invalidateFlowCache('beforeRender', true);
 
-        expect(array1Spy).toHaveBeenCalledWith(true);
-        expect(array2Spy).toHaveBeenCalledWith(true);
-        expect(objectSpy).toHaveBeenCalledWith(true);
+        expect(array1Spy).toHaveBeenCalledWith('beforeRender', true);
+        expect(array2Spy).toHaveBeenCalledWith('beforeRender', true);
+        expect(objectSpy).toHaveBeenCalledWith('beforeRender', true);
       });
 
       test('should handle empty subModels without error', () => {
+        realFlowEngine.applyFlowCache.set('event:beforeRender-beforeRender-test-model-uid', {
+          status: 'resolved',
+          data: [],
+          promise: Promise.resolve([]),
+        });
+
         model.invalidateFlowCache('beforeRender');
 
-        expect(deleteSpy).toHaveBeenCalledWith('autoFlow-all-test-model-uid');
+        expect(deleteSpy).toHaveBeenCalledWith('event:beforeRender-beforeRender-test-model-uid');
       });
 
       test('should handle null flowEngine gracefully', () => {
@@ -2268,7 +2270,7 @@ describe('FlowModel', () => {
 
         model.invalidateFlowCache('beforeRender', true);
 
-        expect(childSpy).toHaveBeenCalledWith(true);
+        expect(childSpy).toHaveBeenCalledWith('beforeRender', true);
       });
     });
   });
@@ -2319,7 +2321,7 @@ describe('FlowModel', () => {
         });
 
         const handlerSpy = flow.steps.testStep.handler as any;
-        await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+        await model.dispatchEvent('beforeRender');
         expect(handlerSpy).toHaveBeenCalled();
       });
 
@@ -2366,7 +2368,7 @@ describe('FlowModel', () => {
         });
 
         const handlerSpy = flow.steps.nestedStep.handler as any;
-        await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
+        await model.dispatchEvent('beforeRender');
         expect(handlerSpy).toHaveBeenCalled();
       });
     });

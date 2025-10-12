@@ -394,19 +394,30 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public invalidateFlowCache(eventName?: string, deep = false) {
     if (this.flowEngine) {
       const scope = `event:${this.getFlowCacheScope(eventName || 'beforeRender')}`;
-      const deleteKey = (name: string) => {
-        const key = FlowEngine.generateApplyFlowCacheKey(scope, name, this.uid);
-        this.flowEngine.applyFlowCache.delete(key);
-      };
+      const cache = this.flowEngine.applyFlowCache;
 
       if (eventName) {
-        deleteKey(eventName);
-      } else {
-        // 粗粒度：扫描并删除当前模型 uid 相关的事件缓存
-        for (const key of this.flowEngine.applyFlowCache.keys()) {
-          if (key.endsWith(`:${this.uid}`) && key.startsWith(`${scope}:`)) {
-            this.flowEngine.applyFlowCache.delete(key);
+        // 删除该事件名下所有缓存（忽略不同 inputArgs 的散列差异）
+        const altScope = scope.replace(/:/g, '-');
+        const uidSuffixes = [`:${this.uid}`, `-${this.uid}`];
+        const eventSegments = [`:${eventName}:`, `-${eventName}-`];
+        for (const key of cache.keys()) {
+          const startMatches = key.startsWith(scope) || key.startsWith(altScope);
+          const endMatches = uidSuffixes.some((s) => key.endsWith(s));
+          const eventMatches = eventSegments.some((seg) => key.includes(seg));
+          if (startMatches && endMatches && eventMatches) {
+            cache.delete(key);
           }
+        }
+      } else {
+        // 粗粒度：扫描并删除当前模型 uid 相关的事件缓存（任意事件）
+        const altScope = `${scope}:`.replace(/:/g, '-');
+        const prefixes = [`${scope}:`, altScope];
+        const uidSuffixes = [`:${this.uid}`, `-${this.uid}`];
+        for (const key of cache.keys()) {
+          const startMatches = prefixes.some((p) => key.startsWith(p));
+          const endMatches = uidSuffixes.some((s) => key.endsWith(s));
+          if (startMatches && endMatches) cache.delete(key);
         }
       }
 
@@ -415,17 +426,22 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         const forkScope = `event:${
           (fork as any).getFlowCacheScope?.(eventName || 'beforeRender') ?? String((fork as any)['forkId'])
         }`;
-        const deleteForkKey = (name: string) => {
-          const k = FlowEngine.generateApplyFlowCacheKey(forkScope, name, this.uid);
-          this.flowEngine.applyFlowCache.delete(k);
-        };
+        const altForkScope = forkScope.replace(/:/g, '-');
+        const uidSuffixes = [`:${this.uid}`, `-${this.uid}`];
         if (eventName) {
-          deleteForkKey(eventName);
-        } else {
+          const eventSegments = [`:${eventName}:`, `-${eventName}-`];
           for (const key of this.flowEngine.applyFlowCache.keys()) {
-            if (key.endsWith(`:${this.uid}`) && key.startsWith(`${forkScope}:`)) {
-              this.flowEngine.applyFlowCache.delete(key);
-            }
+            const startMatches = key.startsWith(forkScope) || key.startsWith(altForkScope);
+            const endMatches = uidSuffixes.some((s) => key.endsWith(s));
+            const eventMatches = eventSegments.some((seg) => key.includes(seg));
+            if (startMatches && endMatches && eventMatches) this.flowEngine.applyFlowCache.delete(key);
+          }
+        } else {
+          const prefixes = [`${forkScope}:`, `${altForkScope}-`];
+          for (const key of this.flowEngine.applyFlowCache.keys()) {
+            const startMatches = prefixes.some((p) => key.startsWith(p));
+            const endMatches = uidSuffixes.some((s) => key.endsWith(s));
+            if (startMatches && endMatches) this.flowEngine.applyFlowCache.delete(key);
           }
         }
       });
@@ -675,7 +691,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     eventName: string,
     inputArgs?: Record<string, any>,
     options?: DispatchEventOptions,
-  ): Promise<void> {
+  ): Promise<any[]> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
       console.warn('FlowEngine not available on this model for dispatchEvent. Please set flowEngine on the model.');
@@ -688,7 +704,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         this.cleanRun
       }, targetIsFork=${(target as any)?.isFork === true}`,
     );
-    await currentFlowEngine.executor.dispatchEvent(target, eventName, inputArgs, options);
+    return await currentFlowEngine.executor.dispatchEvent(target, eventName, inputArgs, options);
   }
 
   private _dispatchEventWithDebounce = _.debounce(
@@ -705,17 +721,19 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       /** 是否要开启防抖功能 */
       debounce?: boolean;
     } & DispatchEventOptions,
-  ): Promise<void> {
+  ): Promise<any[]> {
+    const isBeforeRender = eventName === 'beforeRender';
+    // 缺省值由模型层提供：beforeRender 默认顺序执行 + 使用缓存；可被 options 覆盖
+    const defaults = isBeforeRender ? { sequential: true, useCache: true } : {};
+    const execOptions = {
+      sequential: options?.sequential ?? (defaults as any).sequential,
+      useCache: options?.useCache ?? (defaults as any).useCache,
+    } as DispatchEventOptions;
+
     if (options?.debounce) {
-      return this._dispatchEventWithDebounce(eventName, inputArgs, {
-        sequential: options?.sequential,
-        useCache: options?.useCache,
-      });
+      return this._dispatchEventWithDebounce(eventName, inputArgs, execOptions);
     }
-    return this._dispatchEvent(eventName, inputArgs, {
-      sequential: options?.sequential,
-      useCache: options?.useCache,
-    });
+    return this._dispatchEvent(eventName, inputArgs, execOptions);
   }
 
   /**
@@ -747,7 +765,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (this._lastAutoRunParams) {
       try {
         const [inputArgs] = this._lastAutoRunParams as any[];
-        await this.dispatchEvent('beforeRender', inputArgs, { sequential: true, useCache: true });
+        await this.dispatchEvent('beforeRender', inputArgs);
       } catch (error) {
         console.error('FlowModel._rerunLastAutoRun: Error during rerun:', error);
       }
@@ -955,7 +973,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   async rerender() {
-    await this.dispatchEvent('beforeRender', this._lastAutoRunParams?.[0], { sequential: true, useCache: false });
+    await this.dispatchEvent('beforeRender', this._lastAutoRunParams?.[0], { useCache: false });
   }
 
   /**
@@ -1131,7 +1149,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   ) {
     await Promise.all(
       this.mapSubModels(subKey, async (sub) => {
-        await sub.dispatchEvent('beforeRender', inputArgs, { sequential: true, useCache: true });
+        await sub.dispatchEvent('beforeRender', inputArgs);
       }),
     );
   }

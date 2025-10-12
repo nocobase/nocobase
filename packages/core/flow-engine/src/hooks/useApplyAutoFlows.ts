@@ -36,7 +36,8 @@ export function useApplyAutoFlows(
   const { loading, error } = useRequest(
     async () => {
       if (!model) return;
-      await model.dispatchEvent('beforeRender', inputArgs, { sequential: true, useCache: true });
+      // beforeRender 在模型层默认顺序执行并默认使用缓存（可覆盖）
+      await model.dispatchEvent('beforeRender', inputArgs);
     },
     {
       refreshDeps: [model, inputArgs],
