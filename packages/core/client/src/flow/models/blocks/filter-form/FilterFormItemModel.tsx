@@ -37,7 +37,7 @@ const getModelFields = async (model: CollectionBlockModel) => {
         key: field.name,
         label: field.title,
         useModel: 'FilterFormItemModel',
-        refreshTargets: ['FormCustomItemModel/FormJSFieldItemModel'],
+        refreshTargets: ['FilterFormCustomItemModel'],
         createModelOptions: () => ({
           use: 'FilterFormItemModel',
           stepParams: {
