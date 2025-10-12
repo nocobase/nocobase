@@ -164,12 +164,15 @@ FilterFormCustomFieldModel.registerFlow({
         if (!ctx.model.fieldModelInstance) {
           ctx.model.fieldModelInstance = ctx.model.flowEngine.createModel({
             use: fieldModel,
-            props: fieldModelProps,
+            props: { allowClear: true, ...fieldModelProps },
           });
         } else {
-          ctx.model.fieldModelInstance.setProps(fieldModelProps);
+          ctx.model.fieldModelInstance.setProps({ allowClear: true, ...fieldModelProps });
         }
       },
+    },
+    connectFields: {
+      use: 'connectFields',
     },
   },
 });
