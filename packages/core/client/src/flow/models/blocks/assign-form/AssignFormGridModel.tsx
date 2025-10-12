@@ -85,7 +85,17 @@ export class AssignFormGridModel extends FormGridModel {
   addOrEnsureItem(fieldName: string, value?: any) {
     const collection = (this.context as any)?.collection;
     const items = this.subModels?.items || [];
-    const existing = items.find((m) => m?.context.fieldPath === fieldName);
+    // AssignFormItemModel 并非 CollectionFieldModel，不存在 context.fieldPath，
+    // 需要依据步骤参数中声明的 fieldSettings.init.fieldPath 来判断是否已存在同名条目
+    const existing = items.find((m) => {
+      try {
+        const init =
+          typeof (m as any)?.getStepParams === 'function' ? (m as any).getStepParams('fieldSettings', 'init') : null;
+        return init?.fieldPath === fieldName;
+      } catch (_e) {
+        return false;
+      }
+    });
     if (existing) {
       // 更新已有项的当前值，便于重新打开时回填
       if (typeof (existing as any)?.setStepParams === 'function') {

@@ -1393,6 +1393,7 @@
   "Collapse settings": "折叠设置",
   "Upload file settings": "文件上传设置",
   "Allow selection of existing file": "允许选择已有文件",
+  "No assigned fields configured": "未配置字段",
   "Current device type": "当前设备类型",
   "Computer": "电脑",
   "Mobile": "手机",

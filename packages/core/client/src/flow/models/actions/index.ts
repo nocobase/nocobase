@@ -16,6 +16,6 @@ export * from './JSCollectionActionModel';
 export * from './JSRecordActionModel';
 export * from './PopupCollectionActionModel';
 export * from './RefreshActionModel';
-export * from './UpdateActionModel';
+export * from './UpdateRecordActionModel';
 export * from './ViewActionModel';
 //
