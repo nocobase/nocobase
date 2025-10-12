@@ -730,6 +730,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       useCache: options?.useCache ?? (defaults as any).useCache,
     } as DispatchEventOptions;
 
+    // 记录最近一次 beforeRender 的入参与选项，便于 stepParams 变化时触发重跑
+    if (isBeforeRender) {
+      this._lastAutoRunParams = [inputArgs, execOptions.useCache];
+    }
+
     if (options?.debounce) {
       return this._dispatchEventWithDebounce(eventName, inputArgs, execOptions);
     }
@@ -901,6 +906,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
             // 设置态隐藏时的渲染：由实例方法 renderHiddenInConfig 决定；若为渲染函数模式，则包装为函数
             return modelInstance.renderHiddenInConfig?.();
           }
+
+          // 订阅 stepParams 变化，以便当步骤参数（如 JS 代码等）更新时触发一次 React 渲染，
+          // 从而让 useHooksBeforeRender 中的副作用得以感知并执行（如 applyFlow('jsSettings')）。
+          modelInstance.stepParams;
 
           // 调用原始渲染方法
           return originalRender.call(renderTarget);

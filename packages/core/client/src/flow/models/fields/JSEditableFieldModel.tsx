@@ -79,6 +79,7 @@ const JSFormRuntime: React.FC<{
  * - 子节点由脚本渲染（DOM 操作），用于完全自定义输入体验。
  */
 export class JSEditableFieldModel extends FieldModel {
+  private _mountedOnce = false;
   render() {
     return (
       <JSFormRuntime
@@ -89,6 +90,21 @@ export class JSEditableFieldModel extends FieldModel {
         readOnly={this.props?.readOnly}
       />
     );
+  }
+
+  /**
+   * 在 CreateForm / 提交后重置等场景下，字段可能被卸载并重新挂载。
+   * 由于 beforeRender 命中缓存，新挂载的容器不会自动写入 JS 渲染内容。
+   * 这里在二次挂载时检测容器已就绪，主动触发 rerender 来刷新 beforeRender（禁用缓存），
+   * 保证输入框不会因为容器变更而空白。
+   */
+  protected onMount() {
+    if (this._mountedOnce) {
+      if (this.context.ref?.current) {
+        this.rerender();
+      }
+    }
+    this._mountedOnce = true;
   }
 }
 

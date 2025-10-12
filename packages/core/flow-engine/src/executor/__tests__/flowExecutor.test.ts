@@ -166,7 +166,7 @@ describe('FlowExecutor', () => {
     expect(calls.sort()).toEqual(['a', 'b']);
   });
 
-  it('dispatchEvent sequential respects sort order and continues on non-exit errors', async () => {
+  it('dispatchEvent sequential respects sort order and stops on errors', async () => {
     const calls: string[] = [];
     const mkFlow = (key: string, sort: number, opts?: { throw?: boolean }) => ({
       on: { eventName: 'seq2' },
@@ -190,8 +190,8 @@ describe('FlowExecutor', () => {
     const model = createModelWithFlows('m-seq2', flows);
     await engine.executor.dispatchEvent(model, 'seq2', {}, { sequential: true });
 
-    // 顺序：按 sort 执行；f1 抛错但不影响后面的 f2, f3
-    expect(calls).toEqual(['f1', 'f2', 'f3']);
+    // 顺序：按 sort 执行；f1 抛错后终止，f2 和 f3 不会执行
+    expect(calls).toEqual(['f1']);
   });
 
   it('dispatchEvent caches non-beforeRender when useCache=true', async () => {
