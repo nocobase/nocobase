@@ -10,3 +10,4 @@
 export * from './DateOnlyFilterFieldModel';
 export * from './DateTimeNoTzFilterFieldModel';
 export * from './DateTimeTzFilterFieldModel';
+export * from './DateTimeFilterFieldModel';

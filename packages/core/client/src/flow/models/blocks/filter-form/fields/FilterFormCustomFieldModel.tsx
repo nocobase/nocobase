@@ -9,12 +9,81 @@
 
 import React from 'react';
 import { FilterFormCustomItemModel } from '../FilterFormCustomItemModel';
-import { escapeT } from '@nocobase/flow-engine';
+import { escapeT, FieldModelRenderer, FormItem } from '@nocobase/flow-engine';
 import { FieldComponentProps } from './FieldComponentProps';
+import { debounce } from 'lodash';
 
 export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
+  fieldModelInstance = null;
+
+  operator: string;
+
+  private debouncedDoFilter: ReturnType<typeof debounce>;
+
+  get defaultTargetUid(): string {
+    return this.getStepParams('filterFormItemSettings', 'init').defaultTargetUid;
+  }
+
+  onInit(options) {
+    super.onInit(options);
+    // 创建防抖的 doFilter 方法，延迟 300ms
+    this.debouncedDoFilter = debounce(this.doFilter.bind(this), 300);
+  }
+
+  onUnmount() {
+    super.onUnmount();
+    // 取消防抖函数的执行
+    this.debouncedDoFilter.cancel();
+  }
+
+  doFilter() {
+    this.context.filterManager.refreshTargetsByFilter(this.uid);
+  }
+
+  doReset() {
+    this.context.filterManager.refreshTargetsByFilter(this.uid);
+  }
+
+  /**
+   * 获取用于显示在筛选条件中的字段值
+   * @returns
+   */
+  getFilterValue() {
+    return this.context.form?.getFieldValue(this.props.name);
+  }
+
+  /**
+   * 处理回车事件
+   * 当用户在输入框中按下回车键时触发筛选
+   */
+  handleEnterPress = (event: KeyboardEvent) => {
+    if (event.key === 'Enter' || event.keyCode === 13) {
+      event.preventDefault(); // 防止表单提交等默认行为
+      this.doFilter(); // 立即执行筛选
+    }
+  };
+
+  getValueProps(value) {
+    if (this.context.blockModel.autoTriggerFilter) {
+      this.debouncedDoFilter(); // 当值发生变化时，触发一次筛选
+    }
+
+    return {
+      value,
+      onKeyDown: this.handleEnterPress.bind(this), // 添加回车事件监听
+    };
+  }
+
   render() {
-    return <div>123</div>;
+    if (!this.fieldModelInstance) {
+      return null;
+    }
+
+    return (
+      <FormItem {...this.props} getValueProps={this.getValueProps.bind(this)}>
+        <FieldModelRenderer model={this.fieldModelInstance} />
+      </FormItem>
+    );
   }
 }
 
@@ -67,7 +136,7 @@ FilterFormCustomFieldModel.registerFlow({
             placeholder: escapeT('Please select'),
           },
         },
-        props: {
+        fieldModelProps: {
           type: 'object',
           title: escapeT('Component properties'),
           'x-component': FieldComponentProps,
@@ -85,7 +154,22 @@ FilterFormCustomFieldModel.registerFlow({
           ],
         },
       },
-      handler(ctx, params) {},
+      handler(ctx, params) {
+        const { fieldModel, fieldModelProps = {}, title } = params;
+        ctx.model.setProps({
+          label: title,
+          name: ctx.model.uid,
+        });
+
+        if (!ctx.model.fieldModelInstance) {
+          ctx.model.fieldModelInstance = ctx.model.flowEngine.createModel({
+            use: fieldModel,
+            props: fieldModelProps,
+          });
+        } else {
+          ctx.model.fieldModelInstance.setProps(fieldModelProps);
+        }
+      },
     },
   },
 });
