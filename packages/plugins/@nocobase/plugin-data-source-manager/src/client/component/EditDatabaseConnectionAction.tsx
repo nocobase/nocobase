@@ -26,7 +26,7 @@ import { useTranslation } from 'react-i18next';
 import { useForm, useField } from '@formily/react';
 import PluginDatabaseConnectionsClient from '../';
 import { NAMESPACE } from '../locale';
-import { addDatasourceCollections, useLoadCollections } from '../hooks';
+import { useLoadCollections } from '../hooks';
 import { CollectionsTableField } from './CollectionsTableField';
 
 export const EditDatabaseConnectionAction = () => {

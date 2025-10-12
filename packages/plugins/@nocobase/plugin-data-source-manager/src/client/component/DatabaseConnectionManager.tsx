@@ -26,7 +26,6 @@ import { ThirdDataSource } from '../ThridDataSource';
 import { CreateDatabaseConnectAction } from './CreateDatabaseConnectAction';
 import { EditDatabaseConnectionAction } from './EditDatabaseConnectionAction';
 import { ViewDatabaseConnectionAction } from './ViewDatabaseConnectionAction';
-import { addDatasourceCollections } from '../hooks';
 import _ from 'lodash';
 
 export const DatabaseConnectionManagerPane = () => {

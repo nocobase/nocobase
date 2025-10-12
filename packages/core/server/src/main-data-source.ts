@@ -84,11 +84,11 @@ export class MainDataSource extends SequelizeDataSource {
 
   async loadTables(ctx: Context, tables: string[]) {
     const repo = this.collectionManager.db.getRepository('collections');
-    const existsCollections = await repo.find({
-      filter: { name: tables },
-    });
-    const existsCollectionNames = existsCollections.map((c: Model) => c.name);
-    const toAddTables = tables.filter((table) => !existsCollectionNames.includes(table));
+    const existsCollections = this.collectionManager.db.collections;
+    const existsTables = Array.from(existsCollections.values()).map(
+      (collection: Collection) => collection.model.tableName,
+    );
+    const toAddTables = tables.filter((table) => !existsTables.includes(table));
     if (toAddTables.length) {
       try {
         this.status = 'loading';
@@ -98,12 +98,10 @@ export class MainDataSource extends SequelizeDataSource {
           underscored: false,
         }));
         await repo.create({ values, context: ctx });
-        this.status = 'loaded';
       } catch (e) {
-        ctx.logger.error('Failed to load tables', {
-          error: e.message,
-          stack: e.stack,
-        });
+        throw e;
+      } finally {
+        this.status = 'loaded';
       }
     }
   }
@@ -112,7 +110,10 @@ export class MainDataSource extends SequelizeDataSource {
     const db = this.collectionManager.db;
     const loadedCollections = await db.getRepository('collections').find({
       appends: ['fields'],
-      filter,
+      filter: {
+        hidden: false,
+        ...filter,
+      },
     });
     const collections = loadedCollections.filter((collection: Model) => collection.options?.from !== 'db2cm');
     const loadedData = {};

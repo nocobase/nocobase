@@ -38,7 +38,7 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
   }
 
   abstract readTables(): Promise<any>;
-  abstract loadTables(ctx: Context, tables: string[]): Promise<void>;
+  abstract loadTables(ctx: Context, tables: string[]): Promise<any>;
 
   mergeWithLoadedCollections(
     collections: CollectionOptions[],

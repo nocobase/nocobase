@@ -20,12 +20,12 @@ export class DataSourceFactory {
     this.collectionTypes.set(type, dataSourceClass);
   }
 
-  getClass(type: string): DataSourceConstructor {
-    return this.collectionTypes.get(type);
+  getClass<T extends DataSource = DataSource>(type: string): DataSourceConstructor<T> {
+    return this.collectionTypes.get(type) as DataSourceConstructor<T>;
   }
 
-  create(type: string, options: any = {}): DataSource {
-    const klass = this.collectionTypes.get(type);
+  create<T extends DataSource = DataSource>(type: string, options: any = {}): T {
+    const klass = this.getClass<T>(type);
     if (!klass) {
       throw new Error(`Data source type "${type}" not found`);
     }

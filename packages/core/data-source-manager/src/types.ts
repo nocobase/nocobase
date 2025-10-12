@@ -9,7 +9,9 @@
 
 import { DataSource } from './data-source';
 
-export type DataSourceConstructor = new (...args: any[]) => DataSource;
+export type DataSourceConstructor<T extends DataSource = DataSource> = Omit<typeof DataSource, 'prototype'> & {
+  new (...args: any[]): T;
+};
 
 export type tableInfo = {
   tableName: string;

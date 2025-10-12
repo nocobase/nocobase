@@ -111,7 +111,7 @@ export default {
     if (!dataSource) {
       throw new Error(`dataSource ${dataSourceKey} not found`);
     }
-    await dataSource.loadTables(ctx, tables);
+    ctx.body = await dataSource.loadTables(ctx, tables);
     await next();
   },
 };
