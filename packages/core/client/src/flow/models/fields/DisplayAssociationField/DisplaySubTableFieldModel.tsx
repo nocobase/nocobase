@@ -13,6 +13,7 @@ import { Table } from 'antd';
 import React from 'react';
 import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
+import { adjustColumnOrder } from '../../blocks/table/utils';
 
 const AddFieldColumn = ({ model }) => {
   return (
@@ -60,26 +61,28 @@ export class DisplaySubTableFieldModel extends FieldModel {
       return !v.hidden;
     });
 
-    return [
-      enableIndexColumn && {
-        key: '__index__',
-        width: 48,
-        align: 'center',
-        fixed: 'left',
-        render: (props, record, index) => {
-          return index + 1;
+    return adjustColumnOrder(
+      [
+        enableIndexColumn && {
+          key: '__index__',
+          width: 48,
+          align: 'center',
+          fixed: 'left',
+          render: (props, record, index) => {
+            return index + 1;
+          },
         },
-      },
-      ...baseColumns.concat({
-        key: 'empty',
-      }),
-      {
-        key: 'addColumn',
-        fixed: 'right',
-        width: 100,
-        title: <AddFieldColumn model={this} />,
-      },
-    ].filter(Boolean) as any;
+        ...baseColumns.concat({
+          key: 'empty',
+        }),
+        {
+          key: 'addColumn',
+          fixed: 'right',
+          width: 100,
+          title: <AddFieldColumn model={this} />,
+        },
+      ].filter(Boolean),
+    ) as any;
   }
   public render() {
     return (

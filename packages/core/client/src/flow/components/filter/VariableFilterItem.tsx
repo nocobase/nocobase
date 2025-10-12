@@ -59,6 +59,7 @@ function createStaticInputRenderer(
   const fieldProps = meta?.uiSchema?.['x-component-props'] || {};
   const opProps = schema?.['x-component-props'] || {};
   const combinedProps = merge({}, fieldProps, opProps);
+  const selectOptions = schema?.enum || [];
 
   const commonProps: any = {
     style: { width: 200, ...(combinedProps?.style || {}) },
@@ -71,7 +72,8 @@ function createStaticInputRenderer(
     if (xComp === 'InputNumber') return <InputNumber {...commonProps} {...rest} value={value} onChange={onChange} />;
     if (xComp === 'NumberPicker') return <NumberPicker {...commonProps} {...rest} value={value} onChange={onChange} />;
     if (xComp === 'Switch') return <Switch {...commonProps} {...rest} checked={!!value} onChange={onChange} />;
-    if (xComp === 'Select') return <Select {...commonProps} {...rest} value={value} onChange={onChange} />;
+    if (xComp === 'Select')
+      return <Select options={selectOptions} {...commonProps} {...rest} value={value} onChange={onChange} />;
     if (xComp === 'DateFilterDynamicComponent')
       return <DateFilterDynamicComponentLazy {...commonProps} {...rest} value={value} onChange={onChange} />;
     // 普通文本输入：透传组合输入事件，避免 IME 被中断

@@ -447,6 +447,10 @@ SubTableColumnModel.registerFlow({
       title: escapeT('Display mode'),
       use: 'pattern',
     },
+    fixed: {
+      title: escapeT('Fixed'),
+      use: 'fixed',
+    },
   },
 });
 

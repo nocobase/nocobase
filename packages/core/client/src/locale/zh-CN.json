@@ -1392,5 +1392,13 @@
   "Expand button": "展开",
   "Collapse settings": "折叠设置",
   "Upload file settings": "文件上传设置",
-  "Allow selection of existing file": "允许选择已有文件"
+  "Allow selection of existing file": "允许选择已有文件",
+  "Current device type": "当前设备类型",
+  "Computer": "电脑",
+  "Mobile": "手机",
+  "Tablet": "平板",
+  "SmartTv": "智能电视",
+  "Console": "游戏机",
+  "Wearable": "可穿戴设备",
+  "Embedded": "嵌入式设备"
 }

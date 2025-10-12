@@ -614,7 +614,8 @@ export const openView = defineAction({
 
     const pageModelClass = ctx.inputArgs.pageModelClass || params.pageModelClass || 'ChildPageModel';
 
-    const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
+    // 移动端中只需要显示子页面
+    const openMode = ctx.inputArgs.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
     const size = ctx.inputArgs.size || params.size || 'medium';
     let pageModelUid: string | null = null;
     let pageModelRef: FlowModel | null = null;
@@ -656,7 +657,7 @@ export const openView = defineAction({
     finalInputArgs.filterByTk = inputArgs.filterByTk ?? params.filterByTk;
     finalInputArgs.sourceId = inputArgs.sourceId ?? params.sourceId;
     await ctx.viewer.open({
-      type: ctx.inputArgs.isMobileLayout ? 'embed' : openMode, // 移动端中只需要显示子页面
+      type: openMode,
       inputArgs: finalInputArgs,
       preventClose: !!params.preventClose,
       destroyOnClose: true,

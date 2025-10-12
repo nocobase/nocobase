@@ -32,8 +32,7 @@ import React, { useRef } from 'react';
 import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
-import { TableCustomColumnModel } from './TableCustomColumnModel';
-import { extractIndex } from './utils';
+import { extractIndex, adjustColumnOrder } from './utils';
 
 type TableBlockModelStructure = {
   subModels: {
@@ -174,8 +173,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         title: <AddFieldColumn model={this} />,
       } as any);
     }
-
-    return cols;
+    return adjustColumnOrder(cols);
   }
 
   EditableRow = (props) => {
