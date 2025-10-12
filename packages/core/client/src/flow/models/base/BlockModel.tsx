@@ -13,6 +13,7 @@ import _ from 'lodash';
 import React from 'react';
 import { BlockItemCard } from '../../components';
 import { BlockPlaceholder } from '../../components/placeholders/BlockPlaceholder';
+import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
 
 export type BlockSceneType = 'new' | 'one' | 'many' | 'select' | BlockSceneType[];
 
@@ -186,4 +187,20 @@ BlockModel.define({
   //     return !M['_isScene'] || !M['_isScene']?.('select');
   //   });
   // },
+});
+
+BlockModel.registerEvents({
+  beforeRender: {
+    title: escapeT('Before render'),
+    name: 'beforeRender',
+    uiSchema: {
+      condition: {
+        type: 'object',
+        title: escapeT('Trigger condition'),
+        'x-decorator': 'FormItem',
+        'x-component': ConditionBuilder,
+      },
+    },
+    handler: commonConditionHandler,
+  },
 });
