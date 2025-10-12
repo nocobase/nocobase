@@ -7,7 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DefaultStructure } from '@nocobase/flow-engine';
-import { CollectionFieldModel } from './CollectionFieldModel';
+import { CollectionFieldModel, FlowModel } from '.';
+import { CollectionField, FlowEngineContext } from '..';
+import type { DefaultStructure } from '../types';
 
-export class FilterableItemModel<T extends DefaultStructure = DefaultStructure> extends CollectionFieldModel<T> {}
+export class FilterableItemModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
+  static bindModelToInterface(
+    modelName: string,
+    interfaceName: string | string[],
+    options: {
+      isDefault?: boolean;
+      defaultProps?: object | ((ctx: FlowEngineContext, fieldInstance: CollectionField) => object);
+      when?: (ctx: FlowEngineContext, fieldInstance: CollectionField) => boolean;
+    } = {},
+  ) {
+    return CollectionFieldModel.bindModelToInterface(modelName, interfaceName, options);
+  }
+}
