@@ -101,6 +101,6 @@ async function rebuildFieldSubModel(ctx, model, binding: BindingOptions) {
     },
   });
 
-  await subModel.applyAutoFlows();
+  await subModel.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
   await model.save(); // 持久化
 }

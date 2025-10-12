@@ -51,7 +51,7 @@ export class DisplaySubTableFieldModel extends FieldModel {
 
   async afterAddAsSubModel() {
     await super.afterAddAsSubModel();
-    await this.applyAutoFlows();
+    await this.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
   }
 
   getColumns() {

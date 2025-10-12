@@ -1756,9 +1756,7 @@ describe('FlowModel', () => {
 
         const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
         try {
-          const { unmount } = render(
-            React.createElement(FlowModelRenderer, { model: callbackModel, skipApplyAutoFlows: true }),
-          );
+          const { unmount } = render(React.createElement(FlowModelRenderer, { model: callbackModel }));
 
           expect(renderSpy).toHaveBeenCalledTimes(1);
           unmount();
@@ -1781,9 +1779,7 @@ describe('FlowModel', () => {
         // Constructor should not trigger any render pre-call
         expect(renderSpy).toHaveBeenCalledTimes(0);
 
-        const { getByTestId, unmount } = render(
-          React.createElement(FlowModelRenderer, { model: elementModel, skipApplyAutoFlows: true }),
-        );
+        const { getByTestId, unmount } = render(React.createElement(FlowModelRenderer, { model: elementModel }));
 
         // Render should be called exactly once during mount
         expect(renderSpy).toHaveBeenCalledTimes(1);
@@ -2151,7 +2147,7 @@ describe('FlowModel', () => {
       vi.restoreAllMocks();
     });
 
-    describe('invalidateAutoFlowCache', () => {
+    describe('invalidateFlowCache', () => {
       test('should delete auto flow cache for current model', () => {
         const expectedCacheKey = 'autoFlow-all-test-model-uid';
         realFlowEngine.applyFlowCache.set(expectedCacheKey, {
@@ -2193,8 +2189,8 @@ describe('FlowModel', () => {
         const childModel1 = new FlowModel({ uid: 'child1', flowEngine: realFlowEngine });
         const childModel2 = new FlowModel({ uid: 'child2', flowEngine: realFlowEngine });
 
-        const child1Spy = vi.spyOn(childModel1, 'invalidateAutoFlowCache');
-        const child2Spy = vi.spyOn(childModel2, 'invalidateAutoFlowCache');
+        const child1Spy = vi.spyOn(childModel1, 'invalidateFlowCache');
+        const child2Spy = vi.spyOn(childModel2, 'invalidateFlowCache');
 
         model.addSubModel('children', childModel1);
         model.addSubModel('children', childModel2);
@@ -2207,7 +2203,7 @@ describe('FlowModel', () => {
 
       test('should recursively invalidate cache for object subModels', () => {
         const childModel = new FlowModel({ uid: 'child', flowEngine: realFlowEngine });
-        const childSpy = vi.spyOn(childModel, 'invalidateAutoFlowCache');
+        const childSpy = vi.spyOn(childModel, 'invalidateFlowCache');
 
         model.setSubModel('child', childModel);
 
@@ -2221,9 +2217,9 @@ describe('FlowModel', () => {
         const arrayChild2 = new FlowModel({ uid: 'arrayChild2', flowEngine: realFlowEngine });
         const objectChild = new FlowModel({ uid: 'objectChild', flowEngine: realFlowEngine });
 
-        const array1Spy = vi.spyOn(arrayChild1, 'invalidateAutoFlowCache');
-        const array2Spy = vi.spyOn(arrayChild2, 'invalidateAutoFlowCache');
-        const objectSpy = vi.spyOn(objectChild, 'invalidateAutoFlowCache');
+        const array1Spy = vi.spyOn(arrayChild1, 'invalidateFlowCache');
+        const array2Spy = vi.spyOn(arrayChild2, 'invalidateFlowCache');
+        const objectSpy = vi.spyOn(objectChild, 'invalidateFlowCache');
 
         model.addSubModel('arrayChildren', arrayChild1);
         model.addSubModel('arrayChildren', arrayChild2);
@@ -2253,7 +2249,7 @@ describe('FlowModel', () => {
 
       test('should pass deep parameter to recursive calls', () => {
         const childModel = new FlowModel({ uid: 'child', flowEngine: realFlowEngine });
-        const childSpy = vi.spyOn(childModel, 'invalidateAutoFlowCache');
+        const childSpy = vi.spyOn(childModel, 'invalidateFlowCache');
 
         model.setSubModel('child', childModel);
 

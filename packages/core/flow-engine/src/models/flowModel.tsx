@@ -752,21 +752,42 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }, 100);
 
   /**
-   * 自动流程执行前钩子。
-   * 子类可覆盖；可抛出 FlowExitException 提前终止。
+   * 通用事件分发钩子：开始
+   * 子类可覆盖；beforeRender 事件可通过抛出 FlowExitException 提前终止。
+   */
+  public async onDispatchEventStart(
+    eventName: string,
+    options?: DispatchEventOptions,
+    inputArgs?: Record<string, any>,
+  ): Promise<void> {}
+
+  /**
+   * 通用事件分发钩子：结束
+   * 子类可覆盖。
+   */
+  public async onDispatchEventEnd(
+    eventName: string,
+    options?: DispatchEventOptions,
+    inputArgs?: Record<string, any>,
+    result?: any,
+  ): Promise<void> {}
+
+  /**
+   * 通用事件分发钩子：错误
+   * 子类可覆盖。
+   */
+  public async onDispatchEventError(
+    eventName: string,
+    options?: DispatchEventOptions,
+    inputArgs?: Record<string, any>,
+    error?: Error,
+  ): Promise<void> {}
+
+  /**
+   * 兼容钩子（建议迁移到 onDispatchEvent*）：beforeRender 专用旧钩子
    */
   public async onBeforeAutoFlows(inputArgs?: Record<string, any>): Promise<void> {}
-
-  /**
-   * 自动流程执行后钩子。
-   * 子类可覆盖。
-   */
   public async onAfterAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise<void> {}
-
-  /**
-   * 自动流程错误钩子。
-   * 子类可覆盖。
-   */
   public async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise<void> {}
 
   useHooksBeforeRender() {}
@@ -786,52 +807,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
     this._lastAutoRunParams = args;
 
-    // 在执行自动流程前触发（无论是否命中缓存都应触发）
-    try {
-      await this.onBeforeAutoFlows(inputArgs);
-    } catch (error) {
-      if (error instanceof FlowExitException) {
-        this.context.logger?.debug(`[FlowModel.applyAutoFlows] ${error.message}`);
-        return [];
-      }
-      try {
-        await this.onAutoFlowsError(error as Error, inputArgs);
-      } catch (_) {
-        // swallow secondary hook error to avoid masking the original
-      }
-      throw error;
-    }
-
-    // 执行 beforeRender 事件（内部可能命中缓存）
-    let results: any[] = [];
-    try {
-      const out = await this.flowEngine.executor.dispatchEvent(this, 'beforeRender', inputArgs, {
-        sequential: true,
-        useCache,
-      });
-      results = Array.isArray(out) ? out : [];
-    } catch (error) {
-      try {
-        await this.onAutoFlowsError(error as Error, inputArgs);
-      } catch (_) {
-        // ignore secondary error from error hook
-      }
-      throw error;
-    }
-
-    // 执行后钩子
-    try {
-      await this.onAfterAutoFlows(results, inputArgs);
-    } catch (error) {
-      try {
-        await this.onAutoFlowsError(error as Error, inputArgs);
-      } catch (_) {
-        // ignore
-      }
-      throw error;
-    }
-
-    return results;
+    const out = await this.flowEngine.executor.dispatchEvent(this, 'beforeRender', inputArgs, {
+      sequential: true,
+      useCache,
+    });
+    return Array.isArray(out) ? out : [];
   }
 
   /**

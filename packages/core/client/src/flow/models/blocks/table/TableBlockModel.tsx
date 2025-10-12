@@ -589,7 +589,7 @@ TableBlockModel.registerFlow({
           ctx.model.mapSubModels('columns', async (column) => {
             if (column.hidden) return;
             try {
-              await column.applyAutoFlows();
+              await column.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
             } catch (err) {
               column['__autoFlowError'] = err;
               // 列级错误不再向上抛，避免拖垮整表；在单元格层用 ErrorBoundary 展示

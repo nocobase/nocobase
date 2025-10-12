@@ -189,6 +189,26 @@ export class FlowExecutor {
     const runId = `${model.uid}-${eventName}-${Date.now()}`;
     const logger = model.context.logger;
 
+    // 统一：事件开始钩子（beforeRender 兼容旧钩子）
+    try {
+      await (model as any).onDispatchEventStart?.(eventName, options, inputArgs);
+      if (isBeforeRender && (model as any).onBeforeAutoFlows) {
+        await (model as any).onBeforeAutoFlows(inputArgs);
+      }
+    } catch (err) {
+      if (isBeforeRender && err instanceof FlowExitException) {
+        logger.debug(`[FlowModel.dispatchEvent] ${err.message}`);
+        return [];
+      }
+      // 其他事件抛错：进入错误钩子并记录
+      try {
+        await (model as any).onDispatchEventError?.(eventName, err as Error, options, inputArgs);
+      } finally {
+        logger.error({ err }, `BaseModel.dispatchEvent: Start hook error for event '${eventName}'`);
+      }
+      return;
+    }
+
     // 构造待执行的 flows 列表
     const flows = isBeforeRender
       ? model.getEventFlows('beforeRender') // 统一：beforeRender 运行自动流集合（含无 on 的流）
@@ -251,9 +271,27 @@ export class FlowExecutor {
       : null;
 
     try {
-      return await this.withApplyFlowCache(cacheKey, execute);
+      const result = await this.withApplyFlowCache(cacheKey, execute);
+      // 统一：事件结束钩子（beforeRender 兼容旧钩子）
+      try {
+        await (model as any).onDispatchEventEnd?.(eventName, options, inputArgs, result);
+        if (isBeforeRender && (model as any).onAfterAutoFlows) {
+          await (model as any).onAfterAutoFlows(result, inputArgs);
+        }
+      } catch (hookErr) {
+        logger.error({ err: hookErr }, `BaseModel.dispatchEvent: End hook error for event '${eventName}'`);
+      }
+      return result;
     } catch (error) {
       // 与事件分发语义保持一致：记录错误，不抛给调用方
+      try {
+        await (model as any).onDispatchEventError?.(eventName, options, inputArgs, error as Error);
+        if (isBeforeRender && (model as any).onAutoFlowsError) {
+          await (model as any).onAutoFlowsError(error as Error, inputArgs);
+        }
+      } catch (_) {
+        // swallow secondary hook error
+      }
       model.context.logger.error(
         { err: error },
         `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`,
