@@ -51,6 +51,9 @@ export class ClickableFieldModel extends FieldModel {
   }
 
   renderInDisplayStyle(value, record?) {
+    if (typeof value === 'object') {
+      return;
+    }
     const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
     const result = this.renderComponent(value);
     const display = record ? (value ? result : 'N/A') : result;
@@ -141,7 +144,7 @@ ClickableFieldModel.registerFlow({
     displayStyle: {
       title: escapeT('Display style'),
       uiSchema: (ctx) => {
-        if (['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'].includes(ctx.collectionField.interface)) {
+        if (['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'].includes(ctx.collectionField?.interface)) {
           return null;
         }
 
