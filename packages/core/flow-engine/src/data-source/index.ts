@@ -703,6 +703,7 @@ export class CollectionField {
         multiple: target ? ['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) : undefined,
         maxCount: target && !['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) ? 1 : undefined,
         target: target,
+        template: this.targetCollection?.template,
       },
       _.isUndefined,
     );
