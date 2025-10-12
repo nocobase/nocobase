@@ -20,7 +20,6 @@ export class FilterFormCustomItemModel extends FlowModel {
 
     const toChildren = (models: Map<string, any>) =>
       Array.from(models.entries()).map(([name, ModelClass]) => {
-        const hasChildren = typeof ModelClass.defineChildren === 'function' || !!ModelClass.meta?.children;
         const item: any = {
           key: name,
           label: ctx.t(ModelClass.meta.label),
@@ -28,18 +27,8 @@ export class FilterFormCustomItemModel extends FlowModel {
           searchable: !!ModelClass.meta?.searchable,
           searchPlaceholder: ModelClass.meta?.searchPlaceholder,
         };
-        if (hasChildren) {
-          // 子模型自身定义了 children，作为“子菜单入口”使用；点击展开二级菜单
-          item.children = (innerCtx: FlowModelContext) => {
-            if (typeof ModelClass.defineChildren === 'function') {
-              return ModelClass.defineChildren(innerCtx);
-            }
-            return ModelClass.meta?.children || [];
-          };
-        } else {
-          // 叶子项：点击直接创建实例
-          item.createModelOptions = { use: name };
-        }
+        // 叶子项：点击直接创建实例
+        item.createModelOptions = { use: name };
         return item;
       });
 
