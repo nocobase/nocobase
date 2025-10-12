@@ -88,10 +88,11 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
           </Radio.Group>
         </FormItem>
         <FormItem label={t('Options')}>
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space direction="vertical" size={8} style={{ width: '100%' }}>
             {options.map((option: any, index: number) => (
-              <Space key={index} style={{ width: '100%' }}>
+              <Space key={index} style={{ width: '100%' }} size={8} wrap align="start">
                 <Input
+                  style={{ flex: 1, minWidth: 120 }}
                   placeholder={t('Option label')}
                   value={option.label}
                   onChange={(e) => {
@@ -101,6 +102,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
                   }}
                 />
                 <Input
+                  style={{ flex: 1, minWidth: 120 }}
                   placeholder={t('Option value')}
                   value={option.value}
                   onChange={(e) => {
@@ -110,6 +112,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
                   }}
                 />
                 <Button
+                  type="text"
                   icon={<CloseOutlined />}
                   onClick={() => {
                     const newOptions = options.filter((_: any, i: number) => i !== index);
@@ -119,6 +122,8 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
               </Space>
             ))}
             <Button
+              type="dashed"
+              block
               icon={<PlusOutlined />}
               onClick={() => {
                 updateProps('options', [...options, { label: '', value: '' }]);
@@ -137,10 +142,11 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
     const options = propsValue.options || [];
     return (
       <FormItem label={t('Options')}>
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space direction="vertical" size={8} style={{ width: '100%' }}>
           {options.map((option: any, index: number) => (
-            <Space key={`${option.value}-${index}`} style={{ width: '100%' }}>
+            <Space key={`${option.value}-${index}`} style={{ width: '100%' }} size={8} wrap align="start">
               <Input
+                style={{ flex: 1, minWidth: 120 }}
                 placeholder={t('Option label')}
                 value={option.label}
                 onChange={(e) => {
@@ -150,6 +156,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
                 }}
               />
               <Input
+                style={{ flex: 1, minWidth: 120 }}
                 placeholder={t('Option value')}
                 value={option.value}
                 onChange={(e) => {
@@ -159,6 +166,7 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
                 }}
               />
               <Button
+                type="text"
                 icon={<CloseOutlined />}
                 onClick={() => {
                   const newOptions = options.filter((_: any, i: number) => i !== index);
@@ -168,6 +176,8 @@ export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[
             </Space>
           ))}
           <Button
+            type="dashed"
+            block
             icon={<PlusOutlined />}
             onClick={() => {
               updateProps('options', [...options, { label: '', value: '' }]);
