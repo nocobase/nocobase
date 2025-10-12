@@ -75,11 +75,11 @@
 - **applyFlow(flowKey: string, inputArgs?: Record<string, any>): Promise\<any\>**  
   执行指定流。
 
-- **dispatchEvent(eventName: string, inputArgs?: Record<string, any>): void**  
-  触发事件，自动匹配并执行相关流。
-
-- **applyAutoFlows(inputArgs?: Record<string, any>): Promise\<any[]\>**  
-  执行所有自动流。
+- **dispatchEvent(eventName: string, inputArgs?: Record<string, any>, options?: { debounce?: boolean; sequential?: boolean; useCache?: boolean }): void**  
+  触发事件，自动匹配并执行相关流；支持顺序或并行执行。
+  - `sequential`: 为 `true` 时按 `sort` 顺序串行执行（默认并行）。
+  - `useCache`: 为 `true` 时启用事件层面的缓存（默认 `false`）；特殊事件 `beforeRender` 强制使用缓存。
+  - 特殊事件 `beforeRender` 始终按 `sort` 顺序串行执行。
 
 - **applySubModelsAutoFlows(subKey: string, extra?: Record\<string, any\>): Promise\<void\>**  
   执行指定子模型的自动流。
@@ -90,23 +90,26 @@
 - **getFlows(): Map\<string, FlowDefinition\>**  
   获取所有已配置流（含继承）。
 
-- **getAutoFlows(): FlowDefinition[]**  
-  获取所有自动应用流程定义并按 sort 排序。
+- **getEventFlows(eventName: string): FlowDefinition[]**  
+  按事件名获取流程集合并按 sort 排序。
+  - 特殊事件 `beforeRender`: 兼容包含“未声明 on 且 manual !== true”的流程（等价历史自动流）。
 
 ---
 
-### 自动流执行生命周期钩子
+### 事件分发钩子（推荐）
 
-FlowModel 提供了三个全局自动流执行生命周期钩子，子类可以重写这些方法来实现自定义逻辑：
+为统一各类事件流程（含 beforeRender），提供以下通用钩子：
 
-- **async onBeforeAutoFlows(inputArgs?: Record<string, any>): Promise\<void\>**
-  在所有自动流执行前调用。可以通过抛出 `FlowExitException` 来终止后续流程执行。
+- **async onDispatchEventStart(eventName: string, options?: DispatchEventOptions, inputArgs?: Record<string, any>)**
+  事件执行前调用；beforeRender 可通过抛出 `FlowExitException` 终止执行。
 
-- **async onAfterAutoFlows(results: any[], inputArgs?: Record<string, any>): Promise\<void\>**
-  在所有自动流执行后调用。可以访问所有自动流的执行结果。
+- **async onDispatchEventEnd(eventName: string, options?: DispatchEventOptions, inputArgs?: Record<string, any>, results?: any[])**
+  事件执行后调用；`results` 为按 sort 顺序收集到的步骤结果数组。
 
-- **async onAutoFlowsError(error: Error, inputArgs?: Record<string, any>): Promise\<void\>**
-  在自动流执行或生命周期钩子出错时调用。可进行自定义错误处理。
+- **async onDispatchEventError(eventName: string, options?: DispatchEventOptions, inputArgs?: Record<string, any>, error?: Error)**
+  事件执行或生命周期钩子出错时调用。
+
+兼容：beforeRender 的旧钩子 `onBeforeAutoFlows`、`onAfterAutoFlows`、`onAutoFlowsError` 仍可工作，但建议迁移到上述通用钩子。
 
 ---
 
@@ -207,7 +210,7 @@ await model.save();
 
 // 执行流
 await model.applyFlow('default');
-await model.applyAutoFlows();
+await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
 await model.dispatchEvent('event');
 ```
 
@@ -241,3 +244,5 @@ interface DefaultStructure {
   subModels?: Record<string, FlowModel | FlowModel[]>;
 }
 ```
+- **invalidateFlowCache(eventName?: string, deep?: boolean): void**  
+  失效当前模型指定事件的流程缓存；未指定 `eventName` 时失效当前模型的全部事件缓存。常用：`invalidateFlowCache('beforeRender')`。

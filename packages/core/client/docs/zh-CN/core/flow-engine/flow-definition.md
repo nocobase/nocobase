@@ -10,7 +10,6 @@
 interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   key: string; // 流唯一标识
   title?: string; // 可选：流显示名称
-  auto?: boolean; // 可选：是否自动运行
   sort?: number; // 可选：流执行排序，数字越小越先执行，默认为 0，可为负数
   on?: { eventName: string }; // 可选：事件触发配置
   steps: Record<string, StepDefinition<TModel>>; // 流步骤定义
@@ -120,7 +119,8 @@ MyFlowModel.registerFlow(myFlow); // 注册流
 class MyFlowDefinition implements FlowDefinition {
   key = 'MyFlowDefinition';
   title = '我的复杂流程';
-  auto = true;
+  // 推荐显式声明 beforeRender 生命周期事件（等价于未声明 on 且 manual !== true 的自动流）
+  on = { eventName: 'beforeRender' };
   sort = 0;
 
   steps = {
@@ -209,7 +209,7 @@ myModel.setStepParams('myFlow', 'step1', { name: '小明' });
 ```ts
 await myModel.applyFlow('myFlow'); // 主动执行指定流
 myModel.dispatchEvent('user.created'); // 分发事件触发流（如流配置了 on.eventName）
-await myModel.applyAutoFlows(); // 执行所有 auto=true 的流，按 sort 排序
+await myModel.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true }); // 执行所有 beforeRender 事件流（含兼容未声明 on 且非 manual 的流），按 sort 顺序
 ```
 
 ---
@@ -222,8 +222,7 @@ await myModel.applyAutoFlows(); // 执行所有 auto=true 的流，按 sort 排�
 | ----------- | -------------------------------- | ---------------------------------- |
 | `key`       | `string`                         | 流唯一标识，必须配置                        |
 | `title`     | `string`                         | （可选）流显示名称                         |
-| `on`        | `{ eventName: string }`          | （可选）事件触发配置                         |
-| `auto`      | `boolean`                        | （可选）是否在 `applyAutoFlows()` 中自动执行流 |
+| `on`        | `{ eventName: string }`          | （可选）事件触发配置（可用 `beforeRender` 作为生命周期事件） |
 | `sort`      | `number`                         | （可选）流执行排序，数字越小越先执行，默认为 0，可为负数   |
 | `steps`     | `Record<string, StepDefinition>` | 步骤集合，键为步骤名，值为步骤定义                  |
 

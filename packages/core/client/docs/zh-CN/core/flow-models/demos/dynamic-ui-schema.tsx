@@ -110,7 +110,7 @@ class PluginDynamicUiSchema extends Plugin {
       props: { formType: 'user', advancedMode: false },
     });
 
-    await model.applyAutoFlows();
+    await model.dispatchEvent('beforeRender', undefined, { sequential: true, useCache: true });
 
     this.router.add('root', {
       path: '/',

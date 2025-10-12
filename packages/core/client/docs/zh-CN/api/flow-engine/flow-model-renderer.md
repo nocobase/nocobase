@@ -18,10 +18,7 @@ interface FlowModelRendererProps {
   /** 是否在设置中隐藏移除按钮 */
   hideRemoveInSettings?: boolean; // 默认 false
 
-  /** 是否跳过自动应用流，默认 false */
-  skipApplyAutoFlows?: boolean; // 默认 false
-
-  /** 当 skipApplyAutoFlows !== false 时，传递给 useApplyAutoFlows 的运行时参数 */
+  /** 传递给 beforeRender 事件的运行时参数 */
   inputArgs?: Record<string, any>
 
   /** 设置菜单层级：1=仅当前模型(默认)，2=包含子模型 */
@@ -43,8 +40,7 @@ interface FlowModelRendererProps {
   - `modal`: 模态框形式（待实现）
   - `drawer`: 抽屉形式（待实现）
 - **hideRemoveInSettings**: 是否在设置中隐藏移除按钮，当设为 `true` 时，流设置菜单中不会显示删除/移除选项
-- **skipApplyAutoFlows**: 是否跳过自动应用流。当设为 `true` 时，组件不会调用 `useApplyAutoFlows` hook
-- **inputArgs**: 运行时参数，当 `skipApplyAutoFlows` 为 `false` 时传递给 `useApplyAutoFlows` hook
+- **inputArgs**: 运行时参数，传递给 beforeRender 事件
 - **settingsMenuLevel**: 设置菜单层级，控制设置菜单的显示范围
   - `1`: 仅显示当前模型的设置（默认）
   - `2`: 包含子模型的设置
@@ -70,10 +66,10 @@ interface FlowModelRendererProps {
   hideRemoveInSettings={true}
 />
 
-// 跳过自动应用流
+// 传递 beforeRender 事件上下文
 <FlowModelRenderer 
   model={model} 
-  skipApplyAutoFlows={true}
+  inputArgs={{ customData: 'value' }}
 />
 
 // 传递额外上下文
@@ -96,7 +92,6 @@ interface FlowModelRendererProps {
   showFlowSettings={true}
   flowSettingsVariant="contextMenu"
   hideRemoveInSettings={false}
-  skipApplyAutoFlows={false}
   settingsMenuLevel={2}
   inputArgs={{ 
     userId: 123,
@@ -137,14 +132,7 @@ interface FlowModelRendererProps {
 ```
 
 ### 4. 自定义流控制
-当需要手动控制流应用时，可以跳过自动流：
-
-```tsx | pure
-<FlowModelRenderer 
-  model={flowModel} 
-  skipApplyAutoFlows={true}
-/>
-```
+当需要手动控制时，可以选择不传 inputArgs 或通过模型上自定义逻辑控制。
 
 ### 5. 传递自定义上下文
 当需要向流传递特定上下文数据时：
