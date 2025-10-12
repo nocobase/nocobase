@@ -654,7 +654,7 @@ export class CollectionField {
   }
 
   get title() {
-    const titleValue = this.options?.title || this.options?.uiSchema?.title || this.options.name;
+    const titleValue = this.options?.uiSchema?.title || this.options?.title || this.options.name;
     return this.flowEngine.translate(titleValue);
   }
 
