@@ -133,5 +133,5 @@ export function SourceCascader(props) {
     [flowEngine],
   );
 
-  return <Cascader {...props} options={options} loadData={loadData} />;
+  return <Cascader allowClear {...props} options={options} loadData={loadData} />;
 }
