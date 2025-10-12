@@ -19,10 +19,11 @@ import {
 } from '@nocobase/client';
 
 import { lang, NAMESPACE } from './locale';
-import { Radio, Select, Space } from 'antd';
+import { App, Radio, Select, Space } from 'antd';
 import { useFlowContext } from './FlowContext';
 import { useForm } from '@formily/react';
 import PluginWorkflowClient from '.';
+import { parse } from '@nocobase/utils/client';
 
 const RemoveNodeContext = createContext(null);
 
@@ -30,9 +31,24 @@ export function useRemoveNodeContext() {
   return useContext(RemoveNodeContext);
 }
 
+function findBranchNodes(nodes, branchHead) {
+  const result = new Map();
+  for (let node = branchHead; node; node = node.downstream) {
+    result.set(node.id, node);
+    const subBranches = nodes.filter((item) => item.upstream === node && item.branchIndex != null);
+    for (const subBranch of subBranches) {
+      const subBranchNodes = findBranchNodes(nodes, subBranch);
+      for (const [key, value] of subBranchNodes) {
+        result.set(key, value);
+      }
+    }
+  }
+  return result;
+}
+
 function KeepBranchRadioGroup(props) {
   const { value, onChange } = props;
-  const type = typeof value === 'number' ? 1 : 0;
+  const { nodes } = useFlowContext();
   const { deletingNode, deletingBranches } = useRemoveNodeContext();
   const plugin = usePlugin(PluginWorkflowClient) as PluginWorkflowClient;
   const compile = useCompile();
@@ -63,7 +79,7 @@ function KeepBranchRadioGroup(props) {
   return (
     <>
       <Radio.Group
-        value={type}
+        value={typeof value === 'number' ? 1 : 0}
         onChange={(e) => {
           if (e.target.value === 0) {
             onChange(null);
@@ -90,12 +106,47 @@ function KeepBranchRadioGroup(props) {
 
 function useRemoveNodeSubmitAction() {
   const api = useAPIClient();
-  const { refresh } = useFlowContext() ?? {};
-  const { deletingNode, setDeletingNode } = useRemoveNodeContext();
+  const { nodes, refresh } = useFlowContext() ?? {};
+  const { deletingNode, deletingBranches, setDeletingNode } = useRemoveNodeContext();
   const { values, clearFormGraph } = useForm();
+  const { modal } = App.useApp();
+  const branchNodesUsingVariable = useMemo(() => {
+    const result = [];
+    if (values.keepBranch == null || !deletingNode) {
+      return result;
+    }
+    const branchHead = deletingBranches.find((item) => values.keepBranch === item.branchIndex);
+    for (const node of findBranchNodes(nodes, branchHead).values()) {
+      const template = parse(node.config);
+      const refs = template.parameters.filter(({ key }) => {
+        return (
+          key.startsWith(`$jobsMapByNodeKey.${deletingNode.key}.`) ||
+          key === `$jobsMapByNodeKey.${deletingNode.key}` ||
+          key.startsWith(`$scopes.${deletingNode.key}.`) ||
+          key === `$scopes.${deletingNode.key}`
+        );
+      });
+      if (refs.length) {
+        result.push(node);
+      }
+    }
+    return result;
+  }, [deletingBranches, deletingNode, nodes, values.keepBranch]);
+
   const keepBranchValues = values.keepBranch != null ? values : {};
+
   return {
     async run() {
+      if (branchNodesUsingVariable.length) {
+        modal.error({
+          title: lang('Can not delete'),
+          content: lang(
+            'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.',
+            { nodes: branchNodesUsingVariable.map((item) => item.title).join(', ') },
+          ),
+        });
+        return;
+      }
       await api.resource('flow_nodes').destroy?.({
         filterByTk: deletingNode.id,
         ...keepBranchValues,
