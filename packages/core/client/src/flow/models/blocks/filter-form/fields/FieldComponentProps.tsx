@@ -7,22 +7,46 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useField } from '@formily/react';
 import { FormItem } from '@formily/antd-v5';
 import { Input, Radio, Checkbox, Space, Button } from 'antd';
 import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { FilterableItemModel, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 
 // 字段组件属性配置组件
-export const FieldComponentProps: React.FC<{ fieldModel: string }> = ({ fieldModel }) => {
+export const FieldComponentProps: React.FC<{ fieldModel: string; source: string[] }> = ({
+  fieldModel,
+  source = [],
+}) => {
   const field = useField<any>();
   const { t } = useTranslation();
   const propsValue = field.value || {};
+  const flowEngine = useFlowEngine();
+  const ctx = useFlowContext();
 
   const updateProps = (key: string, value: any) => {
     field.setValue({ ...propsValue, [key]: value });
   };
+
+  useEffect(() => {
+    if (!source.length) return undefined;
+    const collectionField = flowEngine.dataSourceManager.getCollectionField(source.join('.'));
+    const binding = FilterableItemModel.getDefaultBindingByField(ctx.model.context, collectionField);
+    if (!binding) {
+      return;
+    }
+
+    const fieldProps = collectionField.getComponentProps();
+
+    const props =
+      typeof binding.defaultProps === 'function'
+        ? binding.defaultProps(ctx.model.context, field)
+        : binding.defaultProps;
+
+    field.setValue({ ...props, ...fieldProps, ...propsValue });
+  }, [source.join('.')]);
 
   // DateTimeFilterFieldModel 的配置
   if (fieldModel === 'DateTimeFilterFieldModel') {

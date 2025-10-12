@@ -25,7 +25,7 @@ export function FieldModelSelect(props) {
     }
     onChange(binding.modelName);
     return binding.modelName;
-  }, [source, flowEngine.dataSourceManager, ctx.model.context, onChange]);
+  }, [source.join('.')]);
 
   return <Select allowClear {...props} value={props.value || defaultValue} />;
 }
