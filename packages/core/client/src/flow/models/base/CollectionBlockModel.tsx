@@ -366,7 +366,6 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         return;
       }
       if (field.isAssociationField()) {
-        console.log(field.name);
         (this.resource as BaseRecordResource).addAppends(field.name);
         if (refresh) {
           this.resource.refresh();

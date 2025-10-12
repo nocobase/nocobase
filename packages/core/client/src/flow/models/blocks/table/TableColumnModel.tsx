@@ -396,5 +396,9 @@ TableColumnModel.registerFlow({
         });
       },
     },
+    fixed: {
+      title: escapeT('Fixed'),
+      use: 'fixed',
+    },
   },
 });

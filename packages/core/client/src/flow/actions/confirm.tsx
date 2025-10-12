@@ -43,8 +43,8 @@ export const confirm = defineAction({
   },
   defaultParams: {
     enable: true,
-    title: 'Please Confirm',
-    content: 'Are you sure you want to proceed with this action?',
+    title: escapeT('Please Confirm'),
+    content: escapeT('Are you sure you want to perform the action?'),
   },
   async handler(ctx, params) {
     if (params.enable) {

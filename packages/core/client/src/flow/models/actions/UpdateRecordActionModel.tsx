@@ -10,8 +10,10 @@
 import { escapeT, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Alert, ButtonProps } from 'antd';
 import React, { useEffect, useRef } from 'react';
-import { ActionModel, ActionSceneEnum, CollectionActionModel, RecordActionModel } from '../base';
-import { AssignFormModel } from '../blocks';
+import { ActionModel, ActionSceneEnum } from '../base/ActionModel';
+import { CollectionActionModel } from '../base/CollectionActionModel';
+import { RecordActionModel } from '../base/RecordActionModel';
+import { AssignFormModel } from '../blocks/assign-form/AssignFormModel';
 // import { RemoteFlowModelRenderer } from '../../FlowPage';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
@@ -63,22 +65,26 @@ function AssignFieldsEditor() {
     if (isBulk && (formModel as any)?.context?.defineProperty) {
       formModel.context.defineProperty('record', { get: () => undefined });
     }
-    const grid = (formModel as any)?.subModels?.grid;
-    const items = grid?.subModels?.items || [];
-    for (const it of items) {
-      const saved =
-        typeof it?.getStepParams === 'function' ? it.getStepParams('fieldSettings', 'assignValue')?.value : undefined;
-      if (typeof saved !== 'undefined') {
-        (it as any).assignValue = saved;
-      }
-    }
     initializedRef.current = true;
   }, [action, blockModel?.collection, formModel]);
 
   return formModel ? <FlowModelRenderer model={formModel} showFlowSettings={false} /> : null;
 }
 
-export class UpdateActionModel extends ActionModel<{
+function Info() {
+  const ctx = useFlowSettingsContext();
+  return (
+    <Alert
+      type="info"
+      showIcon
+      message={ctx.t(
+        'After clicking the custom button, the following fields of the current record will be saved according to the following form.',
+      )}
+    />
+  );
+}
+
+export class UpdateRecordActionModel extends ActionModel<{
   subModels: {
     assignForm: AssignFormModel;
   };
@@ -88,7 +94,7 @@ export class UpdateActionModel extends ActionModel<{
   assignFormUid?: string;
 
   defaultProps: ButtonProps = {
-    title: escapeT('Update'),
+    title: escapeT('Update record'),
     type: 'link',
   };
 
@@ -97,8 +103,8 @@ export class UpdateActionModel extends ActionModel<{
   }
 }
 
-UpdateActionModel.define({
-  label: escapeT('Update'),
+UpdateRecordActionModel.define({
+  label: escapeT('Update record'),
   // 使用函数型 createModelOptions，从父级上下文提取资源信息，直接注入到子模型的 resourceSettings.init
   createModelOptions: (ctx) => {
     const dsKey = ctx.collection.dataSourceKey;
@@ -116,7 +122,7 @@ UpdateActionModel.define({
   },
 });
 
-UpdateActionModel.registerFlow({
+UpdateRecordActionModel.registerFlow({
   key: SETTINGS_FLOW_KEY,
   title: escapeT('Action settings'),
   // 配置流仅用于收集参数，避免作为自动流程执行
@@ -138,9 +144,7 @@ UpdateActionModel.registerFlow({
         return {
           tip: {
             'x-decorator': 'FormItem',
-            'x-component': () => (
-              <Alert type="info" showIcon message={'点击当前自定义按钮时，当前数据以下字段将按照以下表单保存。'} />
-            ),
+            'x-component': () => <Info />,
           },
           editor: {
             'x-decorator': 'FormItem',
@@ -149,31 +153,20 @@ UpdateActionModel.registerFlow({
         };
       },
       async beforeParamsSave(ctx) {
-        const m = ctx.model as UpdateActionModel;
-        let form: AssignFormModel = m?.assignFormUid && ctx.engine.getModel?.(m.assignFormUid);
-        if (!form && ctx.engine) {
-          form = (await ctx.engine.loadModel({
-            uid: m.assignFormUid || undefined,
-            parentId: ctx.model.uid,
-            subKey: 'assignForm',
-          })) as any;
-        }
+        const m = ctx.model as UpdateRecordActionModel;
+        // 跨视图栈按 uid 定位到设置面板中的真实 AssignForm 实例
+        const form: AssignFormModel = m?.assignFormUid && ctx.engine.getModel?.(m.assignFormUid, true);
         if (!form) return;
         const assignedValues = form?.getAssignedValues?.() || {};
         const grid = form?.subModels?.grid;
         const items = grid?.subModels?.items || [];
-        for (const it of items) {
-          if (typeof it?.setStepParams === 'function') {
-            it.setStepParams('fieldSettings', 'assignValue', { value: it.assignValue });
-          }
-        }
         ctx.model.setStepParams(SETTINGS_FLOW_KEY, 'assignFieldValues', { assignedValues });
       },
     },
   },
 });
 
-UpdateActionModel.registerFlow({
+UpdateRecordActionModel.registerFlow({
   key: 'apply',
   on: 'click',
   steps: {
