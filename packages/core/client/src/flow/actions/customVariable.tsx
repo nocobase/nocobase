@@ -25,14 +25,41 @@ export const customVariable = defineAction({
       'x-component-props': {},
     },
   },
-  async handler(ctx, params) {},
+  async handler(ctx, params) {
+    const { variables = [] } = params;
+
+    variables.forEach((variable) => {
+      const modelInstance = ctx.model.flowEngine.getModel(variable.formUid);
+      const gridModel = modelInstance?.subModels?.grid;
+
+      if (!gridModel) {
+        return;
+      }
+
+      const properties = {};
+
+      gridModel.mapSubModels('items', (item) => {
+        properties[item.props.name] = { title: item.props.label, type: 'string' };
+      });
+
+      ctx.model.context.defineProperty(variable.key, {
+        get: () => modelInstance?.form?.getFieldsValue(true),
+        cache: false,
+        meta: {
+          title: variable.title,
+          type: 'object',
+          properties,
+        },
+      });
+    });
+  },
 });
 
 type FlowVariableType = 'formValue';
 
 interface FormValueVariable {
   key: string;
-  name: string;
+  title: string;
   type: 'formValue';
   formUid: string;
 }
@@ -47,7 +74,7 @@ interface VariableEditorProps {
 
 interface VariableFormValues {
   key: string;
-  name: string;
+  title: string;
   formUid: string;
 }
 
@@ -68,7 +95,7 @@ function VariableEditor(props: VariableEditorProps) {
 
   const resetForm = React.useCallback(() => {
     form.resetFields();
-    form.setFieldsValue({ key: generateVariableKey(), name: '', formUid: '' });
+    form.setFieldsValue({ key: generateVariableKey(), title: '', formUid: '' });
   }, [form]);
 
   const openModal = React.useCallback(
@@ -85,7 +112,7 @@ function VariableEditor(props: VariableEditorProps) {
         }
         form.setFieldsValue({
           key: target.key,
-          name: target.name,
+          title: target.title,
           formUid: target.type === 'formValue' ? target.formUid : '',
         });
       }
@@ -105,7 +132,7 @@ function VariableEditor(props: VariableEditorProps) {
     const formValues = await form.validateFields();
     const nextVariable: FlowVariable = {
       key: formValues.key,
-      name: formValues.name,
+      title: formValues.title,
       type: currentType,
       formUid: formValues.formUid,
     };
@@ -166,8 +193,8 @@ function VariableEditor(props: VariableEditorProps) {
     () => [
       {
         title: t('Title'),
-        dataIndex: 'name',
-        key: 'name',
+        dataIndex: 'title',
+        key: 'title',
         ellipsis: true,
         render: (text: string) => <span style={{ whiteSpace: 'nowrap' }}>{text}</span>,
       },
@@ -260,11 +287,11 @@ function VariableEditor(props: VariableEditorProps) {
       >
         <Form<VariableFormValues> form={form} layout="vertical" disabled={disabled}>
           <Form.Item
-            label={t('Variable name')}
-            name="name"
-            rules={[{ required: true, message: t('Please enter variable name') }]}
+            label={t('Variable title')}
+            name="title"
+            rules={[{ required: true, message: t('Please enter variable title') }]}
           >
-            <Input placeholder={t('Please enter variable name')} />
+            <Input placeholder={t('Please enter variable title')} />
           </Form.Item>
           <Form.Item label={t('Variable identifier')} name="key">
             <Input disabled />
