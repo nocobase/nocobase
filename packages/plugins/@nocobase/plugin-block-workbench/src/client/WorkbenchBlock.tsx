@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, useFieldSchema } from '@formily/react';
+import { observer, useFieldSchema, RecursionField } from '@formily/react';
 import {
   CollectionContext,
   createStyles,
@@ -90,18 +90,7 @@ const InternalIcons = () => {
             }
           >
             {fieldSchema.mapProperties((s, key) => {
-              const icon = s['x-component-props']?.['icon'];
-              const backgroundColor = s['x-component-props']?.['iconColor'];
-              return (
-                <List.Item
-                  key={key}
-                  prefix={<Avatar style={{ backgroundColor }} icon={<Icon type={icon} />} />}
-                  onClick={() => {}}
-                  style={{ marginTop: '5px' }}
-                >
-                  <NocoBaseRecursionField name={key} schema={s} />
-                </List.Item>
-              );
+              return <NocoBaseRecursionField name={key} schema={s} />;
             })}
           </List>
         )}
@@ -144,6 +133,10 @@ const useStyles = createStyles(({ token, css }) => ({
       button[aria-label*='schema-initializer-WorkbenchBlock.ActionBar-workbench:configureActions'] {
         margin-bottom: ${token.paddingLG}px;
         margin-left: ${token.paddingLG}px;
+      }
+      .adm-list-body-inner {
+        margin-top: 6px;
+        margin-bottom: 3px;
       }
     }
   `,

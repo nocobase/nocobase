@@ -30,6 +30,7 @@ export type AIEmployee = {
     skills?: { name: string }[];
   };
   builtIn?: boolean;
+  webSearch?: boolean;
 };
 
 export type SkillSettings = {
@@ -41,6 +42,16 @@ export type Conversation = {
   title: string;
   updatedAt: string;
   aiEmployee: AIEmployee;
+};
+
+export type ConversationOptions = {
+  sessionId: string;
+  options: {
+    conversationSetting?: ConversationSetting;
+  };
+};
+export type ConversationSetting = {
+  webSearch?: boolean;
 };
 
 export type ContextItem = {
@@ -106,6 +117,7 @@ export type SendOptions = {
   workContext: ContextItem[];
   editingMessageId?: string;
   skillSettings?: SkillSettings;
+  webSearch?: boolean;
 };
 
 export type ResendOptions = {

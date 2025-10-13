@@ -32,7 +32,7 @@ export class JavaScriptBlockModel extends BlockModel {
   }
   protected onMount() {
     // If component has mounted before, rerun to refresh JS on remount
-    // Keep first mount single-run (handled by auto-flows + onRefReady)
+    // Keep first mount single-run (handled by beforeRender event + onRefReady)
     if (this._mountedOnce) {
       if (this.context.ref.current) {
         this.rerender();

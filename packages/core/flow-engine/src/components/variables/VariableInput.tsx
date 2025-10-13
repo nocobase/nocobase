@@ -254,11 +254,29 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
     if (disabled) {
       return;
     }
-    setCurrentMetaTreeNode(null);
     const cleared = clearValue !== undefined ? clearValue : null;
     setInnerValue(cleared);
+
+    // 若 clearValue 能解析到某个路径（例如 ['constant']），
+    // 则尝试立即定位到对应的 MetaTreeNode，以便渲染正确的常量组件。
+    try {
+      const path = resolvePathFromValue?.(cleared);
+      if (Array.isArray(resolvedMetaTree) && path && path.length > 0) {
+        const node = findMetaTreeNodeByPath(resolvedMetaTree as MetaTreeNode[], path as string[]);
+        if (node) {
+          setCurrentMetaTreeNode(node);
+          emitChange(cleared as any, node);
+          return;
+        }
+      }
+    } catch (_) {
+      // 忽略解析异常，走默认回退
+    }
+
+    // 默认回退（无法定位具体 MetaTreeNode 时）
+    setCurrentMetaTreeNode(null);
     emitChange(cleared as any);
-  }, [emitChange, disabled, clearValue]);
+  }, [emitChange, disabled, clearValue, resolvedMetaTree, resolvePathFromValue]);
 
   const stableProps = useMemo(() => {
     const { style, onFocus, onBlur, disabled, ...otherProps } = restProps;

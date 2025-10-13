@@ -19,7 +19,8 @@ import {
 import { Form, FormInstance } from 'antd';
 import { omit } from 'lodash';
 import React from 'react';
-import { BlockGridModel, CollectionBlockModel } from '../../base';
+import { BlockGridModel } from '../../base/BlockGridModel';
+import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
