@@ -24,14 +24,14 @@ import {
 } from '@nocobase/flow-engine';
 import { JSEditableFieldModel } from '../../../models/fields/JSEditableFieldModel';
 
-// Minimal auto-flow model that executes preview code
+// Minimal beforeRender event model that executes preview code
 class DummyJsAutoModel extends FlowModel {
   render() {
     return <span data-testid={`dummy-${this.uid}`} ref={this.context.ref as any} />;
   }
 }
 
-describe('useCodeRunner (auto flow)', () => {
+describe('useCodeRunner (beforeRender)', () => {
   it('logs success and captures console output', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ DummyJsAutoModel });
@@ -82,7 +82,7 @@ describe('useCodeRunner (auto flow)', () => {
     expect(result.current.running).toBe(false);
   });
 
-  it('previews and updates DOM for JSEditable (auto flow)', async () => {
+  it('previews and updates DOM for JSEditable (beforeRender)', async () => {
     const engine = new FlowEngine();
     engine.registerModels({ JSEditableFieldModel });
     const field = engine.createModel<JSEditableFieldModel>({ use: 'JSEditableFieldModel', uid: 'f1' });

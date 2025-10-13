@@ -106,7 +106,11 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
           if (isManual) {
             await m.applyFlow('jsSettings', { preview: { code, version } });
           } else {
-            await m.applyAutoFlows({ preview: { code, version } }, false);
+            await m.dispatchEvent(
+              'beforeRender',
+              { preview: { code, version } },
+              { sequential: true, useCache: false },
+            );
           }
         };
 

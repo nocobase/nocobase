@@ -74,7 +74,7 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
     };
     const pageModel = {
       context: pageModelContext,
-      invalidateAutoFlowCache: vi.fn(),
+      invalidateFlowCache: vi.fn(),
       _rerunLastAutoRun: vi.fn(),
     } as any;
 
@@ -137,7 +137,7 @@ describe('openView action - route mode defineProperties/defineMethods', () => {
     };
     const pageModel = {
       context: pageModelContext,
-      invalidateAutoFlowCache: vi.fn(),
+      invalidateFlowCache: vi.fn(),
       _rerunLastAutoRun: vi.fn(),
     } as any;
 

@@ -175,7 +175,7 @@ DetailsBlockModel.registerFlow({
           throw new Error('Resource is not initialized');
         }
         // 1. 先初始化字段网格，确保所有字段都创建完成
-        await ctx.model.applySubModelsAutoFlows('grid');
+        await ctx.model.applySubModelsBeforeRenderFlows('grid');
       },
     },
     layout: {

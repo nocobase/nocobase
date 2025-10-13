@@ -52,7 +52,7 @@ export class DisplaySubTableFieldModel extends FieldModel {
 
   async afterAddAsSubModel() {
     await super.afterAddAsSubModel();
-    await this.applyAutoFlows();
+    await this.dispatchEvent('beforeRender');
   }
 
   getColumns() {
@@ -105,7 +105,7 @@ DisplaySubTableFieldModel.registerFlow({
   steps: {
     init: {
       async handler(ctx) {
-        await ctx.model.applySubModelsAutoFlows('columns');
+        await ctx.model.applySubModelsBeforeRenderFlows('columns');
       },
     },
   },
