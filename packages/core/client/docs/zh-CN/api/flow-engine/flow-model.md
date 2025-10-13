@@ -83,7 +83,6 @@
 
 - **applySubModelsBeforeRenderFlows(subKey: string, inputArgs?: Record\<string, any\>): Promise\<void\>**  
   对指定子模型派发 `beforeRender` 事件（内部顺序执行并使用缓存）。
-  兼容：`applySubModelsAutoFlows` 作为别名保留，后续将弃用。
 
 - **getFlow(key: string): FlowDefinition \| undefined**  
   获取指定 key 的流配置。
@@ -98,8 +97,6 @@
 ---
 
 ### 事件分发钩子
-
-为统一各类事件流程，提供以下通用钩子：
 
 - **async onDispatchEventStart(eventName: string, options?: DispatchEventOptions, inputArgs?: Record<string, any>)**
   事件执行前调用；beforeRender 可通过抛出 `FlowExitException` 终止执行。

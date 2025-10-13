@@ -131,10 +131,7 @@ interface FlowModelRendererProps {
 />
 ```
 
-### 4. 自定义流控制
-当需要手动控制时，可以选择不传 inputArgs 或通过模型上自定义逻辑控制。
-
-### 5. 传递自定义上下文
+### 4. 传递自定义上下文
 当需要向流传递特定上下文数据时：
 
 ```tsx | pure
@@ -148,7 +145,7 @@ interface FlowModelRendererProps {
 />
 ```
 
-### 6. 控制设置菜单层级
+### 5. 控制设置菜单层级
 当需要控制设置菜单显示范围时，可以通过 `settingsMenuLevel` 参数配置：
 
 ```tsx | pure

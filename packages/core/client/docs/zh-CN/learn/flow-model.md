@@ -216,7 +216,7 @@ FlowModel 并不会改变组件的实现方式。它只是为 ReactComponent 增
 | ------ | --------------------------------- | -------------------------------------------- |
 | 初始化    | `constructor`、`componentDidMount` | `onInit`、`onMount`                           |
 | 卸载     | `componentWillUnmount`            | `onUnmount`                                  |
-| 响应输入   | `componentDidUpdate`              | `onDispatchEventStart/End`（例如 beforeRender） |
+| 响应输入   | `componentDidUpdate`              | `onDispatchEventStart/End`（配合 beforeRender 事件） |
 | 错误处理   | `componentDidCatch`               | `onDispatchEventError`                      |
 
 ### 🧱 构建结构对比

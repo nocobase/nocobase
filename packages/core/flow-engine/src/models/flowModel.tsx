@@ -1164,17 +1164,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   /**
-   * @deprecated 请改用 applySubModelsBeforeRenderFlows
-   */
-  async applySubModelsAutoFlows<K extends keyof Structure['subModels']>(
-    subKey: K,
-    inputArgs?: Record<string, any>,
-    shared?: Record<string, any>,
-  ) {
-    return this.applySubModelsBeforeRenderFlows(subKey, inputArgs, shared);
-  }
-
-  /**
    * 创建一个 fork 实例，实现"一份数据（master）多视图（fork）"的能力。
    * @param {IModelComponentProps} [localProps={}] fork 专属的局部 props，优先级高于 master.props
    * @param {string} [key] 可选的 key，用于复用 fork 实例。如果提供了 key，会尝试复用已存在的 fork
