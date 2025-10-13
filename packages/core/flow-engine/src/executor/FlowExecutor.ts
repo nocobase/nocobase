@@ -186,6 +186,8 @@ export class FlowExecutor {
     // 由模型层决定缺省值；执行器仅按显式 options 执行
     const sequential = !!options?.sequential;
     const useCache = !!options?.useCache;
+    // beforeRender 特殊处理：出错时一律抛出（用于错误边界捕获）
+    const throwOnError = isBeforeRender;
 
     const runId = `${model.uid}-${eventName}-${Date.now()}`;
     const logger = model.context.logger;
@@ -197,12 +199,13 @@ export class FlowExecutor {
         logger.debug(`[FlowModel.dispatchEvent] ${err.message}`);
         return [];
       }
-      // 其他事件抛错：进入错误钩子并记录
+      // 进入错误钩子并记录
       try {
         await model.onDispatchEventError?.(eventName, options, inputArgs, err as Error);
       } finally {
         logger.error({ err }, `BaseModel.dispatchEvent: Start hook error for event '${eventName}'`);
       }
+      if (throwOnError) throw err;
       return;
     }
 
@@ -255,6 +258,7 @@ export class FlowExecutor {
               { err: error },
               `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
             );
+            if (throwOnError) throw error;
             return undefined;
           }
         }),
@@ -282,9 +286,9 @@ export class FlowExecutor {
       }
       return result;
     } catch (error) {
-      // 与事件分发语义保持一致：记录错误，不抛给调用方
+      // 进入错误钩子并记录
       try {
-        await (model as any).onDispatchEventError?.(eventName, options, inputArgs, error as Error);
+        await model.onDispatchEventError?.(eventName, options, inputArgs, error as Error);
       } catch (_) {
         // swallow secondary hook error
       }
@@ -292,6 +296,7 @@ export class FlowExecutor {
         { err: error },
         `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`,
       );
+      if (throwOnError) throw error;
     }
   }
 }

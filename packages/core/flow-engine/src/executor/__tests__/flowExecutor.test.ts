@@ -264,6 +264,21 @@ describe('FlowExecutor', () => {
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
+  it("dispatchEvent('beforeRender') rejects when a step throws", async () => {
+    const handler = vi.fn().mockImplementation(() => {
+      throw new Error('boom-br');
+    });
+    const flows = {
+      bad: { steps: { s: { handler } } },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+
+    const model = createModelWithFlows('m-br-reject', flows);
+
+    await expect(engine.executor.dispatchEvent(model, 'beforeRender', undefined, { sequential: true })).rejects.toThrow(
+      'boom-br',
+    );
+  });
+
   it('instance flow overrides global flow with same key', async () => {
     class MyModel extends FlowModel {}
 

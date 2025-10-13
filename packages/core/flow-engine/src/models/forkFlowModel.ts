@@ -250,9 +250,41 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   dispose() {
     if (this.disposed) return;
     this.disposed = true;
+    // 统一按事件缓存命名规则清理当前 fork 的所有缓存项（覆盖所有事件）
+    try {
+      const cache = this.flowEngine?.applyFlowCache;
+      if (cache && cache.size > 0) {
+        const uidSuffixes = [`:${this.uid}`, `-${this.uid}`];
+        const forkIdColon = `:${this.forkId}:`;
+        const forkIdHyphen = `-${this.forkId}-`;
+
+        for (const key of cache.keys()) {
+          // 事件缓存统一以 event: 或 event- 开头
+          const isEventCache = key.startsWith('event:') || key.startsWith('event-');
+          if (!isEventCache) continue;
+
+          // 仅删除当前 fork + 当前 uid 的键
+          const endMatches = uidSuffixes.some((s) => key.endsWith(s));
+          if (!endMatches) continue;
+
+          // 限定在去除 uid 后缀的范围内匹配 forkId 片段，避免误伤
+          let trimmed = key;
+          for (const suf of uidSuffixes) {
+            if (trimmed.endsWith(suf)) {
+              trimmed = trimmed.slice(0, -suf.length);
+              break;
+            }
+          }
+          if (trimmed.includes(forkIdColon) || trimmed.includes(forkIdHyphen)) {
+            cache.delete(key);
+          }
+        }
+      }
+    } catch {
+      // 忽略清理阶段异常，避免影响后续释放
+    }
+
     if (this.master && (this.master as any).forks) {
-      const forkCacheKey = FlowEngine.generateApplyFlowCacheKey(`${this.forkId}`, 'all', this.uid);
-      this.flowEngine.applyFlowCache.delete(forkCacheKey);
       (this.master as any).forks.delete(this as any);
     }
     // 从 master 的 forkCache 中移除自己
