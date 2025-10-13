@@ -139,7 +139,7 @@ SubTableFieldModel.registerFlow({
     },
     init: {
       async handler(ctx, params) {
-        await ctx.model.applySubModelsAutoFlows('columns');
+        await ctx.model.applySubModelsBeforeRenderFlows('columns');
       },
     },
     allowAddNew: {

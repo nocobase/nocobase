@@ -702,7 +702,7 @@ export const openView = defineAction({
                 pageModel.context.defineMethod(key, method);
               });
 
-              pageModel.invalidateAutoFlowCache(true);
+              pageModel.invalidateFlowCache('beforeRender', true);
               pageModel['_rerunLastAutoRun'](); // TODO: 临时做法，等上下文重构完成后去掉
             }}
           />
@@ -722,7 +722,7 @@ export const openView = defineAction({
         const nav = ctx.inputArgs?.navigation || ctx.view?.navigation;
         if (pageModelUid) {
           const pageModel = pageModelRef || ctx.model.flowEngine.getModel(pageModelUid);
-          pageModel?.invalidateAutoFlowCache(true);
+          pageModel?.invalidateFlowCache('beforeRender', true);
         }
         if (navigation !== false) {
           if (nav?.back) {

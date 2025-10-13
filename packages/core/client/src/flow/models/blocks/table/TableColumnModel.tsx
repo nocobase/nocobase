@@ -73,7 +73,7 @@ export class TableColumnModel extends DisplayItemModel {
 
   async afterAddAsSubModel() {
     await super.afterAddAsSubModel();
-    await this.applyAutoFlows();
+    await this.dispatchEvent('beforeRender');
   }
 
   static defineChildren(ctx: FlowModelContext) {
@@ -252,7 +252,7 @@ TableColumnModel.registerFlow({
         ctx.model.setProps('title', collectionField.title);
         ctx.model.setProps('dataIndex', collectionField.name);
         // for quick edit
-        await ctx.model.applySubModelsAutoFlows('field');
+        await ctx.model.applySubModelsBeforeRenderFlows('field');
         ctx.model.setProps({
           ...collectionField.getComponentProps(),
         });

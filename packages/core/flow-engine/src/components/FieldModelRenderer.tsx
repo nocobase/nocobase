@@ -20,7 +20,6 @@ const flowModelRendererPropKeys: (keyof FlowModelRendererProps)[] = [
   'flowSettingsVariant',
   'hideRemoveInSettings',
   'showTitle',
-  'skipApplyAutoFlows',
   'inputArgs',
   'showErrorFallback',
   'settingsMenuLevel',
