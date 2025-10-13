@@ -1,0 +1,9 @@
+{
+  "name": "@nocobase/shared",
+  "version": "2.0.0-alpha.7",
+  "main": "lib/index.js",
+  "types": "./lib/index.d.ts",
+  "license": "AGPL-3.0",
+  "dependencies": {},
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
+}
