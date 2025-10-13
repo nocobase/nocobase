@@ -28,7 +28,7 @@ export const SyncFieldChangesAction: React.FC = () => {
       onClick={async () => {
         await api.resource('mainDataSource').syncFields({
           values: {
-            collectionName: [record.name],
+            collections: [record.name],
           },
         });
         refresh();
