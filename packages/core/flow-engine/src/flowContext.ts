@@ -1688,8 +1688,10 @@ export class FlowRunJSContext extends FlowContext {
     const ReactDOMShim: any = {
       ...ReactDOMClient,
       createRoot: (container: Element | DocumentFragment, options?: any) => {
+        // 兼容 ElementProxy：若传入的是代理对象，取其底层原生元素
+        const realContainer: any = (container as any)?.__el || container;
         // 使用引擎自带的 reactView.createRoot，以继承应用内的 ConfigProvider/App 上下文与主题
-        return this.engine.reactView.createRoot(container as HTMLElement, options);
+        return this.engine.reactView.createRoot(realContainer as HTMLElement, options);
       },
     };
     this.defineProperty('ReactDOM', { value: ReactDOMShim });

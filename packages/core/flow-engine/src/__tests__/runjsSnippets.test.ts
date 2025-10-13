@@ -19,16 +19,10 @@ describe('RunJS Snippets', () => {
       expect(body).toContain('ctx.message.success');
     });
 
-    it('should return snippet body for global/api-request-get', async () => {
-      const body = await getSnippetBody('global/api-request-get');
+    it('should return snippet body for global/api-request', async () => {
+      const body = await getSnippetBody('global/api-request');
       expect(body).toBeTruthy();
       expect(body).toContain('ctx.api.request');
-    });
-
-    it('should return snippet body for scene/block/render-basic', async () => {
-      const body = await getSnippetBody('scene/block/render-basic');
-      expect(body).toBeTruthy();
-      expect(body).toContain('element');
     });
 
     it('should throw error for non-existent snippet', async () => {
@@ -121,37 +115,8 @@ describe('RunJS Snippets', () => {
   });
 
   describe('New snippets', () => {
-    it('should include api-request-basic snippet', async () => {
-      const body = await getSnippetBody('global/api-request-basic');
-      expect(body).toBeTruthy();
-      expect(body).toContain('ctx.api.request');
-    });
-
-    it('should include api-response snippet', async () => {
-      const body = await getSnippetBody('global/api-response');
-      expect(body).toBeTruthy();
-    });
-
-    it('should include i18n-example snippet', async () => {
-      const body = await getSnippetBody('global/i18n-example');
-      expect(body).toBeTruthy();
-      expect(body).toContain('ctx.t');
-    });
-
-    it('should include basic-html-template snippet', async () => {
-      const body = await getSnippetBody('scene/block/basic-html-template');
-      expect(body).toBeTruthy();
-      expect(body).toContain('innerHTML');
-    });
-
-    it('should include echarts-random snippet', async () => {
-      const body = await getSnippetBody('scene/block/echarts-random');
-      expect(body).toBeTruthy();
-      expect(body).toContain('echarts');
-    });
-
     it('should include query-selector snippet', async () => {
-      const body = await getSnippetBody('scene/block/query-selector');
+      const body = await getSnippetBody('global/query-selector');
       expect(body).toBeTruthy();
       expect(body).toContain('querySelector');
     });

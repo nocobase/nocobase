@@ -154,9 +154,9 @@ export async function buildRunJSCompletions(
     const text = s.body;
     const baseLabel = String(s.name ?? '').trim();
     const prefixLabel = typeof s.prefix === 'string' ? s.prefix.trim() : '';
-    const matchLabelParts = [baseLabel, prefixLabel].filter(Boolean);
-    const label = matchLabelParts.join(' ');
-    const displayLabel = baseLabel || prefixLabel;
+    // 为了与测试及常见补全行为一致，label 仅使用展示名（不拼接 prefix）
+    const label = baseLabel || prefixLabel;
+    const displayLabel = label;
     const detail = baseLabel && prefixLabel && prefixLabel !== displayLabel ? prefixLabel : undefined;
     const dedupeKey = s.ref || `${label}|${detail ?? ''}`;
     if (!displayLabel || snippetLabelSet.has(dedupeKey)) continue;
