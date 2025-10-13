@@ -31,11 +31,21 @@ export class DashscopeProvider extends LLMProvider {
     if (responseFormat === 'json_schema' && schema) {
       responseFormatOptions['json_schema'] = schema;
     }
+
+    const additionalArgs = {};
+    if (this.modelOptions?.builtIn?.webSearch === true) {
+      // enable platform's web search ability
+      // ref: https://bailian.console.aliyun.com/?tab=doc#/doc/?type=model&url=2867560
+      additionalArgs['enable_search'] = true;
+      additionalArgs['search_options'] = { forced_search: true };
+    }
+
     return new ChatOpenAI({
       apiKey,
       ...this.modelOptions,
       modelKwargs: {
         response_format: responseFormatOptions,
+        ...additionalArgs,
       },
       configuration: {
         baseURL: baseURL || this.baseURL,
