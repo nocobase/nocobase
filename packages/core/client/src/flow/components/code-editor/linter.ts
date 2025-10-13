@@ -145,6 +145,17 @@ export const createJavaScriptLinter = () => {
             addId(node.id);
             (node.params || []).forEach(addPatternIds);
             break;
+          case 'FunctionExpression':
+            // 具名函数表达式也记录 id
+            addId(node.id);
+            (node.params || []).forEach(addPatternIds);
+            break;
+          case 'ArrowFunctionExpression':
+            (node.params || []).forEach(addPatternIds);
+            break;
+          case 'CatchClause':
+            addPatternIds((node as any).param);
+            break;
           case 'ClassDeclaration':
             addId(node.id);
             break;
