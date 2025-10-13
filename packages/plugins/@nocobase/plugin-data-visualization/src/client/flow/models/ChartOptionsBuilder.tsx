@@ -9,8 +9,15 @@
 import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Select, InputNumber, Checkbox, Form } from 'antd';
 import { useT } from '../../locale';
-import { normalizeBuilder, applyTypeChange, buildFieldOptions } from './ChartOptionsBuilder.service';
+import { normalizeBuilder, applyTypeChange, buildFieldOptions, getChartFormSpec } from './ChartOptionsBuilder.service';
+import type { ChartTypeKey } from './ChartOptionsBuilder.service';
 import { sleep } from '../utils';
+
+// 表单项原子类型定义（保持在 UI 层）
+type FormItemSpec =
+  | { kind: 'select'; name: string; label?: string; required?: boolean; allowClear?: boolean; placeholderKey?: string }
+  | { kind: 'checkbox'; name: string; labelKey: string }
+  | { kind: 'number'; name: string; labelKey: string; min?: number; max?: number };
 
 export const ChartOptionsBuilder: React.FC<{
   columns?: string[];
@@ -38,7 +45,7 @@ export const ChartOptionsBuilder: React.FC<{
       }
     };
     handleColumnChange();
-  }, [columns]);
+  }, [columns, form, onChange]);
 
   // 用户编辑：基于 all（当前表单值），在列就绪时规范化并外抛；列未就绪时仅外抛用户变更
   const handleValuesChange = (changed: any, all: any) => {
@@ -79,14 +86,16 @@ export const ChartOptionsBuilder: React.FC<{
             style={{ width: 160 }}
             options={[
               { label: t('Line'), value: 'line' },
-              { label: t('Bar'), value: 'bar' },
+              { label: t('Column'), value: 'bar' },
+              { label: t('Bar'), value: 'barHorizontal' },
               { label: t('Pie'), value: 'pie' },
+              { label: t('Scatter'), value: 'scatter' },
             ]}
           />
         </Form.Item>
 
         {/* 图表属性 */}
-        {getChartFormItems(type, { t, fieldOptions })}
+        {renderChartOptions(type, { t, fieldOptions })}
 
         {/* 公共属性 */}
         {/* <Form.Item label={t('Height')} name="height">
@@ -106,68 +115,46 @@ export const ChartOptionsBuilder: React.FC<{
   );
 };
 
-const getChartFormItems = (
-  type: 'line' | 'bar' | 'pie' = 'line',
-  options: {
-    t: (s: string) => string;
-    fieldOptions: { label: string; value: string }[];
-  },
+const renderItem = (
+  spec: FormItemSpec,
+  ctx: { t: (s: string) => string; fieldOptions: { label: string; value: string }[] },
 ) => {
-  const { t, fieldOptions } = options;
-  if (type === 'line' || type === 'bar') {
+  const { t, fieldOptions } = ctx;
+  if (spec.kind === 'select') {
+    const label = spec.label ? spec.label : undefined;
+    const placeholder = spec.placeholderKey ? t(spec.placeholderKey) : undefined;
     return (
-      <>
-        {/* required */}
-        <Form.Item label="xField" name="xField" required>
-          <Select style={{ width: 160 }} placeholder={t('Select field')} options={fieldOptions} />
-        </Form.Item>
-
-        <Form.Item label="yField" name="yField" required>
-          <Select style={{ width: 160 }} placeholder={t('Select field')} options={fieldOptions} />
-        </Form.Item>
-
-        {/* optional */}
-        <Form.Item label="seriesField" name="seriesField">
-          <Select style={{ width: 160 }} allowClear placeholder={t('Optional series')} options={fieldOptions} />
-        </Form.Item>
-
-        {type === 'line' ? (
-          <Form.Item name="smooth" valuePropName="checked" colon={false} label=" ">
-            <Checkbox>{t('Smooth')}</Checkbox>
-          </Form.Item>
-        ) : (
-          <></>
-          // TODO: 关于堆叠stack https://echarts.apache.org/handbook/zh/how-to/chart-types/bar/stacked-bar
-          // <Form.Item name="stack" valuePropName="checked" colon={false} label=" ">
-          //   <Checkbox>{t('Stack')}</Checkbox>
-          // </Form.Item>
-        )}
-      </>
+      <Form.Item key={spec.name} label={label ?? undefined} name={spec.name} required={spec.required}>
+        <Select
+          style={{ width: 160 }}
+          allowClear={!!spec.allowClear}
+          placeholder={placeholder}
+          options={fieldOptions}
+        />
+      </Form.Item>
     );
   }
-  // pie
-  if (type === 'pie') {
+  if (spec.kind === 'checkbox') {
     return (
-      <>
-        {/* required */}
-        <Form.Item label={t('Category')} name="pieCategory" required>
-          <Select style={{ width: 160 }} placeholder={t('Select field')} options={fieldOptions} />
-        </Form.Item>
-
-        <Form.Item label={t('Value field')} name="pieValue" required>
-          <Select style={{ width: 160 }} placeholder={t('Select field')} options={fieldOptions} />
-        </Form.Item>
-
-        {/* optional */}
-        <Form.Item label={t('Inner radius (%)')} name="pieRadiusInner">
-          <InputNumber min={0} max={100} style={{ width: 160 }} />
-        </Form.Item>
-
-        <Form.Item label={t('Outer radius (%)')} name="pieRadiusOuter">
-          <InputNumber min={0} max={100} style={{ width: 160 }} />
-        </Form.Item>
-      </>
+      <Form.Item key={spec.name} name={spec.name} valuePropName="checked" colon={false} label=" ">
+        <Checkbox>{t(spec.labelKey)}</Checkbox>
+      </Form.Item>
+    );
+  }
+  if (spec.kind === 'number') {
+    return (
+      <Form.Item key={spec.name} label={t(spec.labelKey)} name={spec.name}>
+        <InputNumber min={spec.min} max={spec.max} style={{ width: 160 }} />
+      </Form.Item>
     );
   }
   return null;
+};
+
+const renderChartOptions = (
+  type: ChartTypeKey,
+  options: { t: (s: string) => string; fieldOptions: { label: string; value: string }[] },
+) => {
+  const formSpecs = getChartFormSpec(type);
+  return <>{(formSpecs as any[]).map((spec) => renderItem(spec as any, options))}</>;
 };
