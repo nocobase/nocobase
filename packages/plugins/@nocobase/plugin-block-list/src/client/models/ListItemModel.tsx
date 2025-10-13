@@ -8,11 +8,8 @@
  */
 
 import {
-  DisplayItemModel,
-  FlowModelContext,
   PropertyMetaFactory,
   createRecordMetaFactory,
-  escapeT,
   DndProvider,
   Droppable,
   FlowModelRenderer,
@@ -22,8 +19,9 @@ import {
   FlowModel,
 } from '@nocobase/flow-engine';
 import React from 'react';
+import { css } from '@emotion/css';
 import { SettingOutlined } from '@ant-design/icons';
-import { FieldModel, DetailsGridModel, FormComponent, ActionModel } from '@nocobase/client';
+import { DetailsGridModel, FormComponent, ActionModel } from '@nocobase/client';
 import { Space, List } from 'antd';
 
 type ListItemModelStructure = {
@@ -52,11 +50,6 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
       </AddSubModelButton>
     );
   }
-  getRecordData(index) {
-    const data = this.context.blockModel.resource.getData();
-    console.log(index);
-    return data[index];
-  }
 
   render() {
     const index = this.context.index;
@@ -80,7 +73,13 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
         <div>
           <DndProvider>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Space>
+              <Space
+                className={css`
+                  button {
+                    padding: 5px;
+                  }
+                `}
+              >
                 {this.mapSubModels('actions', (action) => {
                   const fork = action.createFork({}, `${index}`);
                   const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
@@ -92,7 +91,6 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
                       const name = coll?.name;
                       const dataSourceKey = coll?.dataSourceKey;
                       const filterByTk = coll?.getFilterByTK?.(rec);
-                      console.log(ctx.record.id);
                       if (!name || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
                       return { collection: name, dataSourceKey, filterByTk };
                     },
@@ -129,17 +127,6 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
   }
 }
 
-ListItemModel.registerFlow({
-  key: 'listItemSettings',
-  sort: 600,
-  title: escapeT('List layout settings'),
-  steps: {
-    layout: {
-      use: 'layout',
-      title: escapeT('Layout'),
-    },
-  },
-});
 ListItemModel.define({
   createModelOptions: {
     use: 'ListItemModel',

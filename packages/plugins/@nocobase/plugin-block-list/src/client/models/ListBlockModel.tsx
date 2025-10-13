@@ -16,6 +16,7 @@ import {
   DragHandler,
   AddSubModelButton,
   FlowSettingsButton,
+  FlowModel,
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, ActionModel } from '@nocobase/client';
@@ -239,6 +240,19 @@ ListBlockModel.registerFlow({
     defaultSorting: {
       use: 'sortingRule',
       title: escapeT('Default sorting'),
+    },
+    layout: {
+      use: 'layout',
+      title: escapeT('Layout'),
+      handler(ctx, params) {
+        ctx.model.setProps({ ...params, labelWidth: params.layout === 'vertical' ? null : params.labelWidth });
+        const item = ctx.model.subModels.item as FlowModel;
+        item.setProps({
+          ...params,
+          labelWidth: params.layout === 'vertical' ? '100%' : params.labelWidth,
+          labelWrap: params.layout === 'vertical' ? true : params.labelWrap,
+        });
+      },
     },
     refreshData: {
       title: escapeT('Refresh data'),
