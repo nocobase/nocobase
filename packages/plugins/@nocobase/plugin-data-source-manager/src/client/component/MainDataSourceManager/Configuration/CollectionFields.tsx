@@ -395,10 +395,10 @@ const CurrentFields = (props) => {
           collectionName: record.collectionName,
         },
       });
-      ctx?.refresh?.();
+      // ctx?.refresh?.();
       await props.refreshAsync();
-      refreshCM();
       message.success(t('Saved successfully'));
+      refreshCM();
     } catch (error) {
       console.error('Failed to update field type:', error);
       message.error(t('Save failed'));
