@@ -705,7 +705,7 @@ describe('FlowModel', () => {
           TestFlowModelWithHooks.registerFlow(errorFlow);
 
           const modelWithHooks = new TestFlowModelWithHooks(modelOptions);
-          await modelWithHooks.dispatchEvent('beforeRender');
+          await expect(modelWithHooks.dispatchEvent('beforeRender')).rejects.toThrow('Test error');
           // Verify hooks were called (error path)
           expect(beforeHookSpy).toHaveBeenCalledTimes(1);
           expect(afterHookSpy).not.toHaveBeenCalled();
