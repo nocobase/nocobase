@@ -347,7 +347,8 @@ const FieldInterfaceRenderer = ({ value, record, updateFieldHandler, isPresetFie
 
 const FieldTypeRenderer = ({ value, record, updateFieldHandler, isPresetField = false }) => {
   const item = omit(record, ['__parent', '__collectionName']);
-  return !Array.isArray(item?.possibleTypes) || isPresetField ? (
+  const possibleTypes = item?.possibleTypes || [];
+  return !Array.isArray(item?.possibleTypes) || isPresetField || !possibleTypes.includes(value) ? (
     <Tag>{value}</Tag>
   ) : (
     <Select
@@ -418,7 +419,12 @@ const CurrentFields = (props) => {
       dataIndex: 'interface',
       title: t('Field interface'),
       render: (value, record) => (
-        <FieldInterfaceRenderer value={value} record={record} updateFieldHandler={updateFieldHandler} />
+        <FieldInterfaceRenderer
+          value={value}
+          record={record}
+          updateFieldHandler={updateFieldHandler}
+          isPresetField={collectionPresetFieldsInterfaces.includes(record.interface)}
+        />
       ),
     },
     {
