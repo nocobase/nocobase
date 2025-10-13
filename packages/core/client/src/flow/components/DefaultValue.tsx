@@ -41,7 +41,8 @@ interface Props {
 
 function createTempFieldClass(Base: any) {
   return class Temp extends Base {
-    async onBeforeAutoFlows() {
+    async onDispatchEventStart(eventName: string) {
+      if (eventName !== 'beforeRender') return;
       const initParams = this.getStepParams?.('fieldSettings', 'init') || {};
       const collectionFieldKey =
         initParams?.dataSourceKey &&
@@ -56,7 +57,8 @@ function createTempFieldClass(Base: any) {
           get: () => collectionFieldFromManager || fallbackCollectionField,
         });
     }
-    async onAfterAutoFlows() {
+    async onDispatchEventEnd(eventName: string) {
+      if (eventName !== 'beforeRender') return;
       const originalProps = this._originalModel?.props || {};
       const collectionField = this.context?.collectionField;
       const inferMultipleFromCollectionField = () => {

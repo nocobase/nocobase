@@ -168,7 +168,7 @@ const fork2 = model.createFork('key2', {});
 
 ### 1. 生命周期逻辑集中且清晰
 
-FlowModel 拥有多个生命周期钩子（如 `onInit`、`onMount`、`onUnmount`、`onBeforeAutoFlows`、`onAfterAutoFlows` 等），这些逻辑通过类方法更清晰地组织，避免了函数式中多个 Hook 间的复杂依赖。
+FlowModel 拥有多个生命周期钩子（如 `onInit`、`onMount`、`onUnmount`、`onDispatchEventStart/End/Error` 等），这些逻辑通过类方法更清晰地组织，避免了函数式中多个 Hook 间的复杂依赖。对于渲染前的自动执行逻辑，统一通过 `onDispatchEvent*` 钩子并判断 `eventName === 'beforeRender'`。
 
 ### 2. 支持继承与复用
 
@@ -205,7 +205,7 @@ FlowModel 并不会改变组件的实现方式。它只是为 ReactComponent 增
 | 用途            | 构建 UI 组件                | 构建数据驱动、流化、结构化的“模型树”                   |
 | 数据结构          | 组件树                     | 模型树（支持父子模型、多实例 Fork）                   |
 | 子组件           | 使用 JSX 嵌套组件             | 使用 `setSubModel`/`addSubModel` 明确设置子模型 |
-| 动态行为          | 事件绑定、状态更新驱动 UI          | 注册/派发 Flow、处理自动流                      |
+| 动态行为          | 事件绑定、状态更新驱动 UI          | 注册/派发/处理 Flow                      |
 | 持久化           | 无内建机制                   | 支持持久化（如 `model.save()`）                |
 | 支持 Fork（多次渲染） | 否（需手动复用）                | 是（`createFork` 多实例化）                   |
 | 引擎控制          | 无                       | 是，受 `FlowEngine` 管理、注册和加载              |
@@ -216,8 +216,8 @@ FlowModel 并不会改变组件的实现方式。它只是为 ReactComponent 增
 | ------ | --------------------------------- | -------------------------------------------- |
 | 初始化    | `constructor`、`componentDidMount` | `onInit`、`onMount`                           |
 | 卸载     | `componentWillUnmount`            | `onUnmount`                                  |
-| 响应输入   | `componentDidUpdate`              | `onBeforeAutoFlows`、`onAfterAutoFlows` |
-| 错误处理   | `componentDidCatch`               | `onAutoFlowsError`                      |
+| 响应输入   | `componentDidUpdate`              | `onDispatchEventStart/End`（配合 beforeRender 事件） |
+| 错误处理   | `componentDidCatch`               | `onDispatchEventError`                      |
 
 ### 🧱 构建结构对比
 
@@ -250,8 +250,7 @@ class HelloModel extends FlowModel {
 
 | 功能                               | 说明                     |
 | -------------------------------- | ---------------------- |
-| `applyAutoFlows`                 | 自动触发已注册的流             |
-| `registerFlow` / `dispatchEvent` | 支持流引擎事件处理             |
+| `registerFlow` / `dispatchEvent` | 注册/分发事件流（含 beforeRender） |
 | `setSubModel` / `addSubModel`    | 显式控制子模型的创建与绑定          |
 | `createFork`                     | 支持一个模型逻辑被复用渲染多次（如表格每行） |
 | `loadModel` / `save()`           | 模型可持久化，与后端打通           |
@@ -289,9 +288,9 @@ class HelloModel extends FlowModel {
 * `onInit(options)`
 * `onMount()`
 * `onUnmount()`
-* `onBeforeAutoFlows(inputArgs)`
-* `onAfterAutoFlows(results, inputArgs)`
-* `onAutoFlowsError(error, inputArgs)`
+* `onDispatchEventStart(eventName, options?, inputArgs?)`
+* `onDispatchEventEnd(eventName, options?, inputArgs?, results?)`
+* `onDispatchEventError(eventName, options?, inputArgs?, error?)`
 
 ### 属性和参数管理
 
@@ -311,7 +310,6 @@ class HelloModel extends FlowModel {
 
 * `registerFlow`
 * `dispatchEvent`
-* `applyAutoFlows`
 
 ### 事件（emitter.on）
 
