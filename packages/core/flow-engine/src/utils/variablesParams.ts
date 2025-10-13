@@ -68,8 +68,9 @@ export function inferViewRecordRef(ctx: FlowContext): RecordRef | undefined {
   const collection = inputArgs?.collectionName || (view as any)?.record?.collection;
   const dataSourceKey = inputArgs?.dataSourceKey || (view as any)?.record?.dataSourceKey || 'main';
   const filterByTk = inputArgs?.filterByTk || (view as any)?.record?.filterByTk;
+  const sourceId = inputArgs?.sourceId;
   if (!collection || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
-  return { collection, dataSourceKey, filterByTk };
+  return { collection, dataSourceKey, filterByTk, sourceId };
 }
 
 export function inferParentRecordRef(ctx: FlowContext): RecordRef | undefined {

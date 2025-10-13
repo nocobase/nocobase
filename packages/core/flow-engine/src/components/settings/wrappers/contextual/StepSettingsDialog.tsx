@@ -135,6 +135,7 @@ const openStepSettingsDialog = async ({
     width: dialogWidth,
     destroyOnClose: true,
     ...toJS(uiModeProps),
+    inputArgs: { ...(toJS(uiModeProps)?.inputArgs || {}), __isSettingsPopup: true },
     onClose: () => {
       if (cleanup) {
         cleanup();

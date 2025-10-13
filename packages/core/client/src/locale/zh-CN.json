@@ -1285,9 +1285,7 @@
   "Timeout config": "超时配置",
   "Response type": "响应类型",
   "Actions column": "操作列",
-  "Data Source Key": "数据源键",
-  "Enter data source key": "输入数据源键",
-  "Collection Name": "数据表名称",
+  "Data source key": "数据源键",
   "Enter collection name": "输入数据表名称",
   "Edit page size": "编辑页面大小",
   "Set data scope": "设置数据范围",
@@ -1401,5 +1399,9 @@
   "SmartTv": "智能电视",
   "Console": "游戏机",
   "Wearable": "可穿戴设备",
-  "Embedded": "嵌入式设备"
+  "Embedded": "嵌入式设备",
+  "Current popup": "当前弹窗",
+  "Parent popup": "上级弹窗",
+  "No parent popup": "无上级弹窗",
+  "Popup record": "弹窗记录"
 }

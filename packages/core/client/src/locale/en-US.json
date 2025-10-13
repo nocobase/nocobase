@@ -956,9 +956,7 @@
   "Stay on the current popup or page": "Stay on the current popup or page",
   "Return to the previous popup or page": "Return to the previous popup or page",
   "Actions column": "Actions column",
-  "Data Source Key": "Data Source Key",
-  "Enter data source key": "Enter data source key",
-  "Collection Name": "Collection Name",
+  "Data source key": "Data source key",
   "Enter collection name": "Enter collection name",
   "Edit page size": "Edit page size",
   "Set data scope": "Set data scope",
@@ -993,5 +991,9 @@
   "No form available for submission.": "No form available for submission.",
   "Collapse button": "Collapse",
   "Expand button": "Expand",
-  "No assigned fields configured": "No assigned fields configured"
+  "No assigned fields configured": "No assigned fields configured",
+  "Current popup": "Current popup",
+  "Parent popup": "Parent popup",
+  "No parent popup": "No parent popup",
+  "Popup record": "Popup record"
 }
