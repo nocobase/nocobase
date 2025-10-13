@@ -8,7 +8,7 @@
  */
 
 import type { FlowContext, PropertyMeta, PropertyMetaFactory } from '../flowContext';
-import { inferRecordRef, buildRecordMeta } from '../utils/variablesParams';
+import { buildRecordMeta, inferViewRecordRef } from '../utils/variablesParams';
 
 // 判断是否为普通对象（Plain Object），避免对类实例/代理等进行深度遍历
 function isPlainObject(val: any) {
@@ -65,88 +65,57 @@ function makeMetaFromValue(value: any, title?: string, seen?: WeakSet<any>): any
   return { type: 'any', title };
 }
 
-function buildNavigationMeta(ctx: FlowContext, getView: () => any): any {
-  // 与运行时对象保持一致：无 current，仅暴露 viewStack；并动态展开 viewStack 项
-  const t = (key: string) => (ctx as any)?.t?.(key) || key;
-  return {
-    type: 'object',
-    title: t('导航'),
-    properties: async () => {
-      const view = getView();
-      const nav = view?.navigation;
-      const props: Record<string, any> = {};
-
-      // 动态 viewStack：按索引展开，并为每个项提供字段
-      const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
-      const stackMeta: any = {
-        type: 'array',
-        title: t('视图堆栈'),
-        properties: undefined as Record<string, any> | undefined,
-      };
-      if (stack.length) {
-        const children: Record<string, any> = {};
-        const max = Math.min(stack.length, 20);
-        for (let i = 0; i < max; i++) {
-          const item = stack[i] || {};
-          children[String(i)] = {
-            type: 'object',
-            title: `#${i}`,
-            properties: {
-              viewUid: { type: 'string', title: 'viewUid' },
-              tabUid: { type: 'string', title: 'tabUid' },
-              filterByTk: { type: 'string', title: 'filterByTk' },
-              sourceId: { type: 'string', title: 'sourceId' },
-            },
-          };
-        }
-        stackMeta.properties = children;
-      }
-
-      props.viewStack = stackMeta;
-      return props;
-    },
-  };
-}
-
 /**
  * Create a meta factory for ctx.view that includes:
  * - buildVariablesParams: { record } via inferRecordRef
  * - properties.record: full collection meta via buildRecordMeta
  * - type/preventClose/inputArgs/navigation fields for better variable selection UX
  */
-export function createViewMeta(ctx: FlowContext, getView: () => any): PropertyMetaFactory {
-  const viewTitle = (ctx as any)?.t?.('当前视图') || '当前视图';
+export function createViewMeta(ctx: FlowContext): PropertyMetaFactory {
+  const viewTitle = ctx.t('当前视图');
   const factory: PropertyMetaFactory = async () => {
-    const recordMeta = await buildRecordMeta(
-      () => {
-        try {
-          const ref = inferRecordRef(ctx);
-          if (!ref?.collection) return null;
-          const ds = ctx.dataSourceManager?.getDataSource?.(ref.dataSourceKey || 'main');
-          return ds?.collectionManager?.getCollection?.(ref.collection) || null;
-        } catch (e) {
-          return null;
-        }
-      },
-      (ctx as any)?.t?.('当前视图记录') || '当前视图记录',
-      (c) => inferRecordRef(c),
-    );
-
-    const view = getView();
+    const view = ctx.view;
     return {
       type: 'object',
-      title: viewTitle,
+      title: ctx.t('当前视图'),
       buildVariablesParams: (c) => {
-        const ref = inferRecordRef(c);
-        return ref ? { record: ref } : undefined;
+        const params = inferViewRecordRef(c);
+        if (params) {
+          return {
+            record: params,
+          };
+        }
+        return undefined;
       },
       properties: async () => {
         const props: Record<string, any> = {};
-        if (recordMeta) props.record = recordMeta;
+        // 仅当能推断到当前记录引用时，才暴露“当前视图记录”，避免出现空子菜单
+        const refNow = inferViewRecordRef(ctx);
+        if (refNow && refNow.collection) {
+          const recordFactory: PropertyMetaFactory = async () => {
+            try {
+              const ref = inferViewRecordRef(ctx);
+              if (!ref?.collection) return null;
+              const dsKey = ref.dataSourceKey || 'main';
+              const ds = ctx.dataSourceManager?.getDataSource?.(dsKey);
+              const col = ds?.collectionManager?.getCollection?.(ref.collection);
+              if (!col) return null;
+              return (await buildRecordMeta(
+                () => col,
+                ctx.t('当前视图记录'),
+                (c) => inferViewRecordRef(c),
+              )) as PropertyMeta;
+            } catch (e) {
+              return null;
+            }
+          };
+          recordFactory.title = ctx.t('当前视图记录');
+          recordFactory.hasChildren = true;
+          props.record = recordFactory;
+        }
         props.type = { type: 'string', title: (ctx as any)?.t?.('类型') || '类型' };
         props.preventClose = { type: 'boolean', title: (ctx as any)?.t?.('是否允许关闭') || '是否允许关闭' };
         props.inputArgs = makeMetaFromValue(view?.inputArgs, (ctx as any)?.t?.('输入参数') || '输入参数');
-        props.navigation = buildNavigationMeta(ctx, getView);
         return props;
       },
     } as PropertyMeta;

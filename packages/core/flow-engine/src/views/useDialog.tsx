@@ -102,11 +102,6 @@ export function useDialog() {
     };
 
     const ctx = new FlowContext();
-    ctx.defineProperty('view', {
-      get: () => currentDialog,
-      meta: createViewMeta(ctx, () => currentDialog),
-      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
-    });
     // 为当前视图创建作用域引擎（隔离实例与缓存）
     const scopedEngine = createViewScopedEngine(flowContext.engine);
     ctx.defineProperty('engine', { value: scopedEngine });
@@ -117,6 +112,11 @@ export function useDialog() {
       ctx.addDelegate(flowContext.engine.context);
     }
 
+    ctx.defineProperty('view', {
+      get: () => currentDialog,
+      // meta: createViewMeta(ctx),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+    });
     // 内部组件，在 Provider 内部计算 content
     const DialogWithContext = observer(
       () => {

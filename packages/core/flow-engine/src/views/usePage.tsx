@@ -102,11 +102,6 @@ export function usePage() {
     };
 
     const ctx = new FlowContext();
-    ctx.defineProperty('view', {
-      get: () => currentPage,
-      meta: createViewMeta(ctx, () => currentPage),
-      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
-    });
     // 为当前视图创建作用域引擎（隔离实例与缓存）
     const scopedEngine = createViewScopedEngine(flowContext.engine);
     ctx.defineProperty('engine', { value: scopedEngine });
@@ -116,6 +111,12 @@ export function usePage() {
     } else {
       ctx.addDelegate(flowContext.engine.context);
     }
+
+    ctx.defineProperty('view', {
+      get: () => currentPage,
+      // meta: createViewMeta(ctx),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+    });
 
     const PageWithContext = observer(
       () => {

@@ -102,11 +102,6 @@ export function useDrawer() {
     };
 
     const ctx = new FlowContext();
-    ctx.defineProperty('view', {
-      get: () => currentDrawer,
-      meta: createViewMeta(ctx, () => currentDrawer),
-      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
-    });
     // 为当前视图创建作用域引擎（隔离实例与缓存）
     const scopedEngine = createViewScopedEngine(flowContext.engine);
     // 先将引擎暴露给视图上下文，再按需继承父上下文
@@ -117,6 +112,12 @@ export function useDrawer() {
     } else {
       ctx.addDelegate(flowContext.engine.context);
     }
+
+    ctx.defineProperty('view', {
+      get: () => currentDrawer,
+      // meta: createViewMeta(ctx),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+    });
 
     // 内部组件，在 Provider 内部计算 content
     const DrawerWithContext: React.FC = observer(

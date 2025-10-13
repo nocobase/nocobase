@@ -558,7 +558,7 @@ export const openView = defineAction({
 
     inputArgs.sourceId = inputArgs.sourceId || params.sourceId || viewInputArgs?.sourceId;
 
-    inputArgs.tabUid = inputArgs.tabuid || params.tabUid || viewInputArgs?.tabUid;
+    inputArgs.tabUid = inputArgs.tabUid || params.tabUid || viewInputArgs?.tabUid;
 
     const navigation = inputArgs.navigation ?? params.navigation;
 
