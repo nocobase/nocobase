@@ -2,16 +2,20 @@
 
 ## 在 Model 内部使用
 
-建议在 `onBeforeAutoFlows` 或 `onAfterAutoFlows` 方法中处理异步属性，系统会自动维护 loading 状态。例如：
+建议在 `onDispatchEventStart/End` 钩子中处理渲染前（beforeRender）相关的异步属性，系统会自动维护 loading 状态。例如：
 
 ```ts
 class MyModel {
-  async onBeforeAutoFlows() {
-    this.asyncProperty1 = await this.context.asyncProperty2;
+  async onDispatchEventStart(eventName: string) {
+    if (eventName === 'beforeRender') {
+      this.asyncProperty1 = await this.context.asyncProperty2;
+    }
   }
 
-  async onAfterAutoFlows() {
-    this.asyncProperty1 = await this.context.asyncProperty2;
+  async onDispatchEventEnd(eventName: string) {
+    if (eventName === 'beforeRender') {
+      this.asyncProperty1 = await this.context.asyncProperty2;
+    }
   }
 }
 ```

@@ -566,7 +566,7 @@ const LinkageRulesUI = observer(
 
     // 复制规则
     const handleCopyRule = (index: number) => {
-      const originalRule = rules[index];
+      const originalRule = _.cloneDeep(rules[index]);
       const newRule: LinkageRule = {
         ...originalRule,
         key: uid(),

@@ -28,4 +28,7 @@ DisplayURLFieldModel.define({
 
 DisplayItemModel.bindModelToInterface('DisplayURLFieldModel', ['url'], {
   isDefault: true,
+  when: (ctx) => {
+    return true;
+  },
 });

@@ -18,7 +18,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import React from 'react';
-import { BlockSceneEnum } from '../../base';
+import { BlockSceneEnum } from '../../base/BlockModel';
 import { FormBlockModel, FormComponent } from './FormBlockModel';
 
 // CreateFormModel - 专门用于新增记录
