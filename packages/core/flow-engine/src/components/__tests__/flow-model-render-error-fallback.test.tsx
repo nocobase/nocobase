@@ -124,7 +124,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
       <ConfigProvider>
         <App>
           <FlowEngineProvider engine={engine}>
-            <FlowModelRenderer model={model} showFlowSettings showErrorFallback skipApplyAutoFlows />
+            <FlowModelRenderer model={model} showFlowSettings showErrorFallback />
           </FlowEngineProvider>
         </App>
       </ConfigProvider>,
@@ -141,7 +141,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
         return (
           <div>
             {items.map((m: FlowModel) => (
-              <FlowModelRenderer key={m.uid} model={m} showFlowSettings showErrorFallback skipApplyAutoFlows />
+              <FlowModelRenderer key={m.uid} model={m} showFlowSettings showErrorFallback />
             ))}
           </div>
         );
@@ -167,7 +167,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
       <ConfigProvider>
         <App>
           <FlowEngineProvider engine={engine}>
-            <FlowModelRenderer model={parent} skipApplyAutoFlows />
+            <FlowModelRenderer model={parent} />
           </FlowEngineProvider>
         </App>
       </ConfigProvider>,
@@ -186,7 +186,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
         return (
           <div>
             {cells.map((m: FlowModel) => (
-              <FlowModelRenderer key={m.uid} model={m} showFlowSettings showErrorFallback skipApplyAutoFlows />
+              <FlowModelRenderer key={m.uid} model={m} showFlowSettings showErrorFallback />
             ))}
           </div>
         );
@@ -212,7 +212,7 @@ describe('Delete problematic model via FlowSettings menu', () => {
       <ConfigProvider>
         <App>
           <FlowEngineProvider engine={engine}>
-            <FlowModelRenderer model={parent} skipApplyAutoFlows />
+            <FlowModelRenderer model={parent} />
           </FlowEngineProvider>
         </App>
       </ConfigProvider>,

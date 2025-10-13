@@ -166,7 +166,7 @@ export class SubTableColumnModel<
 
   async afterAddAsSubModel() {
     await super.afterAddAsSubModel();
-    await this.applyAutoFlows();
+    await this.dispatchEvent('beforeRender');
   }
 
   getColumnProps(): TableColumnProps {
@@ -365,7 +365,7 @@ SubTableColumnModel.registerFlow({
             },
           },
         });
-        await model.applyAutoFlows();
+        await model.dispatchEvent('beforeRender');
       },
     },
     title: {

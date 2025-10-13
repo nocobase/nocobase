@@ -10,13 +10,13 @@
 import { describe, expect, test, beforeEach } from 'vitest';
 import { FlowModel } from '@nocobase/flow-engine';
 
-describe('FlowModel.getFlows sorting and getAutoFlows order', () => {
+describe('FlowModel.getFlows sorting and getEventFlows(beforeRender) order', () => {
   let TestFlowModel: typeof FlowModel;
   let model: FlowModel;
 
   beforeEach(() => {
     // use a fresh subclass to isolate class-level registries
-    TestFlowModel = class extends FlowModel {};
+    TestFlowModel = class extends FlowModel<any> {};
     // provide a minimal fake engine to avoid circular deps in tests
     const fakeEngine = { getModel: () => undefined } as any;
     model = new TestFlowModel({ flowEngine: fakeEngine } as any);
@@ -37,7 +37,7 @@ describe('FlowModel.getFlows sorting and getAutoFlows order', () => {
     expect(orderedKeys).toEqual(['flowD', 'flowB', 'flowC', 'flowA']);
   });
 
-  test('getAutoFlows keeps getFlows order and filters out manual/on flows', () => {
+  test("getEventFlows('beforeRender') keeps getFlows order and filters out manual/on flows", () => {
     // class-level
     TestFlowModel.registerFlow('flowA', { title: 'A', sort: 10, steps: {} });
     TestFlowModel.registerFlow('flowB', { title: 'B', sort: 5, steps: {} });
@@ -51,7 +51,7 @@ describe('FlowModel.getFlows sorting and getAutoFlows order', () => {
     model.registerFlow('manualFlow', { title: 'Manual', manual: true, sort: -1, steps: {} });
 
     const getFlowsOrder = Array.from(model.getFlows().keys());
-    const autoFlowKeys = model.getAutoFlows().map((f) => f.key);
+    const autoFlowKeys = model.getEventFlows('beforeRender').map((f) => f.key);
 
     // auto flows should exclude event/manual flows
     expect(autoFlowKeys).toEqual(['flowD', 'flowB', 'flowC', 'flowE', 'flowA']);

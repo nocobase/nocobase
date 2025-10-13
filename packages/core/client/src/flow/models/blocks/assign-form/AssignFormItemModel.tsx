@@ -172,7 +172,7 @@ export class AssignFormItemModel extends FormItemModel {
           updateAssociation: false,
           multiple: multi,
         });
-        fm?.applyAutoFlows?.();
+        fm?.dispatchEvent?.('beforeRender', undefined, { sequential: true, useCache: true });
         // 为本地枚举型字段补全可选项（仅在未显式传入 options 时处理）
         ensureOptionsFromUiSchemaEnumIfAbsent(fm as any, cfForMultiple as any);
         if (!fm?.props?.fieldNames && cfForMultiple?.targetCollection) {
