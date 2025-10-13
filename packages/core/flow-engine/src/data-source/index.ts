@@ -490,6 +490,7 @@ export class Collection {
   }
 
   getField(fieldName: string): CollectionField | undefined {
+    this.setFields(this.options.fields); //数据表字段被删除
     return this.fields.get(fieldName);
   }
 
@@ -653,7 +654,7 @@ export class CollectionField {
   }
 
   get title() {
-    const titleValue = this.options?.title || this.options?.uiSchema?.title || this.options.name;
+    const titleValue = this.options?.uiSchema?.title || this.options?.title || this.options.name;
     return this.flowEngine.translate(titleValue);
   }
 
@@ -702,6 +703,7 @@ export class CollectionField {
         multiple: target ? ['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) : undefined,
         maxCount: target && !['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) ? 1 : undefined,
         target: target,
+        template: this.targetCollection?.template,
       },
       _.isUndefined,
     );

@@ -38,7 +38,7 @@ export const titleField = defineAction({
   name: 'titleField',
   title: tval('Label field'),
   uiSchema: (ctx) => {
-    if (!ctx.collectionField.isAssociationField()) {
+    if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
       return null;
     }
     return {
@@ -76,7 +76,7 @@ export const titleField = defineAction({
         },
       });
       await model.save();
-      await model.applyAutoFlows();
+      await model.dispatchEvent('beforeRender');
       // 持久化
       await ctx.model.save();
     }
@@ -109,7 +109,7 @@ export const titleField = defineAction({
         },
       });
       // await model.save();
-      await model.applyAutoFlows();
+      await model.dispatchEvent('beforeRender');
     }
   },
 });

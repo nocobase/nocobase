@@ -614,7 +614,8 @@ export const openView = defineAction({
 
     const pageModelClass = ctx.inputArgs.pageModelClass || params.pageModelClass || 'ChildPageModel';
 
-    const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
+    // 移动端中只需要显示子页面
+    const openMode = ctx.inputArgs.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
     const size = ctx.inputArgs.size || params.size || 'medium';
     let pageModelUid: string | null = null;
     let pageModelRef: FlowModel | null = null;
@@ -656,7 +657,7 @@ export const openView = defineAction({
     finalInputArgs.filterByTk = inputArgs.filterByTk ?? params.filterByTk;
     finalInputArgs.sourceId = inputArgs.sourceId ?? params.sourceId;
     await ctx.viewer.open({
-      type: ctx.inputArgs.isMobileLayout ? 'embed' : openMode, // 移动端中只需要显示子页面
+      type: openMode,
       inputArgs: finalInputArgs,
       preventClose: !!params.preventClose,
       destroyOnClose: true,
@@ -701,7 +702,7 @@ export const openView = defineAction({
                 pageModel.context.defineMethod(key, method);
               });
 
-              pageModel.invalidateAutoFlowCache(true);
+              pageModel.invalidateFlowCache('beforeRender', true);
               pageModel['_rerunLastAutoRun'](); // TODO: 临时做法，等上下文重构完成后去掉
             }}
           />
@@ -721,7 +722,7 @@ export const openView = defineAction({
         const nav = ctx.inputArgs?.navigation || ctx.view?.navigation;
         if (pageModelUid) {
           const pageModel = pageModelRef || ctx.model.flowEngine.getModel(pageModelUid);
-          pageModel?.invalidateAutoFlowCache(true);
+          pageModel?.invalidateFlowCache('beforeRender', true);
         }
         if (navigation !== false) {
           if (nav?.back) {
@@ -731,5 +732,8 @@ export const openView = defineAction({
       },
       onOpen: ctx.inputArgs.onOpen,
     });
+
+    // Automatically refresh the current block's data when the popup is closed
+    await ctx.resource?.refresh();
   },
 });

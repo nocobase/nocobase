@@ -37,6 +37,9 @@ export const displayFieldComponent = defineAction({
   title: escapeT('Field component'),
   uiSchema: (ctx: any) => {
     const { titleField } = ctx.model.props;
+    if (!ctx.collectionField) {
+      return;
+    }
     const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
     if (classes.length === 1 && !titleField) return null;
 
@@ -52,6 +55,9 @@ export const displayFieldComponent = defineAction({
   },
 
   beforeParamsSave: async (ctx: any, params, previousParams) => {
+    if (!ctx.collectionField) {
+      return;
+    }
     const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
     const { titleField } = ctx.model.props;
     let titleFieldClasses = [];
@@ -89,7 +95,6 @@ export const displayFieldComponent = defineAction({
   async handler(ctx, params) {
     if (params.use !== ctx.model.subModels.field.use) {
       ctx.model.setStepParams(ctx.flowKey, 'model', { use: ctx.model.subModels.field.use });
-      console.log(params.use, ctx.model.subModels.field.use);
     }
     // if (!params.use) {
     //   throw new Error('model use is a required parameter');

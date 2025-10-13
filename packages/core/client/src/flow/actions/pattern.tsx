@@ -14,6 +14,9 @@ export const pattern = defineAction({
   name: 'pattern',
   title: escapeT('Display mode'),
   uiSchema: (ctx) => {
+    if (!ctx.model.collectionField) {
+      return;
+    }
     return {
       pattern: {
         'x-component': 'Select',
@@ -98,6 +101,6 @@ async function rebuildFieldSubModel(ctx, model, binding: BindingOptions) {
     },
   });
 
-  await subModel.applyAutoFlows();
+  await subModel.dispatchEvent('beforeRender');
   await model.save(); // 持久化
 }

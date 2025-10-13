@@ -228,7 +228,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     }
     this.setStepParams('chartSettings', 'configure', params);
     this.rerender();
-    // 调用链：rerender -> applyAutoFlows -> handler（处理数据、属性、事件） -> runQueryAndUpdateResult（查数据）
+    // 调用链：rerender -> dispatchEvent('beforeRender') -> handler（处理数据、属性、事件） -> runQueryAndUpdateResult（查数据）
   }
 
   // 取消预览，回滚stepParams，并刷新图表
