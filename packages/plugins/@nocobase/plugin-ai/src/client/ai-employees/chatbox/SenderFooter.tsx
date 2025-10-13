@@ -14,6 +14,7 @@ import { AddContextButton } from '../AddContextButton';
 import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatBoxStore } from './stores/chat-box';
 import _ from 'lodash';
+import { SearchSwitch } from './SearchSwitch';
 
 export const SenderFooter: React.FC<{
   components: any;
@@ -60,6 +61,7 @@ export const SenderFooter: React.FC<{
         />
         <Divider type="vertical" />
         <Upload />
+        {currentEmployee?.webSearch && <SearchSwitch />}
       </Flex>
       <Flex align="center">
         {loading ? (

@@ -31,7 +31,15 @@ export * from './ElementProxy';
 export * from './flowContext';
 export * from './FlowContextProvider';
 export * from './JSRunner';
-export * from './runjs-context';
+export {
+  getRunJSDocFor,
+  createJSRunnerWithVersion,
+  getRunJSScenesForModel,
+  getRunJSScenesForContext,
+} from './runjs-context/helpers';
+export { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
+export { setupRunJSContexts } from './runjs-context/setup';
+export { getSnippetBody, listSnippetsForContext } from './runjs-context/snippets';
 
 export * from './views';
 
