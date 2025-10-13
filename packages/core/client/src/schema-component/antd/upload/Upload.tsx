@@ -27,7 +27,7 @@ import useUploadStyle from 'antd/es/upload/style';
 import cls from 'classnames';
 import { saveAs } from 'file-saver';
 import filesize from 'filesize';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import LightBox from 'react-image-lightbox';
 import 'react-image-lightbox/style.css'; // This only needs to be imported once in your app
@@ -73,7 +73,25 @@ attachmentFileTypes.add({
   },
   Previewer({ index, list, onSwitchIndex }) {
     const [angle, setAngle] = useState(0);
-    const [zoom, setZoom] = useState(1);
+    const isPatchingRef = useRef(false);
+
+    const getImageEl = () => document.querySelector('.ril-image-current') as HTMLElement | null;
+
+    const applyRotation = useCallback((el: HTMLElement | null, a: number) => {
+      if (!el) return;
+      const cur = el.style.transform || '';
+      // 去掉已有 rotate，保留 Lightbox 的 translate/scale
+      const withoutRotate = cur.replace(/rotate\([^)]*\)/g, '').trim();
+      const next = `${withoutRotate} rotate(${((a % 360) + 360) % 360}deg)`.trim();
+      if (cur === next) return; // 没变化就不写，避免重复触发
+      isPatchingRef.current = true;
+      el.style.transform = next;
+      el.style.transformOrigin = 'center center';
+      setTimeout(() => {
+        isPatchingRef.current = false;
+      }, 0);
+    }, []);
+
     const onDownload = useCallback(
       (e) => {
         e.preventDefault();
@@ -88,21 +106,27 @@ attachmentFileTypes.add({
     const onRotateRight = useCallback(() => {
       setAngle((prev) => (prev + 90) % 360);
     }, []);
-    const onZoomIn = useCallback(() => {
-      setZoom((prev) => Math.min(prev + 0.5, 2));
-    }, []);
-    const onZoomOut = useCallback(() => {
-      setZoom((prev) => Math.max(prev - 0.5, 1));
-    }, []);
 
+    // 角度变化时重新应用旋转
     useEffect(() => {
-      const el = document.querySelector('.ril-image-current') as HTMLElement;
-      if (!el) {
-        return;
-      }
-      const nextRotate = `rotate(${angle}deg)`;
-      el.style.transform = [angle ? nextRotate : '', `scale(${zoom})`].filter(Boolean).join(' ');
-    }, [angle, zoom]);
+      applyRotation(getImageEl(), angle);
+    }, [angle, applyRotation]);
+
+    // 监听 Lightbox 内部 transform 改动（缩放/拖拽时）
+    useEffect(() => {
+      const el = getImageEl();
+      if (!el) return;
+      applyRotation(el, angle);
+      const observer = new MutationObserver((mutations) => {
+        if (isPatchingRef.current) return;
+        if (mutations.some((m) => m.attributeName === 'style')) {
+          applyRotation(el, angle);
+        }
+      });
+      observer.observe(el, { attributes: true, attributeFilter: ['style'] });
+      return () => observer.disconnect();
+    }, [applyRotation, angle, index]);
+
     return (
       <>
         <LightBoxGlobalStyle />
@@ -112,10 +136,18 @@ attachmentFileTypes.add({
           nextSrc={list[(index + 1) % list.length]?.url}
           prevSrc={list[(index + list.length - 1) % list.length]?.url}
           onCloseRequest={() => onSwitchIndex(null)}
-          onMovePrevRequest={() => onSwitchIndex((index + list.length - 1) % list.length)}
-          onMoveNextRequest={() => onSwitchIndex((index + 1) % list.length)}
+          onMovePrevRequest={() => {
+            setAngle(0);
+            onSwitchIndex((index + list.length - 1) % list.length);
+          }}
+          onMoveNextRequest={() => {
+            setAngle(0);
+            onSwitchIndex((index + 1) % list.length);
+          }}
+          onAfterOpen={() => {
+            applyRotation(getImageEl(), angle);
+          }}
           imageTitle={list[index]?.title}
-          enableZoom={false}
           toolbarButtons={[
             <button
               key="preview-img"
@@ -131,7 +163,7 @@ attachmentFileTypes.add({
             <button
               key="rotate-left"
               type="button"
-              className="ril-rotate-left ril__toolbarItemChild ril__builtinButton"
+              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
               style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
               onClick={onRotateLeft}
             >
@@ -140,31 +172,11 @@ attachmentFileTypes.add({
             <button
               key="rotate-right"
               type="button"
-              className="ril-rotate-right ril__toolbarItemChild ril__builtinButton"
+              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
               style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
               onClick={onRotateRight}
             >
               <RedoOutlined />
-            </button>,
-            <button
-              key="zoom-in"
-              type="button"
-              className="ril-zoom-in ril__toolbarItemChild ril__builtinButton"
-              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-              onClick={onZoomIn}
-              disabled={zoom >= 2}
-            >
-              <ZoomInOutlined />
-            </button>,
-            <button
-              key="rotate-right"
-              type="button"
-              className="ril-zoom-out ril__toolbarItemChild ril__builtinButton"
-              style={{ fontSize: 22, background: 'none', lineHeight: 1 }}
-              onClick={onZoomOut}
-              disabled={zoom <= 1}
-            >
-              <ZoomOutOutlined />
             </button>,
           ]}
         />
