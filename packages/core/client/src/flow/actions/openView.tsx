@@ -552,13 +552,17 @@ export const openView = defineAction({
     }
     const inputArgs = ctx.inputArgs || {};
 
-    const viewInputArgs = ctx.view?.inputArgs as Record<string, any> | undefined;
+    if (inputArgs.filterByTk === undefined && params.filterByTk !== undefined) {
+      inputArgs.filterByTk = params.filterByTk;
+    }
 
-    inputArgs.filterByTk = inputArgs.filterByTk || params.filterByTk || viewInputArgs?.filterByTk;
+    if (inputArgs.sourceId === undefined && params.sourceId !== undefined) {
+      inputArgs.sourceId = params.sourceId;
+    }
 
-    inputArgs.sourceId = inputArgs.sourceId || params.sourceId || viewInputArgs?.sourceId;
-
-    inputArgs.tabUid = inputArgs.tabUid || params.tabUid || viewInputArgs?.tabUid;
+    if (inputArgs.tabUid === undefined && params.tabUid !== undefined) {
+      inputArgs.tabUid = params.tabUid;
+    }
 
     const navigation = inputArgs.navigation ?? params.navigation;
 
