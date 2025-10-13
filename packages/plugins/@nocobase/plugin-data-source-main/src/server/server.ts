@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Filter, InheritedCollection, UniqueConstraintError } from '@nocobase/database';
+import { Filter, InheritedCollection, JoiValidationError, UniqueConstraintError } from '@nocobase/database';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
@@ -29,6 +29,8 @@ import { beforeDestoryField } from './hooks/beforeDestoryField';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
+import { Schema } from '@formily/json-schema';
+import _ from 'lodash';
 
 export class PluginDataSourceMainServer extends Plugin {
   private loadFilter: Filter = {};
@@ -438,55 +440,7 @@ export class PluginDataSourceMainServer extends Plugin {
   async load() {
     this.db.getRepository<CollectionRepository>('collections').setApp(this.app);
 
-    const errorHandlerPlugin = this.app.getPlugin<PluginErrorHandler>('error-handler');
-    errorHandlerPlugin.errorHandler.register(
-      (err) => {
-        return err instanceof UniqueConstraintError;
-      },
-      (err, ctx) => {
-        return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
-      },
-    );
-
-    errorHandlerPlugin.errorHandler.register(
-      (err) => err instanceof FieldIsDependedOnByOtherError,
-      (err, ctx) => {
-        ctx.status = 400;
-        ctx.body = {
-          errors: [
-            {
-              message: ctx.i18n.t('field-is-depended-on-by-other', {
-                fieldName: err.options.fieldName,
-                fieldCollectionName: err.options.fieldCollectionName,
-                dependedFieldName: err.options.dependedFieldName,
-                dependedFieldCollectionName: err.options.dependedFieldCollectionName,
-                dependedFieldAs: err.options.dependedFieldAs,
-                ns: 'data-source-main',
-              }),
-            },
-          ],
-        };
-      },
-    );
-
-    errorHandlerPlugin.errorHandler.register(
-      (err) => err instanceof FieldNameExistsError,
-      (err, ctx) => {
-        ctx.status = 400;
-
-        ctx.body = {
-          errors: [
-            {
-              message: ctx.i18n.t('field-name-exists', {
-                name: err.value,
-                collectionName: err.collectionName,
-                ns: 'data-source-main',
-              }),
-            },
-          ],
-        };
-      },
-    );
+    this.registerErrorHandler();
 
     this.app.resourceManager.use(async function mergeReverseFieldWhenSaveCollectionField(ctx, next) {
       if (ctx.action.resourceName === 'collections.fields' && ['create', 'update'].includes(ctx.action.actionName)) {
@@ -561,6 +515,95 @@ export class PluginDataSourceMainServer extends Plugin {
       dumpRules: 'required',
       origin: this.options.packageName,
     });
+  }
+
+  registerErrorHandler() {
+    const errorHandlerPlugin = this.app.pm.get<PluginErrorHandler>('error-handler');
+    errorHandlerPlugin.errorHandler.register(
+      (err) => {
+        return err instanceof UniqueConstraintError;
+      },
+      (err, ctx) => {
+        return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
+      },
+    );
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof FieldIsDependedOnByOtherError,
+      (err, ctx) => {
+        ctx.status = 400;
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.i18n.t('field-is-depended-on-by-other', {
+                fieldName: err.options.fieldName,
+                fieldCollectionName: err.options.fieldCollectionName,
+                dependedFieldName: err.options.dependedFieldName,
+                dependedFieldCollectionName: err.options.dependedFieldCollectionName,
+                dependedFieldAs: err.options.dependedFieldAs,
+                ns: 'data-source-main',
+              }),
+            },
+          ],
+        };
+      },
+    );
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof FieldNameExistsError,
+      (err, ctx) => {
+        ctx.status = 400;
+
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.i18n.t('field-name-exists', {
+                name: err.value,
+                collectionName: err.collectionName,
+                ns: 'data-source-main',
+              }),
+            },
+          ],
+        };
+      },
+    );
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof JoiValidationError,
+      (err: JoiValidationError, ctx) => {
+        const t = ctx.i18n.t;
+        ctx.status = 400;
+        ctx.body = {
+          errors: err.details.map((detail) => {
+            const context = detail.context;
+            if (context.label) {
+              const [collectionName, fieldName] = detail.context.label.split('.');
+              const collection = this.db.getCollection(collectionName);
+              if (collection) {
+                const collectionTitle = Schema.compile(collection.options.title, { t });
+                const field = collection.getField(fieldName);
+                const fieldOptions = Schema.compile(field?.options, { t });
+                const fieldTitle = _.get(fieldOptions, 'uiSchema.title', fieldName);
+                context.label = `${t(collectionTitle, {
+                  ns: ['lm-collections', 'client'],
+                })}-${t(fieldTitle, {
+                  ns: ['lm-collections', 'client'],
+                })}`;
+              }
+            }
+            if (context.regex) {
+              context.regex = context.regex.source;
+            }
+            return {
+              message: ctx.i18n.t(detail.type, {
+                ...context,
+                ns: 'data-source-main',
+              }),
+            };
+          }),
+        };
+      },
+    );
   }
 
   async install() {
