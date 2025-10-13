@@ -7,33 +7,40 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowRunJSContext } from './FlowRunJSContext';
-import { createSafeDocument, createSafeWindow } from '../../utils';
+import { FlowRunJSContext } from '../../flowContext';
 
-export class FormJSFieldItemRunJSContext extends FlowRunJSContext {
-  static injectDefaultGlobals() {
-    return { window: createSafeWindow(), document: createSafeDocument() };
-  }
-  constructor(delegate: any) {
-    super(delegate);
-    this.defineProperty('element', { get: () => (this as any)._delegate['element'] });
-    this.defineProperty('record', { get: () => (this as any)._delegate['record'] });
-    this.defineProperty('value', { get: () => (this as any)._delegate['value'] });
-  }
-}
+export class FormJSFieldItemRunJSContext extends FlowRunJSContext {}
 
 FormJSFieldItemRunJSContext.define({
   label: 'FormJSFieldItem RunJS context',
   properties: {
-    element: 'ElementProxy，表单字段容器',
-    value: '字段值（读/受控场景需通过 setProps 修改）',
-    record: '当前记录（只读）',
+    element: `ElementProxy instance providing a safe DOM container for form field rendering.
+      Supports innerHTML, append, and other DOM manipulation methods.`,
+    value: `Current field value (read-only in display mode; in controlled scenarios, use setProps to modify).`,
+    record: `Current record data object (read-only).
+      Contains all field values of the parent record.`,
   },
   methods: {
-    onRefReady: '容器就绪回调',
-    setProps: '设置表单项属性：`setProps(fieldModel, { value })`（由联动/表单上下文提供）',
-  },
-  snipastes: {
-    显示字段值: { $ref: 'scene/jsfield/innerHTML-value', prefix: 'sn-form-value' },
+    onRefReady: `Wait for form field container DOM element to be ready before executing callback.
+      Parameters: (ref: React.RefObject, callback: (element: HTMLElement) => void, timeout?: number) => void`,
+    setProps: `Set form field properties programmatically.
+      Parameters: (fieldModel: any, props: { value?: any, disabled?: boolean, visible?: boolean }) => void
+      Example: ctx.setProps(fieldModel, { value: "new value" })`,
   },
 });
+
+FormJSFieldItemRunJSContext.define(
+  {
+    label: '表单 JS 字段项 RunJS 上下文',
+    properties: {
+      element: 'ElementProxy，表单字段容器',
+      value: '字段值（展示模式为只读；受控场景用 setProps 修改）',
+      record: '当前记录（只读）',
+    },
+    methods: {
+      onRefReady: '容器就绪回调',
+      setProps: '设置表单项属性：`setProps(fieldModel, { value })`（由联动/表单上下文提供）',
+    },
+  },
+  { locale: 'zh-CN' },
+);
