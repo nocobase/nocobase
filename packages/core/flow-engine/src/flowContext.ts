@@ -1683,7 +1683,16 @@ export class FlowRunJSContext extends FlowContext {
     this.addDelegate(delegate);
     this.defineProperty('React', { value: React });
     this.defineProperty('antd', { value: antd });
-    this.defineProperty('ReactDOM', { value: ReactDOMClient });
+    // 为 JS 运行时代码提供带有 antd/App/ConfigProvider 包裹的 React 根
+    // 保持与 ReactDOMClient 接口一致，优先覆盖 createRoot，其余方法透传
+    const ReactDOMShim: any = {
+      ...ReactDOMClient,
+      createRoot: (container: Element | DocumentFragment, options?: any) => {
+        // 使用引擎自带的 reactView.createRoot，以继承应用内的 ConfigProvider/App 上下文与主题
+        return this.engine.reactView.createRoot(container as HTMLElement, options);
+      },
+    };
+    this.defineProperty('ReactDOM', { value: ReactDOMShim });
   }
   static define(meta: RunJSDocMeta, options?: { locale?: string }) {
     const locale = options?.locale;
