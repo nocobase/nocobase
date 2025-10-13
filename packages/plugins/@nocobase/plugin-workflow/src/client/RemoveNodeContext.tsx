@@ -48,7 +48,6 @@ function findBranchNodes(nodes, branchHead) {
 
 function KeepBranchRadioGroup(props) {
   const { value, onChange } = props;
-  const { nodes } = useFlowContext();
   const { deletingNode, deletingBranches } = useRemoveNodeContext();
   const plugin = usePlugin(PluginWorkflowClient) as PluginWorkflowClient;
   const compile = useCompile();
@@ -110,33 +109,36 @@ function useRemoveNodeSubmitAction() {
   const { deletingNode, deletingBranches, setDeletingNode } = useRemoveNodeContext();
   const { values, clearFormGraph } = useForm();
   const { modal } = App.useApp();
-  const branchNodesUsingVariable = useMemo(() => {
-    const result = [];
-    if (values.keepBranch == null || !deletingNode) {
-      return result;
-    }
-    const branchHead = deletingBranches.find((item) => values.keepBranch === item.branchIndex);
-    for (const node of findBranchNodes(nodes, branchHead).values()) {
-      const template = parse(node.config);
-      const refs = template.parameters.filter(({ key }) => {
-        return (
-          key.startsWith(`$jobsMapByNodeKey.${deletingNode.key}.`) ||
-          key === `$jobsMapByNodeKey.${deletingNode.key}` ||
-          key.startsWith(`$scopes.${deletingNode.key}.`) ||
-          key === `$scopes.${deletingNode.key}`
-        );
-      });
-      if (refs.length) {
-        result.push(node);
-      }
-    }
-    return result;
-  }, [deletingBranches, deletingNode, nodes, values.keepBranch]);
 
   const keepBranchValues = values.keepBranch != null ? values : {};
 
   return {
     async run() {
+      if (!deletingNode) {
+        return;
+      }
+      const branchNodesUsingVariable = [];
+      const branchHead =
+        values.keepBranch != null ? deletingBranches.find((item) => values.keepBranch === item.branchIndex) : null;
+      const relatedNodes = findBranchNodes(nodes, branchHead);
+      const downstreamNodes = findBranchNodes(nodes, deletingNode.downstream);
+      for (const [key, node] of downstreamNodes) {
+        relatedNodes.set(key, node);
+      }
+      for (const node of relatedNodes.values()) {
+        const template = parse((node as any).config);
+        const refs = template.parameters.filter(({ key }) => {
+          return (
+            key.startsWith(`$jobsMapByNodeKey.${deletingNode.key}.`) ||
+            key === `$jobsMapByNodeKey.${deletingNode.key}` ||
+            key.startsWith(`$scopes.${deletingNode.key}.`) ||
+            key === `$scopes.${deletingNode.key}`
+          );
+        });
+        if (refs.length) {
+          branchNodesUsingVariable.push(node);
+        }
+      }
       if (branchNodesUsingVariable.length) {
         modal.error({
           title: lang('Can not delete'),

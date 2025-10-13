@@ -208,31 +208,32 @@ export function RemoveButton() {
   }, [current.id, refresh, api]);
 
   const onRemove = useCallback(async () => {
-    const usingNodes = nodes.filter((node) => {
-      if (node === current) {
-        return false;
-      }
-
-      const template = parse(node.config);
-      const refs = template.parameters.filter(
-        ({ key }) => key.startsWith(`$jobsMapByNodeKey.${current.key}.`) || key === `$jobsMapByNodeKey.${current.key}`,
-      );
-      return refs.length;
-    });
-
-    if (usingNodes.length) {
-      modal.error({
-        title: lang('Can not delete'),
-        content: lang(
-          'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.',
-          { nodes: usingNodes.map((item) => item.title).join(', ') },
-        ),
-      });
-      return;
-    }
-
     const branches = nodes.filter((item) => item.upstream === current && item.branchIndex != null);
     if (!branches.length) {
+      const usingNodes = nodes.filter((node) => {
+        if (node === current) {
+          return false;
+        }
+
+        const template = parse(node.config);
+        const refs = template.parameters.filter(
+          ({ key }) =>
+            key.startsWith(`$jobsMapByNodeKey.${current.key}.`) || key === `$jobsMapByNodeKey.${current.key}`,
+        );
+        return refs.length;
+      });
+
+      if (usingNodes.length) {
+        modal.error({
+          title: lang('Can not delete'),
+          content: lang(
+            'The result of this node has been referenced by other nodes ({{nodes}}), please remove the usage before deleting.',
+            { nodes: usingNodes.map((item) => item.title).join(', ') },
+          ),
+        });
+        return;
+      }
+
       modal.confirm({
         title: t('Delete'),
         content: t('Are you sure you want to delete it?'),
