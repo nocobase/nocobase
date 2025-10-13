@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { SnippetModule } from '../types';
 import { JSBlockRunJSContext } from '../../../contexts/JSBlockRunJSContext';
+import { SnippetModule } from '../../types';
 
 const snippet: SnippetModule = {
   contexts: [JSBlockRunJSContext],
