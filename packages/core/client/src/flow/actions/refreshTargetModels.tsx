@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { ActionScene, defineAction, escapeT, FlowModel, useFlowContext } from '@nocobase/flow-engine';
+import { ActionScene, defineAction, escapeT, useFlowContext } from '@nocobase/flow-engine';
 import { Space, Input, Button } from 'antd';
 import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
