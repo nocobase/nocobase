@@ -411,10 +411,8 @@ CollectionBlockModel.registerFlow({
   steps: {
     refresh: {
       async handler(ctx) {
-        const filterManager: FilterManager = (ctx as any)?.model?.context?.filterManager;
-        if (filterManager?.bindToTarget) {
-          filterManager.bindToTarget(ctx.model.uid);
-        }
+        const filterManager: FilterManager = ctx.model.context.filterManager;
+        filterManager.bindToTarget(ctx.model.uid);
         if (ctx.model.isManualRefresh) {
           ctx.model.resource.loading = false;
         } else {
