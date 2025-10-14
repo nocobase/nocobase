@@ -42,9 +42,12 @@ export function AddButton(props: AddButtonProps) {
   const { upstream, branchIndex = null } = props;
   const { workflow } = useFlowContext() ?? {};
   const { styles } = useStyles();
-  const { anchor, creating, onMenuOpen } = useAddNodeContext();
+  const addNodeContext = useAddNodeContext();
   const executed = useWorkflowExecuted();
-  const onOpen = useCallback(() => onMenuOpen({ upstream, branchIndex }), [onMenuOpen, upstream, branchIndex]);
+  const onOpen = useCallback(
+    () => addNodeContext.onMenuOpen({ upstream, branchIndex }),
+    [addNodeContext, upstream, branchIndex],
+  );
 
   if (!workflow) {
     return null;
@@ -59,10 +62,15 @@ export function AddButton(props: AddButtonProps) {
           aria-label={props['aria-label'] || 'add-button'}
           shape="circle"
           icon={<PlusOutlined />}
-          loading={creating?.upstreamId == upstream?.id && creating?.branchIndex === branchIndex}
+          loading={
+            addNodeContext.creating?.upstreamId == upstream?.id && addNodeContext.creating?.branchIndex === branchIndex
+          }
           size="small"
           onClick={onOpen}
-          className={cx({ anchoring: anchor?.upstream === upstream && anchor?.branchIndex === branchIndex })}
+          className={cx({
+            anchoring:
+              addNodeContext.anchor?.upstream === upstream && addNodeContext.anchor?.branchIndex === branchIndex,
+          })}
         />
       )}
     </div>
@@ -109,6 +117,7 @@ function useAddNodeSubmitAction() {
         }
         ctx.setVisible(false);
         setPresetting(null);
+        form.reset();
         refresh();
       } catch (err) {
         console.error(err);
@@ -127,11 +136,6 @@ export function useAddNodeContext() {
 
 const defaultBranchingOptions = [
   {
-    label: `{{t('After end of branches', { ns: "${NAMESPACE}" })}}`,
-    value: false,
-  },
-  {
-    label: `{{t('Inside of branch', { ns: "${NAMESPACE}" })}}`,
     value: 0,
   },
 ];
@@ -140,6 +144,7 @@ const DownstreamBranchIndex = observer((props) => {
   const { presetting } = useAddNodeContext();
   const { nodes } = useFlowContext();
   const { values } = useForm();
+  const compile = useCompile();
   const options = useMemo(() => {
     if (!presetting?.instruction) {
       return [];
@@ -156,8 +161,20 @@ const DownstreamBranchIndex = observer((props) => {
     if (!branching) {
       return [];
     }
-    return branching === true ? defaultBranchingOptions : branching;
-  }, [presetting, nodes, values.config]);
+    const br = branching === true ? defaultBranchingOptions : branching;
+    return [
+      {
+        label: lang('After end of branches'),
+        value: false,
+      },
+      ...br.map((item) => ({
+        ...item,
+        label: item.label
+          ? lang('Inside of "{{branchName}}" branch', { branchName: compile(item.label) })
+          : lang('Inside of branch'),
+      })),
+    ];
+  }, [presetting, nodes, values.config, compile]);
 
   if (!options.length) {
     return null;
