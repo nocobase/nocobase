@@ -12,6 +12,7 @@ export * from './dataScope';
 export * from './openView';
 export * from './runjs';
 export * from './customVariable';
+export * from './refreshTargetModels';
 export { titleField } from './titleField';
 export * from './dateTimeFormat';
 export * from './sortingRules';
