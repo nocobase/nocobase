@@ -53,7 +53,7 @@ ActionPanelLinkActionModel.registerFlow({
   key: 'actionPanelLinkSettings',
   on: 'click',
   steps: {
-    setScope: {
+    click: {
       async handler(ctx, params) {
         const { url, searchParams, openInNewWindow } = ctx.model.props as any;
         const t = ctx.t;
@@ -76,15 +76,15 @@ ActionPanelLinkActionModel.registerFlow({
     },
   },
 });
+
 ActionPanelLinkActionModel.registerFlow({
-  key: 'actionPanelLinkSetting',
+  key: 'buttonSettings',
   title: escapeT('Link action settings'),
   steps: {
-    init: {
+    general: {
       use: 'addAction',
-      title: escapeT('Link'),
+      title: escapeT('Action setting'),
       preset: true,
-      hideInSettings: true,
     },
     editLink: {
       title: escapeT('Edit link'),

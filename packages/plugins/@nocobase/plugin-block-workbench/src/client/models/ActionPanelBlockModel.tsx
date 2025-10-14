@@ -16,14 +16,12 @@ import {
   FlowModelRenderer,
   useFlowModel,
 } from '@nocobase/flow-engine';
+import { css } from '@emotion/css';
 import { Card, Space } from 'antd';
 import { Grid, List } from 'antd-mobile';
 import React from 'react';
-import { observer } from '@formily/react';
-import { BlockModel, css, useOpenModeContext } from '@nocobase/client';
+import { BlockModel, useOpenModeContext } from '@nocobase/client';
 import { SettingOutlined } from '@ant-design/icons';
-
-const NAMESPACE = 'client';
 
 function isMobile() {
   return window.matchMedia('(max-width: 768px)').matches;
@@ -73,29 +71,39 @@ export class ActionPanelBlockModel extends BlockModel {
     const token = this.context.themeToken;
     return (
       <Card id={`model-${this.uid}`} className="action-panel-block">
-        <Space>
-          <div className="nb-action-panel-warp">
-            {layout === WorkbenchLayout.Grid ? (
-              <ResponsiveSpace>
-                {this.mapSubModels('actions', (action) => {
-                  return (
-                    <Droppable model={action} key={action.uid}>
-                      <FlowModelRenderer
-                        model={action}
-                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                        extraToolbarItems={[
-                          {
-                            key: 'drag-handler',
-                            component: DragHandler,
-                            sort: 1,
-                          },
-                        ]}
-                      />
-                    </Droppable>
-                  );
-                })}
-              </ResponsiveSpace>
-            ) : (
+        <div className="nb-action-panel-warp">
+          {layout === WorkbenchLayout.Grid ? (
+            <ResponsiveSpace>
+              {this.mapSubModels('actions', (action) => {
+                return (
+                  <Droppable model={action} key={action.uid}>
+                    <FlowModelRenderer
+                      model={action}
+                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                      extraToolbarItems={[
+                        {
+                          key: 'drag-handler',
+                          component: DragHandler,
+                          sort: 1,
+                        },
+                      ]}
+                    />
+                  </Droppable>
+                );
+              })}
+            </ResponsiveSpace>
+          ) : (
+            <Space
+              className={css`
+                width: 100%;
+                .ant-space-item {
+                  width: 100%;
+                }
+                .nb-toolbar-container > .nb-toolbar-container-icons {
+                  top: 20px !important;
+                }
+              `}
+            >
               <List
                 style={
                   {
@@ -125,9 +133,9 @@ export class ActionPanelBlockModel extends BlockModel {
                   );
                 })}
               </List>
-            )}
-          </div>
-        </Space>
+            </Space>
+          )}
+        </div>
         <div style={{ marginTop: '10px' }}>{this.renderConfiguireActions()}</div>
       </Card>
     );

@@ -12,25 +12,20 @@ import { ButtonProps } from 'antd';
 import { openViewFlow } from '@nocobase/client';
 import { ActionPanelActionModel } from './ActionPanelActionModel';
 
-export class ActionPanelPopupActionModel extends ActionPanelActionModel {
-  defaultProps: ButtonProps = {
-    title: escapeT('Popup'),
-  };
-}
+export class ActionPanelPopupActionModel extends ActionPanelActionModel {}
 
 ActionPanelPopupActionModel.define({
   label: escapeT('Popup'),
 });
 
 ActionPanelPopupActionModel.registerFlow({
-  key: 'actionPanelPopupSetting',
+  key: 'buttonSettings',
   title: escapeT('Popup action settings'),
   steps: {
-    init: {
+    general: {
       use: 'addAction',
-      title: escapeT('Popup'),
+      title: escapeT('Action setting'),
       preset: true,
-      hideInSettings: true,
     },
   },
 });

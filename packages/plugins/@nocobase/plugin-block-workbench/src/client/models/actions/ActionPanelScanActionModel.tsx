@@ -52,7 +52,6 @@ export const QRCodeScanner = (props) => {
     textAlign: 'center',
   };
 
-  // 改动6：不再手动 getCameras，Html5QrcodeScanner 会自动选择可用摄像头
   return visible ? (
     <div style={style}>
       <QRCodeScannerInner setVisible={setVisible} app={props.app} navigate={props.navigate} onClose={props.onClose} />
@@ -100,14 +99,13 @@ ActionPanelScanActionModel.registerFlow({
 });
 
 ActionPanelScanActionModel.registerFlow({
-  key: 'actionPanelPopupSetting',
+  key: 'buttonSettings',
   title: escapeT('Scan QR code action settings', { ns: 'block-workbench' }),
   steps: {
-    init: {
+    general: {
       use: 'addAction',
-      title: escapeT('Scan QR code'),
+      title: escapeT('Action setting'),
       preset: true,
-      hideInSettings: true,
     },
   },
 });
