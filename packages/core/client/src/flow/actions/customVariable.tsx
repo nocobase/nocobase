@@ -90,7 +90,7 @@ interface VariableFormValues {
 }
 
 const VARIABLE_TYPE_LABELS: Record<FlowVariableType, string> = {
-  formValue: 'Form variable',
+  formValue: escapeT('Form variable'),
 };
 
 const generateVariableKey = () => `var_${uid().slice(0, 4)}`;

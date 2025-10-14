@@ -214,7 +214,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
 }
 
 FilterFormItemModel.define({
-  label: 'Block list',
+  label: escapeT('Block list'),
 });
 
 FilterFormItemModel.registerFlow({

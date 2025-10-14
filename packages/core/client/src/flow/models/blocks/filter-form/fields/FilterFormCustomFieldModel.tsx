@@ -100,7 +100,7 @@ FilterFormCustomFieldModel.registerFlow({
   steps: {
     fieldSettings: {
       preset: true,
-      title: escapeT('Field Settings'),
+      title: escapeT('Field settings'),
       uiSchema: {
         title: {
           type: 'string',
@@ -126,13 +126,13 @@ FilterFormCustomFieldModel.registerFlow({
           'x-decorator': 'FormItem',
           required: true,
           enum: [
-            { label: escapeT('Input'), value: 'InputFieldModel' },
-            { label: escapeT('Number'), value: 'NumberFieldModel' },
-            { label: escapeT('Date'), value: 'DateTimeFilterFieldModel' },
-            { label: escapeT('Select'), value: 'SelectFieldModel' },
-            { label: escapeT('Radio group'), value: 'RadioGroupFieldModel' },
-            { label: escapeT('Checkbox group'), value: 'CheckboxGroupFieldModel' },
-            { label: escapeT('Record select'), value: 'RecordSelectFieldModel' },
+            { label: 'Input', value: 'InputFieldModel' },
+            { label: 'Number', value: 'NumberFieldModel' },
+            { label: 'Date', value: 'DateTimeFilterFieldModel' },
+            { label: 'Select', value: 'SelectFieldModel' },
+            { label: 'Radio group', value: 'RadioGroupFieldModel' },
+            { label: 'Checkbox group', value: 'CheckboxGroupFieldModel' },
+            { label: 'Record select', value: 'RecordSelectFieldModel' },
           ],
           'x-component-props': {
             placeholder: escapeT('Please select'),
