@@ -29,32 +29,38 @@ export const customVariable = defineAction({
     const { variables = [] } = params;
 
     variables.forEach((variable) => {
+      const getFunction = () => {
+        const modelInstance = ctx.model.flowEngine.getModel(variable.formUid);
+        return modelInstance?.form?.getFieldsValue(true);
+      };
+      const metaFunction = () => {
+        const modelInstance = ctx.model.flowEngine.getModel(variable.formUid);
+        const gridModel = modelInstance?.subModels?.grid;
+        const properties = {};
+
+        if (!gridModel) {
+          console.warn(`Not found form or form has no grid: ${variable.formUid}`);
+          return;
+        }
+
+        gridModel.mapSubModels('items', (item) => {
+          properties[item.props.name] = { title: item.props.label, type: 'string' };
+        });
+
+        return {
+          title: variable.title,
+          type: 'object',
+          properties,
+        };
+      };
+
+      // 解决一开始不显示 title 的问题
+      metaFunction.title = variable.title;
+
       ctx.model.context.defineProperty(variable.key, {
-        get: () => {
-          const modelInstance = ctx.model.flowEngine.getModel(variable.formUid);
-          return modelInstance?.form?.getFieldsValue(true);
-        },
+        get: getFunction,
         cache: false,
-        meta: () => {
-          const modelInstance = ctx.model.flowEngine.getModel(variable.formUid);
-          const gridModel = modelInstance?.subModels?.grid;
-          const properties = {};
-
-          if (!gridModel) {
-            console.warn(`Not found form or form has no grid: ${variable.formUid}`);
-            return;
-          }
-
-          gridModel.mapSubModels('items', (item) => {
-            properties[item.props.name] = { title: item.props.label, type: 'string' };
-          });
-
-          return {
-            title: variable.title,
-            type: 'object',
-            properties,
-          };
-        },
+        meta: metaFunction,
       });
     });
   },
