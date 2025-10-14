@@ -736,8 +736,5 @@ export const openView = defineAction({
       },
       onOpen: ctx.inputArgs.onOpen,
     });
-
-    // Automatically refresh the current block's data when the popup is closed
-    await ctx.resource?.refresh();
   },
 });
