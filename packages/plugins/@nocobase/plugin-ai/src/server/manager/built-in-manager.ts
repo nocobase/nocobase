@@ -11,6 +11,11 @@ import PluginAIServer from '../plugin';
 import dataModeling from '../ai-employees/built-in/data-modeling';
 import formFiller from '../ai-employees/built-in/form-filler';
 import aiCoding from '../ai-employees/built-in/ai-coding';
+import dataOrganizer from '../ai-employees/built-in/data-organizer';
+import insightsAnalyst from '../ai-employees/built-in/insights-analyst';
+import researchAnalyst from '../ai-employees/built-in/research-analyst';
+import translator from '../ai-employees/built-in/translator';
+import nocobaseAssistant from '../ai-employees/built-in/nocobase-assistant';
 import type { AIEmployee } from '../../collections/ai-employees';
 
 const DEFAULT_LANGUAGE = 'en-US';
@@ -23,7 +28,16 @@ const DEFAULT_KNOWLEDGE_BASE_PROMPT =
   "From knowledge base:\n{knowledgeBaseData}\nanswer user's question using this information.";
 
 export class BuiltInManager {
-  private builtInEmployees = [dataModeling, formFiller, aiCoding];
+  private builtInEmployees = [
+    dataModeling,
+    formFiller,
+    aiCoding,
+    dataOrganizer,
+    insightsAnalyst,
+    researchAnalyst,
+    translator,
+    nocobaseAssistant,
+  ];
   private builtInEmployeeMap = Object.fromEntries(this.builtInEmployees.map((x) => [x.username, x]));
 
   constructor(protected plugin: PluginAIServer) {}

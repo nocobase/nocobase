@@ -85,7 +85,7 @@ export const SenderHeader: React.FC = () => {
               <UserAddOutlined />
               {t('Select an')}
             </span>
-            <Dropdown menu={{ items }} placement="topLeft">
+            <Dropdown menu={{ items }} placement="topLeft" overlayStyle={{ zIndex: 1200 }}>
               {t('AI employee')}
             </Dropdown>
           </Button>

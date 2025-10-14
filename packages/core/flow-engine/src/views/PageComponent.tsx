@@ -24,7 +24,7 @@ export const PageComponent = forwardRef((props: any, ref) => {
     hidden,
     title: _title,
     styles = {},
-    zIndex,
+    zIndex = 4, // 这个默认值是为了防止表格的阴影显示到子页面上面
   } = mergedProps;
   const closedRef = useRef(false);
   const flowEngine = useFlowEngine();
