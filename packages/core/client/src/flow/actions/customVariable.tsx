@@ -266,6 +266,7 @@ function VariableEditor(props: VariableEditorProps) {
         locale={{ emptyText: t('No data') }}
         size="small"
         scroll={{ x: 'max-content' }}
+        bordered
       />
       <Dropdown menu={menu} trigger={['hover']} disabled={disabled}>
         <Button type="dashed" block icon={<PlusOutlined />} disabled={disabled}>
