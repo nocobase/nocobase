@@ -660,6 +660,8 @@
   "Parent popup record": "Parent popup record",
   "Associated records": "Associated records",
   "Parent record": "Parent record",
+  "Current popup parent record": "Current popup parent record",
+  "Popup uid": "Popup UID",
   "Current time": "Current time",
   "System variables": "System variables",
   "Date variables": "Date variables",

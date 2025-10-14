@@ -199,6 +199,8 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
         properties: async () => {
           const parentRef = await getParentRecordRef(level);
           const props: Record<string, any> = {};
+          // 弹窗 UID（纯前端变量）
+          props.uid = { type: 'string', title: t('Popup uid') };
 
           // 记录分组
           if (parentRef) {
@@ -251,14 +253,66 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
       title: t('Current popup'),
       buildVariablesParams: (c) => {
         const ref = inferViewRecordRef(c);
-        return { record: ref };
+        const inputArgs = (c?.view as any)?.inputArgs || {};
+        const out: Record<string, any> = { record: ref };
+        try {
+          const srcId = inputArgs?.sourceId;
+          const assoc: string | undefined = inputArgs?.associationName;
+          const dsKey: string = inputArgs?.dataSourceKey || 'main';
+          if (srcId != null && srcId !== '' && assoc && typeof assoc === 'string') {
+            // associationName 形如 `posts.comments`，父级集合为 `posts`
+            const parentCollectionName = String(assoc).split('.')[0];
+            if (parentCollectionName) {
+              out.sourceRecord = {
+                collection: parentCollectionName,
+                dataSourceKey: dsKey,
+                filterByTk: srcId,
+              };
+            }
+          }
+        } catch (_) {
+          // 忽略异常，保持 record 正常返回
+        }
+        return out;
       },
       properties: async () => {
         const props: Record<string, any> = {};
+        // 当前弹窗 UID（纯前端变量）
+        props.uid = { type: 'string', title: t('Popup uid') };
         const base = await buildRecordMeta(getCurrentCollection, t('Current popup record'), (c) =>
           inferViewRecordRef(c),
         );
         if (base) props.record = base;
+        // 当 view.inputArgs 带有 sourceId + associationName 时，提供“上级记录”变量（基于 sourceId 推断）
+        try {
+          const inputArgs = (ctx.view as any)?.inputArgs || {};
+          const srcId = inputArgs?.sourceId;
+          const assoc: string | undefined = inputArgs?.associationName;
+          const dsKey: string = inputArgs?.dataSourceKey || 'main';
+          if (srcId != null && srcId !== '' && assoc && typeof assoc === 'string') {
+            const parentCollectionName = String(assoc).includes('.') ? String(assoc).split('.')[0] : undefined;
+            if (parentCollectionName) {
+              const parentCollectionAccessor = () => {
+                try {
+                  const ds = ctx.dataSourceManager?.getDataSource?.(dsKey);
+                  return ds?.collectionManager?.getCollection?.(parentCollectionName) || null;
+                } catch (_) {
+                  return null;
+                }
+              };
+              const srcMeta = await buildRecordMeta(parentCollectionAccessor, t('Current popup parent record'), () => ({
+                collection: parentCollectionName,
+                dataSourceKey: dsKey,
+                filterByTk: srcId,
+              }));
+              if (srcMeta) {
+                props.sourceRecord = srcMeta;
+              }
+            }
+          }
+        } catch (_) {
+          // ignore
+        }
         const resourceMeta: PropertyMeta = {
           type: 'object',
           title: t('Data source'),
@@ -297,6 +351,7 @@ interface PopupNodeResource {
 }
 
 interface PopupNode {
+  uid?: string;
   resource: PopupNodeResource;
   parent?: PopupNode;
 }
@@ -315,6 +370,7 @@ export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promi
     const collectionName = p?.collectionName;
     const dataSourceKey = p?.dataSourceKey || 'main';
     const node: PopupNode = {
+      uid: viewUid,
       resource: {
         dataSourceKey,
         collectionName,
@@ -340,6 +396,7 @@ export function registerPopupVariable(ctx: FlowContext, view: FlowView) {
   ctx.defineProperty('popup', {
     get: async () => buildPopupRuntime(ctx, view),
     meta: createPopupMeta(ctx),
-    resolveOnServer: (p: string) => p === 'record' || p?.startsWith('record.'),
+    resolveOnServer: (p: string) =>
+      p === 'record' || p?.startsWith('record.') || p === 'sourceRecord' || p?.startsWith('sourceRecord.'),
   });
 }
