@@ -82,7 +82,7 @@ const VARIABLE_TYPE_LABELS: Record<FlowVariableType, string> = {
   formValue: 'Form variable',
 };
 
-const generateVariableKey = () => `var_${uid()}`;
+const generateVariableKey = () => `var_${uid().slice(0, 4)}`;
 
 function VariableEditor(props: VariableEditorProps) {
   const { value = [], onChange, disabled } = props;
@@ -293,12 +293,16 @@ function VariableEditor(props: VariableEditorProps) {
           >
             <Input placeholder={t('Please enter variable title')} />
           </Form.Item>
-          <Form.Item label={t('Variable identifier')} name="key">
-            <Input disabled />
+          <Form.Item
+            label={t('Variable identifier')}
+            name="key"
+            rules={[{ required: true, message: t('Please enter variable identifier') }]}
+          >
+            <Input placeholder={t('Please enter variable identifier')} />
           </Form.Item>
           {currentType === 'formValue' ? (
             <Form.Item
-              label={t('Form uid')}
+              label={t('Form UID')}
               name="formUid"
               rules={[{ required: true, message: t('Please enter form uid') }]}
             >
