@@ -11,9 +11,11 @@ export const options = {
     // { target: 100, duration: '1s' },
     // { target: 100, duration: '58s' },
     // { target: 0, duration: '1s' },
+
+    // 10min
     { target: 100, duration: '30s' },
-    { target: 200, duration: '1m' },
-    { target: 200, duration: '1m' },
+    { target: 200, duration: '30s' },
+    { target: 200, duration: '8m' },
     { target: 100, duration: '30s' },
     { target: 0, duration: '30s' },
   ],
@@ -45,8 +47,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -66,8 +66,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -86,8 +84,6 @@ export default function () {
     resp = http.request('GET', url, null, params);
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
-
-    sleep(1);
 
     params = {
       headers: {
@@ -127,8 +123,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -167,8 +161,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -189,8 +181,6 @@ export default function () {
     resp = http.request('POST', url, `{}`, params);
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
-
-    sleep(1);
 
     params = {
       headers: {
@@ -213,8 +203,6 @@ export default function () {
     resp = http.request('POST', url, JSON.stringify({ account: __ENV.USERNAME, password: __ENV.PASSWORD }), params);
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
-
-    sleep(1);
 
     token = resp.json('data.token');
 
@@ -239,8 +227,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -261,8 +247,6 @@ export default function () {
     resp = http.request('GET', url, null, params);
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
-
-    sleep(1);
 
     params = {
       headers: {
@@ -285,8 +269,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -307,8 +289,6 @@ export default function () {
     resp = http.request('GET', url, null, params);
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
-
-    sleep(1);
 
     params = {
       headers: {
@@ -333,8 +313,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -356,8 +334,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -378,8 +354,6 @@ export default function () {
     resp = http.request('GET', url, null, params);
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
-
-    sleep(1);
 
     params = {
       headers: {
@@ -403,8 +377,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -426,8 +398,6 @@ export default function () {
     resp = http.request('GET', url, null, params);
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
-
-    sleep(1);
 
     params = {
       headers: {
@@ -451,8 +421,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -475,8 +443,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -498,8 +464,6 @@ export default function () {
     resp = http.request('GET', url, null, params);
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
-
-    sleep(1);
 
     params = {
       headers: {
@@ -525,8 +489,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -548,8 +510,6 @@ export default function () {
     resp = http.request('GET', url, null, params);
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
-
-    sleep(1);
 
     params = {
       headers: {
@@ -575,8 +535,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -598,8 +556,6 @@ export default function () {
     resp = http.request('GET', url, null, params);
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
-
-    sleep(1);
 
     params = {
       headers: {
@@ -623,8 +579,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -647,8 +601,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -670,8 +622,6 @@ export default function () {
     resp = http.request('GET', url, null, params);
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
-
-    sleep(1);
 
     params = {
       headers: {
@@ -792,8 +742,6 @@ export default function () {
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
 
-    sleep(1);
-
     params = {
       headers: {
         'Proxy-Connection': `keep-alive`,
@@ -815,9 +763,7 @@ export default function () {
     resp = http.request('GET', url, null, params);
 
     check(resp, { 'status equals 200': (r) => r.status === 200 });
-
-    sleep(1);
   });
 
-  // sleep(1);
+  sleep(1);
 }
