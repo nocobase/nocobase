@@ -580,7 +580,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                         fallback={this.itemFallback}
                         showFlowSettings={this.flowEngine.flowSettings.enabled ? this.getItemFlowSettings() : false}
                         showErrorFallback
-                        settingsMenuLevel={this.itemSettingsMenuLevel}
+                        settingsMenuLevel={(item as any).settingsMenuLevel ?? this.itemSettingsMenuLevel}
                         showTitle
                         extraToolbarItems={this.itemExtraToolbarItems}
                       />

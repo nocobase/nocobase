@@ -15,6 +15,7 @@ import { DefaultValue } from './components/DefaultValue';
 import { FlowModelRepository } from './FlowModelRepository';
 import { FlowRoute } from './FlowPage';
 import * as models from './models';
+import * as embedModels from './models/blocks/embed';
 import * as filterFormActions from './models/blocks/filter-manager/flow-actions';
 import { DynamicFlowsIcon } from './components/DynamicFlowsIcon';
 
@@ -28,6 +29,8 @@ export class PluginFlowEngine extends Plugin {
       ),
     ) as Record<string, typeof FlowModel>;
     this.flowEngine.registerModels(filteredModels);
+    // 兜底注册：将 embed 模块中的导出统一尝试注册，避免被上方过滤器遗漏
+    this.flowEngine.registerModels(embedModels as any);
     this.flowEngine.registerActions(actions);
     this.flowEngine.registerActions(filterFormActions);
     this.flowEngine.flowSettings.registerComponents({
