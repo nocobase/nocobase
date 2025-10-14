@@ -1422,5 +1422,8 @@
   "Embedded": "嵌入式设备",
   "Before render": "渲染前",
   "Block list": "区块列表",
-  "Field settings": "字段设置"
+  "Field settings": "字段设置",
+  "Refresh target models": "刷新目标模型",
+  "Target model uid": "目标模型 uid",
+  "Add target model": "添加目标模型"
 }
