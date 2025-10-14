@@ -12,6 +12,7 @@
   "string.email": "{{label}} email address doesn’t meet the required format",
   "string.uri": "{{label}} must be a valid uri",
   "string.uriCustomScheme": "{{label}} must be a valid uri with a scheme matching the {{scheme}} pattern",
+  "string.uriRelativeOnly": "{{label}} must be a valid relative uri",
   "string.isoDate": "{{label}} must be a valid ISO 8601 date",
   "string.guid": "{{label}} must be a valid UUID",
   "string.hex": "{{label}} must only contain hexadecimal characters",

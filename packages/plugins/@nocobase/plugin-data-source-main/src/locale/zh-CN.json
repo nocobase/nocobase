@@ -11,6 +11,7 @@
   "string.regex": "{{label}} 值 {{value}} 格式不正确",
   "string.email": "{{label}} 邮箱地址不符合要求的格式",
   "string.uri": "{{label}} 必须是有效的URI",
+  "string.uriRelativeOnly": "{{label}} 必须是有效的相对路径",
   "string.uriCustomScheme": "{{label}} 必须是符合 {{scheme}} 模式的有效URI",
   "string.isoDate": "{{label}} 必须是有效的ISO日期",
   "string.guid": "{{label}} 必须是有效的UUID",

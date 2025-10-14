@@ -576,8 +576,9 @@ export class PluginDataSourceMainServer extends Plugin {
         ctx.body = {
           errors: err.details.map((detail) => {
             const context = detail.context;
-            if (context.label) {
-              const [collectionName, fieldName] = detail.context.label.split('.');
+            const label = context.label;
+            if (label) {
+              const [collectionName, fieldName] = label.split('.');
               const collection = this.db.getCollection(collectionName);
               if (collection) {
                 const collectionTitle = Schema.compile(collection.options.title, { t });
@@ -586,7 +587,7 @@ export class PluginDataSourceMainServer extends Plugin {
                 const fieldTitle = _.get(fieldOptions, 'uiSchema.title', fieldName);
                 context.label = `${t(collectionTitle, {
                   ns: ['lm-collections', 'client'],
-                })}-${t(fieldTitle, {
+                })}: ${t(fieldTitle, {
                   ns: ['lm-collections', 'client'],
                 })}`;
               }
@@ -594,11 +595,15 @@ export class PluginDataSourceMainServer extends Plugin {
             if (context.regex) {
               context.regex = context.regex.source;
             }
+            let message = ctx.i18n.t(detail.type, {
+              ...context,
+              ns: 'data-source-main',
+            });
+            if (message === detail.type) {
+              message = err.message.replace(`"${label}"`, context.label);
+            }
             return {
-              message: ctx.i18n.t(detail.type, {
-                ...context,
-                ns: 'data-source-main',
-              }),
+              message,
             };
           }),
         };
