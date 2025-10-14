@@ -423,7 +423,7 @@ const CurrentFields = (props) => {
           value={value}
           record={record}
           updateFieldHandler={updateFieldHandler}
-          isPresetField={collectionPresetFieldsInterfaces.includes(record.interface)}
+          isPresetField={collectionInfo.from === 'db2cm' || collectionPresetFieldsInterfaces.includes(record.interface)}
         />
       ),
     },

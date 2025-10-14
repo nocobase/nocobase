@@ -121,7 +121,13 @@ export class MainDataSource extends SequelizeDataSource {
       const c = db.getCollection(collection.name);
       loadedData[c.tableName()] = {
         ...collection.toJSON(),
-        fields: collection.fields.map((field: Model) => field.toJSON()),
+        fields: collection.fields.map((field: Model) => {
+          const f = c.getField(field.name);
+          return {
+            columnName: f?.columnName(),
+            ...field.toJSON(),
+          };
+        }),
       };
     }
     return loadedData;

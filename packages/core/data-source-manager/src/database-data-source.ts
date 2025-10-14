@@ -51,14 +51,13 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
       if (!loadedCollection) return collection;
 
       const collectionFields = collection.fields || [];
-      const loadedFieldsAsObjectByName = Object.fromEntries((loadedCollection.fields || []).map((f) => [f.name, f]));
-      const loadedFieldsAsObjectByField = Object.fromEntries(
-        (loadedCollection.fields || []).map((f) => [f.field || f.name, f]),
+      const loadedFieldsObj = Object.fromEntries(
+        (loadedCollection.fields || []).map((f) => [f.columnName || f.field || f.name, f]),
       );
 
       // Merge existing fields
       const newFields = collectionFields.map((field) => {
-        const loadedField = loadedFieldsAsObjectByField[field.name] || loadedFieldsAsObjectByName[field.name];
+        const loadedField = loadedFieldsObj[field.name];
         if (!loadedField) return field;
         if (loadedField.possibleTypes) {
           loadedField.possibleTypes = field.possibleTypes;
@@ -87,7 +86,7 @@ export abstract class DatabaseDataSource<T extends DatabaseIntrospector = Databa
       ...modelOptions,
     };
 
-    if (fieldOptions.type && modelOptions.type && fieldOptions.type !== modelOptions.type) {
+    if (fieldOptions.rawType && modelOptions.rawType && fieldOptions.rawType !== modelOptions.rawType) {
       newOptions.type = fieldOptions.type;
       newOptions.interface = fieldOptions.interface;
       newOptions.rawType = fieldOptions.rawType;
