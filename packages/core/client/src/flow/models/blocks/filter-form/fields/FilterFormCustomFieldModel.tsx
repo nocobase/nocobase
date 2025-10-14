@@ -184,6 +184,12 @@ FilterFormCustomFieldModel.registerFlow({
         } else {
           ctx.model.fieldModelInstance.setProps({ allowClear: true, ...fieldModelProps });
         }
+
+        if (fieldModel === 'DateTimeFilterFieldModel' && fieldModelProps.isRange) {
+          ctx.model.operator = '$dateBetween';
+        } else {
+          ctx.model.operator = undefined;
+        }
       },
     },
     connectFields: {
