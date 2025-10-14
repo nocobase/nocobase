@@ -7,59 +7,28 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { RunJSVersion, RunJSContextCtor } from './contexts/FlowRunJSContext';
-import { FlowRunJSContext } from './contexts/FlowRunJSContext';
-import { JSBlockRunJSContext } from './contexts/JSBlockRunJSContext';
-import { JSFieldRunJSContext } from './contexts/JSFieldRunJSContext';
-import { JSItemRunJSContext } from './contexts/JSItemRunJSContext';
-import { FormJSFieldItemRunJSContext } from './contexts/FormJSFieldItemRunJSContext';
-import { JSRecordActionRunJSContext } from './contexts/JSRecordActionRunJSContext';
-import { JSCollectionActionRunJSContext } from './contexts/JSCollectionActionRunJSContext';
+// 为避免在模块初始化阶段引入 FlowContext（从而触发循环依赖），不要在顶层导入各类 RunJSContext。
+// 在需要默认映射时（首次 resolve）再使用 createRequire 同步加载对应模块。
+
+export type RunJSVersion = 'v1' | (string & {});
+export type RunJSContextCtor = new (delegate: any) => any;
+export type RunJSContextMeta = {
+  scenes?: string[];
+};
 
 export class RunJSContextRegistry {
-  private static map = new Map<string, RunJSContextCtor>();
-  private static defaultsRegistered = false;
-  private static ensureDefaults() {
-    if (this.defaultsRegistered) return;
-    // v1 默认映射（延迟注册：首次访问时再注册）
-    const v = 'v1' as RunJSVersion;
-    try {
-      const ensure = (model: string, ctor: RunJSContextCtor) => {
-        const key = `${v}:${model}`;
-        if (!this.map.has(key)) this.map.set(key, ctor);
-      };
-      ensure('JSBlockModel', JSBlockRunJSContext as any);
-      ensure('JSFieldModel', JSFieldRunJSContext as any);
-      ensure('JSItemModel', JSItemRunJSContext as any);
-      ensure('FormJSFieldItemModel', FormJSFieldItemRunJSContext as any);
-      ensure('JSRecordActionModel', JSRecordActionRunJSContext as any);
-      ensure('JSCollectionActionModel', JSCollectionActionRunJSContext as any);
-      ensure('*', FlowRunJSContext as any);
-    } finally {
-      this.defaultsRegistered = true;
-    }
-  }
-  static register(version: RunJSVersion, modelClass: string, ctor: RunJSContextCtor) {
-    this.map.set(`${version}:${modelClass}`, ctor);
+  private static map = new Map<string, { ctor: RunJSContextCtor; meta?: RunJSContextMeta }>();
+  static register(version: RunJSVersion, modelClass: string, ctor: RunJSContextCtor, meta?: RunJSContextMeta) {
+    this.map.set(`${version}:${modelClass}`, { ctor, meta });
   }
   static resolve(version: RunJSVersion, modelClass: string) {
-    this.ensureDefaults();
-    return this.map.get(`${version}:${modelClass}`) || this.map.get(`${version}:*`);
+    return this.map.get(`${version}:${modelClass}`)?.ctor || this.map.get(`${version}:*`)?.ctor;
+  }
+  static getMeta(version: RunJSVersion, modelClass: string): RunJSContextMeta | undefined {
+    return this.map.get(`${version}:${modelClass}`)?.meta || this.map.get(`${version}:*`)?.meta;
   }
 }
 
 export function getModelClassName(ctx: any): string {
-  const model = ctx?.model;
-  if (!model) return '*';
-  // 1) 优先使用类 meta 中声明的 createModelOptions.use（构建后稳定，不受构造函数名压缩影响）
-  try {
-    const Ctor = model.constructor as any;
-    const use = Ctor?.meta?.createModelOptions?.use;
-    if (typeof use === 'string' && use) return use;
-  } catch (_) {
-    // ignore
-  }
-  // 2) 回退到构造函数名（开发模式可靠，生产模式可能被压缩）
-  const byName = model?.constructor?.name;
-  return byName || '*';
+  return ctx?.model?.constructor?.name || '*';
 }
