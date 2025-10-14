@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionGroupModel, ActionModel } from '@nocobase/client';
+import { ActionGroupModel } from '@nocobase/client';
 import { escapeT } from '@nocobase/flow-engine';
 import { ActionPanelPopupActionModel } from './ActionPanelPopupActionModel';
 import { ActionPanelLinkActionModel } from './ActionPanelLinkActionModel';
+import { ActionPanelScanActionModel } from './ActionPanelScanActionModel';
 
 export class ActionPanelGroupActionModel extends ActionGroupModel {}
 
@@ -21,4 +22,5 @@ ActionPanelGroupActionModel.define({
 ActionPanelGroupActionModel.registerActionModels({
   ActionPanelPopupActionModel,
   ActionPanelLinkActionModel,
+  ActionPanelScanActionModel,
 });

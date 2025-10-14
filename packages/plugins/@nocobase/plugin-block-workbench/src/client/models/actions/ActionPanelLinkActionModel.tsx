@@ -8,9 +8,8 @@
  */
 
 import { escapeT } from '@nocobase/flow-engine';
-import { ColorPicker, TextAreaWithContextSelector } from '@nocobase/client';
-import { isURL, parse } from '@nocobase/utils/client';
-import React from 'react';
+import { TextAreaWithContextSelector } from '@nocobase/client';
+import { isURL } from '@nocobase/utils/client';
 import { css } from '@emotion/css';
 import { ActionPanelActionModel } from './ActionPanelActionModel';
 
@@ -82,40 +81,10 @@ ActionPanelLinkActionModel.registerFlow({
   title: escapeT('Link action settings'),
   steps: {
     init: {
-      title: escapeT('Add action'),
+      use: 'addAction',
+      title: escapeT('Link'),
       preset: true,
       hideInSettings: true,
-      uiSchema(ctx) {
-        const t = ctx.t;
-        return {
-          title: {
-            title: t('Title'),
-            required: true,
-            'x-component': 'Input',
-            'x-decorator': 'FormItem',
-          },
-          icon: {
-            title: t('Icon'),
-            required: true,
-            'x-component': 'IconPicker',
-            'x-decorator': 'FormItem',
-          },
-          iconColor: {
-            title: t('Color'),
-            required: true,
-            default: '#1677FF',
-            'x-component': ColorPicker,
-            'x-decorator': 'FormItem',
-          },
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          title: params.title,
-          icon: params.icon,
-          iconColor: params.iconColor,
-        });
-      },
     },
     editLink: {
       title: escapeT('Edit link'),

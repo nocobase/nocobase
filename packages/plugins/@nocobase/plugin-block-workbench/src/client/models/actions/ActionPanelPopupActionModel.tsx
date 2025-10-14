@@ -9,11 +9,7 @@
 
 import { escapeT } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
-import { ActionSceneEnum, PopupActionModel, ColorPicker, Icon, openViewFlow } from '@nocobase/client';
-import { useTranslation } from 'react-i18next';
-import { Avatar } from 'antd';
-import React from 'react';
-import { css } from '@emotion/css';
+import { openViewFlow } from '@nocobase/client';
 import { ActionPanelActionModel } from './ActionPanelActionModel';
 
 export class ActionPanelPopupActionModel extends ActionPanelActionModel {
@@ -31,40 +27,10 @@ ActionPanelPopupActionModel.registerFlow({
   title: escapeT('Popup action settings'),
   steps: {
     init: {
-      title: escapeT('Add action'),
+      use: 'addAction',
+      title: escapeT('Popup'),
       preset: true,
       hideInSettings: true,
-      uiSchema(ctx) {
-        const t = ctx.t;
-        return {
-          title: {
-            title: t('Title'),
-            required: true,
-            'x-component': 'Input',
-            'x-decorator': 'FormItem',
-          },
-          icon: {
-            title: t('Icon'),
-            required: true,
-            'x-component': 'IconPicker',
-            'x-decorator': 'FormItem',
-          },
-          iconColor: {
-            title: t('Color'),
-            required: true,
-            default: '#1677FF',
-            'x-component': ColorPicker,
-            'x-decorator': 'FormItem',
-          },
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          title: params.title,
-          icon: params.icon,
-          iconColor: params.iconColor,
-        });
-      },
     },
   },
 });
