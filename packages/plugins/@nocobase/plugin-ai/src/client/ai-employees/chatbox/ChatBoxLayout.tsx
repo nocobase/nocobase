@@ -8,7 +8,7 @@
  */
 
 import React, { useContext } from 'react';
-import { CurrentUserContext } from '@nocobase/client';
+import { CurrentUserContext, useMobileLayout } from '@nocobase/client';
 import { ChatBoxWrapper } from './ChatBox';
 import { Helmet } from 'react-helmet';
 import { ChatButton } from './ChatButton';
@@ -23,6 +23,7 @@ export const ChatBoxLayout: React.FC<{
   const open = useChatBoxStore.use.open();
   const expanded = useChatBoxStore.use.expanded();
   const activeTool = useChatToolsStore.use.activeTool();
+  const { isMobileLayout } = useMobileLayout();
 
   useChatBoxEffect();
 
@@ -30,7 +31,7 @@ export const ChatBoxLayout: React.FC<{
     <div>
       {props.children}
       <ChatButton />
-      {open && !expanded ? (
+      {open && !expanded && !isMobileLayout ? (
         <Helmet>
           <style type="text/css">
             {`
