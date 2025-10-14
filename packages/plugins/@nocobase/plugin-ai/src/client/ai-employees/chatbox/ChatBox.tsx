@@ -18,7 +18,7 @@ import {
   ShrinkOutlined,
   CodeOutlined,
 } from '@ant-design/icons';
-import { useToken } from '@nocobase/client';
+import { useMobileLayout, useToken } from '@nocobase/client';
 const { Header, Footer, Sider } = Layout;
 import { Conversations } from './Conversations';
 import { Messages } from './Messages';
@@ -53,6 +53,8 @@ export const ChatBox: React.FC = () => {
   useEffect(() => {
     setChatBoxRef(chatBoxRef);
   }, []);
+
+  const { isMobileLayout } = useMobileLayout();
 
   return (
     <Layout style={{ height: '100%' }} ref={chatBoxRef}>
@@ -138,11 +140,13 @@ export const ChatBox: React.FC = () => {
                 <Divider type="vertical" />
               </>
             ) : null}
-            <Button
-              icon={!expanded ? <ExpandOutlined /> : <ShrinkOutlined />}
-              type="text"
-              onClick={() => setExpanded(!expanded)}
-            />
+            {!isMobileLayout && (
+              <Button
+                icon={!expanded ? <ExpandOutlined /> : <ShrinkOutlined />}
+                type="text"
+                onClick={() => setExpanded(!expanded)}
+              />
+            )}
             <Button icon={<CloseOutlined />} type="text" onClick={() => setOpen(false)} />
           </div>
         </Header>
@@ -184,13 +188,34 @@ const ExpandChatBox: React.FC = observer(() => {
   );
 });
 
+const MobileLayoutChatBox: React.FC<{ showConversations: boolean }> = ({ showConversations }) => {
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        left: '0',
+        top: '0',
+        width: showConversations ? '800px' : '100%',
+        height: '100%',
+        zIndex: dialogController.shouldHide ? -1 : 1100,
+        backgroundColor: 'white',
+      }}
+    >
+      <ChatBox />
+    </div>
+  );
+};
+
 export const ChatBoxWrapper: React.FC = () => {
   const expanded = useChatBoxStore.use.expanded();
   const showConversations = useChatBoxStore.use.showConversations();
   const showCodeHistory = useChatBoxStore.use.showCodeHistory();
+  const { isMobileLayout } = useMobileLayout();
 
   return expanded ? (
     <ExpandChatBox />
+  ) : isMobileLayout ? (
+    <MobileLayoutChatBox showConversations={showConversations} />
   ) : (
     <div
       style={{
