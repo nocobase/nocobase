@@ -29,26 +29,31 @@ export const customVariable = defineAction({
     const { variables = [] } = params;
 
     variables.forEach((variable) => {
-      const modelInstance = ctx.model.flowEngine.getModel(variable.formUid);
-      const gridModel = modelInstance?.subModels?.grid;
-
-      if (!gridModel) {
-        return;
-      }
-
-      const properties = {};
-
-      gridModel.mapSubModels('items', (item) => {
-        properties[item.props.name] = { title: item.props.label, type: 'string' };
-      });
-
       ctx.model.context.defineProperty(variable.key, {
-        get: () => modelInstance?.form?.getFieldsValue(true),
+        get: () => {
+          const modelInstance = ctx.model.flowEngine.getModel(variable.formUid);
+          return modelInstance?.form?.getFieldsValue(true);
+        },
         cache: false,
-        meta: {
-          title: variable.title,
-          type: 'object',
-          properties,
+        meta: () => {
+          const modelInstance = ctx.model.flowEngine.getModel(variable.formUid);
+          const gridModel = modelInstance?.subModels?.grid;
+          const properties = {};
+
+          if (!gridModel) {
+            console.warn(`Not found form or form has no grid: ${variable.formUid}`);
+            return;
+          }
+
+          gridModel.mapSubModels('items', (item) => {
+            properties[item.props.name] = { title: item.props.label, type: 'string' };
+          });
+
+          return {
+            title: variable.title,
+            type: 'object',
+            properties,
+          };
         },
       });
     });
