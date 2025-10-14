@@ -151,7 +151,7 @@ ActionPanelBlockModel.define({
 
 ActionPanelBlockModel.registerFlow({
   key: 'actionPanelBlockSetting',
-  title: escapeT('Action panel settings'),
+  title: escapeT('Action panel settings', { ns: 'block-workbench' }),
   steps: {
     layout: {
       title: escapeT('Layout', { ns: 'block-workbench' }),

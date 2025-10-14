@@ -18,16 +18,4 @@ ActionPanelPopupActionModel.define({
   label: escapeT('Popup'),
 });
 
-ActionPanelPopupActionModel.registerFlow({
-  key: 'buttonSettings',
-  title: escapeT('Popup action settings'),
-  steps: {
-    general: {
-      use: 'addAction',
-      title: escapeT('Action setting'),
-      preset: true,
-    },
-  },
-});
-
 ActionPanelPopupActionModel.registerFlow(openViewFlow);

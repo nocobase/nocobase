@@ -78,14 +78,9 @@ ActionPanelLinkActionModel.registerFlow({
 });
 
 ActionPanelLinkActionModel.registerFlow({
-  key: 'buttonSettings',
-  title: escapeT('Link action settings'),
+  key: 'linkButtonSettings',
+  title: escapeT('Link action settings', { ns: 'block-workbench' }),
   steps: {
-    general: {
-      use: 'addAction',
-      title: escapeT('Action setting'),
-      preset: true,
-    },
     editLink: {
       title: escapeT('Edit link'),
       uiSchema(ctx) {

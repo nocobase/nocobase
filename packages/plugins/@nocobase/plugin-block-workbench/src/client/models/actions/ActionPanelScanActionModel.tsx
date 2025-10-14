@@ -98,18 +98,6 @@ ActionPanelScanActionModel.registerFlow({
   },
 });
 
-ActionPanelScanActionModel.registerFlow({
-  key: 'buttonSettings',
-  title: escapeT('Scan QR code action settings', { ns: 'block-workbench' }),
-  steps: {
-    general: {
-      use: 'addAction',
-      title: escapeT('Action setting'),
-      preset: true,
-    },
-  },
-});
-
 ActionPanelScanActionModel.define({
   label: escapeT('Scan QR code', { ns: 'block-workbench' }),
 });
