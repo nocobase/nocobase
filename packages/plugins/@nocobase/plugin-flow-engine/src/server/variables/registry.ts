@@ -221,16 +221,31 @@ async function fetchRecordWithRequestCache(
       if (cache.has(key)) {
         return cache.get(key);
       }
-      // 仅当缓存项是本次请求所需 selects 的“超集”时才复用（避免缺字段/关联）
-      const needFields = Array.isArray(fields) ? new Set(fields) : undefined;
+      // 仅当缓存项是本次请求所需 selects 的“超集”时才复用（避免缺字段/关联）。
+      // 注意：若 needFields 中某路径已被 cachedAppends 的前缀覆盖（例如 needFields: ['roles.name'] 且 cachedAppends: ['roles']），
+      // 则认为该字段已被关联载入，可视为满足。
+      const needFields = Array.isArray(fields) ? [...new Set(fields)] : undefined;
       const needAppends = Array.isArray(appends) ? new Set(appends) : undefined;
       for (const [cacheKey, cacheVal] of cache.entries()) {
         const parsed = JSON.parse(cacheKey) as { ds: string; c: string; tk: unknown; f?: string[]; a?: string[] };
         if (!parsed || parsed.ds !== keyObj.ds || parsed.c !== keyObj.c || parsed.tk !== keyObj.tk) continue;
-        const cachedFields = Array.isArray(parsed.f) ? new Set(parsed.f) : undefined;
-        const cachedAppends = Array.isArray(parsed.a) ? new Set(parsed.a) : undefined;
-        const fieldsOk = !needFields || (cachedFields && [...needFields].every((x) => cachedFields.has(x)));
-        const appendsOk = !needAppends || (cachedAppends && [...needAppends].every((x) => cachedAppends.has(x)));
+        const cachedFields = new Set(parsed.f || []);
+        const cachedAppends = new Set(parsed.a || []);
+
+        const fieldCoveredByAppends = (fieldPath: string) => {
+          // 归一化，防御空串
+          const p = String(fieldPath || '');
+          // 若某个 append 是字段路径的前缀，则认为覆盖
+          // 例如 append: 'roles' 覆盖 'roles.name' / 'roles.users.id'
+          for (const a of cachedAppends) {
+            if (!a) continue;
+            if (p === a || p.startsWith(a + '.')) return true;
+          }
+          return false;
+        };
+
+        const fieldsOk = !needFields || needFields.every((f) => cachedFields.has(f) || fieldCoveredByAppends(f));
+        const appendsOk = !needAppends || [...needAppends].every((a) => cachedAppends.has(a));
         if (fieldsOk && appendsOk) {
           return cacheVal;
         }
