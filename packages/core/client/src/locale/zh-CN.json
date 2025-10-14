@@ -1423,7 +1423,6 @@
   "Before render": "渲染前",
   "Block list": "区块列表",
   "Field settings": "字段设置",
-  "Refresh target models": "刷新目标模型",
-  "Target model uid": "目标模型 uid",
-  "Add target model": "添加目标模型"
+  "Refresh target blocks": "刷新目标区块",
+  "Target block uid": "目标区块 uid"
 }

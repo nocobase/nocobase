@@ -13,9 +13,9 @@ import { Space, Input, Button } from 'antd';
 import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
-export const refreshTargetModels = defineAction({
-  name: 'refreshTargetModels',
-  title: escapeT('Refresh target models'),
+export const refreshTargetBlocks = defineAction({
+  name: 'refreshTargetBlocks',
+  title: escapeT('Refresh target blocks'),
   scene: [ActionScene.DYNAMIC_EVENT_FLOW],
   uiSchema: {
     targets: {
@@ -70,7 +70,7 @@ function EditTargets(props: Readonly<{ value?: string[]; onChange?: (value: stri
       {targets.map((target, index) => (
         <Space key={`target-${index}-${target}`} style={{ width: '100%' }} size={8}>
           <Input
-            placeholder={t('Target model uid')}
+            placeholder={t('Target block uid')}
             value={target}
             onChange={(e) => handleChange(index, e.target.value)}
             style={{ flex: 1 }}
@@ -87,7 +87,7 @@ function EditTargets(props: Readonly<{ value?: string[]; onChange?: (value: stri
         </Space>
       ))}
       <Button type="dashed" block icon={<PlusOutlined />} onClick={handleAdd}>
-        {t('Add target model')}
+        {t('Add target block')}
       </Button>
     </Space>
   );
