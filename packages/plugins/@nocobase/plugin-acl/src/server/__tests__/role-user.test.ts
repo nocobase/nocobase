@@ -239,7 +239,7 @@ describe('role', () => {
     expect(response3.statusCode).toEqual(200);
   });
 
-  it('should not allowed to set root role', async () => {
+  it('should not allow to set other role', async () => {
     const user = await db.getRepository('users').create({
       values: {},
     });

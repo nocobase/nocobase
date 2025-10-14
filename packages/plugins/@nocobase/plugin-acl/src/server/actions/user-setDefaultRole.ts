@@ -9,6 +9,7 @@
 
 import { Context, Next } from '@nocobase/actions';
 import { UNION_ROLE_KEY } from '../constants';
+import { Model } from '@nocobase/database';
 
 export async function setDefaultRole(ctx: Context, next: Next) {
   const {
@@ -56,7 +57,7 @@ export async function setDefaultRole(ctx: Context, next: Next) {
       },
       transaction,
     });
-    let model;
+    let model: Model;
     if (targetUserRole) {
       await repository.model.update({ default: true }, { where: { userId: currentUser.id, roleName }, transaction });
       model = targetUserRole.set('default', true);
@@ -70,7 +71,9 @@ export async function setDefaultRole(ctx: Context, next: Next) {
         transaction,
       });
     }
-    db.emitAsync('rolesUsers.afterSave', model);
+    if (model) {
+      db.emitAsync('rolesUsers.afterSave', model);
+    }
   });
 
   ctx.body = 'ok';
