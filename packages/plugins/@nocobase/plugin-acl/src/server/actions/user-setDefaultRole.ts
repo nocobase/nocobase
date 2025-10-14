@@ -8,6 +8,7 @@
  */
 
 import { Context, Next } from '@nocobase/actions';
+import { UNION_ROLE_KEY } from '../constants';
 
 export async function setDefaultRole(ctx: Context, next: Next) {
   const {
@@ -59,7 +60,7 @@ export async function setDefaultRole(ctx: Context, next: Next) {
     if (targetUserRole) {
       await repository.model.update({ default: true }, { where: { userId: currentUser.id, roleName }, transaction });
       model = targetUserRole.set('default', true);
-    } else {
+    } else if (roleName === UNION_ROLE_KEY) {
       model = await repository.create({
         values: {
           userId: currentUser.id,
