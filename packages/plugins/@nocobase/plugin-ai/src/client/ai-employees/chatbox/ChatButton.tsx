@@ -13,7 +13,7 @@ import icon from '../icon.svg';
 import { css } from '@emotion/css';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
 import { RightOutlined, LeftOutlined, HolderOutlined } from '@ant-design/icons';
-import { useToken } from '@nocobase/client';
+import { useMobileLayout, useToken } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
 import { ShortcutList } from '../shortcuts/ShortcutList';
@@ -26,6 +26,7 @@ import { AIEmployeeShortcutModel } from '../flow/models';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
+  const { isMobileLayout } = useMobileLayout();
   ctx.engine.flowSettings.on('beforeOpen', (event) => {
     if (event?.model instanceof AIEmployeeShortcutModel) {
       return;
@@ -89,62 +90,64 @@ export const ChatButton: React.FC = observer(() => {
   }
 
   return (
-    <div
-      className={css`
-        z-index: 1050;
-        display: flex;
-        border-radius: 8px;
-        gap: 8px;
-        position: fixed;
-        bottom: 42px;
-        align-items: center;
-        inset-inline-end: 8px;
-        width: fit-content;
-        height: 60px;
-        padding: 4px;
+    !isMobileLayout && (
+      <div
+        className={css`
+          z-index: 1050;
+          display: flex;
+          border-radius: 8px;
+          gap: 8px;
+          position: fixed;
+          bottom: 42px;
+          align-items: center;
+          inset-inline-end: 8px;
+          width: fit-content;
+          height: 60px;
+          padding: 4px;
 
-        background: rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(20px) saturate(180%);
-        -webkit-backdrop-filter: blur(20px) saturate(180%);
-        border: 1px solid rgba(255, 255, 255, 0.4);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-      `}
-    >
-      <>
-        <Button
-          variant="text"
-          color="default"
-          icon={!folded ? <RightOutlined /> : <LeftOutlined />}
-          style={{
-            height: '52px',
-            width: '12px',
-            fontSize: token.fontSizeSM,
-          }}
-          onClick={() => setFolded(!folded)}
-        />
-      </>
-
-      {!folded && (
+          background: rgba(255, 255, 255, 0.2);
+          backdrop-filter: blur(20px) saturate(180%);
+          -webkit-backdrop-filter: blur(20px) saturate(180%);
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        `}
+      >
         <>
-          <ShortcutList />
-          <Divider
-            type="vertical"
+          <Button
+            variant="text"
+            color="default"
+            icon={!folded ? <RightOutlined /> : <LeftOutlined />}
             style={{
-              height: '50px',
+              height: '52px',
+              width: '12px',
+              fontSize: token.fontSizeSM,
             }}
+            onClick={() => setFolded(!folded)}
           />
-          <Dropdown menu={{ items }} placement="topRight">
-            <Avatar
-              src={icon}
-              size={52}
-              shape="square"
-              onClick={() => {
-                setOpen(!open);
+        </>
+
+        {!folded && (
+          <>
+            <ShortcutList />
+            <Divider
+              type="vertical"
+              style={{
+                height: '50px',
               }}
             />
-          </Dropdown>
-        </>
-      )}
-    </div>
+            <Dropdown menu={{ items }} placement="topRight">
+              <Avatar
+                src={icon}
+                size={52}
+                shape="square"
+                onClick={() => {
+                  setOpen(!open);
+                }}
+              />
+            </Dropdown>
+          </>
+        )}
+      </div>
+    )
   );
 });
