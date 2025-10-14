@@ -4,7 +4,7 @@
   "displayName.zh-CN": "错误处理器",
   "description": "Handling application errors and exceptions.",
   "description.zh-CN": "处理应用程序中的错误和异常。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {

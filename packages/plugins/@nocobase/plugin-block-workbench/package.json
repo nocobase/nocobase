@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-block-workbench",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "displayName": "Block: Action panel",
   "displayName.zh-CN": "区块：操作面板",
   "description": "Centrally manages and displays various actions, allowing users to efficiently perform tasks. It supports extensibility, with current action types including pop-ups, links, scanning, and custom requests.",

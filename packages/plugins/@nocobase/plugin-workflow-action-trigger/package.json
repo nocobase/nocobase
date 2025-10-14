@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流：操作后事件",
   "description": "Triggered after the completion of a request initiated through an action button or API, such as after adding, updating, deleting data, or \"submit to workflow\". Suitable for data processing, sending notifications, etc., after actions are completed.",
   "description.zh-CN": "通过操作按钮或 API 发起请求并在执行完成后触发，比如新增、更新、删除数据或者“提交至工作流”之后。适用于在操作完成后进行数据处理、发送通知等。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/plugins/workflow-action-trigger",

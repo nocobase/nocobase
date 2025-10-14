@@ -4,7 +4,7 @@
   "description": "Provides a unified management service that includes channel configuration, logging, and other features, supporting the configuration of various notification channels, including in-app message and email.",
   "displayName.zh-CN": "通知管理",
   "description.zh-CN": "提供统一的管理服务，涵盖渠道配置、日志记录等功能，支持多种通知渠道的配置，包括站内信和电子邮件等。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "homepage": "https://docs.nocobase.com/handbook/notification-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/notification-manager",
   "main": "dist/server/index.js",

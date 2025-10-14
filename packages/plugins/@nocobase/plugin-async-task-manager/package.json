@@ -4,7 +4,7 @@
   "displayName.zh-CN": "异步任务管理器",
   "description": "Manage and monitor asynchronous tasks such as data import/export. Support task progress tracking and notification.",
   "description.zh-CN": "管理和监控数据导入导出等异步任务。支持任务进度跟踪和通知。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "1.x",

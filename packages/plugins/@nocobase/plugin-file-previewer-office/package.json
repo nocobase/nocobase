@@ -4,7 +4,7 @@
   "displayName.zh-CN": "Office 文件预览",
   "description": "A plugin for previewing office files via Microsoft live preview service.",
   "description.zh-CN": "基于微软在线服务预览 Office 文件的插件。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "1.x",

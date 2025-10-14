@@ -4,7 +4,7 @@
   "displayName.zh-CN": "权限控制",
   "description": "Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.",
   "description.zh-CN": "基于角色、资源和操作的权限控制，可以精确控制界面配置权限、数据操作权限、菜单访问权限、插件权限。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/acl",

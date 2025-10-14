@@ -4,7 +4,7 @@
   "displayName.zh-CN": "多应用数据表共享",
   "description": "",
   "description.zh-CN": "",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",

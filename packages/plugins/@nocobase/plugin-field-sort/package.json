@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-field-sort",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "displayName": "Collection field: Sort",
   "displayName.zh-CN": "数据表字段：排序",

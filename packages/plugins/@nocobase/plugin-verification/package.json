@@ -4,7 +4,7 @@
   "displayName.zh-CN": "验证",
   "description": "User identity verification management, including SMS, TOTP authenticator, with extensibility.",
   "description.zh-CN": "用户身份验证管理，包含短信、TOTP 认证器等，可扩展。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/verification",

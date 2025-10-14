@@ -4,7 +4,7 @@
   "displayName.zh-CN": "数据表字段：Markdown(Vditor)",
   "description": "Used to store Markdown and render it using Vditor editor, supports common Markdown syntax such as list, code, quote, etc., and supports uploading images, recordings, etc.It also allows for instant rendering, where what you see is what you get.",
   "description.zh-CN": "用于存储 Markdown，并使用 Vditor 编辑器渲染，支持常见 Markdown 语法，如列表，代码，引用等，并支持上传图片，录音等。同时可以做到即时渲染，所见即所得。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/field-markdown-vditor",

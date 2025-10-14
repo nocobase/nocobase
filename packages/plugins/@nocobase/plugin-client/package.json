@@ -4,7 +4,7 @@
   "displayName.zh-CN": "WEB 客户端",
   "description": "Provides a client interface for the NocoBase server",
   "description.zh-CN": "为 NocoBase 服务端提供客户端界面",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {

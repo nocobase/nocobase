@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-data-visualization",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "displayName": "Data visualization",
   "displayName.zh-CN": "数据可视化",
   "description": "Provides data visualization feature, including chart block and chart filter block, support line charts, area charts, bar charts and more than a dozen kinds of charts, you can also extend more chart types.",

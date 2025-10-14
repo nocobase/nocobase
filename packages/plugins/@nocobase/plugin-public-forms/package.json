@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-public-forms",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "main": "dist/server/index.js",
   "displayName": "Public forms",
   "displayName.zh-CN": "公开表单",

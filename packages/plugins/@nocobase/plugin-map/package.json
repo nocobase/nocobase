@@ -2,7 +2,7 @@
   "name": "@nocobase/plugin-map",
   "displayName": "Block: Map",
   "displayName.zh-CN": "区块：地图",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "description": "Map block, support Gaode map and Google map, you can also extend more map types.",
   "description.zh-CN": "地图区块，支持高德地图和 Google 地图，你也可以扩展更多地图类型。",
   "license": "AGPL-3.0",

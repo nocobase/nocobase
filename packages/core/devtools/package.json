@@ -1,13 +1,13 @@
 {
   "name": "@nocobase/devtools",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./src/index.js",
   "dependencies": {
-    "@nocobase/build": "1.8.27",
-    "@nocobase/client": "1.8.27",
-    "@nocobase/test": "1.8.27",
+    "@nocobase/build": "1.8.28",
+    "@nocobase/client": "1.8.28",
+    "@nocobase/test": "1.8.28",
     "@types/koa": "^2.15.0",
     "@types/koa-bodyparser": "^4.3.4",
     "@types/lodash": "^4.14.177",

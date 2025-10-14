@@ -4,7 +4,7 @@
   "displayName.zh-CN": "UI schema 存储服务",
   "description": "Provides centralized UI schema storage service.",
   "description.zh-CN": "提供中心化的 UI schema 存储服务。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/ui-schema-storage",

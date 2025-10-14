@@ -4,7 +4,7 @@
   "displayName.zh-CN": "数据源：主数据库",
   "description": "NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.",
   "description.zh-CN": "NocoBase 主数据库，支持 PostgreSQL、MySQL、MariaDB 等关系型数据库。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/data-source-main",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-source-main",

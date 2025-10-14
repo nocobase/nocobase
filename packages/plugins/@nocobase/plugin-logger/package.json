@@ -4,7 +4,7 @@
   "displayName.zh-CN": "日志",
   "description": "Server-side logs, mainly including API request logs and system runtime logs, and allows to package and download log files.",
   "description.zh-CN": "服务端日志，主要包括接口请求日志和系统运行日志，并支持打包和下载日志文件。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/logger",

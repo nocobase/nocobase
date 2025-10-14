@@ -4,7 +4,7 @@
   "displayName.zh-CN": "多应用管理器",
   "description": "Dynamically create multiple apps without separate deployments.",
   "description.zh-CN": "无需单独部署即可动态创建多个应用。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/multi-app-manager",

@@ -4,7 +4,7 @@
   "displayName.zh-CN": "区块：模板",
   "description": "Create and manage block templates for reuse on pages.",
   "description.zh-CN": "创建和管理区块模板，用于在页面中重复使用。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-template",

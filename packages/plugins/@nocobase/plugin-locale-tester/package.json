@@ -2,7 +2,7 @@
   "name": "@nocobase/plugin-locale-tester",
   "displayName": "Locale tester",
   "displayName.zh-CN": "翻译测试工具",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "homepage": "https://github.com/nocobase/locales",
   "main": "dist/server/index.js",
   "peerDependencies": {

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notification-in-app-message",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "displayName": "Notification: In-app message",
   "displayName.zh-CN": "通知：站内信",
   "description": "It supports users in receiving real-time message notifications within the NocoBase application.",

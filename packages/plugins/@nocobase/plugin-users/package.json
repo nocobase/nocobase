@@ -4,7 +4,7 @@
   "displayName.zh-CN": "用户",
   "description": "Provides basic user model, as well as created by and updated by fields.",
   "description.zh-CN": "提供了基础的用户模型，以及创建人和最后更新人字段。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/users",

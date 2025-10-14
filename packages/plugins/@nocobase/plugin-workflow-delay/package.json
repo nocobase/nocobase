@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流：延时节点",
   "description": "Could be used in workflow parallel branch for waiting other branches.",
   "description.zh-CN": "可用于工作流并行分支中等待其他分支执行完成。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-delay",

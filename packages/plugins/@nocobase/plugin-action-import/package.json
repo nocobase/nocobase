@@ -4,7 +4,7 @@
   "displayName.zh-CN": "操作：导入记录",
   "description": "Import records using excel templates. You can configure which fields to import and templates will be generated automatically.",
   "description.zh-CN": "使用 Excel 模板导入数据，可以配置导入哪些字段，自动生成模板。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-import",

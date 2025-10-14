@@ -4,7 +4,7 @@
   "displayName.zh-CN": "操作：导出记录",
   "description": "Export filtered records to excel, you can configure which fields to export.",
   "description.zh-CN": "导出筛选后的记录到 Excel 中，可以配置导出哪些字段。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-export",

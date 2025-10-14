@@ -4,7 +4,7 @@
   "displayName.zh-CN": "区块：iframe",
   "description": "Create an iframe block on the page to embed and display external web pages or content.",
   "description.zh-CN": "在页面上创建和管理iframe，用于嵌入和展示外部网页或内容。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-iframe",

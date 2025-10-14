@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流：并行分支节点",
   "description": "Could be used for parallel execution of branch processes in the workflow.",
   "description.zh-CN": "用于在工作流中需要并行执行的分支流程。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-parallel",

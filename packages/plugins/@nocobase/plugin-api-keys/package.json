@@ -4,7 +4,7 @@
   "displayName.zh-CN": "认证：API 密钥",
   "description": "Allows users to use API key to access application's HTTP API",
   "description.zh-CN": "允许用户使用 API 密钥访问应用的 HTTP API",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/api-keys",

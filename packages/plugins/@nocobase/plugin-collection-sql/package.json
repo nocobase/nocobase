@@ -4,7 +4,7 @@
   "displayName.zh-CN": "数据表: SQL",
   "description": "Provides SQL collection template",
   "description.zh-CN": "提供 SQL 数据表模板",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "homepage": "https://docs-cn.nocobase.com/handbook/collection-sql",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/collection-sql",
   "main": "dist/server/index.js",

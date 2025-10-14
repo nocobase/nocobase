@@ -4,7 +4,7 @@
   "displayName.zh-CN": "数据表字段：自动编码",
   "description": "Automatically generate codes based on configured rules, supporting combinations of dates, numbers, and text.",
   "description.zh-CN": "根据配置的规则自动生成编码，支持日期、数字、文本的组合。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/field-sequence",

@@ -4,7 +4,7 @@
   "displayName.zh-CN": "AI 集成",
   "description": "Support integration with AI services, providing AI-related workflow nodes to enhance business processing capabilities.",
   "description.zh-CN": "支持接入 AI 服务，提供 AI 相关的工作流节点，增强业务处理能力。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "1.x",

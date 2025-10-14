@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流：循环节点",
   "description": "Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.",
   "description.zh-CN": "用于对一个数组中的每个值进行重复的子流程处理，也可用于固定次数的重复子流程处理。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-loop",

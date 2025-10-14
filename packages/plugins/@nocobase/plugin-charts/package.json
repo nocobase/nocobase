@@ -4,7 +4,7 @@
   "displayName.zh-CN": "图表（废弃）",
   "description": "The plugin has been deprecated, please use the data visualization plugin instead.",
   "description.zh-CN": "已废弃插件，请使用数据可视化插件代替。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {

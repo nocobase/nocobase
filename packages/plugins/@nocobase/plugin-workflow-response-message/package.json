@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-response-message",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "displayName": "Workflow: Response message",
   "displayName.zh-CN": "工作流：响应消息",
   "description": "Used for assemble response message and showing to client in form event and request interception workflows.",

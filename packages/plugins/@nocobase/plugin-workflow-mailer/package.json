@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流：邮件发送节点",
   "description": "Send email in workflow.",
   "description.zh-CN": "可用于在工作流中发送电子邮件。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-smtp-mailer",

@@ -4,7 +4,7 @@
   "displayName.zh-CN": "数据表字段：关系快照",
   "description": "When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.",
   "description.zh-CN": "在添加数据时，为它的关系数据创建快照，并保存在当前的数据中。关系数据更新时，快照不会更新。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/field-snapshot",

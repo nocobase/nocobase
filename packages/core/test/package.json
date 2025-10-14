@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/test",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "main": "lib/index.js",
   "module": "./src/index.ts",
   "types": "./lib/index.d.ts",
@@ -51,7 +51,7 @@
   },
   "dependencies": {
     "@faker-js/faker": "8.1.0",
-    "@nocobase/server": "1.8.27",
+    "@nocobase/server": "1.8.28",
     "@playwright/test": "^1.45.3",
     "@testing-library/jest-dom": "^6.4.2",
     "@testing-library/react": "^14.0.0",

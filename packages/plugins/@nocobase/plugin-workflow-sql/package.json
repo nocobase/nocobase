@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流：SQL 节点",
   "description": "Execute SQL statements in workflow.",
   "description.zh-CN": "可用于在工作流中对数据库执行任意 SQL 语句。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-sql",

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notification-email",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "displayName": "Notification: Email",
   "displayName.zh-CN": "通知：电子邮件",
   "description": "Used for sending email notifications with built-in SMTP transport.",

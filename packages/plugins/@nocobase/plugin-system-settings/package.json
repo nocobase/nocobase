@@ -4,7 +4,7 @@
   "displayName.zh-CN": "系统设置",
   "description": "Used to adjust the system title, logo, language, etc.",
   "description.zh-CN": "用于调整系统的标题、LOGO、语言等。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/system-settings",

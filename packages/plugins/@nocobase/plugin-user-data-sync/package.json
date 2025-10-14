@@ -4,7 +4,7 @@
   "displayName.zh-CN": "用户数据同步",
   "description": "Reigster and manage extensible user data synchronization sources, with HTTP API provided by default. Support for synchronizing data to resources such as users and departments.",
   "description.zh-CN": "注册和管理可扩展的用户数据同步来源，默认提供 HTTP API。支持向用户和部门等资源同步数据。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "1.x",

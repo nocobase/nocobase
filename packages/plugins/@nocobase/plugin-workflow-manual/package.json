@@ -4,7 +4,7 @@
   "displayName.zh-CN": "工作流：人工处理节点",
   "description": "Could be used for workflows which some of decisions are made by users.",
   "description.zh-CN": "用于人工控制部分决策的流程。",
-  "version": "1.8.27",
+  "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-manual",
