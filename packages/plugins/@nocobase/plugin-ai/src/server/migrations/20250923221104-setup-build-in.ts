@@ -7,9 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { useDialog } from './useDialog';
-export { useDrawer } from './useDrawer';
-export { usePage } from './usePage';
-export { usePopover } from './usePopover';
-export { ViewNavigation } from './ViewNavigation';
-export { createViewMeta } from './createViewMeta';
+import { Migration } from '@nocobase/server';
+import PluginAIServer from '../plugin';
+
+export default class extends Migration {
+  on = 'afterSync'; // 'beforeLoad' or 'afterLoad'
+  appVersion = '<2.0.0';
+
+  async up() {
+    await (this.plugin as PluginAIServer).setupBuiltIn();
+  }
+}

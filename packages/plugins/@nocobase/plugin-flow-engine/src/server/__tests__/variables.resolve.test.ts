@@ -158,7 +158,7 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
         // missing contextParams for view.record -> keep placeholder
         { id: 't2', template: { id: '{{ ctx.view.record.id }}' } },
       ],
-    } as any;
+    };
     const res = await execResolve(payload, 1);
     const results = res.body?.results || [];
     const r1 = results.find((r: any) => r.id === 't1');
@@ -186,6 +186,52 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.id).toBe(1);
     expect(typeof data.role).toBe('string');
     expect(data.role.length).toBeGreaterThan(0);
+  });
+
+  it('should resolve multi-level appends for deep associations (user.roles.users.nickname)', async () => {
+    // Ensure there is at least one role which includes current user (id=1)
+    const roleName = 'r_test_multi_appends';
+    const rolesRepo = app.db.getRepository('roles');
+    const existing = await rolesRepo.findOne({ filter: { name: roleName } }).catch(() => null);
+    if (!existing) {
+      await rolesRepo.create({
+        values: {
+          name: roleName,
+          title: 'Test Multi Appends',
+          allowConfigure: true,
+        },
+      });
+    }
+    const userRolesRepo: any = app.db.getRepository('users.roles', 1);
+    try {
+      await userRolesRepo.add(roleName);
+    } catch (_) {
+      // ignore if already added
+    }
+
+    const payload = {
+      template: {
+        nicks: '{{ ctx.user.roles.users.nickname }}',
+      },
+    };
+    const res = await execResolve(payload, 1);
+    const data = res.body?.data ?? res.body;
+
+    expect(Array.isArray(data.nicks)).toBe(true);
+    expect(data.nicks.length).toBeGreaterThan(0);
+
+    // Validate it contains current user's nickname when available
+    const u = await app.db
+      .getRepository('users')
+      .findOne({ filterByTk: 1 })
+      .catch(() => null);
+    const hasGetter = !!(u && typeof (u as { get?: (k: string) => unknown }).get === 'function');
+    const nick = hasGetter
+      ? (u as { get: (k: string) => unknown }).get('nickname')
+      : (u as { nickname?: unknown } | null)?.nickname;
+    if (nick) {
+      expect(data.nicks).toContain(nick);
+    }
   });
 
   it('should resolve array-indexed dynamic record via flattened key (list.0)', async () => {

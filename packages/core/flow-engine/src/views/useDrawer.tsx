@@ -12,7 +12,7 @@ import DOMPurify from 'dompurify';
 import { observer } from '..';
 import { FlowContext, FlowEngineContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
-import { createViewMeta } from './createViewMeta';
+import { registerPopupVariable } from './createViewMeta';
 import DrawerComponent from './DrawerComponent';
 import usePatchElement from './usePatchElement';
 import { FlowEngineProvider } from '../provider';
@@ -44,7 +44,7 @@ export function useDrawer() {
     let currentHeader: any = null;
 
     // Footer 组件实现
-    const FooterComponent = ({ children, ...props }) => {
+    const FooterComponent: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       React.useEffect(() => {
         currentFooter = children;
         drawerRef.current?.setFooter(children);
@@ -59,10 +59,10 @@ export function useDrawer() {
     };
 
     // Header 组件实现
-    const HeaderComponent = ({ ...props }) => {
+    const HeaderComponent: React.FC<{ title?: React.ReactNode; extra?: React.ReactNode }> = (props) => {
       React.useEffect(() => {
         currentHeader = props;
-        drawerRef.current?.setHeader(props as any);
+        drawerRef.current?.setHeader(props);
 
         return () => {
           currentHeader = null;
@@ -75,7 +75,7 @@ export function useDrawer() {
 
     // 构造 currentDrawer 实例
     const currentDrawer = {
-      type: 'drawer',
+      type: 'drawer' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
       destroy: () => drawerRef.current?.destroy(),
@@ -102,11 +102,6 @@ export function useDrawer() {
     };
 
     const ctx = new FlowContext();
-    ctx.defineProperty('view', {
-      get: () => currentDrawer,
-      meta: createViewMeta(ctx, () => currentDrawer),
-      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
-    });
     // 为当前视图创建作用域引擎（隔离实例与缓存）
     const scopedEngine = createViewScopedEngine(flowContext.engine);
     // 先将引擎暴露给视图上下文，再按需继承父上下文
@@ -117,6 +112,14 @@ export function useDrawer() {
     } else {
       ctx.addDelegate(flowContext.engine.context);
     }
+
+    ctx.defineProperty('view', {
+      get: () => currentDrawer,
+      // meta: createViewMeta(ctx),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+    });
+    // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
+    registerPopupVariable(ctx, currentDrawer);
 
     // 内部组件，在 Provider 内部计算 content
     const DrawerWithContext: React.FC = observer(
