@@ -388,8 +388,16 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     return (
       <>
         <DndProvider>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <Space>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              marginBottom: this.context.themeToken.margin,
+              gap: this.context.themeToken.marginXXS,
+            }}
+          >
+            <Space wrap>
               {this.mapSubModels('actions', (action) => {
                 // @ts-ignore
                 if (action.props.position === 'left') {
@@ -407,7 +415,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
               {/* 占位 */}
               <span></span>
             </Space>
-            <Space>
+            <Space wrap>
               {this.mapSubModels('actions', (action) => {
                 // @ts-ignore
                 if (action.props.position !== 'left') {
