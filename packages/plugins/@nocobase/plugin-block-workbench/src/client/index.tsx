@@ -28,6 +28,8 @@ import {
   workbenchActionSettingsCustomRequest,
 } from './WorkbenchCustomRequestActionSchemaInitializerItem';
 import { lazy } from '@nocobase/client';
+import models from './models';
+
 export class PluginBlockWorkbenchClient extends Plugin {
   async load() {
     const { QRCodeScanner } = lazy(() => import('./components/qrcode-scanner'), 'QRCodeScanner');
@@ -83,6 +85,8 @@ export class PluginBlockWorkbenchClient extends Plugin {
     this.app.schemaInitializerManager.addItem('workbench:configureActions', `customRequest`, {
       Component: WorkbenchCustomRequestActionSchemaInitializerItem,
     });
+
+    this.flowEngine.registerModels(models);
   }
 }
 
