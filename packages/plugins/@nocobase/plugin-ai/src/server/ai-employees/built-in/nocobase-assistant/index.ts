@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Migration } from '@nocobase/server';
-import PluginAIServer from '../plugin';
+import profile from './profile';
 
-export default class extends Migration {
-  on = 'afterSync'; // 'beforeLoad' or 'afterLoad'
-  appVersion = '<1.9.0';
-
-  async up() {
-    await (this.plugin as PluginAIServer).setupBuiltIn();
-  }
-}
+export default {
+  username: 'cole',
+  description: 'NocoBase Assistant',
+  profile,
+  skillSettings: {
+    skills: [],
+  },
+};

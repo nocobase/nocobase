@@ -12,7 +12,7 @@ import DOMPurify from 'dompurify';
 import { observer } from '..';
 import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
-import { createViewMeta } from './createViewMeta';
+import { registerPopupVariable } from './createViewMeta';
 import DialogComponent from './DialogComponent';
 import usePatchElement from './usePatchElement';
 import { FlowEngineProvider } from '../provider';
@@ -44,7 +44,7 @@ export function useDialog() {
     let currentHeader: any = null;
 
     // Footer 组件实现
-    const FooterComponent = ({ children, ...props }) => {
+    const FooterComponent: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       React.useEffect(() => {
         currentFooter = children;
         dialogRef.current?.setFooter(children);
@@ -59,10 +59,10 @@ export function useDialog() {
     };
 
     // Header 组件实现
-    const HeaderComponent = ({ ...props }) => {
+    const HeaderComponent: React.FC<{ title?: React.ReactNode; extra?: React.ReactNode }> = (props) => {
       React.useEffect(() => {
         currentHeader = props;
-        dialogRef.current?.setHeader(props as any);
+        dialogRef.current?.setHeader(props);
 
         return () => {
           currentHeader = null;
@@ -75,7 +75,7 @@ export function useDialog() {
 
     // 构造 currentDialog 实例
     const currentDialog = {
-      type: 'dialog',
+      type: 'dialog' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
       destroy: () => dialogRef.current?.destroy(),
@@ -102,11 +102,6 @@ export function useDialog() {
     };
 
     const ctx = new FlowContext();
-    ctx.defineProperty('view', {
-      get: () => currentDialog,
-      meta: createViewMeta(ctx, () => currentDialog),
-      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
-    });
     // 为当前视图创建作用域引擎（隔离实例与缓存）
     const scopedEngine = createViewScopedEngine(flowContext.engine);
     ctx.defineProperty('engine', { value: scopedEngine });
@@ -117,6 +112,13 @@ export function useDialog() {
       ctx.addDelegate(flowContext.engine.context);
     }
 
+    ctx.defineProperty('view', {
+      get: () => currentDialog,
+      // meta: createViewMeta(ctx),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+    });
+    // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
+    registerPopupVariable(ctx, currentDialog);
     // 内部组件，在 Provider 内部计算 content
     const DialogWithContext = observer(
       () => {

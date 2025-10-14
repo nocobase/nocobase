@@ -103,7 +103,7 @@ export const FlowRoute = () => {
     if (!layoutContentRef.current) {
       return;
     }
-    routeModel.context.defineProperty('layoutContentElement', {
+    flowEngine.context.defineProperty('layoutContentElement', {
       get: () => layoutContentRef.current,
     });
     routeModel.context.defineProperty('currentRoute', {

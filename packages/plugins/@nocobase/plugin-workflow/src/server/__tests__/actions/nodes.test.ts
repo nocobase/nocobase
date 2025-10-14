@@ -12,7 +12,7 @@ import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import { JOB_STATUS } from '../../constants';
 
-describe('workflow > actions > workflows', () => {
+describe('workflow > actions > nodes', () => {
   let app: MockServer;
   let agent;
   let db: Database;
@@ -290,6 +290,366 @@ describe('workflow > actions > workflows', () => {
 
       const nodes = await workflow.getNodes();
       expect(nodes.length).toBe(0);
+    });
+
+    it('target has no upstream, 1 branch, no downstream, no `keepBranch`', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      await agent.resource('flow_nodes').destroy({
+        filterByTk: n1.id,
+      });
+
+      const nodes = await workflow.getNodes();
+      expect(nodes.length).toBe(0);
+    });
+
+    it('target has no upstream, 1 branch, no downstream, `keepBranch` as branch 1', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const res1 = await agent.resource('flow_nodes').destroy({
+        filterByTk: n1.id,
+        keepBranch: 1,
+      });
+      expect(res1.status).toBe(400);
+
+      const res2 = await agent.resource('flow_nodes').destroy({
+        filterByTk: n1.id,
+        keepBranch: 'a',
+      });
+      expect(res2.status).toBe(400);
+
+      await agent.resource('flow_nodes').destroy({
+        filterByTk: n1.id,
+        keepBranch: 0,
+      });
+
+      const nodes = await workflow.getNodes();
+      expect(nodes.length).toBe(1);
+      expect(nodes[0].id).toBe(n2.id);
+    });
+
+    it('target has no upstream, 2 branches, no downstream, `keepBranch` as branch 1', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 1,
+      });
+
+      await agent.resource('flow_nodes').destroy({
+        filterByTk: n1.id,
+        keepBranch: 0,
+      });
+
+      const nodes = await workflow.getNodes();
+      expect(nodes.length).toBe(1);
+      expect(nodes[0].id).toBe(n2.id);
+    });
+
+    it('target has no upstream, 2 branches, no downstream, `keepBranch` as branch 2', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 1,
+      });
+
+      await agent.resource('flow_nodes').destroy({
+        filterByTk: n1.id,
+        keepBranch: 1,
+      });
+
+      const nodes = await workflow.getNodes();
+      expect(nodes.length).toBe(1);
+      expect(nodes[0].id).toBe(n3.id);
+    });
+
+    it('target has no upstream, 1 branch, has downstream, `keepBranch` as branch 1', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n3);
+
+      await agent.resource('flow_nodes').destroy({
+        filterByTk: n1.id,
+        keepBranch: 0,
+      });
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      expect(nodes.length).toBe(2);
+      expect(nodes[0].id).toBe(n2.id);
+      expect(nodes[1].id).toBe(n3.id);
+    });
+
+    it('target has no upstream, 1 branch with 2 nodes, has downstream, `keepBranch` as branch 1', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n2.id,
+      });
+      await n2.setDownstream(n3);
+
+      const n4 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n4);
+
+      await agent.resource('flow_nodes').destroy({
+        filterByTk: n1.id,
+        keepBranch: 0,
+      });
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      expect(nodes.length).toBe(3);
+      expect(nodes[0].id).toBe(n2.id);
+      expect(nodes[1].id).toBe(n3.id);
+      expect(nodes[1].downstreamId).toBe(n4.id);
+      expect(nodes[2].id).toBe(n4.id);
+      expect(nodes[2].upstreamId).toBe(n3.id);
+    });
+
+    it('target has upstream, 1 branch, has downstream, no `keepBranch`', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n2);
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n2.id,
+        branchIndex: 0,
+      });
+
+      const n4 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n2.setDownstream(n4);
+
+      await agent.resource('flow_nodes').destroy({
+        filterByTk: n2.id,
+      });
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      expect(nodes.length).toBe(2);
+      expect(nodes[0].id).toBe(n1.id);
+      expect(nodes[1].id).toBe(n4.id);
+    });
+
+    it('target has upstream, 1 branch, has downstream, `keepBranch` as 1', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n2);
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n2.id,
+        branchIndex: 0,
+      });
+
+      const n4 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n2.setDownstream(n4);
+
+      await agent.resource('flow_nodes').destroy({
+        filterByTk: n2.id,
+        keepBranch: 0,
+      });
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      expect(nodes.length).toBe(3);
+      expect(nodes[0].id).toBe(n1.id);
+      expect(nodes[1].id).toBe(n3.id);
+      expect(nodes[2].id).toBe(n4.id);
+    });
+
+    it('target as branch, 1 branch, no downstream, `keepBranch` as 1', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const n2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 1,
+      });
+
+      const n3 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n2.id,
+        branchIndex: 0,
+      });
+
+      const n4 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+      });
+      await n1.setDownstream(n4);
+
+      await agent.resource('flow_nodes').destroy({
+        filterByTk: n2.id,
+        keepBranch: 0,
+      });
+
+      const nodes = await workflow.getNodes({ order: [['id', 'asc']] });
+      expect(nodes.length).toBe(3);
+      expect(nodes[0].id).toBe(n1.id);
+      expect(nodes[0].downstreamId).toBe(n4.id);
+      expect(nodes[1].id).toBe(n3.id);
+      expect(nodes[1].upstreamId).toBe(n1.id);
+      expect(nodes[1].branchIndex).toBe(1);
+      expect(nodes[1].downstreamId).toBe(null);
+      expect(nodes[2].id).toBe(n4.id);
+      expect(nodes[2].upstreamId).toBe(n1.id);
     });
   });
 

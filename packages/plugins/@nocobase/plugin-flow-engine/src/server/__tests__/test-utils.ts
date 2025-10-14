@@ -13,7 +13,7 @@
  */
 import type { ResourcerContext } from '@nocobase/resourcer';
 import type { HttpRequestContext } from '../template/contexts';
-import { variables } from '../variables/registry';
+import { variables, inferSelectsFromUsage } from '../variables/registry';
 
 /**
  * 重置变量注册表：
@@ -31,7 +31,14 @@ export function resetVariablesRegistryForTest() {
   reg.register({
     name: 'user',
     scope: 'request',
-    attach: (flowCtx: HttpRequestContext, koaCtx: ResourcerContext) => {
+    attach: (
+      flowCtx: HttpRequestContext,
+      koaCtx: ResourcerContext,
+      _params?: unknown,
+      usage?: Record<string, string[]>,
+    ) => {
+      const paths = usage?.['user'] || [];
+      const { generatedAppends, generatedFields } = inferSelectsFromUsage(paths);
       flowCtx.defineProperty('user', {
         get: async () => {
           try {
@@ -40,7 +47,11 @@ export function resetVariablesRegistryForTest() {
             const ds = (koaCtx as any).app.dataSourceManager.get('main');
             const cm = ds.collectionManager;
             const repo = cm.db.getRepository('users');
-            const rec = await repo.findOne({ filterByTk: uid });
+            const rec = await repo.findOne({
+              filterByTk: uid,
+              fields: generatedFields,
+              appends: generatedAppends,
+            });
             return rec ? rec.toJSON?.() : undefined;
           } catch (_) {
             return undefined;
