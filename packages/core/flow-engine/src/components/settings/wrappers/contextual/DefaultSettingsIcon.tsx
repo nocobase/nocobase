@@ -182,7 +182,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         }
       },
     });
-  }, [model]);
+  }, [model, t]);
 
   const handleStepConfiguration = useCallback(
     (key: string) => {
@@ -223,7 +223,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         console.log(t('Configuration popup cancelled or error'), ':', error);
       }
     },
-    [model],
+    [model, t],
   );
 
   const handleMenuClick = useCallback(
@@ -255,6 +255,15 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   const getModelConfigurableFlowsAndSteps = useCallback(
     async (targetModel: FlowModel, modelKey?: string): Promise<FlowInfo[]> => {
       try {
+        try {
+          console.info('[EMBED-DBG] menu:getModelFlows', {
+            rootUid: model?.uid,
+            targetUid: targetModel?.uid,
+            className: targetModel?.constructor?.name,
+          });
+        } catch (_) {
+          /* noop */
+        }
         const flows = targetModel.getFlows();
 
         const flowsArray = Array.from(flows.values());
@@ -333,7 +342,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         return [];
       }
     },
-    [],
+    [model?.uid, t],
   );
 
   // 获取可配置的flows和steps
@@ -342,10 +351,10 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     const processedModels = new Set<string>(); // 防止循环引用
 
     const processModel = async (targetModel: FlowModel, depth: number, modelKey?: string) => {
-      // 限制递归深度为menuLevels
-      if (depth > menuLevels) {
-        return;
-      }
+      // 限制递归深度为menuLevels（但若存在 __embedded，则额外允许递归一次以包含原始区块菜单）
+      const embedded = (targetModel as any)?.subModels?.['__embedded'];
+      const hasEmbedded = !!embedded && embedded instanceof FlowModel;
+      if (depth > menuLevels && !hasEmbedded) return;
 
       // 防止循环引用
       const modelId = targetModel.uid || `temp-${Date.now()}`;
@@ -355,11 +364,24 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       processedModels.add(modelId);
 
       try {
+        try {
+          const subKeys = targetModel?.subModels ? Object.keys(targetModel.subModels) : [];
+          console.info('[EMBED-DBG] menu:processModel', {
+            rootUid: model?.uid,
+            uid: targetModel?.uid,
+            depth,
+            menuLevels,
+            subKeys,
+          });
+        } catch (_) {
+          /* noop */
+        }
         const modelFlows = await getModelConfigurableFlowsAndSteps(targetModel, modelKey);
         result.push(...modelFlows);
 
-        // 如果需要，处理子模型
-        if (depth < menuLevels && targetModel.subModels) {
+        // 如果需要，处理子模型；若存在 __embedded，则无论 depth 是否达到 menuLevels，都额外处理一次
+        const canRecurseChildren = depth < menuLevels;
+        if ((canRecurseChildren && targetModel.subModels) || hasEmbedded) {
           await Promise.all(
             Object.entries(targetModel.subModels).map(async ([subKey, subModelValue]) => {
               if (Array.isArray(subModelValue)) {
@@ -376,6 +398,19 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               }
             }),
           );
+          if (hasEmbedded) {
+            try {
+              console.info('[EMBED-DBG] menu:found-embedded', {
+                rootUid: model?.uid,
+                ownerUid: targetModel?.uid,
+                embeddedUid: (embedded as any)?.uid,
+                depth,
+              });
+            } catch (_) {
+              /* noop */
+            }
+            await processModel(embedded as FlowModel, depth + 1, '__embedded');
+          }
         }
       } finally {
         processedModels.delete(modelId);

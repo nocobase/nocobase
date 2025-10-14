@@ -975,6 +975,25 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       })) as JSRunner;
       return runner.run(code);
     });
+    // 在同一视图内创建隔离的子引擎（仅隔离实例与缓存，复用父引擎的注册/资源/设置）：
+    // kind: 'block'（默认，不加入视图栈） | 'view'（加入视图栈）
+    this.defineMethod('createIsolatedEngine', async (kind: 'block' | 'view' = 'block') => {
+      try {
+        const mod: any = await import('./ViewScopedFlowEngine');
+        const createViewScopedEngine = mod?.createViewScopedEngine;
+        if (typeof createViewScopedEngine !== 'function') {
+          throw new Error('createViewScopedEngine not available');
+        }
+        const scoped = createViewScopedEngine(this.engine);
+        if (kind !== 'view' && typeof scoped?.unlinkFromStack === 'function') {
+          scoped.unlinkFromStack();
+        }
+        return scoped;
+      } catch (e) {
+        this.logger?.error?.(e, 'createIsolatedEngine failed');
+        throw e;
+      }
+    });
     this.defineMethod('renderJson', function (template: any) {
       return this.resolveJsonTemplate(template);
     });
@@ -1193,7 +1212,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const g = globalThis as any;
       g.__nocobaseImportAsyncCache = g.__nocobaseImportAsyncCache || new Map<string, Promise<any>>();
       const cache: Map<string, Promise<any>> = g.__nocobaseImportAsyncCache;
-      if (cache.has(u)) return cache.get(u)!;
+      if (cache.has(u)) return cache.get(u) as Promise<any>;
       // 尝试使用原生 dynamic import（加上 vite/webpack 的 ignore 注释）
       const nativeImport = () => import(/* @vite-ignore */ /* webpackIgnore: true */ u);
       // 兜底方案：通过 eval 在运行时构造 import，避免被打包器接管
@@ -1713,7 +1732,7 @@ export class FlowRunJSContext extends FlowContext {
     const self = this as any as Function;
     let cacheForClass = __runjsDocCache.get(self);
     const cacheKey = String(locale || 'default');
-    if (cacheForClass && cacheForClass.has(cacheKey)) return cacheForClass.get(cacheKey)!;
+    if (cacheForClass && cacheForClass.has(cacheKey)) return cacheForClass.get(cacheKey) as RunJSDocMeta;
     const chain: Function[] = [];
     let cur: any = self;
     while (cur && cur.prototype) {

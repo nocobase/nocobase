@@ -574,16 +574,35 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                         })();
                   return (
                     <Droppable model={item}>
-                      <MemoFlowModelRenderer
-                        model={item}
-                        key={`${item.uid}:${rowIndex}`}
-                        fallback={this.itemFallback}
-                        showFlowSettings={this.flowEngine.flowSettings.enabled ? this.getItemFlowSettings() : false}
-                        showErrorFallback
-                        settingsMenuLevel={this.itemSettingsMenuLevel}
-                        showTitle
-                        extraToolbarItems={this.itemExtraToolbarItems}
-                      />
+                      {(() => {
+                        const resolvedLevel =
+                          (item as any)?.props?.settingsMenuLevel ??
+                          (item as any)?.settingsMenuLevel ??
+                          this.itemSettingsMenuLevel;
+                        try {
+                          console.info('[EMBED-DBG] Grid.renderItem menu-level', {
+                            gridUid: this.uid,
+                            itemUid: (item as any)?.uid,
+                            resolvedLevel,
+                            propsLevel: (item as any)?.props?.settingsMenuLevel,
+                            fieldLevel: (item as any)?.settingsMenuLevel,
+                          });
+                        } catch (_) {
+                          /* noop: debug logging failed */
+                        }
+                        return (
+                          <MemoFlowModelRenderer
+                            model={item}
+                            key={`${item.uid}:${rowIndex}`}
+                            fallback={this.itemFallback}
+                            showFlowSettings={this.flowEngine.flowSettings.enabled ? this.getItemFlowSettings() : false}
+                            showErrorFallback
+                            settingsMenuLevel={resolvedLevel}
+                            showTitle
+                            extraToolbarItems={this.itemExtraToolbarItems}
+                          />
+                        );
+                      })()}
                     </Droppable>
                   );
                 }}

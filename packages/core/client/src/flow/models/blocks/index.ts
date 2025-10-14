@@ -13,5 +13,6 @@ export * from './filter-form';
 export * from './filter-manager';
 export * from './form';
 export * from './js-block';
+export * from './embed/EmbedBlockModel';
 export * from './table';
 //
