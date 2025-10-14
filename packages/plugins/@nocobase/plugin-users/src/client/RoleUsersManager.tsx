@@ -32,10 +32,16 @@ const useRemoveUser = () => {
   const { refresh } = useResourceActionContext();
   return {
     async run() {
-      await api.resource('roles.users', role?.name).remove({
-        values: [record['id']],
-      });
-      refresh();
+      try {
+        await api.resource('roles.users', role?.name).remove({
+          values: [record['id']],
+        });
+        refresh();
+      } catch (error) {
+        // Error notification is already handled by APIClient
+        // Just prevent the refresh from being called
+        console.error('Failed to remove user from role:', error);
+      }
     },
   };
 };
@@ -54,11 +60,17 @@ const useBulkRemoveUsers = () => {
         message.warning(t('Please select users'));
         return;
       }
-      await api.resource('roles.users', role?.name).remove({
-        values: selected,
-      });
-      setState?.({ selectedRowKeys: [] });
-      refresh();
+      try {
+        await api.resource('roles.users', role?.name).remove({
+          values: selected,
+        });
+        setState?.({ selectedRowKeys: [] });
+        refresh();
+      } catch (error) {
+        // Error notification is already handled by APIClient
+        // Just prevent the refresh from being called
+        console.error('Failed to remove users from role:', error);
+      }
     },
   };
 };
