@@ -28,7 +28,7 @@ export class EmbedBlockModel extends BlockModel {
 
   get title() {
     if (this._targetModel?.title) {
-      const embedLabel = this.translate?.('引用');
+      const embedLabel = this.translate?.('Embed') || 'Embed';
       return `${this._targetModel.title} (${embedLabel})`;
     }
     return super.title;
@@ -199,6 +199,15 @@ EmbedBlockModel.registerFlow({
     target: {
       title: escapeT('Target model'),
       uiSchema: {
+        mode: {
+          title: escapeT('Embed mode'),
+          'x-component': 'Radio.Group',
+          'x-decorator': 'FormItem',
+          enum: [
+            { label: escapeT('Reference'), value: 'reference' },
+            { label: escapeT('Copy'), value: 'copy' },
+          ],
+        },
         targetUid: {
           title: escapeT('Target UID'),
           'x-component': 'Input',
@@ -210,8 +219,71 @@ EmbedBlockModel.registerFlow({
           ],
         },
       },
-      handler(ctx, params) {
+      defaultParams() {
+        return { mode: 'reference' };
+      },
+      async handler(ctx, params) {
         const v = (params?.targetUid || '').trim();
+        const mode = params?.mode || 'reference';
+        if (!v) {
+          ctx.model.setStepParams('embedSettings', 'target', { targetUid: '' });
+          return;
+        }
+        if (mode === 'copy') {
+          try {
+            const engine = ctx.model.flowEngine;
+            const source = engine.getModel(v) || (await engine.loadModel({ uid: v }));
+            if (!source) return;
+            const json = source.serialize();
+            // 收集所有 uid
+            const set = new Set<string>();
+            const collect = (node: any) => {
+              if (!node || typeof node !== 'object') return;
+              if (typeof node.uid === 'string') set.add(node.uid);
+              const sms = node.subModels;
+              if (sms && typeof sms === 'object') {
+                for (const key of Object.keys(sms)) {
+                  const val = (sms as any)[key];
+                  if (Array.isArray(val)) val.forEach((child) => collect(child));
+                  else if (val && typeof val === 'object') collect(val);
+                }
+              }
+            };
+            collect(json);
+            // 构建映射：根 uid 保持当前 embed 的 uid，其它生成新 uid
+            const map = new Map<string, string>();
+            map.set(json.uid, ctx.model.uid);
+            // 为了生成 uid，复用 window.crypto 或简洁随机（这里用 Math.random + Date，可替换为 uid 库）
+            const gen = () =>
+              typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                ? (crypto as any).randomUUID()
+                : `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 10)}`;
+            set.forEach((oldId) => {
+              if (oldId === json.uid) return;
+              map.set(oldId, gen());
+            });
+            let str = JSON.stringify(json);
+            for (const [oldId, newId] of map.entries()) {
+              const re = new RegExp(oldId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+              str = str.replace(re, newId);
+            }
+            const newJson = JSON.parse(str);
+            const newModel = await engine.replaceModel(ctx.model.uid, newJson);
+            try {
+              // 清理旧缓存并强制执行 beforeRender，避免沿用旧 uid 的缓存导致临时样式异常
+              newModel.invalidateFlowCache?.('beforeRender', true);
+              await newModel.dispatchEvent?.('beforeRender', undefined, { useCache: false, sequential: true });
+            } catch (e) {
+              // 忽略强制刷新错误，交给正常渲染流程
+            }
+            // 结束当前设置流程并关闭设置视图
+            ctx.exit();
+            return;
+          } catch (e) {
+            console.error('[EmbedBlockModel] copy mode failed:', e);
+          }
+        }
+        // 默认：引用模式
         ctx.model.setStepParams('embedSettings', 'target', { targetUid: v });
       },
     },
