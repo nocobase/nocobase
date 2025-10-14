@@ -119,6 +119,7 @@ export const linkageSetActionProps = defineAction({
             options={[
               { label: t('Visible'), value: 'visible' },
               { label: t('Hidden'), value: 'hidden' },
+              { label: t('Hidden text'), value: 'hiddenText' },
               { label: t('Enabled'), value: 'enabled' },
               { label: t('Disabled'), value: 'disabled' },
             ]}
@@ -129,7 +130,11 @@ export const linkageSetActionProps = defineAction({
     },
   },
   handler(ctx, { value, setProps }) {
-    setProps(ctx.model, { hiddenModel: value === 'hidden', disabled: value === 'disabled' });
+    setProps(ctx.model, {
+      hiddenModel: value === 'hidden',
+      disabled: value === 'disabled',
+      hiddenText: value === 'hiddenText',
+    });
   },
 });
 
@@ -875,6 +880,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
             if (!model.__originalProps) {
               model.__originalProps = {
                 hiddenModel: model.hidden,
+                hiddenText: undefined,
                 disabled: undefined,
                 required: undefined,
                 hidden: undefined,
@@ -910,8 +916,12 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       ...model.__props,
     };
 
-    model.setProps(_.omit(newProps, ['hiddenModel', 'value']));
+    model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
     model.hidden = !!newProps.hiddenModel;
+
+    if (newProps.hiddenText) {
+      model.setProps('title', '');
+    }
 
     // 目前只有表单的“字段赋值”有 value 属性
     if ('value' in newProps && model.context.form) {

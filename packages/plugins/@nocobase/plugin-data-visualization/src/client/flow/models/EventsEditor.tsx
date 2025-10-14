@@ -10,7 +10,7 @@
 import { connect, mapProps } from '@formily/react';
 import { CodeEditor } from '../components/CodeEditor';
 
-export const ChartEventsEditor = connect(
+const EventsEditor = connect(
   CodeEditor,
   mapProps((props) => {
     return {
@@ -20,3 +20,5 @@ export const ChartEventsEditor = connect(
     };
   }),
 );
+
+export default EventsEditor;

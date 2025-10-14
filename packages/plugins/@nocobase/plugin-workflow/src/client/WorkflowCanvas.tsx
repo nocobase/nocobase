@@ -45,6 +45,8 @@ import { useTrigger } from './triggers';
 import { ExecutionStatusOptions, ExecutionStatusOptionsMap } from './constants';
 import { HideVariableContext } from './variable';
 import { useWorkflowAnyExecuted, useWorkflowExecuted } from './hooks';
+import { AddNodeContextProvider } from './AddNodeContext';
+import { RemoveNodeContextProvider } from './RemoveNodeContext';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -501,7 +503,11 @@ export function WorkflowCanvas() {
           <WorkflowMenu />
         </aside>
       </div>
-      <CanvasContent entry={entry} />
+      <AddNodeContextProvider>
+        <RemoveNodeContextProvider>
+          <CanvasContent entry={entry} />
+        </RemoveNodeContextProvider>
+      </AddNodeContextProvider>
     </FlowContext.Provider>
   );
 }
