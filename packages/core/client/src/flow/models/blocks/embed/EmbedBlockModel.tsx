@@ -161,6 +161,12 @@ export class EmbedBlockModel extends BlockModel {
     this.rerender();
   }
 
+  async destroy(): Promise<boolean> {
+    this._scopedEngine?.unlinkFromStack?.();
+    this._scopedEngine = undefined;
+    return await super.destroy();
+  }
+
   renderComponent() {
     const target: FlowModel | undefined = (this.subModels as any)?.['target'];
     if (!target) {
