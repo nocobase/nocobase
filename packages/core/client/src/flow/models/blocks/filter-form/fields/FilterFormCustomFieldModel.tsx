@@ -14,6 +14,7 @@ import { FieldComponentProps } from './FieldComponentProps';
 import { debounce } from 'lodash';
 import { SourceCascader } from '../SourceCascader';
 import { FieldModelSelect } from '../FieldModelSelect';
+import { uid } from '@nocobase/utils/client';
 
 export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
   fieldModelInstance = null;
@@ -109,6 +110,15 @@ FilterFormCustomFieldModel.registerFlow({
           'x-decorator': 'FormItem',
           required: true,
         },
+        name: {
+          type: 'string',
+          title: escapeT('Field name'),
+          'x-component': 'Input',
+          'x-decorator': 'FormItem',
+          required: true,
+          description:
+            '{{t("Randomly generated and can be modified. Support letters, numbers and underscores, must start with an letter.")}}',
+        },
         source: {
           type: 'array',
           title: escapeT('Field source'),
@@ -169,11 +179,16 @@ FilterFormCustomFieldModel.registerFlow({
           ],
         },
       },
+      defaultParams(ctx) {
+        return {
+          name: `f_${uid().slice(0, 4)}`,
+        };
+      },
       handler(ctx, params) {
-        const { fieldModel, fieldModelProps = {}, title } = params;
+        const { fieldModel, fieldModelProps = {}, title, name } = params;
         ctx.model.setProps({
           label: title,
-          name: ctx.model.uid,
+          name: name,
         });
 
         if (!ctx.model.fieldModelInstance) {
