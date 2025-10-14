@@ -9,7 +9,7 @@
 
 import { ActionScene, defineAction, escapeT, useFlowContext } from '@nocobase/flow-engine';
 import React from 'react';
-import { Table, Button, Dropdown, Modal, Form, Input, Space } from 'antd';
+import { Table, Button, Dropdown, Modal, Form, Input, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { uid } from '@formily/shared';
@@ -211,7 +211,7 @@ function VariableEditor(props: VariableEditorProps) {
         key: 'type',
         ellipsis: true,
         render: (type: FlowVariableType) => (
-          <span style={{ whiteSpace: 'nowrap' }}>{t(VARIABLE_TYPE_LABELS[type] || type)}</span>
+          <Tag style={{ whiteSpace: 'nowrap' }}>{t(VARIABLE_TYPE_LABELS[type] || type)}</Tag>
         ),
       },
       {
