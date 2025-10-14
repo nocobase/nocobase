@@ -28,7 +28,7 @@ export class EmbedBlockModel extends BlockModel {
 
   get title() {
     if (this._targetModel?.title) {
-      const embedLabel = this.translate?.('Embed');
+      const embedLabel = this.translate?.('引用');
       return `${this._targetModel.title} (${embedLabel})`;
     }
     return super.title;
@@ -164,8 +164,10 @@ export class EmbedBlockModel extends BlockModel {
   renderComponent() {
     const target: FlowModel | undefined = (this.subModels as any)?.['target'];
     if (!target) {
+      const errorColor =
+        (this.context as any)?.themeToken?.colorErrorText || (this.context as any)?.themeToken?.colorError || '#ff4d4f';
       return (
-        <div style={{ padding: 16, color: 'var(--colorTextTertiary)' }}>
+        <div style={{ padding: 16, color: errorColor }} role="alert" aria-live="polite">
           {this.translate?.('Target block missing or invalid') || 'Target block missing or invalid'}
         </div>
       );
