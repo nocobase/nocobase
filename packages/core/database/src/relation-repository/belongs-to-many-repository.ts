@@ -66,7 +66,6 @@ export class BelongsToManyRepository extends MultipleRelationRepository {
     this.collection.validate({
       values,
       operation: 'create',
-      context: options.context,
     });
     const instance = await sourceModel[createAccessor](values, createOptions);
     await updateAssociations(instance, values, { ...options, transaction });
