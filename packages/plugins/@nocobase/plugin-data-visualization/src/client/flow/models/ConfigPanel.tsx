@@ -40,7 +40,7 @@ export const ConfigPanel: React.FC = () => {
         items={[
           {
             key: 'query',
-            label: t('Query & Result'),
+            label: t('Data query'),
             children: (
               <Card style={getCardStyle('query')} styles={{ body: { padding: 0 } }}>
                 <QueryPanel />
