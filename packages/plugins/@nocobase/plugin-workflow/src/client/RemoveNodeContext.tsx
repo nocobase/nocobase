@@ -25,7 +25,7 @@ import { useForm } from '@formily/react';
 import PluginWorkflowClient from '.';
 import { parse } from '@nocobase/utils/client';
 
-const RemoveNodeContext = createContext(null);
+const RemoveNodeContext = createContext<any>({});
 
 export function useRemoveNodeContext() {
   return useContext(RemoveNodeContext);
@@ -52,7 +52,7 @@ function KeepBranchRadioGroup(props) {
   const plugin = usePlugin(PluginWorkflowClient) as PluginWorkflowClient;
   const compile = useCompile();
   const branchOptions = useMemo(() => {
-    if (!deletingNode || deletingBranches.length === 0) {
+    if (!deletingNode || deletingBranches?.length === 0) {
       return [];
     }
     const instruction = plugin.instructions.get(deletingNode?.type);
@@ -62,12 +62,12 @@ function KeepBranchRadioGroup(props) {
         : instruction.branching;
     return branching
       ? deletingBranches.map((item, index) => {
-          const { label } = Array.isArray(branching)
-            ? branching.find((branch) => branch.value === item.branchIndex)
+          const option = Array.isArray(branching)
+            ? branching.find((branch) => branch.value === item.branchIndex) ?? {}
             : {};
           return {
-            label: label
-              ? lang('"{{branchName}}" branch', { branchName: compile(label) })
+            label: option['label']
+              ? lang('"{{branchName}}" branch', { branchName: compile(option['label']) })
               : lang('Branch {{index}}', { index: index + 1 }),
             value: item.branchIndex,
           };
