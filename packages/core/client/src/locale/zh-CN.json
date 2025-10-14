@@ -931,7 +931,6 @@
   "Please enter form uid": "请输入表单 UID",
   "Show date range": "显示日期范围",
   "Custom field": "自定义字段",
-  "Field Settings": "字段设置",
   "Field model": "字段模型",
   "Component properties": "组件属性",
   "Select a source field to use metadata of the field": "选择源字段以使用字段的元数据",
