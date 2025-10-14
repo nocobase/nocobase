@@ -251,7 +251,7 @@ export class Collection<
         const required = rules.some((rule) => rule.name === 'required');
 
         if (required) {
-          const { error } = Joi.any().required().label(`${this.name}.${field.name}`).validate(val);
+          const { error } = Joi.any().empty(null).required().label(`${this.name}.${field.name}`).validate(val);
           if (error) {
             throw error;
           }
