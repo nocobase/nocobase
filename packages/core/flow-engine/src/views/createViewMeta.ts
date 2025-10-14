@@ -270,11 +270,10 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
           }),
         };
         props.resource = resourceMeta;
-        // 配置态弹窗不展示“上级弹窗”；
-        // 仅在上一层确为弹窗（可推断 RecordRef）时显示
-        const isSettings = !!ctx.view?.inputArgs?.__isSettingsPopup;
-        const parentRef1 = isSettings ? undefined : await getParentRecordRef(1);
-        if (!isSettings && parentRef1) {
+        // 是否展示“上级弹窗”应依据实际视图层级，而不是简单以配置态隐藏。
+        // 当存在父级弹窗（不含当前配置弹窗自身）时，展示“上级弹窗”节点。
+        const parentRef1 = await getParentRecordRef(1);
+        if (parentRef1) {
           props.parent = createParentFactory(1);
         }
         return props;
@@ -335,9 +334,9 @@ export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promi
  * 在视图上下文中注册 popup 变量（统一消除重复）
  */
 export function registerPopupVariable(ctx: FlowContext, view: FlowView) {
-  // 仅在当前视图可推断到记录引用（确为弹窗上下文或由 openView 打开的 embed）时注册
-  const refNow = inferViewRecordRef(ctx);
-  if (!refNow) return;
+  // 始终注册 popup 变量：
+  // - 若当前视图无可推断记录，仅在元信息中不呈现 record 字段；
+  // - 但仍可依据 navigation 推断并展示上级弹窗信息。
   ctx.defineProperty('popup', {
     get: async () => buildPopupRuntime(ctx, view),
     meta: createPopupMeta(ctx),
