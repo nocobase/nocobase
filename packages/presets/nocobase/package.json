@@ -107,7 +107,6 @@
     "@nocobase/plugin-async-task-manager",
     "@nocobase/plugin-ai",
     "@nocobase/plugin-block-iframe",
-    "@nocobase/plugin-block-lowcode",
     "@nocobase/plugin-block-workbench",
     "@nocobase/plugin-calendar",
     "@nocobase/plugin-client",
