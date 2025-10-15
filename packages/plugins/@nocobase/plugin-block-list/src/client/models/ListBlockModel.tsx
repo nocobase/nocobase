@@ -206,7 +206,7 @@ ListBlockModel.registerFlow({
 ListBlockModel.registerFlow({
   key: 'listettings',
   sort: 500,
-  title: escapeT('List settings'),
+  title: escapeT('List settings', { ns: 'block-list' }),
   steps: {
     pageSize: {
       title: escapeT('Page size'),

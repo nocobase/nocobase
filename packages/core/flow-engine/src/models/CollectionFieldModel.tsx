@@ -110,8 +110,10 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
         return this.fieldPath;
       },
     });
-    this.context.blockModel.addAppends(this.fieldPath);
-    this.context.blockModel.addAppends(this.associationPathName);
+    if (this.context.blockModel) {
+      this.context.blockModel.addAppends(this.fieldPath);
+      this.context.blockModel.addAppends(this.associationPathName);
+    }
   }
 
   getFieldSettingsInitParams(): FieldSettingsInitParams {
