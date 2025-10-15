@@ -126,18 +126,9 @@ const traverseJSON = (data, options: TraverseOptions) => {
         include: subInclude,
       });
     } else if (field.type === 'belongsTo') {
-      result[key] = traverseJSON(data[key], {
-        collection: collection.db.getCollection(field.target),
-        // exclude: [field.foreignKey],
-        include: subInclude,
-        excludePk: false,
-      });
+      result[key] = data[key];
     } else if (field.type === 'belongsToMany') {
-      result[key] = traverseBelongsToMany(data[key], {
-        collection: collection.db.getCollection(field.target),
-        exclude: [field.foreignKey, field.otherKey],
-        through: field.through,
-      });
+      result[key] = data[key];
     } else {
       result[key] = data[key];
     }
