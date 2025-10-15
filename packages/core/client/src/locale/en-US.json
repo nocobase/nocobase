@@ -163,6 +163,8 @@
   "Chart title": "Chart title",
   "Chart type": "Chart type",
   "Chart config": "Chart config",
+  "Please configure target block": "Please configure target block",
+  "Target block is invalid": "Target block is invalid",
   "Templates": "Templates",
   "Template": "Template",
   "Select template": "Select template",

@@ -1346,6 +1346,8 @@
   "Target model": "目标区块",
   "Target UID": "目标 UID",
   "Target block missing or invalid": "目标区块缺失或无效",
+  "Please configure target block": "请配置目标区块",
+  "Target block is invalid": "目标区块无效",
   "Button type": "按钮类型",
   "Danger action": "危险操作",
   "Datetime settings": "日期时间设置",

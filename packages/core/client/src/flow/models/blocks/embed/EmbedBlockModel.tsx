@@ -8,6 +8,8 @@
  */
 
 import React from 'react';
+import { Result, Empty } from 'antd';
+import { BlockItemCard } from '../../../components';
 import { escapeT, FlowEngine, FlowModel, FlowModelRenderer, createBlockScopedEngine } from '@nocobase/flow-engine';
 import { BlockModel } from '../../base/BlockModel';
 
@@ -28,7 +30,7 @@ export class EmbedBlockModel extends BlockModel {
 
   get title() {
     if (this._targetModel?.title) {
-      const embedLabel = this.translate?.('Embed') || 'Embed';
+      const embedLabel = this.translate?.('Reference');
       return `${this._targetModel.title} (${embedLabel})`;
     }
     return super.title;
@@ -169,13 +171,31 @@ export class EmbedBlockModel extends BlockModel {
 
   renderComponent() {
     const target: FlowModel | undefined = (this.subModels as any)?.['target'];
+    const configuredUid = this._getTargetUidFromParams();
     if (!target) {
-      const errorColor =
-        (this.context as any)?.themeToken?.colorErrorText || (this.context as any)?.themeToken?.colorError || '#ff4d4f';
+      // 未配置 target uid：展示简洁占位
+      if (!configuredUid) {
+        return (
+          <BlockItemCard>
+            <div style={{ padding: 24 }}>
+              <Empty
+                image={Empty.PRESENTED_IMAGE_SIMPLE}
+                description={this.translate?.('Please configure target block') || 'Please configure target block'}
+              />
+            </div>
+          </BlockItemCard>
+        );
+      }
+      // 配置了 uid 但无效：展示错误样式，但背景仍保持卡片一致
       return (
-        <div style={{ padding: 16, color: errorColor }} role="alert" aria-live="polite">
-          {this.translate?.('Target block missing or invalid') || 'Target block missing or invalid'}
-        </div>
+        <BlockItemCard>
+          <div style={{ padding: 24 }}>
+            <Result
+              status="error"
+              subTitle={this.translate?.('Target block is invalid') || 'Target block is invalid'}
+            />
+          </div>
+        </BlockItemCard>
       );
     }
     return <FlowModelRenderer key={target.uid} model={target} showFlowSettings={false} showErrorFallback />;
