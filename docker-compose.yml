@@ -51,6 +51,7 @@ services:
       - "${DB_POSTGRES_PORT}:5432"
     volumes:
       - ./storage/db/postgres/backups:/backups
+      - ./storage/db/postgres/data:/var/lib/postgresql
     environment:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_DB: ${DB_DATABASE}
