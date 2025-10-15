@@ -95,6 +95,7 @@ export const QueryPanel: React.FC = observer(() => {
 
   // 图形化模式
   const handleBuilderChange = async (next: any) => {
+    console.log('handleBuilderChange', next);
     const query = form?.values?.query || {};
     form?.setValuesIn?.('query', {
       ...next,

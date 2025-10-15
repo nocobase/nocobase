@@ -85,7 +85,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     return this.getStepParams('chartSettings', 'configure');
   }
 
-  onInit(options) {
+  async onInit(options) {
     super.onInit(options);
     this.context.defineProperty('chartRef', {
       get: () => createRef(),
@@ -119,7 +119,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       if (initQuery) {
         this.applyQuery(initQuery);
         // 依赖 refresh 事件驱动渲染
-        this.resource.refresh();
+        await this.resource.refresh();
       }
     } catch (e) {
       // 初始阶段不打断页面加载，错误信息写入预览 store 以便排查
@@ -199,6 +199,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       (this.resource as SQLResource).setDebug(true);
       (this.resource as SQLResource).setSQL(query.sql);
     } else {
+      console.log('---applyQuery', query);
       (this.resource as ChartResource).setQueryParams(query);
     }
   }
@@ -250,6 +251,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   // 预览，暂存预览前的 stepParams，并刷新图表
   async onPreview(params: { query: any; chart: any }, needQueryData?: boolean) {
+    console.log('---onPreview', params.query);
     const values = _.cloneDeep(params);
     if (!values) return;
 
@@ -375,6 +377,7 @@ ChartBlockModel.registerFlow({
         };
       },
       async handler(ctx, params) {
+        console.log('---setting flow handler', params);
         const { query, chart } = params;
         if (!query || !chart) {
           return;

@@ -116,6 +116,7 @@ export function getCollectionOptions(dm: any, compile: (v: any) => string) {
 }
 
 export function validateQuery(query: Record<string, any>): { success: boolean; message: string } {
+  console.log('---validateQuery', query);
   if (!query) {
     return { success: false, message: 'query is required' };
   }
@@ -132,6 +133,33 @@ export function validateQuery(query: Record<string, any>): { success: boolean; m
     if (!query.measures?.length) {
       return { success: false, message: 'please select measures' };
     }
+    // 允许filter整体为空（undefined/null），允许 items 为空或空数组
+    const filter = query.filter;
+    if (filter && Array.isArray(filter.items) && filter.items.length > 0) {
+      // 递归检测是否存在非法空 path
+      const hasInvalidPath = (items: any[]): boolean => {
+        for (const it of items) {
+          if (it && typeof it === 'object') {
+            // 组：继续递归
+            if (it.logic && Array.isArray(it.items)) {
+              if (hasInvalidPath(it.items)) return true;
+            } else {
+              // 规则项：校验 path
+              const path = (it as any).path;
+              if (typeof path === 'string' && path.trim().length === 0) {
+                return true;
+              }
+            }
+          }
+        }
+        return false;
+      };
+
+      if (hasInvalidPath(filter.items)) {
+        return { success: false, message: 'please select filter field' };
+      }
+    }
   }
+
   return { success: true, message: '' };
 }

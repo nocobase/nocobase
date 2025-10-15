@@ -112,10 +112,22 @@ export const removeUnparsableFilter = (filter: any) => {
       const newLogic = filter.map((condition) => removeUnparsableFilter(condition)).filter(Boolean);
       return newLogic.length > 0 ? newLogic : null;
     } else {
-      const newLogic = {};
-      for (const key in filter) {
-        const value = removeUnparsableFilter(filter[key]);
-        if (value !== null && value !== undefined && !(typeof value === 'object' && Object.keys(value).length === 0)) {
+      const newLogic: any = {};
+      for (const [key, rawVal] of Object.entries(filter)) {
+        // 跳过无效键：空字符串或仅空白
+        if (typeof key === 'string' && key.trim().length === 0) {
+          continue;
+        }
+        const value = removeUnparsableFilter(rawVal);
+        // 丢弃空值/空对象/空数组
+        if (
+          value !== null &&
+          value !== undefined &&
+          !(
+            typeof value === 'object' &&
+            ((Array.isArray(value) && value.length === 0) || Object.keys(value).length === 0)
+          )
+        ) {
           newLogic[key] = value;
         }
       }

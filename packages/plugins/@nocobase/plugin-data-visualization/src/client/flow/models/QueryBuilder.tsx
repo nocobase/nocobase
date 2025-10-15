@@ -59,6 +59,7 @@ export const QueryBuilder = React.forwardRef<
   };
 
   const handleValuesChange = (_: any, allValues: any) => {
+    console.log('---handleValuesChange', allValues);
     onChange?.(allValues);
   };
 
@@ -235,7 +236,10 @@ export const QueryBuilder = React.forwardRef<
           <Form.Item name="filter" style={{ overflow: 'auto' }}>
             <FilterGroup
               value={form.getFieldValue('filter')}
-              onChange={(v) => form.setFieldsValue({ filter: v })}
+              onChange={(v) => {
+                form.setFieldsValue({ filter: v });
+                onChange?.(form.getFieldsValue(true));
+              }}
               FilterItem={(p) => {
                 return <VariableFilterItem {...p} model={ctx.model} rightAsVariable />;
               }}
