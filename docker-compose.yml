@@ -66,7 +66,7 @@ services:
     volumes:
       - ./:/var/www/app
   nocobase:
-    image: node:16-stretch-slim
+    image: node:lts-slim
     networks:
       - nocobase
     command: [ "yarn", "start" ]
