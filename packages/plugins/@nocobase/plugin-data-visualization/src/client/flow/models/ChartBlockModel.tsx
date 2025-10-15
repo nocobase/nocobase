@@ -336,7 +336,7 @@ ChartBlockModel.registerFlow({
       uiMode: {
         type: 'embed',
         props: {
-          minWidth: '510px', // 最小宽度 支持 measures field 完整展示 6 个字不换行
+          // minWidth: '510px', // 最小宽度 支持 measures field 完整展示 6 个字不换行
           footer: (originNode, { OkBtn }) => (
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
               <CancelButton style={{ marginRight: 6 }} />

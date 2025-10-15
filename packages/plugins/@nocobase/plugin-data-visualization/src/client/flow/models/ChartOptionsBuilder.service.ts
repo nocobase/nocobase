@@ -8,7 +8,7 @@
  */
 
 // 图表类型
-export type ChartTypeKey = 'line' | 'bar' | 'barHorizontal' | 'pie' | 'scatter';
+export type ChartTypeKey = 'line' | 'bar' | 'barHorizontal' | 'pie' | 'scatter' | 'area';
 
 const TYPE_FIELD_SPECS = {
   line: [
@@ -41,6 +41,13 @@ const TYPE_FIELD_SPECS = {
     { name: 'seriesField', valueType: 'string' },
     { name: 'sizeField', valueType: 'string' },
   ],
+  area: [
+    { name: 'xField', valueType: 'string', required: true },
+    { name: 'yField', valueType: 'string', required: true },
+    { name: 'seriesField', valueType: 'string' },
+    { name: 'smooth', valueType: 'boolean' },
+    { name: 'stack', valueType: 'boolean' },
+  ],
 };
 
 const BOOL_LABEL_KEY = { smooth: 'Smooth', stack: 'Stack' };
@@ -65,7 +72,7 @@ export function getChartFormSpec(type: ChartTypeKey) {
     }
     if (fs.valueType === 'boolean') {
       return {
-        kind: 'checkbox',
+        kind: 'switch',
         name: fs.name,
         labelKey: (BOOL_LABEL_KEY as any)[fs.name] || fs.name,
       };
@@ -163,11 +170,26 @@ const normalizeScatter = (builder = {}, columns: string[]) => {
   return next;
 };
 
+const normalizeArea = (builder = {}, columns: string[]) => {
+  const next = stripInvalidColumns(builder, columns);
+  next.type = 'area';
+  const { a, b } = pickFirstTwo(columns);
+  if (!next.xField && a) next.xField = a;
+  if (!next.yField && b) next.yField = b;
+  delete next.pieCategory;
+  delete next.pieValue;
+  delete next.pieRadiusInner;
+  delete next.pieRadiusOuter;
+  delete next.sizeField;
+  return next;
+};
+
 const applyLine = (builder, columns: string[]) => normalizeLine({ ...builder }, columns);
 const applyBar = (builder, columns: string[]) => normalizeBar({ ...builder }, columns);
 const applyBarHorizontal = (builder, columns: string[]) => normalizeBarHorizontal({ ...builder }, columns);
 const applyPie = (builder, columns: string[]) => normalizePie({ ...builder }, columns);
 const applyScatter = (builder, columns: string[]) => normalizeScatter({ ...builder }, columns);
+const applyArea = (builder, columns: string[]) => normalizeArea({ ...builder }, columns);
 
 const s = (v) => JSON.stringify(v ?? '');
 
@@ -208,7 +230,7 @@ return (function () {
   return code;
 };
 
-const genRawLineOrBar = (type: 'line' | 'bar', builder: any) => {
+const genRawLine = (builder: any) => {
   const {
     xField,
     yField,
@@ -218,6 +240,7 @@ const genRawLineOrBar = (type: 'line' | 'bar', builder: any) => {
     label = false,
     smooth = false,
     stack = false,
+    boundaryGap = false,
   } = builder || {};
 
   if (!xField || !yField) {
@@ -243,10 +266,62 @@ return (function () {
   const option = {
     tooltip: { show: ${!!tooltip} },
     legend: { show: ${!!legend} },
-    xAxis: { type: 'category' },
+    xAxis: { type: 'category', boundaryGap: ${!!boundaryGap} },
     yAxis: { type: 'value' },
     series: Array.from(seriesMap.entries()).map(([key, arr]) => ({
-      type: ${s(type)},
+      type: 'line',
+      name: key === '__default__' ? ${s('')} : String(key),
+      data: arr.map(p => [p.x, p.y]),
+      smooth: ${!!smooth},
+      stack: ${!!stack} ? 'total' : undefined,
+      label: { show: ${!!label} },
+    })),
+  };
+  return option;
+})();`.trim();
+  return code;
+};
+
+const genRawBar = (builder: any) => {
+  const {
+    xField,
+    yField,
+    seriesField,
+    tooltip = true,
+    legend = true,
+    label = false,
+    smooth = false,
+    stack = false,
+    boundaryGap = true,
+  } = builder || {};
+
+  if (!xField || !yField) {
+    return `return { tooltip: { show: ${!!tooltip} }, legend: { show: ${!!legend} } };`;
+  }
+
+  const code = `
+return (function () {
+  const data = (ctx && ctx.data && ctx.data.objects) || [];
+  const xField = ${s(xField)};
+  const yField = ${s(yField)};
+  const seriesField = ${s(seriesField)};
+
+  const seriesMap = new Map();
+  data.forEach(row => {
+    const seriesKey = seriesField ? row[seriesField] : '__default__';
+    if (!seriesMap.has(seriesKey)) {
+      seriesMap.set(seriesKey, []);
+    }
+    seriesMap.get(seriesKey).push({ x: row[xField], y: row[yField] });
+  });
+
+  const option = {
+    tooltip: { show: ${!!tooltip} },
+    legend: { show: ${!!legend} },
+    xAxis: { type: 'category', boundaryGap: ${!!boundaryGap} },
+    yAxis: { type: 'value' },
+    series: Array.from(seriesMap.entries()).map(([key, arr]) => ({
+      type: 'bar',
       name: key === '__default__' ? ${s('')} : String(key),
       data: arr.map(p => [p.x, p.y]),
       smooth: ${!!smooth},
@@ -260,7 +335,16 @@ return (function () {
 };
 
 const genRawBarHorizontal = (builder: any) => {
-  const { xField, yField, seriesField, tooltip = true, legend = true, label = false, stack = false } = builder || {};
+  const {
+    xField,
+    yField,
+    seriesField,
+    tooltip = true,
+    legend = true,
+    label = false,
+    stack = false,
+    boundaryGap = true,
+  } = builder || {};
 
   if (!xField || !yField) {
     return `return { tooltip: { show: ${!!tooltip} }, legend: { show: ${!!legend} } };`;
@@ -287,7 +371,7 @@ return (function () {
     tooltip: { show: ${!!tooltip} },
     legend: { show: ${!!legend} },
     xAxis: { type: 'value' },
-    yAxis: { type: 'category' },
+    yAxis: { type: 'category', boundaryGap: ${!!boundaryGap} },
     series: Array.from(seriesMap.entries()).map(([key, arr]) => ({
       type: 'bar',
       name: key === '__default__' ? ${s('')} : String(key),
@@ -302,7 +386,16 @@ return (function () {
 };
 
 const genRawScatter = (builder: any) => {
-  const { xField, yField, seriesField, sizeField, tooltip = true, legend = true, label = false } = builder || {};
+  const {
+    xField,
+    yField,
+    seriesField,
+    sizeField,
+    tooltip = true,
+    legend = true,
+    label = false,
+    boundaryGap = true,
+  } = builder || {};
 
   if (!xField || !yField) {
     return `return { tooltip: { show: ${!!tooltip} }, legend: { show: ${!!legend} } };`;
@@ -341,7 +434,7 @@ return (function () {
   const option = {
     tooltip: { show: ${!!tooltip} },
     legend: { show: ${!!legend} },
-    xAxis: { type: 'category', data: categories },
+    xAxis: { type: 'category', data: categories, boundaryGap: ${!!boundaryGap} },
     yAxis: { type: 'value' },
     series: Array.from(seriesMap.entries()).map(([key, map]) => {
       const yArr = categories.map(cat => {
@@ -366,9 +459,62 @@ return (function () {
   return code;
 };
 
+const genRawArea = (builder: any) => {
+  const {
+    xField,
+    yField,
+    seriesField,
+    tooltip = true,
+    legend = true,
+    label = false,
+    smooth = false,
+    stack = false,
+    boundaryGap = false,
+  } = builder || {};
+
+  if (!xField || !yField) {
+    return `return { tooltip: { show: ${!!tooltip} }, legend: { show: ${!!legend} } };`;
+  }
+
+  const code = `
+return (function () {
+  const data = (ctx && ctx.data && ctx.data.objects) || [];
+  const xField = ${s(xField)};
+  const yField = ${s(yField)};
+  const seriesField = ${s(seriesField)};
+
+  const seriesMap = new Map();
+  data.forEach(row => {
+    const seriesKey = seriesField ? row[seriesField] : '__default__';
+    if (!seriesMap.has(seriesKey)) {
+      seriesMap.set(seriesKey, []);
+    }
+    seriesMap.get(seriesKey).push({ x: row[xField], y: row[yField] });
+  });
+
+  const option = {
+    tooltip: { show: ${!!tooltip} },
+    legend: { show: ${!!legend} },
+    xAxis: { type: 'category', boundaryGap: ${!!boundaryGap} },
+    yAxis: { type: 'value' },
+    series: Array.from(seriesMap.entries()).map(([key, arr]) => ({
+      type: 'line',
+      name: key === '__default__' ? ${s('')} : String(key),
+      data: arr.map(p => [p.x, p.y]),
+      smooth: ${!!smooth},
+      stack: ${!!stack} ? 'total' : undefined,
+      areaStyle: {},
+      label: { show: ${!!label} },
+    })),
+  };
+  return option;
+})();`.trim();
+  return code;
+};
+
 const TYPE_REGISTRY = {
-  line: { key: 'line', normalize: normalizeLine, applyType: applyLine, genRaw: (b) => genRawLineOrBar('line', b) },
-  bar: { key: 'bar', normalize: normalizeBar, applyType: applyBar, genRaw: (b) => genRawLineOrBar('bar', b) },
+  line: { key: 'line', normalize: normalizeLine, applyType: applyLine, genRaw: genRawLine },
+  bar: { key: 'bar', normalize: normalizeBar, applyType: applyBar, genRaw: genRawBar },
   barHorizontal: {
     key: 'barHorizontal',
     normalize: normalizeBarHorizontal,
@@ -377,6 +523,7 @@ const TYPE_REGISTRY = {
   },
   pie: { key: 'pie', normalize: normalizePie, applyType: applyPie, genRaw: genRawPie },
   scatter: { key: 'scatter', normalize: normalizeScatter, applyType: applyScatter, genRaw: genRawScatter },
+  area: { key: 'area', normalize: normalizeArea, applyType: applyArea, genRaw: genRawArea },
 };
 
 // 纯函数：按图表类型规范化（补默认、删无关字段）
