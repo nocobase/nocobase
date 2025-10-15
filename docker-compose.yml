@@ -68,7 +68,7 @@ services:
     image: node:lts-slim
     networks:
       - nocobase
-    command: [ "yarn", "start" ]
+    command: [ "yarn", "nocobase", "install", "&&", "yarn", "dev" ]
     working_dir: /app
     env_file: ./.env
     volumes:
