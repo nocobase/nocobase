@@ -1,0 +1,28 @@
+{
+  "name": "@nocobase/plugin-block-embed",
+  "displayName": "Block: Embed",
+  "displayName.zh-CN": "区块：嵌入",
+  "description": "A block to embed and render another block instance with scoped engine isolation and configuration reuse.",
+  "description.zh-CN": "用于嵌入并渲染其他区块实例，提供作用域引擎隔离与配置复用能力。",
+  "version": "2.0.0-alpha.8",
+  "license": "AGPL-3.0",
+  "main": "./dist/server/index.js",
+  "types": "./dist/index.d.ts",
+  "devDependencies": {
+    "antd": "5.x",
+    "react": "^18.2.0",
+    "@formily/shared": "2.x"
+  },
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/flow-engine": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  },
+  "keywords": [
+    "nocobase",
+    "plugin",
+    "block",
+    "embed"
+  ]
+}

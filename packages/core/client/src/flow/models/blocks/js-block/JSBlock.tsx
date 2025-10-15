@@ -8,7 +8,6 @@
  */
 
 import { ElementProxy, escapeT, createSafeDocument, createSafeWindow } from '@nocobase/flow-engine';
-import { uid as genUid } from 'uid/secure';
 import { Card } from 'antd';
 import React from 'react';
 import { BlockModel } from '../../base';
@@ -145,92 +144,6 @@ ctx.element.innerHTML = \`
       },
       handler(ctx, params) {
         const { code, version } = resolveRunJsParams(ctx, params);
-        // 提供在 runjs 中一键替换为 EmbedBlockModel 的能力
-        const _embedImpl = async (targetUid: string) => {
-          try {
-            const uid = (targetUid || '').trim();
-            if (!uid) return;
-            const engine = ctx.engine;
-            // 使用 replaceModel 原位替换为 EmbedBlockModel，并写入目标 uid
-            await engine.replaceModel(ctx.model.uid, {
-              use: 'EmbedBlockModel',
-              stepParams: {
-                embedSettings: {
-                  target: { targetUid: uid },
-                },
-              },
-            });
-            // 结束后续流程：embedBlock 执行后不再继续后面的脚本
-            ctx.exitAll();
-          } catch (error) {
-            console.error('[JSBlockModel] embedBlock error:', error);
-          }
-        };
-        // 仅保留新名称：embedBlock
-        ctx.defineMethod('embedBlock', _embedImpl);
-        // 提供复制现有模型树并原位替换当前 JSBlock 的能力
-        const _copyImpl = async (sourceUid: string) => {
-          try {
-            const uid = (sourceUid || '').trim();
-            if (!uid) return;
-            const engine = ctx.engine;
-            const sourceModel = engine.getModel(uid) || (await engine.loadModel({ uid }));
-            if (!sourceModel) {
-              console.warn('[JSBlockModel.copyModel] source model not found:', uid);
-              return;
-            }
-
-            // 1) 获取完整序列化 JSON（包含子模型）
-            const json = sourceModel.serialize();
-
-            // 2) 收集所有 uid（递归遍历）
-            const set = new Set<string>();
-            const collect = (node: any) => {
-              if (!node || typeof node !== 'object') return;
-              if (typeof node.uid === 'string') set.add(node.uid);
-              const sms = node.subModels;
-              if (sms && typeof sms === 'object') {
-                for (const key of Object.keys(sms)) {
-                  const val = (sms as any)[key];
-                  if (Array.isArray(val)) {
-                    val.forEach((child) => collect(child));
-                  } else if (val && typeof val === 'object') {
-                    collect(val);
-                  }
-                }
-              }
-            };
-            collect(json);
-
-            // 3) 为每个 uid 生成新的 uid 映射
-            const map = new Map<string, string>();
-            const rootOldUid = json.uid as string;
-            // 根节点 uid 固定映射为当前 JSBlock 的 uid，保持网格/父级引用稳定
-            map.set(rootOldUid, ctx.model.uid);
-            set.forEach((oldId) => {
-              if (oldId === rootOldUid) return;
-              map.set(oldId, genUid());
-            });
-
-            // 4) 字符串替换所有出现的旧 uid → 新 uid
-            let str = JSON.stringify(json);
-            for (const [oldId, newId] of map.entries()) {
-              // 安全全局替换
-              const re = new RegExp(oldId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-              str = str.replace(re, newId);
-            }
-            const newJson = JSON.parse(str);
-
-            // 5) 用新 JSON 原位替换当前 JSBlock 模型
-            await engine.replaceModel(ctx.model.uid, newJson);
-            // 结束后续流程：copyBlock 执行后不再继续后面的脚本
-            ctx.exitAll();
-          } catch (error) {
-            console.error('[JSBlockModel] copyBlock error:', error);
-          }
-        };
-        // 仅保留新名称：copyBlock
-        ctx.defineMethod('copyBlock', _copyImpl);
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),

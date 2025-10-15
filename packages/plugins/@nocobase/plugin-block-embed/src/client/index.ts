@@ -7,11 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './assign-form';
-export * from './details';
-export * from './filter-form';
-export * from './filter-manager';
-export * from './form';
-export * from './js-block';
-export * from './table';
-//
+import { Plugin } from '@nocobase/client';
+import { EmbedBlockModel } from './models/EmbedBlockModel';
+
+export class PluginBlockEmbedClient extends Plugin {
+  async load() {
+    this.flowEngine.registerModels({ EmbedBlockModel });
+  }
+}
+
+export default PluginBlockEmbedClient;

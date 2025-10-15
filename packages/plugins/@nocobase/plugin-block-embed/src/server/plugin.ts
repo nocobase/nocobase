@@ -7,4 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './EmbedBlockModel';
+import { InstallOptions, Plugin } from '@nocobase/server';
+
+export class PluginBlockEmbedServer extends Plugin {
+  async load() {}
+
+  async install(options?: InstallOptions) {}
+  async afterEnable() {}
+  async afterDisable() {}
+  async remove() {}
+}
+
+export default PluginBlockEmbedServer;

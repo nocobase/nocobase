@@ -35,14 +35,6 @@ JSBlockRunJSContext.define({
       Example: ctx.onRefReady(ctx.ref, (el) => { el.innerHTML = "Ready!" })`,
     requireAsync: 'Load external library: `const lib = await ctx.requireAsync(url)`',
     importAsync: 'Dynamically import ESM module: `const mod = await ctx.importAsync(url)`',
-    embedBlock:
-      `Replace current JS block with an Embed block that targets an existing model uid.\n\n` +
-      'Signature: `await ctx.embedBlock(targetUid: string)`\n\n' +
-      'Note: After calling this function, subsequent script code will NOT execute.',
-    copyBlock:
-      `Clone an existing block (with all sub-models), remap UIDs, and replace current JS block with the cloned block.\n\n` +
-      'Signature: `await ctx.copyBlock(sourceUid: string)`\n\n' +
-      'Note: After calling this function, subsequent script code will NOT execute.',
   },
 });
 
@@ -66,14 +58,6 @@ JSBlockRunJSContext.define(
       onRefReady: '容器 ref 就绪回调：\n```js\nctx.onRefReady(ctx.ref, el => { /* ... */ })\n```',
       requireAsync: '加载外部库：`const lib = await ctx.requireAsync(url)`',
       importAsync: '按 URL 动态导入 ESM 模块：`const mod = await ctx.importAsync(url)`',
-      embedBlock:
-        '将当前 JS 区块原位替换为 Embed 区块，并指向已有模型 uid。\n\n' +
-        '签名：`await ctx.embedBlock(targetUid: string)`\n\n' +
-        '注意：调用后，后续脚本将不会继续执行。',
-      copyBlock:
-        '克隆指定 uid 的区块（含子模型），并将当前 JS 区块原位替换为克隆结果。\n\n' +
-        '签名：`await ctx.copyBlock(sourceUid: string)`\n\n' +
-        '注意：调用后，后续脚本将不会继续执行。',
     },
   },
   { locale: 'zh-CN' },
