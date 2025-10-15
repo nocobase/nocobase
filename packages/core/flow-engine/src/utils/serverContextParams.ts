@@ -14,6 +14,7 @@ export type RecordRef = {
   id?: any; // primary key value
   filterByTk?: any; // alias for id
   dataSourceKey?: string;
+  sourceId?: any;
   fields?: string[];
   appends?: string[];
   record?: any; // full record object (try to infer pk from it)

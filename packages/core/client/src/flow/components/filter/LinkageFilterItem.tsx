@@ -198,20 +198,23 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
     };
   }, [t]);
 
-  // 右侧变量树：追加 constant/null 根节点
-  // 右侧变量树改为“稳定数组”而不是函数，避免 useRequest 反复拉取导致 ValueComponent 重建
-  const rightMetaTreeRef = useRef<MetaTreeNode[] | null>(null);
-  if (!rightMetaTreeRef.current) {
-    const baseMetaTree = ctx.getPropertyMetaTree() as MetaTreeNode[];
-    rightMetaTreeRef.current = [
-      { title: t('Constant'), name: 'constant', type: 'string', paths: ['constant'] },
-      { title: t('Null'), name: 'null', type: 'object', paths: ['null'] },
-      ...(Array.isArray(baseMetaTree) ? baseMetaTree : []),
-    ];
-  }
+  // 右侧变量树：动态函数获取，保证能拿到最新的 ctx（含 view.record 等）
+  const rightMetaTreeGetter = useMemo(() => {
+    return async () => {
+      const baseMetaTree = (model?.context.getPropertyMetaTree() || ctx.getPropertyMetaTree()) as MetaTreeNode[];
+      return [
+        { title: t('Constant'), name: 'constant', type: 'string', paths: ['constant'] },
+        { title: t('Null'), name: 'null', type: 'object', paths: ['null'] },
+        ...(Array.isArray(baseMetaTree) ? baseMetaTree : []),
+      ];
+    };
+  }, [ctx, model, t]);
 
   // 左侧变量树：默认整棵 ctx（不追加 Constant/Null），确保可获取字段 interface
-  const leftMetaTreeGetter = useCallback(() => ctx.getPropertyMetaTree(), [ctx]);
+  const leftMetaTreeGetter = useCallback(() => {
+    const tree = model?.context?.getPropertyMetaTree?.() || ctx.getPropertyMetaTree();
+    return tree;
+  }, [ctx, model]);
 
   // 右侧 converters：常量/空值特殊处理；变量沿用默认（表达式）
   const rightSideConverters = useMemo<Converters>(() => {
@@ -302,7 +305,7 @@ export const LinkageFilterItem: React.FC<LinkageFilterItemProps> = observer((pro
         <VariableInput
           value={rightOperandValue}
           onChange={(v) => (value.value = v)}
-          metaTree={rightMetaTreeRef.current as MetaTreeNode[]}
+          metaTree={rightMetaTreeGetter}
           converters={rightSideConverters}
           showValueComponent
           style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}
