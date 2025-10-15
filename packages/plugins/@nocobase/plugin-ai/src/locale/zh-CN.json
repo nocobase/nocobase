@@ -182,5 +182,6 @@
   "Cite {{count}} pieces of information as references": "引用 {{count}} 篇资料作为参考",
   "references {{index}}": "参考资料 {{index}}",
   "Enable search": "启用搜索",
-  "Disable search": "禁用搜索"
+  "Disable search": "禁用搜索",
+  "Conversation": "当前会话"
 }

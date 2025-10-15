@@ -181,5 +181,6 @@
   "Cite {{count}} pieces of information as references": "Cite {{count}} pieces of information as references",
   "references {{index}}": "references {{index}}",
   "Enable search": "Enable search",
-  "Disable search": "Disable search"
+  "Disable search": "Disable search",
+  "Conversation": "Conversation"
 }
