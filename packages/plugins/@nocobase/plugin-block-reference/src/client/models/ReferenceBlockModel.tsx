@@ -15,14 +15,14 @@ import { uid as genUid } from '@formily/shared';
 import { BlockModel } from '@nocobase/client';
 
 /**
- * EmbedBlockModel（插件版）
- * - 通过配置 targetUid（实例 model.uid）嵌入并渲染另一个区块；
+ * ReferenceBlockModel（插件版）
+ * - 通过配置 targetUid（实例 model.uid）引用并渲染另一个区块；
  * - 在 BlockScoped 引擎中实例化目标区块，隔离模型实例与事件缓存；
- * - 与目标区块建立父子关系（目标作为 Embed 的子模型，仅用于设置菜单聚合，不做持久化）；
+ * - 与目标区块建立父子关系（目标仅作为 Reference 的子模型用于设置菜单聚合，不做持久化）；
  * - 当目标缺失/非法/循环时，渲染占位提示；
- * - 标题为：目标标题 + (embed)。
+ * - 标题为：目标标题 + (Reference)。
  */
-export class EmbedBlockModel extends BlockModel {
+export class ReferenceBlockModel extends BlockModel {
   public settingsMenuLevel = 2;
   private _scopedEngine?: FlowEngine;
   private _targetModel?: FlowModel;
@@ -30,8 +30,8 @@ export class EmbedBlockModel extends BlockModel {
 
   get title() {
     if (this._targetModel?.title) {
-      const embedLabel = this.translate?.('Embed', { ns: [NAMESPACE, 'client'] }) || 'Embed';
-      return `${this._targetModel.title} (${embedLabel})`;
+      const refLabel = this.translate?.('Reference', { ns: [NAMESPACE, 'client'] }) || 'Reference';
+      return `${this._targetModel.title} (${refLabel})`;
     }
     return super.title;
   }
@@ -49,7 +49,7 @@ export class EmbedBlockModel extends BlockModel {
   }
 
   private _getTargetUidFromParams(): string | undefined {
-    const p = (this.getStepParams as any)?.('embedSettings', 'target') || {};
+    const p = (this.getStepParams as any)?.('referenceSettings', 'target') || {};
     return (p?.targetUid || '').trim() || undefined;
   }
 
@@ -62,7 +62,7 @@ export class EmbedBlockModel extends BlockModel {
 
   /**
    * 解析最终目标模型：
-   * - 支持 embed-of-embed 扁平化（直到非 EmbedBlockModel）；
+   * - 支持 reference-of-reference 扁平化（直到非 ReferenceBlockModel）；
    * - 简单循环检测（A→B→A 等）；
    * - 目标缺失或非法时返回 null。
    */
@@ -80,12 +80,12 @@ export class EmbedBlockModel extends BlockModel {
       const model = await engine.loadModel<FlowModel>({ uid: currentUid });
       if (!model) return null;
 
-      const isEmbed = (model.constructor as any)?.name === 'EmbedBlockModel';
-      if (!isEmbed) {
+      const isReference = (model.constructor as any)?.name === 'ReferenceBlockModel';
+      if (!isReference) {
         return model;
       }
 
-      const next = (model as any)?.getStepParams?.('embedSettings', 'target')?.targetUid;
+      const next = (model as any)?.getStepParams?.('referenceSettings', 'target')?.targetUid;
       if (!next || typeof next !== 'string' || !next.trim()) {
         return null;
       }
@@ -191,33 +191,53 @@ export class EmbedBlockModel extends BlockModel {
   }
 }
 
-EmbedBlockModel.registerFlow({
-  key: 'embedSettings',
+ReferenceBlockModel.registerFlow({
+  key: 'referenceSettings',
   sort: -999,
-  title: tStr('Embed settings'),
+  title: tStr('Reference block'),
   steps: {
     target: {
-      title: tStr('Target model'),
-      uiSchema: {
-        mode: {
-          title: tStr('Embed mode'),
-          'x-component': 'Radio.Group',
-          'x-decorator': 'FormItem',
-          enum: [
-            { label: tStr('Reference'), value: 'reference' },
-            { label: tStr('Copy'), value: 'copy' },
-          ],
-        },
-        targetUid: {
-          title: tStr('Target UID'),
-          'x-component': 'Input',
-          'x-decorator': 'FormItem',
-          'x-validator': [
-            {
-              format: 'string',
+      preset: true,
+      title: tStr('Reference settings'),
+      uiSchema: (ctx) => {
+        const m = (ctx.model as any) || {};
+        const step = m.getStepParams?.('referenceSettings', 'target') || {};
+        const uid = (step?.targetUid || '').trim();
+        const isNew = !!m.isNew;
+        const hasConfigured = !!uid;
+        // 更精准的有效性判断：要求已解析的 _targetModel 存在且与当前 uid 匹配
+        const resolvedUid = m._resolvedTargetUid;
+        const resolvedModel = m._targetModel;
+        const hasValidTarget = !!resolvedModel && resolvedUid === uid;
+        const disableUid = !isNew && hasConfigured && hasValidTarget;
+        return {
+          targetUid: {
+            title: tStr('Block UID'),
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+            'x-decorator-props': {
+              tooltip: disableUid ? tStr('Block UID is already set and cannot be modified') : undefined,
             },
-          ],
-        },
+            'x-component-props': {
+              disabled: disableUid,
+            },
+            'x-validator': [
+              {
+                format: 'string',
+                required: true,
+              },
+            ],
+          },
+          mode: {
+            title: tStr('Reference mode'),
+            'x-component': 'Radio.Group',
+            'x-decorator': 'FormItem',
+            enum: [
+              { label: tStr('Reference'), value: 'reference' },
+              { label: tStr('Copy'), value: 'copy' },
+            ],
+          },
+        };
       },
       defaultParams() {
         return { mode: 'reference' };
@@ -226,7 +246,7 @@ EmbedBlockModel.registerFlow({
         const v = (params?.targetUid || '').trim();
         const mode = params?.mode || 'reference';
         if (!v) {
-          ctx.model.setStepParams('embedSettings', 'target', { targetUid: '' });
+          ctx.model.setStepParams('referenceSettings', 'target', { targetUid: '' });
           return;
         }
         if (mode === 'copy') {
@@ -267,25 +287,25 @@ EmbedBlockModel.registerFlow({
             ctx.exit();
             return;
           } catch (e) {
-            console.error('[EmbedBlockModel] copy mode failed:', e);
+            console.error('[ReferenceBlockModel] copy mode failed:', e);
           }
         }
-        ctx.model.setStepParams('embedSettings', 'target', { targetUid: v });
+        ctx.model.setStepParams('referenceSettings', 'target', { targetUid: v });
       },
     },
   },
 });
 
-EmbedBlockModel.registerFlow({
+ReferenceBlockModel.registerFlow({
   key: 'cardSettings',
   steps: {}, // 隐藏自身的block配置
 });
 
-EmbedBlockModel.define({
-  label: tStr('Embed'),
+ReferenceBlockModel.define({
+  label: tStr('Reference block'),
   group: escapeT('Other blocks'),
   createModelOptions: {
-    use: 'EmbedBlockModel',
+    use: 'ReferenceBlockModel',
   },
   sort: 900,
 });

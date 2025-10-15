@@ -7,15 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { InstallOptions, Plugin } from '@nocobase/server';
+import { Plugin } from '@nocobase/client';
+import { ReferenceBlockModel } from './models/ReferenceBlockModel';
 
-export class PluginBlockEmbedServer extends Plugin {
-  async load() {}
-
-  async install(options?: InstallOptions) {}
-  async afterEnable() {}
-  async afterDisable() {}
-  async remove() {}
+export class PluginBlockReferenceClient extends Plugin {
+  async load() {
+    this.flowEngine.registerModels({ ReferenceBlockModel });
+  }
 }
 
-export default PluginBlockEmbedServer;
+export default PluginBlockReferenceClient;
