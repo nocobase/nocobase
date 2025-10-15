@@ -15,7 +15,7 @@ import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined } from
 import { useT } from '../../locale';
 import { useDataSourceManager, useCompile } from '@nocobase/client';
 import { getFieldOptions, getCollectionOptions, getFormatterOptionsByField } from './QueryBuilder.service';
-import { appendColon } from '../utils';
+import { appendColon, debugLog } from '../utils';
 
 export type QueryBuilderRef = {
   validate: () => Promise<any>;
@@ -59,7 +59,7 @@ export const QueryBuilder = React.forwardRef<
   };
 
   const handleValuesChange = (_: any, allValues: any) => {
-    console.log('---handleValuesChange', allValues);
+    debugLog('---handleValuesChange', allValues);
     onChange?.(allValues);
   };
 

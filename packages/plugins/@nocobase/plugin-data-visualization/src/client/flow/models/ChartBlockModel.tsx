@@ -14,8 +14,7 @@ import React, { createRef } from 'react';
 import _ from 'lodash';
 import { Button } from 'antd';
 import { useT, tStr } from '../../locale';
-import { EyeOutlined } from '@ant-design/icons';
-import { convertDatasetFormats, sleep } from '../utils';
+import { convertDatasetFormats, sleep, debugLog } from '../utils';
 import { Chart, ChartOptions } from './Chart';
 import { ConfigPanel } from './ConfigPanel';
 import { ChartResource } from '../resources/ChartResource';
@@ -199,7 +198,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       (this.resource as SQLResource).setDebug(true);
       (this.resource as SQLResource).setSQL(query.sql);
     } else {
-      console.log('---applyQuery', query);
+      debugLog('---applyQuery', query);
       (this.resource as ChartResource).setQueryParams(query);
     }
   }
@@ -251,7 +250,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   // 预览，暂存预览前的 stepParams，并刷新图表
   async onPreview(params: { query: any; chart: any }, needQueryData?: boolean) {
-    console.log('---onPreview', params.query);
+    debugLog('---onPreview', params.query);
     const values = _.cloneDeep(params);
     if (!values) return;
 
@@ -375,7 +374,7 @@ ChartBlockModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        console.log('---setting flow handler', params);
+        debugLog('---setting flow handler', params);
         const { query, chart } = params;
         if (!query || !chart) {
           return;
