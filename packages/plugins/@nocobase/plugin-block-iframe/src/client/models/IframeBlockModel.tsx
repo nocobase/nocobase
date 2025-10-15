@@ -44,7 +44,7 @@ const Iframe: any = observer(
     useEffect(() => {
       const generateSrc = async () => {
         if (mode === 'html') {
-          const targetHtmlContent = htmlContent;
+          const targetHtmlContent = compile(htmlContent);
           if (targetHtmlContent === undefined) {
             return;
           }
