@@ -128,8 +128,8 @@ const traverseJSON = (data, options: TraverseOptions) => {
     } else if (field.type === 'belongsTo') {
       result[key] = traverseJSON(data[key], {
         collection: collection.db.getCollection(field.target),
-        exclude: [field.targetKey],
-        include: subInclude,
+        // exclude: [field.targetKey],
+        include: [...subInclude, field.targetKey],
         excludePk: false,
       });
     } else if (field.type === 'belongsToMany') {
