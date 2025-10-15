@@ -1,6 +1,6 @@
 {
   "The current user has no roles. Please try another account.": "У текущего пользователя нет ролей. Попробуйте другой аккаунт.",
-  "Роль пользователя не существует. Попробуйте войти снова.",
+  "The user role does not exist. Please try signing in again": "Роль пользователя не существует. Попробуйте войти снова.",
   "New role": "Новая роль",
   "Permissions": "Права доступа",
   "Desktop menu": "Меню рабочего стола",
