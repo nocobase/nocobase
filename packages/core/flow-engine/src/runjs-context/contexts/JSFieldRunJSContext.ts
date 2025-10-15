@@ -7,37 +7,42 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowRunJSContext } from './FlowRunJSContext';
-import { createSafeDocument, createSafeWindow } from '../../utils';
+import { FlowRunJSContext } from '../../flowContext';
 
-export class JSFieldRunJSContext extends FlowRunJSContext {
-  static injectDefaultGlobals() {
-    return { window: createSafeWindow(), document: createSafeDocument() };
-  }
-  constructor(delegate: any) {
-    super(delegate);
-    this.defineProperty('element', { get: () => (this as any)._delegate['element'] });
-    this.defineProperty('value', { get: () => (this as any)._delegate['value'] });
-    this.defineProperty('record', { get: () => (this as any)._delegate['record'] });
-    this.defineProperty('collection', { get: () => (this as any)._delegate['collection'] });
-  }
-}
+export class JSFieldRunJSContext extends FlowRunJSContext {}
 
 JSFieldRunJSContext.define({
   label: 'JSField RunJS context',
   properties: {
-    element: 'ElementProxy，字段渲染容器',
-    value: '字段当前值（只读）',
-    record: '当前记录（只读）',
-    collection: '集合定义（只读）',
+    element: `ElementProxy instance providing a safe DOM container for field rendering.
+      Supports innerHTML, append, and other DOM manipulation methods.`,
+    value: `Current value of the field (read-only).
+      Contains the data value stored in this field.`,
+    record: `Current record data object (read-only).
+      Contains all field values of the parent record.`,
+    collection: `Collection definition metadata (read-only).
+      Provides schema information about the collection this field belongs to.`,
   },
   methods: {
-    onRefReady: 'Container ready callback',
-  },
-  snipastes: {
-    'Render value': { $ref: 'scene/jsfield/innerHTML-value', prefix: 'sn-jsf-value' },
-    'Message success': { $ref: 'global/message-success', prefix: 'sn-msg-ok' },
-    'Format number': { $ref: 'scene/jsfield/format-number', prefix: 'sn-jsf-num' },
-    'Color by value': { $ref: 'scene/jsfield/color-by-value', prefix: 'sn-jsf-color' },
+    onRefReady: `Wait for field container DOM element to be ready before executing callback.
+      Parameters: (ref: React.RefObject, callback: (element: HTMLElement) => void, timeout?: number) => void
+      Example: ctx.onRefReady(ctx.ref, (el) => { el.innerHTML = ctx.value })`,
   },
 });
+
+JSFieldRunJSContext.define(
+  {
+    label: 'JS 字段 RunJS 上下文',
+    properties: {
+      element: 'ElementProxy，字段渲染容器，支持 innerHTML/append 等 DOM 操作',
+      value: '字段当前值（只读）',
+      record: '当前记录对象（只读，包含父记录全部字段值）',
+      collection: '集合定义元数据（只读，描述字段所属集合的 Schema）',
+    },
+    methods: {
+      onRefReady:
+        '在字段容器 DOM 就绪后执行回调。参数：(ref, callback, timeout?)；示例：ctx.onRefReady(ctx.ref, el => { el.innerHTML = ctx.value })',
+    },
+  },
+  { locale: 'zh-CN' },
+);

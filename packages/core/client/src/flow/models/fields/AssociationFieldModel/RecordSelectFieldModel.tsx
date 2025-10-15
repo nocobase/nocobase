@@ -77,6 +77,7 @@ export function LazySelect(props) {
           : [];
   return (
     <Select
+      style={{ width: '100%' }}
       {...others}
       allowClear
       showSearch

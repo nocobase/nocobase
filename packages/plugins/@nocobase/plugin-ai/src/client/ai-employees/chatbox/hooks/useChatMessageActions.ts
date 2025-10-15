@@ -208,6 +208,7 @@ export const useChatMessageActions = () => {
     editingMessageId,
     onConversationCreate,
     skillSettings,
+    webSearch,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
   }) => {
@@ -240,7 +241,7 @@ export const useChatMessageActions = () => {
 
     if (!sessionId) {
       const createRes = await api.resource('aiConversations').create({
-        values: { aiEmployee, systemMessage, skillSettings },
+        values: { aiEmployee, systemMessage, skillSettings, conversationSettings: { webSearch } },
       });
       const conversation = createRes?.data?.data;
       if (!conversation) return;

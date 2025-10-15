@@ -15,14 +15,17 @@ import { PageModel } from './PageModel';
 export class RootPageModel extends PageModel {
   async saveStepParams() {
     await super.saveStepParams();
-    // 更新路由
-    this.context.api.request({
-      url: `desktopRoutes:update?filter[id]=${this.props.routeId}`,
-      method: 'post',
-      data: {
-        enableTabs: !!this.stepParams.pageSettings.general.enableTabs,
-      },
-    });
+
+    if (this.stepParams.pageSettings) {
+      // 更新路由
+      this.context.api.request({
+        url: `desktopRoutes:update?filter[id]=${this.props.routeId}`,
+        method: 'post',
+        data: {
+          enableTabs: !!this.stepParams.pageSettings.general.enableTabs,
+        },
+      });
+    }
   }
 
   async handleDragEnd(event: DragEndEvent) {
