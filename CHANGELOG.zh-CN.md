@@ -5,6 +5,16 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.8.29](https://github.com/nocobase/nocobase/compare/v1.8.28...v1.8.29) - 2025-10-15
+
+### 🚀 优化
+
+- **[工作流：审批]** 重构分支配置以适配内核变更 by @mytharcher
+
+### 🐛 修复
+
+- **[工作流：审批]** 修复迁移脚本在未安装应用时由于表不存在的报错问题 by @mytharcher
+
 ## [v1.8.28](https://github.com/nocobase/nocobase/compare/v1.8.27...v1.8.28) - 2025-10-14
 
 ### 🚀 优化
