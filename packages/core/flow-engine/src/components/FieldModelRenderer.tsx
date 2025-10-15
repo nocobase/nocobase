@@ -31,13 +31,20 @@ export function FieldModelRenderer(props: any) {
   const composingRef = useRef(false);
 
   const handleChange = (e: any) => {
-    const val = e?.target?.value || e;
+    let val;
+    if (e && e.target && typeof e.target.value !== 'undefined') {
+      val = e.target.value;
+    } else if (typeof e === 'string') {
+      val = e;
+    } else {
+      val = '';
+    }
+
     model.setProps({ value: val });
     if (!composingRef.current) {
-      props.onChange(e);
+      props.onChange?.(val); // 只传字符串
     }
   };
-
   const handleCompositionStart = () => {
     composingRef.current = true;
   };
