@@ -293,8 +293,6 @@ const PreviewButton = ({ style }) => {
       variant="outlined"
       style={style}
       onClick={async () => {
-        // 先提交以确保 form.values 最新且通过校验
-        await form.submit();
         // 这里通过普通的 form.values 拿不到数据
         const formValues = ctx.getStepFormValues('chartSettings', 'configure');
         // 写入配置参数，统一走 onPreview 方便回滚

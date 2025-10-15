@@ -17,7 +17,8 @@ import { QueryBuilder } from './QueryBuilder';
 import { ResultPanel } from './ResultPanel';
 import { ChartBlockModel } from './ChartBlockModel';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
-import { sleep } from '../utils';
+import { configStore } from './config-store';
+import { validateQuery } from './QueryBuilder.service';
 
 const QueryMode: React.FC = connect(({ value = 'builder', onChange, onClick }) => {
   const t = useT();
@@ -39,12 +40,15 @@ const QueryMode: React.FC = connect(({ value = 'builder', onChange, onClick }) =
   );
 });
 
-// 核心修改：将顶部“模式切换 + Result/Run”合并到本组件的一行头部
 export const QueryPanel: React.FC = observer(() => {
   const t = useT();
   const form = useForm();
   const ctx = useFlowSettingsContext<ChartBlockModel>();
   const mode = form?.values?.query?.mode || 'builder';
+  const qbRef = React.useRef(null);
+
+  const [showResult, setShowResult] = useState(false);
+  const [running, setRunning] = useState(false);
 
   React.useEffect(() => {
     // 在 SQL 模式下，隐藏并取消校验 builder 模式相关字段，避免全表单 submit 时的必填校验
@@ -89,22 +93,49 @@ export const QueryPanel: React.FC = observer(() => {
     }
   }, [mode, form]);
 
-  const [showResult, setShowResult] = useState(false);
-  const [running, setRunning] = useState(false);
+  // 图形化模式
+  const handleBuilderChange = async (next: any) => {
+    const query = form?.values?.query || {};
+    form?.setValuesIn?.('query', {
+      ...next,
+      mode: query.mode,
+      sql: query.sql,
+    });
+  };
+
+  // SQL 模式
+  // const handleSqlChange = async (sql: string) => {
+  //   form?.setValuesIn?.('query.sql', sql);
+  // };
 
   const handleRunQuery = async () => {
     try {
       setRunning(true);
-      // builder 模式先提交表单做校验；sql 模式不需要校验
-      if (form.values?.mode === 'builder') {
-        await form.submit();
+      // 触发下层 QueryBuilder 的校验
+      if (mode === 'builder') {
+        try {
+          await qbRef.current?.validate();
+        } catch {
+          setRunning(false);
+          return;
+        }
       }
-      // 写入查询参数，统一走 onPreview 方便回滚
+
+      // 业务自定义校验
+      const query = form.values?.query;
+      const { success, message } = validateQuery(query);
+      if (!success) {
+        configStore.setError(ctx.model.uid, message);
+        setShowResult(true);
+        return;
+      }
+
+      // 通过校验后，写入查询参数并预览
       await ctx.model.onPreview(form.values, true);
-      // 显示数据结果面板
       setShowResult(true);
     } catch (error: any) {
-      console.error(error);
+      configStore.setError(ctx.model.uid, error?.message);
+      setShowResult(true);
     } finally {
       setRunning(false);
     }
@@ -119,7 +150,7 @@ export const QueryPanel: React.FC = observer(() => {
             alignItems: 'center',
             justifyContent: 'space-between',
             marginBottom: '8px',
-            // 解决父容器裁剪导致圆角/边框被吃掉
+            // 解决父容器裁剪导致圆角/边框被吃掉的问题
             paddingTop: 1,
             paddingLeft: 1,
           }}
@@ -133,18 +164,18 @@ export const QueryPanel: React.FC = observer(() => {
               {t('Run query')}
             </Button>
             <Button type="link" aria-expanded={showResult} onClick={() => setShowResult((v) => !v)}>
-              {t('Data result')}
+              {showResult ? t('Hide data') : t('View data')}
               {showResult ? <DownOutlined /> : <RightOutlined />}
             </Button>
           </Space>
         </div>
-        {/* 下面保持不变 */}
+
         {showResult ? (
           <div style={{ marginTop: 8 }}>
             <ResultPanel />
           </div>
         ) : mode === 'builder' ? (
-          <QueryBuilder />
+          <QueryBuilder ref={qbRef} initialValues={form?.values?.query} onChange={handleBuilderChange} />
         ) : (
           <Field name="sql" component={[SQLEditor]} />
         )}
