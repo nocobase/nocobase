@@ -270,7 +270,8 @@ return (function () {
     yAxis: { type: 'value' },
     series: Array.from(seriesMap.entries()).map(([key, arr]) => ({
       type: 'line',
-      name: key === '__default__' ? ${s('')} : String(key),
+      // 默认系列名：无 seriesField 时用 yField，确保图例可见
+      name: key === '__default__' ? yField : String(key),
       data: arr.map(p => [p.x, p.y]),
       smooth: ${!!smooth},
       stack: ${!!stack} ? 'total' : undefined,
@@ -322,9 +323,9 @@ return (function () {
     yAxis: { type: 'value' },
     series: Array.from(seriesMap.entries()).map(([key, arr]) => ({
       type: 'bar',
-      name: key === '__default__' ? ${s('')} : String(key),
+      // 默认系列名：无 seriesField 时用 yField
+      name: key === '__default__' ? yField : String(key),
       data: arr.map(p => [p.x, p.y]),
-      smooth: ${!!smooth},
       stack: ${!!stack} ? 'total' : undefined,
       label: { show: ${!!label} },
     })),
@@ -447,7 +448,8 @@ return (function () {
       });
       return {
         type: 'scatter',
-        name: key === '__default__' ? ${s('')} : String(key),
+        // 默认系列名：无 seriesField 时用 yField
+        name: key === '__default__' ? yField : String(key),
         data: yArr,
         symbolSize: (value, params) => sizeArr[params.dataIndex] || 20,
         label: { show: ${!!label} },
