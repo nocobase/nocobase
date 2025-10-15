@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useContext } from 'react';
-import { CurrentUserContext, useMobileLayout } from '@nocobase/client';
+import React from 'react';
+import { useMobileLayout } from '@nocobase/client';
 import { ChatBoxWrapper } from './ChatBox';
 import { Helmet } from 'react-helmet';
 import { ChatButton } from './ChatButton';

@@ -19,6 +19,7 @@ interface ChatBoxState {
   open: boolean;
   expanded: boolean;
   showConversations: boolean;
+  minimize: boolean;
 
   currentEmployee?: AIEmployee;
   senderValue: string;
@@ -41,6 +42,7 @@ interface ChatBoxActions {
   setOpen: (open: boolean) => void;
   setExpanded: (expanded: boolean) => void;
   setShowConversations: (show: boolean) => void;
+  setMinimize: (minus: boolean) => void;
 
   setCurrentEmployee: (aiEmployee?: AIEmployee | ((prev: AIEmployee) => AIEmployee)) => void;
   setSenderValue: (value: string) => void;
@@ -61,6 +63,7 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
   open: false,
   expanded: false,
   showConversations: false,
+  minimize: false,
 
   currentEmployee: null,
   senderValue: '',
@@ -82,6 +85,7 @@ const store = create<ChatBoxState & ChatBoxActions>()((set) => ({
   setOpen: (open) => set({ open }),
   setExpanded: (expanded) => set({ expanded }),
   setShowConversations: (show) => set({ showConversations: show }),
+  setMinimize: (minus) => set({ minimize: minus }),
 
   setCurrentEmployee: (employee: AIEmployee | ((prev: AIEmployee) => AIEmployee)) =>
     set((state) => ({
