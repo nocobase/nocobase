@@ -55,7 +55,19 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
     const index = this.context.index;
     const record = this.context.record;
     const grid = this.subModels.grid.createFork({}, `grid-${index}`);
-
+    const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
+      () => (grid.context as any).collection,
+      grid.context.t('Current record'),
+      (ctx) => {
+        const coll = ctx.collection;
+        const rec = ctx.record;
+        const name = coll?.name;
+        const dataSourceKey = coll?.dataSourceKey;
+        const filterByTk = coll?.getFilterByTK?.(rec);
+        if (!name || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
+        return { collection: name, dataSourceKey, filterByTk };
+      },
+    );
     grid.context.defineProperty('fieldIndex', {
       get: () => index,
       cache: false,
@@ -63,6 +75,8 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
     grid.context.defineProperty('record', {
       get: () => record,
       cache: false,
+      resolveOnServer: true,
+      meta: recordMeta,
     });
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     return (

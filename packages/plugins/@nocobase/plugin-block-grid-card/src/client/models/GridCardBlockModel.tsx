@@ -215,7 +215,7 @@ GridCardBlockModel.registerFlow({
 GridCardBlockModel.registerFlow({
   key: 'listettings',
   sort: 500,
-  title: escapeT('Grid card settings'),
+  title: escapeT('Grid card block settings', { ns: 'block-grid-card' }),
   steps: {
     columnCount: {
       title: escapeT('Set the count of columns displayed in a row'),
