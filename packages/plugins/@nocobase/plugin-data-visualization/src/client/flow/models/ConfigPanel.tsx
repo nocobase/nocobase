@@ -33,40 +33,38 @@ export const ConfigPanel: React.FC = () => {
   };
 
   return (
-    <>
-      <Collapse
-        activeKey={activeKeys}
-        onChange={setActiveKeys}
-        items={[
-          {
-            key: 'query',
-            label: t('Data query'),
-            children: (
-              <Card style={getCardStyle('query')} styles={{ body: { padding: 0 } }}>
-                <QueryPanel />
-              </Card>
-            ),
-          },
-          {
-            key: 'chartOptions',
-            label: t('Chart options'),
-            children: (
-              <Card style={getCardStyle('chartOptions')} styles={{ body: { padding: 0 } }}>
-                <ChartOptionsPanel />
-              </Card>
-            ),
-          },
-          {
-            key: 'events',
-            label: t('Events'),
-            children: (
-              <Card style={getCardStyle('events')} styles={{ body: { padding: 0 } }}>
-                <EventsPanel />
-              </Card>
-            ),
-          },
-        ]}
-      />
-    </>
+    <Collapse
+      activeKey={activeKeys}
+      onChange={setActiveKeys}
+      items={[
+        {
+          key: 'query',
+          label: <span style={{ fontWeight: 500 }}>{t('Data query')}</span>,
+          children: (
+            <Card style={getCardStyle('query')} styles={{ body: { padding: 0 } }}>
+              <QueryPanel />
+            </Card>
+          ),
+        },
+        {
+          key: 'chartOptions',
+          label: <span style={{ fontWeight: 500 }}>{t('Chart options')}</span>,
+          children: (
+            <Card style={getCardStyle('chartOptions')} styles={{ body: { padding: 0 } }}>
+              <ChartOptionsPanel />
+            </Card>
+          ),
+        },
+        {
+          key: 'events',
+          label: <span style={{ fontWeight: 500 }}>{t('Events')}</span>,
+          children: (
+            <Card style={getCardStyle('events')} styles={{ body: { padding: 0 } }}>
+              <EventsPanel />
+            </Card>
+          ),
+        },
+      ]}
+    />
   );
 };
