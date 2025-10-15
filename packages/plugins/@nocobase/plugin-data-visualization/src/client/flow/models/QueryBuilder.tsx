@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { FilterGroup, VariableFilterItem } from '@nocobase/client';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
-import { Form, Space, Collapse, Cascader, Select, Input, Checkbox, Button, InputNumber } from 'antd';
+import { Form, Space, Cascader, Select, Input, Checkbox, Button, InputNumber } from 'antd';
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
-import { DEFAULT_DATA_SOURCE_KEY, useDataSourceManager, useCompile } from '@nocobase/client';
+import { useDataSourceManager, useCompile } from '@nocobase/client';
 import { getFieldOptions, getCollectionOptions, getFormatterOptionsByField } from './QueryBuilder.service';
 import { appendColon } from '../utils';
 

@@ -9,10 +9,10 @@
 
 import { useForm } from '@formily/react';
 import { ChildPageModel, DataBlockModel } from '@nocobase/client';
-import { createCollectionContextMeta, escapeT, SQLResource, useFlowContext } from '@nocobase/flow-engine';
+import { createCollectionContextMeta, SQLResource, useFlowContext } from '@nocobase/flow-engine';
 import React, { createRef } from 'react';
 import _ from 'lodash';
-import { Button, Badge } from 'antd';
+import { Button } from 'antd';
 import { useT, tStr } from '../../locale';
 import { EyeOutlined } from '@ant-design/icons';
 import { convertDatasetFormats, sleep } from '../utils';
@@ -289,7 +289,6 @@ const PreviewButton = ({ style }) => {
   const ctx = useFlowContext();
   const form = useForm();
   return (
-    // <Badge dot offset={[-8, 2]}>
     <Button
       color="primary"
       variant="outlined"
@@ -303,7 +302,6 @@ const PreviewButton = ({ style }) => {
     >
       {t('Preview')}
     </Button>
-    // </Badge>
   );
 };
 

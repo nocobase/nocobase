@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseRecordResource, FilterItem } from '@nocobase/flow-engine';
+import { BaseRecordResource } from '@nocobase/flow-engine';
 import { parseField, removeUnparsableFilter, isEmptyFilterObject } from '../../utils';
 import { transformFilter } from '@nocobase/utils/client';
 import { validateQuery } from '../models/QueryBuilder.service';
