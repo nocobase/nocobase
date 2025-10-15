@@ -123,6 +123,10 @@ export const FormItem = ({
       label={renderLabel()}
       colon={false}
       extra={rest.extra && <span style={{ whiteSpace: 'pre-wrap' }}>{rest.extra}</span>}
+      tooltip={{
+        title: rest.tooltip,
+        overlayInnerStyle: { whiteSpace: 'pre-line' },
+      }}
     >
       {processedChildren}
     </Form.Item>
