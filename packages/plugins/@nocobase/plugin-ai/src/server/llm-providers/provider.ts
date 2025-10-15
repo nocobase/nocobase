@@ -53,9 +53,9 @@ export abstract class LLMProvider {
       if (!this.isToolConflict() && context.tools?.length) {
         tools.push(...context.tools);
       }
-      chain = chain.bindTools(tools);
+      chain = chain.bindTools?.(tools);
     } else if (context.tools?.length) {
-      chain = chain.bindTools(context.tools);
+      chain = chain.bindTools?.(context.tools);
     }
 
     if (context.structuredOutput) {

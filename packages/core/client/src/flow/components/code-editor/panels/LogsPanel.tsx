@@ -9,6 +9,7 @@
 
 import React from 'react';
 import type { RunLog } from '../hooks/useCodeRunner';
+import { WRAPPER_PRELUDE_LINES } from '../errorHelpers';
 
 export const LogsPanel: React.FC<{
   logs: RunLog[];
@@ -32,6 +33,8 @@ export const LogsPanel: React.FC<{
         logs.map((l, i) => {
           const color = l.level === 'error' ? '#ff4d4f' : l.level === 'warn' ? '#faad14' : '#333';
           const clickable = l.level === 'error' && typeof l.line === 'number' && typeof l.column === 'number';
+          const displayLine =
+            typeof l.line === 'number' ? Math.max(1, l.line - WRAPPER_PRELUDE_LINES) : (l.line as any);
           return (
             <pre
               key={i}
@@ -53,7 +56,7 @@ export const LogsPanel: React.FC<{
               }}
             >
               [{l.level}] {l.msg}
-              {clickable ? ` (${tr('at')} ${l.line}:${l.column})` : ''}
+              {clickable ? ` (${tr('at')} ${displayLine}:${l.column})` : ''}
             </pre>
           );
         })
