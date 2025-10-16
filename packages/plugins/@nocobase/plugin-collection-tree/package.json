@@ -2,8 +2,10 @@
   "name": "@nocobase/plugin-collection-tree",
   "version": "1.8.28",
   "displayName": "Collection: Tree",
+  "displayName.ru-RU": "Древовидная Коллекция",
   "displayName.zh-CN": "数据表：树",
   "description": "Provides tree collection template",
+  "description.ru-RU": "Предоставляет шаблон коллекции в виде дерева. Широко используется для организации документов, каталожных разделов, управляемых задач, меню, комментариев и других сценариев, где важна вложенность и классификация.",
   "description.zh-CN": "提供树数据表模板",
   "keywords": [
     "Collections"

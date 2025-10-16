@@ -1,12 +1,15 @@
 {
   "name": "@nocobase/plugin-data-source-main",
   "displayName": "Data source: Main",
+  "displayName.ru-RU": "Основной Источник данных",
   "displayName.zh-CN": "数据源：主数据库",
   "description": "NocoBase main database, supports relational databases such as PostgreSQL, MySQL, MariaDB and so on.",
+  "description.ru-RU": "Основная база данных NocoBase: поддерживает реляционные СУБД, включая PostgreSQL, MySQL, MariaDB и другие.",
   "description.zh-CN": "NocoBase 主数据库，支持 PostgreSQL、MySQL、MariaDB 等关系型数据库。",
   "version": "1.8.28",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/data-source-main",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/data-source-main",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-source-main",
   "license": "AGPL-3.0",
   "devDependencies": {

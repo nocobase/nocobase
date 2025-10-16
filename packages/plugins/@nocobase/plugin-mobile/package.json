@@ -6,8 +6,10 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile",
   "license": "AGPL-3.0",
   "displayName": "Mobile",
+  "displayName.ru-RU": "Мобильная версия",
   "displayName.zh-CN": "移动端",
   "description": "Provides the ability to configure mobile pages.",
+  "description.ru-RU": "Предоставляет возможность настройки мобильных страниц.",
   "description.zh-CN": "提供移动端页面配置的能力。",
   "peerDependencies": {
     "@nocobase/client": "1.x",

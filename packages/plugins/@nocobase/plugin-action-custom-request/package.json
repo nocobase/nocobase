@@ -3,10 +3,13 @@
   "version": "1.8.28",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-custom-request",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/action-custom-request",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-custom-request",
   "displayName": "Action: Custom request",
+  "displayName.ru-RU": "Действие: Пользовательский запрос",
   "displayName.zh-CN": "操作：自定义请求",
   "description": "Sending a request to any HTTP service supports sending context data to the target service.",
+  "description.ru-RU": "Отправка запроса к любому HTTP-сервису, поддерживается отправка контекстных данных в целевой сервис.",
   "description.zh-CN": "向任意 HTTP 服务发送请求，支持将上下文数据发送给目标服务。",
   "license": "AGPL-3.0",
   "devDependencies": {

@@ -1,13 +1,16 @@
 {
   "name": "@nocobase/plugin-workflow-loop",
   "displayName": "Workflow: Loop node",
+  "displayName.ru-RU": "Рабочий процесс: Узел циклов",
   "displayName.zh-CN": "工作流：循环节点",
   "description": "Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.",
   "description.zh-CN": "用于对一个数组中的每个值进行重复的子流程处理，也可用于固定次数的重复子流程处理。",
+  "description.ru-RU": "Используется для повторения обработки каждого значения в массиве, а также может использоваться для фиксированного количества повторений подпроцесса.",
   "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-loop",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-loop",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-loop",
   "devDependencies": {
     "@ant-design/icons": "5.x",

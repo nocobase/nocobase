@@ -2,12 +2,15 @@
   "name": "@nocobase/plugin-ui-schema-storage",
   "displayName": "UI schema storage",
   "displayName.zh-CN": "UI schema 存储服务",
+  "displayName.ru-RU": "Хранилище UI схем",
   "description": "Provides centralized UI schema storage service.",
   "description.zh-CN": "提供中心化的 UI schema 存储服务。",
+  "description.ru-RU": "Предоставляет централизованный сервис хранения UI схем.",
   "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/ui-schema-storage",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/ui-schema-storage",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/ui-schema-storage",
   "devDependencies": {
     "@formily/json-schema": "2.x"

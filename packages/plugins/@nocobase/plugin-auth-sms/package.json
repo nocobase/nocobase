@@ -1,12 +1,15 @@
 {
   "name": "@nocobase/plugin-auth-sms",
   "displayName": "Auth: SMS",
+  "displayName.ru-RU": "Аутентификация: SMS",
   "displayName.zh-CN": "认证：短信",
   "description": "SMS authentication.",
+  "description.ru-RU": "Аутентификация по SMS.",
   "description.zh-CN": "通过短信验证码认证身份。",
   "version": "1.8.28",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/auth-sms",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/auth-sms",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/auth-sms",
   "license": "AGPL-3.0",
   "devDependencies": {

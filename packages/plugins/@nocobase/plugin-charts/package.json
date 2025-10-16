@@ -1,8 +1,10 @@
 {
   "name": "@nocobase/plugin-charts",
   "displayName": "Charts (deprecated)",
+  "displayName.ru-RU": "Графики (устаревший)",
   "displayName.zh-CN": "图表（废弃）",
   "description": "The plugin has been deprecated, please use the data visualization plugin instead.",
+  "description.ru-RU": "Данный плагин устарел, используйте вместо него плагин для визуализации данных.",
   "description.zh-CN": "已废弃插件，请使用数据可视化插件代替。",
   "version": "1.8.28",
   "main": "./dist/server/index.js",

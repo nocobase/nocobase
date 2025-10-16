@@ -3,8 +3,10 @@
   "version": "1.8.28",
   "main": "dist/server/index.js",
   "displayName": "License settings",
+  "displayName.ru-RU": "Настройки лицензии",
   "displayName.zh-CN": "授权设置",
   "description": "Instance ID and license key settings",
+  "description.ru-RU": "Настройка идентификатора инстанса и ключа лицензии",
   "description.zh-CN": "实例 ID 和授权密钥设置",
   "devDependencies": {
     "@nocobase/license-kit": "^0.2.17"

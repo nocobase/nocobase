@@ -3,10 +3,13 @@
   "version": "1.8.28",
   "main": "dist/server/index.js",
   "displayName": "Data source manager",
+  "displayName.ru-RU": "Менеджер управления источниками данных",
   "displayName.zh-CN": "数据源管理",
   "description": "Manage data sources, including the built-in Master database, external databases, APIs, etc.",
+  "description.ru-RU": "Управление источниками данных: встроенная основная база данных, внешние базы данных, API и другие источники.",
   "description.zh-CN": "管理数据源，包括内置的 Master 数据库，外部的数据库、API。",
   "homepage": "https://docs.nocobase.com/handbook/data-source-manager",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/data-source-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/data-source-manager",
   "peerDependencies": {
     "@nocobase/client": "1.x",

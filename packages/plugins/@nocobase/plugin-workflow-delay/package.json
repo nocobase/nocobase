@@ -1,13 +1,16 @@
 {
   "name": "@nocobase/plugin-workflow-delay",
   "displayName": "Workflow: Delay node",
+  "displayName.ru-RU": "Рабочий процесс: Узел задержки",
   "displayName.zh-CN": "工作流：延时节点",
   "description": "Could be used in workflow parallel branch for waiting other branches.",
+  "description.ru-RU": "Может использоваться в параллельных ветках рабочего процесса для ожидания завершения других веток.",
   "description.zh-CN": "可用于工作流并行分支中等待其他分支执行完成。",
   "version": "1.8.28",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-delay",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-delay",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-delay",
   "devDependencies": {
     "antd": "5.x",
