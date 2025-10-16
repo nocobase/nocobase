@@ -20,7 +20,7 @@ import React, { FC, memo, useCallback, useContext, useEffect, useMemo, useRef, u
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import { NavigateFunction, Outlet, useOutletContext } from 'react-router-dom';
-import { FormDialog, withSearchParams } from '..';
+import { FormDialog, ICON_POPUP_Z_INDEX, withSearchParams, zIndexContext } from '..';
 import { antTableCell } from '../../../acl/style';
 import {
   CurrentTabUidContext,
@@ -286,23 +286,26 @@ const NocoBasePageHeaderTabs: FC<{ className: string; activeKey: string }> = ({ 
                 return (
                   <SchemaComponentOptions scope={options.scope} components={{ ...options.components }}>
                     <FormLayout layout={'vertical'}>
-                      <SchemaComponent
-                        schema={{
-                          properties: {
-                            title: {
-                              title: t('Tab name'),
-                              'x-component': 'Input',
-                              'x-decorator': 'FormItem',
-                              required: true,
+                      {/* 防止按钮的配置弹窗的图标弹窗被遮挡 */}
+                      <zIndexContext.Provider value={ICON_POPUP_Z_INDEX}>
+                        <SchemaComponent
+                          schema={{
+                            properties: {
+                              title: {
+                                title: t('Tab name'),
+                                'x-component': 'Input',
+                                'x-decorator': 'FormItem',
+                                required: true,
+                              },
+                              icon: {
+                                title: t('Icon'),
+                                'x-component': 'IconPicker',
+                                'x-decorator': 'FormItem',
+                              },
                             },
-                            icon: {
-                              title: t('Icon'),
-                              'x-component': 'IconPicker',
-                              'x-decorator': 'FormItem',
-                            },
-                          },
-                        }}
-                      />
+                          }}
+                        />
+                      </zIndexContext.Provider>
                     </FormLayout>
                   </SchemaComponentOptions>
                 );
