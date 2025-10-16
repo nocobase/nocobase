@@ -146,8 +146,7 @@
     "@nocobase/plugin-workflow-notification",
     "@nocobase/plugin-theme-editor",
     "@nocobase/plugin-block-template",
-    "@nocobase/plugin-license",
-    "@nocobase/plugin-block-reference"
+    "@nocobase/plugin-license"
   ],
   "repository": {
     "type": "git",
