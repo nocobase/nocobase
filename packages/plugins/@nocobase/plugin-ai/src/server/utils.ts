@@ -18,9 +18,7 @@ export function stripToolCallTags(content: string): string | null {
   if (typeof content !== 'string') {
     return content;
   }
-  return content
-    .replace(/<[|｜]tool▁(?:calls▁begin|calls▁end|call▁begin|call▁end|sep)[|｜]>/g, '')
-    .replace(/function/, '');
+  return content.replace(/<[|｜]tool▁(?:calls▁begin|calls▁end|call▁begin|call▁end|sep)[|｜]>/g, '');
 }
 
 export function parseResponseMessage(row: Model) {
