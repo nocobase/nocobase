@@ -222,12 +222,16 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   // 应用图表配置（仅设置，不负责渲染）
   async applyChartOptions(payload: { mode: 'basic' | 'custom'; builder?: any; raw?: string }) {
     const optionRaw = payload.mode === 'basic' ? genRawByBuilder(payload.builder) : payload.raw;
-    const { value: option } = await this.context.runjs(optionRaw);
+    const { success, value, error, timeout } = await this.context.runjs(optionRaw);
+    if (!success && error) {
+      console.error('applyChartOptions runjs error:', error);
+      return;
+    }
     this.setProps({
       chart: {
         ...this.props.chart,
         optionRaw, // js文本
-        option, // js对象
+        option: value, // js对象
       },
     });
   }
@@ -235,15 +239,15 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   // 应用事件配置（仅设置，不负责渲染）
   async applyEvents(raw?: string) {
     if (!raw) return;
-    return new Promise<void>((resolve, reject) => {
-      this.context.onRefReady(this.context.chartRef, async () => {
-        try {
-          await this.context.runjs(raw, { chart: (this.context.chartRef as any).current });
-          resolve();
-        } catch (e) {
-          reject(e);
-        }
+
+    this.context.onRefReady(this.context.chartRef, async () => {
+      const { success, value, error, timeout } = await this.context.runjs(raw, {
+        chart: (this.context.chartRef as any).current,
       });
+      if (!success && error) {
+        console.error('applyEvents runjs error:', error);
+        return;
+      }
     });
   }
 
