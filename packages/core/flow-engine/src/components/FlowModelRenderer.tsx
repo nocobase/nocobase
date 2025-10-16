@@ -223,8 +223,15 @@ const FlowModelRendererCore: React.FC<{
     };
 
     // 如果不显示流程设置，直接返回模型内容（可能包装 ErrorBoundary）
+    // 当模型类发生变化（如 replaceModel），强制重挂载内容，规避部分子组件 hooks deps 形态不一致导致的报错
+    const contentKey = (model as any)?.use || (model as any)?.constructor?.name || model.uid;
+
     if (!showFlowSettings) {
-      return wrapWithErrorBoundary(<ContentOrError />);
+      return wrapWithErrorBoundary(
+        <div key={contentKey}>
+          <ContentOrError />
+        </div>,
+      );
     }
 
     // 根据 flowSettingsVariant 包装相应的设置组件
@@ -243,14 +250,22 @@ const FlowModelRendererCore: React.FC<{
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
             toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
           >
-            {wrapWithErrorBoundary(<ContentOrError />)}
+            {wrapWithErrorBoundary(
+              <div key={contentKey}>
+                <ContentOrError />
+              </div>,
+            )}
           </FlowsFloatContextMenu>
         );
 
       case 'contextMenu':
         return (
           <FlowsContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>
-            {wrapWithErrorBoundary(<ContentOrError />)}
+            {wrapWithErrorBoundary(
+              <div key={contentKey}>
+                <ContentOrError />
+              </div>,
+            )}
           </FlowsContextMenu>
         );
 
@@ -281,7 +296,11 @@ const FlowModelRendererCore: React.FC<{
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
             toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
           >
-            {wrapWithErrorBoundary(<ContentOrError />)}
+            {wrapWithErrorBoundary(
+              <div key={contentKey}>
+                <ContentOrError />
+              </div>,
+            )}
           </FlowsFloatContextMenu>
         );
     }

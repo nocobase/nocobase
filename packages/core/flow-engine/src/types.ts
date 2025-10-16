@@ -310,6 +310,7 @@ export interface IFlowModelRepository<T extends FlowModel = FlowModel> {
   save(model: T, options?: { onlyStepParams?: boolean }): Promise<Record<string, any>>;
   destroy(uid: string): Promise<boolean>;
   move(sourceId: string, targetId: string, position: 'before' | 'after'): Promise<void>;
+  duplicate(uid: string): Promise<Record<string, any> | null>;
 }
 
 /**
