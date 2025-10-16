@@ -98,6 +98,9 @@ describe('FlowEngine', () => {
         return true;
       }
       async move() {}
+      async duplicate() {
+        return null;
+      }
     }
 
     let repo: MockFlowModelRepository;
