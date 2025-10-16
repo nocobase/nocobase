@@ -15,7 +15,7 @@ import { CodeEditorExtension } from '../extension/CodeEditorExtension';
 export const RightExtra: React.FC<{
   name?: string;
   language?: string;
-  scene?: string;
+  scene?: string | string[];
   extraEditorRef: EditorRef;
   onActionCountChange?: (count: number) => void;
   extraContent?: React.ReactNode;

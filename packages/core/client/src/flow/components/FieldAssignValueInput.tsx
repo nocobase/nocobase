@@ -116,7 +116,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
       updateAssociation: false,
       multiple,
     });
-    fm?.applyAutoFlows?.();
+    fm?.dispatchEvent?.('beforeRender', undefined, { sequential: true, useCache: true });
     // 为本地枚举型字段补全可选项（仅在未显式传入 options 时处理）
     ensureOptionsFromUiSchemaEnumIfAbsent(fm, cf);
     if (!fm?.props?.fieldNames && cf?.targetCollection) {

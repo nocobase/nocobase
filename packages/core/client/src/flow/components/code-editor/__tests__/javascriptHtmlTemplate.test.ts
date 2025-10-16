@@ -10,12 +10,15 @@
 import { syntaxTree } from '@codemirror/language';
 import { CompletionContext } from '@codemirror/autocomplete';
 import { EditorState } from '@codemirror/state';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, beforeAll } from 'vitest';
+import { setupRunJSContexts } from '@nocobase/flow-engine';
 import { javascriptWithHtmlTemplates } from '../javascriptHtmlTemplate';
-import { createJavascriptCompletion } from '../javascriptCompletion';
 import { createHtmlCompletion } from '../htmlCompletion';
 
 describe('javascriptWithHtmlTemplates', () => {
+  beforeAll(async () => {
+    await setupRunJSContexts();
+  });
   it('mounts html parser for template literal segments', () => {
     const support = javascriptWithHtmlTemplates();
     const state = EditorState.create({
@@ -52,6 +55,7 @@ describe('javascriptWithHtmlTemplates', () => {
     const pos = doc.indexOf('<') + 1;
     const context = new CompletionContext(state, pos, true);
 
+    const { createJavascriptCompletion } = await import('../javascriptCompletion');
     const jsCompletion = createJavascriptCompletion()(context);
     expect(jsCompletion).toBeNull();
 
@@ -71,6 +75,7 @@ describe('javascriptWithHtmlTemplates', () => {
     const pos = doc.lastIndexOf('<');
     const context = new CompletionContext(state, pos + 1, true);
 
+    const { createJavascriptCompletion } = await import('../javascriptCompletion');
     const jsCompletion = createJavascriptCompletion()(context);
     expect(jsCompletion).toBeNull();
 
@@ -79,7 +84,7 @@ describe('javascriptWithHtmlTemplates', () => {
     expect(htmlResult?.options?.some((option) => option.label.includes('div'))).toBe(true);
   });
 
-  it('keeps javascript completions available outside template literals', () => {
+  it('keeps javascript completions available outside template literals', async () => {
     const state = EditorState.create({
       doc: 'const value = windo',
       extensions: [javascriptWithHtmlTemplates()],
@@ -88,6 +93,7 @@ describe('javascriptWithHtmlTemplates', () => {
     const pos = state.doc.length;
     const context = new CompletionContext(state, pos, true);
 
+    const { createJavascriptCompletion } = await import('../javascriptCompletion');
     const result = createJavascriptCompletion()(context);
     expect(result).not.toBeNull();
     expect(result?.options.length ?? 0).toBeGreaterThan(0);

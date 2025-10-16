@@ -10,21 +10,7 @@
 import { BaseRecordResource, FilterItem } from '@nocobase/flow-engine';
 import { parseField, removeUnparsableFilter, isEmptyFilterObject } from '../../utils';
 import { transformFilter } from '@nocobase/utils/client';
-
-function fixWrongData(filter: any): any {
-  // 处理异常结构，最外面多了一层 $and 或 $or
-  if (Array.isArray(filter.$and) && filter.$and.length === 1 && filter.$and[0]?.logic) {
-    filter = filter.$and[0];
-  }
-  if (Array.isArray(filter.$or) && filter.$or.length === 1 && filter.$or[0]?.logic) {
-    filter = filter.$or[0];
-  }
-  // 处理异常结构，缺少 items 字段
-  if ((filter?.logic === '$and' || filter?.logic === '$or') && !Array.isArray(filter.items)) {
-    filter.items = [];
-  }
-  return filter;
-}
+import { validateQuery } from '../models/QueryBuilder.service';
 
 export class ChartResource<TData = any> extends BaseRecordResource<TData> {
   resourceName = 'charts';
@@ -41,7 +27,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // 整体数据查询参数，内部 QueryBuilder 调用
   setQueryParams(query: Record<string, any>, mark?: string) {
-    const { success, message } = this.validateQuery(query);
+    const { success, message } = validateQuery(query);
     if (!success) {
       // 这里过程性校验 不强制报错，只做提示
       console.warn(message);
@@ -49,7 +35,6 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
     }
     const parsed = this.parseQuery(query);
     const { filter, ...rest } = parsed;
-    console.log('---setQueryParams parsed', parsed, mark);
 
     // 写入除 filter 以外的字段到请求体
     this.request.data = {
@@ -69,8 +54,6 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // 筛选条件写入请求参数，父类 addFilterGroup/removeFilterGroup --> resetFilter --> setFilter
   setFilter(filter: Record<string, any>) {
-    console.log('---setFilter', filter);
-
     // 入参为 undefined 或 null 时，直接清空已设置的筛选条件并返回
     if (filter === undefined || filter === null) {
       delete this.request.data.filter;
@@ -78,7 +61,6 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
     }
 
     const cleanedRoot = removeUnparsableFilter(filter);
-
     let merged = cleanedRoot;
     if (
       cleanedRoot &&
@@ -100,22 +82,6 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
       this.request.data.filter = merged;
     }
     return this;
-  }
-
-  validateQuery(query: Record<string, any>): { success: boolean; message: string } {
-    if (!query) {
-      return { success: false, message: 'validate: query is required' };
-    }
-    if (!query.mode) {
-      return { success: false, message: 'validate: query mode is required' };
-    }
-    if (query.mode === 'sql' && !query.sql) {
-      return { success: false, message: 'validate: sql is required when mode is sql' };
-    }
-    if (query.mode === 'builder' && (!query.collectionPath?.length || !query.measures?.length)) {
-      return { success: false, message: 'validate: collection and measures are required when mode is builder' };
-    }
-    return { success: true, message: '' };
   }
 
   // 解析 queryBuider 表单值为请求参数
@@ -180,6 +146,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // debounce 刷新数据
   async refresh() {
+    console.log('---ChartResource refresh');
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer);
     }

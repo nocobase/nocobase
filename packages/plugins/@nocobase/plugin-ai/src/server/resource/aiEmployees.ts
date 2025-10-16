@@ -100,6 +100,7 @@ export const listByUser = async (ctx: Context, next: Next) => {
     },
     skillSettings: row.skillSettings,
     builtIn: row.builtIn,
+    webSearch: row.modelSettings?.builtIn?.webSearch ?? false,
   }));
   await next();
 };

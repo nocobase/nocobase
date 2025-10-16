@@ -48,6 +48,7 @@ export class AIEmployee {
   private systemMessage: string;
   private aiChatConversation: AIChatConversation;
   private skillSettings?: Record<string, any>;
+  private webSearch?: boolean;
 
   constructor(
     ctx: Context,
@@ -55,6 +56,7 @@ export class AIEmployee {
     sessionId: string,
     systemMessage?: string,
     skillSettings?: Record<string, any>,
+    webSearch?: boolean,
   ) {
     this.employee = employee;
     this.ctx = ctx;
@@ -68,6 +70,7 @@ export class AIEmployee {
     const locale = this.ctx.getCurrentLocale();
     const builtInManager = this.plugin.builtInManager;
     builtInManager.setupBuiltInInfo(locale, this.employee as unknown as AIEmployeeType);
+    this.webSearch = webSearch;
   }
 
   async getLLMService() {
@@ -75,6 +78,14 @@ export class AIEmployee {
 
     if (!modelSettings?.llmService) {
       throw new Error('LLM service not configured');
+    }
+
+    if (modelSettings?.builtIn?.webSearch === true) {
+      if (this.webSearch !== false) {
+        modelSettings.builtIn.webSearch = true;
+      } else {
+        modelSettings.builtIn.webSearch = false;
+      }
     }
 
     const service = await this.db.getRepository('llmServices').findOne({

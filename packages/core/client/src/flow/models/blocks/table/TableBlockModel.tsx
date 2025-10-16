@@ -32,8 +32,7 @@ import React, { useRef } from 'react';
 import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
-import { TableCustomColumnModel } from './TableCustomColumnModel';
-import { extractIndex } from './utils';
+import { extractIndex, adjustColumnOrder } from './utils';
 
 type TableBlockModelStructure = {
   subModels: {
@@ -174,8 +173,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
         title: <AddFieldColumn model={this} />,
       } as any);
     }
-
-    return cols;
+    return adjustColumnOrder(cols);
   }
 
   EditableRow = (props) => {
@@ -390,8 +388,16 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     return (
       <>
         <DndProvider>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <Space>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              marginBottom: this.context.themeToken.margin,
+              gap: this.context.themeToken.marginXXS,
+            }}
+          >
+            <Space wrap>
               {this.mapSubModels('actions', (action) => {
                 // @ts-ignore
                 if (action.props.position === 'left') {
@@ -409,7 +415,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
               {/* 占位 */}
               <span></span>
             </Space>
-            <Space>
+            <Space wrap>
               {this.mapSubModels('actions', (action) => {
                 // @ts-ignore
                 if (action.props.position !== 'left') {
@@ -589,7 +595,7 @@ TableBlockModel.registerFlow({
           ctx.model.mapSubModels('columns', async (column) => {
             if (column.hidden) return;
             try {
-              await column.applyAutoFlows();
+              await column.dispatchEvent('beforeRender');
             } catch (err) {
               column['__autoFlowError'] = err;
               // 列级错误不再向上抛，避免拖垮整表；在单元格层用 ErrorBoundary 展示

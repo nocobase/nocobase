@@ -654,7 +654,7 @@ export class CollectionField {
   }
 
   get title() {
-    const titleValue = this.options?.title || this.options?.uiSchema?.title || this.options.name;
+    const titleValue = this.options?.uiSchema?.title || this.options?.title || this.options.name;
     return this.flowEngine.translate(titleValue);
   }
 
@@ -703,6 +703,7 @@ export class CollectionField {
         multiple: target ? ['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) : undefined,
         maxCount: target && !['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) ? 1 : undefined,
         target: target,
+        template: this.targetCollection?.template,
       },
       _.isUndefined,
     );

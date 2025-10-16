@@ -7,11 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export default {
+import type { SnippetModule } from '../types';
+
+const snippet: SnippetModule = {
   contexts: ['*'],
   prefix: 'sn-notify',
   label: 'Open notification',
   description: 'Open an AntD notification with custom content',
+  locales: {
+    'zh-CN': {
+      label: '打开通知',
+      description: '展示一条自定义内容的通知',
+    },
+  },
   content: `
 ctx.notification.open({
   message: ctx.t('Notification title'),
@@ -19,3 +27,5 @@ ctx.notification.open({
 });
 `,
 };
+
+export default snippet;

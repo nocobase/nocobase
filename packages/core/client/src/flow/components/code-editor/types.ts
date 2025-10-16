@@ -21,7 +21,7 @@ export interface EditorRef {
 export type CodeEditorExtra = ComponentType<{
   name?: string;
   language?: string;
-  scene?: string;
+  scene?: string | string[];
   editorRef: EditorRef;
   setActive: (key: string, active: boolean) => void;
 }>;

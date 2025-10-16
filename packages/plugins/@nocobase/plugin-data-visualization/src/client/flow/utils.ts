@@ -111,3 +111,24 @@ export const formatters = {
     },
   ],
 };
+
+export function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+export function appendColon(label: string, lang?: string): string {
+  if (typeof label !== 'string') {
+    return '';
+  }
+  const trimmed = label.trim();
+  if (!trimmed) {
+    return '';
+  }
+  // 先移除末尾已有的半角/全角冒号（以及其后的空白）
+  const noColon = trimmed.replace(/[：:]\s*$/u, '');
+  const isZh = typeof lang === 'string' && /^zh([-_]|$)/i.test(lang);
+  const colon = isZh ? '：' : ':';
+  return `${noColon}${colon}`;
+}

@@ -4,7 +4,7 @@
 
 ## 以下流执行时会创建 FlowRuntimeContext
 
-- `model.applyAutoFlows(inputArgs)`  
+- `model.dispatchEvent('beforeRender', inputArgs)`  
   自动执行所有属性流，`inputArgs` 为流输入参数。
 
 - `model.dispatchEvent(eventName, inputArgs)`  

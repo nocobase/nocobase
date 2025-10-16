@@ -11,7 +11,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import type { Completion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
-import { useFlowContext } from '@nocobase/flow-engine';
+import { useFlowContext, getRunJSScenesForContext } from '@nocobase/flow-engine';
 import { useRunJSDocCompletions } from './hooks/useRunJSDocCompletions';
 import { clearDiagnostics, parseErrorLineColumn, markErrorAt, jumpTo } from './errorHelpers';
 import { Button } from 'antd';
@@ -35,7 +35,7 @@ interface CodeEditorProps {
   version?: string; // runjs 版本（默认 v1）
   name?: string;
   language?: string;
-  scene?: string;
+  scene?: string | string[];
 }
 
 export * from './types';
@@ -62,7 +62,21 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   const runtimeCtx = useFlowContext<any>();
   // const settingsCtx = useFlowSettingsContext?.() as any;
   const hostCtx = runtimeCtx; // || settingsCtx;
-  const { completions: dynamicCompletions, entries: snippetEntries } = useRunJSDocCompletions(hostCtx, version);
+  const resolvedScene = useMemo(() => {
+    if (scene && (Array.isArray(scene) ? scene.length : true)) return scene;
+    if (!hostCtx) return undefined;
+    try {
+      const autoScenes = getRunJSScenesForContext(hostCtx, { version: version as any });
+      return autoScenes.length ? autoScenes : undefined;
+    } catch (_) {
+      return undefined;
+    }
+  }, [scene, hostCtx, version]);
+  const { completions: dynamicCompletions, entries: snippetEntries } = useRunJSDocCompletions(
+    hostCtx,
+    version,
+    resolvedScene,
+  );
   const { run, logs, running } = useCodeRunner(hostCtx, version);
   const [snippetOpen, setSnippetOpen] = useState(false);
   const getSnippetsContainer = useCallback(() => {
@@ -94,8 +108,8 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   // 合并外部注入与动态构建的 completions
   const finalExtra = useMemo(() => {
     const arr: Completion[] = [];
-    if (Array.isArray(extraCompletions)) arr.push(...extraCompletions);
     if (Array.isArray(dynamicCompletions)) arr.push(...dynamicCompletions);
+    if (Array.isArray(extraCompletions)) arr.push(...extraCompletions);
     return arr;
   }, [extraCompletions, dynamicCompletions]);
 
@@ -140,7 +154,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       <RightExtraPanel
         name={name}
         language={language}
-        scene={scene}
+        scene={resolvedScene}
         extraEditorRef={extraEditorRef.current}
         extraContent={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

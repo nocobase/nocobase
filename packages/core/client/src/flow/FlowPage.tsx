@@ -25,6 +25,7 @@ import { resolveViewParamsToViewList, ViewItem } from './resolveViewParamsToView
 import { getViewDiffAndUpdateHidden } from './getViewDiffAndUpdateHidden';
 import { getOpenViewStepParams } from './flows/openViewFlow';
 import { useDesignable } from '../schema-component';
+import { deviceType } from 'react-device-detect';
 
 function InternalFlowPage({ uid, ...props }) {
   const model = useFlowModelById(uid);
@@ -66,6 +67,27 @@ export const FlowRoute = () => {
     flowEngine.context.defineProperty('isMobileLayout', {
       get: () => isMobileLayout,
     });
+    flowEngine.context.defineProperty('deviceType', {
+      get: () => (deviceType === 'browser' ? 'computer' : deviceType),
+      cache: false,
+      meta: {
+        type: 'string',
+        title: flowEngine.translate('Current device type'),
+        interface: 'select',
+        uiSchema: {
+          enum: [
+            { label: flowEngine.translate('Computer'), value: 'computer' },
+            { label: flowEngine.translate('Mobile'), value: 'mobile' },
+            { label: flowEngine.translate('Tablet'), value: 'tablet' },
+            { label: flowEngine.translate('SmartTv'), value: 'smarttv' },
+            { label: flowEngine.translate('Console'), value: 'console' },
+            { label: flowEngine.translate('Wearable'), value: 'wearable' },
+            { label: flowEngine.translate('Embedded'), value: 'embedded' },
+          ],
+          'x-component': 'Select',
+        },
+      },
+    });
   }, [isMobileLayout, flowEngine]);
 
   useEffect(() => {
@@ -81,7 +103,7 @@ export const FlowRoute = () => {
     if (!layoutContentRef.current) {
       return;
     }
-    routeModel.context.defineProperty('layoutContentElement', {
+    flowEngine.context.defineProperty('layoutContentElement', {
       get: () => layoutContentRef.current,
     });
     routeModel.context.defineProperty('currentRoute', {

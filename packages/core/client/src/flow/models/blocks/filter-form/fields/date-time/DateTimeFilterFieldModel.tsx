@@ -6,7 +6,6 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { escapeT } from '@nocobase/flow-engine';
 import React from 'react';
 import { FilterFormFieldModel } from '../FilterFormFieldModel';
 import { DateFilterDynamicComponent } from './components/DateFilterDynamicComponent';
@@ -16,15 +15,3 @@ export class DateTimeFilterFieldModel extends FilterFormFieldModel {
     return <DateFilterDynamicComponent {...this.props} />;
   }
 }
-
-DateTimeFilterFieldModel.registerFlow({
-  key: 'datetimeSettings',
-  sort: 1000,
-  title: escapeT('Datetime settings'),
-  steps: {
-    dateFormat: {
-      use: 'dateDisplayFormat',
-      title: escapeT('Date display format'),
-    },
-  },
-});

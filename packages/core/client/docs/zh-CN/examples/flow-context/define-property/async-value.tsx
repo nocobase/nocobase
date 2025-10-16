@@ -14,9 +14,11 @@ class AsyncValueModel extends FlowModel {
       },
     });
   }
-  async onBeforeAutoFlows() {
-    this.asyncValue = await this.context.asyncValue;
-    console.log('Async value prepared:', this.asyncValue);
+  async onDispatchEventStart(eventName: string) {
+    if (eventName === 'beforeRender') {
+      this.asyncValue = await this.context.asyncValue;
+      console.log('Async value prepared:', this.asyncValue);
+    }
   }
   render() {
     return (

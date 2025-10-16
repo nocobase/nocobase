@@ -21,6 +21,7 @@ import {
   JSRecordActionModel,
 } from '@nocobase/client';
 import { uid } from '@nocobase/utils/client';
+import _ from 'lodash';
 
 export const setupAICoding = () => {
   CodeEditorExtension.registerRightExtra({
@@ -33,7 +34,7 @@ const AICodingExtra = (props) => {
   const ctx = useFlowContext<FlowRuntimeContext>();
   const uid = getUid(ctx, props.name);
   const scene = props.scene ?? getScene(ctx);
-  return <AICodingButton {...props} uid={uid} scene={scene} />;
+  return <AICodingButton {...props} uid={uid} scene={_.isArray(scene) ? scene[0] : scene} />;
 };
 const getUid = (context: FlowRuntimeContext, name: string) => {
   return `${context.model.uid}-${context.flowKey ?? uid()}-${context.currentStep ?? uid()}-${name}`;

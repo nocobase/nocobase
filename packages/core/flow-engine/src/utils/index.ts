@@ -48,7 +48,6 @@ export {
   createRecordMetaFactory,
   extractUsedVariableNames,
   extractUsedVariablePaths,
-  inferParentRecordRef,
   inferRecordRef,
   type RecordParamsBuilder,
 } from './variablesParams';

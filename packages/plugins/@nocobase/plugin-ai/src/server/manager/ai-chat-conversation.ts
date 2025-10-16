@@ -125,7 +125,7 @@ class AIChatConversationImpl implements AIChatConversation {
     }
     return {
       messages,
-      tools: options?.tools,
+      tools: options.tools,
     };
   }
 

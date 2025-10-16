@@ -12,9 +12,39 @@ import { Tabs, Table, Typography, Alert } from 'antd';
 import { TableOutlined, CodeOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 import { configStore } from './config-store';
-import { observer } from '@formily/react';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 const { Paragraph } = Typography;
+
+export const ResultPanel: React.FC = () => {
+  const t = useT();
+  const ctx = useFlowSettingsContext();
+  const uid = ctx.model.uid;
+  const data = configStore.results[uid]?.result;
+  const error = configStore.results[uid]?.error;
+
+  return !error ? (
+    <Tabs
+      size="small"
+      type="card"
+      items={[
+        {
+          key: 'table',
+          label: <span style={{ fontSize: 12 }}>{t('Table')}</span>,
+          icon: <TableOutlined />,
+          children: <TableResult data={data || []} />,
+        },
+        {
+          key: 'json',
+          label: <span style={{ fontSize: 12 }}>{t('JSON')}</span>,
+          icon: <CodeOutlined />,
+          children: <JSONResult data={data || []} />,
+        },
+      ]}
+    />
+  ) : (
+    <Alert showIcon message={t('Query Error')} description={error} type="error" />
+  );
+};
 
 const TableResult: React.FC<{
   data: any[];
@@ -46,34 +76,3 @@ const JSONResult: React.FC<{
     </Paragraph>
   );
 };
-
-export const ResultPanel: React.FC = observer(() => {
-  const t = useT();
-  const ctx = useFlowSettingsContext();
-  const uid = ctx.model.uid;
-  const data = configStore.results[uid]?.result;
-  const error = configStore.results[uid]?.error;
-
-  return !error ? (
-    <Tabs
-      size="small"
-      type="card"
-      items={[
-        {
-          key: 'table',
-          label: t('Table'),
-          icon: <TableOutlined />,
-          children: <TableResult data={data || []} />,
-        },
-        {
-          key: 'json',
-          label: t('JSON'),
-          icon: <CodeOutlined />,
-          children: <JSONResult data={data || []} />,
-        },
-      ]}
-    />
-  ) : (
-    <Alert showIcon message={t('Query error')} description={error} type="error" />
-  );
-});

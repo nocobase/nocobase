@@ -57,8 +57,14 @@ export const EditorCore: React.FC<{
     if (!editorRef.current) return;
     const staticCompletionSource = (options: Completion[]) => {
       const source = (context: CompletionContext): CompletionResult | null => {
-        const word = context.matchBefore(/[a-zA-Z_][\w.]*/);
-        if (!word || (word.from === word.to && !context.explicit)) return null;
+        const word = context.matchBefore(/[$_\p{Letter}][$_\p{Letter}\p{Number}.-]*/u);
+        if (!word) {
+          if (context.explicit) {
+            return { from: context.pos, to: context.pos, options };
+          }
+          return null;
+        }
+        if (word.from === word.to && !context.explicit) return null;
         return { from: word.from, to: word.to, options };
       };
       return source;

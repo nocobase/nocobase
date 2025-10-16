@@ -12,7 +12,7 @@ import ReactDOM from 'react-dom';
 import { observer } from '..';
 import { FlowContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
-import { createViewMeta } from './createViewMeta';
+import { registerPopupVariable } from './createViewMeta';
 import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
 import { FlowEngineProvider } from '../provider';
@@ -48,7 +48,7 @@ export function usePage() {
     });
 
     // Footer 组件实现
-    const FooterComponent = ({ children, ...props }) => {
+    const FooterComponent: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
       React.useEffect(() => {
         pageRef.current?.setFooter(children);
 
@@ -61,9 +61,9 @@ export function usePage() {
     };
 
     // Header 组件实现
-    const HeaderComponent = ({ ...props }) => {
+    const HeaderComponent: React.FC<{ title?: React.ReactNode; extra?: React.ReactNode }> = (props) => {
       React.useEffect(() => {
-        pageRef.current?.setHeader(props as any);
+        pageRef.current?.setHeader(props);
 
         return () => {
           pageRef.current?.setHeader(null);
@@ -77,7 +77,7 @@ export function usePage() {
 
     // 构造 currentPage 实例
     const currentPage = {
-      type: 'embed',
+      type: 'embed' as const,
       inputArgs: config.inputArgs || {},
       preventClose: !!config.preventClose,
       destroy: () => pageRef.current?.destroy(),
@@ -102,11 +102,6 @@ export function usePage() {
     };
 
     const ctx = new FlowContext();
-    ctx.defineProperty('view', {
-      get: () => currentPage,
-      meta: createViewMeta(ctx, () => currentPage),
-      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
-    });
     // 为当前视图创建作用域引擎（隔离实例与缓存）
     const scopedEngine = createViewScopedEngine(flowContext.engine);
     ctx.defineProperty('engine', { value: scopedEngine });
@@ -116,6 +111,14 @@ export function usePage() {
     } else {
       ctx.addDelegate(flowContext.engine.context);
     }
+
+    ctx.defineProperty('view', {
+      get: () => currentPage,
+      // meta: createViewMeta(ctx),
+      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+    });
+    // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
+    registerPopupVariable(ctx, currentPage);
 
     const PageWithContext = observer(
       () => {
