@@ -124,10 +124,11 @@ export const FormItem = ({
       colon={false}
       extra={rest.extra && <span style={{ whiteSpace: 'pre-wrap' }}>{rest.extra}</span>}
       tooltip={
-        {
+        rest.tooltip &&
+        ({
           title: rest.tooltip,
           overlayInnerStyle: { whiteSpace: 'pre-line' },
-        } as TooltipProps
+        } as TooltipProps)
       }
     >
       {processedChildren}

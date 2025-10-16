@@ -45,6 +45,10 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   // 统一管理 refresh 监听引用，便于 off 解绑
   private __onResourceRefresh = () => this.renderChart();
 
+  onActive() {
+    this.resource.refresh();
+  }
+
   // 初始化注册 ChartResource | SQLResource
   initResource(mode = 'builder') {
     // 1) 先拿旧实例并解绑，防止旧实例残留监听

@@ -34,7 +34,7 @@ export function FieldModelRenderer(props: any) {
     let val;
     if (e && e.target && typeof e.target.value !== 'undefined') {
       val = e.target.value;
-    } else if (typeof e === 'string') {
+    } else if (typeof e === 'string' || (typeof e === 'object' && !(e instanceof Event))) {
       val = e;
     } else {
       val = '';
@@ -42,7 +42,7 @@ export function FieldModelRenderer(props: any) {
 
     model.setProps({ value: val });
     if (!composingRef.current) {
-      props.onChange?.(val); // 只传字符串
+      props.onChange?.(val);
     }
   };
   const handleCompositionStart = () => {
