@@ -27,8 +27,11 @@ import {
   useCreateCalendarBlock,
 } from './schema-initializer/items';
 
-const TitleRenderer = ({ value }) => {
-  return <span aria-label="event-title">{value || 'N/A'}</span>;
+const TitleRenderer = ({ value, collectionField }) => {
+  const options = collectionField?.uiSchema?.enum;
+  const label =
+    Array.isArray(options) && options.length ? options.find((opt) => opt?.value === value)?.label ?? value : value;
+  return <span aria-label="event-title">{label || 'N/A'}</span>;
 };
 interface ColorFunctions {
   loading: boolean;
