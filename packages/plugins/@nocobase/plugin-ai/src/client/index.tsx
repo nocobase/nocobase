@@ -50,6 +50,7 @@ import { CodeEditorContext } from './ai-employees/context/code-editor';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
 import { setupDataModeling } from './ai-employees/data-modeling/setup';
+import { getCodeSnippetTool, listCodeSnippetTool } from './ai-employees/ai-coding/tools';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -148,6 +149,8 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerTool(...defineCollectionsTool);
     this.aiManager.registerTool(...formFillerTool);
     this.aiManager.registerTool(...chartGeneratorTool);
+    this.aiManager.registerTool(...listCodeSnippetTool);
+    this.aiManager.registerTool(...getCodeSnippetTool);
   }
 
   setupWorkflow() {

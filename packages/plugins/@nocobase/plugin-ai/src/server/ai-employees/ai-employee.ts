@@ -530,7 +530,7 @@ export class AIEmployee {
           if (updated === 0) {
             return;
           }
-          const result = await toolCall.tool.invoke(this.ctx, toolCall.args);
+          const result = await toolCall.tool.invoke(this.ctx, toolCall.args, toolCall.id);
           await this.aiToolMessagesModel.update(
             {
               invokeStatus: 'done',
@@ -594,7 +594,7 @@ export class AIEmployee {
       const frontendTools = tools.filter(({ tool }) => tool.execution === 'frontend');
       if (!_.isEmpty(frontendTools)) {
         const parallelToolCall = frontendTools.map(async (toolCall) => {
-          const result = await toolCall.tool.invoke(this.ctx, toolCall.args);
+          const result = await toolCall.tool.invoke(this.ctx, toolCall.args, toolCall.id);
           await this.aiToolMessagesModel.update(
             {
               invokeStatus: 'done',

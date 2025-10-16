@@ -133,8 +133,11 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
       const v = viewRef.current;
       return v ? v.state.doc.toString() : '';
     },
+
     buttonGroupHeight: 0,
+    snippetEntries: [],
   });
+  extraEditorRef.current.snippetEntries = snippetEntries;
 
   // snippet group display handled in SnippetsDrawer
 
