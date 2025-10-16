@@ -735,6 +735,17 @@ export class FlowEngine {
   }
 
   /**
+   * Duplicate a model tree via repository API.
+   * Returns the duplicated model JSON (root with subModels) or null if not available.
+   * @param {string} uid UID of the model to duplicate
+   * @returns {Promise<any | null>} Duplicated model JSON or null
+   */
+  async duplicateModel(uid: string) {
+    if (!this.ensureModelRepository()) return null;
+    return this._modelRepository.duplicate(uid);
+  }
+
+  /**
    * Replace a model instance with a new instance of a class.
    * @template T New model type
    * @param {string} uid UID of the model to replace
