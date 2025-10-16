@@ -22,7 +22,7 @@ import React from 'react';
 import { css } from '@emotion/css';
 import { SettingOutlined } from '@ant-design/icons';
 import { DetailsGridModel, FormComponent, ActionModel } from '@nocobase/client';
-import { Space, List } from 'antd';
+import { Space } from 'antd';
 
 type ListItemModelStructure = {
   subModels: {

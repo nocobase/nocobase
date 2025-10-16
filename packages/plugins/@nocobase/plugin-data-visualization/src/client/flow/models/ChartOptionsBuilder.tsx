@@ -7,16 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { Select, InputNumber, Checkbox, Form } from 'antd';
+import { Select, InputNumber, Switch, Form } from 'antd';
 import { useT } from '../../locale';
 import { normalizeBuilder, applyTypeChange, buildFieldOptions, getChartFormSpec } from './ChartOptionsBuilder.service';
 import type { ChartTypeKey } from './ChartOptionsBuilder.service';
-import { sleep } from '../utils';
+import { sleep, appendColon } from '../utils';
+import { useFlowSettingsContext } from '@nocobase/flow-engine';
 
-// 表单项原子类型定义（保持在 UI 层）
 type FormItemSpec =
   | { kind: 'select'; name: string; label?: string; required?: boolean; allowClear?: boolean; placeholderKey?: string }
-  | { kind: 'checkbox'; name: string; labelKey: string }
+  | { kind: 'switch'; name: string; labelKey: string }
   | { kind: 'number'; name: string; labelKey: string; min?: number; max?: number };
 
 export const ChartOptionsBuilder: React.FC<{
@@ -26,6 +26,14 @@ export const ChartOptionsBuilder: React.FC<{
 }> = ({ columns, initialValues, onChange }) => {
   const t = useT();
   const [form] = Form.useForm();
+  const ctx = useFlowSettingsContext<any>();
+  const lang = ctx?.i18n?.language;
+
+  // 为通用布尔项注入默认值，保证 UI 与生成配置一致
+  const computedInitialValues = useMemo(
+    () => ({ legend: true, tooltip: true, label: false, ...initialValues }),
+    [initialValues],
+  );
 
   // 程序化回填时抑制一次 onValuesChange，避免循环
   const ignoreOnValuesChangeRef = useRef(false);
@@ -71,21 +79,22 @@ export const ChartOptionsBuilder: React.FC<{
     <div style={{ padding: 1 }}>
       <Form
         form={form}
-        layout="horizontal"
-        labelCol={{ flex: '120px' }}
-        wrapperCol={{ flex: 'auto' }}
-        labelAlign="right"
-        colon={false}
-        style={{ textAlign: 'left' }}
-        initialValues={initialValues}
+        layout="vertical"
+        colon
+        initialValues={computedInitialValues}
         onValuesChange={handleValuesChange}
       >
         {/* 图表类型 */}
-        <Form.Item label={t('Chart type')} name="type">
+        <Form.Item
+          label={<span style={{ fontWeight: 500 }}>{appendColon(t('Chart type'), lang)}</span>}
+          name="type"
+          required
+        >
           <Select
             style={{ width: 160 }}
             options={[
               { label: t('Line'), value: 'line' },
+              { label: t('Area'), value: 'area' },
               { label: t('Column'), value: 'bar' },
               { label: t('Bar'), value: 'barHorizontal' },
               { label: t('Pie'), value: 'pie' },
@@ -95,65 +104,89 @@ export const ChartOptionsBuilder: React.FC<{
         </Form.Item>
 
         {/* 图表属性 */}
-        {renderChartOptions(type, { t, fieldOptions })}
+        {renderChartOptions(type, { t, fieldOptions, lang })}
 
         {/* 公共属性 */}
         {/* <Form.Item label={t('Height')} name="height">
           <InputNumber min={100} style={{ width: 160 }} />
         </Form.Item> */}
-        <Form.Item name="legend" valuePropName="checked" colon={false} label=" ">
-          <Checkbox>{t('Legend')}</Checkbox>
+        <Form.Item
+          name="legend"
+          valuePropName="checked"
+          label={<span style={{ fontWeight: 500 }}>{appendColon(t('Legend'), lang)}</span>}
+        >
+          <Switch />
         </Form.Item>
-        <Form.Item name="tooltip" valuePropName="checked" colon={false} label=" ">
-          <Checkbox>{t('Tooltip')}</Checkbox>
+        <Form.Item
+          name="tooltip"
+          valuePropName="checked"
+          label={<span style={{ fontWeight: 500 }}>{appendColon(t('Tooltip'), lang)}</span>}
+        >
+          <Switch />
         </Form.Item>
-        <Form.Item name="label" valuePropName="checked" colon={false} label=" ">
-          <Checkbox>{t('Label')}</Checkbox>
+        <Form.Item
+          name="label"
+          valuePropName="checked"
+          label={<span style={{ fontWeight: 500 }}>{appendColon(t('Label'), lang)}</span>}
+        >
+          <Switch />
         </Form.Item>
       </Form>
     </div>
   );
 };
 
-const renderItem = (
+function renderItem(
   spec: FormItemSpec,
-  ctx: { t: (s: string) => string; fieldOptions: { label: string; value: string }[] },
-) => {
-  const { t, fieldOptions } = ctx;
+  ctx: { t: (s: string) => string; fieldOptions: { label: string; value: string }[]; lang?: string },
+) {
+  const { t, fieldOptions, lang } = ctx;
   if (spec.kind === 'select') {
-    const label = spec.label ? spec.label : undefined;
-    const placeholder = spec.placeholderKey ? t(spec.placeholderKey) : undefined;
     return (
-      <Form.Item key={spec.name} label={label ?? undefined} name={spec.name} required={spec.required}>
+      <Form.Item
+        key={spec.name}
+        label={<span style={{ fontWeight: 500 }}>{appendColon(spec.label ?? '', lang)}</span>}
+        name={spec.name}
+        required={spec.required}
+      >
         <Select
           style={{ width: 160 }}
           allowClear={!!spec.allowClear}
-          placeholder={placeholder}
+          placeholder={spec.placeholderKey ? t(spec.placeholderKey) : undefined}
           options={fieldOptions}
         />
       </Form.Item>
     );
   }
-  if (spec.kind === 'checkbox') {
+  if (spec.kind === 'switch') {
     return (
-      <Form.Item key={spec.name} name={spec.name} valuePropName="checked" colon={false} label=" ">
-        <Checkbox>{t(spec.labelKey)}</Checkbox>
+      <Form.Item
+        key={spec.name}
+        name={spec.name}
+        valuePropName="checked"
+        label={<span style={{ fontWeight: 500 }}>{appendColon(t(spec.labelKey), lang)}</span>}
+      >
+        <Switch />
       </Form.Item>
     );
   }
   if (spec.kind === 'number') {
     return (
-      <Form.Item key={spec.name} label={t(spec.labelKey)} name={spec.name}>
+      <Form.Item
+        key={spec.name}
+        label={<span style={{ fontWeight: 500 }}>{appendColon(t(spec.labelKey), lang)}</span>}
+        name={spec.name}
+      >
         <InputNumber min={spec.min} max={spec.max} style={{ width: 160 }} />
       </Form.Item>
     );
   }
   return null;
-};
+}
 
 const renderChartOptions = (
   type: ChartTypeKey,
-  options: { t: (s: string) => string; fieldOptions: { label: string; value: string }[] },
+  options: { t: (s: string) => string; fieldOptions: { label: string; value: string }[]; lang?: string },
 ) => {
   const formSpecs = getChartFormSpec(type);
   return <>{(formSpecs as any[]).map((spec) => renderItem(spec as any, options))}</>;

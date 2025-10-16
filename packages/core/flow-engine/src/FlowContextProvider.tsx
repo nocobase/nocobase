@@ -18,13 +18,15 @@ export function FlowContextProvider(props: { children: React.ReactNode; context:
   return <FlowReactContext.Provider value={props.context}>{props.children}</FlowReactContext.Provider>;
 }
 
-export function FlowViewContextProvider(props: { children: React.ReactNode; context: FlowContext }) {
+export const FlowViewContextProvider = React.memo((props: { children: React.ReactNode; context: FlowContext }) => {
   return (
     <FlowViewContext.Provider value={props.context}>
       <FlowReactContext.Provider value={props.context}>{props.children}</FlowReactContext.Provider>
     </FlowViewContext.Provider>
   );
-}
+});
+
+FlowViewContextProvider.displayName = 'FlowViewContextProvider';
 
 export function useFlowContext<T = FlowEngineContext>() {
   return useContext(FlowReactContext) as T;

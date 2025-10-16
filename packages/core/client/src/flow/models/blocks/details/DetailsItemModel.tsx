@@ -118,6 +118,9 @@ export class DetailsItemModel extends DisplayItemModel<{
             fork.context.defineProperty('fieldIndex', {
               get: () => idx,
             });
+            fork.context.defineProperty('record', {
+              get: () => this.context.record,
+            });
             return fork;
           })()
         : fieldModel;

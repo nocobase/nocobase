@@ -1429,5 +1429,8 @@
   "Block list": "区块列表",
   "Field settings": "字段设置",
   "Refresh target blocks": "刷新目标区块",
-  "Target block uid": "目标区块 uid"
+  "Target block uid": "目标区块 uid",
+  "Submit action settings": "提交按钮设置",
+  "Submit record": "提交记录",
+  "Are you sure you want to save it?": "你确定要提交记录吗？"
 }
