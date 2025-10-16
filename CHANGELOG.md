@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.8.30](https://github.com/nocobase/nocobase/compare/v1.8.29...v1.8.30) - 2025-10-16
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue of tab icon pop-ups being obscured ([#7607](https://github.com/nocobase/nocobase/pull/7607)) by @zhangzhonghe
+
 ## [v1.8.29](https://github.com/nocobase/nocobase/compare/v1.8.28...v1.8.29) - 2025-10-15
 
 ### 🚀 Improvements
