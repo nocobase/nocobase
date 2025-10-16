@@ -45,6 +45,7 @@ import React, {
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import {
+  ICON_POPUP_Z_INDEX,
   SchemaSettingsItemType,
   SchemaToolbarVisibleContext,
   VariablesContext,
@@ -108,6 +109,7 @@ import { Designable, createDesignable, useDesignable } from '../schema-component
 import { useSchemaTemplateManager } from '../schema-templates';
 import { useBlockTemplateContext } from '../schema-templates/BlockTemplateProvider';
 import { useLocalVariables, useVariables } from '../variables';
+import { VariableScopeContext } from '../variables/VariableScope';
 import { FormDataTemplates } from './DataTemplates';
 import { EnableChildCollections } from './EnableChildCollections';
 import { ChildDynamicComponent } from './EnableChildCollections/DynamicComponent';
@@ -115,7 +117,6 @@ import { FormLinkageRules } from './LinkageRules';
 import { useLinkageCollectionFieldOptions } from './LinkageRules/action-hooks';
 import { LinkageRuleCategory, LinkageRuleDataKeyMap } from './LinkageRules/type';
 import { CurrentRecordContextProvider, useCurrentRecord } from './VariableInput/hooks/useRecordVariable';
-import { VariableScopeContext } from '../variables/VariableScope';
 export interface SchemaSettingsProps {
   title?: any;
   dn?: Designable;
@@ -938,11 +939,14 @@ export const SchemaSettingsModalItem: FC<SchemaSettingsModalItemProps> = (props)
                                                     <ApplicationContext.Provider value={app}>
                                                       <APIClientProvider apiClient={apiClient}>
                                                         <ConfigProvider locale={locale}>
-                                                          <SchemaComponent
-                                                            components={components}
-                                                            scope={scope}
-                                                            schema={schema}
-                                                          />
+                                                          {/* 防止按钮的配置弹窗的图标弹窗被遮挡 */}
+                                                          <zIndexContext.Provider value={ICON_POPUP_Z_INDEX}>
+                                                            <SchemaComponent
+                                                              components={components}
+                                                              scope={scope}
+                                                              schema={schema}
+                                                            />
+                                                          </zIndexContext.Provider>
                                                         </ConfigProvider>
                                                       </APIClientProvider>
                                                     </ApplicationContext.Provider>
