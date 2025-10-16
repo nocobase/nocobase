@@ -19,7 +19,7 @@ import {
   FlowModel,
 } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
-import { CollectionBlockModel, BlockSceneEnum, ActionModel } from '@nocobase/client';
+import { CollectionBlockModel, BlockSceneEnum, ActionModel, BlockModel } from '@nocobase/client';
 import React from 'react';
 import { List, Space } from 'antd';
 import { css } from '@emotion/css';
@@ -257,16 +257,16 @@ ListBlockModel.registerFlow({
     refreshData: {
       title: escapeT('Refresh data'),
       async handler(ctx, params) {
-        await Promise.all(
-          ctx.model.mapSubModels('item', async (item) => {
-            try {
-              await item.applyAutoFlows();
-            } catch (err) {
-              item['__autoFlowError'] = err;
-              // 列级错误不再向上抛，避免拖垮整表；在单元格层用 ErrorBoundary 展示
-            }
-          }),
-        );
+        // await Promise.all(
+        //   // ctx.model.mapSubModels('item', async (item: ListItemModel) => {
+        //   //   try {
+        //   //     await item?.applyAutoFlows?.();
+        //   //   } catch (err) {
+        //   //     item['__autoFlowError'] = err;
+        //   //     // 列级错误不再向上抛，避免拖垮整表；在单元格层用 ErrorBoundary 展示
+        //   //   }
+        //   // }),
+        // );
       },
     },
   },
