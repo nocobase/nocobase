@@ -22,7 +22,7 @@ interface FlowEngineProviderProps {
 
 const FlowEngineReactContext = createContext<FlowEngine | null>(null);
 
-export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = (props) => {
+export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = React.memo((props) => {
   const { engine, children } = props;
   if (!engine) {
     throw new Error('FlowEngineProvider must be supplied with an engine.');
@@ -32,7 +32,9 @@ export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = (props) => 
       <FlowContextProvider context={engine.context}>{children}</FlowContextProvider>
     </FlowEngineReactContext.Provider>
   );
-};
+});
+
+FlowEngineProvider.displayName = 'FlowEngineProvider';
 
 export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { modal, message, notification } = App.useApp();

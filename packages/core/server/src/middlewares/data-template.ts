@@ -126,12 +126,13 @@ const traverseJSON = (data, options: TraverseOptions) => {
         include: subInclude,
       });
     } else if (field.type === 'belongsTo') {
-      result[key] = traverseJSON(data[key], {
-        collection: collection.db.getCollection(field.target),
-        // exclude: [field.foreignKey],
-        include: subInclude,
-        excludePk: false,
-      });
+      result[key] = data[key];
+      // traverseJSON(data[key], {
+      //   collection: collection.db.getCollection(field.target),
+      //   // exclude: [field.targetKey],
+      //   include: subInclude, //[..., field.targetKey],
+      //   excludePk: false,
+      // });
     } else if (field.type === 'belongsToMany') {
       result[key] = traverseBelongsToMany(data[key], {
         collection: collection.db.getCollection(field.target),

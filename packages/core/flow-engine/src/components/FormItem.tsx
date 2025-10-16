@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Tooltip, Form } from 'antd';
-import type { FormItemProps } from 'antd';
+import type { FormItemProps, TooltipProps } from 'antd';
 
 type ChildExtraProps = Record<string, any>;
 
@@ -123,6 +123,12 @@ export const FormItem = ({
       label={renderLabel()}
       colon={false}
       extra={rest.extra && <span style={{ whiteSpace: 'pre-wrap' }}>{rest.extra}</span>}
+      tooltip={
+        {
+          title: rest.tooltip,
+          overlayInnerStyle: { whiteSpace: 'pre-line' },
+        } as TooltipProps
+      }
     >
       {processedChildren}
     </Form.Item>
