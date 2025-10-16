@@ -17,7 +17,7 @@ import { FlowRoute } from './FlowPage';
 import * as models from './models';
 import * as filterFormActions from './models/blocks/filter-manager/flow-actions';
 import { DynamicFlowsIcon } from './components/DynamicFlowsIcon';
-import { Markdown } from './models/common/Markdown';
+import { Markdown } from './models/common/Markdown/Markdown';
 import { LiquidEngine } from './models/common/Liquid';
 
 export class PluginFlowEngine extends Plugin {

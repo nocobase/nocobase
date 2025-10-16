@@ -8,8 +8,7 @@
  */
 
 import { useAPIClient, useCompile, usePlugin, useZIndexContext, getZIndex } from '@nocobase/client';
-
-import { Button, Input } from 'antd';
+import { Button } from 'antd';
 import { css } from '@emotion/css';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
 import { FlowContextSelector, useFlowContext } from '@nocobase/flow-engine';
@@ -41,12 +40,12 @@ const NAMESPACE = 'block-markdown';
 const locales = ['en_US', 'fr_FR', 'pt_BR', 'ja_JP', 'ko_KR', 'ru_RU', 'sv_SE', 'zh_CN', 'zh_TW'];
 
 const Edit = (props) => {
-  const { disabled, onChange, value, fileCollection, toolbar, containerRef } = props;
+  const { disabled, onChange, value, fileCollection, toolbar, vditorRef } = props;
 
   const [editorReady, setEditorReady] = useState(false);
   const vdRef = useRef<Vditor>();
   const vdFullscreen = useRef(false);
-  // const containerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const containerParentRef = useRef<HTMLDivElement>(null);
   const apiClient = useAPIClient();
   const cdn = useCDN();
@@ -158,6 +157,7 @@ const Edit = (props) => {
         },
       },
     });
+    vditorRef.current = vditor;
 
     return () => {
       vdRef.current?.destroy();
@@ -261,7 +261,7 @@ export interface MarkdownWithContextSelectorProps {
 }
 
 /**
- * TextArea 与变量选择器的组合，紧凑排版，边框无缝拼接。
+ * markdown 与变量选择器的组合，紧凑排版，边框无缝拼接。
  */
 export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorProps> = ({
   value = '',
@@ -279,8 +279,8 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
   }, [value]);
 
   const handleTextChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const next = e?.target?.value ?? '';
+    (e) => {
+      const next = e ?? '';
       setInnerValue(next);
       onChange?.(next);
     },
@@ -290,25 +290,23 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
   // 将指定文本插入到当前光标位置
   const insertAtCaret = useCallback(
     (toInsert: string) => {
-      console.log(ref.current);
-      const el = ref.current?.resizableTextArea?.textArea as HTMLTextAreaElement | undefined;
-      if (!el) {
-        const next = (innerValue || '') + (toInsert || '');
-        setInnerValue(next);
-        onChange?.(next);
+      const editor = ref.current as any;
+      if (!editor) {
+        console.warn('Vditor 尚未初始化，无法插入文本');
         return;
       }
-      const start = el.selectionStart ?? innerValue?.length ?? 0;
-      const end = el.selectionEnd ?? start;
-      const prev = innerValue || '';
-      const next = prev.slice(0, start) + toInsert + prev.slice(end);
+
+      // 🔹 在当前光标位置插入文本
+      editor.insertValue(toInsert);
+
+      // 🔹 同步外部状态
+      const next = editor.getValue();
       setInnerValue(next);
       onChange?.(next);
-      // 恢复光标位置并聚焦
+
+      // 🔹 保持聚焦
       requestAnimationFrame(() => {
-        const pos = start + (toInsert?.length || 0);
-        el.setSelectionRange(pos, pos);
-        el.focus();
+        editor.focus();
       });
     },
     [innerValue, onChange],
@@ -328,7 +326,7 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
   return (
     <div style={{ position: 'relative', width: '100%', ...style }}>
       <Edit
-        containerRef={ref}
+        vditorRef={ref}
         value={innerValue}
         onChange={handleTextChange}
         placeholder={placeholder}

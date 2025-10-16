@@ -6,7 +6,6 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
 import { Liquid } from 'liquidjs';
 
 export class LiquidEngine extends Liquid {
@@ -15,6 +14,21 @@ export class LiquidEngine extends Liquid {
       extname: '.liquid',
       cache: true,
       ...options,
+    });
+
+    // 注册国际化过滤器
+    this.registerFilter('t', (key, locale = 'en', dict = {}) => {
+      if (!key) return '';
+      if (!dict) return key;
+
+      // 优先当前语言，否则 fallback 到英文
+      return dict[key]?.[locale] || dict[key]?.['en'] || key;
+    });
+
+    // （可选）注册一个日志过滤器，方便调试
+    this.registerFilter('log', (value) => {
+      console.log('[Liquid log]', value);
+      return value;
     });
   }
 
@@ -27,7 +41,6 @@ export class LiquidEngine extends Liquid {
     const result = {};
 
     for (const fullPath of paths) {
-      // 去掉前缀 ctx.（如果有）
       const path = fullPath.replace(/^ctx\./, '');
       const keys = path.split('.');
 
@@ -37,10 +50,8 @@ export class LiquidEngine extends Liquid {
         const isLast = i === keys.length - 1;
 
         if (isLast) {
-          // 最后一个层级填充模板变量
           current[key] = `{{${fullPath}}}`;
         } else {
-          // 创建中间层对象
           current[key] = current[key] || {};
           current = current[key];
         }

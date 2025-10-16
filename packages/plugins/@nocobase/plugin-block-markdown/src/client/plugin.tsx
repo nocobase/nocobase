@@ -18,13 +18,13 @@ export class PluginBlockMarkdownClient extends Plugin {
   }
 
   getCDN() {
-    return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-field-markdown-vditor/dist/client/vditor';
+    return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor';
   }
 
   initVditorDependency() {
     const cdn = this.getCDN();
     try {
-      const vditorDepdencePrefix = 'plugin-field-markdown-vditor-dep';
+      const vditorDepdencePrefix = 'plugin-block-markdown-dep';
       const vditorDepdence = {
         [`${vditorDepdencePrefix}.katex`]: `${cdn}/dist/js/katex/katex.min.js?v=0.16.9`,
         [`${vditorDepdencePrefix}.ABCJS`]: `${cdn}/dist/js/abcjs/abcjs_basic.min`,

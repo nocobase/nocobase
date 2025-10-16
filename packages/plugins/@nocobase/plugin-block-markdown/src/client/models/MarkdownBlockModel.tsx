@@ -11,14 +11,10 @@ import { BlockModel } from '@nocobase/client';
 import { escapeT } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'antd';
-import Vditor from 'vditor';
-import { MarkdownWithContextSelector } from './components/Edit';
+
 export class MarkdownBlockModel extends BlockModel {
   render() {
     const { content } = this.props;
-    const token = this.context.themeToken;
-    const t = this.context.t;
-
     return <Card>{content}</Card>;
   }
 }
@@ -37,18 +33,35 @@ MarkdownBlockModel.registerFlow({
         return {
           content: {
             type: 'string',
-            'x-component': MarkdownWithContextSelector,
+            'x-component': ctx.markdown.edit(),
           },
         };
       },
       useRawParams: true,
       defaultParams: {
-        content: "{{t('This is a demo text, **supports Markdown syntax**.')}}",
+        content: "{{ 'This is a demo text, **supports Markdown syntax**.' | t: locale, i18n }}",
       },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          content: params.content,
-        });
+      async handler(ctx, params) {
+        const content = params.content;
+        try {
+          // 分析变量
+          const vars = await ctx.liquid.fullVariables(content);
+          // 构造 Liquid context 结构
+          const liquidContext = ctx.liquid.transformLiquidContext(vars);
+          // 只解析变量
+          const r = await ctx.resolveJsonTemplate(liquidContext);
+          // 解析 Liquid 模板
+          const result = await ctx.liquid.render(content, { ctx: r });
+          // 解析 Markdown
+          const mdContent = ctx.markdown.render(ctx.t(result));
+          ctx.model.setProps({
+            content: mdContent,
+          });
+        } catch (error) {
+          ctx.model.setProps({
+            content: <pre>{`渲染失败: ${error}`}</pre>,
+          });
+        }
       },
     },
   },
