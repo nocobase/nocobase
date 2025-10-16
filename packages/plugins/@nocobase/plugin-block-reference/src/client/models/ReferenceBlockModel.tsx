@@ -346,7 +346,7 @@ ReferenceBlockModel.registerFlow({
           if (insertIndex < 0) insertIndex = arr.length;
         }
 
-        // 3) 在本地创建新实例（挂到同一父与 subKey），并插入到相同位置
+        // 3) 在本地创建新实例（挂到同一父与 subKey）
         const newOptions = {
           ...duplicated,
           parentId: parent.uid,
@@ -358,57 +358,81 @@ ReferenceBlockModel.registerFlow({
         (newModel as any).isNew = true;
         newModel.setParent(parent);
 
-        if (subType === 'array') {
-          let arr = (parent.subModels as any)[subKey] as FlowModel[] | undefined;
-          if (!Array.isArray(arr)) {
-            (parent.subModels as any)[subKey] = [];
-            arr = (parent.subModels as any)[subKey] as FlowModel[];
+        const isPresetOrNew = !!(oldModel as any).isNew;
+        // 4) 预设/新建 与 已持久化 分支分别处理（仅非 replace 分支改动，replace 分支沿用原位替换逻辑）
+        if (isPresetOrNew) {
+          // 非 replace：通过 addSubModel 触发 onSubModelAdded，让 Grid 追加到最后一行
+          if (subType === 'array') {
+            parent.addSubModel(subKey, newModel);
+            await (newModel as any).afterAddAsSubModel?.();
+          } else {
+            parent.setSubModel(subKey, newModel);
+            await (newModel as any).afterAddAsSubModel?.();
           }
-          const finalIndex = Math.min(Math.max(insertIndex, 0), arr.length);
-          arr.splice(finalIndex, 0, newModel);
-          arr.forEach((m, idx) => (m.sortIndex = idx));
-          // 更新 GridModel 的 rows，将旧 uid 替换为新 uid，以保持原位置
-          const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
-          if (gridParams?.rows && typeof gridParams.rows === 'object') {
-            const newRows = _.cloneDeep(gridParams.rows);
-            for (const rowId of Object.keys(newRows)) {
-              const columns = newRows[rowId];
-              if (Array.isArray(columns)) {
-                for (let ci = 0; ci < columns.length; ci++) {
-                  const col = columns[ci];
-                  if (Array.isArray(col)) {
-                    for (let ii = 0; ii < col.length; ii++) {
-                      if (col[ii] === oldModel.uid) {
-                        col[ii] = newModel.uid;
+          // 4.1 确保父模型已存在
+          const parentExists = await (engine.modelRepository as any)?.findOne?.({ uid: parent.uid });
+          if (!parentExists) {
+            await parent.save();
+          }
+          // 4.2 确保旧实例作为锚点已持久化
+          const oldExists = await (engine.modelRepository as any)?.findOne?.({ uid: oldModel.uid });
+          if (!oldExists) {
+            await (oldModel as any).save?.();
+          }
+          // 4.3 保存新实例
+          await newModel.save();
+          (newModel as any).isNew = false;
+          // 4.4 在后端以旧实例为锚点移动新实例到目标位置，从而建立父子与排序
+          if (subType === 'array' && (engine.modelRepository as any)?.move) {
+            await (engine.modelRepository as any).move(newModel.uid, oldModel.uid, 'before');
+          }
+          // 4.5 销毁旧实例（持久化）
+          await engine.destroyModel(oldModel.uid);
+          // 4.6 保存父模型的布局
+          await parent.saveStepParams();
+        } else {
+          // replace：保持当前位置不变——手动插入到与旧实例相同的索引，并更新 rows 将旧 uid 替换为新 uid
+          if (subType === 'array') {
+            let arr = (parent.subModels as any)[subKey] as FlowModel[] | undefined;
+            if (!Array.isArray(arr)) {
+              (parent.subModels as any)[subKey] = [];
+              arr = (parent.subModels as any)[subKey] as FlowModel[];
+            }
+            const finalIndex = Math.min(Math.max(insertIndex, 0), arr.length);
+            arr.splice(finalIndex, 0, newModel);
+            arr.forEach((m, idx) => (m.sortIndex = idx));
+
+            // 替换 Grid rows 中的 uid，保持原位置
+            const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
+            if (gridParams?.rows && typeof gridParams.rows === 'object') {
+              const newRows = _.cloneDeep(gridParams.rows);
+              for (const rowId of Object.keys(newRows)) {
+                const columns = newRows[rowId];
+                if (Array.isArray(columns)) {
+                  for (let ci = 0; ci < columns.length; ci++) {
+                    const col = columns[ci];
+                    if (Array.isArray(col)) {
+                      for (let ii = 0; ii < col.length; ii++) {
+                        if (col[ii] === oldModel.uid) {
+                          col[ii] = newModel.uid;
+                        }
                       }
                     }
                   }
                 }
               }
+              parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: gridParams.sizes || {} });
+              parent.setProps('rows', newRows);
             }
-            parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: gridParams.sizes || {} });
-            parent.setProps('rows', newRows);
+            await (newModel as any).afterAddAsSubModel?.();
+          } else {
+            parent.setSubModel(subKey, newModel);
+            await (newModel as any).afterAddAsSubModel?.();
           }
-        } else {
-          parent.setSubModel(subKey, newModel);
-        }
 
-        const isPresetOrNew = !!(oldModel as any).isNew;
-        // 4) 预设/新建：需要先保证父模型在服务端存在，再保存新实例
-        if (isPresetOrNew) {
-          const parentExists = await (engine.modelRepository as any).findOne?.({ uid: parent.uid });
-          if (!parentExists) {
-            await parent.save();
-          }
-        }
-        await newModel.save();
-
-        if (isPresetOrNew) {
-          // 5a) 预设/新建场景：仅本地移除旧实例，不调用持久化删除
-          engine.removeModel(oldModel.uid);
-          // 将父模型的布局参数持久化（如 GridModel 的 rows/sizes），避免刷新后丢失
-          await parent.saveStepParams();
-        } else {
+          // 5) 已持久化场景：先保存新实例、再相对移动并删除旧实例，最后只保存布局参数
+          await newModel.save();
+          (newModel as any).isNew = false;
           // 5b) 已持久化场景：若为数组子模型，则在服务端相对移动保持原位置；随后销毁旧实例
           if (subType === 'array' && engine.modelRepository) {
             const targetExists = await (engine.modelRepository as any).findOne({ uid: oldModel.uid });
