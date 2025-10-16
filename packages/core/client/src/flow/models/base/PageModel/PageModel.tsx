@@ -35,6 +35,22 @@ type PageModelStructure = {
 
 export class PageModel extends FlowModel<PageModelStructure> {
   tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
+  tabActiveKey: string;
+
+  onMount(): void {
+    super.onMount();
+    this.tabActiveKey = this.context.view.inputArgs?.tabUid;
+  }
+
+  invokeTabModelLifecycleMethod(tabActiveKey: string, method: 'onActive' | 'onInactive') {
+    const tabModel: BasePageTabModel = this.flowEngine.getModel(tabActiveKey);
+
+    if (tabModel) {
+      tabModel.subModels.grid?.mapSubModels('items', (item) => {
+        item[method]?.();
+      });
+    }
+  }
 
   createPageTabModelOptions = (): CreateModelOptions => {
     const modeId = uid();
@@ -99,6 +115,10 @@ export class PageModel extends FlowModel<PageModelStructure> {
             this.context.view.navigation?.changeTo?.({
               tabUid: activeKey,
             });
+
+            this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
+            this.invokeTabModelLifecycleMethod(this.tabActiveKey, 'onInactive');
+            this.tabActiveKey = activeKey;
           }}
           // destroyInactiveTabPane
           tabBarExtraContent={{
