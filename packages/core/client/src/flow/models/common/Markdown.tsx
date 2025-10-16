@@ -12,7 +12,7 @@ import 'vditor/dist/index.css';
 
 export class Markdown {
   cache;
-  constructor(props) {
+  constructor() {
     this.cache = new Map();
   }
 

@@ -108,6 +108,7 @@
     "@nocobase/plugin-ai",
     "@nocobase/plugin-block-iframe",
     "@nocobase/plugin-block-workbench",
+    "@nocobase/plugin-block-markdown",
     "@nocobase/plugin-calendar",
     "@nocobase/plugin-client",
     "@nocobase/plugin-collection-sql",

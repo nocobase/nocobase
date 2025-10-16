@@ -56,10 +56,8 @@ export class PluginFlowEngine extends Plugin {
     const liquidInstance = new LiquidEngine();
 
     // 注册到全局上下文
-    engine.context.defineProperty('liquid', {
+    this.flowEngine.context.defineProperty('liquid', {
       get: () => liquidInstance,
-      configurable: false,
-      enumerable: true,
     });
   }
 }
