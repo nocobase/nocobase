@@ -8,7 +8,7 @@
  */
 
 import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
-import { formatters } from '../utils';
+import { formatters, debugLog } from '../utils';
 
 // 纯函数：构建字段树
 export function getFieldOptions(dm: any, compile: (v: any) => string, collectionPath?: string[]) {
@@ -116,7 +116,7 @@ export function getCollectionOptions(dm: any, compile: (v: any) => string) {
 }
 
 export function validateQuery(query: Record<string, any>): { success: boolean; message: string } {
-  console.log('---validateQuery', query);
+  debugLog('---validateQuery', query);
   if (!query) {
     return { success: false, message: 'query is required' };
   }
