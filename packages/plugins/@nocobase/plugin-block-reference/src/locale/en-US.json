@@ -9,5 +9,6 @@
   "Target UID": "Target UID",
   "Please configure target block": "Please configure target block",
   "Target block is invalid": "Target block is invalid",
+  "Some configurations using uid may need to be reconfigured": "Some configurations using uid may need to be reconfigured",
   "Other blocks": "Other blocks"
 }

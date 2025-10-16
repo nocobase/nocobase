@@ -8,5 +8,6 @@
   "Block UID is already set and cannot be modified": "当前已经指定区块UID，不允许修改",
   "Please configure target block": "请先配置目标区块",
   "Target block is invalid": "目标区块无效",
+  "Some configurations using uid may need to be reconfigured": "部分使用uid的配置可能需要重新配置",
   "Other blocks": "其他区块"
 }

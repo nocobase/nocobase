@@ -11,7 +11,6 @@ import React from 'react';
 import { Result, Empty, Card } from 'antd';
 import { escapeT, FlowEngine, FlowModel, FlowModelRenderer, createBlockScopedEngine } from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
-import { uid as genUid } from '@formily/shared';
 import { BlockModel } from '@nocobase/client';
 
 /**
@@ -23,6 +22,66 @@ import { BlockModel } from '@nocobase/client';
  * - 标题为：目标标题 + (Reference)。
  */
 export class ReferenceBlockModel extends BlockModel {
+  constructor(options: any) {
+    super(options);
+    // 通过 Proxy 将未知属性/方法转发到目标模型：
+    // - 若属性/方法在本实例（含原型链）已存在，则不代理；
+    // - 若不存在且已解析出 _targetModel，则从目标模型读取；函数按目标模型上下文绑定；
+    // - 支持写入：未知属性写入目标模型（若存在对应键）；否则写回自身。
+    const proxy = new Proxy(this as any, {
+      get(target, prop: string | symbol, receiver) {
+        if (prop === '__isReferenceProxy') return true;
+        if (prop in target) {
+          // 自身已有（含原型链）则直接返回；若为函数需绑定到 target，避免 private field 访问报错
+          const val = Reflect.get(target, prop, target);
+          if (typeof val === 'function' && prop !== 'constructor') {
+            return val.bind(target);
+          }
+          return val;
+        }
+        const t = target._targetModel as any;
+        if (t) {
+          const val = Reflect.get(t, prop, t);
+          if (typeof val === 'function' && prop !== 'constructor') {
+            return val.bind(t);
+          }
+          if (val !== undefined) return val;
+        }
+        return undefined;
+      },
+      set(target, prop: string | symbol, value, receiver) {
+        if (prop in target) {
+          return Reflect.set(target, prop, value, target);
+        }
+        const t = target._targetModel as any;
+        if (t && prop in t) {
+          return Reflect.set(t, prop, value, t);
+        }
+        return Reflect.set(target, prop, value, target);
+      },
+      has(target, prop: string | symbol) {
+        if (prop in target) return true;
+        const t = target._targetModel as any;
+        return !!t && prop in t;
+      },
+      ownKeys(target) {
+        const keys = new Set(Reflect.ownKeys(target));
+        const t = target._targetModel as any;
+        if (t) {
+          for (const k of Reflect.ownKeys(t)) keys.add(k);
+        }
+        return Array.from(keys);
+      },
+      getOwnPropertyDescriptor(target, prop: string | symbol) {
+        const desc = Reflect.getOwnPropertyDescriptor(target, prop);
+        if (desc) return desc;
+        const t = target._targetModel as any;
+        if (!t) return undefined;
+        return Object.getOwnPropertyDescriptor(t, prop) || undefined;
+      },
+    });
+    return proxy as any;
+  }
   public settingsMenuLevel = 2;
   private _scopedEngine?: FlowEngine;
   private _targetModel?: FlowModel;
@@ -36,20 +95,8 @@ export class ReferenceBlockModel extends BlockModel {
     return super.title;
   }
 
-  get resource(): any {
-    return (this._targetModel as any)?.resource;
-  }
-
-  async getFilterFields(): Promise<any[]> {
-    const t = this._targetModel as any;
-    if (t?.getFilterFields) {
-      return await t.getFilterFields();
-    }
-    return [];
-  }
-
   private _getTargetUidFromParams(): string | undefined {
-    const p = (this.getStepParams as any)?.('referenceSettings', 'target') || {};
+    const p = this.getStepParams('referenceSettings', 'target') || {};
     return (p?.targetUid || '').trim() || undefined;
   }
 
@@ -80,12 +127,12 @@ export class ReferenceBlockModel extends BlockModel {
       const model = await engine.loadModel<FlowModel>({ uid: currentUid });
       if (!model) return null;
 
-      const isReference = (model.constructor as any)?.name === 'ReferenceBlockModel';
+      const isReference = model.constructor.name === 'ReferenceBlockModel';
       if (!isReference) {
         return model;
       }
 
-      const next = (model as any)?.getStepParams?.('referenceSettings', 'target')?.targetUid;
+      const next = model.getStepParams('referenceSettings', 'target')?.targetUid;
       if (!next || typeof next !== 'string' || !next.trim()) {
         return null;
       }
@@ -96,7 +143,8 @@ export class ReferenceBlockModel extends BlockModel {
 
   public async onDispatchEventStart(eventName: string): Promise<void> {
     if (eventName !== 'beforeRender') return;
-    const targetUid = this._getTargetUidFromParams();
+    const stepParams = (this.getStepParams as any)?.('referenceSettings', 'target') || {};
+    const targetUid = (stepParams?.targetUid || '').trim() || undefined;
     if (!targetUid) {
       const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
       if (oldTarget) {
@@ -138,10 +186,6 @@ export class ReferenceBlockModel extends BlockModel {
 
     this._targetModel = target;
     this._resolvedTargetUid = targetUid;
-    this.context.defineProperty('collection', {
-      get: () => (target as any)?.context?.collection,
-      cache: false,
-    });
     this.rerender();
   }
 
@@ -237,60 +281,139 @@ ReferenceBlockModel.registerFlow({
               { label: tStr('Copy'), value: 'copy' },
             ],
           },
+          copyNotice: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-component': 'Alert',
+            'x-component-props': {
+              type: 'warning',
+              showIcon: true,
+              message: tStr('Some configurations using uid may need to be reconfigured'),
+            },
+            'x-reactions': {
+              dependencies: ['mode'],
+              fulfill: {
+                state: {
+                  hidden: '{{$deps[0] !== "copy"}}',
+                },
+              },
+            },
+          },
         };
       },
       defaultParams() {
         return { mode: 'reference' };
       },
-      async handler(ctx, params) {
+      async beforeParamsSave(ctx, params) {
         const v = (params?.targetUid || '').trim();
         const mode = params?.mode || 'reference';
-        if (!v) {
-          ctx.model.setStepParams('referenceSettings', 'target', { targetUid: '' });
+        if (mode !== 'copy' || !v) return;
+        const engine = ctx.engine;
+        // 1) 先在服务端复制目标模型，得到新的根节点 JSON（含新 uid）
+        const duplicated = await engine.duplicateModel(v);
+        if (!duplicated) return;
+
+        // 2) 计算父模型与原位置
+        const oldModel = ctx.model as FlowModel;
+        const parent = oldModel.parent as FlowModel | undefined;
+        const subKey = oldModel.subKey as string;
+        const subType = (oldModel as any).subType as 'array' | 'object';
+
+        // 若没有父模型，直接退出（无处安放新实例）
+        if (!parent || !subKey) {
+          ctx.exit();
           return;
         }
-        if (mode === 'copy') {
-          try {
-            const engine = ctx.model.flowEngine;
-            const source = engine.getModel(v) || (await engine.loadModel({ uid: v }));
-            if (!source) return;
-            const json = source.serialize();
-            const set = new Set<string>();
-            const collect = (node: any) => {
-              if (!node || typeof node !== 'object') return;
-              if (typeof node.uid === 'string') set.add(node.uid);
-              const sms = node.subModels;
-              if (sms && typeof sms === 'object') {
-                for (const key of Object.keys(sms)) {
-                  const val = (sms as any)[key];
-                  if (Array.isArray(val)) val.forEach((child) => collect(child));
-                  else if (val && typeof val === 'object') collect(val);
-                }
-              }
-            };
-            collect(json);
-            const map = new Map<string, string>();
-            map.set(json.uid, ctx.model.uid);
-            set.forEach((oldId) => {
-              if (oldId === json.uid) return;
-              map.set(oldId, genUid());
-            });
-            let str = JSON.stringify(json);
-            for (const [oldId, newId] of map.entries()) {
-              const re = new RegExp(oldId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-              str = str.replace(re, newId);
-            }
-            const newJson = JSON.parse(str);
-            const newModel = await engine.replaceModel(ctx.model.uid, newJson);
-            newModel.invalidateFlowCache?.('beforeRender', true);
-            await newModel.dispatchEvent?.('beforeRender', undefined, { useCache: false, sequential: true });
-            ctx.exit();
-            return;
-          } catch (e) {
-            console.error('[ReferenceBlockModel] copy mode failed:', e);
+
+        let insertIndex = -1;
+        if (subType === 'array') {
+          const arr = ((parent.subModels as any)[subKey] || []) as FlowModel[];
+          insertIndex = Array.isArray(arr) ? arr.findIndex((m) => m?.uid === oldModel.uid) : -1;
+          if (insertIndex < 0) insertIndex = arr.length;
+        }
+
+        // 3) 在本地创建新实例（挂到同一父与 subKey），并插入到相同位置
+        const newOptions = {
+          ...duplicated,
+          parentId: parent.uid,
+          subKey,
+          subType,
+        } as any;
+        const newModel = engine.createModel<FlowModel>(newOptions);
+        // 标记为新建，触发如 GridModel 等父容器在 onSubModelAdded 中进行布局/rows 初始化
+        (newModel as any).isNew = true;
+        newModel.setParent(parent);
+
+        if (subType === 'array') {
+          let arr = (parent.subModels as any)[subKey] as FlowModel[] | undefined;
+          if (!Array.isArray(arr)) {
+            (parent.subModels as any)[subKey] = [];
+            arr = (parent.subModels as any)[subKey] as FlowModel[];
+          }
+          const finalIndex = Math.min(Math.max(insertIndex, 0), arr.length);
+          arr.splice(finalIndex, 0, newModel);
+          arr.forEach((m, idx) => (m.sortIndex = idx));
+          (parent as any).emitter?.emit?.('onSubModelAdded', newModel);
+          // 针对 GridModel 等，主动触发一次 rows 合并确保界面即时可见
+          if (typeof (parent as any).resetRows === 'function') {
+            (parent as any).resetRows(true);
+          }
+        } else {
+          parent.setSubModel(subKey, newModel);
+        }
+
+        const isPresetOrNew = !!(oldModel as any).isNew;
+        // 4) 预设/新建：需要先保证父模型在服务端存在，再保存新实例
+        if (isPresetOrNew) {
+          const parentExists = await (engine.modelRepository as any).findOne?.({ uid: parent.uid });
+          if (!parentExists) {
+            await parent.save();
           }
         }
-        ctx.model.setStepParams('referenceSettings', 'target', { targetUid: v });
+        await newModel.save();
+
+        if (isPresetOrNew) {
+          // 5a) 预设/新建场景：仅本地移除旧实例，不调用持久化删除
+          engine.removeModel(oldModel.uid);
+          // 确保新副本在正确位置（如有同级已持久化兄弟节点，进行一次相对移动来固定顺序）
+          if (subType === 'array' && engine.modelRepository) {
+            const arr = ((parent.subModels as any)[subKey] || []) as FlowModel[];
+            // 优先选用“后一个”兄弟作为锚点（before），否则用“前一个”（after）
+            const afterSibling = arr[insertIndex + 1];
+            const beforeSibling = arr[insertIndex - 1];
+            let moved = false;
+            if (afterSibling) {
+              const exists = await (engine.modelRepository as any).findOne?.({ uid: afterSibling.uid });
+              if (exists && typeof (engine.modelRepository as any).move === 'function') {
+                await (engine.modelRepository as any).move(newModel.uid, afterSibling.uid, 'before');
+                moved = true;
+              }
+            }
+            if (!moved && beforeSibling) {
+              const exists = await (engine.modelRepository as any).findOne?.({ uid: beforeSibling.uid });
+              if (exists && typeof (engine.modelRepository as any).move === 'function') {
+                await (engine.modelRepository as any).move(newModel.uid, beforeSibling.uid, 'after');
+                moved = true;
+              }
+            }
+          }
+          // 将父模型的布局参数持久化（如 GridModel 的 rows/sizes），避免刷新后丢失
+          await parent.saveStepParams();
+        } else {
+          // 5b) 已持久化场景：若为数组子模型，则在服务端相对移动保持原位置；随后销毁旧实例
+          if (subType === 'array' && engine.modelRepository) {
+            const targetExists = await (engine.modelRepository as any).findOne({ uid: oldModel.uid });
+            if (targetExists && typeof (engine.modelRepository as any).move === 'function') {
+              await (engine.modelRepository as any).move(newModel.uid, oldModel.uid, 'before');
+            }
+          }
+          await engine.destroyModel(oldModel.uid);
+          // 持久化父模型的布局参数
+          await parent.saveStepParams();
+        }
+
+        // 关闭设置视图
+        ctx.exit();
       },
     },
   },
