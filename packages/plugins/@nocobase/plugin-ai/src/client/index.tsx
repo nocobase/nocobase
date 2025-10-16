@@ -31,6 +31,7 @@ import { formFillerTool } from './ai-employees/form-filler/tools';
 import './ai-employees/flow/events';
 import { aiEmployeesData } from './ai-employees/flow/context';
 import { dashscopeProviderOptions } from './llm-providers/dashscope';
+import { ollamaProviderOptions } from './llm-providers/ollama';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 import { DatasourceSettingPage } from './ai-employees/admin/datasource';
 import { DatasourceContext } from './ai-employees/context/datasource';
@@ -132,6 +133,7 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
+    this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),

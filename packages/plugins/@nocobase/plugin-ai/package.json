@@ -22,6 +22,7 @@
     "@langchain/core": "^0.3.61",
     "@langchain/deepseek": "^0.0.2",
     "@langchain/google-genai": "^0.2.16",
+    "@langchain/ollama": "^0.1.1",
     "@langchain/openai": "^0.6.13",
     "@nocobase/ai-employee-avatars": "^1.0.2",
     "@xyflow/react": "^12.7.0",
