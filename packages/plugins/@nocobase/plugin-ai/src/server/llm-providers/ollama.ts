@@ -28,13 +28,15 @@ export class OllamaProvider extends LLMProvider {
 
     return new ChatOllama({
       baseUrl: baseURL || this.baseURL,
-      model: model || 'granite4:tiny-h',
+      model: model || 'mistral-nemo:12b',
       temperature,
       topP,
       topK,
       numPredict,
       ...rest,
       verbose: false,
+      format: undefined,
+      keepAlive: '5m',
     });
   }
 
