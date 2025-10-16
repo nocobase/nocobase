@@ -8,6 +8,7 @@
  */
 
 import React from 'react';
+import _ from 'lodash';
 import { Result, Empty, Card } from 'antd';
 import {
   escapeT,
@@ -366,10 +367,27 @@ ReferenceBlockModel.registerFlow({
           const finalIndex = Math.min(Math.max(insertIndex, 0), arr.length);
           arr.splice(finalIndex, 0, newModel);
           arr.forEach((m, idx) => (m.sortIndex = idx));
-          (parent as any).emitter?.emit?.('onSubModelAdded', newModel);
-          // 针对 GridModel 等，主动触发一次 rows 合并确保界面即时可见
-          if (typeof (parent as any).resetRows === 'function') {
-            (parent as any).resetRows(true);
+          // 更新 GridModel 的 rows，将旧 uid 替换为新 uid，以保持原位置
+          const gridParams = parent.getStepParams('gridSettings', 'grid') || {};
+          if (gridParams?.rows && typeof gridParams.rows === 'object') {
+            const newRows = _.cloneDeep(gridParams.rows);
+            for (const rowId of Object.keys(newRows)) {
+              const columns = newRows[rowId];
+              if (Array.isArray(columns)) {
+                for (let ci = 0; ci < columns.length; ci++) {
+                  const col = columns[ci];
+                  if (Array.isArray(col)) {
+                    for (let ii = 0; ii < col.length; ii++) {
+                      if (col[ii] === oldModel.uid) {
+                        col[ii] = newModel.uid;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            parent.setStepParams('gridSettings', 'grid', { rows: newRows, sizes: gridParams.sizes || {} });
+            parent.setProps('rows', newRows);
           }
         } else {
           parent.setSubModel(subKey, newModel);
@@ -388,28 +406,6 @@ ReferenceBlockModel.registerFlow({
         if (isPresetOrNew) {
           // 5a) 预设/新建场景：仅本地移除旧实例，不调用持久化删除
           engine.removeModel(oldModel.uid);
-          // 确保新副本在正确位置（如有同级已持久化兄弟节点，进行一次相对移动来固定顺序）
-          if (subType === 'array' && engine.modelRepository) {
-            const arr = ((parent.subModels as any)[subKey] || []) as FlowModel[];
-            // 优先选用“后一个”兄弟作为锚点（before），否则用“前一个”（after）
-            const afterSibling = arr[insertIndex + 1];
-            const beforeSibling = arr[insertIndex - 1];
-            let moved = false;
-            if (afterSibling) {
-              const exists = await (engine.modelRepository as any).findOne?.({ uid: afterSibling.uid });
-              if (exists && typeof (engine.modelRepository as any).move === 'function') {
-                await (engine.modelRepository as any).move(newModel.uid, afterSibling.uid, 'before');
-                moved = true;
-              }
-            }
-            if (!moved && beforeSibling) {
-              const exists = await (engine.modelRepository as any).findOne?.({ uid: beforeSibling.uid });
-              if (exists && typeof (engine.modelRepository as any).move === 'function') {
-                await (engine.modelRepository as any).move(newModel.uid, beforeSibling.uid, 'after');
-                moved = true;
-              }
-            }
-          }
           // 将父模型的布局参数持久化（如 GridModel 的 rows/sizes），避免刷新后丢失
           await parent.saveStepParams();
         } else {
