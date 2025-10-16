@@ -9,7 +9,14 @@
 
 import React from 'react';
 import { Result, Empty, Card } from 'antd';
-import { escapeT, FlowEngine, FlowModel, FlowModelRenderer, createBlockScopedEngine } from '@nocobase/flow-engine';
+import {
+  escapeT,
+  FlowEngine,
+  FlowModel,
+  FlowModelRenderer,
+  createBlockScopedEngine,
+  FlowEngineProvider,
+} from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
 
@@ -227,7 +234,13 @@ export class ReferenceBlockModel extends BlockModel {
         </Card>
       );
     }
-    return <FlowModelRenderer key={target.uid} model={target} showFlowSettings={false} showErrorFallback />;
+    // 使用 BlockScoped 引擎包裹渲染，确保拖拽/移动等操作拿到正确的 engine
+    const engine = this._ensureScopedEngine();
+    return (
+      <FlowEngineProvider engine={engine}>
+        <FlowModelRenderer key={target.uid} model={target} showFlowSettings={false} showErrorFallback />
+      </FlowEngineProvider>
+    );
   }
 
   public render(): any {
