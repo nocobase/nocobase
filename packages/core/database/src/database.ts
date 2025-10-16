@@ -393,8 +393,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
    */
   initListener() {
     this.on('afterConnect', async (client) => {
-      if (this.inDialect('postgres')) {
-        await client.query('SET search_path = public');
+      if (this.isPostgresCompatibleDialect() && this.options.schema) {
+        await client.query(`SET search_path TO ${this.options.schema}`);
       }
     });
 
@@ -1089,9 +1089,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
       }
     }
     this.logger.debug('runSQL', { finalSQL });
-    if (this.options.schema && this.isPostgresCompatibleDialect()) {
-      await this.sequelize.query(queryGenerator.setSearchPath(this.options.schema));
-    }
+    // if (this.options.schema && this.isPostgresCompatibleDialect()) {
+    //   await this.sequelize.query(queryGenerator.setSearchPath(this.options.schema));
+    // }
     const result = await this.sequelize.query(finalSQL, { bind, transaction });
     let data: any = result[0];
     if (type === 'selectVar') {
