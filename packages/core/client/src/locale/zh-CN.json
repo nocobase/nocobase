@@ -1340,9 +1340,6 @@
   "No form available for submission.": "没有可用的表单进行提交。",
   "Page settings": "页面设置",
   "Card settings": "卡片设置",
-  "Reference": "引用",
-  "Copy": "复制",
-  "Embed": "嵌入",
   "Table settings": "表格设置",
   "Table column settings": "表格列设置",
   "Other column": "其他列",
@@ -1359,7 +1356,6 @@
   "Delete settings": "删除设置",
   "Confirmation": "二次确认",
   "Popup settings": "弹窗设置",
-  
   "Button type": "按钮类型",
   "Danger action": "危险操作",
   "Datetime settings": "日期时间设置",

@@ -1079,10 +1079,6 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
       },
       transaction,
     });
-    const typeRow = Array.isArray(typeQuery) ? (typeQuery as any[])[0] : null;
-    if (!typeRow) {
-      throw new Error(`FlowModelRepository.insertBeside: target '${targetUid}' not found`);
-    }
 
     const nodes = FlowModelRepository.schemaToSingleNodes(schema);
 
@@ -1090,7 +1086,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
 
     rootNode.childOptions = {
       parentUid: targetParent,
-      type: (typeRow as any)['type'],
+      type: typeQuery[0]['type'],
       position: {
         type: side,
         target: targetUid,

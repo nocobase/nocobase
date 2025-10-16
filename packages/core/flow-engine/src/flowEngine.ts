@@ -770,14 +770,6 @@ export class FlowEngine {
     const currentSubKey = oldModel.subKey;
     const currentSubType = oldModel.subType;
     const currentOptions = oldModel.serialize();
-    // 记录旧位置索引（仅数组子模型）
-    let currentIndex = -1;
-    if (currentParent && currentSubKey && currentSubType === 'array') {
-      const arr = (currentParent.subModels as any)[currentSubKey] as FlowModel[] | undefined;
-      if (Array.isArray(arr)) {
-        currentIndex = arr.findIndex((m) => m?.uid === oldModel.uid);
-      }
-    }
 
     // 2. 确定新的选项
     let userOptions: Partial<FlowModelOptions>;
@@ -808,25 +800,13 @@ export class FlowEngine {
     // 5. 使用createModel创建新的模型实例
     const newModel = this.createModel<T>(newOptions);
 
-    // 6. 如果有父模型，将新模型添加到父模型的subModels中（保持原位置）
+    // 6. 如果有父模型，将新模型添加到父模型的subModels中
     if (currentParent && currentSubKey) {
       if (currentSubType === 'array') {
-        let arr = (currentParent.subModels as any)[currentSubKey] as FlowModel[] | undefined;
-        if (!Array.isArray(arr)) {
-          (currentParent.subModels as any)[currentSubKey] = observable.shallow([] as any[]);
-          arr = (currentParent.subModels as any)[currentSubKey] as FlowModel[];
-        }
-        // 建立父子关系
-        newModel.setParent(currentParent as FlowModel);
-        if (currentIndex >= 0 && currentIndex <= arr.length) {
-          arr.splice(currentIndex, 0, newModel);
-        } else {
-          arr.push(newModel);
-        }
-        // 重新分配 sortIndex，保持稳定
-        arr.forEach((m, idx) => (m.sortIndex = idx));
-        currentParent.emitter.emit('onSubModelAdded', newModel);
+        // 对于数组类型，使用addSubModel方法
+        currentParent.addSubModel(currentSubKey, newModel);
       } else {
+        // 对于对象类型，使用setSubModel方法
         currentParent.setSubModel(currentSubKey, newModel);
       }
     }
