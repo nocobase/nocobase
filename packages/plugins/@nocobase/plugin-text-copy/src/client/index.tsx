@@ -70,42 +70,58 @@ class PluginTextCopy extends Plugin {
       TextCopyButton: copyButton,
     });
 
-    // Add the schema settings to enable/disable the copy functionality
-    this.app.schemaSettingsManager.addItem('fieldSettings:component:Input', 'enableCopier', {
-      type: 'switch',
-      useComponentProps() {
-        const { t } = useTranslation(NAMESPACE);
-        const { fieldSchema: tableFieldSchema } = useColumnSchema();
-        const fieldSchema = useFieldSchema();
-        const field = useField();
-        const { dn } = useDesignable();
+    // Add the schema settings to enable/disable the copy functionality for all text-based fields
+    const addCopyButtonSetting = (fieldType: string) => {
+      this.app.schemaSettingsManager.addItem(`fieldSettings:component:${fieldType}`, 'enableCopier', {
+        type: 'switch',
+        useComponentProps() {
+          const { t } = useTranslation(NAMESPACE);
+          const { fieldSchema: tableFieldSchema } = useColumnSchema();
+          const fieldSchema = useFieldSchema();
+          const field = useField();
+          const { dn } = useDesignable();
 
-        const schema = tableFieldSchema || fieldSchema;
+          const schema = tableFieldSchema || fieldSchema;
 
-        return {
-          title: t('Display copy button'),
-          checked: !!schema['x-component-props']?.addonAfter,
-          onChange: async (checked) => {
-            if (checked) {
-              field.componentProps.addonAfter = copyButton;
-              _.set(schema, 'x-component-props.addonAfter', '{{TextCopyButton}}');
-            } else {
-              field.componentProps.addonAfter = null;
-              _.unset(schema, 'x-component-props.addonAfter');
-            }
+          return {
+            title: t('Display copy button'),
+            checked: !!schema['x-component-props']?.addonAfter,
+            onChange: async (checked) => {
+              if (checked) {
+                field.componentProps.addonAfter = copyButton;
+                _.set(schema, 'x-component-props.addonAfter', '{{TextCopyButton}}');
+              } else {
+                field.componentProps.addonAfter = null;
+                _.unset(schema, 'x-component-props.addonAfter');
+              }
 
-            await dn.emit('patch', {
-              schema: {
-                'x-uid': schema['x-uid'],
-                'x-component-props': {
-                  ...schema['x-component-props'],
+              await dn.emit('patch', {
+                schema: {
+                  'x-uid': schema['x-uid'],
+                  'x-component-props': {
+                    ...schema['x-component-props'],
+                  },
                 },
-              },
-            });
-          },
-        };
-      },
-    });
+              });
+            },
+          };
+        },
+      });
+    };
+
+    // Add copy button setting to all text-based field types
+    const textBasedFieldTypes = [
+      'Input',
+      'Input.TextArea',
+      'Input.URL',
+      'Input.JSON',
+      'InputNumber',
+      'Markdown',
+      'MarkdownVditor',
+      'RichText',
+    ];
+
+    textBasedFieldTypes.forEach(addCopyButtonSetting);
   }
 }
 
