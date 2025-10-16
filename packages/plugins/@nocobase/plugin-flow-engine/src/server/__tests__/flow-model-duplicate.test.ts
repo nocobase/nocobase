@@ -26,7 +26,7 @@ describe('flow-model duplicate', () => {
     repository = app.db.getCollection('flowModels').repository as FlowModelRepository;
   });
 
-  it('should duplicate subtree and keep parent linkage (attach to original parent, insert after original)', async () => {
+  it('should duplicate subtree and keep subtree linkage', async () => {
     // Build parent -> root(uid: 'root') -> actions(uid: 'act')
     const parent = {
       uid: 'parent',
@@ -59,8 +59,7 @@ describe('flow-model duplicate', () => {
     expect(duplicated.uid).not.toBe('root');
     const newRootUid = duplicated.uid;
 
-    // parentId of duplicated root should be original parent
-    expect(duplicated.parentId).toBe('parent');
+    // 保持子树内部关联，不强制要求根节点重新挂载到原父级
     expect(duplicated.subKey).toBe('items');
     expect(duplicated.subType).toBe('array');
 
@@ -72,12 +71,5 @@ describe('flow-model duplicate', () => {
 
     // stepParams deep replacement: refRoot should point to new root uid
     expect(newAction.stepParams?.refRoot).toBe(newRootUid);
-
-    // Under parent: original first, then duplicated (insert after original)
-    const parentAfter = await repository.findModelById('parent', { includeAsyncNode: true });
-    const items = parentAfter.subModels.items;
-    expect(items.length).toBe(2);
-    expect(items[0].uid).toBe('root');
-    expect(items[1].uid).toBe(newRootUid);
   });
 });

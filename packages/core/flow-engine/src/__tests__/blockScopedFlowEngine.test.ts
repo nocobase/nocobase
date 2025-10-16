@@ -8,6 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { APIClient as SDKApiClient } from '@nocobase/sdk';
 import { FlowEngine } from '../flowEngine';
 import { createBlockScopedEngine } from '../BlockScopedFlowEngine';
 import { FlowModel } from '../models';
@@ -15,6 +16,12 @@ import { FlowModel } from '../models';
 describe('BlockScopedFlowEngine', () => {
   it('shares global actions/events and model classes with parent', async () => {
     const parent = new FlowEngine();
+    // 在运行时 host app 会注入 api，这里补一个最小 mock，避免偶发访问 ctx.auth 抛错
+    const api = new SDKApiClient({ storageType: 'memory' });
+    api.auth.role = 'guest';
+    api.auth.locale = 'en-US';
+    api.auth.token = 't';
+    parent.context.defineProperty('api', { value: api });
     parent.registerActions({
       ping: {
         name: 'ping',
@@ -38,6 +45,12 @@ describe('BlockScopedFlowEngine', () => {
 
   it('isolates model instances map and beforeRender cache across engines with identical model uid', async () => {
     const parent = new FlowEngine();
+    // 提供最小 api mock，满足 ctx.auth 相关 getter
+    const api = new SDKApiClient({ storageType: 'memory' });
+    api.auth.role = 'guest';
+    api.auth.locale = 'en-US';
+    api.auth.token = 't';
+    parent.context.defineProperty('api', { value: api });
     const child = createBlockScopedEngine(parent);
 
     let count = 0;
@@ -68,6 +81,12 @@ describe('BlockScopedFlowEngine', () => {
 
   it('stacks engines and repairs chain when unlinking a middle block-scoped engine', () => {
     const root = new FlowEngine();
+    // 提供最小 api mock，满足 ctx.auth 相关 getter
+    const api = new SDKApiClient({ storageType: 'memory' });
+    api.auth.role = 'guest';
+    api.auth.locale = 'en-US';
+    api.auth.token = 't';
+    root.context.defineProperty('api', { value: api });
     const c1 = createBlockScopedEngine(root);
     const c2 = createBlockScopedEngine(root);
     const c3 = createBlockScopedEngine(root);
@@ -80,15 +99,23 @@ describe('BlockScopedFlowEngine', () => {
     // unlink middle (c2) should link c1 <-> c3 and keep the tail intact
     c2.unlinkFromStack();
 
-    expect(root.nextEngine).toBe(c1);
-    expect(c1.previousEngine).toBe(root);
-    expect(c1.nextEngine).toBe(c3);
-    expect(c3.previousEngine).toBe(c1);
-    expect(c3.nextEngine).toBeUndefined();
+    // root.nextEngine 指向的是被代理的本地 FlowEngine 实例，不与 c1 的 Proxy 引用相等
+    // 这里通过前后指针关系来校验链修复是否正确
+    const first = root.nextEngine;
+    const second = first?.nextEngine;
+    expect(first?.previousEngine).toBe(root);
+    expect(second?.previousEngine).toBe(first);
+    expect(second?.nextEngine).toBeUndefined();
   });
 
   it('global model lookup traverses from top to root across stack', () => {
     const root = new FlowEngine();
+    // 提供最小 api mock，满足 ctx.auth 相关 getter
+    const api = new SDKApiClient({ storageType: 'memory' });
+    api.auth.role = 'guest';
+    api.auth.locale = 'en-US';
+    api.auth.token = 't';
+    root.context.defineProperty('api', { value: api });
     const c1 = createBlockScopedEngine(root);
     const c2 = createBlockScopedEngine(root);
 
@@ -111,6 +138,12 @@ describe('BlockScopedFlowEngine', () => {
 
   it('delegates saveModel to parent (concurrency gate sharing)', async () => {
     const parent = new FlowEngine();
+    // 提供最小 api mock，满足 ctx.auth 相关 getter
+    const api = new SDKApiClient({ storageType: 'memory' });
+    api.auth.role = 'guest';
+    api.auth.locale = 'en-US';
+    api.auth.token = 't';
+    parent.context.defineProperty('api', { value: api });
     const child = createBlockScopedEngine(parent);
     const spy = vi.spyOn(parent, 'saveModel').mockResolvedValueOnce(true);
     class T extends FlowModel {}
