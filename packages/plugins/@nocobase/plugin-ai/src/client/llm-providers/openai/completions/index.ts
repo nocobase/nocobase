@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LLMProviderOptions } from '../../manager/ai-manager';
+import { LLMProviderOptions } from '../../../manager/ai-manager';
+import { ProviderSettingsForm } from '../components/ProviderSettings';
 import { ModelSettingsForm } from './ModelSettings';
-import { ProviderSettingsForm } from './ProviderSettings';
 
-export const openaiProviderOptions: LLMProviderOptions = {
+export const openaiCompletionsProviderOptions: LLMProviderOptions = {
   components: {
     ProviderSettingsForm,
     ModelSettingsForm,
