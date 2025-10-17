@@ -1088,10 +1088,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
         finalSQL = `SELECT * FROM (${normalizedSQL}) AS tmp WHERE ${wSQL}`;
       }
     }
-    this.logger.debug('runSQL', { finalSQL });
     if (this.options.schema && this.isPostgresCompatibleDialect()) {
-      await this.sequelize.query(queryGenerator.setSearchPath(this.options.schema));
+      finalSQL = `${queryGenerator.setSearchPath(this.options.schema)} ${finalSQL}`;
     }
+    this.logger.debug('runSQL', { finalSQL });
     const result = await this.sequelize.query(finalSQL, { bind, transaction });
     let data: any = result[0];
     if (type === 'selectVar') {
