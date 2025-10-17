@@ -19,11 +19,11 @@ import {
 import { Form, FormInstance } from 'antd';
 import { omit } from 'lodash';
 import React from 'react';
+import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { BlockGridModel } from '../../base/BlockGridModel';
 import { CollectionBlockModel } from '../../base/CollectionBlockModel';
 import { FormActionModel } from './FormActionModel';
 import { FormGridModel } from './FormGridModel';
-import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 
 type DefaultCollectionBlockModelStructure = {
   parent?: BlockGridModel;
@@ -87,6 +87,9 @@ export class FormBlockModel<
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
+    });
+    this.context.resource.on('saved', () => {
+      this.dispatchEvent('formSubmitSuccess', {});
     });
   }
 
