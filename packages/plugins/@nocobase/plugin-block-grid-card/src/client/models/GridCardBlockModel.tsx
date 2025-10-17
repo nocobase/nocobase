@@ -260,7 +260,6 @@ GridCardBlockModel.registerFlow({
         },
       },
       handler(ctx, params) {
-        console.log(params.columnCount);
         ctx.model.setProps({
           columnCount: params.columnCount,
         });
@@ -315,16 +314,16 @@ GridCardBlockModel.registerFlow({
     refreshData: {
       title: escapeT('Refresh data'),
       async handler(ctx, params) {
-        await Promise.all(
-          ctx.model.mapSubModels('item', async (item) => {
-            try {
-              await item.applyAutoFlows();
-            } catch (err) {
-              item['__autoFlowError'] = err;
-              // 列级错误不再向上抛，避免拖垮整表；在单元格层用 ErrorBoundary 展示
-            }
-          }),
-        );
+        // await Promise.all(
+        //   ctx.model.mapSubModels('item', async (item) => {
+        //     try {
+        //       await item.applyAutoFlows();
+        //     } catch (err) {
+        //       item['__autoFlowError'] = err;
+        //       // 列级错误不再向上抛，避免拖垮整表；在单元格层用 ErrorBoundary 展示
+        //     }
+        //   }),
+        // );
       },
     },
   },
