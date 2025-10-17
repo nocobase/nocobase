@@ -160,8 +160,9 @@ export function getFormValues({
   return getFilteredFormValues(form);
 }
 
-export function useCollectValuesToSubmit() {
-  const form = useForm();
+export function useCollectValuesToSubmit(f?: Form) {
+  const originalForm = useForm();
+  const form = f ?? originalForm;
   const filterByTk = useFilterByTk();
   const { field, resource } = useBlockRequestContext();
   const { fields, getField, getTreeParentField, name } = useCollection_deprecated();
