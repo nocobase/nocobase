@@ -88,6 +88,10 @@ export class AesEncryptor {
   }
 
   static async create(app: Application) {
+    if (process.env.APP_AES_SECRET_KEY) {
+      const key = Buffer.from(process.env.APP_AES_SECRET_KEY, 'hex');
+      return new AesEncryptor(key);
+    }
     const KEY_PATH = process.env.APP_AES_SECRET_KEY_PATH;
     const keyPath = KEY_PATH ? resolve(process.cwd(), KEY_PATH) : await this.getKeyPath(app.name);
     const key = await AesEncryptor.getOrGenerateKey(keyPath);

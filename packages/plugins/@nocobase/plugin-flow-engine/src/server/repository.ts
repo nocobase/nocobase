@@ -526,13 +526,90 @@ export class FlowModelRepository extends Repository {
   }
 
   @transaction()
-  async duplicate(uid: string, options?: Transactionable) {
-    const s = await this.getJsonSchema(uid, { ...options, includeAsyncNode: true });
-    if (!s?.['uid']) {
+  async duplicate(modelUid: string, options?: Transactionable) {
+    const nodes = await this.findNodesById(modelUid, { ...options, includeAsyncNode: true });
+    if (!nodes?.length) {
       return null;
     }
-    this.regenerateUid(s);
-    return this.insert(s, options);
+
+    // 1) 生成 old -> new uid 映射
+    const uidMap: Record<string, string> = {};
+    for (const n of nodes) {
+      uidMap[n['uid']] = uid();
+    }
+    // 2) 父先于子，同时在同一父/同一分组内按原 sort 顺序插入
+    const sorted: any[] = [...nodes].sort((a: any, b: any) => {
+      if (a.depth !== b.depth) return a.depth - b.depth;
+      const ap = a.parent || '';
+      const bp = b.parent || '';
+      if (ap !== bp) return ap < bp ? -1 : 1;
+      const at = a.type || '';
+      const bt = b.type || '';
+      if (at !== bt) return at < bt ? -1 : 1;
+      const as = a.sort ?? 0;
+      const bs = b.sort ?? 0;
+      return as - bs;
+    });
+
+    for (const n of sorted) {
+      const oldUid = n['uid'];
+      const newUid = uidMap[oldUid];
+      const oldParentUid = n['parent'];
+      const newParentUid = uidMap[oldParentUid] ?? null;
+
+      const optionsObj = this.replaceStepParamsModelUids(
+        lodash.isPlainObject(n.options) ? n.options : JSON.parse(n.options),
+        uidMap,
+      );
+      if (newParentUid) {
+        optionsObj.parent = newParentUid;
+        optionsObj.parentId = newParentUid;
+      }
+
+      const schemaNode: SchemaNode = {
+        uid: newUid,
+        ['x-async']: !!n.async,
+        ...optionsObj,
+      };
+
+      if (newParentUid) {
+        schemaNode.childOptions = {
+          parentUid: newParentUid,
+          type: n.type,
+          position: 'last',
+        };
+      }
+
+      await this.insertSingleNode(schemaNode, { transaction: (options as any)?.transaction });
+    }
+
+    // 3) 返回新根节点的完整模型
+    return this.findModelById(uidMap[modelUid], { ...options });
+  }
+
+  private replaceStepParamsModelUids(options: any, uidMap: Record<string, string>) {
+    const opts = options && typeof options === 'object' ? options : {};
+    const replaceUidString = (v: any) => (typeof v === 'string' && uidMap[v] ? uidMap[v] : v);
+
+    const replaceInPlace = (val: any): any => {
+      if (Array.isArray(val)) {
+        for (let i = 0; i < val.length; i++) {
+          val[i] = replaceInPlace(val[i]);
+        }
+        return val;
+      }
+      if (val && typeof val === 'object') {
+        for (const k of Object.keys(val)) {
+          (val as any)[k] = replaceInPlace((val as any)[k]);
+        }
+        return val;
+      }
+      return replaceUidString(val);
+    };
+
+    if (opts.stepParams) opts.stepParams = replaceInPlace(opts.stepParams);
+
+    return opts;
   }
 
   @transaction()

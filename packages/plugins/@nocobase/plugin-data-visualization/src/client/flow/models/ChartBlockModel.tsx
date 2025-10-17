@@ -9,13 +9,12 @@
 
 import { useForm } from '@formily/react';
 import { ChildPageModel, DataBlockModel } from '@nocobase/client';
-import { createCollectionContextMeta, escapeT, SQLResource, useFlowContext } from '@nocobase/flow-engine';
+import { createCollectionContextMeta, SQLResource, useFlowContext } from '@nocobase/flow-engine';
 import React, { createRef } from 'react';
 import _ from 'lodash';
-import { Button, Badge } from 'antd';
+import { Button } from 'antd';
 import { useT, tStr } from '../../locale';
-import { EyeOutlined } from '@ant-design/icons';
-import { convertDatasetFormats, sleep } from '../utils';
+import { convertDatasetFormats, sleep, debugLog } from '../utils';
 import { Chart, ChartOptions } from './Chart';
 import { ConfigPanel } from './ConfigPanel';
 import { ChartResource } from '../resources/ChartResource';
@@ -45,6 +44,10 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   // 统一管理 refresh 监听引用，便于 off 解绑
   private __onResourceRefresh = () => this.renderChart();
+
+  onActive() {
+    this.resource.refresh();
+  }
 
   // 初始化注册 ChartResource | SQLResource
   initResource(mode = 'builder') {
@@ -199,7 +202,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       (this.resource as SQLResource).setDebug(true);
       (this.resource as SQLResource).setSQL(query.sql);
     } else {
-      console.log('---applyQuery', query);
+      debugLog('---applyQuery', query);
       (this.resource as ChartResource).setQueryParams(query);
     }
   }
@@ -219,12 +222,16 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   // 应用图表配置（仅设置，不负责渲染）
   async applyChartOptions(payload: { mode: 'basic' | 'custom'; builder?: any; raw?: string }) {
     const optionRaw = payload.mode === 'basic' ? genRawByBuilder(payload.builder) : payload.raw;
-    const { value: option } = await this.context.runjs(optionRaw);
+    const { success, value, error, timeout } = await this.context.runjs(optionRaw);
+    if (!success && error) {
+      console.error('applyChartOptions runjs error:', error);
+      return;
+    }
     this.setProps({
       chart: {
         ...this.props.chart,
         optionRaw, // js文本
-        option, // js对象
+        option: value, // js对象
       },
     });
   }
@@ -232,15 +239,15 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   // 应用事件配置（仅设置，不负责渲染）
   async applyEvents(raw?: string) {
     if (!raw) return;
-    return new Promise<void>((resolve, reject) => {
-      this.context.onRefReady(this.context.chartRef, async () => {
-        try {
-          await this.context.runjs(raw, { chart: (this.context.chartRef as any).current });
-          resolve();
-        } catch (e) {
-          reject(e);
-        }
+
+    this.context.onRefReady(this.context.chartRef, async () => {
+      const { success, value, error, timeout } = await this.context.runjs(raw, {
+        chart: (this.context.chartRef as any).current,
       });
+      if (!success && error) {
+        console.error('applyEvents runjs error:', error);
+        return;
+      }
     });
   }
 
@@ -251,7 +258,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   // 预览，暂存预览前的 stepParams，并刷新图表
   async onPreview(params: { query: any; chart: any }, needQueryData?: boolean) {
-    console.log('---onPreview', params.query);
+    debugLog('---onPreview', params.query);
     const values = _.cloneDeep(params);
     if (!values) return;
 
@@ -289,7 +296,6 @@ const PreviewButton = ({ style }) => {
   const ctx = useFlowContext();
   const form = useForm();
   return (
-    // <Badge dot offset={[-8, 2]}>
     <Button
       color="primary"
       variant="outlined"
@@ -303,7 +309,6 @@ const PreviewButton = ({ style }) => {
     >
       {t('Preview')}
     </Button>
-    // </Badge>
   );
 };
 
@@ -377,7 +382,7 @@ ChartBlockModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        console.log('---setting flow handler', params);
+        debugLog('---setting flow handler', params);
         const { query, chart } = params;
         if (!query || !chart) {
           return;
