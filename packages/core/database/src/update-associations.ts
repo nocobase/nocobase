@@ -86,7 +86,6 @@ export async function updateModelByValues(instance: Model, values: UpdateValue, 
   (instance.constructor as typeof Model).collection.validate({
     values,
     operation: 'update',
-    context: (options as any)?.context,
   });
   await instance.update(values, options);
   await updateAssociations(instance, values, options);
@@ -375,7 +374,6 @@ export async function updateSingleAssociation(
 
   (association.target as typeof Model).collection.validate({
     values: value,
-    context: options.context,
     operation: 'create',
   });
   const instance = await model[createAccessor](value, { context, transaction });
@@ -517,7 +515,6 @@ export async function updateMultipleAssociation(
       // create new record
       (association.target as typeof Model).collection.validate({
         values: item,
-        context: options.context,
         operation: 'create',
       });
       const instance = await model[createAccessor](item, accessorOptions);
@@ -542,7 +539,6 @@ export async function updateMultipleAssociation(
         // create new record
         (association.target as typeof Model).collection.validate({
           values: item,
-          context: options.context,
           operation: 'create',
         });
         instance = await model[createAccessor](item, accessorOptions);
@@ -568,7 +564,6 @@ export async function updateMultipleAssociation(
         }
         (association.target as typeof Model).collection.validate({
           values: item,
-          context: options.context,
           operation: 'update',
         });
         await instance.update(item, { ...options, transaction });
