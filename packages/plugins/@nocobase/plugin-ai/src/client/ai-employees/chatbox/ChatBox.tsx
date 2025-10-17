@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useRef, useState } from 'react';
-import { Layout, Card, Button, Divider, Tooltip } from 'antd';
+import React, { useEffect, useRef } from 'react';
+import { Layout, Card, Button, Divider, Tooltip, notification, Avatar, Flex, Typography } from 'antd';
 import {
   CloseOutlined,
   ExpandOutlined,
@@ -17,6 +17,7 @@ import {
   MenuFoldOutlined,
   ShrinkOutlined,
   CodeOutlined,
+  CompressOutlined,
 } from '@ant-design/icons';
 import { useMobileLayout, useToken } from '@nocobase/client';
 const { Header, Footer, Sider } = Layout;
@@ -28,11 +29,13 @@ import { useT } from '../../locale';
 import { UserPrompt } from './UserPrompt';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
-import { aiSelection } from '../stores/ai-selection';
 import { observer } from '@formily/react';
 import { dialogController } from '../stores/dialog-controller';
 import { CodeHistory } from '../ai-coding/CodeHistory';
 import { isEngineer } from '../built-in/utils';
+import { avatars } from '../avatars';
+
+const { Text } = Typography;
 
 export const ChatBox: React.FC = () => {
   const chatBoxRef = useRef<HTMLDivElement | null>(null);
@@ -41,6 +44,7 @@ export const ChatBox: React.FC = () => {
   const currentEmployee = useChatBoxStore.use.currentEmployee();
   const expanded = useChatBoxStore.use.expanded();
   const setExpanded = useChatBoxStore.use.setExpanded();
+  const setMinimize = useChatBoxStore.use.setMinimize();
   const showConversations = useChatBoxStore.use.showConversations();
   const setShowConversations = useChatBoxStore.use.setShowConversations();
   const setShowCodeHistory = useChatBoxStore.use.setShowCodeHistory();
@@ -140,7 +144,15 @@ export const ChatBox: React.FC = () => {
                 <Divider type="vertical" />
               </>
             ) : null}
-            {!isMobileLayout && (
+            {isMobileLayout ? (
+              <Button
+                icon={<CompressOutlined />}
+                type="text"
+                onClick={() => {
+                  setMinimize(true);
+                }}
+              />
+            ) : (
               <Button
                 icon={!expanded ? <ExpandOutlined /> : <ShrinkOutlined />}
                 type="text"
@@ -188,34 +200,83 @@ const ExpandChatBox: React.FC = observer(() => {
   );
 });
 
-const MobileLayoutChatBox: React.FC<{ showConversations: boolean }> = ({ showConversations }) => {
-  return (
-    <div
-      style={{
-        position: 'fixed',
-        left: '0',
-        top: '0',
-        width: showConversations ? '800px' : '100%',
-        height: '100%',
-        zIndex: dialogController.shouldHide ? -1 : 1100,
-        backgroundColor: 'white',
-      }}
-    >
-      <ChatBox />
-    </div>
-  );
+const MobileLayoutChatBox: React.FC<{ showConversations: boolean; minimize: boolean }> = observer(
+  ({ showConversations, minimize }) => {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          left: '0',
+          top: '0',
+          width: showConversations ? '800px' : '100%',
+          height: '100%',
+          zIndex: dialogController.shouldHide ? -1 : 1100,
+          backgroundColor: 'white',
+          display: minimize ? 'none' : 'block',
+        }}
+      >
+        <ChatBox />
+        <ChatBoxMinimizeControl />
+      </div>
+    );
+  },
+);
+
+export const ChatBoxMinimizeControl: React.FC = () => {
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const minimize = useChatBoxStore.use.minimize();
+  const setMinimize = useChatBoxStore.use.setMinimize();
+  const setOpen = useChatBoxStore.use.setOpen();
+
+  const t = useT();
+  const [api, contextHolder] = notification.useNotification();
+  const key = useRef(`ai-chat-box-minimize--control-${new Date().getTime()}`);
+  if (minimize === true) {
+    api.open({
+      key: key.current,
+      closeIcon: false,
+      message: (
+        <Flex justify="space-between" align="center">
+          <Avatar shape="circle" size={35} src={avatars(currentEmployee.avatar)} />
+          <Text ellipsis>{t('Conversation')}</Text>
+          <Button
+            type="text"
+            icon={<CloseOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpen(false);
+              setMinimize(false);
+            }}
+          ></Button>
+        </Flex>
+      ),
+      duration: 0,
+      placement: 'top',
+      style: {
+        width: 200,
+      },
+      onClick() {
+        setMinimize(false);
+      },
+    });
+  } else {
+    api.destroy(key.current);
+  }
+
+  return <>{contextHolder}</>;
 };
 
 export const ChatBoxWrapper: React.FC = () => {
   const expanded = useChatBoxStore.use.expanded();
+  const minimize = useChatBoxStore.use.minimize();
   const showConversations = useChatBoxStore.use.showConversations();
   const showCodeHistory = useChatBoxStore.use.showCodeHistory();
   const { isMobileLayout } = useMobileLayout();
 
-  return expanded ? (
+  return isMobileLayout ? (
+    <MobileLayoutChatBox showConversations={showConversations} minimize={minimize} />
+  ) : expanded ? (
     <ExpandChatBox />
-  ) : isMobileLayout ? (
-    <MobileLayoutChatBox showConversations={showConversations} />
   ) : (
     <div
       style={{

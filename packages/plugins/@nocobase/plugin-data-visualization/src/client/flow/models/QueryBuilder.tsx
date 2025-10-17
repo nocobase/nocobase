@@ -8,425 +8,324 @@
  */
 
 import React from 'react';
-import { Field, ObjectField, ArrayField, observer, useForm } from '@formily/react';
-import { InputNumber, FilterGroup, VariableFilterItem } from '@nocobase/client';
-import { useFlowSettingsContext, createCollectionContextMeta } from '@nocobase/flow-engine';
-import { useQueryBuilderLogic } from './queryBuilder.logic';
-import { Space, Collapse, Cascader, Select, Input, Checkbox, Button, Divider } from 'antd';
+import { FilterGroup, VariableFilterItem } from '@nocobase/client';
+import { useFlowSettingsContext } from '@nocobase/flow-engine';
+import { Form, Space, Cascader, Select, Input, Checkbox, Button, InputNumber } from 'antd';
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined } from '@ant-design/icons';
-import FormItemLite from './FormItemLite';
 import { useT } from '../../locale';
+import { useDataSourceManager, useCompile } from '@nocobase/client';
+import { getFieldOptions, getCollectionOptions, getFormatterOptionsByField } from './QueryBuilder.service';
+import { appendColon, debugLog } from '../utils';
 
-// 极简适配器：让 antd 原生组件符合 Formily 的 value/onChange 协议，并对 dataSource 做 options 映射
-const CascaderAdapter: React.FC<any> = ({ dataSource, onChange, onValueChange, ...rest }) => {
-  return (
-    <Cascader
-      {...rest}
-      options={dataSource}
-      onChange={(v) => {
-        onChange?.(v); // 先写入 Formily 表单值
-        onValueChange?.(v); // 再触发业务侧副作用
-      }}
-    />
-  );
+export type QueryBuilderRef = {
+  validate: () => Promise<any>;
 };
 
-const SelectAdapter: React.FC<any> = ({ dataSource, onChange, onValueChange, ...rest }) => {
-  return (
-    <Select
-      {...rest}
-      options={dataSource}
-      onChange={(v) => {
-        onChange?.(v);
-        onValueChange?.(v);
-      }}
-    />
-  );
-};
-
-const InputAdapter: React.FC<any> = ({ onChange, onValueChange, ...rest }) => {
-  return (
-    <Input
-      {...rest}
-      onChange={(e) => {
-        const v = e?.target?.value;
-        onChange?.(v);
-        onValueChange?.(v);
-      }}
-    />
-  );
-};
-
-const CheckboxAdapter: React.FC<any> = ({ value, onChange, onValueChange, content, children, ...rest }) => {
-  return (
-    <Checkbox
-      {...rest}
-      checked={!!value}
-      onChange={(e) => {
-        const v = e?.target?.checked;
-        onChange?.(v);
-        onValueChange?.(v);
-      }}
-    >
-      {children ?? content}
-    </Checkbox>
-  );
-};
-
-export const QueryBuilder: React.FC = observer(() => {
-  const {
-    token,
-    collectionOptions,
-    fieldOptions,
-    filterOptions,
-    useFormatterOptions,
-    useOrderOptions,
-    useOrderReactionHook,
-    onCollectionChange,
-  } = useQueryBuilderLogic();
-
+export const QueryBuilder = React.forwardRef<
+  QueryBuilderRef,
+  {
+    initialValues?: any;
+    onChange?: (v: any) => void;
+  }
+>(({ initialValues, onChange }, ref) => {
   const t = useT();
-  const form = useForm();
+  const [form] = Form.useForm();
+  const ctx = useFlowSettingsContext<any>();
+  const lang = ctx?.i18n?.language;
 
-  // 兼容：老数据迁移到新字段
-  React.useEffect(() => {
-    const legacy = form?.values?.query?.settings?.collection;
-    const current = form?.values?.query?.collectionPath;
-    if (!current && legacy) {
-      form.setValuesIn('query.collectionPath', legacy);
-    }
-  }, [form]);
+  React.useImperativeHandle(ref, () => ({
+    validate: () => form.validateFields(),
+  }));
+
+  // 从内表单读取 collectionPath，驱动字段树
+  const collectionPath = Form.useWatch('collectionPath', form);
+
+  // 构建集合选项（改为 service 纯函数）
+  const dm = useDataSourceManager();
+  const compile = useCompile();
+  const collectionOptions = React.useMemo(() => getCollectionOptions(dm, compile), [dm, compile]);
+  const fieldOptions = React.useMemo(() => getFieldOptions(dm, compile, collectionPath), [dm, compile, collectionPath]);
+
+  // 切换集合后，清理依赖旧集合的字段配置
+  const onCollectionChange = (val: any) => {
+    form.setFieldsValue({
+      collectionPath: val,
+      measures: [],
+      dimensions: [],
+      orders: [],
+      filter: undefined,
+    });
+    onChange?.(form.getFieldsValue(true));
+  };
+
+  const handleValuesChange = (_: any, allValues: any) => {
+    debugLog('---handleValuesChange', allValues);
+    onChange?.(allValues);
+  };
+
+  // 工具：数组上移/下移
+  const moveItem = (name: string, index: number, dir: -1 | 1) => {
+    const arr = form.getFieldValue(name) || [];
+    const target = index + dir;
+    if (target < 0 || target >= arr.length) return;
+    const next = arr.slice();
+    const [item] = next.splice(index, 1);
+    next.splice(target, 0, item);
+    form.setFieldsValue({ [name]: next });
+    onChange?.({ ...(form.getFieldsValue(true) || {}), [name]: next });
+  };
 
   return (
-    <>
-      {/* 设置：数据源/集合 */}
-      <Field
-        name="collectionPath"
-        title={t('Collection')}
-        decorator={[FormItemLite]}
-        component={[
-          CascaderAdapter,
-          {
-            showSearch: true,
-            placeholder: t('Collection'),
-            dataSource: collectionOptions,
-            onValueChange: onCollectionChange,
-            style: { width: 222, marginBottom: 4 },
-          },
-        ]}
-      />
-
-      <div style={{ margin: '4px 0' }} />
-
-      <Collapse
-        size="small"
-        bordered={false}
-        defaultActiveKey={['measures']}
-        style={{ border: 'none', boxShadow: 'none' }}
-      >
-        {/* Measures */}
-        <Collapse.Panel
-          key="measures"
-          header={t('Measures')}
-          style={{ background: token.colorBgContainer, marginBottom: 8 }}
+    <div style={{ paddingTop: 8 }}>
+      <Form form={form} layout="vertical" initialValues={initialValues} onValuesChange={handleValuesChange}>
+        {/* 设置：数据源/集合 */}
+        <Form.Item
+          name="collectionPath"
+          label={<span style={{ fontWeight: 500 }}>{appendColon(t('Collection'), lang)}</span>}
+          rules={[{ required: true }]}
         >
-          <ArrayField name="measures" required>
-            {(field) => (
-              <>
-                <div style={{ overflow: 'auto' }}>
-                  {field.value?.map((item, index) => (
-                    <ObjectField name={index} key={index}>
-                      <Space wrap align="center" size={[8, 4]} style={{ marginBottom: 8 }}>
-                        <Field
-                          name="field"
-                          required
-                          decorator={[FormItemLite]}
-                          component={[
-                            CascaderAdapter,
-                            {
-                              placeholder: t('Select Field'),
-                              fieldNames: { label: 'title', value: 'name', children: 'children' },
-                              dataSource: fieldOptions,
-                              style: { minWidth: 100 },
-                            },
-                          ]}
-                        />
-                        <Field
-                          name="aggregation"
-                          decorator={[FormItemLite]}
-                          component={[
-                            SelectAdapter,
-                            {
-                              placeholder: t('Aggregation'),
-                              style: { minWidth: 75 },
-                              dataSource: [
-                                { label: t('Sum'), value: 'sum' },
-                                { label: t('Count'), value: 'count' },
-                                { label: t('Avg'), value: 'avg' },
-                                { label: t('Max'), value: 'max' },
-                                { label: t('Min'), value: 'min' },
-                              ],
-                            },
-                          ]}
-                        />
-                        <Field
-                          name="alias"
-                          decorator={[FormItemLite]}
-                          component={[InputAdapter, { placeholder: t('Alias'), style: { width: 85 } }]}
-                        />
-                        <Field
-                          name="distinct"
-                          decorator={[FormItemLite]}
-                          component={[CheckboxAdapter]}
-                          content={t('Distinct')}
-                        />
-                        <Button
-                          size="small"
-                          type="text"
-                          onClick={() => field.remove(index)}
-                          icon={<DeleteOutlined />}
-                        />
-                        <Button
-                          size="small"
-                          type="text"
-                          disabled={index === 0}
-                          onClick={() => field.moveUp(index)}
-                          icon={<ArrowUpOutlined />}
-                        />
-                        <Button
-                          size="small"
-                          type="text"
-                          disabled={index === (field.value?.length ?? 0) - 1}
-                          onClick={() => field.moveDown(index)}
-                          icon={<ArrowDownOutlined />}
-                        />
-                      </Space>
-                    </ObjectField>
-                  ))}
-                </div>
-                <Button type="dashed" icon={<PlusOutlined />} onClick={() => field.push({})}>
-                  {t('Add field')}
-                </Button>
-              </>
-            )}
-          </ArrayField>
-        </Collapse.Panel>
-
-        {/* Dimensions */}
-        <Collapse.Panel
-          key="dimensions"
-          header={t('Dimensions')}
-          style={{ background: token.colorBgContainer, marginBottom: 8 }}
-        >
-          <ArrayField name="dimensions">
-            {(field) => (
-              <>
-                <div style={{ overflow: 'auto' }}>
-                  {field.value?.map((item, index) => (
-                    <ObjectField name={index} key={index}>
-                      <Space wrap align="center" size={[8, 4]} style={{ marginBottom: 8 }}>
-                        <Field
-                          name="field"
-                          required
-                          decorator={[FormItemLite]}
-                          component={[
-                            CascaderAdapter,
-                            {
-                              placeholder: t('Select Field'),
-                              fieldNames: { label: 'title', value: 'name', children: 'children' },
-                              dataSource: fieldOptions,
-                              style: { minWidth: 100 },
-                            },
-                          ]}
-                        />
-                        <Field
-                          name="format"
-                          decorator={[FormItemLite]}
-                          reactions={[
-                            useFormatterOptions,
-                            (f) => {
-                              // 仅当存在可选项时显示
-                              // @ts-ignore
-                              f.visible = !!(f.dataSource && f.dataSource.length);
-                            },
-                          ]}
-                          component={[SelectAdapter, { placeholder: t('Format'), style: { maxWidth: 120 } }]}
-                        />
-                        <Field
-                          name="alias"
-                          decorator={[FormItemLite]}
-                          component={[InputAdapter, { placeholder: t('Alias'), style: { width: 100 } }]}
-                        />
-                        <Button
-                          size="small"
-                          type="text"
-                          onClick={() => field.remove(index)}
-                          icon={<DeleteOutlined />}
-                        />
-                        <Button
-                          size="small"
-                          type="text"
-                          disabled={index === 0}
-                          onClick={() => field.moveUp(index)}
-                          icon={<ArrowUpOutlined />}
-                        />
-                        <Button
-                          size="small"
-                          type="text"
-                          disabled={index === (field.value?.length ?? 0) - 1}
-                          onClick={() => field.moveDown(index)}
-                          icon={<ArrowDownOutlined />}
-                        />
-                      </Space>
-                    </ObjectField>
-                  ))}
-                </div>
-                <Button type="dashed" icon={<PlusOutlined />} onClick={() => field.push({})}>
-                  {t('Add field')}
-                </Button>
-              </>
-            )}
-          </ArrayField>
-        </Collapse.Panel>
-
-        {/* Filter */}
-        <Collapse.Panel
-          key="filter"
-          header={t('Filter')}
-          style={{ background: token.colorBgContainer, marginBottom: 8 }}
-        >
-          <Field
-            name="filter"
-            decorator={[FormItemLite, { style: { overflow: 'auto' } }]}
-            component={[
-              function FilterGroupWrapper(props) {
-                const ctx = useFlowSettingsContext<any>();
-                return (
-                  <FilterGroup
-                    value={props.value}
-                    onChange={(v) => {
-                      console.log('---onChange v', v);
-                      props.onChange(v);
-                    }}
-                    FilterItem={(p) => <VariableFilterItem {...p} model={ctx.model} rightAsVariable />}
-                  />
-                );
-              },
-            ]}
+          <Cascader
+            showSearch
+            placeholder={t('Collection')}
+            options={collectionOptions}
+            onChange={onCollectionChange}
+            style={{ width: 222 }}
           />
-        </Collapse.Panel>
+        </Form.Item>
+
+        {/* Measures */}
+        <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Measures'), lang)}</div>
+        <div style={{ marginBottom: 16 }}>
+          <Form.List name="measures">
+            {(fields, { add, remove }) => (
+              <>
+                <div style={{ overflow: 'auto' }}>
+                  {fields.map((field, idx) => (
+                    <Space align="center" size={[8, 4]} wrap={false} style={{ marginBottom: 8 }} key={field.key}>
+                      <Form.Item name={[field.name, 'field']} style={{ marginBottom: 0 }}>
+                        <Cascader
+                          style={{ minWidth: 114 }}
+                          placeholder={t('Select Field')}
+                          fieldNames={{ label: 'title', value: 'name', children: 'children' }}
+                          options={fieldOptions}
+                        />
+                      </Form.Item>
+                      <Form.Item name={[field.name, 'aggregation']} style={{ marginBottom: 0 }}>
+                        <Select
+                          style={{ minWidth: 74 }}
+                          placeholder={t('Aggregation')}
+                          options={[
+                            { label: t('Sum'), value: 'sum' },
+                            { label: t('Count'), value: 'count' },
+                            { label: t('Avg'), value: 'avg' },
+                            { label: t('Max'), value: 'max' },
+                            { label: t('Min'), value: 'min' },
+                          ]}
+                        />
+                      </Form.Item>
+                      <Form.Item name={[field.name, 'alias']} style={{ marginBottom: 0 }}>
+                        <Input placeholder={t('Alias')} />
+                      </Form.Item>
+                      <Form.Item name={[field.name, 'distinct']} valuePropName="checked" style={{ marginBottom: 0 }}>
+                        <Checkbox style={{ minWidth: 60 }}>{t('Distinct')}</Checkbox>
+                      </Form.Item>
+                      <Button size="small" type="text" onClick={() => remove(field.name)} icon={<DeleteOutlined />} />
+                      {fields.length > 1 && (
+                        <>
+                          <Button
+                            size="small"
+                            type="text"
+                            disabled={idx === 0}
+                            onClick={() => moveItem('measures', idx, -1)}
+                            icon={<ArrowUpOutlined />}
+                          />
+                          <Button
+                            size="small"
+                            type="text"
+                            disabled={idx === fields.length - 1}
+                            onClick={() => moveItem('measures', idx, 1)}
+                            icon={<ArrowDownOutlined />}
+                          />
+                        </>
+                      )}
+                    </Space>
+                  ))}
+                </div>
+                <Button
+                  type="link"
+                  icon={<PlusOutlined />}
+                  onClick={() => add({})}
+                  style={{ marginTop: -8, padding: 0 }}
+                >
+                  {t('Add field')}
+                </Button>
+              </>
+            )}
+          </Form.List>
+        </div>
+
+        {/* Dimensions 标题 */}
+        <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Dimensions'), lang)}</div>
+        <div style={{ marginBottom: 16 }}>
+          <Form.List name="dimensions">
+            {(fields, { add, remove }) => (
+              <>
+                <div style={{ overflow: 'auto' }}>
+                  {fields.map((field, idx) => {
+                    const fieldName = field.name;
+                    const dimField = form.getFieldValue(['dimensions', fieldName, 'field']);
+                    const fmtOptions = getFormatterOptionsByField(dm, collectionPath, dimField);
+                    return (
+                      <Space align="center" size={[8, 4]} wrap={false} style={{ marginBottom: 8 }} key={field.key}>
+                        <Form.Item name={[field.name, 'field']} style={{ marginBottom: 0 }}>
+                          <Cascader
+                            style={{ minWidth: 114 }}
+                            placeholder={t('Select Field')}
+                            fieldNames={{ label: 'title', value: 'name', children: 'children' }}
+                            options={fieldOptions}
+                          />
+                        </Form.Item>
+                        {/* 仅当 fmtOptions 有值时展示 Format 选择项 */}
+                        {fmtOptions?.length ? (
+                          <Form.Item name={[field.name, 'format']} style={{ marginBottom: 0 }}>
+                            <Select
+                              placeholder={t('Format')}
+                              popupMatchSelectWidth={false}
+                              options={fmtOptions.map((o: any) => ({ label: o.label, value: o.value }))}
+                            />
+                          </Form.Item>
+                        ) : null}
+                        <Form.Item name={[field.name, 'alias']} style={{ marginBottom: 0 }}>
+                          <Input placeholder={t('Alias')} />
+                        </Form.Item>
+                        <Button size="small" type="text" onClick={() => remove(field.name)} icon={<DeleteOutlined />} />
+                        <Button
+                          size="small"
+                          type="text"
+                          disabled={idx === 0}
+                          onClick={() => moveItem('dimensions', idx, -1)}
+                          icon={<ArrowUpOutlined />}
+                        />
+                        <Button
+                          size="small"
+                          type="text"
+                          disabled={idx === fields.length - 1}
+                          onClick={() => moveItem('dimensions', idx, 1)}
+                          icon={<ArrowDownOutlined />}
+                        />
+                      </Space>
+                    );
+                  })}
+                </div>
+                <Button
+                  type="link"
+                  icon={<PlusOutlined />}
+                  onClick={() => add({})}
+                  style={{ marginTop: -8, padding: 0 }}
+                >
+                  {t('Add field')}
+                </Button>
+              </>
+            )}
+          </Form.List>
+        </div>
+
+        {/* Filter 标题 */}
+        <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Filter'), lang)}</div>
+        <div style={{ marginBottom: 16 }}>
+          <Form.Item name="filter" style={{ overflow: 'auto' }}>
+            <FilterGroup
+              value={form.getFieldValue('filter')}
+              onChange={(v) => {
+                form.setFieldsValue({ filter: v });
+                onChange?.(form.getFieldsValue(true));
+              }}
+              FilterItem={(p) => {
+                return <VariableFilterItem {...p} model={ctx.model} rightAsVariable />;
+              }}
+            />
+          </Form.Item>
+        </div>
 
         {/* Sort */}
-        <Collapse.Panel key="sort" header={t('Sort')} style={{ background: token.colorBgContainer, marginBottom: 4 }}>
-          <ArrayField name="orders" reactions={[useOrderReactionHook]}>
-            {(field) => (
+        <div style={{ fontWeight: 500, marginBottom: 4 }}>{appendColon(t('Sort'), lang)}</div>
+        <div style={{ marginBottom: 16 }}>
+          <Form.List name="orders">
+            {(fields, { add, remove }) => (
               <>
                 <div style={{ overflow: 'auto' }}>
-                  {field.value?.map((item, index) => (
-                    <ObjectField name={index} key={index}>
-                      <Space wrap align="center" size={[8, 4]} style={{ marginBottom: 8 }}>
-                        {/* <Field
-                          name="field"
-                          required
-                          decorator={[FormItemLite]}
-                          reactions={[useOrderOptions]}
-                          component={[CascaderAdapter, { placeholder: t('Select Field'), style: { minWidth: 100 } }]}
-                        /> */}
-                        <Field
-                          name="field"
-                          required
-                          decorator={[FormItemLite]}
-                          component={[
-                            CascaderAdapter,
-                            {
-                              placeholder: t('Select Field'),
-                              fieldNames: { label: 'title', value: 'name', children: 'children' },
-                              dataSource: fieldOptions,
-                              style: { minWidth: 100 },
-                            },
+                  {fields.map((field, idx) => (
+                    <Space wrap align="center" size={[8, 4]} style={{ marginBottom: 8 }} key={field.key}>
+                      <Form.Item name={[field.name, 'field']} style={{ marginBottom: 0 }}>
+                        <Cascader
+                          placeholder={t('Select Field')}
+                          fieldNames={{ label: 'title', value: 'name', children: 'children' }}
+                          options={fieldOptions}
+                          style={{ minWidth: 114 }}
+                        />
+                      </Form.Item>
+                      <Form.Item name={[field.name, 'order']} style={{ marginBottom: 0 }}>
+                        <Select
+                          defaultValue="ASC"
+                          style={{ minWidth: 100 }}
+                          options={[
+                            { label: 'ASC', value: 'ASC' },
+                            { label: 'DESC', value: 'DESC' },
                           ]}
                         />
-                        <Field
-                          name="order"
-                          decorator={[FormItemLite]}
-                          component={[
-                            SelectAdapter,
-                            {
-                              defaultValue: 'ASC',
-                              dataSource: [
-                                { label: 'ASC', value: 'ASC' },
-                                { label: 'DESC', value: 'DESC' },
-                              ],
-                              style: { minWidth: 100 },
-                            },
+                      </Form.Item>
+                      <Form.Item name={[field.name, 'nulls']} style={{ marginBottom: 0 }}>
+                        <Select
+                          defaultValue="default"
+                          style={{ minWidth: 110 }}
+                          options={[
+                            { label: t('Default'), value: 'default' },
+                            { label: t('NULLS first'), value: 'first' },
+                            { label: t('NULLS last'), value: 'last' },
                           ]}
                         />
-                        <Field
-                          name="nulls"
-                          decorator={[FormItemLite]}
-                          component={[
-                            SelectAdapter,
-                            {
-                              defaultValue: 'default',
-                              dataSource: [
-                                { label: t('Default'), value: 'default' },
-                                { label: t('NULLS first'), value: 'first' },
-                                { label: t('NULLS last'), value: 'last' },
-                              ],
-                              style: { minWidth: 110 },
-                            },
-                          ]}
-                        />
-                        <Button
-                          size="small"
-                          type="text"
-                          onClick={() => field.remove(index)}
-                          icon={<DeleteOutlined />}
-                        />
-                        <Button
-                          size="small"
-                          type="text"
-                          disabled={index === 0}
-                          onClick={() => field.moveUp(index)}
-                          icon={<ArrowUpOutlined />}
-                        />
-                        <Button
-                          size="small"
-                          type="text"
-                          disabled={index === (field.value?.length ?? 0) - 1}
-                          onClick={() => field.moveDown(index)}
-                          icon={<ArrowDownOutlined />}
-                        />
-                      </Space>
-                    </ObjectField>
+                      </Form.Item>
+                      <Button size="small" type="text" onClick={() => remove(field.name)} icon={<DeleteOutlined />} />
+                      <Button
+                        size="small"
+                        type="text"
+                        disabled={idx === 0}
+                        onClick={() => moveItem('orders', idx, -1)}
+                        icon={<ArrowUpOutlined />}
+                      />
+                      <Button
+                        size="small"
+                        type="text"
+                        disabled={idx === fields.length - 1}
+                        onClick={() => moveItem('orders', idx, 1)}
+                        icon={<ArrowDownOutlined />}
+                      />
+                    </Space>
                   ))}
                 </div>
-                <Button type="dashed" icon={<PlusOutlined />} onClick={() => field.push({})}>
+                <Button
+                  type="link"
+                  icon={<PlusOutlined />}
+                  onClick={() => add({})}
+                  style={{ marginTop: -8, padding: 0 }}
+                >
                   {t('Add field')}
                 </Button>
               </>
             )}
-          </ArrayField>
-        </Collapse.Panel>
-      </Collapse>
+          </Form.List>
+        </div>
 
-      <div style={{ margin: '4px 0' }} />
+        {/* Limit */}
+        <Form.Item name="limit" label={<span style={{ fontWeight: 500 }}>{appendColon(t('Limit'), lang)}</span>}>
+          <InputNumber min={0} style={{ width: 120 }} />
+        </Form.Item>
 
-      {/* Limit */}
-      <Field
-        name="limit"
-        title={t('Limit')}
-        decorator={[FormItemLite]}
-        component={[InputNumber, { defaultValue: 2000, min: 1, style: { width: 100, marginBottom: 8 } }]}
-      />
-
-      {/* Offset */}
-      <Field
-        name="offset"
-        title={t('Offset')}
-        decorator={[FormItemLite]}
-        component={[InputNumber, { defaultValue: 0, min: 0, style: { width: 100, marginBottom: 8 } }]}
-      />
-    </>
+        {/* Offset */}
+        <Form.Item name="offset" label={<span style={{ fontWeight: 500 }}>{appendColon(t('Offset'), lang)}</span>}>
+          <InputNumber min={0} style={{ width: 120 }} />
+        </Form.Item>
+      </Form>
+    </div>
   );
 });

@@ -9,7 +9,7 @@
 
 import * as React from 'react';
 import DOMPurify from 'dompurify';
-import { observer } from '..';
+import { autorun, observable, observer } from '..';
 import { FlowContext, FlowEngineContext } from '../flowContext';
 import { FlowViewContextProvider } from '../FlowContextProvider';
 import { registerPopupVariable } from './createViewMeta';
@@ -18,13 +18,41 @@ import usePatchElement from './usePatchElement';
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
 
-let uuid = 0;
-
 export function useDrawer() {
   const holderRef = React.useRef(null);
+  const drawerList = React.useMemo(() => observable.shallow({ value: [] }), []);
+
+  const RenderNestedDrawer = React.memo((props: { index: number }) => {
+    const { index } = props;
+    const [RenderDrawer, setRenderDrawer] = React.useState<React.ComponentType | null>(null);
+
+    React.useEffect(() => {
+      autorun(() => {
+        const list = drawerList.value;
+        if (list[index] && RenderDrawer !== list[index]) {
+          setRenderDrawer(list[index]);
+        }
+
+        if (!list[index]) {
+          setRenderDrawer(null);
+        }
+      });
+    }, [RenderDrawer, index]);
+
+    if (!RenderDrawer) {
+      return null;
+    }
+
+    return (
+      <RenderDrawer>
+        <RenderNestedDrawer index={index + 1} />
+      </RenderDrawer>
+    );
+  });
+
+  RenderNestedDrawer.displayName = 'RenderNestedDrawer';
 
   const open = (config, flowContext: FlowEngineContext) => {
-    uuid += 1;
     const drawerRef = React.createRef<{
       destroy: () => void;
       update: (config: any) => void;
@@ -122,8 +150,8 @@ export function useDrawer() {
     registerPopupVariable(ctx, currentDrawer);
 
     // 内部组件，在 Provider 内部计算 content
-    const DrawerWithContext: React.FC = observer(
-      (props) => {
+    const DrawerWithContext: React.FC = React.memo(
+      observer((props) => {
         // eslint-disable-next-line react-hooks/rules-of-hooks
         const mountedRef = React.useRef(false);
         const rawContent = typeof config.content === 'function' ? config.content(currentDrawer, ctx) : config.content;
@@ -164,43 +192,36 @@ export function useDrawer() {
             {props.children}
           </DrawerComponent>
         );
-      },
-      {
-        displayName: 'DrawerWithContext',
-      },
+      }),
     );
 
-    const renderDrawer = (children: React.ReactNode) => (
+    DrawerWithContext.displayName = 'DrawerWithContext';
+
+    const RenderDrawer = React.memo(({ children }) => (
       <FlowEngineProvider engine={scopedEngine}>
         <FlowViewContextProvider context={ctx}>
           <DrawerWithContext>{children}</DrawerWithContext>
         </FlowViewContextProvider>
       </FlowEngineProvider>
-    );
+    ));
 
-    closeFunc = holderRef.current?.patchElement(renderDrawer);
+    RenderDrawer.displayName = 'RenderDrawer';
+
+    closeFunc = holderRef.current?.patchElement(RenderDrawer);
     return Object.assign(promise, currentDrawer);
   };
 
   const api = React.useMemo(() => ({ open }), []);
   const ElementsHolder = React.memo(
     React.forwardRef((props, ref) => {
-      const [elements, patchElement] = usePatchElement<(children: React.ReactNode) => React.ReactElement>();
+      const [elements, patchElement] = usePatchElement<React.ElementType>();
       React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
 
-      // 嵌套渲染：后面的元素是前一个元素的子元素
-      const renderNestedElements = () => {
-        if (elements.length === 0) {
-          return null;
-        }
+      React.useEffect(() => {
+        drawerList.value = elements;
+      }, [elements]);
 
-        // 从最后一个元素开始，向前递归渲染
-        return elements.reduceRight((children: React.ReactNode, renderElement) => {
-          return renderElement(children);
-        }, null as React.ReactNode);
-      };
-
-      return <>{renderNestedElements()}</>;
+      return <RenderNestedDrawer index={0} />;
     }),
   );
 

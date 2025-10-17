@@ -7,24 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BaseRecordResource, FilterItem } from '@nocobase/flow-engine';
+import { BaseRecordResource } from '@nocobase/flow-engine';
 import { parseField, removeUnparsableFilter, isEmptyFilterObject } from '../../utils';
+import { debugLog } from '../utils';
 import { transformFilter } from '@nocobase/utils/client';
-
-function fixWrongData(filter: any): any {
-  // 处理异常结构，最外面多了一层 $and 或 $or
-  if (Array.isArray(filter.$and) && filter.$and.length === 1 && filter.$and[0]?.logic) {
-    filter = filter.$and[0];
-  }
-  if (Array.isArray(filter.$or) && filter.$or.length === 1 && filter.$or[0]?.logic) {
-    filter = filter.$or[0];
-  }
-  // 处理异常结构，缺少 items 字段
-  if ((filter?.logic === '$and' || filter?.logic === '$or') && !Array.isArray(filter.items)) {
-    filter.items = [];
-  }
-  return filter;
-}
+import { validateQuery } from '../models/QueryBuilder.service';
 
 export class ChartResource<TData = any> extends BaseRecordResource<TData> {
   resourceName = 'charts';
@@ -41,7 +28,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // 整体数据查询参数，内部 QueryBuilder 调用
   setQueryParams(query: Record<string, any>, mark?: string) {
-    const { success, message } = this.validateQuery(query);
+    const { success, message } = validateQuery(query);
     if (!success) {
       // 这里过程性校验 不强制报错，只做提示
       console.warn(message);
@@ -96,22 +83,6 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
       this.request.data.filter = merged;
     }
     return this;
-  }
-
-  validateQuery(query: Record<string, any>): { success: boolean; message: string } {
-    if (!query) {
-      return { success: false, message: 'validate: query is required' };
-    }
-    if (!query.mode) {
-      return { success: false, message: 'validate: query mode is required' };
-    }
-    if (query.mode === 'sql' && !query.sql) {
-      return { success: false, message: 'validate: sql is required when mode is sql' };
-    }
-    if (query.mode === 'builder' && (!query.collectionPath?.length || !query.measures?.length)) {
-      return { success: false, message: 'validate: collection and measures are required when mode is builder' };
-    }
-    return { success: true, message: '' };
   }
 
   // 解析 queryBuider 表单值为请求参数
@@ -176,6 +147,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // debounce 刷新数据
   async refresh() {
+    debugLog('---ChartResource refresh');
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer);
     }

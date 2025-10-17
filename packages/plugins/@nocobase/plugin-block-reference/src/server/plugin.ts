@@ -9,23 +9,13 @@
 
 import { InstallOptions, Plugin } from '@nocobase/server';
 
-export class PluginBlockLowcodeServer extends Plugin {
-  afterAdd() {}
-
-  beforeLoad() {}
-
-  async load() {
-    // Server-side logic for lowcode component blocks
-    // Currently no server-side functionality needed
-  }
+export class PluginBlockReferenceServer extends Plugin {
+  async load() {}
 
   async install(options?: InstallOptions) {}
-
   async afterEnable() {}
-
   async afterDisable() {}
-
   async remove() {}
 }
 
-export default PluginBlockLowcodeServer;
+export default PluginBlockReferenceServer;
