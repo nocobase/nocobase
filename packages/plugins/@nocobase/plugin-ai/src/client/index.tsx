@@ -11,7 +11,8 @@ import PluginACLClient from '@nocobase/plugin-acl/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
 import { Plugin, lazy } from '@nocobase/client';
 import { AIManager } from './manager/ai-manager';
-import { openaiProviderOptions } from './llm-providers/openai';
+import { openaiResponsesProviderOptions } from './llm-providers/openai/responses';
+import { openaiCompletionsProviderOptions } from './llm-providers/openai/completions';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
 import { LLMInstruction } from './workflow/nodes/llm';
 import { tval } from '@nocobase/utils/client';
@@ -128,7 +129,8 @@ export class PluginAIClient extends Plugin {
   setupAIFeatures() {
     this.app.flowEngine.context.defineProperty(...aiEmployeesData);
 
-    this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
+    this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
+    this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
