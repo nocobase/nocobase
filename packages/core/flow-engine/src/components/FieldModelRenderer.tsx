@@ -61,7 +61,7 @@ export function FieldModelRenderer(props: any) {
     onCompositionEnd: handleCompositionEnd,
   };
   useEffect(() => {
-    model.setProps(modelProps);
+    model && model.setProps(modelProps);
   }, [modelProps]);
 
   return <FlowModelRenderer model={model} {...rest} />;
