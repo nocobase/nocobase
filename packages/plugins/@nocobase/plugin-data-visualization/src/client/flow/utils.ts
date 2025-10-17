@@ -132,3 +132,24 @@ export function appendColon(label: string, lang?: string): string {
   const colon = isZh ? '：' : ':';
   return `${noColon}${colon}`;
 }
+
+// 调试日志开关：支持 URL 参数 ?_debug=true 或 localStorage('nocobase.debug')
+export const isDebugEnabled = () => {
+  if (typeof window === 'undefined') return false;
+  try {
+    const params = new URLSearchParams(window.location.search || '');
+    const q = params.get('_debug');
+    if (q === 'true' || q === '1') return true;
+    const ls = window.localStorage?.getItem('nocobase.debug');
+    if (ls === 'true' || ls === '1') return true;
+  } catch {
+    // ignore
+  }
+  return false;
+};
+
+// 统一调试日志入口，仅在开启调试时输出
+export const debugLog = (...args: any[]) => {
+  if (!isDebugEnabled()) return;
+  console.log(...args);
+};

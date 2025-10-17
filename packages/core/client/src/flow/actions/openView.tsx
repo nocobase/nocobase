@@ -15,6 +15,7 @@ import { useField, useForm, useFormEffects } from '@formily/react';
 import { onFieldValueChange } from '@formily/core';
 import { FlowPage } from '../FlowPage';
 import { VariableInput } from '@nocobase/flow-engine';
+import { RootPageModel } from '../models';
 
 /**
  * 弹窗打开动作（openView）配置
@@ -698,6 +699,13 @@ export const openView = defineAction({
               pageModel.context.defineProperty('closable', {
                 get: () => openMode !== 'embed',
               });
+
+              if (pageModel instanceof RootPageModel) {
+                // ctx.pageActive 是一个 observable.ref 对象，来自 RouteModel
+                pageModel.context.defineProperty('pageActive', {
+                  get: () => ctx.pageActive,
+                });
+              }
 
               Object.entries(defineProperties as Record<string, any>).forEach(([key, p]) => {
                 pageModel.context.defineProperty(key, p);
