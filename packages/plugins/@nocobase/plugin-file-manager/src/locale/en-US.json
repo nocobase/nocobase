@@ -37,5 +37,7 @@
   "See more": "See more",
   "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".": "Aliyun OSS region part of the bucket. For example: \"oss-cn-beijing\".",
   "Timeout": "Timeout",
-  "Upload timeout for a single file in milliseconds. Default is 600000.": "Upload timeout for a single file in milliseconds. Default is 600000."
+  "Upload timeout for a single file in milliseconds. Default is 600000.": "Upload timeout for a single file in milliseconds. Default is 600000.",
+  "Private bucket": "Private bucket",
+  "If enabled, the system will generate signed URLs for file access when the bucket is private.": "If enabled, the system will generate signed URLs for file access when the bucket is private."
 }
