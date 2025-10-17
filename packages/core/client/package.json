@@ -76,7 +76,9 @@
     "react-to-print": "^2.14.7",
     "sanitize-html": "2.13.0",
     "tabulator-tables": "^6.3.1",
-    "use-deep-compare-effect": "^1.8.1"
+    "use-deep-compare-effect": "^1.8.1",
+    "vditor": "^3.10.3",
+    "liquidjs": "^10.0.0"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
