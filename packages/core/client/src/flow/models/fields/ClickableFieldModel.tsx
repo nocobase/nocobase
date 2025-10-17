@@ -55,7 +55,6 @@ export class ClickableFieldModel extends FieldModel {
     if (typeof value === 'object' && restProps.target) {
       return;
     }
-    console.log(this.props, value);
     const result = this.renderComponent(value);
     const display = record ? (value ? result : 'N/A') : result;
     const isTag = displayStyle === 'tag';
