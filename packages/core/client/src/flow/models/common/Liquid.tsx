@@ -25,7 +25,6 @@ export class LiquidEngine extends Liquid {
       return dict[key]?.[locale] || dict[key]?.['en'] || key;
     });
 
-    // （可选）注册一个日志过滤器，方便调试
     this.registerFilter('log', (value) => {
       console.log('[Liquid log]', value);
       return value;
@@ -91,7 +90,6 @@ export class LiquidEngine extends Liquid {
 
       // 3️⃣ 只解析变量
       const resolvedCtx = await ctx.resolveJsonTemplate(liquidContext);
-
       // 4️⃣ 渲染模板
       return await this.render(template, { ctx: resolvedCtx });
     } catch (err) {

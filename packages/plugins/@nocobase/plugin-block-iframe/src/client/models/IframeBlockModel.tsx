@@ -36,7 +36,7 @@ const Iframe: any = observer(
         url: `iframeHtml:getHtml/${htmlId}`,
       },
       {
-        refreshDeps: [htmlId],
+        refreshDeps: [htmlId, html],
         ready: mode === 'html' && !!htmlId,
       },
     );
@@ -106,7 +106,6 @@ export class IframeBlockModel extends BlockModel {
     const { url, htmlId, mode = 'url', html, params, ...others } = this.props;
     const token = this.context.themeToken;
     const t = this.context.t;
-    console.log(this.props);
     if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
       return <Card style={{ marginBottom: token.padding }}>{t('Please fill in the iframe URL')}</Card>;
     }
@@ -368,8 +367,8 @@ IframeBlockModel.registerFlow({
           }
         };
         if (mode === 'html') {
-          const { data } = await saveHtml(html);
-          ctx.model.setStepParams('iframeBlockSettings', 'editIframe', { htmlId: data?.id });
+          const data = await saveHtml(html);
+          ctx.model.setStepParams('iframeBlockSettings', 'editIframe', { htmlId: data.data?.id || data?.id });
         }
       },
       async handler(ctx, params) {
