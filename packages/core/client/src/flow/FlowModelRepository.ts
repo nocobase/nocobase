@@ -113,6 +113,36 @@ export class MockFlowModelRepository implements IFlowModelRepository<FlowModel> 
   async move(sourceId: string, targetId: string, position: 'before' | 'after' = 'after') {
     // TODO
   }
+
+  async duplicate(uid: string) {
+    const source = await this.load(uid);
+    if (!source) return null;
+
+    const genUid = () => `dup_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+
+    const cloneTree = (node: any, newParentUid?: string): any => {
+      const { subModels, flowEngine, ...rest } = node || {};
+      const cloned: any = { ...rest };
+      cloned.uid = genUid();
+      if (newParentUid) cloned.parentId = newParentUid;
+
+      if (subModels && typeof subModels === 'object') {
+        cloned.subModels = {} as Record<string, any>;
+        for (const key of Object.keys(subModels)) {
+          const value = (subModels as any)[key];
+          if (Array.isArray(value)) {
+            cloned.subModels[key] = value.map((child) => cloneTree(child, cloned.uid));
+          } else if (value && typeof value === 'object') {
+            cloned.subModels[key] = cloneTree(value, cloned.uid);
+          }
+        }
+      }
+      return cloned;
+    };
+
+    // 返回深拷贝的模型树（不直接写入本地存储）
+    return cloneTree(source);
+  }
 }
 
 export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
@@ -152,6 +182,15 @@ export class FlowModelRepository implements IFlowModelRepository<FlowModel> {
       method: 'POST',
       url: 'flowModels:move',
       params: { sourceId, targetId, position },
+    });
+    return response.data?.data;
+  }
+
+  async duplicate(uid: string) {
+    const response = await this.app.apiClient.request({
+      method: 'POST',
+      url: 'flowModels:duplicate',
+      params: { uid },
     });
     return response.data?.data;
   }

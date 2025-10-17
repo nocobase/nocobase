@@ -7,7 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Schema } from '@formily/react';
 import { uid } from '@formily/shared';
 import lodash from 'lodash';
 import { SelectedField } from './configure';

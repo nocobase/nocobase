@@ -44,3 +44,5 @@ export { getSnippetBody, listSnippetsForContext } from './runjs-context/snippets
 export * from './views';
 
 export * from './FlowDefinition';
+export { createViewScopedEngine } from './ViewScopedFlowEngine';
+export { createBlockScopedEngine } from './BlockScopedFlowEngine';
