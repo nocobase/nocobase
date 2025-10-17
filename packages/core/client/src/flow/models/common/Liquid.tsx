@@ -75,4 +75,28 @@ export class LiquidEngine extends Liquid {
       return `<pre style="color:red;">Liquid 模板错误：${err.message}</pre>`;
     }
   }
+
+  /**
+   * 合并步骤：获取变量 -> 构建 context -> 解析 -> 渲染
+   * @param {string} template Liquid 模板字符串
+   * @param {context} ctx flowContext
+   */
+  async renderWithFullContext(template, ctx) {
+    try {
+      // 1️⃣ 分析模板中的变量
+      const vars = await this.fullVariables(template);
+
+      // 2️⃣ 构造 Liquid context
+      const liquidContext = this.transformLiquidContext(vars);
+
+      // 3️⃣ 只解析变量
+      const resolvedCtx = await ctx.resolveJsonTemplate(liquidContext);
+
+      // 4️⃣ 渲染模板
+      return await this.render(template, { ctx: resolvedCtx });
+    } catch (err) {
+      console.error('[Liquid] renderWithFullContext 错误:', err);
+      return `<pre style="color:red;">Liquid 渲染错误：${err.message}</pre>`;
+    }
+  }
 }

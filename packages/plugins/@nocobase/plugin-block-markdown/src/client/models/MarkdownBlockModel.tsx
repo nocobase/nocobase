@@ -46,7 +46,7 @@ MarkdownBlockModel.registerFlow({
           content: {
             type: 'string',
             'x-decorator': 'FormItem',
-            'x-component': ctx.markdown.edit(),
+            'x-component': (props) => ctx.markdown.edit(props),
             description: descriptionContent,
           },
         };
@@ -58,14 +58,7 @@ MarkdownBlockModel.registerFlow({
       async handler(ctx, params) {
         const content = params.content;
         try {
-          // 分析变量
-          const vars = await ctx.liquid.fullVariables(content);
-          // 构造 Liquid context 结构
-          const liquidContext = ctx.liquid.transformLiquidContext(vars);
-          // 只解析变量
-          const r = await ctx.resolveJsonTemplate(liquidContext);
-          // 解析 Liquid 模板
-          const result = await ctx.liquid.render(content, { ctx: r });
+          const result = await ctx.liquid.renderWithFullContext(content, ctx);
           // 解析 Markdown
           const mdContent = ctx.markdown.render(ctx.t(result));
           ctx.model.setProps({

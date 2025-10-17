@@ -15,13 +15,14 @@ export class Markdown {
   /**
    * 渲染 Markdown
    * @param {string} text - Markdown 文本
+   * @param {object} props - 其他属性
    * @returns {JSX.Element}
    */
-  render(text) {
+  render(text, props) {
     if (!text) return null;
 
     try {
-      return <Display value={text} />;
+      return <Display value={text} {...props} />;
     } catch (err) {
       console.error('渲染失败:', err);
       return <pre style={{ color: 'red' }}>Markdown 渲染错误：{err.message}</pre>;
@@ -35,7 +36,7 @@ export class Markdown {
    */
   edit(props) {
     try {
-      return Edit;
+      return <Edit {...props} />;
     } catch (err) {
       return <pre style={{ color: 'red' }}>Markdown 编辑器加载错误：{err.message}</pre>;
     }
