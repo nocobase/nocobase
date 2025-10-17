@@ -41,7 +41,16 @@ FormSubmitActionModel.define({
 FormSubmitActionModel.registerFlow({
   key: 'submitSettings',
   on: 'click',
+  title: escapeT('Submit action settings'),
   steps: {
+    confirm: {
+      use: 'confirm',
+      defaultParams: {
+        enable: true,
+        title: escapeT('Submit record'),
+        content: escapeT('Are you sure you want to save it?'),
+      },
+    },
     saveResource: {
       async handler(ctx, params) {
         if (!ctx?.resource) {
