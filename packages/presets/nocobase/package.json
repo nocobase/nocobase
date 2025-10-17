@@ -25,6 +25,7 @@
     "@nocobase/plugin-block-reference": "2.0.0-alpha.13",
     "@nocobase/plugin-block-template": "2.0.0-alpha.13",
     "@nocobase/plugin-block-workbench": "2.0.0-alpha.13",
+    "@nocobase/plugin-block-grid-card": "2.0.0-alpha.13",
     "@nocobase/plugin-calendar": "2.0.0-alpha.13",
     "@nocobase/plugin-charts": "2.0.0-alpha.13",
     "@nocobase/plugin-client": "2.0.0-alpha.13",
