@@ -81,6 +81,9 @@ export class LiquidEngine extends Liquid {
    * @param {context} ctx flowContext
    */
   async renderWithFullContext(template, ctx) {
+    if (!template) {
+      return;
+    }
     try {
       // 1️⃣ 分析模板中的变量
       const vars = await this.fullVariables(template);
