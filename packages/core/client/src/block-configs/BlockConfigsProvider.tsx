@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { createContext, useContext, ReactNode, useRef, useCallback } from "react";
+import React, { createContext, useContext, ReactNode, useRef, useCallback } from 'react';
 
 export const BlockConfigsContext = createContext<{
   getConfigs: () => any;
@@ -31,34 +31,34 @@ export const useBlockConfigs = () => {
 export const BlockConfigsProvider = ({ children, value: initialValue }: { children: ReactNode; value: any }) => {
   const valueRef = useRef(initialValue);
   const subscribersRef = useRef<Array<() => void>>([]);
-  
+
   const getConfigs = useCallback(() => {
     return valueRef.current;
   }, []);
 
   const setConfigs = useCallback((newValue: any, shouldNotify = false) => {
     valueRef.current = newValue;
-    
+
     // 仅在明确要求通知时执行回调
     if (shouldNotify) {
-      subscribersRef.current.forEach(callback => callback());
+      subscribersRef.current.forEach((callback) => callback());
     }
   }, []);
-  
+
   const getFiltersConfigs = useCallback(() => {
     return valueRef.current?.configData?.filterSteps || {};
   }, []);
-  
+
   const getEventsConfigs = useCallback(() => {
     return valueRef.current?.configData?.events || {};
   }, []);
 
   const subscribe = useCallback((callback: () => void) => {
     subscribersRef.current.push(callback);
-    
+
     // 返回取消订阅函数
     return () => {
-      subscribersRef.current = subscribersRef.current.filter(cb => cb !== callback);
+      subscribersRef.current = subscribersRef.current.filter((cb) => cb !== callback);
     };
   }, []);
 
@@ -67,12 +67,8 @@ export const BlockConfigsProvider = ({ children, value: initialValue }: { childr
     setConfigs,
     getFiltersConfigs,
     getEventsConfigs,
-    subscribe
+    subscribe,
   }).current;
 
-  return (
-    <BlockConfigsContext.Provider value={contextValue}>
-      {children}
-    </BlockConfigsContext.Provider>
-  );
-}; 
+  return <BlockConfigsContext.Provider value={contextValue}>{children}</BlockConfigsContext.Provider>;
+};
