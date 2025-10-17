@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { FieldModel } from '@nocobase/client';
-import React from 'react';
 import { largeField, EditableItemModel } from '@nocobase/flow-engine';
-import { Edit } from './components/Edit';
 @largeField()
 export class VditorFieldModel extends FieldModel {
   render() {
-    return <Edit {...this.props} />;
+    const markdown = this.context.markdown;
+
+    return markdown.edit(this.props);
   }
 }
 EditableItemModel.bindModelToInterface('VditorFieldModel', ['vditor'], { isDefault: true });
