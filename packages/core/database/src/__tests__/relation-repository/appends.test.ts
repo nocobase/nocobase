@@ -50,6 +50,7 @@ describe('appends', () => {
 
   it('should find with appends', async () => {
     await User.repository.create({
+      updateAssociationValues: ['posts'],
       values: {
         name: 'u1',
         posts: [

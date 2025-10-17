@@ -1205,6 +1205,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const serverHooks = schema['x-server-hooks'] || [];
 
     const node = await this.create({
+      updateAssociationValues: ['serverHooks'],
       values: {
         name,
         ['x-uid']: uid,

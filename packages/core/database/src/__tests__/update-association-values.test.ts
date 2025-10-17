@@ -69,6 +69,7 @@ describe('update associations', () => {
     });
 
     await T1.repository.create({
+      updateAssociationValues: ['t2'],
       values: {
         id_: 1,
         t2: [
@@ -149,7 +150,7 @@ describe('update associations', () => {
       values: {},
     });
     await db.getRepository('a').create({
-      updateAssociationValues: ['b'],
+      updateAssociationValues: ['b', 'b.c', 'b.c.d'],
       values: {
         name: 'a1',
         b: {
@@ -259,7 +260,7 @@ describe('update associations', () => {
       values: {},
     });
     await db.getRepository('a').create({
-      updateAssociationValues: ['b'],
+      updateAssociationValues: ['b', 'b.c', 'b.c.d'],
       values: {
         name: 'a1',
         b: {

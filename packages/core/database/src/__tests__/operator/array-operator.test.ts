@@ -109,6 +109,7 @@ describe('array field operator', function () {
     await db.sync();
 
     await User.repository.createMany({
+      updateAssociationValues: ['posts'],
       records: [
         {
           name: 'u0',

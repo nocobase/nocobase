@@ -113,6 +113,7 @@ describe('remove action', () => {
 
   test('remove has one', async () => {
     const p1 = await Post.repository.create({
+      updateAssociationValues: ['profile'],
       values: {
         title: 'p1',
         profile: {

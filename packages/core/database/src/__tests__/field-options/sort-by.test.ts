@@ -116,6 +116,7 @@ describe('associated field order', () => {
 
   it('should sort hasMany association', async () => {
     await db.getRepository('users').create({
+      updateAssociationValues: ['posts'],
       values: {
         name: 'u1',
         posts: [{ title: 'c' }, { title: 'b' }, { title: 'a' }],
@@ -134,6 +135,7 @@ describe('associated field order', () => {
 
   it('should sort belongsToMany association', async () => {
     await db.getRepository('posts').create({
+      updateAssociationValues: ['tags'],
       values: {
         title: 'p1',
         tags: [{ name: 'c' }, { name: 'b' }, { name: 'a' }],
@@ -152,6 +154,7 @@ describe('associated field order', () => {
 
   it('should sort nested associations', async () => {
     await db.getRepository('users').create({
+      updateAssociationValues: ['posts', 'posts.tags'],
       values: {
         name: 'u1',
         posts: [{ title: 'c', tags: [{ name: 'c' }, { name: 'b' }, { name: 'a' }] }, { title: 'b' }, { title: 'a' }],
@@ -173,6 +176,7 @@ describe('associated field order', () => {
 
   it('should sortBy hidden field', async () => {
     await db.getRepository('users').create({
+      updateAssociationValues: ['records'],
       values: {
         name: 'u1',
         records: [

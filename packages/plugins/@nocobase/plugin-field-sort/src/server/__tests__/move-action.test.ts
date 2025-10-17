@@ -57,6 +57,7 @@ describe('sort action', () => {
 
       for (let index = 1; index < 5; index++) {
         await UserCollection.repository.create({
+          updateAssociationValues: ['posts'],
           values: {
             name: `u${index}`,
             posts: [
@@ -114,7 +115,7 @@ describe('sort action', () => {
         },
       });
 
-      await api
+      const response = await api
         .agent()
         .resource('users.posts', u1.get('id'))
         .create({
@@ -122,6 +123,7 @@ describe('sort action', () => {
             title: 'u1p4',
           },
         });
+      expect(response.status).toEqual(200);
 
       const u1p4 = await api.db.getRepository('posts').findOne({
         filter: {

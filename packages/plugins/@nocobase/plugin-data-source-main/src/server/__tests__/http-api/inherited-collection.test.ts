@@ -114,6 +114,7 @@ pgOnly()('Inherited Collection', () => {
     const collectionB = app.db.getCollection('b');
 
     const res = await agent.resource('b').create({
+      updateAssociationValues: ['bs'],
       values: {
         af: 'a1',
         bs: [{ bf: 'b1' }, { bf: 'b2' }],

@@ -23,6 +23,7 @@ import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
 import { setSystemRoleMode } from './actions/union-role';
+import { verifyAssociationsPermissionMiddleware } from './middlewares/verifyAssociationsPermission';
 
 export class PluginACLServer extends Plugin {
   get acl() {
@@ -503,7 +504,7 @@ export class PluginACLServer extends Plugin {
         }
       }
 
-      if (actionName === 'update' && resourceName === 'roles.resources') {
+      if (['create', 'update'].includes(actionName) && resourceName === 'roles.resources') {
         ctx.action.mergeParams({
           updateAssociationValues: ['actions'],
         });
@@ -625,6 +626,7 @@ export class PluginACLServer extends Plugin {
       },
       { after: 'dataSource', group: 'with-acl-meta' },
     );
+    this.app.dataSourceManager.use(verifyAssociationsPermissionMiddleware(), { after: 'acl' });
 
     this.db.on('afterUpdateCollection', async (collection) => {
       if (collection.options.loadedFromCollectionManager || collection.options.asStrategyResource) {
