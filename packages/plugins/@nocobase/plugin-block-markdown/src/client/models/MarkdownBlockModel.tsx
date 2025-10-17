@@ -25,15 +25,29 @@ MarkdownBlockModel.define({
 
 MarkdownBlockModel.registerFlow({
   key: 'markdownBlockSettings',
-  title: escapeT('Markdown block settings'),
+  title: escapeT('Markdown block settings', { ns: 'block-markdown' }),
   steps: {
     editMarkdown: {
       title: escapeT('Edit markdown'),
       uiSchema(ctx) {
+        const t = ctx.t;
+        const descriptionContent = (
+          <>
+            <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
+              {t('Syntax references')}:
+            </span>
+            <a href={`https://shopify.github.io/liquid/basics/introduction/`} target="_blank" rel="noreferrer">
+              Liquid
+            </a>
+          </>
+        );
+
         return {
           content: {
             type: 'string',
+            'x-decorator': 'FormItem',
             'x-component': ctx.markdown.edit(),
+            description: descriptionContent,
           },
         };
       },
