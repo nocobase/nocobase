@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { escapeT, useFlowContext } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import { Card, Spin, theme, Tooltip, Select } from 'antd';
@@ -25,11 +25,12 @@ import {
 } from '@nocobase/client';
 
 const Iframe: any = observer(
-  (props: IIframe & { html?: string; htmlId?: number; mode: string; params?: any; engine?: string }) => {
-    const { url, htmlId, mode = 'url', html, params, engine, ...others } = props;
+  (props: IIframe & { html?: string; htmlId?: number; mode: string; params?: any }) => {
+    const { url, htmlId, mode = 'url', html, params, ...others } = props;
     const { token } = theme.useToken();
     const compile = useCompile();
-    const { t } = useTranslation();
+    const ctx = useFlowContext();
+
     const { loading, data: htmlContent } = useRequest<string>(
       {
         url: `iframeHtml:getHtml/${htmlId}`,
@@ -44,7 +45,9 @@ const Iframe: any = observer(
     useEffect(() => {
       const generateSrc = async () => {
         if (mode === 'html') {
-          const targetHtmlContent = compile(htmlContent);
+          const liquid = ctx.liquid;
+          const result = await liquid.renderWithFullContext(htmlContent, ctx);
+          const targetHtmlContent = compile(result);
           if (targetHtmlContent === undefined) {
             return;
           }
@@ -100,9 +103,10 @@ const Iframe: any = observer(
 
 export class IframeBlockModel extends BlockModel {
   render() {
-    const { url, htmlId, mode = 'url', height, html, params, engine, ...others } = this.props;
+    const { url, htmlId, mode = 'url', html, params, ...others } = this.props;
     const token = this.context.themeToken;
     const t = this.context.t;
+    console.log(this.props);
     if ((mode === 'url' && !url) || (mode === 'html' && !htmlId)) {
       return <Card style={{ marginBottom: token.padding }}>{t('Please fill in the iframe URL')}</Card>;
     }
@@ -346,8 +350,9 @@ IframeBlockModel.registerFlow({
           },
         };
       },
-      async handler(ctx, params) {
-        const { mode, url, html, height, htmlId, params: searchParams, engine, allow } = params;
+      useRawParams: true,
+      async beforeParamsSave(ctx, params) {
+        const { mode, html, htmlId } = params;
         const saveHtml = async (html: string) => {
           const options = {
             values: { html },
@@ -359,23 +364,23 @@ IframeBlockModel.registerFlow({
           } else {
             // eslint-disable-next-line no-unsafe-optional-chaining
             const { data } = await ctx.api.resource('iframeHtml').create?.(options);
-            return data?.data;
+            return data;
           }
         };
-        let id;
         if (mode === 'html') {
-          const data = await saveHtml(html);
-          id = data.id;
+          const { data } = await saveHtml(html);
+          ctx.model.setStepParams('iframeBlockSettings', 'editIframe', { htmlId: data?.id });
         }
+      },
+      async handler(ctx, params) {
+        const { mode, url, html, params: searchParams, allow, htmlId } = params;
         ctx.model.setProps({
           mode,
           url,
           html,
-          height,
           params: searchParams,
-          engine,
           allow,
-          htmlId: id,
+          htmlId,
         });
       },
     },
