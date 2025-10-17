@@ -51,10 +51,11 @@ export class ClickableFieldModel extends FieldModel {
   }
 
   renderInDisplayStyle(value, record?) {
-    if (typeof value === 'object') {
+    const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
+    if (typeof value === 'object' && restProps.target) {
       return;
     }
-    const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
+    console.log(this.props, value);
     const result = this.renderComponent(value);
     const display = record ? (value ? result : 'N/A') : result;
     const isTag = displayStyle === 'tag';
@@ -180,7 +181,7 @@ ClickableFieldModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps({ clickToOpen: params.clickToOpen });
+        ctx.model.setProps({ clickToOpen: params.clickToOpen, ...ctx.collectionField.getComponentProps() });
       },
     },
     overflowMode: {
