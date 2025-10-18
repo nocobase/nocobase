@@ -463,6 +463,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
             return {
               onClick: (event) => {
                 this.dispatchEvent('rowClick', { record, rowIndex, event });
+
+                // TODO: 写到 flow 中无效
+                defineClickedRowRecordVariable(this, record);
               },
             };
           }}
@@ -657,19 +660,6 @@ TableBlockModel.registerEvents({
       },
     },
     handler: commonConditionHandler,
-  },
-});
-
-TableBlockModel.registerFlow({
-  key: 'rowClick',
-  on: 'rowClick',
-  steps: {
-    handleRowClick: {
-      handler(ctx, params) {
-        const { record } = params;
-        defineClickedRowRecordVariable(ctx.model, record);
-      },
-    },
   },
 });
 
