@@ -20,6 +20,7 @@ import { useCurrentPopupContext } from '../page/PagePopups';
 import { TabsContextProvider, useTabsContext } from '../tabs/context';
 import { ActionContextNoRerender } from './context';
 import { useActionContext } from './hooks';
+import { useDesignable } from '../../';
 import { useSetAriaLabelForModal } from './hooks/useSetAriaLabelForModal';
 import { ActionDrawerProps, ComposedActionDrawer, OpenSize } from './types';
 import { getZIndex, useZIndexContext, zIndexContext } from './zIndexContext';
@@ -106,6 +107,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
 
     const zIndex = getZIndex('modal', _zIndex || parentZIndex, props.level || 0);
     const ready = useDelayedVisible(visible, delay); // 200ms 与 Modal 动画时间一致
+    const { designable } = useDesignable();
 
     return (
       <ActionContextNoRerender>
@@ -133,6 +135,10 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
                   &.nb-action-popup {
                     .ant-modal-header {
                       display: none;
+                    }
+
+                    .ant-modal-body {
+                      margin-top: ${designable ? '30px' : 0};
                     }
 
                     .ant-modal-content {
