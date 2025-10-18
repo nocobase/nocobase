@@ -23,16 +23,18 @@ import {
   ForkFlowModel,
   MultiRecordResource,
   observable,
+  useFlowContext,
   useFlowEngine,
 } from '@nocobase/flow-engine';
 import { Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
 import { extractIndex, adjustColumnOrder } from './utils';
+import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 
 type TableBlockModelStructure = {
   subModels: {
@@ -457,6 +459,13 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
             renderCell: this.renderCell,
             ...this.rowSelectionProps,
           }}
+          onRow={(record, rowIndex) => {
+            return {
+              onClick: (event) => {
+                this.dispatchEvent('rowClick', { record, rowIndex, event });
+              },
+            };
+          }}
           loading={this.resource.loading}
           virtual={this.props.virtual}
           scroll={{ x: 'max-content' }}
@@ -624,3 +633,56 @@ TableBlockModel.define({
   },
   sort: 300,
 });
+
+TableBlockModel.registerEvents({
+  rowClick: {
+    title: escapeT('Row click'),
+    name: 'rowClick',
+    uiSchema: {
+      condition: {
+        type: 'object',
+        title: escapeT('Trigger condition'),
+        'x-decorator': 'FormItem',
+        'x-component': (props) => {
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          const ctx = useFlowContext();
+          // eslint-disable-next-line react-hooks/rules-of-hooks
+          useEffect(() => {
+            defineClickedRowRecordVariable(ctx.model, null);
+            return () => removeClickedRowRecordVariable(ctx.model);
+          }, [ctx.model]);
+
+          return <ConditionBuilder {...props} />;
+        },
+      },
+    },
+    handler: commonConditionHandler,
+  },
+});
+
+TableBlockModel.registerFlow({
+  key: 'rowClick',
+  on: 'rowClick',
+  steps: {
+    handleRowClick: {
+      handler(ctx, params) {
+        const { record } = params;
+        defineClickedRowRecordVariable(ctx.model, record);
+      },
+    },
+  },
+});
+
+function defineClickedRowRecordVariable(model: TableBlockModel, value: any) {
+  const recordMeta = createCurrentRecordMetaFactory(model.context, () => model.collection, {
+    title: escapeT('Clicked row record'),
+  });
+  model.context.defineProperty('clickedRowRecord', {
+    get: () => value,
+    meta: recordMeta,
+  });
+}
+
+function removeClickedRowRecordVariable(model: TableBlockModel) {
+  model.context.defineProperty('clickedRowRecord', {});
+}

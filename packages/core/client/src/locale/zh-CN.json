@@ -1432,5 +1432,7 @@
   "Target block uid": "目标区块 uid",
   "Submit action settings": "提交按钮设置",
   "Submit record": "提交记录",
-  "Are you sure you want to save it?": "你确定要提交记录吗？"
+  "Are you sure you want to save it?": "你确定要提交记录吗？",
+  "Row click": "行点击",
+  "Clicked row record": "被点击的行记录"
 }
