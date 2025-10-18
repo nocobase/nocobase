@@ -461,11 +461,10 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
           }}
           onRow={(record, rowIndex) => {
             return {
-              onClick: (event) => {
-                this.dispatchEvent('rowClick', { record, rowIndex, event });
-
-                // TODO: 写到 flow 中无效
+              onClick: async (event) => {
                 defineClickedRowRecordVariable(this, record);
+                await this.dispatchEvent('rowClick', { record, rowIndex, event });
+                removeClickedRowRecordVariable(this);
               },
             };
           }}
