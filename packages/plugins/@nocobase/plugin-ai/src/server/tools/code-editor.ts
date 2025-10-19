@@ -15,7 +15,7 @@ export const listCodeSnippet: ToolOptions = {
   title: '{{t("Get code snippet list")}}',
   description: '{{t("Get code snippet list")}}',
   execution: 'frontend',
-  schema: z.void(),
+  schema: z.object({}),
   invoke: async (ctx, _args, id) => {
     const { toolCallResults } = ctx.action.params.values || {};
     const { result } = toolCallResults?.find((item) => item.id === id) ?? {};
