@@ -8,7 +8,7 @@
  */
 
 import _ from 'lodash';
-import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
+import { FlowContext, FlowModelContext } from '../flowContext';
 import { getValuesByPath } from '@nocobase/utils/client';
 import type { FlowModel } from '../models';
 import type { ServerContextParams } from './serverContextParams';
@@ -16,7 +16,7 @@ import type { ServerContextParams } from './serverContextParams';
 /**
  * 解析 defaultParams，支持静态值和函数形式
  * @param {Record<string, any> | ((ctx: any) => Record<string, any> | Promise<Record<string, any>>)} defaultParams 默认参数
- * @param {FlowRuntimeContext<TModel>} ctx 上下文
+ * @param {FlowContext} ctx 上下文（可带 runId）
  * @returns {Promise<Record<string, any>>} 解析后的参数对象
  */
 export async function resolveDefaultParams<TModel extends FlowModel = FlowModel>(
@@ -84,7 +84,7 @@ type BatchPayload = {
 
 type QueueItem = {
   id: string;
-  ctx: FlowRuntimeContext;
+  ctx: FlowContext & { runId?: string };
   payload: BatchPayload;
   resolve: (v: unknown) => void;
   reject: (e: unknown) => void;
@@ -124,7 +124,10 @@ function stableStringifyOrdered(obj: unknown): string {
   }
 }
 
-export function enqueueVariablesResolve(ctx: FlowRuntimeContext, payload: BatchPayload): Promise<unknown> {
+export function enqueueVariablesResolve(
+  ctx: FlowContext & { runId?: string },
+  payload: BatchPayload,
+): Promise<unknown> {
   const agg = VAR_AGGREGATOR;
   const runId = ctx.runId || 'GLOBAL';
   const dedupKey = stableStringifyOrdered(payload);

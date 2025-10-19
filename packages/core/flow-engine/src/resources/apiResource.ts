@@ -10,6 +10,7 @@
 import { APIClient } from '@nocobase/sdk';
 import { FlowContext } from '../flowContext';
 import { FlowResource, ResourceError } from './flowResource';
+import { LogDuration } from '../utils/logDecorators';
 
 export class APIResource<TData = any> extends FlowResource<TData> {
   // 请求配置
@@ -120,6 +121,7 @@ export class APIResource<TData = any> extends FlowResource<TData> {
     return this.request;
   }
 
+  @LogDuration({ type: 'resource.api', slowMs: 16, enrich: (self: any) => ({ url: self.getURL?.() }) })
   async refresh() {
     if (!this.api) {
       throw new Error('API client not set');

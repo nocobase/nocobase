@@ -9,6 +9,9 @@
 import { observable } from '@formily/reactive';
 import _ from 'lodash';
 import pino from 'pino';
+import { LogOptions, serializeError } from './utils/logging';
+import LogManager from './logging/LogManager';
+import { getDefaultLogLevel } from './logging';
 import { EngineActionRegistry } from './action-registry/EngineActionRegistry';
 import { EngineEventRegistry } from './event-registry/EngineEventRegistry';
 import { FlowExecutor } from './executor/FlowExecutor';
@@ -115,6 +118,12 @@ export class FlowEngine {
   private _resources = new Map<string, typeof FlowResource>();
 
   logger: pino.Logger;
+  /** Expose LogManager for direct use (engine.logManager.*) */
+  public readonly logManager: LogManager = new LogManager(this);
+  /** Logging options (thresholds etc.) */
+  get logOptions(): LogOptions {
+    return this.logManager.options;
+  }
 
   /**
    * Flow settings, including components and form scopes.
@@ -149,20 +158,38 @@ export class FlowEngine {
       SingleRecordResource,
       MultiRecordResource,
     });
+    const defaultLevel = getDefaultLogLevel();
     this.logger = pino({
-      level: 'trace',
+      level: defaultLevel,
       browser: {
         write: {
-          fatal: (o) => console.trace(o),
+          fatal: (o) => console.error(o),
           error: (o) => console.error(o),
           warn: (o) => console.warn(o),
           info: (o) => console.info(o),
           debug: (o) => console.debug(o),
-          trace: (o) => console.trace(o),
+          trace: (o) => console.debug(o),
         },
       },
     });
     this.executor = new FlowExecutor(this);
+    // default sampling for high-frequency logs (can be overridden via logManager.updateOptions)
+    this.logManager.updateOptions((prev) => ({
+      samples: Object.assign(
+        {
+          'step.start': 10,
+          'model.update': 10,
+          'event.flow.dispatch': 5,
+          // reduce noise for frequent model lifecycle logs
+          'model.dispatch': 5,
+          'model.mount': 20,
+          'model.unmount': 20,
+        },
+        prev.samples || {},
+      ),
+    }));
+    // emit a minimal boot log so DevTools can show something on startup
+    this.context.logger.info({ type: 'engine.ready' });
   }
 
   /** 上一个引擎（根引擎为 undefined） */
@@ -198,8 +225,6 @@ export class FlowEngine {
     }
   }
 
-  // （已移除）getModelGlobal/forEachModelGlobal/getAllModelsGlobal：不再维护冗余全局遍历 API
-
   /**
    * Get the flow engine context object.
    * @returns {FlowEngineContext} Flow engine context
@@ -210,6 +235,8 @@ export class FlowEngine {
     }
     return this._flowContext;
   }
+
+  // logBus removed; use engine.logManager.bus instead.
 
   get dataSourceManager() {
     return this.context.dataSourceManager;
@@ -233,7 +260,7 @@ export class FlowEngine {
    */
   setModelRepository(modelRepository: IFlowModelRepository) {
     if (this._modelRepository) {
-      console.warn('FlowEngine: Model repository is already set and will be overwritten.');
+      this.context.logger.warn({ type: 'engine.modelRepository.overwrite' });
     }
     this._modelRepository = modelRepository;
   }
@@ -312,7 +339,7 @@ export class FlowEngine {
    */
   #registerModel(name: string, modelClass: ModelConstructor): void {
     if (this._modelClasses.has(name)) {
-      console.warn(`FlowEngine: Model class with name '${name}' is already registered and will be overwritten.`);
+      this.context.logger.warn({ type: 'engine.model.register.overwrite', name });
     }
     Object.defineProperty(modelClass, 'name', { value: name });
     this._modelClasses.set(name, modelClass);
@@ -450,10 +477,22 @@ export class FlowEngine {
     // 在模型实例化阶段应用 flow 级 defaultParams（仅填充缺失的 stepParams，不覆盖）
     // 不阻塞创建流程：允许 defaultParams 为异步函数
     this._applyFlowDefinitionDefaultParams(modelInstance as FlowModel).catch((err) => {
-      console.warn('FlowEngine: apply flow defaultParams failed:', err);
+      modelInstance.context.logger?.warn?.(
+        { type: 'engine.flow.defaultParams.apply.failed', error: serializeError(err), modelId: modelInstance.uid },
+        'FlowEngine: apply flow defaultParams failed',
+      );
     });
 
     modelInstance._createSubModels(options.subModels);
+
+    // structured log: model.create
+    modelInstance.context.logger?.info?.({
+      type: 'model.create',
+      use: typeof modelClassName === 'string' ? modelClassName : modelInstance.constructor?.name,
+      parentId: modelInstance.parent?.uid || options.parentId,
+      subKey: (options as any).subKey,
+      subType: (options as any).subType,
+    });
 
     return modelInstance as T;
   }
@@ -475,7 +514,9 @@ export class FlowEngine {
         try {
           resolved = typeof dp === 'function' ? await dp(ctx) : dp;
         } catch (e) {
-          console.warn(`FlowEngine: resolve defaultParams of flow '${flowKey}' failed:`, e);
+          this.logManager
+            .createLogger({ modelId: model.uid })
+            .warn({ type: 'engine.flow.defaultParams.resolve.failed', flowKey, error: serializeError(e) });
           continue;
         }
 
@@ -495,7 +536,9 @@ export class FlowEngine {
         }
       }
     } catch (error) {
-      console.warn('FlowEngine: apply flow defaultParams error:', error);
+      this.logManager
+        .createLogger({ modelId: model.uid })
+        .warn({ type: 'engine.flow.defaultParams.apply.error', error: serializeError(error) });
     }
   }
 
@@ -540,7 +583,7 @@ export class FlowEngine {
    */
   public removeModel(uid: string): boolean {
     if (!this._modelInstances.has(uid)) {
-      console.warn(`FlowEngine: Model with UID '${uid}' does not exist.`);
+      this.context.logger.warn({ type: 'engine.model.remove.missing', uid });
       return false;
     }
     const modelInstance = this._modelInstances.get(uid) as FlowModel;
@@ -565,6 +608,7 @@ export class FlowEngine {
       }
     }
     this._modelInstances.delete(uid);
+    modelInstance?.context?.logger?.info?.({ type: 'model.remove' });
     return true;
   }
 
@@ -683,6 +727,7 @@ export class FlowEngine {
     // 如果这个 model 正在保存中，返回现有的保存 Promise
     if (this._savingModels.has(modelUid)) {
       this.logger.debug(`Model ${modelUid} is already being saved, waiting for existing save operation`);
+      model.context.logger?.debug?.({ type: 'model.save.coalesce.wait' });
       return await this._savingModels.get(modelUid);
     }
 
@@ -692,6 +737,7 @@ export class FlowEngine {
 
     try {
       const result = await savePromise;
+      model.context.logger?.debug?.({ type: 'model.save.coalesce.done' });
       return result;
     } finally {
       // 无论成功还是失败，都要清除保存状态
@@ -712,12 +758,26 @@ export class FlowEngine {
     options?: { onlyStepParams?: boolean },
   ): Promise<any> {
     this.logger.debug(`Starting save operation for model ${model.uid}`);
+    const t0 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+    model.context.logger?.debug?.({ type: 'model.save.start', onlyStepParams: options?.onlyStepParams });
     try {
       const result = await this._modelRepository.save(model, options);
       this.logger.debug(`Successfully saved model ${model.uid}`);
+      {
+        const t1 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+        model.context.logger?.debug?.({ type: 'model.save.end', duration: Math.max(0, t1 - t0) });
+      }
       return result;
     } catch (error) {
       this.logger.error(`Failed to save model ${model.uid}:`, error);
+      {
+        const t1 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+        model.context.logger?.error?.({
+          type: 'model.save.error',
+          duration: Math.max(0, t1 - t0),
+          error: serializeError(error),
+        });
+      }
       throw error;
     }
   }
@@ -731,7 +791,10 @@ export class FlowEngine {
     if (this.ensureModelRepository()) {
       await this._modelRepository.destroy(uid);
     }
-    return this.removeModel(uid);
+    const inst = this.getModel(uid);
+    const ok = this.removeModel(uid);
+    inst?.context?.logger?.info?.({ type: 'model.destroy' });
+    return ok;
   }
 
   /**
@@ -761,7 +824,7 @@ export class FlowEngine {
   ): Promise<T | null> {
     const oldModel = this.getModel(uid);
     if (!oldModel) {
-      console.warn(`FlowEngine: Cannot replace model. Model with UID '${uid}' not found.`);
+      this.context.logger.warn({ type: 'engine.model.replace.missing', uid });
       return null;
     }
 
@@ -817,6 +880,11 @@ export class FlowEngine {
       currentParent.parent.invalidateFlowCache('beforeRender', true);
       currentParent.parent?.rerender();
       currentParent.emitter.emit('onSubModelReplaced', { oldModel, newModel });
+      this.context.logger.child({ parentId: currentParent.uid }).info({
+        type: 'model.sub.replaced',
+        oldId: (oldModel as any)?.uid,
+        newId: (newModel as any)?.uid,
+      });
     }
     await newModel.save();
     return newModel;
@@ -832,19 +900,25 @@ export class FlowEngine {
     const sourceModel = this.getModel(sourceId);
     const targetModel = this.getModel(targetId);
     if (!sourceModel || !targetModel) {
-      console.warn(`FlowEngine: Cannot move model. Source or target model not found.`);
+      this.logManager
+        .createLogger()
+        .warn({ type: 'engine.model.move.missing', sourceId: sourceId, targetId: targetId });
       return;
     }
     const move = (sourceModel: FlowModel, targetModel: FlowModel) => {
       if (!sourceModel.parent || !targetModel.parent || sourceModel.parent !== targetModel.parent) {
-        console.error('FlowModel.moveTo: Both models must have the same parent to perform move operation.');
+        this.logManager
+          .createLogger()
+          .error({ type: 'engine.model.move.invalidParent', sourceId: sourceModel.uid, targetId: targetModel.uid });
         return false;
       }
 
       const subModels = sourceModel.parent.subModels[sourceModel.subKey];
 
       if (!subModels || !Array.isArray(subModels)) {
-        console.error('FlowModel.moveTo: Parent subModels must be an array to perform move operation.');
+        this.logManager
+          .createLogger({ parentId: sourceModel.parent?.uid })
+          .error({ type: 'engine.model.move.subModelsNotArray' });
         return false;
       }
 
@@ -854,12 +928,16 @@ export class FlowEngine {
       const targetIndex = findIndex(targetModel);
 
       if (currentIndex === -1 || targetIndex === -1) {
-        console.error('FlowModel.moveTo: Current or target model not found in parent subModels.');
+        this.logManager
+          .createLogger({ parentId: sourceModel.parent?.uid })
+          .error({ type: 'engine.model.move.indexNotFound', sourceId: sourceModel.uid, targetId: targetModel.uid });
         return false;
       }
 
       if (currentIndex === targetIndex) {
-        console.warn('FlowModel.moveTo: Current model is already at the target position. No action taken.');
+        this.logManager
+          .createLogger({ parentId: sourceModel.parent?.uid })
+          .warn({ type: 'engine.model.move.noop', modelId: sourceModel.uid });
         return false;
       }
 
@@ -870,6 +948,14 @@ export class FlowEngine {
       // 重新分配连续的sortIndex
       subModels.forEach((model, index) => {
         model.sortIndex = index;
+      });
+
+      const childLogger = this.context.logger.child({ parentId: sourceModel.parent?.uid });
+      childLogger.info({
+        type: 'model.move',
+        sourceId: sourceModel.uid,
+        targetId: targetModel.uid,
+        position: currentIndex - targetIndex > 0 ? 'after' : 'before',
       });
 
       return true;

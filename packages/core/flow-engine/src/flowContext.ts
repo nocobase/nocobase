@@ -16,7 +16,6 @@ import * as antd from 'antd';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import _ from 'lodash';
-import pino from 'pino';
 import qs from 'qs';
 import React, { createRef } from 'react';
 import * as ReactDOMClient from 'react-dom/client';
@@ -45,6 +44,8 @@ import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
+import { startTimer, levelByDuration, logAt, LoggerLike, serializeError } from './utils/logging';
+import { LogDuration } from './utils/logDecorators';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -268,7 +269,7 @@ export class FlowContext {
 
     // 防止重复委托同一个 context
     if (this._delegates.includes(ctx)) {
-      console.warn(`[FlowContext] delegate - skip duplicate delegate: ${this._delegates.length}`);
+      this.logger?.warn?.({ type: 'ctx.delegate.duplicate.skip', count: this._delegates.length });
       return;
     }
 
@@ -352,7 +353,7 @@ export class FlowContext {
             const childNodes = this.#createChildNodes(props as Record<string, PropertyMeta>, fullPath, [], meta);
             return Array.isArray(childNodes) ? childNodes : await childNodes();
           } catch (error) {
-            console.warn(`Failed to load meta for ${finalKey}:`, error);
+            this.logger?.warn?.({ type: 'ctx.meta.load.failed', key: finalKey, error: serializeError(error) });
             return [];
           }
         };
@@ -393,9 +394,12 @@ export class FlowContext {
         // 未找到目标路径，返回空数组
         return [];
       } else if (propertyPath === null) {
-        console.warn(
-          `[FlowContext] getPropertyMetaTree - unsupported value format: "${value}". Only "{{ ctx.propertyName }}" format is supported. Returning empty meta tree.`,
-        );
+        this.logger?.warn?.({
+          type: 'ctx.meta.getTree.unsupportedValue',
+          value,
+          message:
+            'Only "{{ ctx.propertyName }}" format is supported in getPropertyMetaTree. Returning empty meta tree.',
+        });
         return [];
       }
     }
@@ -710,7 +714,7 @@ export class FlowContext {
 
                   return resolvedChildren;
                 } catch (error) {
-                  console.warn(`Failed to load meta for ${name}:`, error);
+                  this.logger?.warn?.({ type: 'ctx.meta.load.failed', key: name, error: serializeError(error) });
                   return [];
                 }
               },
@@ -918,7 +922,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare route: RouteOptions;
   declare location: Location;
   declare sql: FlowSQLRepository;
-  declare logger: pino.Logger;
+  declare logger: LoggerLike;
 }
 
 class BaseFlowModelContext extends BaseFlowEngineContext {
@@ -979,6 +983,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       return this.resolveJsonTemplate(template);
     });
     this.defineMethod('resolveJsonTemplate', async function (this: BaseFlowEngineContext, template: any) {
+      const stopFinal = startTimer();
       // 提取模板使用到的变量及其子路径
       const used = extractUsedVariablePaths(template);
       const usedVarNames = Object.keys(used || {});
@@ -996,13 +1001,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         if (mark === true) {
           serverVarPaths[varName] = paths;
         } else if (typeof mark === 'function') {
-          const filtered = paths.filter((p) => {
-            try {
-              return !!mark(p);
-            } catch (_) {
-              return false;
-            }
-          });
+          const filtered = paths.filter((p) => !!mark(p));
           if (filtered.length) serverVarPaths[varName] = filtered;
         }
       }
@@ -1010,6 +1009,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const needServer = Object.keys(serverVarPaths).length > 0;
       let serverResolved = template;
       if (needServer) {
+        // 调用装饰器方法，自动计时与分级
         const collectFromMeta = async (): Promise<Record<string, any>> => {
           const out: Record<string, any> = {};
           try {
@@ -1056,18 +1056,22 @@ export class FlowEngineContext extends BaseFlowEngineContext {
 
         if (this.api) {
           try {
-            serverResolved = await enqueueVariablesResolve(this as FlowRuntimeContext<FlowModel>, {
-              template,
-              contextParams: autoContextParams || {},
-            });
+            // 使用装饰器包裹的方法记录 server 解析耗时
+            serverResolved = await this.resolveVariablesOnServer(template, autoContextParams || {});
           } catch (e) {
+            // 失败则回退（装饰器已记录 error 级日志）
             this.logger?.warn?.({ err: e }, 'variables:resolve failed, fallback to client-only');
             serverResolved = template;
           }
         }
       }
 
-      return resolveExpressions(serverResolved, this);
+      const out = await resolveExpressions(serverResolved, this);
+      // 记录最终解析耗时
+      const d = stopFinal();
+      const lvl = levelByDuration(d, this.engine?.logManager?.options?.slowParamsMs ?? 8);
+      logAt(this.logger, lvl, { type: 'variables.resolve.final', duration: d });
+      return out;
     });
     this.defineProperty('requirejs', {
       get: () => this.app?.requirejs?.requirejs,
@@ -1138,9 +1142,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       ),
     });
     this.defineProperty('logger', {
-      get: () => {
-        return this.engine.logger.child({ module: 'flow-engine' });
-      },
+      get: () => this.engine.logManager.createLogger({ module: 'flow-engine' }),
     });
     this.defineProperty('auth', {
       get: () => ({
@@ -1193,7 +1195,10 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       const g = globalThis as any;
       g.__nocobaseImportAsyncCache = g.__nocobaseImportAsyncCache || new Map<string, Promise<any>>();
       const cache: Map<string, Promise<any>> = g.__nocobaseImportAsyncCache;
-      if (cache.has(u)) return cache.get(u)!;
+      if (cache.has(u)) {
+        const hit = cache.get(u);
+        if (hit) return hit;
+      }
       // 尝试使用原生 dynamic import（加上 vite/webpack 的 ignore 注释）
       const nativeImport = () => import(/* @vite-ignore */ /* webpackIgnore: true */ u);
       // 兜底方案：通过 eval 在运行时构造 import，避免被打包器接管
@@ -1357,6 +1362,14 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       },
     );
   }
+  @LogDuration({ type: 'variables.resolve.server', slowMsKey: 'slowParamsMs' })
+  async resolveVariablesOnServer(template: any, autoContextParams?: any): Promise<any> {
+    const resolved = await enqueueVariablesResolve(this, {
+      template,
+      contextParams: autoContextParams || {},
+    });
+    return resolved;
+  }
 }
 
 export class FlowModelContext extends BaseFlowModelContext {
@@ -1378,6 +1391,14 @@ export class FlowModelContext extends BaseFlowModelContext {
     });
     this.defineProperty('model', {
       value: model,
+    });
+    // 为模型上下文绑定专属 logger（包含 modelId/modelType），避免每次 child 绑定
+    this.defineProperty('logger', {
+      get: () =>
+        this.engine.logManager.createLogger({
+          modelId: model.uid,
+          modelType: model.constructor?.name,
+        }),
     });
     // 提供稳定的 ref 实例，确保渲染端与运行时上下文使用同一对象
     const stableRef = createRef<HTMLDivElement>();
@@ -1505,6 +1526,15 @@ export class FlowForkModelContext extends BaseFlowModelContext {
     this.defineProperty('model', {
       get: () => this.fork,
     });
+    // fork 模型上下文 logger：绑定 fork 的 modelId/modelType，并带上 forkOf 便于关联
+    this.defineProperty('logger', {
+      get: () =>
+        this.engine.logManager.createLogger({
+          modelId: this.fork.uid,
+          modelType: this.fork.constructor?.name,
+          forkOf: this.master.uid,
+        }),
+    });
     // 提供稳定的 ref 实例，确保渲染端与运行时上下文使用同一对象
     const stableRef = createRef<HTMLDivElement>();
     this.defineProperty('ref', {
@@ -1520,6 +1550,17 @@ export class FlowForkModelContext extends BaseFlowModelContext {
       });
       return runner.run(code);
     });
+  }
+
+  // 装饰器：记录服务端变量解析耗时
+  @LogDuration({ type: 'variables.resolve.server', slowMsKey: 'slowParamsMs' })
+  protected async resolveVariablesOnServer(template: any, autoContextParams?: any): Promise<any> {
+    // 通过微批接口请求服务端解析
+    const resolved = await enqueueVariablesResolve(this, {
+      template,
+      contextParams: autoContextParams || {},
+    });
+    return resolved;
   }
 }
 
@@ -1554,7 +1595,7 @@ export class FlowRuntimeContext<
       'useResource',
       (className: 'APIResource' | 'SingleRecordResource' | 'MultiRecordResource' | 'SQLResource') => {
         if (model.context.has('resource')) {
-          console.warn(`[FlowRuntimeContext] useResource - resource already defined in context: ${className}`);
+          this.logger?.warn?.({ type: 'ctx.resource.duplicate', className });
           return;
         }
         model.context.defineProperty('resource', {
@@ -1713,7 +1754,10 @@ export class FlowRunJSContext extends FlowContext {
     const self = this as any as Function;
     let cacheForClass = __runjsDocCache.get(self);
     const cacheKey = String(locale || 'default');
-    if (cacheForClass && cacheForClass.has(cacheKey)) return cacheForClass.get(cacheKey)!;
+    if (cacheForClass && cacheForClass.has(cacheKey)) {
+      const hit = cacheForClass.get(cacheKey);
+      if (hit) return hit;
+    }
     const chain: Function[] = [];
     let cur: any = self;
     while (cur && cur.prototype) {
