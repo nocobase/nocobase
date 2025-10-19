@@ -26,6 +26,12 @@ const ellipsisDefaultStyle: CSSProperties = {
   wordBreak: 'break-all',
 };
 
+const wrappingDefaultStyle: CSSProperties = {
+  overflowWrap: 'break-word',
+  whiteSpace: 'normal',
+  wordBreak: 'break-word',
+};
+
 const isOverflowTooltip = (el: HTMLElement) => {
   if (!el) return false;
   const contentWidth = getContentWidth(el);
@@ -67,17 +73,19 @@ export const EllipsisWithTooltip = forwardRef((props: Partial<IEllipsisWithToolt
     }
   }, []);
 
-  const divContent = useMemo(
-    () =>
-      props.ellipsis ? (
-        <div ref={elRef} role={props.role} style={ellipsisDefaultStyle} onMouseEnter={handleMouseEnter}>
-          {props.children}
-        </div>
-      ) : (
-        props.children
-      ),
-    [handleMouseEnter, props.children, props.ellipsis, props.role],
-  );
+  const divContent = useMemo(() => {
+    const mouseEventProps = props.ellipsis ? { onMouseEnter: handleMouseEnter } : {};
+    return (
+      <div
+        ref={elRef}
+        role={props.role}
+        style={props.ellipsis ? ellipsisDefaultStyle : wrappingDefaultStyle}
+        {...mouseEventProps}
+      >
+        {props.children}
+      </div>
+    );
+  }, [handleMouseEnter, props.children, props.ellipsis, props.role]);
 
   if (!props.ellipsis || !ellipsis) {
     return divContent;
