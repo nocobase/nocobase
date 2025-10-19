@@ -13,4 +13,5 @@ export * from './EllipsisWithTooltip';
 export * from './ExpiresRadio';
 export * from './JsonInput';
 export * from './code-editor';
+export * from './TextAreaWithContextSelector';
 //

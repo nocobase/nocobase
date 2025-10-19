@@ -8,6 +8,14 @@ export default () => {
 
   const ctx = useMemo(() => {
     const c = new FlowContext();
+    c.defineMethod('t', (key: string) => {
+      const dict: Record<string, string> = {
+        User: '用户',
+        Name: '名称',
+        'This variable is not available': '该变量不可用',
+      };
+      return dict[key] || key;
+    });
     c.defineProperty('user', {
       value: { name: 'Alice' },
       meta: {

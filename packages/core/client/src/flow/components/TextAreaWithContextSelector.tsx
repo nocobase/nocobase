@@ -136,5 +136,3 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
     </div>
   );
 };
-
-export default TextAreaWithContextSelector;
