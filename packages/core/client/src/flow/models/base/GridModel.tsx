@@ -577,7 +577,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                       <MemoFlowModelRenderer
                         model={item}
                         key={`${item.uid}:${rowIndex}:${(item as any)?.use || (item as any)?.constructor?.name || 'm'}`}
-                        fallback={this.itemFallback}
+                        fallback={baseItem.skeleton || this.itemFallback}
                         showFlowSettings={this.flowEngine.flowSettings.enabled ? this.getItemFlowSettings() : false}
                         showErrorFallback
                         settingsMenuLevel={(item as any)?.settingsMenuLevel ?? this.itemSettingsMenuLevel}
