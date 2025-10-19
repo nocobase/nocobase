@@ -1,6 +1,6 @@
 English | [中文](./README.zh-CN.md) | [日本語](./README.ja-JP.md)
 
-[![Watch How NocoBase works](https://static-docs.nocobase.com/youtube-cover.png)](https://youtu.be/FrtCxWYhxFk?si=yzV0ObVGtulCFB-X)
+https://github.com/user-attachments/assets/8d183b44-9bb5-4792-b08f-bc08fe8dfaaf
 
 <p align="center">
 <a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>

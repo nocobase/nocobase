@@ -11,7 +11,8 @@ import PluginACLClient from '@nocobase/plugin-acl/client';
 import PluginWorkflowClient from '@nocobase/plugin-workflow/client';
 import { Plugin, lazy } from '@nocobase/client';
 import { AIManager } from './manager/ai-manager';
-import { openaiProviderOptions } from './llm-providers/openai';
+import { openaiResponsesProviderOptions } from './llm-providers/openai/responses';
+import { openaiCompletionsProviderOptions } from './llm-providers/openai/completions';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
 import { LLMInstruction } from './workflow/nodes/llm';
 import { tval } from '@nocobase/utils/client';
@@ -31,6 +32,7 @@ import { formFillerTool } from './ai-employees/form-filler/tools';
 import './ai-employees/flow/events';
 import { aiEmployeesData } from './ai-employees/flow/context';
 import { dashscopeProviderOptions } from './llm-providers/dashscope';
+import { ollamaProviderOptions } from './llm-providers/ollama';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
 import { DatasourceSettingPage } from './ai-employees/admin/datasource';
 import { DatasourceContext } from './ai-employees/context/datasource';
@@ -50,6 +52,7 @@ import { CodeEditorContext } from './ai-employees/context/code-editor';
 import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
 import { setupDataModeling } from './ai-employees/data-modeling/setup';
+import { getCodeSnippetTool, listCodeSnippetTool } from './ai-employees/ai-coding/tools';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -127,11 +130,13 @@ export class PluginAIClient extends Plugin {
   setupAIFeatures() {
     this.app.flowEngine.context.defineProperty(...aiEmployeesData);
 
-    this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
+    this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
+    this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
+    this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
     this.aiManager.chatSettings.set('messages', {
       title: tval('Messages'),
@@ -148,6 +153,8 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerTool(...defineCollectionsTool);
     this.aiManager.registerTool(...formFillerTool);
     this.aiManager.registerTool(...chartGeneratorTool);
+    this.aiManager.registerTool(...listCodeSnippetTool);
+    this.aiManager.registerTool(...getCodeSnippetTool);
   }
 
   setupWorkflow() {

@@ -43,6 +43,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
       ...config,
       data,
     });
+    this.emit('saved', data);
     if (options?.refresh !== false) {
       await this.refresh();
     }
