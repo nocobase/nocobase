@@ -17,6 +17,9 @@ import {
   FlowModelRenderer,
   createBlockScopedEngine,
   FlowEngineProvider,
+  FlowViewContextProvider,
+  FlowContext,
+  useFlowViewContext,
 } from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
@@ -237,9 +240,30 @@ export class ReferenceBlockModel extends BlockModel {
     }
     // 使用 BlockScoped 引擎包裹渲染，确保拖拽/移动等操作拿到正确的 engine
     const engine = this._ensureScopedEngine();
+    // 桥接父视图上下文：
+    // - 复用父级的 view/popup 等视图变量；
+    // - 同时将 ctx.engine 指向 block 作用域引擎，保证实例/缓存隔离。
+    const RefViewBridge: React.FC<{ engine: FlowEngine; model: FlowModel }> = ({ engine, model }) => {
+      const parentViewCtx = useFlowViewContext();
+      const viewCtx = React.useMemo(() => {
+        const c = new FlowContext();
+        c.defineProperty('engine', { value: engine });
+        c.addDelegate(engine.context);
+        // 继承父级视图上下文（若存在），获取 ctx.view / ctx.popup 等变量与元信息
+        if (parentViewCtx && parentViewCtx instanceof FlowContext) {
+          c.addDelegate(parentViewCtx);
+        }
+        return c;
+      }, [engine, parentViewCtx]);
+      return (
+        <FlowViewContextProvider context={viewCtx}>
+          <FlowModelRenderer key={model.uid} model={model} showFlowSettings={false} showErrorFallback />
+        </FlowViewContextProvider>
+      );
+    };
     return (
       <FlowEngineProvider engine={engine}>
-        <FlowModelRenderer key={target.uid} model={target} showFlowSettings={false} showErrorFallback />
+        <RefViewBridge engine={engine} model={target} />
       </FlowEngineProvider>
     );
   }
