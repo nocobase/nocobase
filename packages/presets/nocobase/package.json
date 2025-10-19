@@ -85,6 +85,7 @@
     "@nocobase/plugin-workflow-request": "2.0.0-alpha.14",
     "@nocobase/plugin-workflow-response-message": "2.0.0-alpha.14",
     "@nocobase/plugin-workflow-sql": "2.0.0-alpha.14",
+    "@nocobase/plugin-flow-devtools": "2.0.0-alpha.14",
     "@nocobase/server": "2.0.0-alpha.14",
     "cronstrue": "^2.11.0",
     "fs-extra": "^11.1.1"
