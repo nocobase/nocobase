@@ -41,15 +41,15 @@ interface FilterContentProps {
  * 支持新的数据结构格式：
  * ```typescript
  * {
- *   "logic": "or",
+ *   "logic": "$or",
  *   "items": [
  *     {
  *       "path": "isAdmin",
- *       "operator": "eq",
+ *       "operator": "$eq",
  *       "value": true
  *     },
  *     {
- *       "logic": "and",
+ *       "logic": "$and",
  *       "items": [...]
  *     }
  *   ]
@@ -59,7 +59,7 @@ interface FilterContentProps {
  * @example
  * ```typescript
  * const filterValue = observable({
- *   logic: 'and',
+ *   logic: '$and',
  *   items: []
  * });
  *
@@ -76,7 +76,7 @@ export const FilterContainer: FC<FilterContentProps> = observer(
 
     // 确保 value 有正确的默认结构
     if (!value.logic) {
-      value.logic = 'and';
+      value.logic = '$and';
     }
     if (!Array.isArray(value.items)) {
       value.items = [];
