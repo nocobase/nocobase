@@ -93,6 +93,16 @@ const rowSelectCheckboxCheckedClassHover = css`
     display: none;
   }
 `;
+
+const highlightedRowClass = css`
+  & td {
+    background-color: #e6f7ff !important;
+  }
+
+  &:hover td {
+    background-color: #bae7ff !important;
+  }
+`;
 const HeaderWrapperComponent = React.memo((props) => {
   const engine = useFlowEngine();
 
@@ -156,6 +166,23 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
 
   createResource(ctx, params) {
     return this.context.createResource(MultiRecordResource);
+  }
+
+  /**
+   * 高亮指定的行
+   * @param record - 要高亮的行记录
+   */
+  highlightRow(record: any) {
+    if (record) {
+      this.setProps('highlightedRowKey', record[this.collection.filterTargetKey]);
+    }
+  }
+
+  /**
+   * 取消行高亮
+   */
+  clearHighlight() {
+    this.setProps('highlightedRowKey', null);
   }
 
   getColumns() {
@@ -387,6 +414,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   }
 
   renderComponent() {
+    const highlightedRowKey = this.props.highlightedRowKey;
     return (
       <>
         <DndProvider>
@@ -449,6 +477,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
           tableLayout="fixed"
           size={this.props.size}
           rowKey={this.collection.filterTargetKey}
+          rowClassName={(record) => {
+            return record[this.collection.filterTargetKey] === highlightedRowKey ? highlightedRowClass : '';
+          }}
           rowSelection={{
             columnWidth: 50,
             type: 'checkbox',
@@ -462,9 +493,13 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
           onRow={(record, rowIndex) => {
             return {
               onClick: async (event) => {
-                defineClickedRowRecordVariable(this, record);
-                await this.dispatchEvent('rowClick', { record, rowIndex, event });
-                removeClickedRowRecordVariable(this);
+                if (this.props.highlightedRowKey !== record[this.collection.filterTargetKey]) {
+                  defineClickedRowRecordVariable(this, record);
+                  await this.dispatchEvent('rowClick', { record, rowIndex, event });
+                  removeClickedRowRecordVariable(this);
+                } else {
+                  await this.dispatchEvent('rowClick', { record, rowIndex, event });
+                }
               },
             };
           }}
@@ -658,7 +693,16 @@ TableBlockModel.registerEvents({
         },
       },
     },
-    handler: commonConditionHandler,
+    async handler(ctx, params) {
+      commonConditionHandler(ctx, params);
+
+      const model = ctx.model as TableBlockModel;
+      if (model.props.highlightedRowKey !== ctx.inputArgs.record[model.collection.filterTargetKey]) {
+        model.highlightRow(ctx.inputArgs.record);
+      } else {
+        model.clearHighlight();
+      }
+    },
   },
 });
 
