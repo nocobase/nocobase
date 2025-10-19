@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import React, { useEffect, useMemo, useState, useRef } from 'react';
-import { Select, InputNumber, Switch, Form } from 'antd';
+import { Select, InputNumber, Switch, Form, Slider, Segmented } from 'antd';
 import { useT } from '../../locale';
 import { normalizeBuilder, applyTypeChange, buildFieldOptions, getChartFormSpec } from './ChartOptionsBuilder.service';
 import type { ChartTypeKey } from './ChartOptionsBuilder.service';
@@ -15,9 +15,25 @@ import { sleep, appendColon } from '../utils';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 
 type FormItemSpec =
-  | { kind: 'select'; name: string; label?: string; required?: boolean; allowClear?: boolean; placeholderKey?: string }
+  | {
+      kind: 'select';
+      name: string;
+      labelKey?: string;
+      label?: string;
+      required?: boolean;
+      allowClear?: boolean;
+      placeholderKey?: string;
+    }
   | { kind: 'switch'; name: string; labelKey: string }
-  | { kind: 'number'; name: string; labelKey: string; min?: number; max?: number };
+  | { kind: 'number'; name: string; labelKey: string; min?: number; max?: number }
+  | { kind: 'enum'; name: string; labelKey: string; options: { labelKey?: string; label?: string; value: string }[] }
+  | { kind: 'slider'; name: string; labelKey: string; min?: number; max?: number }
+  | {
+      kind: 'segmented';
+      name: string;
+      labelKey: string;
+      options: { labelKey?: string; label?: string; value: number }[];
+    };
 
 export const ChartOptionsBuilder: React.FC<{
   columns?: string[];
@@ -91,13 +107,14 @@ export const ChartOptionsBuilder: React.FC<{
           required
         >
           <Select
-            style={{ width: 160 }}
+            style={{ width: 180 }}
             options={[
               { label: t('Line'), value: 'line' },
               { label: t('Area'), value: 'area' },
               { label: t('Column'), value: 'bar' },
               { label: t('Bar'), value: 'barHorizontal' },
               { label: t('Pie'), value: 'pie' },
+              { label: t('Funnel'), value: 'funnel' },
               { label: t('Scatter'), value: 'scatter' },
             ]}
           />
@@ -108,7 +125,7 @@ export const ChartOptionsBuilder: React.FC<{
 
         {/* 公共属性 */}
         {/* <Form.Item label={t('Height')} name="height">
-          <InputNumber min={100} style={{ width: 160 }} />
+          <InputNumber min={100} style={{ width: 180 }} />
         </Form.Item> */}
         <Form.Item
           name="legend"
@@ -145,12 +162,12 @@ function renderItem(
     return (
       <Form.Item
         key={spec.name}
-        label={<span style={{ fontWeight: 500 }}>{appendColon(spec.label ?? '', lang)}</span>}
+        label={<span style={{ fontWeight: 500 }}>{appendColon(t(spec.labelKey || spec.label || ''), lang)}</span>}
         name={spec.name}
         required={spec.required}
       >
         <Select
-          style={{ width: 160 }}
+          style={{ width: 180 }}
           allowClear={!!spec.allowClear}
           placeholder={spec.placeholderKey ? t(spec.placeholderKey) : undefined}
           options={fieldOptions}
@@ -177,7 +194,50 @@ function renderItem(
         label={<span style={{ fontWeight: 500 }}>{appendColon(t(spec.labelKey), lang)}</span>}
         name={spec.name}
       >
-        <InputNumber min={spec.min} max={spec.max} style={{ width: 160 }} />
+        <InputNumber min={spec.min} max={spec.max} style={{ width: 180 }} />
+      </Form.Item>
+    );
+  }
+  if (spec.kind === 'slider') {
+    const min = spec.min ?? 0;
+    const max = spec.max ?? 100;
+    return (
+      <Form.Item key={spec.name} label={<span style={{ fontWeight: 500 }}>{appendColon(t(spec.labelKey), lang)}</span>}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Form.Item name={spec.name} style={{ margin: 0, paddingLeft: 6 }}>
+            <Slider min={min} max={max} step={1} style={{ width: 180 }} />
+          </Form.Item>
+          <Form.Item name={spec.name} noStyle>
+            <InputNumber min={min} max={max} step={1} style={{ width: 80 }} />
+          </Form.Item>
+        </div>
+      </Form.Item>
+    );
+  }
+  if (spec.kind === 'enum') {
+    return (
+      <Form.Item
+        key={spec.name}
+        label={<span style={{ fontWeight: 500 }}>{appendColon(t(spec.labelKey), lang)}</span>}
+        name={spec.name}
+      >
+        <Select
+          style={{ width: 180 }}
+          options={(spec.options || []).map((o) => ({ label: t(o.labelKey || o.label || ''), value: o.value }))}
+        />
+      </Form.Item>
+    );
+  }
+  if (spec.kind === 'segmented') {
+    return (
+      <Form.Item
+        key={spec.name}
+        label={<span style={{ fontWeight: 500 }}>{appendColon(t(spec.labelKey), lang)}</span>}
+        name={spec.name}
+      >
+        <Segmented
+          options={(spec.options || []).map((o) => ({ label: t(o.labelKey || o.label || ''), value: o.value }))}
+        />
       </Form.Item>
     );
   }
