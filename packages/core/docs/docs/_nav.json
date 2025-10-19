@@ -1,0 +1,53 @@
+[
+  {
+    "text": "开始",
+    "link": "/get-started/get-nocobase"
+  },
+  {
+    "text": "指南",
+    "link": "/guide/",
+    "items": [
+      { "text": "Interface Builder", "link": "/interface-builder" },
+      { "text": "Plugin Manager", "link": "/plugin-manager" },
+      { "text": "Data sources", "link": "/data-sources" },
+      {
+        "text": "Users & Permissions",
+        "link": "/users-and-permissions"
+      },
+      { "text": "Workflow", "link": "/workflow" },
+      { "text": "AI employees", "link": "/ai-employees" },
+      { "text": "API documentation", "link": "/features/api-documentation" },
+      { "text": "API keys", "link": "/features/api-keys" },
+      { "text": "Audit logs", "link": "/features/audit-logs" },
+      { "text": "Authentication", "link": "/features/authentication" },
+      { "text": "Backup manager", "link": "/features/backup-manager" },
+      { "text": "Custom brand", "link": "/features/custom-brand" },
+      { "text": "Email settings", "link": "/features/email-settings" },
+      { "text": "Variables and secrets", "link": "/features/variables-and-secrets" },
+      { "text": "File manager", "link": "/features/file-manager" },
+      { "text": "License settings", "link": "/features/license-settings" },
+      { "text": "Localization", "link": "/features/localization" },
+      { "text": "Logger", "link": "/features/logger" },
+      { "text": "Map manager", "link": "/features/map-manager" },
+      { "text": "Migration manager", "link": "/features/migration-manager" },
+      { "text": "Mobile", "link": "/features/mobile" },
+      { "text": "Multi-app", "link": "/features/multi-app" },
+      { "text": "Notification manager", "link": "/features/notification-manager" },
+      { "text": "Public forms", "link": "/features/public-forms" },
+      { "text": "Routes", "link": "/features/routes" },
+      { "text": "Security", "link": "/features/security" },
+      { "text": "System settings", "link": "/features/system-settings" },
+      { "text": "Theme editor", "link": "/features/theme-editor" },
+      { "text": "Verification", "link": "/features/verification" }
+    ]
+  },
+  {
+    "text": "开发",
+    "link": "/development/",
+    "items": [
+      { "text": "插件开发", "link": "/plugin-development.html" },
+      { "text": "FlowEngine", "link": "/flow-engine.html" },
+      { "text": "Database", "link": "/database.html" }
+    ]
+  }
+]

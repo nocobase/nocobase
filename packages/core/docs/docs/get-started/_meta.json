@@ -1,0 +1,86 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Get started",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "获取 NocoBase",
+        "link": "/get-started/get-nocobase"
+      },
+      {
+        "type": "custom-link",
+        "label": "什么是 NocoBase",
+        "link": "/get-started/nocobase-overview"
+      },
+      {
+        "type": "custom-link",
+        "label": "安装",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Docker 安装",
+            "link": "/get-started/install-nocobase/docker"
+          },
+          {
+            "type": "custom-link",
+            "label": "create-nocobase-app 安装",
+            "link": "/get-started/install-nocobase/create-nocobase-app"
+          },
+          {
+            "type": "custom-link",
+            "label": "Git 源码安装",
+            "link": "/get-started/install-nocobase/git"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "升级",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Docker 安装的升级",
+            "link": "/get-started/upgrade-nocobase/docker"
+          },
+          {
+            "type": "custom-link",
+            "label": "create-nocobase-app 安装的升级",
+            "link": "/get-started/upgrade-nocobase/create-nocobase-app"
+          },
+          {
+            "type": "custom-link",
+            "label": "Git 源码安装的升级",
+            "link": "/get-started/upgrade-nocobase/git"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "插件管理",
+        "link": "/get-started/plugin-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "部署",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "生产环境部署",
+            "link": "/get-started/deploy/production"
+          },
+          {
+            "type": "custom-link",
+            "label": "内网部署",
+            "link": "/get-started/deploy/internal"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "备份与还原",
+        "link": "/get-started/backup-and-restore"
+      }
+    ]
+  }
+]
