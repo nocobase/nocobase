@@ -93,6 +93,7 @@ describe('LogDuration decorator', () => {
   });
 
   it('uses method name as default type when not provided', () => {
+    const engine = new FlowEngine();
     // 关闭采样与过滤，确保默认方法名日志不会被筛掉
     engine.logManager.setOptions({
       ...engine.logManager.options,
@@ -101,7 +102,6 @@ describe('LogDuration decorator', () => {
       dropTypePrefixes: [],
       samples: {},
     });
-    const engine = new FlowEngine();
     // 在默认测试环境下，基础 logger 级别为 info，会抑制 debug 级别日志。
     // 该用例未指定 slowMs，常为 debug 日志，需显式开启 debug 级别以确保记录写入 bus。
     (engine.logger as any).level = 'debug';
