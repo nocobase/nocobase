@@ -26,7 +26,7 @@ import {
   observable,
   useFlowEngine,
 } from '@nocobase/flow-engine';
-import { Space, Table } from 'antd';
+import { Skeleton, Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
 import React, { useCallback, useMemo, useRef } from 'react';
@@ -407,7 +407,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   }
 
   renderComponent() {
-    return (
+    return !this.columns.value.length ? (
+      <Skeleton paragraph={{ rows: 3 }} />
+    ) : (
       <>
         <DndProvider>
           <div

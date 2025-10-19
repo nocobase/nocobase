@@ -43,7 +43,6 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import { Skeleton, Spin } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -54,7 +53,6 @@ import { ToolbarItemConfig } from '../types';
 import { FlowErrorFallback } from './FlowErrorFallback';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
-import { FieldSkeleton } from './FieldSkeleton';
 
 export interface FlowModelRendererProps {
   model?: FlowModel;
@@ -330,7 +328,7 @@ const FlowModelRendererCore: React.FC<{
 export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
   ({
     model,
-    fallback = <FieldSkeleton />,
+    fallback = null,
     showFlowSettings = false,
     flowSettingsVariant = 'dropdown',
     hideRemoveInSettings = false,
