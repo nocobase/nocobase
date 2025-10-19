@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.8.31](https://github.com/nocobase/nocobase/compare/v1.8.30...v1.8.31) - 2025-10-17
+
+### 🐛 Bug Fixes
+
+- **[database]** Fix error thrown when operator `$in` meets `null` value ([#7610](https://github.com/nocobase/nocobase/pull/7610)) by @mytharcher
+
+- **[Workflow: Approval]**
+  - Fix the transaction timeout issue caused by transactions not rolling back properly when database errors occur after approval submission by @mytharcher
+
+  - Fix the issue where variables are not parsed in approval submit form by @mytharcher
+
 ## [v1.8.30](https://github.com/nocobase/nocobase/compare/v1.8.29...v1.8.30) - 2025-10-16
 
 ### 🐛 Bug Fixes

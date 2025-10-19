@@ -10,10 +10,10 @@
 import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
 import { tval } from '@nocobase/utils/client';
-import { namespace, useT } from '../../locale';
+import { namespace, useT } from '../../../locale';
 import { Collapse } from 'antd';
 import { WorkflowVariableRawTextArea } from '@nocobase/plugin-workflow/client';
-import { ModelSelect } from '../components/ModelSelect';
+import { ModelSelect } from '../../components/ModelSelect';
 import { Switch } from 'antd';
 
 const Options: React.FC = () => {

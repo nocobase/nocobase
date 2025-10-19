@@ -10,7 +10,8 @@
 import { Plugin } from '@nocobase/server';
 import { AIManager } from './manager/ai-manager';
 import { AIPluginFeatureManagerImpl } from './manager/ai-feature-manager';
-import { openaiProviderOptions } from './llm-providers/openai';
+import { openaiResponsesProviderOptions } from './llm-providers/openai';
+import { openaiCompletionsProviderOptions } from './llm-providers/openai';
 import { deepseekProviderOptions } from './llm-providers/deepseek';
 import aiResource from './resource/ai';
 import PluginWorkflowServer from '@nocobase/plugin-workflow';
@@ -35,6 +36,7 @@ import { Model } from '@nocobase/database';
 import { anthropicProviderOptions } from './llm-providers/anthropic';
 import aiSettings from './resource/aiSettings';
 import { dashscopeProviderOptions } from './llm-providers/dashscope';
+import { ollamaProviderOptions } from './llm-providers/ollama';
 import { BuiltInManager } from './manager/built-in-manager';
 import { AIContextDatasourceManager } from './manager/ai-context-datasource-manager';
 import { aiContextDatasources } from './resource/aiContextDatasources';
@@ -78,11 +80,13 @@ export class PluginAIServer extends Plugin {
   }
 
   registerLLMProviders() {
-    this.aiManager.registerLLMProvider('openai', openaiProviderOptions);
+    this.aiManager.registerLLMProvider('openai', openaiResponsesProviderOptions);
+    this.aiManager.registerLLMProvider('openai-completions', openaiCompletionsProviderOptions);
     this.aiManager.registerLLMProvider('deepseek', deepseekProviderOptions);
     this.aiManager.registerLLMProvider('google-genai', googleGenAIProviderOptions);
     this.aiManager.registerLLMProvider('anthropic', anthropicProviderOptions);
     this.aiManager.registerLLMProvider('dashscope', dashscopeProviderOptions);
+    this.aiManager.registerLLMProvider('ollama', ollamaProviderOptions);
     // this.aiManager.registerLLMProvider('tongyi', tongyiProviderOptions);
   }
 
