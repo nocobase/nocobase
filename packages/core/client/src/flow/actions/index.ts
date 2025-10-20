@@ -13,6 +13,7 @@ export * from './openView';
 export * from './runjs';
 export * from './customVariable';
 export * from './refreshTargetBlocks';
+export * from './setTargetDataScope';
 export { titleField } from './titleField';
 export * from './dateTimeFormat';
 export * from './sortingRules';
