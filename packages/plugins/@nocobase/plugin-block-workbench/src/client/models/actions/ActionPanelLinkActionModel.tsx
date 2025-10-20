@@ -61,7 +61,6 @@ ActionPanelLinkActionModel.registerFlow({
           ctx.message.warning(t('Please configure the URL'));
           return;
         }
-        console.log(searchParams);
         const link = joinUrlSearch(url, searchParams);
 
         if (link) {
@@ -141,6 +140,7 @@ ActionPanelLinkActionModel.registerFlow({
                       'x-component': TextAreaWithContextSelector,
                       'x-component-props': {
                         rows: 1,
+                        style: { width: 200 },
                       },
                     },
                     remove: {

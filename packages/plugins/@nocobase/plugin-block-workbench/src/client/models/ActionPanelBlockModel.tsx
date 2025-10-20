@@ -14,7 +14,7 @@ import {
   AddSubModelButton,
   DragHandler,
   FlowModelRenderer,
-  useFlowModel,
+  DndProvider,
 } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
 import { Card, Space } from 'antd';
@@ -35,7 +35,6 @@ export const WorkbenchLayout = {
 const ResponsiveSpace = (props) => {
   const isMobileMedia = isMobile();
   const { isMobile: underMobileCtx } = useOpenModeContext() || {};
-  const model = useFlowModel();
 
   if (underMobileCtx || isMobileMedia) {
     return (
@@ -71,50 +70,10 @@ export class ActionPanelBlockModel extends BlockModel {
     const token = this.context.themeToken;
     return (
       <Card id={`model-${this.uid}`} className="action-panel-block">
-        <div className="nb-action-panel-warp">
-          {layout === WorkbenchLayout.Grid ? (
-            <ResponsiveSpace>
-              {this.mapSubModels('actions', (action) => {
-                return (
-                  <Droppable model={action} key={action.uid}>
-                    <FlowModelRenderer
-                      model={action}
-                      showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                      extraToolbarItems={[
-                        {
-                          key: 'drag-handler',
-                          component: DragHandler,
-                          sort: 1,
-                        },
-                      ]}
-                    />
-                  </Droppable>
-                );
-              })}
-            </ResponsiveSpace>
-          ) : (
-            <Space
-              className={css`
-                width: 100%;
-                .ant-space-item {
-                  width: 100%;
-                }
-                .nb-toolbar-container > .nb-toolbar-container-icons {
-                  top: 20px !important;
-                }
-              `}
-            >
-              <List
-                style={
-                  {
-                    '--adm-color-background': token.colorBgContainer,
-                    '--active-background-color': token.colorBorderSecondary,
-                    '--border-inner': `solid 1px ${token.colorBorderSecondary}`,
-                    '--border-bottom': `none`,
-                    '--border-top': `none`,
-                  } as any
-                }
-              >
+        <DndProvider>
+          <div className="nb-action-panel-warp">
+            {layout === WorkbenchLayout.Grid ? (
+              <ResponsiveSpace>
                 {this.mapSubModels('actions', (action) => {
                   return (
                     <Droppable model={action} key={action.uid}>
@@ -132,10 +91,52 @@ export class ActionPanelBlockModel extends BlockModel {
                     </Droppable>
                   );
                 })}
-              </List>
-            </Space>
-          )}
-        </div>
+              </ResponsiveSpace>
+            ) : (
+              <Space
+                className={css`
+                  width: 100%;
+                  .ant-space-item {
+                    width: 100%;
+                  }
+                  .nb-toolbar-container > .nb-toolbar-container-icons {
+                    top: 20px !important;
+                  }
+                `}
+              >
+                <List
+                  style={
+                    {
+                      '--adm-color-background': token.colorBgContainer,
+                      '--active-background-color': token.colorBorderSecondary,
+                      '--border-inner': `solid 1px ${token.colorBorderSecondary}`,
+                      '--border-bottom': `none`,
+                      '--border-top': `none`,
+                    } as any
+                  }
+                >
+                  {this.mapSubModels('actions', (action) => {
+                    return (
+                      <Droppable model={action} key={action.uid}>
+                        <FlowModelRenderer
+                          model={action}
+                          showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                          extraToolbarItems={[
+                            {
+                              key: 'drag-handler',
+                              component: DragHandler,
+                              sort: 1,
+                            },
+                          ]}
+                        />
+                      </Droppable>
+                    );
+                  })}
+                </List>
+              </Space>
+            )}
+          </div>
+        </DndProvider>
         <div style={{ marginTop: '10px' }}>{this.renderConfiguireActions()}</div>
       </Card>
     );
