@@ -93,6 +93,7 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
                     padding: 5px;
                   }
                 `}
+                wrap
               >
                 {this.mapSubModels('actions', (action) => {
                   const fork = action.createFork({}, `${index}`);

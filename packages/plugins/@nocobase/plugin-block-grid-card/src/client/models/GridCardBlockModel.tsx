@@ -128,7 +128,7 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
     return (
       <>
         <DndProvider>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <Space>
               {this.mapSubModels('actions', (action) => {
                 // @ts-ignore
@@ -147,7 +147,7 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
               {/* 占位 */}
               <span></span>
             </Space>
-            <Space>
+            <Space wrap>
               {this.mapSubModels('actions', (action) => {
                 // @ts-ignore
                 if (action.props.position !== 'left') {
