@@ -65,11 +65,11 @@ export class ActionPanelBlockModel extends BlockModel {
     );
   }
 
-  render() {
+  renderComponent() {
     const { layout } = this.props;
     const token = this.context.themeToken;
     return (
-      <Card id={`model-${this.uid}`} className="action-panel-block">
+      <div id={`model-${this.uid}`} className="action-panel-block">
         <DndProvider>
           <div className="nb-action-panel-warp">
             {layout === WorkbenchLayout.Grid ? (
@@ -138,7 +138,7 @@ export class ActionPanelBlockModel extends BlockModel {
           </div>
         </DndProvider>
         <div style={{ marginTop: '10px' }}>{this.renderConfiguireActions()}</div>
-      </Card>
+      </div>
     );
   }
 }
