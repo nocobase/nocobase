@@ -37,8 +37,8 @@ RUN git config user.email "test@mail.com"  \
     && git commit -m "chore(versions): test publish packages"
 RUN yarn release:force --registry $VERDACCIO_URL
 RUN rm -rf /tmp/node_modules
-RUN yarn docs:install
-RUN yarn docs:build
+RUN cd /tmp/docs && yarn install
+RUN cd /tmp/docs && yarn build
 
 RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
