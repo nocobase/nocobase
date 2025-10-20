@@ -8,10 +8,13 @@
  */
 import { useFlowEngine } from '@nocobase/flow-engine';
 import { Plugin } from '../Plugin';
+import { useApp } from './useApp';
 
 export function usePlugin<T extends typeof Plugin = any>(plugin: T): InstanceType<T>;
 export function usePlugin<T extends {}>(name: string): T;
 export function usePlugin(name: any) {
-  const flowEngine = useFlowEngine();
-  return flowEngine.context.app.pm.get(name);
+  const application = useApp();
+  const flowEngine = useFlowEngine({ throwError: false });
+  const app = application || flowEngine.context.app;
+  return app.pm.get(name);
 }

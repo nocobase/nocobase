@@ -29,6 +29,7 @@ import {
   resolveStepUiSchema,
   resolveUiMode,
   setupRuntimeContextSteps,
+  buildSettingsViewInputArgs,
 } from './utils';
 import { FlowStepContext } from './hooks/useFlowStep';
 
@@ -764,6 +765,8 @@ export class FlowSettings {
       zIndex: 5000,
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
+      // 统一构造 settings 弹窗的 inputArgs（集合/记录/父导航/关联）
+      inputArgs: buildSettingsViewInputArgs(model as any, (modeProps as any)?.inputArgs),
       content: (currentView, viewCtx) => {
         viewCtx?.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
           return forms.get(keyOf({ flowKey, stepKey }))?.values;

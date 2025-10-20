@@ -77,9 +77,10 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
           return this.translate('Total {{count}} items', { count: total });
         },
         showSizeChanger: true,
-        onChange: (page) => {
+        onChange: (page, pageSize) => {
           this.resource.loading = true;
           this.resource.setPage(page);
+          this.resource.setPageSize(pageSize);
           this.resource.refresh();
         },
       };
@@ -123,7 +124,7 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
     return (
       <>
         <DndProvider>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
             <Space>
               {this.mapSubModels('actions', (action) => {
                 // @ts-ignore
@@ -142,7 +143,7 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
               {/* 占位 */}
               <span></span>
             </Space>
-            <Space>
+            <Space wrap>
               {this.mapSubModels('actions', (action) => {
                 // @ts-ignore
                 if (action.props.position !== 'left') {
@@ -179,15 +180,20 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
             model.context.defineProperty('record', {
               get: () => item,
               cache: false,
-              resolveOnServer: true,
             });
             model.context.defineProperty('index', {
               get: () => index,
               cache: false,
-              resolveOnServer: true,
             });
             return (
-              <List.Item key={index}>
+              <List.Item
+                key={index}
+                className={css`
+                  > div {
+                    width: 100%;
+                  }
+                `}
+              >
                 <FlowModelRenderer model={model} />
               </List.Item>
             );

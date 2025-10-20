@@ -11,6 +11,7 @@ import { css } from '@emotion/css';
 import { escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
 import { Card, Divider } from 'antd';
 import React, { useRef } from 'react';
+import { castArray } from 'lodash';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
@@ -21,7 +22,9 @@ const ArrayNester = ({ name, value = [] }: any) => {
 
   // 用来缓存每行的 fork，保证每行只创建一次
   const forksRef = useRef<Record<string, any>>({});
-  const rowIndex = model.context.fieldIndex || [];
+  const rowIndex = model.context.fieldIndex;
+  const resultIndex = castArray(rowIndex);
+  const record = model.context.record;
   const collectionName = model.context.collectionField.name;
   const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
 
@@ -43,7 +46,11 @@ const ArrayNester = ({ name, value = [] }: any) => {
           if (!forksRef.current[key]) {
             const fork = gridModel.createFork();
             fork.context.defineProperty('fieldIndex', {
-              get: () => [...rowIndex, `${collectionName}:${index}`],
+              get: () => [...resultIndex, `${collectionName}:${index}`],
+            });
+
+            fork.context.defineProperty('record', {
+              get: () => record,
             });
             forksRef.current[key] = fork;
           }

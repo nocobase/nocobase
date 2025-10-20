@@ -13,6 +13,7 @@ import { css } from '@emotion/css';
 import { observer } from '@formily/reactive-react';
 import {
   AddSubModelButton,
+  autorun,
   createCurrentRecordMetaFactory,
   DndProvider,
   DragHandler,
@@ -25,14 +26,17 @@ import {
   observable,
   useFlowEngine,
 } from '@nocobase/flow-engine';
-import { Space, Table } from 'antd';
+import { Skeleton, Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
-import React, { useRef } from 'react';
+import React, { useCallback, useMemo, useRef } from 'react';
 import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
 import { extractIndex, adjustColumnOrder } from './utils';
+import { HighPerformanceSpin } from '../../../../schema-component/common/high-performance-spin/HighPerformanceSpin';
+
+const MemoizedTable = React.memo(Table);
 
 type TableBlockModelStructure = {
   subModels: {
@@ -150,6 +154,24 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
 
   get resource() {
     return super.resource as MultiRecordResource;
+  }
+
+  private readonly columns = observable.ref([]);
+  private disposeAutorun: () => void;
+
+  onMount() {
+    super.onMount();
+    // 只有当表格列发生变化时才重新计算 columns，防止表格出现不必要的重渲染
+    this.disposeAutorun = autorun(() => {
+      this.columns.value = this.getColumns();
+    });
+  }
+
+  onUnmount() {
+    super.onUnmount();
+    if (this.disposeAutorun) {
+      this.disposeAutorun();
+    }
   }
 
   createResource(ctx, params) {
@@ -385,7 +407,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   }
 
   renderComponent() {
-    return (
+    return !this.columns.value.length ? (
+      <Skeleton paragraph={{ rows: 3 }} />
+    ) : (
       <>
         <DndProvider>
           <div
@@ -442,35 +466,16 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
             </Space>
           </div>
         </DndProvider>
-        <Table
-          components={this.components}
-          tableLayout="fixed"
-          size={this.props.size}
-          rowKey={this.collection.filterTargetKey}
-          rowSelection={{
-            columnWidth: 50,
-            type: 'checkbox',
-            onChange: (_, selectedRows) => {
-              this.resource.setSelectedRows(selectedRows);
-            },
-            selectedRowKeys: this.resource.getSelectedRows().map((row) => row[this.collection.filterTargetKey]),
-            renderCell: this.renderCell,
-            ...this.rowSelectionProps,
-          }}
-          loading={this.resource.loading}
-          virtual={this.props.virtual}
-          scroll={{ x: 'max-content' }}
-          dataSource={this.resource.getData()}
-          columns={this.getColumns()}
-          pagination={this.pagination()}
-          onChange={(pagination) => {
-            console.log('onChange pagination:', pagination);
-            this.resource.loading = true;
-            this.resource.setPage(pagination.current);
-            this.resource.setPageSize(pagination.pageSize);
-            this.resource.refresh();
-          }}
-        />
+        <HighPerformanceSpin spinning={!!this.resource.loading}>
+          <HighPerformanceTable
+            model={this}
+            size={this.props.size}
+            virtual={this.props.virtual}
+            dataSource={this.resource.getData()}
+            columns={this.columns.value}
+            pagination={this.pagination()}
+          />
+        </HighPerformanceSpin>
       </>
     );
   }
@@ -624,3 +629,51 @@ TableBlockModel.define({
   },
   sort: 300,
 });
+
+const tableScroll = { x: 'max-content' };
+const HighPerformanceTable = React.memo(
+  (props: { model: TableBlockModel; size: any; virtual: boolean; dataSource: any; columns: any; pagination: any }) => {
+    const { model, size, virtual, dataSource, columns, pagination: _pagination } = props;
+    const rowSelection = useMemo(() => {
+      return {
+        columnWidth: 50,
+        type: 'checkbox',
+        onChange: (_, selectedRows) => {
+          model.resource.setSelectedRows(selectedRows);
+        },
+        selectedRowKeys: model.resource.getSelectedRows().map((row) => row[model.collection.filterTargetKey]),
+        renderCell: model.renderCell,
+        ...model.rowSelectionProps,
+      };
+    }, [model]);
+    const handleChange = useCallback(
+      (pagination) => {
+        console.log('onChange pagination:', pagination);
+        model.resource.loading = true;
+        model.resource.setPage(pagination.current);
+        model.resource.setPageSize(pagination.pageSize);
+        model.resource.refresh();
+      },
+      [model],
+    );
+    const pagination = useMemo(() => _pagination, [dataSource]);
+
+    return (
+      <MemoizedTable
+        components={model.components}
+        tableLayout="fixed"
+        size={size}
+        rowKey={model.collection.filterTargetKey}
+        rowSelection={rowSelection as any}
+        virtual={virtual}
+        scroll={tableScroll}
+        dataSource={dataSource}
+        columns={columns}
+        pagination={pagination}
+        onChange={handleChange}
+      />
+    );
+  },
+);
+
+HighPerformanceTable.displayName = 'HighPerformanceTable';

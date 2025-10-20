@@ -50,6 +50,25 @@ FormSubmitActionModel.registerFlow({
         title: escapeT('Submit record'),
         content: escapeT('Are you sure you want to save it?'),
       },
+      async handler(ctx, params) {
+        if (params.enable) {
+          try {
+            await ctx.form.validateFields();
+            const confirmed = await ctx.modal.confirm({
+              title: ctx.t(params.title),
+              content: ctx.t(params.content),
+              okText: ctx.t('Confirm'),
+              cancelText: ctx.t('Cancel'),
+            });
+
+            if (!confirmed) {
+              ctx.exit();
+            }
+          } catch (error) {
+            ctx.exit();
+          }
+        }
+      },
     },
     saveResource: {
       async handler(ctx, params) {
