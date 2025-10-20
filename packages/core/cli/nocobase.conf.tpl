@@ -50,9 +50,13 @@ server {
         }
     }
 
+    location = /docs {
+        return 301 /docs/;
+    }
+
     location /docs/ {
         alias {{cwd}}/docs/;
-        try_files $uri $uri/ /index.html;
+        try_files $uri $uri/ /docs/index.html;
         add_header Last-Modified $date_gmt;
         add_header Cache-Control 'no-store, no-cache';
         add_header X-Robots-Tag "noindex, nofollow";
@@ -63,6 +67,7 @@ server {
             expires 365d;
             add_header Cache-Control "public";
         }
+        error_page 404 /docs/404.html;
     }
 
     location {{publicPath}} {
