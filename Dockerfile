@@ -40,6 +40,7 @@ RUN yarn install && \
     yarn release:force --registry $VERDACCIO_URL && \
     yarn config set registry $VERDACCIO_URL && \
     cd docs && yarn install && yarn build && \
+    rm -rf node_modules && \
     cd .. && \
     yarn create nocobase-app my-nocobase-app -a \
       -e APP_ENV=production \
@@ -56,6 +57,12 @@ RUN yarn install && \
 
 # ========== 运行阶段 ==========
 FROM node:20-bookworm-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends wget gnupg ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+RUN wget --quiet -O /usr/share/keyrings/pgdg.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
 
 # 安装必要依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
