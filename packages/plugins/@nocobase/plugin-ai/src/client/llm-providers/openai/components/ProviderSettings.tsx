@@ -10,7 +10,7 @@
 import React from 'react';
 import { SchemaComponent } from '@nocobase/client';
 import { tval } from '@nocobase/utils/client';
-import { namespace } from '../../locale';
+import { namespace } from '../../../locale';
 
 export const ProviderSettingsForm: React.FC = () => {
   return (

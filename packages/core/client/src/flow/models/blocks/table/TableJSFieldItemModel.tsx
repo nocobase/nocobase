@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { buildWrapperFieldChildren, escapeT, FlowModelContext } from '@nocobase/flow-engine';
-import { TableColumnModel } from './TableColumnModel';
+import { escapeT, FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
+import { TableAssociationFieldGroupModel } from './TableAssociationFieldGroupModel';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
+import { buildJSFieldMenuChildren } from '../utils/transformChildrenToJS';
 
 /**
  * “JavaScript 字段”菜单入口（表格）：
@@ -19,12 +20,12 @@ import { TableCustomColumnModel } from './TableCustomColumnModel';
  */
 export class TableJSFieldItemModel extends TableCustomColumnModel {
   static defineChildren(ctx: FlowModelContext) {
-    const groups = buildWrapperFieldChildren(ctx, {
+    return buildJSFieldMenuChildren(ctx, {
       useModel: 'TableColumnModel',
       fieldUseModel: 'JSFieldModel',
       refreshTargets: ['TableColumnModel'],
+      associationProvider: (inner) => TableAssociationFieldGroupModel.defineChildren(inner) as SubModelItem[],
     });
-    return groups?.[0]?.children || [];
   }
 }
 

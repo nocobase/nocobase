@@ -43,7 +43,6 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import { Skeleton, Spin } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -329,7 +328,7 @@ const FlowModelRendererCore: React.FC<{
 export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
   ({
     model,
-    fallback = <Skeleton.Button size="small" />,
+    fallback = null,
     showFlowSettings = false,
     flowSettingsVariant = 'dropdown',
     hideRemoveInSettings = false,

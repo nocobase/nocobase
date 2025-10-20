@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModel, FlowModelContext, ModelRenderMode } from '@nocobase/flow-engine';
+import { escapeT, FlowModel, FlowModelContext, ModelRenderMode, SubModelItem } from '@nocobase/flow-engine';
 import _ from 'lodash';
 
 export class DetailsCustomItemModel extends FlowModel {
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
-  static defineChildren(ctx: FlowModelContext) {
+  static defineChildren(ctx: FlowModelContext): Promise<SubModelItem[]> | SubModelItem[] {
     const commonModels = ctx.engine.filterModelClassByParent('CommonItemModel');
     const detailCustomModels = ctx.engine.filterModelClassByParent('DetailsCustomItemModel');
 

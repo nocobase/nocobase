@@ -21,40 +21,44 @@ const useBlockHeight = ({ height, heightMode }) => {
   return height;
 };
 
-export const BlockItemCard = React.forwardRef((props: CardProps & { description?: any }, ref) => {
-  const { t } = useTranslation();
-  const { token } = theme.useToken();
-  const { title: blockTitle, description, children, className, ...rest } = props;
-  const height = useBlockHeight(props as any);
-  const title = (blockTitle || description) && (
-    <div style={{ padding: '8px 0px 8px' }}>
-      <span> {t(blockTitle as any, { ns: NAMESPACE_UI_SCHEMA })}</span>
-      {description && (
-        <DisplayMarkdown
-          value={t(description, { ns: NAMESPACE_UI_SCHEMA })}
-          style={{
-            overflowWrap: 'break-word',
-            whiteSpace: 'normal',
-            fontWeight: 400,
-            color: token.colorTextDescription,
-            borderRadius: '4px',
-          }}
-        />
-      )}
-    </div>
-  );
-  return (
-    <Card
-      ref={ref as any}
-      title={title}
-      style={{ display: 'flex', flexDirection: 'column', height: height }}
-      styles={{
-        body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' },
-      }}
-      className={className}
-      {...rest}
-    >
-      {children}
-    </Card>
-  );
-});
+export const BlockItemCard = React.forwardRef(
+  (props: CardProps & { beforeContent?: React.ReactNode; afterContent?: React.ReactNode; description?: any }, ref) => {
+    const { t } = useTranslation();
+    const { token } = theme.useToken();
+    const { title: blockTitle, description, children, className, ...rest } = props;
+    const height = useBlockHeight(props as any);
+    const title = (blockTitle || description) && (
+      <div style={{ padding: '8px 0px 8px' }}>
+        <span> {t(blockTitle as any, { ns: NAMESPACE_UI_SCHEMA })}</span>
+        {description && (
+          <DisplayMarkdown
+            value={t(description, { ns: NAMESPACE_UI_SCHEMA })}
+            style={{
+              overflowWrap: 'break-word',
+              whiteSpace: 'normal',
+              fontWeight: 400,
+              color: token.colorTextDescription,
+              borderRadius: '4px',
+            }}
+          />
+        )}
+      </div>
+    );
+    return (
+      <Card
+        ref={ref as any}
+        title={title}
+        style={{ display: 'flex', flexDirection: 'column', height: height }}
+        styles={{
+          body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' },
+        }}
+        className={className}
+        {...rest}
+      >
+        {props.beforeContent}
+        {children}
+        {props.afterContent}
+      </Card>
+    );
+  },
+);
