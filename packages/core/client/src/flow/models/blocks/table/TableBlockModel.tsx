@@ -695,6 +695,12 @@ const HighPerformanceTable = React.memo(
       },
       [model],
     );
+    const rowClassName = useCallback(
+      (record) => {
+        return record[model.collection?.filterTargetKey] === highlightedRowKey ? highlightedRowClass : '';
+      },
+      [highlightedRowKey, model.collection?.filterTargetKey],
+    );
     const pagination = useMemo(() => _pagination, [dataSource]);
 
     return (
@@ -710,9 +716,7 @@ const HighPerformanceTable = React.memo(
         columns={columns}
         pagination={pagination}
         onChange={handleChange}
-        rowClassName={(record) => {
-          return record[model.collection.filterTargetKey] === highlightedRowKey ? highlightedRowClass : '';
-        }}
+        rowClassName={rowClassName}
       />
     );
   },
