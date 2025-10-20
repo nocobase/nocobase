@@ -187,7 +187,14 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
               resolveOnServer: true,
             });
             return (
-              <List.Item key={index}>
+              <List.Item
+                key={index}
+                className={css`
+                  > div {
+                    width: 100%;
+                  }
+                `}
+              >
                 <FlowModelRenderer model={model} />
               </List.Item>
             );
