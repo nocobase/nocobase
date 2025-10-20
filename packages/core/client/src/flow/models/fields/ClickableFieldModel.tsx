@@ -14,6 +14,7 @@ import { css } from '@emotion/css';
 import React from 'react';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base';
+import { EllipsisWithTooltip } from '../../components';
 
 export class ClickableFieldModel extends FieldModel {
   get collectionField(): CollectionField {
@@ -95,42 +96,26 @@ export class ClickableFieldModel extends FieldModel {
    * 基类统一渲染逻辑
    */
   render(): any {
-    const { value, displayStyle, fieldNames, overflowMode, width } = this.props;
+    const { value, displayStyle, fieldNames, overflowMode } = this.props;
     const titleField = this.props.titleField || fieldNames?.label;
-    const typographyProps = {
-      ellipsis:
-        overflowMode === 'ellipsis'
-          ? {
-              tooltip: {
-                rootClassName: css`
-                  .ant-tooltip-inner {
-                    color: #000;
-                  }
-                `,
-                color: '#fff',
-              },
-            }
-          : false, // 处理省略显示
-      style: {
-        whiteSpace: overflowMode === 'wrap' ? 'normal' : 'nowrap', // 控制换行
-        width: width || 'auto',
-      },
-    };
+    const ellipsis = overflowMode === 'ellipsis';
     if (titleField) {
       if (displayStyle === 'tag') {
         const result = castArray(value).map((v, idx) => (
           <React.Fragment key={idx}>{this.renderInDisplayStyle(v?.[titleField], v)}</React.Fragment>
         ));
-        return <Typography.Text {...typographyProps}>{result}</Typography.Text>;
+        return <EllipsisWithTooltip ellipsis={ellipsis}>{result}</EllipsisWithTooltip>;
       } else {
         const result = castArray(value).flatMap((v, idx) => {
           const node = this.renderInDisplayStyle(v?.[titleField], v);
           return idx === 0 ? [node] : [<span key={`sep-${idx}`}>, </span>, node];
         });
-        return <Typography.Text {...typographyProps}>{result}</Typography.Text>;
+        return <EllipsisWithTooltip ellipsis={ellipsis}>{result}</EllipsisWithTooltip>;
       }
     } else {
-      const textContent = <Typography.Text {...typographyProps}>{this.renderInDisplayStyle(value)}</Typography.Text>;
+      const textContent = (
+        <EllipsisWithTooltip ellipsis={ellipsis}>{this.renderInDisplayStyle(value)}</EllipsisWithTooltip>
+      );
       return textContent;
     }
   }
