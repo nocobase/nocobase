@@ -36,6 +36,8 @@ RUN  yarn install && yarn build --no-dts && \
   git commit -m "chore(versions): test publish packages" && \
   yarn release:force --registry $VERDACCIO_URL && \
   yarn config set registry $VERDACCIO_URL && \
+  cd /tmp/docs && yarn install && yarn build && \
+  rm -rf /tmp/node_modules && \
   mkdir /app && \
   cd /app && \
   yarn config set network-timeout 600000 -g && \
