@@ -147,9 +147,10 @@ export class Application {
   maintaining = false;
   error = null;
   hasLoadError = false;
+  locales = null;
 
   private wsAuthorized = false;
-  private variables: Variable[] = [];
+  private readonly variables: Variable[] = [];
   apps: {
     Component?: ComponentType;
   } = {
@@ -324,7 +325,7 @@ export class Application {
       observable: true,
     });
     this.use(FlowEngineProvider, { engine: this.flowEngine });
-    this.use(FlowEngineGlobalsContextProvider);
+    this.use(FlowEngineGlobalsContextProvider, { app: this });
   }
 
   private addReactRouterComponents() {
