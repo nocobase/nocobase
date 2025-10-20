@@ -21,8 +21,6 @@ EOD
 WORKDIR /tmp
 COPY . /tmp
 RUN yarn install && yarn build --no-dts
-RUN yarn docs:install
-RUN yarn docs:build
 
 SHELL ["/bin/bash", "-c"]
 
@@ -38,6 +36,9 @@ RUN git config user.email "test@mail.com"  \
     && git config user.name "test" && git add .  \
     && git commit -m "chore(versions): test publish packages"
 RUN yarn release:force --registry $VERDACCIO_URL
+
+RUN yarn docs:install
+RUN yarn docs:build
 
 RUN yarn config set registry $VERDACCIO_URL
 WORKDIR /app
