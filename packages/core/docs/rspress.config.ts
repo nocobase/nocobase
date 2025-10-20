@@ -50,10 +50,9 @@ export default defineConfig({
   locales: [
     {
       lang: 'en',
-      // 导航栏切换语言的标签
       label: 'English',
       title: 'NocoBase Documentation',
-      description: 'Helping you quickly learn and master NocoBase',
+      description: 'Helping you learn and master NocoBase quickly',
     },
     {
       lang: 'cn',
