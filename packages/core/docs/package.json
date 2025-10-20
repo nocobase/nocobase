@@ -1,0 +1,30 @@
+{
+  "name": "@nocobase/docs",
+  "version": "2.0.0-alpha.15",
+  "private": true,
+  "scripts": {
+    "build": "rspress build",
+    "check": "biome check --write",
+    "dev": "rspress dev",
+    "format": "prettier --write .",
+    "lint": "eslint .",
+    "preview": "rspress preview"
+  },
+  "dependencies": {
+    "@rspress/core": "^2.0.0-beta.34"
+  },
+  "devDependencies": {
+    "@rspress/plugin-llms": "^2.0.0-beta.34",
+    "@rspress/plugin-sitemap": "2.0.0-beta.34",
+    "@rspress/plugin-algolia": "2.0.0-beta.34",
+    "@rspress/plugin-preview": "2.0.0-beta.34",
+    "@rsbuild/plugin-sass": "^1.4.0",
+    "@biomejs/biome": "2.2.3",
+    "@eslint/js": "^9.35.0",
+    "@types/node": "^22.8.1",
+    "eslint": "^9.35.0",
+    "globals": "^16.3.0",
+    "prettier": "^3.6.2",
+    "typescript-eslint": "^8.43.0"
+  }
+}
