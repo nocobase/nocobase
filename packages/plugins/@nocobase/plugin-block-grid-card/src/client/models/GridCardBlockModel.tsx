@@ -74,13 +74,15 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
         current,
         pageSize,
         total: totalCount,
+        pageSizeOptions: [3, 6, 9, 15, 30, 60, 72],
         showTotal: (total) => {
           return this.translate('Total {{count}} items', { count: total });
         },
         showSizeChanger: true,
-        onChange: (page) => {
+        onChange: (page, pageSize) => {
           this.resource.loading = true;
           this.resource.setPage(page);
+          this.resource.setPageSize(pageSize);
           this.resource.refresh();
         },
       };
@@ -272,17 +274,17 @@ GridCardBlockModel.registerFlow({
           'x-component': 'Select',
           'x-decorator': 'FormItem',
           enum: [
-            { label: '5', value: 5 },
-            { label: '10', value: 10 },
-            { label: '20', value: 20 },
-            { label: '50', value: 50 },
-            { label: '100', value: 100 },
-            { label: '200', value: 200 },
+            { label: '3', value: 3 },
+            { label: '6', value: 6 },
+            { label: '9', value: 9 },
+            { label: '15', value: 15 },
+            { label: '30', value: 30 },
+            { label: '60', value: 60 },
           ],
         },
       },
       defaultParams: {
-        pageSize: 20,
+        pageSize: 15,
       },
       handler(ctx, params) {
         ctx.model.resource.loading = true;
