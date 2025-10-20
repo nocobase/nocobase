@@ -22,6 +22,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
   // 用来缓存每行的 fork，保证每行只创建一次
   const forksRef = useRef<Record<string, any>>({});
   const rowIndex = model.context.fieldIndex || [];
+  const record = model.context.record;
   const collectionName = model.context.collectionField.name;
   const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
 
@@ -44,6 +45,9 @@ const ArrayNester = ({ name, value = [] }: any) => {
             const fork = gridModel.createFork();
             fork.context.defineProperty('fieldIndex', {
               get: () => [...rowIndex, `${collectionName}:${index}`],
+            });
+            fork.context.defineProperty('record', {
+              get: () => record,
             });
             forksRef.current[key] = fork;
           }
