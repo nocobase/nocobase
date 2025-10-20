@@ -25,9 +25,10 @@ function Button(props) {
           width: 6em;
           padding: 0 10px;
           text-align: center;
-          cursor: pointer;
+          cursor: ${others.disabled ? 'not-allowed' : 'pointer'};
         `}
         {...others}
+        onClick={!others.disabled && others.onClick}
       >
         <Avatar style={{ backgroundColor }} size={48} icon={<Icon type={icon} />} />
         <div
@@ -37,6 +38,7 @@ function Button(props) {
             overflow: ellipsis ? 'hidden' : 'visible',
             marginTop: `${token.marginSM}px`,
             width: '100%',
+            opacity: `${others.disabled ? '0.3' : '1'}`,
           }}
         >
           {!onlyIcon && title}
@@ -68,7 +70,15 @@ export class ActionPanelActionModel extends ActionModel {
   }
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
   protected renderHiddenInConfig(): React.ReactNode | undefined {
-    return <Button {...this.props} disabled />;
+    return (
+      <Button
+        {...this.parent.props}
+        {...this.props}
+        token={this.context.themeToken}
+        disabled
+        style={{ opacity: '0.3' }}
+      />
+    );
   }
 }
 
