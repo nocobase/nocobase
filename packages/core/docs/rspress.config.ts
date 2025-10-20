@@ -7,7 +7,7 @@ import * as path from 'node:path';
 
 export default defineConfig({
   root: path.join(__dirname, 'docs'),
-  title: 'NocoBase Documentation',
+  // title: 'NocoBase Documentation',
   icon: 'https://www.nocobase.com/images/favicon/apple-touch-icon.png',
   logo: {
     light: '/LogoBlack.png',
@@ -33,7 +33,10 @@ export default defineConfig({
               '@nocobase/client-v2': path.join(__dirname, '../client-v2/src'),
               '@nocobase/shared': path.join(__dirname, '../shared/src'),
               '@nocobase/sdk': path.join(__dirname, '../sdk/src'),
-              '@nocobase/flow-engine': path.join(__dirname, '../flow-engine/src'),
+              '@nocobase/flow-engine': path.join(
+                __dirname,
+                '../flow-engine/src',
+              ),
             },
           },
         },
@@ -44,6 +47,22 @@ export default defineConfig({
       siteUrl: 'https://docs.nocobase.com', // 替换为你的网站 URL
     }),
   ],
+  locales: [
+    {
+      lang: 'en',
+      // 导航栏切换语言的标签
+      label: 'English',
+      title: 'NocoBase Documentation',
+      description: 'Helping you quickly learn and master NocoBase',
+    },
+    {
+      lang: 'cn',
+      label: '简体中文',
+      title: 'NocoBase 文档',
+      description: '帮助你快速学习和掌握 NocoBase',
+    },
+  ],
+  lang: 'cn',
   themeConfig: {
     socialLinks: [
       {
