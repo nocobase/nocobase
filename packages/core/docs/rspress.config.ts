@@ -10,6 +10,7 @@ const base = process.env.DOCS_BASE || '/';
 export default defineConfig({
   root: path.join(__dirname, 'docs'),
   outDir: path.join(__dirname, 'dist'),
+  themeDir: path.join(__dirname, 'theme'),
   base,
   // title: 'NocoBase Documentation',
   icon: 'https://www.nocobase.com/images/favicon/apple-touch-icon.png',
@@ -37,10 +38,7 @@ export default defineConfig({
               '@nocobase/client-v2': path.join(__dirname, '../client-v2/src'),
               '@nocobase/shared': path.join(__dirname, '../shared/src'),
               '@nocobase/sdk': path.join(__dirname, '../sdk/src'),
-              '@nocobase/flow-engine': path.join(
-                __dirname,
-                '../flow-engine/src',
-              ),
+              '@nocobase/flow-engine': path.join(__dirname, '../flow-engine/src'),
             },
           },
         },

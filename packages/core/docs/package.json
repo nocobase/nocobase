@@ -2,6 +2,11 @@
   "name": "@nocobase/docs",
   "version": "2.0.0-alpha.15",
   "private": true,
+  "scripts": {
+    "build": "rspress build",
+    "dev": "rspress dev",
+    "preview": "rspress preview"
+  },
   "devDependencies": {
     "@rspress/core": "^2.0.0-beta.34",
     "@rspress/plugin-llms": "^2.0.0-beta.34",
