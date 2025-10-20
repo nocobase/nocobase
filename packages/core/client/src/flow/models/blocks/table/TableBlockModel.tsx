@@ -702,6 +702,22 @@ const HighPerformanceTable = React.memo(
       [highlightedRowKey, model.collection?.filterTargetKey],
     );
     const pagination = useMemo(() => _pagination, [dataSource]);
+    const onRow = useCallback(
+      (record, rowIndex) => {
+        return {
+          onClick: async (event) => {
+            if (highlightedRowKey !== record[model.collection.filterTargetKey]) {
+              defineClickedRowRecordVariable(model, record);
+              await model.dispatchEvent('rowClick', { record, rowIndex, event });
+              removeClickedRowRecordVariable(model);
+            } else {
+              await model.dispatchEvent('rowClick', { record, rowIndex, event });
+            }
+          },
+        };
+      },
+      [highlightedRowKey, model],
+    );
 
     return (
       <MemoizedTable
@@ -717,6 +733,7 @@ const HighPerformanceTable = React.memo(
         pagination={pagination}
         onChange={handleChange}
         rowClassName={rowClassName}
+        onRow={onRow}
       />
     );
   },
