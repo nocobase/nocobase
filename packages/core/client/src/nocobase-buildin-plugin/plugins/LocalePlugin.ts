@@ -13,6 +13,7 @@ import dayjs from 'dayjs';
 import { loadConstrueLocale } from '../../antd-config-provider/loadConstrueLocale';
 import { Plugin } from '../../application/Plugin';
 import { dayjsLocale } from '../../locale';
+import { FlowEngineGlobalsContextProvider } from '@nocobase/flow-engine';
 
 export class LocalePlugin extends Plugin {
   locales: any = {};
@@ -33,6 +34,7 @@ export class LocalePlugin extends Plugin {
       this.locales = data?.data || {};
       this.app.use(ConfigProvider, { locale: this.locales.antd, popupMatchSelectWidth: false });
       this.app.use(App, { component: false });
+      this.app.use(FlowEngineGlobalsContextProvider);
       if (data?.data?.lang) {
         api.auth.setLocale(data?.data?.lang);
         this.app.i18n.changeLanguage(data?.data?.lang);
