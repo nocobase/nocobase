@@ -84,10 +84,10 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
     </>
   );
 };
-
-export const useFlowEngine = (): FlowEngine => {
+// 不 throw Error 怎么处理？
+export const useFlowEngine = ({ throwError = true } = {}): FlowEngine => {
   const context = useContext(FlowEngineReactContext);
-  if (!context) {
+  if (!context && throwError) {
     // This error should ideally not be hit if FlowEngineProvider is used correctly at the root
     // and always supplied with an engine.
     throw new Error(
