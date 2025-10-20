@@ -28,7 +28,7 @@ function Button(props) {
           cursor: ${others.disabled ? 'not-allowed' : 'pointer'};
         `}
         {...others}
-        onClick={!others.disabled && others.onClick}
+        onClick={others.disabled ? undefined : others.onClick}
       >
         <Avatar style={{ backgroundColor }} size={48} icon={<Icon type={icon} />} />
         <div
