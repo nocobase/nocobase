@@ -171,3 +171,4 @@ export { ModelSelect, Chat };
 export type { LLMProviderOptions, ToolOptions } from './manager/ai-manager';
 export type { ToolCall } from './ai-employees/types';
 export * from './features';
+export { AIEmployeeActionModel } from './ai-employees/flow/models/AIEmployeeActionModel';
