@@ -20,6 +20,9 @@ EOD
 
 WORKDIR /tmp
 COPY . /tmp
+
+SHELL ["/bin/bash", "-c"]
+
 RUN  yarn install && yarn build --no-dts && \
   CURRENTVERSION="$(jq -r '.version' lerna.json)" && \
   IFS='.-' read -r major minor patch label <<< "$CURRENTVERSION" && \
