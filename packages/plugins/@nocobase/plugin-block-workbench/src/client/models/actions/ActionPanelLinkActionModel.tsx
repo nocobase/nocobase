@@ -117,11 +117,20 @@ ActionPanelLinkActionModel.registerFlow({
                     style: {
                       flexWrap: 'nowrap',
                       maxWidth: '100%',
+                      display: 'flex',
                     },
                     className: css`
-                      & > .ant-space-item:first-child,
+                      & > .ant-space-item:first-child {
+                        flex: 3;
+                      }
+                      ,
+                      & > .ant-space-item:nth-child(2) {
+                        flex-shrink: 0;
+                        flex: 5;
+                      }
                       & > .ant-space-item:last-child {
                         flex-shrink: 0;
+                        flex: 1;
                       }
                     `,
                   },
@@ -140,7 +149,6 @@ ActionPanelLinkActionModel.registerFlow({
                       'x-component': TextAreaWithContextSelector,
                       'x-component-props': {
                         rows: 1,
-                        style: { width: 200 },
                       },
                     },
                     remove: {
