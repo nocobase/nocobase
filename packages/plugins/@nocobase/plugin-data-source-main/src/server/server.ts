@@ -17,7 +17,6 @@ import { FieldIsDependedOnByOtherError } from './errors/field-is-depended-on-by-
 import { FieldNameExistsError } from './errors/field-name-exists-error';
 import {
   afterCreateForForeignKeyField,
-  afterCreateForReverseField,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
   beforeInitOptions,
@@ -179,7 +178,28 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.app.db.on('fields.beforeCreate', beforeCreateForValidateField(this.app.db));
 
-    this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
+    this.app.db.on('fields.afterCreate', async (model, { transaction }) => {
+      const Field = this.app.db.getCollection('fields');
+      const reverseKey = model.get('reverseKey');
+
+      if (!reverseKey) {
+        return;
+      }
+
+      const reverse = await Field.model.findByPk(reverseKey, { transaction });
+      await reverse.update({ reverseKey: model.get('key') }, { hooks: false, transaction });
+
+      // NOTE: add sync logic due to hooks is false
+      this.sendSyncMessage(
+        {
+          type: 'syncCollection',
+          collectionName: model.get('collectionName'),
+        },
+        {
+          transaction,
+        },
+      );
+    });
 
     this.app.db.on('fields.beforeCreate', async (model: FieldModel, options) => {
       const { transaction } = options;
