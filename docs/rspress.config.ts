@@ -22,10 +22,10 @@ export default defineConfig({
     plugins: [pluginSass()],
     resolve: {
       alias: {
-        '@nocobase/client-v2': path.join(__dirname, '../client-v2/src'),
-        '@nocobase/shared': path.join(__dirname, '../shared/src'),
-        '@nocobase/sdk': path.join(__dirname, '../sdk/src'),
-        '@nocobase/flow-engine': path.join(__dirname, '../flow-engine/src'),
+        '@nocobase/client-v2': path.join(__dirname, '../packages/core/client-v2/src'),
+        '@nocobase/shared': path.join(__dirname, '../packages/core/shared/src'),
+        '@nocobase/sdk': path.join(__dirname, '../packages/core/sdk/src'),
+        '@nocobase/flow-engine': path.join(__dirname, '../packages/core/flow-engine/src'),
       },
     },
   },
