@@ -11,18 +11,52 @@ import { DragEndEvent } from '@dnd-kit/core';
 import _ from 'lodash';
 import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { PageModel } from './PageModel';
+import { autorun } from '@nocobase/flow-engine';
 
 export class RootPageModel extends PageModel {
+  mounted = false;
+
+  onMount() {
+    super.onMount();
+
+    autorun(() => {
+      if (this.context.pageActive.value && this.mounted) {
+        if (this.tabActiveKey) {
+          this.invokeTabModelLifecycleMethod(this.tabActiveKey, 'onActive');
+        } else {
+          const firstTab = this.subModels.tabs?.[0];
+          if (firstTab) {
+            this.invokeTabModelLifecycleMethod(firstTab.uid, 'onActive');
+          }
+        }
+      }
+      if (this.context.pageActive.value === false) {
+        if (this.tabActiveKey) {
+          this.invokeTabModelLifecycleMethod(this.tabActiveKey, 'onInactive');
+        } else {
+          const firstTab = this.subModels.tabs?.[0];
+          if (firstTab) {
+            this.invokeTabModelLifecycleMethod(firstTab.uid, 'onInactive');
+          }
+        }
+      }
+      this.mounted = true;
+    });
+  }
+
   async saveStepParams() {
     await super.saveStepParams();
-    // 更新路由
-    this.context.api.request({
-      url: `desktopRoutes:update?filter[id]=${this.props.routeId}`,
-      method: 'post',
-      data: {
-        enableTabs: !!this.stepParams.pageSettings.general.enableTabs,
-      },
-    });
+
+    if (this.stepParams.pageSettings) {
+      // 更新路由
+      this.context.api.request({
+        url: `desktopRoutes:update?filter[id]=${this.props.routeId}`,
+        method: 'post',
+        data: {
+          enableTabs: !!this.stepParams.pageSettings.general.enableTabs,
+        },
+      });
+    }
   }
 
   async handleDragEnd(event: DragEndEvent) {

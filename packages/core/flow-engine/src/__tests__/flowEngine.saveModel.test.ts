@@ -47,6 +47,10 @@ class MockFlowModelRepository implements IFlowModelRepository {
   async move(sourceId: string, targetId: string, position: 'before' | 'after'): Promise<void> {
     // Mock implementation
   }
+
+  async duplicate(uid: string): Promise<Record<string, any> | null> {
+    return null;
+  }
 }
 
 describe('FlowEngine.saveModel concurrent save prevention', () => {

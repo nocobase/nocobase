@@ -43,7 +43,6 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import { Skeleton, Spin } from 'antd';
 import _ from 'lodash';
 import React from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -87,10 +86,7 @@ export interface FlowModelRendererProps {
   /** 是否在边框左上角显示模型title，默认 false */
   showTitle?: boolean; // 默认 false
 
-  /** 是否跳过自动应用流程，默认 false */
-  skipApplyAutoFlows?: boolean; // 默认 false
-
-  /** 当 skipApplyAutoFlows !== false 时，传递给 useApplyAutoFlows 的额外上下文 */
+  /** 传递给 beforeRender 事件的运行时参数 */
   inputArgs?: Record<string, any>;
 
   /** 是否在最外层包装 FlowErrorFallback 组件，默认 false */
@@ -168,57 +164,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   },
 );
 
-/**
- * 内部组件：不带 useApplyAutoFlows 的渲染器
- */
-const FlowModelRendererWithoutAutoFlows: React.FC<{
-  model: FlowModel;
-  showFlowSettings:
-    | boolean
-    | {
-        showBackground?: boolean;
-        showBorder?: boolean;
-        showDragHandle?: boolean;
-        style?: React.CSSProperties;
-        /**
-         * @default 'inside'
-         */
-        toolbarPosition?: 'inside' | 'above';
-      };
-  flowSettingsVariant: string;
-  hideRemoveInSettings: boolean;
-  showTitle: boolean;
-  showErrorFallback?: boolean;
-  settingsMenuLevel?: number;
-  extraToolbarItems?: ToolbarItemConfig[];
-}> = observer(
-  ({
-    model,
-    showFlowSettings,
-    flowSettingsVariant,
-    hideRemoveInSettings,
-    showTitle,
-    showErrorFallback,
-    settingsMenuLevel,
-    extraToolbarItems,
-  }) => {
-    setAutoFlowError(model, null);
-    return (
-      <FlowModelProvider model={model}>
-        <FlowModelRendererCore
-          model={model}
-          showFlowSettings={showFlowSettings}
-          flowSettingsVariant={flowSettingsVariant}
-          hideRemoveInSettings={hideRemoveInSettings}
-          showTitle={showTitle}
-          showErrorFallback={showErrorFallback}
-          settingsMenuLevel={settingsMenuLevel}
-          extraToolbarItems={extraToolbarItems}
-        />
-      </FlowModelProvider>
-    );
-  },
-);
+// 移除不带 beforeRender 执行的渲染器，统一触发 beforeRender 事件
 
 /**
  * 核心渲染逻辑组件
@@ -264,7 +210,7 @@ const FlowModelRendererCore: React.FC<{
     const ContentOrError: React.FC = () => {
       const autoError = getAutoFlowError(model);
       if (autoError) {
-        // 把自动流的错误转化为内容区错误，由内层边界兜住
+        // 将 beforeRender 事件错误转化为内容区错误，由内层边界兜住
         throw autoError;
       }
       const rendered = model.render();
@@ -276,8 +222,15 @@ const FlowModelRendererCore: React.FC<{
     };
 
     // 如果不显示流程设置，直接返回模型内容（可能包装 ErrorBoundary）
+    // 当模型类发生变化（如 replaceModel），强制重挂载内容，规避部分子组件 hooks deps 形态不一致导致的报错
+    const contentKey = (model as any)?.use || (model as any)?.constructor?.name || model.uid;
+
     if (!showFlowSettings) {
-      return wrapWithErrorBoundary(<ContentOrError />);
+      return wrapWithErrorBoundary(
+        <div key={contentKey}>
+          <ContentOrError />
+        </div>,
+      );
     }
 
     // 根据 flowSettingsVariant 包装相应的设置组件
@@ -296,14 +249,22 @@ const FlowModelRendererCore: React.FC<{
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
             toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
           >
-            {wrapWithErrorBoundary(<ContentOrError />)}
+            {wrapWithErrorBoundary(
+              <div key={contentKey}>
+                <ContentOrError />
+              </div>,
+            )}
           </FlowsFloatContextMenu>
         );
 
       case 'contextMenu':
         return (
           <FlowsContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>
-            {wrapWithErrorBoundary(<ContentOrError />)}
+            {wrapWithErrorBoundary(
+              <div key={contentKey}>
+                <ContentOrError />
+              </div>,
+            )}
           </FlowsContextMenu>
         );
 
@@ -334,7 +295,11 @@ const FlowModelRendererCore: React.FC<{
             toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
             toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
           >
-            {wrapWithErrorBoundary(<ContentOrError />)}
+            {wrapWithErrorBoundary(
+              <div key={contentKey}>
+                <ContentOrError />
+              </div>,
+            )}
           </FlowsFloatContextMenu>
         );
     }
@@ -355,8 +320,7 @@ const FlowModelRendererCore: React.FC<{
  * @param {string} props.flowSettingsVariant - The interaction style for flow settings.
  * @param {boolean} props.hideRemoveInSettings - Whether to hide remove button in settings.
  * @param {boolean} props.showTitle - Whether to show model title in the top-left corner of the border.
- * @param {boolean} props.skipApplyAutoFlows - Whether to skip applying auto flows.
- * @param {any} props.inputArgs - Runtime arguments to pass to useApplyAutoFlows when skipApplyAutoFlows is false.
+ * @param {any} props.inputArgs - Runtime arguments to pass to beforeRender event flows.
  * @param {number} props.settingsMenuLevel - Settings menu levels: 1=current model only (default), 2=include sub-models.
  * @param {ToolbarItemConfig[]} props.extraToolbarItems - Extra toolbar items to add to this renderer instance.
  * @returns {React.ReactNode | null} The rendered output of the model, or null if the model or its render method is invalid.
@@ -364,12 +328,11 @@ const FlowModelRendererCore: React.FC<{
 export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
   ({
     model,
-    fallback = <Skeleton.Button size="small" />,
+    fallback = null,
     showFlowSettings = false,
     flowSettingsVariant = 'dropdown',
     hideRemoveInSettings = false,
     showTitle = false,
-    skipApplyAutoFlows = false,
     inputArgs,
     showErrorFallback = true,
     settingsMenuLevel,
@@ -381,19 +344,8 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
       return null;
     }
 
-    // 构建渲染内容
-    const content = skipApplyAutoFlows ? (
-      <FlowModelRendererWithoutAutoFlows
-        model={model}
-        showFlowSettings={showFlowSettings}
-        flowSettingsVariant={flowSettingsVariant}
-        hideRemoveInSettings={hideRemoveInSettings}
-        showTitle={showTitle}
-        showErrorFallback={showErrorFallback}
-        settingsMenuLevel={settingsMenuLevel}
-        extraToolbarItems={extraToolbarItems}
-      />
-    ) : (
+    // 构建渲染内容：统一在渲染前触发 beforeRender 事件（带缓存）
+    const content = (
       <FlowModelRendererWithAutoFlows
         model={model}
         showFlowSettings={showFlowSettings}

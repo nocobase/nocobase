@@ -78,6 +78,8 @@ export const useChatMessageActions = () => {
   const messagesServiceRef = useRef<any>();
   messagesServiceRef.current = messagesService;
 
+  const employeeTools = plugin.aiManager.useTools();
+
   const processStreamResponse = async (stream: any, sessionId: string, aiEmployee: AIEmployee) => {
     const reader = stream.getReader();
     const decoder = new TextDecoder();
@@ -183,17 +185,25 @@ export const useChatMessageActions = () => {
     await messagesServiceRef.current.runAsync(sessionId);
     if (!error && tools && tools.length > 0) {
       const toolCallIds: string[] = [];
+      const toolCallResults = [];
       for (const tool of tools) {
         toolCallIds.push(tool.id);
-        const t = plugin.aiManager.tools.get(tool.name);
+        const t = employeeTools.get(tool.name);
         if (t && t.invoke) {
-          await t.invoke(app, tool.args);
+          const result = await t.invoke(app, tool.args);
+          if (result) {
+            toolCallResults.push({
+              id: tool.id,
+              result,
+            });
+          }
         }
       }
       await confirmToolCall({
         sessionId,
         aiEmployee,
         toolCallIds,
+        toolCallResults,
       });
     }
   };
@@ -208,6 +218,7 @@ export const useChatMessageActions = () => {
     editingMessageId,
     onConversationCreate,
     skillSettings,
+    webSearch,
   }: SendOptions & {
     onConversationCreate?: (sessionId: string) => void;
   }) => {
@@ -240,7 +251,7 @@ export const useChatMessageActions = () => {
 
     if (!sessionId) {
       const createRes = await api.resource('aiConversations').create({
-        values: { aiEmployee, systemMessage, skillSettings },
+        values: { aiEmployee, systemMessage, skillSettings, conversationSettings: { webSearch } },
       });
       const conversation = createRes?.data?.data;
       if (!conversation) return;
@@ -408,11 +419,13 @@ export const useChatMessageActions = () => {
       messageId,
       aiEmployee,
       toolCallIds,
+      toolCallResults,
     }: {
       sessionId: string;
       messageId?: string;
       aiEmployee: AIEmployee;
       toolCallIds?: string[];
+      toolCallResults?: { id: string; [key: string]: any }[];
     }) => {
       setResponseLoading(true);
       addMessage({
@@ -427,7 +440,7 @@ export const useChatMessageActions = () => {
           url: 'aiConversations:confirmToolCall',
           method: 'POST',
           headers: { Accept: 'text/event-stream' },
-          data: { sessionId, messageId, toolCallIds },
+          data: { sessionId, messageId, toolCallIds, toolCallResults },
           responseType: 'stream',
           adapter: 'fetch',
         });

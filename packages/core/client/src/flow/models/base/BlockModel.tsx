@@ -8,11 +8,12 @@
  */
 import { observable } from '@formily/reactive';
 import { Observer } from '@formily/reactive-react';
-import { buildSubModelItems, DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
+import { DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import React from 'react';
 import { BlockItemCard } from '../../components';
 import { BlockPlaceholder } from '../../components/placeholders/BlockPlaceholder';
+import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
 
 export type BlockSceneType = 'new' | 'one' | 'many' | 'select' | BlockSceneType[];
 
@@ -186,4 +187,21 @@ BlockModel.define({
   //     return !M['_isScene'] || !M['_isScene']?.('select');
   //   });
   // },
+});
+
+// TODO: 应该放到 @nocobase/flow-engine 里，不过因为 flow-engine 里不能依赖 flow，所以先放这里
+FlowModel.registerEvents({
+  beforeRender: {
+    title: escapeT('Before render'),
+    name: 'beforeRender',
+    uiSchema: {
+      condition: {
+        type: 'object',
+        title: escapeT('Trigger condition'),
+        'x-decorator': 'FormItem',
+        'x-component': ConditionBuilder,
+      },
+    },
+    handler: commonConditionHandler,
+  },
 });

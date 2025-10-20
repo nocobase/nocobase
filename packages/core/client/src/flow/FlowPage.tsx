@@ -9,6 +9,7 @@
 
 import {
   FlowModelRenderer,
+  observable,
   parsePathnameToViewParams,
   reaction,
   useFlowEngine,
@@ -19,7 +20,7 @@ import {
 import type { FlowModel } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { useAllAccessDesktopRoutes, useCurrentRoute, useMobileLayout } from '../route-switch';
+import { useAllAccessDesktopRoutes, useCurrentRoute, useKeepAlive, useMobileLayout } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
 import { resolveViewParamsToViewList, ViewItem } from './resolveViewParamsToViewList';
 import { getViewDiffAndUpdateHidden } from './getViewDiffAndUpdateHidden';
@@ -55,6 +56,7 @@ export const FlowRoute = () => {
   const prevViewListRef = useRef<ViewItem[]>([]);
   const hasStepNavigatedRef = useRef(false);
   const { designable } = useDesignable();
+  const { active } = useKeepAlive();
 
   const routeModel = useMemo(() => {
     return flowEngine.createModel({
@@ -62,6 +64,16 @@ export const FlowRoute = () => {
       use: 'RouteModel',
     });
   }, [flowEngine]);
+
+  useEffect(() => {
+    routeModel.context.defineProperty('pageActive', {
+      value: observable.ref(false),
+    });
+  }, [routeModel]);
+
+  useEffect(() => {
+    routeModel.context.pageActive.value = active;
+  }, [active, routeModel]);
 
   useEffect(() => {
     flowEngine.context.defineProperty('isMobileLayout', {
@@ -103,7 +115,7 @@ export const FlowRoute = () => {
     if (!layoutContentRef.current) {
       return;
     }
-    routeModel.context.defineProperty('layoutContentElement', {
+    flowEngine.context.defineProperty('layoutContentElement', {
       get: () => layoutContentRef.current,
     });
     routeModel.context.defineProperty('currentRoute', {

@@ -113,6 +113,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   async create(data: TDataItem, options?: AxiosRequestConfig): Promise<void> {
     const config = this.mergeRequestConfig({ data }, this.createActionOptions, options);
     await this.runAction('create', config);
+    this.emit('saved', data);
     await this.refresh();
   }
 
@@ -140,6 +141,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
       options,
     );
     await this.runAction('update', config);
+    this.emit('saved', data);
     await this.refresh();
   }
 

@@ -1,6 +1,6 @@
 [English](./README.md) | 简体中文 | [日本語](./README.ja-JP.md)
  
-https://github.com/nocobase/nocobase/assets/1267426/29623e45-9a48-4598-bb9e-9dd173ade553
+https://github.com/user-attachments/assets/ff1e4b3d-fc22-415d-a983-0c97ebc14096
 
 <p align="center">
 <a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
@@ -9,23 +9,26 @@ https://github.com/nocobase/nocobase/assets/1267426/29623e45-9a48-4598-bb9e-9dd1
 
 ## NocoBase 是什么
 
-NocoBase 是一个极易扩展的开源无代码开发平台。
-不必投入几年时间、数百万资金研发，花几分钟时间部署 NocoBase，马上拥有一个私有、可控、极易扩展的无代码开发平台。
+NocoBase 是一个极易扩展的 AI 无代码开发平台。
+
+完全掌控，无限扩展，AI 协同。  
+让你的团队快速响应变化，大幅降低成本。  
+无需多年研发，无需数百万投入。  
+花几分钟部署 NocoBase，立即拥有一切。  
+
+
 
 中文官网：  
 https://www.nocobase.com/cn
 
 在线体验：  
-https://demo-cn.nocobase.com/new
+https://demo.nocobase.com/new
 
 文档：  
 https://docs-cn.nocobase.com/
 
 社区：  
 https://forum.nocobase.com/
-
-教程：  
-https://www.nocobase.com/cn/tutorials
 
 用户故事：  
 https://www.nocobase.com/cn/blog/tags/customer-stories
@@ -35,23 +38,40 @@ https://www.nocobase.com/cn/blog/tags/customer-stories
 
 ## 与众不同之处
 
-### 1. 数据模型驱动
+### 1. 数据模型 驱动，而非表单/表格驱动
+NocoBase 采用 数据模型驱动 的方式，将数据结构与用户界面分离，突破了传统表单或表格驱动开发的限制，释放无限可能。
 
-多数以表单、表格或者流程驱动的无代码产品都是在使用界面上直接创建数据结构，比如 Airtable 在表格里新增一列就是新增一个字段。这样的好处是使用简单，不足是功能和灵活性受限，难以满足较复杂场景的需求。
-
-NocoBase 采用数据结构与使用界面分离的设计思路，可以为数据表创建任意数量、任意形态的区块（数据视图），每个区块里可以定义不同的样式、文案、操作。这样既兼顾了无代码的简单操作，又具备了原生开发的灵活性。
+- 界面与数据结构彻底解耦
+- 同一个表或记录可以创建任意数量、任意形式的区块和操作
+- 支持主数据库、外部数据库以及第三方 API 作为数据源
 
 ![model](https://static-docs.nocobase.com/model.png)
 
-### 2. 所见即所得
-NocoBase 可以开发复杂和有特色的业务系统，但这并不意味着需要复杂和专业的操作。只需一次点击，就可以在使用界面上显示出配置选项，具备系统配置权限的管理员可以用所见即所得的操作方式，直接配置用户的使用界面。
+### 2. AI 员工，融入你的业务系统
+不同于停留在演示层面的 AI，NocoBase 让你能够将 AI 能力无缝集成到交互界面、业务流程和数据上下文中，让 AI 真正落地于企业场景。
+
+- 定义 AI 员工，担任翻译员、分析员、调研员或助手等角色
+- AI 与人工无缝协同于交互界面和业务流程
+- 确保 AI 的使用符合企业的安全、透明和定制化需求
+
+![AI-employee](https://static-docs.nocobase.com/ai-employee-home.png)
+
+### 3. 所见即所得，极易上手
+NocoBase 能够开发复杂而独特的业务系统，但使用体验却简单直观。
+
+- 一键切换使用模式与配置模式
+- 页面即画布，可随意拖拽区块和操作，像 Notion 一样搭建界面
+- 配置模式面向普通用户设计，而非仅限程序员
 
 ![wysiwyg](https://static-docs.nocobase.com/wysiwyg.gif)
 
-### 3. 一切皆插件
+### 4. 一切皆 插件，为扩展而生
+仅仅堆叠无代码功能，永远无法覆盖所有业务场景。NocoBase 基于 插件化微内核架构，为扩展而设计。
 
-NocoBase 采用插件化架构，所有新功能都可以通过开发和安装插件来实现，扩展功能就像在手机上安装 APP 一样简单。
-
+- 所有功能都是插件，类似于 WordPress
+- 插件安装即用
+- 页面、区块、操作、API、数据源等都可以通过插件扩展
+  
 ![plugins](https://static-docs.nocobase.com/plugins.png)
 
 ## 安装

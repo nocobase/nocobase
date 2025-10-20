@@ -1,6 +1,6 @@
 [English](./README.md) | [简体中文](./README.zh-CN.md) | 日本語
 
-https://github.com/user-attachments/assets/cf08bfe5-e6e6-453c-8b96-350a6a8bed17
+https://github.com/user-attachments/assets/8d183b44-9bb5-4792-b08f-bc08fe8dfaaf
 
 <p align="center">
 <a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
@@ -9,23 +9,24 @@ https://github.com/user-attachments/assets/cf08bfe5-e6e6-453c-8b96-350a6a8bed17
 
 ## NocoBaseはなに？
 
-NocoBaseは非常に拡張性の高いオープンソースのノーコード開発プラットフォームです。
-大量のお時間と資金を投入して開発する必要がなく、NocoBaseをデプロイすることですぐにでもプライベートで制御可能かつ非常に拡張性の高いノーコード開発プラットフォームを構築することができます。
+超拡張可能な AIノーコード開発プラットフォーム。
+
+完全なコントロール、無限の拡張性、AIの協働。  
+チームが変化に素早く対応し、コストを大幅に削減。  
+長年の開発も、数百万円規模の投資も不要。  
+数分で NocoBase をデプロイすれば、すぐにすべてが手に入ります。  
 
 ホームページ：  
 https://www.nocobase.com/
 
 オンライン体験：  
-https://demo-cn.nocobase.com/new
+https://demo.nocobase.com/new
 
 ドキュメント：  
-https://docs-cn.nocobase.com/
+https://docs.nocobase.com/
 
 コミュニティ：  
 https://forum.nocobase.com/
-
-チュートリアル：  
-https://www.nocobase.com/ja/tutorials
 
 顧客のストーリー：  
 https://www.nocobase.com/ja/blog/tags/customer-stories
@@ -36,20 +37,39 @@ https://www.nocobase.com/ja/blog/tags/customer-stories
 
 ## 他の製品との違い
 
-### 1. データモデル駆動 
+### 1. データモデル駆動 ― フォーム／テーブル駆動ではありません
+フォームやテーブルに縛られるのではなく、データモデル駆動のアプローチでデータ構造と UI を分離し、無限の可能性を切り開きます。
 
-多くのノーコード製品はフォーム、表、またはプロセス駆動型であり、表に項目を追加することでフィールドを新しく作成するなど、ユーザーインターフェース上で直接データ構造を作成します。この方法のメリットは使いやすさですが、機能と柔軟性が制限されており、複雑なシナリオには対応しにくいという欠点があります。
+- UI とデータ構造が完全にデカップリングされている
+- 同じテーブルやレコードでも、形式を問わず複数のブロックやアクションを作成できる
+- メイン DB・外部 DB・サードパーティ API をデータソースとして利用できる
 
-NocoBaseはデータ構造とユーザーインターフェースを分離する設計理念を採用しており、データテーブルに任意の数や形態のブロック（データビュー）を作成できます。各ブロックには異なるスタイル、テキスト、操作を定義できるため、ノーコードの簡単な操作性とネイティブ開発の柔軟性を両立しています。
 ![model](https://static-docs.nocobase.com/model.png)
 
-### 2. リアルタイムエディタ
-NocoBaseは複雑で特徴的な業務システムを開発できますが、複雑で専門的な知識は必要としません。ワンクリックで設定オプションをユーザーインターフェースに表示でき、システム設定権限を持つ管理者は、見たままの操作方法でユーザーインターフェースを直接設定できます。
+### 2. AI スタッフ を業務システムに統合
+単体の AI デモとは異なり、NocoBase ならインターフェースやワークフロー、データの文脈に AI をシームレスに埋め込み、実践的な価値を生み出せます。
+
+- 翻訳者・アナリスト・リサーチャー・アシスタントなど役割別に AI スタッフを定義
+- インターフェースとワークフローで人と AI がシームレスに協働
+- ビジネス要件に合わせて、安全・透明・カスタマイズ可能な AI 利用を実現
+
+![AI-employee](https://static-docs.nocobase.com/ai-employee-home.png)
+
+### 3. WYSIWYG ― 直感的で使いやすい
+複雑な業務システムを構築できる一方で、NocoBase の体験は常にシンプルで直感的です。
+
+- ワンクリックで利用モードと設定モードを切り替え
+- ページは Notion のようにブロックとアクションを配置するキャンバス
+- プログラマーだけでなく、一般ユーザーでも扱いやすい設定画面
+
 ![wysiwyg](https://static-docs.nocobase.com/wysiwyg.gif)
 
-### 3. プラグインによる高拡張性
+### 4. すべてが プラグイン ― 拡張のための設計
+ノーコード機能を増やすだけでは、すべての業務シナリオをカバーできません。NocoBase はマイクロカーネル型のプラグインアーキテクチャで拡張を前提に設計されています。
 
-NocoBaseはプラグイン化されたアーキテクチャを採用しており、新しい機能はすべてプラグインの開発とインストールによって実現できます。機能の拡張は、スマートフォンにアプリをインストールするのと同じくらい簡単です。
+- すべての機能が WordPress のようにプラグインとして提供
+- インストールするだけですぐに利用可能
+- ページ・ブロック・アクション・API・データソースをカスタムプラグインで拡張できる
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
 

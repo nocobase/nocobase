@@ -1,6 +1,6 @@
 English | [中文](./README.zh-CN.md) | [日本語](./README.ja-JP.md)
 
-https://github.com/user-attachments/assets/a50c100a-4561-4e06-b2d2-d48098659ec0
+https://github.com/user-attachments/assets/8d183b44-9bb5-4792-b08f-bc08fe8dfaaf
 
 <p align="center">
 <a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
@@ -9,8 +9,11 @@ https://github.com/user-attachments/assets/a50c100a-4561-4e06-b2d2-d48098659ec0
 
 ## What is NocoBase
 
-NocoBase is an extensibility-first, open-source no-code development platform.   
-Instead of investing years of time and millions of dollars in research and development, deploy NocoBase in a few minutes and you'll have a private, controllable, and extremely scalable no-code development platform!
+NocoBase is the most extensible AI-powered no-code platform.   
+Total control. Infinite extensibility. AI collaboration.  
+Enable your team to adapt quickly and cut costs dramatically.  
+No years of development. No millions wasted.  
+Deploy NocoBase in minutes — and take control of everything.
 
 Homepage:  
 https://www.nocobase.com/  
@@ -24,9 +27,6 @@ https://docs.nocobase.com/
 Forum:  
 https://forum.nocobase.com/
 
-Tutorials:  
-https://www.nocobase.com/en/tutorials
-
 Use Cases:  
 https://www.nocobase.com/en/blog/tags/customer-stories
 
@@ -36,23 +36,41 @@ Our [blog](https://www.nocobase.com/en/blog/timeline) is regularly updated with 
 
 ## Distinctive features
 
-### 1. Data model-driven
+### 1. Data model-driven, not form/table–driven
 
-Most form-, table-, or process-driven no-code products create data structures directly in the user interface, such as Airtable, where adding a new column to a table is adding a new field. This has the advantage of simplicity of use, but the disadvantage of limited functionality and flexibility to meet the needs of more complex scenarios.
+Instead of being constrained by forms or tables, NocoBase adopts a data model–driven approach, separating data structure from user interface to unlock unlimited possibilities.
 
-NocoBase adopts the design idea of separating the data structure from the user interface, allowing you to create any number of blocks (data views) for the data collections, with different type, styles, content, and actions in each block. This balances the simplicity of no-code operation with the flexibility of native development.
+- UI and data structure are fully decoupled
+- Multiple blocks and actions can be created for the same table or record in any quantity or form
+- Supports the main database, external databases, and third-party APIs as data sources
 
 ![model](https://static-docs.nocobase.com/model.png)
 
-### 2. What you see is what you get
+### 2. AI employees, integrated into your business systems
+Unlike standalone AI demos, NocoBase allows you to embed AI capabilities seamlessly into your interfaces, workflows, and data context, making AI truly useful in real business scenarios.
 
-NocoBase enables the development of complex and distinctive business systems, but this does not mean that complex and specialized operations are required. With a single click, configuration options are displayed on the usage interface, and administrators with system configuration privileges can directly configure the user interface in a WYSIWYG manner.
+- Define AI employees for roles such as translator, analyst, researcher, or assistant
+- Seamless AI–human collaboration in interfaces and workflows
+- Ensure AI usage is secure, transparent, and customizable for your business needs
+
+![AI-employee](https://static-docs.nocobase.com/ai-employee-home.png)
+
+### 3. What you see is what you get, incredibly easy to use
+
+While enabling the development of complex business systems, NocoBase keeps the experience simple and intuitive.
+
+- One-click switch between usage mode and configuration mode
+- Pages serve as a canvas to arrange blocks and actions, similar to Notion
+- Configuration mode is designed for ordinary users, not just programmers
 
 ![wysiwyg](https://static-docs.nocobase.com/wysiwyg.gif)
 
-### 3. Everything is implemented as plugins
+### 4. Everything is a plugin, designed for extension
+Adding more no-code features will never cover every business case. NocoBase is built for extension through its plugin-based microkernel architecture.
 
-NocoBase adopts plugin architecture, all new functions can be realized by developing and installing plugins, and expanding the functions is as easy as installing an APP on your phone.
+- All functionalities are plugins, similar to WordPress
+- Plugins are ready to use upon installation
+- Pages, blocks, actions, APIs, and data sources can all be extended through custom plugins
 
 ![plugins](https://static-docs.nocobase.com/plugins.png)
 

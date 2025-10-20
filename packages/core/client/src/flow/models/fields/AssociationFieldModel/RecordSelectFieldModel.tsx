@@ -18,6 +18,7 @@ import {
   useFlowModel,
 } from '@nocobase/flow-engine';
 import { Select } from 'antd';
+import { debounce } from 'lodash';
 import React from 'react';
 import { AssociationFieldModel } from './AssociationFieldModel';
 
@@ -72,11 +73,12 @@ export function LazySelect(props) {
         ? Array.isArray(value)
           ? value.filter(Boolean)
           : []
-        : value
+        : value && typeof value === 'object'
           ? [value]
           : [];
   return (
     <Select
+      style={{ width: '100%' }}
       {...others}
       allowClear
       showSearch
@@ -259,50 +261,54 @@ RecordSelectFieldModel.registerFlow({
     },
   },
 });
+
+async function originalHandler(ctx, params) {
+  try {
+    const targetCollection = ctx.model.collectionField.targetCollection;
+    const labelFieldName = ctx.model.props.fieldNames.label;
+    const targetLabelField = targetCollection.getField(labelFieldName);
+
+    const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+      targetLabelField.options.interface,
+    );
+    const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
+
+    const searchText = ctx.inputArgs.searchText?.trim();
+
+    const resource = ctx.model.resource;
+    const key = `${labelFieldName}.${operator}`;
+    if (searchText === '') {
+      resource.removeFilterGroup(labelFieldName);
+    } else {
+      resource.setPage(1);
+      resource.addFilterGroup(labelFieldName, {
+        [key]: searchText,
+      });
+    }
+    await resource.refresh();
+    const data = resource.getData();
+    ctx.model.setDataSource(data);
+    if (data.length < paginationState.pageSize) {
+      paginationState.hasMore = false;
+    } else {
+      paginationState.hasMore = true;
+      paginationState.page++;
+    }
+  } catch (error) {
+    console.error('AssociationSelectField search flow error:', error);
+    ctx.model.setDataSource([]);
+  }
+}
+
+const debouncedHandler = debounce(originalHandler, 500);
+
 // 模糊搜索
 RecordSelectFieldModel.registerFlow({
   key: 'searchSettings',
   on: 'search',
   steps: {
     step1: {
-      async handler(ctx, params) {
-        try {
-          const targetCollection = ctx.model.collectionField.targetCollection;
-          const labelFieldName = ctx.model.props.fieldNames.label;
-          const targetLabelField = targetCollection.getField(labelFieldName);
-
-          const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
-            targetLabelField.options.interface,
-          );
-          const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
-
-          const searchText = ctx.inputArgs.searchText?.trim();
-
-          const resource = ctx.model.resource;
-          const key = `${labelFieldName}.${operator}`;
-          if (searchText === '') {
-            resource.removeFilterGroup(labelFieldName);
-          } else {
-            resource.setPage(1);
-            resource.addFilterGroup(labelFieldName, {
-              [key]: searchText,
-            });
-          }
-          await resource.refresh();
-          const data = resource.getData();
-          ctx.model.setDataSource(data);
-          if (data.length < paginationState.pageSize) {
-            paginationState.hasMore = false;
-          } else {
-            paginationState.hasMore = true;
-            paginationState.page++;
-          }
-        } catch (error) {
-          console.error('AssociationSelectField search flow error:', error);
-          // 出错时也可以选择清空数据源或者显示错误提示
-          ctx.model.setDataSource([]);
-        }
-      },
+      handler: debouncedHandler,
     },
   },
 });

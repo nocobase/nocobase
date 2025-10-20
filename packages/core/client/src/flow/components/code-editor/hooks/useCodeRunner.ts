@@ -9,7 +9,7 @@
 
 import { useCallback, useState } from 'react';
 import { parseErrorLineColumn } from '../errorHelpers';
-import { FlowModelContext, JSRunner } from '@nocobase/flow-engine';
+import { FlowModelContext, JSRunner, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
 
 export type RunLog = { level: 'log' | 'info' | 'warn' | 'error'; msg: string; line?: number; column?: number };
 
@@ -62,7 +62,13 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         };
         const captureConsole = createConsoleCapture(push);
 
-        runtimeModel.setStepParams?.('jsSettings', 'runJs', { code, version });
+        // 选择一个可用的设置流：优先 jsSettings，不存在则尝试 clickSettings
+        const preferFlowKeys = ['jsSettings', 'clickSettings'] as const;
+        const availableKey = preferFlowKeys.find((k) => (runtimeModel as any)?.getFlow?.(k));
+        const flowKey = availableKey || 'jsSettings';
+
+        // 将预览中的代码写入对应 flow 的 stepParams，确保 handler 能拿到最新代码
+        runtimeModel.setStepParams?.(flowKey, 'runJs', { code, version });
 
         // Monkey-patch JSRunner.run to inject captureConsole into globals for all runjs calls during preview
         type JSRunnerPrototype = { run: JSRunner['run'] };
@@ -101,12 +107,25 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         } as JSRunner['run'];
 
         const runOnModel = async (m) => {
-          const flow = m?.getFlow?.('jsSettings');
+          const flow = m?.getFlow?.(flowKey);
           const isManual = flow?.manual === true;
-          if (isManual) {
-            await m.applyFlow('jsSettings', { preview: { code, version } });
+          // 如果 flow 显式绑定了某个事件（如 on: 'click'），则按事件名分发；
+          // 否则：manual=true 走 applyFlow；没有 on 且非 manual 走 beforeRender。
+          const onDef = flow?.on;
+          const eventName = typeof onDef === 'string' ? onDef : onDef?.eventName;
+          if (!flow) {
+            // 无可用流程（典型场景：联动规则里的 RunJS 预览），直接在当前上下文执行代码
+            await hostCtx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
+          } else if (typeof eventName === 'string') {
+            await m.dispatchEvent(eventName, { preview: { code, version } }, { sequential: true, useCache: false });
+          } else if (isManual) {
+            await m.applyFlow(flowKey, { preview: { code, version } });
           } else {
-            await m.applyAutoFlows({ preview: { code, version } }, false);
+            await m.dispatchEvent(
+              'beforeRender',
+              { preview: { code, version } },
+              { sequential: true, useCache: false },
+            );
           }
         };
 

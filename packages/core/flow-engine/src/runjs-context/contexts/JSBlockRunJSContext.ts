@@ -7,46 +7,58 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowRunJSContext } from './FlowRunJSContext';
-import { createSafeDocument, createSafeWindow } from '../../utils';
+import { FlowRunJSContext } from '../../flowContext';
 
-export class JSBlockRunJSContext extends FlowRunJSContext {
-  static injectDefaultGlobals() {
-    return { window: createSafeWindow(), document: createSafeDocument() };
-  }
-  constructor(delegate: any) {
-    super(delegate);
-    // 显式暴露本场景所需属性
-    this.defineProperty('element', { get: () => (this as any)._delegate['element'] });
-    this.defineProperty('record', { get: () => (this as any)._delegate['record'] });
-    this.defineProperty('value', { get: () => (this as any)._delegate['value'] });
-  }
-}
+export class JSBlockRunJSContext extends FlowRunJSContext {}
 
 JSBlockRunJSContext.define({
-  label: 'JSBlock RunJS context',
+  label: 'RunJS context',
   properties: {
-    element: 'ElementProxy，安全 DOM 容器。支持 innerHTML/append 等',
-    record: '当前记录（只读，存在于数据块/详情等场景）',
-    value: '当前值（若存在）',
-    React: 'React（已注入）',
-    antd: 'AntD（已注入）',
+    element: {
+      description: `ElementProxy instance providing a safe DOM container.
+      Supports innerHTML, append, and other DOM manipulation methods.
+      Use this to render content in the JS block.`,
+      detail: 'ElementProxy',
+      properties: {
+        innerHTML: 'Set or read the HTML content of the container element.',
+      },
+    },
+    record: `Current record data object (read-only).
+      Available when the JS block is within a data block or detail view context.`,
+    value: 'Current value of the field or component, if available in the current context.',
+    React: 'React library',
+    antd: 'Ant Design library',
   },
   methods: {
-    onRefReady: 'Container ref ready callback:\n```js\nctx.onRefReady(ctx.ref, el => { /* ... */ })\n```',
+    onRefReady: `Wait for container DOM element to be ready before executing callback.
+      Parameters: (ref: React.RefObject, callback: (element: HTMLElement) => void, timeout?: number) => void
+      Example: ctx.onRefReady(ctx.ref, (el) => { el.innerHTML = "Ready!" })`,
     requireAsync: 'Load external library: `const lib = await ctx.requireAsync(url)`',
-  },
-  snipastes: {
-    'Render HTML': { $ref: 'scene/jsblock/render-basic', prefix: 'sn-jsb-html' },
-    'Render React': { $ref: 'scene/jsblock/render-react', prefix: 'sn-jsb-react' },
-    'Init ECharts': { $ref: 'libs/echarts-init', prefix: 'sn-echarts' },
-    'Render card': { $ref: 'scene/jsblock/render-card', prefix: 'sn-jsb-card' },
-    'Button handler': { $ref: 'scene/jsblock/render-button-handler', prefix: 'sn-jsb-button' },
-    'JSX mount': { $ref: 'scene/jsblock/jsx-mount', prefix: 'sn-jsx-mount' },
-    'JSX unmount': { $ref: 'scene/jsblock/jsx-unmount', prefix: 'sn-jsx-unmount' },
-    Notification: { $ref: 'global/notification-open', prefix: 'sn-notify' },
-    'Window open': { $ref: 'global/window-open', prefix: 'sn-window-open' },
-    'Add click listener': { $ref: 'scene/jsblock/add-event-listener', prefix: 'sn-jsb-click' },
-    'Append style': { $ref: 'scene/jsblock/append-style', prefix: 'sn-jsb-style' },
+    importAsync: 'Dynamically import ESM module: `const mod = await ctx.importAsync(url)`',
   },
 });
+
+JSBlockRunJSContext.define(
+  {
+    label: 'RunJS 上下文',
+    properties: {
+      element: {
+        description: 'ElementProxy，安全的 DOM 容器，支持 innerHTML/append 等',
+        detail: 'ElementProxy',
+        properties: {
+          innerHTML: '读取或设置容器的 HTML 内容',
+        },
+      },
+      record: '当前记录（只读，用于数据区块/详情等场景）',
+      value: '当前值（若存在）',
+      React: 'React 库',
+      antd: 'Ant Design 库',
+    },
+    methods: {
+      onRefReady: '容器 ref 就绪回调：\n```js\nctx.onRefReady(ctx.ref, el => { /* ... */ })\n```',
+      requireAsync: '加载外部库：`const lib = await ctx.requireAsync(url)`',
+      importAsync: '按 URL 动态导入 ESM 模块：`const mod = await ctx.importAsync(url)`',
+    },
+  },
+  { locale: 'zh-CN' },
+);

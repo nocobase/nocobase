@@ -7,26 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowRunJSContext } from './FlowRunJSContext';
+import { FlowRunJSContext } from '../../flowContext';
 
-export class JSCollectionActionRunJSContext extends FlowRunJSContext {
-  constructor(delegate: any) {
-    super(delegate);
-    this.defineProperty('resource', { get: () => (this as any)._delegate['resource'] });
-  }
-}
+export class JSCollectionActionRunJSContext extends FlowRunJSContext {}
 
 JSCollectionActionRunJSContext.define({
   label: 'JSCollectionAction RunJS context',
   properties: {
-    resource: '列表资源（选中行/分页等）',
-  },
-  methods: {
-    runAction: 'Run action',
-    message: 'Message API',
-  },
-  snipastes: {
-    'Selected count': { $ref: 'scene/actions/collection-selected-count', prefix: 'sn-act-selected-count' },
-    'Iterate selected rows': { $ref: 'scene/actions/iterate-selected-rows', prefix: 'sn-act-iterate' },
+    resource: `Collection resource instance providing access to selected rows, pagination, and data operations.
+      Use ctx.resource.selectedRows to get selected records.
+      Use ctx.resource.pagination for page info.`,
   },
 });
+
+JSCollectionActionRunJSContext.define(
+  {
+    label: 'JS 集合动作 RunJS 上下文',
+    properties: {
+      resource: '列表资源（包含选中行/分页信息等）',
+    },
+  },
+  { locale: 'zh-CN' },
+);

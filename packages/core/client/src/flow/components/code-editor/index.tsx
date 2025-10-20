@@ -11,8 +11,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 
 import type { Completion } from '@codemirror/autocomplete';
 import { EditorView } from '@codemirror/view';
-import { InjectableRendingEventTrigger, InjectableRendingEventTriggerProps } from '../decorator';
-import { useFlowContext } from '@nocobase/flow-engine';
+import { useFlowContext, getRunJSScenesForContext } from '@nocobase/flow-engine';
 import { useRunJSDocCompletions } from './hooks/useRunJSDocCompletions';
 import { clearDiagnostics, parseErrorLineColumn, markErrorAt, jumpTo } from './errorHelpers';
 import { Button } from 'antd';
@@ -31,25 +30,18 @@ interface CodeEditorProps {
   theme?: 'light' | 'dark';
   readonly?: boolean;
   enableLinter?: boolean;
-  rightExtra?: ((editorRef: EditorRef, setActive: (key: string, active: boolean) => void) => React.ReactNode)[];
   wrapperStyle?: React.CSSProperties;
   extraCompletions?: Completion[]; // 供外部注入的静态补全
   version?: string; // runjs 版本（默认 v1）
+  name?: string;
+  language?: string;
+  scene?: string | string[];
 }
 
 export * from './types';
+export * from './extension';
 
-export const CodeEditor: React.FC<CodeEditorProps & InjectableRendingEventTriggerProps> = (props) => {
-  const { mode, name, language, scene, ...rest } = props;
-  const triggerProps = { mode, name, language, scene };
-  return (
-    <InjectableRendingEventTrigger {...triggerProps}>
-      <InnerCodeEditor {...rest} />
-    </InjectableRendingEventTrigger>
-  );
-};
-
-const InnerCodeEditor: React.FC<CodeEditorProps> = ({
+export const CodeEditor: React.FC<CodeEditorProps> = ({
   value = '',
   onChange,
   placeholder = '',
@@ -58,17 +50,33 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
   theme = 'light',
   readonly = false,
   enableLinter = false,
-  rightExtra,
   wrapperStyle,
   extraCompletions,
   version = 'v1',
+  name,
+  language,
+  scene,
 }) => {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const runtimeCtx = useFlowContext<any>();
   // const settingsCtx = useFlowSettingsContext?.() as any;
   const hostCtx = runtimeCtx; // || settingsCtx;
-  const { completions: dynamicCompletions, entries: snippetEntries } = useRunJSDocCompletions(hostCtx, version);
+  const resolvedScene = useMemo(() => {
+    if (scene && (Array.isArray(scene) ? scene.length : true)) return scene;
+    if (!hostCtx) return undefined;
+    try {
+      const autoScenes = getRunJSScenesForContext(hostCtx, { version: version as any });
+      return autoScenes.length ? autoScenes : undefined;
+    } catch (_) {
+      return undefined;
+    }
+  }, [scene, hostCtx, version]);
+  const { completions: dynamicCompletions, entries: snippetEntries } = useRunJSDocCompletions(
+    hostCtx,
+    version,
+    resolvedScene,
+  );
   const { run, logs, running } = useCodeRunner(hostCtx, version);
   const [snippetOpen, setSnippetOpen] = useState(false);
   const getSnippetsContainer = useCallback(() => {
@@ -100,8 +108,8 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
   // 合并外部注入与动态构建的 completions
   const finalExtra = useMemo(() => {
     const arr: Completion[] = [];
-    if (Array.isArray(extraCompletions)) arr.push(...extraCompletions);
     if (Array.isArray(dynamicCompletions)) arr.push(...dynamicCompletions);
+    if (Array.isArray(extraCompletions)) arr.push(...extraCompletions);
     return arr;
   }, [extraCompletions, dynamicCompletions]);
 
@@ -125,8 +133,11 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
       const v = viewRef.current;
       return v ? v.state.doc.toString() : '';
     },
+
     buttonGroupHeight: 0,
+    snippetEntries: [],
   });
+  extraEditorRef.current.snippetEntries = snippetEntries;
 
   // snippet group display handled in SnippetsDrawer
 
@@ -144,7 +155,9 @@ const InnerCodeEditor: React.FC<CodeEditorProps> = ({
       ref={wrapperRef}
     >
       <RightExtraPanel
-        rightExtra={rightExtra}
+        name={name}
+        language={language}
+        scene={resolvedScene}
         extraEditorRef={extraEditorRef.current}
         extraContent={
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>

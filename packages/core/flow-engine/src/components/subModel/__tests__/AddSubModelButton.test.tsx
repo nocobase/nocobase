@@ -847,6 +847,7 @@ describe('AddSubModelButton toggleable behavior', () => {
     save = vi.fn().mockResolvedValue({});
     destroy = vi.fn().mockResolvedValue(true);
     move = vi.fn().mockResolvedValue(undefined);
+    duplicate = vi.fn().mockResolvedValue(null);
   }
 
   function setup() {

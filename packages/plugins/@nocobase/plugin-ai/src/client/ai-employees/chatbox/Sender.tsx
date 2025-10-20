@@ -26,6 +26,7 @@ const useSendMessage = () => {
   const editingMessageId = useChatBoxStore.use.editingMessageId();
 
   const currentConversation = useChatConversationsStore.use.currentConversation();
+  const webSearch = useChatConversationsStore.use.webSearch();
 
   const attachments = useChatMessagesStore.use.attachments();
   const contextItems = useChatMessagesStore.use.contextItems();
@@ -50,6 +51,7 @@ const useSendMessage = () => {
       workContext: contextItems,
       editingMessageId: isEditingMessage ? editingMessageId : undefined,
       skillSettings,
+      webSearch,
     });
 
     if (isEditingMessage) {

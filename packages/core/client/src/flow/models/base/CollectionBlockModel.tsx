@@ -35,6 +35,10 @@ export interface ResourceSettingsInitParams {
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   isManualRefresh = false;
 
+  onActive() {
+    this.resource?.refresh();
+  }
+
   /**
    * 子菜单过滤函数
    */
@@ -297,7 +301,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.associationName || params.collectionName);
         resource.on('refresh', () => {
-          this.invalidateAutoFlowCache();
+          this.invalidateFlowCache('beforeRender');
         });
         return resource;
       },

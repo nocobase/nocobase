@@ -7,6 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ComponentType } from 'react';
+import { SnippetEntry } from './runjsCompletions';
+
 /**
  * Shared types for CodeEditor components
  */
@@ -14,4 +17,18 @@ export interface EditorRef {
   write(document: string): void;
   read(): string;
   buttonGroupHeight?: number;
+  snippetEntries: SnippetEntry[];
 }
+
+export type CodeEditorExtra = ComponentType<{
+  name?: string;
+  language?: string;
+  scene?: string | string[];
+  editorRef: EditorRef;
+  setActive: (key: string, active: boolean) => void;
+}>;
+
+export type CodeEditorExtraRegistry = {
+  name: string;
+  extra: CodeEditorExtra;
+};

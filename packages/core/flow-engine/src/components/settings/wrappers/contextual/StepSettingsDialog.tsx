@@ -135,6 +135,12 @@ const openStepSettingsDialog = async ({
     width: dialogWidth,
     destroyOnClose: true,
     ...toJS(uiModeProps),
+    // 透传 navigation，便于变量元信息根据真实视图栈推断父级弹窗
+    inputArgs: {
+      ...(toJS(uiModeProps)?.inputArgs || {}),
+      navigation: ctx?.view?.navigation ?? toJS(uiModeProps)?.inputArgs?.navigation,
+      __isSettingsPopup: true,
+    },
     onClose: () => {
       if (cleanup) {
         cleanup();

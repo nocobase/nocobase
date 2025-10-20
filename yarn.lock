@@ -3262,7 +3262,7 @@
   resolved "https://registry.npmmirror.com/@cfworker/json-schema/-/json-schema-4.1.1.tgz#4a2a3947ee9fa7b7c24be981422831b8674c3be6"
   integrity sha512-gAmrUZSGtKc3AiBL71iNWxDsyUC5uMaKKGdvzYsBoTW/xi42JQHl7eKV2OYzCUqvc+D2RCcf7EXY2iCyFIk6og==
 
-"@codemirror/autocomplete@^6.0.0", "@codemirror/autocomplete@^6.18.6", "@codemirror/autocomplete@^6.3.2":
+"@codemirror/autocomplete@^6.0.0", "@codemirror/autocomplete@^6.3.2":
   version "6.18.6"
   resolved "https://registry.npmjs.org/@codemirror/autocomplete/-/autocomplete-6.18.6.tgz#de26e864a1ec8192a1b241eb86addbb612964ddb"
   integrity sha512-PHHBXFomUs5DF+9tCOM/UoW6XQ4R44lLNNhRaW9PKPTU0D7lIjRg3ElxaJnTwsl/oHiR93WSXDBrekhoUGCPtg==
@@ -3352,7 +3352,7 @@
     "@lezer/highlight" "^1.0.0"
     "@lezer/lr" "^1.0.0"
 
-"@codemirror/language@^6.0.0", "@codemirror/language@^6.11.0", "@codemirror/language@^6.11.1", "@codemirror/language@^6.6.0", "@codemirror/language@^6.8.0":
+"@codemirror/language@^6.0.0", "@codemirror/language@^6.11.0", "@codemirror/language@^6.6.0", "@codemirror/language@^6.8.0":
   version "6.11.2"
   resolved "https://registry.npmjs.org/@codemirror/language/-/language-6.11.2.tgz#90d2d094cfbd14263bc5354ebd2445ee4e81bdc3"
   integrity sha512-p44TsNArL4IVXDTbapUmEkAlvWs2CFQbcfc0ymDsis1kH2wh0gcY96AS29c/vp2d0y2Tquk1EDSaawpzilUiAw==
@@ -5505,6 +5505,16 @@
   dependencies:
     "@google/generative-ai" "^0.24.0"
     uuid "^11.1.0"
+
+"@langchain/ollama@^0.1.1":
+  version "0.1.6"
+  resolved "https://registry.npmmirror.com/@langchain/ollama/-/ollama-0.1.6.tgz#54efddc514ef0e88ea138a61a085d7b7e8c1681b"
+  integrity sha512-hS+xHiRqKpq37eGyZQ0JoTghfNA7hWXK54XbILQ0KVm3v2MMWLKqBAep4LwMLrAr4NE7SIp+SJnQRdsjabR0jw==
+  dependencies:
+    ollama "^0.5.12"
+    uuid "^10.0.0"
+    zod "^3.24.1"
+    zod-to-json-schema "^3.24.1"
 
 "@langchain/ollama@^0.2.0":
   version "0.2.3"
@@ -8851,13 +8861,6 @@
   dependencies:
     "@types/node" "*"
 
-"@types/acorn@^4.0.6":
-  version "4.0.6"
-  resolved "https://registry.npmjs.org/@types/acorn/-/acorn-4.0.6.tgz#d61ca5480300ac41a7d973dd5b84d0a591154a22"
-  integrity sha512-veQTnWP+1D/xbxVrPC3zHnCZRjSrKfhbMUlEA43iMZLu7EsnTtkJklIuwrCPbOi8YkvDQAiW05VQQFvvz9oieQ==
-  dependencies:
-    "@types/estree" "*"
-
 "@types/ali-oss@^6.16.11":
   version "6.16.11"
   resolved "https://registry.npmmirror.com/@types/ali-oss/-/ali-oss-6.16.11.tgz#a70fc1ef54abb54809405c8b5d77dac06011557c"
@@ -10906,11 +10909,6 @@ acorn@^8.10.0, acorn@^8.4.1, acorn@^8.8.2, acorn@^8.9.0:
   version "8.11.2"
   resolved "https://registry.npmmirror.com/acorn/-/acorn-8.11.2.tgz#ca0d78b51895be5390a5903c5b3bdcdaf78ae40b"
   integrity sha512-nc0Axzp/0FILLEVsm4fNwLCwMttvhEI263QtVPQcbpfZZ3ts0hLsZGOpE6czNlid7CJ9MlyH8reXkpsf3YUY4w==
-
-acorn@^8.15.0:
-  version "8.15.0"
-  resolved "https://registry.npmjs.org/acorn/-/acorn-8.15.0.tgz#a360898bc415edaac46c8241f6383975b930b816"
-  integrity sha512-NZyJarBfL7nWwIq+FDL6Zp/yHEhePMNnnJ0y3qfieCrmNvYct8uvtiV41UvlSe6apAfk0fY1FbWx+NwfmpvtTg==
 
 add-stream@^1.0.0:
   version "1.0.0"
@@ -35741,12 +35739,12 @@ zod-to-json-schema@^3.22.3:
   resolved "https://registry.npmmirror.com/zod-to-json-schema/-/zod-to-json-schema-3.24.3.tgz#5958ba111d681f8d01c5b6b647425c9b8a6059e7"
   integrity sha512-HIAfWdYIt1sssHfYZFCXp4rU1w2r8hVVXYIlmoa0r0gABLs5di3RCqPU5DDROogVz1pAdYBaz7HK5n9pSUNs3A==
 
-zod-to-json-schema@^3.23.5:
+zod-to-json-schema@^3.23.5, zod-to-json-schema@^3.24.1:
   version "3.24.6"
   resolved "https://registry.npmmirror.com/zod-to-json-schema/-/zod-to-json-schema-3.24.6.tgz#5920f020c4d2647edfbb954fa036082b92c9e12d"
   integrity sha512-h/z3PKvcTcTetyjl1fkj79MHNEjm+HpD6NXheWjzOekY7kV+lwDYnHw+ivHkijnCSMz1yJaWBD9vu/Fcmk+vEg==
 
-zod@^3.23.8:
+zod@^3.23.8, zod@^3.24.1:
   version "3.25.76"
   resolved "https://registry.npmmirror.com/zod/-/zod-3.25.76.tgz#26841c3f6fd22a6a2760e7ccb719179768471e34"
   integrity sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==
