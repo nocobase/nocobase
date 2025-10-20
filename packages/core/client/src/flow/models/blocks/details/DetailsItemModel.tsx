@@ -15,7 +15,7 @@ import {
   FlowModelContext,
   FormItem,
 } from '@nocobase/flow-engine';
-import { get } from 'lodash';
+import { get, castArray } from 'lodash';
 import React from 'react';
 import { FieldModel } from '../../base';
 import { DetailsGridModel } from './DetailsGridModel';
@@ -26,7 +26,8 @@ import { DetailsGridModel } from './DetailsGridModel';
  * @param fieldPath 字段路径 (如 "o2m_aa.oho_bb.name")
  * @param idx Form.List 的索引
  */
-export function getValueWithIndex(record: any, fieldPath: string, fieldIndex?: string[]) {
+export function getValueWithIndex(record: any, fieldPath: string, idx?: string[]) {
+  const fieldIndex = castArray(idx).filter((v) => typeof v === 'string');
   const path = fieldPath.split('.');
 
   if (fieldIndex?.length) {
@@ -110,6 +111,7 @@ export class DetailsItemModel extends DisplayItemModel<{
   render() {
     const fieldModel = this.subModels.field as FieldModel;
     const idx = this.context.fieldIndex;
+    const record = this.context.record;
     // 嵌套场景下继续传透，为字段子模型创建 fork
     const modelForRender =
       idx != null
@@ -119,13 +121,13 @@ export class DetailsItemModel extends DisplayItemModel<{
               get: () => idx,
             });
             fork.context.defineProperty('record', {
-              get: () => this.context.record,
+              get: () => record,
+              cache: false,
             });
             return fork;
           })()
         : fieldModel;
-    const value = getValueWithIndex(this.context.record, this.fieldPath, idx);
-
+    const value = getValueWithIndex(record, this.fieldPath, idx);
     return (
       <FormItem {...this.props} value={value}>
         <FieldModelRenderer model={modelForRender} />

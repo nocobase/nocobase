@@ -180,12 +180,10 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
             model.context.defineProperty('record', {
               get: () => item,
               cache: false,
-              resolveOnServer: true,
             });
             model.context.defineProperty('index', {
               get: () => index,
               cache: false,
-              resolveOnServer: true,
             });
             return (
               <List.Item
