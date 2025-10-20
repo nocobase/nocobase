@@ -324,6 +324,7 @@ export class Application {
       observable: true,
     });
     this.use(FlowEngineProvider, { engine: this.flowEngine });
+    this.use(FlowEngineGlobalsContextProvider);
   }
 
   private addReactRouterComponents() {
