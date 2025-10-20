@@ -465,12 +465,14 @@ export class FlowSettings {
     flowEngine,
     form,
     onFormValuesChange,
+    key,
   }: {
     uiSchema: any;
     initialValues: any;
     flowEngine: any;
     form?: any;
     onFormValuesChange?: (form: any) => void;
+    key?: string;
   }): React.ReactElement {
     // 获取 scopes 和 components
     const scopes = {
@@ -497,7 +499,7 @@ export class FlowSettings {
 
     return React.createElement(
       FormProviderWithForm,
-      { form, initialValues, onFormValuesChange },
+      { form, initialValues, onFormValuesChange, key },
       React.createElement(SchemaField as any, {
         schema: compiledSchema,
         components: flowEngine?.flowSettings?.components || {},
