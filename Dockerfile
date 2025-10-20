@@ -20,7 +20,8 @@ EOD
 
 WORKDIR /tmp
 COPY . /tmp
-RUN  yarn install && yarn build --no-dts
+RUN yarn install && yarn build --no-dts
+RUN yarn cross-env DOCS_BASE=/docs/ rspress build --config packages/core/docs/rspress.config.ts
 
 SHELL ["/bin/bash", "-c"]
 
@@ -45,6 +46,8 @@ RUN cd /app \
   && cd /app/my-nocobase-app \
   && yarn install --production \
   && yarn add newrelic --production -W
+
+RUN cp -r /tmp/packages/core/docs/dist /app/my-nocobase-app/docs
 
 WORKDIR /app/my-nocobase-app
 RUN $BEFORE_PACK_NOCOBASE

@@ -5,8 +5,12 @@ import { pluginPreview } from '@rspress/plugin-preview';
 import { pluginSitemap } from '@rspress/plugin-sitemap';
 import * as path from 'node:path';
 
+const base = process.env.DOCS_BASE || '/';
+
 export default defineConfig({
   root: path.join(__dirname, 'docs'),
+  outDir: path.join(__dirname, 'dist'),
+  base,
   // title: 'NocoBase Documentation',
   icon: 'https://www.nocobase.com/images/favicon/apple-touch-icon.png',
   logo: {
