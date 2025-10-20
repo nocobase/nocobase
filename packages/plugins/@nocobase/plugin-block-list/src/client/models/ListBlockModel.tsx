@@ -77,9 +77,10 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
           return this.translate('Total {{count}} items', { count: total });
         },
         showSizeChanger: true,
-        onChange: (page) => {
+        onChange: (page, pageSize) => {
           this.resource.loading = true;
           this.resource.setPage(page);
+          this.resource.setPageSize(pageSize);
           this.resource.refresh();
         },
       };
