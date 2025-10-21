@@ -9,6 +9,7 @@
 
 import { ActionPanelBlockModel } from './ActionPanelBlockModel';
 import * as actions from './actions';
+
 export default {
   ActionPanelBlockModel,
   ...actions,

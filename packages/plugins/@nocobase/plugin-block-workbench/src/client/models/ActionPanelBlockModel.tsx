@@ -16,11 +16,12 @@ import {
   FlowModelRenderer,
   DndProvider,
 } from '@nocobase/flow-engine';
+import { LockOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { Card, Space } from 'antd';
+import { Space, Avatar, Button, Tooltip, ConfigProvider } from 'antd';
 import { Grid, List } from 'antd-mobile';
 import React from 'react';
-import { BlockModel, useOpenModeContext } from '@nocobase/client';
+import { BlockModel, useOpenModeContext, Icon, ActionModel } from '@nocobase/client';
 import { SettingOutlined } from '@ant-design/icons';
 
 function isMobile() {
@@ -68,42 +69,73 @@ export class ActionPanelBlockModel extends BlockModel {
   renderComponent() {
     const { layout } = this.props;
     const token = this.context.themeToken;
+
     return (
       <div id={`model-${this.uid}`} className="action-panel-block">
-        <DndProvider>
-          <div className="nb-action-panel-warp">
-            {layout === WorkbenchLayout.Grid ? (
-              <ResponsiveSpace>
-                {this.mapSubModels('actions', (action) => {
-                  return (
-                    <Droppable model={action} key={action.uid}>
-                      <FlowModelRenderer
-                        model={action}
-                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                        extraToolbarItems={[
-                          {
-                            key: 'drag-handler',
-                            component: DragHandler,
-                            sort: 1,
-                          },
-                        ]}
-                      />
-                    </Droppable>
-                  );
-                })}
-              </ResponsiveSpace>
-            ) : (
-              <Space
-                className={css`
-                  width: 100%;
-                  .ant-space-item {
-                    width: 100%;
-                  }
-                  .nb-toolbar-container > .nb-toolbar-container-icons {
-                    top: 20px !important;
-                  }
-                `}
-              >
+        <ConfigProvider wave={{ disabled: true }}>
+          <DndProvider>
+            <div className="nb-action-panel-warp">
+              {layout === WorkbenchLayout.Grid ? (
+                <ResponsiveSpace>
+                  {this.mapSubModels('actions', (action: ActionModel) => {
+                    const { icon, color = '#1677FF', title } = action.props;
+                    action.enableEditDanger = false;
+                    action.enableEditType = false;
+                    action.renderHiddenInConfig = () => {
+                      return (
+                        <Tooltip
+                          title={this.context.t(
+                            'The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).',
+                          )}
+                        >
+                          <Button disabled style={{ display: 'block' }}>
+                            <Avatar
+                              style={{ backgroundColor: 'rgba(0,0,0,0.04)', color: 'rgba(0,0,0,0.25)' }}
+                              size={48}
+                              icon={<LockOutlined />}
+                            />
+                          </Button>
+                        </Tooltip>
+                      );
+                    };
+                    action.props.children = (
+                      <div>
+                        <Avatar style={{ backgroundColor: color }} size={48} icon={<Icon type={icon as any} />} />
+                        <div>{title}</div>
+                      </div>
+                    );
+
+                    return (
+                      <Droppable model={action} key={action.uid}>
+                        <div
+                          className={css`
+                            padding: 10px 0px;
+                            .ant-btn {
+                              background: none;
+                              border: none !important;
+                              .ant-btn-icon {
+                                display: ${action.hidden ? 'block' : ' none'};
+                              }
+                            }
+                          `}
+                        >
+                          <FlowModelRenderer
+                            model={action}
+                            showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                            extraToolbarItems={[
+                              {
+                                key: 'drag-handler',
+                                component: DragHandler,
+                                sort: 1,
+                              },
+                            ]}
+                          />
+                        </div>
+                      </Droppable>
+                    );
+                  })}
+                </ResponsiveSpace>
+              ) : (
                 <List
                   style={
                     {
@@ -115,28 +147,79 @@ export class ActionPanelBlockModel extends BlockModel {
                     } as any
                   }
                 >
-                  {this.mapSubModels('actions', (action) => {
+                  {this.mapSubModels('actions', (action: ActionModel) => {
+                    const { icon, color = '#1677FF', title } = action.props;
+                    action.enableEditDanger = false;
+                    action.enableEditType = false;
+                    action.renderHiddenInConfig = () => {
+                      return (
+                        <Button disabled>
+                          <List.Item
+                            disabled
+                            prefix={
+                              (
+                                <Avatar
+                                  style={{ backgroundColor: 'rgba(0,0,0,0.04)', color: 'rgba(0,0,0,0.25)' }}
+                                  icon={<LockOutlined />}
+                                />
+                              ) as any
+                            }
+                          >
+                            <div style={{ fontSize: '14px' }}>
+                              {this.context.t(
+                                'The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).',
+                              )}
+                            </div>
+                          </List.Item>
+                        </Button>
+                      );
+                    };
+                    action.props.children = (
+                      <List.Item
+                        prefix={
+                          (<Avatar style={{ backgroundColor: color }} icon={<Icon type={icon as any} />} />) as any
+                        }
+                      >
+                        <div>{title}</div>
+                      </List.Item>
+                    );
                     return (
                       <Droppable model={action} key={action.uid}>
-                        <FlowModelRenderer
-                          model={action}
-                          showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                          extraToolbarItems={[
-                            {
-                              key: 'drag-handler',
-                              component: DragHandler,
-                              sort: 1,
-                            },
-                          ]}
-                        />
+                        <div
+                          className={css`
+                            .ant-btn {
+                              border: none;
+                              background: none;
+                              display: block;
+                              width: 100%;
+                              text-align: justify;
+                              height: 100%;
+                              .ant-btn-icon {
+                                display: ${action.hidden ? 'block' : ' none'};
+                              }
+                            }
+                          `}
+                        >
+                          <FlowModelRenderer
+                            model={action}
+                            showFlowSettings={{ showBackground: false, showBorder: false }}
+                            extraToolbarItems={[
+                              {
+                                key: 'drag-handler',
+                                component: DragHandler,
+                                sort: 1,
+                              },
+                            ]}
+                          />
+                        </div>
                       </Droppable>
                     );
                   })}
                 </List>
-              </Space>
-            )}
-          </div>
-        </DndProvider>
+              )}
+            </div>
+          </DndProvider>
+        </ConfigProvider>
         <div style={{ marginTop: '10px' }}>{this.renderConfiguireActions()}</div>
       </div>
     );
@@ -160,7 +243,7 @@ ActionPanelBlockModel.registerFlow({
         const t = ctx.t;
         return {
           layout: {
-            'x-component': 'Select',
+            'x-component': 'Radio.Group',
             'x-decorator': 'FormItem',
             enum: [
               { label: t('Grid', { ns: 'block-workbench' }), value: WorkbenchLayout.Grid },

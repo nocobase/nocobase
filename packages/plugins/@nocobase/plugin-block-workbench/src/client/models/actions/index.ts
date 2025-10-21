@@ -8,7 +8,4 @@
  */
 
 export * from './ActionPanelGroupAction';
-export * from './ActionPanelPopupActionModel';
-export * from './ActionPanelActionModel';
-export * from './ActionPanelLinkActionModel';
 export * from './ActionPanelScanActionModel';

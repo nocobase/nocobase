@@ -12,7 +12,8 @@ import React, { useState } from 'react';
 import ReactDOM from 'react-dom/client';
 import { LeftOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import { ActionPanelActionModel } from './ActionPanelActionModel';
+import type { ButtonProps } from 'antd/es/button';
+import { ActionModel } from '@nocobase/client';
 import { QRCodeScannerInner } from './components/qrcode-scanner';
 
 export const QRCodeScanner = (props) => {
@@ -61,13 +62,18 @@ export const QRCodeScanner = (props) => {
   ) : null;
 };
 
-export class ActionPanelScanActionModel extends ActionPanelActionModel {
+export class ActionPanelScanActionModel extends ActionModel {
   onClick(event) {
     this.dispatchEvent('click', {
       event,
       ...this.getInputArgs(),
     });
   }
+
+  defaultProps: ButtonProps = {
+    title: escapeT('Scan QR code', { ns: 'block-workbench' }),
+    icon: 'ScanOutlined',
+  };
 }
 
 ActionPanelScanActionModel.registerFlow({

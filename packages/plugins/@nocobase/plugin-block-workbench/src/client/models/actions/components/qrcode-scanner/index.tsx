@@ -15,7 +15,7 @@ import { ScanBox } from './ScanBox';
 import { useScanner } from './useScanner';
 
 const qrcodeEleId = 'qrcode';
-export const QRCodeScannerInner = ({ setVisible, app, navigate }) => {
+export const QRCodeScannerInner = ({ setVisible, app, navigate, onClose }) => {
   const containerRef = useRef<HTMLDivElement>();
   const imgUploaderRef = useRef<HTMLInputElement>();
   const { t } = useTranslation('block-workbench');

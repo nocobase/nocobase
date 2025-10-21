@@ -29,7 +29,6 @@ import {
 } from './WorkbenchCustomRequestActionSchemaInitializerItem';
 import { lazy } from '@nocobase/client';
 import models from './models';
-import { addAction } from './models/actions/addAction';
 export class PluginBlockWorkbenchClient extends Plugin {
   async load() {
     const { QRCodeScanner } = lazy(() => import('./components/qrcode-scanner'), 'QRCodeScanner');
@@ -87,7 +86,6 @@ export class PluginBlockWorkbenchClient extends Plugin {
     });
 
     this.flowEngine.registerModels(models);
-    this.flowEngine.registerActions({ addAction });
   }
 }
 

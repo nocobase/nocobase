@@ -8,10 +8,11 @@
  */
 
 import { escapeT } from '@nocobase/flow-engine';
-import { TextAreaWithContextSelector } from '@nocobase/client';
 import { isURL } from '@nocobase/utils/client';
 import { css } from '@emotion/css';
-import { ActionPanelActionModel } from './ActionPanelActionModel';
+import type { ButtonProps } from 'antd/es/button';
+import { TextAreaWithContextSelector } from '../../components/TextAreaWithContextSelector';
+import { ActionModel, ActionSceneEnum } from '../base';
 
 // 补全 URL
 function completeURL(url: string, origin = window.location.origin) {
@@ -61,26 +62,25 @@ function joinUrlSearch(url: string, params: { name: string; value: any }[] = [])
   }
 }
 
-export class ActionPanelLinkActionModel extends ActionPanelActionModel {
-  onClick(event) {
-    this.dispatchEvent('click', {
-      event,
-      ...this.getInputArgs(),
-    });
-  }
+export class LinkActionModel extends ActionModel {
+  static scene = ActionSceneEnum.record;
+
+  defaultProps: ButtonProps = {
+    title: escapeT('Link'),
+    icon: 'LinkOutlined',
+  };
 }
 
-ActionPanelLinkActionModel.define({
+LinkActionModel.define({
   label: escapeT('Link'),
 });
 
-ActionPanelLinkActionModel.registerFlow({
+LinkActionModel.registerFlow({
   key: 'actionPanelLinkSettings',
   on: 'click',
   steps: {
     click: {
       async handler(ctx, params) {
-        console.log(ctx.router);
         const { url, searchParams, openInNewWindow } = ctx.model.props as any;
         const t = ctx.t;
         if (!url) {
@@ -107,9 +107,9 @@ ActionPanelLinkActionModel.registerFlow({
   },
 });
 
-ActionPanelLinkActionModel.registerFlow({
+LinkActionModel.registerFlow({
   key: 'linkButtonSettings',
-  title: escapeT('Link action settings', { ns: 'block-workbench' }),
+  title: escapeT('Link action settings'),
   steps: {
     editLink: {
       title: escapeT('Edit link'),
