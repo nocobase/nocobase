@@ -48,9 +48,8 @@ interface LinkageRule {
 // 获取表单中所有字段的 model 实例的通用函数
 const getFormFields = (ctx: any) => {
   try {
-    const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-    const fields = gridModels;
-    return fields.map((model: any) => ({
+    const fieldModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+    return fieldModels.map((model: any) => ({
       label: model.props.label || model.props.name,
       value: model.uid,
       model,
@@ -142,6 +141,132 @@ export const linkageSetFieldProps = defineAction({
   name: 'linkageSetFieldProps',
   title: escapeT('Set field state'),
   scene: ActionScene.FIELD_LINKAGE_RULES,
+  sort: 100,
+  uiSchema: {
+    value: {
+      type: 'object',
+      'x-component': (props) => {
+        const { value = { fields: [] }, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
+
+        const fieldOptions = getFormFields(ctx);
+
+        // 状态选项
+        const stateOptions = [
+          { label: t('Visible'), value: 'visible' },
+          { label: t('Hidden'), value: 'hidden' },
+          { label: t('Hidden (reserved value)'), value: 'hiddenReservedValue' },
+          { label: t('Required'), value: 'required' },
+          { label: t('Not required'), value: 'notRequired' },
+          { label: t('Disabled'), value: 'disabled' },
+          { label: t('Enabled'), value: 'enabled' },
+        ];
+
+        const handleFieldsChange = (selectedFields: string[]) => {
+          onChange({
+            ...value,
+            fields: selectedFields,
+          });
+        };
+
+        const handleStateChange = (selectedState: string) => {
+          onChange({
+            ...value,
+            state: selectedState,
+          });
+        };
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Fields')}</div>
+              <Select
+                mode="multiple"
+                value={value.fields}
+                onChange={handleFieldsChange}
+                placeholder={t('Please select fields')}
+                style={{ width: '100%' }}
+                options={fieldOptions}
+                showSearch
+                // @ts-ignore
+                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                allowClear
+              />
+            </div>
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('State')}</div>
+              <Select
+                value={value.state}
+                onChange={handleStateChange}
+                placeholder={t('Please select state')}
+                style={{ width: '100%' }}
+                options={stateOptions}
+                allowClear
+              />
+            </div>
+          </div>
+        );
+      },
+    },
+  },
+  handler: (ctx, { value, setProps }) => {
+    const { fields, state } = value || {};
+
+    if (!fields || !Array.isArray(fields) || !state) {
+      return;
+    }
+
+    // 根据 uid 找到对应的字段 model 并设置属性
+    fields.forEach((fieldUid: string) => {
+      try {
+        const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+        const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
+
+        if (fieldModel) {
+          let props: any = {};
+
+          switch (state) {
+            case 'visible':
+              props = { hiddenModel: false };
+              break;
+            case 'hidden':
+              props = { hiddenModel: true };
+              break;
+            case 'hiddenReservedValue':
+              props = { hidden: true };
+              break;
+            case 'required':
+              props = { required: true };
+              break;
+            case 'notRequired':
+              props = { required: false };
+              break;
+            case 'disabled':
+              props = { disabled: true };
+              break;
+            case 'enabled':
+              props = { disabled: false };
+              break;
+            default:
+              console.warn(`Unknown state: ${state}`);
+              return;
+          }
+
+          setProps(fieldModel as FlowModel, props);
+        }
+      } catch (error) {
+        console.warn(`Failed to set props for field ${fieldUid}:`, error);
+      }
+    });
+  },
+});
+
+export const subFormLinkageSetFieldProps = defineAction({
+  name: 'subFormLinkageSetFieldProps',
+  title: escapeT('Set field state'),
+  scene: ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
     value: {
@@ -1066,6 +1191,33 @@ export const fieldLinkageRules = defineAction({
         'x-component': LinkageRulesUI,
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.FIELD_LINKAGE_RULES),
+          title: escapeT('Field linkage rules'),
+        },
+      },
+    };
+  },
+  defaultParams: {
+    value: [],
+  },
+  handler: (ctx, params) => {
+    if (ctx.model.hidden) {
+      return;
+    }
+    commonLinkageRulesHandler(ctx, params);
+  },
+});
+
+export const subFormFieldLinkageRules = defineAction({
+  name: 'subFormFieldLinkageRules',
+  title: escapeT('Field linkage rules'),
+  uiMode: 'embed',
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.SUB_FORM_FIELD_LINKAGE_RULES),
           title: escapeT('Field linkage rules'),
         },
       },
