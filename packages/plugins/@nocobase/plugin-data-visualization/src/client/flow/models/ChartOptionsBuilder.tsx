@@ -114,6 +114,7 @@ export const ChartOptionsBuilder: React.FC<{
               { label: t('Column'), value: 'bar' },
               { label: t('Bar'), value: 'barHorizontal' },
               { label: t('Pie'), value: 'pie' },
+              { label: t('Doughnut'), value: 'doughnut' },
               { label: t('Funnel'), value: 'funnel' },
               { label: t('Scatter'), value: 'scatter' },
             ]}

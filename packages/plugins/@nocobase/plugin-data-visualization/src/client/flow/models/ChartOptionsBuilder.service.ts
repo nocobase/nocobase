@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export type ChartTypeKey = 'line' | 'bar' | 'barHorizontal' | 'pie' | 'scatter' | 'area' | 'funnel';
+export type ChartTypeKey = 'line' | 'bar' | 'barHorizontal' | 'pie' | 'doughnut' | 'scatter' | 'area' | 'funnel';
 
 const TYPE_FIELD_SPECS = {
   line: [
@@ -41,6 +41,19 @@ const TYPE_FIELD_SPECS = {
     { name: 'pieRadiusOuter', valueType: 'number', default: 70 },
     {
       name: 'pieLabelType',
+      valueType: 'enum',
+      default: 'percent',
+      options: ['value', 'percent'],
+      labelKey: 'Label content',
+    },
+  ],
+  doughnut: [
+    { name: 'doughnutCategory', valueType: 'string', required: true },
+    { name: 'doughnutValue', valueType: 'string', required: true },
+    { name: 'doughnutRadiusInner', valueType: 'number', default: 40 },
+    { name: 'doughnutRadiusOuter', valueType: 'number', default: 70 },
+    {
+      name: 'doughnutLabelType',
       valueType: 'enum',
       default: 'percent',
       options: ['value', 'percent'],
@@ -96,6 +109,7 @@ const AUTO_FILL_RULES: Record<ChartTypeKey, { first?: string; second?: string }>
   bar: { first: 'xField', second: 'yField' },
   barHorizontal: { first: 'xField', second: 'yField' },
   pie: { first: 'pieCategory', second: 'pieValue' },
+  doughnut: { first: 'doughnutCategory', second: 'doughnutValue' },
   funnel: { first: 'funnelCategory', second: 'funnelValue' },
   scatter: { first: 'xField', second: 'yField' },
   area: { first: 'xField', second: 'yField' },
@@ -137,6 +151,7 @@ const normalizeLine = (builder = {}, columns: string[]) => normalizeByType('line
 const normalizeBar = (builder = {}, columns: string[]) => normalizeByType('bar', builder, columns);
 const normalizeBarHorizontal = (builder = {}, columns: string[]) => normalizeByType('barHorizontal', builder, columns);
 const normalizePie = (builder = {}, columns: string[]) => normalizeByType('pie', builder, columns);
+const normalizeDoughnut = (builder = {}, columns: string[]) => normalizeByType('doughnut', builder, columns);
 const normalizeFunnel = (builder = {}, columns: string[]) => normalizeByType('funnel', builder, columns);
 const normalizeScatter = (builder = {}, columns: string[]) => normalizeByType('scatter', builder, columns);
 const normalizeArea = (builder = {}, columns: string[]) => normalizeByType('area', builder, columns);
@@ -146,6 +161,8 @@ const BOOL_LABEL_KEY = { smooth: 'Smooth', stack: 'Stack', yAxisSplitLine: 'Spli
 const NUMBER_LIMITS = {
   pieRadiusInner: { min: 0, max: 100, labelKey: 'Inner radius (%)' },
   pieRadiusOuter: { min: 0, max: 100, labelKey: 'Outer radius (%)' },
+  doughnutRadiusInner: { min: 0, max: 100, labelKey: 'Inner radius (%)' },
+  doughnutRadiusOuter: { min: 0, max: 100, labelKey: 'Outer radius (%)' },
   xAxisLabelRotate: { min: 0, max: 90, labelKey: 'X axis label rotate' },
   funnelMinSize: { min: 0, max: 100, labelKey: 'Min size (%)' },
   funnelMaxSize: { min: 0, max: 100, labelKey: 'Max size (%)' },
@@ -164,9 +181,9 @@ export function getChartFormSpec(type: ChartTypeKey) {
     }
     if (fs.valueType === 'string') {
       const labelKey =
-        fs.name === 'pieCategory' || fs.name === 'funnelCategory'
+        fs.name === 'pieCategory' || fs.name === 'funnelCategory' || fs.name === 'doughnutCategory'
           ? 'Category field'
-          : fs.name === 'pieValue' || fs.name === 'funnelValue'
+          : fs.name === 'pieValue' || fs.name === 'funnelValue' || fs.name === 'doughnutValue'
             ? 'Value field'
             : fs.name; // xField/yField/seriesField 等直接使用同名键
       return {
@@ -198,10 +215,12 @@ export function getChartFormSpec(type: ChartTypeKey) {
         ],
       };
     }
-    // 对饼图半径与漏斗尺寸使用 Slider（0-100，整数）
+    // 对饼图半径、环形图半径与漏斗尺寸使用 Slider（0-100，整数）
     if (
       fs.name === 'pieRadiusInner' ||
       fs.name === 'pieRadiusOuter' ||
+      fs.name === 'doughnutRadiusInner' ||
+      fs.name === 'doughnutRadiusOuter' ||
       fs.name === 'funnelMinSize' ||
       fs.name === 'funnelMaxSize'
     ) {
@@ -234,11 +253,20 @@ export function buildFieldOptions(columns: string[] = []) {
 export function stripInvalidColumns(builder = {}, columns: string[] = []): any {
   const next = { ...builder };
   const colSet = new Set(columns || []);
-  ['xField', 'yField', 'seriesField', 'pieCategory', 'pieValue', 'sizeField', 'funnelCategory', 'funnelValue'].forEach(
-    (k) => {
-      if (next[k] && !colSet.has(next[k])) next[k] = undefined;
-    },
-  );
+  [
+    'xField',
+    'yField',
+    'seriesField',
+    'pieCategory',
+    'pieValue',
+    'doughnutCategory',
+    'doughnutValue',
+    'sizeField',
+    'funnelCategory',
+    'funnelValue',
+  ].forEach((k) => {
+    if (next[k] && !colSet.has(next[k])) next[k] = undefined;
+  });
   return next;
 }
 
@@ -275,6 +303,49 @@ return (function () {
       radius: radius,
       data: data.map(row => ({ name: row[categoryField], value: row[valueField] })),
       label: { show: ${!!label}, formatter: (${s(pieLabelType)}) === 'percent' ? '{d}%' : '{c}' },
+    }]
+  };
+  return option;
+})();`.trim();
+  return code;
+};
+
+const genRawDoughnut = (builder: any) => {
+  const {
+    doughnutCategory,
+    doughnutValue,
+    doughnutRadiusInner = 40,
+    doughnutRadiusOuter = 70,
+    tooltip = true,
+    legend = true,
+    label = false,
+    doughnutLabelType = 'percent',
+  } = builder || {};
+
+  if (!doughnutCategory || !doughnutValue) {
+    return `return { tooltip: { show: ${!!tooltip} }, legend: { show: ${!!legend} } };`;
+  }
+
+  const code = `
+return (function () {
+  const data = (ctx && ctx.data && ctx.data.objects) || [];
+  const categoryField = ${s(doughnutCategory)};
+  const valueField = ${s(doughnutValue)};
+  const radius = [${s(String(doughnutRadiusInner) + '%')}, ${s(String(doughnutRadiusOuter) + '%')}];
+
+  const option = {
+    tooltip: { show: ${!!tooltip} },
+    legend: { show: ${!!legend} },
+    series: [{
+      type: 'pie',
+      radius: radius,
+      data: data.map(row => ({ name: row[categoryField], value: row[valueField] })),
+      label: { show: ${!!label}, formatter: (${s(doughnutLabelType)}) === 'percent' ? '{d}%' : '{c}' },
+      itemStyle: {
+        borderRadius: 10,
+        borderColor: '#fff',
+        borderWidth: 2
+      },
     }]
   };
   return option;
@@ -636,6 +707,7 @@ const TYPE_REGISTRY = {
     genRaw: (b) => genRawBarHorizontal(b),
   },
   pie: { key: 'pie', normalize: normalizePie, genRaw: genRawPie },
+  doughnut: { key: 'doughnut', normalize: normalizeDoughnut, genRaw: genRawDoughnut },
   funnel: { key: 'funnel', normalize: normalizeFunnel, genRaw: genRawFunnel },
   scatter: { key: 'scatter', normalize: normalizeScatter, genRaw: genRawScatter },
   area: { key: 'area', normalize: normalizeArea, genRaw: genRawArea },
