@@ -130,7 +130,7 @@ export class FlowEngine {
    */
   public reactView: ReactView;
   /**
-   * Flow executor that runs flows and auto-flows.
+   * Flow executor that runs event flows.
    */
   public executor: FlowExecutor;
 
@@ -735,6 +735,17 @@ export class FlowEngine {
   }
 
   /**
+   * Duplicate a model tree via repository API.
+   * Returns the duplicated model JSON (root with subModels) or null if not available.
+   * @param {string} uid UID of the model to duplicate
+   * @returns {Promise<any | null>} Duplicated model JSON or null
+   */
+  async duplicateModel(uid: string) {
+    if (!this.ensureModelRepository()) return null;
+    return this._modelRepository.duplicate(uid);
+  }
+
+  /**
    * Replace a model instance with a new instance of a class.
    * @template T New model type
    * @param {string} uid UID of the model to replace
@@ -803,7 +814,7 @@ export class FlowEngine {
     // 7. 触发事件以通知其他部分模型已替换
     if (currentParent) {
       currentParent.emitter.setPaused(false);
-      currentParent.parent.invalidateAutoFlowCache(true);
+      currentParent.parent.invalidateFlowCache('beforeRender', true);
       currentParent.parent?.rerender();
       currentParent.emitter.emit('onSubModelReplaced', { oldModel, newModel });
     }

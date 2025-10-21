@@ -35,6 +35,7 @@ export interface ToolOptions {
   invoke: (
     ctx: Context,
     args: Record<string, any>,
+    id: string,
   ) => Promise<{
     status: 'success' | 'error';
     content: string;

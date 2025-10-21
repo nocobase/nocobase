@@ -29,6 +29,7 @@ import {
   resolveStepUiSchema,
   resolveUiMode,
   setupRuntimeContextSteps,
+  buildSettingsViewInputArgs,
 } from './utils';
 import { FlowStepContext } from './hooks/useFlowStep';
 
@@ -205,8 +206,7 @@ export class FlowSettings {
         Upload,
       } = await import('@formily/antd-v5');
 
-      // 单独导入 Button 组件
-      const { Button } = await import('antd');
+      const { Button, Alert } = await import('antd');
 
       // 注册基础组件
       this.components.Form = Form;
@@ -254,6 +254,7 @@ export class FlowSettings {
       this.components.Space = Space;
       this.components.Editable = Editable;
       this.components.PreviewText = PreviewText;
+      this.components.Alert = Alert;
 
       // 注册按钮组件
       this.components.Button = Button;
@@ -464,12 +465,14 @@ export class FlowSettings {
     flowEngine,
     form,
     onFormValuesChange,
+    key,
   }: {
     uiSchema: any;
     initialValues: any;
     flowEngine: any;
     form?: any;
     onFormValuesChange?: (form: any) => void;
+    key?: string;
   }): React.ReactElement {
     // 获取 scopes 和 components
     const scopes = {
@@ -496,7 +499,7 @@ export class FlowSettings {
 
     return React.createElement(
       FormProviderWithForm,
-      { form, initialValues, onFormValuesChange },
+      { form, initialValues, onFormValuesChange, key },
       React.createElement(SchemaField as any, {
         schema: compiledSchema,
         components: flowEngine?.flowSettings?.components || {},
@@ -764,6 +767,8 @@ export class FlowSettings {
       zIndex: 5000,
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
+      // 统一构造 settings 弹窗的 inputArgs（集合/记录/父导航/关联）
+      inputArgs: buildSettingsViewInputArgs(model as any, (modeProps as any)?.inputArgs),
       content: (currentView, viewCtx) => {
         viewCtx?.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
           return forms.get(keyOf({ flowKey, stepKey }))?.values;

@@ -11,7 +11,7 @@ import { useEffect, useState } from 'react';
 import type { Completion } from '@codemirror/autocomplete';
 import { buildRunJSCompletions, type SnippetEntry } from '../runjsCompletions';
 
-export function useRunJSDocCompletions(hostCtx: any, version = 'v1') {
+export function useRunJSDocCompletions(hostCtx: any, version = 'v1', scene?: string | string[]) {
   const [completions, setCompletions] = useState<Completion[] | null>(null);
   const [entries, setEntries] = useState<SnippetEntry[]>([]);
   const [error, setError] = useState<Error | null>(null);
@@ -19,7 +19,7 @@ export function useRunJSDocCompletions(hostCtx: any, version = 'v1') {
     let cancelled = false;
     (async () => {
       try {
-        const { completions, entries } = await buildRunJSCompletions(hostCtx, version);
+        const { completions, entries } = await buildRunJSCompletions(hostCtx, version, scene);
         if (!cancelled) {
           setCompletions(completions);
           setEntries(entries);
@@ -36,6 +36,6 @@ export function useRunJSDocCompletions(hostCtx: any, version = 'v1') {
     return () => {
       cancelled = true;
     };
-  }, [hostCtx, version]);
+  }, [hostCtx, version, scene]);
   return { completions, entries, error };
 }

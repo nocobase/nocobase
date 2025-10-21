@@ -144,8 +144,8 @@ export class DataSource {
     return this.collectionManager.upsertCollection(options);
   }
 
-  upsertCollections(collections: CollectionOptions[]) {
-    return this.collectionManager.upsertCollections(collections);
+  upsertCollections(collections: CollectionOptions[], options: { clearFields?: boolean } = {}) {
+    return this.collectionManager.upsertCollections(collections, options);
   }
 
   removeCollection(name: string) {
@@ -210,12 +210,12 @@ export class CollectionManager {
     this.collections.delete(name);
   }
 
-  updateCollection(newOptions: CollectionOptions) {
+  updateCollection(newOptions: CollectionOptions, options: { clearFields?: boolean } = {}) {
     const collection = this.getCollection(newOptions.name);
     if (!collection) {
       throw new Error(`Collection ${newOptions.name} not found`);
     }
-    collection.setOptions(newOptions);
+    collection.setOptions(newOptions, options);
   }
 
   upsertCollection(options: CollectionOptions) {
@@ -227,10 +227,10 @@ export class CollectionManager {
     return this.getCollection(options.name);
   }
 
-  upsertCollections(collections: CollectionOptions[]) {
+  upsertCollections(collections: CollectionOptions[], options: { clearFields?: boolean } = {}) {
     for (const collection of sortCollectionsByInherits(collections)) {
       if (this.collections.has(collection.name)) {
-        this.updateCollection(collection);
+        this.updateCollection(collection, options);
       } else {
         this.addCollection(collection);
       }
@@ -412,10 +412,13 @@ export class Collection {
     this.dataSource = dataSource;
   }
 
-  setOptions(newOptions: any = {}) {
+  setOptions(newOptions: any = {}, options: { clearFields?: boolean } = {}) {
     Object.keys(this.options).forEach((key) => delete this.options[key]);
     Object.assign(this.options, newOptions);
     this.initInherits();
+    if (options.clearFields) {
+      this.clearFields();
+    }
     this.upsertFields(this.options.fields || []);
   }
 
@@ -490,7 +493,6 @@ export class Collection {
   }
 
   getField(fieldName: string): CollectionField | undefined {
-    this.setFields(this.options.fields); //数据表字段被删除
     return this.fields.get(fieldName);
   }
 
@@ -654,7 +656,7 @@ export class CollectionField {
   }
 
   get title() {
-    const titleValue = this.options?.title || this.options?.uiSchema?.title || this.options.name;
+    const titleValue = this.options?.uiSchema?.title || this.options?.title || this.options.name;
     return this.flowEngine.translate(titleValue);
   }
 
@@ -703,6 +705,7 @@ export class CollectionField {
         multiple: target ? ['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) : undefined,
         maxCount: target && !['belongsToMany', 'hasMany', 'belongsToArray'].includes(type) ? 1 : undefined,
         target: target,
+        template: this.targetCollection?.template,
       },
       _.isUndefined,
     );

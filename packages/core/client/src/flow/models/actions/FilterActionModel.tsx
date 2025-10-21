@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, MultiRecordResource, observer, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { escapeT, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { isEmptyFilter, removeNullCondition, transformFilter } from '@nocobase/utils/client';
-import { Button, ButtonProps, Popover, Select, Space } from 'antd';
-import React, { FC } from 'react';
-import { FilterGroup, FilterItem, VariableFilterItem } from '../../components/filter';
+import { ButtonProps, Popover, Select } from 'antd';
+import React from 'react';
+import { FilterGroup, VariableFilterItem } from '../../components/filter';
 import { ActionModel } from '../base';
+import { FilterContainer } from '../../components/filter/FilterContainer';
 
 export class FilterActionModel extends ActionModel {
   static scene = 'collection';
@@ -117,7 +118,7 @@ FilterActionModel.registerFlow({
             return (
               <FilterGroup
                 value={props.value || {}}
-                FilterItem={(props) => <FilterItem {...props} model={modelInstance} />}
+                FilterItem={(props) => <VariableFilterItem {...props} model={modelInstance} />}
               />
             );
           },
@@ -208,106 +209,3 @@ function clearInputValue(value: any) {
   }
   return undefined;
 }
-
-/**
- * 筛选项组件的属性接口
- */
-interface FilterItemProps {
-  value: {
-    path: string;
-    operator: string;
-    value: string;
-  };
-}
-
-/**
- * FilterContent 组件的属性接口
- */
-interface FilterContentProps {
-  /** 响应式的过滤条件对象 */
-  value: Record<string, any>;
-  /** 自定义筛选项组件 */
-  FilterItem?: React.FC<FilterItemProps>;
-  /** 上下文对象，用于获取字段列表等元信息 */
-  ctx: any;
-}
-
-/**
- * 筛选内容组件
- *
- * 支持新的数据结构格式：
- * ```typescript
- * {
- *   "logic": "or",
- *   "items": [
- *     {
- *       "leftValue": "isAdmin",
- *       "operator": "eq",
- *       "rightValue": true
- *     },
- *     {
- *       "logic": "and",
- *       "items": [...]
- *     }
- *   ]
- * }
- * ```
- *
- * @example
- * ```typescript
- * const filterValue = observable({
- *   logic: 'and',
- *   items: []
- * });
- *
- * <FilterContent
- *   value={filterValue}
- *   ctx={contextObject}
- *   FormItem={CustomFormItem}
- * />
- * ```
- */
-export const FilterContainer: FC<FilterContentProps> = observer(
-  (props) => {
-    const { value, FilterItem, ctx } = props;
-
-    // 确保 value 有正确的默认结构
-    if (!value.logic) {
-      value.logic = 'and';
-    }
-    if (!Array.isArray(value.items)) {
-      value.items = [];
-    }
-
-    const handleReset = () => {
-      // 触发重置事件，由外部组件处理
-      if (ctx?.model?.dispatchEvent) {
-        ctx.model.dispatchEvent('reset');
-      }
-    };
-
-    const handleSubmit = () => {
-      // 触发提交事件，由外部组件处理
-      if (ctx?.model?.dispatchEvent) {
-        ctx.model.dispatchEvent('submit');
-      }
-    };
-
-    const translate = ctx?.model?.translate || ((text: string) => text);
-
-    return (
-      <>
-        <FilterGroup value={value} FilterItem={FilterItem} />
-        <Space style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
-          <Button onClick={handleReset}>{translate('Reset')}</Button>
-          <Button type="primary" onClick={handleSubmit}>
-            {translate('Submit')}
-          </Button>
-        </Space>
-      </>
-    );
-  },
-  {
-    displayName: 'FilterContainer',
-  },
-);

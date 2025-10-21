@@ -25,6 +25,7 @@ export {
   ValidationErrorItem,
   where,
 } from 'sequelize';
+export { ValidationError as JoiValidationError } from 'joi';
 export * from './belongs-to-array/belongs-to-array-repository';
 export * from './collection';
 export * from './collection-group-manager';

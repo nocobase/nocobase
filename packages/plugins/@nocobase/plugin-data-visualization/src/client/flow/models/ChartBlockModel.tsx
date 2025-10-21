@@ -8,57 +8,46 @@
  */
 
 import { useForm } from '@formily/react';
-import { DataBlockModel, SubPageModel } from '@nocobase/client';
+import { ChildPageModel, DataBlockModel } from '@nocobase/client';
 import { createCollectionContextMeta, SQLResource, useFlowContext } from '@nocobase/flow-engine';
-import { Button, Badge } from 'antd';
 import React, { createRef } from 'react';
-import { useT } from '../../locale';
-import { EyeOutlined } from '@ant-design/icons';
-import { convertDatasetFormats } from '../utils';
+import _ from 'lodash';
+import { Button } from 'antd';
+import { useT, tStr } from '../../locale';
+import { convertDatasetFormats, sleep, debugLog } from '../utils';
 import { Chart, ChartOptions } from './Chart';
 import { ConfigPanel } from './ConfigPanel';
 import { ChartResource } from '../resources/ChartResource';
-import _ from 'lodash';
 import { genRawByBuilder } from './ChartOptionsBuilder.service';
 import { configStore } from './config-store';
-import { useQueryBuilderLogic } from './queryBuilder.logic';
 
 type ChartBlockModelStructure = {
   subModels: {
-    page: SubPageModel;
+    page: ChildPageModel;
   };
 };
 
 type ChartProps = {
-  query: {
-    mode: 'builder' | 'sql';
-    measure?: any;
-    dimension?: any;
-    filter?: any;
-    order?: any;
-    limit?: any;
-    offset?: any;
-    sql?: string; // only sql mode
-  };
   chart: ChartOptions & {
-    optionRaw?: string; // 持久化存储原始脚本，供数据刷新时重新生成 option
-    mode: 'basic' | 'custom';
-    builder?: any;
-    raw?: string; // only custom mode
+    optionRaw?: string;
   };
 };
 
 export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   declare props: ChartProps;
 
-  _previousStepParams: any; // 上一次的 stepParams，用于 preview 时回滚
+  _previousStepParams: any; // 上一次持久化的 stepParams，用于 preview 时回滚
 
   get resource(): ChartResource<any> | SQLResource<any> {
     return this.context.resource as ChartResource<any> | SQLResource<any>;
   }
 
   // 统一管理 refresh 监听引用，便于 off 解绑
-  private __onResourceRefresh = () => this.rerender();
+  private __onResourceRefresh = () => this.renderChart();
+
+  onActive() {
+    this.resource.refresh();
+  }
 
   // 初始化注册 ChartResource | SQLResource
   initResource(mode = 'builder') {
@@ -99,7 +88,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     return this.getStepParams('chartSettings', 'configure');
   }
 
-  onInit(options) {
+  async onInit(options) {
     super.onInit(options);
     this.context.defineProperty('chartRef', {
       get: () => createRef(),
@@ -125,6 +114,22 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
         return this.context.dataSourceManager.getCollection(dataSourceKey, collectionName);
       }, this.context.t('Current collection')),
     });
+
+    // 初始加载：根据持久化的 stepParams 应用查询并触发一次数据刷新
+    try {
+      const initParams = this.getResourceSettingsInitParams();
+      const initQuery = initParams?.query;
+      if (initQuery) {
+        this.applyQuery(initQuery);
+        // 依赖 refresh 事件驱动渲染
+        await this.resource.refresh();
+      }
+    } catch (e) {
+      // 初始阶段不打断页面加载，错误信息写入预览 store 以便排查
+      const message =
+        (e as any)?.response?.data?.errors?.map?.((err: any) => err.message).join('\n') || (e as any)?.message;
+      configStore.setError(this.uid, message);
+    }
   }
 
   renderComponent() {
@@ -166,13 +171,11 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
           title: field,
           type: fieldType,
           interface: fieldType === 'number' ? 'number' : 'input',
-          // getFirstSubclassNameOf() {
-          //   return fieldType === 'number' ? 'NumberFilterFieldModel' : 'InputFilterFieldModel';
-          // },
         };
       });
       return fields;
     } else {
+      // builder 模式：从 collection 表解析 fields
       const fields = this.context.collection?.getFields().filter((field) => field.filterable) || [];
       return fields;
     }
@@ -192,51 +195,98 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     }
   }
 
-  // 公共方法：运行数据查询 + 刷新资源 + 更新结果面板
-  async runQueryAndUpdateResult(query: any) {
+  // 应用数据查询配置（仅设置，不负责渲染）
+  applyQuery(query: any) {
+    this.checkResource(query);
+    if (query?.mode === 'sql') {
+      (this.resource as SQLResource).setDebug(true);
+      (this.resource as SQLResource).setSQL(query.sql);
+    } else {
+      debugLog('---applyQuery', query);
+      (this.resource as ChartResource).setQueryParams(query);
+    }
+  }
+
+  // 写入结果，用于展示数据，并联动更新 column 配置
+  setDataResult() {
     const uid = this.uid;
     try {
-      if (!query?.mode) {
-        throw new Error('Query mode is required');
-      }
-      if (query.mode === 'sql') {
-        (this.resource as SQLResource).setSQL(query.sql);
-      } else {
-        (this.resource as ChartResource).setQueryParams(query, 'from model runQueryAndUpdateResult');
-      }
-      // 改用 run()，拿到数据后手动写入，避免触发 refresh 事件
-      const res = await this.resource.run();
-      const { data, meta } = res || {};
-      if (data) {
-        this.resource.setData?.(data);
-      }
-      if (meta) {
-        this.resource.setMeta?.(meta);
-      }
-      const uid = this.uid;
+      const data = this.resource.getData();
       configStore.setResult(uid, data);
     } catch (error: any) {
-      const message = error?.response?.data?.errors?.map?.((e: any) => e.message).join('\n') || error.message;
+      const message = error?.response?.data?.errors?.map?.((e: any) => e.message).join('\n') || error?.message;
       configStore.setError(uid, message);
     }
   }
 
+  // 应用图表配置（仅设置，不负责渲染）
+  async applyChartOptions(payload: { mode: 'basic' | 'custom'; builder?: any; raw?: string }) {
+    const optionRaw = payload.mode === 'basic' ? genRawByBuilder(payload.builder) : payload.raw;
+    const { success, value, error, timeout } = await this.context.runjs(optionRaw);
+    if (!success && error) {
+      console.error('applyChartOptions runjs error:', error);
+      return;
+    }
+    this.setProps({
+      chart: {
+        ...this.props.chart,
+        optionRaw, // js文本
+        option: value, // js对象
+      },
+    });
+  }
+
+  // 应用事件配置（仅设置，不负责渲染）
+  async applyEvents(raw?: string) {
+    if (!raw) return;
+
+    this.context.onRefReady(this.context.chartRef, async () => {
+      const { success, value, error, timeout } = await this.context.runjs(raw, {
+        chart: (this.context.chartRef as any).current,
+      });
+      if (!success && error) {
+        console.error('applyEvents runjs error:', error);
+        return;
+      }
+    });
+  }
+
+  // 显式渲染（必要时可直接调用）
+  renderChart() {
+    this.rerender(); // 会继续触发 handler
+  }
+
   // 预览，暂存预览前的 stepParams，并刷新图表
-  async setParamsAndRerender(params) {
+  async onPreview(params: { query: any; chart: any }, needQueryData?: boolean) {
+    debugLog('---onPreview', params.query);
+    const values = _.cloneDeep(params);
+    if (!values) return;
+
+    // 仅在首次预览时记录，以便 cancelPreview 回滚
     if (!this._previousStepParams) {
       this._previousStepParams = _.cloneDeep(this.getResourceSettingsInitParams());
     }
-    this.setStepParams('chartSettings', 'configure', params);
-    this.rerender();
-    // 调用链：rerender -> applyAutoFlows -> handler（处理数据、属性、事件） -> runQueryAndUpdateResult（查数据）
+    // 应用最新 stepParams，随后触发 flow handler
+    this.setStepParams('chartSettings', 'configure', values);
+
+    if (needQueryData) {
+      // 等待确保 stepParams 已更新
+      await sleep(100);
+      // 刷新请求数据
+      await this.resource.refresh();
+      this.setDataResult(); // 写入结果，用于展示数据，并联动更新 column 配置
+    }
   }
 
   // 取消预览，回滚stepParams，并刷新图表
-  async cancelAndRerender() {
+  async cancelPreview() {
     if (this._previousStepParams) {
       this.setStepParams('chartSettings', 'configure', this._previousStepParams);
       this._previousStepParams = null;
-      this.rerender();
+      // 等待确保 stepParams 已更新
+      await sleep(100);
+      // 重新请求数据，并刷新图表
+      await this.resource.refresh();
     }
   }
 }
@@ -246,32 +296,19 @@ const PreviewButton = ({ style }) => {
   const ctx = useFlowContext();
   const form = useForm();
   return (
-    // <Badge dot offset={[-8, 2]}>
     <Button
       color="primary"
       variant="outlined"
       style={style}
-      icon={<EyeOutlined />}
       onClick={async () => {
         // 这里通过普通的 form.values 拿不到数据
         const formValues = ctx.getStepFormValues('chartSettings', 'configure');
-        const query = formValues?.query || {};
-
-        if (query.mode === 'builder') {
-          await form.submit();
-        }
-
-        ctx.model.checkResource(query); // 保证 resource 正确
-        if (query?.mode === 'sql') {
-          // 开启 debug 模式，sql 查询不要走 runById
-          (ctx.model.resource as SQLResource).setDebug(true);
-        }
-        ctx.model.setParamsAndRerender(formValues || {});
+        // 写入配置参数，统一走 onPreview 方便回滚
+        await ctx.model.onPreview(formValues);
       }}
     >
       {t('Preview')}
     </Button>
-    // </Badge>
   );
 };
 
@@ -284,7 +321,7 @@ const CancelButton = ({ style }) => {
       style={style}
       onClick={() => {
         // 回滚 未保存的 stepParams 并刷新图表
-        ctx.model.cancelAndRerender();
+        ctx.model.cancelPreview();
         ctx.view.close();
       }}
     >
@@ -299,14 +336,14 @@ ChartBlockModel.define({
 
 ChartBlockModel.registerFlow({
   key: 'chartSettings',
-  title: 'Chart settings',
+  title: tStr('Chart settings'),
   steps: {
     configure: {
-      title: 'Configure chart',
+      title: tStr('Configure chart'),
       uiMode: {
         type: 'embed',
         props: {
-          minWidth: '510px', // 最小宽度 支持 measures field 完整展示 6 个字不换行
+          // minWidth: '510px', // 最小宽度 支持 measures field 完整展示 6 个字不换行
           footer: (originNode, { OkBtn }) => (
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
               <CancelButton style={{ marginRight: 6 }} />
@@ -345,32 +382,25 @@ ChartBlockModel.registerFlow({
         };
       },
       async handler(ctx, params) {
+        debugLog('---setting flow handler', params);
         const { query, chart } = params;
         if (!query || !chart) {
           return;
         }
         try {
           // 数据部分
-          ctx.model.checkResource(query); // 保证 resource 正确
-          await ctx.model.runQueryAndUpdateResult(query);
+          ctx.model.applyQuery(query);
 
           // 图表部分
-          const optionRaw = chart.option?.mode === 'basic' ? genRawByBuilder(chart.option?.builder) : chart.option?.raw;
-          const { value: option } = await ctx.runjs(optionRaw);
-          ctx.model.setProps({
-            ...params,
-            chart: {
-              ...params.chart,
-              optionRaw, // TODO 是否持久化？
-              option, // TODO 是否换个变量，并传给<Chart> 不要覆盖已有结构？
-            },
+          await ctx.model.applyChartOptions({
+            mode: chart.option?.mode || 'basic',
+            builder: chart.option?.builder,
+            raw: chart.option?.raw,
           });
 
           // 事件部分
           if (chart.events?.raw) {
-            ctx.onRefReady(ctx.chartRef, () => {
-              ctx.runjs(chart.events?.raw, { chart: ctx.chartRef.current });
-            });
+            await ctx.model.applyEvents(chart.events?.raw);
           }
         } catch (error) {
           console.error('ChartBlockModel chartSettings configure flow handler() error:', error);

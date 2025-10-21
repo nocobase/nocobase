@@ -89,10 +89,10 @@ const Edit: React.FC = () => {
             'x-component-props': {
               styles: {
                 wrapper: {
-                  zIndex: 1000,
+                  zIndex: 1200,
                 },
                 mask: {
-                  zIndex: 1000,
+                  zIndex: 1200,
                 },
               },
             },

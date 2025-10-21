@@ -131,10 +131,19 @@ function searchBranchDownstreams(nodes, from) {
   return result;
 }
 
+function findBranchTail(branchHead) {
+  let tail = branchHead;
+  while (tail.downstream) {
+    tail = tail.downstream;
+  }
+  return tail;
+}
+
 export async function destroy(context: Context, next) {
   const { db } = context;
   const repository = utils.getRepositoryFromParams(context) as Repository;
-  const { filterByTk } = context.action.params;
+  const { filterByTk, keepBranch } = context.action.params;
+  const keepBranchIndex = keepBranch == null || keepBranch === '' ? null : Number.parseInt(keepBranch, 10);
 
   const fields = ['id', 'upstreamId', 'downstreamId', 'branchIndex'];
   const instance = await repository.findOne({
@@ -142,31 +151,15 @@ export async function destroy(context: Context, next) {
     fields: [...fields, 'workflowId'],
     appends: ['upstream', 'downstream', 'workflow.versionStats.executed'],
   });
+  if (!instance) {
+    context.throw(404, 'Node not found');
+  }
   if (instance.workflow.versionStats.executed > 0) {
     context.throw(400, 'Nodes in executed workflow could not be deleted');
   }
 
   await db.sequelize.transaction(async (transaction) => {
     const { upstream, downstream } = instance.get();
-
-    if (upstream && upstream.downstreamId === instance.id) {
-      await upstream.update(
-        {
-          downstreamId: instance.downstreamId,
-        },
-        { transaction },
-      );
-    }
-
-    if (downstream) {
-      await downstream.update(
-        {
-          upstreamId: instance.upstreamId,
-          branchIndex: instance.branchIndex,
-        },
-        { transaction },
-      );
-    }
 
     const nodes = await repository.find({
       filter: {
@@ -180,8 +173,6 @@ export async function destroy(context: Context, next) {
     nodes.forEach((item) => {
       nodesMap.set(item.id, item);
     });
-    // overwrite
-    // nodesMap.set(instance.id, instance);
     // make linked list
     nodes.forEach((item) => {
       if (item.upstreamId) {
@@ -192,10 +183,81 @@ export async function destroy(context: Context, next) {
       }
     });
 
-    const branchNodes = searchBranchNodes(nodes, nodesMap.get(instance.id));
+    const keepBranchHead =
+      keepBranchIndex != null
+        ? nodes.find((item) => item.upstreamId === instance.id && item.branchIndex == keepBranchIndex)
+        : null;
+    if (keepBranchIndex != null && !keepBranchHead) {
+      context.throw(400, `Branch ${keepBranchIndex} not found`);
+    }
+    const keepBranchNodes = keepBranchHead ? searchBranchDownstreams(nodes, keepBranchHead) : [];
+    const keepBranchNodeIds = new Set<number>(keepBranchNodes.map((item) => item.id));
+
+    const branchNodes = instance ? searchBranchNodes(nodes, instance) : [];
+    const branchNodesToDelete = keepBranchHead
+      ? branchNodes.filter((item) => !keepBranchNodeIds.has(item.id))
+      : branchNodes;
+
+    if (keepBranchHead) {
+      if (upstream && upstream.downstreamId === instance.id) {
+        await upstream.update(
+          {
+            downstreamId: keepBranchHead.id,
+          },
+          { transaction },
+        );
+      }
+
+      await keepBranchHead.update(
+        {
+          upstreamId: instance.upstreamId,
+          branchIndex: instance.branchIndex,
+        },
+        { transaction },
+      );
+
+      if (downstream) {
+        const branchTail = findBranchTail(keepBranchHead);
+        await branchTail.update(
+          {
+            downstreamId: instance.downstreamId,
+          },
+          { transaction },
+        );
+        branchTail.downstreamId = instance.downstreamId;
+        branchTail.downstream = downstream;
+
+        await downstream.update(
+          {
+            upstreamId: branchTail.id,
+            branchIndex: null,
+          },
+          { transaction },
+        );
+      }
+    } else {
+      if (upstream && upstream.downstreamId === instance.id) {
+        await upstream.update(
+          {
+            downstreamId: instance.downstreamId,
+          },
+          { transaction },
+        );
+      }
+
+      if (downstream) {
+        await downstream.update(
+          {
+            upstreamId: instance.upstreamId,
+            branchIndex: instance.branchIndex,
+          },
+          { transaction },
+        );
+      }
+    }
 
     await repository.destroy({
-      filterByTk: [instance.id, ...branchNodes.map((item) => item.id)],
+      filterByTk: [instance.id, ...branchNodesToDelete.map((item) => item.id)],
       transaction,
     });
   });

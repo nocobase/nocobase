@@ -10,7 +10,7 @@
 import { escapeT, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { AxiosRequestConfig } from 'axios';
-import { ActionModel, CollectionBlockModel } from '../../base';
+import { ActionModel } from '../../base';
 import { EditFormModel } from './EditFormModel';
 import { FormBlockModel } from './FormBlockModel';
 
@@ -41,7 +41,35 @@ FormSubmitActionModel.define({
 FormSubmitActionModel.registerFlow({
   key: 'submitSettings',
   on: 'click',
+  title: escapeT('Submit action settings'),
   steps: {
+    confirm: {
+      use: 'confirm',
+      defaultParams: {
+        enable: true,
+        title: escapeT('Submit record'),
+        content: escapeT('Are you sure you want to save it?'),
+      },
+      async handler(ctx, params) {
+        if (params.enable) {
+          try {
+            await ctx.form.validateFields();
+            const confirmed = await ctx.modal.confirm({
+              title: ctx.t(params.title),
+              content: ctx.t(params.content),
+              okText: ctx.t('Confirm'),
+              cancelText: ctx.t('Cancel'),
+            });
+
+            if (!confirmed) {
+              ctx.exit();
+            }
+          } catch (error) {
+            ctx.exit();
+          }
+        }
+      },
+    },
     saveResource: {
       async handler(ctx, params) {
         if (!ctx?.resource) {
@@ -90,6 +118,13 @@ FormSubmitActionModel.registerFlow({
         ctx.message.success(ctx.t('Saved successfully'));
 
         if (ctx.view) {
+          const viewUid = ctx.view.inputArgs?.viewUid;
+          const actionModel = ctx.engine.getModel(viewUid, true);
+
+          if (actionModel) {
+            actionModel.context.blockModel?.resource?.refresh();
+          }
+
           ctx.view.close();
         }
       },

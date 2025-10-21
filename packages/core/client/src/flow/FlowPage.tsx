@@ -9,6 +9,7 @@
 
 import {
   FlowModelRenderer,
+  observable,
   parsePathnameToViewParams,
   reaction,
   useFlowEngine,
@@ -19,12 +20,13 @@ import {
 import type { FlowModel } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { useAllAccessDesktopRoutes, useCurrentRoute, useMobileLayout } from '../route-switch';
+import { useAllAccessDesktopRoutes, useCurrentRoute, useKeepAlive, useMobileLayout } from '../route-switch';
 import { SkeletonFallback } from './components/SkeletonFallback';
 import { resolveViewParamsToViewList, ViewItem } from './resolveViewParamsToViewList';
 import { getViewDiffAndUpdateHidden } from './getViewDiffAndUpdateHidden';
 import { getOpenViewStepParams } from './flows/openViewFlow';
 import { useDesignable } from '../schema-component';
+import { deviceType } from 'react-device-detect';
 
 function InternalFlowPage({ uid, ...props }) {
   const model = useFlowModelById(uid);
@@ -54,6 +56,7 @@ export const FlowRoute = () => {
   const prevViewListRef = useRef<ViewItem[]>([]);
   const hasStepNavigatedRef = useRef(false);
   const { designable } = useDesignable();
+  const { active } = useKeepAlive();
 
   const routeModel = useMemo(() => {
     return flowEngine.createModel({
@@ -63,8 +66,39 @@ export const FlowRoute = () => {
   }, [flowEngine]);
 
   useEffect(() => {
+    routeModel.context.defineProperty('pageActive', {
+      value: observable.ref(false),
+    });
+  }, [routeModel]);
+
+  useEffect(() => {
+    routeModel.context.pageActive.value = active;
+  }, [active, routeModel]);
+
+  useEffect(() => {
     flowEngine.context.defineProperty('isMobileLayout', {
       get: () => isMobileLayout,
+    });
+    flowEngine.context.defineProperty('deviceType', {
+      get: () => (deviceType === 'browser' ? 'computer' : deviceType),
+      cache: false,
+      meta: {
+        type: 'string',
+        title: flowEngine.translate('Current device type'),
+        interface: 'select',
+        uiSchema: {
+          enum: [
+            { label: flowEngine.translate('Computer'), value: 'computer' },
+            { label: flowEngine.translate('Mobile'), value: 'mobile' },
+            { label: flowEngine.translate('Tablet'), value: 'tablet' },
+            { label: flowEngine.translate('SmartTv'), value: 'smarttv' },
+            { label: flowEngine.translate('Console'), value: 'console' },
+            { label: flowEngine.translate('Wearable'), value: 'wearable' },
+            { label: flowEngine.translate('Embedded'), value: 'embedded' },
+          ],
+          'x-component': 'Select',
+        },
+      },
     });
   }, [isMobileLayout, flowEngine]);
 
@@ -81,7 +115,7 @@ export const FlowRoute = () => {
     if (!layoutContentRef.current) {
       return;
     }
-    routeModel.context.defineProperty('layoutContentElement', {
+    flowEngine.context.defineProperty('layoutContentElement', {
       get: () => layoutContentRef.current,
     });
     routeModel.context.defineProperty('currentRoute', {

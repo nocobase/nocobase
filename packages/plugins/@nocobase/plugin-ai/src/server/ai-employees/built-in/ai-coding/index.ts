@@ -23,6 +23,14 @@ export default {
         name: 'dataModeling-getCollectionMetadata',
         autoCall: true,
       },
+      {
+        name: 'codeEditor-listCodeSnippet',
+        autoCall: true,
+      },
+      {
+        name: 'codeEditor-getCodeSnippet',
+        autoCall: true,
+      },
     ],
   },
 };

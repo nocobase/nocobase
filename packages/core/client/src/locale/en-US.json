@@ -660,6 +660,8 @@
   "Parent popup record": "Parent popup record",
   "Associated records": "Associated records",
   "Parent record": "Parent record",
+  "Current popup parent record": "Current popup parent record",
+  "Popup uid": "Popup UID",
   "Current time": "Current time",
   "System variables": "System variables",
   "Date variables": "Date variables",
@@ -956,9 +958,7 @@
   "Stay on the current popup or page": "Stay on the current popup or page",
   "Return to the previous popup or page": "Return to the previous popup or page",
   "Actions column": "Actions column",
-  "Data Source Key": "Data Source Key",
-  "Enter data source key": "Enter data source key",
-  "Collection Name": "Collection Name",
+  "Data source key": "Data source key",
   "Enter collection name": "Enter collection name",
   "Edit page size": "Edit page size",
   "Set data scope": "Set data scope",
@@ -992,5 +992,10 @@
   "No form available for reset.": "No form available for reset.",
   "No form available for submission.": "No form available for submission.",
   "Collapse button": "Collapse",
-  "Expand button": "Expand"
+  "Expand button": "Expand",
+  "No assigned fields configured": "No assigned fields configured",
+  "Current popup": "Current popup",
+  "Parent popup": "Parent popup",
+  "No parent popup": "No parent popup",
+  "Popup record": "Popup record"
 }

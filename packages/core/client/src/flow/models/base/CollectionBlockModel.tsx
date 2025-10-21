@@ -35,6 +35,10 @@ export interface ResourceSettingsInitParams {
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   isManualRefresh = false;
 
+  onActive() {
+    this.resource?.refresh();
+  }
+
   /**
    * 子菜单过滤函数
    */
@@ -297,7 +301,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.associationName || params.collectionName);
         resource.on('refresh', () => {
-          this.invalidateAutoFlowCache();
+          this.invalidateFlowCache('beforeRender');
         });
         return resource;
       },
@@ -338,7 +342,6 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   }
 
   addAppends(fieldPath: string, refresh = false) {
-    console.log(fieldPath);
     if (!fieldPath) {
       return;
     }
@@ -367,7 +370,6 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         return;
       }
       if (field.isAssociationField()) {
-        console.log(field.name);
         (this.resource as BaseRecordResource).addAppends(field.name);
         if (refresh) {
           this.resource.refresh();

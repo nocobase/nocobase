@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Card, Skeleton, Spin } from 'antd';
+import { Card, Skeleton } from 'antd';
 import React from 'react';
 
 export function SkeletonFallback(props) {

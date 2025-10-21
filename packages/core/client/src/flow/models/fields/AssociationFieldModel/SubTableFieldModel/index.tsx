@@ -17,11 +17,12 @@ import {
   useFlowEngine,
 } from '@nocobase/flow-engine';
 import React from 'react';
-import { EditFormModel, FormItemModel } from '../../../blocks/form';
+import { FormItemModel } from '../../../blocks/form';
 import { AssociationFieldModel } from '../AssociationFieldModel';
 import { RecordPickerContent } from '../RecordPickerFieldModel';
 import { SubTableColumnModel } from './SubTableColumnModel';
 import { SubTableField } from './SubTableField';
+import { adjustColumnOrder } from '../../../blocks/table/utils';
 
 const AddFieldColumn = ({ model }) => {
   return (
@@ -67,26 +68,28 @@ export class SubTableFieldModel extends AssociationFieldModel {
       Boolean,
     );
 
-    return [
-      enableIndexColumn && {
-        key: '__index__',
-        width: 48,
-        align: 'center',
-        fixed: 'left',
-        render: (props) => {
-          return props.rowIdx + 1;
+    return adjustColumnOrder(
+      [
+        enableIndexColumn && {
+          key: '__index__',
+          width: 48,
+          align: 'center',
+          fixed: 'left',
+          render: (props) => {
+            return props.rowIdx + 1;
+          },
         },
-      },
-      ...baseColumns.concat({
-        key: '_empty',
-      }),
-      isConfigMode && {
-        key: 'addColumn',
-        fixed: 'right',
-        width: 100,
-        title: <AddFieldColumn model={this} />,
-      },
-    ].filter(Boolean) as any;
+        ...baseColumns.concat({
+          key: '_empty',
+        }),
+        isConfigMode && {
+          key: 'addColumn',
+          fixed: 'right',
+          width: 100,
+          title: <AddFieldColumn model={this} />,
+        },
+      ].filter(Boolean),
+    ) as any;
   }
 
   render() {
@@ -136,7 +139,7 @@ SubTableFieldModel.registerFlow({
     },
     init: {
       async handler(ctx, params) {
-        await ctx.model.applySubModelsAutoFlows('columns');
+        await ctx.model.applySubModelsBeforeRenderFlows('columns');
       },
     },
     allowAddNew: {
@@ -281,12 +284,13 @@ SubTableFieldModel.registerFlow({
           },
           embed: {},
         };
-        const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
+        const openMode = ctx.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
           inheritContext: false,
+          target: ctx.layoutContentElement,
           inputArgs: {
             parentId: ctx.model.uid,
             scene: 'select',

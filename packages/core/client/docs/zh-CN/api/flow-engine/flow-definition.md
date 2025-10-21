@@ -10,7 +10,9 @@
 interface FlowDefinition<TModel extends FlowModel = FlowModel> {
   key: string; // 流唯一标识
   title?: string; // 可选：流显示名称
-  // 注意：自动执行策略：未配置 on 且未显式 manual: true 的流，视为自动执行
+  // 注意：自动执行策略：
+  // 1) 未配置 on 且未显式 manual: true 的流，视为自动执行；
+  // 2) 等价地，你也可以显式声明 on: 'beforeRender' 将其作为“渲染前生命周期事件”流；
   manual?: boolean; // 可选：是否仅手动执行
   sort?: number; // 可选：流执行排序，数字越小越先执行，默认为 0，可为负数
   on?: { eventName: string }; // 可选：事件触发配置
@@ -126,7 +128,8 @@ MyFlowModel.registerFlow(myFlow); // 注册流
 class MyFlowDefinition implements FlowDefinition {
   key = 'MyFlowDefinition';
   title = '我的复杂流程';
-  auto = true;
+  // 等价于未显式声明 on 且 manual !== true 的“自动流”
+  on = { eventName: 'beforeRender' };
   sort = 0;
 
   steps = {
@@ -215,7 +218,7 @@ myModel.setStepParams('myFlow', 'step1', { name: '小明' });
 ```ts
 await myModel.applyFlow('myFlow'); // 主动执行指定流
 myModel.dispatchEvent('user.created'); // 分发事件触发流（如流配置了 on.eventName）
-await myModel.applyAutoFlows(); // 执行所有 auto=true 的流，按 sort 排序
+await myModel.dispatchEvent('beforeRender'); // beforeRender 默认顺序执行并使用缓存（可覆盖）
 ```
 
 ---

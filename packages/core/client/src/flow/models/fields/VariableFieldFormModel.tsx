@@ -47,6 +47,16 @@ export class VariableFieldFormModel extends FlowModel {
       <FormProvider form={this.form}>
         <FormLayout layout={'vertical'}>
           {this.mapSubModels('fields', (field) => {
+            // 确保字段模型具备稳定的 id/name，便于依赖路径的组件（如公式字段）正确解析
+            const init = field?.getStepParams?.('fieldSettings', 'init') || {};
+            const fp = init?.fieldPath as string | undefined;
+            if (fp) {
+              const namePath = fp.includes('.') ? fp.split('.') : [fp];
+              const toSet: any = {};
+              if (!field?.props?.id) toSet.id = namePath;
+              if (!field?.props?.name) toSet.name = namePath;
+              if (Object.keys(toSet).length) field?.setProps?.(toSet);
+            }
             return <FlowModelRenderer key={field.uid} model={field} />;
           })}
         </FormLayout>

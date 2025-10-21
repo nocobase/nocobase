@@ -13,7 +13,7 @@ import { FlowEngine } from './flowEngine';
  * ViewScopedFlowEngine（视图作用域引擎）
  *
  * 设计目标：
- * - 仅在视图（dialog/drawer/embed）作用域内隔离“模型实例表”和“自动流缓存”；
+ * - 仅在视图（dialog/drawer/embed）作用域内隔离“模型实例表”和“事件缓存”；
  * - 其余能力（动作/事件/模型类/资源/仓库/设置/日志/翻译等）全部直接代理到父引擎；
  * - 使用 Proxy 实现“最小代理”，保持与父引擎的全局一致性。
  *

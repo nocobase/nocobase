@@ -393,8 +393,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
    */
   initListener() {
     this.on('afterConnect', async (client) => {
-      if (this.inDialect('postgres')) {
-        await client.query('SET search_path = public');
+      if (this.isPostgresCompatibleDialect()) {
+        await client.query('SET search_path TO public');
       }
     });
 
@@ -1067,12 +1067,12 @@ export class Database extends EventEmitter implements AsyncEmitter {
     if (!finalSQL.replace(/\s+/g, ' ').trim()) {
       throw new Error('SQL cannot be empty');
     }
+    const queryGenerator = this.sequelize.getQueryInterface().queryGenerator as any;
     if (filter) {
       let where = {};
       const tmpCollection = new Collection({ name: 'tmp', underscored: false }, { database: this });
       const r = tmpCollection.repository;
       where = r.buildQueryOptions({ filter }).where;
-      const queryGenerator = this.sequelize.getQueryInterface().queryGenerator as any;
       const wSQL = queryGenerator.getWhereConditions(where, null, null, { bindParam: true });
 
       if (wSQL) {
@@ -1083,6 +1083,9 @@ export class Database extends EventEmitter implements AsyncEmitter {
         }
         finalSQL = `SELECT * FROM (${normalizedSQL}) AS tmp WHERE ${wSQL}`;
       }
+    }
+    if (this.options.schema && this.isPostgresCompatibleDialect()) {
+      finalSQL = `${queryGenerator.setSearchPath(this.options.schema)} ${finalSQL}`;
     }
     this.logger.debug('runSQL', { finalSQL });
     const result = await this.sequelize.query(finalSQL, { bind, transaction });

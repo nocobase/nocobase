@@ -14,6 +14,7 @@ import { FlowContextProvider } from './FlowContextProvider';
 import { FlowEngine } from './flowEngine';
 import { useDialog, useDrawer, usePage, usePopover } from './views';
 import { FlowViewer } from './views/FlowView';
+import { observer } from '@formily/reactive-react';
 
 interface FlowEngineProviderProps {
   engine: FlowEngine;
@@ -22,7 +23,7 @@ interface FlowEngineProviderProps {
 
 const FlowEngineReactContext = createContext<FlowEngine | null>(null);
 
-export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = (props) => {
+export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = React.memo((props) => {
   const { engine, children } = props;
   if (!engine) {
     throw new Error('FlowEngineProvider must be supplied with an engine.');
@@ -32,9 +33,14 @@ export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = (props) => 
       <FlowContextProvider context={engine.context}>{children}</FlowContextProvider>
     </FlowEngineReactContext.Provider>
   );
-};
+});
 
-export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+FlowEngineProvider.displayName = 'FlowEngineProvider';
+
+export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactNode; app: any }> = ({
+  children,
+  app,
+}) => {
   const { modal, message, notification } = App.useApp();
   const [drawer, contextHolder] = useDrawer();
   const [embed, pageContextHolder] = usePage();
@@ -43,6 +49,8 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
   const engine = useFlowEngine();
   const config = useContext(ConfigProvider.ConfigContext);
   const { token } = theme.useToken();
+
+  config.locale = app.locales?.antd;
 
   useEffect(() => {
     const context = {
@@ -72,20 +80,20 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
   }, [engine, drawer, modal, message, notification, config, popover, token, dialog, embed]);
 
   return (
-    <>
+    <ConfigProvider {...config} popupMatchSelectWidth={false}>
       {children}
       {contextHolder as any}
       {popoverContextHolder as any}
       {pageContextHolder as any}
       {dialogContextHolder as any}
       {/* The modal context is provided by App.useApp() */}
-    </>
+    </ConfigProvider>
   );
 };
-
-export const useFlowEngine = (): FlowEngine => {
+// 不 throw Error 怎么处理？
+export const useFlowEngine = ({ throwError = true } = {}): FlowEngine => {
   const context = useContext(FlowEngineReactContext);
-  if (!context) {
+  if (!context && throwError) {
     // This error should ideally not be hit if FlowEngineProvider is used correctly at the root
     // and always supplied with an engine.
     throw new Error(

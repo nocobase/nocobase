@@ -101,7 +101,7 @@ describe('DefaultValue component', () => {
     // 每个用例重置表单实例，避免跨用例的值污染（例如上个用例输入的 "hello"）
     form = createForm();
 
-    // 为多选关联选择组件的测试场景，覆盖/简化自动流程，只保留必要的属性赋值
+    // 为多选关联选择组件的测试场景，覆盖/简化 beforeRender 事件流，仅保留必要的属性赋值
     RecordSelectFieldModel.registerFlow({ key: 'eventSettings', manual: true, steps: {} });
     RecordSelectFieldModel.registerFlow({
       key: 'selectSettings',
@@ -193,7 +193,7 @@ describe('DefaultValue component', () => {
         },
       },
     });
-    // 指定为对多关系，DefaultValue 内部应选择 RecordSelectFieldModel，并在 onAfterAutoFlows 推断 multiple
+    // 指定为对多关系，DefaultValue 内部应选择 RecordSelectFieldModel，并在 onDispatchEventEnd 推断 multiple
     host.context.defineProperty('collectionField', {
       value: {
         interface: 'm2m',

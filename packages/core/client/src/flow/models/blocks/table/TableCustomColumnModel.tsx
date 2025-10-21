@@ -70,6 +70,10 @@ TableCustomColumnModel.registerFlow({
         ctx.model.setProps('width', params.width);
       },
     },
+    fixed: {
+      title: escapeT('Fixed'),
+      use: 'fixed',
+    },
   },
 });
 
