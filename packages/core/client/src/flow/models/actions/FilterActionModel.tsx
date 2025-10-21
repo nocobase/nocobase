@@ -18,11 +18,14 @@ import { FilterContainer } from '../../components/filter/FilterContainer';
 export class FilterActionModel extends ActionModel {
   static scene = 'collection';
 
+  private readonly map = new WeakMap<any, any>();
+
   declare props: ButtonProps & {
     filterValue?: any;
     ignoreFieldsNames?: string[];
     open?: boolean;
     position: 'left';
+    filterableFieldNames?: string[];
   };
 
   defaultProps: any = {
@@ -32,6 +35,26 @@ export class FilterActionModel extends ActionModel {
     filterValue: { logic: '$and', items: [] },
   };
 
+  getIgnoreFieldNames() {
+    if (this.map.has(this.props.filterableFieldNames)) {
+      return this.map.get(this.props.filterableFieldNames);
+    }
+
+    const fields =
+      this.context.blockModel.collection?.getFields().filter((field) => {
+        // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
+        return field.target !== 'attachments';
+      }) || [];
+
+    const result = getIgnoreFieldNames(
+      this.props.filterableFieldNames || [],
+      fields.map((field) => field.name),
+    );
+    this.map.set(this.props.filterableFieldNames, result);
+
+    return result;
+  }
+
   render() {
     return (
       <Popover
@@ -40,7 +63,9 @@ export class FilterActionModel extends ActionModel {
           <FilterContainer
             value={this.props.filterValue}
             ctx={this.context}
-            FilterItem={(props) => <VariableFilterItem {...props} model={this} />}
+            FilterItem={(props) => (
+              <VariableFilterItem {...props} model={this} ignoreFieldNames={this.getIgnoreFieldNames()} />
+            )}
           />
         }
         trigger="click"
@@ -72,10 +97,10 @@ FilterActionModel.registerFlow({
         ctx.model.setProps('position', params.position || 'left');
       },
     },
-    filterableFieldsNames: {
+    filterableFieldNames: {
       title: escapeT('Filterable fields'),
       uiSchema: {
-        filterableFieldsNames: {
+        filterableFieldNames: {
           type: 'array',
           'x-decorator': 'FormItem',
           'x-component': (props) => {
@@ -98,11 +123,11 @@ FilterActionModel.registerFlow({
       defaultParams(ctx) {
         const names = ctx.blockModel.collection.getFields().map((field) => field.name);
         return {
-          filterableFieldsNames: names || [],
+          filterableFieldNames: names || [],
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('filterableFieldsNames', params.filterableFieldsNames);
+        ctx.model.setProps('filterableFieldNames', params.filterableFieldNames);
       },
     },
     defaultFilter: {
@@ -208,4 +233,8 @@ function clearInputValue(value: any) {
     return '';
   }
   return undefined;
+}
+
+function getIgnoreFieldNames(filterableFieldNames: string[], allFields: string[]) {
+  return allFields?.filter((field) => !filterableFieldNames.includes(field));
 }

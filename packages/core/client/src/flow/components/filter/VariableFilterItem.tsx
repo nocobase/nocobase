@@ -48,6 +48,7 @@ export interface VariableFilterItemProps {
    * 默认使用整棵 ctx 的 metaTree：model.context.getPropertyMetaTree()
    */
   rightMetaTree?: MetaTreeNode[] | (() => MetaTreeNode[] | Promise<MetaTreeNode[]>);
+  ignoreFieldNames?: string[];
 }
 
 function createStaticInputRenderer(
@@ -85,7 +86,7 @@ function createStaticInputRenderer(
  * 上下文筛选项组件
  */
 export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
-  ({ value, model, rightAsVariable, rightMetaTree }) => {
+  ({ value, model, rightAsVariable, rightMetaTree, ignoreFieldNames }) => {
     // 使用 View 上下文，确保可访问 ctx.view 的异步子树
     const ctx = useFlowViewContext();
     const t = model.translate;
@@ -256,6 +257,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
           style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}
           onlyLeafSelectable={true}
           placeholder={t('Select field')}
+          ignoreFieldNames={ignoreFieldNames}
         />
 
         <Select
