@@ -54,7 +54,7 @@ export const FilterItem: FC<FilterItemProps> = observer(
         return field.target !== 'attachments';
       }) || [];
     const ignoreFieldsNames = getIgnoreFieldsNames(
-      modelInstance.props.filterableFieldsNames || [],
+      modelInstance.props.filterableFieldNames || [],
       fields.map((field) => field.name),
     );
     const t = modelInstance.translate;
@@ -140,6 +140,6 @@ export const FilterItem: FC<FilterItemProps> = observer(
   },
 );
 
-function getIgnoreFieldsNames(filterableFieldsNames: string[], allFields: string[]) {
-  return allFields?.filter((field) => !filterableFieldsNames.includes(field));
+function getIgnoreFieldsNames(filterableFieldNames: string[], allFields: string[]) {
+  return allFields?.filter((field) => !filterableFieldNames.includes(field));
 }

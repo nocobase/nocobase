@@ -35,6 +35,7 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   formatPathToValue: customFormatPathToValue,
   open,
   onlyLeafSelectable = false,
+  ignoreFieldNames,
   ...cascaderProps
 }) => {
   // 记录最后点击的路径，用于双击检测
@@ -97,8 +98,11 @@ const FlowContextSelectorComponent: React.FC<FlowContextSelectorProps> = ({
   const options = useMemo(() => {
     if (!resolvedMetaTree) return [];
     const base = buildContextSelectorItems(resolvedMetaTree);
-    return translateOptions(base);
-  }, [resolvedMetaTree, updateFlag, translateOptions]);
+    return translateOptions(base).filter((item) => {
+      if (!ignoreFieldNames || ignoreFieldNames.length === 0) return true;
+      return !ignoreFieldNames.includes(item.meta?.name || '');
+    });
+  }, [resolvedMetaTree, updateFlag, translateOptions, ignoreFieldNames]);
 
   // 内部展开路径：在 onlyLeafSelectable=true 时，点击父节点不会触发 onChange，
   // 但会触发 loadData。我们在此记录路径以在懒加载后保持展开。
