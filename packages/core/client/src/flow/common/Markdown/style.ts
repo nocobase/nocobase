@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { genStyleHook } from '../../../../schema-component/antd/__builtins__';
+import { genStyleHook } from '../../../schema-component/antd/__builtins__';
 
 export default genStyleHook('nb-markdown-vditor', (token) => {
   const { componentCls } = token;

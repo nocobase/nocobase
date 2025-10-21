@@ -11,7 +11,7 @@ import { useAPIClient, useCompile, usePlugin, useZIndexContext, getZIndex } from
 import { Button } from 'antd';
 import { css } from '@emotion/css';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
-import { FlowContextSelector, useFlowContext } from '@nocobase/flow-engine';
+import { FlowContextSelector, useFlowContext, useFlowModel } from '@nocobase/flow-engine';
 import React, { useEffect, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Vditor from 'vditor';
@@ -273,6 +273,8 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
   const flowCtx = useFlowContext();
   const [innerValue, setInnerValue] = useState<string>(value || '');
   const ref = useRef<TextAreaRef>(null);
+  const isConfigMode = !!flowCtx.model.flowEngine?.flowSettings?.enabled;
+  console.log(isConfigMode);
 
   // 外部 value 变化时同步内部显示
   useEffect(() => {
@@ -333,34 +335,36 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
         placeholder={placeholder}
         style={{ width: '100%' }}
       />
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          zIndex: 1,
-          lineHeight: 0,
-        }}
-      >
-        {/* 参考 1.0：小号按钮 + 非 hover 去掉右/上边框，背景透明，贴合右上角 */}
-        <FlowContextSelector metaTree={metaTree} onChange={(val) => handleVariableSelected(val)} onlyLeafSelectable>
-          <Button
-            type="default"
-            className={css`
-              font-style: italic;
-              font-family: 'New York, Times New Roman, Times, serif';
-              line-height: 1;
-              &:not(:hover) {
-                border-right-color: transparent;
-                border-top-color: transparent;
-                background-color: transparent;
-              }
-            `}
-          >
-            x
-          </Button>
-        </FlowContextSelector>
-      </div>
+      {isConfigMode && (
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            right: 0,
+            zIndex: 1,
+            lineHeight: 0,
+          }}
+        >
+          {/* 参考 1.0：小号按钮 + 非 hover 去掉右/上边框，背景透明，贴合右上角 */}
+          <FlowContextSelector metaTree={metaTree} onChange={(val) => handleVariableSelected(val)} onlyLeafSelectable>
+            <Button
+              type="default"
+              className={css`
+                font-style: italic;
+                font-family: 'New York, Times New Roman, Times, serif';
+                line-height: 1;
+                &:not(:hover) {
+                  border-right-color: transparent;
+                  border-top-color: transparent;
+                  background-color: transparent;
+                }
+              `}
+            >
+              x
+            </Button>
+          </FlowContextSelector>
+        </div>
+      )}
     </div>
   );
 };
