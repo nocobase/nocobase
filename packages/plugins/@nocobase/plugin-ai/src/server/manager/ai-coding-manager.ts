@@ -36,28 +36,24 @@ export class AICodingManager {
   }
 
   provideWorkContextBackgroundStrategy(): WorkContextBackgroundStrategy {
-    return async (ctx, aiMessages, workContext) => {
+    return async (_ctx, _aiMessages, workContext) => {
       const document: { name: string; content: string }[] = [resource];
       const sceneSet = new Set(workContext.map((item) => item.content as Content).map((content) => content.scene));
-      if (sceneSet.has('JSBlockModel')) {
+      if (sceneSet.has('block')) {
         document.push(jsBlock);
         document.push(...jsFilterExample['en-US']);
       }
-      if (sceneSet.has('JSItemModel')) {
-        document.push(jsItem);
-      }
-      if (sceneSet.has('JSFieldModel')) {
+      if (sceneSet.has('detail')) {
         document.push(jsField);
       }
-      if (sceneSet.has('JSColumnModel')) {
+      if (sceneSet.has('form')) {
+        document.push(jsItem);
+        document.push(jsAction);
+      }
+
+      if (sceneSet.has('table')) {
         document.push(jsColumn);
         document.push(...jsColumnExample['en-US']);
-      }
-      if (
-        sceneSet.has('JSFormActionModel') ||
-        sceneSet.has('JSRecordActionModel') ||
-        sceneSet.has('JSCollectionActionModel')
-      ) {
         document.push(jsAction);
       }
 

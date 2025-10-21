@@ -8,74 +8,25 @@
  */
 
 import React from 'react';
-import { FlowModel, FlowRuntimeContext } from '@nocobase/flow-engine';
+import { FlowRuntimeContext, useFlowContext } from '@nocobase/flow-engine';
 import { AICodingButton } from './AICodingButton';
-import {
-  JSBlockModel,
-  JSCollectionActionModel,
-  JSColumnModel,
-  JSFieldModel,
-  JSFormActionModel,
-  JSItemModel,
-  JSRecordActionModel,
-} from '@nocobase/client';
+import { CodeEditorExtension } from '@nocobase/client';
 import { uid } from '@nocobase/utils/client';
+import _ from 'lodash';
 
 export const setupAICoding = () => {
-  FlowModel.registerFlow({
-    key: 'AIEmployeeHandleInjectableRending',
-    on: 'InjectableRending',
-    steps: {
-      injectAIEmployeeShortcut: {
-        handler(ctx) {
-          const settingContext = ctx.inputArgs.ctx;
-          const name = ctx.inputArgs.name ?? 'code';
-          const language = ctx.inputArgs.language ?? 'javascript';
-          const scene = ctx.inputArgs.scene;
-          const setProps = ctx.inputArgs.setProps;
-
-          setProps((prev) => ({
-            ...prev,
-            rightExtra: [
-              (editorRef, setActive) => {
-                const props = {
-                  uid: getUid(settingContext, name),
-                  scene: scene ?? getScene(settingContext),
-                  language,
-                  editorRef,
-                  setActive,
-                };
-                return <AICodingButton key="plugin-ai-button-ai-coding" {...props} />;
-              },
-            ],
-          }));
-        },
-      },
-    },
+  CodeEditorExtension.registerRightExtra({
+    name: 'ai-coding-button',
+    extra: AICodingExtra,
   });
 };
 
+const AICodingExtra = (props) => {
+  const ctx = useFlowContext<FlowRuntimeContext>();
+  const uid = getUid(ctx, props.name);
+  const scene = props.scene ?? 'unknown';
+  return <AICodingButton {...props} uid={uid} scene={_.isArray(scene) ? scene[0] : scene} />;
+};
 const getUid = (context: FlowRuntimeContext, name: string) => {
   return `${context.model.uid}-${context.flowKey ?? uid()}-${context.currentStep ?? uid()}-${name}`;
-};
-
-const getScene = (context: FlowRuntimeContext) => {
-  const flowModel = context.model;
-  if (flowModel instanceof JSBlockModel) {
-    return 'JSBlockModel';
-  } else if (flowModel instanceof JSItemModel) {
-    return 'JSItemModel';
-  } else if (flowModel instanceof JSFieldModel) {
-    return 'JSFieldModel';
-  } else if (flowModel instanceof JSColumnModel) {
-    return 'JSColumnModel';
-  } else if (flowModel instanceof JSFormActionModel) {
-    return 'JSFormActionModel';
-  } else if (flowModel instanceof JSRecordActionModel) {
-    return 'JSRecordActionModel';
-  } else if (flowModel instanceof JSCollectionActionModel) {
-    return 'JSCollectionActionModel';
-  } else {
-    return 'unknown';
-  }
 };

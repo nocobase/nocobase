@@ -115,7 +115,7 @@ export class PluginUISchemaStorageServer extends Plugin {
       });
     });
 
-    this.app.resourceManager.define({
+    this.app.resourcer.define({
       name: 'uiSchemas',
       actions: uiSchemaActions,
     });

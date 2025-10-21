@@ -642,11 +642,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     return this.create({ values, transaction, context, ...rest });
   }
 
-  private validate(options: {
-    values: Record<string, any>[];
-    context: { t: Function };
-    operation: 'create' | 'update';
-  }) {
+  private validate(options: { values: Record<string, any>[]; operation: 'create' | 'update' }) {
     this.collection.validate(options);
   }
 
@@ -673,7 +669,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     });
 
     const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
-    this.validate({ values: values as any, context: options.context, operation: 'create' });
+    this.validate({ values: values as any, operation: 'create' });
     const instance = await this.model.create<any>(values, {
       ...options,
       transaction,
@@ -744,7 +740,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     const guard = UpdateGuard.fromOptions(this.model, { ...options, underscored: this.collection.options.underscored });
 
     const values = (this.model as typeof Model).callSetters(guard.sanitize(options.values || {}), options);
-    this.validate({ values: values as any, context: options.context, operation: 'update' });
+    this.validate({ values: values as any, operation: 'update' });
     // NOTE:
     // 1. better to be moved to separated API like bulkUpdate/updateMany
     // 2. strictly `false` comparing for compatibility of legacy api invoking
