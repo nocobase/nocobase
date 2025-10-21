@@ -119,6 +119,7 @@ const ArrayNester = ({ name, value, disabled }: any) => {
               // 每行只创建一次 fork
               if (!forksRef.current[uid]) {
                 const fork = gridModel.createFork();
+                fork.gridContainerRef = React.createRef<HTMLDivElement>();
                 fork.context.defineProperty('fieldIndex', {
                   get: () => [...rowIndex, `${collectionName}:${index}`],
                 });
