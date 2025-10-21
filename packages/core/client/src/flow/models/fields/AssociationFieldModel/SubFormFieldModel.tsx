@@ -159,6 +159,9 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
   updateAssociation = true;
   onInit(options) {
     super.onInit(options);
+    this.context.blockModel.emitter.on('formValuesChange', ({ changedValues, allValues }) => {
+      this.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
+    });
   }
   render() {
     return <ArrayNester {...this.props} />;
@@ -172,6 +175,21 @@ SubFormListFieldModel.define({
     subModels: {
       grid: {
         use: 'FormGridModel',
+      },
+    },
+  },
+});
+
+SubFormListFieldModel.registerFlow({
+  key: 'eventSettings',
+  title: escapeT('Event settings'),
+  on: 'formValuesChange',
+  steps: {
+    linkageRules: {
+      use: 'fieldLinkageRules',
+      afterParamsSave(ctx) {
+        // 保存后，自动运行一次
+        ctx.model.applyFlow('eventSettings');
       },
     },
   },
