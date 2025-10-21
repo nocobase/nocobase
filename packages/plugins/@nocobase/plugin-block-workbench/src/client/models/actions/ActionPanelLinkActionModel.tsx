@@ -27,13 +27,38 @@ function completeURL(url: string, origin = window.location.origin) {
 function joinUrlSearch(url: string, params: { name: string; value: any }[] = []): string {
   if (!params?.length) return url;
 
-  const queryString = params
-    .filter((p) => p.name && p.value !== undefined && p.value !== null && p.value !== '')
-    .map((p) => `${encodeURIComponent(p.name)}=${encodeURIComponent(p.value)}`)
-    .join('&');
+  const filtered = params.filter((p) => p.name && p.value !== undefined && p.value !== null && p.value !== '');
+  if (!filtered.length) return url;
 
-  const separator = url.includes('?') ? '&' : '?';
-  return `${url}${separator}${queryString}`;
+  try {
+    // 检测是否为绝对 URL
+    const isAbsolute = /^https?:\/\//i.test(url);
+
+    // 确定 base，用于 URL 构造器解析相对路径
+    const base = typeof window !== 'undefined' ? window.location.origin : 'http://localhost';
+
+    // 使用 URL 构造器自动处理 query、hash 等
+    const u = new URL(url, isAbsolute ? undefined : base);
+
+    for (const { name, value } of filtered) {
+      u.searchParams.set(name, String(value));
+    }
+
+    // 如果是相对路径（没有协议、域名），去掉 origin
+    if (!isAbsolute) {
+      // 组合 pathname + search + hash
+      return `${u.pathname}${u.search}${u.hash}`;
+    }
+
+    return u.toString();
+  } catch {
+    // fallback: 纯字符串拼接方式
+    const queryString = filtered.map((p) => `${encodeURIComponent(p.name)}=${encodeURIComponent(p.value)}`).join('&');
+
+    const [path, hash = ''] = url.split('#');
+    const separator = path.includes('?') ? '&' : '?';
+    return `${path}${separator}${queryString}${hash ? `#${hash}` : ''}`;
+  }
 }
 
 export class ActionPanelLinkActionModel extends ActionPanelActionModel {
@@ -55,6 +80,7 @@ ActionPanelLinkActionModel.registerFlow({
   steps: {
     click: {
       async handler(ctx, params) {
+        console.log(ctx.router);
         const { url, searchParams, openInNewWindow } = ctx.model.props as any;
         const t = ctx.t;
         if (!url) {
@@ -67,7 +93,11 @@ ActionPanelLinkActionModel.registerFlow({
           if (openInNewWindow) {
             window.open(completeURL(link), '_blank');
           } else {
-            ctx.router.navigate(link, { replace: true });
+            if (isURL(link)) {
+              window.location.href = link;
+            } else {
+              ctx.router.navigate(link, { replace: true });
+            }
           }
         } else {
           console.error('link should be a string');
