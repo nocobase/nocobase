@@ -7,21 +7,25 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, MultiRecordResource, observer, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { escapeT, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { isEmptyFilter, removeNullCondition, transformFilter } from '@nocobase/utils/client';
-import { Button, ButtonProps, Popover, Select, Space } from 'antd';
-import React, { FC } from 'react';
-import { FilterGroup, FilterItem, VariableFilterItem } from '../../components/filter';
+import { ButtonProps, Popover, Select } from 'antd';
+import React from 'react';
+import { FilterGroup, VariableFilterItem } from '../../components/filter';
 import { ActionModel } from '../base';
+import { FilterContainer } from '../../components/filter/FilterContainer';
 
 export class FilterActionModel extends ActionModel {
   static scene = 'collection';
+
+  private readonly map = new WeakMap<any, any>();
 
   declare props: ButtonProps & {
     filterValue?: any;
     ignoreFieldsNames?: string[];
     open?: boolean;
     position: 'left';
+    filterableFieldNames?: string[];
   };
 
   defaultProps: any = {
@@ -31,6 +35,26 @@ export class FilterActionModel extends ActionModel {
     filterValue: { logic: '$and', items: [] },
   };
 
+  getIgnoreFieldNames() {
+    if (this.map.has(this.props.filterableFieldNames)) {
+      return this.map.get(this.props.filterableFieldNames);
+    }
+
+    const fields =
+      this.context.blockModel.collection?.getFields().filter((field) => {
+        // 过滤掉附件字段，因为会报错：Target collection attachments not found for field xxx
+        return field.target !== 'attachments';
+      }) || [];
+
+    const result = getIgnoreFieldNames(
+      this.props.filterableFieldNames || [],
+      fields.map((field) => field.name),
+    );
+    this.map.set(this.props.filterableFieldNames, result);
+
+    return result;
+  }
+
   render() {
     return (
       <Popover
@@ -39,7 +63,9 @@ export class FilterActionModel extends ActionModel {
           <FilterContainer
             value={this.props.filterValue}
             ctx={this.context}
-            FilterItem={(props) => <VariableFilterItem {...props} model={this} />}
+            FilterItem={(props) => (
+              <VariableFilterItem {...props} model={this} ignoreFieldNames={this.getIgnoreFieldNames()} />
+            )}
           />
         }
         trigger="click"
@@ -71,10 +97,10 @@ FilterActionModel.registerFlow({
         ctx.model.setProps('position', params.position || 'left');
       },
     },
-    filterableFieldsNames: {
+    filterableFieldNames: {
       title: escapeT('Filterable fields'),
       uiSchema: {
-        filterableFieldsNames: {
+        filterableFieldNames: {
           type: 'array',
           'x-decorator': 'FormItem',
           'x-component': (props) => {
@@ -97,11 +123,11 @@ FilterActionModel.registerFlow({
       defaultParams(ctx) {
         const names = ctx.blockModel.collection.getFields().map((field) => field.name);
         return {
-          filterableFieldsNames: names || [],
+          filterableFieldNames: names || [],
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('filterableFieldsNames', params.filterableFieldsNames);
+        ctx.model.setProps('filterableFieldNames', params.filterableFieldNames);
       },
     },
     defaultFilter: {
@@ -209,105 +235,6 @@ function clearInputValue(value: any) {
   return undefined;
 }
 
-/**
- * 筛选项组件的属性接口
- */
-interface FilterItemProps {
-  value: {
-    path: string;
-    operator: string;
-    value: string;
-  };
+function getIgnoreFieldNames(filterableFieldNames: string[], allFields: string[]) {
+  return allFields?.filter((field) => !filterableFieldNames.includes(field));
 }
-
-/**
- * FilterContent 组件的属性接口
- */
-interface FilterContentProps {
-  /** 响应式的过滤条件对象 */
-  value: Record<string, any>;
-  /** 自定义筛选项组件 */
-  FilterItem?: React.FC<FilterItemProps>;
-  /** 上下文对象，用于获取字段列表等元信息 */
-  ctx: any;
-}
-
-/**
- * 筛选内容组件
- *
- * 支持新的数据结构格式：
- * ```typescript
- * {
- *   "logic": "or",
- *   "items": [
- *     {
- *       "leftValue": "isAdmin",
- *       "operator": "eq",
- *       "rightValue": true
- *     },
- *     {
- *       "logic": "and",
- *       "items": [...]
- *     }
- *   ]
- * }
- * ```
- *
- * @example
- * ```typescript
- * const filterValue = observable({
- *   logic: 'and',
- *   items: []
- * });
- *
- * <FilterContent
- *   value={filterValue}
- *   ctx={contextObject}
- *   FormItem={CustomFormItem}
- * />
- * ```
- */
-export const FilterContainer: FC<FilterContentProps> = observer(
-  (props) => {
-    const { value, FilterItem, ctx } = props;
-
-    // 确保 value 有正确的默认结构
-    if (!value.logic) {
-      value.logic = 'and';
-    }
-    if (!Array.isArray(value.items)) {
-      value.items = [];
-    }
-
-    const handleReset = () => {
-      // 触发重置事件，由外部组件处理
-      if (ctx?.model?.dispatchEvent) {
-        ctx.model.dispatchEvent('reset');
-      }
-    };
-
-    const handleSubmit = () => {
-      // 触发提交事件，由外部组件处理
-      if (ctx?.model?.dispatchEvent) {
-        ctx.model.dispatchEvent('submit');
-      }
-    };
-
-    const translate = ctx?.model?.translate || ((text: string) => text);
-
-    return (
-      <>
-        <FilterGroup value={value} FilterItem={FilterItem} />
-        <Space style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
-          <Button onClick={handleReset}>{translate('Reset')}</Button>
-          <Button type="primary" onClick={handleSubmit}>
-            {translate('Submit')}
-          </Button>
-        </Space>
-      </>
-    );
-  },
-  {
-    displayName: 'FilterContainer',
-  },
-);

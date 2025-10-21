@@ -21,6 +21,7 @@ export interface FlowContextSelectorProps
   formatPathToValue?: (item: MetaTreeNode) => string;
   open?: boolean;
   onlyLeafSelectable?: boolean;
+  ignoreFieldNames?: string[];
 }
 
 export interface ContextSelectorItem {
@@ -69,6 +70,7 @@ export interface VariableInputProps {
    * 默认行为为 null；可设置为 '' 等，以便清空后默认切换为“常量-空字符串”。
    */
   clearValue?: any;
+  ignoreFieldNames?: string[];
   [key: string]: any;
 }
 
