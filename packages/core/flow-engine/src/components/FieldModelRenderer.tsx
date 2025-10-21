@@ -34,7 +34,12 @@ export function FieldModelRenderer(props: any) {
     let val;
     if (e && e.target && typeof e.target.value !== 'undefined') {
       val = e.target.value;
-    } else if (typeof e === 'string' || typeof e === 'number' || (typeof e === 'object' && !(e instanceof Event))) {
+    } else if (
+      typeof e === 'string' ||
+      typeof e === 'number' ||
+      typeof e === 'boolean' ||
+      (typeof e === 'object' && !(e instanceof Event))
+    ) {
       val = e;
     } else {
       val = '';
