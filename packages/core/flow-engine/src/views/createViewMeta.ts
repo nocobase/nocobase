@@ -287,8 +287,25 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
         try {
           const inputArgs = (ctx.view as any)?.inputArgs || {};
           const srcId = inputArgs?.sourceId;
-          const assoc: string | undefined = inputArgs?.associationName;
-          const dsKey: string = inputArgs?.dataSourceKey || 'main';
+          let assoc: string | undefined = inputArgs?.associationName;
+          let dsKey: string = inputArgs?.dataSourceKey || 'main';
+
+          // 兜底：若 associationName 缺失或不含“.”，尝试从当前视图模型的 openView 参数推断
+          if (!assoc || typeof assoc !== 'string' || !assoc.includes('.')) {
+            const nav = (ctx.view as any)?.navigation;
+            const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
+            const last = stack?.[stack.length - 1];
+            if (last?.viewUid) {
+              let model: any = ctx?.engine?.getModel?.(last.viewUid);
+              if (!model) {
+                model = await ctx.engine.loadModel({ uid: last.viewUid });
+              }
+              const p = model?.getStepParams?.('popupSettings', 'openView') || {};
+              assoc = p?.associationName || assoc;
+              dsKey = p?.dataSourceKey || dsKey;
+            }
+          }
+
           if (srcId != null && srcId !== '' && assoc && typeof assoc === 'string') {
             const parentCollectionName = String(assoc).includes('.') ? String(assoc).split('.')[0] : undefined;
             if (parentCollectionName) {

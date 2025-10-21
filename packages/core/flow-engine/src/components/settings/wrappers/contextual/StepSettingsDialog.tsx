@@ -14,7 +14,14 @@ import { Button, Space } from 'antd';
 import React, { useEffect } from 'react';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from '../../../../hooks/useFlowSettingsContext';
 import { StepSettingsDialogProps } from '../../../../types';
-import { compileUiSchema, FlowExitException, getT, resolveDefaultParams, resolveStepUiSchema } from '../../../../utils';
+import {
+  compileUiSchema,
+  FlowExitException,
+  getT,
+  resolveDefaultParams,
+  resolveStepUiSchema,
+  buildSettingsViewInputArgs,
+} from '../../../../utils';
 
 const SchemaField = createSchemaField();
 
@@ -136,11 +143,11 @@ const openStepSettingsDialog = async ({
     destroyOnClose: true,
     ...toJS(uiModeProps),
     // 透传 navigation，便于变量元信息根据真实视图栈推断父级弹窗
-    inputArgs: {
-      ...(toJS(uiModeProps)?.inputArgs || {}),
-      navigation: ctx?.view?.navigation ?? toJS(uiModeProps)?.inputArgs?.navigation,
-      __isSettingsPopup: true,
-    },
+    inputArgs: buildSettingsViewInputArgs(
+      model as any,
+      { ...(toJS(uiModeProps)?.inputArgs || {}), __isSettingsPopup: true },
+      { navigationOverride: ctx?.view?.navigation },
+    ),
     onClose: () => {
       if (cleanup) {
         cleanup();
