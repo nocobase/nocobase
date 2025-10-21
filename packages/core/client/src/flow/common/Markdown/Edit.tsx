@@ -274,8 +274,6 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
   const [innerValue, setInnerValue] = useState<string>(value || '');
   const ref = useRef<TextAreaRef>(null);
   const isConfigMode = !!flowCtx.model.flowEngine?.flowSettings?.enabled;
-  console.log(isConfigMode);
-
   // 外部 value 变化时同步内部显示
   useEffect(() => {
     setInnerValue(value || '');
