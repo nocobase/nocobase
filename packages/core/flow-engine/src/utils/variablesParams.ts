@@ -124,8 +124,11 @@ export function createRecordMetaFactory(
 export function createCurrentRecordMetaFactory(
   ctx: FlowContext,
   collectionAccessor: () => Collection | null,
+  options?: { title?: string },
 ): PropertyMetaFactory {
-  const title = ctx.t?.('Current record') || 'Current record';
+  const title = options?.title
+    ? ctx.t?.(options.title) || options.title
+    : ctx.t?.('Current record') || 'Current record';
   return createRecordMetaFactory(collectionAccessor, title, (c) => inferRecordRef(c));
 }
 
