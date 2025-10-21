@@ -49,7 +49,15 @@ function Button(props) {
   return (
     <List.Item
       prefix={(<Avatar style={{ backgroundColor }} icon={<Icon type={icon} />} />) as any}
-      style={{ marginTop: '5px', fontSize: 14 }}
+      style={{
+        marginTop: '5px',
+        fontSize: 14,
+        ...(others.disabled
+          ? {
+              color: 'inherit',
+            }
+          : {}),
+      }}
       {...others}
     >
       <span>{!onlyIcon && title}</span>
