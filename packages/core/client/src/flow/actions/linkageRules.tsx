@@ -26,7 +26,7 @@ import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { FieldAssignValueInput } from '../components/FieldAssignValueInput';
-import _ from 'lodash';
+import _, { values } from 'lodash';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -350,38 +350,40 @@ export const subFormLinkageSetFieldProps = defineAction({
         const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
         const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
 
-        if (fieldModel) {
-          let props: any = {};
+        fieldModel.forks.forEach((forkModel: FlowModel) => {
+          if (forkModel) {
+            let props: any = {};
 
-          switch (state) {
-            case 'visible':
-              props = { hiddenModel: false };
-              break;
-            case 'hidden':
-              props = { hiddenModel: true };
-              break;
-            case 'hiddenReservedValue':
-              props = { hidden: true };
-              break;
-            case 'required':
-              props = { required: true };
-              break;
-            case 'notRequired':
-              props = { required: false };
-              break;
-            case 'disabled':
-              props = { disabled: true };
-              break;
-            case 'enabled':
-              props = { disabled: false };
-              break;
-            default:
-              console.warn(`Unknown state: ${state}`);
-              return;
+            switch (state) {
+              case 'visible':
+                props = { hiddenModel: false };
+                break;
+              case 'hidden':
+                props = { hiddenModel: true };
+                break;
+              case 'hiddenReservedValue':
+                props = { hidden: true };
+                break;
+              case 'required':
+                props = { required: true };
+                break;
+              case 'notRequired':
+                props = { required: false };
+                break;
+              case 'disabled':
+                props = { disabled: true };
+                break;
+              case 'enabled':
+                props = { disabled: false };
+                break;
+              default:
+                console.warn(`Unknown state: ${state}`);
+                return;
+            }
+
+            setProps(forkModel as FlowModel, props);
           }
-
-          setProps(fieldModel as FlowModel, props);
-        }
+        });
       } catch (error) {
         console.warn(`Failed to set props for field ${fieldUid}:`, error);
       }
@@ -1279,4 +1281,20 @@ function getSupportedActions(ctx: FlowContext, scene: ActionScene) {
     .map((action) => action.name);
 
   return result;
+}
+
+function getFieldPathAndIndex(changedValues: Record<string, any>, fieldName: string) {
+  const fieldPath = fieldName.split('.');
+  // 因为是子表单的值，所以是一个数组
+  const fieldValue = _.get(changedValues, fieldPath) || [];
+
+  return fieldValue
+    .map((item, index) => {
+      if (!item) return null;
+      return {
+        index,
+        value: item,
+      };
+    })
+    .filter(Boolean);
 }

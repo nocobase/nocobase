@@ -163,6 +163,12 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
       this.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
     });
   }
+  onMount() {
+    super.onMount();
+    setTimeout(() => {
+      this.applyFlow('eventSettings');
+    }, 100);
+  }
   render() {
     return <ArrayNester {...this.props} />;
   }
