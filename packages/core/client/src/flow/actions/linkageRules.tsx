@@ -455,6 +455,85 @@ export const linkageAssignField = defineAction({
   },
 });
 
+export const setFieldsDefaultValue = defineAction({
+  name: 'setFieldsDefaultValue',
+  title: escapeT('设置字段默认值'),
+  scene: ActionScene.FIELD_LINKAGE_RULES,
+  sort: 200,
+  uiSchema: {
+    value: {
+      type: 'object',
+      'x-component': (props) => {
+        const { value = { field: undefined, initialValue: undefined }, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
+
+        const fieldOptions = getFormFields(ctx);
+
+        const selectedFieldUid = value.field;
+
+        const handleFieldChange = (selectedField) => {
+          const nextField = selectedField;
+          const changed = nextField !== selectedFieldUid;
+          onChange({
+            ...value,
+            field: nextField,
+            initialValue: changed ? undefined : value.initialValue,
+          });
+        };
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Field')}</div>
+              <Select
+                value={selectedFieldUid}
+                onChange={handleFieldChange}
+                placeholder={t('Please select field')}
+                style={{ width: '100%' }}
+                options={fieldOptions}
+                showSearch
+                // @ts-ignore
+                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                allowClear
+              />
+            </div>
+            {selectedFieldUid && (
+              <div>
+                <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Default value')}</div>
+                <FieldAssignValueInput
+                  key={selectedFieldUid}
+                  fieldUid={selectedFieldUid}
+                  value={value.initialValue}
+                  onChange={(v) => onChange({ ...value, initialValue: v })}
+                />
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+  },
+  handler: (ctx, { value, setProps }) => {
+    const { initialValue, field } = value || {};
+    if (!field) return;
+    try {
+      const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+      const fieldModel = gridModels.find((model: any) => model.uid === field);
+      if (!fieldModel) return;
+      // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+      if (typeof initialValue === 'undefined') {
+        setProps(fieldModel as FlowModel, {});
+        return;
+      }
+      setProps(fieldModel as FlowModel, { initialValue });
+    } catch (error) {
+      console.warn(`Failed to assign value to field ${field}:`, error);
+    }
+  },
+});
+
 export const linkageRunjs = defineAction({
   name: 'linkageRunjs',
   title: escapeT('Execute JavaScript'),
