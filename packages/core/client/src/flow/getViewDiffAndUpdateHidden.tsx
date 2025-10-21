@@ -35,7 +35,12 @@ export function getViewDiffAndUpdateHidden(prevViewList: ViewItem[], currentView
     if (!currentViewMap.has(key)) {
       viewsToClose.push(viewItem);
     } else {
-      viewItem.hidden.value = currentViewMap.get(key).hidden.value; // 用于控制已经渲染的视图是否隐藏
+      const current = currentViewMap.get(key);
+      // 同步hidden状态，控制已渲染视图显隐
+      viewItem.hidden.value = current.hidden.value;
+      // 同步路由参数（如 tabUid / filterByTk / sourceId 等），
+      // 确保后续 openView 传递的 navigation.viewStack 与实际路由一致。
+      viewItem.params = current.params;
     }
   });
 
