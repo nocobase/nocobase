@@ -224,7 +224,7 @@ export const FlowRoute = () => {
         });
 
         // 6. 若仅参数变化（无视图开关），在路由变更回调中“就地”同步 prevViewList 的 params，
-        //    避免替换整个列表导致已打开视图的引用/hidden 状态丢失。
+        //    避免打开弹窗后切换 Tab 造成 params 不同步
         if (viewsToOpen.length === 0 && viewsToClose.length === 0) {
           const currentMap = new Map<string, (typeof viewList)[number]>();
           viewList.forEach((item) => currentMap.set(getKey(item), item));
