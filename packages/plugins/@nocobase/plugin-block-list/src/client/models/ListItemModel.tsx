@@ -21,7 +21,7 @@ import {
 import React from 'react';
 import { css } from '@emotion/css';
 import { SettingOutlined } from '@ant-design/icons';
-import { DetailsGridModel, FormComponent, ActionModel } from '@nocobase/client';
+import { DetailsGridModel, FormComponent, ActionModel, GridModel } from '@nocobase/client';
 import { Space } from 'antd';
 
 type ListItemModelStructure = {
@@ -54,8 +54,9 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
   render() {
     const index = this.context.index;
     const record = this.context.record;
-    const grid = this.subModels.grid.createFork({}, `grid-${index}`);
+    const grid = this.subModels.grid.createFork({}, `grid-${index}`) as any;
 
+    grid.gridContainerRef = React.createRef<HTMLDivElement>();
     grid.context.defineProperty('fieldIndex', {
       get: () => index,
       cache: false,
