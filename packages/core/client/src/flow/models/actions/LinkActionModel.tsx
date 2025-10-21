@@ -97,6 +97,9 @@ LinkActionModel.registerFlow({
               window.location.href = link;
             } else {
               ctx.router.navigate(link, { replace: true });
+              if (ctx.view) {
+                ctx.view.close();
+              }
             }
           }
         } else {
