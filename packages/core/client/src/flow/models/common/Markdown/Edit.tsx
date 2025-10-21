@@ -15,6 +15,7 @@ import { FlowContextSelector, useFlowContext } from '@nocobase/flow-engine';
 import React, { useEffect, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Vditor from 'vditor';
+import 'vditor/dist/index.css';
 import { useCDN } from './useCDN';
 import useStyle from './style';
 
