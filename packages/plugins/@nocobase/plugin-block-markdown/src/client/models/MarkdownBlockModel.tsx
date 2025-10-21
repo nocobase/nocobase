@@ -10,7 +10,7 @@
 import { BlockModel } from '@nocobase/client';
 import { escapeT } from '@nocobase/flow-engine';
 import { Card } from 'antd';
-import React from 'antd';
+import React from 'react';
 
 export class MarkdownBlockModel extends BlockModel {
   render() {
