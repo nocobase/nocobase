@@ -33,6 +33,7 @@ export const ObjectNester = (props) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
   const rowIndex = model.context.fieldIndex;
+  const record = model.context.record;
   // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
   const grid = React.useMemo(() => {
     if (rowIndex == null) return gridModel;
@@ -40,9 +41,13 @@ export const ObjectNester = (props) => {
     fork.context.defineProperty('fieldIndex', {
       get: () => rowIndex,
     });
+    fork.context.defineProperty('record', {
+      get: () => record,
+      cache: false,
+    });
 
     return fork;
-  }, [gridModel, rowIndex]);
+  }, [gridModel, rowIndex, record]);
   useEffect(() => {
     if (props.disabled !== grid.context.parentDisabled) {
       grid.mapSubModels('items', (item) => {

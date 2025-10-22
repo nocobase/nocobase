@@ -68,7 +68,7 @@ export class ActionPanelBlockModel extends BlockModel {
 
   renderComponent() {
     const { layout, ellipsis } = this.props;
-    console.log(ellipsis);
+
     const token = this.context.themeToken;
 
     return (

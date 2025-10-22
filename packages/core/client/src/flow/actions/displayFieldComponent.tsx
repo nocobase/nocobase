@@ -94,7 +94,7 @@ export const displayFieldComponent = defineAction({
   },
   async handler(ctx, params) {
     if (params.use !== ctx.model.subModels.field.use) {
-      ctx.model.setStepParams(ctx.flowKey, 'model', { use: ctx.model.subModels.field.use });
+      ctx.model.setStepParams(ctx.flowKey, 'model', { use: params.use });
     }
     // if (!params.use) {
     //   throw new Error('model use is a required parameter');
