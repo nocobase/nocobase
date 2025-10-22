@@ -133,10 +133,11 @@ export const QueryPanel: React.FC = observer(() => {
 
       // 通过校验后，写入查询参数并预览
       await ctx.model.onPreview(form.values, true);
-      setShowResult(true);
+      // 调整为不自动展示结果预览
+      // setShowResult(true);
     } catch (error: any) {
       configStore.setError(ctx.model.uid, error?.message);
-      setShowResult(true);
+      // setShowResult(true);
     } finally {
       setRunning(false);
     }
