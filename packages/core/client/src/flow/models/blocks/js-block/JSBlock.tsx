@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ElementProxy, escapeT, createSafeDocument, createSafeWindow } from '@nocobase/flow-engine';
+import {
+  ElementProxy,
+  escapeT,
+  createSafeDocument,
+  createSafeWindow,
+  createSafeNavigator,
+} from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
 import { BlockModel } from '../../base';
@@ -148,7 +154,12 @@ ctx.element.innerHTML = \`
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
-          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
+          const navigator = createSafeNavigator();
+          await ctx.runjs(
+            code,
+            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
+            { version },
+          );
         });
       },
     },
