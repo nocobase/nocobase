@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/client-v2",
-  "version": "2.0.0-alpha.15",
+  "version": "2.0.0-alpha.19",
   "license": "AGPL-3.0",
   "main": "lib/index.js",
   "module": "es/index.mjs",
@@ -8,8 +8,8 @@
   "dependencies": {
     "i18next": "^22.4.9",
     "react-router-dom": "^6.30.1",
-    "@nocobase/flow-engine": "^2.0.0-alpha.15",
-    "@nocobase/sdk": "2.0.0-alpha.15",
-    "@nocobase/shared": "2.0.0-alpha.15"
+    "@nocobase/flow-engine": "^2.0.0-alpha.19",
+    "@nocobase/sdk": "2.0.0-alpha.19",
+    "@nocobase/shared": "2.0.0-alpha.19"
   }
 }
