@@ -67,7 +67,7 @@ const Iframe: any = observer(
       };
 
       generateSrc();
-    }, [htmlContent, mode, url, params]);
+    }, [htmlContent, mode, url, params, html]);
 
     if (loading && !src) {
       return (
