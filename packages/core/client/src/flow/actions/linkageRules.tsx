@@ -13,6 +13,7 @@ import {
   escapeT,
   FlowContext,
   FlowModel,
+  FlowRuntimeContext,
   useFlowContext,
   useFlowEngine,
 } from '@nocobase/flow-engine';
@@ -1327,20 +1328,20 @@ export const subFormFieldLinkageRules = defineAction({
   defaultParams: {
     value: [],
   },
-  handler: (ctx, params) => {
+  useRawParams: true,
+  handler: async (ctx, params) => {
     if (ctx.model.hidden) {
       return;
     }
     const originalModel = ctx.model;
     const grid = originalModel?.subModels?.grid;
-    grid.forks.forEach((forkModel: FlowModel) => {
+    grid.forks.forEach(async (forkModel: FlowModel) => {
       if (forkModel.hidden) {
         return;
       }
-      ctx.model = forkModel;
-      commonLinkageRulesHandler(ctx, params);
+      const flowContext = new FlowRuntimeContext(forkModel, ctx.flowKey);
+      commonLinkageRulesHandler(flowContext, await flowContext.resolveJsonTemplate(params));
     });
-    ctx.model = originalModel;
   },
 });
 

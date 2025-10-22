@@ -9,7 +9,7 @@
 
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
+import { createCollectionContextMeta, escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
 import { Button, Card, Divider, Form, Tooltip } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -109,7 +109,8 @@ const ArrayNester = ({ name, value, disabled }: any) => {
       <Form.List name={name}>
         {(fields, { add, remove }) => (
           <>
-            {fields.map(({ key, name: index }) => {
+            {fields.map((field) => {
+              const { key, name: index } = field;
               const uid = `${key}.${name}`;
               // 每行只创建一次 fork
               if (!forksRef.current[uid]) {
@@ -117,6 +118,13 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                 fork.gridContainerRef = React.createRef<HTMLDivElement>();
                 fork.context.defineProperty('fieldIndex', {
                   get: () => [...rowIndex, `${collectionName}:${index}`],
+                });
+                fork.context.defineProperty('currentObject', {
+                  get: () => {
+                    return fork.context.form.getFieldValue([name, index]);
+                  },
+                  cache: false,
+                  meta: createCollectionContextMeta(() => fork.context.collection, fork.context.t('Current object')),
                 });
                 forksRef.current[uid] = fork;
               }
@@ -161,6 +169,11 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
     super.onInit(options);
     this.context.blockModel.emitter.on('formValuesChange', ({ changedValues, allValues }) => {
       this.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
+    });
+
+    this.context.defineProperty('currentObject', {
+      value: null,
+      meta: createCollectionContextMeta(() => this.context.collection, this.context.t('Current object')),
     });
   }
   onMount() {
