@@ -10,7 +10,7 @@
 import { escapeT, useFlowContext } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
-import { Card, Spin, theme, Tooltip, Select } from 'antd';
+import { Card, Spin, theme, Tooltip, Select, InputNumber } from 'antd';
 import { LinkOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import RIframe from 'react-iframe';
 import type { IIframe } from 'react-iframe/types';
@@ -26,7 +26,7 @@ import {
 
 const Iframe: any = observer(
   (props: IIframe & { html?: string; htmlId?: number; mode: string; params?: any }) => {
-    const { url, htmlId, mode = 'url', html, params, ...others } = props;
+    const { url, htmlId, mode = 'url', html, params, height, ...others } = props;
     const { token } = theme.useToken();
     const compile = useCompile();
     const ctx = useFlowContext();
@@ -73,7 +73,7 @@ const Iframe: any = observer(
       return (
         <div
           style={{
-            height: '60vh',
+            height: height || '60vh',
             marginBottom: token.padding,
             border: 0,
           }}
@@ -90,7 +90,7 @@ const Iframe: any = observer(
         display="block"
         position="relative"
         styles={{
-          height: '60vh',
+          height: height || '60vh',
           marginBottom: '24px',
           border: 0,
         }}
@@ -347,6 +347,20 @@ IframeBlockModel.registerFlow({
             },
             required: true,
           },
+          height: {
+            title: t('Height'),
+            type: 'string',
+            'x-decorator': 'FormItem',
+            'x-component': InputNumber,
+            'x-component-props': {
+              addonAfter: 'px',
+            },
+            'x-validator': [
+              {
+                minimum: 40,
+              },
+            ],
+          },
         };
       },
       useRawParams: true,
@@ -372,7 +386,7 @@ IframeBlockModel.registerFlow({
         }
       },
       async handler(ctx, params) {
-        const { mode, url, html, params: searchParams, allow, htmlId } = params;
+        const { mode, url, html, params: searchParams, allow, htmlId, height } = params;
         ctx.model.setProps({
           mode,
           url,
@@ -380,6 +394,7 @@ IframeBlockModel.registerFlow({
           params: searchParams,
           allow,
           htmlId,
+          height,
         });
       },
     },
