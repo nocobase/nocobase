@@ -381,14 +381,20 @@ ChartBlockModel.registerFlow({
           },
         };
       },
+      useRawParams: true, // 配置里的变量就直接用，不做解析
       async handler(ctx, params) {
         debugLog('---setting flow handler', params);
-        const { query, chart } = params;
+        let { query } = params;
+        const { chart } = params;
         if (!query || !chart) {
           return;
         }
         try {
           // 数据部分
+          if (query.mode !== 'sql') {
+            // builder 模式下，变量解析
+            query = await ctx.resolveJsonTemplate(query);
+          }
           ctx.model.applyQuery(query);
 
           // 图表部分
