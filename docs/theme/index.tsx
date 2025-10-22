@@ -105,20 +105,20 @@ const getGridClass = (feature: Feature): string => {
 };
 
 export const Layout = () => {
-  const lang = useLang();
+  // const lang = useLang();
   return (
     <BasicLayout
-      beforeNav={
-        <NoSSR>
-          <div className="rp-banner">
-            {
-              lang === 'en'
-                ? '🚧 NocoBase 2.0 documentation is incomplete and currently being written'
-                : '🚧 NocoBase 2.0 文档尚不完整，内容正在编写中'
-            }
-          </div>
-        </NoSSR>
-      }
+      // beforeNav={
+      //   <NoSSR>
+      //     <div className="rp-banner">
+      //       {
+      //         lang === 'en'
+      //           ? '🚧 NocoBase 2.0 documentation is incomplete and currently being written'
+      //           : '🚧 NocoBase 2.0 文档尚不完整，内容正在编写中'
+      //       }
+      //     </div>
+      //   </NoSSR>
+      // }
     />
   );
 };

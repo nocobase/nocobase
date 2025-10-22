@@ -1,3 +1,23 @@
+html:not(.rp-dark) {
+  --rp-code-font-size: 14px;
+  --rp-code-block-color: #2e3440;
+  --rp-code-title-bg: #e9f0f7;
+  --rp-code-block-bg: #f6f8fa;
+  --rp-code-copy-code-hover-bg: #ffffff0d;
+  --rp-code-wrap-code-hover-bg: #ffffff0d;
+  --rp-home-hero-name-background: #2e3440;
+}
+
+html.rp-dark {
+  --rp-code-font-size: 14px;
+  --rp-code-block-color: #e5e7eb;
+  --rp-code-title-bg: #2d2d2d;
+  --rp-code-block-bg: #242424;
+  --rp-code-copy-code-hover-bg: #ffffff0d;
+  --rp-code-wrap-code-hover-bg: #ffffff0d;
+  --rp-home-hero-name-background: #e5e7eb;
+}
+
 .rp-banner {
   --rp-banner-background: linear-gradient(279deg, #ff8b00 35.21%, #fb6d5b 63.34%);
     color: rgb(255, 255, 255);
