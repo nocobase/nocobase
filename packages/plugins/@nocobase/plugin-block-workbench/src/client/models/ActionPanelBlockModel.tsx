@@ -67,7 +67,8 @@ export class ActionPanelBlockModel extends BlockModel {
   }
 
   renderComponent() {
-    const { layout } = this.props;
+    const { layout, ellipsis } = this.props;
+    console.log(ellipsis);
     const token = this.context.themeToken;
 
     return (
@@ -99,9 +100,24 @@ export class ActionPanelBlockModel extends BlockModel {
                       );
                     };
                     action.props.children = (
-                      <div>
+                      <div style={{ width: '5em' }}>
                         <Avatar style={{ backgroundColor: color }} size={48} icon={<Icon type={icon as any} />} />
-                        <div>{title}</div>
+                        <div
+                          style={
+                            ellipsis
+                              ? {
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }
+                              : {
+                                  whiteSpace: 'normal',
+                                  wordBreak: 'break-word',
+                                }
+                          }
+                        >
+                          {title}
+                        </div>
                       </div>
                     );
 
@@ -181,7 +197,22 @@ export class ActionPanelBlockModel extends BlockModel {
                           (<Avatar style={{ backgroundColor: color }} icon={<Icon type={icon as any} />} />) as any
                         }
                       >
-                        <div>{title}</div>
+                        <div
+                          style={
+                            ellipsis
+                              ? {
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  whiteSpace: 'nowrap',
+                                }
+                              : {
+                                  whiteSpace: 'normal',
+                                  wordBreak: 'break-word',
+                                }
+                          }
+                        >
+                          {title}
+                        </div>
                       </List.Item>
                     );
                     return (
@@ -198,6 +229,9 @@ export class ActionPanelBlockModel extends BlockModel {
                               .ant-btn-icon {
                                 display: ${action.hidden ? 'block' : ' none'};
                               }
+                            }
+                            .adm-list-item-content-main {
+                              overflow: hidden;
                             }
                           `}
                         >
@@ -259,6 +293,29 @@ ActionPanelBlockModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps({
           layout: params.layout,
+        });
+      },
+    },
+    ellipsis: {
+      title: escapeT('Ellipsis action title', { ns: 'block-workbench' }),
+      uiSchema(ctx) {
+        return {
+          ellipsis: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              checkedChildren: escapeT('Yes'),
+              unCheckedChildren: escapeT('No'),
+            },
+          },
+        };
+      },
+      defaultParams: {
+        ellipsis: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          ellipsis: params.ellipsis,
         });
       },
     },
