@@ -61,6 +61,23 @@ const getFormFields = (ctx: any) => {
   }
 };
 
+const getFormFieldsByForkModel = (ctx: any) => {
+  try {
+    const fieldModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+    return fieldModels.map((model: any) => {
+      const forkModel = Array.from(model.forks)[0] as any;
+      return {
+        label: forkModel?.props.label || forkModel?.props.name,
+        value: forkModel?.uid || model.uid,
+        model: forkModel,
+      };
+    });
+  } catch (error) {
+    console.warn('Failed to get form fields:', error);
+    return [];
+  }
+};
+
 export const linkageSetBlockProps = defineAction({
   name: 'linkageSetBlockProps',
   title: escapeT('Set block state'),
@@ -278,7 +295,7 @@ export const subFormLinkageSetFieldProps = defineAction({
         const ctx = useFlowContext();
         const t = ctx.model.translate.bind(ctx.model);
 
-        const fieldOptions = getFormFields(ctx);
+        const fieldOptions = getFormFieldsByForkModel(ctx);
 
         // 状态选项
         const stateOptions = [
@@ -597,7 +614,7 @@ export const subFormLinkageAssignField = defineAction({
         const ctx = useFlowContext();
         const t = ctx.model.translate.bind(ctx.model);
 
-        const fieldOptions = getFormFields(ctx);
+        const fieldOptions = getFormFieldsByForkModel(ctx);
 
         const selectedFieldUid = value.field;
 
