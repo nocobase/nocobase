@@ -73,7 +73,6 @@ export const displayFieldComponent = defineAction({
     if (params.use !== previousParams.use) {
       const fieldUid = ctx.model.subModels['field']['uid'];
       await ctx.engine.destroyModel(fieldUid);
-      console.log(params.use);
       ctx.model.setSubModel('field', {
         use: params.use,
         props: selected?.defaultProps,
