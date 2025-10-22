@@ -13,6 +13,7 @@ import {
   escapeT,
   FlowContext,
   FlowModel,
+  FlowRuntimeContext,
   useFlowContext,
   useFlowEngine,
 } from '@nocobase/flow-engine';
@@ -26,7 +27,7 @@ import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { FieldAssignValueInput } from '../components/FieldAssignValueInput';
-import _ from 'lodash';
+import _, { values } from 'lodash';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -48,13 +49,38 @@ interface LinkageRule {
 // 获取表单中所有字段的 model 实例的通用函数
 const getFormFields = (ctx: any) => {
   try {
-    const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
-    const fields = gridModels;
-    return fields.map((model: any) => ({
+    const fieldModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+    return fieldModels.map((model: any) => ({
       label: model.props.label || model.props.name,
       value: model.uid,
       model,
     }));
+  } catch (error) {
+    console.warn('Failed to get form fields:', error);
+    return [];
+  }
+};
+
+const getFormFieldsByForkModel = (ctx: any) => {
+  try {
+    const fieldModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+    return fieldModels.map((model: any) => {
+      const forkModel = Array.from(model.forks)[0] as any;
+
+      if (forkModel) {
+        return {
+          label: forkModel?.props.label || forkModel?.props.name,
+          value: forkModel?.uid || model.uid,
+          model: forkModel,
+        };
+      }
+
+      return {
+        label: model.props.label || model.props.name,
+        value: model.uid,
+        model,
+      };
+    });
   } catch (error) {
     console.warn('Failed to get form fields:', error);
     return [];
@@ -264,6 +290,141 @@ export const linkageSetFieldProps = defineAction({
   },
 });
 
+export const subFormLinkageSetFieldProps = defineAction({
+  name: 'subFormLinkageSetFieldProps',
+  title: escapeT('Set field state'),
+  scene: ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
+  sort: 100,
+  uiSchema: {
+    value: {
+      type: 'object',
+      'x-component': (props) => {
+        const { value = { fields: [] }, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
+
+        const fieldOptions = getFormFieldsByForkModel(ctx);
+
+        // 状态选项
+        const stateOptions = [
+          { label: t('Visible'), value: 'visible' },
+          { label: t('Hidden'), value: 'hidden' },
+          { label: t('Hidden (reserved value)'), value: 'hiddenReservedValue' },
+          { label: t('Required'), value: 'required' },
+          { label: t('Not required'), value: 'notRequired' },
+          { label: t('Disabled'), value: 'disabled' },
+          { label: t('Enabled'), value: 'enabled' },
+        ];
+
+        const handleFieldsChange = (selectedFields: string[]) => {
+          onChange({
+            ...value,
+            fields: selectedFields,
+          });
+        };
+
+        const handleStateChange = (selectedState: string) => {
+          onChange({
+            ...value,
+            state: selectedState,
+          });
+        };
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Fields')}</div>
+              <Select
+                mode="multiple"
+                value={value.fields}
+                onChange={handleFieldsChange}
+                placeholder={t('Please select fields')}
+                style={{ width: '100%' }}
+                options={fieldOptions}
+                showSearch
+                // @ts-ignore
+                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                allowClear
+              />
+            </div>
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('State')}</div>
+              <Select
+                value={value.state}
+                onChange={handleStateChange}
+                placeholder={t('Please select state')}
+                style={{ width: '100%' }}
+                options={stateOptions}
+                allowClear
+              />
+            </div>
+          </div>
+        );
+      },
+    },
+  },
+  handler: (ctx, { value, setProps }) => {
+    const { fields, state } = value || {};
+
+    if (!fields || !Array.isArray(fields) || !state) {
+      return;
+    }
+
+    // 根据 uid 找到对应的字段 model 并设置属性
+    fields.forEach((fieldUid: string) => {
+      try {
+        const fieldIndex = ctx.model?.context?.fieldIndex;
+        const fieldModels = ctx.model?.subModels?.items || [];
+        const fieldModel = fieldModels.find((model: any) => model.uid === fieldUid);
+        const forkModel = fieldModel.getFork(`${fieldIndex}:${fieldUid}`);
+
+        let model = forkModel;
+
+        // 适配对一子表单的场景
+        if (fieldModel.forks.size === 0) {
+          model = fieldModel;
+        }
+
+        if (model) {
+          let props: any = {};
+
+          switch (state) {
+            case 'visible':
+              props = { hiddenModel: false };
+              break;
+            case 'hidden':
+              props = { hiddenModel: true };
+              break;
+            case 'hiddenReservedValue':
+              props = { hidden: true };
+              break;
+            case 'required':
+              props = { required: true };
+              break;
+            case 'notRequired':
+              props = { required: false };
+              break;
+            case 'disabled':
+              props = { disabled: true };
+              break;
+            case 'enabled':
+              props = { disabled: false };
+              break;
+            default:
+              console.warn(`Unknown state: ${state}`);
+              return;
+          }
+
+          setProps(model as FlowModel, props);
+        }
+      } catch (error) {
+        console.warn(`Failed to set props for field ${fieldUid}:`, error);
+      }
+    });
+  },
+});
+
 export const linkageSetDetailsFieldProps = defineAction({
   name: 'linkageSetDetailsFieldProps',
   title: escapeT('Set field state'),
@@ -455,6 +616,176 @@ export const linkageAssignField = defineAction({
   },
 });
 
+export const subFormLinkageAssignField = defineAction({
+  name: 'subFormLinkageAssignField',
+  title: escapeT('Field assignment'),
+  scene: ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
+  sort: 200,
+  uiSchema: {
+    value: {
+      type: 'object',
+      'x-component': (props) => {
+        const { value = { field: undefined, assignValue: undefined }, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
+
+        const fieldOptions = getFormFieldsByForkModel(ctx);
+
+        const selectedFieldUid = value.field;
+
+        const handleFieldChange = (selectedField) => {
+          const nextField = selectedField;
+          const changed = nextField !== selectedFieldUid;
+          onChange({
+            ...value,
+            field: nextField,
+            // 切换字段时清空赋值
+            assignValue: changed ? undefined : value.assignValue,
+          });
+        };
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Field')}</div>
+              <Select
+                value={selectedFieldUid}
+                onChange={handleFieldChange}
+                placeholder={t('Please select field')}
+                style={{ width: '100%' }}
+                options={fieldOptions}
+                showSearch
+                // @ts-ignore
+                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                allowClear
+              />
+            </div>
+            {selectedFieldUid && (
+              <div>
+                <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Assign value')}</div>
+                <FieldAssignValueInput
+                  key={selectedFieldUid}
+                  fieldUid={selectedFieldUid}
+                  value={value.assignValue}
+                  onChange={(v) => onChange({ ...value, assignValue: v })}
+                />
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+  },
+  handler: (ctx, { value, setProps }) => {
+    // 字段赋值处理逻辑
+    const { assignValue, field } = value || {};
+    if (!field) return;
+    try {
+      const fieldModels = ctx.model?.subModels?.items || [];
+      const fieldModel = fieldModels.find((model: any) => model.uid === field);
+      const forkModel = fieldModel?.getFork(`${ctx.model?.context?.fieldIndex}:${field}`);
+
+      let model = forkModel;
+
+      // 适配对一子表单的场景
+      if (fieldModel.forks.size === 0) {
+        model = fieldModel;
+      }
+
+      if (!model) return;
+
+      // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+      if (typeof assignValue === 'undefined') {
+        setProps(model, {});
+        return;
+      }
+      setProps(model, { value: assignValue });
+    } catch (error) {
+      console.warn(`Failed to assign value to field ${field}:`, error);
+    }
+  },
+});
+
+export const setFieldsDefaultValue = defineAction({
+  name: 'setFieldsDefaultValue',
+  title: escapeT('设置字段默认值'),
+  scene: ActionScene.FIELD_LINKAGE_RULES,
+  sort: 200,
+  uiSchema: {
+    value: {
+      type: 'object',
+      'x-component': (props) => {
+        const { value = { field: undefined, initialValue: undefined }, onChange } = props;
+        // eslint-disable-next-line react-hooks/rules-of-hooks
+        const ctx = useFlowContext();
+        const t = ctx.model.translate.bind(ctx.model);
+
+        const fieldOptions = getFormFields(ctx);
+
+        const selectedFieldUid = value.field;
+
+        const handleFieldChange = (selectedField) => {
+          const nextField = selectedField;
+          const changed = nextField !== selectedFieldUid;
+          onChange({
+            ...value,
+            field: nextField,
+            initialValue: changed ? undefined : value.initialValue,
+          });
+        };
+
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Field')}</div>
+              <Select
+                value={selectedFieldUid}
+                onChange={handleFieldChange}
+                placeholder={t('Please select field')}
+                style={{ width: '100%' }}
+                options={fieldOptions}
+                showSearch
+                // @ts-ignore
+                filterOption={(input, option) => (option?.label ?? '').toLowerCase().includes(input.toLowerCase())}
+                allowClear
+              />
+            </div>
+            {selectedFieldUid && (
+              <div>
+                <div style={{ marginBottom: '4px', fontSize: '14px' }}>{t('Default value')}</div>
+                <FieldAssignValueInput
+                  key={selectedFieldUid}
+                  fieldUid={selectedFieldUid}
+                  value={value.initialValue}
+                  onChange={(v) => onChange({ ...value, initialValue: v })}
+                />
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
+  },
+  handler: (ctx, { value, setProps }) => {
+    const { initialValue, field } = value || {};
+    if (!field) return;
+    try {
+      const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+      const fieldModel = gridModels.find((model: any) => model.uid === field);
+      if (!fieldModel) return;
+      // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+      if (typeof initialValue === 'undefined') {
+        setProps(fieldModel as FlowModel, {});
+        return;
+      }
+      setProps(fieldModel as FlowModel, { initialValue });
+    } catch (error) {
+      console.warn(`Failed to assign value to field ${field}:`, error);
+    }
+  },
+});
+
 export const linkageRunjs = defineAction({
   name: 'linkageRunjs',
   title: escapeT('Execute JavaScript'),
@@ -463,6 +794,7 @@ export const linkageRunjs = defineAction({
     ActionScene.FIELD_LINKAGE_RULES,
     ActionScene.ACTION_LINKAGE_RULES,
     ActionScene.DETAILS_FIELD_LINKAGE_RULES,
+    ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   ],
   sort: 300,
   uiSchema: {
@@ -910,26 +1242,41 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     });
 
   // 2. 最后才实际更改相关 model 的状态
-  allModels.forEach((model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean }) => {
-    const newProps = {
-      ...model.__originalProps,
-      ...model.__props,
-    };
+  allModels.forEach(
+    (
+      model: FlowModel & {
+        __originalProps?: any;
+        __props?: any;
+        __shouldReset?: boolean;
+        isFork?: boolean;
+        forkId?: number;
+      },
+    ) => {
+      const newProps = {
+        ...model.__originalProps,
+        ...model.__props,
+      };
 
-    model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
-    model.hidden = !!newProps.hiddenModel;
+      model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
+      model.hidden = !!newProps.hiddenModel;
 
-    if (newProps.hiddenText) {
-      model.setProps('title', '');
-    }
+      if (newProps.hiddenText) {
+        model.setProps('title', '');
+      }
 
-    // 目前只有表单的“字段赋值”有 value 属性
-    if ('value' in newProps && model.context.form) {
-      model.context.form.setFieldValue(model.props.name, newProps.value);
-    }
+      // 目前只有表单的“字段赋值”有 value 属性
+      if ('value' in newProps && model.context.form) {
+        model.context.form.setFieldValue(
+          model.isFork && Array.isArray(model.props.name)
+            ? [...model.props.name.slice(0, -1), model.forkId, ...model.props.name.slice(-1)]
+            : model.props.name,
+          newProps.value,
+        );
+      }
 
-    model.__props = null;
-  });
+      model.__props = null;
+    },
+  );
 };
 
 export const blockLinkageRules = defineAction({
@@ -1003,6 +1350,51 @@ export const fieldLinkageRules = defineAction({
   },
 });
 
+export const subFormFieldLinkageRules = defineAction({
+  name: 'subFormFieldLinkageRules',
+  title: escapeT('Field linkage rules'),
+  uiMode: 'embed',
+  uiSchema(ctx) {
+    return {
+      value: {
+        type: 'array',
+        'x-component': LinkageRulesUI,
+        'x-component-props': {
+          supportedActions: getSupportedActions(ctx, ActionScene.SUB_FORM_FIELD_LINKAGE_RULES),
+          title: escapeT('Field linkage rules'),
+        },
+      },
+    };
+  },
+  defaultParams: {
+    value: [],
+  },
+  useRawParams: true,
+  handler: async (ctx, params) => {
+    if (ctx.model.hidden) {
+      return;
+    }
+    const grid = ctx.model?.subModels?.grid;
+
+    // 适配对一子表单的场景
+    if (grid.forks.size === 0) {
+      if (grid.hidden) {
+        return;
+      }
+      const flowContext = new FlowRuntimeContext(grid, ctx.flowKey);
+      commonLinkageRulesHandler(flowContext, await flowContext.resolveJsonTemplate(params));
+    } else {
+      grid.forks.forEach(async (forkModel: FlowModel) => {
+        if (forkModel.hidden) {
+          return;
+        }
+        const flowContext = new FlowRuntimeContext(forkModel, ctx.flowKey);
+        commonLinkageRulesHandler(flowContext, await flowContext.resolveJsonTemplate(params));
+      });
+    }
+  },
+});
+
 export const detailsFieldLinkageRules = defineAction({
   name: 'detailsFieldLinkageRules',
   title: escapeT('Field linkage rules'),
@@ -1048,4 +1440,20 @@ function getSupportedActions(ctx: FlowContext, scene: ActionScene) {
     .map((action) => action.name);
 
   return result;
+}
+
+function getFieldPathAndIndex(changedValues: Record<string, any>, fieldName: string) {
+  const fieldPath = fieldName.split('.');
+  // 因为是子表单的值，所以是一个数组
+  const fieldValue = _.get(changedValues, fieldPath) || [];
+
+  return fieldValue
+    .map((item, index) => {
+      if (!item) return null;
+      return {
+        index,
+        value: item,
+      };
+    })
+    .filter(Boolean);
 }

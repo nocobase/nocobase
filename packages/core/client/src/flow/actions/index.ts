@@ -28,6 +28,7 @@ export * from './validation';
 export * from './columnFixed';
 export {
   fieldLinkageRules,
+  subFormFieldLinkageRules,
   detailsFieldLinkageRules,
   linkageSetDetailsFieldProps,
   actionLinkageRules,
@@ -35,8 +36,10 @@ export {
   linkageSetBlockProps,
   linkageSetActionProps,
   linkageSetFieldProps,
+  subFormLinkageSetFieldProps,
   linkageAssignField,
   linkageRunjs,
+  subFormLinkageAssignField,
 } from './linkageRules';
 export { displayFieldComponent } from './displayFieldComponent';
 export * from './overflowMode';
