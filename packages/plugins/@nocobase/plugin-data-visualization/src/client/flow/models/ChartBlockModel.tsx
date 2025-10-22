@@ -294,7 +294,6 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 const PreviewButton = ({ style }) => {
   const t = useT();
   const ctx = useFlowContext();
-  const form = useForm();
   return (
     <Button
       color="primary"
@@ -381,7 +380,7 @@ ChartBlockModel.registerFlow({
           },
         };
       },
-      useRawParams: true, // 配置里的变量就直接用，不做解析
+      useRawParams: true, // 不默认解析配置里的变量
       async handler(ctx, params) {
         debugLog('---setting flow handler', params);
         let { query } = params;
@@ -392,7 +391,7 @@ ChartBlockModel.registerFlow({
         try {
           // 数据部分
           if (query.mode !== 'sql') {
-            // builder 模式下，变量解析
+            // builder 模式下变量解析；sql 模式下交给 sqlResource 处理解析
             query = await ctx.resolveJsonTemplate(query);
           }
           ctx.model.applyQuery(query);

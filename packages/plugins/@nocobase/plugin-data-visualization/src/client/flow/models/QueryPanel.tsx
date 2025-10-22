@@ -15,7 +15,6 @@ import { useT } from '../../locale';
 import { BuildOutlined, ConsoleSqlOutlined, RightOutlined, DownOutlined, RightSquareOutlined } from '@ant-design/icons';
 import { QueryBuilder } from './QueryBuilder';
 import { ResultPanel } from './ResultPanel';
-import { ChartBlockModel } from './ChartBlockModel';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { configStore } from './config-store';
 import { validateQuery } from './QueryBuilder.service';
@@ -43,7 +42,7 @@ const QueryMode: React.FC = connect(({ value = 'builder', onChange, onClick }) =
 export const QueryPanel: React.FC = observer(() => {
   const t = useT();
   const form = useForm();
-  const ctx = useFlowSettingsContext<ChartBlockModel>();
+  const ctx = useFlowSettingsContext<any>();
   const mode = form?.values?.query?.mode || 'builder';
   const qbRef = React.useRef(null);
 
