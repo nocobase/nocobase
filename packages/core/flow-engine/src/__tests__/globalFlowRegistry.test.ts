@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect } from 'vitest';
 import { FlowModel } from '@nocobase/flow-engine';
+import { describe, expect, it } from 'vitest';
 
 describe('GlobalFlowRegistry (class-level flows)', () => {
   class BaseModel extends FlowModel {}

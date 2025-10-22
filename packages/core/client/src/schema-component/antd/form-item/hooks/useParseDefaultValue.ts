@@ -135,6 +135,7 @@ const useParseDefaultValue = () => {
           }
         } else {
           field.setInitialValue(value);
+          field.setValue(value);
         }
 
         field.loading = false;

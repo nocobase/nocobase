@@ -15,6 +15,7 @@ import { ActionModel } from './ActionModel';
 export class PopupActionModel extends ActionModel {
   defaultProps: ButtonProps = {
     title: escapeT('Popup'),
+    icon: 'SettingOutlined',
   };
 }
 

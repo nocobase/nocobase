@@ -293,123 +293,126 @@ export const useFilterActionProps = () => {
     service,
   });
 };
-export const schema: ISchema = {
-  type: 'object',
-  properties: {
-    [uid()]: {
-      type: 'void',
-      'x-decorator': 'ResourceActionProvider',
-      'x-decorator-props': {
-        collection,
-        resourceName: 'applications',
-        request: {
-          resource: 'applications',
-          action: 'list',
-          params: {
-            pageSize: 50,
-            sort: ['-createdAt'],
-            appends: [],
+
+export function getSchema() {
+  const schema: ISchema = {
+    type: 'object',
+    properties: {
+      [uid()]: {
+        type: 'void',
+        'x-decorator': 'ResourceActionProvider',
+        'x-decorator-props': {
+          collection,
+          resourceName: 'applications',
+          request: {
+            resource: 'applications',
+            action: 'list',
+            params: {
+              pageSize: 50,
+              sort: ['-createdAt'],
+              appends: [],
+            },
           },
         },
-      },
-      'x-component': 'CollectionProvider_deprecated',
-      'x-component-props': {
-        collection,
-      },
-      properties: {
-        actions: {
-          type: 'void',
-          'x-component': 'ActionBar',
-          'x-component-props': {
-            style: {
-              marginBottom: 16,
-            },
-          },
-          properties: {
-            filter: {
-              'x-component': 'Filter.Action',
-              'x-use-component-props': useFilterActionProps,
-              default: {
-                $and: [{ displayName: { $includes: '' } }, { name: { $includes: '' } }],
-              },
-              title: "{{t('Filter')}}",
-              'x-component-props': {
-                icon: 'FilterOutlined',
-              },
-              'x-align': 'left',
-            },
-            migrateData: {
-              type: 'void',
-              title: `{{ t("Migrate data to new multi-app", { ns: "${NAMESPACE}" }) }}`,
-              'x-component': 'Action',
-              'x-component-props': {
-                icon: 'DeliveredProcedureOutlined',
-                useAction: useMigrateData,
+        'x-component': 'CollectionProvider_deprecated',
+        'x-component-props': {
+          collection,
+        },
+        properties: {
+          actions: {
+            type: 'void',
+            'x-component': 'ActionBar',
+            'x-component-props': {
+              style: {
+                marginBottom: 16,
               },
             },
-            delete: {
-              type: 'void',
-              title: '{{ t("Delete") }}',
-              'x-component': 'Action',
-              'x-component-props': {
-                icon: 'DeleteOutlined',
-                useAction: useDestroyAll,
-                confirm: {
-                  title: "{{t('Delete')}}",
-                  content: "{{t('Are you sure you want to delete it?')}}",
+            properties: {
+              filter: {
+                'x-component': 'Filter.Action',
+                'x-use-component-props': useFilterActionProps,
+                default: {
+                  $and: [{ displayName: { $includes: '' } }, { name: { $includes: '' } }],
+                },
+                title: "{{t('Filter')}}",
+                'x-component-props': {
+                  icon: 'FilterOutlined',
+                },
+                'x-align': 'left',
+              },
+              migrateData: {
+                type: 'void',
+                title: `{{ t("Migrate data to new multi-app", { ns: "${NAMESPACE}" }) }}`,
+                'x-component': 'Action',
+                'x-component-props': {
+                  icon: 'DeliveredProcedureOutlined',
+                  useAction: useMigrateData,
                 },
               },
-            },
-
-            create: {
-              type: 'void',
-              title: '{{t("Add new")}}',
-              'x-decorator': (props) =>
-                React.createElement(SchemaComponentOptions, { ...props, scope: { createOnly: true } }),
-              'x-component': 'Action',
-              'x-component-props': {
-                type: 'primary',
-                icon: 'PlusOutlined',
-              },
-              properties: {
-                drawer: {
-                  type: 'void',
-                  'x-component': 'Action.Drawer',
-                  'x-decorator': 'Form',
-                  'x-decorator-props': {
-                    useValues(options) {
-                      const ctx = useActionContext();
-                      return useRequest(
-                        () =>
-                          Promise.resolve({
-                            data: {
-                              name: `a_${uid()}`,
-                            },
-                          }),
-                        { ...options, refreshDeps: [ctx.visible] },
-                      );
-                    },
+              delete: {
+                type: 'void',
+                title: '{{ t("Delete") }}',
+                'x-component': 'Action',
+                'x-component-props': {
+                  icon: 'DeleteOutlined',
+                  useAction: useDestroyAll,
+                  confirm: {
+                    title: "{{t('Delete')}}",
+                    content: "{{t('Are you sure you want to delete it?')}}",
                   },
-                  title: '{{t("Add new")}}',
-                  properties: {
-                    formSchema,
-                    footer: {
-                      type: 'void',
-                      'x-component': 'Action.Drawer.Footer',
-                      properties: {
-                        cancel: {
-                          title: '{{t("Cancel")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            useAction: '{{ cm.useCancelAction }}',
+                },
+              },
+
+              create: {
+                type: 'void',
+                title: '{{t("Add new")}}',
+                'x-decorator': (props) =>
+                  React.createElement(SchemaComponentOptions, { ...props, scope: { createOnly: true } }),
+                'x-component': 'Action',
+                'x-component-props': {
+                  type: 'primary',
+                  icon: 'PlusOutlined',
+                },
+                properties: {
+                  drawer: {
+                    type: 'void',
+                    'x-component': 'Action.Drawer',
+                    'x-decorator': 'Form',
+                    'x-decorator-props': {
+                      useValues(options) {
+                        const ctx = useActionContext();
+                        return useRequest(
+                          () =>
+                            Promise.resolve({
+                              data: {
+                                name: `a_${uid()}`,
+                              },
+                            }),
+                          { ...options, refreshDeps: [ctx.visible] },
+                        );
+                      },
+                    },
+                    title: '{{t("Add new")}}',
+                    properties: {
+                      formSchema,
+                      footer: {
+                        type: 'void',
+                        'x-component': 'Action.Drawer.Footer',
+                        properties: {
+                          cancel: {
+                            title: '{{t("Cancel")}}',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              useAction: '{{ cm.useCancelAction }}',
+                            },
                           },
-                        },
-                        submit: {
-                          title: '{{t("Submit")}}',
-                          'x-component': 'Action',
-                          'x-component-props': {
-                            type: 'primary',
-                            useAction: '{{ cm.useCreateAction }}',
+                          submit: {
+                            title: '{{t("Submit")}}',
+                            'x-component': 'Action',
+                            'x-component-props': {
+                              type: 'primary',
+                              useAction: '{{ cm.useCreateAction }}',
+                            },
                           },
                         },
                       },
@@ -419,80 +422,80 @@ export const schema: ISchema = {
               },
             },
           },
-        },
-        table: {
-          type: 'void',
-          'x-uid': 'input',
-          'x-component': 'Table.Void',
-          'x-component-props': {
-            rowKey: 'name',
-            rowSelection: {
-              type: 'checkbox',
-            },
-            useDataSource: '{{ cm.useDataSourceFromRAC }}',
-          },
-          properties: {
-            displayName: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                displayName: {
-                  type: 'string',
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                },
+          table: {
+            type: 'void',
+            'x-uid': 'input',
+            'x-component': 'Table.Void',
+            'x-component-props': {
+              rowKey: 'name',
+              rowSelection: {
+                type: 'checkbox',
               },
+              useDataSource: '{{ cm.useDataSourceFromRAC }}',
             },
-            name: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                name: {
-                  type: 'string',
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                },
-              },
-            },
-            pinned: {
-              type: 'void',
-              title: i18nText('Pin to menu'),
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                pinned: {
-                  type: 'string',
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                },
-              },
-            },
-            status: {
-              type: 'void',
-              'x-decorator': 'Table.Column.Decorator',
-              'x-component': 'Table.Column',
-              properties: {
-                status: {
-                  type: 'string',
-                  'x-component': 'CollectionField',
-                  'x-read-pretty': true,
-                },
-              },
-            },
-            actions: {
-              type: 'void',
-              title: '{{t("Actions")}}',
-              'x-component': 'Table.Column',
-              properties: {
-                actions: {
-                  type: 'void',
-                  'x-component': 'Space',
-                  'x-component-props': {
-                    split: '|',
+            properties: {
+              displayName: {
+                type: 'void',
+                'x-decorator': 'Table.Column.Decorator',
+                'x-component': 'Table.Column',
+                properties: {
+                  displayName: {
+                    type: 'string',
+                    'x-component': 'CollectionField',
+                    'x-read-pretty': true,
                   },
-                  ...tableActionColumnSchema,
+                },
+              },
+              name: {
+                type: 'void',
+                'x-decorator': 'Table.Column.Decorator',
+                'x-component': 'Table.Column',
+                properties: {
+                  name: {
+                    type: 'string',
+                    'x-component': 'CollectionField',
+                    'x-read-pretty': true,
+                  },
+                },
+              },
+              pinned: {
+                type: 'void',
+                title: i18nText('Pin to menu'),
+                'x-decorator': 'Table.Column.Decorator',
+                'x-component': 'Table.Column',
+                properties: {
+                  pinned: {
+                    type: 'string',
+                    'x-component': 'CollectionField',
+                    'x-read-pretty': true,
+                  },
+                },
+              },
+              status: {
+                type: 'void',
+                'x-decorator': 'Table.Column.Decorator',
+                'x-component': 'Table.Column',
+                properties: {
+                  status: {
+                    type: 'string',
+                    'x-component': 'CollectionField',
+                    'x-read-pretty': true,
+                  },
+                },
+              },
+              actions: {
+                type: 'void',
+                title: '{{t("Actions")}}',
+                'x-component': 'Table.Column',
+                properties: {
+                  actions: {
+                    type: 'void',
+                    'x-component': 'Space',
+                    'x-component-props': {
+                      split: '|',
+                    },
+                    ...tableActionColumnSchema,
+                  },
                 },
               },
             },
@@ -500,5 +503,6 @@ export const schema: ISchema = {
         },
       },
     },
-  },
-};
+  };
+  return schema;
+}
