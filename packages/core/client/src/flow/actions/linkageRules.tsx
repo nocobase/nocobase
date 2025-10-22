@@ -66,10 +66,19 @@ const getFormFieldsByForkModel = (ctx: any) => {
     const fieldModels = ctx.model?.subModels?.grid?.subModels?.items || [];
     return fieldModels.map((model: any) => {
       const forkModel = Array.from(model.forks)[0] as any;
+
+      if (forkModel) {
+        return {
+          label: forkModel?.props.label || forkModel?.props.name,
+          value: forkModel?.uid || model.uid,
+          model: forkModel,
+        };
+      }
+
       return {
-        label: forkModel?.props.label || forkModel?.props.name,
-        value: forkModel?.uid || model.uid,
-        model: forkModel,
+        label: model.props.label || model.props.name,
+        value: model.uid,
+        model,
       };
     });
   } catch (error) {
@@ -370,7 +379,14 @@ export const subFormLinkageSetFieldProps = defineAction({
         const fieldModel = fieldModels.find((model: any) => model.uid === fieldUid);
         const forkModel = fieldModel.getFork(`${fieldIndex}:${fieldUid}`);
 
-        if (forkModel) {
+        let model = forkModel;
+
+        // 适配对一子表单的场景
+        if (fieldModel.forks.size === 0) {
+          model = fieldModel;
+        }
+
+        if (model) {
           let props: any = {};
 
           switch (state) {
@@ -400,7 +416,7 @@ export const subFormLinkageSetFieldProps = defineAction({
               return;
           }
 
-          setProps(forkModel as FlowModel, props);
+          setProps(model as FlowModel, props);
         }
       } catch (error) {
         console.warn(`Failed to set props for field ${fieldUid}:`, error);
@@ -669,14 +685,22 @@ export const subFormLinkageAssignField = defineAction({
       const fieldModels = ctx.model?.subModels?.items || [];
       const fieldModel = fieldModels.find((model: any) => model.uid === field);
       const forkModel = fieldModel?.getFork(`${ctx.model?.context?.fieldIndex}:${field}`);
-      if (!forkModel) return;
+
+      let model = forkModel;
+
+      // 适配对一子表单的场景
+      if (fieldModel.forks.size === 0) {
+        model = fieldModel;
+      }
+
+      if (!model) return;
 
       // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
       if (typeof assignValue === 'undefined') {
-        setProps(forkModel, {});
+        setProps(model, {});
         return;
       }
-      setProps(forkModel, { value: assignValue });
+      setProps(model, { value: assignValue });
     } catch (error) {
       console.warn(`Failed to assign value to field ${field}:`, error);
     }
@@ -1350,15 +1374,24 @@ export const subFormFieldLinkageRules = defineAction({
     if (ctx.model.hidden) {
       return;
     }
-    const originalModel = ctx.model;
-    const grid = originalModel?.subModels?.grid;
-    grid.forks.forEach(async (forkModel: FlowModel) => {
-      if (forkModel.hidden) {
+    const grid = ctx.model?.subModels?.grid;
+
+    // 适配对一子表单的场景
+    if (grid.forks.size === 0) {
+      if (grid.hidden) {
         return;
       }
-      const flowContext = new FlowRuntimeContext(forkModel, ctx.flowKey);
+      const flowContext = new FlowRuntimeContext(grid, ctx.flowKey);
       commonLinkageRulesHandler(flowContext, await flowContext.resolveJsonTemplate(params));
-    });
+    } else {
+      grid.forks.forEach(async (forkModel: FlowModel) => {
+        if (forkModel.hidden) {
+          return;
+        }
+        const flowContext = new FlowRuntimeContext(forkModel, ctx.flowKey);
+        commonLinkageRulesHandler(flowContext, await flowContext.resolveJsonTemplate(params));
+      });
+    }
   },
 });
 

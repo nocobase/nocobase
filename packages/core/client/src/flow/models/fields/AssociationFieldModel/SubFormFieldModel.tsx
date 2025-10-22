@@ -64,6 +64,23 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
   updateAssociation = true;
   onInit(options) {
     super.onInit(options);
+    this.context.blockModel.emitter.on('formValuesChange', ({ changedValues, allValues }) => {
+      this.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
+    });
+
+    this.context.defineProperty('currentObject', {
+      get: () => {
+        return this.context.form.getFieldValue(this.props.name);
+      },
+      cache: false,
+      meta: createCollectionContextMeta(() => this.context.collection, this.context.t('Current object')),
+    });
+  }
+  onMount() {
+    super.onMount();
+    setTimeout(() => {
+      this.applyFlow('eventSettings');
+    }, 100);
   }
   render() {
     return <ObjectNester {...this.props} />;
@@ -77,6 +94,21 @@ SubFormFieldModel.define({
     subModels: {
       grid: {
         use: 'FormGridModel',
+      },
+    },
+  },
+});
+
+SubFormFieldModel.registerFlow({
+  key: 'eventSettings',
+  title: escapeT('Event settings'),
+  on: 'formValuesChange',
+  steps: {
+    linkageRules: {
+      use: 'subFormFieldLinkageRules',
+      afterParamsSave(ctx) {
+        // 保存后，自动运行一次
+        ctx.model.applyFlow('eventSettings');
       },
     },
   },
