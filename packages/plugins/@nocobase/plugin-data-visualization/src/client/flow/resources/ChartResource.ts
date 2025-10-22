@@ -113,6 +113,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
       }),
       // 过滤条件
       filter: query.filter ? removeUnparsableFilter(transformFilter(query.filter)) : undefined,
+      orders: query.orders,
       limit: query.limit,
       offset: query.offset,
     };
