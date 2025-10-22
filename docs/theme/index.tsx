@@ -170,9 +170,9 @@ export function HomeFeature() {
 
   return (
     <div>
-      {features?.map((feature: any) => {
+      {features?.map((feature: any, index: number) => {
         return (
-          <>
+          <div key={feature.title || `feature-${index}`}>
             <div className="rp-home-feature-container">
               <h2 className="rp-home-feature-header">{feature.title}</h2>
               <p className="rp-home-feature-desc">{feature.details}</p>
@@ -182,7 +182,7 @@ export function HomeFeature() {
                 return <HomeFeatureItem key={item.title} feature={item} />;
               })}
             </div>
-          </>
+          </div>
         )
       })}
     </div>
