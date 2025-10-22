@@ -347,43 +347,43 @@ export const subFormLinkageSetFieldProps = defineAction({
     // 根据 uid 找到对应的字段 model 并设置属性
     fields.forEach((fieldUid: string) => {
       try {
-        const gridModels = ctx.model?.subModels?.items || [];
-        const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
+        const fieldIndex = ctx.model?.context?.fieldIndex;
+        const fieldModels = ctx.model?.subModels?.items || [];
+        const fieldModel = fieldModels.find((model: any) => model.uid === fieldUid);
+        const forkModel = fieldModel.getFork(`${fieldIndex}:${fieldUid}`);
 
-        fieldModel.forks.forEach((forkModel: FlowModel) => {
-          if (forkModel) {
-            let props: any = {};
+        if (forkModel) {
+          let props: any = {};
 
-            switch (state) {
-              case 'visible':
-                props = { hiddenModel: false };
-                break;
-              case 'hidden':
-                props = { hiddenModel: true };
-                break;
-              case 'hiddenReservedValue':
-                props = { hidden: true };
-                break;
-              case 'required':
-                props = { required: true };
-                break;
-              case 'notRequired':
-                props = { required: false };
-                break;
-              case 'disabled':
-                props = { disabled: true };
-                break;
-              case 'enabled':
-                props = { disabled: false };
-                break;
-              default:
-                console.warn(`Unknown state: ${state}`);
-                return;
-            }
-
-            setProps(forkModel as FlowModel, props);
+          switch (state) {
+            case 'visible':
+              props = { hiddenModel: false };
+              break;
+            case 'hidden':
+              props = { hiddenModel: true };
+              break;
+            case 'hiddenReservedValue':
+              props = { hidden: true };
+              break;
+            case 'required':
+              props = { required: true };
+              break;
+            case 'notRequired':
+              props = { required: false };
+              break;
+            case 'disabled':
+              props = { disabled: true };
+              break;
+            case 'enabled':
+              props = { disabled: false };
+              break;
+            default:
+              console.warn(`Unknown state: ${state}`);
+              return;
           }
-        });
+
+          setProps(forkModel as FlowModel, props);
+        }
       } catch (error) {
         console.warn(`Failed to set props for field ${fieldUid}:`, error);
       }
@@ -648,18 +648,17 @@ export const subFormLinkageAssignField = defineAction({
     const { assignValue, field } = value || {};
     if (!field) return;
     try {
-      const gridModels = ctx.model?.subModels?.items || [];
-      const fieldModel = gridModels.find((model: any) => model.uid === field);
-      if (!fieldModel) return;
+      const fieldModels = ctx.model?.subModels?.items || [];
+      const fieldModel = fieldModels.find((model: any) => model.uid === field);
+      const forkModel = fieldModel?.getFork(`${ctx.model?.context?.fieldIndex}:${field}`);
+      if (!forkModel) return;
 
-      fieldModel.forks.forEach((forkModel: FlowModel, index: number) => {
-        // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-        if (typeof assignValue === 'undefined') {
-          setProps(forkModel, {});
-          return;
-        }
-        setProps(forkModel, { value: assignValue });
-      });
+      // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+      if (typeof assignValue === 'undefined') {
+        setProps(forkModel, {});
+        return;
+      }
+      setProps(forkModel, { value: assignValue });
     } catch (error) {
       console.warn(`Failed to assign value to field ${field}:`, error);
     }
