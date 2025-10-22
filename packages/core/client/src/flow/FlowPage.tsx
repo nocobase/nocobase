@@ -222,19 +222,6 @@ export const FlowRoute = () => {
           delete viewStateRef.current[getKey(viewItem)];
           prevViewListRef.current = prevViewListRef.current.filter((item) => getKey(item) !== getKey(viewItem));
         });
-
-        // 6. 若仅参数变化（无视图开关），在路由变更回调中“就地”同步 prevViewList 的 params，
-        //    避免打开弹窗后切换 Tab 造成 params 不同步
-        if (viewsToOpen.length === 0 && viewsToClose.length === 0) {
-          const currentMap = new Map<string, (typeof viewList)[number]>();
-          viewList.forEach((item) => currentMap.set(getKey(item), item));
-          prevViewListRef.current.forEach((prevItem) => {
-            const cur = currentMap.get(getKey(prevItem));
-            if (cur) {
-              prevItem.params = cur.params;
-            }
-          });
-        }
       },
       {
         fireImmediately: true,
