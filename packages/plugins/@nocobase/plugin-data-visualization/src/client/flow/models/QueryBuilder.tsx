@@ -112,7 +112,7 @@ export const QueryBuilder = React.forwardRef<
                       </Form.Item>
                       <Form.Item name={[field.name, 'aggregation']} style={{ marginBottom: 0 }}>
                         <Select
-                          style={{ minWidth: 74 }}
+                          style={{ minWidth: 75 }}
                           placeholder={t('Aggregation')}
                           options={[
                             { label: t('Sum'), value: 'sum' },
@@ -124,7 +124,7 @@ export const QueryBuilder = React.forwardRef<
                         />
                       </Form.Item>
                       <Form.Item name={[field.name, 'alias']} style={{ marginBottom: 0 }}>
-                        <Input placeholder={t('Alias')} />
+                        <Input style={{ minWidth: 75 }} placeholder={t('Alias')} />
                       </Form.Item>
                       <Form.Item name={[field.name, 'distinct']} valuePropName="checked" style={{ marginBottom: 0 }}>
                         <Checkbox style={{ minWidth: 60 }}>{t('Distinct')}</Checkbox>
@@ -196,7 +196,7 @@ export const QueryBuilder = React.forwardRef<
                           </Form.Item>
                         ) : null}
                         <Form.Item name={[field.name, 'alias']} style={{ marginBottom: 0 }}>
-                          <Input placeholder={t('Alias')} />
+                          <Input style={{ minWidth: 75 }} placeholder={t('Alias')} />
                         </Form.Item>
                         <Button size="small" type="text" onClick={() => remove(field.name)} icon={<DeleteOutlined />} />
                         <Button

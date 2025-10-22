@@ -202,6 +202,7 @@ RecordSelectFieldModel.registerFlow({
         const resource = ctx.model.resource;
         const options = ctx.model.getDataSource();
         resource.setPage(1);
+        await ctx.model.applyFlow('selectSettings');
         await resource.refresh();
         const { count } = resource.getMeta();
         const data = resource.getData();

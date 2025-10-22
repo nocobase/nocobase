@@ -37,10 +37,7 @@ export const FlowEngineProvider: React.FC<FlowEngineProviderProps> = React.memo(
 
 FlowEngineProvider.displayName = 'FlowEngineProvider';
 
-export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactNode; app: any }> = ({
-  children,
-  app,
-}) => {
+export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { modal, message, notification } = App.useApp();
   const [drawer, contextHolder] = useDrawer();
   const [embed, pageContextHolder] = usePage();
@@ -49,8 +46,6 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
   const engine = useFlowEngine();
   const config = useContext(ConfigProvider.ConfigContext);
   const { token } = theme.useToken();
-
-  config.locale = app.locales?.antd;
 
   useEffect(() => {
     const context = {
@@ -80,7 +75,7 @@ export const FlowEngineGlobalsContextProvider: React.FC<{ children: React.ReactN
   }, [engine, drawer, modal, message, notification, config, popover, token, dialog, embed]);
 
   return (
-    <ConfigProvider {...config} popupMatchSelectWidth={false}>
+    <ConfigProvider {...config} locale={engine.context.locales?.antd} popupMatchSelectWidth={false}>
       {children}
       {contextHolder as any}
       {popoverContextHolder as any}
