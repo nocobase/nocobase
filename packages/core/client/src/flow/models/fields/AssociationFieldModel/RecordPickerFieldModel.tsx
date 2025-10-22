@@ -139,9 +139,12 @@ export class RecordPickerFieldModel extends FieldModel {
         this.context.t('Current collection'),
       ),
     });
+  }
+  protected onMount(): void {
     this.onClick = (e) => {
       this.dispatchEvent('openView', {
         event: e,
+        onChange: this.props.onChange,
       });
     };
   }
@@ -191,6 +194,7 @@ RecordPickerFieldModel.registerFlow({
         size: 'medium',
       },
       handler(ctx, params) {
+        const { onChange } = ctx.inputArgs;
         const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
         const sizeToWidthMap: Record<string, any> = {
           drawer: {
@@ -229,7 +233,7 @@ RecordPickerFieldModel.registerFlow({
                 if (toOne) {
                   // 单选
                   ctx.model.selectedRows.value = selectedRows?.[0];
-                  ctx.model.change();
+                  onChange(ctx.model.selectedRows.value);
                   ctx.model._closeView?.();
                 } else {
                   // 多选：追加
