@@ -174,6 +174,7 @@ export const FlowRoute = () => {
 
         // 4. 处理需要打开的视图
         if (viewsToOpen.length) {
+          const prevViewListCopy = [...prevViewListRef.current];
           const openView = (index: number) => {
             if (!viewsToOpen[index]) {
               return;
@@ -183,10 +184,9 @@ export const FlowRoute = () => {
             const closeRef = React.createRef<(result?: any, force?: boolean) => void>();
             const updateRef = React.createRef<(value: any) => void>();
             const openViewParams = getOpenViewStepParams(viewItem.model);
+            const openerUids = prevViewListCopy.map((item) => item.params.viewUid);
+            prevViewListCopy.push(viewItem);
 
-            prevViewListRef.current.push(viewItem);
-
-            const openerUids = prevViewListRef.current.slice(0, -1).map((item) => item.params.viewUid);
             viewItem.model.dispatchEvent('click', {
               target: layoutContentRef.current,
               collectionName: openViewParams?.collectionName,
@@ -198,7 +198,7 @@ export const FlowRoute = () => {
               ...viewItem.params,
               navigation: new ViewNavigation(
                 flowEngine.context,
-                prevViewListRef.current.map((item) => item.params),
+                prevViewListCopy.map((item) => item.params),
               ),
               onOpen() {
                 openView(index + 1); // 递归打开下一个视图
@@ -220,8 +220,9 @@ export const FlowRoute = () => {
         viewsToClose.forEach((viewItem) => {
           viewStateRef.current[getKey(viewItem)]?.close?.(true);
           delete viewStateRef.current[getKey(viewItem)];
-          prevViewListRef.current = prevViewListRef.current.filter((item) => getKey(item) !== getKey(viewItem));
         });
+
+        prevViewListRef.current = viewList;
       },
       {
         fireImmediately: true,

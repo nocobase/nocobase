@@ -45,6 +45,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
           const key = `row_${index}`;
           if (!forksRef.current[key]) {
             const fork = gridModel.createFork();
+            fork.gridContainerRef = React.createRef<HTMLDivElement>();
             fork.context.defineProperty('fieldIndex', {
               get: () => [...resultIndex, `${collectionName}:${index}`],
             });
