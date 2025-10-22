@@ -60,4 +60,4 @@ export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToView
 export { buildSettingsViewInputArgs } from './buildSettingsViewInputArgs';
 
 // 安全全局对象（window/document）
-export { createSafeDocument, createSafeWindow } from './safeGlobals';
+export { createSafeDocument, createSafeWindow, createSafeNavigator } from './safeGlobals';

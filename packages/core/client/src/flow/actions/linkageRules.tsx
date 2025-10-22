@@ -15,6 +15,9 @@ import {
   FlowModel,
   useFlowContext,
   useFlowEngine,
+  createSafeWindow,
+  createSafeDocument,
+  createSafeNavigator,
 } from '@nocobase/flow-engine';
 import { evaluateConditions, FilterGroupType } from '@nocobase/utils/client';
 import React from 'react';
@@ -514,7 +517,8 @@ export const linkageRunjs = defineAction({
     }
 
     try {
-      ctx.runjs(script);
+      const navigator = createSafeNavigator();
+      ctx.runjs(script, { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator });
     } catch (error) {
       console.error('Script execution error:', error);
       // 可以选择显示错误信息给用户
