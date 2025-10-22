@@ -18,4 +18,5 @@ export * from './PopupCollectionActionModel';
 export * from './RefreshActionModel';
 export * from './UpdateRecordActionModel';
 export * from './ViewActionModel';
+export * from './LinkActionModel';
 //

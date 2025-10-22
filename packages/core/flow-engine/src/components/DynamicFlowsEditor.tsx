@@ -8,13 +8,12 @@
  */
 
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
-import { uid } from '@nocobase/utils/client';
-import { Collapse, Space, Button, Tabs, Input, Modal, Form, Empty, Select } from 'antd';
-import type { FormInstance } from 'antd';
 import { observer } from '@formily/react';
+import type { FormInstance } from 'antd';
+import { Button, Collapse, Empty, Form, Input, Modal, Select, Space, Tabs } from 'antd';
 import React from 'react';
-import { FlowModel } from '../models';
 import { FlowDefinition } from '../FlowDefinition';
+import { FlowModel } from '../models';
 import { FlowDefinitionOptions } from '../types';
 
 const Panel = Collapse.Panel;

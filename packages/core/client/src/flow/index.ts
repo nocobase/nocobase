@@ -69,4 +69,6 @@ export * from './components/TextAreaWithContextSelector';
 export * from './FlowModelRepository';
 export * from './FlowPage';
 export * from './models';
+export { openViewFlow } from './flows/openViewFlow';
+export { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
 //
