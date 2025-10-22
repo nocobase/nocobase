@@ -16,13 +16,7 @@ import RIframe from 'react-iframe';
 import type { IIframe } from 'react-iframe/types';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import {
-  BlockModel,
-  useCompile,
-  useRequest,
-  useParseURLAndParams,
-  TextAreaWithContextSelector,
-} from '@nocobase/client';
+import { BlockModel, useCompile, useRequest, TextAreaWithContextSelector, joinUrlSearch } from '@nocobase/client';
 
 const Iframe: any = observer(
   (props: IIframe & { html?: string; htmlId?: number; mode: string; params?: any }) => {
@@ -40,7 +34,6 @@ const Iframe: any = observer(
         ready: mode === 'html' && !!htmlId,
       },
     );
-    const { parseURLAndParams } = useParseURLAndParams();
     const [src, setSrc] = useState(null);
     useEffect(() => {
       const generateSrc = async () => {
@@ -56,7 +49,7 @@ const Iframe: any = observer(
           setSrc(dataUrl);
         } else {
           try {
-            const targetUrl = await parseURLAndParams(url, params || []);
+            const targetUrl = joinUrlSearch(url, params);
             setSrc(targetUrl);
           } catch (error) {
             console.error('Error fetching target URL:', error);
@@ -363,7 +356,10 @@ IframeBlockModel.registerFlow({
           },
         };
       },
-      useRawParams: true,
+      useRawParams: (ctx) => {
+        console.log(ctx.model.props);
+        return ctx.model.props.model === 'html';
+      },
       async beforeParamsSave(ctx, params) {
         const { mode, html, htmlId } = params;
         const saveHtml = async (html: string) => {
