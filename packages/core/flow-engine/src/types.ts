@@ -134,6 +134,8 @@ export enum ActionScene {
   BLOCK_LINKAGE_RULES = 1,
   /** 表单字段级联动规则可用 */
   FIELD_LINKAGE_RULES,
+  /** 子表单字段级联动规则可用 */
+  SUB_FORM_FIELD_LINKAGE_RULES,
   /** 详情字段级联动规则可用 */
   DETAILS_FIELD_LINKAGE_RULES,
   /** 按钮级联动规则可用 */

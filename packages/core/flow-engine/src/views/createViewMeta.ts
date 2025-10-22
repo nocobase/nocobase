@@ -13,6 +13,8 @@ import type { RecordRef } from '../utils/serverContextParams';
 import type { Collection } from '../data-source';
 import type { FlowView } from './FlowView';
 
+type PopupModelLike = { getStepParams?: (a: string, b: string) => any } | undefined;
+
 // 判断是否为普通对象（Plain Object），避免对类实例/代理等进行深度遍历
 function isPlainObject(val: any) {
   if (val === null || typeof val !== 'object') return false;
@@ -140,7 +142,8 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
   const getCurrentCollection = (): Collection | null => {
     try {
       const ref = inferViewRecordRef(ctx);
-      if (!ref?.filterByTk) return null;
+      // 避免 0 等 falsy 值被误判为无效主键
+      if (typeof ref?.filterByTk === 'undefined' || ref.filterByTk === null) return null;
       const ds = ctx.dataSourceManager?.getDataSource?.(ref.dataSourceKey || 'main');
       return ds?.collectionManager?.getCollection?.(ref.collection) || null;
     } catch (_) {
@@ -149,9 +152,10 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
   };
 
   // 从视图堆栈推断 level 级父弹窗（level=1 上一层）
-  const getParentRecordRef = async (level: number): Promise<RecordRef | undefined> => {
+  const getParentRecordRef = async (level: number, flowCtx?: FlowContext): Promise<RecordRef | undefined> => {
     try {
-      const nav = ctx.view?.navigation;
+      const useCtx = flowCtx || ctx;
+      const nav = useCtx.view?.navigation;
       const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
       if (stack.length < 2 || level < 1) return undefined;
       const idx = stack.length - 1 - level;
@@ -159,12 +163,12 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
       const parent = stack[idx];
       if (!parent?.viewUid) return undefined;
 
-      let model: any = ctx.engine?.getModel?.(parent.viewUid);
-      if (!model && typeof ctx.engine?.loadModel === 'function') {
+      let model = useCtx.engine?.getModel?.(parent.viewUid) as PopupModelLike;
+      if (!model) {
         try {
-          model = await ctx.engine.loadModel({ uid: parent.viewUid });
+          model = (await useCtx.engine.loadModel({ uid: parent.viewUid })) as PopupModelLike;
         } catch (e) {
-          console.warn('[FlowEngine] popup.getParentRecordRef loadModel failed:', e);
+          (useCtx.logger || ctx.logger)?.warn?.({ err: e }, '[FlowEngine] popup.getParentRecordRef loadModel failed');
         }
       }
       const params = model?.getStepParams?.('popupSettings', 'openView') || {};
@@ -174,7 +178,7 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
       if (!collection || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
       return { collection, dataSourceKey, filterByTk };
     } catch (e) {
-      console.warn('[FlowEngine] popup.getParentRecordRef failed:', e);
+      (flowCtx?.logger || ctx.logger)?.warn?.({ err: e }, '[FlowEngine] popup.getParentRecordRef failed');
       return undefined;
     }
   };
@@ -251,10 +255,37 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
     const meta: PropertyMeta = {
       type: 'object',
       title: t('Current popup'),
-      buildVariablesParams: (c) => {
+      buildVariablesParams: async (c) => {
         const ref = inferViewRecordRef(c);
-        const inputArgs = (c?.view as any)?.inputArgs || {};
-        const out: Record<string, any> = { record: ref };
+        const inputArgs = c.view?.inputArgs;
+        type PopupVariableParams = {
+          record?: RecordRef;
+          sourceRecord?: RecordRef;
+          parent?: PopupVariableParams;
+        };
+        const params: PopupVariableParams = {};
+        if (ref) params.record = ref;
+
+        // 构建 parent 链（用于服务端解析 ctx.popup.parent[.parent...].record.*）
+        try {
+          const nav = c.view?.navigation;
+          const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
+          if (stack.length >= 2) {
+            let cur: Record<string, any> = params;
+            let level = 1;
+            let parentRef = await getParentRecordRef(level, c);
+            while (parentRef) {
+              if (!cur.parent) cur.parent = {};
+              cur.parent.record = parentRef;
+              cur = cur.parent;
+              level += 1;
+              parentRef = await getParentRecordRef(level, c);
+            }
+          }
+        } catch (err) {
+          c.logger?.debug?.({ err }, '[FlowEngine] buildVariablesParams: build parent-chain failed');
+        }
+
         try {
           const srcId = inputArgs?.sourceId;
           const assoc: string | undefined = inputArgs?.associationName;
@@ -263,17 +294,17 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
             // associationName 形如 `posts.comments`，父级集合为 `posts`
             const parentCollectionName = String(assoc).split('.')[0];
             if (parentCollectionName) {
-              out.sourceRecord = {
+              params.sourceRecord = {
                 collection: parentCollectionName,
                 dataSourceKey: dsKey,
                 filterByTk: srcId,
               };
             }
           }
-        } catch (_) {
-          // 忽略异常，保持 record 正常返回
+        } catch (err) {
+          c.logger?.debug?.({ err }, '[FlowEngine] buildVariablesParams: infer sourceRecord failed');
         }
-        return out;
+        return params;
       },
       properties: async () => {
         const props: Record<string, any> = {};
@@ -285,20 +316,20 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
         if (base) props.record = base;
         // 当 view.inputArgs 带有 sourceId + associationName 时，提供“上级记录”变量（基于 sourceId 推断）
         try {
-          const inputArgs = (ctx.view as any)?.inputArgs || {};
+          const inputArgs = ctx.view?.inputArgs;
           const srcId = inputArgs?.sourceId;
           let assoc: string | undefined = inputArgs?.associationName;
           let dsKey: string = inputArgs?.dataSourceKey || 'main';
 
           // 兜底：若 associationName 缺失或不含“.”，尝试从当前视图模型的 openView 参数推断
           if (!assoc || typeof assoc !== 'string' || !assoc.includes('.')) {
-            const nav = (ctx.view as any)?.navigation;
+            const nav = ctx.view?.navigation;
             const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
             const last = stack?.[stack.length - 1];
             if (last?.viewUid) {
-              let model: any = ctx?.engine?.getModel?.(last.viewUid);
+              let model = ctx?.engine?.getModel?.(last.viewUid) as PopupModelLike;
               if (!model) {
-                model = await ctx.engine.loadModel({ uid: last.viewUid });
+                model = (await ctx.engine.loadModel({ uid: last.viewUid })) as PopupModelLike;
               }
               const p = model?.getStepParams?.('popupSettings', 'openView') || {};
               assoc = p?.associationName || assoc;
@@ -327,8 +358,8 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
               }
             }
           }
-        } catch (_) {
-          // ignore
+        } catch (err) {
+          ctx.logger?.debug?.({ err }, '[FlowEngine] popup.properties: build sourceRecord failed');
         }
         const resourceMeta: PropertyMeta = {
           type: 'object',
@@ -373,15 +404,15 @@ interface PopupNode {
   parent?: PopupNode;
 }
 
-export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promise<PopupNode> {
+export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promise<PopupNode | undefined> {
   const nav = view?.navigation;
   const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
   const buildNode = async (idx: number): Promise<PopupNode | undefined> => {
     if (idx < 0 || !stack[idx]?.viewUid) return undefined;
     const viewUid = stack[idx].viewUid;
-    let model: any = ctx.engine?.getModel?.(viewUid);
-    if (!model && typeof ctx.engine?.loadModel === 'function') {
-      model = await ctx.engine?.loadModel({ uid: viewUid });
+    let model = ctx.engine?.getModel?.(viewUid) as PopupModelLike;
+    if (!model) {
+      model = (await ctx.engine?.loadModel({ uid: viewUid })) as PopupModelLike;
     }
     const p = model?.getStepParams?.('popupSettings', 'openView') || {};
     const collectionName = p?.collectionName;
@@ -407,13 +438,22 @@ export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promi
  * 在视图上下文中注册 popup 变量（统一消除重复）
  */
 export function registerPopupVariable(ctx: FlowContext, view: FlowView) {
+  // - 顶层 record / sourceRecord 及其子字段
+  // - 任意层级 parent.parent... 下的 record / sourceRecord 及其子字段
+  const POPUP_SERVER_PATH_RE =
+    /^(?:record|sourceRecord)(?:\.|$)|^parent(?:\.parent)*(?:\.(?:record|sourceRecord))(?:\.|$)/;
   // 始终注册 popup 变量：
   // - 若当前视图无可推断记录，仅在元信息中不呈现 record 字段；
   // - 但仍可依据 navigation 推断并展示上级弹窗信息。
   ctx.defineProperty('popup', {
     get: async () => buildPopupRuntime(ctx, view),
     meta: createPopupMeta(ctx),
-    resolveOnServer: (p: string) =>
-      p === 'record' || p?.startsWith('record.') || p === 'sourceRecord' || p?.startsWith('sourceRecord.'),
+    resolveOnServer: (p: string) => {
+      try {
+        return !!p && POPUP_SERVER_PATH_RE.test(p);
+      } catch (_) {
+        return false;
+      }
+    },
   });
 }

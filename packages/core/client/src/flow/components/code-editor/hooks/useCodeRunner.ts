@@ -9,7 +9,13 @@
 
 import { useCallback, useState } from 'react';
 import { parseErrorLineColumn } from '../errorHelpers';
-import { FlowModelContext, JSRunner, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
+import {
+  FlowModelContext,
+  JSRunner,
+  createSafeWindow,
+  createSafeDocument,
+  createSafeNavigator,
+} from '@nocobase/flow-engine';
 
 export type RunLog = { level: 'log' | 'info' | 'warn' | 'error'; msg: string; line?: number; column?: number };
 
@@ -115,7 +121,12 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
           const eventName = typeof onDef === 'string' ? onDef : onDef?.eventName;
           if (!flow) {
             // 无可用流程（典型场景：联动规则里的 RunJS 预览），直接在当前上下文执行代码
-            await hostCtx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
+            const navigator = createSafeNavigator();
+            await hostCtx.runjs(
+              code,
+              { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
+              { version },
+            );
           } else if (typeof eventName === 'string') {
             await m.dispatchEvent(eventName, { preview: { code, version } }, { sequential: true, useCache: false });
           } else if (isManual) {

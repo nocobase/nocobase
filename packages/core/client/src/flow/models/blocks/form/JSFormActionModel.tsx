@@ -10,7 +10,7 @@
 /**
  * JS Form Action：表单工具栏按钮点击执行 JS。
  */
-import { escapeT, createSafeWindow, createSafeDocument } from '@nocobase/flow-engine';
+import { escapeT, createSafeWindow, createSafeDocument, createSafeNavigator } from '@nocobase/flow-engine';
 import { CodeEditor } from '../../../components/code-editor';
 import { FormActionModel } from './FormActionModel';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
@@ -72,7 +72,12 @@ ctx.message.success('Current form values: ' + JSON.stringify(values));
             await ctx.resource.refresh();
           }
         });
-        await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
+        const navigator = createSafeNavigator();
+        await ctx.runjs(
+          code,
+          { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
+          { version },
+        );
       },
     },
   },
