@@ -16,7 +16,7 @@
 
 ## 选择模型
 
-首先选择已接入的 LLM 服务，如果还没有接入 LLM 服务，则需要先添加 LLM 服务配置。参考：[LLM 服务管理](./../../../service.md)
+首先选择已接入的 LLM 服务，如果还没有接入 LLM 服务，则需要先添加 LLM 服务配置。参考：[LLM 服务管理](/ai-employees/quick-start/llm-service)
 
 选择服务以后，应用会尝试从 LLM 服务获取可用模型列表供选择。部分 LLM 在线服务获取模型的接口可能不符合标准 API 协议，用户也可以手动输入模型 id.
 
@@ -33,7 +33,7 @@
 其中值得注意的是 **Response format** 设置，该设置项用于提示大模型响应的内容格式，可以是文本或 JSON. 如果选择了 JSON 模式，需要注意：
 
 - 对应的 LLM 模型需要支持以 JSON 模式调用，同时用户需要在 Prompt 中明确提示 LLM 响应 JSON 格式，例如: "Tell me a joke about cats, respond in JSON with \`setup\` and \`punchline\` keys". 否则可能没有响应结果，报错 `400 status code (no body)`.
-- 响应结果是一个 JSON 字符串，用户需要利用工作流其他节点的能力解析后，才能使用其中的结构化内容。也可以使用 [结构化输出](../../../../../handbook/ai-ee/workflow/nodes/llm/structured-output) 功能。
+- 响应结果是一个 JSON 字符串，用户需要利用工作流其他节点的能力解析后，才能使用其中的结构化内容。也可以使用 [结构化输出](/ai-employees/workflow/nodes/llm/structured-output) 功能。
 
 ## 消息
 

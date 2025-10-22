@@ -43,8 +43,3 @@
 ![](https://static-docs.nocobase.com/202503041330291.png)
 
 ![](https://static-docs.nocobase.com/202503041331279.png)
-
-如果需要使用 JSON 对象中的字段内容，可以参考：
-
-- [JSON 变量映射](../../../../../handbook/workflow-json-variable-mapping)
-- [JSON 计算](../../../../../handbook/workflow-json-query)
