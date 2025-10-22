@@ -110,6 +110,7 @@ export class ActionPanelBlockModel extends BlockModel {
                         <div
                           className={css`
                             padding: 10px 0px;
+                            margin-bottom: 15px;
                             .ant-btn {
                               background: none;
                               border: none !important;
