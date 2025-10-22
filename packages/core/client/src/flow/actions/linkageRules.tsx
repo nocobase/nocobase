@@ -347,7 +347,7 @@ export const subFormLinkageSetFieldProps = defineAction({
     // 根据 uid 找到对应的字段 model 并设置属性
     fields.forEach((fieldUid: string) => {
       try {
-        const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+        const gridModels = ctx.model?.subModels?.items || [];
         const fieldModel = gridModels.find((model: any) => model.uid === fieldUid);
 
         fieldModel.forks.forEach((forkModel: FlowModel) => {
@@ -648,7 +648,7 @@ export const subFormLinkageAssignField = defineAction({
     const { assignValue, field } = value || {};
     if (!field) return;
     try {
-      const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
+      const gridModels = ctx.model?.subModels?.items || [];
       const fieldModel = gridModels.find((model: any) => model.uid === field);
       if (!fieldModel) return;
 
@@ -1332,7 +1332,16 @@ export const subFormFieldLinkageRules = defineAction({
     if (ctx.model.hidden) {
       return;
     }
-    commonLinkageRulesHandler(ctx, params);
+    const originalModel = ctx.model;
+    const grid = originalModel?.subModels?.grid;
+    grid.forks.forEach((forkModel: FlowModel) => {
+      if (forkModel.hidden) {
+        return;
+      }
+      ctx.model = forkModel;
+      commonLinkageRulesHandler(ctx, params);
+    });
+    ctx.model = originalModel;
   },
 });
 
