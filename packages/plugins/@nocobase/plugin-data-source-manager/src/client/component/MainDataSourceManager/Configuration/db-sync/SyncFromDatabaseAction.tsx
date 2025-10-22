@@ -11,13 +11,14 @@ import React from 'react';
 import { Dropdown, Button, App, message } from 'antd';
 import { ImportOutlined, SyncOutlined, ReloadOutlined } from '@ant-design/icons';
 import LoadCollection from './LoadCollectionAction';
-import { useAPIClient } from '@nocobase/client';
+import { useAPIClient, useDataSource } from '@nocobase/client';
 import { useDSMTranslation } from '../../../../locale';
 
 export const SyncFromDatabaseAction: React.FC = () => {
   const { t } = useDSMTranslation();
   const api = useAPIClient();
   const { modal } = App.useApp();
+  const ds = useDataSource();
 
   return (
     <Dropdown
@@ -38,6 +39,7 @@ export const SyncFromDatabaseAction: React.FC = () => {
                 content: t('Field synchronization confirmation prompt'),
                 onOk: async () => {
                   await api.resource('mainDataSource').syncFields();
+                  ds.reload();
                   message.success(t('Sync successfully'));
                 },
               });

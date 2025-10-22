@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useAPIClient, useCollectionRecordData, useResourceActionContext } from '@nocobase/client';
+import { useAPIClient, useCollectionRecordData, useDataSource, useResourceActionContext } from '@nocobase/client';
 import React from 'react';
 import { SyncOutlined } from '@ant-design/icons';
 import { Button, message } from 'antd';
@@ -17,6 +17,7 @@ export const SyncFieldChangesAction: React.FC = () => {
   const { t } = useDSMTranslation();
   const api = useAPIClient();
   const record = useCollectionRecordData();
+  const ds = useDataSource();
   const { refresh } = useResourceActionContext();
 
   if (record.from === 'db2cm' || record.template === 'view' || record.template === 'sql') {
@@ -32,6 +33,7 @@ export const SyncFieldChangesAction: React.FC = () => {
           },
         });
         refresh();
+        ds.reload();
         message.success(t('Sync successfully'));
       }}
     >

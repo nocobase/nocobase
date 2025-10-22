@@ -38,7 +38,7 @@ import {
   useApp,
 } from '@nocobase/client';
 import { message, Select, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
-import React, { createContext, useContext, useMemo, useEffect, useState } from 'react';
+import React, { createContext, useContext, useMemo, useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { omit } from 'lodash';
 
@@ -281,27 +281,43 @@ const FieldInterfaceRenderer = ({ value, record, updateFieldHandler, isPresetFie
   const [options, setOptions] = useState([]);
   const targetType = record.type;
 
+  const applyInterfaceChange = useCallback(
+    async (newValue) => {
+      const interfaceConfig = getInterface(newValue);
+      setSelectValue(newValue);
+      await updateFieldHandler(record, {
+        interface: newValue,
+        uiSchema: {
+          title: record?.uiSchema?.title,
+          ...interfaceConfig?.default?.uiSchema,
+        },
+      });
+    },
+    [record],
+  );
+
   useEffect(() => {
     if (isPresetField) return;
     if (record?.possibleTypes || targetType) {
       const newOptions = getInterfaceOptions(initOptions, targetType);
       setOptions(newOptions);
     }
-  }, [targetType, initOptions]);
+  }, [record, isPresetField, targetType, initOptions]);
 
   useEffect(() => {
-    if (options.length === 1 && options[0]?.children?.length === 1) {
-      const targetValue = options[0]?.children?.[0]?.name;
-      if (targetValue !== selectValue) {
-        setSelectValue(targetValue);
-      }
-    } else if (selectValue && !isValueInOptions(selectValue, options)) {
-      const targetValue = options[0]?.children?.[0]?.name;
-      if (targetValue) {
-        setSelectValue(targetValue);
-      }
+    if (isPresetField) return;
+    if (!options.length) return;
+
+    const firstOption = options[0]?.children?.[0]?.name;
+    if (!firstOption) return;
+
+    if (
+      (options.length === 1 && options[0]?.children?.length === 1 && selectValue !== firstOption) ||
+      (selectValue && !isValueInOptions(selectValue, options))
+    ) {
+      applyInterfaceChange(firstOption);
     }
-  }, [options, selectValue]);
+  }, [selectValue, isPresetField, options, applyInterfaceChange]);
 
   if (['oho', 'obo', 'o2m', 'm2o', 'm2m'].includes(record.interface)) {
     return (
