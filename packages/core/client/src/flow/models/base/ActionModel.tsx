@@ -14,6 +14,7 @@ import type { ButtonProps } from 'antd/es/button';
 import _ from 'lodash';
 import React from 'react';
 import { Icon } from '../../../icon/Icon';
+import { ColorPicker } from '../../../schema-component/antd/color-picker';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
 
 export type ActionSceneType = 'collection' | 'record' | ActionSceneType[];
@@ -38,6 +39,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   enableEditIcon = true;
   enableEditType = true;
   enableEditDanger = true;
+  enableEditColor = true;
 
   static _getScene() {
     return _.castArray(this['scene'] || []);
@@ -98,9 +100,13 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   }
 
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
-  protected renderHiddenInConfig(): React.ReactNode | undefined {
+  renderHiddenInConfig(): React.ReactNode | undefined {
     return (
-      <Tooltip title={this.context.t('当前按钮已被隐藏，你无法点击（该内容仅在激活 UI Editor 时显示）。')}>
+      <Tooltip
+        title={this.context.t(
+          'The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).',
+        )}
+      >
         <Button type={this.props.type} disabled icon={<LockOutlined />} />
       </Tooltip>
     );
@@ -149,6 +155,13 @@ ActionModel.registerFlow({
                 'x-decorator': 'FormItem',
                 'x-component': 'Switch',
                 title: escapeT('Danger action'),
+              }
+            : undefined,
+          color: ctx.model.enableEditColor
+            ? {
+                'x-decorator': 'FormItem',
+                'x-component': ColorPicker,
+                title: escapeT('Color'),
               }
             : undefined,
         };
