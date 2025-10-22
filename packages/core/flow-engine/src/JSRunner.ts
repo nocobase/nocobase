@@ -55,6 +55,9 @@ export class JSRunner {
     error?: any;
     timeout?: boolean;
   }> {
+    if (location?.search.includes('skipRunJs=true')) {
+      return { success: true, value: null };
+    }
     const wrapped = `(async () => {
       try {
         ${code};

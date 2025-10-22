@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { getValuesByPath } from '@nocobase/shared';
 import _ from 'lodash';
-import { FlowContext, FlowModelContext } from '../flowContext';
-import { getValuesByPath } from '@nocobase/utils/client';
+import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
 import type { FlowModel } from '../models';
 import type { ServerContextParams } from './serverContextParams';
 

@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import type { FlowContext, PropertyMeta, PropertyMetaFactory } from '../flowContext';
-import type { JSONValue } from './params-resolvers';
-import type { Collection } from '../data-source';
-import { createCollectionContextMeta } from './createCollectionContextMeta';
-import { buildServerContextParams, type RecordRef, type ServerContextParams } from '../utils/serverContextParams';
 import {
   extractUsedVariableNames as _extractUsedVariableNames,
   extractUsedVariablePaths as _extractUsedVariablePaths,
-} from '@nocobase/utils/client';
+} from '@nocobase/shared';
+import type { Collection } from '../data-source';
+import type { FlowContext, PropertyMeta, PropertyMetaFactory } from '../flowContext';
+import { buildServerContextParams, type RecordRef, type ServerContextParams } from '../utils/serverContextParams';
+import { createCollectionContextMeta } from './createCollectionContextMeta';
+import type { JSONValue } from './params-resolvers';
 
 // Narrowest resource shape we rely on for inference
 type ResourceLike = {
