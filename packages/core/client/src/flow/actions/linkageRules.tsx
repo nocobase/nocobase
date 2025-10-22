@@ -651,12 +651,15 @@ export const subFormLinkageAssignField = defineAction({
       const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
       const fieldModel = gridModels.find((model: any) => model.uid === field);
       if (!fieldModel) return;
-      // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-      if (typeof assignValue === 'undefined') {
-        setProps(fieldModel as FlowModel, {});
-        return;
-      }
-      setProps(fieldModel as FlowModel, { value: assignValue });
+
+      fieldModel.forks.forEach((forkModel: FlowModel, index: number) => {
+        // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
+        if (typeof assignValue === 'undefined') {
+          setProps(forkModel, {});
+          return;
+        }
+        setProps(forkModel, { value: assignValue });
+      });
     } catch (error) {
       console.warn(`Failed to assign value to field ${field}:`, error);
     }
@@ -1198,26 +1201,41 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     });
 
   // 2. 最后才实际更改相关 model 的状态
-  allModels.forEach((model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean }) => {
-    const newProps = {
-      ...model.__originalProps,
-      ...model.__props,
-    };
+  allModels.forEach(
+    (
+      model: FlowModel & {
+        __originalProps?: any;
+        __props?: any;
+        __shouldReset?: boolean;
+        isFork?: boolean;
+        forkId?: number;
+      },
+    ) => {
+      const newProps = {
+        ...model.__originalProps,
+        ...model.__props,
+      };
 
-    model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
-    model.hidden = !!newProps.hiddenModel;
+      model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
+      model.hidden = !!newProps.hiddenModel;
 
-    if (newProps.hiddenText) {
-      model.setProps('title', '');
-    }
+      if (newProps.hiddenText) {
+        model.setProps('title', '');
+      }
 
-    // 目前只有表单的“字段赋值”有 value 属性
-    if ('value' in newProps && model.context.form) {
-      model.context.form.setFieldValue(model.props.name, newProps.value);
-    }
+      // 目前只有表单的“字段赋值”有 value 属性
+      if ('value' in newProps && model.context.form) {
+        model.context.form.setFieldValue(
+          model.isFork && Array.isArray(model.props.name)
+            ? [...model.props.name.slice(0, -1), model.forkId, ...model.props.name.slice(-1)]
+            : model.props.name,
+          newProps.value,
+        );
+      }
 
-    model.__props = null;
-  });
+      model.__props = null;
+    },
+  );
 };
 
 export const blockLinkageRules = defineAction({
