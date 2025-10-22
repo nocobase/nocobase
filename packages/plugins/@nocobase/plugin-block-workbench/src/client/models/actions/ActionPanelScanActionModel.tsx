@@ -16,7 +16,7 @@ import type { ButtonProps } from 'antd/es/button';
 import { ActionModel } from '@nocobase/client';
 import { QRCodeScannerInner } from './components/qrcode-scanner';
 
-export const QRCodeScanner = (props) => {
+const QRCodeScanner = (props) => {
   const [visible, setVisible] = useState(true);
   const { t } = useTranslation('block-workbench');
 
