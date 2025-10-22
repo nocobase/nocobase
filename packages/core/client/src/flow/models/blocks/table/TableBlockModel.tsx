@@ -673,18 +673,22 @@ const HighPerformanceTable = React.memo(
     highlightedRowKey: string;
   }) => {
     const { model, size, virtual, dataSource, columns, pagination: _pagination, highlightedRowKey } = props;
+    const [selectedRowKeys, setSelectedRowKeys] = React.useState<string[]>(() =>
+      model.resource.getSelectedRows().map((row) => row[model.collection.filterTargetKey]),
+    );
     const rowSelection = useMemo(() => {
       return {
         columnWidth: 50,
         type: 'checkbox',
         onChange: (_, selectedRows) => {
           model.resource.setSelectedRows(selectedRows);
+          setSelectedRowKeys(selectedRows.map((row) => row[model.collection.filterTargetKey]));
         },
-        selectedRowKeys: model.resource.getSelectedRows().map((row) => row[model.collection.filterTargetKey]),
+        selectedRowKeys,
         renderCell: model.renderCell,
         ...model.rowSelectionProps,
       };
-    }, [model]);
+    }, [model, selectedRowKeys]);
     const handleChange = useCallback(
       (pagination) => {
         console.log('onChange pagination:', pagination);
