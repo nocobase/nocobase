@@ -39,6 +39,7 @@ export {
   subFormLinkageSetFieldProps,
   linkageAssignField,
   linkageRunjs,
+  subFormLinkageAssignField,
 } from './linkageRules';
 export { displayFieldComponent } from './displayFieldComponent';
 export * from './overflowMode';
