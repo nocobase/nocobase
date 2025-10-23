@@ -41,13 +41,24 @@
                 "type": "custom-link",
                 "label": "网格卡片",
                 "link": "/interface-builder/data-blocks/grid-card"
+              },
+              {
+                "type": "custom-link",
+                "label": "图表",
+                "link": "/interface-builder/data-blocks/chart"
               }
             ]
           },
           {
             "type": "custom-link",
             "label": "筛选区块",
-            "link": "/interface-builder/filter-blocks"
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "表单",
+                "link": "/interface-builder/filter-blocks/form"
+              }
+            ]
           },
           {
             "type": "custom-link",

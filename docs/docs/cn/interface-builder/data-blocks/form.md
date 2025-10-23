@@ -4,12 +4,6 @@
 
 表单区块是用于构建数据输入和编辑界面的重要区块。它具有高度的定制性，基于数据模型来使用相应的组件显示所需的字段。通过联动规则等事件流，表单区块可以动态展示字段。此外，还可以与工作流程结合，实现自动化流程触发和数据处理，进一步提高工作效率或实现逻辑编排。
 
-## 添加区块
-
-<video width="100%" height="440" controls>
-      <source src="https://static-docs.nocobase.com/20240416215917.mp4" type="video/mp4">
-</video>
-
 ## 区块配置项
 
 ![20240416220148](https://static-docs.nocobase.com/20240416220148.png)
@@ -26,7 +20,7 @@
 
 ### 本表字段
 
-**注意 ** 继承表的字段（父表字段）也会合并显示出来
+** 注意 ** 继承表的字段（父表字段）也会合并显示出来
 
 ![20240416230739](https://static-docs.nocobase.com/20240416230739.png)
 
@@ -47,6 +41,4 @@
 ![20240417115249](https://static-docs.nocobase.com/20240417115249.png)
 
 - [提交](/handbook/ui/actions/types/submit)
-- [保存数据](/handbook/ui/actions/types/save-record)
-- [自定义请求](/handbook/action-custom-request)
 - [触发工作流](/handbook/workflow/manual/triggers/custom-action)

@@ -32,18 +32,28 @@
 
 ### 本表字段
 
-**注意 ** 继承表的字段（父表字段）也会合并显示出来
-![20240415223714](https://static-docs.nocobase.com/20240415223714.png)
+> **注意**：继承表中的字段（即父表字段）会自动合并显示在当前表中。
+
+![20251023185113](https://static-docs.nocobase.com/20251023185113.png)
 
 ### 关系表字段
 
-![20240415223746](https://static-docs.nocobase.com/20240415223746.png)
+> **注意**：支持将关系表字段显示出来（目前仅支持对一关系）。
+
+![20251023185239](https://static-docs.nocobase.com/20251023185239.png)
+
+### 其他自定义列
+
+![20251023185425](https://static-docs.nocobase.com/20251023185425.png)
+
+- [Js field](/handbook/ui/fields/types/jsField)
+- [Js column](/handbook/ui/fields/types/jsColumn)
 
 ## 配置操作
 
 ### 全局操作
 
-![20240415225525](https://static-docs.nocobase.com/20240415225525.png)
+![20251023171655](https://static-docs.nocobase.com/20251023171655.png)
 
 - [筛选](/handbook/ui/actions/types/filter)
 - [添加](/handbook/ui/actions/types/add-new)
@@ -51,14 +61,24 @@
 - [刷新](/handbook/ui/actions/types/refresh)
 - [导入](/handbook/action-import)
 - [导出](/handbook/action-export)
+- [模板打印](/handbook/action-template-print)
 - [批量更新](/handbook/action-bulk-update)
+- [导出附件](/handbook/action-export-attachments)
+- [触发工作流](/handbook/action-trigger-workflow)
+- [JS action ](/handbook/action-js-action)
+- [AI 员工](/handbook/action-ai-employee)
 
 ### 行操作
 
-![20240415225657](https://static-docs.nocobase.com/20240415225657.png)
+![20251023181019](https://static-docs.nocobase.com/20251023181019.png)
 
 - [查看](/handbook/ui/actions/types/view)
 - [编辑](/handbook/ui/actions/types/edit)
 - [删除](/handbook/ui/actions/types/delete)
 - [弹窗](/handbook/ui/actions/types/pop-up)
 - [链接](/handbook/ui/actions/types/link)
+- [更新记录](/handbook/action-update-record)
+- [模板打印](/handbook/action-template-print)
+- [触发工作流](/handbook/action-trigger-workflow)
+- [JS action ](/handbook/action-js-action)
+- [AI 员工](/handbook/action-ai-employee)

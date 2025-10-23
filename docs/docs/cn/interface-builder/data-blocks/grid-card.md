@@ -4,11 +4,6 @@
 
 网格卡片区块以卡片形式展示数据记录的摘要信息，支持根据不同屏幕尺寸配置列数，以确保在不同尺寸的设备上友好显示。
 
-### 添加区块
-
-<video width="100%" height="440" controls>
-      <source src="https://static-docs.nocobase.com/20240418120045.mp4" type="video/mp4">
-</video>
 
 ## 区块配置项
 
@@ -40,16 +35,6 @@
 <source src="https://static-docs.nocobase.com/20240419175643.mp4" type="video/mp4">
 </video>
 
-### 设置区块高度
-
-示例：设置订单网格卡片区块高度为「全高」模式。
-
-![20240604232619](https://static-docs.nocobase.com/20240604232619.gif)
-
-更多内容参考 [区块高度](/handbook/ui/blocks/block-settings/block-height)
-
-- [设置排序规则](/handbook/ui/blocks/block-settings/sorting-rule)
-- [保存为区块模板](/handbook/block-template)
 
 ## 配置字段
 
@@ -83,6 +68,4 @@
 - [编辑](/handbook/ui/actions/types/edit)
 - [删除](/handbook/ui/actions/types/delete)
 - [弹窗](/handbook/ui/actions/types/pop-up)
-- [更新记录](/handbook/ui/actions/types/update-record)
-- [自定义请求](/handbook/action-custom-request)
 - [触发工作流](/handbook/workflow/manual/triggers/custom-action)
