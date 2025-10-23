@@ -36,31 +36,44 @@ const Iframe: any = observer(
     );
     const [src, setSrc] = useState(null);
     useEffect(() => {
-      const generateSrc = async () => {
+      let active = true; // 标记当前请求是否有效
+
+      const generateSrc = async (content: string | undefined) => {
+        if (!content) return;
         if (mode === 'html') {
-          const liquid = ctx.liquid;
-          const result = await liquid.renderWithFullContext(htmlContent, ctx);
-          const targetHtmlContent = compile(result);
-          if (targetHtmlContent === undefined) {
-            return;
+          try {
+            const liquid = ctx.liquid;
+            const result = await liquid.renderWithFullContext(content, ctx);
+            const targetHtmlContent = compile(result);
+            if (targetHtmlContent === undefined) return;
+
+            const encodedHtml = encodeURIComponent(targetHtmlContent);
+            const dataUrl = 'data:text/html;charset=utf-8,' + encodedHtml;
+
+            if (active) {
+              setSrc(dataUrl);
+            }
+          } catch (err) {
+            console.error(err);
           }
-          const encodedHtml = encodeURIComponent(targetHtmlContent);
-          const dataUrl = 'data:text/html;charset=utf-8,' + encodedHtml;
-          setSrc(dataUrl);
         } else {
           try {
             const targetUrl = joinUrlSearch(url, params);
-            setSrc(targetUrl);
+            if (active) setSrc(targetUrl);
           } catch (error) {
             console.error('Error fetching target URL:', error);
-            // Handle error or set a fallback URL
-            setSrc('fallback-url');
+            if (active) setSrc('fallback-url');
           }
         }
       };
 
-      generateSrc();
-    }, [htmlContent, mode, url, params, html]);
+      generateSrc(htmlContent);
+
+      // cleanup: 标记旧调用无效
+      return () => {
+        active = false;
+      };
+    }, [htmlContent, mode, url, params, html, htmlId]);
 
     if (loading && !src) {
       return (

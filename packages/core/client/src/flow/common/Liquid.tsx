@@ -85,9 +85,11 @@ export class LiquidEngine extends Liquid {
       return;
     }
     try {
+      if (typeof template === 'number') {
+        template = String(template);
+      }
       // 1️⃣ 分析模板中的变量
       const vars = await this.fullVariables(template);
-
       // 2️⃣ 构造 Liquid context
       const liquidContext = this.transformLiquidContext(vars);
 
