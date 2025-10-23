@@ -52,12 +52,10 @@ export const DisplayMarkdown = (props) => {
     <div
       ref={contentRef}
       className={`${markdownClass} nb-markdown`}
-      dangerouslySetInnerHTML={{ __html: html }}
+      dangerouslySetInnerHTML={{ __html: textOnly ? text : html }}
       style={baseStyle}
     />
   );
-
-  if (textOnly) return text;
 
   return isEllipsis && isOverflowed ? (
     <Tooltip
