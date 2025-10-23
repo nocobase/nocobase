@@ -1,14 +1,12 @@
 # Iframe 区块
 
-<PluginInfo name="block-iframe"></PluginInfo>
+:::tip 提示
+该功能由插件 `plugin-block-iframe` 提供。
+:::
 
 ## 介绍
 
 IFrame 区块允许将外部网页或内容嵌入到当前页面中。用户可以通过配置 URL 或直接插入 HTML 代码，轻松将外部应用集成到页面。使用 HTML 页面时，用户可以灵活定制内容，满足特定展示需求，这种方式特别适合需要定制化展示的场景，无需跳转即可加载外部资源，提升用户体验和页面的交互效果。
-
-## 安装
-
-内置插件，无需安装。
 
 ## 添加区块
 
@@ -20,15 +18,6 @@ IFrame 区块允许将外部网页或内容嵌入到当前页面中。用户可�
 
 ## 模板引擎
 
-### 字符串模板
-
-默认的模板引擎
-
-### Handlebars
-
-![20240811205239](https://static-docs.nocobase.com/20240811205239.png)
-
-更多内容参考 [Handlebars 模板引擎](/handbook/template-handlebars)
 
 ## 传入变量
 

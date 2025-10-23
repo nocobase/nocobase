@@ -18,31 +18,31 @@
 
 目前页面里的区块类型包括：数据区块、筛选区块、其他区块。
 
-![](https://static-docs.nocobase.com/dad0a394d33dd26f31c3202a76bb0153.png)
+![20251023222441](https://static-docs.nocobase.com/20251023222441.png)
 
 ### 弹窗（对话框或抽屉）里的区块
 
-弹窗有对话框和抽屉两种，和页面一样也可以添加区块，区别在于弹窗里的区块通常为单条记录的添加、编辑或查看等，区块类型包括数据区块、其他区块。
+弹窗有对话框和抽屉两种，和页面一样也可以添加区块，区别在于弹窗里表单区块通常为单条记录的添加、编辑或查看等，区块类型包括数据区块、其他区块。
 
-![2024-04-10_11-27-04](https://static-docs.nocobase.com/2024-04-10_11-27-04.png)
+![20251023222613](https://static-docs.nocobase.com/20251023222613.png)
 
 ## 区块的设计器
 
 每个区块右上角都有三个小图标，从左到右分别为：
 
 1. 拖拽布局
-2. 快捷添加区块
+2. 事件流
 3. 区块参数配置
 
-![](https://static-docs.nocobase.com/b488f3013532a246df59b89c0688a58f.png)
+![20251023224032](https://static-docs.nocobase.com/20251023224032.png)
 
-简单的区块所有的配置项都集中在「区块参数配置」里，如 Markdown
+简单的区块所有的配置项都集中在「区块参数配置」里，如 JS Block
 
-![](https://static-docs.nocobase.com/f37e277863068b2661f66d4020af806a.png)
+![20251023224903](https://static-docs.nocobase.com/20251023224903.png)
 
 复杂的数据类型区块还会提供独立的内嵌的「配置字段」和「配置操作」。
 
-![](https://static-docs.nocobase.com/71b550da637d23145a5f62d48ee8521b.png)
+![20251023225141](https://static-docs.nocobase.com/20251023225141.png)
 
 除此之外，也可以自由发挥，提供更多嵌套的可能，如图表区块。
 

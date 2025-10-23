@@ -12,35 +12,29 @@
 - [扫二维码](/handbook/action-qr-scan)
 - [弹窗操作](/handbook/action-popup)
 
-![20240612213229](https://static-docs.nocobase.com/20240612213229.png)
+![20251023225754](https://static-docs.nocobase.com/20251023225754.png)
 
 ## 操作类型
 
-操作面板支持的操作类型有：
 
-### 链接
+操作面板支持多种操作类型，方便用户在区块中进行交互和扩展操作。
 
-<video width="100%" controls>
-  <source src="https://static-docs.nocobase.com/20240612213731_rec_.mp4" type="video/mp4">
-</video>
+当前支持的操作类型包括：
 
-### 扫二维码
+- **链接**：跳转到指定页面或外部网址。
 
-<video width="100%" controls>
-  <source src="https://static-docs.nocobase.com/20240612214013_rec_.mp4" type="video/mp4">
-</video>
+![20251023230643](https://static-docs.nocobase.com/20251023230643.png)
 
-### 弹窗按钮
+- **扫描二维码**：通过扫描二维码触发相应操作。
 
-和页面中配置区块一致
+- **打开弹窗**：打开弹窗以展示区块内容。
+![20251023230522](https://static-docs.nocobase.com/20251023230522.png)
+> 💡 后续版本将持续扩展更多操作类型。
 
-<video width="100%" controls>
+![20251023230420](https://static-docs.nocobase.com/20251023230420.png)
+## 布局
 
-  <source src="https://static-docs.nocobase.com/20240919163242.mp4" type="video/mp4">
-</video>
+- 栅格
+- 列表
 
-### 自定义请求按钮
-
-<video width="100%" controls>
-  <source src="https://static-docs.nocobase.com/20240919163825.mp4" type="video/mp4">
-</video>
+![20251023230718](https://static-docs.nocobase.com/20251023230718.gif)

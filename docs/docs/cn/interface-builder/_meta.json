@@ -159,6 +159,11 @@
         "type": "custom-link",
         "label": "联动规则",
         "link": "/interface-builder/linkage-rule"
+      },
+      {
+        "type": "custom-link",
+        "label": "事件流",
+        "link": "/interface-builder/event-flow"
       }
     ]
   }
