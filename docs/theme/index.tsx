@@ -124,7 +124,7 @@ export const Layout = () => {
 };
 
 function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
-  const { icon, title, details, link: rawLink } = feature;
+  const { title, details, link: rawLink } = feature;
 
   const link = rawLink;
   const navigate = useNavigate();
@@ -145,13 +145,6 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
           }}
         >
           <div className="rp-home-feature__title-wrapper">
-            {icon ? (
-              <div
-                className="rp-home-feature__icon"
-                {...renderHtmlOrText(icon)}
-              ></div>
-            ) : null}
-
             <h2 className="rp-home-feature__title">{title}</h2>
           </div>
           <p
