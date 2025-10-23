@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-block-grid-card",
-  "version": "2.0.0-alpha.19",
+  "version": "2.0.0-alpha.20",
   "main": "dist/server/index.js",
   "displayName": "Block: GridCard",
   "displayName.zh-CN": "区块：网格卡片",
@@ -9,7 +9,6 @@
   "license": "AGPL-3.0",
   "homepage": "https://docs.nocobase.com/handbook/block-grid-card",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-grid-card",
-  "dependencies": {},
   "peerDependencies": {
     "@nocobase/client": "1.x",
     "@nocobase/server": "1.x",

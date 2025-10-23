@@ -131,6 +131,7 @@ export function FormComponent({
       labelCol={{ style: { width: layoutProps?.labelWidth } }}
       onValuesChange={(changedValues, allValues) => {
         model.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
+        model.emitter.emit('formValuesChange', { changedValues, allValues });
       }}
       {...rest}
     >

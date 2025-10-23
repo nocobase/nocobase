@@ -48,6 +48,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
   const { collection, dataSource, blockModel } = itemModel?.context || {};
   const init = itemModel?.getStepParams?.('fieldSettings', 'init') || {};
   const fieldPath: string | undefined = init?.fieldPath;
+  const fieldName = fieldPath.split('.').slice(-1)[0];
 
   // 生成临时根模型 + 子字段模型
   const [tempRoot, setTempRoot] = React.useState<any>(null);
@@ -55,8 +56,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
     if (!itemModel || !collection || !fieldPath) return;
     const engine = itemModel?.context?.engine || flowCtx.model?.context?.engine;
     const fields = typeof collection?.getFields === 'function' ? collection.getFields() || [] : [];
-    const f = fields.find((x: any) => x?.name === fieldPath);
-    const cfObj = typeof collection?.getField === 'function' ? collection.getField(fieldPath) : undefined;
+    const f = fields.find((x: any) => x?.name === fieldName);
     const binding = EditableItemModel.getDefaultBindingByField(itemModel?.context, f);
     if (!binding) {
       return;
@@ -87,7 +87,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
     // 注入上下文（集合/数据源/字段/区块/资源）
     created.context?.defineProperty?.('collection', { value: collection });
     if (dataSource) created.context?.defineProperty?.('dataSource', { value: dataSource });
-    const cf = typeof collection?.getField === 'function' ? collection.getField(fieldPath) : undefined;
+    const cf = typeof collection?.getField === 'function' ? collection.getField(fieldName) : undefined;
     if (cf) created.context?.defineProperty?.('collectionField', { value: cf });
     if (blockModel) created.context?.defineProperty?.('blockModel', { value: blockModel });
     if (created.context) {
@@ -130,7 +130,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
       created.subModels.fields.forEach?.((m) => m.remove());
       created.remove();
     };
-  }, [itemModel, collection, dataSource, blockModel, fieldPath, flowCtx]);
+  }, [itemModel, collection, dataSource, blockModel, fieldPath, fieldName, flowCtx]);
 
   // 同步 value/onChange 到临时根与字段模型
   React.useEffect(() => {
