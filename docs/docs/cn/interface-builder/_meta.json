@@ -1,7 +1,7 @@
 [
   {
     "type": "custom-link",
-    "label": "界面配置",
+    "label": "界面构建器",
     "link": "/interface-builder",
     "items": [
       {
@@ -14,9 +14,16 @@
             "link": "/interface-builder/blocks"
           },
           {
-            "type": "custom-link",
+            "type": "link",
             "label": "数据区块",
-            "link": "/interface-builder/data-blocks"
+            "link": "/interface-builder/data-blocks",
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "表格",
+                "link": "/interface-builder/data-blocks/table"
+              }
+            ]
           },
           {
             "type": "custom-link",
