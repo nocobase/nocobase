@@ -11,7 +11,6 @@
 - [链接](/handbook/ui/actions/types/link)
 - [扫二维码](/handbook/action-qr-scan)
 - [弹窗操作](/handbook/action-popup)
-- [自定义请求](/handbook/action-custom-request)
 
 ![20240612213229](https://static-docs.nocobase.com/20240612213229.png)
 
