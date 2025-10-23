@@ -140,7 +140,11 @@ export const Display = (props) => {
         onOpenChange={(visible) => {
           setPopoverVisible(ellipsis && visible);
         }}
-        content={<DisplayInner value={value} style={{ maxWidth: 500, maxHeight: 400, overflowY: 'auto' }} />}
+        content={
+          <div style={{ maxWidth: 600, maxHeight: 500, overflow: 'auto' }}>
+            <DisplayInner value={value} />
+          </div>
+        }
       >
         <div
           ref={elRef}
