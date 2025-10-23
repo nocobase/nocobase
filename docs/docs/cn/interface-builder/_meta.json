@@ -14,14 +14,33 @@
             "link": "/interface-builder/blocks"
           },
           {
-            "type": "link",
+            "type": "custom-link",
             "label": "数据区块",
-            "link": "/interface-builder/data-blocks",
             "items": [
               {
                 "type": "custom-link",
                 "label": "表格",
                 "link": "/interface-builder/data-blocks/table"
+              },
+              {
+                "type": "custom-link",
+                "label": "表单",
+                "link": "/interface-builder/data-blocks/form"
+              },
+              {
+                "type": "custom-link",
+                "label": "详情",
+                "link": "/interface-builder/data-blocks/details"
+              },
+              {
+                "type": "custom-link",
+                "label": "列表",
+                "link": "/interface-builder/data-blocks/list"
+              },
+              {
+                "type": "custom-link",
+                "label": "网格卡片",
+                "link": "/interface-builder/data-blocks/grid-card"
               }
             ]
           },
@@ -33,7 +52,28 @@
           {
             "type": "custom-link",
             "label": "其他区块",
-            "link": "/interface-builder/other-blocks"
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "操作面板",
+                "link": "/interface-builder/other-blocks/action-panel"
+              },
+              {
+                "type": "custom-link",
+                "label": "Iframe",
+                "link": "/interface-builder/other-blocks/iframe"
+              },
+              {
+                "type": "custom-link",
+                "label": "Markdown",
+                "link": "/interface-builder/other-blocks/markdown"
+              },
+              {
+                "type": "custom-link",
+                "label": "JSBlock",
+                "link": "/interface-builder/other-blocks/js-block"
+              }
+            ]
           },
           {
             "type": "custom-link",
