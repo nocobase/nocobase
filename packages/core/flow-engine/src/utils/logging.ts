@@ -40,6 +40,8 @@ export interface LogOptions {
   slowParamsMs: number;
   slowRenderMs: number;
   capacity: number;
+  /** Optional: base console logger level (engine.logger.level). */
+  loggerLevel?: LogLevel;
   samples?: Record<string, number>;
   slowOnly?: { event?: boolean; step?: boolean };
   dropTypes?: string[];
@@ -176,6 +178,32 @@ export function logAt(
  * - otherwise   -> 'warn'
  */
 export function getDefaultLogLevel(): LogLevel {
+  try {
+    const hasWindow = typeof window !== 'undefined' && typeof (window as any).localStorage !== 'undefined';
+    if (hasWindow) {
+      const raw = (window as any).localStorage?.getItem?.('nb.flow.logs.options');
+      if (raw) {
+        const obj = JSON.parse(raw);
+        const lvl = obj?.loggerLevel;
+        const allowed: Record<string, true> = {
+          silent: true,
+          fatal: true,
+          error: true,
+          warn: true,
+          info: true,
+          debug: true,
+          trace: true,
+        };
+        if (typeof lvl === 'string' && allowed[lvl]) {
+          return lvl as LogLevel;
+        }
+      }
+    }
+  } catch (_) {
+    // ignore parse / access errors and fallback to env
+  }
+
+  // 2) Fallback to env-based heuristic
   const env =
     typeof process !== 'undefined' && (process as any)?.env?.NODE_ENV
       ? String((process as any).env.NODE_ENV).toLowerCase()

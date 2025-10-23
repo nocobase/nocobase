@@ -44,6 +44,7 @@ export class LogManager {
     if (typeof next.capacity === 'number' && next.capacity > 0) {
       this._bus.setCapacity(next.capacity);
     }
+    this.engine.logger.level = next.loggerLevel || this.engine.logger.level;
   }
 
   updateOptions(patchOrFn: Partial<LogOptions> | ((prev: LogOptions) => Partial<LogOptions>)) {

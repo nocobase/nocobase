@@ -67,6 +67,7 @@ interface LogOptions {
   slowStepMs?: number;
   slowEventMs?: number;
   filters?: Record<string, unknown> | undefined;
+  loggerLevel?: 'silent' | 'fatal' | 'error' | 'warn' | 'info' | 'debug' | 'trace';
 }
 
 interface LogManager {
@@ -177,6 +178,9 @@ export const FlowLogsPanel: React.FC = () => {
       ? Number(engine.logManager.options.maxRatePerSec)
       : undefined,
   );
+  const [loggerLevel, setLoggerLevel] = React.useState<LogLevel | undefined>(
+    (engine?.logManager?.options?.loggerLevel as LogLevel | undefined) || undefined,
+  );
   const engineReady = !!(engine?.logManager?.bus?.getSnapshot && engine?.logManager?.setOptions);
 
   // Restore options and filters from localStorage on mount
@@ -200,6 +204,9 @@ export const FlowLogsPanel: React.FC = () => {
           setOptSampleStepStart(Number(storedOpt.samples['step.start']));
         if (typeof storedOpt.samples['model.update'] === 'number')
           setOptSampleModelUpdate(Number(storedOpt.samples['model.update']));
+      }
+      if (storedOpt?.loggerLevel && typeof storedOpt.loggerLevel === 'string') {
+        setLoggerLevel(storedOpt.loggerLevel as any);
       }
     }
     const storedFilters = loadJSON<StoredFilters>(STORAGE_KEYS.filters);
@@ -860,6 +867,24 @@ export const FlowLogsPanel: React.FC = () => {
           <Collapse.Panel header={t('Publish options')} key="p">
             <Space wrap>
               <Space>
+                <Typography.Text>{t('Logger level')}</Typography.Text>
+                <Select<string>
+                  size="small"
+                  allowClear
+                  placeholder={t('default')}
+                  value={loggerLevel}
+                  onChange={(v) => setLoggerLevel((v as any) || undefined)}
+                  style={{ width: 160 }}
+                  options={[
+                    { value: 'debug', label: 'debug' },
+                    { value: 'info', label: 'info' },
+                    { value: 'warn', label: 'warn' },
+                    { value: 'error', label: 'error' },
+                    // trace/silent/fatal are advanced; hide for now or add optionally
+                  ]}
+                />
+              </Space>
+              <Space>
                 <Switch size="small" checked={optSlowEvent} onChange={setOptSlowEvent} />
                 <Typography.Text>{t('slowOnly(event)')}</Typography.Text>
               </Space>
@@ -904,6 +929,7 @@ export const FlowLogsPanel: React.FC = () => {
                     dropTypePrefixes: optDropCache ? ['cache.'] : [],
                     samples: { 'step.start': optSampleStepStart, 'model.update': optSampleModelUpdate },
                     capacity,
+                    loggerLevel: loggerLevel,
                   };
                   if (!engine?.logManager?.setOptions) {
                     console.warn('FlowDevtools: cannot apply publish options, setOptions unavailable');
@@ -929,6 +955,7 @@ export const FlowLogsPanel: React.FC = () => {
                     samples: { 'step.start': 10, 'model.update': 10, 'event.flow.dispatch': 5 },
                     capacity: 2000,
                     maxRatePerSec: undefined,
+                    loggerLevel: undefined,
                     // maxPerSecByType intentionally omitted in type
                   };
                   if (!engine?.logManager?.setOptions) {
@@ -937,6 +964,7 @@ export const FlowLogsPanel: React.FC = () => {
                   }
                   const merged: LogOptions = Object.assign({}, engine.logManager.options || {}, next);
                   engine.logManager.setOptions(merged);
+                  setLoggerLevel(undefined);
                   saveJSON(STORAGE_KEYS.options, merged);
                   const snap = engine.logManager.bus?.getSnapshot?.() || [];
                   setRows(snap);
@@ -953,6 +981,7 @@ export const FlowLogsPanel: React.FC = () => {
                     dropTypes: ['step.start'],
                     dropTypePrefixes: ['cache.'],
                     samples: { 'step.start': 10, 'model.update': 10, 'event.flow.dispatch': 5 },
+                    loggerLevel: 'warn',
                   };
                   if (!engine?.logManager?.setOptions) {
                     console.warn('FlowDevtools: cannot apply default noise reduction, setOptions unavailable');
@@ -966,6 +995,7 @@ export const FlowLogsPanel: React.FC = () => {
                   setOptDropCache(true);
                   setOptSampleStepStart(10);
                   setOptSampleModelUpdate(10);
+                  setLoggerLevel('warn');
                   saveJSON(STORAGE_KEYS.options, merged);
                   const snap = engine.logManager.bus?.getSnapshot?.() || [];
                   setRows(snap);

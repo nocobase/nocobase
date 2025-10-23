@@ -14,6 +14,8 @@
   "Max rate(/s)": "最大速率(/秒)",
   "unlimited": "无限制",
   "Apply rate": "应用速率",
+  "Logger level": "日志级别",
+  "default": "默认",
   "Filters": "过滤器",
   "Levels": "等级",
   "type contains...": "类型包含...",

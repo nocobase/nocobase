@@ -14,6 +14,8 @@
   "Max rate(/s)": "Max rate(/s)",
   "unlimited": "unlimited",
   "Apply rate": "Apply rate",
+  "Logger level": "Logger level",
+  "default": "default",
   "Filters": "Filters",
   "Levels": "Levels",
   "type contains...": "type contains...",
