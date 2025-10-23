@@ -148,7 +148,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // debounce 刷新数据
   async refresh() {
-    debugLog('---ChartResource refresh');
+    debugLog('---ChartResource refresh', this.request.data);
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer);
     }
