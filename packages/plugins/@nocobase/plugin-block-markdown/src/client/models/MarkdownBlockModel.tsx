@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BlockModel } from '@nocobase/client';
+import { BlockModel, css } from '@nocobase/client';
 import { escapeT } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
@@ -15,7 +15,17 @@ import React from 'react';
 export class MarkdownBlockModel extends BlockModel {
   render() {
     const { content } = this.props;
-    return <Card>{content}</Card>;
+    return (
+      <Card
+        className={css`
+          .ant-card-body {
+            padding: 0px 10px;
+          }
+        `}
+      >
+        {content}
+      </Card>
+    );
   }
 }
 
