@@ -923,6 +923,17 @@ class BaseFlowEngineContext extends FlowContext {
   declare location: Location;
   declare sql: FlowSQLRepository;
   declare logger: LoggerLike;
+
+  // 装饰器：记录服务端变量解析耗时
+  @LogDuration({ type: 'variables.resolve.server', slowMsKey: 'slowParamsMs' })
+  protected async resolveVariablesOnServer(template: any, autoContextParams?: any): Promise<any> {
+    const self = this.createProxy() as BaseFlowEngineContext;
+    const resolved = await enqueueVariablesResolve(self as any, {
+      template,
+      contextParams: autoContextParams || {},
+    });
+    return resolved;
+  }
 }
 
 class BaseFlowModelContext extends BaseFlowEngineContext {
@@ -1361,14 +1372,6 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         });
       },
     );
-  }
-  @LogDuration({ type: 'variables.resolve.server', slowMsKey: 'slowParamsMs' })
-  async resolveVariablesOnServer(template: any, autoContextParams?: any): Promise<any> {
-    const resolved = await enqueueVariablesResolve(this, {
-      template,
-      contextParams: autoContextParams || {},
-    });
-    return resolved;
   }
 }
 

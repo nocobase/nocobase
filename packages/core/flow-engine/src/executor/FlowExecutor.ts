@@ -211,7 +211,7 @@ export class FlowExecutor {
         if (!handler) {
           const stepType = step.use || 'inline';
           const msg = `BaseModel.applyFlow: No handler available for step '${stepKey}' in flow '${flowKey}'.`;
-          flowContext.logger.error(
+          flowContext.logger.info(
             {
               type: 'step.missingHandler',
               stepKey,
@@ -285,7 +285,7 @@ export class FlowExecutor {
           },
           error,
         );
-        throw error;
+        return Promise.reject(error);
       }
     }
     // flow end log

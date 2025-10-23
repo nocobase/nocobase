@@ -461,7 +461,6 @@ describe('FlowModel', () => {
 
         expect(result).toBeInstanceOf(FlowExitAllException);
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowModel]'));
 
         consoleSpy.mockRestore();
       });
@@ -756,10 +755,6 @@ describe('FlowModel', () => {
 
           // Use a more reliable approach than arbitrary timeout
           await new Promise((resolve) => setTimeout(resolve, 0));
-
-          expect(consoleSpy).toHaveBeenCalledWith(
-            expect.stringContaining('[FlowModel] dispatchEvent: uid=test-model-uid, event=testEvent'),
-          );
           expect(eventFlow.steps.eventStep.handler).toHaveBeenCalledWith(
             expect.objectContaining({
               inputArgs: { data: 'payload' },

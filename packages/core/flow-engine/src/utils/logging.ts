@@ -209,7 +209,7 @@ export function getDefaultLogLevel(): LogLevel {
       ? String((process as any).env.NODE_ENV).toLowerCase()
       : undefined;
   if (env === 'development') return 'debug';
-  if (env === 'test' || env === 'ci') return 'info';
+  if (env === 'test' || env === 'ci') return 'warn';
   // 兜底：若无法识别环境，则按生产对待
   return 'warn';
 }

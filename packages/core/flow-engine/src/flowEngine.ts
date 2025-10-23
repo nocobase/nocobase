@@ -514,9 +514,11 @@ export class FlowEngine {
         try {
           resolved = typeof dp === 'function' ? await dp(ctx) : dp;
         } catch (e) {
-          this.logManager
-            .createLogger({ modelId: model.uid })
-            .warn({ type: 'engine.flow.defaultParams.resolve.failed', flowKey, error: serializeError(e) });
+          model.context.logger.warn({
+            type: 'engine.flow.defaultParams.resolve.failed',
+            flowKey,
+            error: serializeError(e),
+          });
           continue;
         }
 
@@ -536,9 +538,7 @@ export class FlowEngine {
         }
       }
     } catch (error) {
-      this.logManager
-        .createLogger({ modelId: model.uid })
-        .warn({ type: 'engine.flow.defaultParams.apply.error', error: serializeError(error) });
+      model.context.logger.warn({ type: 'engine.flow.defaultParams.apply.error', error: serializeError(error) });
     }
   }
 
@@ -763,21 +763,17 @@ export class FlowEngine {
     try {
       const result = await this._modelRepository.save(model, options);
       this.logger.debug(`Successfully saved model ${model.uid}`);
-      {
-        const t1 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
-        model.context.logger?.debug?.({ type: 'model.save.end', duration: Math.max(0, t1 - t0) });
-      }
+      const t1 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+      model.context.logger?.debug?.({ type: 'model.save.end', duration: Math.max(0, t1 - t0) });
       return result;
     } catch (error) {
       this.logger.error(`Failed to save model ${model.uid}:`, error);
-      {
-        const t1 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
-        model.context.logger?.error?.({
-          type: 'model.save.error',
-          duration: Math.max(0, t1 - t0),
-          error: serializeError(error),
-        });
-      }
+      const t1 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
+      model.context.logger?.error?.({
+        type: 'model.save.error',
+        duration: Math.max(0, t1 - t0),
+        error: serializeError(error),
+      });
       throw error;
     }
   }
@@ -880,7 +876,7 @@ export class FlowEngine {
       currentParent.parent.invalidateFlowCache('beforeRender', true);
       currentParent.parent?.rerender();
       currentParent.emitter.emit('onSubModelReplaced', { oldModel, newModel });
-      this.context.logger.child({ parentId: currentParent.uid }).info({
+      currentParent.context.logger.info({
         type: 'model.sub.replaced',
         oldId: (oldModel as any)?.uid,
         newId: (newModel as any)?.uid,
@@ -900,16 +896,16 @@ export class FlowEngine {
     const sourceModel = this.getModel(sourceId);
     const targetModel = this.getModel(targetId);
     if (!sourceModel || !targetModel) {
-      this.logManager
-        .createLogger()
-        .warn({ type: 'engine.model.move.missing', sourceId: sourceId, targetId: targetId });
+      this.context.logger.warn({ type: 'engine.model.move.missing', sourceId: sourceId, targetId: targetId });
       return;
     }
     const move = (sourceModel: FlowModel, targetModel: FlowModel) => {
       if (!sourceModel.parent || !targetModel.parent || sourceModel.parent !== targetModel.parent) {
-        this.logManager
-          .createLogger()
-          .error({ type: 'engine.model.move.invalidParent', sourceId: sourceModel.uid, targetId: targetModel.uid });
+        this.context.logger.error({
+          type: 'engine.model.move.invalidParent',
+          sourceId: sourceModel.uid,
+          targetId: targetModel.uid,
+        });
         return false;
       }
 
