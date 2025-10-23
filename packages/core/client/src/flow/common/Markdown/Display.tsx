@@ -133,7 +133,7 @@ export const Display = (props) => {
           setPopoverVisible(ellipsis && visible);
         }}
         content={
-          <div style={{ maxWidth: 600, maxHeight: 500, overflow: 'auto' }}>
+          <div style={{ maxWidth: 600, maxHeight: 450, overflow: 'auto' }}>
             <DisplayInner value={value} />
           </div>
         }
