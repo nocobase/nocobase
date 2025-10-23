@@ -72,6 +72,7 @@ features:
       - title: Notifications
         details: Configure email, SMS, in-app messages and other notification channels to achieve automatic message push.
         icon: <i class="fas fa-bell"></i>
+        link: /features/notification-manager
       - title: Data Visualization
         details: Display data insights through charts and dashboards, support multi-dimensional analysis and display.
         icon: <i class="fas fa-chart-bar"></i>

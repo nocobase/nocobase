@@ -73,6 +73,7 @@ features:
       - title: 通知
         details: 配置邮件、短信、站内信 等通知渠道，实现消息自动推送。
         icon: <i class="fas fa-bell"></i>
+        link: /features/notification-manager
       - title: 数据可视化
         details: 通过图表和仪表盘展示数据洞察，支持多维度分析与展示。
         icon: <i class="fas fa-chart-bar"></i>
