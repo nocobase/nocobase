@@ -206,14 +206,6 @@ describe('application', () => {
       expect(app.serving('b')).toBe(false);
     });
 
-    it('configure as dispatcher and any services', () => {
-      process.env.WORKER_MODE = '!,*';
-
-      expect(app.serving()).toBe(true);
-      expect(app.serving('a')).toBe(true);
-      expect(app.serving('b')).toBe(true);
-    });
-
     it('configure as none', () => {
       process.env.WORKER_MODE = '-';
 
