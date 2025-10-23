@@ -38,7 +38,7 @@ RUN  yarn install && yarn build --no-dts && \
   yarn config set registry $VERDACCIO_URL && \
   cd /tmp/docs && \
   yarn install && \
-  yarn cross-env DOCS_BASE=/docs/ rspress build && \
+  yarn rspress build && \
   rm -rf /tmp/node_modules && \
   mkdir /app && \
   cd /app && \
@@ -76,7 +76,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/*
 
 RUN rm -rf /etc/nginx/sites-enabled/default
-COPY ./docker/nocobase/nocobase.conf /etc/nginx/sites-enabled/nocobase.conf
+COPY ./docker/nocobase/nocobase-docs.conf /etc/nginx/sites-enabled/nocobase-docs.conf
 COPY --from=builder /app/nocobase.tar.gz /app/nocobase.tar.gz
 
 WORKDIR /app/nocobase
