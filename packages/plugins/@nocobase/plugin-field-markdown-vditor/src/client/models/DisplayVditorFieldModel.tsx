@@ -11,7 +11,7 @@ import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import { DisplayTitleFieldModel, tval } from '@nocobase/client';
 import React, { useState, useEffect } from 'react';
 
-const Display = ({ value, markdown, liquid, t, textOnly, ctx }) => {
+const Display = ({ value, markdown, liquid, t, textOnly, ctx, overflowMode }) => {
   const [content, setContent] = useState(null);
 
   useEffect(() => {
@@ -20,13 +20,13 @@ const Display = ({ value, markdown, liquid, t, textOnly, ctx }) => {
     (async () => {
       try {
         const result = await liquid.renderWithFullContext(value, ctx);
-        const html = markdown.render(t(result), { ellipsis: textOnly });
+        const html = markdown.render(t(result), { ellipsis: overflowMode === 'ellipsis', textOnly });
         setContent(html);
       } catch (err) {
         setContent(`<pre style="color:red;"> 渲染错误: ${err.message}</pre>`);
       }
     })();
-  }, [value, textOnly]);
+  }, [value, textOnly, overflowMode]);
 
   return content;
 };
@@ -35,8 +35,18 @@ export class DisplayVditorFieldModel extends DisplayTitleFieldModel {
   public renderComponent(value) {
     if (!value) return null;
     const { markdown, liquid, t } = this.context;
-    const { textOnly } = this.props;
-    return <Display value={value} markdown={markdown} liquid={liquid} t={t} textOnly={textOnly} ctx={this.context} />;
+    const { textOnly, overflowMode } = this.props;
+    return (
+      <Display
+        value={value}
+        markdown={markdown}
+        liquid={liquid}
+        t={t}
+        textOnly={textOnly}
+        ctx={this.context}
+        overflowMode={overflowMode}
+      />
+    );
   }
 }
 

@@ -8,6 +8,7 @@
  */
 
 import { Popover } from 'antd';
+import { css } from '@emotion/css';
 import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import Vditor from 'vditor';
 import { useCDN } from './useCDN';
@@ -95,11 +96,8 @@ function openCustomPreview(src: string) {
 }
 
 export const Display = (props) => {
-  const value = props.value;
+  const { value, textOnly = true } = props;
   const cdn = useCDN();
-
-  const containerRef = useRef<HTMLDivElement>();
-
   const [popoverVisible, setPopoverVisible] = useState(false);
   const [ellipsis, setEllipsis] = useState(false);
 
@@ -108,7 +106,7 @@ export const Display = (props) => {
   const elRef = useRef<HTMLDivElement>();
   useEffect(() => {
     if (!props.value) return;
-    if (props.ellipsis) {
+    if (textOnly) {
       Vditor.md2html(props.value, {
         mode: 'light',
         cdn,
@@ -117,14 +115,8 @@ export const Display = (props) => {
           setText(convertToText(html));
         })
         .catch(() => setText(''));
-    } else {
-      containerRef.current &&
-        Vditor.preview(containerRef.current, props.value, {
-          mode: 'light',
-          cdn,
-        });
     }
-  }, [props.value, props.ellipsis]);
+  }, [props.value, textOnly]);
 
   const isOverflowTooltip = useCallback(() => {
     if (!elRef.current) return false;
@@ -163,10 +155,31 @@ export const Display = (props) => {
             }
           }}
         >
-          {text}
+          {textOnly ? (
+            text
+          ) : (
+            <div
+              className={css`
+                .vditor-reset {
+                  white-space: nowrap;
+                  display: -webkit-box;
+                  -webkit-box-orient: vertical;
+                  -webkit-line-clamp: 1;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  word-break: break-word;
+                }
+              `}
+            >
+              <DisplayInner value={value} />
+            </div>
+          )}
         </div>
       </Popover>
     );
+  }
+  if (textOnly) {
+    return text;
   }
   return <DisplayInner value={value} />;
 };

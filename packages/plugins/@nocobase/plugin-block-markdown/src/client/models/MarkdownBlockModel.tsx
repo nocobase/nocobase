@@ -70,7 +70,7 @@ MarkdownBlockModel.registerFlow({
         try {
           const result = await ctx.liquid.renderWithFullContext(content, ctx);
           // 解析 Markdown
-          const mdContent = ctx.markdown.render(ctx.t(result));
+          const mdContent = ctx.markdown.render(ctx.t(result), { textOnly: false });
           ctx.model.setProps({
             content: mdContent,
           });
