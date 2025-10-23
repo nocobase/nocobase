@@ -20,6 +20,7 @@ import {
   ElementProxy,
   createSafeDocument,
   createSafeWindow,
+  createSafeNavigator,
 } from '@nocobase/flow-engine';
 import { Tooltip } from 'antd';
 import React from 'react';
@@ -222,7 +223,12 @@ JSColumnModel.registerFlow({
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
-          await ctx.runjs(code, { window: createSafeWindow(), document: createSafeDocument() }, { version });
+          const navigator = createSafeNavigator();
+          await ctx.runjs(
+            code,
+            { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
+            { version },
+          );
         });
       },
     },

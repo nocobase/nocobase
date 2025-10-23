@@ -8,9 +8,10 @@
  */
 
 /**
- * 统一的安全全局对象代理：window/document
- * - 默认仅允许常用的定时器、console、Math、Date、addEventListener（绑定原 window）
- * - document 仅允许 createElement/querySelector/querySelectorAll
+ * 统一的安全全局对象代理：window/document/navigator
+ * - window：仅允许常用的定时器、console、Math、Date、addEventListener、open（安全包装）、location（安全代理）
+ * - document：仅允许 createElement/querySelector/querySelectorAll
+ * - navigator：仅提供极少量低风险能力（clipboard.writeText、onLine、language、languages）
  * - 不允许随意访问未声明的属性，最小权限原则
  */
 
@@ -182,6 +183,51 @@ export function createSafeDocument(extra?: Record<string, any>) {
       get(_target, prop: string) {
         if (prop in allowed) return allowed[prop];
         throw new Error(`Access to document property "${prop}" is not allowed.`);
+      },
+    },
+  );
+}
+
+export function createSafeNavigator(extra?: Record<string, any>) {
+  const nav: any = (typeof window !== 'undefined' && window.navigator) || undefined;
+
+  // 始终提供 clipboard 对象，避免可选链访问时抛错
+  const clipboard: Record<string, any> = {};
+  const writeText = nav?.clipboard?.writeText;
+  if (typeof writeText === 'function') {
+    clipboard.writeText = writeText.bind(nav.clipboard);
+  }
+
+  const allowed: Record<string, any> = {
+    clipboard,
+  };
+
+  // 只读常用标识，避免泄露更多指纹信息
+  Object.defineProperty(allowed, 'onLine', {
+    get: () => !!nav?.onLine,
+    enumerable: true,
+    configurable: false,
+  });
+  Object.defineProperty(allowed, 'language', {
+    get: () => nav?.language,
+    enumerable: true,
+    configurable: false,
+  });
+  Object.defineProperty(allowed, 'languages', {
+    get: () => (nav?.languages ? [...nav.languages] : undefined),
+    enumerable: true,
+    configurable: false,
+  });
+
+  // 允许额外注入（例如自定义能力的受控暴露）
+  Object.assign(allowed, extra || {});
+
+  return new Proxy(
+    {},
+    {
+      get(_t, prop: string) {
+        if (prop in allowed) return (allowed as any)[prop];
+        throw new Error(`Access to navigator property "${String(prop)}" is not allowed.`);
       },
     },
   );

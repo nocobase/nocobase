@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { createSafeDocument, createSafeWindow } from '../safeGlobals';
+import { createSafeDocument, createSafeWindow, createSafeNavigator } from '../safeGlobals';
 
 describe('safeGlobals', () => {
   it('createSafeWindow exposes only allowed globals and extras', () => {
@@ -25,5 +25,26 @@ describe('safeGlobals', () => {
     expect(typeof doc.createElement).toBe('function');
     expect(doc.bar).toBe(true);
     expect(() => doc.cookie).toThrow(/not allowed/);
+  });
+
+  it('createSafeNavigator exposes limited props and guards others', () => {
+    const nav: any = createSafeNavigator();
+    // clipboard object should always exist
+    expect(typeof nav.clipboard).toBe('object');
+    // writeText may or may not exist depending on environment
+    if (typeof navigator !== 'undefined' && (navigator as any).clipboard?.writeText) {
+      expect(typeof nav.clipboard.writeText).toBe('function');
+    } else {
+      expect(typeof nav.clipboard.writeText === 'undefined' || typeof nav.clipboard.writeText === 'function').toBe(
+        true,
+      );
+    }
+    // readable properties
+    expect(() => void nav.onLine).not.toThrow();
+    expect(() => void nav.language).not.toThrow();
+    expect(() => void nav.languages).not.toThrow();
+    // blocked properties
+    expect(() => (nav as any).geolocation).toThrow(/not allowed/);
+    expect(() => (nav as any).userAgent).toThrow(/not allowed/);
   });
 });
