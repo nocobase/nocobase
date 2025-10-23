@@ -15,6 +15,20 @@ const { FlowLogsPanel } = lazy(() => import('./panel'), 'FlowLogsPanel');
 
 export class PluginFlowDevtoolsClient extends Plugin {
   async load() {
+    // 尽早应用本地保存的日志发布选项，避免刷新后早期日志被默认规则丢弃
+    try {
+      const s = localStorage.getItem('nb.flow.logs.options');
+      if (s) {
+        const stored = JSON.parse(s);
+        if (stored && typeof stored === 'object') {
+          const prev = (this.app.flowEngine?.logManager?.options as any) || {};
+          const next = Object.assign({}, prev, stored);
+          this.app.flowEngine?.logManager?.setOptions?.(next);
+        }
+      }
+    } catch (e) {
+      console.warn('FlowDevtools: early apply options (plugin.load) failed', e);
+    }
     // Global provider with floating button + drawer
     this.app.use(FlowDevtoolsProvider);
     this.app.pluginSettingsManager.add(NAMESPACE, {

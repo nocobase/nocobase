@@ -4,7 +4,7 @@
   "displayName.zh-CN": "流程诊断工具",
   "description": "Client-side diagnostics panel for flow-engine structured logs.",
   "description.zh-CN": "前端流程引擎结构化日志的诊断面板。",
-  "version": "2.0.0-alpha.18",
+  "version": "2.0.0-alpha.19",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "types": "./dist/index.d.ts",

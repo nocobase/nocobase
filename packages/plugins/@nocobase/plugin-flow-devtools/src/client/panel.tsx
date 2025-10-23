@@ -73,6 +73,7 @@ interface LogManager {
   options?: LogOptions;
   setOptions?: (opts: LogOptions) => void;
   bus?: LogBus;
+  createLogger?: (arg: { from?: string }) => { info?: (payload: unknown) => void };
 }
 
 interface FlowEngineLike {
@@ -518,7 +519,7 @@ export const FlowLogsPanel: React.FC = () => {
           onClick={() => {
             const now = Date.now();
             try {
-              engine
+              engine?.logManager
                 ?.createLogger?.({ from: 'devtools' })
                 ?.info?.({ type: 'devtools.test', ts: now, message: 'hello from devtools' });
             } catch (e) {
