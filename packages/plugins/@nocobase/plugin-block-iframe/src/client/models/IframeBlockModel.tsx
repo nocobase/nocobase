@@ -357,7 +357,6 @@ IframeBlockModel.registerFlow({
         };
       },
       useRawParams: (ctx) => {
-        console.log(ctx.model.props);
         return ctx.model.props.model === 'html';
       },
       async beforeParamsSave(ctx, params) {
