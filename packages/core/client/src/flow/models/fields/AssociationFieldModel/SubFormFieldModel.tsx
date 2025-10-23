@@ -9,7 +9,7 @@
 
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
+import { createCollectionContextMeta, escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
 import { Button, Card, Divider, Form, Tooltip } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -33,6 +33,7 @@ export const ObjectNester = (props) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
   const rowIndex = model.context.fieldIndex;
+  const record = model.context.record;
   // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
   const grid = React.useMemo(() => {
     if (rowIndex == null) return gridModel;
@@ -40,9 +41,13 @@ export const ObjectNester = (props) => {
     fork.context.defineProperty('fieldIndex', {
       get: () => rowIndex,
     });
+    fork.context.defineProperty('record', {
+      get: () => record,
+      cache: false,
+    });
 
     return fork;
-  }, [gridModel, rowIndex]);
+  }, [gridModel, rowIndex, record]);
   useEffect(() => {
     if (props.disabled !== grid.context.parentDisabled) {
       grid.mapSubModels('items', (item) => {
@@ -64,6 +69,23 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
   updateAssociation = true;
   onInit(options) {
     super.onInit(options);
+    this.context.blockModel.emitter.on('formValuesChange', ({ changedValues, allValues }) => {
+      this.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
+    });
+
+    this.context.defineProperty('currentObject', {
+      get: () => {
+        return this.context.form.getFieldValue(this.props.name);
+      },
+      cache: false,
+      meta: createCollectionContextMeta(() => this.context.collection, this.context.t('Current object')),
+    });
+  }
+  onMount() {
+    super.onMount();
+    setTimeout(() => {
+      this.applyFlow('eventSettings');
+    }, 100);
   }
   render() {
     return <ObjectNester {...this.props} />;
@@ -77,6 +99,21 @@ SubFormFieldModel.define({
     subModels: {
       grid: {
         use: 'FormGridModel',
+      },
+    },
+  },
+});
+
+SubFormFieldModel.registerFlow({
+  key: 'eventSettings',
+  title: escapeT('Event settings'),
+  on: 'formValuesChange',
+  steps: {
+    linkageRules: {
+      use: 'subFormFieldLinkageRules',
+      afterParamsSave(ctx) {
+        // 保存后，自动运行一次
+        ctx.model.applyFlow('eventSettings');
       },
     },
   },
@@ -109,7 +146,8 @@ const ArrayNester = ({ name, value, disabled }: any) => {
       <Form.List name={name}>
         {(fields, { add, remove }) => (
           <>
-            {fields.map(({ key, name: index }) => {
+            {fields.map((field) => {
+              const { key, name: index } = field;
               const uid = `${key}.${name}`;
               // 每行只创建一次 fork
               if (!forksRef.current[uid]) {
@@ -117,6 +155,13 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                 fork.gridContainerRef = React.createRef<HTMLDivElement>();
                 fork.context.defineProperty('fieldIndex', {
                   get: () => [...rowIndex, `${collectionName}:${index}`],
+                });
+                fork.context.defineProperty('currentObject', {
+                  get: () => {
+                    return fork.context.form.getFieldValue([name, index]);
+                  },
+                  cache: false,
+                  meta: createCollectionContextMeta(() => fork.context.collection, fork.context.t('Current object')),
                 });
                 forksRef.current[uid] = fork;
               }
@@ -159,6 +204,20 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
   updateAssociation = true;
   onInit(options) {
     super.onInit(options);
+    this.context.blockModel.emitter.on('formValuesChange', ({ changedValues, allValues }) => {
+      this.dispatchEvent('formValuesChange', { changedValues, allValues }, { debounce: true });
+    });
+
+    this.context.defineProperty('currentObject', {
+      value: null,
+      meta: createCollectionContextMeta(() => this.context.collection, this.context.t('Current object')),
+    });
+  }
+  onMount() {
+    super.onMount();
+    setTimeout(() => {
+      this.applyFlow('eventSettings');
+    }, 100);
   }
   render() {
     return <ArrayNester {...this.props} />;
@@ -172,6 +231,21 @@ SubFormListFieldModel.define({
     subModels: {
       grid: {
         use: 'FormGridModel',
+      },
+    },
+  },
+});
+
+SubFormListFieldModel.registerFlow({
+  key: 'eventSettings',
+  title: escapeT('Event settings'),
+  on: 'formValuesChange',
+  steps: {
+    linkageRules: {
+      use: 'subFormFieldLinkageRules',
+      afterParamsSave(ctx) {
+        // 保存后，自动运行一次
+        ctx.model.applyFlow('eventSettings');
       },
     },
   },

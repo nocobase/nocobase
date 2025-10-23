@@ -113,6 +113,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
       }),
       // 过滤条件
       filter: query.filter ? removeUnparsableFilter(transformFilter(query.filter)) : undefined,
+      orders: query.orders,
       limit: query.limit,
       offset: query.offset,
     };
@@ -147,7 +148,7 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
 
   // debounce 刷新数据
   async refresh() {
-    debugLog('---ChartResource refresh');
+    debugLog('---ChartResource refresh', this.request.data);
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer);
     }

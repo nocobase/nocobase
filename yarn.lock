@@ -6646,14 +6646,6 @@
     "@nocobase/license-kit-win32-ia32-msvc" "0.2.17"
     "@nocobase/license-kit-win32-x64-msvc" "0.2.17"
 
-"@nocobase/sdk@1.8.0-beta.4":
-  version "1.8.0-beta.4"
-  resolved "https://registry.npmjs.org/@nocobase/sdk/-/sdk-1.8.0-beta.4.tgz#91c7ae43b258c902773ced7891405f0df4a3ec72"
-  integrity sha512-G+IyLvyB1g0Dc/JC+brQzSMrdBGRkPnOcze9HsA9XOmaeV1z3DcOYoYaqY1WqbCXWNcPOBYGJYHc1vQhZIHzEA==
-  dependencies:
-    axios "^1.7.0"
-    qs "^6.10.1"
-
 "@node-saml/node-saml@^4.0.2":
   version "4.0.5"
   resolved "https://registry.npmjs.org/@node-saml/node-saml/-/node-saml-4.0.5.tgz#039e387095b54639b06df62b1b4a6d8941c6d907"
