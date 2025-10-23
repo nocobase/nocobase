@@ -19,9 +19,6 @@ features:
       - title: NocoBase Getting Started
         details: Understand NocoBase's core concepts and basic operations.
         icon: <i class="fas fa-rocket"></i>
-      - title: How NocoBase Works
-        details: Watch a 10-minute video to understand the fundamentals.
-        icon: <i class="fas fa-play-circle"></i>
       - title: Installation, Upgrade & Deployment
         details: Install NocoBase from scratch, complete version upgrades and production environment deployment.
         icon: <i class="fas fa-download"></i>

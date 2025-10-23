@@ -20,9 +20,6 @@ features:
       - title: NocoBase 使用入门
         details: 了解 NocoBase 的核心概念和基本操作。
         icon: <i class="fas fa-rocket"></i>
-      - title: NocoBase 如何工作
-        details: 主要放首页的10分钟视频。
-        icon: <i class="fas fa-play-circle"></i>
       - title: 安装、升级、部署
         details: 从零开始安装 NocoBase，完成版本升级与生产环境部署。
         icon: <i class="fas fa-download"></i>
