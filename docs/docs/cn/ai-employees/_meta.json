@@ -118,5 +118,36 @@
         ]
       }
     ]
+  },
+  {
+    "type": "custom-link",
+    "label": "AI 知识库",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/ai-employees/knowledge-base/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "向量数据库",
+        "link": "/ai-employees/knowledge-base/vector-database"
+      },
+      {
+        "type": "custom-link",
+        "label": "向量存储",
+        "link": "/ai-employees/knowledge-base/vector-store"
+      },
+      {
+        "type": "custom-link",
+        "label": "知识库",
+        "link": "/ai-employees/knowledge-base/knowledge-base"
+      },
+      {
+        "type": "custom-link",
+        "label": "RAG",
+        "link": "/ai-employees/knowledge-base/rag"
+      }
+    ]
   }
 ]
