@@ -18,7 +18,7 @@
 
 - 在 `Name` 输入框输入知识库名称；
 - 在 `File storage` 选择文件存储位置；
-- 在 `Vector store` 选择向量存储，参考 [向量存储](/ai-knowledge-base/vector-store)；
+- 在 `Vector store` 选择向量存储，参考 [向量存储](/ai-employees/knowledge-base/vector-store)；
 - 在 `Description` 输入框输入知识库描述；
 
 点击 `Submit` 按钮创建向量存储信息。

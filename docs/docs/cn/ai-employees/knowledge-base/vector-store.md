@@ -15,7 +15,7 @@
 点击右上角 `Add new` 按钮新增向量存储：
 
 - 在 `Name` 输入框输入向量存储名称；
-- 在 `Vector store` 选择已经配置好的向量数据库，参考：[向量数据库](/ai-knowledge-base/vector-database)；
+- 在 `Vector store` 选择已经配置好的向量数据库，参考：[向量数据库](/ai-employees/knowledge-base/vector-database)；
 - 在 `LLM service` 选择已经配置好的 LLM 服务，参考：[LLM 服务管理](/ai-employees/quick-start/llm-service)；
 - 在 `Embedding model` 输入框输入要使用的 `Embedding` 模型名称；
   

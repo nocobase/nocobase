@@ -17,7 +17,7 @@
 在`Knowledge base` 标签页中，打开`Enable`开关。
 
 - 在 `Knowledge Base Prompt` 输入引用知识库的提示语，`{knowledgeBaseData}` 是固定的占位符，不要修改；
-- 在 `Knowledge Base` 选择配置好的知识库，参考：[知识库](/ai-knowledge-base/knowledge-base)；
+- 在 `Knowledge Base` 选择配置好的知识库，参考：[知识库](/ai-employees/knowledge-base/knowledge-base)；
 - 在 `Top K` 输入框中输入要检索的文档数量，默认为 3 个；
 - 在 `Score` 输入框检索时文档相关系阈值；
 
