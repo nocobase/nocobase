@@ -68,7 +68,7 @@ export class ActionPanelBlockModel extends BlockModel {
 
   renderComponent() {
     const { layout, ellipsis } = this.props;
-    console.log(ellipsis);
+
     const token = this.context.themeToken;
 
     return (
@@ -130,6 +130,7 @@ export class ActionPanelBlockModel extends BlockModel {
                             .ant-btn {
                               background: none;
                               border: none !important;
+                              box-shadow: none;
                               .ant-btn-icon {
                                 display: ${action.hidden ? 'block' : ' none'};
                               }
@@ -220,6 +221,7 @@ export class ActionPanelBlockModel extends BlockModel {
                         <div
                           className={css`
                             .ant-btn {
+                              box-shadow: none;
                               border: none;
                               background: none;
                               display: block;

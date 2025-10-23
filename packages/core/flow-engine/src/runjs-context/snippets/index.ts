@@ -22,6 +22,7 @@ const snippets: Record<string, () => Promise<any>> = {
   'global/open-view-drawer': () => import('./global/open-view-drawer.snippet'),
   'global/open-view-dialog': () => import('./global/open-view-dialog.snippet'),
   'global/query-selector': () => import('./global/query-selector.snippet'),
+  'global/clipboard-copy-text': () => import('./global/clipboard-copy-text.snippet'),
   // libs
   'scene/block/echarts-init': () => import('./scene/block/echarts-init.snippet'),
   // scene/block

@@ -86,6 +86,7 @@ export const createJavaScriptLinter = () => {
         'ctx',
         'console',
         'window',
+        'navigator',
         'document',
         'Math',
         'Date',
