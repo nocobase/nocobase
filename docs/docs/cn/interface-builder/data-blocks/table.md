@@ -6,11 +6,15 @@
 
 ## 区块配置项
 
-<!-- ![20251023150305](https://static-docs.nocobase.com/20251023150305.png) -->
-
 ![20251023150819](https://static-docs.nocobase.com/20251023150819.png)
 
-<!-- ![20240415215319](https://static-docs.nocobase.com/20240415215319.png) -->
+### 区块联动规则
+
+通过联动规则控制区块行为（如是否显示或执行javaScript）。
+
+![20251023194550](https://static-docs.nocobase.com/20251023194550.png)
+
+更多内容参考 [联动规则](/handbook/ui/blocks/linkage-rule)
 
 ### 设置数据范围
 
@@ -32,7 +36,7 @@
 
 ### 本表字段
 
-> **注意**：继承表中的字段（即父表字段）会自动合并显示在当前表中。
+> **注意**：继承表中的字段（即父表字段）会自动合并显示在当前字段列表中。
 
 ![20251023185113](https://static-docs.nocobase.com/20251023185113.png)
 
@@ -82,3 +86,11 @@
 - [触发工作流](/handbook/action-trigger-workflow)
 - [JS action ](/handbook/action-js-action)
 - [AI 员工](/handbook/action-ai-employee)
+
+## 快速编辑
+
+在区块配置和表格列配置中「启用快速便捷」激活，便可自定义哪些列可以快捷编辑。
+
+![20251023190149](https://static-docs.nocobase.com/20251023190149.png)
+
+![20251023190519](https://static-docs.nocobase.com/20251023190519.gif)

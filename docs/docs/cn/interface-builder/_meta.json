@@ -154,6 +154,11 @@
             "link": "/interface-builder/actions/permissions"
           }
         ]
+      },
+      {
+        "type": "custom-link",
+        "label": "联动规则",
+        "link": "/interface-builder/linkage-rule"
       }
     ]
   }
