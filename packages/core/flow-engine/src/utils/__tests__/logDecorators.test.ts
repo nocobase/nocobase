@@ -19,13 +19,22 @@ class Demo {
     this.context = engine.context;
   }
 
-  @LogDuration({ type: 'demo.sync', slowMs: 0 })
+  @LogDuration({
+    type: 'demo.sync',
+    slowMs: 0,
+    // 显式指定 logger，避免不同环境下默认 logger 级别/路径差异影响断言
+    getLogger: (self: Demo) => self.engine.logManager.createLogger({ module: 'flow-engine' }),
+  })
   syncFast() {
     // do nothing
     return 1;
   }
 
-  @LogDuration({ type: 'demo.async', slowMs: 1 })
+  @LogDuration({
+    type: 'demo.async',
+    slowMs: 1,
+    getLogger: (self: Demo) => self.engine.logManager.createLogger({ module: 'flow-engine' }),
+  })
   async asyncMaybeSlow(delayMs = 0) {
     if (delayMs > 0) await new Promise((resolve) => setTimeout(resolve, delayMs));
     return 2;
@@ -38,7 +47,10 @@ class Demo {
 
   // no explicit type: falls back to method name
   // 固定为 info 级别，避免在某些环境下 debug 被抑制导致日志缺失
-  @LogDuration({ level: 'info' })
+  @LogDuration({
+    level: 'info',
+    getLogger: (self: Demo) => self.engine.logManager.createLogger({ module: 'flow-engine' }),
+  })
   fallbackName() {
     return 3;
   }
@@ -57,6 +69,8 @@ class Demo {
 describe('LogDuration decorator', () => {
   it('logs sync method with auto level', async () => {
     const engine = new FlowEngine();
+    // 确保低级别日志不会被抑制，便于稳定断言
+    (engine.logger as any).level = 'debug';
     engine.logManager.bus.clear();
     const d = new Demo(engine);
     expect(d.syncFast()).toBe(1);
@@ -69,6 +83,8 @@ describe('LogDuration decorator', () => {
 
   it('respects slow threshold to promote level to info', async () => {
     const engine = new FlowEngine();
+    // 确保低级别日志不会被抑制，便于稳定断言
+    (engine.logger as any).level = 'debug';
     engine.logManager.bus.clear();
     const d = new Demo(engine);
     await d.asyncMaybeSlow(5);

@@ -351,15 +351,18 @@ describe('FlowModel', () => {
         };
 
         TestFlowModel.registerFlow(exitFlow);
-        const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+        const loggerSpy = vi.spyOn(model.context.logger, 'info').mockImplementation(() => {});
 
         const result = await model.applyFlow('exitFlow');
 
         expect(result).toEqual({});
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
-        expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowModel]'));
-
-        consoleSpy.mockRestore();
+        // 新日志为 payload + message 形式，断言 payload 的类型字段
+        expect(loggerSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'flow.exit', flowKey: 'exitFlow', modelId: model.uid }),
+          expect.any(String),
+        );
+        loggerSpy.mockRestore();
       });
 
       test('should handle FlowExitException correctly', async () => {
@@ -395,7 +398,11 @@ describe('FlowModel', () => {
 
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
         expect(exitFlow2.steps.step2.handler).toHaveBeenCalled();
-        expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
+        // 新日志为 payload + message 形式，断言 payload 的类型字段
+        expect(loggerSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'flow.exit', flowKey: 'exitFlow', modelId: model.uid }),
+          expect.any(String),
+        );
 
         loggerSpy.mockRestore();
       });
@@ -433,7 +440,11 @@ describe('FlowModel', () => {
 
         expect(exitFlow.steps.step2.handler).not.toHaveBeenCalled();
         expect(exitFlow2.steps.step2.handler).not.toHaveBeenCalled();
-        expect(loggerSpy).toHaveBeenCalledWith(expect.stringContaining('[FlowEngine]'));
+        // 新日志为 payload + message 形式，断言 payload 的类型字段
+        expect(loggerSpy).toHaveBeenCalledWith(
+          expect.objectContaining({ type: 'flow.exitAll', flowKey: 'exitFlow', modelId: model.uid }),
+          expect.any(String),
+        );
 
         loggerSpy.mockRestore();
       });

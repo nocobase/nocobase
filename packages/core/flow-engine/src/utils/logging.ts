@@ -172,10 +172,11 @@ export function logAt(
 }
 
 /**
- * Decide default logger level for browser/runtime by NODE_ENV:
- * - development -> 'debug'
- * - test/ci     -> 'info'
- * - otherwise   -> 'warn'
+ * Decide default logger level for browser/runtime by environment:
+ * - CI            -> 'error' (minimal noise in pipelines)
+ * - development   -> 'debug'
+ * - test          -> 'warn'
+ * - otherwise     -> 'warn'
  */
 export function getDefaultLogLevel(): LogLevel {
   try {
@@ -204,12 +205,12 @@ export function getDefaultLogLevel(): LogLevel {
   }
 
   // 2) Fallback to env-based heuristic
-  const env =
-    typeof process !== 'undefined' && (process as any)?.env?.NODE_ENV
-      ? String((process as any).env.NODE_ENV).toLowerCase()
-      : undefined;
+  const penv = (typeof process !== 'undefined' ? (process as any).env || {} : {}) as Record<string, any>;
+  const env = typeof penv.NODE_ENV === 'string' ? String(penv.NODE_ENV).toLowerCase() : undefined;
+  const isCI = ['1', 'true', 'yes'].includes(String(penv.CI || '').toLowerCase()) || env === 'ci';
+  if (isCI) return 'error';
   if (env === 'development') return 'debug';
-  if (env === 'test' || env === 'ci') return 'warn';
+  if (env === 'test') return 'warn';
   // 兜底：若无法识别环境，则按生产对待
   return 'warn';
 }
