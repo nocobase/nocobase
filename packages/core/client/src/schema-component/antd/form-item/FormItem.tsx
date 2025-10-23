@@ -49,6 +49,9 @@ const formItemWrapCss = css`
       display: inline;
     }
   }
+  .ant-formily-item-label label {
+    word-break: normal;
+  }
 `;
 
 const formItemLabelCss = css`
