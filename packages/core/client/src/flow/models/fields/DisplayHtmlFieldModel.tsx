@@ -16,7 +16,7 @@ import { DisplayTitleFieldModel } from './DisplayTitleFieldModel';
 export class DisplayHtmlFieldModel extends DisplayTitleFieldModel {
   public renderComponent(value) {
     const { textOnly = true } = this.props;
-    return <DisplayMarkdown {...this.props} textOnly={textOnly} value={value} />;
+    return textOnly ? value : <DisplayMarkdown {...this.props} textOnly={textOnly} value={value} />;
   }
 }
 
