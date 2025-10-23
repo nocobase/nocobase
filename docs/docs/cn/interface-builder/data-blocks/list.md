@@ -1,6 +1,6 @@
 # 列表区块
 
-:::tip
+:::tip 提示 
 该功能由插件 `plugin-block-list` 提供。
 :::
 

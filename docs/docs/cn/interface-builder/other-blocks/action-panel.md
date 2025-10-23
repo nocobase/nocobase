@@ -1,6 +1,6 @@
 # 区块：操作面板
 
-:::tip
+:::tip 提示
 该功能由插件 `plugin-block-workbench` 提供。
 :::
 
