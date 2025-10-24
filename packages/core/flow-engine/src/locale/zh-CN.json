@@ -57,5 +57,6 @@
   "Name": "名称",
   "Model with ID {{uid}} not found": "未找到 ID 为 {{uid}} 的模型",
   "Common actions": "通用操作",
-  "This variable is not available": "此变量不可用"
+  "This variable is not available": "此变量不可用",
+  "Copy popup UID": "复制弹窗 UID"
 }
