@@ -441,10 +441,7 @@ export class PluginMultiAppManagerServer extends Plugin {
 
     this.app.resourcer.registerActionHandlers({
       'applications:memoryUsage': async (ctx, next) => {
-        const usage = process.memoryUsage();
-        ctx.body = Object.fromEntries(
-          Object.entries(usage).map(([key, value]) => [key, (value / 1024 / 1024).toFixed(2) + ' MB']),
-        );
+        ctx.body = process.memoryUsage();
         await next();
       },
     });
