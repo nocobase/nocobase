@@ -22,7 +22,7 @@ describe('FlowModel.getFlows sorting and getEventFlows(beforeRender) order', () 
     model = new TestFlowModel({ flowEngine: fakeEngine } as any);
   });
 
-  test('getFlows returns Map ordered by sort ascending', () => {
+  test('getFlows returns dynamic(instance) flows first, each group ordered by sort ascending', () => {
     // class-level (static) flows
     TestFlowModel.registerFlow('flowA', { title: 'A', sort: 10, steps: {} });
     TestFlowModel.registerFlow('flowB', { title: 'B', sort: 5, steps: {} });
@@ -34,7 +34,8 @@ describe('FlowModel.getFlows sorting and getEventFlows(beforeRender) order', () 
     const flows = model.getFlows();
     const orderedKeys = Array.from(flows.keys());
 
-    expect(orderedKeys).toEqual(['flowD', 'flowB', 'flowC', 'flowA']);
+    // 动态流组：flowD(0), flowC(7)；静态流组：flowB(5), flowA(10)
+    expect(orderedKeys).toEqual(['flowD', 'flowC', 'flowB', 'flowA']);
   });
 
   test("getEventFlows('beforeRender') keeps getFlows order and filters out manual/on flows", () => {
@@ -54,21 +55,22 @@ describe('FlowModel.getFlows sorting and getEventFlows(beforeRender) order', () 
     const autoFlowKeys = model.getEventFlows('beforeRender').map((f) => f.key);
 
     // auto flows should exclude event/manual flows
-    expect(autoFlowKeys).toEqual(['flowD', 'flowB', 'flowC', 'flowE', 'flowA']);
+    // 新顺序：动态流组（flowD 0, flowC 7, flowE 8）→ 静态流组（flowB 5, flowA 10）
+    expect(autoFlowKeys).toEqual(['flowD', 'flowC', 'flowE', 'flowB', 'flowA']);
 
     // relative order should match getFlows order (subset in same sequence)
     const filteredGetFlowsOrder = getFlowsOrder.filter((k) => !['eventFlow', 'manualFlow'].includes(k));
     expect(autoFlowKeys).toEqual(filteredGetFlowsOrder);
   });
 
-  test('getFlows tie-breaker: static before instance when sort equal', () => {
+  test('getFlows tie-breaker: instance before static when sort equal', () => {
     // static flow with sort 2
     TestFlowModel.registerFlow('static2', { title: 'S2', sort: 2, steps: {} });
     // instance flow with same sort 2
     model.registerFlow('instance2', { title: 'I2', sort: 2, steps: {} });
 
     const keys = Array.from(model.getFlows().keys());
-    expect(keys.indexOf('static2')).toBeLessThan(keys.indexOf('instance2'));
+    expect(keys.indexOf('instance2')).toBeLessThan(keys.indexOf('static2'));
   });
 
   test('getFlows tie-breaker: parent static before child static when sort equal', () => {
