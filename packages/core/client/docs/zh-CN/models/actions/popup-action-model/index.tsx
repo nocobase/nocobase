@@ -1,42 +1,37 @@
 import React from 'react';
 import { Application, Plugin, PopupActionModel, PluginFlowEngine, MockFlowModelRepository } from '@nocobase/client';
-import { FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { FlowContextSelector, FlowModel, FlowModelRenderer, useFlowContext, useFlowView } from '@nocobase/flow-engine';
 import MockAdapter from 'axios-mock-adapter';
-import { Button, Space, Typography } from 'antd';
+import { Button, Space } from 'antd';
 
-// 弹窗页面模型：用于展示自定义上下文内容
-class DemoPopupPageModel extends FlowModel {
+class OpenViewContentModel extends FlowModel {
   render() {
-    const token = this.context.themeToken;
-    const boxStyle: React.CSSProperties = {
-      padding: 16,
-      margin: 16,
-      background: token.colorBgContainer,
-      border: `1px solid ${token.colorBorder}`,
-      borderRadius: token.borderRadius,
-    };
-    return (
-      <div style={boxStyle}>
-        <Typography.Title level={5} style={{ marginTop: 0 }}>
-          演示：透传自定义上下文
-        </Typography.Title>
-        <div style={{ marginBottom: 8 }}>myToken: {String(this.context.myToken)}</div>
-        <div style={{ marginBottom: 12 }}>extraInfo: {JSON.stringify(this.context.extraInfo)}</div>
-        <Space>
-          <Button
-            onClick={() => {
-              this.context.message?.success?.('调用了自定义方法');
-              this.context.greet?.('NocoBase');
-            }}
-          >
-            调用自定义方法
-          </Button>
-          <Button onClick={() => this.context.view?.close?.()}>关闭</Button>
-        </Space>
-      </div>
-    );
+    return <OpenViewContent />;
   }
 }
+
+const OpenViewContent: React.FC = () => {
+  const ctx = useFlowContext();
+  const view = useFlowView();
+  const [value, setValue] = React.useState('');
+
+  return (
+    <div style={{ padding: 24 }}>
+      <view.Header title={`新定义上下文`} />
+      <Space direction="vertical" style={{ width: '100%' }}>
+        <FlowContextSelector
+          value={value}
+          onChange={(val) => setValue(val)}
+          metaTree={() => ctx.getPropertyMetaTree()}
+          style={{ width: 360 }}
+          showSearch
+        >
+          <Button type="primary">选择上下文变量</Button>
+        </FlowContextSelector>
+      </Space>
+    </div>
+  );
+};
 
 // 继承 PopupActionModel：通过 getInputArgs 透传自定义上下文
 class CustomCtxPopupActionModel extends PopupActionModel {
@@ -49,19 +44,22 @@ class CustomCtxPopupActionModel extends PopupActionModel {
     const base = super.getInputArgs?.() || {};
     return {
       ...base,
-      mode: 'dialog',
-      size: 'medium',
-      pageModelClass: 'DemoPopupPageModel',
-      // 自定义属性：在子页面通过 ctx.myToken / ctx.extraInfo 读取
+      pageModelClass: 'OpenViewContentModel',
       defineProperties: {
-        myToken: { get: () => this.context.user?.id ?? 'anonymous' },
-        extraInfo: { value: { from: 'parent', at: Date.now() } },
-      },
-      // 自定义方法：在子页面通过 ctx.greet() 调用
-      defineMethods: {
-        greet: (name: string) => {
-          this.context.message?.info?.(`Hello, ${name}!`);
+        someContext: {
+          value: { name: '演示数据', email: 'demo@example.com' },
+          meta: {
+            title: '新定义上下文',
+            type: 'object',
+            properties: {
+              name: { title: '名称', type: 'string' },
+              email: { title: '邮箱', type: 'string' },
+            },
+          },
         },
+      },
+      defineMethods: {
+        greet: (_name: string) => {},
       },
     };
   }
@@ -71,21 +69,16 @@ class CustomCtxPopupActionModel extends PopupActionModel {
 class DemoRootActionPageModel extends FlowModel {
   render() {
     const btn = this.subModels?.btn as FlowModel | undefined;
-    return (
-      <div style={{ padding: 24 }}>
-        <Typography.Title level={4}>PopupActionModel - 自定义上下文示例</Typography.Title>
-        {btn ? <FlowModelRenderer model={btn} /> : null}
-      </div>
-    );
+    return btn ? <FlowModelRenderer model={btn} /> : null;
   }
 }
 
 class DemoPlugin extends Plugin {
   async load() {
     // 注册模型
-    this.flowEngine.registerModels({ DemoPopupPageModel, CustomCtxPopupActionModel, DemoRootActionPageModel });
+    this.flowEngine.registerModels({ CustomCtxPopupActionModel, DemoRootActionPageModel, OpenViewContentModel });
 
-    // 使用本地 Mock 仓库，避免依赖后端接口，并清理旧数据避免历史配置干扰
+    // 使用本地 Mock
     const repo = new MockFlowModelRepository('demo-popup-action:');
     await repo.clear();
     this.flowEngine.setModelRepository(repo);
