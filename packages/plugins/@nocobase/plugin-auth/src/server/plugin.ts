@@ -110,8 +110,8 @@ export class PluginAuthServer extends Plugin {
       },
     });
     // Register actions
-    Object.entries(authActions).forEach(
-      ([action, handler]) => this.app.resourceManager.getResource('auth')?.addAction(action, handler),
+    Object.entries(authActions).forEach(([action, handler]) =>
+      this.app.resourceManager.getResource('auth')?.addAction(action, handler),
     );
     Object.entries(authenticatorsActions).forEach(([action, handler]) =>
       this.app.resourceManager.registerActionHandler(`authenticators:${action}`, handler),

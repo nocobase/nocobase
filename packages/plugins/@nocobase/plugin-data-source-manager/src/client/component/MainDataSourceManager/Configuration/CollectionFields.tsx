@@ -34,17 +34,13 @@ import {
   useResourceActionContext,
   useResourceContext,
   ViewCollectionField,
-  useFieldInterfaceOptions,
-  useApp,
 } from '@nocobase/client';
-import { message, Select, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
-import React, { createContext, useContext, useMemo, useEffect, useState, useCallback } from 'react';
+import { message, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
+import React, { createContext, useContext, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { omit } from 'lodash';
 
 import { FilterTargetKeyAlert } from '../../CollectionsManager/FilterTargetKeyAlert';
 import { collection } from './schemas/collectionFields';
-import { SyncFieldChangesAction } from './db-sync/SyncFieldChangesAction';
 const resourceActionProps = {
   association: {
     sourceKey: 'name',
@@ -74,56 +70,24 @@ const CollectionFieldsProvider = (props) => {
   );
 };
 
+const indentStyle = css`
+  .ant-table {
+    margin-left: -16px !important;
+  }
+`;
 const tableContainer = css`
   tr {
     display: flex;
   }
   td,
   th {
-    flex: 2;
+    flex: 2.3;
     width: 0;
-    min-width: 120px;
-
-    /* Field display name */
-    &:nth-child(2) {
-      flex: 2.5;
-      min-width: 150px;
-    }
-
-    /* Field name */
-    &:nth-child(3) {
-      flex: 2;
-      min-width: 120px;
-    }
-
-    /* Field interface - 需要更多空间 */
-    &:nth-child(4) {
-      flex: 2.5;
-      min-width: 180px;
-    }
-
-    /* Field type */
     &:nth-child(5) {
-      flex: 1.8;
-      min-width: 120px;
-    }
-
-    /* Title field */
-    &:nth-child(6) {
       flex: 1.2;
-      min-width: 100px;
     }
-
-    /* Description */
-    &:nth-child(7) {
-      flex: 2;
-      min-width: 120px;
-    }
-
-    /* Actions */
     &:last-child {
       flex: 1.5;
-      min-width: 120px;
     }
   }
   .ant-table-selection-column,
@@ -131,265 +95,16 @@ const tableContainer = css`
     flex-basis: 50px !important;
     min-width: 50px;
     flex: 0;
-  }
-`;
-
-const groupTableContainer = css`
-  tr {
-    display: flex;
-  }
-  td,
-  th {
-    flex: 2;
-    width: 0;
-    min-width: 120px;
-
-    /* Title column for inherited fields - 需要更多空间显示完整标题 */
-    &:nth-child(2) {
-      flex: 4;
-      min-width: 300px;
-      white-space: nowrap;
-    }
-
-    /* Field display name */
-    &:nth-child(3) {
-      flex: 2.5;
-      min-width: 150px;
-    }
-
-    /* Field name */
-    &:nth-child(4) {
-      flex: 2;
-      min-width: 120px;
-    }
-
-    /* Field interface */
-    &:nth-child(5) {
-      flex: 2.5;
-      min-width: 180px;
-    }
-
-    /* Field type */
-    &:nth-child(6) {
-      flex: 1.8;
-      min-width: 120px;
-    }
-
-    /* Title field */
-    &:nth-child(7) {
-      flex: 1.2;
-      min-width: 100px;
-    }
-
-    /* Actions */
-    &:last-child {
-      flex: 1.5;
-      min-width: 120px;
-    }
-  }
-  .ant-table-selection-column,
-  .ant-table-row-expand-icon-cell {
-    flex-basis: 50px !important;
-    min-width: 50px;
-    flex: 0;
-  }
-`;
-
-const inheritFieldsContainer = css`
-  tr {
-    display: flex;
-  }
-  td,
-  th {
-    flex: 2;
-    width: 0;
-    min-width: 100px;
-
-    /* Field display name */
-    &:nth-child(1) {
-      flex: 2.5;
-      min-width: 150px;
-    }
-
-    /* Field name - 减少宽度 */
-    &:nth-child(2) {
-      flex: 1.5;
-      min-width: 100px;
-    }
-
-    /* Field interface */
-    &:nth-child(3) {
-      flex: 2;
-      min-width: 150px;
-    }
-
-    /* Field type */
-    &:nth-child(4) {
-      flex: 1.5;
-      min-width: 100px;
-    }
-
-    /* Title field */
-    &:nth-child(5) {
-      flex: 1.2;
-      min-width: 80px;
-    }
-
-    /* Description */
-    &:nth-child(6) {
-      flex: 2;
-      min-width: 120px;
-    }
-
-    /* Actions */
-    &:last-child {
-      flex: 1.8;
-      min-width: 140px;
-    }
   }
 `;
 
 const titlePrompt = 'Default title for each record';
-
-const getInterfaceOptions = (data, type) => {
-  const interfaceOptions = [];
-  data.forEach((item) => {
-    const options = item.children.filter((h) => h?.availableTypes?.includes(type));
-    interfaceOptions.push({
-      label: item.label,
-      key: item.key,
-      children: options,
-    });
-  });
-  return interfaceOptions.filter((v) => {
-    if (type === 'sort') {
-      return v.key === 'advanced';
-    }
-    return v.children.length > 0;
-  });
-};
-
-const isValueInOptions = (value, options) => {
-  return options?.some((option) => option.children?.some?.((child) => child.name === value));
-};
-
-const FieldInterfaceRenderer = ({ value, record, updateFieldHandler, isPresetField = false }) => {
-  const compile = useCompile();
-  const { getInterface } = useCollectionManager_deprecated();
-  const initOptions = useFieldInterfaceOptions();
-  const [selectValue, setSelectValue] = useState(value);
-  const [options, setOptions] = useState([]);
-  const targetType = record.type;
-
-  const applyInterfaceChange = useCallback(
-    async (newValue) => {
-      const interfaceConfig = getInterface(newValue);
-      setSelectValue(newValue);
-      await updateFieldHandler(record, {
-        interface: newValue,
-        uiSchema: {
-          title: record?.uiSchema?.title,
-          ...interfaceConfig?.default?.uiSchema,
-        },
-      });
-    },
-    [record],
-  );
-
-  useEffect(() => {
-    if (isPresetField) return;
-    if (record?.possibleTypes || targetType) {
-      const newOptions = getInterfaceOptions(initOptions, targetType);
-      setOptions(newOptions);
-    }
-  }, [record, isPresetField, targetType, initOptions]);
-
-  useEffect(() => {
-    if (isPresetField) return;
-    if (!options.length) return;
-
-    const firstOption = options[0]?.children?.[0]?.name;
-    if (!firstOption) return;
-
-    if (
-      (options.length === 1 && options[0]?.children?.length === 1 && selectValue !== firstOption) ||
-      (selectValue && !isValueInOptions(selectValue, options))
-    ) {
-      applyInterfaceChange(firstOption);
-    }
-  }, [selectValue, isPresetField, options, applyInterfaceChange]);
-
-  if (['oho', 'obo', 'o2m', 'm2o', 'm2m'].includes(record.interface)) {
-    return (
-      <Tag>
-        {compile(initOptions.find((h) => h.key === 'relation')?.children?.find((v) => v.name === value)?.label)}
-      </Tag>
-    );
-  }
-
-  if (!options.length || options.every((group) => !group.children.length)) {
-    return <Tag>{compile(getInterface(value)?.title)}</Tag>;
-  }
-
-  return (
-    <Select
-      aria-label={`field-interface-${record?.interface}`}
-      value={selectValue}
-      style={{ width: '100%' }}
-      popupMatchSelectWidth={false}
-      disabled={isPresetField}
-      onChange={async (newValue) => {
-        if (isPresetField) return;
-        const interfaceConfig = getInterface(newValue);
-        setSelectValue(newValue);
-        await updateFieldHandler(record, {
-          interface: newValue,
-          uiSchema: { title: record?.uiSchema?.title, ...interfaceConfig?.default?.uiSchema },
-        });
-      }}
-    >
-      {options.map((group) => (
-        <Select.OptGroup key={group.key} label={compile(group.label)}>
-          {group.children.map((item) => (
-            <Select.Option key={item.name} value={item.name}>
-              {compile(item.label)}
-            </Select.Option>
-          ))}
-        </Select.OptGroup>
-      ))}
-    </Select>
-  );
-};
-
-const FieldTypeRenderer = ({ value, record, updateFieldHandler, isPresetField = false }) => {
-  const item = omit(record, ['__parent', '__collectionName']);
-  const possibleTypes = item?.possibleTypes || [];
-  return !Array.isArray(item?.possibleTypes) || isPresetField || !possibleTypes.includes(value) ? (
-    <Tag>{value}</Tag>
-  ) : (
-    <Select
-      aria-label={`field-type-${value}`}
-      defaultValue={value}
-      popupMatchSelectWidth={false}
-      style={{ width: '100%' }}
-      options={
-        item?.possibleTypes.map((v) => {
-          return { label: v, value: v };
-        }) || []
-      }
-      onChange={async (newValue) => {
-        await updateFieldHandler(record, { type: newValue });
-      }}
-    />
-  );
-};
-
 const CurrentFields = (props) => {
   const compile = useCompile();
   const { getInterface } = useCollectionManager_deprecated();
   const { t } = useTranslation();
   const { setState } = useResourceActionContext();
-  const { targetKey, resource } = props.collectionResource || {};
+  const { targetKey } = props.collectionResource || {};
   const parentRecordData = useRecord();
   const [loadingRecord, setLoadingRecord] = React.useState<any>(null);
   const { refreshCM, isTitleField, getTemplate } = useCollectionManager_deprecated();
@@ -397,30 +112,6 @@ const CurrentFields = (props) => {
   const targetTemplate = getTemplate(template);
   const api = useAPIClient();
   const ctx = useContext(CollectionListContext);
-  const { collectionInfo } = props;
-  const app = useApp();
-  const mainDataSourcePlugin: any = app.pm.get('data-source-main');
-  const collectionPresetFields = mainDataSourcePlugin.getCollectionPresetFields();
-  const collectionPresetFieldsInterfaces = collectionPresetFields.map((v) => v.value?.interface).filter((v) => v);
-
-  const updateFieldHandler = async (record, values) => {
-    try {
-      await resource.update({
-        filterByTk: record.name,
-        values: {
-          ...values,
-          collectionName: record.collectionName,
-        },
-      });
-      // ctx?.refresh?.();
-      await props.refreshAsync();
-      message.success(t('Saved successfully'));
-      refreshCM();
-    } catch (error) {
-      console.error('Failed to update field type:', error);
-      message.error(t('Save failed'));
-    }
-  };
   const columns: TableColumnProps<any>[] = [
     {
       dataIndex: ['uiSchema', 'title'],
@@ -434,26 +125,7 @@ const CurrentFields = (props) => {
     {
       dataIndex: 'interface',
       title: t('Field interface'),
-      render: (value, record) => (
-        <FieldInterfaceRenderer
-          value={value}
-          record={record}
-          updateFieldHandler={updateFieldHandler}
-          isPresetField={collectionInfo.from === 'db2cm' || collectionPresetFieldsInterfaces.includes(record.interface)}
-        />
-      ),
-    },
-    {
-      dataIndex: 'type',
-      title: t('Field type'),
-      render: (value, record) => (
-        <FieldTypeRenderer
-          value={value}
-          record={record}
-          updateFieldHandler={updateFieldHandler}
-          isPresetField={collectionInfo.from === 'db2cm' || collectionPresetFieldsInterfaces.includes(record.interface)}
-        />
-      ),
+      render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
     },
     {
       dataIndex: 'titleField',
@@ -462,9 +134,8 @@ const CurrentFields = (props) => {
         const handleChange = async (checked) => {
           setLoadingRecord(record);
           await api.request({
-            url: `collections:update`,
+            url: `collections:update?filterByTk=${filterByTk}`,
             method: 'post',
-            params: { filterByTk },
             data: { titleField: checked ? record.name : 'id' },
           });
           ctx?.refresh?.();
@@ -489,7 +160,7 @@ const CurrentFields = (props) => {
     },
     {
       dataIndex: 'description',
-      title: t('Description'),
+      title: t('Descriptio '),
       render: (value) => <Input.ReadPretty value={value} ellipsis={true} />,
     },
     {
@@ -521,10 +192,9 @@ const CurrentFields = (props) => {
     <Table
       rowKey={'name'}
       columns={columns}
-      showHeader={true}
+      showHeader={false}
       pagination={false}
       dataSource={props.fields}
-      className={tableContainer}
       rowSelection={{
         type: 'checkbox',
         // @ts-ignore
@@ -542,6 +212,7 @@ const CurrentFields = (props) => {
           });
         },
       }}
+      className={indentStyle}
     />
   );
 };
@@ -574,11 +245,6 @@ const InheritFields = (props) => {
       render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
     },
     {
-      dataIndex: 'type',
-      title: t('Field type'),
-      render: (value, record) => <Tag>{value}</Tag>,
-    },
-    {
       dataIndex: 'titleField',
       title: t('Title field'),
       render(_, record) {
@@ -586,9 +252,8 @@ const InheritFields = (props) => {
           setLoadingRecord(record);
 
           await api.request({
-            url: `collections:update`,
+            url: `collections:update?filterByTk=${filterByTk}`,
             method: 'post',
-            params: { filterByTk },
             data: { titleField: checked ? record.name : 'id' },
           });
           ctx?.refresh?.();
@@ -609,11 +274,6 @@ const InheritFields = (props) => {
           </Tooltip>
         ) : null;
       },
-    },
-    {
-      dataIndex: 'description',
-      title: t('Description'),
-      render: (value) => <Input.ReadPretty value={value} ellipsis={true} />,
     },
     {
       dataIndex: 'actions',
@@ -645,7 +305,6 @@ const InheritFields = (props) => {
       showHeader={false}
       pagination={false}
       dataSource={props.fields.filter((field) => field.interface)}
-      className={inheritFieldsContainer}
     />
   );
 };
@@ -676,8 +335,6 @@ const CollectionFieldsInternal = () => {
         <div
           className={css`
             font-weight: 500;
-            white-space: nowrap;
-            min-width: 300px;
           `}
         >
           {value}
@@ -693,12 +350,12 @@ const CollectionFieldsInternal = () => {
       title: t('Field interface'),
     },
     {
-      dataIndex: 'type',
-      title: t('Field type'),
-    },
-    {
       dataIndex: 'titleField',
       title: t('Title field'),
+    },
+    {
+      dataIndex: 'description',
+      title: t('Description'),
     },
     {
       dataIndex: 'actions',
@@ -706,10 +363,50 @@ const CollectionFieldsInternal = () => {
     },
   ];
   const fields = data?.data || [];
-  const allCurrentFields = fields.filter((field) => field.interface || field.primaryKey || field.isForeignKey);
+  const groups = {
+    pf: [],
+    association: [],
+    general: [],
+    system: [],
+  };
 
-  const dataSource = [];
+  fields.forEach((field) => {
+    if (field.primaryKey || field.isForeignKey) {
+      groups.pf.push(field);
+    } else if (field.interface) {
+      const conf = getInterface(field.interface);
+      if (conf?.group === 'systemInfo') {
+        groups.system.push(field);
+      } else if (conf?.group === 'relation') {
+        groups.association.push(field);
+      } else {
+        groups.general.push(field);
+      }
+    }
+  });
 
+  const dataSource = [
+    {
+      key: 'pf',
+      title: t('PK & FK fields'),
+      fields: groups.pf,
+    },
+    {
+      key: 'association',
+      title: t('Association fields'),
+      fields: groups.association,
+    },
+    {
+      key: 'general',
+      title: t('General fields'),
+      fields: groups.general,
+    },
+    {
+      key: 'system',
+      title: t('System fields'),
+      fields: groups.system,
+    },
+  ];
   dataSource.push(
     ...inherits
       .map((key) => {
@@ -757,7 +454,6 @@ const CollectionFieldsInternal = () => {
           <Action {...deleteProps} />
           <SyncFieldsAction {...syncProps} />
           <SyncSQLFieldsAction refreshCMList={refreshAsync} />
-          <SyncFieldChangesAction />
           <SchemaComponent
             schema={{
               type: 'object',
@@ -768,38 +464,32 @@ const CollectionFieldsInternal = () => {
           />
           <AddCollectionField {...addProps} />
         </Space>
-        {allCurrentFields.length > 0 && (
-          <div>
-            <CurrentFields
-              fields={allCurrentFields}
-              collectionInfo={field.record}
-              collectionResource={collectionResource}
-              refreshAsync={refreshAsync}
-              type="all"
-            />
-          </div>
-        )}
-        {dataSource.filter((d) => d.fields.length).length > 0 && (
-          <Table
-            rowKey={'key'}
-            columns={columns}
-            dataSource={dataSource.filter((d) => d.fields.length)}
-            pagination={false}
-            showHeader={false}
-            className={groupTableContainer}
-            expandable={{
-              defaultExpandAllRows: true,
-              defaultExpandedRowKeys: dataSource.map((d) => d.key),
-              expandedRowRender: (record) => (
+        <Table
+          rowKey={'key'}
+          columns={columns}
+          dataSource={dataSource.filter((d) => d.fields.length)}
+          pagination={false}
+          className={tableContainer}
+          expandable={{
+            defaultExpandAllRows: true,
+            defaultExpandedRowKeys: dataSource.map((d) => d.key),
+            expandedRowRender: (record) =>
+              record.inherit ? (
                 <InheritFields
                   fields={record.fields}
                   collectionResource={collectionResource}
                   refreshAsync={refreshAsync}
                 />
+              ) : (
+                <CurrentFields
+                  fields={record.fields}
+                  collectionResource={collectionResource}
+                  refreshAsync={refreshAsync}
+                  type={record.key}
+                />
               ),
-            }}
-          />
-        )}
+          }}
+        />
       </FieldContext.Provider>
     </FormContext.Provider>
   );

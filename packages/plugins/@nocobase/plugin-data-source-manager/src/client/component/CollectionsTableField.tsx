@@ -153,15 +153,15 @@ const CollectionsTable = observer((tableProps: any) => {
 
     setLoading(true);
     try {
-      const response = await api.resource('dataSources').readTables({
-        values: {
-          dataSourceKey: key,
-          ...(from === 'create'
-            ? {
-                dbOptions: { ...options, type: formValues.type || 'mysql' },
-              }
-            : {}),
-        },
+      const params: any = {
+        isFirst: from === 'create',
+        dbOptions: { ...options, type: formValues.type || 'mysql' },
+      };
+
+      const response = await api.request({
+        url: `dataSources/${key}/collections:all`,
+        method: 'get',
+        params,
       });
       const { data } = response?.data || {};
       const allCollectionsData = data || [];
