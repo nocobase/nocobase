@@ -25,7 +25,7 @@ function completeURL(url: string, origin = window.location.origin) {
   return url.startsWith('/') ? `${origin}${url}` : `${origin}/${url}`;
 }
 
-function joinUrlSearch(url: string, params: { name: string; value: any }[] = []): string {
+export function joinUrlSearch(url: string, params: { name: string; value: any }[] = []): string {
   if (!params?.length) return url;
 
   const filtered = params.filter((p) => p.name && p.value !== undefined && p.value !== null && p.value !== '');
