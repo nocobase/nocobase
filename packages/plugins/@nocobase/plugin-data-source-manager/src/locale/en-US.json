@@ -1,0 +1,7 @@
+{
+  "Field synchronization confirmation prompt": "Are you sure you want to synchronize fields from database? Depends on the number of tables and fields, This operation may take anywhere from a few seconds to several dozen seconds. If you only need to sync specific tables, please use the \"Configure Fields\" - \"Sync from database\" for those tables.",
+  "Load tables from database": "Load tables from database",
+  "Sync field changes from database": "Sync field changes from database",
+  "Available tables": "Available tables",
+  "Selected tables": "Selected tables"
+}
