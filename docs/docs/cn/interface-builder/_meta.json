@@ -20,32 +20,32 @@
               {
                 "type": "custom-link",
                 "label": "表格",
-                "link": "/interface-builder/data-blocks/table"
+                "link": "/interface-builder/blocks/data-blocks/table"
               },
               {
                 "type": "custom-link",
                 "label": "表单",
-                "link": "/interface-builder/data-blocks/form"
+                "link": "/interface-builder/blocks/data-blocks/form"
               },
               {
                 "type": "custom-link",
                 "label": "详情",
-                "link": "/interface-builder/data-blocks/details"
+                "link": "/interface-builder/blocks/data-blocks/details"
               },
               {
                 "type": "custom-link",
                 "label": "列表",
-                "link": "/interface-builder/data-blocks/list"
+                "link": "/interface-builder/blocks/data-blocks/list"
               },
               {
                 "type": "custom-link",
                 "label": "网格卡片",
-                "link": "/interface-builder/data-blocks/grid-card"
+                "link": "/interface-builder/blocks/data-blocks/grid-card"
               },
               {
                 "type": "custom-link",
                 "label": "图表",
-                "link": "/interface-builder/data-blocks/chart"
+                "link": "/interface-builder/blocks/data-blocks/chart"
               }
             ]
           },
@@ -56,7 +56,7 @@
               {
                 "type": "custom-link",
                 "label": "表单",
-                "link": "/interface-builder/filter-blocks/form"
+                "link": "/interface-builder/blocks/filter-blocks/form"
               }
             ]
           },
@@ -67,22 +67,22 @@
               {
                 "type": "custom-link",
                 "label": "操作面板",
-                "link": "/interface-builder/other-blocks/action-panel"
+                "link": "/interface-builder/blocks/other-blocks/action-panel"
               },
               {
                 "type": "custom-link",
                 "label": "Iframe",
-                "link": "/interface-builder/other-blocks/iframe"
+                "link": "/interface-builder/blocks/other-blocks/iframe"
               },
               {
                 "type": "custom-link",
                 "label": "Markdown",
-                "link": "/interface-builder/other-blocks/markdown"
+                "link": "/interface-builder/blocks/other-blocks/markdown"
               },
               {
                 "type": "custom-link",
                 "label": "JSBlock",
-                "link": "/interface-builder/other-blocks/js-block"
+                "link": "/interface-builder/blocks/other-blocks/js-block"
               }
             ]
           },
@@ -92,38 +92,38 @@
             "items": [
               {
                 "type": "custom-link",
-                "label": "区块删除",
-                "link": "/interface-builder/block-settings/block-delete"
+                "label": "数据范围",
+                "link": "/interface-builder/blocks/block-settings/data-scope"
               },
               {
                 "type": "custom-link",
                 "label": "布局",
-                "link": "/interface-builder/block-settings/block-layout"
+                "link": "/interface-builder/blocks/block-settings/block-layout"
               },
               {
                 "type": "custom-link",
                 "label": "区块联动规则",
-                "link": "/interface-builder/block-settings/block-linkage-rule"
-              },
-              {
-                "type": "custom-link",
-                "label": "区块标题",
-                "link": "/interface-builder/block-settings/block-title"
-              },
-              {
-                "type": "custom-link",
-                "label": "数据范围",
-                "link": "/interface-builder/block-settings/data-scope"
+                "link": "/interface-builder/blocks/block-settings/block-linkage-rule"
               },
               {
                 "type": "custom-link",
                 "label": "字段联动规则",
-                "link": "/interface-builder/block-settings/field-linkage-rule"
+                "link": "/interface-builder/blocks/block-settings/field-linkage-rule"
               },
               {
                 "type": "custom-link",
                 "label": "排序规则",
-                "link": "/interface-builder/block-settings/sorting-rule"
+                "link": "/interface-builder/blocks/block-settings/sorting-rule"
+              },
+              {
+                "type": "custom-link",
+                "label": "区块删除",
+                "link": "/interface-builder/blocks/block-settings/block-delete"
+              },
+              {
+                "type": "custom-link",
+                "label": "区块标题",
+                "link": "/interface-builder/blocks/block-settings/block-title"
               }
             ]
           }
@@ -141,12 +141,39 @@
           {
             "type": "custom-link",
             "label": "通用配置项",
-            "link": "/interface-builder/fields/common-settings"
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "表格字段",
+                "link": "/interface-builder/fields/generic/table-column"
+              },
+              {
+                "type": "custom-link",
+                "label": "详情字段",
+                "link": "/interface-builder/fields/generic/detail-form-item"
+              },
+              {
+                "type": "custom-link",
+                "label": "筛选表单字段",
+                "link": "/interface-builder/fields/generic/filter-form-item"
+              },
+              {
+                "type": "custom-link",
+                "label": "表单字段",
+                "link": "/interface-builder/fields/generic/form-item"
+              }
+            ]
           },
           {
             "type": "custom-link",
             "label": "特有配置项",
-            "link": "/interface-builder/fields/specific-settings"
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "日期",
+                "link": "/interface-builder/fields/specific/date-picker"
+              }
+            ]
           },
           {
             "type": "custom-link",
@@ -156,7 +183,7 @@
           {
             "type": "custom-link",
             "label": "关系字段组件",
-            "link": "/interface-builder/fields/relation-components"
+            "link": "/interface-builder/fields/association-field"
           }
         ]
       },
