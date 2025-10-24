@@ -88,13 +88,44 @@
           },
           {
             "type": "custom-link",
-            "label": "区块模板",
-            "link": "/interface-builder/block-templates"
-          },
-          {
-            "type": "custom-link",
             "label": "区块设置项",
-            "link": "/interface-builder/block-settings"
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "区块删除",
+                "link": "/interface-builder/block-settings/block-delete"
+              },
+              {
+                "type": "custom-link",
+                "label": "布局",
+                "link": "/interface-builder/block-settings/block-layout"
+              },
+              {
+                "type": "custom-link",
+                "label": "区块联动规则",
+                "link": "/interface-builder/block-settings/block-linkage-rule"
+              },
+              {
+                "type": "custom-link",
+                "label": "区块标题",
+                "link": "/interface-builder/block-settings/block-title"
+              },
+              {
+                "type": "custom-link",
+                "label": "数据范围",
+                "link": "/interface-builder/block-settings/data-scope"
+              },
+              {
+                "type": "custom-link",
+                "label": "字段联动规则",
+                "link": "/interface-builder/block-settings/field-linkage-rule"
+              },
+              {
+                "type": "custom-link",
+                "label": "排序规则",
+                "link": "/interface-builder/block-settings/sorting-rule"
+              }
+            ]
           }
         ]
       },
