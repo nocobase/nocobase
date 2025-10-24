@@ -25,7 +25,8 @@ export default class extends Instruction {
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
+    processor.terminated = true;
 
-    return processor.exit(endStatus);
+    await processor.exit(endStatus);
   }
 }
