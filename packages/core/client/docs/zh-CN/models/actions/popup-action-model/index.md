@@ -1,7 +1,4 @@
 # PopupActionModel
-以下示例展示如何在继承 `PopupActionModel` 时，通过覆盖 `getInputArgs()` 透传自定义上下文到弹窗页面中。
-
-<code src="./index.tsx"></code>
 
 ## 扩展说明
 
@@ -39,7 +36,9 @@ class CustomCtxPopupActionModel extends PopupActionModel {
       // 自定义属性：在子页面可通过 ctx.someContext 访问传递到下层弹窗的上下文
       defineProperties: {
         someContext: {
-          value: { name: '演示数据', email: 'demo@example.com' },
+          get: async () => {
+            return { name: '演示数据', email: 'demo@example.com' };
+          },
           meta: {
             title: '新定义上下文',
             type: 'object',
@@ -61,3 +60,6 @@ class CustomCtxPopupActionModel extends PopupActionModel {
 }
 ```
 
+以下示例展示如何在继承 `PopupActionModel` 时，通过覆盖 `getInputArgs()` 透传自定义上下文到弹窗页面中。
+
+<code src="./index.tsx"></code>
