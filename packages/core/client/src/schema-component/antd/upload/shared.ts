@@ -287,7 +287,7 @@ export function useBeforeUpload(rules) {
           delete proxiedFile.response;
         }
       }
-      return error ? false : proxiedFile;
+      return error ? false : Promise.resolve(proxiedFile);
     },
     [rules],
   );
