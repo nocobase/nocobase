@@ -26,21 +26,14 @@ import { ThirdDataSource } from '../ThridDataSource';
 import { CreateDatabaseConnectAction } from './CreateDatabaseConnectAction';
 import { EditDatabaseConnectionAction } from './EditDatabaseConnectionAction';
 import { ViewDatabaseConnectionAction } from './ViewDatabaseConnectionAction';
+import { addDatasourceCollections } from '../hooks';
 import _ from 'lodash';
 
 export const DatabaseConnectionManagerPane = () => {
   const { t } = useTranslation();
   const plugin = usePlugin(PluginDatabaseConnectionsClient);
   const dm = useDataSourceManager();
-  const api = useAPIClient();
-
-  const dataSourceListCallback = useCallback(
-    (data: any) => {
-      dm.setDataSources(data?.data || []);
-      dm.reload();
-    },
-    [dm],
-  );
+  const api = useAPIClient(); // 移到组件顶层
 
   const types = [...plugin.types.keys()]
     .map((key) => {
@@ -72,11 +65,14 @@ export const DatabaseConnectionManagerPane = () => {
   );
 
   const dataSourceCreateCallback = useCallback(
-    async (data: any) => {
+    async (data: any, collections) => {
+      if (!data.options?.addAllCollections) {
+        await addDatasourceCollections(api, data.key, { collections, dbOptions: data.options });
+      }
       dm.addDataSource(ThirdDataSource, data);
       reloadKeys.current = [...reloadKeys.current, data.key];
     },
-    [dm],
+    [api, dm],
   );
 
   const useRefreshActionProps = () => {
@@ -126,7 +122,6 @@ export const DatabaseConnectionManagerPane = () => {
           useDestroyAction,
           dataSourceDeleteCallback,
           dataSourceCreateCallback,
-          dataSourceListCallback,
           useIsAbleDelete,
         }}
         schema={databaseConnectionSchema}

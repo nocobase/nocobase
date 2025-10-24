@@ -11,7 +11,6 @@ import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocob
 import { ToposortOptions } from '@nocobase/utils';
 import { DataSource } from './data-source';
 import { DataSourceFactory } from './data-source-factory';
-import { DataSourceConstructor } from './types';
 
 type DataSourceHook = (dataSource: DataSource) => void;
 
@@ -102,11 +101,11 @@ export class DataSourceManager {
     };
   }
 
-  registerDataSourceType(type: string, DataSourceClass: DataSourceConstructor) {
+  registerDataSourceType(type: string, DataSourceClass: typeof DataSource) {
     this.factory.register(type, DataSourceClass);
   }
 
-  getDataSourceType(type: string): DataSourceConstructor | undefined {
+  getDataSourceType(type: string): typeof DataSource | undefined {
     return this.factory.getClass(type);
   }
 

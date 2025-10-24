@@ -149,9 +149,6 @@ export class CollectionModel extends MagicAttributeModel {
     });
 
     for (const instance of instances) {
-      if (!instance.get('collectionName')) {
-        instance.set('collectionName', this.get('name'));
-      }
       await instance.load(options);
     }
   }

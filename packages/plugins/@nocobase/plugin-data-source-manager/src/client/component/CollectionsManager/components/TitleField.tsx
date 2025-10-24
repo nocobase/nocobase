@@ -35,9 +35,8 @@ export const TitleField = withDynamicSchemaProps(
     const handleChange = async (checked) => {
       setLoadingRecord(record);
       await api.request({
-        url: `dataSources/${dataSourceKey}/collections:update`,
+        url: `dataSources/${dataSourceKey}/collections:update?filterByTk=${filterByTk}`,
         method: 'post',
-        params: { filterByTk },
         data: { titleField: checked ? record.name : 'id' },
       });
       message.success(t('Saved successfully'));

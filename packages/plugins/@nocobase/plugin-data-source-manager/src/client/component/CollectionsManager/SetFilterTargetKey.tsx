@@ -91,18 +91,16 @@ export const SetFilterTargetKey = (props) => {
             }
             if (dataSourceKey === 'main') {
               await api.request({
-                url: `collections:update`,
+                url: `collections:update?filterByTk=${record.name}`,
                 method: 'post',
-                params: { filterByTk: record.name },
                 data: {
                   filterTargetKey,
                 },
               });
             } else {
               await api.request({
-                url: `dataSources/${dataSourceKey}/collections:update`,
+                url: `dataSources/${dataSourceKey}/collections:update?filterByTk=${record.name}`,
                 method: 'post',
-                params: { filterByTk: record.name },
                 data: {
                   filterTargetKey,
                 },

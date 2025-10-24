@@ -28,11 +28,11 @@ import {
   useRecord,
 } from '@nocobase/client';
 import { getPickerFormat } from '@nocobase/utils/client';
-import React, { useContext, useMemo, useState } from 'react';
+import { message } from 'antd';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import { useDataSourceRefresh } from '../../hooks/useDataSourceRefresh';
-import { useDataSourceData } from '../../hooks/useResourceData';
+import { DataSourceContext } from '../../DatabaseConnectionProvider';
 import { CollectionFields } from './CollectionFields';
 import { getCollectionSchema } from './schema/collections';
 
@@ -100,8 +100,6 @@ export const ConfigurationTable = () => {
   const data = useContext(CollectionCategoriesContext);
   const api = useAPIClient();
   const compile = useCompile();
-  const service = useContext(ResourceActionContext);
-
   const loadCategories = async () => {
     return data.data.map((item: any) => ({
       label: compile(item.name),
@@ -124,18 +122,56 @@ export const ConfigurationTable = () => {
   };
 
   const useRefreshActionProps = () => {
-    return useDataSourceRefresh({
-      dataSourceName: name,
-      onSuccess: () => {
-        service?.refresh?.();
+    const service = useContext(ResourceActionContext);
+    const api = useAPIClient();
+    const field = useField();
+    const { name } = useParams();
+    field.data = field.data || {};
+    const { setDataSource, dataSource } = useContext(DataSourceContext);
+    return {
+      async onClick() {
+        field.data.loading = true;
+        try {
+          const { data } = await api.request({
+            url: `dataSources:refresh?filterByTk=${name}&clientStatus=${dataSource?.status || 'loaded'}`,
+            method: 'post',
+          });
+          field.data.loading = false;
+          setDataSource({ ...data?.data, name });
+          if (data?.data?.status === 'reloading') {
+            message.warning(t('Data source synchronization in progress'));
+          } else if (data?.data?.status === 'loaded') {
+            message.success(t('Data source synchronization successful'));
+            service?.refresh?.();
+          }
+          await ds.getDataSource(name).reload();
+        } catch (error) {
+          field.data.loading = false;
+        }
       },
-    });
+    };
   };
   const collectionSchema = useMemo(() => {
     return getCollectionSchema(name);
   }, [name]);
 
-  const { data: dataSourceData } = useDataSourceData(name);
+  const resource = api.resource('dataSources', name);
+  const [dataSourceData, setDataSourceData] = useState({});
+
+  useEffect(() => {
+    try {
+      // eslint-disable-next-line promise/catch-or-return
+      resource
+        .get({
+          filterByTk: name,
+        })
+        .then((data) => {
+          setDataSourceData(data?.data);
+        });
+    } catch (error) {
+      console.log(error);
+    }
+  }, [name]);
 
   const loadFilterTargetKeys = async (field) => {
     const { fields } = field.form.values;
