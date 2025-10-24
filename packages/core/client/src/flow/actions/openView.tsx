@@ -538,6 +538,11 @@ export const openView = defineAction({
     // If uid differs from current model, delegate to ctx.openView to open that popup
     if (params?.uid && params.uid !== ctx.model.uid) {
       const actionDefaults = (ctx.model as any)?.getInputArgs?.() || {};
+      // 透传自定义上下文（继承 PopupActionModel 后可通过 getInputArgs 注入）
+      const inputArgs = (ctx.inputArgs as any) || {};
+      const defineProperties =
+        inputArgs.defineProperties ?? ctx.model.context?.inputArgs?.defineProperties ?? undefined;
+      const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? undefined;
       // 外部弹窗时应该以弹窗发起者为高优先级
       await ctx.openView(params.uid, {
         ...params,
@@ -548,6 +553,9 @@ export const openView = defineAction({
         filterByTk: params.filterByTk ?? actionDefaults.filterByTk,
         sourceId: params.sourceId ?? actionDefaults.sourceId,
         tabUid: params.tabUid,
+        // 关键：把自定义上下文一并传递给 ctx.openView
+        ...(defineProperties ? { defineProperties } : {}),
+        ...(defineMethods ? { defineMethods } : {}),
       });
       return;
     }
