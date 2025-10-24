@@ -240,7 +240,7 @@ export class XlsxImporter extends EventEmitter {
       const column = this.options.columns[index];
       const field = this.options.collection.getField(column.dataIndex[0]);
       if (!field) {
-        throw new ImportValidationError('Import validation.Field not found', {
+        throw new ImportValidationError('Import validation. Field not found', {
           field: column.dataIndex[0],
         });
       }
@@ -504,5 +504,7 @@ export class XlsxImporter extends EventEmitter {
         return { headerRowIndex: rowIndex, headers: orderedHeaders };
       }
     }
+
+    return { headerRowIndex: -1, headers: [] };
   }
 }
