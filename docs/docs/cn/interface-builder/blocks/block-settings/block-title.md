@@ -4,6 +4,4 @@
 
 自定义区块标题。
 
-![20240407175754](https://static-docs.nocobase.com/20240407175754.png)
-
-![20240423110346](https://static-docs.nocobase.com/20240423110346.png)
+![20251024174424](https://static-docs.nocobase.com/20251024174424.png)
