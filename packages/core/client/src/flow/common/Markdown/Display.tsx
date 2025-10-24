@@ -129,14 +129,12 @@ export const Display = (props) => {
     return (
       <Popover
         open={popoverVisible}
+        getPopupContainer={() => document.getElementsByClassName('ant-drawer-content')?.[0] as HTMLElement}
         onOpenChange={(visible) => {
           setPopoverVisible(ellipsis && visible);
         }}
-        content={
-          <div style={{ maxWidth: 600, maxHeight: 500, overflow: 'auto' }}>
-            <DisplayInner value={value} />
-          </div>
-        }
+        overlayStyle={{ maxWidth: 400, maxHeight: 450, overflow: 'auto' }}
+        content={<DisplayInner value={value} />}
       >
         <div
           ref={elRef}
