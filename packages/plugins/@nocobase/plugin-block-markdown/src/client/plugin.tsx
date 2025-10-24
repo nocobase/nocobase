@@ -8,37 +8,23 @@
  */
 
 import { Plugin } from '@nocobase/client';
-import 'vditor/dist/index.css';
-import { lazy } from '@nocobase/client';
-import { VditorFieldModel } from './models/VditorFieldModel';
-import { DisplayVditorFieldModel } from './models/DisplayVditorFieldModel';
-const { MarkdownVditor } = lazy(() => import('./components'), 'MarkdownVditor');
+import { MarkdownBlockModel } from './models';
 
-import { MarkdownVditorFieldInterface } from './interfaces/markdown-vditor';
-export class PluginFieldMarkdownVditorClient extends Plugin {
-  dependencyLoaded = false;
-
-  async afterAdd() {}
-
-  async beforeLoad() {}
-
+export class PluginBlockMarkdownClient extends Plugin {
   async load() {
-    this.app.addComponents({ MarkdownVditor });
-    this.app.dataSourceManager.addFieldInterfaces([MarkdownVditorFieldInterface]);
     this.flowEngine.registerModels({
-      VditorFieldModel,
-      DisplayVditorFieldModel,
+      MarkdownBlockModel,
     });
   }
 
   getCDN() {
-    return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-field-markdown-vditor/dist/client/vditor';
+    return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor';
   }
 
   initVditorDependency() {
     const cdn = this.getCDN();
     try {
-      const vditorDepdencePrefix = 'plugin-field-markdown-vditor-dep';
+      const vditorDepdencePrefix = 'plugin-block-markdown-dep';
       const vditorDepdence = {
         [`${vditorDepdencePrefix}.katex`]: `${cdn}/dist/js/katex/katex.min.js?v=0.16.9`,
         [`${vditorDepdencePrefix}.ABCJS`]: `${cdn}/dist/js/abcjs/abcjs_basic.min`,
@@ -63,4 +49,4 @@ export class PluginFieldMarkdownVditorClient extends Plugin {
   }
 }
 
-export default PluginFieldMarkdownVditorClient;
+export default PluginBlockMarkdownClient;

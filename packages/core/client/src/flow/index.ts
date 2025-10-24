@@ -17,6 +17,8 @@ import { FlowRoute } from './FlowPage';
 import * as models from './models';
 import * as filterFormActions from './models/blocks/filter-manager/flow-actions';
 import { DynamicFlowsIcon } from './components/DynamicFlowsIcon';
+import { Markdown } from './common/Markdown/Markdown';
+import { LiquidEngine } from './common/Liquid';
 
 export class PluginFlowEngine extends Plugin {
   async load() {
@@ -43,6 +45,19 @@ export class PluginFlowEngine extends Plugin {
         return model.getEvents().size > 0;
       },
       sort: 0,
+    });
+    // 实例化一个全局 Markdown 解析器
+    const markdownInstance = new Markdown();
+    this.flowEngine.context.defineProperty('markdown', {
+      get: () => markdownInstance,
+    });
+
+    // 创建全局实例
+    const liquidInstance = new LiquidEngine();
+
+    // 注册到全局上下文
+    this.flowEngine.context.defineProperty('liquid', {
+      get: () => liquidInstance,
     });
   }
 }
