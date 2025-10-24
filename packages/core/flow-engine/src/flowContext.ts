@@ -926,7 +926,7 @@ class BaseFlowEngineContext extends FlowContext {
 
   // 装饰器：记录服务端变量解析耗时
   @LogDuration({ type: 'variables.resolve.server', slowMsKey: 'slowParamsMs' })
-  protected async resolveVariablesOnServer(template: any, autoContextParams?: any): Promise<any> {
+  async resolveVariablesOnServer(template: any, autoContextParams?: any): Promise<any> {
     const self = this.createProxy() as BaseFlowEngineContext;
     const resolved = await enqueueVariablesResolve(self as any, {
       template,
@@ -1557,7 +1557,7 @@ export class FlowForkModelContext extends BaseFlowModelContext {
 
   // 装饰器：记录服务端变量解析耗时
   @LogDuration({ type: 'variables.resolve.server', slowMsKey: 'slowParamsMs' })
-  protected async resolveVariablesOnServer(template: any, autoContextParams?: any): Promise<any> {
+  async resolveVariablesOnServer(template: any, autoContextParams?: any): Promise<any> {
     // 通过微批接口请求服务端解析
     const resolved = await enqueueVariablesResolve(this, {
       template,
