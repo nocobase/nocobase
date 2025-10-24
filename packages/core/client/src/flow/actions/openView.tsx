@@ -536,13 +536,11 @@ export const openView = defineAction({
   },
   async handler(ctx: FlowModelContext, params) {
     // If uid differs from current model, delegate to ctx.openView to open that popup
+    const inputArgs = ctx.inputArgs || {};
+    const defineProperties = inputArgs.defineProperties ?? ctx.model.context?.inputArgs?.defineProperties ?? undefined;
+    const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? undefined;
     if (params?.uid && params.uid !== ctx.model.uid) {
       const actionDefaults = (ctx.model as any)?.getInputArgs?.() || {};
-      // 透传自定义上下文（继承 PopupActionModel 后可通过 getInputArgs 注入）
-      const inputArgs = (ctx.inputArgs as any) || {};
-      const defineProperties =
-        inputArgs.defineProperties ?? ctx.model.context?.inputArgs?.defineProperties ?? undefined;
-      const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? undefined;
       // 外部弹窗时应该以弹窗发起者为高优先级
       await ctx.openView(params.uid, {
         ...params,
@@ -559,7 +557,6 @@ export const openView = defineAction({
       });
       return;
     }
-    const inputArgs = ctx.inputArgs || {};
 
     if (inputArgs.filterByTk === undefined && params.filterByTk !== undefined) {
       inputArgs.filterByTk = params.filterByTk;
@@ -573,7 +570,12 @@ export const openView = defineAction({
       inputArgs.tabUid = params.tabUid;
     }
 
-    const navigation = inputArgs.navigation ?? params.navigation;
+    let navigation = inputArgs.navigation ?? params.navigation;
+
+    // 传递了上下文就必须禁用路由，否则下次路由打开会缺少上下文
+    if (defineProperties || defineMethods) {
+      navigation = false;
+    }
 
     if (navigation !== false) {
       if (!ctx.inputArgs.navigation && ctx.view?.navigation) {
