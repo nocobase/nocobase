@@ -52,6 +52,7 @@ import { FlowDefinition } from '../FlowDefinition';
 import { FlowSettingsOpenOptions } from '../flowSettings';
 import type { EventDefinition, FlowEvent, DispatchEventOptions } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
+import { startTimer, serializeError } from '../utils/logging';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
@@ -189,7 +190,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     try {
       this.setupReactiveRender();
     } catch (error) {
-      console.error(`Failed to setup reactive render for ${this.constructor.name}:`, error);
+      this.context?.logger?.error?.(
+        { type: 'model.render.setupReactive.error', modelId: this.uid, error: serializeError(error) },
+        `Failed to setup reactive render for ${this.constructor.name}`,
+      );
       // 如果包装失败，确保 render 方法仍然可用
       if (typeof this.render !== 'function') {
         this.render = () => React.createElement('div', null, 'Render method not available');
@@ -396,6 +400,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (this.flowEngine) {
       const scope = `event:${this.getFlowCacheScope(eventName || 'beforeRender')}`;
       const cache = this.flowEngine.applyFlowCache;
+      let removed = 0;
 
       if (eventName) {
         // 删除该事件名下所有缓存（忽略不同 inputArgs 的散列差异）
@@ -408,6 +413,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           const eventMatches = eventSegments.some((seg) => key.includes(seg));
           if (startMatches && endMatches && eventMatches) {
             cache.delete(key);
+            removed++;
           }
         }
       } else {
@@ -418,7 +424,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         for (const key of cache.keys()) {
           const startMatches = prefixes.some((p) => key.startsWith(p));
           const endMatches = uidSuffixes.some((s) => key.endsWith(s));
-          if (startMatches && endMatches) cache.delete(key);
+          if (startMatches && endMatches) {
+            cache.delete(key);
+            removed++;
+          }
         }
       }
 
@@ -435,16 +444,30 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
             const startMatches = key.startsWith(forkScope) || key.startsWith(altForkScope);
             const endMatches = uidSuffixes.some((s) => key.endsWith(s));
             const eventMatches = eventSegments.some((seg) => key.includes(seg));
-            if (startMatches && endMatches && eventMatches) this.flowEngine.applyFlowCache.delete(key);
+            if (startMatches && endMatches && eventMatches) {
+              this.flowEngine.applyFlowCache.delete(key);
+              removed++;
+            }
           }
         } else {
           const prefixes = [`${forkScope}:`, `${altForkScope}-`];
           for (const key of this.flowEngine.applyFlowCache.keys()) {
             const startMatches = prefixes.some((p) => key.startsWith(p));
             const endMatches = uidSuffixes.some((s) => key.endsWith(s));
-            if (startMatches && endMatches) this.flowEngine.applyFlowCache.delete(key);
+            if (startMatches && endMatches) {
+              this.flowEngine.applyFlowCache.delete(key);
+              removed++;
+            }
           }
         }
+      });
+      this.context?.logger?.debug?.({
+        type: 'cache.invalidate',
+        modelId: this.uid,
+        modelType: this.constructor?.name,
+        eventName: eventName || 'all',
+        deep,
+        removed,
       });
     }
     if (deep) {
@@ -620,8 +643,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   setProps(props: IModelComponentProps | string, value?: any): void {
     if (typeof props === 'string') {
       this.props[props] = value;
+      this.context?.logger?.debug?.({ type: 'model.update', field: props });
     } else {
       this.props = { ...this.props, ...props };
+      const changedKeys = Object.keys(props || {});
+      this.context?.logger?.debug?.({ type: 'model.update', fields: changedKeys, count: changedKeys.length });
     }
   }
 
@@ -647,13 +673,31 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           ...this.stepParams[flowKey][stepKeyOrStepsParams],
           ...params,
         };
+        this.context?.logger?.debug?.({
+          type: 'model.update',
+          flowKey,
+          stepKey: stepKeyOrStepsParams,
+          paramCount: Object.keys(params || {}).length,
+        });
       } else if (typeof stepKeyOrStepsParams === 'object' && stepKeyOrStepsParams !== null) {
         this.stepParams[flowKey] = { ...(this.stepParams[flowKey] || {}), ...stepKeyOrStepsParams };
+        this.context?.logger?.debug?.({
+          type: 'model.update',
+          flowKey,
+          steps: Object.keys(stepKeyOrStepsParams || {}),
+          count: Object.keys(stepKeyOrStepsParams || {}).length,
+        });
       }
     } else if (typeof flowKeyOrAllParams === 'object' && flowKeyOrAllParams !== null) {
       for (const fk in flowKeyOrAllParams) {
         if (Object.prototype.hasOwnProperty.call(flowKeyOrAllParams, fk)) {
           this.stepParams[fk] = { ...(this.stepParams[fk] || {}), ...flowKeyOrAllParams[fk] };
+          this.context?.logger?.debug?.({
+            type: 'model.update',
+            flowKey: fk,
+            steps: Object.keys(flowKeyOrAllParams[fk] || {}),
+            count: Object.keys(flowKeyOrAllParams[fk] || {}).length,
+          });
         }
       }
     }
@@ -675,16 +719,21 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   async applyFlow(flowKey: string, inputArgs?: Record<string, any>, runId?: string): Promise<any> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
-      console.warn('FlowEngine not available on this model for applyFlow. Check and model.flowEngine setup.');
+      this.context?.logger?.warn?.({
+        type: 'model.applyFlow.missingEngine',
+        message: 'FlowEngine not available on this model for applyFlow.',
+      });
       return Promise.reject(new Error('FlowEngine not available for applyFlow. Please set flowEngine on the model.'));
     }
     const isFork = (this as any).isFork === true;
     const target = this;
-    console.log(
-      `[FlowModel] applyFlow: uid=${this.uid}, flowKey=${flowKey}, isFork=${isFork}, cleanRun=${
-        this.cleanRun
-      }, targetIsFork=${(target as any)?.isFork === true}`,
-    );
+    this.context?.logger?.debug?.({
+      type: 'model.applyFlow',
+      flowKey,
+      isFork,
+      cleanRun: this.cleanRun,
+      targetIsFork: (target as any)?.isFork === true,
+    });
     return currentFlowEngine.executor.runFlow(target, flowKey, inputArgs, runId);
   }
 
@@ -695,16 +744,22 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   ): Promise<any[]> {
     const currentFlowEngine = this.flowEngine;
     if (!currentFlowEngine) {
-      console.warn('FlowEngine not available on this model for dispatchEvent. Please set flowEngine on the model.');
+      this.context?.logger?.warn?.({
+        type: 'model.dispatch.missingEngine',
+        eventName,
+        message: 'FlowEngine not available on this model for dispatchEvent.',
+      });
       return;
     }
     const isFork = (this as any).isFork === true;
     const target = this;
-    console.log(
-      `[FlowModel] dispatchEvent: uid=${this.uid}, event=${eventName}, isFork=${isFork}, cleanRun=${
-        this.cleanRun
-      }, targetIsFork=${(target as any)?.isFork === true}`,
-    );
+    this.context?.logger?.debug?.({
+      type: 'model.dispatch',
+      eventName,
+      isFork,
+      cleanRun: this.cleanRun,
+      targetIsFork: (target as any)?.isFork === true,
+    });
     return await currentFlowEngine.executor.dispatchEvent(target, eventName, inputArgs, options);
   }
 
@@ -773,7 +828,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         const [inputArgs] = this._lastAutoRunParams as any[];
         await this.dispatchEvent('beforeRender', inputArgs);
       } catch (error) {
-        console.error('FlowModel._rerunLastAutoRun: Error during rerun:', error);
+        this.context?.logger?.error?.(
+          { type: 'model.rerun.error', error: serializeError(error) },
+          'FlowModel._rerunLastAutoRun: Error during rerun',
+        );
       }
     }
   }, 100);
@@ -786,7 +844,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     eventName: string,
     options?: DispatchEventOptions,
     inputArgs?: Record<string, any>,
-  ): Promise<void> {}
+  ): Promise<void> {
+    return;
+  }
 
   /**
    * 通用事件分发钩子：结束
@@ -797,7 +857,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     options?: DispatchEventOptions,
     inputArgs?: Record<string, any>,
     results?: any[],
-  ): Promise<void> {}
+  ): Promise<void> {
+    return;
+  }
 
   /**
    * 通用事件分发钩子：错误
@@ -808,9 +870,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     options?: DispatchEventOptions,
     inputArgs?: Record<string, any>,
     error?: Error,
-  ): Promise<void> {}
+  ): Promise<void> {
+    return;
+  }
 
-  useHooksBeforeRender() {}
+  useHooksBeforeRender() {
+    return;
+  }
 
   /**
    * 智能检测是否应该跳过响应式包装
@@ -848,7 +914,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
       // 验证原始方法是函数
       if (typeof originalRender !== 'function') {
-        console.error(`FlowModel ${this.constructor.name}: original render method is not a function`, originalRender);
+        this.context?.logger?.error?.(
+          { type: 'model.render.original.notFunction', modelId: this.uid },
+          `FlowModel ${this.constructor.name}: original render method is not a function`,
+        );
         return;
       }
 
@@ -888,10 +957,16 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
           // 添加生命周期钩子：当渲染目标变化时，解绑旧目标并绑定新目标
           React.useEffect(() => {
+            {
+              renderTarget?.context?.logger?.debug?.({ type: 'model.mount' });
+            }
             if (typeof renderTarget.onMount === 'function') {
               renderTarget.onMount();
             }
             return () => {
+              {
+                renderTarget?.context?.logger?.debug?.({ type: 'model.unmount' });
+              }
               if (typeof renderTarget.onUnmount === 'function') {
                 renderTarget.onUnmount();
               }
@@ -912,8 +987,29 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           // 从而让 useHooksBeforeRender 中的副作用得以感知并执行（如 applyFlow('jsSettings')）。
           modelInstance.stepParams;
 
-          // 调用原始渲染方法
-          return originalRender.call(renderTarget);
+          // 调用原始渲染方法，并统计单次渲染耗时（超过 slowRenderMs 才输出）
+          const renderTimer = startTimer();
+          const node = originalRender.call(renderTarget);
+          const ms = renderTimer();
+          const threshold = modelInstance?.flowEngine?.logManager?.options?.slowRenderMs ?? 8;
+          if (ms > threshold) {
+            // Avoid publishing logs synchronously during render to prevent nested updates.
+            const payload = {
+              type: 'model.render',
+              modelId: modelInstance?.uid,
+              modelType: modelInstance?.constructor?.name,
+              duration: ms,
+            };
+            // schedule after commit
+            setTimeout(() => {
+              try {
+                modelInstance?.context?.logger?.info?.(payload);
+              } catch (_) {
+                void 0;
+              }
+            }, 0);
+          }
+          return node;
         });
 
         // 设置显示名称便于调试
@@ -939,7 +1035,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       // 替换 render 方法
       this.render = wrappedRender;
     } catch (error) {
-      console.error(`FlowModel ${this.constructor.name}: Error during render method wrapping:`, error);
+      this.context?.logger?.error?.(
+        { type: 'model.render.wrap.error', modelId: this.uid, error: serializeError(error) },
+        `FlowModel ${this.constructor.name}: Error during render method wrapping`,
+      );
     }
   }
 
@@ -1005,6 +1104,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (this._options.delegateToParent !== false) {
       this.context.addDelegate(this.parent.context);
     }
+    {
+      this.context?.logger?.debug?.({ type: 'model.parent.set', parentId: parent.uid });
+    }
   }
 
   removeParentDelegate() {
@@ -1012,6 +1114,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       return;
     }
     this.context.removeDelegate(this.parent.context);
+    {
+      this.context?.logger?.debug?.({ type: 'model.parent.delegate.removed', parentId: this.parent?.uid });
+    }
   }
 
   addSubModel<T extends FlowModel>(subKey: string, options: CreateModelOptions | T) {
@@ -1044,6 +1149,16 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const maxSortIndex = Math.max(...(subModels[subKey] as FlowModel[]).map((item) => item.sortIndex || 0), 0);
     model.sortIndex = maxSortIndex + 1;
     subModels[subKey].push(model);
+    {
+      actualParent?.context?.logger?.debug?.({
+        type: 'model.sub.add',
+        modelId: model.uid,
+        modelType: model.constructor.name,
+        subKey,
+        subType: 'array',
+        sortIndex: model.sortIndex,
+      });
+    }
     actualParent.emitter.emit('onSubModelAdded', model);
     return model;
   }
@@ -1070,6 +1185,15 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
     model.setParent(actualParent);
     (actualParent.subModels as any)[subKey] = model;
+    {
+      actualParent?.context?.logger?.debug?.({
+        type: 'model.sub.set',
+        modelId: model.uid,
+        modelType: model.constructor.name,
+        subKey,
+        subType: 'object',
+      });
+    }
     actualParent.emitter.emit('onSubModelAdded', model);
     return model;
   }
@@ -1201,7 +1325,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   }
 
   clearForks() {
-    console.log(`FlowModel ${this.uid} clearing all forks.`);
+    this.context?.logger?.debug?.({ type: 'model.forks.clear', modelId: this.uid });
     // 主动使所有 fork 失效
     if (this.forks?.size) {
       this.forks.forEach((fork) => fork.dispose());
@@ -1272,7 +1396,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const step = flow?.steps?.[stepKey];
 
     if (!flow || !step) {
-      console.error(`Flow ${flowKey} or step ${stepKey} not found`);
+      this.context?.logger?.error?.({ type: 'model.stepSettings.missing', flowKey, stepKey });
       return;
     }
 
@@ -1318,7 +1442,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     stepKey?: string;
     preset?: boolean;
     uiMode?: 'drawer' | 'dialog';
-  }) {}
+  }) {
+    return;
+  }
 
   get translate() {
     return this.flowEngine.translate.bind(this.flowEngine);

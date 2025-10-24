@@ -10,6 +10,7 @@
 import { observable } from '@formily/reactive';
 import _ from 'lodash';
 import { FlowContext, FlowEngineContext } from '../flowContext';
+import { LogDuration } from '../utils/logDecorators';
 import { BaseRecordResource } from './baseRecordResource';
 
 type SQLRunOptions = {
@@ -55,6 +56,7 @@ export class FlowSQLRepository {
     });
   }
 
+  @LogDuration({ type: 'resource.sql', slowMs: 16 })
   async run(sql: string, options: SQLRunOptions = {}) {
     const result = transformSQL(sql);
     const bind = await this.ctx.resolveJsonTemplate(result.bind);
@@ -83,6 +85,7 @@ export class FlowSQLRepository {
     });
   }
 
+  @LogDuration({ type: 'resource.sql', slowMs: 16 })
   async runById(uid: string, options?: SQLRunOptions) {
     const response = await this.ctx.api.request({
       method: 'GET',
@@ -237,6 +240,7 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     return this._debugEnabled ? await this.runBySQL() : await this.runById();
   }
 
+  @LogDuration({ type: 'resource.sql', slowMs: 16 })
   async runBySQL() {
     const sql = this._sql;
     const result = transformSQL(sql);
@@ -250,6 +254,7 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     return await this.runAction<TData, any>('run', options);
   }
 
+  @LogDuration({ type: 'resource.sql', slowMs: 16 })
   async runById() {
     const { data } = await this.runAction<TData, any>('getBind', {
       method: 'get',
