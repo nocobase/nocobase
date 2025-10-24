@@ -279,10 +279,10 @@ export function useBeforeUpload(rules) {
       const error = validate(proxiedFile, rules);
 
       if (error) {
-        proxiedFile.status = 'error';
-        proxiedFile.response = t(error);
+        file.status = 'error';
+        file.response = t(error);
       } else {
-        if (proxiedFile.status === 'error') {
+        if (file.status === 'error') {
           delete proxiedFile.status;
           delete proxiedFile.response;
         }
