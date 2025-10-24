@@ -37,6 +37,9 @@ export class DisplayTitleFieldModel extends FieldModel {
                 rootClassName: css`
                   .ant-tooltip-inner {
                     color: #000;
+                    max-height: 500px;
+                    overflow-y: auto;
+                    padding: 10px;
                   }
                 `,
                 color: '#fff',
