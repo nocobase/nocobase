@@ -129,6 +129,7 @@ export const Display = (props) => {
     return (
       <Popover
         open={popoverVisible}
+        getPopupContainer={() => document.getElementsByClassName('ant-drawer-content')?.[0] || document.body}
         onOpenChange={(visible) => {
           setPopoverVisible(ellipsis && visible);
         }}
