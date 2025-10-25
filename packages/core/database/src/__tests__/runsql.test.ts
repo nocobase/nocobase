@@ -154,7 +154,7 @@ describe('runSQL', function () {
     });
 
     test('should handle filter with ORDER BY clause', async () => {
-      const result = await db.runSQL('SELECT * FROM test ORDER BY age DESC', {
+      const result = await db.runSQL('SELECT * FROM test ORDER BY age DESC LIMIT 10', {
         filter: {
           age: { $gte: 30 },
         },
