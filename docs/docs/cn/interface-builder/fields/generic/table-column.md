@@ -24,18 +24,38 @@
 
 ### 启用快速编辑
 
-当启用快速编辑该列鼠标hover 时将出现编辑按钮，点击即可在弹窗中快速编辑并保存数据。
+当启用快速编辑该列鼠标 hover 时将出现编辑按钮，点击即可在弹窗中快速编辑并保存数据。
 
-![20240422115501](https://static-docs.nocobase.com/20240422115501.png)
+![20251025171158](https://static-docs.nocobase.com/20251025171158.gif)
+
+### 启用点击打开
+
+除了关系字段支持点击打开弹窗，普通字段也可以开启点击打开以作为打开弹窗的入口。
+
+![20251025172308](https://static-docs.nocobase.com/20251025172308.gif)
+
+### 内容溢出显示方式
+
+当列内容溢出表格列宽度时可以设置溢出方式
+
+- 省略显示（默认）
+- 换行
+
+![20251025172549](https://static-docs.nocobase.com/20251025172549.png)
 
 ### 固定列
 
-![20240511140524](https://static-docs.nocobase.com/20240511140524.png)
+![20251025170858](https://static-docs.nocobase.com/20251025170858.gif)
 
 ### 字段组件
 
-部分字段支持切换为其他组件，例如：`URL` 组件可以切换为 `Preview` 组件。
+部分字段支持多种展示形态可通过切换字段组件实现，例如：`URL` 组件可以切换为 `Preview` 组件。
 
-![20240806165152](https://static-docs.nocobase.com/20240806165152.png)
+![20251025171658](https://static-docs.nocobase.com/20251025171658.png)
 
-如果你需要扩展更多的组件，可以参考 [扩展有值字段组件组件](/plugin-samples/field/value)。
+### 显示样式
+
+- 标签
+- 文本
+
+![20251025172723](https://static-docs.nocobase.com/20251025172723.png)

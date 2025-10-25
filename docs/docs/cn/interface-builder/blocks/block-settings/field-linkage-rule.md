@@ -6,8 +6,8 @@
 
 - [表单区块](/handbook/ui/blocks/data-blocks/form#%E8%81%94%E5%8A%A8%E8%A7%84%E5%88%99)
 - [详情区块](/handbook/ui/blocks/data-blocks/details#%E8%81%94%E5%8A%A8%E8%A7%84%E5%88%99)
-- [子表单](/handbook/ui/fields/specific/nester)（需 v1.3.17-beta 及以上版本）
-- [子表格](/handbook/ui/fields/specific/sub-table)（需 v1.3.17-beta 及以上版本）
+- [子表单](/handbook/ui/fields/specific/nester)
+- [子表格](/handbook/ui/fields/specific/sub-table)
 
 ## 使用说明
 

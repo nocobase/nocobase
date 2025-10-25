@@ -4,41 +4,51 @@
 
 详情区块、列表区块、网格区块等字段配置基本一致，主要控制阅读状态下字段的展示。
 
-![20240409131155](https://static-docs.nocobase.com/20240409131155.png)
+![20251025172851](https://static-docs.nocobase.com/20251025172851.png)
 
 ## 字段配置项
 
 ### 日期字段格式化
 
-![20240417223807](https://static-docs.nocobase.com/20240417223807.png)
+![20251025173005](https://static-docs.nocobase.com/20251025173005.png)
 
-更多内容参考 [日期格式化](/handbook/ui/fields/specific/date-picker)
+更多内容参考 [日期格式化](/interface-builder/fields/specific/date-picker)
 
 ### 数值字段格式化
 
-![20240417223608](https://static-docs.nocobase.com/20240417223608.png)
+![20251025173242](https://static-docs.nocobase.com/20251025173242.png)
 
 支持简单的单位换算，千分位分隔符，前后缀，精确度，科学记数法。
 
-![20240417223709](https://static-docs.nocobase.com/20240417223709.png)
-
 更多内容参考 [数值格式化](/handbook/ui/fields/field-settings/number-format)
 
-- [编辑字段标题](/handbook/ui/fields/field-settings/edit-title)
-- [显示标题](/handbook/ui/fields/field-settings/display-title)
-- [编辑字段描述](/handbook/ui/fields/field-settings/edit-description)
-- [编辑字段提示信息](/handbook/ui/fields/field-settings/edit-tooltip)
+### 启用点击打开
+
+除了关系字段支持点击打开弹窗，普通字段也可以开启点击打开以作为打开弹窗的入口，还可以设置弹窗打开方式（抽屉、对话框、子页面）。
+
+![20251025173549](https://static-docs.nocobase.com/20251025173549.gif)
+
+### 内容溢出显示方式
+
+当字段项内容溢出宽度时可以设置溢出方式
+
+- 省略显示（默认）
+- 换行
+
+![20251025173917](https://static-docs.nocobase.com/20251025173917.png)
 
 ### 字段组件
 
-部分字段支持切换为其他组件，例如：`URL` 组件可以切换为 `Preview` 组件。
+部分字段支持多种展示形态可通过切换字段组件实现。
 
-![20240806165321](https://static-docs.nocobase.com/20240806165321.png)
+例如：`URL` 组件可以切换为 `Preview` 组件。
 
-如果你需要扩展更多的组件，可以参考 [扩展有值字段组件组件](/plugin-samples/field/value)。
+![20251025174042](https://static-docs.nocobase.com/20251025174042.png)
 
-### 样式
+例如：关系字段可以切换不同的展示,由标题字段组件切换为`子详情`以展示更多关系字段内容。
 
-![2024-06-26-15-16-09-表单风格入口](https://static-docs.nocobase.com/2024-06-26-15-16-09-表单风格入口.png)
-![2024-06-26-15-21-31-样式配置](https://static-docs.nocobase.com/2024-06-26-15-21-31-样式配置.png)
-![2024-06-26-15-22-42-表单-最终效果](https://static-docs.nocobase.com/2024-06-26-15-22-42-表单-最终效果.png)
+![20251025174311](https://static-docs.nocobase.com/20251025174311.gif)
+
+- [编辑字段标题](/handbook/ui/fields/field-settings/edit-title)
+- [编辑字段描述](/handbook/ui/fields/field-settings/edit-description)
+- [编辑字段提示信息](/handbook/ui/fields/field-settings/edit-tooltip)

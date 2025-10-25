@@ -13,21 +13,20 @@
 和区块一样，字段组件的右上角也有三个图标，分别为：
 
 - 拖拽布局
-- 快捷添加字段
+- 字段事件流
 - 字段参数配置
 
-![](https://static-docs.nocobase.com/30cc5fcaeeb171862f79449a72a7fcf9.png)
+![20251025165432](https://static-docs.nocobase.com/20251025165432.png)
 
 ## 字段的布局
 
 通过拖拽移动可以自定义调整字段在区块中的布局。
 
-![](https://static-docs.nocobase.com/0825ea8c014c9073f505e74f707ded66.gif)
+![20251025165605](https://static-docs.nocobase.com/20251025165605.gif)
 
-## 字段组件
+## 字段配置项
 
-部分字段支持切换为其他组件，例如：`URL` 组件可以切换为 `Preview` 组件。
+除了通用的字段配置项，不同类似的字段支持不同的字段类型。
 
-![20240806164801](https://static-docs.nocobase.com/20240806164801.png)
+![20251025170120](https://static-docs.nocobase.com/20251025170120.png)
 
-如果你需要扩展更多的组件，可以参考 [扩展有值字段组件组件](/plugin-samples/field/value)。
