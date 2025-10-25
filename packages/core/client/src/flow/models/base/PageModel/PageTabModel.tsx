@@ -26,10 +26,11 @@ function PageTabChildrenRenderer({ ctx, options }) {
       refreshDeps: [ctx.model.uid],
     },
   );
+  const margin = ctx?.isMobileLayout ? 8 : ctx?.themeToken.marginBlock;
   if (loading || !data?.uid) {
-    return <SkeletonFallback style={{ margin: 16 }} />;
+    return <SkeletonFallback style={{ margin }} />;
   }
-  return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin: 16 }} />} />;
+  return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin }} />} />;
 }
 
 export class BasePageTabModel extends FlowModel<{

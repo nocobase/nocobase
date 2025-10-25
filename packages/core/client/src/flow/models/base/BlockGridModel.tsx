@@ -68,7 +68,11 @@ export class BlockGridModel extends GridModel {
   }
 
   render() {
-    return <div style={{ padding: this.context.themeToken.marginBlock }}>{super.render()}</div>;
+    return (
+      <div style={{ padding: this.context.isMobileLayout ? 8 : this.context.themeToken.marginBlock }}>
+        {super.render()}
+      </div>
+    );
   }
 }
 

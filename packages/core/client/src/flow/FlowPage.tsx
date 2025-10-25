@@ -33,7 +33,11 @@ function InternalFlowPage({ uid, ...props }) {
   return (
     <FlowModelRenderer
       model={model}
-      fallback={<SkeletonFallback style={{ margin: 16 }} />}
+      fallback={
+        <SkeletonFallback
+          style={{ margin: model?.context.isMobileLayout ? 8 : model?.context.themeToken.marginBlock }}
+        />
+      }
       hideRemoveInSettings
       showFlowSettings={{ showBackground: false, showBorder: false }}
       {...props}
@@ -301,7 +305,7 @@ export const FlowPage = (props: FlowPageProps & Record<string, unknown>) => {
     },
   );
   if (loading || !data?.uid) {
-    return <SkeletonFallback style={{ margin: 16 }} />;
+    return <SkeletonFallback style={{ margin: ctx?.isMobileLayout ? 8 : ctx?.themeToken.marginBlock }} />;
   }
   return <InternalFlowPage uid={data.uid} {...rest} />;
 };
