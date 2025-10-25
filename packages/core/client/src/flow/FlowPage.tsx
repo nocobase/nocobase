@@ -226,7 +226,13 @@ export const FlowRoute = () => {
           delete viewStateRef.current[getKey(viewItem)];
         });
 
-        prevViewListRef.current = viewList;
+        prevViewListRef.current = viewList.map((item, index) => {
+          if (prevViewListRef.current[index]) {
+            // 修复子页面切换时，hidden 状态失去响应性的问题
+            item.hidden = prevViewListRef.current[index].hidden;
+          }
+          return item;
+        });
       },
       {
         fireImmediately: true,
