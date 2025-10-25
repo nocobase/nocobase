@@ -81,7 +81,7 @@ BlockGridModel.registerFlow({
   steps: {
     grid: {
       handler(ctx, params) {
-        ctx.model.setProps('rowGap', ctx.themeToken.marginBlock);
+        ctx.model.setProps('rowGap', ctx.isMobileLayout ? 12 : ctx.themeToken.marginBlock);
         ctx.model.setProps('colGap', ctx.themeToken.marginBlock);
       },
     },
