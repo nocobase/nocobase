@@ -8,11 +8,14 @@
  */
 
 import { connect, mapReadPretty } from '@formily/react';
-import { InputNumber as AntdNumber, InputNumberProps as AntdInputNumberProps } from 'antd';
-import React from 'react';
-import { InputNumberReadPrettyProps, ReadPretty } from './ReadPretty';
+import { InputNumberProps as AntdInputNumberProps, InputNumber as AntdNumber } from 'antd';
 import BigNumber from 'bignumber.js';
 import { omit } from 'lodash';
+import React from 'react';
+import { withAutoFocus } from '../../../hoc/withAutoFocus';
+import { InputNumberReadPrettyProps, ReadPretty } from './ReadPretty';
+
+const InputNumberWithAutoFocus = withAutoFocus(AntdNumber);
 
 type ComposedInputNumber = React.ForwardRefExoticComponent<
   Pick<Partial<any>, string | number | symbol> & React.RefAttributes<unknown>
@@ -45,7 +48,7 @@ export const InputNumber: ComposedInputNumber = connect((props: AntdInputNumberP
   if (others['formatStyle']) {
     inputNumberProps = omit(inputNumberProps, ['addonAfter', 'addonBefore']);
   }
-  return <AntdNumber {...inputNumberProps} />;
+  return <InputNumberWithAutoFocus {...inputNumberProps} />;
 }, mapReadPretty(ReadPretty));
 
 InputNumber.ReadPretty = ReadPretty;
