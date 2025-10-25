@@ -278,9 +278,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 let stepTitle = actionStep.title;
                 if (actionStep.use) {
                   try {
-                    const action = targetModel.flowEngine?.getAction?.(actionStep.use);
+                    const action = targetModel.getAction?.(actionStep.use);
                     hasActionUiSchema = action && action.uiSchema != null;
-                    stepTitle = stepTitle || action.title;
+                    stepTitle = stepTitle || action?.title;
                   } catch (error) {
                     console.warn(t('Failed to get action {{action}}', { action: actionStep.use }), ':', error);
                   }

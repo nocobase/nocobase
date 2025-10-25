@@ -162,7 +162,7 @@ const FlowsContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
                 // 如果step使用了action，也获取action的uiSchema
                 let actionUiSchema = {};
                 if (actionStep.use) {
-                  const action = model.flowEngine?.getAction?.(actionStep.use);
+                  const action = model.getAction?.(actionStep.use);
                   if (action && action.uiSchema) {
                     actionUiSchema = action.uiSchema;
                   }
