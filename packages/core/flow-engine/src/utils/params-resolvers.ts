@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { getValuesByPath } from '@nocobase/shared';
 import _ from 'lodash';
 import { FlowContext, FlowModelContext, FlowRuntimeContext } from '../flowContext';
-import { getValuesByPath } from '@nocobase/utils/client';
 import type { FlowModel } from '../models';
 import type { ServerContextParams } from './serverContextParams';
 
@@ -440,7 +440,7 @@ async function compileExpression<TModel extends FlowModel = FlowModel>(expressio
    * ✅ "{{ctx.user}}"            -> 捕获: "ctx.user"
    * ❌ "Hello {{ ctx.user }}"    -> 不匹配（不是纯表达式）
    */
-  const singleMatch = expression.match(/^\{\{\s*(.+)\s*\}\}$/);
+  const singleMatch = expression.match(/^\s*\{\{\s*([^{}]+?)\s*\}\}\s*$/);
   if (singleMatch) {
     const inner = singleMatch[1];
     const dotPath = matchDotOnly(inner);

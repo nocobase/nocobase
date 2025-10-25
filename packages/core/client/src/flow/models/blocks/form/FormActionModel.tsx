@@ -46,7 +46,7 @@ FormSubmitActionModel.registerFlow({
     confirm: {
       use: 'confirm',
       defaultParams: {
-        enable: true,
+        enable: false,
         title: escapeT('Submit record'),
         content: escapeT('Are you sure you want to save it?'),
       },

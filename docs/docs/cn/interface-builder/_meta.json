@@ -1,0 +1,102 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Interface Builder",
+    "link": "/interface-builder",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "区块",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/interface-builder/blocks"
+          },
+          {
+            "type": "custom-link",
+            "label": "数据区块",
+            "link": "/interface-builder/data-blocks"
+          },
+          {
+            "type": "custom-link",
+            "label": "筛选区块",
+            "link": "/interface-builder/filter-blocks"
+          },
+          {
+            "type": "custom-link",
+            "label": "其他区块",
+            "link": "/interface-builder/other-blocks"
+          },
+          {
+            "type": "custom-link",
+            "label": "区块模板",
+            "link": "/interface-builder/block-templates"
+          },
+          {
+            "type": "custom-link",
+            "label": "区块设置项",
+            "link": "/interface-builder/block-settings"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "字段",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/interface-builder/fields"
+          },
+          {
+            "type": "custom-link",
+            "label": "通用配置项",
+            "link": "/interface-builder/fields/common-settings"
+          },
+          {
+            "type": "custom-link",
+            "label": "特有配置项",
+            "link": "/interface-builder/fields/specific-settings"
+          },
+          {
+            "type": "custom-link",
+            "label": "字段配置项",
+            "link": "/interface-builder/fields/field-settings"
+          },
+          {
+            "type": "custom-link",
+            "label": "关系字段组件",
+            "link": "/interface-builder/fields/relation-components"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "操作",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "概述",
+            "link": "/interface-builder/actions"
+          },
+          {
+            "type": "custom-link",
+            "label": "通用配置项",
+            "link": "/interface-builder/actions/common-settings"
+          },
+          {
+            "type": "custom-link",
+            "label": "操作类型",
+            "link": "/interface-builder/actions/types"
+          },
+          {
+            "type": "custom-link",
+            "label": "操作权限",
+            "link": "/interface-builder/actions/permissions"
+          }
+        ]
+      }
+    ]
+  }
+]

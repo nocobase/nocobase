@@ -120,7 +120,7 @@ export const DateFilterDynamicComponent = (props) => {
         open={open}
         onDropdownVisibleChange={setOpen}
         {...props}
-        allowClear
+        allowClear={false}
         style={{
           width: '100%',
           minWidth: 100,

@@ -7,16 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { rspack } from '@rspack/core';
 import ncc from '@vercel/ncc';
+import * as bundleRequire from 'bundle-require';
 import chalk from 'chalk';
 import fg from 'fast-glob';
 import fs from 'fs-extra';
 import path from 'path';
 import { build as tsupBuild } from 'tsup';
-import * as bundleRequire from 'bundle-require';
 import { EsbuildSupportExts, globExcludeFiles, PLUGIN_COMMERCIAL } from './constant';
-import { PkgLog, UserConfig, getPackageJson } from './utils';
+import pluginEsbuildCommercialInject from './plugins/pluginEsbuildCommercialInject';
+import { getPackageJson, PkgLog, UserConfig } from './utils';
 import {
   buildCheck,
   checkRequire,
@@ -26,9 +28,7 @@ import {
   getSourcePackages,
 } from './utils/buildPluginUtils';
 import { getDepPkgPath, getDepsConfig } from './utils/getDepsConfig';
-import { RsdoctorRspackPlugin } from '@rsdoctor/rspack-plugin';
 import { obfuscate } from './utils/obfuscationResult';
-import pluginEsbuildCommercialInject from './plugins/pluginEsbuildCommercialInject';
 
 const validExts = ['.ts', '.tsx', '.js', '.jsx', '.mjs'];
 const serverGlobalFiles: string[] = ['src/**', '!src/client/**', ...globExcludeFiles];
@@ -59,6 +59,8 @@ const external = [
   '@nocobase/utils',
   '@nocobase/license-kit',
   '@nocobase/flow-engine',
+  '@nocobase/client-v2',
+  '@nocobase/shared',
   // @nocobase/auth
   'jsonwebtoken',
 
