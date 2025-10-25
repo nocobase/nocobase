@@ -398,7 +398,7 @@ export const useFilterAction = () => {
   };
 };
 
-export const useCreateAction = (actionCallback?: (values: any, collections: any[]) => void) => {
+export const useCreateAction = (actionCallback?: (values: any) => void) => {
   const form = useForm();
   const field = useField();
   const ctx = useActionContext();
@@ -410,14 +410,9 @@ export const useCreateAction = (actionCallback?: (values: any, collections: any[
         await form.submit();
         field.data = field.data || {};
         field.data.loading = true;
-        let collections = [];
-        if (!form.values.addAllCollections) {
-          collections = form.values.collections;
-        }
-        delete form.values.collections;
         const res = await resource.create({ values: form.values });
         ctx.setVisible(false);
-        await actionCallback?.(res?.data?.data, collections);
+        actionCallback?.(res?.data?.data);
         await form.reset();
         field.data.loading = false;
         refresh();

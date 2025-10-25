@@ -7,4 +7,4 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './BlockConfigsProvider';
+export const PRESET_FIELDS_INTERFACES = ['id', 'createdAt', 'updatedAt', 'createdBy', 'updatedBy'];
