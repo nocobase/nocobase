@@ -145,7 +145,7 @@ export async function destroy(context: Context, next) {
   const { filterByTk, keepBranch } = context.action.params;
   const keepBranchIndex = keepBranch == null || keepBranch === '' ? null : Number.parseInt(keepBranch, 10);
 
-  const fields = ['id', 'upstreamId', 'downstreamId', 'branchIndex'];
+  const fields = ['id', 'upstreamId', 'downstreamId', 'branchIndex', 'key'];
   const instance = await repository.findOne({
     filterByTk,
     fields: [...fields, 'workflowId'],
