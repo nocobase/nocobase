@@ -1477,5 +1477,6 @@
   "Select target action": "选择目标操作",
   "Current action": "当前操作",
   "Other action": "其他操作",
-  "Please input target action uid": "请输入目标操作 UID"
+  "Please input target action uid": "请输入目标操作 UID",
+  "Set details field state": "设置详情字段状态"
 }

@@ -15,6 +15,7 @@ export * from './setFormFieldState';
 export * from './setFormFieldValue';
 export * from './setTargetBlockState';
 export * from './SetTargetActionState';
+export * from './setDetailsFieldState';
 export * from './customVariable';
 export * from './refreshTargetBlocks';
 export * from './setTargetDataScope';
