@@ -22905,7 +22905,7 @@ lint-staged@^13.2.3:
     string-argv "0.3.2"
     yaml "2.3.1"
 
-liquidjs@^10.0.0:
+liquidjs@^10.0.0, liquidjs@^10.23.0:
   version "10.23.0"
   resolved "https://registry.npmmirror.com/liquidjs/-/liquidjs-10.23.0.tgz#ddeb43f1ee2b73bb8775cd87ed5c2069235f128a"
   integrity sha512-Chm3luYvACZUj+Wlq7Nxwi0YvGXJv3vx+LPIGfa6n1FaUoMxe8T2M+5S1m2YkSToqJcsxZRK0VeCPZNrSa2yOw==
