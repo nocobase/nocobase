@@ -24,9 +24,9 @@ type BlockStateValue = {
   stateWhenNotMet?: 'visible' | 'hidden';
 };
 
-export const setTargetBlockState = defineAction({
-  name: 'setTargetBlockState',
-  title: escapeT('Set target block state'),
+export const setBlockState = defineAction({
+  name: 'setBlockState',
+  title: escapeT('Set block state'),
   scene: ActionScene.DYNAMIC_EVENT_FLOW,
   uiSchema: {
     value: {

@@ -27,9 +27,9 @@ type ActionStateValue = {
   stateWhenNotMet?: ActionState;
 };
 
-export const SetTargetActionState = defineAction({
-  name: 'SetTargetActionState',
-  title: escapeT('Set target action state'),
+export const setActionState = defineAction({
+  name: 'setActionState',
+  title: escapeT('Set action state'),
   scene: ActionScene.DYNAMIC_EVENT_FLOW,
   uiSchema: {
     value: {
