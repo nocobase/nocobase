@@ -37,11 +37,6 @@ describe('runSQL', function () {
         { num: 3, name: 'Charlie', age: 35 },
       ],
     });
-    if (db.isPostgresCompatibleDialect()) {
-      if (db.options.schema) {
-        await db.runSQL(`SET search_path TO ${db.options.schema}`);
-      }
-    }
   });
 
   afterEach(async () => {
@@ -154,7 +149,7 @@ describe('runSQL', function () {
     });
 
     test('should handle filter with ORDER BY clause', async () => {
-      const result = await db.runSQL('SELECT * FROM test ORDER BY age DESC', {
+      const result = await db.runSQL('SELECT * FROM test ORDER BY age DESC LIMIT 10', {
         filter: {
           age: { $gte: 30 },
         },

@@ -604,7 +604,7 @@ export class FlowSettings {
         let actionDefaultParams: Record<string, any> = {};
         let uiMode;
         if (step.use) {
-          const action = (model as any).flowEngine?.getAction?.(step.use);
+          const action = model.getAction?.(step.use);
           if (action) {
             actionDefaultParams = action.defaultParams || {};
             stepTitle = stepTitle || action.title;

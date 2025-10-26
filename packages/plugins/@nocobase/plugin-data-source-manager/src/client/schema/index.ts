@@ -150,6 +150,7 @@ export const databaseConnectionSchema: ISchema = {
               type: 'checkbox',
             },
             useDataSource: '{{ cm.useDataSourceFromRAC }}',
+            onSuccess: '{{ dataSourceListCallback }}',
           },
           properties: {
             key: {

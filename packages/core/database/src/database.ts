@@ -565,11 +565,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   ): Collection<Attributes, CreateAttributes> {
     options = lodash.cloneDeep(options);
 
-    if (typeof options.underscored !== 'boolean') {
-      if (this.options.underscored) {
-        options.underscored = true;
-      }
-    }
+    options.underscored = options.underscored ?? this.options.underscored;
 
     this.logger.trace(`beforeDefineCollection: ${safeJsonStringify(options)}`, {
       databaseInstanceId: this.instanceId,
@@ -1065,6 +1061,19 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.sequelize.getQueryInterface().quoteIdentifiers(tableName);
   }
 
+  private async runSQLWithSchema(finalSQL: string, bind: any, transaction?: any) {
+    if (!this.options.schema || !this.isPostgresCompatibleDialect()) {
+      return this.sequelize.query(finalSQL, { bind, transaction });
+    }
+
+    const execute = async (t: any) => {
+      await this.sequelize.query(`SET LOCAL search_path TO ${this.options.schema}`, { transaction: t });
+      return this.sequelize.query(finalSQL, { bind, transaction: t });
+    };
+
+    return transaction ? execute(transaction) : this.sequelize.transaction(execute);
+  }
+
   async runSQL(sql: string, options: RunSQLOptions = {}) {
     const { filter, bind, type, transaction } = options;
     let finalSQL = sql;
@@ -1088,11 +1097,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
         finalSQL = `SELECT * FROM (${normalizedSQL}) AS tmp WHERE ${wSQL}`;
       }
     }
-    if (this.options.schema && this.isPostgresCompatibleDialect()) {
-      finalSQL = `${queryGenerator.setSearchPath(this.options.schema)} ${finalSQL}`;
-    }
     this.logger.debug('runSQL', { finalSQL });
-    const result = await this.sequelize.query(finalSQL, { bind, transaction });
+    const result = await this.runSQLWithSchema(finalSQL, bind, transaction);
     let data: any = result[0];
     if (type === 'selectVar') {
       if (Array.isArray(data)) {
