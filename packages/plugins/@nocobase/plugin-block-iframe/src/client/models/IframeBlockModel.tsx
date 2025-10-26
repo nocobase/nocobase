@@ -282,11 +282,15 @@ IframeBlockModel.registerFlow({
                     style: {
                       flexWrap: 'nowrap',
                       maxWidth: '100%',
+                      width: '100%',
                     },
                     className: css`
                       & > .ant-space-item:first-child,
                       & > .ant-space-item:last-child {
                         flex-shrink: 0;
+                      }
+                      & > .ant-space-item:nth-child(2) {
+                        width: 100%;
                       }
                     `,
                   },
@@ -308,6 +312,9 @@ IframeBlockModel.registerFlow({
                         useTypedConstant: true,
                         changeOnSelect: true,
                         rows: 1,
+                        style: {
+                          width: '100%',
+                        },
                       },
                     },
                     remove: {
