@@ -9,17 +9,19 @@
 IFrame 区块允许将外部网页或内容嵌入到当前页面中。用户可以通过配置 URL 或直接插入 HTML 代码，轻松将外部应用集成到页面。使用 HTML 页面时，用户可以灵活定制内容，满足特定展示需求，这种方式特别适合需要定制化展示的场景，无需跳转即可加载外部资源，提升用户体验和页面的交互效果。
 
 ![20251026205102](https://static-docs.nocobase.com/20251026205102.png)
+
 ## 模板语法
 
 在 HTML 模式 下，区块内容支持使用 Liquid 模板语法。
 
 ![20251026205331](https://static-docs.nocobase.com/20251026205331.png)
+
 ## 支持变量
 
 ### html 支持变量解析
 
 - 支持从变量选择器中选择当前区块上下文的变量
-![20251026205441](https://static-docs.nocobase.com/20251026205441.png)
+  ![20251026205441](https://static-docs.nocobase.com/20251026205441.png)
 
 - 支持通过代码编写的方式向应用注入变量并使用
 
@@ -176,6 +178,6 @@ IFrame 区块允许将外部网页或内容嵌入到当前页面中。用户可�
 
 ### url 支持变量
 
-![20240603142219](https://static-docs.nocobase.com/20240603142219.png)
+![20251026212608](https://static-docs.nocobase.com/20251026212608.png)
 
-更多关于变量内容参考 [变量](/handbook/ui/variables)
+更多关于变量内容参考 [变量](/interface-builder/variables)

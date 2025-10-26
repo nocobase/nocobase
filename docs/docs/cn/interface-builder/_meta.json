@@ -386,6 +386,11 @@
         "type": "custom-link",
         "label": "事件流",
         "link": "/interface-builder/event-flow"
+      },
+      {
+        "type": "custom-link",
+        "label": "变量",
+        "link": "/interface-builder/variables"
       }
     ]
   }
