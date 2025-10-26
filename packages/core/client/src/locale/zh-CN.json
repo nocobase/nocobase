@@ -1483,5 +1483,16 @@
   "Message type": "消息类型",
   "Message content": "消息内容",
   "Duration (seconds, 0 = no auto close)": "显示时长(秒,0 表示不自动关闭)",
-  "Please input message content": "请输入消息内容"
+  "Please input message content": "请输入消息内容",
+  "Show notification": "显示通知",
+  "Notification type": "通知类型",
+  "Notification title": "通知标题",
+  "Notification description": "通知描述",
+  "Please input notification title": "请输入通知标题",
+  "Please input notification description": "请输入通知描述",
+  "Placement": "弹出位置",
+  "Top left": "左上角",
+  "Top right": "右上角",
+  "Bottom left": "左下角",
+  "Bottom right": "右下角"
 }
