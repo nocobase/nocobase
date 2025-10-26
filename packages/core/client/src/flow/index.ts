@@ -53,7 +53,7 @@ export class PluginFlowEngine extends Plugin {
     });
 
     // 创建全局实例
-    const liquidInstance = new LiquidEngine();
+    const liquidInstance = new LiquidEngine({ ctx: this.flowEngine.context });
 
     // 注册到全局上下文
     this.flowEngine.context.defineProperty('liquid', {

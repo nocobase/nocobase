@@ -177,7 +177,7 @@ export const Display = (props) => {
     );
   }
   if (textOnly) {
-    return text;
+    return text as any;
   }
   return <DisplayInner value={value} />;
 };
