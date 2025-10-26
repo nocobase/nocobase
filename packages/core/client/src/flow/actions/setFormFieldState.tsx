@@ -181,7 +181,7 @@ export const setFormFieldState = defineAction({
       },
     },
   },
-  handler: async (ctx, { value }) => {
+  handler: (ctx, { value }) => {
     const params: FormFieldStateValue = value || { fields: [] };
     const { fields, targetFormUid, condition, stateWhenMet, stateWhenNotMet } = params;
 
@@ -195,7 +195,7 @@ export const setFormFieldState = defineAction({
       return;
     }
 
-    const conditionResult = evaluateConditionGroup(ctx, await ctx.resolveJsonTemplate(condition));
+    const conditionResult = evaluateConditionGroup(ctx, condition);
     const nextState = conditionResult ? stateWhenMet : stateWhenNotMet;
 
     if (!nextState) {

@@ -1447,5 +1447,19 @@
   "Row click": "行点击",
   "Clicked row record": "被点击的行记录",
   "The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).":"当前按钮已被隐藏，你无法点击（该内容仅在激活 UI Editor 时显示）。",
-  "Link action settings":"链接操作设置"
+  "Link action settings":"链接操作设置",
+  "Set form field value": "设置表单字段值",
+  "Form field assignment": "表单字段赋值",
+  "Target form block": "目标表单区块",
+  "Select target form block": "选择目标表单区块",
+  "Other form": "其他表单",
+  "Please input target form uid": "请输入目标表单 UID",
+  "Assignment mode": "赋值模式",
+  "Direct assignment": "直接赋值",
+  "Conditional assignment": "按条件赋值",
+  "Set condition": "设置条件",
+  "When condition is met": "条件满足时",
+  "When condition is not met": "条件不满足时",
+  "Assign value": "赋值",
+  "Set field value": "设置字段值"
 }
