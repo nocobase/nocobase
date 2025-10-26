@@ -21,6 +21,7 @@ type FormFieldStateValue = {
   condition?: FilterGroupType;
   stateWhenMet?: string;
   stateWhenNotMet?: string;
+  stateMode?: 'conditional' | 'direct';
 };
 
 export const setFormFieldState = defineAction({
@@ -38,12 +39,14 @@ export const setFormFieldState = defineAction({
 
         const isFormBlockModel = ctx.model instanceof FormBlockModel;
         const targetFormUidFromContext = isFormBlockModel ? ctx.model.uid : undefined;
+        const stateMode = rawValue.stateMode ?? 'direct';
         const mergedValue: FormFieldStateValue = {
           fields: rawValue.fields || [],
           targetFormUid: rawValue.targetFormUid ?? targetFormUidFromContext,
-          condition: rawValue.condition || { logic: '$and', items: [] },
+          condition: stateMode === 'conditional' ? rawValue.condition || { logic: '$and', items: [] } : undefined,
           stateWhenMet: rawValue.stateWhenMet,
-          stateWhenNotMet: rawValue.stateWhenNotMet,
+          stateWhenNotMet: stateMode === 'conditional' ? rawValue.stateWhenNotMet : undefined,
+          stateMode,
         };
 
         const fieldOptions = getFormFields(ctx, mergedValue.targetFormUid);
@@ -98,6 +101,15 @@ export const setFormFieldState = defineAction({
           updateValue({ targetFormUid: event.target.value });
         };
 
+        const handleStateModeChange = (event: RadioChangeEvent) => {
+          const nextMode = event.target.value as 'conditional' | 'direct';
+          updateValue({
+            stateMode: nextMode,
+            condition: nextMode === 'conditional' ? mergedValue.condition ?? { logic: '$and', items: [] } : undefined,
+            stateWhenNotMet: nextMode === 'conditional' ? mergedValue.stateWhenNotMet : undefined,
+          });
+        };
+
         const targetMode =
           isFormBlockModel && mergedValue.targetFormUid === targetFormUidFromContext ? 'current' : 'other';
 
@@ -110,7 +122,7 @@ export const setFormFieldState = defineAction({
         return (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              {renderSectionLabel(t('Target form block'))}
+              {renderSectionLabel(t('Select target form block'))}
               {isFormBlockModel ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <Radio.Group value={targetMode} onChange={handleTargetModeChange}>
@@ -134,7 +146,7 @@ export const setFormFieldState = defineAction({
               )}
             </div>
             <div>
-              {renderSectionLabel(t('Form fields'))}
+              {renderSectionLabel(t('Select form fields'))}
               <Select
                 mode="multiple"
                 value={mergedValue.fields}
@@ -151,31 +163,54 @@ export const setFormFieldState = defineAction({
               />
             </div>
             <div>
-              {renderSectionLabel(t('Condition'))}
-              <ConditionBuilder value={mergedValue.condition as FilterGroupType} onChange={handleConditionChange} />
+              {renderSectionLabel(t('Select mode'))}
+              <Radio.Group value={mergedValue.stateMode ?? 'direct'} onChange={handleStateModeChange}>
+                <Radio value="direct">{t('Without condition')}</Radio>
+                <Radio value="conditional">{t('With condition')}</Radio>
+              </Radio.Group>
             </div>
-            <div>
-              {renderSectionLabel(t('When condition is met'))}
-              <Select
-                value={mergedValue.stateWhenMet}
-                onChange={handleStateWhenMetChange}
-                placeholder={t('Please select state')}
-                style={{ width: '100%' }}
-                options={stateOptions}
-                allowClear
-              />
-            </div>
-            <div>
-              {renderSectionLabel(t('When condition is not met'))}
-              <Select
-                value={mergedValue.stateWhenNotMet}
-                onChange={handleStateWhenNotMetChange}
-                placeholder={t('Please select state')}
-                style={{ width: '100%' }}
-                options={stateOptions}
-                allowClear
-              />
-            </div>
+            {mergedValue.stateMode === 'conditional' ? (
+              <>
+                <div>
+                  {renderSectionLabel(t('Set condition'))}
+                  <ConditionBuilder value={mergedValue.condition} onChange={handleConditionChange} />
+                </div>
+                <div>
+                  {renderSectionLabel(t('When condition is met'))}
+                  <Select
+                    value={mergedValue.stateWhenMet}
+                    onChange={handleStateWhenMetChange}
+                    placeholder={t('Please select state')}
+                    style={{ width: '100%' }}
+                    options={stateOptions}
+                    allowClear
+                  />
+                </div>
+                <div>
+                  {renderSectionLabel(t('When condition is not met'))}
+                  <Select
+                    value={mergedValue.stateWhenNotMet}
+                    onChange={handleStateWhenNotMetChange}
+                    placeholder={t('Please select state')}
+                    style={{ width: '100%' }}
+                    options={stateOptions}
+                    allowClear
+                  />
+                </div>
+              </>
+            ) : (
+              <div>
+                {renderSectionLabel(t('Set state'))}
+                <Select
+                  value={mergedValue.stateWhenMet}
+                  onChange={handleStateWhenMetChange}
+                  placeholder={t('Please select state')}
+                  style={{ width: '100%' }}
+                  options={stateOptions}
+                  allowClear
+                />
+              </div>
+            )}
           </div>
         );
       },
@@ -183,7 +218,12 @@ export const setFormFieldState = defineAction({
   },
   handler: (ctx, { value }) => {
     const params: FormFieldStateValue = value || { fields: [] };
-    const { fields, targetFormUid, condition, stateWhenMet, stateWhenNotMet } = params;
+    const fields = params.fields;
+    const targetFormUid = params.targetFormUid;
+    const condition = params.condition;
+    const stateWhenMet = params.stateWhenMet;
+    const stateWhenNotMet = params.stateWhenNotMet;
+    const stateMode = params.stateMode ?? 'direct';
 
     if (!Array.isArray(fields) || fields.length === 0) {
       return;
@@ -195,8 +235,14 @@ export const setFormFieldState = defineAction({
       return;
     }
 
-    const conditionResult = evaluateConditionGroup(ctx, condition);
-    const nextState = conditionResult ? stateWhenMet : stateWhenNotMet;
+    const nextState = (() => {
+      if (stateMode === 'direct') {
+        return stateWhenMet;
+      }
+
+      const conditionResult = evaluateConditionGroup(ctx, condition);
+      return conditionResult ? stateWhenMet : stateWhenNotMet;
+    })();
 
     if (!nextState) {
       return;

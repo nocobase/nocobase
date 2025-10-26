@@ -1461,5 +1461,10 @@
   "When condition is met": "条件满足时",
   "When condition is not met": "条件不满足时",
   "Assign value": "赋值",
-  "Set field value": "设置字段值"
+  "Set field value": "设置字段值",
+  "Without condition": "不使用条件",
+  "With condition": "使用条件",
+  "Select form fields": "选择表单字段",
+  "Select mode": "选择模式",
+  "Set state": "设置状态"
 }
