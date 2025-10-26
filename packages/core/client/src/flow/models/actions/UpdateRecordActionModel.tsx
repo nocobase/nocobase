@@ -10,6 +10,7 @@
 import { escapeT, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Alert, ButtonProps } from 'antd';
 import React, { useEffect, useRef } from 'react';
+import { AxiosRequestConfig } from 'axios';
 import { ActionModel, ActionSceneEnum } from '../base/ActionModel';
 import { CollectionActionModel } from '../base/CollectionActionModel';
 import { RecordActionModel } from '../base/RecordActionModel';
