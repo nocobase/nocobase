@@ -417,6 +417,32 @@ export class PluginMultiAppManagerServer extends Plugin {
           },
         });
         ctx.body = items;
+        await next();
+      },
+    });
+
+    this.app.resourcer.registerActionHandlers({
+      'applications:stop': async (ctx, next) => {
+        const { filterByTk } = ctx.action.params;
+        AppSupervisor.getInstance().stopApp(filterByTk);
+        ctx.body = 'ok';
+        await next();
+      },
+    });
+
+    this.app.resourcer.registerActionHandlers({
+      'applications:start': async (ctx, next) => {
+        const { filterByTk } = ctx.action.params;
+        AppSupervisor.getInstance().startApp(filterByTk);
+        ctx.body = 'ok';
+        await next();
+      },
+    });
+
+    this.app.resourcer.registerActionHandlers({
+      'applications:memoryUsage': async (ctx, next) => {
+        ctx.body = process.memoryUsage();
+        await next();
       },
     });
 
