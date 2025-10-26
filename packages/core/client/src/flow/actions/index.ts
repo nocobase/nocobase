@@ -14,6 +14,7 @@ export * from './runjs';
 export * from './setFormFieldState';
 export * from './setFormFieldValue';
 export * from './setTargetBlockState';
+export * from './SetTargetActionState';
 export * from './customVariable';
 export * from './refreshTargetBlocks';
 export * from './setTargetDataScope';
