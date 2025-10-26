@@ -24,6 +24,7 @@ type TableVoidProps = TableProps<any> & {
     options?: Options<any, any> & { uid?: string },
     props?: any,
   ) => Result<any, any> & { state?: any; setState?: any };
+  onSuccess?: (data?: any) => void;
 };
 
 const pageSizeOptions = [5, 10, 20, 50, 100, 200];
@@ -94,7 +95,12 @@ const useDefSelectedRowKeys = () => {
 
 export const TableVoid: React.FC<TableVoidProps> = observer(
   (props) => {
-    const { rowKey = 'id', useDataSource = useDef, useSelectedRowKeys = useDefSelectedRowKeys } = props;
+    const {
+      rowKey = 'id',
+      useDataSource = useDef,
+      useSelectedRowKeys = useDefSelectedRowKeys,
+      onSuccess: propsOnSuccess,
+    } = props;
     const field = useField<Field>();
     const fieldSchema = useFieldSchema();
     const form = useMemo(() => createForm(), []);
@@ -115,6 +121,9 @@ export const TableVoid: React.FC<TableVoidProps> = observer(
           }
           field.componentProps.pagination.current = data?.meta?.page || 1;
           field.componentProps.pagination.pageSize = data?.meta?.pageSize || 10;
+
+          // 调用从 props 传入的 onSuccess 回调
+          propsOnSuccess?.(data);
         },
       },
       props,

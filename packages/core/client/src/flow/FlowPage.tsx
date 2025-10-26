@@ -33,7 +33,11 @@ function InternalFlowPage({ uid, ...props }) {
   return (
     <FlowModelRenderer
       model={model}
-      fallback={<SkeletonFallback style={{ margin: 16 }} />}
+      fallback={
+        <SkeletonFallback
+          style={{ margin: model?.context.isMobileLayout ? 8 : model?.context.themeToken.marginBlock }}
+        />
+      }
       hideRemoveInSettings
       showFlowSettings={{ showBackground: false, showBorder: false }}
       {...props}
@@ -222,7 +226,13 @@ export const FlowRoute = () => {
           delete viewStateRef.current[getKey(viewItem)];
         });
 
-        prevViewListRef.current = viewList;
+        prevViewListRef.current = viewList.map((item, index) => {
+          if (prevViewListRef.current[index]) {
+            // 修复子页面切换时，hidden 状态失去响应性的问题
+            item.hidden = prevViewListRef.current[index].hidden;
+          }
+          return item;
+        });
       },
       {
         fireImmediately: true,
@@ -301,7 +311,7 @@ export const FlowPage = (props: FlowPageProps & Record<string, unknown>) => {
     },
   );
   if (loading || !data?.uid) {
-    return <SkeletonFallback style={{ margin: 16 }} />;
+    return <SkeletonFallback style={{ margin: ctx?.isMobileLayout ? 8 : ctx?.themeToken.marginBlock }} />;
   }
   return <InternalFlowPage uid={data.uid} {...rest} />;
 };

@@ -16,6 +16,7 @@ import {
   DataSourceContext_deprecated,
   EditSubFieldAction,
   FieldSummary,
+  ResourceActionContext,
   SchemaComponent,
   SchemaComponentContext,
   TemplateSummary,
@@ -32,6 +33,8 @@ import React, { useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { CollectionFields } from './CollectionFields';
 import { collectionSchema } from './schemas/collections';
+import { useDataSourceRefresh } from '../../../hooks';
+import { SyncFromDatabaseAction } from './db-sync/SyncFromDatabaseAction';
 
 /**
  * @param service
@@ -114,6 +117,16 @@ export const ConfigurationTable = () => {
   const compile = useCompile();
   const form = useForm();
   const app = useApp();
+  const service = useContext(ResourceActionContext);
+
+  const useRefreshActionProps = () => {
+    return useDataSourceRefresh({
+      dataSourceName: 'main',
+      onSuccess: () => {
+        service?.refresh?.();
+      },
+    });
+  };
 
   /**
    *
@@ -224,6 +237,7 @@ export const ConfigurationTable = () => {
           FieldSummary,
           TemplateSummay: TemplateSummary,
           CollectionFields,
+          SyncFromDatabaseAction,
         }}
         scope={{
           loadFilterTargetKeys,
@@ -242,6 +256,7 @@ export const ConfigurationTable = () => {
           enableInherits: database?.dialect === 'postgres',
           isPG: database?.dialect === 'postgres',
           getPickerFormat,
+          useRefreshActionProps,
         }}
       />
     </SchemaComponentContext.Provider>

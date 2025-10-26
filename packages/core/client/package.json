@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/client",
-  "version": "2.0.0-alpha.21",
+  "version": "2.0.0-alpha.24",
   "license": "AGPL-3.0",
   "main": "lib/index.js",
   "module": "es/index.mjs",
@@ -28,10 +28,10 @@
     "@formily/reactive-react": "^2.2.27",
     "@formily/shared": "^2.2.27",
     "@formily/validator": "^2.2.27",
-    "@nocobase/evaluators": "2.0.0-alpha.21",
-    "@nocobase/flow-engine": "2.0.0-alpha.21",
-    "@nocobase/sdk": "2.0.0-alpha.21",
-    "@nocobase/utils": "2.0.0-alpha.21",
+    "@nocobase/evaluators": "2.0.0-alpha.24",
+    "@nocobase/flow-engine": "2.0.0-alpha.24",
+    "@nocobase/sdk": "2.0.0-alpha.24",
+    "@nocobase/utils": "2.0.0-alpha.24",
     "@tanstack/react-table": "^8.21.3",
     "@types/tabulator-tables": "^6.2.6",
     "ahooks": "^3.7.2",
@@ -52,6 +52,7 @@
     "i18next-http-backend": "^2.1.1",
     "ignore": "^5.2.0",
     "json5": "^2.2.3",
+    "liquidjs": "^10.0.0",
     "lodash": "4.17.21",
     "lru-cache": "6.0.0",
     "markdown-it": "14.1.0",
@@ -77,8 +78,7 @@
     "sanitize-html": "2.13.0",
     "tabulator-tables": "^6.3.1",
     "use-deep-compare-effect": "^1.8.1",
-    "vditor": "^3.10.3",
-    "liquidjs": "^10.0.0"
+    "vditor": "^3.10.3"
   },
   "peerDependencies": {
     "react": ">=18.0.0",
