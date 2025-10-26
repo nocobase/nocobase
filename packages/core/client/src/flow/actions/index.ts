@@ -11,6 +11,7 @@ export * from './confirm';
 export * from './dataScope';
 export * from './openView';
 export * from './runjs';
+export * from './setFormFieldState';
 export * from './customVariable';
 export * from './refreshTargetBlocks';
 export * from './setTargetDataScope';
