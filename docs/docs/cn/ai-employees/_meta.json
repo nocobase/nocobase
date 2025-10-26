@@ -149,5 +149,38 @@
         "link": "/ai-employees/knowledge-base/rag"
       }
     ]
+  },
+  {
+    "type": "custom-link",
+    "label": "应用文档",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "场景",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "入门",
+            "link": "/ai-employees/scenarios/getting-started"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "配置",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "管理员配置",
+            "link": "/ai-employees/configuration/admin-configuration"
+          },
+          {
+            "type": "custom-link",
+            "label": "提示词指南",
+            "link": "/ai-employees/configuration/prompt-engineering-guide"
+          }
+        ]
+      }
+    ]
   }
 ]
