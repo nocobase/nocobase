@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Context } from '@nocobase/actions';
 import { DataSourceOptions } from './data-source';
 import { DatabaseDataSource } from './database-data-source';
 import { DatabaseIntrospector } from './database-introspector/database-introspector';
 import { SequelizeCollectionManager } from './sequelize-collection-manager';
 
-export abstract class SequelizeDataSource<
-  T extends DatabaseIntrospector = DatabaseIntrospector,
-> extends DatabaseDataSource<T> {
+export class SequelizeDataSource<T extends DatabaseIntrospector = DatabaseIntrospector> extends DatabaseDataSource<T> {
   declare collectionManager: SequelizeCollectionManager;
 
   constructor(options: DataSourceOptions) {
@@ -24,5 +23,12 @@ export abstract class SequelizeDataSource<
 
   createCollectionManager(options?: any) {
     return new SequelizeCollectionManager(options.collectionManager);
+  }
+
+  async readTables(): Promise<any> {
+    return;
+  }
+  async loadTables(ctx: Context, tables: string[]): Promise<any> {
+    return;
   }
 }

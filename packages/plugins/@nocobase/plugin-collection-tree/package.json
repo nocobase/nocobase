@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-collection-tree",
-  "version": "2.0.0-alpha.21",
+  "version": "2.0.0-alpha.23",
   "displayName": "Collection: Tree",
   "displayName.zh-CN": "数据表：树",
   "description": "Provides tree collection template",
