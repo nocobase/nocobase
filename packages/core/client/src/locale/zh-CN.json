@@ -1467,5 +1467,10 @@
   "Select form fields": "选择表单字段",
   "Select mode": "选择模式",
   "Set state": "设置状态",
-  "Set value": "设置值"
+  "Set value": "设置值",
+  "Set target block state": "设置目标区块状态",
+  "Select target block": "选择目标区块",
+  "Current block": "当前区块",
+  "Other block": "其他区块",
+  "Please input target block uid": "请输入目标区块 UID"
 }
