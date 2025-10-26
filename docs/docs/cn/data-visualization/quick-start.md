@@ -53,7 +53,7 @@
   - 折线/面积/柱状/条形：`xField`（维度）、`yField`（度量）、`seriesField`（系列，可选）
   - 饼/环形：`Category`（分类维度）、`Value`（度量）
   - 散点：`xField`、`yField`（两个度量或维度）
-  - 更多图形等更多配置可以参考 Echarts 用法 https://echarts.apache.org/handbook/zh/concepts/axis
+  - 更多图形等更多配置可以参考 Echarts 文档 [Axis](https://echarts.apache.org/handbook/en/concepts/axis)
 - 前面点击”运行查询“后，字段映射默认会自动完成；变更维度/度量后请重新确认映射。
 
 ![20251024173054](https://static-docs.nocobase.com/20251024173054.png)
