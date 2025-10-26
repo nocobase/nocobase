@@ -31,7 +31,6 @@ export const setFormFieldValue = defineAction({
   name: 'setFormFieldValue',
   title: escapeT('Set form field value'),
   scene: ActionScene.DYNAMIC_EVENT_FLOW,
-  sort: 200,
   uiSchema: {
     value: {
       type: 'object',

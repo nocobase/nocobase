@@ -28,7 +28,6 @@ export const setTargetBlockState = defineAction({
   name: 'setTargetBlockState',
   title: escapeT('Set target block state'),
   scene: ActionScene.DYNAMIC_EVENT_FLOW,
-  sort: 100,
   uiSchema: {
     value: {
       type: 'object',
