@@ -37,7 +37,7 @@
   - `xField`、`yField`：两个度量或维度，用于坐标轴
 
 
-> 更多图表属性配置可以参考 Echarts 文档 [坐标轴](https://echarts.apache.org/handbook/en/concepts/axis) 和 [示例](https://echarts.apache.org/examples/en/index.html)
+> 更多图表选项配置可以参考 Echarts 文档 [坐标轴](https://echarts.apache.org/handbook/en/concepts/axis) 和 [示例](https://echarts.apache.org/examples/en/index.html)
 
 
 **注意：**
