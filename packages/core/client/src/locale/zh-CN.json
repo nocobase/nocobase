@@ -1478,5 +1478,10 @@
   "Other action": "其他操作",
   "Please input target action uid": "请输入目标操作 UID",
   "Set details field state": "设置详情字段状态",
-  "Set form field state": "设置表单字段状态"
+  "Set form field state": "设置表单字段状态",
+  "Show message": "显示消息",
+  "Message type": "消息类型",
+  "Message content": "消息内容",
+  "Duration (seconds, 0 = no auto close)": "显示时长(秒,0 表示不自动关闭)",
+  "Please input message content": "请输入消息内容"
 }
