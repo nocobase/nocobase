@@ -17,7 +17,8 @@ import { FieldModelSelect } from '../FieldModelSelect';
 import { uid } from '@nocobase/utils/client';
 
 export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
-  fieldModelInstance = null;
+  customFieldModelInstance = null;
+  customFieldProps = null;
 
   operator: string;
 
@@ -78,13 +79,13 @@ export class FilterFormCustomFieldModel extends FilterFormCustomItemModel {
   }
 
   render() {
-    if (!this.fieldModelInstance) {
+    if (!this.customFieldModelInstance) {
       return null;
     }
 
     return (
       <FormItem {...this.props} getValueProps={this.getValueProps.bind(this)}>
-        <FieldModelRenderer model={this.fieldModelInstance} />
+        <FieldModelRenderer model={this.customFieldModelInstance} />
       </FormItem>
     );
   }
@@ -191,13 +192,13 @@ FilterFormCustomFieldModel.registerFlow({
           name: name,
         });
 
-        if (!ctx.model.fieldModelInstance) {
-          ctx.model.fieldModelInstance = ctx.model.flowEngine.createModel({
+        if (!ctx.model.customFieldModelInstance) {
+          ctx.model.customFieldModelInstance = ctx.model.flowEngine.createModel({
             use: fieldModel,
             props: { allowClear: true, ...fieldModelProps },
           });
         } else {
-          ctx.model.fieldModelInstance.setProps({ allowClear: true, ...fieldModelProps });
+          ctx.model.customFieldModelInstance.setProps({ allowClear: true, ...fieldModelProps });
         }
 
         if (fieldModel === 'DateTimeFilterFieldModel' && fieldModelProps.isRange) {
@@ -205,10 +206,26 @@ FilterFormCustomFieldModel.registerFlow({
         } else {
           ctx.model.operator = undefined;
         }
+
+        ctx.model.customFieldProps = fieldModelProps;
       },
     },
     connectFields: {
       use: 'connectFields',
+    },
+    initialValue: {
+      title: escapeT('Default value'),
+      uiSchema: (ctx) => {
+        return {
+          defaultValue: {
+            'x-component': 'DefaultValue',
+            'x-decorator': 'FormItem',
+          },
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ initialValue: params.defaultValue });
+      },
     },
   },
 });
