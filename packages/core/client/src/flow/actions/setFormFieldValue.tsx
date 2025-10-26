@@ -176,10 +176,10 @@ export const setFormFieldValue = defineAction({
             {selectedFieldUid && (
               <>
                 <div>
-                  {renderSectionLabel(t('Assignment mode'))}
+                  {renderSectionLabel(t('Select mode'))}
                   <Radio.Group value={currentAssignmentMode} onChange={handleAssignmentModeChange}>
-                    <Radio value="direct">{t('Direct assignment')}</Radio>
-                    <Radio value="conditional">{t('Conditional assignment')}</Radio>
+                    <Radio value="direct">{t('Without condition')}</Radio>
+                    <Radio value="conditional">{t('With condition')}</Radio>
                   </Radio.Group>
                 </div>
                 {currentAssignmentMode === 'conditional' ? (
@@ -218,7 +218,7 @@ export const setFormFieldValue = defineAction({
                   </>
                 ) : (
                   <div>
-                    {renderSectionLabel(t('Assign value'))}
+                    {renderSectionLabel(t('Set value'))}
                     <div style={{ marginTop: '8px' }}>
                       <FieldAssignValueInput
                         key={`${selectedFieldUid}-direct`}
