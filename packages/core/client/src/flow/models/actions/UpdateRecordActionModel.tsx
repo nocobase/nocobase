@@ -101,6 +101,16 @@ export class UpdateRecordActionModel extends ActionModel<{
   getAclActionName() {
     return 'update';
   }
+
+  /**
+   * 简化设置保存请求配置的方式
+   * @param requestConfig
+   */
+  setSaveRequestConfig(requestConfig?: AxiosRequestConfig) {
+    this.setStepParams('apply', 'apply', {
+      requestConfig,
+    });
+  }
 }
 
 UpdateRecordActionModel.define({
@@ -191,7 +201,10 @@ UpdateRecordActionModel.registerFlow({
           ctx.message.error(ctx.t('Record is required to perform this action'));
           return;
         }
-        await ctx.api.resource(collection).update({ filterByTk, values: assignedValues });
+
+        await ctx.api
+          .resource(collection)
+          .update({ filterByTk, values: assignedValues, ...params.requestConfig?.params });
         // 刷新与提示
         ctx.blockModel?.resource?.refresh?.();
         ctx.message.success(ctx.t('Saved successfully'));
