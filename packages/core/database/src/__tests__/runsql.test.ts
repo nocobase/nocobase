@@ -37,11 +37,6 @@ describe('runSQL', function () {
         { num: 3, name: 'Charlie', age: 35 },
       ],
     });
-    if (db.isPostgresCompatibleDialect()) {
-      if (db.options.schema) {
-        await db.runSQL(`SET search_path TO ${db.options.schema}`);
-      }
-    }
   });
 
   afterEach(async () => {
