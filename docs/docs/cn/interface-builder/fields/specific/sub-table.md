@@ -38,7 +38,7 @@
 
 ### 字段组件
 
-[字段组件](/handbook/ui/fields/association-field)：切换为其他关系字段组件，如下拉选择、数据选择器等；
+[字段组件](/interface-builder/fields/association-field)：切换为其他关系字段组件，如下拉选择、数据选择器等；
 
 ### 联动规则
 :::info{title=提示}

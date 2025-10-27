@@ -40,5 +40,5 @@
 
 - [弹窗尺寸](/handbook/ui/actions/action-settings/popup-size)
 
-- [字段组件](/handbook/ui/fields/association-field)；
+- [字段组件](/interface-builder/fields/association-field)；
 

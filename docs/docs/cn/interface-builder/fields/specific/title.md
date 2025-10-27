@@ -15,4 +15,4 @@
 
 ![20240429223831](https://static-docs.nocobase.com/20240429223831.png)
 
-更多内容参考 [字段组件](/handbook/ui/fields/association-field)；
+更多内容参考 [字段组件](/interface-builder/fields/association-field)；
