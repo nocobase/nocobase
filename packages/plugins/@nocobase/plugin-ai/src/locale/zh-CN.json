@@ -183,5 +183,13 @@
   "references {{index}}": "参考资料 {{index}}",
   "Enable search": "启用搜索",
   "Disable search": "禁用搜索",
-  "Conversation": "当前会话"
+  "Conversation": "当前会话",
+  "Get code snippet list": "获取代码片段列表",
+  "Get code snippet content": "获取代码片段",
+  "Start coding": "开始编写代码",
+  "Code review": "代码审查",
+  "Diagnose and fix the error": "诊断并修复错误",
+  "please review the code": "请审查这份代码",
+  "please fix the error": "请修复这个错误",
+  "Oops! Something went wrong. Let me diagnose and fix it.": "哦!好像出了什么问题，让我诊断并修复它。"
 }
