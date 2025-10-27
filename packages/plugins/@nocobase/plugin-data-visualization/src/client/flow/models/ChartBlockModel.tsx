@@ -45,10 +45,6 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   // 统一管理 refresh 监听引用，便于 off 解绑
   private __onResourceRefresh = () => this.renderChart();
 
-  onActive() {
-    this.resource.refresh();
-  }
-
   // 初始化注册 ChartResource | SQLResource
   initResource(mode = 'builder') {
     // 1) 先拿旧实例并解绑，防止旧实例残留监听
@@ -120,7 +116,8 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       const initParams = this.getResourceSettingsInitParams();
       const initQuery = initParams?.query;
       if (initQuery) {
-        this.applyQuery(initQuery);
+        // 初始化场景：禁用 debug，使 SQLResource.refresh() 走 runById
+        this.applyQuery(initQuery, { debug: false });
         // 依赖 refresh 事件驱动渲染
         await this.resource.refresh();
       }
@@ -196,10 +193,11 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   }
 
   // 应用数据查询配置（仅设置，不负责渲染）
-  applyQuery(query: any) {
+  applyQuery(query: any, options?: { debug?: boolean }) {
     this.checkResource(query);
     if (query?.mode === 'sql') {
-      (this.resource as SQLResource).setDebug(true);
+      // 默认开启 debug（预览、交互）；初始化时传入 { debug: false } 使用 runById
+      (this.resource as SQLResource).setDebug(options?.debug ?? true);
       (this.resource as SQLResource).setSQL(query.sql);
     } else {
       debugLog('---applyQuery', query);
