@@ -95,8 +95,7 @@
 
 #### 配置区块的数据范围
 
-![20240416224307_rec_](https://static-docs.nocobase.com/20240416224307_rec_.gif)
-
+![20251027151107](https://static-docs.nocobase.com/20251027151107.png)
 #### 配置关系字段的数据范围
 
 ![20240416224641_rec_](https://static-docs.nocobase.com/20240416224641_rec_.gif)
@@ -108,18 +107,18 @@
 #### 配置操作的联动规则
 
 ![20240416223101_rec_](https://static-docs.nocobase.com/20240416223101_rec_.gif)
-
+<!-- 
 #### 表单提交操作的字段赋值配置
 
-![20240416224014_rec_](https://static-docs.nocobase.com/20240416224014_rec_.gif)
+![20240416224014_rec_](https://static-docs.nocobase.com/20240416224014_rec_.gif) -->
 
-### 表格选中记录
+<!-- ### 表格选中记录
 
 目前仅用于表格区块的 Add record 操作的表单字段默认值
 
-#### Add record 操作的表单字段默认值
+#### Add record 操作的表单字段默认值 -->
 
-### 父级记录（已弃用）
+<!-- ### 父级记录（已弃用）
 
 仅限于关系区块里使用，表示关系数据的源记录。
 
@@ -191,7 +190,7 @@
 - Now
 - Yesterday
 - Today
-- Tomorrow -->
+- Tomorrow --> -->
 
 ### URL 查询参数
 
@@ -202,3 +201,7 @@
 ### API token
 
 该变量的值是一个字符串，是用于访问 NocoBase API 的凭证。可以用于验证用户的身份。
+
+### 当前设备类型
+
+![20251027150402](https://static-docs.nocobase.com/20251027150402.png)
