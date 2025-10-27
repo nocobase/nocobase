@@ -56,14 +56,20 @@ MarkdownBlockModel.registerFlow({
           content: {
             type: 'string',
             'x-decorator': 'FormItem',
-            'x-component': (props) => ctx.markdown.edit(props),
+            'x-component': (props) => {
+              console.log(props.value || ctx.model.props.value);
+              return ctx.markdown.edit({
+                ...props,
+                value: props.value || ctx.model.props.value,
+              });
+            },
             description: descriptionContent,
           },
         };
       },
       useRawParams: true,
       defaultParams: {
-        content: "{{ 'This is a demo text, **supports Markdown syntax**.' | t: locale, i18n }}",
+        content: "{{ 'This is a demo text, **supports Markdown syntax**.' | t }}",
       },
       async handler(ctx, params) {
         const content = params.content;
@@ -73,10 +79,12 @@ MarkdownBlockModel.registerFlow({
           const mdContent = ctx.markdown.render(ctx.t(result), { textOnly: false });
           ctx.model.setProps({
             content: mdContent,
+            value: content,
           });
         } catch (error) {
           ctx.model.setProps({
             content: <pre>{`渲染失败: ${error}`}</pre>,
+            value: content,
           });
         }
       },

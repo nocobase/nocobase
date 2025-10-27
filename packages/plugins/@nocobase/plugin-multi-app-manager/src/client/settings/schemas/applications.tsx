@@ -9,22 +9,22 @@
 
 import { ISchema } from '@formily/react';
 import { uid } from '@formily/shared';
-import { tval } from '@nocobase/utils/client';
 import {
   SchemaComponentOptions,
   useActionContext,
+  useAPIClient,
+  useFilterFieldOptions,
+  useFilterFieldProps,
   useRecord,
   useRequest,
   useResourceActionContext,
   useResourceContext,
-  useFilterFieldProps,
-  useFilterFieldOptions,
-  useAPIClient,
 } from '@nocobase/client';
+import { tval } from '@nocobase/utils/client';
+import { Form, InputNumber, message, Modal } from 'antd';
 import React from 'react';
-import { i18nText, usePluginUtils } from '../../utils';
 import { NAMESPACE } from '../../../locale';
-import { Modal, Form, InputNumber, message } from 'antd';
+import { i18nText, usePluginUtils } from '../../utils';
 
 const collection = {
   name: 'applications',
@@ -86,6 +86,30 @@ const collection = {
       },
     },
   ],
+};
+
+export const useStop = () => {
+  const { refresh } = useResourceActionContext();
+  const { resource, targetKey } = useResourceContext();
+  const { [targetKey]: filterByTk } = useRecord();
+  return {
+    async run() {
+      await resource.stop({ filterByTk });
+      refresh();
+    },
+  };
+};
+
+export const useStart = () => {
+  const { refresh } = useResourceActionContext();
+  const { resource, targetKey } = useResourceContext();
+  const { [targetKey]: filterByTk } = useRecord();
+  return {
+    async run() {
+      await resource.start({ filterByTk });
+      refresh();
+    },
+  };
 };
 
 export const useDestroy = () => {
@@ -222,6 +246,26 @@ export const formSchema: ISchema = {
 
 export const tableActionColumnSchema: ISchema = {
   properties: {
+    start: {
+      type: 'void',
+      title: '{{ t("Start") }}',
+      'x-component': 'Action.Link',
+      'x-component-props': {
+        useAction: useStart,
+      },
+    },
+    stop: {
+      type: 'void',
+      title: '{{ t("Stop") }}',
+      'x-component': 'Action.Link',
+      'x-component-props': {
+        confirm: {
+          title: "{{t('Stop')}}",
+          content: "{{t('Are you sure you want to stop it?')}}",
+        },
+        useAction: useStop,
+      },
+    },
     view: {
       type: 'void',
       'x-component': 'AppVisitor',
