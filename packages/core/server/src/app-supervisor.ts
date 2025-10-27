@@ -219,6 +219,22 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return apps.map((app) => app.name);
   }
 
+  async startApp(appName: string) {
+    const appInstance = await AppSupervisor.getInstance().getApp(appName);
+    await appInstance.runCommand('start', '--quickstart');
+  }
+
+  async stopApp(appName: string) {
+    if (!this.apps[appName]) {
+      console.log(`app ${appName} not exists`);
+      return;
+    }
+
+    // call app.stop
+    await this.apps[appName].runCommand('stop');
+    this.apps[appName] = null;
+  }
+
   async removeApp(appName: string) {
     if (!this.apps[appName]) {
       console.log(`app ${appName} not exists`);
@@ -227,6 +243,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     // call app.destroy
     await this.apps[appName].runCommand('destroy');
+    this.apps[appName] = null;
   }
 
   subApps() {
