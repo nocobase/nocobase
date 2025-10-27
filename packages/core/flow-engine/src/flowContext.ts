@@ -46,7 +46,7 @@ import { buildServerContextParams as _buildServerContextParams } from './utils/s
 import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
 import { applyContextDefinitions } from './utils/applyContextDefinitions';
-import { createScopedContext } from './utils/createScopedContext';
+import { createEphemeralContext } from './utils/createEphemeralContext';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -1309,7 +1309,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       async function (this: BaseFlowEngineContext, actionName: string, params?: Record<string, any>) {
         const def = this.engine.getAction<FlowModel, FlowEngineContext>(actionName);
         // 使用“临时作用域”上下文，避免将临时定义污染到引擎级上下文
-        const ctx = createScopedContext(this as unknown as FlowEngineContext);
+        const ctx = createEphemeralContext(this as unknown as FlowEngineContext);
         if (!def) {
           throw new Error(`Action '${actionName}' not found.`);
         }
@@ -1472,7 +1472,7 @@ export class FlowModelContext extends BaseFlowModelContext {
       async function (this: BaseFlowModelContext, actionName: string, params?: Record<string, any>) {
         const def = this.model.getAction<FlowModel, FlowModelContext>(actionName);
         // 使用“临时作用域”上下文，避免将临时定义污染到模型级上下文
-        const ctx = createScopedContext(this as unknown as FlowModelContext);
+        const ctx = createEphemeralContext(this as unknown as FlowModelContext);
         if (!def) {
           throw new Error(`Action '${actionName}' not found.`);
         }

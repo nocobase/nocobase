@@ -17,7 +17,7 @@ import { FlowExitException, resolveDefaultParams } from '../utils';
 import { FlowExitAllException } from '../utils/exceptions';
 import { setupRuntimeContextSteps } from '../utils/setupRuntimeContextSteps';
 import { applyContextDefinitions } from '../utils/applyContextDefinitions';
-import { createScopedContext } from '../utils/createScopedContext';
+import { createEphemeralContext } from '../utils/createEphemeralContext';
 
 export class FlowExecutor {
   constructor(private readonly engine: FlowEngine) {}
@@ -107,12 +107,7 @@ export class FlowExecutor {
       let useRawParams: StepDefinition['useRawParams'] = step.useRawParams;
 
       // 单步作用域隔离：为当前 step 创建“临时上下文”，委托到 flowContext，并桥接必要直连字段
-      const runtimeCtx = createScopedContext<FlowRuntimeContext>(flowContext, [
-        'mode',
-        'flowKey',
-        'model',
-        { key: 'stepResults', cache: false },
-      ]);
+      const runtimeCtx = createEphemeralContext<FlowRuntimeContext>(flowContext);
       if (step.use) {
         const actionDefinition = model.getAction(step.use);
         if (!actionDefinition) {
