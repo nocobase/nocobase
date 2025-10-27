@@ -256,7 +256,7 @@ export const DefaultValue = connect((props: Props) => {
   // Build a temporary field model (isolated), using collectionField's recommended editable subclass
   const tempRoot = useMemo(() => {
     const host = model;
-    const origin = host?.subModels?.field;
+    const origin = host?.customFieldModelInstance || host?.subModels?.field;
     const init = host?.getStepParams?.('fieldSettings', 'init') || origin?.getStepParams?.('fieldSettings', 'init');
     // 如果是关系的对多字段，统一使用 RecordSelectFieldModel 作为默认值渲染模型
     const collectionField = origin?.collectionField;
@@ -279,7 +279,7 @@ export const DefaultValue = connect((props: Props) => {
       subKey: null,
       subType: null,
       stepParams: init ? { fieldSettings: { init } } : undefined,
-      props: { disabled: false },
+      props: { disabled: false, allowClear: true, ...host?.customFieldProps },
     };
     const created = model.context.engine.createModel({
       use: 'VariableFieldFormModel',

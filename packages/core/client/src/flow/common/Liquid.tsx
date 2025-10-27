@@ -9,7 +9,7 @@
 import { Liquid } from 'liquidjs';
 
 export class LiquidEngine extends Liquid {
-  constructor(options = {}) {
+  constructor(options: any) {
     super({
       extname: '.liquid',
       cache: true,
@@ -17,13 +17,7 @@ export class LiquidEngine extends Liquid {
     });
 
     // 注册国际化过滤器
-    this.registerFilter('t', (key, locale = 'en', dict = {}) => {
-      if (!key) return '';
-      if (!dict) return key;
-
-      // 优先当前语言，否则 fallback 到英文
-      return dict[key]?.[locale] || dict[key]?.['en'] || key;
-    });
+    this.registerFilter('t', options.ctx.t);
 
     this.registerFilter('log', (value) => {
       console.log('[Liquid log]', value);

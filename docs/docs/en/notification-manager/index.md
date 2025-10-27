@@ -18,10 +18,10 @@ The Notification Manager is a centralized service that integrates various notifi
 
 The currently supported channels include:
 
-- [In-App Message](/features/notification-in-app-message)
-- [Email](/features/notification-email) (built-in SMTP protocol)
+- [In-App Message](/notification-manager/notification-in-app-message)
+- [Email](/notification-manager/notification-email) (built-in SMTP protocol)
 
-For additional channels, refer to the [Channel Expansion](./development/extension) documentation.
+For additional channels, refer to the [Channel Expansion](/notification-manager/development/extension) documentation.
 
 ## Notification Logs
 

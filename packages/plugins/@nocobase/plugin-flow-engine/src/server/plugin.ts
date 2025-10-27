@@ -15,6 +15,7 @@ import { GlobalContext, HttpRequestContext } from './template/contexts';
 import { JSONValue, resolveJsonTemplate } from './template/resolver';
 import { variables } from './variables/registry';
 import { prefetchRecordsForResolve } from './variables/utils';
+import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   private globalContext!: GlobalContext;
@@ -31,20 +32,6 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
       throw new Error('no db');
     }
     return cm.db;
-  }
-
-  transformSQL(template: string) {
-    let index = 1;
-    const bind = {};
-
-    const sql = template.replace(/{{\s*([^}]+)\s*}}/g, (_, expr) => {
-      const key = `__var${index}`;
-      bind[key] = `{{${expr.trim()}}}`;
-      index++;
-      return `$${key}`;
-    });
-
-    return { sql, bind };
   }
 
   async load() {
@@ -126,14 +113,15 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     // 兼容：保留部分动作通过 name:action 注册（如 flowSql）
     this.app.resourceManager.registerActionHandlers({
       'flowSql:runById': async (ctx, next) => {
-        const { uid, type, filter, bind, dataSourceKey = 'main' } = ctx.action.params.values;
+        const { uid, type, filter, bind, liquidContext, dataSourceKey = 'main' } = ctx.action.params.values;
         const r = this.db.getRepository('flowSql');
         const record = await r.findOne({
           filter: { uid },
         });
         const db = this.getDatabaseByDataSourceKey(record.dataSourceKey || dataSourceKey);
-        const result = this.transformSQL(record.sql);
-        ctx.body = await db.runSQL(result.sql, {
+        const result = await transformSQL(record.sql);
+        const sql = await parseLiquidContext(result.sql, liquidContext);
+        ctx.body = await db.runSQL(sql, {
           type,
           filter,
           bind,
@@ -146,8 +134,11 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
         const record = await r.findOne({
           filter: { uid },
         });
-        const { bind } = this.transformSQL(record.sql);
-        ctx.body = bind;
+        const { bind, liquidContext } = await transformSQL(record.sql);
+        ctx.body = {
+          bind,
+          liquidContext,
+        };
         await next();
       },
       'flowSql:save': async (ctx, next) => {
