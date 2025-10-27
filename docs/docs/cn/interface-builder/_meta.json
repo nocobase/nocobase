@@ -373,7 +373,7 @@
           {
             "type": "custom-link",
             "label": "操作权限",
-            "link": "/interface-builder/actions/permissions"
+            "link": "/interface-builder/actions/permission"
           }
         ]
       },
