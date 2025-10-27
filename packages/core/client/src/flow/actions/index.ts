@@ -18,6 +18,7 @@ export * from './setActionState';
 export * from './setDetailsFieldState';
 export * from './showMessage';
 export * from './showNotification';
+export * from './navigateToURL';
 export * from './customVariable';
 export * from './refreshTargetBlocks';
 export * from './setTargetDataScope';
