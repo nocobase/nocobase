@@ -9,15 +9,15 @@
 
 在页面设计器 点击“添加区块”，选择“图表”，添加一个图表区块。
 
-![20251024110657](https://static-docs.nocobase.com/20251024110657.png)
+![clipboard-image-1761554593](https://static-docs.nocobase.com/clipboard-image-1761554593.png)
 
 添加后，点击区块右上角“配置”。
 
-![20251024110810](https://static-docs.nocobase.com/20251024110810.png)
+![clipboard-image-1761554709](https://static-docs.nocobase.com/clipboard-image-1761554709.png)
 
 右侧打开图表的配置面板。包含 数据查询、图表选项、事件 三个部分。
 
-![clipboard-image-1761275483](https://static-docs.nocobase.com/clipboard-image-1761275483.png)
+![clipboard-image-1761554848](https://static-docs.nocobase.com/clipboard-image-1761554848.png)
 
 ## 配置数据查询
 在”数据查询“面板，可以配置数据源、查询过滤条件等。
@@ -34,7 +34,10 @@
   - 选择一个或多个字段作为分组维度（日期、品类、地区等）。
   - 日期/时间字段可设置格式（如 `YYYY-MM`、`YYYY-MM-DD`），便于统一展示。
 
-![20251024171419](https://static-docs.nocobase.com/20251024171419.png)
+![clipboard-image-1761555060](https://static-docs.nocobase.com/clipboard-image-1761555060.png)
+
+其他条件：筛选、排序、分页 是可选的。
+
 
 ## 运行查询并查看数据
 
@@ -42,7 +45,7 @@
 - 可以点击 “查看数据” 预览返回的数据结果，支持切换 Table/JSON 格式。再次点击则收起数据预览。
 - 数据结果为空或不符合预期时，回到查询面板检查集合权限、度量/维度的字段映射与数据类型。
 
-![clipboard-image-1761297506](https://static-docs.nocobase.com/clipboard-image-1761297506.png)
+![clipboard-image-1761555228](https://static-docs.nocobase.com/clipboard-image-1761555228.png)
 
 ## 配置图表选项
 
@@ -56,15 +59,18 @@
   - 更多图形等更多配置可以参考 Echarts 文档 [Axis](https://echarts.apache.org/handbook/en/concepts/axis)
 - 前面点击”运行查询“后，字段映射默认会自动完成；变更维度/度量后请重新确认映射。
 
-![20251024173054](https://static-docs.nocobase.com/20251024173054.png)
+![clipboard-image-1761555586](https://static-docs.nocobase.com/clipboard-image-1761555586.png)
 
 ## 预览与保存
+配置的修改会默认自动实时更新预览，在左侧页面中可以查看图表。但是请注意在点击“保存”按钮前，所有的修改并没有被真的保存。
+
+你也可以点击底部的按钮：
 
 - 预览：配置修改会自动实时刷新预览，你也可以点击底部“预览”按钮手动触发刷新。 
-- 取消：如果当前的修改配置你不想要了，可以点击”取消“或刷新页面，则撤销本次修改，回退到之前的状态。
-- 保存：点击“保存”将当前所有查询与图表配置真正保存到页面，下一次刷新还存在。
+- 取消：如果当前的修改配置你不想要了，可以点击底部”取消“按钮，或刷新页面，则会撤销本次修改 回退到上次保存的状态。
+- 保存：点击“保存”将当前所有查询与图表配置真正保存到数据库中，对所有用户生效。
 
-![20251024173807](https://static-docs.nocobase.com/20251024173807.png)
+![clipboard-image-1761555803](https://static-docs.nocobase.com/clipboard-image-1761555803.png)
 
 ## 常见注意点
 
