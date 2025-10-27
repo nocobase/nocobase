@@ -2,14 +2,32 @@
 
 ## 介绍
 
-弹窗打开方式有抽屉和对话框，默认是抽屉。抽屉适合大量信息和复杂操作，对话框适合简单内容或快速操作。点击蒙层可关闭弹窗。
+凡是点击能打开弹窗的操作/字段，都支持配置弹窗的打开方式、尺寸等。
 
-![20240413102507](https://static-docs.nocobase.com/20240413102507.png)
+![20251027212617](https://static-docs.nocobase.com/20251027212617.png)
+
+![20251027212800](https://static-docs.nocobase.com/20251027212800.png)
+
+## 打开方式
 
 - 抽屉
 
-![20240423120702](https://static-docs.nocobase.com/20240423120702.png)
+![20251027212832](https://static-docs.nocobase.com/20251027212832.png)
 
 - 对话框
 
-![20240423120721](https://static-docs.nocobase.com/20240423120721.png)
+![20251027212905](https://static-docs.nocobase.com/20251027212905.png)
+
+- 子页面
+
+![20251027212940](https://static-docs.nocobase.com/20251027212940.png)
+
+## 弹窗尺寸
+
+- 大
+- 中（默认）
+- 小
+
+## Filter by Tk
+
+![20251027213320](https://static-docs.nocobase.com/20251027213320.png)

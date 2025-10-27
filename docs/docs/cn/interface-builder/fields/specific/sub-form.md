@@ -8,27 +8,22 @@
 
 ### 对多的关系字段子表单
 
-![20240409213911](https://static-docs.nocobase.com/20240409213911.png)
-
-支持多层关系字段的嵌套显示，商品/库存。
-
-![20240422172545](https://static-docs.nocobase.com/20240422172545.png)
-
+![20251027200753](https://static-docs.nocobase.com/20251027200753.png)
 
 ### 对一关系字段子表单
 
-![20240409214419](https://static-docs.nocobase.com/20240409214419.png)
+![20251027202218](https://static-docs.nocobase.com/20251027202218.png)
+
+### 支持多层关系字段的嵌套配置。
+
+![20251027201218](https://static-docs.nocobase.com/20251027201218.png)
 
 ## 字段配置项
-### 允许添加/关联多条(默认开启)
-
-开启时通过点击 + 号添加多条记录。
-
-![20240422172237](https://static-docs.nocobase.com/20240422172237.png)
-
 
 ### 字段组件
 
 [字段组件](/interface-builder/fields/association-field)：切换为其他关系字段组件，如下拉选择、数据选择器等；
 
+[联动规则](/interface-builder/linkage-rule):配置子表单字段联动规则；
 
+![20251027202439](https://static-docs.nocobase.com/20251027202439.png)

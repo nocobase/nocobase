@@ -8,35 +8,22 @@
 
 ### 对多的关系字段子详情
 
-![20240822225058](https://static-docs.nocobase.com/20240822225058.png)
+![20251027221700](https://static-docs.nocobase.com/20251027221700.png)
 
-支持多层关系字段的嵌套显示，示例：订单/商品/库存，订单/商品/供应商。
+支持多层关系字段的嵌套显示，示例：订单/订单商品/商品。
 
-![20240822225231](https://static-docs.nocobase.com/20240822225231.png)
+![20251027221924](https://static-docs.nocobase.com/20251027221924.png)
 
 ### 对一的关系字段子详情
 
-![20240822230215](https://static-docs.nocobase.com/20240822230215.png)
+![20251027222059](https://static-docs.nocobase.com/20251027222059.png)
 
 ## 字段配置项
 
-### 设定排序规则
-
-支持为对多的关系数据调整数据展示顺序。
-
-![20240822230359](https://static-docs.nocobase.com/20240822230359.png)
-
-![20240822230422](https://static-docs.nocobase.com/20240822230422.png)
-
 ### 字段组件
 
-[字段组件](/interface-builder/fields/association-field)：切换为其他关系字段组件，如下拉选择、数据选择器等；
+![20251027222243](https://static-docs.nocobase.com/20251027222243.png)
 
-### 联动规则
-:::info{title=提示}
-需要 NocoBase v1.3.17-beta 及以上版本。
-:::
+![20251027222347](https://static-docs.nocobase.com/20251027222347.png)
 
-![20240906090603_rec_](https://static-docs.nocobase.com/20240906090603_rec_.gif)
-
-更多内容参考 [联动规则](/handbook/ui/blocks/block-settings/field-linkage-rule)
+[字段组件](/interface-builder/fields/association-field)：切换为其他阅读态关系字段组件，如标题字段组件、子表格（仅对多关系字段支持）等；

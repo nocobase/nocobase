@@ -181,7 +181,7 @@
               {
                 "type": "custom-link",
                 "label": "子表单",
-                "link": "/interface-builder/fields/specific/nester"
+                "link": "/interface-builder/fields/specific/sub-form"
               },
               {
                 "type": "custom-link",
