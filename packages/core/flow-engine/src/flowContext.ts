@@ -45,6 +45,8 @@ import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
+import { applyContextDefinitions } from './utils/applyContextDefinitions';
+import { createScopedContext } from './utils/createScopedContext';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -1306,10 +1308,15 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       'runAction',
       async function (this: BaseFlowEngineContext, actionName: string, params?: Record<string, any>) {
         const def = this.engine.getAction<FlowModel, FlowEngineContext>(actionName);
-        const ctx = this.createProxy() as unknown as FlowEngineContext;
+        // 使用“临时作用域”上下文，避免将临时定义污染到引擎级上下文
+        const ctx = createScopedContext(this as unknown as FlowEngineContext);
         if (!def) {
           throw new Error(`Action '${actionName}' not found.`);
         }
+
+        // 在解析默认参数与执行 handler 前，优先应用 defineProperties/defineMethods，
+        // 以便 defaultParams 与模板解析可引用新定义的 ctx 能力。
+        await applyContextDefinitions(ctx, def);
 
         const defaultParams = await resolveDefaultParams(def.defaultParams, ctx);
         let combinedParams: Record<string, any> = { ...(defaultParams || {}), ...(params || {}) };
@@ -1320,7 +1327,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         }
         if (!useRawParams) {
           // 先服务端解析，再前端补齐
-          combinedParams = await (ctx as any).resolveJsonTemplate(combinedParams);
+          combinedParams = await ctx.resolveJsonTemplate(combinedParams);
         }
 
         if (!def.handler) {
@@ -1464,10 +1471,12 @@ export class FlowModelContext extends BaseFlowModelContext {
       'runAction',
       async function (this: BaseFlowModelContext, actionName: string, params?: Record<string, any>) {
         const def = this.model.getAction<FlowModel, FlowModelContext>(actionName);
-        const ctx = this.createProxy() as unknown as FlowModelContext;
+        // 使用“临时作用域”上下文，避免将临时定义污染到模型级上下文
+        const ctx = createScopedContext(this as unknown as FlowModelContext);
         if (!def) {
           throw new Error(`Action '${actionName}' not found.`);
         }
+        await applyContextDefinitions(ctx, def);
 
         const defaultParams = await resolveDefaultParams(def.defaultParams, ctx);
         let combinedParams: Record<string, any> = { ...(defaultParams || {}), ...(params || {}) };
@@ -1477,7 +1486,7 @@ export class FlowModelContext extends BaseFlowModelContext {
           useRawParams = await useRawParams(ctx);
         }
         if (!useRawParams) {
-          combinedParams = await (ctx as any).resolveJsonTemplate(combinedParams);
+          combinedParams = await ctx.resolveJsonTemplate(combinedParams);
         }
 
         if (!def.handler) {

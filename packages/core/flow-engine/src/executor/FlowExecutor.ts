@@ -16,6 +16,8 @@ import type { ActionDefinition, ApplyFlowCacheEntry, StepDefinition } from '../t
 import { FlowExitException, resolveDefaultParams } from '../utils';
 import { FlowExitAllException } from '../utils/exceptions';
 import { setupRuntimeContextSteps } from '../utils/setupRuntimeContextSteps';
+import { applyContextDefinitions } from '../utils/applyContextDefinitions';
+import { createScopedContext } from '../utils/createScopedContext';
 
 export class FlowExecutor {
   constructor(private readonly engine: FlowEngine) {}
@@ -100,9 +102,17 @@ export class FlowExecutor {
 
     for (const [stepKey, step] of Object.entries(stepDefs) as [string, StepDefinition][]) {
       // Resolve handler and params
-      let handler: ActionDefinition['handler'] | undefined;
+      let handler: ActionDefinition<FlowModel, FlowRuntimeContext>['handler'] | undefined;
       let combinedParams: Record<string, any> = {};
       let useRawParams: StepDefinition['useRawParams'] = step.useRawParams;
+
+      // 单步作用域隔离：为当前 step 创建“临时上下文”，委托到 flowContext，并桥接必要直连字段
+      const runtimeCtx = createScopedContext<FlowRuntimeContext>(flowContext, [
+        'mode',
+        'flowKey',
+        'model',
+        { key: 'stepResults', cache: false },
+      ]);
       if (step.use) {
         const actionDefinition = model.getAction(step.use);
         if (!actionDefinition) {
@@ -111,14 +121,21 @@ export class FlowExecutor {
           );
           continue;
         }
+
+        // 在解析默认参数之前，应用 actionDefinition 与 step 上的 defineProperties/defineMethods（作用于 scoped）
+        await applyContextDefinitions<FlowRuntimeContext>(runtimeCtx, actionDefinition);
+        await applyContextDefinitions<FlowRuntimeContext>(runtimeCtx, step);
+
         handler = step.handler || actionDefinition.handler;
         useRawParams = useRawParams ?? actionDefinition.useRawParams;
-        const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, flowContext);
-        const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
+        const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, runtimeCtx);
+        const stepDefaultParams = await resolveDefaultParams(step.defaultParams, runtimeCtx);
         combinedParams = { ...actionDefaultParams, ...stepDefaultParams };
       } else if (step.handler) {
+        // 对于内联 handler，也支持 step 层面的 defineProperties/defineMethods（若提供）（作用于 scoped）
+        await applyContextDefinitions<FlowRuntimeContext>(runtimeCtx, step);
         handler = step.handler;
-        const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
+        const stepDefaultParams = await resolveDefaultParams(step.defaultParams, runtimeCtx);
         combinedParams = { ...stepDefaultParams };
       } else {
         flowContext.logger.error(
@@ -133,10 +150,10 @@ export class FlowExecutor {
       }
       if (typeof useRawParams === 'function') {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        useRawParams = await useRawParams(flowContext);
+        useRawParams = await useRawParams(runtimeCtx);
       }
       if (!useRawParams) {
-        combinedParams = await flowContext.resolveJsonTemplate(combinedParams);
+        combinedParams = await runtimeCtx.resolveJsonTemplate(combinedParams);
       }
       try {
         if (!handler) {
@@ -145,7 +162,7 @@ export class FlowExecutor {
           );
           continue;
         }
-        const currentStepResult = handler(flowContext, combinedParams);
+        const currentStepResult = handler(runtimeCtx, combinedParams);
         const isAwait = step.isAwait !== false;
         lastResult = isAwait ? await currentStepResult : currentStepResult;
 
