@@ -57,7 +57,7 @@
       {
         "type": "custom-link",
         "label": "SQL 模式查询数据",
-        "link": "/data-visualization/guide/sql-mode"
+        "link": "/data-visualization/guide/sql-data-query"
       },
       {
         "type": "custom-link",
