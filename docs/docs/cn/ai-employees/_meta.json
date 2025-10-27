@@ -79,6 +79,11 @@
         "type": "custom-link",
         "label": "AI编程",
         "link": "/ai-employees/built-in/ai-coding"
+      },
+      {
+        "type": "custom-link",
+        "label": "Viz：洞察分析师",
+        "link": "/ai-employees/built-in/viz"
       }
     ]
   },
@@ -162,6 +167,11 @@
             "type": "custom-link",
             "label": "入门",
             "link": "/ai-employees/scenarios/getting-started"
+          },
+          {
+            "type": "custom-link",
+            "label": "Viz：CRM 场景配置",
+            "link": "/ai-employees/scenarios/viz-crm"
           }
         ]
       },
