@@ -53,7 +53,8 @@
     "items": [
       { "text": "插件开发", "link": "/plugin-development.html" },
       { "text": "FlowEngine", "link": "/flow-engine.html" },
-      { "text": "Database", "link": "/database.html" }
+      { "text": "Database", "link": "/database.html" },
+      { "text": "Playground", "link": "/development/playground" }
     ]
   }
 ]

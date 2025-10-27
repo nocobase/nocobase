@@ -22,23 +22,99 @@ export default defineConfig({
     plugins: [pluginSass()],
     resolve: {
       alias: {
-        '@nocobase/client-v2': path.join(__dirname, '../packages/core/client-v2/src'),
-        '@nocobase/shared': path.join(__dirname, '../packages/core/shared/src'),
-        '@nocobase/sdk': path.join(__dirname, '../packages/core/sdk/src'),
-        '@nocobase/flow-engine': path.join(__dirname, '../packages/core/flow-engine/src'),
+        // Force single React copy used by main docs runtime
+        react: path.join(__dirname, '../node_modules/react'),
+        'react-dom': path.join(__dirname, '../node_modules/react-dom'),
+        'react/jsx-runtime': path.join(
+          __dirname,
+          '../node_modules/react/jsx-runtime',
+        ),
+        'react/jsx-dev-runtime': path.join(
+          __dirname,
+          '../node_modules/react/jsx-dev-runtime',
+        ),
+        // Shims for browser: avoid Node-only deps in helpers
+        '@budibase/handlebars-helpers': path.join(
+          __dirname,
+          'shims/budibase-handlebars-helpers.js',
+        ),
+        url: path.join(__dirname, 'shims/url.js'),
+        // 优先指向已构建产物，减少编译与语法兼容成本
+        '@nocobase/client': path.join(__dirname, '../packages/core/client/es'),
+        '@nocobase/flow-engine': path.join(
+          __dirname,
+          '../packages/core/flow-engine',
+        ),
+        '@nocobase/shared': path.join(__dirname, '../packages/core/shared'),
+        '@nocobase/sdk': path.join(__dirname, '../packages/core/sdk'),
+        '@nocobase/utils': path.join(__dirname, '../packages/core/utils'),
+        '@nocobase/evaluators': path.join(
+          __dirname,
+          '../packages/core/evaluators',
+        ),
+        // 仍保留 v2 的源码别名（如有需要）
+        '@nocobase/client-v2': path.join(
+          __dirname,
+          '../packages/core/client-v2/src',
+        ),
       },
     },
   },
   plugins: [
     pluginPreview({
+      previewMode: 'iframe',
       iframeOptions: {
+        devPort: Number(process.env.RP_PREVIEW_PORT || '8899'),
         builderConfig: {
+          output: {
+            // 使用 ESM script，避免全局作用域下的变量冲突（如 module 重复声明）
+            scriptType: 'module',
+          },
+          dev: {
+            // 关闭 HMR，避免在预览入口里注入 module.hot 相关包装造成的顶层符号冲突
+            hmr: false,
+          },
           resolve: {
             alias: {
-              '@nocobase/client-v2': path.join(__dirname, '../client-v2/src'),
-              '@nocobase/shared': path.join(__dirname, '../shared/src'),
-              '@nocobase/sdk': path.join(__dirname, '../sdk/src'),
-              '@nocobase/flow-engine': path.join(__dirname, '../flow-engine/src'),
+              // Ensure preview iframe uses the same single React instance
+              react: path.join(__dirname, '../node_modules/react'),
+              'react-dom': path.join(__dirname, '../node_modules/react-dom'),
+              'react/jsx-runtime': path.join(
+                __dirname,
+                '../node_modules/react/jsx-runtime',
+              ),
+              'react/jsx-dev-runtime': path.join(
+                __dirname,
+                '../node_modules/react/jsx-dev-runtime',
+              ),
+              '@budibase/handlebars-helpers': path.join(
+                __dirname,
+                'shims/budibase-handlebars-helpers.js',
+              ),
+              url: path.join(__dirname, 'shims/url.js'),
+              // 预览 iframe 构建需与主站保持一致的本地别名
+              '@nocobase/client': path.join(
+                __dirname,
+                '../packages/core/client/es',
+              ),
+              '@nocobase/flow-engine': path.join(
+                __dirname,
+                '../packages/core/flow-engine',
+              ),
+              '@nocobase/shared': path.join(
+                __dirname,
+                '../packages/core/shared',
+              ),
+              '@nocobase/sdk': path.join(__dirname, '../packages/core/sdk'),
+              '@nocobase/utils': path.join(__dirname, '../packages/core/utils'),
+              '@nocobase/evaluators': path.join(
+                __dirname,
+                '../packages/core/evaluators',
+              ),
+              '@nocobase/client-v2': path.join(
+                __dirname,
+                '../packages/core/client-v2/src',
+              ),
             },
           },
         },
