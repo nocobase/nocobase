@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './afterCreateForForeignKeyField';
-export * from './beforeCreateForReverseField';
-export * from './beforeDestroyForeignKey';
-export * from './beforeInitOptions';
+import { castArray } from 'lodash';
+import { Op } from 'sequelize';
+
+export default {
+  $in(val, ctx) {
+    return {
+      [Op.in]: val == null ? [] : castArray(val),
+    };
+  },
+} as Record<string, any>;

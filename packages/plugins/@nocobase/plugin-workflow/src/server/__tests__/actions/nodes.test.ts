@@ -288,7 +288,7 @@ describe('workflow > actions > nodes', () => {
         filterByTk: n1.id,
       });
 
-      const nodes = await workflow.getNodes();
+      const nodes = await workflow.getNodes({ order: [['id', 'ASC']] });
       expect(nodes.length).toBe(0);
     });
 
@@ -316,7 +316,7 @@ describe('workflow > actions > nodes', () => {
         filterByTk: n1.id,
       });
 
-      const nodes = await workflow.getNodes();
+      const nodes = await workflow.getNodes({ order: [['id', 'ASC']] });
       expect(nodes.length).toBe(0);
     });
 
@@ -357,7 +357,7 @@ describe('workflow > actions > nodes', () => {
         keepBranch: 0,
       });
 
-      const nodes = await workflow.getNodes();
+      const nodes = await workflow.getNodes({ order: [['id', 'ASC']] });
       expect(nodes.length).toBe(1);
       expect(nodes[0].id).toBe(n2.id);
     });
@@ -393,9 +393,11 @@ describe('workflow > actions > nodes', () => {
         keepBranch: 0,
       });
 
-      const nodes = await workflow.getNodes();
+      const nodes = await workflow.getNodes({ order: [['id', 'ASC']] });
       expect(nodes.length).toBe(1);
       expect(nodes[0].id).toBe(n2.id);
+      // NOTE: ensure key is not updated to new value
+      expect(nodes[0].key).toBe(n2.key);
     });
 
     it('target has no upstream, 2 branches, no downstream, `keepBranch` as branch 2', async () => {
@@ -429,7 +431,7 @@ describe('workflow > actions > nodes', () => {
         keepBranch: 1,
       });
 
-      const nodes = await workflow.getNodes();
+      const nodes = await workflow.getNodes({ order: [['id', 'ASC']] });
       expect(nodes.length).toBe(1);
       expect(nodes[0].id).toBe(n3.id);
     });
