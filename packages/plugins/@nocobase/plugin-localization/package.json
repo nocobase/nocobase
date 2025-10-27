@@ -3,6 +3,7 @@
   "version": "1.8.31",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/localization-management",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/localization-management",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/localization-management",
   "license": "AGPL-3.0",
   "devDependencies": {
@@ -20,7 +21,9 @@
   ],
   "displayName": "Localization",
   "displayName.zh-CN": "本地化",
+  "displayName.ru-RU": "Локализация",
   "description": "Allows to manage localization resources of the application.",
+  "description.ru-RU": "Позволяет управлять ресурсами локализации приложения.",
   "description.zh-CN": "支持管理应用程序的本地化资源。",
   "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1"
 }

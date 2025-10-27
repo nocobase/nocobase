@@ -3,8 +3,10 @@
   "version": "1.8.31",
   "main": "dist/server/index.js",
   "displayName": "Collection field: Attachment(URL)",
+  "displayName.ru-RU": "Поле коллекции: Вложение (URL)",
   "displayName.zh-CN": "数据表字段：附件（URL）",
   "description": "Supports attachments in URL format.",
+  "description.ru-RU": "Поддержка вложений в формате URL.",
   "description.zh-CN": "支持 URL 格式的附件。",
   "peerDependencies": {
     "@nocobase/client": "1.x",

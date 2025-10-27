@@ -1,14 +1,18 @@
 {
   "name": "@nocobase/plugin-workflow-mailer",
   "displayName": "Workflow: mailer node",
+  "displayName.ru-RU": "Рабочий процесс: Узел отправки почты",
   "displayName.zh-CN": "工作流：邮件发送节点",
   "description": "Send email in workflow.",
+  "description.ru-RU": "Отправляет электронное письмо в рамках рабочего процесса.",
   "description.zh-CN": "可用于在工作流中发送电子邮件。",
   "version": "1.8.31",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-smtp-mailer",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-smtp-mailer",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-smtp-mailer",
+
   "devDependencies": {
     "antd": "5.x",
     "nodemailer": "6.9.13",

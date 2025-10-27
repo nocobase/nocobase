@@ -3,10 +3,13 @@
   "version": "1.8.31",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-print",
+  "homepage.ru-RU": "https://docs.nocobase.ru/handbook/action-print",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-print",
   "displayName": "Action: Print",
+  "displayName.ru-RU": "Действие: Печать",
   "displayName.zh-CN": "操作：打印",
   "description": "Calls the browser's print function to print a record.",
+  "description.ru-RU": "Вызов функции для печати выбранной записи или для быстрого экспорта в формат .pdf.",
   "description.zh-CN": "调用浏览器的打印功能实现单条数据的打印。",
   "license": "AGPL-3.0",
   "peerDependencies": {

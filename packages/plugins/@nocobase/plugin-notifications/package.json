@@ -2,6 +2,8 @@
   "name": "@nocobase/plugin-notifications",
   "version": "1.8.31",
   "description": "",
+  "displayName.ru-RU": "Уведомления",
+  "description.ru-RU": "Пакет плагинов для отправки и тестирования уведомлений.",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "devDependencies": {

@@ -1,13 +1,16 @@
 {
   "name": "@nocobase/plugin-block-iframe",
   "displayName": "Block: iframe",
+  "displayName.ru-RU": "Блок: iframe",
   "displayName.zh-CN": "区块：iframe",
   "description": "Create an iframe block on the page to embed and display external web pages or content.",
+  "description.ru-RU": "Создавайте iframe-блоки и управляйте ими на странице для встраивания и отображения внешних веб-страниц или контента.",
   "description.zh-CN": "在页面上创建和管理iframe，用于嵌入和展示外部网页或内容。",
   "version": "1.8.31",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-iframe",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/block-iframe",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-iframe",
   "devDependencies": {
     "@ant-design/icons": "5.x",

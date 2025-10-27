@@ -1,13 +1,16 @@
 {
   "name": "@nocobase/plugin-workflow-manual",
   "displayName": "Workflow: Manual node",
+  "displayName.ru-RU": "Рабочий процесс: Узел ручной обработки",
   "displayName.zh-CN": "工作流：人工处理节点",
   "description": "Could be used for workflows which some of decisions are made by users.",
+  "description.ru-RU": "Может использоваться в рабочих процессах, где какие-то решения принимаются пользователями.",
   "description.zh-CN": "用于人工控制部分决策的流程。",
   "version": "1.8.31",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-manual",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-manual",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-manual",
   "devDependencies": {
     "@ant-design/icons": "5.x",

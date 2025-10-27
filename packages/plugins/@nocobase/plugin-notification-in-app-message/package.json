@@ -2,10 +2,13 @@
   "name": "@nocobase/plugin-notification-in-app-message",
   "version": "1.8.31",
   "displayName": "Notification: In-app message",
+  "displayName.ru-RU": "Уведомления: Всплывающие сообщения внутри приложения",
   "displayName.zh-CN": "通知：站内信",
   "description": "It supports users in receiving real-time message notifications within the NocoBase application.",
+  "description.ru-RU": "Поддерживает получение пользователями уведомлений в реальном времени внутри приложения NocoBase.",
   "description.zh-CN": "支持用户在 NocoBase 应用内实时接收消息通知。",
   "homepage": "https://docs.nocobase.com/handbook/notification-in-app-message",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/notification-in-app-message",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/notification-in-app-message",
   "keywords": [
     "Notification"

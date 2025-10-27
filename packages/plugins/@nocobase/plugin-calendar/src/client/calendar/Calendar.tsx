@@ -52,6 +52,7 @@ import { dateFnsLocalizer } from 'react-big-calendar';
 import { format, parse, startOfWeek, getDay } from 'date-fns';
 import enUS from 'date-fns/locale/en-US';
 import zhCN from 'date-fns/locale/zh-CN';
+import ruRU from 'date-fns/locale/ru-RU';
 
 interface Event {
   id: string;

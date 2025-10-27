@@ -1,7 +1,12 @@
 {
   "Parallel branch": "Параллельная ветвь",
+  "Run multiple branch processes in parallel.": "Запускать несколько ветвей параллельно.",
+  "Add branch": "Добавить ветвь",
+  "Mode": "Режим",
   "All succeeded": "Всё успешно",
   "Any succeeded": "Что-то успешно",
+  "Any succeeded or failed": "Что-то успешно или провалилось",
   "Continue after all branches succeeded": "Продолжать после успеха на всех ветвях",
-  "Continue after any branch succeeded": "Продолжать после успеха на любой из ветвей"
+  "Continue after any branch succeeded": "Продолжать после успеха на любой из ветвей",
+  "Continue after any branch succeeded, or exit after any branch failed.": "Продолжать после успеха на любой из ветвей, или выйти после провала любой из ветвей."
 }

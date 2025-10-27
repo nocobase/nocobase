@@ -1,8 +1,10 @@
 {
   "name": "@nocobase/plugin-field-m2m-array",
   "displayName": "Collection field: Many to many (array)",
+  "displayName.ru-RU": "Связь коллекций: «многие ко многим» (массив)",
   "displayName.zh-CN": "数据表字段：多对多 (数组)",
   "description": "Allows to create many to many relationships between two models by storing an array of unique keys of the target model.",
+  "description.ru-RU": "Позволяет создавать отношения «многие ко многим» между двумя моделями, сохраняя массив уникальных ключей целевой модели.",
   "description.zh-CN": "支持通过在数组中存储目标表唯一键的方式建立多对多关系。",
   "version": "1.8.31",
   "main": "dist/server/index.js",

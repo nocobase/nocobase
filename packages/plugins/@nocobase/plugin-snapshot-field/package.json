@@ -1,13 +1,16 @@
 {
   "name": "@nocobase/plugin-snapshot-field",
   "displayName": "Collection field: Snapshot",
+  "displayName.ru-RU": "Поле коллекции: Снимок",
   "displayName.zh-CN": "数据表字段：关系快照",
   "description": "When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.",
+  "description.ru-RU": "При добавлении новой записи создаёт снимок связанной записи и сохраняет его в текущей записи. Снимок не обновляется при изменении связанной записи.",
   "description.zh-CN": "在添加数据时，为它的关系数据创建快照，并保存在当前的数据中。关系数据更新时，快照不会更新。",
   "version": "1.8.31",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/field-snapshot",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/field-snapshot",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/field-snapshot",
   "devDependencies": {
     "@ant-design/icons": "5.x",

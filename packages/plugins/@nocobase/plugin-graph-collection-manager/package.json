@@ -1,13 +1,16 @@
 {
   "name": "@nocobase/plugin-graph-collection-manager",
   "displayName": "Graph collection manager",
+  "displayName.ru-RU": "Менеджер графовых коллекций",
   "displayName.zh-CN": "可视化数据表管理",
   "description": "An ER diagram-like tool. Currently only the Master database is supported.",
+  "description.ru-RU": "Инструмент в стиле ER-диаграммы. В настоящий момент поддерживается только основная база данных.",
   "description.zh-CN": "类似 ER 图的工具，目前只支持主数据库。",
   "version": "1.8.31",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/graph-collection-manager",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/graph-collection-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/graph-collection-manager",
   "devDependencies": {
     "@ant-design/icons": "5.x",

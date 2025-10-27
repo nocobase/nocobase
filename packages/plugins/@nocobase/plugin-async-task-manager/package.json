@@ -1,8 +1,10 @@
 {
   "name": "@nocobase/plugin-async-task-manager",
   "displayName": "Async task manager",
+  "displayName.ru-RU": "Менеджер асинхронных задач",
   "displayName.zh-CN": "异步任务管理器",
   "description": "Manage and monitor asynchronous tasks such as data import/export. Support task progress tracking and notification.",
+  "description.ru-RU": "Управление асинхронными задачами и мониторинг (например, импорт/экспорт данных). Поддержка отслеживания прогресса и уведомлений о задачах.",
   "description.zh-CN": "管理和监控数据导入导出等异步任务。支持任务进度跟踪和通知。",
   "version": "1.8.31",
   "main": "dist/server/index.js",

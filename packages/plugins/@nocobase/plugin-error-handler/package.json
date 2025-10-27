@@ -1,12 +1,17 @@
 {
   "name": "@nocobase/plugin-error-handler",
   "displayName": "Error handler",
+  "displayName.ru-RU": "Обработчик ошибок",
   "displayName.zh-CN": "错误处理器",
+  "description.ru-RU": "Обработка ошибок и исключений приложения.",
   "description": "Handling application errors and exceptions.",
   "description.zh-CN": "处理应用程序中的错误和异常。",
   "version": "1.8.31",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/handbook/error-handler",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/error-handler",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/error-handler",
   "devDependencies": {
     "@formily/json-schema": "2.x",
     "supertest": "^6.1.6"

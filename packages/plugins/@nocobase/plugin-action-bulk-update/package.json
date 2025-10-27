@@ -3,10 +3,13 @@
   "version": "1.8.31",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-bulk-update",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/action-bulk-update",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-bulk-update",
   "displayName": "Action: Batch update",
+  "displayName.ru-RU": "Действие: Массовое обновление",
   "displayName.zh-CN": "操作：批量更新",
   "description": "Batch update all records or selected records.",
+  "description.ru-RU": "Массовое обновление всех или только выбранных записей.",
   "description.zh-CN": "对全部数据或选中的数据进行批量更新。",
   "license": "AGPL-3.0",
   "peerDependencies": {

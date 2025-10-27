@@ -1,14 +1,17 @@
 {
   "name": "@nocobase/plugin-workflow-aggregate",
   "displayName": "Workflow: Aggregate node",
+  "displayName.ru-RU": "Рабочий процесс: Узел агрегации",
   "displayName.zh-CN": "工作流：聚合查询节点",
   "description": "Used to aggregate data against the database in workflow, such as: statistics, sum, average, etc.",
   "description.zh-CN": "可用于在工作流中对数据库进行聚合查询，如：统计数量、求和、平均值等。",
+  "description.ru-RU": "Используется для агрегирования данных из базы данных в рабочем процессе, например: статистика, сумма, среднее и т.д.",
   "version": "1.8.31",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-aggregate",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-aggregate",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-aggregate",
   "devDependencies": {
     "antd": "5.x",
     "mathjs": "^10.6.0",
