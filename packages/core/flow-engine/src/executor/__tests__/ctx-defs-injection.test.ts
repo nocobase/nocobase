@@ -169,4 +169,29 @@ describe('defineProperties/defineMethods injection', () => {
     const [, received] = stepHandler.mock.calls[0];
     expect(received).toEqual({ a: 2, b: 101 });
   });
+
+  it('FlowExecutor: subsequent defineProperty/defineMethod write to parent context (not scoped)', async () => {
+    const flows = {
+      f: {
+        steps: {
+          a: {
+            handler: (ctx) => {
+              (ctx as any).defineProperty('mark', { value: 7 });
+              (ctx as any).defineMethod('inc', (x: number) => x + 1);
+              return { ok: true };
+            },
+          },
+          b: {
+            // 无注入，直接读取上一步通过 defineProperty/defineMethod 挂在到父级的能力
+            defaultParams: (ctx) => ({ v: (ctx as any).mark, w: (ctx as any).inc(2) }),
+            handler: (_ctx, params) => params,
+          },
+        },
+      },
+    } satisfies Record<string, Omit<FlowDefinitionOptions, 'key'>>;
+
+    const m = engine.createModel<FlowModel>({ use: FlowModel.name, flowRegistry: flows });
+    const res = await engine.executor.runFlow(m, 'f');
+    expect(res).toEqual({ a: { ok: true }, b: { v: 7, w: 3 } });
+  });
 });

@@ -16,7 +16,6 @@ import type { ActionDefinition, ApplyFlowCacheEntry, StepDefinition } from '../t
 import { FlowExitException, resolveDefaultParams } from '../utils';
 import { FlowExitAllException } from '../utils/exceptions';
 import { setupRuntimeContextSteps } from '../utils/setupRuntimeContextSteps';
-import { applyContextDefinitions } from '../utils/applyContextDefinitions';
 import { createEphemeralContext } from '../utils/createEphemeralContext';
 
 export class FlowExecutor {
@@ -105,9 +104,7 @@ export class FlowExecutor {
       let handler: ActionDefinition<FlowModel, FlowRuntimeContext>['handler'] | undefined;
       let combinedParams: Record<string, any> = {};
       let useRawParams: StepDefinition['useRawParams'] = step.useRawParams;
-
-      // 单步作用域隔离：为当前 step 创建“临时上下文”，委托到 flowContext，并桥接必要直连字段
-      const runtimeCtx = createEphemeralContext<FlowRuntimeContext>(flowContext);
+      let runtimeCtx: FlowRuntimeContext;
       if (step.use) {
         const actionDefinition = model.getAction(step.use);
         if (!actionDefinition) {
@@ -117,9 +114,8 @@ export class FlowExecutor {
           continue;
         }
 
-        // 在解析默认参数之前，应用 actionDefinition 与 step 上的 defineProperties/defineMethods（作用于 scoped）
-        await applyContextDefinitions<FlowRuntimeContext>(runtimeCtx, actionDefinition);
-        await applyContextDefinitions<FlowRuntimeContext>(runtimeCtx, step);
+        // 为当前 step 创建“临时上下文”，并直接注入 action 与 step 提供的定义（step 覆盖 action）
+        runtimeCtx = await createEphemeralContext<FlowRuntimeContext>(flowContext, [actionDefinition, step]);
 
         handler = step.handler || actionDefinition.handler;
         useRawParams = useRawParams ?? actionDefinition.useRawParams;
@@ -127,8 +123,8 @@ export class FlowExecutor {
         const stepDefaultParams = await resolveDefaultParams(step.defaultParams, runtimeCtx);
         combinedParams = { ...actionDefaultParams, ...stepDefaultParams };
       } else if (step.handler) {
-        // 对于内联 handler，也支持 step 层面的 defineProperties/defineMethods（若提供）（作用于 scoped）
-        await applyContextDefinitions<FlowRuntimeContext>(runtimeCtx, step);
+        // 对于内联 handler，为该步创建临时上下文并注入 step 定义
+        runtimeCtx = await createEphemeralContext<FlowRuntimeContext>(flowContext, step);
         handler = step.handler;
         const stepDefaultParams = await resolveDefaultParams(step.defaultParams, runtimeCtx);
         combinedParams = { ...stepDefaultParams };

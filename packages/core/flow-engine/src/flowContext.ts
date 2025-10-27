@@ -45,7 +45,6 @@ import type { RecordRef } from './utils/serverContextParams';
 import { buildServerContextParams as _buildServerContextParams } from './utils/serverContextParams';
 import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
-import { applyContextDefinitions } from './utils/applyContextDefinitions';
 import { createEphemeralContext } from './utils/createEphemeralContext';
 
 // Helper: detect a RecordRef-like object
@@ -1308,15 +1307,11 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       'runAction',
       async function (this: BaseFlowEngineContext, actionName: string, params?: Record<string, any>) {
         const def = this.engine.getAction<FlowModel, FlowEngineContext>(actionName);
-        // 使用“临时作用域”上下文，避免将临时定义污染到引擎级上下文
-        const ctx = createEphemeralContext(this as unknown as FlowEngineContext);
+        // 使用“临时作用域”上下文，避免将临时定义污染到引擎级上下文，并在创建时应用定义
+        const ctx = await createEphemeralContext(this as unknown as FlowEngineContext, def);
         if (!def) {
           throw new Error(`Action '${actionName}' not found.`);
         }
-
-        // 在解析默认参数与执行 handler 前，优先应用 defineProperties/defineMethods，
-        // 以便 defaultParams 与模板解析可引用新定义的 ctx 能力。
-        await applyContextDefinitions(ctx, def);
 
         const defaultParams = await resolveDefaultParams(def.defaultParams, ctx);
         let combinedParams: Record<string, any> = { ...(defaultParams || {}), ...(params || {}) };
@@ -1471,12 +1466,11 @@ export class FlowModelContext extends BaseFlowModelContext {
       'runAction',
       async function (this: BaseFlowModelContext, actionName: string, params?: Record<string, any>) {
         const def = this.model.getAction<FlowModel, FlowModelContext>(actionName);
-        // 使用“临时作用域”上下文，避免将临时定义污染到模型级上下文
-        const ctx = createEphemeralContext(this as unknown as FlowModelContext);
+        // 使用“临时作用域”上下文，避免将临时定义污染到模型级上下文，并在创建时应用定义
+        const ctx = await createEphemeralContext(this as unknown as FlowModelContext, def);
         if (!def) {
           throw new Error(`Action '${actionName}' not found.`);
         }
-        await applyContextDefinitions(ctx, def);
 
         const defaultParams = await resolveDefaultParams(def.defaultParams, ctx);
         let combinedParams: Record<string, any> = { ...(defaultParams || {}), ...(params || {}) };
