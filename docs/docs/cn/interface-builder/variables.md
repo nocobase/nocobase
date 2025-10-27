@@ -36,19 +36,25 @@
 #### 表单字段默认值（仅新增表单）
 
 ![20251027115016](https://static-docs.nocobase.com/20251027115016.png)
+
 <!-- ![20240416171129_rec_](https://static-docs.nocobase.com/20240416171129_rec_.gif) -->
 
 #### 关系字段的数据范围设置
 
-用于处理关系之间的联动，例如：
+用于根据上游字段动态筛选下游字段的可选项，确保数据录入准确。
+
+**示例：**
+
+1. 用户选择 **Account** 字段的值。
+2. 系统根据所选 Account 的 **name** 自动筛选 **Owner** 字段的选项。
 
 ![20251027115147](https://static-docs.nocobase.com/20251027115147.png)
 
 <!-- ![20240416171743_rec_](https://static-docs.nocobase.com/20240416171743_rec_.gif) -->
 
-#### 提交操作的字段赋值配置
+<!-- #### 提交操作的字段赋值配置
 
-![20240416171215_rec_](https://static-docs.nocobase.com/20240416171215_rec_.gif)
+![20240416171215_rec_](https://static-docs.nocobase.com/20240416171215_rec_.gif) -->
 
 <!-- ### 当前对象
 
@@ -77,7 +83,6 @@
 
 ![20251027120217](https://static-docs.nocobase.com/20251027120217.png)
 
-
 ### 当前弹窗记录
 
 弹窗操作在 NocoBase 界面配置中扮演着非常重要的角色。
@@ -91,11 +96,11 @@
 - 配置关系字段的数据范围
 - 配置字段的默认值（新增数据的表单）
 - 配置操作的联动规则
-- 表单提交操作的字段赋值配置
 
 #### 配置区块的数据范围
 
 ![20251027151107](https://static-docs.nocobase.com/20251027151107.png)
+
 #### 配置关系字段的数据范围
 
 ![20240416224641_rec_](https://static-docs.nocobase.com/20240416224641_rec_.gif)
@@ -107,7 +112,8 @@
 #### 配置操作的联动规则
 
 ![20240416223101_rec_](https://static-docs.nocobase.com/20240416223101_rec_.gif)
-<!-- 
+
+<!--
 #### 表单提交操作的字段赋值配置
 
 ![20240416224014_rec_](https://static-docs.nocobase.com/20240416224014_rec_.gif) -->
@@ -194,9 +200,11 @@
 
 ### URL 查询参数
 
-该变量表示的是当前页面 URL 中的查询参数，只有当页面 URL 中存在查询字符串时该变量才是可用状态。配合[链接操作](/handbook/ui/actions/types/link)一起使用会更方便。
+该变量表示的是当前页面 URL 中的查询参数，只有当页面 URL 中存在查询字符串时该变量才是可用状态。配合[链接操作](/interface-builder/actions/types/https://static-docs.nocobase.com)一起使用会更方便。
 
-![20240603200410](https://static-docs.nocobase.com/20240603200410.gif)
+![20251027173017](https://static-docs.nocobase.com/20251027173017.png)
+
+![20251027173121](https://static-docs.nocobase.com/20251027173121.png)
 
 ### API token
 
