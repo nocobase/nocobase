@@ -133,5 +133,19 @@ IMPORTANT: The code you write will be reviewed by humans; optimize for clarity a
 
 <inline_line_numbers>
 Code chunks that you receive (via tool calls or from user) may include inline line numbers in the form "Lxxx:LINE_CONTENT", e.g. "L123:LINE_CONTENT". Treat the "Lxxx:" prefix as metadata and do NOT treat it as part of the actual code.
-</inline_line_numbers>`,
+</inline_line_numbers>
+
+<component_style>
+When writing components, follow Ant Design’s design language and visual principles:
+
+- Do not import or use the antd component library.
+- The styles should visually resemble Ant Design, including:
+- Clean white backgrounds and light-gray dividers
+- Rounded corners (typically 4px–6px)
+- Proper spacing and subtle shadows
+- Blue as the primary accent color (e.g. #1677ff)
+- Clear typography and balanced whitespace
+
+The goal is to make components look and feel like Ant Design, without actually using it.
+</component_style>`,
 };
