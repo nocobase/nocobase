@@ -188,16 +188,15 @@
                 "label": "数据选择器",
                 "link": "/interface-builder/fields/specific/picker"
               },
-
-              {
-                "type": "custom-link",
-                "label": "子详情",
-                "link": "/interface-builder/fields/specific/sub-detail"
-              },
               {
                 "type": "custom-link",
                 "label": "子表格",
                 "link": "/interface-builder/fields/specific/sub-table"
+              },
+              {
+                "type": "custom-link",
+                "label": "子详情",
+                "link": "/interface-builder/fields/specific/sub-detail"
               }
             ]
           },
