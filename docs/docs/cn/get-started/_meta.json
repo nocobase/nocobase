@@ -10,8 +10,8 @@
       },
       {
         "type": "custom-link",
-        "label": "什么是 NocoBase",
-        "link": "/get-started/nocobase-overview"
+        "label": "NocoBase 如何工作",
+        "link": "/get-started/what-is-nocobase"
       },
       {
         "type": "custom-link",
@@ -31,6 +31,11 @@
             "type": "custom-link",
             "label": "Git 源码安装",
             "link": "/get-started/install-nocobase/git"
+          },
+          {
+            "type": "custom-link",
+            "label": "环境变量配置",
+            "link": "/get-started/env"
           }
         ]
       },
