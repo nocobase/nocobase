@@ -17,7 +17,6 @@ import type { PropertyOptions } from '../flowContext';
 // - 注入：create 阶段 define* 写入 scoped；运行阶段 define* 写入 parent。
 type ContextDefsLike<TCtx extends FlowContext> =
   | Partial<Pick<ActionDefinition<any, TCtx>, 'defineProperties' | 'defineMethods'>>
-  | Array<Partial<Pick<ActionDefinition<any, TCtx>, 'defineProperties' | 'defineMethods'>> | null | undefined>
   | null
   | undefined;
 
@@ -26,7 +25,7 @@ export async function createEphemeralContext<TCtx extends FlowContext>(
   contextDefs?: ContextDefsLike<TCtx>,
 ): Promise<TCtx> {
   // 若未提供任何上下文定义，直接复用父级上下文，避免不必要的代理包装
-  if (contextDefs == null) {
+  if (contextDefs == null || (!contextDefs.defineProperties && !contextDefs.defineMethods)) {
     return parent;
   }
   // 1) 创建一个新的 FlowContext，专门承载“临时定义”（defineProperty/defineMethod）
