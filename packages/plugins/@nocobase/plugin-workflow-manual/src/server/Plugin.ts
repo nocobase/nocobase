@@ -256,6 +256,7 @@ export default class extends Plugin {
     this.db.on('workflowManualTasks.afterSave', this.onTaskSave);
     this.db.on('workflowManualTasks.afterDestroy', this.onTaskSave);
     this.db.on('executions.afterUpdate', this.onExecutionStatusChange);
-    this.db.on('workflows.afterUpdate', this.onWorkflowStatusChange);
+    // NOTE: no need re-calculate tasks after workflow status changed
+    // this.db.on('workflows.afterUpdate', this.onWorkflowStatusChange);
   }
 }
