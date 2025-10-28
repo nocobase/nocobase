@@ -181,7 +181,6 @@ describe('ui_schema repository', () => {
       },
     };
     const model2 = await repository.insertModel(model1);
-    console.log(JSON.stringify(model2, null, 2));
     expect(model2).toBeDefined();
     expect(model2.uid).toBe('uid1');
     expect(model2.use).toBe('TestModel');

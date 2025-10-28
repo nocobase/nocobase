@@ -14,7 +14,23 @@ import { resolveJsonTemplate } from '../template/resolver';
 import { HttpRequestContext } from '../template/contexts';
 
 function makeKoaCtx(spy: (opts: any) => void, collectionName = 'users') {
+  // 为新实现提供必要的模型元数据（rawAttributes/associations/primaryKey）
+  const modelMeta = {
+    primaryKeyAttribute: 'id',
+    rawAttributes: {
+      id: {},
+      name: {},
+      // 非关联字段举例；关联在 associations 中声明
+    } as Record<string, unknown>,
+    associations: {
+      roles: {},
+      company: {},
+    } as Record<string, unknown>,
+  };
+
   const repo = {
+    // 提供 collection.model，供 fetchRecordWithRequestCache 补充主键/判断最小载荷
+    collection: { model: modelMeta },
     async findOne(opts: any) {
       spy(opts);
       return {
@@ -23,7 +39,8 @@ function makeKoaCtx(spy: (opts: any) => void, collectionName = 'users') {
         },
       } as any;
     },
-  };
+  } as any;
+
   const koa: any = {
     app: {
       dataSourceManager: {
@@ -31,6 +48,8 @@ function makeKoaCtx(spy: (opts: any) => void, collectionName = 'users') {
           collectionManager: {
             db: {
               getRepository: (name: string) => repo,
+              // adjustSelectsForCollection 会从这里取模型元数据
+              getCollection: (name: string) => ({ model: modelMeta }),
             },
           },
         }),
@@ -120,7 +139,6 @@ describe('variables registry - extractUsage and attachUsedVariables', () => {
     } else {
       // If ctx.view doesn't exist, the test should be skipped or the contextParams format should be fixed
       // For now, let's just skip the test
-      console.log('Skipping test - ctx.view was not created');
     }
   });
 
