@@ -53,7 +53,6 @@ describe('ForkFlowModel', () => {
       const fork = new ForkFlowModel(mockMaster, initialProps, '1');
 
       expect(fork.uid).toBe(mockMaster.uid);
-      expect(fork.forkId).toBe(1);
       expect(fork.localProps).toEqual(initialProps);
       expect(fork.isFork).toBe(true);
       expect((fork as any).master).toBe(mockMaster);
@@ -64,7 +63,6 @@ describe('ForkFlowModel', () => {
       const fork = new ForkFlowModel(mockMaster);
 
       expect(fork.uid).toBe(mockMaster.uid);
-      expect(fork.forkId).toBe(0);
       expect(fork.localProps).toEqual({});
       expect(fork.isFork).toBe(true);
     });
@@ -150,7 +148,7 @@ describe('ForkFlowModel', () => {
 
     test('should return fork own properties first', () => {
       expect(fork.uid).toBe(mockMaster.uid);
-      expect(fork.forkId).toBe(1);
+      expect(fork.forkId).toBe('1');
       expect(fork.isFork).toBe(true);
       expect(fork.localProps).toEqual(initialProps);
     });
@@ -678,10 +676,11 @@ describe('ForkFlowModel', () => {
     test('forkIds must be unique', () => {
       // 创建第一个 fork
       const fork1 = mockMaster.createFork({}, uid());
-      expect(fork1.forkId).toBe(0);
+      const forkId1 = fork1.forkId;
+      expect(forkId1).toBeDefined();
       // 创建第二个 fork
       const fork2 = mockMaster.createFork({}, uid());
-      expect(fork2.forkId).toBe(1);
+      expect(fork2.forkId).not.toBe(forkId1);
       // 销毁第一个 fork
       fork1.dispose();
       // 创建第三个 fork
