@@ -1,6 +1,6 @@
-# 内置 AI 员工
+# AI 员工 · Nathan：前端工程师
 
-## AI 编程
+> 帮你编写和优化前端代码，实现复杂的交互逻辑。
 
 AI 员工插件内置了编程助手 `Nathan`，在 `JSBlock`, `JSField`, `JSItem`, `JSColumn`, `JSAction`, `Event Flow`, `Linkage` 等需要写JavaScript的场景下，代码编辑器右上角会有 `Nathan` 的头像，点击他打开 AI 员工对话框，让他帮你编写或修改代码编辑器中的代码。
 

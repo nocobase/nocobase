@@ -1,59 +1,49 @@
 [
   {
     "text": "开始",
-    "link": "/get-started/get-nocobase"
+    "link": "/get-started/",
+    "items": [
+      { "text": "NocoBase 使用入门", "link": "/get-started/" },
+      { "text": "安装、升级、部署", "link": "/get-started/get-nocobase" },
+      { "text": "安装与升级插件", "link": "/plugin-manager" }
+    ]
   },
   {
-    "text": "指南",
+    "text": "进阶",
     "link": "/guide/",
     "items": [
-      { "text": "Interface Builder", "link": "/interface-builder" },
-      { "text": "Plugin Manager", "link": "/plugin-manager" },
-      { "text": "Data sources", "link": "/data-sources" },
-      {
-        "text": "Users & Permissions",
-        "link": "/users-and-permissions"
-      },
-      { "text": "Workflow", "link": "/workflow" },
-      { "text": "AI employees", "link": "/ai-employees" },
-      { "text": "API documentation", "link": "/features/api-documentation" },
-      { "text": "API keys", "link": "/features/api-keys" },
-      { "text": "Audit logs", "link": "/features/audit-logs" },
-      { "text": "Authentication", "link": "/features/authentication" },
-      { "text": "Backup manager", "link": "/features/backup-manager" },
-      { "text": "Custom brand", "link": "/features/custom-brand" },
-      { "text": "Email settings", "link": "/features/email-settings" },
-      {
-        "text": "Variables and secrets",
-        "link": "/features/variables-and-secrets"
-      },
-      { "text": "File manager", "link": "/features/file-manager" },
-      { "text": "License settings", "link": "/features/license-settings" },
-      { "text": "Localization", "link": "/features/localization" },
-      { "text": "Logger", "link": "/features/logger" },
-      { "text": "Map manager", "link": "/features/map-manager" },
-      { "text": "Migration manager", "link": "/features/migration-manager" },
-      { "text": "Mobile", "link": "/features/mobile" },
-      { "text": "Multi-app", "link": "/features/multi-app" },
-      {
-        "text": "Notification manager",
-        "link": "/features/notification-manager"
-      },
-      { "text": "Public forms", "link": "/features/public-forms" },
-      { "text": "Routes", "link": "/features/routes" },
-      { "text": "Security", "link": "/features/security" },
-      { "text": "System settings", "link": "/features/system-settings" },
-      { "text": "Theme editor", "link": "/features/theme-editor" },
-      { "text": "Verification", "link": "/features/verification" }
+      { "text": "数据源", "link": "/data-sources" },
+      { "text": "配置界面", "link": "/interface-builder" },
+      { "text": "AI 员工", "link": "/ai-employees" },
+      { "text": "用户和权限", "link": "/features/users-and-permissions" },
+      { "text": "用户认证和验证", "link": "/features/authentication" },
+      { "text": "工作流", "link": "/workflow" },
+      { "text": "多应用和多空间", "link": "/features/multi-app" },
+      { "text": "集成", "link": "/features/integration" },
+      { "text": "系统配置", "link": "/features/system-settings" },
+      { "text": "运维", "link": "/features/operations" },
+      { "text": "安全", "link": "/features/security" }
+    ]
+  },
+  {
+    "text": "更多插件",
+    "link": "/features/",
+    "items": [
+      { "text": "通知", "link": "/features/notification-manager" },
+      { "text": "数据可视化", "link": "/features/data-visualization" },
+      { "text": "文件管理器", "link": "/features/file-manager" },
+      { "text": "邮件管理", "link": "/features/email-manager" },
+      { "text": "模板打印", "link": "/features/template-print" },
+      { "text": "其他插件", "link": "/features/" }
     ]
   },
   {
     "text": "开发",
     "link": "/development/",
     "items": [
-      { "text": "插件开发", "link": "/plugin-development.html" },
-      { "text": "FlowEngine", "link": "/flow-engine.html" },
-      { "text": "Database", "link": "/database.html" }
+      { "text": "插件开发指南", "link": "/plugin-development" },
+      { "text": "FlowEngine", "link": "/flow-engine" },
+      { "text": "数据源扩展", "link": "/database" }
     ]
   }
 ]
