@@ -31,7 +31,6 @@
 更多内容参考 [必填](/interface-builder/fields/field-settings/required)
 
 - [编辑字段标题](/interface-builder/fields/field-settings/edit-title)
-- [显示标题](/interface-builder/fields/field-settings/display-title)
 - [编辑字段描述](/interface-builder/fields/field-settings/edit-description)
 - [编辑字段提示信息](/interface-builder/fields/field-settings/edit-tooltip)
 - [模式](/interface-builder/fields/field-settings/pattern)
@@ -40,4 +39,4 @@
 
 部分字段支持切换为其他组件，如关系字段
 
-如果你需要扩展更多的组件，可以参考 [扩展有值字段组件组件](/plugin-samples/field/value)。
+

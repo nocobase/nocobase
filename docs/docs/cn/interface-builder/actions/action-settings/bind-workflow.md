@@ -33,7 +33,7 @@
 
 不同工作流事件类型参考相关插件的详细介绍：
 
-* [操作后事件](/handbook/workflow-action-trigger)
-* [操作前事件](/handbook/workflow-request-interceptor)
-* [审批事件](/handbook/workflow-approval)
-* [自定义操作事件](/handbook/workflow-custom-action-trigger)
+* [操作后事件]
+* [操作前事件]
+* [审批事件]
+* [自定义操作事件]

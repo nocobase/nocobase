@@ -369,6 +369,11 @@
               },
               {
                 "type": "custom-link",
+                "label": "导出附件",
+                "link": "/interface-builder/actions/types/export-attachments"
+              },
+              {
+                "type": "custom-link",
                 "label": "筛选",
                 "link": "/interface-builder/actions/types/filter"
               },
