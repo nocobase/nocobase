@@ -26,6 +26,7 @@ type SimplifyComponentNode = {
   component: string;
   props?: Record<string, unknown>;
   children?: Record<string, SimplifyComponentNode[]>;
+  data?: unknown;
 };
 
 const parseFlowModel = async (model: FlowModel) => {
@@ -37,7 +38,7 @@ const parseFlowModel = async (model: FlowModel) => {
   } else if (model instanceof CollectionBlockModel) {
     return await toCollectionWithData(model);
   } else {
-    return toSimplifyComponentTree(model);
+    return await toSimplifyComponentTree(model);
   }
 };
 
@@ -78,7 +79,7 @@ const toCollectionWithData = async (model: CollectionBlockModel) => {
   };
 };
 
-const toSimplifyComponentTree = (model: FlowModel) => {
+const toSimplifyComponentTree = async (model: FlowModel) => {
   const result: SimplifyComponentNode = {
     uid: model.uid,
     title: model.title,
@@ -106,10 +107,12 @@ const toSimplifyComponentTree = (model: FlowModel) => {
       result.children[key] = [];
       const flowModels = _.isArray(value) ? value : [value];
       for (const flowModel of flowModels) {
-        result.children[key].push(toSimplifyComponentTree(flowModel));
+        result.children[key].push(await toSimplifyComponentTree(flowModel));
       }
     }
   }
+
+  result.data = await FlowUtils.getResource(model as any);
 
   return result;
 };
