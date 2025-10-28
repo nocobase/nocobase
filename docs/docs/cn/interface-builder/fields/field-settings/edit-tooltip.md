@@ -4,8 +4,8 @@
 
 字段提示信息是鼠标悬停在字段上时显示的文字，旨在提供有关该字段的额外说明或指导。这些提示信息通常包括字段的用途、输入格式、限制条件等内容，帮助用户更好地理解和使用该字段。
 
-![20240412112137](https://static-docs.nocobase.com/20240412112137.png)
+![20251028210852](https://static-docs.nocobase.com/20251028210852.png)
 
-![20240412112218](https://static-docs.nocobase.com/20240412112218.png)
+![20251028211127](https://static-docs.nocobase.com/20251028211127.png)
 
-![20240412112247](https://static-docs.nocobase.com/20240412112247.png)
+![20251028211144](https://static-docs.nocobase.com/20251028211144.png)

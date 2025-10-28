@@ -6,19 +6,21 @@
 
 ## 使用说明
 
-![20240422153711](https://static-docs.nocobase.com/20240422153711.png)
+![20251028211328](https://static-docs.nocobase.com/20251028211328.png)
 
 ### 静态值
 
-示例：仅在售商品可以选择关联。
+示例：仅在未删除商品可以选择关联。
 
-![20240422155953](https://static-docs.nocobase.com/20240422155953.png)
+> 字段列表为关系字段目标表字段
+
+![20251028211434](https://static-docs.nocobase.com/20251028211434.png)
 
 ### 变量值
 
-示例：仅商品生产日期早于上个月的商品可以选择关联。
+示例：仅商服务日期晚于订单日期的商品可以选择关联。
 
-![20240422163640](https://static-docs.nocobase.com/20240422163640.png)
+![20251028211727](https://static-docs.nocobase.com/20251028211727.png)
 
 更多关于变量内容参考 [变量](/interface-builder/variables)
 
@@ -26,10 +28,10 @@
 
 关系字段之间通过设置数据范围实现联动。
 
-示例：订单表中有多对多关系字段「商品」和多对一关系字段「客户」， 商品表有多对多关系字段 「客户」，在订单表单区块中，商品的可选数据为当前表单中所选客户关联的商品。
+示例：订单表中有一对多关系字段「商机产品」和多对一关系字段「商机」， 商机产品有多对一关系字段 「商机」，在订单表单区块中，商机商品的可选数据为当前表单中所选商机关联的商机商品。
+
+![20251028212943](https://static-docs.nocobase.com/20251028212943.png)
 
 ![20240422154145](https://static-docs.nocobase.com/20240422154145.png)
 
-<video width="100%" height="440" controls>
-      <source src="https://static-docs.nocobase.com/20240422155351.mp4" type="video/mp4">
-</video>
+![20251028213408](https://static-docs.nocobase.com/20251028213408.gif)
