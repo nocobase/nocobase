@@ -115,7 +115,10 @@ export class FlowExecutor {
         }
 
         // 为当前 step 创建“临时上下文”，并直接注入 action 与 step 提供的定义（step 覆盖 action）
-        runtimeCtx = await createEphemeralContext<FlowRuntimeContext>(flowContext, [actionDefinition, step]);
+        runtimeCtx = await createEphemeralContext<FlowRuntimeContext>(flowContext, {
+          ...actionDefinition,
+          ...step,
+        });
 
         handler = step.handler || actionDefinition.handler;
         useRawParams = useRawParams ?? actionDefinition.useRawParams;
