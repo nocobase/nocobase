@@ -40,7 +40,6 @@
 
 > 编辑表单中的关系字段数据是否允许解除已有数据的关联
 
+![20251028153425](https://static-docs.nocobase.com/20251028153425.gif)
 
-![20241021210710](https://static-docs.nocobase.com/20241021210710.png)
 
-![20241021211909](https://static-docs.nocobase.com/20241021211909.png)
