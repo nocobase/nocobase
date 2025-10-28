@@ -1186,7 +1186,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     // 创建新的 fork 实例
-    const forkId = this.forks.size; // 当前集合大小作为索引
+    const forkId = uid(); // 当前集合大小作为索引
     const fork = new ForkFlowModel<this>(this as any, localProps, forkId);
     if (options?.register !== false) {
       this.forks.add(fork as any);

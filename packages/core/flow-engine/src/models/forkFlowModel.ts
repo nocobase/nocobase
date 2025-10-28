@@ -12,6 +12,7 @@ import { FlowForkModelContext, FlowModelContext } from '../flowContext';
 import type { IModelComponentProps } from '../types';
 import { FlowModel } from './flowModel';
 import { FlowEngine } from '../flowEngine';
+import { uid } from 'uid/secure';
 
 /**
  * ForkFlowModel 作为 FlowModel 的独立实例：
@@ -38,7 +39,7 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   private disposed = false;
 
   /** fork 在 master.forks 中的索引 */
-  public readonly forkId: number;
+  public readonly forkId: string;
 
   /** 需要与 master 共享的属性列表 */
   private static readonly SHARED_PROPERTIES = ['stepParams', 'sortIndex'];
@@ -67,12 +68,12 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   // 不需要定义自己的属性了，现在是SHARED_PROPERTIES中指定的少数几个属性，所有属性设置时会自动添加自己的fork内的独有属性
   #flowContext: FlowModelContext;
 
-  constructor(master: TMaster, initialProps: IModelComponentProps = {}, forkId = 0) {
+  constructor(master: TMaster, initialProps: IModelComponentProps = {}, forkId?: string) {
     void this.localProperties; // 避免 IDE 提示 unused
     this.master = master;
     this.uid = master.uid;
     this.localProps = { ...initialProps };
-    this.forkId = forkId;
+    this.forkId = forkId || uid();
     this.hidden = this.master.hidden;
 
     define(this, {
