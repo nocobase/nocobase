@@ -120,7 +120,6 @@ describe('variables registry - extractUsage and attachUsedVariables', () => {
     } else {
       // If ctx.view doesn't exist, the test should be skipped or the contextParams format should be fixed
       // For now, let's just skip the test
-      console.log('Skipping test - ctx.view was not created');
     }
   });
 
