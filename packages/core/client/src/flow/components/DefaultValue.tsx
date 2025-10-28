@@ -23,6 +23,7 @@ import {
   useFlowContext,
   extractPropertyPath,
   FlowModel,
+  EditableItemModel,
 } from '@nocobase/flow-engine';
 import { get as lodashGet, set as lodashSet, isEqual } from 'lodash';
 import React, { useMemo } from 'react';
@@ -258,8 +259,17 @@ export const DefaultValue = connect((props: Props) => {
     const host = model;
     const origin = host?.customFieldModelInstance || host?.subModels?.field;
     const init = host?.getStepParams?.('fieldSettings', 'init') || origin?.getStepParams?.('fieldSettings', 'init');
-    // 如果是关系的对多字段，统一使用 RecordSelectFieldModel 作为默认值渲染模型
-    const collectionField = origin?.collectionField;
+    // 解析 collectionField（优先使用原字段上的引用；必要时从 dataSourceManager 回落）
+    let collectionField = origin?.collectionField as any;
+    if (!collectionField && init?.dataSourceKey && init?.collectionName && init?.fieldPath) {
+      const key = `${init.dataSourceKey}.${init.collectionName}.${init.fieldPath}`;
+      collectionField = model?.context?.dataSourceManager?.getCollectionField?.(key);
+    }
+    // 尝试从可编辑绑定中获取字段模型（避免在 readPretty 下拿到展示型模型）
+    const editableBinding = collectionField
+      ? EditableItemModel.getDefaultBindingByField(model?.context as any, collectionField)
+      : null;
+    // 如果是关系的对多字段，或绑定缺失，采用兜底策略
     const relationType = collectionField?.type;
     const relationInterface = collectionField?.interface;
     const isToManyRelation =
@@ -269,9 +279,12 @@ export const DefaultValue = connect((props: Props) => {
       relationInterface === 'm2m' ||
       relationInterface === 'o2m' ||
       relationInterface === 'mbm';
-    // 优先用原字段模型；无法解析时回退到 InputFieldModel，避免误用区块模型（会依赖 dataSource/collection）
-    const fieldModelClass = isToManyRelation ? RecordSelectFieldModel : origin?.constructor || InputFieldModel;
-    const TempFieldClass = createTempFieldClass(fieldModelClass);
+
+    const FallbackClass = isToManyRelation ? RecordSelectFieldModel : InputFieldModel;
+    const BoundClass = editableBinding
+      ? (model?.context?.engine?.getModelClass?.(editableBinding.modelName) as any)
+      : null;
+    const TempFieldClass = createTempFieldClass(BoundClass || FallbackClass);
     const fieldSub = {
       use: TempFieldClass,
       uid: uid(),
