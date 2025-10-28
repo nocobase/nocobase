@@ -36,7 +36,7 @@
 
 ![20240422204957](https://static-docs.nocobase.com/20240422204957.png)
 
-更多内容参考 [设置数据范围](/handbook/ui/fields/field-settings/data-scope)
+更多内容参考 [设置数据范围](/interface-builder/fields/field-settings/data-scope)
 
 ### 设置排序规则
 

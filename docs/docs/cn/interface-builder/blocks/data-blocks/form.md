@@ -23,7 +23,7 @@
 
 ![20251023191703](https://static-docs.nocobase.com/20251023191703.png)
 
-更多内容参考 [联动规则](/handbook/ui/blocks/linkage-rule)
+更多内容参考 [联动规则](/interface-builder/linkage-rule)
 
 ### 字段联动规则
 
@@ -31,7 +31,7 @@
 
 ![20251023191849](https://static-docs.nocobase.com/20251023191849.png)
 
-更多内容参考 [联动规则](/handbook/ui/blocks/linkage-rule)
+更多内容参考 [联动规则](/interface-builder/linkage-rule)
 
 ### 布局
 
@@ -62,7 +62,7 @@
 
 ![20251023193231](https://static-docs.nocobase.com/20251023193231.png)
 
-- [提交](/handbook/ui/actions/types/submit)
-- [触发工作流](/handbook/workflow/manual/triggers/custom-action)
-- [JS action ](/handbook/action-js-action)
-- [AI 员工](/handbook/action-ai-employee)
+- [提交](/interface-builder/actions/types/submit)
+- [触发工作流](/interface-builder/actions/types/trigger-workflow)
+- [JS action ](/interface-builder/actions/types/js-action)
+- [AI 员工](/interface-builder/actions/types/ai-employee)

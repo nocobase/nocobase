@@ -14,7 +14,6 @@
 
 ![20240413104602](https://static-docs.nocobase.com/20240413104602.png)
 
-- [编辑按钮](/handbook/ui/actions/action-settings/edit-button)：编辑按钮的标题、颜色、图标
-- [联动规则](/handbook/ui/actions/action-settings/linkage-rule)：动态控制按钮的状态（显示/禁用）
-- [打开模式](/handbook/ui/actions/action-settings/open-mode)：弹窗/抽屉
-- [弹窗尺寸](/handbook/ui/actions/action-settings/popup-size)：默认尺寸为中等（大/中/小）
+- [编辑按钮](/interface-builder/actions/action-settings/edit-button)：编辑按钮的标题、颜色、图标
+- [联动规则](/interface-builder/linkage-rule)：动态控制按钮的状态（显示/禁用）
+- [编辑弹窗](/interface-builder/actions/action-settings/edit-popup)：弹窗/抽屉

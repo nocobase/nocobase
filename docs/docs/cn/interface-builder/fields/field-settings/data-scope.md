@@ -20,7 +20,7 @@
 
 ![20240422163640](https://static-docs.nocobase.com/20240422163640.png)
 
-更多关于变量内容参考 [变量](/handbook/ui/variables)
+更多关于变量内容参考 [变量](/interface-builder/variables)
 
 ### 关系字段联动
 

@@ -185,6 +185,11 @@
               },
               {
                 "type": "custom-link",
+                "label": "下拉选择器",
+                "link": "/interface-builder/fields/specific/select"
+              },
+              {
+                "type": "custom-link",
                 "label": "数据选择器",
                 "link": "/interface-builder/fields/specific/picker"
               },
@@ -197,6 +202,21 @@
                 "type": "custom-link",
                 "label": "子详情",
                 "link": "/interface-builder/fields/specific/sub-detail"
+              },
+              {
+                "type": "custom-link",
+                "label": "标题",
+                "link": "/interface-builder/fields/specific/title"
+              },
+              {
+                "type": "custom-link",
+                "label": "JSField",
+                "link": "/interface-builder/fields/specific/js-field"
+              },
+              {
+                "type": "custom-link",
+                "label": "JSColumn",
+                "link": "/interface-builder/fields/specific/js-column"
               }
             ]
           },
@@ -223,6 +243,11 @@
                 "type": "custom-link",
                 "label": "字段提示信息",
                 "link": "/interface-builder/fields/field-settings/edit-tooltip"
+              },
+              {
+                "type": "custom-link",
+                "label": "数据范围",
+                "link": "/interface-builder/fields/field-settings/data-scope"
               },
               {
                 "type": "custom-link",
@@ -279,7 +304,7 @@
               {
                 "type": "custom-link",
                 "label": "编辑按钮",
-                "link": "/interface-builder/actions/action-settings/bind-workflow"
+                "link": "/interface-builder/actions/action-settings/edit-button"
               },
               {
                 "type": "custom-link",
@@ -334,6 +359,16 @@
               },
               {
                 "type": "custom-link",
+                "label": "导入",
+                "link": "/interface-builder/actions/types/import"
+              },
+              {
+                "type": "custom-link",
+                "label": "导出",
+                "link": "/interface-builder/actions/types/export"
+              },
+              {
+                "type": "custom-link",
                 "label": "筛选",
                 "link": "/interface-builder/actions/types/filter"
               },
@@ -366,6 +401,11 @@
                 "type": "custom-link",
                 "label": "更新记录",
                 "link": "/interface-builder/actions/types/update-record"
+              },
+              {
+                "type": "custom-link",
+                "label": "批量更新",
+                "link": "/interface-builder/actions/types/bulk-update"
               }
             ]
           },

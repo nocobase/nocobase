@@ -4,10 +4,9 @@
 
 字段联动规则是指允许根据用户的行为动态调整表单/详情区块字段的状态，目前支持字段联动规则的区块包括：
 
-- [表单区块](/handbook/ui/blocks/data-blocks/form#%E8%81%94%E5%8A%A8%E8%A7%84%E5%88%99)
-- [详情区块](/handbook/ui/blocks/data-blocks/details#%E8%81%94%E5%8A%A8%E8%A7%84%E5%88%99)
-- [子表单](/handbook/ui/fields/specific/nester)
-- [子表格](/handbook/ui/fields/specific/sub-table)
+- [表单区块](/interface-builder/blocks/data-blocks/form)
+- [详情区块](/interface-builder/blocks/data-blocks/details)
+- [子表单](/interface-builder/fields/specific/sub-form)
 
 ## 使用说明
 
@@ -77,4 +76,4 @@
 
 ![20250418170520](https://static-docs.nocobase.com/20250418170520.png)
 
-更多联动规则说明参考 [联动规则](/handbook/ui/linkage-rule)
+更多联动规则说明参考 [联动规则](/interface-builder/linkage-rule)

@@ -23,7 +23,6 @@
 
 ![20240422151953](https://static-docs.nocobase.com/20240422151953.png)
 
-- [编辑字段标题](/handbook/ui/fields/field-settings/edit-title)
-- [显示标题](/handbook/ui/fields/field-settings/display-title)
-- [编辑字段描述](/handbook/ui/fields/field-settings/edit-description)
-- [编辑字段提示信息](/handbook/ui/fields/field-settings/edit-tooltip)
+- [编辑字段标题](/interface-builder/fields/field-settings/edit-title)
+- [编辑字段描述](/interface-builder/fields/field-settings/edit-description)
+- [编辑字段提示信息](/interface-builder/fields/field-settings/edit-tooltip)

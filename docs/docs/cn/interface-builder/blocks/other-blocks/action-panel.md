@@ -8,9 +8,9 @@
 
 用于放置各种快捷操作，目前支持
 
-- [链接](/handbook/ui/actions/types/link)
-- [扫二维码](/handbook/action-qr-scan)
-- [弹窗操作](/handbook/action-popup)
+- [链接](/interface-builder/actions/types/link)
+- [扫二维码]
+- [弹窗操作](/interface-builder/actions/types/pop-up)
 
 ![20251023225754](https://static-docs.nocobase.com/20251023225754.png)
 

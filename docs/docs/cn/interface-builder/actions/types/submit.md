@@ -28,8 +28,8 @@
 
 ![20240417120149](https://static-docs.nocobase.com/20240417120149.png)
 
-更多内容可参考 [绑定工作流](/handbook/ui/actions/action-settings/bind-workflow)
+更多内容可参考 [绑定工作流](/interface-builder/actions/action-settings/bind-workflow)
 
 
-- [编辑按钮](/handbook/ui/actions/action-settings/edit-button)
-- [二次确认](/handbook/ui/actions/action-settings/double-check)
+- [编辑按钮](/interface-builder/actions/action-settings/edit-button)
+- [二次确认](/interface-builder/actions/action-settings/double-check)

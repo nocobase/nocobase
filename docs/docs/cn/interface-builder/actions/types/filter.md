@@ -18,4 +18,4 @@
 
 ![20240423200041](https://static-docs.nocobase.com/20240423200041.png)
 
-- [编辑按钮](/handbook/ui/actions/action-settings/edit-button)
+- [编辑按钮](/interface-builder/actions/action-settings/edit-button)

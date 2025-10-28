@@ -12,7 +12,7 @@
 
 ![20251024175303](https://static-docs.nocobase.com/20251024175303.png)
 
-更多内容参考 [日期格式化](/handbook/ui/fields/specific/date-picker)
+更多内容参考 [日期格式化](/interface-builder/fields/specific/date-picker)
 
 ### 数值字段格式化
 
@@ -20,7 +20,7 @@
 
 ![20251024175445](https://static-docs.nocobase.com/20251024175445.png)
 
-更多内容参考 [数值格式化](/handbook/ui/fields/field-settings/number-format)
+更多内容参考 [数值格式化](/interface-builder/fields/field-settings/number-format)
 
 ### 启用快速编辑
 

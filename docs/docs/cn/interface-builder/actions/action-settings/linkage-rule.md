@@ -42,11 +42,11 @@
 
 ![20250418150429](https://static-docs.nocobase.com/20250418150429.png)
 
-更多关于变量内容参考 [变量](/handbook/ui/variables)。
+更多关于变量内容参考 [变量](/interface-builder/variables)。
 
 ## RoadMap
 
 - 计划或进行中
   - 操作联动规则支持当前表单
 
-更多联动规则说明参考[联动规则](/handbook/ui/linkage-rule)
+更多联动规则说明参考[联动规则](/interface-builder/linkage-rule)

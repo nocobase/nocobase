@@ -60,4 +60,4 @@
   <source src="https://static-docs.nocobase.com/20250427150738.mp4" type="video/mp4">
 </video>
 
-更多联动规则说明参考 [联动规则](/handbook/ui/linkage-rule)
+更多联动规则说明参考 [联动规则](/interface-builder/linkage-rule)

@@ -25,5 +25,5 @@
 
 ![20240426153534](https://static-docs.nocobase.com/20240426153534.png)
 
-更多关于变量内容参考 [变量](/handbook/ui/variables)
+更多关于变量内容参考 [变量](/interface-builder/variables)
 

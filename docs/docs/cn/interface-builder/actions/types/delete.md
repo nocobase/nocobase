@@ -10,6 +10,6 @@
 
 ![20240413211439](https://static-docs.nocobase.com/20240413211439.png)
 
-- [编辑按钮](/handbook/ui/actions/action-settings/edit-button)
-- [二次确认](/handbook/ui/actions/action-settings/double-check)
+- [编辑按钮](/interface-builder/actions/action-settings/edit-button)
+- [二次确认](/interface-builder/actions/action-settings/double-check)
 - 执行后刷新数据：默认开启，执行操作后刷新区块数据

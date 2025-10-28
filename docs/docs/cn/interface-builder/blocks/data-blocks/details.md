@@ -13,7 +13,7 @@
 通过联动规则控制区块行为（如是否显示或执行javaScript）。
 
 ![20251023195004](https://static-docs.nocobase.com/20251023195004.png)
-更多内容参考 [联动规则](/handbook/ui/blocks/linkage-rule)
+更多内容参考 [联动规则](/interface-builder/linkage-rule)
 
 ### 设置数据范围
 
@@ -21,7 +21,7 @@
 
 ![20251023195051](https://static-docs.nocobase.com/20251023195051.png)
 
-更多内容参考 [设置数据范围](/handbook/ui/blocks/block-settings/data-scope)
+更多内容参考 [设置数据范围](/interface-builder/blocks/block-settings/data-scope)
 
 ### 字段联动规则
 
@@ -31,7 +31,7 @@
 
 ![20251023200739](https://static-docs.nocobase.com/20251023200739.png)
 
-更多内容参考 [联动规则](/handbook/ui/blocks/linkage-rule)
+更多内容参考 [联动规则](/interface-builder/linkage-rule)
 
 ## 配置字段
 
@@ -67,12 +67,11 @@
 
 ![20251023200529](https://static-docs.nocobase.com/20251023200529.png)
 
-- [编辑](/handbook/ui/actions/types/edit)
-- [删除](/handbook/ui/actions/types/delete)
-- [链接](/handbook/ui/actions/types/link)
-- [弹窗](/handbook/ui/actions/types/pop-up)
-- [更新记录](/handbook/ui/actions/types/update-record)
-- [模板打印](/handbook/action-template-print)
-- [触发工作流](/handbook/action-trigger-workflow)
-- [JS action ](/handbook/action-js-action)
-- [AI 员工](/handbook/action-ai-employee)
+- [编辑](/interface-builder/actions/types/edit)
+- [删除](/interface-builder/actions/types/delete)
+- [链接](/interface-builder/actions/types/link)
+- [弹窗](/interface-builder/actions/types/pop-up)
+- [更新记录](/interface-builder/actions/types/update-record)
+- [触发工作流](/interface-builder/actions/types/trigger-workflow)
+- [JS action ](/interface-builder/actions/types/js-action)
+- [AI 员工](/interface-builder/actions/types/ai-employee)

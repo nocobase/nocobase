@@ -51,7 +51,7 @@
 - 当前对象，子表单里的概念（子表单里的每一行数据对象）；
 - 表单选中记录，目前仅限于 「Table 区块 + Add Record 表单」组合；
 
-更多关于变量内容参考 [变量](/handbook/ui/variables)
+更多关于变量内容参考 [变量](/interface-builder/variables)
 
 ### 字段默认值变量
 

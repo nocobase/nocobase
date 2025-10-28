@@ -12,7 +12,7 @@ NocoBase 的关系字段组件旨在帮助用户更好地展示和处理关联�
 
 ![20240429205659](https://static-docs.nocobase.com/20240429205659.png)
 
-更多内容参考 [下拉选择器](/handbook/ui/fields/specific/select)
+更多内容参考 [下拉选择器](/interface-builder/fields/specific/select)
 
 
 ### 数据选择器
@@ -21,7 +21,7 @@ NocoBase 的关系字段组件旨在帮助用户更好地展示和处理关联�
 
 ![20240429210824](https://static-docs.nocobase.com/20240429210824.png)
 
-更多内容参考 [数据选择器](/handbook/ui/fields/specific/picker)
+更多内容参考 [数据选择器](/interface-builder/fields/specific/picker)
 
 ### 子表单
 
@@ -29,7 +29,7 @@ NocoBase 的关系字段组件旨在帮助用户更好地展示和处理关联�
 
 ![20240429215953](https://static-docs.nocobase.com/20240429215953.png)
 
-更多内容参考 [子表单](/handbook/ui/fields/specific/nester)
+更多内容参考 [子表单](/interface-builder/fields/specific/sub-form)
 
 
 ### 子表格
@@ -38,7 +38,7 @@ NocoBase 的关系字段组件旨在帮助用户更好地展示和处理关联�
 
 ![20240429222505](https://static-docs.nocobase.com/20240429222505.png)
 
-更多内容参考 [子表格](/handbook/ui/fields/specific/sub-table)
+更多内容参考 [子表格](/interface-builder/fields/specific/sub-table)
 
 ### 子详情
 
@@ -46,7 +46,7 @@ NocoBase 的关系字段组件旨在帮助用户更好地展示和处理关联�
 
 ![20240822223651](https://static-docs.nocobase.com/20240822223651.png)
 
-更多内容参考 [子详情](/handbook/ui/fields/specific/sub-detail)
+更多内容参考 [子详情](/interface-builder/fields/specific/sub-detail)
 
 
 ### 文件管理器
@@ -55,7 +55,7 @@ NocoBase 的关系字段组件旨在帮助用户更好地展示和处理关联�
 
 ![20240429222753](https://static-docs.nocobase.com/20240429222753.png)
 
-更多内容参考 [文件管理器](/handbook/ui/fields/specific/file-manager)
+更多内容参考 [文件管理器](/interface-builder/fields/specific/file-manager)
 
 ### 标题字段
 
@@ -63,7 +63,7 @@ NocoBase 的关系字段组件旨在帮助用户更好地展示和处理关联�
 
 ![20240429223646](https://static-docs.nocobase.com/20240429223646.png)
 
-更多内容参考 [标题](/handbook/ui/fields/specific/title)
+更多内容参考 [标题](/interface-builder/fields/specific/title)
 
 
 

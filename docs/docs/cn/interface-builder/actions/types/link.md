@@ -37,5 +37,5 @@
 </video>
 
 
-- [编辑按钮](/handbook/ui/actions/action-settings/edit-button)：编辑按钮的标题、颜色、图标；
-- [联动规则](/handbook/ui/actions/action-settings/linkage-rule)：动态控制按钮状态；
+- [编辑按钮](/interface-builder/actions/action-settings/edit-button)：编辑按钮的标题、颜色、图标；
+- [联动规则](/interface-builder/linkage-rule)：动态控制按钮状态；

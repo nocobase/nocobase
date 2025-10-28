@@ -19,8 +19,7 @@
 示例：已收货订单禁止编辑。
 ![20240423211911](https://static-docs.nocobase.com/20240423211911.png)
 
-更多内容参考 [操作的联动规则](/handbook/ui/actions/action-settings/linkage-rule)。
+更多内容参考 [操作的联动规则](/interface-builder/linkage-rule)。
 
-- [编辑按钮](/handbook/ui/actions/action-settings/edit-button)：编辑按钮的标题、颜色、图标；
-- [打开模式](/handbook/ui/actions/action-settings/open-mode)：弹窗/抽屉；
-- [弹窗尺寸](/handbook/ui/actions/action-settings/popup-size)：默认尺寸为中等（大/中/小）；
+- [编辑按钮](/interface-builder/actions/action-settings/edit-button)：编辑按钮的标题、颜色、图标；
+- [编辑弹窗](/interface-builder/actions/action-settings/edit-popup)：弹窗/抽屉；

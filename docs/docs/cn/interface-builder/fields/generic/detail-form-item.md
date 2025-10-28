@@ -20,7 +20,7 @@
 
 支持简单的单位换算，千分位分隔符，前后缀，精确度，科学记数法。
 
-更多内容参考 [数值格式化](/handbook/ui/fields/field-settings/number-format)
+更多内容参考 [数值格式化](/interface-builder/fields/field-settings/number-format)
 
 ### 启用点击打开
 
@@ -49,6 +49,6 @@
 
 ![20251025174311](https://static-docs.nocobase.com/20251025174311.gif)
 
-- [编辑字段标题](/handbook/ui/fields/field-settings/edit-title)
-- [编辑字段描述](/handbook/ui/fields/field-settings/edit-description)
-- [编辑字段提示信息](/handbook/ui/fields/field-settings/edit-tooltip)
+- [编辑字段标题](/interface-builder/fields/field-settings/edit-title)
+- [编辑字段描述](/interface-builder/fields/field-settings/edit-description)
+- [编辑字段提示信息](/interface-builder/fields/field-settings/edit-tooltip)

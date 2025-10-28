@@ -18,7 +18,7 @@
 
 ![20251023202927](https://static-docs.nocobase.com/20251023202927.png)
 
-更多内容参考 [设置数据范围](/handbook/ui/blocks/block-settings/data-scope)
+更多内容参考 [设置数据范围](/interface-builder/blocks/block-settings/data-scope)
 
 ### 设置排序规则
 
@@ -26,7 +26,7 @@
 
 ![20251023203022](https://static-docs.nocobase.com/20251023203022.png)
 
-更多内容参考 [设置排序规则](/handbook/ui/blocks/block-settings/sorting-rule)
+更多内容参考 [设置排序规则](/interface-builder/blocks/block-settings/sorting-rule)
 
 ## 配置字段
 
@@ -42,7 +42,7 @@
 
 ![20251023203611](https://static-docs.nocobase.com/20251023203611.png)
 
-列表字段配置项可参考 [详情字段](/handbook/ui/fields/generic/detail-form-item)
+列表字段配置项可参考 [详情字段](/interface-builder/fields/generic/detail-form-item)
 
 ## 配置操作
 
@@ -50,31 +50,31 @@
 
 ![20251023203918](https://static-docs.nocobase.com/20251023203918.png)
 
-- [筛选](/handbook/ui/actions/types/filter)
-- [添加](/handbook/ui/actions/types/add-new)
-- [删除](/handbook/ui/actions/types/delete)
-- [刷新](/handbook/ui/actions/types/refresh)
-- [导入](/handbook/action-import)
-- [导出](/handbook/action-export)
-- [模板打印](/handbook/action-template-print)
-- [批量更新](/handbook/action-bulk-update)
-- [导出附件](/handbook/action-export-attachments)
-- [触发工作流](/handbook/action-trigger-workflow)
-- [JS action ](/handbook/action-js-action)
-- [AI 员工](/handbook/action-ai-employee)
+- [筛选](/interface-builder/actions/types/filter)
+- [添加](/interface-builder/actions/types/add-new)
+- [删除](/interface-builder/actions/types/delete)
+- [刷新](/interface-builder/actions/types/refresh)
+- [导入](/interface-builder/actions/types/import)
+- [导出](/interface-builder/actions/types/export)
+- [模板打印](/interface-builder/actions/types/template-print)
+- [批量更新](/interface-builder/actions/types/bulk-update)
+- [导出附件](/interface-builder/actions/types/export-attachments)
+- [触发工作流](/interface-builder/actions/types/trigger-workflow)
+- [JS action ](/interface-builder/actions/types/js-action)
+- [AI 员工](/interface-builder/actions/types/ai-employee)
 
 ### 行操作
 
 ![20251023204329](https://static-docs.nocobase.com/20251023204329.png)
 
 
-- [编辑](/handbook/ui/actions/types/edit)
-- [删除](/handbook/ui/actions/types/delete)
-- [链接](/handbook/ui/actions/types/link)
-- [弹窗](/handbook/ui/actions/types/pop-up)
-- [更新记录](/handbook/ui/actions/types/update-record)
-- [模板打印](/handbook/action-template-print)
-- [触发工作流](/handbook/action-trigger-workflow)
-- [JS action ](/handbook/action-js-action)
-- [AI 员工](/handbook/action-ai-employee)
+- [编辑](/interface-builder/actions/types/edit)
+- [删除](/interface-builder/actions/types/delete)
+- [链接](/interface-builder/actions/types/link)
+- [弹窗](/interface-builder/actions/types/pop-up)
+- [更新记录](/interface-builder/actions/types/update-record)
+- [模板打印](/interface-builder/actions/types/template-print)
+- [触发工作流](/interface-builder/actions/types/trigger-workflow)
+- [JS action ](/interface-builder/actions/types/js-action)
+- [AI 员工](/interface-builder/actions/types/ai-employee)
 

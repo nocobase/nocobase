@@ -14,7 +14,7 @@
 
 ![20251023194550](https://static-docs.nocobase.com/20251023194550.png)
 
-更多内容参考 [联动规则](/handbook/ui/blocks/linkage-rule)
+更多内容参考 [联动规则](/interface-builder/linkage-rule)
 
 ### 设置数据范围
 
@@ -22,7 +22,7 @@
 
 ![20251023150936](https://static-docs.nocobase.com/20251023150936.png)
 
-更多内容参考 [设置数据范围](/handbook/ui/blocks/block-settings/data-scope)
+更多内容参考 [设置数据范围](/interface-builder/blocks/block-settings/data-scope)
 
 ### 设置排序规则
 
@@ -30,7 +30,7 @@
 
 ![20251023155114](https://static-docs.nocobase.com/20251023155114.png)
 
-更多内容参考 [设置排序规则](/handbook/ui/blocks/block-settings/sorting-rule)
+更多内容参考 [设置排序规则](/interface-builder/blocks/block-settings/sorting-rule)
 
 ## 配置字段
 
@@ -50,8 +50,8 @@
 
 ![20251023185425](https://static-docs.nocobase.com/20251023185425.png)
 
-- [Js field](/handbook/ui/fields/types/jsField)
-- [Js column](/handbook/ui/fields/types/jsColumn)
+- [Js field](/interface-builder/fields/specific/js-field)
+- [Js column](/interface-builder/fields/specific/js-column)
 
 ## 配置操作
 
@@ -59,33 +59,33 @@
 
 ![20251023171655](https://static-docs.nocobase.com/20251023171655.png)
 
-- [筛选](/handbook/ui/actions/types/filter)
-- [添加](/handbook/ui/actions/types/add-new)
-- [删除](/handbook/ui/actions/types/delete)
-- [刷新](/handbook/ui/actions/types/refresh)
-- [导入](/handbook/action-import)
-- [导出](/handbook/action-export)
-- [模板打印](/handbook/action-template-print)
-- [批量更新](/handbook/action-bulk-update)
-- [导出附件](/handbook/action-export-attachments)
-- [触发工作流](/handbook/action-trigger-workflow)
-- [JS action ](/handbook/action-js-action)
-- [AI 员工](/handbook/action-ai-employee)
+- [筛选](/interface-builder/actions/types/filter)
+- [添加](/interface-builder/actions/types/add-new)
+- [删除](/interface-builder/actions/types/delete)
+- [刷新](/interface-builder/actions/types/refresh)
+- [导入](/interface-builder/actions/types/import)
+- [导出](/interface-builder/actions/types/export)
+- [模板打印](/interface-builder/actions/types/template-print)
+- [批量更新](/interface-builder/actions/types/bulk-update)
+- [导出附件](/interface-builder/actions/types/export-attachments)
+- [触发工作流](/interface-builder/actions/types/trigger-workflow)
+- [JS action ](/interface-builder/actions/types/js-action)
+- [AI 员工](/interface-builder/actions/types/ai-employee)
 
 ### 行操作
 
 ![20251023181019](https://static-docs.nocobase.com/20251023181019.png)
 
-- [查看](/handbook/ui/actions/types/view)
-- [编辑](/handbook/ui/actions/types/edit)
-- [删除](/handbook/ui/actions/types/delete)
-- [弹窗](/handbook/ui/actions/types/pop-up)
-- [链接](/handbook/ui/actions/types/link)
-- [更新记录](/handbook/action-update-record)
-- [模板打印](/handbook/action-template-print)
-- [触发工作流](/handbook/action-trigger-workflow)
-- [JS action ](/handbook/action-js-action)
-- [AI 员工](/handbook/action-ai-employee)
+- [查看](/interface-builder/actions/types/view)
+- [编辑](/interface-builder/actions/types/edit)
+- [删除](/interface-builder/actions/types/delete)
+- [弹窗](/interface-builder/actions/types/pop-up)
+- [链接](/interface-builder/actions/types/link)
+- [更新记录](/interface-builder/actions/types/update-record)
+- [模板打印](/interface-builder/actions/types/template-print)
+- [触发工作流](/interface-builder/actions/types/trigger-workflow)
+- [JS action ](/interface-builder/actions/types/js-action)
+- [AI 员工](/interface-builder/actions/types/ai-employee)
 
 ## 快速编辑
 
