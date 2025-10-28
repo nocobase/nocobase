@@ -231,8 +231,13 @@
               },
               {
                 "type": "custom-link",
-                "label": "字段标题",
+                "label": "字段标签",
                 "link": "/interface-builder/fields/field-settings/edit-title"
+              },
+              {
+                "type": "custom-link",
+                "label": "显示标签",
+                "link": "/interface-builder/fields/field-settings/show-label"
               },
               {
                 "type": "custom-link",

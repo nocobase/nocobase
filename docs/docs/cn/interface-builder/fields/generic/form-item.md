@@ -31,6 +31,7 @@
 更多内容参考 [必填](/interface-builder/fields/field-settings/required)
 
 - [编辑字段标题](/interface-builder/fields/field-settings/edit-title)
+- [显示标签](/interface-builder/fields/field-settings/show-label)
 - [编辑字段描述](/interface-builder/fields/field-settings/edit-description)
 - [编辑字段提示信息](/interface-builder/fields/field-settings/edit-tooltip)
 - [模式](/interface-builder/fields/field-settings/pattern)
