@@ -303,7 +303,7 @@ const PreviewButton = ({ style }) => {
         // 这里通过普通的 form.values 拿不到数据
         const formValues = ctx.getStepFormValues('chartSettings', 'configure');
         // 写入配置参数，统一走 onPreview 方便回滚
-        await ctx.model.onPreview(formValues);
+        await ctx.model.onPreview(formValues, true);
       }}
     >
       {t('Preview')}
