@@ -148,7 +148,7 @@ const ArrayNester = ({ name, value, disabled }: any) => {
           <>
             {fields.map((field) => {
               const { key, name: index } = field;
-              const uid = `${key}.${name}`;
+              const uid = `${key}.${name}.${index}`;
               // 每行只创建一次 fork
               if (!forksRef.current[uid]) {
                 const fork = gridModel.createFork();
