@@ -7,16 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAIEmployeesData } from '../hooks/useAIEmployeesData';
 import { useChatBoxStore } from '../chatbox/stores/chat-box';
 import { useChatBoxActions } from '../chatbox/hooks/useChatBoxActions';
-import { Avatar, Popover } from 'antd';
+import { Avatar, Popover, Tooltip } from 'antd';
 import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
 import { ProfileCard } from '../ProfileCard';
 import { avatars } from '../avatars';
 import { EditorRef } from '@nocobase/client';
 import { isEngineer } from '../built-in/utils';
+import { Task } from '../types';
+import { useT } from '../../locale';
+import prompts from './prompts';
 
 export interface AICodingButtonProps {
   uid: string;
@@ -27,15 +30,14 @@ export interface AICodingButtonProps {
 }
 
 export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, language, editorRef, setActive }) => {
+  const t = useT();
   const { aiEmployees } = useAIEmployeesData();
   const open = useChatBoxStore.use.open();
-  const setOpen = useChatBoxStore.use.setOpen();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
-  const { switchAIEmployee } = useChatBoxActions();
+  const { triggerTask } = useChatBoxActions();
   const addContextItems = useChatMessagesStore.use.addContextItems();
   const setEditorRef = useChatMessagesStore.use.setEditorRef();
   const setCurrentEditorRefUid = useChatMessagesStore.use.setCurrentEditorRefUid();
-  const editorRefMap = useChatMessagesStore.use.editorRef();
 
   const aiEmployee = aiEmployees.filter((e) => isEngineer(e))[0];
 
@@ -45,7 +47,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
     return () => {
       setEditorRef(uid, null);
     };
-  }, [uid, editorRef, setEditorRef]);
+  }, [uid, editorRef, setEditorRef, setCurrentEditorRefUid]);
 
   useEffect(() => {
     if (aiEmployee) {
@@ -53,43 +55,104 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
     } else {
       setActive('AICodingButton', false);
     }
-  }, [aiEmployee]);
+  }, [aiEmployee, setActive]);
 
-  return aiEmployee ? (
-    <Popover content={<ProfileCard aiEmployee={aiEmployee} />}>
-      <Avatar
-        src={avatars(aiEmployee.avatar)}
-        size={32}
-        shape="circle"
-        style={{
-          cursor: 'pointer',
-          border: '1px solid #eee',
-        }}
-        onClick={() => {
-          if (!open) {
-            setOpen(true);
-            switchAIEmployee(aiEmployee);
-          } else {
-            if (currentEmployee?.username !== aiEmployee.username) {
-              switchAIEmployee(aiEmployee);
-            }
-          }
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [errorOccurred, setErrorOccurred] = useState(false);
+  useEffect(() => {
+    const isError = editorRef.logs.find((log) => log.level === 'error') !== undefined;
+    setErrorOccurred(isError);
+    setShowTooltip(isError);
+    if (isError) {
+      setTimeout(() => {
+        setShowTooltip(false);
+      }, 2000);
+    }
+  }, [editorRef.logs]);
 
-          setCurrentEditorRefUid(uid);
-          const editor = editorRefMap[uid];
-          addContextItems({
+  const TaskTemplate = (prototype: Partial<Task>) => {
+    const { message, ...rest } = prototype;
+    return {
+      message: {
+        workContext: [
+          {
             type: 'code-editor',
             uid,
             title: `${scene}(${language})`,
             content: {
               scene,
               language,
-              code: editor?.read(),
+              code: editorRef?.read(),
             },
-          });
-        }}
-      />
-    </Popover>
+          },
+        ],
+        ...(message ?? {}),
+      },
+      autoSend: false,
+      ...rest,
+    };
+  };
+
+  const taskMap: Record<string, Task> = {
+    generateCode: TaskTemplate({ title: t('Start coding') }),
+    codeReview: TaskTemplate({
+      title: t('Code review'),
+      message: { user: t('please review the code'), system: prompts.codeReview },
+    }),
+    logsDiagnosis: TaskTemplate({
+      title: t('Diagnose and fix the error'),
+      message: {
+        user: t('please fix the error'),
+        system: `Here is run logs:${JSON.stringify(
+          editorRef?.logs,
+        )} \n analyze the code and run logs, then fix the problems existing in the code`,
+      },
+      autoSend: errorOccurred,
+    }),
+  };
+
+  const tasks: Task[] = Object.values(taskMap);
+
+  return aiEmployee ? (
+    <Tooltip
+      placement="topRight"
+      title={t('Oops! Something went wrong. Let me diagnose and fix it.')}
+      open={showTooltip}
+      styles={{ root: { maxWidth: 500 } }}
+    >
+      <Popover content={<ProfileCard aiEmployee={aiEmployee} tasks={tasks} />}>
+        <Avatar
+          src={avatars(aiEmployee.avatar)}
+          size={32}
+          shape="circle"
+          style={{
+            cursor: 'pointer',
+            border: '1px solid #eee',
+          }}
+          onClick={() => {
+            if (!open || currentEmployee?.username !== aiEmployee.username) {
+              if (editorRef.logs.find((log) => log.level === 'error')) {
+                triggerTask({ aiEmployee, tasks: [taskMap['logsDiagnosis']] });
+              } else {
+                triggerTask({ aiEmployee, tasks });
+              }
+            }
+
+            setCurrentEditorRefUid(uid);
+            addContextItems({
+              type: 'code-editor',
+              uid,
+              title: `${scene}(${language})`,
+              content: {
+                scene,
+                language,
+                code: editorRef?.read(),
+              },
+            });
+          }}
+        />
+      </Popover>
+    </Tooltip>
   ) : (
     <></>
   );
