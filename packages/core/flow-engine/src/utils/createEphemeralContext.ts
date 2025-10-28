@@ -25,6 +25,10 @@ export async function createEphemeralContext<TCtx extends FlowContext>(
   parent: TCtx,
   contextDefs?: ContextDefsLike<TCtx>,
 ): Promise<TCtx> {
+  // 若未提供任何上下文定义，直接复用父级上下文，避免不必要的代理包装
+  if (contextDefs == null) {
+    return parent;
+  }
   // 1) 创建一个新的 FlowContext，专门承载“临时定义”（defineProperty/defineMethod）
   const scoped = new FlowContext();
   // 2) 读取优先：先从 scoped 自身取（_props/_methods），否则委托到 parent（仅 _props/_methods）
