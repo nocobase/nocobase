@@ -226,11 +226,6 @@
             "items": [
               {
                 "type": "custom-link",
-                "label": "子表格",
-                "link": "/interface-builder/fields/field-settings/data-scope"
-              },
-              {
-                "type": "custom-link",
                 "label": "默认值",
                 "link": "/interface-builder/fields/field-settings/default-value"
               },
