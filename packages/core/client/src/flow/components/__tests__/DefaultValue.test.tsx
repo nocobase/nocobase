@@ -121,6 +121,106 @@ describe('DefaultValue component', () => {
     });
   });
 
+  it('readPretty mode: constant editor stays editable even if origin field is display-only', async () => {
+    // Dummy display-only field model to simulate readPretty binding
+    class DummyDisplayFieldModel extends FlowModel {
+      render() {
+        return <div data-testid="dummy-display">DISPLAY_ONLY</div>;
+      }
+    }
+    engine.registerModels({ DummyDisplayFieldModel });
+
+    const onChange = vi.fn();
+
+    const host = engine.createModel<HostModel>({
+      use: 'HostModel',
+      props: { name: 'nickname', value: '', onChange, metaTree: simpleMetaTree, pattern: 'readPretty' },
+      subModels: { field: { use: 'DummyDisplayFieldModel' } },
+    });
+    // 提供集合字段上下文，指向可编辑接口（input）
+    host.context.defineProperty('collectionField', { value: { interface: 'input', type: 'string' } });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    const input = await screen.findByRole('textbox');
+    expect(input).toBeInTheDocument();
+    await act(async () => {
+      await userEvent.type(input, 'abc');
+    });
+    expect(onChange).toHaveBeenCalled();
+  });
+
+  it('relation field constant mode: selecting an option works and returns record object', async () => {
+    const onChange = vi.fn();
+    // 捕获 DefaultValue 内部创建的临时根模型，便于直接触发字段 onChange
+    const origCreate = engine.createModel.bind(engine);
+    let capturedTempRoot: any;
+    // @ts-ignore
+    engine.createModel = ((options: any, extra?: any) => {
+      const created = origCreate(options, extra);
+      if (options?.use === 'VariableFieldFormModel') {
+        capturedTempRoot = created;
+      }
+      return created;
+    }) as any;
+
+    const host = engine.createModel<HostModel>({
+      use: 'HostModel',
+      props: { name: 'role', value: '', onChange, metaTree: simpleMetaTree },
+      subModels: { field: { use: 'RecordSelectFieldModel' } },
+    });
+    // 关系字段上下文（单选 m2o）
+    host.context.defineProperty('collectionField', {
+      value: {
+        interface: 'm2o',
+        type: 'belongsTo',
+        isAssociationField: () => true,
+        fieldNames: { label: 'name', value: 'id' },
+        targetCollection: {
+          getField: (name) => ({ name, type: 'string', interface: 'input', uiSchema: { 'x-component': 'Input' } }),
+        },
+      },
+    });
+    // 为临时字段提供静态选项，避免依赖资源加载
+    (host as any).customFieldProps = {
+      fieldNames: { label: 'name', value: 'id' },
+      options: [
+        // 提供 value/label 以匹配 antd Select 的期望结构
+        { id: 1, name: 'Role A', value: 1, label: 'Role A' },
+        { id: 2, name: 'Role B', value: 2, label: 'Role B' },
+      ],
+      allowMultiple: false,
+      multiple: false,
+    };
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    // 直接调用临时字段的 onChange，模拟 Select 选择行为
+    await waitFor(() => {
+      expect(capturedTempRoot?.subModels?.fields?.[0]).toBeTruthy();
+    });
+    const fieldModel = capturedTempRoot.subModels.fields[0];
+    await act(async () => {
+      fieldModel?.props?.onChange?.({ data: { id: 1, name: 'Role A' } });
+    });
+    expect(onChange).toHaveBeenCalled();
+  });
   it('constant mode: renders editable input and triggers controlled onChange, does not backfill original form', async () => {
     const onChange = vi.fn();
     const formStub = createFormStub();
