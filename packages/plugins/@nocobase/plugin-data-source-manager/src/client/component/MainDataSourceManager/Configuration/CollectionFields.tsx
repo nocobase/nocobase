@@ -37,7 +37,7 @@ import {
   useFieldInterfaceOptions,
   useApp,
 } from '@nocobase/client';
-import { message, Select, Space, Switch, Table, TableColumnProps, Tag, Tooltip } from 'antd';
+import { message, Select, Space, Switch, Table, TableColumnProps, Tag, Tooltip, App } from 'antd';
 import React, { createContext, useContext, useMemo, useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { omit } from 'lodash';
@@ -285,13 +285,17 @@ const FieldInterfaceRenderer = ({ value, record, updateFieldHandler, isPresetFie
     async (newValue) => {
       const interfaceConfig = getInterface(newValue);
       setSelectValue(newValue);
-      await updateFieldHandler(record, {
-        interface: newValue,
-        uiSchema: {
-          title: record?.uiSchema?.title,
-          ...interfaceConfig?.default?.uiSchema,
+      await updateFieldHandler(
+        record,
+        {
+          interface: newValue,
+          uiSchema: {
+            title: record?.uiSchema?.title,
+            ...interfaceConfig?.default?.uiSchema,
+          },
         },
-      });
+        false,
+      );
     },
     [record],
   );
@@ -399,26 +403,38 @@ const CurrentFields = (props) => {
   const ctx = useContext(CollectionListContext);
   const { collectionInfo } = props;
   const app = useApp();
+  const { modal } = App.useApp();
   const mainDataSourcePlugin: any = app.pm.get('data-source-main');
   const collectionPresetFields = mainDataSourcePlugin.getCollectionPresetFields();
   const collectionPresetFieldsInterfaces = collectionPresetFields.map((v) => v.value?.interface).filter((v) => v);
 
-  const updateFieldHandler = async (record, values) => {
-    try {
-      await resource.update({
-        filterByTk: record.name,
-        values: {
-          ...values,
-          collectionName: record.collectionName,
-        },
+  const updateFieldHandler = async (record, values, needConfirm = true) => {
+    const doUpdate = async () => {
+      try {
+        await resource.update({
+          filterByTk: record.name,
+          values: {
+            ...values,
+            collectionName: record.collectionName,
+          },
+        });
+        await props.refreshAsync();
+        message.success(t('Saved successfully'));
+        refreshCM();
+      } catch (error) {
+        console.error('Failed to update field:', error);
+        message.error(t('Save failed'));
+      }
+    };
+
+    if (needConfirm) {
+      modal.confirm({
+        title: t('Save'),
+        content: t('Are you sure you want to save it?'),
+        onOk: doUpdate,
       });
-      // ctx?.refresh?.();
-      await props.refreshAsync();
-      message.success(t('Saved successfully'));
-      refreshCM();
-    } catch (error) {
-      console.error('Failed to update field type:', error);
-      message.error(t('Save failed'));
+    } else {
+      await doUpdate();
     }
   };
   const columns: TableColumnProps<any>[] = [
@@ -432,10 +448,10 @@ const CurrentFields = (props) => {
       title: t('Field name'),
     },
     {
-      dataIndex: 'interface',
-      title: t('Field interface'),
+      dataIndex: 'type',
+      title: t('Field type'),
       render: (value, record) => (
-        <FieldInterfaceRenderer
+        <FieldTypeRenderer
           value={value}
           record={record}
           updateFieldHandler={updateFieldHandler}
@@ -444,10 +460,10 @@ const CurrentFields = (props) => {
       ),
     },
     {
-      dataIndex: 'type',
-      title: t('Field type'),
+      dataIndex: 'interface',
+      title: t('Field interface'),
       render: (value, record) => (
-        <FieldTypeRenderer
+        <FieldInterfaceRenderer
           value={value}
           record={record}
           updateFieldHandler={updateFieldHandler}
