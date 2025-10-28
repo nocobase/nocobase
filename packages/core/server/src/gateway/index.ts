@@ -188,7 +188,15 @@ export class Gateway extends EventEmitter {
   }
 
   responseErrorWithCode(code, res, options) {
+    const log = this.getLogger(options.appName, res);
     const error = applyErrorWithArgs(getErrorWithCode(code), options);
+    log.error(error.message, {
+      method: 'responseErrorWithCode',
+      code,
+      error,
+      statusCode: res.statusCode,
+      appName: options.appName,
+    });
     this.responseError(res, error);
   }
 
