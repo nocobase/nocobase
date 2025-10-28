@@ -8,6 +8,7 @@ import {
 import { useFrontmatter, useNavigate, usePageData } from '@rspress/runtime';
 import type { Feature } from '@rspress/shared';
 import type { JSX } from 'react';
+import { PluginCard } from './components';
 
 function getCustomMDXComponent() {
   const { h1: H1, ...mdxComponents } = basicGetCustomMDXComponent();
@@ -27,6 +28,7 @@ function getCustomMDXComponent() {
   return {
     ...mdxComponents,
     h1: MyH1,
+    PluginCard,
   };
 }
 
