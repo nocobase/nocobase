@@ -1,8 +1,14 @@
-/* Import Nunito font from Google Fonts (Landrick style) */
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap');
+/* Import Nunito font from local (Landrick style) */
+@import '@fontsource/nunito/300.css';
+@import '@fontsource/nunito/400.css';
+@import '@fontsource/nunito/600.css';
+@import '@fontsource/nunito/700.css';
 
-/* Import FontAwesome for icons */
-@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
+/* Import FontAwesome for icons - local version */
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
+/* Import Unicons for icons (matching website style) - local version */
+@import '@iconscout/unicons/css/line.css';
 
 html:not(.rp-dark) {
   --rp-code-font-size: 14px;
@@ -208,12 +214,10 @@ h1[class*="rp-text"] {
 }
 
 /* Remove the gradient mask overlay that causes the shadow effect */
-/* DISABLED: This was hiding the search modal backdrop! */
-/*
-[class*="mask_"] {
+/* Only target the mask in the hero section, not the search modal backdrop */
+.rp-m-auto.rp-pt-0 [class*="mask_"] {
   display: none !important;
 }
-*/
 
 /* Reduce Hero section padding to make it less spacious */
 .rp-m-auto.rp-pt-0 {
