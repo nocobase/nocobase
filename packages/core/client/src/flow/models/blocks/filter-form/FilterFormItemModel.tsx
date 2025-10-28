@@ -24,7 +24,7 @@ import { FilterFormFieldModel } from './fields';
 
 const getModelFields = async (model: CollectionBlockModel) => {
   const collection = model.context.collection as Collection;
-  const fields = (await model?.getFilterFields()) || [];
+  const fields = (await model?.getFilterFields?.()) || [];
   return fields
     .map((field: any) => {
       const binding = FilterableItemModel.getDefaultBindingByField(model.context, field);
