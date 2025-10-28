@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "用户",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "角色",
+    "link": "/users-permissions/acl"
+  }
+]

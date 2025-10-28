@@ -42,9 +42,11 @@ features:
       - title: 用户和权限
         details: 定义角色、权限与访问控制，保障系统的安全与合规。
         icon: <i class="fas fa-users"></i>
+        link: /users-permissions/user
       - title: 用户认证和验证
         details: 支持多种登录方式与验证机制，确保身份安全与一致性。
         icon: <i class="fas fa-shield-alt"></i>
+        link: /auth-verifications/auth
       - title: 工作流
         details: 设计自动化工作流，实现逻辑编排和业务自动运转。
         icon: <i class="fas fa-project-diagram"></i>
