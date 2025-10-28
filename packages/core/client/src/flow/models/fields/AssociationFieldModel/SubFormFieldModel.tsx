@@ -81,12 +81,6 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
       meta: createCollectionContextMeta(() => this.context.collection, this.context.t('Current object')),
     });
   }
-  onMount() {
-    super.onMount();
-    setTimeout(() => {
-      this.applyFlow('eventSettings');
-    }, 100);
-  }
   render() {
     return <ObjectNester {...this.props} />;
   }
@@ -212,12 +206,6 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
       value: null,
       meta: createCollectionContextMeta(() => this.context.collection, this.context.t('Current object')),
     });
-  }
-  onMount() {
-    super.onMount();
-    setTimeout(() => {
-      this.applyFlow('eventSettings');
-    }, 100);
   }
   render() {
     return <ArrayNester {...this.props} />;
