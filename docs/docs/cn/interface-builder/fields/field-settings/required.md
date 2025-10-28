@@ -6,29 +6,23 @@
 
 ## 哪里可以设置字段必填
 
-
 ### 数据表字段设置
 
 当数据表字段中设置必填，则会触发后端验证，前端也默认显示为必填（不可修改）。
-
 ![20251025175418](https://static-docs.nocobase.com/20251025175418.png)
 
 ### 字段设置
 
 直接设置字段为必填项，适用于那些始终需要用户填写的字段，如用户名、密码等。
 
-![20240411114641](https://static-docs.nocobase.com/20240411114641.png)
+![20251028222818](https://static-docs.nocobase.com/20251028222818.png)
 
-### 联动规则(条件必填)
+### 联动规则
 
-通过表单区块的联动规则按条件设置必填。
+通过表单区块的字段联动规则按条件设置必填。
 
-示例：当订单状态为已发货时发货日期字段必填。
+示例：当订单日期非空时订单号必填。
 
-![20240412110939](https://static-docs.nocobase.com/20240412110939.png)
-
-<video width="100%" height="440" controls>
-      <source src="https://static-docs.nocobase.com/20240417112915.mp4" type="video/mp4">
-</video>
+![20251028223004](https://static-docs.nocobase.com/20251028223004.png)
 
 ### 事件流
