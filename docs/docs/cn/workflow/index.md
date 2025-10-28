@@ -6,11 +6,11 @@
 
 ### 示例
 
-每个工作流通过一个触发器与若干节点编排而成，通过每个节点的特定功能，描述系统中对应事件产生后需要处理的业务逻辑。下图展示了一个典型的库存管理流程：
+每个工作流通过一个触发器与若干节点编排而成，触发器代表系统中的事件，每个节点代表一个执行步骤，整体描述事件产生后需要处理的业务逻辑。下图展示了一个典型的商品下单后的库存扣减流程：
 
-![工作流示例](https://static-docs.nocobase.com/4511011beac54779cb68e66555ebf8a8.png)
+![工作流示例](https://static-docs.nocobase.com/20251029222146.png)
 
-当用户提交订单后，工作流自动检查库存。如果库存充足则扣减库存并继续发货流程；否则把订单标记为无效并通知运营人员。
+当用户提交订单后，工作流自动检查库存。如果库存充足则扣减库存并继续订单创建；否则结束流程。
 
 ### 使用场景
 
@@ -27,11 +27,11 @@
 
 ## 下一步
 
-- [快速开始](./getting-started)：用一个示例引导你完成第一个工作流。
-- [触发器](./triggers/index)：查看所有触发器类型与配置细节。
-- [节点](./nodes/index)：了解自动节点与人工节点的能力边界。
-- [使用变量](./advanced/variables)：学习如何在流程中传递和处理数据。
-- [执行计划](./advanced/executions)：理解执行调度与历史记录。
-- [版本管理](./advanced/revisions)：管理工作流的版本。
-- [高级配置](./advanced/options)：掌握高级配置技巧。
-- [扩展开发](./development/index)：扩展自定义节点或对接你的业务系统。
+- [快速开始](./getting-started)
+- [触发器](./triggers/index)
+- [节点](./nodes/index)
+- [使用变量](./advanced/variables)
+- [执行计划](./advanced/executions)
+- [版本管理](./advanced/revisions)
+- [高级配置](./advanced/options)
+- [扩展开发](./development/index)
