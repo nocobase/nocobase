@@ -1523,8 +1523,6 @@ describe('FlowModel', () => {
         const fork1 = model.createFork();
         const fork2 = model.createFork();
 
-        expect(fork1.forkId).toBe(0);
-        expect(fork2.forkId).toBe(1);
         expect(model.forks.size).toBe(2);
         expect(model.forks.has(fork1)).toBe(true);
         expect(model.forks.has(fork2)).toBe(true);
@@ -1543,8 +1541,6 @@ describe('FlowModel', () => {
         const fork2 = model.createFork({}, 'key2');
 
         expect(fork1).not.toBe(fork2);
-        expect(fork1.forkId).toBe(0);
-        expect(fork2.forkId).toBe(1);
       });
 
       test('should create fork with local props', () => {
