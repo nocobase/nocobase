@@ -2,12 +2,22 @@
 
 ## 介绍
 
-部分字段支持多个组件，我们可以根据需要选择不同的组件来展示字段的值。例如：`URL` 组件可以切换为 `Preview` 组件。
+字段组件是用于展示字段内容的载体。
+部分字段内置多种展示组件，用户可根据实际需求选择合适的组件，以不同的方式呈现字段的值
 
-![20240807092556](https://static-docs.nocobase.com/20240807092556.png)
+示例: 阅读态 URL 字段可以切换为预览组件、URL组件（默认）
 
-![20240807092716](https://static-docs.nocobase.com/20240807092716.png)
+![20251028214033](https://static-docs.nocobase.com/20251028214033.png)
 
-![20240807092859](https://static-docs.nocobase.com/20240807092859.png)
+![20251028214628](https://static-docs.nocobase.com/20251028214628.png)
 
+示例：关系字段可切换为子表单、子表格（仅对多支持）、数据选择器、下拉选择器（默认），文件管理器（仅当关系目标表为文件表时支持）
+
+![20251028214259](https://static-docs.nocobase.com/20251028214259.png)
+
+切换为子表单：
+
+![20251028214352](https://static-docs.nocobase.com/20251028214352.png)
+
+![20251028214450](https://static-docs.nocobase.com/20251028214450.png)
 
