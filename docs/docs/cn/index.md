@@ -76,6 +76,9 @@ features:
         details: 覆盖数据、接口与访问层面的防护策略，确保平台运行安全。
         icon: <i class="fas fa-lock"></i>
         link: /features/security
+      - title: 更多...
+        details: 查看更多功能模块的使用。
+        link: /guide
 
   - title: 开发
     details: 为 NocoBase 开发者提供丰富的扩展与集成能力。
