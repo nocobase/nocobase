@@ -9,6 +9,7 @@
 
 import { ComponentType } from 'react';
 import { SnippetEntry } from './runjsCompletions';
+import { RunLog } from './hooks/useCodeRunner';
 
 /**
  * Shared types for CodeEditor components
@@ -18,6 +19,7 @@ export interface EditorRef {
   read(): string;
   buttonGroupHeight?: number;
   snippetEntries: SnippetEntry[];
+  logs: RunLog[];
 }
 
 export type CodeEditorExtra = ComponentType<{

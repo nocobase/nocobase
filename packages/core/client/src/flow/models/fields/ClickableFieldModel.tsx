@@ -53,7 +53,7 @@ export class ClickableFieldModel extends FieldModel {
 
   renderInDisplayStyle(value, record?) {
     const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
-    if (typeof value === 'object' && restProps.target) {
+    if (value && typeof value === 'object' && restProps.target) {
       return;
     }
     const result = this.renderComponent(value);

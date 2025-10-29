@@ -2,6 +2,7 @@
   {
     "type": "custom-link",
     "label": "Get started",
+    "collapsible": false,
     "items": [
       {
         "type": "custom-link",

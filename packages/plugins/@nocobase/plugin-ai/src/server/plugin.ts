@@ -243,7 +243,7 @@ export class PluginAIServer extends Plugin {
     });
     this.workContextHandler.registerStrategy('code-editor', {
       resolve: this.aiCodingManager.provideWorkContextResolveStrategy(),
-      // background: this.aiCodingManager.provideWorkContextBackgroundStrategy(),
+      background: this.aiCodingManager.provideWorkContextBackgroundStrategy(),
     });
   }
 

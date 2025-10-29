@@ -7,88 +7,101 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { Select } from 'antd';
-import React from 'react';
-import { CollectionBlockModel, useSortFields } from '../../';
-import { useCompile } from '../../schema-component';
+import { defineAction, escapeT, MultiRecordResource } from '@nocobase/flow-engine';
 
-const SelectOptions = (props) => {
-  const flowContext: any = useFlowSettingsContext<CollectionBlockModel>();
-  const resource = flowContext.model.resource;
-  const collectionField = flowContext.model.collectionField;
-  const compile = useCompile();
-  const collectionName = resource?.getResourceName() || collectionField.target;
-  const sortFields = useSortFields(collectionName);
-  return <Select {...props} options={compile(sortFields)} />;
+const getSortFields = (fields) => {
+  return fields
+    .filter((field: any) => {
+      if (!field.interface) {
+        return false;
+      }
+      const fieldInterface = field.getInterfaceOptions();
+      if (fieldInterface?.sortable) {
+        return true;
+      }
+      return false;
+    })
+    .map((field: any) => {
+      return {
+        value: field.name,
+        label: field?.uiSchema?.title || field.name,
+      };
+    });
 };
 
 export const sortingRule = defineAction({
   name: 'sortingRule',
   title: escapeT('Default sorting'),
-  uiSchema: {
-    sort: {
-      type: 'array',
-      'x-component': 'ArrayItems',
-      'x-decorator': 'FormItem',
-      items: {
-        type: 'object',
-        properties: {
-          space: {
-            type: 'void',
-            'x-component': 'Space',
-            properties: {
-              sort: {
-                type: 'void',
-                'x-decorator': 'FormItem',
-                'x-component': 'ArrayItems.SortHandle',
-              },
-              field: {
-                type: 'string',
-                required: true,
-                'x-decorator': 'FormItem',
-                'x-component': SelectOptions,
-                'x-component-props': {
-                  style: {
-                    width: 260,
-                  },
+  uiSchema: (ctx) => {
+    const fields = ctx.collectionField?.targetCollection
+      ? ctx.collectionField.targetCollection.getFields()
+      : ctx.blockModel.collection.getFields();
+    const sortFields = getSortFields(fields);
+    return {
+      sort: {
+        type: 'array',
+        'x-component': 'ArrayItems',
+        'x-decorator': 'FormItem',
+        items: {
+          type: 'object',
+          properties: {
+            space: {
+              type: 'void',
+              'x-component': 'Space',
+              properties: {
+                sort: {
+                  type: 'void',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'ArrayItems.SortHandle',
                 },
-              },
-              direction: {
-                type: 'string',
-                'x-decorator': 'FormItem',
-                'x-component': 'Radio.Group',
-                'x-component-props': {
-                  optionType: 'button',
+                field: {
+                  type: 'string',
+                  required: true,
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Select',
+                  'x-component-props': {
+                    style: {
+                      width: 260,
+                    },
+                  },
+                  enum: sortFields,
                 },
-                enum: [
-                  {
-                    label: escapeT('ASC'),
-                    value: 'asc',
+                direction: {
+                  type: 'string',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'Radio.Group',
+                  'x-component-props': {
+                    optionType: 'button',
                   },
-                  {
-                    label: escapeT('DESC'),
-                    value: 'desc',
-                  },
-                ],
-              },
-              remove: {
-                type: 'void',
-                'x-decorator': 'FormItem',
-                'x-component': 'ArrayItems.Remove',
+                  enum: [
+                    {
+                      label: escapeT('ASC'),
+                      value: 'asc',
+                    },
+                    {
+                      label: escapeT('DESC'),
+                      value: 'desc',
+                    },
+                  ],
+                },
+                remove: {
+                  type: 'void',
+                  'x-decorator': 'FormItem',
+                  'x-component': 'ArrayItems.Remove',
+                },
               },
             },
           },
         },
-      },
-      properties: {
-        add: {
-          type: 'void',
-          title: escapeT('Add sort field'),
-          'x-component': 'ArrayItems.Addition',
+        properties: {
+          add: {
+            type: 'void',
+            title: escapeT('Add sort field'),
+            'x-component': 'ArrayItems.Addition',
+          },
         },
       },
-    },
+    };
   },
   defaultParams(ctx) {
     return {
