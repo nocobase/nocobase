@@ -102,7 +102,7 @@ export default {
     },
     {
       type: 'boolean',
-      name: 'manual',
+      name: 'manually',
       interface: 'checkbox',
       uiSchema: {
         type: 'boolean',
