@@ -6,7 +6,7 @@ FlowModelRenderer 是用于渲染 FlowModel 的核心 React 组件，它负责�
 
 ### FlowModelRenderer
 
-```tsx | pure
+```tsx pure
 import { FlowModelRenderer } from '@nocobase/flow-engine';
 
 // 基本使用
@@ -17,7 +17,7 @@ import { FlowModelRenderer } from '@nocobase/flow-engine';
 
 对于受控的字段 Model，使用 FieldModelRenderer 渲染：
 
-```tsx | pure
+```tsx pure
 import { FieldModelRenderer } from '@nocobase/flow-engine';
 
 // 受控字段渲染
@@ -47,7 +47,7 @@ import { FieldModelRenderer } from '@nocobase/flow-engine';
 
 当 `showFlowSettings` 为对象时，支持以下配置：
 
-```tsx | pure
+```tsx pure
 showFlowSettings={{
   showBackground: true,    // 显示背景
   showBorder: true,        // 显示边框
@@ -70,7 +70,7 @@ showFlowSettings={{
 
 ### 基本渲染
 
-```tsx | pure
+```tsx pure
 import { FlowModelRenderer } from '@nocobase/flow-engine';
 
 function MyComponent() {
@@ -87,7 +87,7 @@ function MyComponent() {
 
 ### 带流程设置的渲染
 
-```tsx | pure
+```tsx pure
 // 显示设置但隐藏删除按钮
 <FlowModelRenderer
   model={myModel}
@@ -113,7 +113,7 @@ function MyComponent() {
 
 ### 自定义工具栏
 
-```tsx | pure
+```tsx pure
 <FlowModelRenderer
   model={myModel}
   showFlowSettings={true}
@@ -132,7 +132,7 @@ function MyComponent() {
 
 ### 跳过自动流程
 
-```tsx | pure
+```tsx pure
 <FlowModelRenderer
   model={myModel}
   skipApplyAutoFlows={true}
@@ -142,7 +142,7 @@ function MyComponent() {
 
 ### 字段模型渲染
 
-```tsx | pure
+```tsx pure
 import { FieldModelRenderer } from '@nocobase/flow-engine';
 
 function FormField({ model, onChange, ...props }) {
@@ -164,7 +164,7 @@ FlowModelRenderer 内置了完善的错误处理机制：
 - **自动流程错误**：捕获并处理自动流程执行中的错误
 - **渲染错误**：当模型渲染失败时显示回退内容
 
-```tsx | pure
+```tsx pure
 <FlowModelRenderer
   model={myModel}
   showErrorFallback={true}
@@ -178,7 +178,7 @@ FlowModelRenderer 内置了完善的错误处理机制：
 
 对于不需要自动流程的场景，可以跳过以提高性能：
 
-```tsx | pure
+```tsx pure
 <FlowModelRenderer
   model={myModel}
   skipApplyAutoFlows={true}

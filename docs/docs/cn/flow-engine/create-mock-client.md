@@ -4,7 +4,7 @@
 
 例如以下示例：
 
-```tsx | pure
+```tsx pure
 import { createMockClient, Plugin } from '@nocobase/client';
 
 class PluginHelloModel extends Plugin {
@@ -23,7 +23,7 @@ export default app.getRootComponent();
 
 createMockClient 提供了 apiMock 构建 Mock 接口数据
 
-```tsx | pure
+```tsx pure
 import { createMockClient, Plugin } from '@nocobase/client';
 
 class PluginHelloModel extends Plugin {
@@ -60,7 +60,7 @@ export default app.getRootComponent();
 
 示例1：通过 router 添加一个路由。
 
-```tsx | pure
+```tsx pure
 import { createMockClient, Plugin } from '@nocobase/client';
 
 class PluginHelloModel extends Plugin {

@@ -2,7 +2,7 @@
 
 ## 从自定义 FlowModel 开始
 
-```tsx | pure
+```tsx pure
 class HelloModel extends FlowModel {
   render() {
     return (

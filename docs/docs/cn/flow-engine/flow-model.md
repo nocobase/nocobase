@@ -2,7 +2,7 @@
 
 ## 自定义 FlowModel
 
-```tsx | pure
+```tsx pure
 class HelloModel extends FlowModel {
   render() {
     return (
@@ -35,6 +35,6 @@ export class PluginHelloClient extends Plugin {
 
 ## 渲染 FlowModel
 
-```tsx | pure
+```tsx pure
 <FlowModelRenderer model={model} />
 ```

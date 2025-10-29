@@ -42,7 +42,7 @@ await engine.loadOrCreateModel({
 
 ### 渲染 FlowModel
 
-```tsx | pure
+```tsx pure
 const model = engine.buildModel({
   uid: 'unique1',
   use: 'HelloModel',
@@ -65,7 +65,7 @@ const model = await engine.loadOrCreateModel(options);
 
 ### 渲染 SubModel
 
-```tsx | pure
+```tsx pure
 model.mapSubModels('subKey', (subModel) => {
   return <FlowModelRenderer model={subModel} />;
 });
@@ -77,13 +77,13 @@ Fork 通常用于需要在多个位置渲染同一个模型模板（但状态独
 
 ### 创建 ForkModel
 
-```tsx | pure
+```tsx pure
 const fork1 = model.createFork('key1', {});
 const fork2 = model.createFork('key2', {});
 ```
 ### 渲染 ForkModel
 
-```tsx | pure
+```tsx pure
 <FlowModelRenderer model={fork1} />
 <FlowModelRenderer model={fork2} />
 ```

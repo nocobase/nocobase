@@ -51,7 +51,7 @@ class PluginHello extends Plugin {
 
 ## 示例：扩展路由
 
-```tsx | pure
+```tsx pure
 import { createMockClient, Plugin } from '@nocobase/client';
 
 class PluginHelloModel extends Plugin {

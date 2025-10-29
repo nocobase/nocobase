@@ -168,7 +168,7 @@ export class PayInstruction extends Instruction {
 
 例如我们需要为上面在服务端定义的随机数字符串类型（`randomString`）的节点提供配置界面，其中有一个配置项是 `digit` 代表随机数的位数，在配置表单中我们使用一个数字输入框来接收用户输入。
 
-```tsx | pure
+```tsx pure
 import WorkflowPlugin, { Instruction, VariableOption } from '@nocobase/workflow/client';
 
 class MyInstruction extends Instruction {

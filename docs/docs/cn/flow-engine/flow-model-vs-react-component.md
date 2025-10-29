@@ -28,7 +28,7 @@
 
 **React：**
 
-```tsx | pure
+```tsx pure
 class MyComponent extends React.Component {
   render() {
     return <div>Hello</div>;
@@ -38,7 +38,7 @@ class MyComponent extends React.Component {
 
 **FlowModel：**
 
-```tsx | pure
+```tsx pure
 class HelloModel extends FlowModel {
   render() {
     return <div>Hello</div>;

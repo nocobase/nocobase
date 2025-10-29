@@ -2,7 +2,7 @@
 
 在 React 中，我们通常这样渲染一个按钮组件：
 
-```tsx | pure
+```tsx pure
 import { Button } from 'antd';
 
 export default function App() {
@@ -29,7 +29,7 @@ export default function App() {
 
 #### 1. 创建自定义模型类
 
-```tsx | pure
+```tsx pure
 class MyModel extends FlowModel {
   render() {
     return <Button {...this.props} />;
@@ -52,7 +52,7 @@ const model = this.flowEngine.createModel({
 
 #### 3. 使用 `<FlowModelRenderer />` 渲染
 
-```tsx | pure
+```tsx pure
 <FlowModelRenderer model={model} />
 ```
 
@@ -73,7 +73,7 @@ const model = this.flowEngine.createModel({
 
 #### 1. 定义按钮属性的 Flow
 
-```tsx | pure
+```tsx pure
 
 const buttonSettings = defineFlow({
   key: 'buttonSettings',

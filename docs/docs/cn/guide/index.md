@@ -10,27 +10,35 @@ features:
       - title: 数据源
         details: 连接与管理内部或外部数据源，构建系统的数据模型。
         link: /data-sources
+        showOnHome: true
       - title: 配置界面
         details: 掌握页面、区块、操作的配置方法，自定义交互界面与展示逻辑。
         link: /interface-builder
+        showOnHome: true
       - title: AI 员工
         details: 与 AI 员工并肩协作，让他们参与系统搭建、数据分析、翻译、决策等业务场景。
         link: /ai-employees
+        showOnHome: true
       - title: 用户和权限
         details: 定义角色、权限与访问控制，保障系统的安全与合规。
         link: /users-permissions/user
+        showOnHome: true
       - title: 认证和验证
         details: 支持多种登录方式与验证机制，确保身份安全与一致性。
         link: /auth-verification/auth
+        showOnHome: true
       - title: 工作流
         details: 设计自动化工作流，实现逻辑编排和业务自动运转。
         link: /workflow
+        showOnHome: true
       - title: 通知
         details: 配置邮件、短信、站内信 等通知渠道，实现消息自动推送。
         link: /notification-manager
+        showOnHome: true
       - title: 多应用和多空间
         details: 创建多个物理隔离的应用实例或者逻辑隔离的业务空间，支持多租户场景。
         link: /multi-app
+        showOnHome: true
   - title: 运维与安全
     details: 系统运维管理、数据安全与监控能力。
     items:
@@ -46,6 +54,7 @@ features:
       - title: 安全
         details: 覆盖数据、接口与访问层面的防护策略，确保平台运行安全。
         link: /security
+        showOnHome: true
       - title: 日志和监控
         details: 记录系统运行与用户操作。
         link: /ops-and-security/logging-and-monitoring
@@ -79,9 +88,11 @@ features:
       - title: 数据可视化
         details: 通过图表和仪表盘展示数据洞察，支持多维度分析与展示。
         link: /data-visualization
+        showOnHome: true
       - title: 邮件管理
         details: 在系统中集成 Google 和 微软邮箱，实现邮件与业务数据深度集成。
         link: /email-manager
+        showOnHome: true
       - title: 模板打印
         details: 基于自定义模板生成可打印文档，如订单、合同或发票。
         link: /template-print

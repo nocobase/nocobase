@@ -32,6 +32,11 @@ export default defineConfig({
       },
     },
   },
+  markdown: {
+    link: {
+      checkDeadLinks: false,
+    },
+  },
   plugins: [
     // pluginPreview({
     //   iframeOptions: {

@@ -180,14 +180,14 @@ export function HomeFeature() {
             const page: any = siteData.pages.find(page => page.frontmatter?.pageName === 'guide');
             if (page) {
               const allItems = page.frontmatter?.features?.flatMap((feature: any) => feature?.items || []);
-              items = [...allItems.slice(0, 8), ...items];
+              items = [...allItems.filter((item: any) => item.showOnHome), ...items];
             }
           } else if (index === 2) {
             const page: any = siteData.pages.find(page => page.frontmatter?.pageName === 'development');
             if (page) {
               // 把 page.frontmatter?.features 里的 items 都拍平合并，取前 8 个
               const allItems = page.frontmatter?.features?.flatMap((feature: any) => feature?.items || []);
-              items = [...allItems.slice(0, 8), ...feature?.items];
+              items = [...allItems.filter((item: any) => item.showOnHome), ...feature?.items];
             }
           }
           return (
