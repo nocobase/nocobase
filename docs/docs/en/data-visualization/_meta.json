@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Overview",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Quick start",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Guide",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Data query",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Chart options",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Preview and save",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "Use context variables",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "Page filters and linkage",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      },
+      {
+        "type": "custom-link",
+        "label": "FAQ",
+        "link": "/data-visualization/guide/faq"
+      },
+      {
+        "type": "custom-link",
+        "label": "Best practices",
+        "link": "/data-visualization/guide/best-practices"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Advanced",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Query data in SQL mode",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Custom chart configuration",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Chart events",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  }
+]
