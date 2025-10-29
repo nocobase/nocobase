@@ -33,7 +33,6 @@ function getCustomMDXComponent() {
     ...mdxComponents,
     h1: MyH1,
     PluginCard,
-    PluginList,
     Badge,
     Tabs,
     Tab,
@@ -90,6 +89,7 @@ export function HomeLayout(props: HomeLayoutProps) {
         {afterHero}
         {beforeFeatures}
         <HomeFeature />
+        <PluginList />
         {afterFeatures}
       </div>
       <HomeFooter />
@@ -119,7 +119,6 @@ export const Layout = () => {
   // const lang = useLang();
   return (
     <BasicLayout
-      afterFeatures={<PluginList />}
       // beforeNav={
       //   <NoSSR>
       //     <div className="rp-banner">
