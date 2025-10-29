@@ -40,14 +40,10 @@ features:
         details: Master page, block, and action configuration methods to customize interactive interfaces and display logic.
         icon: <i class="fas fa-cubes"></i>
         link: /interface-builder
-      - title: AI Employees
-        details: Work alongside AI employees, let them participate in system building, data analysis, translation, decision-making and other business scenarios.
-        icon: <i class="fas fa-robot"></i>
-        link: /ai-employees
       - title: Users & Permissions
         details: Define roles, permissions and access control to ensure system security and compliance.
         icon: <i class="fas fa-users"></i>
-        link: /users-permissions/users/
+        link: /users-and-permissions
       - title: Authentication & Verification
         details: Support multiple login methods and verification mechanisms to ensure identity security and consistency.
         icon: <i class="fas fa-shield-alt"></i>

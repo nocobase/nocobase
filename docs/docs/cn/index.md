@@ -38,10 +38,6 @@ features:
         details: 掌握页面、区块、操作的配置方法，自定义交互界面与展示逻辑。
         icon: <i class="fas fa-cubes"></i>
         link: /interface-builder
-      - title: AI 员工
-        details: 与 AI 员工并肩协作，让他们参与系统搭建、数据分析、翻译、决策等业务场景。
-        icon: <i class="fas fa-robot"></i>
-        link: /ai-employees
       - title: 用户和权限
         details: 定义角色、权限与访问控制，保障系统的安全与合规。
         icon: <i class="fas fa-users"></i>
