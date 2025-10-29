@@ -4,18 +4,22 @@
 
 ## 区块里的操作
 
-![20240412113815](https://static-docs.nocobase.com/20240412113815.png)
+![20251028231445](https://static-docs.nocobase.com/20251028231445.png)
+
 
 ## 操作的设计器（工具栏）
 
-和区块、字段不太一样，操作的设计器里只有两个图标，分别为：
 - 拖拽
+- 事件流
 - 参数配置
 
-![20240412113855](https://static-docs.nocobase.com/20240412113855.png)
+![20251028231600](https://static-docs.nocobase.com/20251028231600.png)
 
 ## 操作的拖拽排序
 
 按住按钮设计器里的「拖拽」图标，可以对按钮进行排序。
+![20251028231700](https://static-docs.nocobase.com/20251028231700.gif)
 
-![20240412114236](https://static-docs.nocobase.com/20240412114236.gif)
+## 操作的配置项
+
+## 操作的事件流
