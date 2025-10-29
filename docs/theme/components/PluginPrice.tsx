@@ -12,8 +12,8 @@ export function PluginPrice() {
 
     <div style={cardStyle}>
       <div style={{ flexGrow: 1 }}>
-        <div className="rp-plugin-price" style={{ display: 'flex', gap: 4, justifyContent: 'space-between' }}>
-          <Badge type="warning">
+        <span className="rp-plugin-price" style={{ display: 'flex', gap: 4, justifyContent: 'space-between' }}>
+          <code>
             <h6 style={{ margin: 0, fontSize: '14px', fontWeight: 500 }}>
               <span style={{ fontSize: '12px', }}>
                 永久使用, 1 年升级
@@ -25,8 +25,8 @@ export function PluginPrice() {
               <span>/</span>
               <span>￥600</span>
             </h6>
-          </Badge>
-          <Badge type="warning">
+          </code>
+          <code>
             <h6 style={{ margin: 0, fontWeight: 500, fontSize: '14px' }}>
               <span style={{ fontSize: '12px', }}>
                 永久使用和升级
@@ -38,8 +38,8 @@ export function PluginPrice() {
               <span >/</span>
               <span >￥1,200</span>
             </h6>
-          </Badge>
-        </div>
+          </code>
+        </span>
       </div>
     </div>
 

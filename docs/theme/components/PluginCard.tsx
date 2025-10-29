@@ -117,7 +117,7 @@ export const PluginCard: React.FC<PluginCardProps> = ({
             }}>
             By <span>{developer}</span>
           </div>
-          <p style={{ margin: '0 0 0.5rem 0', fontSize: '14px', color: '#8c8c8c', lineHeight: 1.4 }}>
+          <p style={{ minHeight: '4em', margin: '0 0 0.5rem 0', fontSize: '14px', color: '#8c8c8c', lineHeight: 1.4 }}>
             {description}
             {detailLink && (
               <>
