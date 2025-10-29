@@ -25,3 +25,7 @@
 - 如果选择不生成文件夹，则文件的命名规则为： `{记录的标题字段值}-{附件字段名}[-{文件序号}].{文件后缀名}`。
 
 文件序号在附件字段中存在多个附件时，会自动生成.
+
+
+- [联动规则](/interface-builder/actions/action-settings/linkage-rule)：动态显示/隐藏按钮；
+- [编辑按钮](/interface-builder/actions/action-settings/edit-button)：编辑按钮的标题、类型、图标；

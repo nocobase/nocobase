@@ -395,7 +395,7 @@
               {
                 "type": "custom-link",
                 "label": "打开弹窗",
-                "link": "/interface-builder/actions/types/pop-ups"
+                "link": "/interface-builder/actions/types/pop-up"
               },
               {
                 "type": "custom-link",

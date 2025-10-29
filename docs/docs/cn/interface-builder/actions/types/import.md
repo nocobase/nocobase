@@ -230,4 +230,4 @@ db.registerFieldValueParsers({
 ![20251029171036](https://static-docs.nocobase.com/20251029171036.png)
 
 - [联动规则](/interface-builder/actions/action-settings/linkage-rule)：动态显示/隐藏按钮；
-- [编辑按钮](/interface-builder/actions/action-settings/edit-button)：编辑按钮的标题、颜色、图标；
+- [编辑按钮](/interface-builder/actions/action-settings/edit-button)：编辑按钮的标题、类型、图标；

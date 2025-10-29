@@ -1,19 +1,19 @@
-# 自定义弹窗
+# 打开弹窗
 
 ## 介绍
 
-自定义弹窗操作与查看和编辑操作类似，属于表格的行按钮，有当前记录作为上下文，用户可以在表格行操作中配置多个弹窗操作。
+**打开弹窗操作**与查看和编辑操作类似。用户可以在表格的行或表头中配置 **打开弹窗** 按钮，点击按钮后会弹出相应的弹窗，且该弹窗中的区块会根据当前上下文记录进行数据展示。
 
-![20240413104530](https://static-docs.nocobase.com/20240413104530.png)
+![20251029182351](https://static-docs.nocobase.com/20251029182351.png)
 
 在弹窗中按需配置区块。
 
-![20240426161322](https://static-docs.nocobase.com/20240426161322.png)
+![20251029190208](https://static-docs.nocobase.com/20251029190208.png)
 
 ## 操作配置项
 
-![20240413104602](https://static-docs.nocobase.com/20240413104602.png)
+![20251029190352](https://static-docs.nocobase.com/20251029190352.png)
 
-- [编辑按钮](/interface-builder/actions/action-settings/edit-button)：编辑按钮的标题、颜色、图标
+- [编辑按钮](/interface-builder/actions/action-settings/edit-button)：编辑按钮的标题、类型、图标
 - [联动规则](/interface-builder/linkage-rule)：动态控制按钮的状态（显示/禁用）
 - [编辑弹窗](/interface-builder/actions/action-settings/edit-popup)：弹窗/抽屉

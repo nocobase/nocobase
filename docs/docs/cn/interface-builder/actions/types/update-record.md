@@ -29,4 +29,3 @@
 - [编辑按钮](/interface-builder/actions/action-settings/edit-button)
 - [二次确认](/interface-builder/actions/action-settings/double-check)
 - [绑定工作流](/interface-builder/actions/action-settings/bind-workflow)
-- 执行后刷新数据

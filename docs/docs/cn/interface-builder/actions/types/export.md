@@ -26,3 +26,6 @@
 - 第三层级：只处理三个层级，最后一级关系字段不显示；
 
 ![20251029171557](https://static-docs.nocobase.com/20251029171557.png)
+
+- [联动规则](/interface-builder/actions/action-settings/linkage-rule)：动态显示/隐藏按钮；
+- [编辑按钮](/interface-builder/actions/action-settings/edit-button)：编辑按钮的标题、颜色、图标；

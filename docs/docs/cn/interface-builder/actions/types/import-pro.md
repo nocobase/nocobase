@@ -97,3 +97,7 @@
 ##### 依据字段
 
 系统根据此字段值识别行是否为重复记录。
+
+
+- [联动规则](/interface-builder/actions/action-settings/linkage-rule)：动态显示/隐藏按钮；
+- [编辑按钮](/interface-builder/actions/action-settings/edit-button)：编辑按钮的标题、类型、图标；
