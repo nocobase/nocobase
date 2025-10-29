@@ -53,7 +53,7 @@ export class ClickableFieldModel extends FieldModel {
 
   renderInDisplayStyle(value, record?) {
     const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
-    if (typeof value === 'object' && restProps.target) {
+    if (value && typeof value === 'object' && restProps.target) {
       return;
     }
     const result = this.renderComponent(value);
@@ -110,7 +110,11 @@ export class ClickableFieldModel extends FieldModel {
           const node = this.renderInDisplayStyle(v?.[titleField], v);
           return idx === 0 ? [node] : [<span key={`sep-${idx}`}>, </span>, node];
         });
-        return <EllipsisWithTooltip ellipsis={ellipsis}>{result}</EllipsisWithTooltip>;
+        return (
+          <EllipsisWithTooltip ellipsis={ellipsis}>
+            <span style={{ display: 'inline-flex', flexWrap: 'nowrap' }}>{result}</span>
+          </EllipsisWithTooltip>
+        );
       }
     } else {
       const textContent = (

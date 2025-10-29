@@ -8,7 +8,7 @@
  */
 
 import { CollectionBlockModel } from '@nocobase/client';
-import { FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
+import { BaseRecordResource, FlowModel, MultiRecordResource } from '@nocobase/flow-engine';
 import _ from 'lodash';
 
 export class FlowUtils {
@@ -47,13 +47,14 @@ export class FlowUtils {
     };
   }
 
-  static async getResource(model: CollectionBlockModel) {
+  static async getResource(model: { resource: BaseRecordResource }) {
     if (!model) {
       return null;
     }
+    if (!model.resource) {
+      return null;
+    }
     if (model.resource instanceof MultiRecordResource) {
-      model.resource.addRequestParameter('page', 1);
-      model.resource.addRequestParameter('pageSize', 2000);
       const { data } = await model.resource.runAction<any, any>('list', {
         method: 'get',
         params: {

@@ -11,6 +11,7 @@ import type { ResourcerContext } from '@nocobase/resourcer';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { JSONValue } from '../template/resolver';
 import { variables, inferSelectsFromUsage } from './registry';
+import { adjustSelectsForCollection } from './selects';
 
 /**
  * 预取：构建“同记录”的字段/关联并集，一次查询写入 ctx.state.__varResolveBatchCache，供后续解析复用
@@ -62,7 +63,10 @@ export async function prefetchRecordsForResolve(
         const filterByTk = (recordParams as any)?.filterByTk;
         if (!collection || typeof filterByTk === 'undefined') continue;
         const group = ensureGroup(dataSourceKey, collection, filterByTk);
-        const { generatedAppends, generatedFields } = inferSelectsFromUsage(remainders);
+        let { generatedAppends, generatedFields } = inferSelectsFromUsage(remainders);
+        const fixed = adjustSelectsForCollection(koaCtx, dataSourceKey, collection, generatedFields, generatedAppends);
+        generatedFields = fixed.fields;
+        generatedAppends = fixed.appends;
         if (generatedFields?.length) generatedFields.forEach((f) => group.fields.add(f));
         if (generatedAppends?.length) generatedAppends.forEach((a) => group.appends.add(a));
       }
@@ -83,6 +87,18 @@ export async function prefetchRecordsForResolve(
         const cm = ds.collectionManager as SequelizeCollectionManager;
         if (!cm?.db) continue;
         const repo = cm.db.getRepository(collection);
+        // 确保预取字段包含主键，仅当模型声明了主键并存在于 rawAttributes 中时才注入
+        const modelInfo = (
+          repo as unknown as {
+            collection?: { model?: { primaryKeyAttribute?: string; rawAttributes?: Record<string, unknown> } };
+          }
+        ).collection?.model;
+        const pkAttr = modelInfo?.primaryKeyAttribute;
+        const pkIsValid =
+          pkAttr && modelInfo?.rawAttributes && Object.prototype.hasOwnProperty.call(modelInfo.rawAttributes, pkAttr);
+        if (fields.size && pkIsValid) {
+          fields.add(pkAttr as string);
+        }
         const fld = fields.size ? Array.from(fields).sort() : undefined;
         const app = appends.size ? Array.from(appends).sort() : undefined;
         const rec = await repo.findOne({ filterByTk: filterByTk as any, fields: fld, appends: app });
@@ -102,7 +118,6 @@ export async function prefetchRecordsForResolve(
       }
     }
   } catch (e: any) {
-    // 忽略预取失败，但记录为 debug
     koaCtx.app?.logger
       ?.child({ module: 'plugin-flow-engine', submodule: 'variables.prefetch' })
       ?.debug('[variables.resolve] prefetch fatal error', { error: e?.message || String(e) });

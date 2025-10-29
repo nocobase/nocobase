@@ -136,19 +136,31 @@ export function createViewMeta(ctx: FlowContext): PropertyMetaFactory {
  * - popup.resource：数据源信息（前端解析）
  * - popup.parent：上级弹窗（无限级，前端解析；不存在则禁用/为空）
  */
-export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
+export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): PropertyMetaFactory {
   const t = (k: string) => ctx.t(k);
 
-  const getCurrentCollection = (): Collection | null => {
-    try {
-      const ref = inferViewRecordRef(ctx);
-      // 避免 0 等 falsy 值被误判为无效主键
-      if (typeof ref?.filterByTk === 'undefined' || ref.filterByTk === null) return null;
-      const ds = ctx.dataSourceManager?.getDataSource?.(ref.dataSourceKey || 'main');
-      return ds?.collectionManager?.getCollection?.(ref.collection) || null;
-    } catch (_) {
-      return null;
+  // 统一解析锚定视图下的 RecordRef，避免在设置弹窗等二级视图中被误导
+  const resolveRecordRef = async (flowCtx: FlowContext): Promise<RecordRef | undefined> => {
+    const view = anchorView ?? (flowCtx.view as any);
+    if (view) {
+      const base = await buildPopupRuntime(flowCtx, view);
+      const res = base?.resource;
+      if (res?.collectionName && res.filterByTk != null) {
+        return {
+          collection: res.collectionName,
+          dataSourceKey: res.dataSourceKey || 'main',
+          filterByTk: res.filterByTk,
+        };
+      }
     }
+    return inferViewRecordRef(flowCtx);
+  };
+
+  const getCurrentCollection = async (): Promise<Collection | null> => {
+    const ref = await resolveRecordRef(ctx);
+    if (!ref?.collection) return null;
+    const ds = ctx.dataSourceManager?.getDataSource?.(ref.dataSourceKey || 'main');
+    return ds?.collectionManager?.getCollection?.(ref.collection) || null;
   };
 
   // 从视图堆栈推断 level 级父弹窗（level=1 上一层）
@@ -185,7 +197,7 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
 
   const hasParentNow = (level: number): boolean => {
     try {
-      const nav = ctx.view?.navigation;
+      const nav = (anchorView ?? ctx.view)?.navigation;
       const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
       return stack.length >= level + 1; // level=1 需要至少2层
     } catch (_) {
@@ -256,7 +268,7 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
       type: 'object',
       title: t('Current popup'),
       buildVariablesParams: async (c) => {
-        const ref = inferViewRecordRef(c);
+        const ref = await resolveRecordRef(c);
         const inputArgs = c.view?.inputArgs;
         type PopupVariableParams = {
           record?: RecordRef;
@@ -310,10 +322,19 @@ export function createPopupMeta(ctx: FlowContext): PropertyMetaFactory {
         const props: Record<string, any> = {};
         // 当前弹窗 UID（纯前端变量）
         props.uid = { type: 'string', title: t('Popup uid') };
-        const base = await buildRecordMeta(getCurrentCollection, t('Current popup record'), (c) =>
-          inferViewRecordRef(c),
-        );
-        if (base) props.record = base;
+        // 基于锚定视图计算“当前弹窗记录”的集合与 RecordRef
+        const recordFactory: PropertyMetaFactory = async () => {
+          const col = await getCurrentCollection();
+          if (!col) return null;
+          return await buildRecordMeta(
+            () => col,
+            t('Current popup record'),
+            (c) => resolveRecordRef(c),
+          );
+        };
+        recordFactory.title = t('Current popup record');
+        recordFactory.hasChildren = true;
+        props.record = recordFactory;
         // 当 view.inputArgs 带有 sourceId + associationName 时，提供“上级记录”变量（基于 sourceId 推断）
         try {
           const inputArgs = ctx.view?.inputArgs;
@@ -447,7 +468,7 @@ export function registerPopupVariable(ctx: FlowContext, view: FlowView) {
   // - 但仍可依据 navigation 推断并展示上级弹窗信息。
   ctx.defineProperty('popup', {
     get: async () => buildPopupRuntime(ctx, view),
-    meta: createPopupMeta(ctx),
+    meta: createPopupMeta(ctx, view),
     resolveOnServer: (p: string) => {
       try {
         return !!p && POPUP_SERVER_PATH_RE.test(p);

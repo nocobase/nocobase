@@ -136,8 +136,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
     buttonGroupHeight: 0,
     snippetEntries: [],
+    logs: [],
   });
   extraEditorRef.current.snippetEntries = snippetEntries;
+  extraEditorRef.current.logs = logs;
 
   // snippet group display handled in SnippetsDrawer
 
