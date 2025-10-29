@@ -7,12 +7,12 @@
       {
         "type": "custom-link",
         "label": "获取 NocoBase",
-        "link": "/get-started/get-nocobase"
+        "link": "/get-started"
       },
       {
         "type": "custom-link",
         "label": "NocoBase 如何工作",
-        "link": "/get-started/what-is-nocobase"
+        "link": "/get-started/how-nocobase-works"
       },
       {
         "type": "custom-link",

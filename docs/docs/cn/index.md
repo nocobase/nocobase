@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: 安装 NocoBase
-      link: /get-started/get-nocobase
+      link: /get-started
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
