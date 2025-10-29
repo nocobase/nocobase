@@ -15,6 +15,7 @@ import React from 'react';
 export class MarkdownBlockModel extends BlockModel {
   render() {
     const { content } = this.props;
+    console.log(content);
     return (
       <Card
         className={css`
@@ -57,7 +58,6 @@ MarkdownBlockModel.registerFlow({
             type: 'string',
             'x-decorator': 'FormItem',
             'x-component': (props) => {
-              console.log(props.value || ctx.model.props.value);
               return ctx.markdown.edit({
                 ...props,
                 value: props.value || ctx.model.props.value,
