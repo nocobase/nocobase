@@ -18,6 +18,9 @@ export default defineConfig({
     light: '/logo.png',
     dark: '/logo-white.png',
   },
+  route: {
+    cleanUrls: true,
+  },
   builderConfig: {
     plugins: [pluginSass()],
     resolve: {
