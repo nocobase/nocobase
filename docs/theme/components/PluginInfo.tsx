@@ -1,8 +1,7 @@
 import { Badge } from '@rspress/core/theme';
 import { Link, useFrontmatter } from "@rspress/runtime";
-import { PluginPrice } from './PluginCard';
-
-export const EditionLevels = ['社区版', '标准版', '专业版', '企业版'];
+import { PluginPrice } from './PluginPrice';
+import { EditionLevels } from './EditionLevels';
 
 export type PluginInfoFrontmatter = {
   displayName?: string;
@@ -50,15 +49,13 @@ export function PluginInfo() {
           <tr style={trStyle}>
             <td style={firstTdStyle}>支持版本</td>
             <td style={tdStyle}>
-              <div style={{ display: 'inline-flex', gap: "4px" }}>
-                {frontmatter.supportedVersions.map(v => <Badge key={v}>{v}</Badge>)}
-              </div>
+              {frontmatter.supportedVersions.map(v => <code style={{ marginRight: 4 }} key={v}>{v}</code>)}
             </td>
           </tr>
           <tr style={trStyle}>
             <td style={firstTdStyle}>默认安装</td>
             <td style={tdStyle}>
-              {frontmatter.defaultInstalled ? <Badge>是</Badge> : <Badge>否</Badge>}
+              {frontmatter.defaultInstalled ? <code>是</code> : <code>否</code>}
               {!frontmatter.defaultInstalled && (
                 <Link style={{ marginLeft: 4, fontSize: "14px" }} className="rp-link" to="#">如何安装插件？</Link>
               )}
@@ -81,13 +78,9 @@ export function PluginInfo() {
               <td style={firstTdStyle}>定价</td>
               <td style={tdStyle}>
                 <div style={{ display: "inline-flex", gap: "2px" }}>
-                  <span>包含于</span>
-                  {EditionLevels.map((e, index) => {
-                    if (index < frontmatter.editionLevel) {
-                      return null;
-                    }
-                    return <a target="_blank" href="https://www.nocobase.com/cn/commercial" style={{ textDecoration: 'none' }}><Badge key={e}>{e}</Badge></a>;
-                  })}
+                  <Badge type="info">
+                    {EditionLevels[frontmatter.editionLevel]}+
+                  </Badge>
                 </div>
               </td>
             </tr>

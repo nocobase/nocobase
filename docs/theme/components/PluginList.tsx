@@ -1,19 +1,22 @@
-import { useLang, useNavigate, usePageData } from '@rspress/core/runtime';
-import { PluginCard, PluginPrice } from './PluginCard';
-import { EditionLevels, type PluginInfoFrontmatter } from './PluginInfo';
-import { Badge, Tabs, Tab, renderHtmlOrText } from '@rspress/core/theme';
+import { useFrontmatter, useLang, useNavigate, usePageData } from '@rspress/core/runtime';
+import { PluginCard } from './PluginCard';
+import { PluginPrice } from './PluginPrice';
+import { type PluginInfoFrontmatter } from './PluginInfo';
+import { EditionLevels } from './EditionLevels';
+import { Badge, renderHtmlOrText } from '@rspress/core/theme';
+import './PluginList.scss';
 
 export function PluginList() {
   const { siteData } = usePageData();
   const lang = useLang();
-  return (
+  const { frontmatter } = useFrontmatter();
+
+  return frontmatter?.isPluginPage ? (
     <>
-
       <div className="rp-home-feature-container">
-        <h2 className="rp-home-feature-header">插件</h2>
-        <p className="rp-home-feature-desc">插件描述</p>
+        <h2 className="rp-home-feature-header">{frontmatter.title}</h2>
+        <p className="rp-home-feature-desc">{frontmatter.description}</p>
       </div>
-
       <div className="rp-home-feature rp-plugin-list">
         {siteData.pages.filter(page => page.frontmatter?.packageName && page.lang === lang && page.routePath.includes('/plugins/')).map(page => {
           return <PluginCard
@@ -108,7 +111,7 @@ export function PluginList() {
       </Tabs> */}
       </div>
     </>
-  );
+  ) : null;
 }
 
 export function Pricing({ frontmatter }: { frontmatter: PluginInfoFrontmatter }) {
