@@ -1291,7 +1291,7 @@
   "No resource selected for refresh": "未选择要刷新的资源",
   "No resource or record selected for deletion": "未选择要删除的资源或记录",
   "Record deleted successfully": "记录删除成功",
-  "Please select non-filterable fields": "请选择不可筛选的字段",
+  "Please select filterable fields": "请选择可筛选的字段",
   "Update record action": "更新记录",
   "Basic configuration": "基础配置",
   "Configure page": "配置页面",
