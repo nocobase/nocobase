@@ -12,23 +12,27 @@ import { JSBlockRunJSContext } from '../../../contexts/JSBlockRunJSContext';
 
 const snippet: SnippetModule = {
   contexts: [JSBlockRunJSContext],
-  prefix: 'sn-jsb-button',
-  label: 'Render button handler',
-  description: 'Render a button and handle click events inside the block',
+  prefix: 'sn-react-jsx',
+  label: 'Render React (JSX)',
+  description: 'Render a simple React component using JSX syntax',
   locales: {
     'zh-CN': {
-      label: '按钮事件处理',
-      description: '在区块中渲染按钮并绑定点击处理逻辑',
+      label: '渲染 React（JSX）',
+      description: '使用 JSX 语法渲染一个简单的 React 组件',
     },
   },
   content: `
-const { Button } = ctx.antd;
+// Render a React component with JSX
+const { React } = ctx;
 
-ctx.render(
-  <Button type="primary" onClick={() => ctx.message.success(ctx.t('Clicked!'))}>
-    {ctx.t('Button')}
-  </Button>
+const App = () => (
+  <div style={{ padding: 12 }}>
+    <h3 style={{ margin: 0, color: '#1890ff' }}>Hello JSX</h3>
+    <div style={{ color: '#555' }}>This block is rendered by JSX.</div>
+  </div>
 );
+
+ctx.render(<App />);
 `,
 };
 

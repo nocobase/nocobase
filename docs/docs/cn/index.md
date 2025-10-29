@@ -7,8 +7,8 @@ hero:
   # tagline: 了解如何上手并实现 NocoBase
   actions:
     - theme: brand
-      text: 安装 NocoBase
-      link: /get-started
+      text: 快速上手
+      link: /get-started/quickstart
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
@@ -19,15 +19,12 @@ features:
     items:
       - title: NocoBase 使用入门
         details: 了解 NocoBase 的核心概念和基本操作。
-        icon: <i class="fas fa-rocket"></i>
         link: /get-started/how-nocobase-works
       - title: 安装、升级、部署
         details: 从零开始安装 NocoBase，完成版本升级与生产环境部署。
-        icon: <i class="fas fa-download"></i>
-        link: /get-started
+        link: /get-started/quickstart
       - title: 安装与升级插件
         details: 了解如何添加、管理和更新插件，扩展系统能力。
-        icon: <i class="fas fa-puzzle-piece"></i>
         link: /get-started/install-upgrade-plugins
 
   - title: 进阶
@@ -48,7 +45,7 @@ features:
       - title: 用户和权限
         details: 定义角色、权限与访问控制，保障系统的安全与合规。
         icon: <i class="fas fa-users"></i>
-        link: /features/users-and-permissions
+        link: /users-and-permissions
       - title: 用户认证和验证
         details: 支持多种登录方式与验证机制，确保身份安全与一致性。
         icon: <i class="fas fa-shield-alt"></i>
@@ -76,49 +73,21 @@ features:
       - title: 安全
         details: 覆盖数据、接口与访问层面的防护策略，确保平台运行安全。
         icon: <i class="fas fa-lock"></i>
-        link: /features/security
+        link: /security
+      - title: 更多...
+        details: 查看更多功能模块的使用。
+        link: /guide
 
-  - title: 更多插件
-    details: 使用更多插件，扩展更多能力。
-    items:
-      - title: 通知
-        details: 配置邮件、短信、站内信 等通知渠道，实现消息自动推送。
-        icon: <i class="fas fa-bell"></i>
-        link: /features/notification-manager
-      - title: 数据可视化
-        details: 通过图表和仪表盘展示数据洞察，支持多维度分析与展示。
-        icon: <i class="fas fa-chart-bar"></i>
-        link: /features/data-visualization
-      - title: 文件管理器
-        details: 上传与管理文件，实现统一的文件存储与访问控制。
-        icon: <i class="fas fa-folder"></i>
-        link: /features/file-manager
-      - title: 邮件管理
-        details: 在系统中集成 Google 和 微软邮箱，实现邮件与业务数据深度集成。
-        icon: <i class="fas fa-envelope"></i>
-        link: /features/email-manager
-      - title: 模板打印
-        details: 基于自定义模板生成可打印文档，如订单、合同或发票。
-        icon: <i class="fas fa-print"></i>
-        link: /features/template-print
-      - title: 其他插件
-        details: 探索更多扩展插件，满足特定业务或行业需求。
-        icon: <i class="fas fa-ellipsis-h"></i>
-        link: /features/
-
-  - title: 开发插件
+  - title: 开发
     details: 为 NocoBase 开发者提供丰富的扩展与集成能力。
     items:
       - title: 插件开发指南
         details: 学习如何创建、发布与维护自定义插件。
-        icon: <i class="fas fa-code"></i>
         link: /plugin-development
       - title: FlowEngine
         details: NocoBase 2.0 前端无代码、低代码开发引擎。
-        icon: <i class="fas fa-cogs"></i>
         link: /flow-engine
       - title: 数据源扩展
         details: 探索如何扩展与优化数据库交互层。
-        icon: <i class="fas fa-server"></i>
         link: /database
 ---

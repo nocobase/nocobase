@@ -23,7 +23,6 @@ const snippet: SnippetModule = {
   },
   content: `
 const { Card, Statistic, Row, Col } = ctx.antd;
-const { createElement: h } = ctx.React;
 
 const res = await ctx.api.request({
   url: 'users:list',
@@ -47,33 +46,29 @@ const distinctRoles = new Set(
     .filter(Boolean),
 ).size;
 
-ctx.ReactDOM.createRoot(ctx.element).render(
-  h(Row, { gutter: 16 },
-    h(Col, { span: 6 },
-      h(Card, {},
-        h(Statistic, { title: ctx.t('Total users'), value: total, valueStyle: { color: '#3f8600' } })
-      )
-    ),
-    h(Col, { span: 6 },
-      h(Card, {},
-        h(Statistic, { title: ctx.t('Administrators'), value: adminCount, valueStyle: { color: '#1890ff' } })
-      )
-    ),
-    h(Col, { span: 6 },
-      h(Card, {},
-        h(Statistic, { title: ctx.t('Users with email'), value: withEmail, valueStyle: { color: '#faad14' } })
-      )
-    ),
-    h(Col, { span: 6 },
-      h(Card, {},
-        h(Statistic, {
-          title: ctx.t('Distinct roles'),
-          value: distinctRoles,
-          valueStyle: { color: '#cf1322' },
-        })
-      )
-    )
-  )
+ctx.render(
+  <Row gutter={16}>
+    <Col span={6}>
+      <Card>
+        <Statistic title={ctx.t('Total users')} value={total} valueStyle={{ color: '#3f8600' }} />
+      </Card>
+    </Col>
+    <Col span={6}>
+      <Card>
+        <Statistic title={ctx.t('Administrators')} value={adminCount} valueStyle={{ color: '#1890ff' }} />
+      </Card>
+    </Col>
+    <Col span={6}>
+      <Card>
+        <Statistic title={ctx.t('Users with email')} value={withEmail} valueStyle={{ color: '#faad14' }} />
+      </Card>
+    </Col>
+    <Col span={6}>
+      <Card>
+        <Statistic title={ctx.t('Distinct roles')} value={distinctRoles} valueStyle={{ color: '#cf1322' }} />
+      </Card>
+    </Col>
+  </Row>
 );
 `,
 };

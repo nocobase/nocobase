@@ -13,6 +13,7 @@ import {
   createSafeWindow,
   createSafeDocument,
   createSafeNavigator,
+  compileRunJs,
 } from '@nocobase/flow-engine';
 import React, { useEffect, useRef } from 'react';
 import { FieldModel } from '../base/FieldModel';
@@ -160,8 +161,9 @@ JSFieldModel.registerFlow({
             cache: false,
           });
           const navigator = createSafeNavigator();
+          const compiled = await compileRunJs(code);
           await ctx.runjs(
-            code,
+            compiled,
             { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
             { version },
           );

@@ -1,10 +1,11 @@
-import { Tabs, Tab } from '@theme';
-
 # Docker 安装
 
-## 0. 先决条件
+:::tip 前提条件
 
-⚡⚡ 请确保你已经安装了 [Docker](https://docs.docker.com/get-docker/)
+- 已安装 [Docker](https://docs.docker.com/get-docker/) 和 Docker Compose
+- 确保 Docker 服务正在运行
+
+:::
 
 ## 1. 新建 docker-compose.yml
 
@@ -18,7 +19,21 @@ vi docker-compose.yml
 
 ## 2. 配置 docker-compose.yml
 
-不同数据库配置参数略有不同，请选择合适的数据库配置，并复制到 docker-compose.yml 里
+选择 NocoBase 版本（[版本对比](../quickstart.md)）和数据库类型，复制对应的配置到 docker-compose.yml 里。
+
+:::tip 配置说明
+
+- **选择镜像**：`latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
+  - 生产环境建议固定为具体数字版本，避免无意自动升级。[查看所有版本](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - 阿里云镜像：`registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
+  - Docker Hub 镜像：`nocobase/nocobase:latest-full`
+  - **full 镜像**包含了备份管理、迁移管理插件所需的 PostgreSQL 16/17 客户端、MySQL 8.0 客户端、Oracle 19.25 客户端以及模板打印（PDF）所需的 LibreOffice
+  - 如需自建镜像，可参考官方提供的 [Dockerfile（精简版）](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) 和 [Dockerfile-full（完整版）](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full)
+- **修改 `APP_KEY`**：请将 `your-secret-key` 替换为随机字符串，用于加密用户 token 等敏感信息
+- **使用已有数据库**：如果已有数据库服务，请修改 `DB_HOST` 为数据库服务器地址，并删除或注释掉数据库服务配置（如 `postgres`、`mysql`、`mariadb` 服务）
+- **端口映射**：默认将容器的 80 端口映射到主机的 13000 端口，可根据需要修改
+
+:::
 
 <Tabs>
 
@@ -199,63 +214,18 @@ services:
 </Tab>
 </Tabs>
 
-选择合适的 NocoBase 版本, 参考 [版本选择](/get-started)
-
-- `latest` `latest-full`：功能稳定，测试较为完善的版本，仅做缺陷修复。推荐安装此版本。
-- `beta` `beta-full`: 包含即将发布的新功能，经过初步测试的版本，可能存在部分已知或未知问题。
-- `alpha` `alpha-full`: 开发中的版本，包含最新的功能代码，可能尚未完成或存在较多不稳定因素，主要用于内部开发和快速迭代。
-- `1.7.14` `1.7.14-full`：指定版本号，最新版本查看 [已发布版本列表](https://hub.docker.com/r/nocobase/nocobase/tags)
-
-:::warning
-
-- full 镜像包含了备份管理、迁移管理插件所需的 PostgreSQL 16/17 客户端、MySQL 8.0 客户端、Oracle 19.25 客户端以及模板打印（PDF）所需的 LibreOffice；
-- 如需自建镜像，可参考官方提供的 [Dockerfile（精简版）](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) 和 [Dockerfile-full（完整版）](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full)
-
-:::
-
-示例
-
-```yml
-# ...
-services:
-  app:
-    # 国内用户建议使用阿里云镜像（推荐使用 full 版本）
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha-full
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
-
-    # 精简版（不包含某些客户端和 LibreOffice）
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:alpha
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14
-
-    # Docker Hub 镜像（国内用户可能无法下载，推荐使用 full 版本）
-    image: nocobase/nocobase:latest-full
-    image: nocobase/nocobase:beta-full
-    image: nocobase/nocobase:alpha-full
-    image: nocobase/nocobase:1.7.14-full
-
-    # 精简版
-    image: nocobase/nocobase:latest
-    image: nocobase/nocobase:beta
-    image: nocobase/nocobase:alpha
-    image: nocobase/nocobase:1.7.14
-# ...
-```
 
 ## 3. 安装并启动 NocoBase
 
-安装过程可能需要等待几分钟
-
 ```bash
 # 拉取最新镜像
-$ docker-compose pull
-# 在后台运行
-$ docker-compose up -d
-# 查看 app 进程的情况
-$ docker-compose logs app
+docker compose pull
+
+# 在后台运行（首次运行会自动执行安装）
+docker compose up -d
+
+# 查看安装和运行日志
+docker compose logs -f app
 
 app-postgres-app-1  | nginx started
 app-postgres-app-1  | yarn run v1.22.15
@@ -271,4 +241,10 @@ app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 
 ## 4. 登录 NocoBase
 
-使用浏览器打开 [http://localhost:13000](http://localhost:13000) 初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
+使用浏览器打开 [http://localhost:13000](http://localhost:13000)，初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
+
+:::warning 账号安全提示
+
+首次登录后，请及时修改默认密码以确保系统安全。
+
+:::
