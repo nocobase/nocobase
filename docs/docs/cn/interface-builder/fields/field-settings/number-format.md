@@ -22,4 +22,4 @@
 
 - 使用科学记数法。
 
-![20240417220416](https://static-docs.nocobase.com/20240417220416.png)
+![20251029214912](https://static-docs.nocobase.com/20251029214912.png)

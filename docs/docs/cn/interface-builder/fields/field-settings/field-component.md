@@ -18,6 +18,3 @@
 切换为子表单：
 
 ![20251028214352](https://static-docs.nocobase.com/20251028214352.png)
-
-![20251028214450](https://static-docs.nocobase.com/20251028214450.png)
-

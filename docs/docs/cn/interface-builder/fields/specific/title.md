@@ -9,11 +9,21 @@
 
 ### 标题字段
 
-当标题字段类型是「数值」
+当标题字段类型是「数值」:
 
 ![20251028155817](https://static-docs.nocobase.com/20251028155817.png)
 
+字段组件为数值组件。
+
 ![20251028155837](https://static-docs.nocobase.com/20251028155837.png)
+
+当标题字段类型是「日期时间」:
+
+![20251029213244](https://static-docs.nocobase.com/20251029213244.png)
+
+字段组件切换为日期组件。
+
+![20251029213320](https://static-docs.nocobase.com/20251029213320.png)
 
 ![20251028155402](https://static-docs.nocobase.com/20251028155402.png)
 

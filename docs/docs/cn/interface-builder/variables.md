@@ -212,4 +212,4 @@
 
 ### 当前设备类型
 
-![20251027150402](https://static-docs.nocobase.com/20251027150402.png)
+![20251029215303](https://static-docs.nocobase.com/20251029215303.png)
