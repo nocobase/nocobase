@@ -31,6 +31,31 @@
         "type": "custom-link",
         "label": "定时任务",
         "link": "/workflow/triggers/schedule"
+      },
+      {
+        "type": "custom-link",
+        "label": "操作前事件",
+        "link": "/workflow/triggers/pre-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "操作后事件",
+        "link": "/workflow/triggers/post-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "自定义操作事件",
+        "link": "/workflow/triggers/custom-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "审批",
+        "link": "/workflow/triggers/approval"
+      },
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/workflow/triggers/webhook"
       }
     ]
   },
@@ -50,7 +75,7 @@
           {
             "type": "custom-link",
             "label": "大语言模型",
-            "link": "/workflow/nodes/llm"
+            "link": "/ai-employees/workflow/nodes/llm/chat"
           }
         ]
       },
@@ -106,7 +131,7 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "表达式计算",
+            "label": "计算",
             "link": "/workflow/nodes/calculation"
           },
           {
@@ -132,33 +157,28 @@
         "items": [
           {
             "type": "custom-link",
-            "label": "概述",
-            "link": "/workflow/nodes/data-operations/index"
-          },
-          {
-            "type": "custom-link",
-            "label": "创建数据",
-            "link": "/workflow/nodes/data-operations/create"
+            "label": "新增数据",
+            "link": "/workflow/nodes/create"
           },
           {
             "type": "custom-link",
             "label": "更新数据",
-            "link": "/workflow/nodes/data-operations/update"
+            "link": "/workflow/nodes/update"
           },
           {
             "type": "custom-link",
             "label": "查询数据",
-            "link": "/workflow/nodes/data-operations/query"
+            "link": "/workflow/nodes/query"
           },
           {
             "type": "custom-link",
             "label": "删除数据",
-            "link": "/workflow/nodes/data-operations/destroy"
+            "link": "/workflow/nodes/destroy"
           },
           {
             "type": "custom-link",
-            "label": "SQL",
-            "link": "/workflow/nodes/data-operations/sql"
+            "label": "SQL 操作",
+            "link": "/workflow/nodes/sql"
           }
         ]
       },
@@ -200,7 +220,7 @@
           {
             "type": "custom-link",
             "label": "通知",
-            "link": "/workflow/nodes/notification"
+            "link": "/notification-manager/#工作流通知节点"
           },
           {
             "type": "custom-link",
@@ -244,6 +264,27 @@
   {
     "type": "custom-link",
     "label": "扩展开发",
-    "link": "/workflow/development/index"
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/workflow/development/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "扩展触发器类型",
+        "link": "/workflow/development/trigger"
+      },
+      {
+        "type": "custom-link",
+        "label": "扩展节点类型",
+        "link": "/workflow/development/node"
+      },
+      {
+        "type": "custom-link",
+        "label": "API 参考",
+        "link": "/workflow/development/api"
+      }
+    ]
   }
 ]

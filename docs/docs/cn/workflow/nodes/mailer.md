@@ -1,3 +1,3 @@
 # 发送邮件
 
-<embed src="../../workflow-mailer/index.md#L3-L999"></embed>
+用于发送电子邮件，支持文本和 HTML 格式的邮件内容。
