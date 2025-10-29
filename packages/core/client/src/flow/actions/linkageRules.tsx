@@ -377,16 +377,14 @@ export const subFormLinkageSetFieldProps = defineAction({
     // 根据 uid 找到对应的字段 model 并设置属性
     fields.forEach((fieldUid: string) => {
       try {
-        const fieldIndex = ctx.model?.context?.fieldIndex;
-        const fieldModels = ctx.model?.subModels?.items || [];
-        const fieldModel = fieldModels.find((model: any) => model.uid === fieldUid);
-        const forkModel = fieldModel.getFork(`${fieldIndex}:${fieldUid}`);
+        const formItemModel = ctx.engine.getModel(fieldUid);
+        const forkModel = formItemModel.getFork(`${ctx.model?.context?.fieldKey}:${fieldUid}`);
 
         let model = forkModel;
 
         // 适配对一子表单的场景
-        if (fieldModel.forks.size === 0) {
-          model = fieldModel;
+        if (formItemModel.forks.size === 0) {
+          model = formItemModel;
         }
 
         if (model) {
