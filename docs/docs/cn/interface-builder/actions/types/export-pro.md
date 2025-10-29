@@ -44,7 +44,7 @@
 并发导出任务较多时，会受服务器配置的影响，从而导致系统响应变慢，所以推荐系统开发者配置最大任务导出并发数（默认为 3），当超过配置的并发数时，进入排队状态。
 ![20250505171706](https://static-docs.nocobase.com/20250505171706.png)
 
-并发数配置方式：环境变量 ASYNC_TASK_MAX_CONCURRENCY=并发数，[如何配置环境变量？](../../welcome/getting-started/env)
+并发数配置方式：环境变量 ASYNC_TASK_MAX_CONCURRENCY=并发数
 
 在不同配置与数据复杂度综合测试下，推荐并发数：
 - 2核 CPU，并发数 3。

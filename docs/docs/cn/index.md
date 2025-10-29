@@ -41,7 +41,7 @@ features:
       - title: 用户和权限
         details: 定义角色、权限与访问控制，保障系统的安全与合规。
         icon: <i class="fas fa-users"></i>
-        link: /users-and-permissions
+        link: /users-permissions/users/
       - title: 用户认证和验证
         details: 支持多种登录方式与验证机制，确保身份安全与一致性。
         icon: <i class="fas fa-shield-alt"></i>
@@ -57,11 +57,11 @@ features:
       - title: 集成
         details: 通过 API、Webhook、iFrame等方式，将 NocoBase 与外部系统高效对接。
         icon: <i class="fas fa-plug"></i>
-        link: /features/integration
+        link: /integration/
       - title: 系统配置
         details: 定义品牌和样式，管理插件和语言，实现全局控制。
         icon: <i class="fas fa-cog"></i>
-        link: /features/system-settings
+        link: /system-settings/
       - title: 运维
         details: 提供备份、监控、日志与发布的实践指南。
         icon: <i class="fas fa-tools"></i>

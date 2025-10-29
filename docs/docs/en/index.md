@@ -43,7 +43,7 @@ features:
       - title: Users & Permissions
         details: Define roles, permissions and access control to ensure system security and compliance.
         icon: <i class="fas fa-users"></i>
-        link: /users-and-permissions
+        link: /users-permissions/users/
       - title: Authentication & Verification
         details: Support multiple login methods and verification mechanisms to ensure identity security and consistency.
         icon: <i class="fas fa-shield-alt"></i>
@@ -59,11 +59,11 @@ features:
       - title: Integration
         details: Efficiently integrate NocoBase with external systems through API, Webhook, iFrame and other methods.
         icon: <i class="fas fa-plug"></i>
-        link: /features/integration
+        link: /integration/
       - title: System Configuration
         details: Define brand and style, manage plugins and languages, achieve global control.
         icon: <i class="fas fa-cog"></i>
-        link: /features/system-settings
+        link: /system-settings/
       - title: Operations
         details: Provide practical guidelines for backup, monitoring, logging and release.
         icon: <i class="fas fa-tools"></i>
