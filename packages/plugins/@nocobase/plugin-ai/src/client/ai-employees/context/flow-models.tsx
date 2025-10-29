@@ -77,10 +77,10 @@ const toCollection = async (model: CollectionBlockModel) => {
     collection: {
       ...collection,
     },
-    prompt: `You can use the tools dataSourceQuery to query data from a data source and dataSourceCounting to get record counts.
+    prompt: `You can use the tools dataSource-dataSourceQuery to query data from a data source and dataSource-dataSourceCounting to get record counts.
 When analyzing user messages, if any words or phrases are related or similar to a known collectionName, prioritize retrieving relevant data before responding.
-When the user asks about quantities, totals, or record counts, you must first call dataSourceCounting to obtain accurate numbers before answering.
-Always apply dataScope.filter when calling dataSourceQuery or dataSourceCounting. Ensure that the filter structure is properly transformed to match the tools’ input format.
+When the user asks about quantities, totals, or record counts, you must first call dataSource-dataSourceCounting to obtain accurate numbers before answering.
+Always apply dataScope.filter when calling dataSource-dataSourceQuery or dataSource-dataSourceCounting. Ensure that the filter structure is properly transformed to match the tools’ input format.
 Do not mention or reveal any details about tools, data sources, or internal processes in your reply.
 Unless the user explicitly requests it, do not directly output large amounts of raw data—summarize, filter, or aggregate the results naturally in your response.`,
   };
