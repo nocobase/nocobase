@@ -38,6 +38,6 @@
 
 ### 字段组件
 
-部分字段支持切换为其他组件，如关系字段
-
-
+部分字段支持切换为其他组件，如关系字段。
+![20251029122626](https://static-docs.nocobase.com/20251029122626.png)
+更多内容参考 [字段组件](/interface-builder/fields/field-settings/field-component)

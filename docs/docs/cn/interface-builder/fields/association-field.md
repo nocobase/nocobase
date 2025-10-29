@@ -27,7 +27,7 @@ NocoBase 的关系字段组件旨在帮助用户更好地展示和处理关联�
 
 当处理较复杂的关系数据时，使用下拉选择器或数据选择器操作都会显得不便捷。这种情况下，用户需要频繁打开弹窗。针对这种场景，则可以使用子表单，用户能够在当前页面或当前弹窗区块上直接维护关系表字段，而无需反复打开新的弹窗，操作流程更流畅。多层级的关系以嵌套表单的形态展示。
 
-![20240429215953](https://static-docs.nocobase.com/20240429215953.png)
+![20251029122948](https://static-docs.nocobase.com/20251029122948.png)
 
 更多内容参考 [子表单](/interface-builder/fields/specific/sub-form)
 
@@ -36,7 +36,7 @@ NocoBase 的关系字段组件旨在帮助用户更好地展示和处理关联�
 
 子表格以表格形式展示一对多或多对多关系记录。它提供了一种清晰、结构化的方式来展示和管理关联数据，支持批量新建数据或选择已有数据关联。
 
-![20240429222505](https://static-docs.nocobase.com/20240429222505.png)
+![20251029123042](https://static-docs.nocobase.com/20251029123042.png)
 
 更多内容参考 [子表格](/interface-builder/fields/specific/sub-table)
 
