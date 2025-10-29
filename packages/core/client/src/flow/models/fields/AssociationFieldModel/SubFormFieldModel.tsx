@@ -141,28 +141,39 @@ const ArrayNester = ({ name, value, disabled }: any) => {
         {(fields, { add, remove }) => (
           <>
             {fields.map((field, index) => {
-              const { key } = field;
+              const { key, name: fieldName } = field;
+              const fieldIndex = [...rowIndex, `${collectionName}:${index}`];
               // 每行只创建一次 fork
               if (!forksRef.current[key]) {
                 const fork = gridModel.createFork({
                   disabled: disabled,
                 });
                 fork.gridContainerRef = React.createRef<HTMLDivElement>();
-                fork.context.defineProperty('fieldIndex', {
-                  get: () => [...rowIndex, `${collectionName}:${key}`], // 使用 key 保持唯一性
-                });
-                fork.context.defineProperty('currentObject', {
-                  get: () => {
-                    return fork.context.form.getFieldValue([name, index]);
-                  },
-                  cache: false,
-                  meta: createCollectionContextMeta(() => fork.context.collection, fork.context.t('Current object')),
+                fork.context.defineProperty('fieldKey', {
+                  get: () => key,
                 });
                 forksRef.current[key] = fork;
               }
-              console.log('forksRef.current', forksRef.current);
+
+              const currentFork = forksRef.current[key];
+              currentFork.context.defineProperty('fieldIndex', {
+                get: () => fieldIndex,
+                cache: false,
+              });
+              currentFork.context.defineProperty('currentObject', {
+                get: () => {
+                  return currentFork.context.form.getFieldValue([name, fieldName]);
+                },
+                cache: false,
+                meta: createCollectionContextMeta(
+                  () => currentFork.context.collection,
+                  currentFork.context.t('Current object'),
+                ),
+              });
+
               return (
-                <div key={key} style={{ marginBottom: 12 }}>
+                // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
+                <div key={index} style={{ marginBottom: 12 }}>
                   {!disabled && (
                     <div style={{ textAlign: 'right' }}>
                       <Tooltip title={t('Remove')}>
@@ -173,9 +184,9 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                             const gridFork = forksRef.current[key];
                             // 同时销毁子模型的 fork
                             gridFork.mapSubModels('items', (item) => {
-                              const cacheKey = `${gridFork.context.fieldIndex}:${item.uid}`;
+                              const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
                               // 同时销毁子模型的 fork
-                              item.subModels.field.getFork(`${gridFork.context.fieldIndex}`)?.dispose(); // 使用模板字符串把数组展开
+                              item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
                               item.getFork(cacheKey)?.dispose();
                             });
                             gridFork.dispose();

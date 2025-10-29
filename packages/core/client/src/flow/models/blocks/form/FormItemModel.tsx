@@ -118,14 +118,18 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     const fieldModel = this.subModels.field as FieldModel;
     // 行索引（来自数组子表单）
     const idx = this.context.fieldIndex;
+    const fieldKey = this.context.fieldKey;
 
     // 嵌套场景下继续传透，为字段子模型创建 fork
     const modelForRender =
       idx != null
         ? (() => {
-            const fork = fieldModel.createFork({}, `${idx}`);
+            const fork = fieldModel.createFork({}, `${fieldKey}`);
             fork.context.defineProperty('fieldIndex', {
               get: () => idx,
+            });
+            fork.context.defineProperty('fieldKey', {
+              get: () => fieldKey,
             });
             return fork;
           })()
