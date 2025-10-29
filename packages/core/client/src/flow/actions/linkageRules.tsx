@@ -377,16 +377,14 @@ export const subFormLinkageSetFieldProps = defineAction({
     // 根据 uid 找到对应的字段 model 并设置属性
     fields.forEach((fieldUid: string) => {
       try {
-        const fieldIndex = ctx.model?.context?.fieldIndex;
-        const fieldModels = ctx.model?.subModels?.items || [];
-        const fieldModel = fieldModels.find((model: any) => model.uid === fieldUid);
-        const forkModel = fieldModel.getFork(`${fieldIndex}:${fieldUid}`);
+        const formItemModel = ctx.engine.getModel(fieldUid);
+        const forkModel = formItemModel.getFork(`${ctx.model?.context?.fieldKey}:${fieldUid}`);
 
         let model = forkModel;
 
         // 适配对一子表单的场景
-        if (fieldModel.forks.size === 0) {
-          model = fieldModel;
+        if (formItemModel.forks.size === 0) {
+          model = formItemModel;
         }
 
         if (model) {
@@ -685,15 +683,14 @@ export const subFormLinkageAssignField = defineAction({
     const { assignValue, field } = value || {};
     if (!field) return;
     try {
-      const fieldModels = ctx.model?.subModels?.items || [];
-      const fieldModel = fieldModels.find((model: any) => model.uid === field);
-      const forkModel = fieldModel?.getFork(`${ctx.model?.context?.fieldIndex}:${field}`);
+      const formItemModel = ctx.engine.getModel(field);
+      const forkModel = formItemModel?.getFork(`${ctx.model?.context?.fieldKey}:${field}`);
 
       let model = forkModel;
 
       // 适配对一子表单的场景
-      if (fieldModel.forks.size === 0) {
-        model = fieldModel;
+      if (formItemModel.forks.size === 0) {
+        model = formItemModel;
       }
 
       if (!model) return;
@@ -1271,9 +1268,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       // 目前只有表单的“字段赋值”有 value 属性
       if ('value' in newProps && model.context.form) {
         model.context.form.setFieldValue(
-          model.isFork && Array.isArray(model.props.name)
-            ? [...model.props.name.slice(0, -1), model.forkId, ...model.props.name.slice(-1)]
-            : model.props.name,
+          model.isFork ? model.context.fieldPathArray : model.props.name,
           newProps.value,
         );
       }

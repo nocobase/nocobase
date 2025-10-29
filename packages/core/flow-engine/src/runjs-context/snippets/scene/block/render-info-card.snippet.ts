@@ -22,29 +22,28 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-const { Card, Descriptions, Tag, Typography } = ctx.antd;
-const { createElement: h } = ctx.React;
+const { Card, Descriptions, Tag } = ctx.antd;
 
 if (!ctx.record) {
-  ctx.element.innerHTML = '<div style="padding:16px;color:#999;">' + ctx.t('No record data') + '</div>';
+  ctx.render('<div style="padding:16px;color:#999;">' + ctx.t('No record data') + '</div>');
   return;
 }
 
 const record = ctx.record;
 
-ctx.ReactDOM.createRoot(ctx.element).render(
-  h(Card, { title: ctx.t('Record Details'), bordered: true, style: { margin: 0 } },
-    h(Descriptions, { column: 2, size: 'small' },
-      h(Descriptions.Item, { label: ctx.t('ID') }, record.id || '-'),
-      h(Descriptions.Item, { label: ctx.t('Status') },
-        h(Tag, { color: record.status === 'active' ? 'green' : 'default' }, record.status || '-')
-      ),
-      h(Descriptions.Item, { label: ctx.t('Title') }, record.title || '-'),
-      h(Descriptions.Item, { label: ctx.t('Created At') },
-        record.createdAt ? new Date(record.createdAt).toLocaleString() : '-'
-      )
-    )
-  )
+ctx.render(
+  <Card title={ctx.t('Record Details')} bordered style={{ margin: 0 }}>
+    <Descriptions column={2} size="small">
+      <Descriptions.Item label={ctx.t('ID')}>{record.id || '-'}</Descriptions.Item>
+      <Descriptions.Item label={ctx.t('Status')}>
+        <Tag color={record.status === 'active' ? 'green' : 'default'}>{record.status || '-'}</Tag>
+      </Descriptions.Item>
+      <Descriptions.Item label={ctx.t('Title')}>{record.title || '-'}</Descriptions.Item>
+      <Descriptions.Item label={ctx.t('Created At')}>
+        {record.createdAt ? new Date(record.createdAt).toLocaleString() : '-'}
+      </Descriptions.Item>
+    </Descriptions>
+  </Card>
 );
 
 `,
