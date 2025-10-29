@@ -4,9 +4,9 @@
 
 在部分操作按钮上，可以配置绑定工作流，用于将该提交操作与工作流关联，实现数据的自动化处理。
 
-![20240413095247](https://static-docs.nocobase.com/20240413095247.png)
+![20251029144822](https://static-docs.nocobase.com/20251029144822.png)
 
-![20240413095309](https://static-docs.nocobase.com/20240413095309.png)
+![20251029145017](https://static-docs.nocobase.com/20251029145017.png)
 
 ## 支持的操作和工作流类型
 
