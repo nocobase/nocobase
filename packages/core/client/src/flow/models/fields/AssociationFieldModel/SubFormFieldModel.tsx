@@ -81,6 +81,13 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
       meta: createCollectionContextMeta(() => this.context.collection, this.context.t('Current object')),
     });
   }
+  onMount() {
+    super.onMount();
+    // 首次渲染触发一次事件流
+    setTimeout(() => {
+      this.applyFlow('eventSettings');
+    }, 100); // TODO：待修复。不延迟的话，会导致 disabled 的状态不生效
+  }
   render() {
     return <ObjectNester {...this.props} />;
   }
@@ -225,6 +232,13 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
       value: null,
       meta: createCollectionContextMeta(() => this.context.collection, this.context.t('Current object')),
     });
+  }
+  onMount() {
+    super.onMount();
+    // 首次渲染触发一次事件流
+    setTimeout(() => {
+      this.applyFlow('eventSettings');
+    }, 100); // TODO：待修复。不延迟的话，会导致 disabled 的状态不生效
   }
   render() {
     return <ArrayNester {...this.props} />;
