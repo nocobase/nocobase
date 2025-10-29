@@ -19,12 +19,16 @@ Built-in plugin, no separate installation required.
 
 ## Usage Instructions
 
-When the application is initialized and installed, a data source will be provided by default to store NocoBase data, known as the main database. For more information, see the [Main Database](/data-sources/data-source-main).
+When the application is initialized and installed, a data source will be provided by default to store NocoBase data, known as the main database. For more information, see the [Main Database](/data-sources/data-source-main/).
 
-![20240322220423](https://static-docs.nocobase.com/20240322220423.png)
+### External Data Sources
 
-At the same time, it also supports external databases as data sources. For more information, see the [External Database / Introduction](/data-sources/data-source-manager/external-database).
+External databases are supported as data sources. For more information, see the [External Database / Introduction](/data-sources/data-source-manager/external-database).
 
-![20240507204316](https://static-docs.nocobase.com/20240507204316.png)
+![nocobase_doc-2025-10-29-19-45-33](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-45-33.png)
 
-You can also access data from HTTP API sources. For more information, see the .
+### Support for Syncing Database Tables
+
+![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
+
+You can also access data from HTTP API sources. For more information, see the [REST API Data Source](/data-sources/data-source-rest-api/).
