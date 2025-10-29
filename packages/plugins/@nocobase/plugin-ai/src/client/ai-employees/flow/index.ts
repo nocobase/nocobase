@@ -41,6 +41,7 @@ export class FlowUtils {
       defaultValue: field.defaultValue,
     }));
     return {
+      dataSource: model.dataSource.key,
       name: model.collection.name,
       title: model.collection.title,
       fields,

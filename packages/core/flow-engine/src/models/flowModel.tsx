@@ -1331,6 +1331,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       ..._.omit(this._options, ['flowEngine']),
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,
+      flowRegistry: {},
     };
     const subModels = this.subModels as {
       [key: string]: FlowModel | FlowModel[];
@@ -1347,8 +1348,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }
     }
     for (const [key, flow] of this.flowRegistry.getFlows()) {
-      data['flowRegistry'] = data['flowRegistry'] || {};
-      data['flowRegistry'][key] = flow.toData();
+      data.flowRegistry[key] = flow.toData();
     }
     return data;
   }
