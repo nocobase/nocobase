@@ -56,7 +56,7 @@ yarn install --frozen-lockfile
 
 ## 4. 设置环境变量
 
-NocoBase 所需的环境变量储存在根目录 `.env` 文件里，根据实际情况修改环境变量，如果你不知道怎么改，[点此查看环境变量说明](../env.md)，也可以保持默认。
+NocoBase 所需的环境变量储存在根目录 `.env` 文件里，根据实际情况修改环境变量，如果你不知道怎么改，[点此查看环境变量说明](/api/cli/env)，也可以保持默认。
 
 ```bash
 TZ=Asia/Shanghai
