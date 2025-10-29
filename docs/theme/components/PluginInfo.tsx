@@ -1,8 +1,7 @@
 import { Badge } from '@rspress/core/theme';
 import { Link, useFrontmatter } from "@rspress/runtime";
-import { PluginPrice } from './PluginCard';
-
-export const EditionLevels = ['社区版', '标准版', '专业版', '企业版'];
+import { PluginPrice } from './PluginPrice';
+import { EditionLevels } from './EditionLevels';
 
 export type PluginInfoFrontmatter = {
   displayName?: string;

@@ -1,7 +1,9 @@
 import { useLang, useNavigate, usePageData } from '@rspress/core/runtime';
-import { PluginCard, PluginPrice } from './PluginCard';
-import { EditionLevels, type PluginInfoFrontmatter } from './PluginInfo';
-import { Badge, Tabs, Tab, renderHtmlOrText } from '@rspress/core/theme';
+import { PluginCard } from './PluginCard';
+import { PluginPrice } from './PluginPrice';
+import { type PluginInfoFrontmatter } from './PluginInfo';
+import { EditionLevels } from './EditionLevels';
+import { Badge, renderHtmlOrText } from '@rspress/core/theme';
 
 export function PluginList() {
   const { siteData } = usePageData();

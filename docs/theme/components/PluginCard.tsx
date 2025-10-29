@@ -1,7 +1,7 @@
 import { Badge } from '@rspress/core/theme';
 import { useNavigate } from '@rspress/core/runtime';
 import React from 'react';
-import { EditionLevels } from './PluginInfo';
+import { EditionLevels } from './EditionLevels';
 
 export interface PluginCardProps {
   name: string;
