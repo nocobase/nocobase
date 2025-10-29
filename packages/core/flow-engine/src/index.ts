@@ -12,6 +12,7 @@ export * from './types';
 
 // 工具函数
 export * from './utils';
+export { compileRunJs } from './utils/jsxTransform';
 
 // 资源类
 export * from './resources';

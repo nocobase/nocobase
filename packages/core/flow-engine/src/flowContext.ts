@@ -20,6 +20,7 @@ import pino from 'pino';
 import qs from 'qs';
 import React, { createRef } from 'react';
 import * as ReactDOMClient from 'react-dom/client';
+import { ElementProxy } from './ElementProxy';
 import type { Location } from 'react-router-dom';
 import { ACL } from './acl/Acl';
 import { ContextPathProxy } from './ContextPathProxy';
@@ -1698,6 +1699,68 @@ export class FlowRunJSContext extends FlowContext {
       },
     };
     this.defineProperty('ReactDOM', { value: ReactDOMShim });
+
+    // Convenience: ctx.render(<App />[, container])
+    // - container defaults to ctx.element if available
+    // - internally uses engine.reactView.createRoot to inherit app context
+    // - caches root per container via global WeakMap
+    this.defineMethod(
+      'render',
+      function (
+        this: any,
+        vnode: React.ReactElement | Node | DocumentFragment | string,
+        container?: Element | DocumentFragment,
+      ) {
+        const el = (container as any) || (this.element as any);
+        if (!el) throw new Error('ctx.render: container not provided and ctx.element is not available');
+        const containerEl: any = (el as any)?.__el || el; // unwrap ElementProxy
+        const globalRef: any = globalThis as any;
+        globalRef.__nbRunjsRoots = globalRef.__nbRunjsRoots || new WeakMap<any, any>();
+        const rootMap: WeakMap<any, any> = globalRef.__nbRunjsRoots;
+
+        // If vnode is string (HTML), unmount react root and set sanitized HTML
+        if (typeof vnode === 'string') {
+          const existingRoot = rootMap.get(containerEl);
+          if (existingRoot && typeof existingRoot.unmount === 'function') {
+            try {
+              existingRoot.unmount();
+            } finally {
+              rootMap.delete(containerEl);
+            }
+          }
+          const proxy: any = new ElementProxy(containerEl);
+          proxy.innerHTML = String(vnode ?? '');
+          return null;
+        }
+
+        // If vnode is a DOM Node or DocumentFragment, unmount and replace content
+        if (
+          vnode &&
+          (vnode as any).nodeType &&
+          ((vnode as any).nodeType === 1 || (vnode as any).nodeType === 3 || (vnode as any).nodeType === 11)
+        ) {
+          const existingRoot = rootMap.get(containerEl);
+          if (existingRoot && typeof existingRoot.unmount === 'function') {
+            try {
+              existingRoot.unmount();
+            } finally {
+              rootMap.delete(containerEl);
+            }
+          }
+          while (containerEl.firstChild) containerEl.removeChild(containerEl.firstChild);
+          containerEl.appendChild(vnode as any);
+          return null;
+        }
+
+        let root = rootMap.get(containerEl);
+        if (!root) {
+          root = this.ReactDOM.createRoot(containerEl);
+          rootMap.set(containerEl, root);
+        }
+        root.render(vnode as any);
+        return root;
+      },
+    );
   }
   static define(meta: RunJSDocMeta, options?: { locale?: string }) {
     const locale = options?.locale;
