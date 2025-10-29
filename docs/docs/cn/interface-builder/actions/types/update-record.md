@@ -4,25 +4,24 @@
 
 自定义的行操作更新数据，通过配置字段赋值配置字段更新逻辑。
 
-![20240413212430](https://static-docs.nocobase.com/20240413212430.png)
-
+![20251029194309](https://static-docs.nocobase.com/20251029194309.png)
 ## 操作配置项
 
-![20240413212816](https://static-docs.nocobase.com/20240413212816.png)
+![20251029194330](https://static-docs.nocobase.com/20251029194330.png)
 
 ### 联动规则
 
 示例：单据状态为取消时按钮隐藏。
 
-![20240423210252](https://static-docs.nocobase.com/20240423210252.png)
+![20251029194524](https://static-docs.nocobase.com/20251029194524.png)
 
 更多内容参考 [操作的联动规则](/interface-builder/linkage-rule)。
 
 ### 字段赋值
 
-示例：更新当前记录中的收货时间为当前时间。
+示例：更新当前记录中的负责人为当前用户。
 
-![20240423210506](https://static-docs.nocobase.com/20240423210506.png)
+![20251029194652](https://static-docs.nocobase.com/20251029194652.png)
 
 更多内容参考 [字段赋值](/interface-builder/actions/action-settings/assign-values)。
 
