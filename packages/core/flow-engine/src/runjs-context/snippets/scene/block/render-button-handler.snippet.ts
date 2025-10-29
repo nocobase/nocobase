@@ -22,11 +22,13 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-const { React, ReactDOM, antd } = ctx;
-const { Button } = antd;
+const { Button } = ctx.antd;
 
-const node = React.createElement(Button, { type: 'primary', onClick: () => ctx.message.success(ctx.t('Clicked!')) }, ctx.t('Button'));
-ReactDOM.createRoot(ctx.element).render(node);
+ctx.render(
+  <Button type="primary" onClick={() => ctx.message.success(ctx.t('Clicked!'))}>
+    {ctx.t('Button')}
+  </Button>
+);
 `,
 };
 

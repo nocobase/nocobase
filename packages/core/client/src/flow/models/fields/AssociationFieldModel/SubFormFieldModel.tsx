@@ -83,9 +83,10 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
   }
   onMount() {
     super.onMount();
+    // 首次渲染触发一次事件流
     setTimeout(() => {
       this.applyFlow('eventSettings');
-    }, 100);
+    }, 100); // TODO：待修复。不延迟的话，会导致 disabled 的状态不生效
   }
   render() {
     return <ObjectNester {...this.props} />;
@@ -146,30 +147,40 @@ const ArrayNester = ({ name, value, disabled }: any) => {
       <Form.List name={name}>
         {(fields, { add, remove }) => (
           <>
-            {fields.map((field) => {
-              const { key, name: index } = field;
-              const uid = `${key}.${name}.${index}`;
+            {fields.map((field, index) => {
+              const { key, name: fieldName } = field;
+              const fieldIndex = [...rowIndex, `${collectionName}:${index}`];
               // 每行只创建一次 fork
-              if (!forksRef.current[uid]) {
-                const fork = gridModel.createFork();
+              if (!forksRef.current[key]) {
+                const fork = gridModel.createFork({
+                  disabled: disabled,
+                });
                 fork.gridContainerRef = React.createRef<HTMLDivElement>();
-                fork.context.defineProperty('fieldIndex', {
-                  get: () => [...rowIndex, `${collectionName}:${index}`],
+                fork.context.defineProperty('fieldKey', {
+                  get: () => key,
                 });
-                fork.context.defineProperty('currentObject', {
-                  get: () => {
-                    return fork.context.form.getFieldValue([name, index]);
-                  },
-                  cache: false,
-                  meta: createCollectionContextMeta(() => fork.context.collection, fork.context.t('Current object')),
-                });
-                forksRef.current[uid] = fork;
+                forksRef.current[key] = fork;
               }
-              forksRef.current[uid].setProps({
-                disabled: disabled,
+
+              const currentFork = forksRef.current[key];
+              currentFork.context.defineProperty('fieldIndex', {
+                get: () => fieldIndex,
+                cache: false,
               });
+              currentFork.context.defineProperty('currentObject', {
+                get: () => {
+                  return currentFork.context.form.getFieldValue([name, fieldName]);
+                },
+                cache: false,
+                meta: createCollectionContextMeta(
+                  () => currentFork.context.collection,
+                  currentFork.context.t('Current object'),
+                ),
+              });
+
               return (
-                <div key={uid} style={{ marginBottom: 12 }}>
+                // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
+                <div key={index} style={{ marginBottom: 12 }}>
                   {!disabled && (
                     <div style={{ textAlign: 'right' }}>
                       <Tooltip title={t('Remove')}>
@@ -177,19 +188,28 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                           style={{ zIndex: 1000, color: '#a8a3a3' }}
                           onClick={() => {
                             remove(index);
+                            const gridFork = forksRef.current[key];
+                            // 同时销毁子模型的 fork
+                            gridFork.mapSubModels('items', (item) => {
+                              const cacheKey = `${gridFork.context.fieldKey}:${item.uid}`;
+                              // 同时销毁子模型的 fork
+                              item.subModels.field?.getFork(`${gridFork.context.fieldKey}`)?.dispose(); // 使用模板字符串把数组展开
+                              item.getFork(cacheKey)?.dispose();
+                            });
+                            gridFork.dispose();
                             // 删除 fork 缓存
-                            delete forksRef.current[uid];
+                            delete forksRef.current[key];
                           }}
                         />
                       </Tooltip>
                     </div>
                   )}
-                  <FlowModelRenderer model={forksRef.current[uid]} showFlowSettings={false} />
+                  <FlowModelRenderer model={forksRef.current[key]} showFlowSettings={false} />
                   <Divider />
                 </div>
               );
             })}
-            <Button type="link" onClick={() => add()} disabled={disabled}>
+            <Button type="link" onClick={() => add({})} disabled={disabled}>
               <PlusOutlined />
               {t('Add new')}
             </Button>
@@ -215,9 +235,10 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
   }
   onMount() {
     super.onMount();
+    // 首次渲染触发一次事件流
     setTimeout(() => {
       this.applyFlow('eventSettings');
-    }, 100);
+    }, 100); // TODO：待修复。不延迟的话，会导致 disabled 的状态不生效
   }
   render() {
     return <ArrayNester {...this.props} />;

@@ -7,8 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Popover } from 'antd';
+import { Popover, QRCode } from 'antd';
 import { css } from '@emotion/css';
+import { createRoot } from 'react-dom/client';
 import React, { CSSProperties, useCallback, useEffect, useRef, useState } from 'react';
 import Vditor from 'vditor';
 import { useCDN } from './useCDN';
@@ -49,7 +50,17 @@ function DisplayInner(props: { value: string; style?: CSSProperties }) {
           openCustomPreview(img.src);
         });
       });
-    }, 0);
+      // 渲染 <qr-code> 为 AntD QRCode
+      containerRef.current?.querySelectorAll('qr-code').forEach((el) => {
+        const value = el.getAttribute('value') || '';
+        const container = document.createElement('div');
+        el.replaceWith(container);
+
+        // 使用 ReactDOM 渲染 AntD QRCode
+        const root = createRoot(container);
+        root.render(<QRCode value={value} />);
+      });
+    }, 300);
   }, [props.value]);
 
   return wrapSSR(

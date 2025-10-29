@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSafeDocument, createSafeWindow, createSafeNavigator, escapeT } from '@nocobase/flow-engine';
+import {
+  createSafeDocument,
+  createSafeWindow,
+  createSafeNavigator,
+  escapeT,
+  compileRunJs,
+} from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { CodeEditor } from '../../components/code-editor';
 import { ActionSceneEnum, RecordActionModel } from '../base';
@@ -77,8 +83,9 @@ if (!ctx.record) {
       async handler(ctx, params) {
         const { code, version } = resolveRunJsParams(ctx, params);
         const navigator = createSafeNavigator();
+        const compiled = await compileRunJs(code);
         await ctx.runjs(
-          code,
+          compiled,
           { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
           { version },
         );

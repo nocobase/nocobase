@@ -22,6 +22,7 @@ import { SelectOptions } from '../../../actions/titleField';
 import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../details/DetailsItemModel';
 import { EditFormModel } from './EditFormModel';
+import _ from 'lodash';
 
 const interfacesOfUnsupportedDefaultValue = [
   'o2o',
@@ -118,22 +119,30 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     const fieldModel = this.subModels.field as FieldModel;
     // 行索引（来自数组子表单）
     const idx = this.context.fieldIndex;
+    const fieldKey = this.context.fieldKey;
+    const parentFieldPathArray = this.parent?.context.fieldPathArray || [];
 
     // 嵌套场景下继续传透，为字段子模型创建 fork
     const modelForRender =
       idx != null
         ? (() => {
-            const fork = fieldModel.createFork({}, `${idx}`);
+            const fork = fieldModel.createFork({}, `${fieldKey}`);
             fork.context.defineProperty('fieldIndex', {
               get: () => idx,
+            });
+            fork.context.defineProperty('fieldKey', {
+              get: () => fieldKey,
             });
             return fork;
           })()
         : fieldModel;
-    const namePath = buildDynamicName(this.props.name, idx);
+    const fieldPath = buildDynamicName(this.props.name, idx);
+    this.context.defineProperty('fieldPathArray', {
+      value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
+    });
     return (
-      <FormItem {...this.props} name={namePath}>
-        <FieldModelRenderer model={modelForRender} name={namePath} />
+      <FormItem {...this.props} name={fieldPath}>
+        <FieldModelRenderer model={modelForRender} name={fieldPath} />
       </FormItem>
     );
   }
