@@ -34,6 +34,28 @@ html.rp-dark {
   --rp-home-hero-name-color: #e5e7eb;
 }
 
+.rp-plugin-price {
+  .rp-not-doc {
+    height: auto;
+  }
+}
+
+.rp-home-feature.rp-plugin-list {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 每行 3 个元素 */
+  gap: 16px; /* 元素之间的间距 */
+  overflow: inherit;
+  .rp-plugin-card {
+    background: var(--rp-home-feature-bg) !important;
+    box-shadow: none !important;
+    &:hover {
+      box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.1) !important;
+      border: 1px solid var(--rp-c-divider) !important;
+    }
+  }
+}
+
+
 .rp-banner {
   --rp-banner-background: linear-gradient(279deg, #ff8b00 35.21%, #fb6d5b 63.34%);
     color: rgb(255, 255, 255);
