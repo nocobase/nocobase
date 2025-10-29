@@ -38,6 +38,7 @@ export const BlockItem: React.FC<BlockItemProps> = withDynamicSchemaProps(
     const label = useMemo(() => getAriaLabel(), [getAriaLabel]);
     const collection = useCollection();
     const markdownField = fieldSchema['x-decorator'] === 'FormItem' && fieldSchema['x-block-linkage-rules'];
+    const iframeBlock = fieldSchema['x-component'] === 'Iframe' && fieldSchema['x-block-linkage-rules'];
     const content = (
       <SortableItem
         role="button"
@@ -52,7 +53,11 @@ export const BlockItem: React.FC<BlockItemProps> = withDynamicSchemaProps(
       </SortableItem>
     );
 
-    return collection && !markdownField ? content : <BlockLinkageRuleProvider>{content}</BlockLinkageRuleProvider>;
+    return collection && !markdownField && !iframeBlock ? (
+      content
+    ) : (
+      <BlockLinkageRuleProvider>{content}</BlockLinkageRuleProvider>
+    );
   },
   { displayName: 'BlockItem' },
 );
