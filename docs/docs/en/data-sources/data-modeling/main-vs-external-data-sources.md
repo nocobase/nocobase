@@ -4,7 +4,7 @@ The differences between main databases and external databases in NocoBase are pr
 
 ## 1. Database Type Support
 
-For more details, see: [Data Source Manager](https://docs.nocobase.com/handbook/data-source-manager)
+For more details, see: [Data Source Manager](https://docs.nocobase.com/data-sources/data-source-manager)
 
 ### Database Types
 
@@ -26,7 +26,7 @@ For more details, see: [Data Source Manager](https://docs.nocobase.com/handbook/
 
 ## 2. Collection Type Support
 
-For more details, see: [Collections](https://docs.nocobase.com/handbook/data-modeling/collection)
+For more details, see: [Collections](https://docs.nocobase.com/data-sources/data-modeling/collection)
 
 | Collection Type | Main Database | External Database | Description |
 |----------------|-------------------|---------------------|-------------|
@@ -43,7 +43,7 @@ For more details, see: [Collections](https://docs.nocobase.com/handbook/data-mod
 
 ## 3. Field Type Support
 
-For more details, see: [Collection Fields](https://docs.nocobase.com/handbook/data-modeling/collection-fields)
+For more details, see: [Collection Fields](https://docs.nocobase.com/data-sources/data-modeling/collection-fields)
 
 ### Basic Types
 

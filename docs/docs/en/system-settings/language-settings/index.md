@@ -10,6 +10,6 @@ When multiple languages are enabled, users can set their language preferences in
 
 ![20240324192509](https://static-docs.nocobase.com/20240324192509.png)
 
-If the language environment you are using is not translated, you can use the "[Localization Management](/handbook/localization-management)" plugin to perform translations.
+If the language environment you are using is not translated, you can use the "[Localization Management](/system-settings/localization-management/)" plugin to perform translations.
 
 ![20240324193055](https://static-docs.nocobase.com/20240324193055.png)

@@ -14,7 +14,7 @@
 
 ### 作为主数据库使用
 
-安装流程参考 [安装概述](/welcome/getting-started/installation)，区别主要在于环境变量。
+安装流程参考 ，区别主要在于环境变量。
 
 #### 环境变量
 
@@ -115,5 +115,5 @@ yarn nocobase upgrade
 
 ## 使用手册
 
-- 主数据库：查阅 [使用手册](/handbook)
-- 外部数据库：查阅 [数据源 / 外部数据库](/handbook/data-source-manager/external-database) 
+- 主数据库：查阅 主数据源
+- 外部数据库：查阅 [数据源 / 外部数据库](/data-sources/data-source-manager/external-database) 

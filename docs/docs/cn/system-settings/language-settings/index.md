@@ -10,6 +10,6 @@
 
 ![20240324192509](https://static-docs.nocobase.com/20240324192509.png)
 
-如果你所使用的语言环境没有翻译，可以使用「[本地化管理](/handbook/localization-management)」插件进行翻译。
+如果你所使用的语言环境没有翻译，可以使用「[本地化管理](/system-settings/localization-management/)」插件进行翻译。
 
 ![20240324193055](https://static-docs.nocobase.com/20240324193055.png)

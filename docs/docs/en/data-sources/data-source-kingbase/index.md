@@ -14,7 +14,7 @@ Currently, only KingbaseES databases running in pg mode are supported.
 
 ### Using as the Primary Database
 
-Refer to the [Installation Overview](/welcome/getting-started/installation) for the setup procedures, the difference is mainly due to the environment variables.
+Refer to the  for the setup procedures, the difference is mainly due to the environment variables.
 
 #### Environment Variables
 
@@ -115,5 +115,5 @@ Activate the Plugin
 
 ## User Guide
 
-- Primary Database: Refer to the [handbook](/handbook)
+- Primary Database: Refer to the main data source
 - External Database: See [Data Source / External Database](/data-sources/data-source-manager/external-database)

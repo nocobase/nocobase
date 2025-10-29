@@ -32,7 +32,7 @@
 
 ![20240507220140](https://static-docs.nocobase.com/20240507220140.png)
 
-更多内容 [数据表字段/概述](/handbook/data-modeling/collection-fields) 章节。
+更多内容 [数据表字段/概述](/data-sources/data-modeling/collection-fields) 章节。
 
 ### 字段类型映射
 

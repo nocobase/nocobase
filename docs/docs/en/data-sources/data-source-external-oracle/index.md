@@ -31,7 +31,7 @@ If the client is not installed as described above, you will need to specify the 
 
 ### Install the Plugin
 
-Follow the instructions in [Installing and Upgrading Commercial Plugins](/welcome/getting-started/plugin).
+Follow the instructions in .
 
 ## Use Cases
 

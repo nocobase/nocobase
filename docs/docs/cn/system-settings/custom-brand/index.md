@@ -12,7 +12,7 @@
 
 ![20240409111254](https://static-docs.nocobase.com/20240409111254.png)
 
-数字 1 的位置可通过[系统设置](/handbook/system-settings)中的 Logo 选项进行配置，而数字 2 和 3 的位置则可以通过本插件进行配置。
+数字 1 的位置可通过[系统设置](/system-settings/)中的 Logo 选项进行配置，而数字 2 和 3 的位置则可以通过本插件进行配置。
 
 ## 使用说明
 

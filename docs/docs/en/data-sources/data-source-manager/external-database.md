@@ -32,7 +32,7 @@ Because the external database does not support modifying table structures, the o
 
 ![20240507220140](https://static-docs.nocobase.com/20240507220140.png)
 
-For more content, refer to the Collection Fields/Overview section.
+For more content, refer to the [Collection Fields/Overview](/data-sources/data-modeling/collection-fields) section.
 
 ### Field Type Mapping
 

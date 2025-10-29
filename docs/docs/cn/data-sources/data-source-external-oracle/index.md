@@ -31,8 +31,8 @@ ldconfig
 
 ### 安装插件
 
-参考 [商业插件的安装与升级](/welcome/getting-started/plugin)
+参考 
 
 ## 使用说明
 
-查看 [数据源 / 外部数据库](/handbook/data-source-manager/external-database) 章节
+查看 [数据源 / 外部数据库](/data-sources/data-source-manager/external-database) 章节

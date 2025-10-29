@@ -4,7 +4,7 @@
 
 ## 一、数据库类型支持
 
-更多详情请参考：[数据源管理](https://docs.nocobase.com/handbook/data-source-manager)
+更多详情请参考：[数据源管理](https://docs.nocobase.com/data-sources/data-source-manager)
 
 ### 数据库类型
 
@@ -26,7 +26,7 @@
 
 ## 二、数据表类型支持
 
-更多详情请参考：[数据表](https://docs.nocobase.com/handbook/data-modeling/collection)
+更多详情请参考：[数据表](https://docs.nocobase.com/data-sources/data-modeling/collection)
 
 | 数据表类型 | 主数据库 | 外部数据库 | 说明 |
 |-----------|---------|-----------|------|
@@ -43,7 +43,7 @@
 
 ## 三、字段类型支持
 
-更多详情请参考：[数据表字段](https://docs.nocobase.com/handbook/data-modeling/collection-fields)
+更多详情请参考：[数据表字段](https://docs.nocobase.com/data-sources/data-modeling/collection-fields)
 
 ### 基本类型
 

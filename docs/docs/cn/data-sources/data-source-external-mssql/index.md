@@ -14,4 +14,4 @@
 
 ## 使用说明
 
-查看 [数据源 / 外部数据库](/handbook/data-source-manager/external-database) 章节
+查看 [数据源 / 外部数据库](/data-sources/data-source-manager/external-database) 章节
