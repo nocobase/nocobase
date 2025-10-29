@@ -1709,8 +1709,8 @@ export class FlowRunJSContext extends FlowContext {
       function (
         this: any,
         vnode: React.ReactElement | Node | DocumentFragment | string,
-        container?: RenderContainer,
-      ): ReactRootLike | null {
+        container?: Element | DocumentFragment,
+      ) {
         const el = (container as any) || (this.element as any);
         if (!el) throw new Error('ctx.render: container not provided and ctx.element is not available');
         const containerEl: any = (el as any)?.__el || el; // unwrap ElementProxy
