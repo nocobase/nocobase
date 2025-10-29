@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: 安装 NocoBase
-      link: /get-started/get-nocobase
+      link: /get-started
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
@@ -20,15 +20,15 @@ features:
       - title: NocoBase 使用入门
         details: 了解 NocoBase 的核心概念和基本操作。
         icon: <i class="fas fa-rocket"></i>
-        link: /get-started/
+        link: /get-started/how-nocobase-works
       - title: 安装、升级、部署
         details: 从零开始安装 NocoBase，完成版本升级与生产环境部署。
         icon: <i class="fas fa-download"></i>
-        link: /get-started/get-nocobase
+        link: /get-started
       - title: 安装与升级插件
         details: 了解如何添加、管理和更新插件，扩展系统能力。
         icon: <i class="fas fa-puzzle-piece"></i>
-        link: /plugin-manager
+        link: /get-started/install-upgrade-plugins
 
   - title: 进阶
     details: 深入理解 NocoBase 核心概念，掌握开发配置的核心能力。
