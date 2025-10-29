@@ -1,0 +1,186 @@
+[
+  {
+    "type": "custom-link",
+    "label": "用户认证",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/auth-verifications/auth/"
+      },
+      {
+        "type": "custom-link",
+        "label": "认证器管理",
+        "link": "/auth-verifications/auth/authenticators"
+      },
+      {
+        "type": "custom-link",
+        "label": "认证类型",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "密码",
+            "link": "/auth-verifications/auth/password"
+          },
+          {
+            "type": "custom-link",
+            "label": "短信",
+            "link": "/auth-verifications/auth-sms/"
+          },
+          {
+            "type": "dir",
+            "label": "OIDC",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "配置",
+                "link": "/auth-verifications/auth-oidc/"
+              },
+              {
+                "type": "custom-link",
+                "label": "示例",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "谷歌登录",
+                    "link": "/auth-verifications/auth-oidc/examples/google"
+                  },
+                  {
+                    "type": "custom-link",
+                    "label": "微软登录",
+                    "link": "/auth-verifications/auth-oidc/examples/microsoft"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "label": "SAML",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "配置",
+                "link": "/auth-verifications/auth-saml/"
+              },
+              {
+                "type": "custom-link",
+                "label": "示例",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "谷歌登录",
+                    "link": "/auth-verifications/auth-saml/examples/google"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "LDAP",
+            "link": "/auth-verifications/auth-ldap/"
+          },
+          {
+            "type": "custom-link",
+            "label": "CAS",
+            "link": "/auth-verifications/auth-cas/"
+          },
+          {
+            "type": "custom-link",
+            "label": "企业微信",
+            "link": "/auth-verifications/auth-wecom/"
+          },
+          {
+            "type": "custom-link",
+            "label": "钉钉",
+            "link": "/auth-verifications/auth-dingtalk/"
+          },
+          {
+            "type": "custom-link",
+            "label": "API 密钥",
+            "link": "/auth-verifications/api-keys/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "开发指南",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "扩展认证类型",
+            "link": "/auth-verifications/auth/dev"
+          },
+          {
+            "type": "custom-link",
+            "label": "API 参考",
+            "link": "/auth-verifications/auth/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "验证",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/auth-verifications/verification/"
+      },
+      {
+        "type": "custom-link",
+        "label": "验证类型",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "短信",
+            "link": "/auth-verifications/verification/sms"
+          },
+          {
+            "type": "custom-link",
+            "label": "TOTP 认证器",
+            "link": "/auth-verifications/verification-totp/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "collapsed": true,
+        "label": "开发指南",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "扩展验证类型",
+            "link": "/auth-verifications/verification/dev/type"
+          },
+          {
+            "type": "custom-link",
+            "label": "扩展验证场景",
+            "link": "/auth-verifications/verification/dev/scene"
+          },
+          {
+            "type": "custom-link",
+            "label": "扩展短信服务商",
+            "link": "/auth-verifications/verification/dev/sms-type"
+          },
+          {
+            "type": "custom-link",
+            "label": "API 参考",
+            "link": "/auth-verifications/verification/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "双因素身份认证 (2FA)",
+    "link": "/auth-verifications/2fa/"
+  }
+]
