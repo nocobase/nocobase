@@ -41,6 +41,7 @@ features:
       - title: Users & Permissions
         details: Define roles, permissions and access control to ensure system security and compliance.
         icon: <i class="fas fa-users"></i>
+        link: /users-permissions/
       - title: Authentication & Verification
         details: Support multiple login methods and verification mechanisms to ensure identity security and consistency.
         icon: <i class="fas fa-shield-alt"></i>

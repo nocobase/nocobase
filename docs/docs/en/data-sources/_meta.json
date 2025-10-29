@@ -1,68 +1,68 @@
 [
   {
     "type": "custom-link",
-    "label": "数据源管理",
+    "label": "Data source manager",
     "link": "/data-sources/"
   },
   {
     "type": "custom-link",
-    "label": "主数据源",
+    "label": "Main data source",
     "link": "/data-sources/data-source-main/"
   },
   {
     "type": "custom-link",
-    "label": "外部数据源（数据库）",
+    "label": "External data sources (Databases)",
     "items": [
       {
         "type": "custom-link",
-        "label": "介绍",
+        "label": "Overview",
         "link": "/data-sources/data-source-manager/external-database"
       },
       {
         "type": "custom-link",
-        "label": "外部 MySQL",
+        "label": "External MySQL",
         "link": "/data-sources/data-source-external-mysql/"
       },
       {
         "type": "custom-link",
-        "label": "外部 MariaDB",
+        "label": "External MariaDB",
         "link": "/data-sources/data-source-external-mariadb/"
       },
       {
         "type": "custom-link",
-        "label": "外部 PostgreSQL",
+        "label": "External PostgreSQL",
         "link": "/data-sources/data-source-external-postgres/"
       },
       {
         "type": "custom-link",
-        "label": "外部 MSSQL",
+        "label": "External MSSQL",
         "link": "/data-sources/data-source-external-mssql/"
       },
       {
         "type": "custom-link",
-        "label": "外部 Oracle",
+        "label": "External Oracle",
         "link": "/data-sources/data-source-external-oracle/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "主、外部数据库对比",
+    "label": "Main vs External Databases",
     "link": "/data-sources/main-vs-external-data-sources"
   },
   {
     "type": "custom-link",
-    "label": "REST API 数据源",
+    "label": "REST API data source",
     "link": "/data-sources/data-source-rest-api/"
   },
   {
     "type": "custom-link",
-    "label": "人大金仓（KingbaseES）数据源",
+    "label": "KingbaseES data source",
     "link": "/data-sources/data-source-kingbase/"
   },
   {
     "type": "custom-link",
-    "label": "类 ER 工具",
+    "label": "ER diagram-like tool",
     "link": "/data-sources/graph-collection-manager/"
   }
 ]

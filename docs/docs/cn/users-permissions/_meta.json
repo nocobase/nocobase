@@ -1,0 +1,82 @@
+[
+  {
+    "type": "custom-link",
+    "label": "用户",
+    "link": "/users-permissions/users/"
+  },
+  {
+    "type": "custom-link",
+    "label": "角色和权限",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/users-permissions/acl/"
+      },
+      {
+        "type": "custom-link",
+        "label": "使用手册",
+        "link": "/users-permissions/acl/manual"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "部门",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/users-permissions/departments/"
+      },
+      {
+        "type": "custom-link",
+        "label": "使用手册",
+        "link": "/users-permissions/departments/manual"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "同步",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "同步管理",
+        "link": "/users-permissions/user-data-sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "数据源",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/user-data-sync/sources/api"
+          },
+          {
+            "type": "custom-link",
+            "label": "企业微信",
+            "link": "/users-permissions/wecom/user-data-sync"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "开发指南",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "扩展同步数据源",
+            "link": "/users-permissions/user-data-sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "扩展同步目标资源",
+            "link": "/users-permissions/user-data-sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

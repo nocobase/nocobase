@@ -15,7 +15,7 @@
       { "text": "数据源", "link": "/data-sources" },
       { "text": "配置界面", "link": "/interface-builder" },
       { "text": "AI 员工", "link": "/ai-employees" },
-      { "text": "用户和权限", "link": "/features/users-and-permissions" },
+      { "text": "用户和权限", "link": "/users-permissions/" },
       { "text": "用户认证和验证", "link": "/features/authentication" },
       { "text": "工作流", "link": "/workflow" },
       { "text": "多应用和多空间", "link": "/features/multi-app" },
