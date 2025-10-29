@@ -2,7 +2,7 @@
 
 ## 获取 API 密钥
 
-参考 [API 密钥](/auth-verifications/api-keys), 需要确保 API 密钥设置的角色具有用户数据同步权限。
+参考 [API 密钥](/auth-verification/api-keys), 需要确保 API 密钥设置的角色具有用户数据同步权限。
 
 ## API 说明
 

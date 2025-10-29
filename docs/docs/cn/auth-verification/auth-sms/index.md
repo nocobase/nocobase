@@ -4,7 +4,7 @@
 
 短信认证插件支持用户通过短信注册用户，登录 NocoBase.
 
-> 需要配合 [`@nocobase/plugin-verification` 插件](/auth-verifications/verification/)提供的短信验证码功能使用
+> 需要配合 [`@nocobase/plugin-verification` 插件](/auth-verification/verification/)提供的短信验证码功能使用
 
 ## 添加短信认证
 

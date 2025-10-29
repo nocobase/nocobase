@@ -6,12 +6,12 @@
       {
         "type": "custom-link",
         "label": "概述",
-        "link": "/auth-verifications/auth/"
+        "link": "/auth-verification/auth/"
       },
       {
         "type": "custom-link",
         "label": "认证器管理",
-        "link": "/auth-verifications/auth/authenticators"
+        "link": "/auth-verification/auth/authenticators"
       },
       {
         "type": "custom-link",
@@ -20,12 +20,12 @@
           {
             "type": "custom-link",
             "label": "密码",
-            "link": "/auth-verifications/auth/password"
+            "link": "/auth-verification/auth/password"
           },
           {
             "type": "custom-link",
             "label": "短信",
-            "link": "/auth-verifications/auth-sms/"
+            "link": "/auth-verification/auth-sms/"
           },
           {
             "type": "dir",
@@ -35,7 +35,7 @@
               {
                 "type": "custom-link",
                 "label": "配置",
-                "link": "/auth-verifications/auth-oidc/"
+                "link": "/auth-verification/auth-oidc/"
               },
               {
                 "type": "custom-link",
@@ -44,12 +44,12 @@
                   {
                     "type": "custom-link",
                     "label": "谷歌登录",
-                    "link": "/auth-verifications/auth-oidc/examples/google"
+                    "link": "/auth-verification/auth-oidc/examples/google"
                   },
                   {
                     "type": "custom-link",
                     "label": "微软登录",
-                    "link": "/auth-verifications/auth-oidc/examples/microsoft"
+                    "link": "/auth-verification/auth-oidc/examples/microsoft"
                   }
                 ]
               }
@@ -63,7 +63,7 @@
               {
                 "type": "custom-link",
                 "label": "配置",
-                "link": "/auth-verifications/auth-saml/"
+                "link": "/auth-verification/auth-saml/"
               },
               {
                 "type": "custom-link",
@@ -72,7 +72,7 @@
                   {
                     "type": "custom-link",
                     "label": "谷歌登录",
-                    "link": "/auth-verifications/auth-saml/examples/google"
+                    "link": "/auth-verification/auth-saml/examples/google"
                   }
                 ]
               }
@@ -81,27 +81,27 @@
           {
             "type": "custom-link",
             "label": "LDAP",
-            "link": "/auth-verifications/auth-ldap/"
+            "link": "/auth-verification/auth-ldap/"
           },
           {
             "type": "custom-link",
             "label": "CAS",
-            "link": "/auth-verifications/auth-cas/"
+            "link": "/auth-verification/auth-cas/"
           },
           {
             "type": "custom-link",
             "label": "企业微信",
-            "link": "/auth-verifications/auth-wecom/"
+            "link": "/auth-verification/auth-wecom/"
           },
           {
             "type": "custom-link",
             "label": "钉钉",
-            "link": "/auth-verifications/auth-dingtalk/"
+            "link": "/auth-verification/auth-dingtalk/"
           },
           {
             "type": "custom-link",
             "label": "API 密钥",
-            "link": "/auth-verifications/api-keys/"
+            "link": "/auth-verification/api-keys/"
           }
         ]
       },
@@ -113,12 +113,12 @@
           {
             "type": "custom-link",
             "label": "扩展认证类型",
-            "link": "/auth-verifications/auth/dev"
+            "link": "/auth-verification/auth/dev"
           },
           {
             "type": "custom-link",
             "label": "API 参考",
-            "link": "/auth-verifications/auth/dev/api"
+            "link": "/auth-verification/auth/dev/api"
           }
         ]
       }
@@ -131,7 +131,7 @@
       {
         "type": "custom-link",
         "label": "概述",
-        "link": "/auth-verifications/verification/"
+        "link": "/auth-verification/verification/"
       },
       {
         "type": "custom-link",
@@ -140,12 +140,12 @@
           {
             "type": "custom-link",
             "label": "短信",
-            "link": "/auth-verifications/verification/sms"
+            "link": "/auth-verification/verification/sms"
           },
           {
             "type": "custom-link",
             "label": "TOTP 认证器",
-            "link": "/auth-verifications/verification-totp/"
+            "link": "/auth-verification/verification-totp/"
           }
         ]
       },
@@ -157,22 +157,22 @@
           {
             "type": "custom-link",
             "label": "扩展验证类型",
-            "link": "/auth-verifications/verification/dev/type"
+            "link": "/auth-verification/verification/dev/type"
           },
           {
             "type": "custom-link",
             "label": "扩展验证场景",
-            "link": "/auth-verifications/verification/dev/scene"
+            "link": "/auth-verification/verification/dev/scene"
           },
           {
             "type": "custom-link",
             "label": "扩展短信服务商",
-            "link": "/auth-verifications/verification/dev/sms-type"
+            "link": "/auth-verification/verification/dev/sms-type"
           },
           {
             "type": "custom-link",
             "label": "API 参考",
-            "link": "/auth-verifications/verification/dev/api"
+            "link": "/auth-verification/verification/dev/api"
           }
         ]
       }
@@ -181,6 +181,6 @@
   {
     "type": "custom-link",
     "label": "双因素身份认证 (2FA)",
-    "link": "/auth-verifications/2fa/"
+    "link": "/auth-verification/2fa/"
   }
 ]

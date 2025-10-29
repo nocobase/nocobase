@@ -64,11 +64,11 @@ export type AuthConfig = {
 
 ##### AuthConfig
 
-| 属性            | 类型                                            | 描述                                                                                                   |
-| --------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `authenticator` | [`Authenticator`](./auth-manager#authenticator) | 认证器数据模型，在 NocoBase 应用中的实际类型是 [AuthModel](/auth-verifications/auth/dev/api#authmodel) |
-| `options`       | `Record<string, any>`                           | 认证器相关配置                                                                                         |
-| `ctx`           | `Context`                                       | 请求上下文                                                                                             |
+| 属性            | 类型                                            | 描述                                                                                                  |
+| --------------- | ----------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `authenticator` | [`Authenticator`](./auth-manager#authenticator) | 认证器数据模型，在 NocoBase 应用中的实际类型是 [AuthModel](/auth-verification/auth/dev/api#authmodel) |
+| `options`       | `Record<string, any>`                           | 认证器相关配置                                                                                        |
+| `ctx`           | `Context`                                       | 请求上下文                                                                                            |
 
 ### `check()`
 

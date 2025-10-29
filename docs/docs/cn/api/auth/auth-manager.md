@@ -112,7 +112,7 @@ export interface Storer {
 
 `Storer` 是认证器存储的接口，包含一个方法。
 
-- `get(name: string): Promise<Authenticator>` - 通过认证器标识获取认证器。在 NocoBase 中实际返回的类型是 [AuthModel](/auth-verifications/auth/dev/api#authmodel).
+- `get(name: string): Promise<Authenticator>` - 通过认证器标识获取认证器。在 NocoBase 中实际返回的类型是 [AuthModel](/auth-verification/auth/dev/api#authmodel).
 
 ### `registerTypes()`
 

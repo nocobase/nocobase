@@ -20,7 +20,7 @@ API 接口 `token`.
 
 ### `authenticator`
 
-当前用户认证时所用的认证器。参考 [用户认证](/auth-verifications/auth/)。
+当前用户认证时所用的认证器。参考 [用户认证](/auth-verification/auth/)。
 
 ## 类方法
 
