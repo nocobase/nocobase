@@ -364,8 +364,18 @@
               },
               {
                 "type": "custom-link",
+                "label": "导入Pro",
+                "link": "/interface-builder/actions/types/import-pro"
+              },
+              {
+                "type": "custom-link",
                 "label": "导出",
                 "link": "/interface-builder/actions/types/export"
+              },
+              {
+                "type": "custom-link",
+                "label": "导出pro",
+                "link": "/interface-builder/actions/types/export-pro"
               },
               {
                 "type": "custom-link",
