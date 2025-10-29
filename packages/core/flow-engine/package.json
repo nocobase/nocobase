@@ -18,7 +18,8 @@
     "slate": "^0.103.0",
     "slate-history": "^0.109.0",
     "slate-react": "^0.110.3",
-    "uid": "^2.0.2"
+    "uid": "^2.0.2",
+    "sucrase": "^3.35.0"
   },
   "peerDependencies": {
     "react": ">=18"

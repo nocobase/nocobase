@@ -9,6 +9,7 @@
 
 import { linter, Diagnostic } from '@codemirror/lint';
 import * as acorn from 'acorn';
+import jsx from 'acorn-jsx';
 // acorn-walk 仅用于轻量遍历做一些静态启发式检查（非类型检查）
 // 类型定义可缺省，因此用 any 兼容
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -38,8 +39,10 @@ export const createJavaScriptLinter = () => {
 
     let ast: any = null;
     try {
-      // 使用 acorn 解析代码，只检查语法错误
-      ast = acorn.parse(text, {
+      // 使用 acorn + jsx 插件解析代码（支持 JSX），只检查语法错误
+      const Parser: any = acorn.Parser || acorn;
+      const ParserWithJSX = typeof jsx === 'function' ? Parser.extend(jsx()) : Parser;
+      ast = ParserWithJSX.parse(text, {
         ecmaVersion: 2022,
         sourceType: 'script',
         allowAwaitOutsideFunction: true,
