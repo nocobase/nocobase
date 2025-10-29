@@ -33,20 +33,20 @@ export default defineConfig({
     },
   },
   plugins: [
-    pluginPreview({
-      iframeOptions: {
-        builderConfig: {
-          resolve: {
-            alias: {
-              '@nocobase/client-v2': path.join(__dirname, '../client-v2/src'),
-              '@nocobase/shared': path.join(__dirname, '../shared/src'),
-              '@nocobase/sdk': path.join(__dirname, '../sdk/src'),
-              '@nocobase/flow-engine': path.join(__dirname, '../flow-engine/src'),
-            },
-          },
-        },
-      },
-    }),
+    // pluginPreview({
+    //   iframeOptions: {
+    //     builderConfig: {
+    //       resolve: {
+    //         alias: {
+    //           '@nocobase/client-v2': path.join(__dirname, '../client-v2/src'),
+    //           '@nocobase/shared': path.join(__dirname, '../shared/src'),
+    //           '@nocobase/sdk': path.join(__dirname, '../sdk/src'),
+    //           '@nocobase/flow-engine': path.join(__dirname, '../flow-engine/src'),
+    //         },
+    //       },
+    //     },
+    //   },
+    // }),
     pluginLlms(),
     pluginSitemap({
       siteUrl: 'https://docs.nocobase.com', // 替换为你的网站 URL

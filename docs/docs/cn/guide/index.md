@@ -18,10 +18,10 @@ features:
         link: /ai-employees
       - title: 用户和权限
         details: 定义角色、权限与访问控制，保障系统的安全与合规。
-        link: /users-and-permissions
+        link: /users-permissions
       - title: 认证和验证
         details: 支持多种登录方式与验证机制，确保身份安全与一致性。
-        link: /auth-verification
+        link: /auth-verifications
       - title: 工作流
         details: 设计自动化工作流，实现逻辑编排和业务自动运转。
         link: /workflow
