@@ -24,7 +24,7 @@
 
 在详情区块中，联动规则主要用于动态控制详情区块上字段的显示和隐藏。
 
-![20250418161037](https://static-docs.nocobase.com/20250418161037.png)
+![20251029114859](https://static-docs.nocobase.com/20251029114859.png)
 
 ## 属性联动
 
@@ -32,48 +32,16 @@
 
 示例:订单勾选为增补订单时，订单状态自动赋值为「待审核」。
 
-![20250418161712](https://static-docs.nocobase.com/20250418161712.png)
+![20251029115348](https://static-docs.nocobase.com/20251029115348.png)
 
 ### 必填
 
-示例: 订单状态为「待支付」时，订单金额必填。
+示例: 订单状态为「已支付」时，订单金额必填。
 
-![20250418163252](https://static-docs.nocobase.com/20250418163252.png)
+![20251029115031](https://static-docs.nocobase.com/20251029115031.png)
 
 ### 显示/隐藏
 
-示例: 仅订单状态为「待支付」时才显示支付方式。
+示例: 仅订单状态为「待支付」时才显示支付账户。
 
-![20250418163733](https://static-docs.nocobase.com/20250418163733.png)
-
-### 选项
-
-> **注意**: 该功能**从v1.7.0-beta.2版本起支持**
-
-支持为`select`, `radioGroup`, `multipleSelect`, `checkboxGroup`等类型的字段动态的配置选项，其可选项可以根据表单中其他字段的变化实现联动。
-
-示例：仅订单金额高于10000时可选择「分期付款」。
-
-![20250418164806](https://static-docs.nocobase.com/20250418164806.png)
-
-联动效果如下
-
-<video width="100%" height="440" controls>
-      <source src="https://static-docs.nocobase.com/20250418164831.mp4" type="video/mp4">
-</video>
-
-### 日期范围
-
-> **注意**: 该功能**从v1.7.0-beta.2版本起支持**
-
-支持为`date`, `datetime`, `dateOnly`, `datetimeNoTz`, `unixTimestamp`, `createdAt`, `updatedAt`等类型字段动态配置日期范围，其可选日期范围可以根据表单中其他字段的变化自动调整。
-
-示例：选择订单日期后，发货日期不能早于订单日期。
-
-![20250418165500](https://static-docs.nocobase.com/20250418165500.png)
-
-示例：交付日期 (Delivery Date) 不能早于今天且不能晚于订单截止日期 (Order Deadline)。
-
-![20250418170520](https://static-docs.nocobase.com/20250418170520.png)
-
-更多联动规则说明参考 [联动规则](/interface-builder/linkage-rule)
+![20251029115713](https://static-docs.nocobase.com/20251029115713.png)
