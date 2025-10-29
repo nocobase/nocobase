@@ -35,4 +35,4 @@ Follow the instructions in [Installing and Upgrading Commercial Plugins](/welcom
 
 ## Use Cases
 
-For detailed instructions, refer to the [Data Source / External Database](/handbook/data-source-manager/external-database) section.
+For detailed instructions, refer to the [Data Source / External Database](/data-sources/data-source-manager/external-database) section.

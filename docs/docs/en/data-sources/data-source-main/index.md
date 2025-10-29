@@ -37,15 +37,15 @@ Through the "Load from database" feature, you can:
 ![nocobase_doc-2025-10-29-19-47-14](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-47-14.png)
 
 NocoBase supports creating and managing various types of data tables:
-- [General collection](/handbook/data-source-main/general-collection): built-in commonly used system fields;
-- [Inheritance collection](/handbook/data-source-main/inheritance-collection): allows the creation of a parent table, from which child tables can be derived. Child tables will inherit the structure of the parent table, and can also define their own columns.
-- [Tree collection](/handbook/collection-tree): tree-structured table, currently only supports adjacent table design;
-- [Calendar collection](/handbook/calendar/calendar-collection): for creating calendar-related event tables;
-- [File collection](/handbook/file-manager/file-collection): for managing file storage;
-- [Expression Collection](/handbook/workflow-dynamic-calculation/expression): for dynamic expression scenarios in workflows;
-- [SQL Collection](/handbook/collection-sql): Not an actual database table, but quickly presenting the SQL query in a structured manner;
-- [Database View collection](/handbook/collection-view): connects to an existing database view;
-- [FDW collection](/handbook/collection-fdw): allows the database system to directly access and query data in external data sources, based on FDW technology;
+- [General collection](/data-sources/data-source-main/general-collection): built-in commonly used system fields;
+- [Inheritance collection](/data-sources/data-source-main/inheritance-collection): allows the creation of a parent table, from which child tables can be derived. Child tables will inherit the structure of the parent table, and can also define their own columns.
+- Tree collection: tree-structured table, currently only supports adjacent table design;
+- Calendar collection: for creating calendar-related event tables;
+- File collection: for managing file storage;
+- Expression Collection: for dynamic expression scenarios in workflows;
+- SQL Collection: Not an actual database table, but quickly presenting the SQL query in a structured manner;
+- Database View collection: connects to an existing database view;
+- FDW collection: allows the database system to directly access and query data in external data sources, based on FDW technology;
 
 ### Supporting Classification Management of Collections
 
@@ -95,4 +95,4 @@ NocoBase not only can synchronize entire tables, but also supports fine-grained 
 
 This flexible synchronization mechanism allows NocoBase to integrate seamlessly into existing technical architectures. There's no need to change existing database management practices, while still enjoying the convenience of low-code development that NocoBase provides.
 
-See more in the [Data Table Fields / Overview](/handbook/data-modeling/collection-fields) section.
+See more in the Data Table Fields / Overview section.

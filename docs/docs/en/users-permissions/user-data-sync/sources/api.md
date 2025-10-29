@@ -2,7 +2,7 @@
 
 ## Obtain an API Key
 
-Refer to [API Keys](../api-keys). Ensure that the role associated with the API key has the necessary permissions to sync user data.
+Refer to the API Keys documentation. Ensure that the role associated with the API key has the necessary permissions to sync user data.
 
 ## API Overview
 
@@ -46,7 +46,7 @@ POST /api/userData:push
 ### Department Data Format
 
 :::info
-Pushing department data requires the [Departments](../../departments) plugin to be installed and enabled.
+Pushing department data requires the [Departments](/users-permissions/departments/) plugin to be installed and enabled.
 :::
 
 #### DepartmentData

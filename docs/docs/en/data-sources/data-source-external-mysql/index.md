@@ -14,4 +14,4 @@ This plugin is a commercial plugin, which needs to be uploaded and activated thr
 
 ## Usage Instructions
 
-Refer to the [Data Source / External Database](/handbook/data-source-manager/external-database) section.
+Refer to the [Data Source / External Database](/data-sources/data-source-manager/external-database) section.

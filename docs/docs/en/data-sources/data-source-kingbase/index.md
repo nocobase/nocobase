@@ -116,4 +116,4 @@ Activate the Plugin
 ## User Guide
 
 - Primary Database: Refer to the [handbook](/handbook)
-- External Database: See [Data Source / External Database](/handbook/data-source-manager/external-database)
+- External Database: See [Data Source / External Database](/data-sources/data-source-manager/external-database)
