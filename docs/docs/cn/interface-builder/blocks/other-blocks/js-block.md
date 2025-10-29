@@ -41,107 +41,58 @@ JS Block 的脚本编辑器支持语法高亮、错误提示与内置代码片�
 - 沙箱：脚本在受控环境中运行，`window`/`document`/`navigator` 采用安全代理对象，常见 API 可用、风险行为受限。
 - 重渲染：区块被隐藏后再显示会自动重渲染（避免初次挂载重复执行）。
 
-## 常见用法
+## 常见用法（精简示例）
 
-### 1) 基础渲染
+### 1) 渲染 React（JSX）
 
 ```js
-// 写入 HTML
-ctx.element.innerHTML = `
-  <div style="padding:12px;">
-    <h3>自定义内容</h3>
-    <button id="helloBtn">点我</button>
+const { Button } = ctx.antd;
+ctx.render(
+  <div style={{ padding: 12 }}>
+    <Button type="primary" onClick={() => ctx.message.success(ctx.t('Clicked!'))}>
+      {ctx.t('Click')}
+    </Button>
   </div>
-`;
-
-// 绑定事件
-const btn = ctx.element.querySelector('#helloBtn');
-btn.addEventListener('click', () => {
-  ctx.viewer.dialog({ content: 'Hello from JS Block!' });
-});
+);
 ```
 
-### 2) 加载第三方库（CDN / ESM）
+### 2) API 请求模板
 
 ```js
-// 加载样式
-await ctx.loadCSS('https://cdn.jsdelivr.net/npm/normalize.css/normalize.css');
+const resp = await ctx.api.request({ url: 'users:list', method: 'get', params: { pageSize: 10 } });
+ctx.message.success(ctx.t('Request finished'));
+console.log(ctx.t('Response data:'), resp?.data);
+```
 
-// 通过 CDN 加载 ECharts 并渲染图表
-const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js');
-if (!echarts) return;
+### 3) 加载 ECharts 并渲染
 
-ctx.element.innerHTML = '';
+```js
 const container = document.createElement('div');
 container.style.height = '360px';
-ctx.element.appendChild(container);
-
+container.style.width = '100%';
+ctx.element.replaceChildren(container);
+const echarts = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js');
+if (!echarts) throw new Error('ECharts not loaded');
 const chart = echarts.init(container);
-chart.setOption({
-  title: { text: 'ECharts 示例' },
-  xAxis: { data: ['A', 'B', 'C', 'D'] },
-  yAxis: {},
-  series: [{ type: 'bar', data: [12, 20, 36, 10] }],
-});
+chart.setOption({ title: { text: ctx.t('ECharts') }, xAxis: {}, yAxis: {}, series: [{ type: 'bar', data: [5, 12, 9] }] });
+chart.resize();
 ```
 
-### 3) 访问数据（Resource 模式）
+### 4) 打开视图（抽屉）
 
 ```js
-// 选择资源类型（多条记录/单条记录/SQL）
-ctx.useResource('MultiRecordResource');
-ctx.resource.setDataSourceKey('main');
-ctx.resource.setResourceName('users');
-
-// 拉取数据
-await ctx.resource.refresh();
-const rows = ctx.resource.getData();
-
-// 渲染列表
-ctx.element.innerHTML = `
-  <ul style="padding:12px;">
-    ${rows.map((r) => `<li>${r.id} - ${r.nickname || r.name}</li>`).join('')}
-  </ul>
-`;
+const popupUid = ctx.model.uid + '-1';
+await ctx.openView(popupUid, { mode: 'drawer', title: ctx.t('Sample drawer'), size: 'large' });
 ```
 
-> 小贴士：在表格/详情等数据上下文中，`ctx.record` 代表“当前记录”（只读），可直接使用。
-
-### 4) 打开弹窗/抽屉与返回导航
-
-优先使用 `ctx.viewer` 家族方法；如需打开预配置视图，可使用 `ctx.openView`。
+### 5) 资源读取并渲染 JSON
 
 ```js
-// 简单内容：对话框
-ctx.viewer.dialog({
-  title: '说明',
-  content: (view) => (
-    <div style={{ padding: 16 }}>
-      这是通过 viewer.dialog 打开的对话框。
-      <a onClick={() => view.close()}>关闭</a>
-    </div>
-  ),
-});
-
-// 打开已配置好的视图（如某个编辑表单），并将主键传入
-await ctx.openView('target-view-uid', {
-  navigation: false,      // 在 JS 运行场景建议关闭路由导航，避免上下文丢失
-  mode: 'drawer',         // 可选：'drawer' | 'dialog' | 'embed'
-  dataSourceKey: 'main',
-  collectionName: 'users',
-  filterByTk: 1,          // 打开记录主键为 1 的数据
-});
-
-// 在被打开的子视图中，可通过 ctx.view 访问当前视图对象
-// 使用 ctx.view.close() 主动关闭，或通过 ctx.view.navigation 返回上一层
-```
-
-### 5) 国际化
-
-```js
-// 推荐使用 ctx.i18n.t(key, { ns }) 或 ctx.t()
-const text = ctx.i18n.t('欢迎使用 JS Block');
-ctx.element.innerHTML = `<div>${text}</div>`;
+const resource = ctx.createResource('SingleRecordResource');
+resource.setDataSourceKey('main');
+resource.setResourceName('users');
+await resource.refresh();
+ctx.render(`<pre style="padding:12px;background:#f5f5f5;border-radius:6px;">${JSON.stringify(resource.getData(), null, 2)}</pre>`);
 ```
 
 ## 注意事项
