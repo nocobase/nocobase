@@ -1,49 +1,22 @@
 [
   {
     "text": "开始",
-    "link": "/get-started/",
-    "items": [
-      { "text": "NocoBase 使用入门", "link": "/get-started/" },
-      { "text": "安装、升级、部署", "link": "/get-started/get-nocobase" },
-      { "text": "安装与升级插件", "link": "/plugin-manager" }
-    ]
+    "link": "/get-started/"
   },
   {
-    "text": "进阶",
-    "link": "/guide/",
-    "items": [
-      { "text": "数据源", "link": "/data-sources" },
-      { "text": "配置界面", "link": "/interface-builder" },
-      { "text": "AI 员工", "link": "/ai-employees" },
-      { "text": "用户和权限", "link": "/users-permissions/" },
-      { "text": "用户认证和验证", "link": "/features/authentication" },
-      { "text": "工作流", "link": "/workflow" },
-      { "text": "多应用和多空间", "link": "/features/multi-app" },
-      { "text": "集成", "link": "/features/integration" },
-      { "text": "系统配置", "link": "/features/system-settings" },
-      { "text": "运维", "link": "/features/operations" },
-      { "text": "安全", "link": "/features/security" }
-    ]
-  },
-  {
-    "text": "更多插件",
-    "link": "/features/",
-    "items": [
-      { "text": "通知", "link": "/features/notification-manager" },
-      { "text": "数据可视化", "link": "/features/data-visualization" },
-      { "text": "文件管理器", "link": "/features/file-manager" },
-      { "text": "邮件管理", "link": "/features/email-manager" },
-      { "text": "模板打印", "link": "/features/template-print" },
-      { "text": "其他插件", "link": "/features/" }
-    ]
+    "text": "手册",
+    "link": "/guide/"
   },
   {
     "text": "开发",
-    "link": "/development/",
-    "items": [
-      { "text": "插件开发指南", "link": "/plugin-development" },
-      { "text": "FlowEngine", "link": "/flow-engine" },
-      { "text": "数据源扩展", "link": "/database" }
-    ]
+    "link": "/development/"
+  },
+  {
+    "text": "插件",
+    "link": "/plugins"
+  },
+  {
+    "text": "API",
+    "link": "/api"
   }
 ]

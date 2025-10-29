@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Button, Radio } from 'antd';
+import { Alert, Button, Radio } from 'antd';
 import { ObjectField, useForm, observer } from '@formily/react';
 import { ChartOptionsEditor } from './ChartOptionsEditor';
 import { useT } from '../../locale';
@@ -66,6 +66,14 @@ export const ChartOptionsPanel: React.FC = observer(() => {
 
   return (
     <ObjectField name="chart.option">
+      <Alert
+        message={t("Please click 'Run Query' to fetch data before configuring chart options")}
+        type="warning"
+        showIcon
+        closable
+        style={{ marginBottom: 16, paddingLeft: 8 }}
+      />
+
       <div
         style={{
           display: 'flex',

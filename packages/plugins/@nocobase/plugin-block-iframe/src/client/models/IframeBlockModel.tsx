@@ -24,7 +24,6 @@ const Iframe: any = observer(
     const { token } = theme.useToken();
     const compile = useCompile();
     const ctx = useFlowContext();
-
     const { loading, data: htmlContent } = useRequest<string>(
       {
         url: `iframeHtml:getHtml/${htmlId}`,
@@ -39,8 +38,8 @@ const Iframe: any = observer(
       let active = true; // 标记当前请求是否有效
 
       const generateSrc = async (content: string | undefined) => {
-        if (!content) return;
         if (mode === 'html') {
+          if (!content) return;
           try {
             const liquid = ctx.liquid;
             const result = await liquid.renderWithFullContext(content, ctx);
@@ -59,6 +58,7 @@ const Iframe: any = observer(
         } else {
           try {
             const targetUrl = joinUrlSearch(url, params);
+            console.log(targetUrl);
             if (active) setSrc(targetUrl);
           } catch (error) {
             console.error('Error fetching target URL:', error);
@@ -74,7 +74,7 @@ const Iframe: any = observer(
         active = false;
       };
     }, [htmlContent, mode, url, params, html, htmlId]);
-
+    console.log(src);
     if (loading && !src) {
       return (
         <div
@@ -282,11 +282,15 @@ IframeBlockModel.registerFlow({
                     style: {
                       flexWrap: 'nowrap',
                       maxWidth: '100%',
+                      width: '100%',
                     },
                     className: css`
                       & > .ant-space-item:first-child,
                       & > .ant-space-item:last-child {
                         flex-shrink: 0;
+                      }
+                      & > .ant-space-item:nth-child(2) {
+                        width: 100%;
                       }
                     `,
                   },
@@ -308,6 +312,9 @@ IframeBlockModel.registerFlow({
                         useTypedConstant: true,
                         changeOnSelect: true,
                         rows: 1,
+                        style: {
+                          width: '100%',
+                        },
                       },
                     },
                     remove: {

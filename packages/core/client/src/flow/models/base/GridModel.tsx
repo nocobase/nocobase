@@ -559,6 +559,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                 dragOverlayRect={this.props.dragOverlayRect}
                 renderItem={(uid) => {
                   const baseItem = this.flowEngine.getModel(uid);
+                  const fieldKey = this.context.fieldKey;
                   const rowIndex = this.context.fieldIndex;
                   const record = this.context.record;
                   // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
@@ -566,21 +567,23 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                     rowIndex == null
                       ? baseItem
                       : (() => {
-                          const fork = baseItem.createFork({}, `${rowIndex}:${uid}`);
+                          const fork = baseItem.createFork({}, `${fieldKey}:${uid}`);
                           fork.context.defineProperty('fieldIndex', {
                             get: () => rowIndex,
+                          });
+                          fork.context.defineProperty('fieldKey', {
+                            get: () => fieldKey,
                           });
                           fork.context.defineProperty('record', {
                             get: () => record,
                           });
-                          fork.setProps({ disabled: this.props.disabled });
                           return fork;
                         })();
                   return (
                     <Droppable model={item}>
                       <MemoFlowModelRenderer
                         model={item}
-                        key={`${item.uid}:${rowIndex}:${(item as any)?.use || (item as any)?.constructor?.name || 'm'}`}
+                        key={`${item.uid}:${fieldKey}:${(item as any)?.use || (item as any)?.constructor?.name || 'm'}`}
                         fallback={baseItem.skeleton || this.itemFallback}
                         showFlowSettings={this.flowEngine.flowSettings.enabled ? this.getItemFlowSettings() : false}
                         showErrorFallback

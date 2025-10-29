@@ -15,8 +15,11 @@ export default defineConfig({
   // title: 'NocoBase Documentation',
   icon: 'https://www.nocobase.com/images/favicon/apple-touch-icon.png',
   logo: {
-    light: '/LogoBlack.png',
-    dark: '/LogoWhite.png',
+    light: '/logo.png',
+    dark: '/logo-white.png',
+  },
+  route: {
+    cleanUrls: true,
   },
   builderConfig: {
     plugins: [pluginSass()],

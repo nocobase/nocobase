@@ -1,0 +1,33 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概述",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "通知：站内信",
+    "link": "/notification-manager/notification-in-app-message"
+  },
+  {
+    "type": "custom-link",
+    "label": "通知：电子邮件",
+    "link": "/notification-manager/notification-email"
+  },
+  {
+    "type": "custom-link",
+    "label": "开发指南",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "扩展通知渠道类型",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "扩展通知API",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

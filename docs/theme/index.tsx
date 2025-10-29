@@ -1,5 +1,5 @@
 import { NoSSR, useLang } from '@rspress/core/runtime';
-import { getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, renderHtmlOrText } from '@rspress/core/theme';
+import { Badge, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme';
 import {
   LlmsContainer,
   LlmsCopyButton,
@@ -8,7 +8,9 @@ import {
 import { useFrontmatter, useNavigate, usePageData } from '@rspress/runtime';
 import type { Feature } from '@rspress/shared';
 import type { JSX } from 'react';
-import { PluginCard } from './components';
+import { PluginCard } from './components/PluginCard';
+import { PluginInfo } from './components/PluginInfo';
+import { PluginList } from './components/PluginList';
 
 function getCustomMDXComponent() {
   const { h1: H1, ...mdxComponents } = basicGetCustomMDXComponent();
@@ -22,13 +24,19 @@ function getCustomMDXComponent() {
           {/* LlmsViewOptions 组件可根据需要添加  */}
           <LlmsViewOptions />
         </LlmsContainer>
+        <PluginInfo />
       </>
     );
   };
+
   return {
     ...mdxComponents,
     h1: MyH1,
     PluginCard,
+    Badge,
+    Tabs,
+    Tab,
+    NoSSR,
   };
 }
 
@@ -81,6 +89,7 @@ export function HomeLayout(props: HomeLayoutProps) {
         {afterHero}
         {beforeFeatures}
         <HomeFeature />
+        <PluginList />
         {afterFeatures}
       </div>
       <HomeFooter />

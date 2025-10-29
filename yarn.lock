@@ -6746,7 +6746,7 @@
 
 "@npmcli/agent@^2.0.0":
   version "2.2.2"
-  resolved "https://registry.npmjs.org/@npmcli/agent/-/agent-2.2.2.tgz#967604918e62f620a648c7975461c9c9e74fc5d5"
+  resolved "https://registry.npmmirror.com/@npmcli/agent/-/agent-2.2.2.tgz#967604918e62f620a648c7975461c9c9e74fc5d5"
   integrity sha512-OrcNPXdpSl9UX7qPVRWbmWMCSXrcDa2M9DvrbOTj7ao1S4PlqVFYv9/yLKMkrJKZ/V5A/kDBC690or307i26Og==
   dependencies:
     agent-base "^7.1.0"
@@ -6770,7 +6770,7 @@
 
 "@npmcli/fs@^3.1.0":
   version "3.1.1"
-  resolved "https://registry.npmjs.org/@npmcli/fs/-/fs-3.1.1.tgz#59cdaa5adca95d135fc00f2bb53f5771575ce726"
+  resolved "https://registry.npmmirror.com/@npmcli/fs/-/fs-3.1.1.tgz#59cdaa5adca95d135fc00f2bb53f5771575ce726"
   integrity sha512-q9CRWjpHCMIh5sVyefoD1cA7PkvILqCZsnSOEUUivORLjxCO/Irmue2DprETiNgEqktDBZaM1Bi+jrarx1XdCg==
   dependencies:
     semver "^7.3.5"
@@ -10880,7 +10880,7 @@ abbrev@1:
 
 abbrev@^2.0.0:
   version "2.0.0"
-  resolved "https://registry.npmjs.org/abbrev/-/abbrev-2.0.0.tgz#cf59829b8b4f03f89dda2771cb7f3653828c89bf"
+  resolved "https://registry.npmmirror.com/abbrev/-/abbrev-2.0.0.tgz#cf59829b8b4f03f89dda2771cb7f3653828c89bf"
   integrity sha512-6/mh1E2u2YgEsCHdY0Yx5oW+61gZU+1vXaoiHHrpKeuRNNgFvS+/jrwHiQhB5apAf5oB7UB7E19ol2R2LKH8hQ==
 
 abort-controller-x@^0.4.0, abort-controller-x@^0.4.3:
@@ -12917,7 +12917,7 @@ cacache@^15.0.5, cacache@^15.2.0:
 
 cacache@^18.0.0:
   version "18.0.4"
-  resolved "https://registry.npmjs.org/cacache/-/cacache-18.0.4.tgz#4601d7578dadb59c66044e157d02a3314682d6a5"
+  resolved "https://registry.npmmirror.com/cacache/-/cacache-18.0.4.tgz#4601d7578dadb59c66044e157d02a3314682d6a5"
   integrity sha512-B+L5iIa9mgcjLbliir2th36yEwPftrzteHYujzsx3dFP/31GCHcIeS8f5MGd80odLOjaOvSpU3EEAmRQptkxLQ==
   dependencies:
     "@npmcli/fs" "^3.1.0"
@@ -13912,9 +13912,9 @@ comma-separated-tokens@^2.0.0:
   integrity sha512-Fu4hJdvzeylCfQPp9SGWidpzrMs7tTrlu6Vb8XGaRGck8QSNZJJp538Wrb60Lax4fPwR64ViY468OIUTbRlGZg==
 
 commander@*:
-  version "14.0.1"
-  resolved "https://registry.npmmirror.com/commander/-/commander-14.0.1.tgz#2f9225c19e6ebd0dc4404dd45821b2caa17ea09b"
-  integrity sha512-2JkV3gUZUVrbNA+1sjBOYLsMZ5cEEl8GTFP2a4AVz5hvasAMCQ1D2l2le/cX+pV4N6ZU17zjUahLpIXRrnWL8A==
+  version "14.0.2"
+  resolved "https://registry.npmmirror.com/commander/-/commander-14.0.2.tgz#b71fd37fe4069e4c3c7c13925252ada4eba14e8e"
+  integrity sha512-TywoWNNRbhoD0BXs1P3ZEScW8W5iKrnbithIl0YH+uCmBd0QpPOA8yc82DS3BIE5Ma6FnBVUsJ7wVUDz4dvOWQ==
 
 commander@10.0.0:
   version "10.0.0"
@@ -18669,7 +18669,7 @@ fs-minipass@^2.0.0, fs-minipass@^2.1.0:
 
 fs-minipass@^3.0.0:
   version "3.0.3"
-  resolved "https://registry.npmjs.org/fs-minipass/-/fs-minipass-3.0.3.tgz#79a85981c4dc120065e96f62086bf6f9dc26cc54"
+  resolved "https://registry.npmmirror.com/fs-minipass/-/fs-minipass-3.0.3.tgz#79a85981c4dc120065e96f62086bf6f9dc26cc54"
   integrity sha512-XUBA9XClHbnJWSfBzjkm6RvPsyg3sryZt06BEQoXcF7EK/xpGaQYJgQKDJSUH5SGZ76Y7pFx1QBnXz09rU5Fbw==
   dependencies:
     minipass "^7.0.3"
@@ -20270,7 +20270,7 @@ http-cache-semantics@^4.0.0, http-cache-semantics@^4.1.0:
 
 http-cache-semantics@^4.1.1:
   version "4.2.0"
-  resolved "https://registry.npmjs.org/http-cache-semantics/-/http-cache-semantics-4.2.0.tgz#205f4db64f8562b76a4ff9235aa5279839a09dd5"
+  resolved "https://registry.npmmirror.com/http-cache-semantics/-/http-cache-semantics-4.2.0.tgz#205f4db64f8562b76a4ff9235aa5279839a09dd5"
   integrity sha512-dTxcvPXqPvXBQpq5dUr6mEMJX4oIEFv6bwom3FDwKRDsuIjjJGANqhBuoAn9c1RQJIdAKav33ED65E2ys+87QQ==
 
 http-deceiver@^1.2.7:
@@ -23455,7 +23455,7 @@ make-error@^1.1.1:
 
 make-fetch-happen@^13.0.0:
   version "13.0.1"
-  resolved "https://registry.npmjs.org/make-fetch-happen/-/make-fetch-happen-13.0.1.tgz#273ba2f78f45e1f3a6dca91cede87d9fa4821e36"
+  resolved "https://registry.npmmirror.com/make-fetch-happen/-/make-fetch-happen-13.0.1.tgz#273ba2f78f45e1f3a6dca91cede87d9fa4821e36"
   integrity sha512-cKTUFc/rbKUd/9meOvgrpJ2WrNzymt6jfRDdwg5UCnVzv9dTpEj9JS5m3wtziXVCjluIXyL8pcaukYqezIzZQA==
   dependencies:
     "@npmcli/agent" "^2.0.0"
@@ -24968,7 +24968,7 @@ minipass-collect@^1.0.2:
 
 minipass-collect@^2.0.1:
   version "2.0.1"
-  resolved "https://registry.npmjs.org/minipass-collect/-/minipass-collect-2.0.1.tgz#1621bc77e12258a12c60d34e2276ec5c20680863"
+  resolved "https://registry.npmmirror.com/minipass-collect/-/minipass-collect-2.0.1.tgz#1621bc77e12258a12c60d34e2276ec5c20680863"
   integrity sha512-D7V8PO9oaz7PWGLbCACuI1qEOsq7UKfLotx/C0Aet43fCUB/wfQ7DYeq2oR/svFJGYDHPr38SHATeaj/ZoKHKw==
   dependencies:
     minipass "^7.0.3"
@@ -24986,7 +24986,7 @@ minipass-fetch@^1.3.0, minipass-fetch@^1.3.2:
 
 minipass-fetch@^3.0.0:
   version "3.0.5"
-  resolved "https://registry.npmjs.org/minipass-fetch/-/minipass-fetch-3.0.5.tgz#f0f97e40580affc4a35cc4a1349f05ae36cb1e4c"
+  resolved "https://registry.npmmirror.com/minipass-fetch/-/minipass-fetch-3.0.5.tgz#f0f97e40580affc4a35cc4a1349f05ae36cb1e4c"
   integrity sha512-2N8elDQAtSnFV0Dk7gt15KHsS0Fyz6CbYZ360h0WTYV1Ty46li3rAXVOQj1THMNLdmrD9Vt5pBPtWtVkpwGBqg==
   dependencies:
     minipass "^7.0.3"
@@ -25565,7 +25565,7 @@ node-fetch@^3.2.0:
 
 node-gyp@^10.2.0:
   version "10.3.1"
-  resolved "https://registry.npmjs.org/node-gyp/-/node-gyp-10.3.1.tgz#1dd1a1a1c6c5c59da1a76aea06a062786b2c8a1a"
+  resolved "https://registry.npmmirror.com/node-gyp/-/node-gyp-10.3.1.tgz#1dd1a1a1c6c5c59da1a76aea06a062786b2c8a1a"
   integrity sha512-Pp3nFHBThHzVtNY7U6JfPjvT/DTE8+o/4xKsLQtBoU+j2HLsGlhcfzflAoUreaJbNmYnX+LlLi0qjV8kpyO6xQ==
   dependencies:
     env-paths "^2.2.0"
@@ -25722,7 +25722,7 @@ nopt@^5.0.0:
 
 nopt@^7.0.0:
   version "7.2.1"
-  resolved "https://registry.npmjs.org/nopt/-/nopt-7.2.1.tgz#1cac0eab9b8e97c9093338446eddd40b2c8ca1e7"
+  resolved "https://registry.npmmirror.com/nopt/-/nopt-7.2.1.tgz#1cac0eab9b8e97c9093338446eddd40b2c8ca1e7"
   integrity sha512-taM24ViiimT/XntxbPyJQzCG+p4EKOpgD3mxFwW38mGjVUrfERQOeY4EDHjdnptttfHuHQXFx+lTP08Q+mLa/w==
   dependencies:
     abbrev "^2.0.0"
@@ -26423,7 +26423,7 @@ ora@^5.4.1:
 
 oracledb@6.5.1:
   version "6.5.1"
-  resolved "https://registry.npmjs.org/oracledb/-/oracledb-6.5.1.tgz#814d985035acdb1a6470b1152af0ca3767569ede"
+  resolved "https://registry.npmmirror.com/oracledb/-/oracledb-6.5.1.tgz#814d985035acdb1a6470b1152af0ca3767569ede"
   integrity sha512-JzoSGei1wnvmqgKnAZK1W650mzHTZXx+7hClV4mwsbY/ZjUtrpnojNJMYJ2jkOhj7XG5oJPfXc4GqDKaNzkxqg==
 
 ordered-read-streams@^1.0.0:
@@ -28366,7 +28366,7 @@ prismjs@~1.27.0:
 
 proc-log@^4.1.0, proc-log@^4.2.0:
   version "4.2.0"
-  resolved "https://registry.npmjs.org/proc-log/-/proc-log-4.2.0.tgz#b6f461e4026e75fdfe228b265e9f7a00779d7034"
+  resolved "https://registry.npmmirror.com/proc-log/-/proc-log-4.2.0.tgz#b6f461e4026e75fdfe228b265e9f7a00779d7034"
   integrity sha512-g8+OnU/L2v+wyiVK+D5fA34J7EH8jZ8DDlvwhRCMxmMj7UCBvxiO1mGeN+36JXIKF4zevU4kRBd8lVgG9vLelA==
 
 process-nextick-args@^2.0.0, process-nextick-args@~2.0.0:
@@ -31592,7 +31592,7 @@ socks-proxy-agent@^8.0.2:
 
 socks-proxy-agent@^8.0.3:
   version "8.0.5"
-  resolved "https://registry.npmjs.org/socks-proxy-agent/-/socks-proxy-agent-8.0.5.tgz#b9cdb4e7e998509d7659d689ce7697ac21645bee"
+  resolved "https://registry.npmmirror.com/socks-proxy-agent/-/socks-proxy-agent-8.0.5.tgz#b9cdb4e7e998509d7659d689ce7697ac21645bee"
   integrity sha512-HehCEsotFqbPW9sJ8WVYB6UbmIMv7kUUORIF2Nncq4VQvBfNBLibW9YZR5dlYCSUhwcD628pRllm7n+E+YTzJw==
   dependencies:
     agent-base "^7.1.2"
@@ -31617,7 +31617,7 @@ socks@^2.3.3, socks@^2.6.2, socks@^2.7.1:
 
 socks@^2.8.3:
   version "2.8.7"
-  resolved "https://registry.npmjs.org/socks/-/socks-2.8.7.tgz#e2fb1d9a603add75050a2067db8c381a0b5669ea"
+  resolved "https://registry.npmmirror.com/socks/-/socks-2.8.7.tgz#e2fb1d9a603add75050a2067db8c381a0b5669ea"
   integrity sha512-HLpt+uLy/pxB+bum/9DzAgiKS8CX1EvbWxI4zlmgGCExImLdiad2iCwXT5Z4c9c3Eq8rP2318mPW2c+QbtjK8A==
   dependencies:
     ip-address "^10.0.1"
@@ -31900,7 +31900,7 @@ sshpk@^1.7.0:
 
 ssri@^10.0.0:
   version "10.0.6"
-  resolved "https://registry.npmjs.org/ssri/-/ssri-10.0.6.tgz#a8aade2de60ba2bce8688e3fa349bad05c7dc1e5"
+  resolved "https://registry.npmmirror.com/ssri/-/ssri-10.0.6.tgz#a8aade2de60ba2bce8688e3fa349bad05c7dc1e5"
   integrity sha512-MGrFH9Z4NP9Iyhqn16sDtBpRRNJ0Y2hNa6D65h736fVSaPCHr4DM4sWUNvVaSuC+0OBGhwsrydQwmgfg5LncqQ==
   dependencies:
     minipass "^7.0.3"
@@ -34080,7 +34080,7 @@ unique-filename@^1.1.0, unique-filename@^1.1.1:
 
 unique-filename@^3.0.0:
   version "3.0.0"
-  resolved "https://registry.npmjs.org/unique-filename/-/unique-filename-3.0.0.tgz#48ba7a5a16849f5080d26c760c86cf5cf05770ea"
+  resolved "https://registry.npmmirror.com/unique-filename/-/unique-filename-3.0.0.tgz#48ba7a5a16849f5080d26c760c86cf5cf05770ea"
   integrity sha512-afXhuC55wkAmZ0P18QsVE6kp8JaxrEokN2HGIoIVv2ijHQd419H0+6EigAFcIzXeMIkcIkNBpB3L/DXB3cTS/g==
   dependencies:
     unique-slug "^4.0.0"
@@ -34094,7 +34094,7 @@ unique-slug@^2.0.0:
 
 unique-slug@^4.0.0:
   version "4.0.0"
-  resolved "https://registry.npmjs.org/unique-slug/-/unique-slug-4.0.0.tgz#6bae6bb16be91351badd24cdce741f892a6532e3"
+  resolved "https://registry.npmmirror.com/unique-slug/-/unique-slug-4.0.0.tgz#6bae6bb16be91351badd24cdce741f892a6532e3"
   integrity sha512-WrcA6AyEfqDX5bWige/4NQfPZMtASNVxdmWR76WESYQVAACSgWcR6e9i0mofqqBxYFtL4oAxPIptY73/0YE1DQ==
   dependencies:
     imurmurhash "^0.1.4"

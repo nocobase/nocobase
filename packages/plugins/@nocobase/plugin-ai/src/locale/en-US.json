@@ -182,5 +182,13 @@
   "references {{index}}": "references {{index}}",
   "Enable search": "Enable search",
   "Disable search": "Disable search",
-  "Conversation": "Conversation"
+  "Conversation": "Conversation",
+  "Get code snippet list": "Get code snippet list",
+  "Get code snippet content": "Get code snippet content",
+  "Start coding": "Start coding",
+  "Code review": "Code review",
+  "Diagnose and fix the error": "Diagnose and fix the error",
+  "please review the code": "please review the code",
+  "please fix the error": "please fix the error",
+  "Oops! Something went wrong. Let me diagnose and fix it.": "Oops! Something went wrong. Let me diagnose and fix it."
 }

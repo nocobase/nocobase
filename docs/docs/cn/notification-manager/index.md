@@ -18,10 +18,10 @@
 
 目前已支持的渠道有：
 
-- [站内信](/features/notification-in-app-message)
-- [电子邮件](/features/notification-email)（内置 SMTP 传输方式）
+- [站内信](/notification-manager/notification-in-app-message)
+- [电子邮件](/notification-manager/notification-email)（内置 SMTP 传输方式）
 
-也可以扩展更多渠道通知，参考[渠道扩展](./development/extension)文档
+也可以扩展更多渠道通知，参考[渠道扩展](/notification-manager/development/extension)文档
 
 ## 通知日志
 

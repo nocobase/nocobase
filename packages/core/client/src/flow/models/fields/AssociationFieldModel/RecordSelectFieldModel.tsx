@@ -18,6 +18,7 @@ import {
   useFlowModel,
 } from '@nocobase/flow-engine';
 import { Select } from 'antd';
+import { css } from '@emotion/css';
 import { debounce } from 'lodash';
 import React from 'react';
 import { AssociationFieldModel } from './AssociationFieldModel';
@@ -94,6 +95,21 @@ export function LazySelect(props) {
       }}
       optionRender={({ data }) => {
         return <LabelByField option={data} fieldNames={fieldNames} />;
+      }}
+      labelRender={(data) => {
+        return (
+          <div
+            className={css`
+              div {
+                white-space: nowrap !important;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+            `}
+          >
+            {data.label}
+          </div>
+        );
       }}
     />
   );

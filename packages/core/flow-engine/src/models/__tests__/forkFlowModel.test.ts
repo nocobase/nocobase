@@ -12,6 +12,7 @@ import { FlowEngine } from '../../flowEngine';
 import type { FlowModelOptions, IModelComponentProps } from '../../types';
 import { FlowModel } from '../flowModel';
 import { ForkFlowModel } from '../forkFlowModel';
+import { uid } from 'uid/secure';
 
 // Helper functions
 const createMockFlowEngine = (): FlowEngine => {
@@ -49,10 +50,9 @@ describe('ForkFlowModel', () => {
   // ==================== CONSTRUCTOR & INITIALIZATION ====================
   describe('Constructor & Initialization', () => {
     test('should create fork with basic parameters', () => {
-      const fork = new ForkFlowModel(mockMaster, initialProps, 1);
+      const fork = new ForkFlowModel(mockMaster, initialProps, '1');
 
       expect(fork.uid).toBe(mockMaster.uid);
-      expect(fork.forkId).toBe(1);
       expect(fork.localProps).toEqual(initialProps);
       expect(fork.isFork).toBe(true);
       expect((fork as any).master).toBe(mockMaster);
@@ -63,7 +63,6 @@ describe('ForkFlowModel', () => {
       const fork = new ForkFlowModel(mockMaster);
 
       expect(fork.uid).toBe(mockMaster.uid);
-      expect(fork.forkId).toBe(0);
       expect(fork.localProps).toEqual({});
       expect(fork.isFork).toBe(true);
     });
@@ -115,7 +114,7 @@ describe('ForkFlowModel', () => {
     let fork: ForkFlowModel;
 
     beforeEach(() => {
-      fork = new ForkFlowModel(mockMaster, initialProps, 1);
+      fork = new ForkFlowModel(mockMaster, initialProps, '1');
     });
 
     test('should return disposed status correctly', () => {
@@ -149,7 +148,7 @@ describe('ForkFlowModel', () => {
 
     test('should return fork own properties first', () => {
       expect(fork.uid).toBe(mockMaster.uid);
-      expect(fork.forkId).toBe(1);
+      expect(fork.forkId).toBe('1');
       expect(fork.isFork).toBe(true);
       expect(fork.localProps).toEqual(initialProps);
     });
@@ -662,8 +661,8 @@ describe('ForkFlowModel', () => {
     });
 
     test('should find and remove correct fork from cache', () => {
-      const fork1 = new ForkFlowModel(mockMaster, {}, 1);
-      const fork2 = new ForkFlowModel(mockMaster, {}, 2);
+      const fork1 = new ForkFlowModel(mockMaster, {}, '1');
+      const fork2 = new ForkFlowModel(mockMaster, {}, '2');
 
       (mockMaster as any).forkCache.set('key1', fork1);
       (mockMaster as any).forkCache.set('key2', fork2);
@@ -672,6 +671,22 @@ describe('ForkFlowModel', () => {
 
       expect((mockMaster as any).forkCache.has('key1')).toBe(false);
       expect((mockMaster as any).forkCache.has('key2')).toBe(true);
+    });
+
+    test('forkIds must be unique', () => {
+      // 创建第一个 fork
+      const fork1 = mockMaster.createFork({}, uid());
+      const forkId1 = fork1.forkId;
+      expect(forkId1).toBeDefined();
+      // 创建第二个 fork
+      const fork2 = mockMaster.createFork({}, uid());
+      expect(fork2.forkId).not.toBe(forkId1);
+      // 销毁第一个 fork
+      fork1.dispose();
+      // 创建第三个 fork
+      const fork3 = mockMaster.createFork({}, uid());
+      expect(fork1['disposed']).toBe(true);
+      expect(fork3.forkId).not.toBe(fork2.forkId);
     });
   });
 
