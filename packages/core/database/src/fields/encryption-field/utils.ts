@@ -8,15 +8,109 @@
  */
 import crypto from 'crypto';
 import { EncryptionError } from './errors/EncryptionError';
+import path from 'path';
+import { customAlphabet } from 'nanoid';
+import fs from 'fs-extra';
+
+const nanoid = customAlphabet('0123456789', 21);
+
 const algorithm = 'aes-256-cbc';
 
-const keyString = process.env.ENCRYPTION_FIELD_KEY || '';
 const defaultIvString = process.env.ENCRYPTION_FIELD_IV || 'Vc53-4G(rTi0vg@a'; // 如果没有设置 IV，使用默认值
 
-// 将字符串转换为 Buffer 对象
-const key = Buffer.from(keyString, 'utf8');
+const encryptionFieldPrimeKeyPath =
+  process.env.ENCRYPTION_FIELD_KEY_PATH || path.resolve(process.cwd(), 'storage', 'encryption-field-keys');
 
-export function aesEncrypt(text: string, ivString: string = defaultIvString) {
+export type KeyStoreEntry = {
+  id: string;
+  key: Buffer;
+};
+
+export class KeyStore {
+  private static entry: KeyStoreEntry | null = null;
+
+  static loadPrimeKey(): KeyStoreEntry {
+    if (!KeyStore.entry) {
+      KeyStore.entry = loadPrimeKey();
+    }
+    return KeyStore.entry;
+  }
+}
+
+export function loadPrimeKey(targetKeyPath?: string): KeyStoreEntry {
+  const keyPath = targetKeyPath || encryptionFieldPrimeKeyPath;
+  const toEntry = (keyPath: string, base64Key: string) => ({
+    id: path.basename(keyPath, '.dat'),
+    key: Buffer.from(base64Key, 'base64'),
+  });
+  if (keyPath.endsWith('.dat')) {
+    if (!fs.existsSync(keyPath)) {
+      throw new EncryptionError('The environment variable `ENCRYPTION_FIELD_KEY_PATH` point to a non-existent file.');
+    }
+    const base64Key = fs.readFileSync(keyPath, 'utf8');
+    return toEntry(keyPath, base64Key);
+  } else {
+    if (!fs.existsSync(keyPath)) {
+      fs.mkdirSync(keyPath, { recursive: true });
+    }
+    const primeKeyPath = readFirstFile(keyPath);
+    if (primeKeyPath) {
+      const base64Key = fs.readFileSync(primeKeyPath, 'utf8');
+      return toEntry(primeKeyPath, base64Key);
+    }
+    const id = nanoid();
+    const key = crypto.randomBytes(32);
+    fs.writeFileSync(path.resolve(keyPath, `${id}.dat`), key.toString('base64'));
+    return { id, key };
+  }
+}
+
+function readFirstFile(dir) {
+  const files = fs.readdirSync(dir);
+  for (const file of files) {
+    const filePath = path.join(dir, file);
+    const stat = fs.statSync(filePath);
+    if (stat.isFile()) {
+      return filePath;
+    }
+  }
+  return null;
+}
+
+export async function generateFieldKey() {
+  const fieldKey = crypto.randomBytes(32);
+  return await encryptFieldKey(fieldKey);
+}
+
+export async function encryptFieldKey(fieldKey: Buffer, keyEntry?: KeyStoreEntry) {
+  const { id, key } = keyEntry ?? KeyStore.loadPrimeKey();
+  return {
+    id,
+    fieldKey,
+    encrypted: await aesEncrypt(key, fieldKey.toString('base64')),
+  };
+}
+
+export function encryptFieldKeySync(fieldKey: Buffer, keyEntry?: KeyStoreEntry) {
+  const { id, key } = keyEntry ?? KeyStore.loadPrimeKey();
+  return {
+    id,
+    fieldKey,
+    encrypted: aesEncryptSync(key, fieldKey.toString('base64')),
+  };
+}
+
+export async function decryptFieldKey(encrypted: string, keyEntry?: KeyStoreEntry) {
+  const { key } = keyEntry ?? KeyStore.loadPrimeKey();
+  return Buffer.from((await aesDecrypt(key, encrypted)) as string, 'base64');
+}
+
+export function decryptFieldKeySync(encrypted: string, keyEntry?: KeyStoreEntry) {
+  const { key } = keyEntry ?? KeyStore.loadPrimeKey();
+  return Buffer.from(aseDecryptSync(key, encrypted) as string, 'base64');
+}
+
+export function aesEncrypt(key: Buffer, text: string, ivString: string = defaultIvString) {
   checkValueAndIv('Encrypt', text, ivString);
 
   return new Promise((resolve, reject) => {
@@ -44,7 +138,7 @@ export function aesEncrypt(text: string, ivString: string = defaultIvString) {
   });
 }
 
-export function aesDecrypt(encrypted: string, ivString: string = defaultIvString) {
+export function aesDecrypt(key: Buffer, encrypted: string, ivString: string = defaultIvString) {
   checkValueAndIv('Decrypt', encrypted, ivString);
 
   return new Promise((resolve, reject) => {
@@ -72,7 +166,7 @@ export function aesDecrypt(encrypted: string, ivString: string = defaultIvString
   });
 }
 
-export function aesEncryptSync(text: string, ivString: string = defaultIvString) {
+export function aesEncryptSync(key: Buffer, text: string, ivString: string = defaultIvString) {
   checkValueAndIv('Encrypt', text, ivString);
 
   const iv = Buffer.from(ivString, 'utf8');
@@ -82,7 +176,7 @@ export function aesEncryptSync(text: string, ivString: string = defaultIvString)
   return encrypted;
 }
 
-export function aseDecryptSync(encrypted: string, ivString: string = defaultIvString) {
+export function aseDecryptSync(key: Buffer, encrypted: string, ivString: string = defaultIvString) {
   checkValueAndIv('Decrypt', encrypted, ivString);
 
   const iv = Buffer.from(ivString, 'utf8');
@@ -90,18 +184,6 @@ export function aseDecryptSync(encrypted: string, ivString: string = defaultIvSt
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
   decrypted += decipher.final('utf8');
   return decrypted;
-}
-
-export function aesCheckKey() {
-  if (!keyString) {
-    throw new EncryptionError('The environment variable `ENCRYPTION_FIELD_KEY` is required, please set it');
-  }
-  if (typeof keyString !== 'string') {
-    throw new EncryptionError('The environment variable `ENCRYPTION_FIELD_KEY` must be a string');
-  }
-  if (keyString.length !== 32) {
-    throw new EncryptionError('The environment variable `ENCRYPTION_FIELD_KEY` must be a 32-character string');
-  }
 }
 
 export function checkValueAndIv(type: 'Decrypt' | 'Encrypt', value: string, iv: string) {

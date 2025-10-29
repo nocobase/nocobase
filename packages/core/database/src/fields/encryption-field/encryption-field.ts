@@ -9,7 +9,7 @@
 
 import { DataTypes, Model } from 'sequelize';
 import { EncryptionError } from './errors/EncryptionError';
-import { aesCheckKey, aesDecrypt, aesEncrypt } from './utils';
+import { aesDecrypt, aesEncrypt, decryptFieldKey } from './utils';
 import { BaseColumnFieldOptions, Field } from '../field';
 
 export interface EncryptionFieldOptions extends BaseColumnFieldOptions {
@@ -23,17 +23,16 @@ export class EncryptionField extends Field {
   }
 
   init() {
-    aesCheckKey();
-    const { name, iv } = this.options;
+    const { name, iv, encryptedKey } = this.options;
     this.writeListener = async (model: Model) => {
-      aesCheckKey();
       if (!model.changed(name as any)) {
         return;
       }
       const value = model.get(name) as string;
       if (value !== undefined && value !== null) {
         try {
-          const encrypted = await aesEncrypt(value, iv);
+          const fieldKey = await decryptFieldKey(encryptedKey);
+          const encrypted = await aesEncrypt(fieldKey, value, iv);
           model.set(name, encrypted);
         } catch (error) {
           console.error(error);
@@ -49,14 +48,14 @@ export class EncryptionField extends Field {
     };
 
     this.findListener = async (instances, options) => {
-      aesCheckKey();
       instances = Array.isArray(instances) ? instances : [instances];
       await Promise.all(
         instances.map(async (instance) => {
           const value = instance.get?.(name);
           if (value !== undefined && value !== null) {
             try {
-              instance.set(name, await aesDecrypt(value, iv));
+              const fieldKey = await decryptFieldKey(encryptedKey);
+              instance.set(name, await aesDecrypt(fieldKey, value, iv));
             } catch (error) {
               console.error(error);
               if (error instanceof EncryptionError) {
