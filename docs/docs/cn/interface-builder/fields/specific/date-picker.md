@@ -11,12 +11,13 @@
 
 ![20240417114311](https://static-docs.nocobase.com/20240417114311.png)
 
+> 数据表字段中设置的日期格式将作为字段的默认格式，在区块配置中可以被字段设置的日期格式覆盖。
 ### 字段设置
 
 ![20251027191824](https://static-docs.nocobase.com/20251027191824.png)
 
 除了预置的多种日期时间格式，还支持自定义格式满足个性化需求。
 
-![20240409174559](https://static-docs.nocobase.com/20240409174559.png)
+![20251029205504](https://static-docs.nocobase.com/20251029205504.png)
 
-![20240422165602](https://static-docs.nocobase.com/20240422165602.png)
+![20251029205526](https://static-docs.nocobase.com/20251029205526.png)

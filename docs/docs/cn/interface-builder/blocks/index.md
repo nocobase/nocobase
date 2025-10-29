@@ -52,4 +52,4 @@
 
 多个区块可以通过拖拽调整布局。
 
-![](https://static-docs.nocobase.com/f6692295ac0917f3babce9a60ce80879.gif)
+![20251029201501](https://static-docs.nocobase.com/20251029201501.gif)

@@ -21,7 +21,7 @@
 
 更多内容参考 [标题字段](/interface-builder/fields/field-settings/title-field)
 
-- [弹窗尺寸](/interface-builder/actions/action-settings/edit-popup)
+[弹窗尺寸](/interface-builder/actions/action-settings/edit-popup)
 
-- [字段组件](/interface-builder/fields/association-field)；
+[字段组件](/interface-builder/fields/association-field)；
 

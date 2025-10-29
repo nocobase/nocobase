@@ -30,15 +30,13 @@ Markdown 区块无需绑定数据源使用，使用 Markdown 语法定义文本�
 
 ## 使用变量
 
-不同位置的 Markdown 支持的变量不同。
+在页面中的 Markdown 支持通用的系统变量（如当前用户、当前角色等）。
 
-在页面中的 Markdown 支持通用的系统变量（如当前用户、当前角色、日期等）。
-
-![20240612205857](https://static-docs.nocobase.com/20240612205857.png)
+![20251029203252](https://static-docs.nocobase.com/20251029203252.png)
 
 而在区块行操作弹窗（或子页面）中的 Markdown，则支持更多的数据上下文变量（如当前记录、当前弹窗记录等）。
 
-![20240612210333](https://static-docs.nocobase.com/20240612210333.png)
+![20251029203400](https://static-docs.nocobase.com/20251029203400.png)
 
 ## 本地化
 

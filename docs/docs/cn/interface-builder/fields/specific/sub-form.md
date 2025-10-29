@@ -8,7 +8,7 @@
 
 ### 对多的关系字段子表单
 
-![20251027200753](https://static-docs.nocobase.com/20251027200753.png)
+![20251029205655](https://static-docs.nocobase.com/20251029205655.png)
 
 ### 对一关系字段子表单
 
@@ -24,6 +24,6 @@
 
 [字段组件](/interface-builder/fields/association-field)：切换为其他关系字段组件，如下拉选择、数据选择器等；
 
-[联动规则](/interface-builder/linkage-rule):配置子表单字段联动规则；
+[联动规则](/interface-builder/linkage-rule)：配置子表单字段联动规则；
 
 ![20251027202439](https://static-docs.nocobase.com/20251027202439.png)

@@ -15,7 +15,6 @@
 
 ![20251023191448](https://static-docs.nocobase.com/20251023191448.png)
 
-<!-- ![20240416220148](https://static-docs.nocobase.com/20240416220148.png) -->
 
 ### 区块联动规则
 
@@ -23,7 +22,7 @@
 
 ![20251023191703](https://static-docs.nocobase.com/20251023191703.png)
 
-更多内容参考 [联动规则](/interface-builder/linkage-rule)
+更多内容参考 [区块联动规则](/interface-builder/blocks/block-settings/block-linkage-rule)
 
 ### 字段联动规则
 
@@ -31,14 +30,14 @@
 
 ![20251023191849](https://static-docs.nocobase.com/20251023191849.png)
 
-更多内容参考 [联动规则](/interface-builder/linkage-rule)
+更多内容参考 [字段联动规则](/interface-builder/blocks/block-settings/field-linkage-rule)
 
 ### 布局
 
 表单区块支持两种布局方式，通过 `layout` 属性进行设置：
 
-- **horizontal**（水平布局）：标签和字段在同一行排列，适合字段较少、表单较宽的场景。
-- **vertical**（垂直布局）：标签在字段上方排列，适合字段较多或需要多行显示的表单。
+- **horizontal**（水平布局）：该布局使标签内容在一行内展示，节省垂直空间，适合简单的表单或信息较少的情况。。
+- **vertical**（垂直布局）（默认）：标签位于字段上方，该布局使表单更加易于阅读和填写，尤其适用于包含多个字段或复杂输入项的表单。
 
 ![20251023193638](https://static-docs.nocobase.com/20251023193638.png)
 

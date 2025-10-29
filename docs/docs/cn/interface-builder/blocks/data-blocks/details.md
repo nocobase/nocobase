@@ -6,7 +6,7 @@
 
 ## 区块配置项
 
-![20240511114328](https://static-docs.nocobase.com/20240511114328.png)
+![20251029202614](https://static-docs.nocobase.com/20251029202614.png)
 
 ### 区块联动规则
 
