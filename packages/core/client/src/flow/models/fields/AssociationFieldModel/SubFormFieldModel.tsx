@@ -140,15 +140,16 @@ const ArrayNester = ({ name, value, disabled }: any) => {
       <Form.List name={name}>
         {(fields, { add, remove }) => (
           <>
-            {fields.map((field) => {
-              const { key, name: index } = field;
-              const uid = `${key}.${name}.${index}`;
+            {fields.map((field, index) => {
+              const { key } = field;
               // 每行只创建一次 fork
-              if (!forksRef.current[uid]) {
-                const fork = gridModel.createFork();
+              if (!forksRef.current[key]) {
+                const fork = gridModel.createFork({
+                  disabled: disabled,
+                });
                 fork.gridContainerRef = React.createRef<HTMLDivElement>();
                 fork.context.defineProperty('fieldIndex', {
-                  get: () => [...rowIndex, `${collectionName}:${index}`],
+                  get: () => [...rowIndex, `${collectionName}:${key}`], // 使用 key 保持唯一性
                 });
                 fork.context.defineProperty('currentObject', {
                   get: () => {
@@ -157,13 +158,11 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                   cache: false,
                   meta: createCollectionContextMeta(() => fork.context.collection, fork.context.t('Current object')),
                 });
-                forksRef.current[uid] = fork;
+                forksRef.current[key] = fork;
               }
-              forksRef.current[uid].setProps({
-                disabled: disabled,
-              });
+              console.log('forksRef.current', forksRef.current);
               return (
-                <div key={uid} style={{ marginBottom: 12 }}>
+                <div key={key} style={{ marginBottom: 12 }}>
                   {!disabled && (
                     <div style={{ textAlign: 'right' }}>
                       <Tooltip title={t('Remove')}>
@@ -171,19 +170,28 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                           style={{ zIndex: 1000, color: '#a8a3a3' }}
                           onClick={() => {
                             remove(index);
+                            const gridFork = forksRef.current[key];
+                            // 同时销毁子模型的 fork
+                            gridFork.mapSubModels('items', (item) => {
+                              const cacheKey = `${gridFork.context.fieldIndex}:${item.uid}`;
+                              // 同时销毁子模型的 fork
+                              item.subModels.field.getFork(`${gridFork.context.fieldIndex}`)?.dispose(); // 使用模板字符串把数组展开
+                              item.getFork(cacheKey)?.dispose();
+                            });
+                            gridFork.dispose();
                             // 删除 fork 缓存
-                            delete forksRef.current[uid];
+                            delete forksRef.current[key];
                           }}
                         />
                       </Tooltip>
                     </div>
                   )}
-                  <FlowModelRenderer model={forksRef.current[uid]} showFlowSettings={false} />
+                  <FlowModelRenderer model={forksRef.current[key]} showFlowSettings={false} />
                   <Divider />
                 </div>
               );
             })}
-            <Button type="link" onClick={() => add()} disabled={disabled}>
+            <Button type="link" onClick={() => add({})} disabled={disabled}>
               <PlusOutlined />
               {t('Add new')}
             </Button>
