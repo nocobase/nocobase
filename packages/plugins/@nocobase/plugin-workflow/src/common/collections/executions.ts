@@ -94,13 +94,25 @@ export default {
       name: 'output',
     },
     {
-      interface: 'createdAt',
       type: 'datetime',
       name: 'createdAt',
+      interface: 'createdAt',
       uiSchema: {
         type: 'datetime',
         title: `{{t("Triggered at", { ns: "${NAMESPACE}" })}}`,
         'x-component': 'DatePicker',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    },
+    {
+      type: 'boolean',
+      name: 'manual',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'boolean',
+        title: `{{t("Triggered manually", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'Checkbox',
         'x-component-props': {},
         'x-read-pretty': true,
       },
