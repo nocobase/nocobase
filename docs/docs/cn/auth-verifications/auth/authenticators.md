@@ -6,7 +6,7 @@
 
 ![](https://static-docs.nocobase.com/66eaa9d5421c9cb713b117366bd8a5d5.png)
 
-## 激活认证类型
+## 激活认证器
 
 ![](https://static-docs.nocobase.com/7f1fb8f8ca5de67ffc68eff0a65848f5.png)
 
@@ -18,12 +18,6 @@
 
 ![](https://static-docs.nocobase.com/da4250c0cea343ebe470cbf7be4b12e4.png)
 
-NocoBase 目前支持的用户认证类型有：
+通过添加不同类型的认证器，可以给系统添加相应的认证方式。
 
-- 密码 (Password)，用户认证插件内置
-- 短信 (SMS)，[sms-auth 插件](../../auth-sms/index.md) 扩展
-- CAS，[cas-auth 插件](../../auth-cas/index.md) 扩展
-- SAML，[saml-auth 插件](../../auth-saml/index.md) 扩展
-- OIDC，[oidc-auth 插件](../../auth-oidc/index.md) 扩展
-
-除此之外，也可以自己扩展用户认证，参考[开发指南](../dev/guide.md)。
+除了已有插件提供的认证类型，开发者也可以自己扩展用户认证类型，参考[开发指南](./dev/)。

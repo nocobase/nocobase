@@ -4,17 +4,17 @@
 
 ### Auth
 
-内核 API，参考: [Auth](../../../api/auth/auth.md)
+内核 API，参考: [Auth](/api/auth/auth)
 
 ### BaseAuth
 
-内核 API, 参考: [BaseAuth](../../../api/auth/base-auth.md)
+内核 API, 参考: [BaseAuth](/api/auth/base-auth)
 
 ### AuthModel
 
 #### 概览
 
-`AuthModel` 是 NocoBase 应用中使用的认证器 (`Authenticator`, 参考: [AuthManager - setStorer](../../../api/auth/auth-manager.md#setstorer) 和 [Auth - constructor](../../../api/auth/auth.md#constructor)) 数据模型，提供了一些和用户数据表交互的方法。除此之外，也可以使用 Sequelize Model 提供的方法。
+`AuthModel` 是 NocoBase 应用中使用的认证器 (`Authenticator`, 参考: [AuthManager - setStorer](/api/auth/auth-manager#setstorer) 和 [Auth - constructor](/api/auth/auth#constructor)) 数据模型，提供了一些和用户数据表交互的方法。除此之外，也可以使用 Sequelize Model 提供的方法。
 
 ```ts
 import { AuthModel } from '@nocobase/plugin-auth';

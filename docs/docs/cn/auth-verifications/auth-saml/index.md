@@ -34,7 +34,7 @@
 
 ## 字段映射
 
-字段映射需要在IdP的配置平台上进行配置，可参考[示例](../auth-saml/example/google.md)。
+字段映射需要在IdP的配置平台上进行配置，可参考[示例](./examples/google.md)。
 
 NocoBase可供映射的字段有：
 
