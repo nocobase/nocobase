@@ -153,7 +153,7 @@ export const FlowModelsContext: WorkContextOptions = {
       return (
         <Space>
           <BuildOutlined />
-          <span>{model?.title || ''}</span>
+          <span>{model?.title || item?.title || ''}</span>
         </Space>
       );
     },
