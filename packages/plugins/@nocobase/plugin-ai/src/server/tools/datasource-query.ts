@@ -85,7 +85,7 @@ type ArgType = z.infer<typeof ArgSchema>;
 export const dataSourceQuery: ToolOptions = {
   name: 'dataSourceQuery',
   title: '{{t("Data source query")}}',
-  description: '{{t("Use dataSource, collectionName, and collection fields to query data from the database.")}}',
+  description: '{{t("Use dataSource, collectionName, and collection fields to query data from the database")}}',
   schema: ArgSchema,
   invoke: async (ctx: Context, args: ArgType) => {
     const plugin = ctx.app.pm.get('ai') as PluginAIServer;
@@ -101,7 +101,7 @@ export const dataSourceCounting: ToolOptions = {
   name: 'dataSourceCounting',
   title: '{{t("Data source records counting")}}',
   description:
-    '{{t("Use dataSource, collectionName, and collection fields to query data from the database. get total count of records")}}',
+    '{{t("Use dataSource, collectionName, and collection fields to query data from the database, get total count of records")}}',
   schema: ArgSchema,
   invoke: async (ctx: Context, args: ArgType) => {
     const plugin = ctx.app.pm.get('ai') as PluginAIServer;

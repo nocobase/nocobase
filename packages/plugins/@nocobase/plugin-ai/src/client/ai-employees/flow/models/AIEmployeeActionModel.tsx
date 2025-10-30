@@ -51,19 +51,10 @@ export class AIEmployeeActionModel extends ActionModel {
             aiEmployee: {
               username: aiEmployee.username,
             },
-          },
-          stepParams: {
-            shortcutSettings: {
-              editTasks: {
-                tasks: [
-                  {
-                    message: {
-                      workContext: [{ type: 'flow-model', uid: ctx.model.uid }],
-                    },
-                  },
-                ],
-              },
+            context: {
+              workContext: [{ type: 'flow-model', uid: ctx.model.uid }],
             },
+            auto: false,
           },
         },
       }));
