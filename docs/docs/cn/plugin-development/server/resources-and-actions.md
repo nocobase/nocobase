@@ -4,7 +4,7 @@
 
 ## 自动生成的 Collection 资源
 
-当你通过 [数据表配置](/learn/server/collections-and-fields) 定义 Collection 或其关联关系时，框架会自动生成对应的 REST 资源。
+当你通过数据表配置定义 Collection 或其关联关系时，框架会自动生成对应的 REST 资源。
 
 例如：
 

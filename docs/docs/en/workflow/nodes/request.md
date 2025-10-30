@@ -86,7 +86,7 @@ The request node considers standard HTTP status codes between `200` and `299` (i
 
 ## Using the Response Result
 
-The response result of an HTTP request can be parsed by the [JSON Query](./plugins/json-query.md) node for use in subsequent nodes.
+The response result of an HTTP request can be parsed by the [JSON Query](./json-query.md) node for use in subsequent nodes.
 
 Since version `v1.0.0-alpha.16`, three parts of the request node's response result can be used as separate variables:
 

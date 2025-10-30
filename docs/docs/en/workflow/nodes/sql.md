@@ -71,7 +71,7 @@ Result after `v1.3.15-beta`:
 
 ### How to use the result of a SQL node?
 
-If a `SELECT` statement is used, the query result will be saved in the node in Sequelize's JSON format. It can be parsed and used with the [JSON-query](../workflow-json-query/index.md) plugin.
+If a `SELECT` statement is used, the query result will be saved in the node in Sequelize's JSON format. It can be parsed and used with the [JSON-query](./json-query.md) plugin.
 
 ### Does the SQL action trigger collection events?
 

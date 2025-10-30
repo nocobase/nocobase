@@ -2,11 +2,11 @@
 
 NocoBase logger is a wrapper around <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. By default, NocoBase divides logs into API request logs, system operation logs, and SQL execution logs. The API request logs and SQL execution logs are printed internally by the application. Plugin developers usually only need to print system operation logs related to their plugins.
 
-This document mainly introduces how to create and print logs when developing plugins. For more information about logging, please refer to: [Logger Plugin](../../handbook/logger/index.md).
+This document mainly introduces how to create and print logs when developing plugins.
 
 ## Default Logging Method
 
-NocoBase provides a method for printing system operation logs. The logs are printed according to specified fields and output to a designated file. Reference: [Logger Plugin - System Logs](../../handbook/logger/index.md#system-logs).
+NocoBase provides a method for printing system operation logs. The logs are printed according to specified fields and output to a designated file.
 
 ```ts
 // Default logging method
@@ -79,7 +79,7 @@ const logger = createLogger({
 
 ### `app.createLogger`
 
-In a multi-app scenario, sometimes we want the custom output directory and file to be under the directory named after the current application. Reference: [Logger Plugin - Log Directory](../../handbook/logger/index.md#log-directory).
+In a multi-app scenario, sometimes we want the custom output directory and file to be under the directory named after the current application.
 
 ```ts
 app.createLogger({

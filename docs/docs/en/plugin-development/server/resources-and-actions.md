@@ -4,7 +4,7 @@ A Resource is a business entry point exposed by the server, and an Action is a s
 
 ## Automatically Generated Collection Resources
 
-When you define a Collection or its associations through [Collection Configuration](/learn/server/collections-and-fields), the framework automatically generates the corresponding REST resources.
+When you define a Collection or its associations through Collection Configuration, the framework automatically generates the corresponding REST resources.
 
 For example:
 
