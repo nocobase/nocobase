@@ -12,7 +12,11 @@ export abstract class BaseNotificationChannel<Message = any> {
   abstract send(params: {
     channel: ChannelOptions;
     message: Message;
-  }): Promise<{ message: Message; status: 'success' | 'fail'; reason?: string }>;
+  }): Promise<{
+    message: Message;
+    status: 'success' | 'fail';
+    reason?: string;
+  }>;
 }
 ```
 
@@ -30,8 +34,13 @@ import { Plugin } from '@nocobase/server';
 import { ExampleServer } from './example-server';
 export class PluginNotificationExampleServer extends Plugin {
   async load() {
-    const notificationServer = this.pm.get(PluginNotificationManagerServer) as PluginNotificationManagerServer;
-    notificationServer.registerChannelType({ type: 'example-sms', Channel: ExampleServer });
+    const notificationServer = this.pm.get(
+      PluginNotificationManagerServer,
+    ) as PluginNotificationManagerServer;
+    notificationServer.registerChannelType({
+      type: 'example-sms',
+      Channel: ExampleServer,
+    });
   }
 }
 
@@ -47,7 +56,7 @@ export default PluginNotificationExampleServer;
 The `send` method is used to dispatch notifications via a specified channel.
 
 ```ts
-send('in-app-message', 
+send('in-app-message',
   message: [
     receivers: [1, 2, 3],
     receiverType: 'userId',
@@ -56,7 +65,7 @@ send('in-app-message',
   ],
   triggerFrom: 'workflow')
 
-send('email', 
+send('email',
   message: [
     receivers: ['a@163.com', 'b@163.com'],
     receiverType: 'email',
@@ -73,7 +82,7 @@ send('email',
 The `receivers` field currently supports two formats: NocoBase user IDs`userId` or custom channel configurations`channel-self-defined`.
 
 ```ts
-type ReceiversType = 
+type ReceiversType =
   | { value: number[]; type: 'userId' }
   | { value: any; type: 'channel-self-defined'; channelType: string };
 ```
@@ -82,12 +91,12 @@ type ReceiversType =
 
 `sendConfig`
 
-| Property       | Type             | Description              |
-| -------------- | ---------------- | ------------------------ |
-| `channelName`  | `string`         | Channel identifier       |
-| `message`      | `object`         | Message object           |
-| `receivers`    | `ReceiversType`  | Recipients               |
-| `triggerFrom`  | `string`         | Source of trigger        |
+| Property      | Type            | Description        |
+| ------------- | --------------- | ------------------ |
+| `channelName` | `string`        | Channel identifier |
+| `message`     | `object`        | Message object     |
+| `receivers`   | `ReceiversType` | Recipients         |
+| `triggerFrom` | `string`        | Source of trigger  |
 
 ## Client Side
 
@@ -114,18 +123,19 @@ Registers a client-side channel type.
 ```ts
 type registerTypeOptions = {
   title: string; // Display title for the channel
-  type: string;  // Channel identifier
+  type: string; // Channel identifier
   components: {
-    ChannelConfigForm?: ComponentType // Channel configuration form component;
-    MessageConfigForm?: ComponentType<{ variableOptions: any }> // Message configuration form component;
-    ContentConfigForm?: ComponentType<{ variableOptions: any }> // Content configuration form component (for message content only, excluding recipient configuration);
+    ChannelConfigForm?: ComponentType; // Channel configuration form component;
+    MessageConfigForm?: ComponentType<{ variableOptions: any }>; // Message configuration form component;
+    ContentConfigForm?: ComponentType<{ variableOptions: any }>; // Content configuration form component (for message content only, excluding recipient configuration);
   };
-  meta?: { // Metadata for channel configuration
-    createable?: boolean // Whether new channels can be added;
-    editable?: boolean   // Whether channel configuration is editable;
-    deletable?: boolean  // Whether channel configuration is deletable;
+  meta?: {
+    // Metadata for channel configuration
+    createable?: boolean; // Whether new channels can be added;
+    editable?: boolean; // Whether channel configuration is editable;
+    deletable?: boolean; // Whether channel configuration is deletable;
   };
 };
 
-type RegisterChannelType = (params: ChannelType) => void
+type RegisterChannelType = (params: ChannelType) => void;
 ```

@@ -6,36 +6,36 @@
   },
   {
     "type": "custom-link",
-    "label": "Roles and Permissions",
+    "label": "Roles and permissions",
     "items": [
       {
         "type": "custom-link",
-        "label": "Role Configuration",
+        "label": "Roles",
         "link": "/users-permissions/acl/role"
       },
       {
         "type": "custom-link",
-        "label": "Permission Configuration",
+        "label": "Permissions",
         "link": "/users-permissions/acl/permissions"
       },
       {
         "type": "custom-link",
-        "label": "Apply in UI",
+        "label": "Application in UI",
         "link": "/users-permissions/acl/ui"
       },
       {
         "type": "custom-link",
-        "label": "Role Union",
+        "label": "Role union",
         "link": "/users-permissions/acl/union"
       },
       {
         "type": "dir",
-        "label": "Development Guide",
+        "label": "Development",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Extending Permission Tabs",
+            "label": "Extend permission tabs",
             "link": "/users-permissions/acl/dev/permission-tab"
           }
         ]
@@ -44,38 +44,33 @@
   },
   {
     "type": "custom-link",
-    "label": "Departments",
+    "label": "Department",
     "items": [
       {
         "type": "custom-link",
-        "label": "Department Management",
+        "label": "Departments",
         "link": "/users-permissions/departments"
       },
       {
         "type": "custom-link",
-        "label": "Department Role Management",
+        "label": "Department roles",
         "link": "/users-permissions/departments/role"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "User Data Synchronization",
+    "label": "User data synchronization",
     "items": [
       {
         "type": "custom-link",
-        "label": "Synchronization Management",
+        "label": "Synchronization management",
         "link": "/users-permissions/sync/"
       },
       {
         "type": "custom-link",
-        "label": "Data Sources",
+        "label": "Data source",
         "items": [
-          {
-            "type": "custom-link",
-            "label": "WeCom",
-            "link": "/users-permissions/sync/sources/wecom"
-          },
           {
             "type": "custom-link",
             "label": "HTTP API",
@@ -85,17 +80,17 @@
       },
       {
         "type": "dir",
-        "label": "Development Guide",
+        "label": "Development",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Extending Synchronized Data Sources",
+            "label": "Extending synchronized data sources",
             "link": "/users-permissions/sync/dev/source"
           },
           {
             "type": "custom-link",
-            "label": "Extending Sync Target Resources",
+            "label": "Extending sync target resources",
             "link": "/users-permissions/sync/dev/resource"
           }
         ]

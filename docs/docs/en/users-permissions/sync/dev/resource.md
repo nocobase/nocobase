@@ -1,11 +1,11 @@
-# Extend Sync Target Resources
+# Extending Sync Target Resources
 
 ## Overview
 
-NocoBase supports syncing user data to the **user** and **department** collections by default. It also allows extending the target resources for data synchronization to write data into other collections or perform other custom processing.
+NocoBase natively supports syncing user data to the **User** and **Department** tables. It also allows for extending the target resources for data synchronization to write data to other tables or perform custom processing as needed.
 
 :::warning{title=Experimental}
-Full documentation to be added.
+Full documentation is pending.
 :::
 
 ## Target Resource Handler Interface
@@ -42,7 +42,7 @@ export abstract class UserDataResource {
 }
 ```
 
-## Register Target Resource
+## Registering Target Resources
 
 `registerResource(resource: UserDataResource, options?: ToposortOptions)`
 
@@ -54,7 +54,9 @@ class CustomUserResourcePluginServer extends Plugin {
   async load() {
     const userDataSyncPlugin = this.app.pm.get(PluginUserDataSyncServer);
     if (userDataSyncPlugin && userDataSyncPlugin.enabled) {
-      userDataSyncPlugin.resourceManager.registerResource(new CustomDataSyncResource(this.db, this.app.logger)
+      userDataSyncPlugin.resourceManager.registerResource(
+        new CustomDataSyncResource(this.db, this.app.logger),
+      );
     }
   }
 }

@@ -53,7 +53,7 @@ features:
         link: /ops-and-security/migration-manager
       - title: 安全
         details: 覆盖数据、接口与访问层面的防护策略，确保平台运行安全。
-        link: /security
+        link: /security/guide
         showOnHome: true
       - title: 日志和监控
         details: 记录系统运行与用户操作。

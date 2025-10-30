@@ -1,122 +1,95 @@
 # Password Authentication
 
-## Configure Interface
-
+## Configuration Interface
 
 ![](https://static-docs.nocobase.com/202411131505095.png)
 
+## Allow sign up
 
-## Allow Registration
-
-When registration is allowed, the login page will display a link to create an account, which redirects to the registration page.
-
+When sign up is allowed, the login page will display the link to create an account, and you can go to the sign up page
 
 ![](https://static-docs.nocobase.com/78903930d4b47aaf75cf94c55dd3596e.png)
 
-
-Registration page
-
+Sign up page
 
 ![](https://static-docs.nocobase.com/ac3c3ab42df28cb7c6dc70b24e99e7f7.png)
 
-
-When registration is not allowed, the login page will not display the link to create an account.
-
+When sign up is not allowed, the login page will not display the link to create an account
 
 ![](https://static-docs.nocobase.com/8d5e3b6df9991bfc1c2e095a93745121.png)
 
-
-When registration is not allowed, the registration page cannot be accessed.
-
+When sign up is not allowed, the sign up page cannot be accessed
 
 ![](https://static-docs.nocobase.com/09325c4b07e09f88f80a14dff8430556.png)
 
+## Sign up form Settings<Badge>v1.4.0-beta.7+</Badge>
 
-## Registration Form Settings<Badge>v1.4.0-beta.7+</Badge>
-
-Supports setting which fields from the users collection are displayed on the registration form and whether they are required. At least one field, either username or email, must be set to be displayed and required.
-
+You can set which fields in the user collection need to be displayed in the sign up form and whether they are required or not. At least one of username or email fields needs to be set to display and required.
 
 ![](https://static-docs.nocobase.com/202411262133669.png)
 
-
-Registration page
-
+Sign up page
 
 ![](https://static-docs.nocobase.com/202411262135801.png)
 
-
 ## Forgot Password<Badge>v1.8.0+</Badge>
 
-The forgot password feature allows users to reset their password via email verification if they have forgotten it.
+The forgot password feature allows users to reset their password via email verification if they forget it.
 
-### Admin Configuration
+### Administrator Configuration
 
-1.  **Enable forgot password feature**
+1.  **Enable Forgot Password Feature**
 
-    In "Settings" > "User Authentication" > "Forgot Password" tab, check the "Enable forgot password feature" checkbox.
+In "Settings" > "Authentication" > "Forgot password" tab, check the "Enable Forgot Password Feature" checkbox.
 
-    
 ![20250423071957_rec_](https://static-docs.nocobase.com/20250423071957_rec_.gif)
 
+2.  **Configure Notification Channel**
 
-2.  **Configure notification channel**
+Select an email notification channel (currently only email is supported). If no notification channel is available, you need to add one first.
 
-    Select an email notification channel (currently only email is supported). If no notification channel is available, you need to add one first.
-
-    
 ![20250423072225_rec_](https://static-docs.nocobase.com/20250423072225_rec_.gif)
 
+3.  **Configure Password Reset Email**
 
-3.  **Configure password reset email**
+Customize the email subject and content, supporting HTML or plain text format. You can use the following variables:
 
-    Customize the email subject and content, supporting HTML or plain text format. The following variables can be used:
-    -   Current user
-    -   System settings
-    -   Reset password link
-    -   Reset link expiration (minutes)
+- Current user
+- System settings
+- Reset password link
+- Reset link expiration (minutes)
 
-    
 ![20250427170047](https://static-docs.nocobase.com/20250427170047.png)
 
+4.  **Set Reset Link Expiration**
 
-4.  **Set reset link expiration**
+Set the validity period (in minutes) for the reset link, default is 120 minutes.
 
-    Set the expiration time for the reset link (in minutes). The default is 120 minutes.
-
-    
 ![20250423073557](https://static-docs.nocobase.com/20250423073557.png)
 
+### User Workflow
 
-### User Flow
+1.  **Initiate Password Reset Request**
 
-1.  **Initiate a password reset request**
+Click the "Forgot Password" link on the login page (requires the administrator to enable the forgot password feature first) to go to the forgot password page.
 
-    On the login page, click the "Forgot Password" link (the forgot password feature must be enabled by an admin first) to go to the forgot password page.
-
-    
 ![20250421103458_rec_](https://static-docs.nocobase.com/20250421103458_rec_.gif)
 
+Enter the registered email address and click the "Send Reset Email" button.
 
-    Enter the registered email and click the "Send reset email" button.
-
-    
 ![20250421113442_rec_](https://static-docs.nocobase.com/20250421113442_rec_.gif)
 
+2.  **Reset Password**
 
-2.  **Reset password**
+The user will receive an email containing a reset link. Click the link to open a page where you can set a new password.
 
-    The user will receive an email containing a reset link. After clicking the link, set a new password on the page that opens.
-
-    
 ![20250421113748](https://static-docs.nocobase.com/20250421113748.png)
 
-
-    After completion, the user can log in to the system with the new password.
+After setting it up, the user can log in to the system with the new password.
 
 ### Notes
 
--   The reset link has a time limit and is valid for 120 minutes after being generated by default (configurable by the admin).
--   The link can only be used once and becomes invalid immediately after use.
--   If the user does not receive the reset email, please check if the email address is correct or check the spam folder.
--   The admin should ensure that the mail server is configured correctly to guarantee the successful delivery of reset emails.
+- The reset link has a time limit, by default it is valid for 120 minutes after generation (configurable by the administrator).
+- The link can only be used once and becomes invalid immediately after use.
+- If the user does not receive the reset email, please check if the email address is correct or check the spam folder.
+- The administrator should ensure that the mail server configuration is correct to guarantee that the reset email can be sent successfully.

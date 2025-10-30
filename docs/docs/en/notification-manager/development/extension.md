@@ -20,10 +20,10 @@ class PluginNotificationExampleClient extends Plugin {
     const notification = this.pm.get(PluginNotificationManagerClient);
     notification.registerChannelType({
       title: 'Example SMS', // Channel type name
-      type: 'example-sms',  // Channel type identifier
+      type: 'example-sms', // Channel type identifier
       components: {
-        ChannelConfigForm,   // Channel configuration form
-        MessageConfigForm,   // Message configuration form
+        ChannelConfigForm, // Channel configuration form
+        MessageConfigForm, // Message configuration form
       },
     });
   }
@@ -59,8 +59,13 @@ import { Plugin } from '@nocobase/server';
 import { ExampleServer } from './example-server';
 export class PluginNotificationExampleServer extends Plugin {
   async load() {
-    const notificationServer = this.pm.get(PluginNotificationManagerServer) as PluginNotificationManagerServer;
-    notificationServer.registerChannelType({ type: 'example-sms', Channel: ExampleServer });
+    const notificationServer = this.pm.get(
+      PluginNotificationManagerServer,
+    ) as PluginNotificationManagerServer;
+    notificationServer.registerChannelType({
+      type: 'example-sms',
+      Channel: ExampleServer,
+    });
   }
 }
 
@@ -217,7 +222,9 @@ class PluginNotificationExampleClient extends Plugin {
   async load() {
     const notification = this.pm.get(PluginNotificationManagerClient);
     notification.registerChannelType({
-      title: tval('Example SMS', { ns: '@nocobase/plugin-notification-example' }),
+      title: tval('Example SMS', {
+        ns: '@nocobase/plugin-notification-example',
+      }),
       type: 'example-sms',
       components: {
         ChannelConfigForm,
@@ -255,8 +262,13 @@ import { Plugin } from '@nocobase/server';
 import { ExampleServer } from './example-server';
 export class PluginNotificationExampleServer extends Plugin {
   async load() {
-    const notificationServer = this.pm.get(PluginNotificationManagerServer) as PluginNotificationManagerServer;
-    notificationServer.registerChannelType({ type: 'example-sms', Channel: ExampleServer });
+    const notificationServer = this.pm.get(
+      PluginNotificationManagerServer,
+    ) as PluginNotificationManagerServer;
+    notificationServer.registerChannelType({
+      type: 'example-sms',
+      Channel: ExampleServer,
+    });
   }
 }
 

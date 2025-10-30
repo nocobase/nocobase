@@ -1,20 +1,20 @@
 # API Reference
 
-## Server-side
+## Server Side
 
 ### Auth
 
-Core API, see: [Auth](/api/auth/auth)
+Kernel API, reference: [Auth](/api/auth/auth.md)
 
 ### BaseAuth
 
-Core API, see: [BaseAuth](/api/auth/base-auth)
+Kernel API, reference: [BaseAuth](/api/auth/base-auth.md)
 
 ### AuthModel
 
 #### Overview
 
-`AuthModel` is the data model for the authenticator (`Authenticator`, see: [AuthManager - setStorer](/api/auth/auth-manager#setstorer) and [Auth - constructor](/api/auth/auth#constructor)) used in NocoBase applications. It provides some methods for interacting with the user collection. In addition, methods provided by the Sequelize Model can also be used.
+`AuthModel` is the authenticator used in NocoBase applications (`Authenticator`, reference: [AuthManager - setStorer](/api/auth/auth-manager.md#setstorer) and [Auth - constructor](../../../api/auth/auth.md#constructor)) data model, providing some methods for interacting with the user data collection. In addition, methods provided by Sequelize Model can also be used.
 
 ```ts
 import { AuthModel } from '@nocobase/plugin-auth';
@@ -33,22 +33,22 @@ class CustomAuth extends BaseAuth {
 
 #### Class Methods
 
-- `findUser(uuid: string): UserModel` - Finds a user by `uuid`.
-  - `uuid` - The user's unique identifier from the current authentication type
+- `findUser(uuid: string): UserModel` - Query user by `uuid`.
+  - `uuid` - User unique identifier from the current authentication type
 
-- `newUser(uuid: string, userValues?: any): UserModel` - Creates a new user and binds the user to the current authenticator via `uuid`.
-  - `uuid` - The user's unique identifier from the current authentication type
-  - `userValues` - Optional. Other user information. If not passed, `uuid` will be used as the user's nickname.
+- `newUser(uuid: string, userValues?: any): UserModel` - Create a new user, bind the user to the current authenticator through `uuid`.
+  - `uuid` - User unique identifier from the current authentication type
+  - `userValues` - Optional. Other user information. When not passed, `uuid` will be used as the user's nickname.
 
-- `findOrCreateUser(uuid: string, userValues?: any): UserModel` - Finds or creates a new user. The creation rule is the same as above.
-  - `uuid` - The user's unique identifier from the current authentication type
+- `findOrCreateUser(uuid: string, userValues?: any): UserModel` - Find or create a new user, the creation rule is the same as above.
+  - `uuid` - User unique identifier from the current authentication type
   - `userValues` - Optional. Other user information.
 
-## Client-side
+## Client Side
 
 ### `plugin.registerType()`
 
-Registers the client-side for an authentication type.
+Register the client of the authentication type.
 
 ```ts
 import AuthPlugin from '@nocobase/plugin-auth/client';
@@ -87,26 +87,26 @@ export type AuthOptions = {
 
 #### Details
 
-- `SignInForm` - Sign-in form
-- `SignInButton` - Sign-in (third-party) button, can be used as an alternative to the sign-in form
-- `SignUpForm` - Sign-up form
-- `AdminSettingsForm` - Admin settings form
+- `SignInForm` - Sign in form
+- `SignInButton` - Sign in (third-party) button, can be used as an alternative to the sign-in form
+- `SignUpForm` - Sign up form
+- `AdminSettingsForm` - Admin configuration form
 
 ### Route
 
-The auth plugin registers the following front-end routes:
+The frontend routes for registering the auth plugin are as follows:
 
 - Auth Layout
   - name: `auth`
   - path: `-`
   - component: `AuthLayout`
 
-- Sign-in Page
+- SignIn Page
   - name: `auth.signin`
   - path: `/signin`
   - component: `SignInPage`
 
-- Sign-up Page
+- SignUp Page
   - name: `auth.signup`
   - path: `/signup`
   - component: `SignUpPage`

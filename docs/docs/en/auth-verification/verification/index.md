@@ -1,33 +1,31 @@
 # Verification
 
 :::info{title=Note}
-Starting from `1.6.0-alpha.30`, the original **Verification Code** feature has been upgraded to **Verification Management**, which supports managing and integrating different user identity verification methods. After a user binds a corresponding verification method, they can perform identity verification in necessary scenarios. This feature is planned to be stably supported starting from `1.7.0`.
+Starting with `1.6.0-alpha.30`, the original “verification code” feature has been upgraded to “Verification Management”, which supports managing and integrating various methods of user verification. Once users bind the corresponding verification method, they can perform identity verification when needed. This feature is planned to be stably supported beginning with version `1.7.0`.
 :::
 
 <PluginInfo name="verification"></PluginInfo>
 
 ## Introduction
 
-**The Verification Management Center supports managing and integrating different user identity verification methods.** For example:
+**The Verification Management Center supports managing and integrating various methods of user verification.** For example:
 
-- SMS verification code - provided by the verification plugin by default. Reference: [Verification: SMS](./sms)
-- TOTP authenticator - Reference: [Verification: TOTP Authenticator](../verification-totp/)
+- SMS Verification Code – Provided by the default verification plugin. Refer to: [Auth: SMS](./sms)
+- TOTP Authenticator – Refer to: [Auth: TOTP Authenticator](../verification-totp/index.md)
 
-Developers can also extend other verification types in the form of plugins. Reference: [Extend Verification Types](./dev/type)
+Developers can also extend other types of verification via plugins. Refer to: [Extending Verification Types](./dev/type)
 
-**Users can bind corresponding verification methods to perform identity verification in necessary scenarios.** For example:
+**Users can perform identity verification when needed after binding the corresponding verification method.** For example:
 
-- SMS verification code login - Reference: [Authentication: SMS](./sms)
-- Two-Factor Authentication (2FA) - Reference: [Two-Factor Authentication (2FA)](../2fa)
-- Secondary verification for risky operations - To be supported in the future
+- SMS Verification Login – Refer to: [Auth: SMS](../auth-sms/index.md)
+- Two-Factor Authentication (2FA) – Refer to: [Auth: Two-Factor Authentication (2FA)](../2fa/)
+- Secondary Verification for Risk Operations – Future support
 
-Developers can also integrate identity verification into other necessary scenarios in the form of extension plugins. Reference: [Extend Verification Scenarios](./dev/scene)
+Developers can also integrate identity verification into other necessary scenarios by extending plugins. Refer to: [Extending Verification Scenarios](./dev/scene)
 
-**Difference and connection between the Verification module and the User Authentication module:** The User Authentication module is mainly responsible for identity authentication in user login scenarios, where processes like SMS login and Two-Factor Authentication rely on the verifiers provided by the Verification module; the Verification module is responsible for identity verification under various risky operations, and user login is one of the scenarios of risky operations.
-
+**Differences and Relationships Between the Verification Module and the User Authentication Module:** The User Authentication Module is primarily responsible for identity authentication during user login, with processes such as SMS login and two-factor authentication relying on verifiers provided by the Verification Module; meanwhile, the Verification Module handles identity verification for various high-risk operations, with user login being one of those scenarios.
 
 ![](https://static-docs.nocobase.com/202502262315404.png)
 
-
-
 ![](https://static-docs.nocobase.com/202502262315966.png)
+[](https://static-docs.nocobase.com/202502262315966.png)
