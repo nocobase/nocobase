@@ -45,10 +45,10 @@
 
 **示例：**
 
-1. 用户选择 **Account** 字段的值。
-2. 系统根据所选 Account 的 **name** 自动筛选 **Owner** 字段的选项。
+1. 用户选择 **Owner** 字段的值。
+2. 系统根据所选 Owner 的 **userName** 自动筛选 **Account** 字段的选项。
 
-![20251027115147](https://static-docs.nocobase.com/20251027115147.png)
+![20251030151928](https://static-docs.nocobase.com/20251030151928.png)
 
 <!-- ![20240416171743_rec_](https://static-docs.nocobase.com/20240416171743_rec_.gif) -->
 

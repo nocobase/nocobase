@@ -22,7 +22,11 @@
 
 ### 字段组件
 
+![20251030150601](https://static-docs.nocobase.com/20251030150601.png)
+
 [字段组件](/interface-builder/fields/association-field)：切换为其他关系字段组件，如下拉选择、数据选择器等；
+
+### 联动规则
 
 [联动规则](/interface-builder/linkage-rule)：配置子表单字段联动规则；
 
