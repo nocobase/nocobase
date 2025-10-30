@@ -38,6 +38,10 @@ features:
         details: 掌握页面、区块、操作的配置方法，自定义交互界面与展示逻辑。
         icon: <i class="fas fa-cubes"></i>
         link: /interface-builder
+      - title: 模板打印
+        details: 基于自定义模板生成可打印文档，如订单、合同或发票。
+        icon: <i class="fas fa-print"></i>
+        link: /template-print/
       - title: 用户和权限
         details: 定义角色、权限与访问控制，保障系统的安全与合规。
         icon: <i class="fas fa-users"></i>

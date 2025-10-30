@@ -40,6 +40,10 @@ features:
         details: Master page, block, and action configuration methods to customize interactive interfaces and display logic.
         icon: <i class="fas fa-cubes"></i>
         link: /interface-builder
+      - title: Template Printing
+        details: Generate printable documents based on custom templates, such as orders, contracts, or invoices.
+        icon: <i class="fas fa-print"></i>
+        link: /template-print/
       - title: Users & Permissions
         details: Define roles, permissions and access control to ensure system security and compliance.
         icon: <i class="fas fa-users"></i>
