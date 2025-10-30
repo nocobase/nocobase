@@ -1,0 +1,82 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Users",
+    "link": "/users-permissions/users/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Roles & Permissions",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/users-permissions/acl/"
+      },
+      {
+        "type": "custom-link",
+        "label": "User Manual",
+        "link": "/users-permissions/acl/manual"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Departments",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/users-permissions/departments/"
+      },
+      {
+        "type": "custom-link",
+        "label": "User Manual",
+        "link": "/users-permissions/departments/manual"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Synchronization",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Synchronization Management",
+        "link": "/users-permissions/user-data-sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Data Sources",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/user-data-sync/sources/api"
+          },
+          {
+            "type": "custom-link",
+            "label": "WeCom",
+            "link": "/users-permissions/wecom/user-data-sync"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Development",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Extending Synchronized Data Sources",
+            "link": "/users-permissions/user-data-sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "Extending Sync Target Resources",
+            "link": "/users-permissions/user-data-sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

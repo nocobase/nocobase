@@ -11,6 +11,7 @@ import type { JSX } from 'react';
 import { PluginCard } from './components/PluginCard';
 import { PluginInfo } from './components/PluginInfo';
 import { PluginList } from './components/PluginList';
+import { ProvidedBy } from './components/ProvidedBy';
 
 function getCustomMDXComponent() {
   const { h1: H1, ...mdxComponents } = basicGetCustomMDXComponent();
@@ -25,6 +26,7 @@ function getCustomMDXComponent() {
           <LlmsViewOptions />
         </LlmsContainer>
         <PluginInfo />
+        <ProvidedBy />
       </>
     );
   };

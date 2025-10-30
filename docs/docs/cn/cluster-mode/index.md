@@ -178,7 +178,7 @@ NocoBase 暂时未实现集群版本的在线升级，为确保数据一致性�
 
 ### 更新版本
 
-参考 [Docker 升级](#) 更新 NocoBase 应用镜像的版本。
+参考 [Docker 升级](../get-started/upgrading/docker) 更新 NocoBase 应用镜像的版本。
 
 ### 启动服务
 
