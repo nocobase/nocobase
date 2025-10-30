@@ -81,7 +81,7 @@
               },
               {
                 "type": "custom-link",
-                "label": "JSBlock",
+                "label": "JS Block",
                 "link": "/interface-builder/blocks/other-blocks/js-block"
               }
             ]
@@ -210,12 +210,12 @@
               },
               {
                 "type": "custom-link",
-                "label": "JSField",
+                "label": "JS Field",
                 "link": "/interface-builder/fields/specific/js-field"
               },
               {
                 "type": "custom-link",
-                "label": "JSColumn",
+                "label": "JS Column",
                 "link": "/interface-builder/fields/specific/js-column"
               }
             ]
