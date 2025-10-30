@@ -21,6 +21,7 @@ import {
   createSafeDocument,
   createSafeWindow,
   createSafeNavigator,
+  compileRunJs,
 } from '@nocobase/flow-engine';
 import { Tooltip } from 'antd';
 import React from 'react';
@@ -224,8 +225,9 @@ JSColumnModel.registerFlow({
             get: () => new ElementProxy(element),
           });
           const navigator = createSafeNavigator();
+          const compiled = await compileRunJs(code);
           await ctx.runjs(
-            code,
+            compiled,
             { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
             { version },
           );

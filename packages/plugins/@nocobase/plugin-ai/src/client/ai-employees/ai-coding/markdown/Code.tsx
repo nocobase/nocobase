@@ -49,7 +49,9 @@ export const Code = (props: any) => {
   const match = /language-(\w+)/.exec(className || '');
   const language = match ? match[1] : '';
 
-  const value = String(children).replace(/\n$/, '');
+  const value = String(children)
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\n$/, '');
   const { message: antdMessage } = App.useApp();
   const copy = () => {
     navigator.clipboard.writeText(value);

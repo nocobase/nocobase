@@ -28,7 +28,7 @@ export const BlockItemCard = React.forwardRef(
     const { title: blockTitle, description, children, className, ...rest } = props;
     const height = useBlockHeight(props as any);
     const title = (blockTitle || description) && (
-      <div style={{ padding: '8px 0px 8px' }}>
+      <div>
         <span> {t(blockTitle as any, { ns: NAMESPACE_UI_SCHEMA })}</span>
         {description && (
           <DisplayMarkdown
@@ -51,6 +51,9 @@ export const BlockItemCard = React.forwardRef(
         style={{ display: 'flex', flexDirection: 'column', height: height }}
         styles={{
           body: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto' },
+          header: {
+            marginTop: '8px',
+          },
         }}
         className={className}
         {...rest}

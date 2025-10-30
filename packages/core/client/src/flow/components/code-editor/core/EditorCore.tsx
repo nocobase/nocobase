@@ -20,6 +20,7 @@ import { basicSetup } from 'codemirror';
 import { EditorView, tooltips } from '@codemirror/view';
 import { javascriptWithHtmlTemplates } from '../javascriptHtmlTemplate';
 import { createHtmlCompletion } from '../htmlCompletion';
+import { createJsxCompletion } from '../jsxCompletion';
 import { createJavascriptCompletion } from '../javascriptCompletion';
 import { createJavaScriptLinter } from '../linter';
 
@@ -87,6 +88,7 @@ export const EditorCore: React.FC<{
       autocompletion({
         override: [
           createHtmlCompletion(),
+          createJsxCompletion(),
           createJavascriptCompletion(),
           ...(Array.isArray(extraCompletions) && extraCompletions.length
             ? [staticCompletionSource(extraCompletions)]

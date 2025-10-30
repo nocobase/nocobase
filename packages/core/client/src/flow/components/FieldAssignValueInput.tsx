@@ -49,7 +49,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
   const { collection, dataSource, blockModel } = itemModel?.context || {};
   const init = itemModel?.getStepParams?.('fieldSettings', 'init') || {};
   const fieldPath: string | undefined = init?.fieldPath;
-  const fieldName = fieldPath.split('.').slice(-1)[0];
+  const fieldName = fieldPath?.split('.').slice(-1)[0];
 
   // 生成临时根模型 + 子字段模型
   const [tempRoot, setTempRoot] = React.useState<any>(null);

@@ -39,7 +39,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   enableEditIcon = true;
   enableEditType = true;
   enableEditDanger = true;
-  enableEditColor = true;
+  enableEditColor = false;
 
   static _getScene() {
     return _.castArray(this['scene'] || []);

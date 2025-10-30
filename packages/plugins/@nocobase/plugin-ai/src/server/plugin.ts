@@ -43,6 +43,7 @@ import { aiContextDatasources } from './resource/aiContextDatasources';
 import { createWorkContextHandler } from './manager/work-context-handler';
 import { AICodingManager } from './manager/ai-coding-manager';
 import { getCodeSnippet, listCodeSnippet } from './tools/code-editor';
+import { dataSourceCounting, dataSourceQuery } from './tools/datasource-query';
 // import { tongyiProviderOptions } from './llm-providers/tongyi';
 
 export class PluginAIServer extends Plugin {
@@ -96,6 +97,7 @@ export class PluginAIServer extends Plugin {
     const dataModelingGroupName = 'dataModeling';
     const workflowGroupName = 'workflowCaller';
     const codeEditorGroupName = 'codeEditor';
+    const dataSourceGroupName = 'dataSource';
     toolManager.registerToolGroup({
       groupName: frontendGroupName,
       title: '{{t("Frontend")}}',
@@ -115,6 +117,11 @@ export class PluginAIServer extends Plugin {
       groupName: codeEditorGroupName,
       title: '{{t("CodeEditor")}}',
       description: '{{t("CodeEditor actions")}}',
+    });
+    toolManager.registerToolGroup({
+      groupName: dataSourceGroupName,
+      title: '{{t("DataSource")}}',
+      description: '{{t("Data source query")}}',
     });
 
     this.aiManager.toolManager.registerTools([
@@ -148,6 +155,14 @@ export class PluginAIServer extends Plugin {
       {
         groupName: codeEditorGroupName,
         tool: getCodeSnippet,
+      },
+      {
+        groupName: dataSourceGroupName,
+        tool: dataSourceCounting,
+      },
+      {
+        groupName: dataSourceGroupName,
+        tool: dataSourceQuery,
       },
     ]);
 
@@ -243,7 +258,7 @@ export class PluginAIServer extends Plugin {
     });
     this.workContextHandler.registerStrategy('code-editor', {
       resolve: this.aiCodingManager.provideWorkContextResolveStrategy(),
-      // background: this.aiCodingManager.provideWorkContextBackgroundStrategy(),
+      background: this.aiCodingManager.provideWorkContextBackgroundStrategy(),
     });
   }
 

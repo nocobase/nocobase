@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { EditorRef } from '../types';
 import { Flex } from 'antd';
 import { CodeEditorExtension } from '../extension/CodeEditorExtension';
@@ -22,14 +22,17 @@ export const RightExtra: React.FC<{
 }> = ({ name = 'code', language = 'javascript', scene, extraEditorRef, onActionCountChange, extraContent }) => {
   const extras = CodeEditorExtension.getRightExtras();
   const [activeCount, setActiveCount] = useState<{ [key: string]: boolean }>({});
-  const setActive = (key: string, active: boolean) => {
-    setActiveCount((prev) => {
-      const next = { ...prev, [key]: active };
-      const count = Object.values(next).filter(Boolean).length;
-      onActionCountChange?.(count);
-      return next;
-    });
-  };
+  const setActive = useCallback(
+    (key: string, active: boolean) => {
+      setActiveCount((prev) => {
+        const next = { ...prev, [key]: active };
+        const count = Object.values(next).filter(Boolean).length;
+        onActionCountChange?.(count);
+        return next;
+      });
+    },
+    [onActionCountChange],
+  );
 
   const baseStyle: React.CSSProperties = { padding: '8px', borderBottom: '1px solid #d9d9d9' };
   const { visible } = useMemo(() => {

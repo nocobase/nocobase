@@ -145,7 +145,6 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   const ctx = useFlowContext();
   const flowEngine = model.flowEngine;
   const [submitLoading, setSubmitLoading] = React.useState(false);
-  const refresh = useUpdate();
   const t = model.translate.bind(model);
 
   // 创建新流的默认值
@@ -161,7 +160,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
 
   // 删除流
   const handleDeleteFlow = (flow: FlowDefinition) => {
-    flow.destroy();
+    flow.remove();
   };
 
   // 上移流

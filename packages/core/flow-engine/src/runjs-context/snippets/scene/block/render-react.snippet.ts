@@ -23,15 +23,15 @@ const snippet: SnippetModule = {
   },
   content: `
 // Render a React element into ctx.element via ReactDOM
-const { React, ReactDOM, antd } = ctx;
-const { Button } = antd;
+const { Button } = ctx.antd;
 
-const node = React.createElement(
-  'div',
-  { style: { padding: 12 } },
-  React.createElement(Button, { type: 'primary', onClick: () => ctx.message.success(ctx.t('Clicked!')) }, ctx.t('Click')),
+ctx.render(
+  <div style={{ padding: 12 }}>
+    <Button type="primary" onClick={() => ctx.message.success(ctx.t('Clicked!'))}>
+      {ctx.t('Click')}
+    </Button>
+  </div>
 );
-ReactDOM.createRoot(ctx.element).render(node);
 `,
 };
 

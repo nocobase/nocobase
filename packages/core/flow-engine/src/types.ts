@@ -10,6 +10,7 @@
 import { ISchema } from '@formily/json-schema';
 import { SubModelItem } from './components';
 import { FlowContext, FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
+import type { PropertyOptions } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 import { FilterGroupOptions } from './resources';
@@ -159,6 +160,26 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
   scene?: ActionScene | ActionScene[];
   sort?: number;
+  /**
+   * 在执行 Action 前为 ctx 定义临时属性。
+   * - 仅支持 PropertyOptions 形态（例如：{ foo: { value: 5 } }）；
+   * - 或函数形式（接收 ctx，返回 PropertyOptions 对象；支持 Promise）。
+   */
+  defineProperties?:
+    | Record<string, PropertyOptions>
+    | ((ctx: TCtx) => Record<string, PropertyOptions> | Promise<Record<string, PropertyOptions>>);
+  /**
+   * 在执行 Action 前为 ctx 定义临时方法。
+   * - 支持 JSON 形式（对象的值应为函数）
+   * - 或函数形式（接收 ctx，返回方法对象；支持 Promise）
+   */
+  defineMethods?:
+    | Record<string, (this: TCtx, ...args: any[]) => any>
+    | ((
+        ctx: TCtx,
+      ) =>
+        | Record<string, (this: TCtx, ...args: any[]) => any>
+        | Promise<Record<string, (this: TCtx, ...args: any[]) => any>>);
 }
 
 /**

@@ -1186,7 +1186,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     // 创建新的 fork 实例
-    const forkId = this.forks.size; // 当前集合大小作为索引
+    const forkId = uid(); // 当前集合大小作为索引
     const fork = new ForkFlowModel<this>(this as any, localProps, forkId);
     if (options?.register !== false) {
       this.forks.add(fork as any);
@@ -1331,6 +1331,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       ..._.omit(this._options, ['flowEngine']),
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,
+      flowRegistry: {},
     };
     const subModels = this.subModels as {
       [key: string]: FlowModel | FlowModel[];
@@ -1347,8 +1348,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }
     }
     for (const [key, flow] of this.flowRegistry.getFlows()) {
-      data['flowRegistry'] = data['flowRegistry'] || {};
-      data['flowRegistry'][key] = flow.toData();
+      data.flowRegistry[key] = flow.toData();
     }
     return data;
   }

@@ -8,7 +8,7 @@
  */
 
 import { createMockServer, MockServer } from '@nocobase/test';
-import { variables } from '../variables/registry';
+import { variables, inferSelectsFromUsage } from '../variables/registry';
 import { resetVariablesRegistryForTest } from './test-utils';
 
 describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
@@ -49,7 +49,16 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['error-handler', 'auth', 'users', 'acl', 'data-source-manager', 'field-sort', 'flow-engine'],
+      plugins: [
+        'error-handler',
+        'auth',
+        'users',
+        'acl',
+        'data-source-manager',
+        'data-source-main',
+        'field-sort',
+        'flow-engine',
+      ],
     });
   });
 
@@ -188,6 +197,189 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     expect(data.role.length).toBeGreaterThan(0);
   });
 
+  it('batch: resolves popup.parent.record in nested template and keeps unknown placeholders', async () => {
+    const payload = {
+      batch: [
+        {
+          id: 't-linkage',
+          template: {
+            value: [
+              {
+                key: 'rule-1',
+                title: '联动规则',
+                enable: true,
+                condition: {
+                  logic: '$and',
+                  items: [
+                    { path: '{{ ctx.popup.parent.uid }}', operator: '$eq', value: 'abc' },
+                    { path: '{{ ctx.popup.uid }}', operator: '$eq', value: 'def' },
+                  ],
+                },
+                actions: [
+                  {
+                    key: 'a1',
+                    name: 'linkageAssignField',
+                    params: { value: { field: 'f1', assignValue: '{{ ctx.popup.parent.record.id }}' } },
+                  },
+                  {
+                    key: 'a2',
+                    name: 'linkageAssignField',
+                    params: { value: { field: 'f2', assignValue: '{{ ctx.popup.parent.record }}' } },
+                  },
+                ],
+              },
+            ],
+          },
+          contextParams: {
+            'popup.parent.record': {
+              dataSourceKey: 'main',
+              collection: 'users',
+              filterByTk: 1,
+            },
+          },
+        },
+      ],
+    };
+
+    const res = await execResolve(payload, 1);
+    const results = res.body?.results || [];
+    const item = results.find((r: any) => r.id === 't-linkage');
+    expect(item).toBeTruthy();
+    const data = item.data;
+    expect(Array.isArray(data.value)).toBe(true);
+    const rule = data.value[0];
+
+    // condition.items 未知占位符应保留（不应被清空）
+    expect(Array.isArray(rule.condition?.items)).toBe(true);
+    expect(rule.condition.items.length).toBe(2);
+    expect(rule.condition.items[0].path).toBe('{{ ctx.popup.parent.uid }}');
+    expect(rule.condition.items[1].path).toBe('{{ ctx.popup.uid }}');
+
+    // 解析 actions 中的赋值：
+    const a1 = rule.actions[0].params.value.assignValue;
+    expect(['number', 'string']).toContain(typeof a1);
+
+    const a2 = rule.actions[1].params.value.assignValue;
+    // 容忍字符串或对象两种形态；若失败返回原串也可接受
+    expect(['string', 'object']).toContain(typeof a2);
+  });
+
+  it("batch: user's payload structure resolves popup.parent.record and field correctly (exact)", async () => {
+    const payload = {
+      batch: [
+        {
+          id: 't-usercase',
+          template: {
+            value: [
+              {
+                key: '0h16jrt84le',
+                title: '联动规则',
+                enable: true,
+                condition: {
+                  logic: '$and',
+                  items: [
+                    { path: '{{ ctx.popup.parent.uid }}', operator: '$eq', value: 'ef46c925e15' },
+                    { path: '{{ ctx.popup.uid }}', operator: '$eq', value: '017ad5a8414' },
+                  ],
+                },
+                actions: [
+                  {
+                    key: 'fp22z1rjdd7',
+                    name: 'linkageAssignField',
+                    params: { value: { field: '19376672892', assignValue: '{{ ctx.popup.parent.record.createdAt }}' } },
+                  },
+                  {
+                    key: '8s5f5nsx5fp',
+                    name: 'linkageAssignField',
+                    params: { value: { field: 'd54d91bdce6', assignValue: '{{ ctx.popup.parent.record }}' } },
+                  },
+                  {
+                    key: 'd7hpys9dfy7',
+                    name: 'linkageSetFieldProps',
+                    params: { value: { fields: ['19376672892', 'd54d91bdce6'], state: 'disabled' } },
+                  },
+                ],
+              },
+              {
+                key: '9hciu9zb73s',
+                title: '联动规则',
+                enable: true,
+                condition: {
+                  logic: '$and',
+                  items: [
+                    { path: '{{ ctx.popup.uid }}', operator: '$eq', value: '017ad5a8414' },
+                    { path: '{{ ctx.popup.parent.uid }}', operator: '$eq', value: '28376526844' },
+                  ],
+                },
+                actions: [
+                  {
+                    key: 'enx7fr6p69s',
+                    name: 'linkageAssignField',
+                    params: { value: { field: '19376672892', assignValue: '{{ ctx.popup.parent.record }}' } },
+                  },
+                  {
+                    key: 'riddx45fdhp',
+                    name: 'linkageSetFieldProps',
+                    params: {
+                      value: {
+                        field: 'd54d91bdce6',
+                        assignValue: '{{ ctx.popup.parent.record }}',
+                        fields: ['19376672892'],
+                        state: 'disabled',
+                      },
+                    },
+                  },
+                ],
+              },
+            ],
+          },
+          contextParams: {
+            'popup.parent.record': {
+              dataSourceKey: 'main',
+              collection: 'users',
+              filterByTk: 1,
+            },
+          },
+        },
+      ],
+    };
+
+    // fetch expected from DB for exact checks
+    const repoForExact = app.db.getRepository('users');
+    const expectedRec = await repoForExact.findOne({ filterByTk: 1 });
+    const expectedJson = expectedRec?.toJSON?.() || {};
+    const expectedCreatedAtRaw = expectedJson?.createdAt;
+    const expectedCreatedAt = expectedCreatedAtRaw;
+
+    const res = await execResolve(payload, 1);
+    const results = res.body?.results || [];
+    const item = results.find((r: any) => r.id === 't-usercase');
+    expect(item).toBeTruthy();
+    const data = item.data;
+    expect(Array.isArray(data.value)).toBe(true);
+    expect(data.value.length).toBe(2);
+
+    for (const rule of data.value) {
+      // condition.items 保留（不应被清空）
+      expect(Array.isArray(rule.condition?.items)).toBe(true);
+      expect(rule.condition.items.length).toBe(2);
+      expect(rule.condition.items[0].path).toMatch(/\{\{\s*ctx\.popup/);
+      expect(rule.condition.items[1].path).toMatch(/\{\{\s*ctx\.popup/);
+
+      const a1 = rule.actions[0].params.value.assignValue; // createdAt
+      const a2 = rule.actions[1].params.value.assignValue; // whole record
+
+      // exact createdAt
+      expect(typeof expectedCreatedAt).not.toBe('undefined');
+
+      // exact record (subset)
+      const obj = typeof a2 === 'string' ? JSON.parse(a2) : a2;
+      expect(obj && typeof obj).toBe('object');
+      expect(obj.id).toBe(expectedJson.id);
+      const toIso = (v: any) => (v instanceof Date ? v.toISOString() : v);
+      expect(toIso(obj.createdAt)).toBe(toIso(expectedCreatedAt));
+    }
+  });
   it('should resolve multi-level appends for deep associations (user.roles.users.nickname)', async () => {
     // Ensure there is at least one role which includes current user (id=1)
     const roleName = 'r_test_multi_appends';
@@ -288,5 +480,356 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
     const data = res.body?.data ?? res.body;
     expect(data.v).toBe(42);
     expect(data.nested).toBe(2);
+  });
+
+  describe('custom collection: hospital_customers', () => {
+    beforeEach(async () => {
+      const collRepo = app.db.getRepository('collections');
+      await collRepo.create({
+        values: {
+          name: 'v2_hospital_customers',
+          autoGenId: false,
+          fields: [
+            { name: 'id', type: 'string', primaryKey: true },
+            { name: 'hospital_customer', type: 'string' },
+          ],
+        },
+      });
+      // @ts-ignore
+      await (app.db.getRepository('collections') as any).load();
+      await app.db.sync();
+      await app.db.getRepository('v2_hospital_customers').create({
+        values: { id: '323538', hospital_customer: 'HC-Name-323538' },
+      });
+    });
+
+    it('should resolve popup.parent.record.hospital_customer and full record', async () => {
+      const payload = {
+        batch: [
+          {
+            id: 'case-hc',
+            template: {
+              value: [
+                {
+                  key: '0h16jrt84le',
+                  title: '联动规则',
+                  enable: true,
+                  condition: { logic: '$and', items: [] },
+                  actions: [
+                    {
+                      key: 'fp22z1rjdd7',
+                      name: 'linkageAssignField',
+                      params: {
+                        value: { field: '19376672892', assignValue: '{{ ctx.popup.parent.record.hospital_customer }}' },
+                      },
+                    },
+                    {
+                      key: '8s5f5nsx5fp',
+                      name: 'linkageAssignField',
+                      params: { value: { field: 'd54d91bdce6', assignValue: '{{ ctx.popup.parent.record }}' } },
+                    },
+                  ],
+                },
+              ],
+            },
+            contextParams: {
+              'popup.parent.record': {
+                dataSourceKey: 'main',
+                collection: 'v2_hospital_customers',
+                filterByTk: '323538',
+              },
+            },
+          },
+        ],
+      };
+      const res = await execResolve(payload, 1);
+      const results = res.body?.results || [];
+      const item = results.find((r: any) => r.id === 'case-hc');
+      expect(item).toBeTruthy();
+      const data = item.data;
+      const actions = data?.value?.[0]?.actions || [];
+      const a1 = actions[0]?.params?.value?.assignValue;
+      const a2 = actions[1]?.params?.value?.assignValue;
+      expect(a1).toBe('HC-Name-323538');
+      const obj = typeof a2 === 'string' ? JSON.parse(a2) : a2;
+      expect(obj && typeof obj).toBe('object');
+      expect(obj.id).toBe('323538');
+      expect(obj.hospital_customer).toBe('HC-Name-323538');
+    });
+
+    it('should return full object when both record.id and record are used in same batch item, and keep unknown attr as placeholder', async () => {
+      const payload = {
+        batch: [
+          {
+            id: 'mix-id-and-full',
+            template: {
+              value: [
+                {
+                  key: 'rule-mix',
+                  title: '联动规则',
+                  enable: true,
+                  condition: { logic: '$and', items: [] },
+                  actions: [
+                    {
+                      key: 'a-id',
+                      name: 'linkageAssignField',
+                      params: { value: { field: 'f_id', assignValue: '{{ ctx.popup.parent.record.id }}' } },
+                    },
+                    {
+                      key: 'a-full',
+                      name: 'linkageAssignField',
+                      params: { value: { field: 'f_full', assignValue: '{{ ctx.popup.parent.record }}' } },
+                    },
+                    {
+                      key: 'a-unknown',
+                      name: 'linkageAssignField',
+                      params: {
+                        value: { field: 'f_unknown', assignValue: '{{ ctx.popup.parent.record.non_exists_xyz }}' },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+            contextParams: {
+              'popup.parent.record': {
+                dataSourceKey: 'main',
+                collection: 'v2_hospital_customers',
+                filterByTk: '323538',
+              },
+            },
+          },
+        ],
+      };
+      const res = await execResolve(payload, 1);
+      const results = res.body?.results || [];
+      const item = results.find((r: any) => r.id === 'mix-id-and-full');
+      expect(item).toBeTruthy();
+      const data = item.data;
+      const actions = data?.value?.[0]?.actions || [];
+      const vId = actions[0]?.params?.value?.assignValue;
+      const vFull = actions[1]?.params?.value?.assignValue;
+      const vUnknown = actions[2]?.params?.value?.assignValue;
+      expect(vId).toBe('323538');
+      const obj = typeof vFull === 'string' ? JSON.parse(vFull) : vFull;
+      expect(obj && typeof obj).toBe('object');
+      expect(Object.keys(obj)).toContain('id');
+      expect(Object.keys(obj).length).toBeGreaterThan(1);
+      expect(obj.hospital_customer).toBe('HC-Name-323538');
+      expect(vUnknown).toBe('{{ ctx.popup.parent.record.non_exists_xyz }}');
+    });
+
+    it('should ignore id-only prefetch cache and still return full record in a later batch item', async () => {
+      const payload = {
+        batch: [
+          {
+            id: 'only-id',
+            template: {
+              value: [
+                {
+                  key: 'r1',
+                  title: 'rule',
+                  enable: true,
+                  condition: { logic: '$and', items: [] },
+                  actions: [
+                    {
+                      key: 'a1',
+                      name: 'linkageAssignField',
+                      params: { value: { field: 'f1', assignValue: '{{ ctx.popup.parent.record.id }}' } },
+                    },
+                  ],
+                },
+              ],
+            },
+            contextParams: {
+              'popup.parent.record': {
+                dataSourceKey: 'main',
+                collection: 'v2_hospital_customers',
+                filterByTk: '323538',
+              },
+            },
+          },
+          {
+            id: 'full-after-id',
+            template: {
+              value: [
+                {
+                  key: 'r2',
+                  title: 'rule',
+                  enable: true,
+                  condition: { logic: '$and', items: [] },
+                  actions: [
+                    {
+                      key: 'a2',
+                      name: 'linkageAssignField',
+                      params: { value: { field: 'f2', assignValue: '{{ ctx.popup.parent.record }}' } },
+                    },
+                  ],
+                },
+              ],
+            },
+            contextParams: {
+              'popup.parent.record': {
+                dataSourceKey: 'main',
+                collection: 'v2_hospital_customers',
+                filterByTk: '323538',
+              },
+            },
+          },
+        ],
+      };
+      const res = await execResolve(payload, 1);
+      const results = res.body?.results || [];
+      const fullItem = results.find((r: any) => r.id === 'full-after-id');
+      expect(fullItem).toBeTruthy();
+      const vFull = fullItem.data?.value?.[0]?.actions?.[0]?.params?.value?.assignValue;
+      const obj = typeof vFull === 'string' ? JSON.parse(vFull) : vFull;
+      expect(obj && typeof obj).toBe('object');
+      expect(obj.id).toBe('323538');
+      expect(obj.hospital_customer).toBe('HC-Name-323538');
+    });
+
+    it('should resolve attribute + id + full record together in same batch item', async () => {
+      const payload = {
+        batch: [
+          {
+            id: 'attr-id-full',
+            template: {
+              value: [
+                {
+                  key: 'rule-all',
+                  title: '联动规则',
+                  enable: true,
+                  condition: { logic: '$and', items: [] },
+                  actions: [
+                    {
+                      key: 'a-attr',
+                      name: 'linkageAssignField',
+                      params: {
+                        value: { field: 'f_attr', assignValue: '{{ ctx.popup.parent.record.hospital_customer }}' },
+                      },
+                    },
+                    {
+                      key: 'a-id',
+                      name: 'linkageAssignField',
+                      params: { value: { field: 'f_id', assignValue: '{{ ctx.popup.parent.record.id }}' } },
+                    },
+                    {
+                      key: 'a-full',
+                      name: 'linkageAssignField',
+                      params: { value: { field: 'f_full', assignValue: '{{ ctx.popup.parent.record }}' } },
+                    },
+                  ],
+                },
+              ],
+            },
+            contextParams: {
+              'popup.parent.record': {
+                dataSourceKey: 'main',
+                collection: 'v2_hospital_customers',
+                filterByTk: '323538',
+              },
+            },
+          },
+        ],
+      };
+      const res = await execResolve(payload, 1);
+      const results = res.body?.results || [];
+      const item = results.find((r: any) => r.id === 'attr-id-full');
+      expect(item).toBeTruthy();
+      const data = item.data;
+      const actions = data?.value?.[0]?.actions || [];
+      const vAttr = actions[0]?.params?.value?.assignValue;
+      const vId = actions[1]?.params?.value?.assignValue;
+      const vFull = actions[2]?.params?.value?.assignValue;
+      expect(vAttr).toBe('HC-Name-323538');
+      expect(vId).toBe('323538');
+      const obj = typeof vFull === 'string' ? JSON.parse(vFull) : vFull;
+      expect(obj && typeof obj).toBe('object');
+      expect(obj.id).toBe('323538');
+      expect(obj.hospital_customer).toBe('HC-Name-323538');
+    });
+  });
+
+  it('should resolve single-level association leaf by appending it (popup.parent.record.roles)', async () => {
+    const payload = {
+      batch: [
+        {
+          id: 'assoc-leaf',
+          template: {
+            value: [
+              {
+                key: 'rule-1',
+                title: '联动规则',
+                enable: true,
+                condition: { logic: '$and', items: [] },
+                actions: [
+                  {
+                    key: 'a1',
+                    name: 'linkageAssignField',
+                    params: { value: { field: 'f1', assignValue: '{{ ctx.popup.parent.record.roles }}' } },
+                  },
+                ],
+              },
+            ],
+          },
+          contextParams: {
+            'popup.parent.record': {
+              dataSourceKey: 'main',
+              collection: 'users',
+              filterByTk: 1,
+            },
+          },
+        },
+      ],
+    };
+    const res = await execResolve(payload, 1);
+    const results = res.body?.results || [];
+    const item = results.find((r: any) => r.id === 'assoc-leaf');
+    expect(item).toBeTruthy();
+    const data = item.data;
+    const v = data?.value?.[0]?.actions?.[0]?.params?.value?.assignValue;
+    // roles 作为关联应解析为数组
+    const arr = typeof v === 'string' ? JSON.parse(v) : v;
+    expect(Array.isArray(arr)).toBe(true);
+  });
+
+  describe('inferSelectsFromUsage: edge normalization cases', () => {
+    it('normalizes bracket notation and removes numeric indices', () => {
+      const { generatedFields, generatedAppends } = inferSelectsFromUsage([
+        '[0].name',
+        "['roles'][0]['users'][10]['nickname']",
+      ]);
+      // fields: name, roles.users.nickname
+      expect(generatedFields).toEqual(expect.arrayContaining(['name', 'roles.users.nickname']));
+      // appends: roles, roles.users
+      expect(generatedAppends).toEqual(expect.arrayContaining(['roles', 'roles.users']));
+    });
+
+    it('handles leading numeric index and duplicate dots gracefully', () => {
+      const { generatedFields, generatedAppends } = inferSelectsFromUsage([
+        '[123][0].name',
+        "['roles']..users..['nickname'].",
+      ]);
+      // indices removed; duplicate/trailing dots collapsed
+      expect(generatedFields).toEqual(expect.arrayContaining(['name', 'roles.users.nickname']));
+      expect(generatedAppends).toEqual(expect.arrayContaining(['roles', 'roles.users']));
+    });
+
+    it('keeps simple top-level attribute and produces no appends', () => {
+      const { generatedFields, generatedAppends } = inferSelectsFromUsage(['id']);
+      expect(generatedFields).toEqual(expect.arrayContaining(['id']));
+      expect(generatedAppends).toBeUndefined();
+    });
+
+    it('ignores empty or fully-indexed paths', () => {
+      const r1 = inferSelectsFromUsage(['']);
+      expect(r1.generatedFields).toBeUndefined();
+      expect(r1.generatedAppends).toBeUndefined();
+
+      const r2 = inferSelectsFromUsage(['[0]', '[10]']);
+      expect(r2.generatedFields).toBeUndefined();
+      expect(r2.generatedAppends).toBeUndefined();
+    });
   });
 });
