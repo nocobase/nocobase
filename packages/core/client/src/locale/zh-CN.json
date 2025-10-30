@@ -1495,5 +1495,17 @@
   "Top right": "右上角",
   "Bottom left": "左下角",
   "Bottom right": "右下角",
-  "Navigate to URL": "导航到 URL"
+  "Navigate to URL": "导航到 URL",
+  "Event flow": "事件流",
+  "Edit event flows": "编辑事件流",
+  "Trigger event": "触发事件",
+  "Select trigger event": "选择触发事件",
+  "Steps": "步骤",
+  "Add step": "添加步骤",
+  "Delete step": "删除步骤",
+  "No event flows": "暂无事件流",
+  "Add event flow": "添加事件流",
+  "Configuration saved": "配置已保存",
+  "Form values change": "表单值变更",
+  "Click": "点击"
 }
