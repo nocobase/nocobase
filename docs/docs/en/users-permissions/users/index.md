@@ -8,17 +8,17 @@ The Users plugin provides a basic user model and a user management interface.
 
 ## Installation
 
-Built-in plugin, no separate installation required.
+This is a built-in plugin, so no separate installation is required.
 
 ## Usage Instructions
 
 ### User Management
 
-This plugin provides a user management interface in the configuration center. After application initialization, an undeletable super admin account will be added. The super admin has Root permissions and can access all resources.
+This plugin provides a user management interface in the configuration center. After initializing the application, an undeletable super admin account is automatically created. The super admin has root permissions and can access all resources.
 
 ![](https://static-docs.nocobase.com/44bf40f56b45d4dd96c424fb08082cf6.png)
 
-In addition, you can also add various different blocks of the users collection to manage users, such as table blocks:
+In addition, you can add various blocks from the users collection to manage users, such as table blocks:
 
 ![](https://static-docs.nocobase.com/76b5a4652f869541a9e8f18a4568a7c9.png)
 
@@ -34,7 +34,7 @@ If you have created custom fields in the users table
 
 ![nocobase_doc-2025-10-29-21-12-24](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-21-12-24.png)
 
-By entering edit mode, you can dynamically add custom fields to the user profile editing form interface
+By entering edit mode, you can dynamically add custom fields to the user profile form.
 
 ![nocobase_doc-2025-10-29-21-14-12](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-21-14-12.png)
 
@@ -47,7 +47,7 @@ By entering edit mode, you can dynamically add custom fields to the user profile
 ### Settings
 
 :::info{title=Tip}
-The version of NocoBase needs to be v1.3.34-beta or above.
+Requires NocoBase v1.3.34-beta or later.
 :::
 
 Configure whether to allow editing user profiles and changing user passwords (applies to all users).
