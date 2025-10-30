@@ -150,7 +150,7 @@ export const useChatBoxActions = () => {
         setMessages(msgs);
         return;
       }
-      if (tasks.length === 1) {
+      if (tasks.length === 1 && options.auto !== false) {
         setMessages(msgs);
         const task = tasks[0];
         const { userMessage, systemMessage, attachments, workContext, skillSettings } = await parseTask(task);
@@ -175,7 +175,7 @@ export const useChatBoxActions = () => {
           send({
             aiEmployee,
             systemMessage,
-            messages: [userMessage],
+            messages: [userMessage ?? { type: 'text', content: '' }],
             attachments,
             workContext,
             skillSettings,

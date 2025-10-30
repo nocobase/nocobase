@@ -17,6 +17,7 @@ export const refreshTargetBlocks = defineAction({
   name: 'refreshTargetBlocks',
   title: escapeT('Refresh target blocks'),
   scene: [ActionScene.DYNAMIC_EVENT_FLOW],
+  sort: 300,
   uiSchema: {
     targets: {
       type: 'array',

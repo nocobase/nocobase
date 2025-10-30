@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT, FlowModelContext, FlowModel, useFlowSettingsContext } from '@nocobase/flow-engine';
+import {
+  defineAction,
+  escapeT,
+  FlowModelContext,
+  FlowModel,
+  useFlowSettingsContext,
+  ActionScene,
+} from '@nocobase/flow-engine';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Input, Select, Cascader } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';

@@ -30,7 +30,8 @@ import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { FieldAssignValueInput } from '../components/FieldAssignValueInput';
-import _, { values } from 'lodash';
+import _ from 'lodash';
+import { SubFormFieldModel } from '../models';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -383,7 +384,7 @@ export const subFormLinkageSetFieldProps = defineAction({
         let model = forkModel;
 
         // 适配对一子表单的场景
-        if (formItemModel.forks.size === 0) {
+        if (!forkModel) {
           model = formItemModel;
         }
 
@@ -689,7 +690,7 @@ export const subFormLinkageAssignField = defineAction({
       let model = forkModel;
 
       // 适配对一子表单的场景
-      if (formItemModel.forks.size === 0) {
+      if (!forkModel) {
         model = formItemModel;
       }
 
@@ -1376,7 +1377,7 @@ export const subFormFieldLinkageRules = defineAction({
     const grid = ctx.model?.subModels?.grid;
 
     // 适配对一子表单的场景
-    if (grid.forks.size === 0) {
+    if (ctx.model instanceof SubFormFieldModel) {
       if (grid.hidden) {
         return;
       }

@@ -6,6 +6,7 @@ import { pluginSitemap } from '@rspress/plugin-sitemap';
 import * as path from 'node:path';
 
 const base = process.env.DOCS_BASE || '/';
+const checkDeadLinks = process.env.CHECK_DEAD_LINKS !== 'false';
 
 export default defineConfig({
   root: path.join(__dirname, 'docs'),
@@ -34,7 +35,7 @@ export default defineConfig({
   },
   markdown: {
     link: {
-      checkDeadLinks: false,
+      checkDeadLinks,
     },
   },
   plugins: [
@@ -71,7 +72,7 @@ export default defineConfig({
       description: '帮助你快速学习和掌握 NocoBase',
     },
   ],
-  lang: 'cn',
+  lang: 'en',
   themeConfig: {
     socialLinks: [
       {

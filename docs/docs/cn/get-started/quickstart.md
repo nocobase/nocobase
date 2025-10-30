@@ -34,7 +34,7 @@ install_methods:
     upgrade_method: 通过 Git 流程同步更新
 ---
 
-# 快速上手
+# 安装方式和版本对比
 
 你可以通过不同方式安装 NocoBase。
 
