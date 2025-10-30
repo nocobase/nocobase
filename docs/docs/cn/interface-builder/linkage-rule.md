@@ -110,6 +110,6 @@
 
 ## 操作联动规则
 
-操作联动规则目前支持当前记录值、全局变量值控制操作行为，如隐藏/禁用等。
+操作联动规则目前支持当前记录值、当前表单等上下文变量和全局变量控制操作行为，如隐藏/禁用等。
 
-👉 详情查看：[操作/联动规则](/interface-builder/linkage-rule)
+👉 详情查看：[操作/联动规则](/interface-builder/actions/action-settings/linkage-rule)
