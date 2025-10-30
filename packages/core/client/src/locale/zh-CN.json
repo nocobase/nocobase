@@ -1507,5 +1507,8 @@
   "Add event flow": "添加事件流",
   "Configuration saved": "配置已保存",
   "Form values change": "表单值变更",
-  "Click": "点击"
+  "Click": "点击",
+  "Move up": "上移",
+  "Move down": "下移",
+  "Copy": "复制"
 }

@@ -1,16 +1,14 @@
-# Extend SMS Service Providers
+# Extend SMS Provider
 
-This article describes how to extend the SMS service providers in the [Verification: SMS](../sms) feature through a plugin.
+This article primarily explains how to extend the SMS provider functionality in the [Auth: SMS](../sms) feature via a plugin.
 
-## Client-side
+## Client
 
 ### Register Configuration Form
 
-When users configure the SMS authenticator, after selecting the SMS service provider type, a configuration form associated with that provider type will appear. This form needs to be registered by the developer on the client-side.
-
+When configuring the SMS verifier, after selecting an SMS provider type, a configuration form associated with that provider type will appear. This configuration form needs to be registered by the developer on the client side.
 
 ![](https://static-docs.nocobase.com/202503011221912.png)
-
 
 ```ts
 import { Plugin, SchemaComponent } from '@nocobase/client';
@@ -52,11 +50,11 @@ class PluginCustomSMSProviderClient extends Plugin {
 }
 ```
 
-## Server-side
+## Server
 
-### Implement the Sending Interface
+### Implement Sending Interface
 
-The verification plugin has already encapsulated the process of creating a one-time password (OTP). Developers only need to implement the sending logic that interacts with the SMS service provider.
+The verification plugin has already encapsulated the process of creating one-time dynamic passwords (OTPs), so developers only need to implement the logic for sending messages to interact with the SMS provider.
 
 ```ts
 class CustomSMSProvider extends SMSProvider {
@@ -73,9 +71,9 @@ class CustomSMSProvider extends SMSProvider {
 }
 ```
 
-### Register the Verification Type
+### Register Verification Type
 
-After the sending interface is implemented, it needs to be registered.
+Once the sending interface is implemented, it needs to be registered.
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -85,7 +83,7 @@ import { tval } from '@nocobase/utils';
 class PluginCustomSMSProviderServer extends Plugin {
   async load() {
     const plugin = this.app.pm.get('verification') as PluginVerificationServer;
-    // name needs to match the client-side
+    // The name must correspond to the one used on the client
     plugin.smsOTPProviderManager.registerProvider('custom-sms-provider-name', {
       title: tval('Custom SMS provider', { ns: namespace }),
       provider: CustomSMSProvider,

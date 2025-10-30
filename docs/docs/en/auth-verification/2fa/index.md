@@ -1,48 +1,39 @@
-# Two-Factor Authentication (2FA)
+# Auth: Two-Factor Authentication (2FA)
 
 <PluginInfo name="two-factor-authentication" licenseBundled="enterprise"></PluginInfo>
 
 ## Introduction
 
-Two-Factor Authentication (2FA) is an extra authentication measure used when logging into an application. When 2FA is enabled for an application, users need to provide another form of authentication when logging in with a password, such as an OTP code, TOTP, etc.
+Two-Factor Authentication (2FA) is an additional security measure used during application login. When 2FA is enabled, users are required to provide an extra form of authentication—such as an OTP code, TOTP, etc.—in addition to their password.
 
 :::info{title=Note}
-Currently, the 2FA process only applies to password logins. If the application has other authentication methods enabled, such as SSO, please use the multi-factor authentication (MFA) protection provided by the corresponding IdP.
+Currently, the 2FA process applies only to password-based logins. If your application has enabled SSO or other authentication methods, please use the multi-factor authentication (MFA) provided by the respective IdP.
 :::
 
 ## Enable Plugin
 
-
 ![](https://static-docs.nocobase.com/202502282108145.png)
-
 
 ## Administrator Configuration
 
-After enabling the plugin, a 2FA configuration page will be added to the Authenticator Management page.
+After enabling the plugin, a 2FA configuration sub-page will be added to the Authenticator management page.
 
-The administrator needs to check the "Enable Two-Factor Authentication (2FA) for all users" option and select an available type of authenticator to bind. If no authenticators are available, you need to go to the Verification Management page to create a new one first. Reference: [Verification](../verification/index.md)
-
+Administrators must check the "Enforce two-Factor authentication (2FA) for all users" option and select an available type of authenticator to bind. If no authenticators are available, please first create a new authenticator on the verification management page. See [Verification](../verification/index.md) for details.
 
 ![](https://static-docs.nocobase.com/202502282109802.png)
 
-
 ## User Login
 
-After 2FA is enabled for the application, when a user logs in with a password, they will enter the 2FA verification process.
+Once 2FA is enabled, when users log in using a password, they will enter the 2FA verification process.
 
-If the user has not yet bound any of the specified authenticators, they will be required to bind one. After successful binding, they can enter the application.
-
+If a user has not yet bound any of the specified authenticators, they will be prompted to bind one. Once the binding is successful, they can access the application.
 
 ![](https://static-docs.nocobase.com/202502282110829.png)
 
-
-If the user has already bound any of the specified authenticators, they will be required to authenticate through the bound authenticator. After successful verification, they can enter the application.
-
+If a user has already bound one of the specified authenticators, they will be required to verify their identity using the bound authenticator. Upon successful verification, they can access the application.
 
 ![](https://static-docs.nocobase.com/202502282110148.png)
 
+After logging in, users can bind additional authenticators on their personal verification page.
 
-After a successful login, users can bind other authenticators on the Verification Management page in their Personal Center.
-
-
-![](https://static-docs.nocobase.com/202502282110024.png)
+!

@@ -44,7 +44,7 @@ The sample data is not the final execution result; it is only used to assist in 
 
 ### Path Includes Array Index
 
-If not checked, the array content will be mapped according to the default variable handling method of NocoBase workflows (see: [Variables](/handbook/workflow/advanced/variables#数据结构)). For example, input the following sample:
+If not checked, the array content will be mapped according to the default variable handling method of NocoBase workflows. For example, input the following sample:
 
 ```json
 {

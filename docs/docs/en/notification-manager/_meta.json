@@ -6,13 +6,19 @@
   },
   {
     "type": "custom-link",
-    "label": "Notification: In-app message",
-    "link": "/notification-manager/notification-in-app-message"
-  },
-  {
-    "type": "custom-link",
-    "label": "Notification: Email",
-    "link": "/notification-manager/notification-email"
+    "label": "Notification channel",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "In-app message",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "Email",
+        "link": "/notification-manager/notification-email"
+      }
+    ]
   },
   {
     "type": "custom-link",
@@ -20,12 +26,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Notification Extension",
+        "label": "Extend channel type",
         "link": "/notification-manager/development/extension"
       },
       {
         "type": "custom-link",
-        "label": "Notification API",
+        "label": "API",
         "link": "/notification-manager/development/api"
       }
     ]

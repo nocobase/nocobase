@@ -1,52 +1,43 @@
-# Configure Permissions
+# Configuring Permissions
 
-## General Permission Configuration
-
+## General Permission Settings
 
 ![](https://static-docs.nocobase.com/119a9650259f9be71210121d0d3a435d.png)
 
+##### Configuration Permissions
 
-### Configure Permissions
+1. **Allows to configure interface**: This permission governs whether a user can configure the interface. Activating it adds a UI configuration button. The "admin" role has this permission enabled by default.
+2. **Allows to install, activate, disable plugins**: This permission dictates whether a user can enable or disable plugins. When active, the user gains access to the plugin manager interface. The "admin" role has this permission enabled by default.
+3. **Allows to configure plugins**: This permission lets the user configure plugin parameters or manage plugin backend data. The "admin" role has this permission enabled by default.
+4. **Allows to clear cache, reboot application**: This permission is tied to system maintenance tasks like clearing the cache and restarting the application. Once activated, related operation buttons appear in the personal center. This permission is disabled by default.
+5. **New menu items are allowed to be accessed by default**: Newly created menus are accessible by default, and this setting is enabled by default.
 
-1. Allow configuring interface: This permission controls whether users are allowed to configure the interface. After activating this permission, the UI configuration button appears. The "admin" role has this permission enabled by default.
-2. Allow installing, activating, and disabling plugins: This permission controls whether users are allowed to enable or disable plugins. After activating this permission, users can access the plugin manager interface. The "admin" role has this permission enabled by default.
-3. Allow configuring plugins: This permission controls whether users are allowed to configure plugin parameters or manage plugin backend data. The "admin" role has this permission enabled by default.
-4. Allow clearing cache and restarting the application: This permission controls the user's system operation and maintenance permissions: clearing the cache and restarting the application. After activation, the relevant action buttons will appear in the personal center. It is disabled by default.
-5. New menu items are allowed access by default: By default, newly created menus are allowed access. Enabled by default.
+##### Global Action Permissions
 
-### Global Action Permissions
+Action permissions apply universally to all data tables and are categorized by operation type. These permissions can be configured based on data scope: all data or the user's own data. The former allows operations on the entire data table, while the latter restricts operations to data relevant to the user.
 
-Global action permissions take effect globally (for all collections) and are divided by action type. They support configuration based on the data scope dimension: all data and own data. The former allows performing actions on the entire collection, while the latter restricts actions to only one's own data.
-
-## Collection Action Permissions
-
+## Data Table Operation Permissions
 
 ![](https://static-docs.nocobase.com/6a6e0281391cecdea5b5218e6173c5d7.png)
 
-
-
 ![](https://static-docs.nocobase.com/9814140434ff9e1bf028a6c282a5a165.png)
 
+Collection operation permissions allow fine-tuning of Action permissions by configuring access to resources within each data table. These permissions include:
 
-Collection action permissions further refine global action permissions, allowing for individual permission configuration for resource access to each collection. These permissions are divided into two aspects:
+1. **Action permissions**: These include adding, viewing, editing, deleting, exporting, and importing actions. Permissions are set based on data scope:
+   - **All records**: Grants the user the ability to perform actions on all records within the data table.
+   - **Own records**: Restricts the user to perform actions only on records they have created.
 
-1. Action Permissions: Action permissions include add, view, edit, delete, export, and import actions. These permissions are configured based on the data scope dimension:
-   - All data: Allows users to perform actions on all records in the collection.
-   - Own data: Restricts users to performing actions only on the data records they have created.
+2. **Field Permissions**: Field permissions enable you to set specific permissions for each field during different operations. For instance, certain fields can be configured to be view-only, without editing privileges.
 
-2. Field Permissions: Field permissions allow for configuring permissions for each field in different actions. For example, some fields can be configured to be view-only and not editable.
+## Menu Permissions
 
-## Menu Access Permissions
-
-Menu access permissions control access rights based on the menu dimension.
-
+Menu permissions control access based on menu items.
 
 ![](https://static-docs.nocobase.com/28eddfc843d27641162d9129e3b6e33f.png)
 
-
 ## Plugin Configuration Permissions
 
-Plugin configuration permissions are used to control the permission to configure specific plugin parameters. When the plugin configuration permission is checked, the corresponding plugin management interface will appear in the admin center.
-
+Plugin configuration permissions control the ability to configure specific plugin parameters. When enabled, the corresponding plugin management interface appears in the management center.
 
 ![](https://static-docs.nocobase.com/5a742ae20a9de93dc2722468b9fd7475.png)

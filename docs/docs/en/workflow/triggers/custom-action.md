@@ -163,7 +163,7 @@ Arrange the logic in the process according to business requirements. For example
 
 
 :::info{title=Tip}
-The "[Response Message](../../nodes/response-message.md)" node can be used in synchronous custom action events to return a prompt message to the client. It cannot be used in asynchronous mode.
+The "[Response Message](../nodes/response-message.md)" node can be used in synchronous custom action events to return a prompt message to the client. It cannot be used in asynchronous mode.
 :::
 
 After configuring and enabling the workflow, return to the table interface and add a "Trigger Workflow" button in the action column of the table:

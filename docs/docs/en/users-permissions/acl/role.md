@@ -1,39 +1,27 @@
-# Roles
+# Management Center
 
-## Admin Center
+## Role Management
 
-### Role Management
-
+The application comes with two predefined roles: "Admin" and "Member," each with distinct default permission settings tailored to their functionalities.
 
 ![](https://static-docs.nocobase.com/da7083c67d794e23dc6eb0f85b1de86c.png)
 
+## Adding, Deleting, and Modifying Roles
 
-The initially installed application has two built-in roles, "Admin" and "Member", which have different default permission settings.
-
-### Adding, Deleting, and Editing Roles
-
-The role identifier is a unique system identifier; the default role can be customized, but the system's default roles cannot be deleted.
-
+The role identifier, a unique system identifier, allows customization of default roles, but the system's predefined roles cannot be deleted.
 
 ![](https://static-docs.nocobase.com/35f323b346db4f9f12f9bee4dea63302.png)
 
+## Setting the Default Role
 
-### Setting the Default Role
-
-The default role is the one assigned to a new user when no role is specified.
-
+The default role is the one automatically assigned to new users if no specific role is provided during their creation.
 
 ![](https://static-docs.nocobase.com/f41bba7ff55ca28715c486dc45bc1708.png)
 
+# Personal Center
 
-## My Profile
+## Role Switching
 
-### Switching Roles
-
-When a user is assigned multiple roles, they can switch between them in My Profile.
-
+Users can be assigned multiple roles and switch between them in the personal center. The default role when logging in is determined by the most recently switched role (this value updates with each switch) or, if not applicable, the first role (system default role).
 
 ![](https://static-docs.nocobase.com/e331d11ec1ca3b8b7e0472105b167819.png)
-
-
-The user's default role priority upon entering the system is: The last role switched to (the default role value is updated each time the role is switched) > The first role (system default role).

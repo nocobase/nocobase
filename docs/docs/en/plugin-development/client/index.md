@@ -200,29 +200,25 @@ The client manages all data sources through the `DataSourceManager`, supporting 
 
 - **[FlowEngine](./flow-engine.md)** - Detailed usage and best practices for the front-end flow engine
 - **[Data Source System](./data-sources.md)** - A complete guide to data source management
-- **[Resource System](./resources.md)** - Detailed explanation of resource types and operations
+- **Resource System** - Detailed explanation of resource types and operations
 - **[Router System](./router.md)** - Route management and page navigation
 
 ### UI Components
 
-- **[Block System](./blocks/)** - Development guide for the block model
-  - [Block Definition](./blocks/definition.md) - How to define and configure blocks
-  - [Block Scenes](./blocks/scenes.md) - Using blocks in different scenarios
-  - [Block Categories](./blocks/categories.md) - Block categorization and management
-- **[Action System](./actions.md)** - Development guide for the action model
-- **[Field System](./fields.md)** - Development guide for the field model
+- **Block System** - Development guide for the block model
+- **Action System** - Development guide for the action model
+- **Field System** - Development guide for the field model
 
 ### Advanced Features
 
-- **[Context System](./context.md)** - Detailed explanation of the context system
-- **[Hooks System](./hooks.md)** - Using React Hooks
+- **Context System** - Detailed explanation of the context system
+- **Hooks System** - Using React Hooks
 - **[Styles and Theme](./styles-and-theme.md)** - Style management and theme customization
 - **[Testing Guide](./tests.md)** - Testing strategies and tool usage
 
 ### Complete Tutorials
 
-- **[Tutorial Outline](./tutorial-outline.md)** - A complete outline for client development tutorials
-- **[Learning Path](../learning-path.md)** - Recommended learning path
+- **Tutorial Outline** - A complete outline for client development tutorials
 
 ## 🚀 Recommended Learning Path
 
@@ -245,4 +241,4 @@ It is recommended to follow this path to progressively delve into client-side de
 - If you are writing a plugin for the first time, you can start with the example in "[Write Your First Plugin](../write-your-first-plugin)"
 - To understand server-side plugin capabilities, please read "[Server Overview](../server/index)"
 - For an in-depth look at the API, you can refer to the type definitions and example code in the `@nocobase/client` package
-- Check the "[Tutorial Outline](./tutorial-outline.md)" for a complete client development guide
+- Check the "Tutorial Outline" for a complete client development guide

@@ -140,15 +140,15 @@ export class PayInstruction extends Instruction {
 
 最终都在主流程的节点上得出整个流程的下一步状态，如果主流程的节点中返回的是失败，则整个流程以失败的状态结束。
 
-如果任意节点执行后返回了“停等”状态，则整个执行流程会被暂时中断挂起，等待一个由对应节点定义的事件触发以恢复流程的执行。例如 [人工节点](../manual/nodes/manual)，执行到该节点后会以“停等”状态从该节点暂停，等待人工介入该流程，决策是否通过。如果人工输入的状态是通过，则继续后续的流程节点，反之则按前面的失败逻辑处理。
+如果任意节点执行后返回了"停等"状态，则整个执行流程会被暂时中断挂起，等待一个由对应节点定义的事件触发以恢复流程的执行。例如人工节点，执行到该节点后会以"停等"状态从该节点暂停，等待人工介入该流程，决策是否通过。如果人工输入的状态是通过，则继续后续的流程节点，反之则按前面的失败逻辑处理。
 
-更多的的指令返回状态可以参考 [工作流 API 参考](./api#JOB_STATUS) 部分。
+更多的的指令返回状态可以参考工作流 API 参考部分。
 
 ### 提前退出
 
 在某些特殊的流程中，可能需要在某个节点中直接结束流程，可以返回 `null`，表示退出当前流程，并且不会继续执行后续节点。
 
-这种情况在一些流程控制类型的节点中比较常见，例如 [并行分支节点](../manual/nodes/parallel) 中（[代码参考](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L87)），当前节点的流程退出，但是会对子分支分别开启新的流程并继续执行。
+这种情况在一些流程控制类型的节点中比较常见，例如并行分支节点中（[代码参考](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L87)），当前节点的流程退出，但是会对子分支分别开启新的流程并继续执行。
 
 :::warn{title=提示}
 扩展节点进行分支流程的调度有一定复杂性，需要谨慎处理，并进行充分的测试。
@@ -156,7 +156,7 @@ export class PayInstruction extends Instruction {
 
 ### 了解更多
 
-定义节点类型的各个参数定义见 [工作流 API 参考](.api#instruction) 部分。
+定义节点类型的各个参数定义见工作流 API 参考部分。
 
 ## 客户端
 
@@ -292,7 +292,7 @@ useVariables(node, options): VariableOption {
 ![映射后的结果变量](https://static-docs.nocobase.com/20240514230103.png)
 
 :::info{title="提示"}
-当结果中某个结构是深层对象数组时，同样可以使用 `children` 来描述路径，但不能包含数组索引，因为在 NocoBase 工作流的变量处理中，针对对象数组的变量路径描述，在使用时会自动扁平化为深层值的数组，而不能通过索引来访问第几个值。可以参考《[工作流：进阶使用](../manual/advanced#使用变量)》部分的内容。
+当结果中某个结构是深层对象数组时，同样可以使用 `children` 来描述路径，但不能包含数组索引，因为在 NocoBase 工作流的变量处理中，针对对象数组的变量路径描述，在使用时会自动扁平化为深层值的数组，而不能通过索引来访问第几个值。
 :::
 
 ### 节点是否可用
@@ -329,4 +329,4 @@ isAvailable({ engine, workflow, upstream, branchIndex }) {
 
 ### 了解更多
 
-定义节点类型的各个参数定义见 [工作流 API 参考](./api#instruction-1) 部分。
+定义节点类型的各个参数定义见工作流 API 参考部分。

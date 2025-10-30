@@ -6,7 +6,7 @@ The NocoBase FlowEngine's context system is divided into three layers, each corr
 - **FlowModelContext (Model Context)**: Used for sharing context within a model tree. Sub-models automatically delegate to the parent model's context, supporting same-name overrides. Suitable for model-level logic and data isolation.
 - **FlowRuntimeContext (Flow Runtime Context)**: Created each time a flow is executed, persisting throughout the entire flow execution cycle. Suitable for data passing, variable storage, and recording runtime status within the flow. Supports two modes: `mode: 'runtime' | 'settings'`, corresponding to runtime mode and settings mode respectively.
 
-All `FlowEngineContext` (Global Context), `FlowModelContext` (Model Context), `FlowRuntimeContext` (Flow Runtime Context), etc., are subclasses or instances of `FlowContext`. For more details on `FlowContext`, see [FlowContext](/flow-context/flow-context)
+All `FlowEngineContext` (Global Context), `FlowModelContext` (Model Context), `FlowRuntimeContext` (Flow Runtime Context), etc., are subclasses or instances of `FlowContext`.
 
 ---
 

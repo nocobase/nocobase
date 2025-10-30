@@ -1,17 +1,17 @@
-# Sync User Data via HTTP API
+# Synchronizing User Data via HTTP API
 
-## Get API Key
+## Obtain an API Key
 
-Refer to [API Keys](/auth-verification/api-keys), you need to ensure that the role set for the API key has user data synchronization permissions.
+Refer to [API Keys](/auth-verification/api-keys). Ensure that the role associated with the API key has the necessary permissions to sync user data.
 
-## API Description
+## API Overview
 
 ### Example
 
 ```bash
 curl 'https://localhost:13000/api/userData:push' \
   -H 'Authorization: Bearer <token>' \
-  --data-raw '{"dataType":"user","records":[]}' # See below for detailed request body description
+  --data-raw '{"dataType":"user","records":[]}' # See details of the request body below
 ```
 
 ### Endpoint
@@ -24,51 +24,52 @@ POST /api/userData:push
 
 #### UserData
 
-| Parameter Name | Type                               | Description                                                                                                      |
-| -------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `dataType`     | `'user' \| 'department'`           | Required, the type of data to push. Fill in `user` to push user data.                                            |
-| `matchKey`     | `'username' \| 'email' \| 'phone'` | Optional. Used to match existing users in the system based on the provided field and its corresponding value in the pushed data. |
-| `records`      | `UserRecord[]`                     | Required, an array of user data records.                                                                         |
+| Parameter  | Type                               | Description                                                                 |
+| ---------- | ---------------------------------- | --------------------------------------------------------------------------- |
+| `dataType` | `'user' \| 'department'`           | Required. Type of data being pushed. Use `user` for pushing user data.      |
+| `matchKey` | `'username' \| 'email' \| 'phone'` | Optional. Used to match existing system users based on the specified field. |
+| `records`  | `UserRecord[]`                     | Required. Array of user data records.                                       |
 
 #### UserRecord
 
-| Parameter Name | Type       | Description                                                                                                                              |
-| -------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `uid`          | `string`   | Required, the unique identifier of the source user data, used to associate the source raw data with the system user. It is immutable for the same user. |
-| `nickname`     | `string`   | Optional, user nickname.                                                                                                                 |
-| `username`     | `string`   | Optional, username.                                                                                                                      |
-| `email`        | `string`   | Optional, user email.                                                                                                                    |
-| `phone`        | `string`   | Optional, phone number.                                                                                                                  |
-| `departments`  | `string[]` | Optional, an array of department uids to which the user belongs.                                                                         |
-| `isDeleted`    | `boolean`  | Optional, whether the record is deleted.                                                                                                 |
-| `<field>`      | `any`      | Optional, data for other custom fields in the users collection.                                                                          |
+| Parameter     | Type       | Description                                                                 |
+| ------------- | ---------- | --------------------------------------------------------------------------- |
+| `uid`         | `string`   | Required. Unique identifier for the source user data. Immutable for a user. |
+| `nickname`    | `string`   | Optional. User's nickname.                                                  |
+| `username`    | `string`   | Optional. Username.                                                         |
+| `email`       | `string`   | Optional. User's email address.                                             |
+| `phone`       | `string`   | Optional. User's phone number.                                              |
+| `departments` | `string[]` | Optional. Array of department UIDs the user belongs to.                     |
+| `isDeleted`   | `boolean`  | Optional. Indicates whether the record is deleted.                          |
+| `<field>`     | `any`      | Optional. Custom fields in the user table.                                  |
 
 ### Department Data Format
 
 :::info
-Pushing department data requires installing and enabling the [Departments](../../departments) plugin.
+Pushing department data requires the [Departments](../../departments) plugin to be installed and enabled.
 :::
 
 #### DepartmentData
 
-| Parameter Name | Type                     | Description                                                                 |
-| -------------- | ------------------------ | --------------------------------------------------------------------------- |
-| `dataType`     | `'user' \| 'department'` | Required, the type of data to push. Fill in `department` to push department data. |
-| `records`      | `DepartmentRecord[]`     | Required, an array of department data records.                              |
+| Parameter  | Type                     | Description                                                                |
+| ---------- | ------------------------ | -------------------------------------------------------------------------- |
+| `dataType` | `'user' \| 'department'` | Required. Type of data being pushed. Use `department` for department data. |
+| `records`  | `DepartmentRecord[]`     | Required. Array of department data records.                                |
 
 #### DepartmentRecord
 
-| Parameter Name | Type      | Description                                                                                                                                      |
-| -------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `uid`          | `string`  | Required, the unique identifier of the source department data, used to associate the source raw data with the system department. It is immutable for the same department. |
-| `title`        | `string`  | Required, department title.                                                                                                                      |
-| `parentUid`    | `string`  | Optional, parent department uid.                                                                                                                 |
-| `isDeleted`    | `boolean` | Optional, whether the record is deleted.                                                                                                         |
-| `<field>`      | `any`     | Optional, data for other custom fields in the departments collection.                                                                            |
+| Parameter   | Type      | Description                                                            |
+| ----------- | --------- | ---------------------------------------------------------------------- |
+| `uid`       | `string`  | Required. Unique identifier for the source department data. Immutable. |
+| `title`     | `string`  | Required. Department title.                                            |
+| `parentUid` | `string`  | Optional. UID of the parent department.                                |
+| `isDeleted` | `boolean` | Optional. Indicates whether the record is deleted.                     |
+| `<field>`   | `any`     | Optional. Custom fields in the department table.                       |
 
 :::info
 
-1. Pushing data multiple times is idempotent.
-2. If a parent department has not been created when pushing a department, the association cannot be established. You can push the data again.
-3. If a department has not been created when pushing a user, the user cannot be associated with the department. You can push the user data again after pushing the department data.
-   :::
+1. Data pushing is idempotent, ensuring consistent results with multiple pushes.
+2. If a parent department is not yet created when pushing department data, it cannot be associated. Re-push the data after creating the parent department.
+3. Similarly, if a department is not yet created when pushing user data, it cannot associate users with their departments. Push the department data first, then re-push the user data.
+
+:::

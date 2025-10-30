@@ -156,6 +156,7 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
           onClick={() => {
             if (link) {
               navigate(transformHref(link, lang));
+              window.scrollTo(0, 0);
             }
           }}
         >

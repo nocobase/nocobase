@@ -1,7 +1,7 @@
 [
   {
     "type": "custom-link",
-    "label": "User Authentication",
+    "label": "Authentication",
     "items": [
       {
         "type": "custom-link",
@@ -10,12 +10,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Authenticator Management",
+        "label": "Authenticators",
         "link": "/auth-verification/auth/authenticators"
       },
       {
         "type": "custom-link",
-        "label": "Authentication Types",
+        "label": "Authentication type",
         "items": [
           {
             "type": "custom-link",
@@ -43,12 +43,12 @@
                 "items": [
                   {
                     "type": "custom-link",
-                    "label": "Google Login",
+                    "label": "Google",
                     "link": "/auth-verification/auth-oidc/examples/google"
                   },
                   {
                     "type": "custom-link",
-                    "label": "Microsoft Login",
+                    "label": "Microsoft Entra ID",
                     "link": "/auth-verification/auth-oidc/examples/microsoft"
                   }
                 ]
@@ -71,7 +71,7 @@
                 "items": [
                   {
                     "type": "custom-link",
-                    "label": "Google Login",
+                    "label": "Google Workspace",
                     "link": "/auth-verification/auth-saml/examples/google"
                   }
                 ]
@@ -90,34 +90,24 @@
           },
           {
             "type": "custom-link",
-            "label": "WeCom",
-            "link": "/auth-verification/auth-wecom/"
-          },
-          {
-            "type": "custom-link",
-            "label": "DingTalk",
-            "link": "/auth-verification/auth-dingtalk/"
-          },
-          {
-            "type": "custom-link",
-            "label": "API Keys",
+            "label": "API keys",
             "link": "/auth-verification/api-keys/"
           }
         ]
       },
       {
         "type": "dir",
-        "label": "Development Guide",
+        "label": "Development",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "Extending Authentication Types",
+            "label": "Extentd authentication type",
             "link": "/auth-verification/auth/dev"
           },
           {
             "type": "custom-link",
-            "label": "API Reference",
+            "label": "API",
             "link": "/auth-verification/auth/dev/api"
           }
         ]
@@ -135,7 +125,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Verification Types",
+        "label": "Verification type",
         "items": [
           {
             "type": "custom-link",
@@ -144,7 +134,7 @@
           },
           {
             "type": "custom-link",
-            "label": "TOTP Authenticator",
+            "label": "TOTP authenticator",
             "link": "/auth-verification/verification-totp/"
           }
         ]
@@ -152,26 +142,26 @@
       {
         "type": "dir",
         "collapsed": true,
-        "label": "Development Guide",
+        "label": "Development",
         "items": [
           {
             "type": "custom-link",
-            "label": "Extending Verification Types",
+            "label": "Extend verification type",
             "link": "/auth-verification/verification/dev/type"
           },
           {
             "type": "custom-link",
-            "label": "Extending Verification Scenarios",
+            "label": "Extend verification scene",
             "link": "/auth-verification/verification/dev/scene"
           },
           {
             "type": "custom-link",
-            "label": "Extending SMS Providers",
+            "label": "Extend SMS provider",
             "link": "/auth-verification/verification/dev/sms-type"
           },
           {
             "type": "custom-link",
-            "label": "API Reference",
+            "label": "API",
             "link": "/auth-verification/verification/dev/api"
           }
         ]
@@ -180,7 +170,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Two-Factor Authentication (2FA)",
+    "label": "Two factor authentication (2FA)",
     "link": "/auth-verification/2fa/"
   }
 ]

@@ -151,7 +151,7 @@ After the approval is completed, the relevant status and data will be recorded i
 
 ### Node Approval Status
 
-Represents the processing status of the current approval node. The result is an enumerated value. See: [Processing Status of Approval Nodes](./advanced.md#审批节点的处理状态).
+Represents the processing status of the current approval node. The result is an enumerated value representing the processing status of approval nodes.
 
 ### Data After Approval
 
@@ -167,7 +167,7 @@ The approval processing record is an array that contains the processing records 
 | --- | --- | --- |
 | id | number | Unique identifier for the processing record |
 | userId | number | User ID who processed this record |
-| status | number | Processing status, see: [Status of Approver Processing Records](./advanced.md#审批人处理记录的状态) |
+| status | number | Processing status of the approver record |
 | comment | string | Comment at the time of processing |
 | updatedAt | string | Update time of the processing record |
 
