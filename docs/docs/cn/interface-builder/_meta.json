@@ -215,6 +215,11 @@
               },
               {
                 "type": "custom-link",
+                "label": "JS Item",
+                "link": "/interface-builder/fields/specific/js-item"
+              },
+              {
+                "type": "custom-link",
                 "label": "JS Column",
                 "link": "/interface-builder/fields/specific/js-column"
               }
