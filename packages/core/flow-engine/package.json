@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/flow-engine",
-  "version": "2.0.0-alpha.25",
+  "version": "2.0.0-alpha.26",
   "private": false,
   "description": "A standalone flow engine for NocoBase, managing workflows, models, and actions.",
   "main": "lib/index.js",
@@ -8,8 +8,8 @@
   "dependencies": {
     "@formily/antd-v5": "1.x",
     "@formily/reactive": "2.x",
-    "@nocobase/sdk": "2.0.0-alpha.25",
-    "@nocobase/shared": "2.0.0-alpha.25",
+    "@nocobase/sdk": "2.0.0-alpha.26",
+    "@nocobase/shared": "2.0.0-alpha.26",
     "ahooks": "^3.7.2",
     "dompurify": "^3.0.2",
     "lodash": "^4.x",
@@ -18,8 +18,8 @@
     "slate": "^0.103.0",
     "slate-history": "^0.109.0",
     "slate-react": "^0.110.3",
-    "uid": "^2.0.2",
-    "sucrase": "^3.35.0"
+    "sucrase": "^3.35.0",
+    "uid": "^2.0.2"
   },
   "peerDependencies": {
     "react": ">=18"
