@@ -20,9 +20,9 @@ import { Button, Space, Spin, Upload } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import { saveAs } from 'file-saver';
 import React from 'react';
-import { DownloadTips, ImportWarning } from './ImportActionInitializer';
-import { NAMESPACE } from './constants';
-import { useFields } from './useFields';
+import { DownloadTips, ImportWarning } from '../ImportActionInitializer';
+import { NAMESPACE } from '../constants';
+import { getOptionFields } from './getOptionFields';
 
 const EXCLUDE_INTERFACES = ['id', 'createdAt', 'createdBy', 'updatedAt', 'updatedBy'];
 const INCLUDE_FILE_TYPE = [
@@ -313,6 +313,7 @@ ImportActionModel.registerFlow({
       title: escapeT('Importable fields'),
       uiSchema: (ctx) => {
         const currentBlock = ctx.model.context.blockModel;
+        const data = getOptionFields(currentBlock.collection.getFields(), ctx.t);
         return {
           explain: {
             type: 'string',
@@ -349,13 +350,7 @@ ImportActionModel.registerFlow({
                       'x-decorator': 'FormItem',
                       'x-component': Cascader,
                       required: true,
-                      'x-use-component-props': () => {
-                        // eslint-disable-next-line react-hooks/rules-of-hooks
-                        const data = useFields(currentBlock.collection.name);
-                        return {
-                          options: data,
-                        };
-                      },
+
                       'x-component-props': {
                         fieldNames: {
                           label: 'title',
@@ -363,6 +358,7 @@ ImportActionModel.registerFlow({
                           children: 'children',
                         },
                         changeOnSelect: false,
+                        options: data,
                       },
                     },
                     title: {
