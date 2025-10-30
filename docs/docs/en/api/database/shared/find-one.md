@@ -1,9 +1,9 @@
-**类型**
+**Type**
 
 ```typescript
 type FindOneOptions = Omit<FindOptions, 'limit'>;
 ```
 
-**参数**
+**Parameters**
 
-大部分参数与 `find()` 相同，不同之处在于 `findOne()` 只返回单条数据，所以不需要 `limit` 参数，且查询时始终为 `1`。
+Most parameters are the same as `find()`. The difference is that `findOne()` only returns a single record, so the `limit` parameter is not needed, and is always `1` during the query.

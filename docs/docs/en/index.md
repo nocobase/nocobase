@@ -1,15 +1,13 @@
 ---
 pageType: home
 
-pageName: home
-
 hero:
   name: NocoBase Documentation
   text: Help you learn and master NocoBase quickly
   actions:
     - theme: brand
-      text: Get Started
-      link: /get-started/how-nocobase-works
+      text: Install NocoBase
+      link: /get-started/get-nocobase
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
@@ -34,14 +32,92 @@ features:
   - title: Advanced
     details: Deep dive into NocoBase core concepts and master configuration and development capabilities.
     items:
-      - title: More...
-        details: Explore more feature modules.
-        link: /guide
+      - title: Data Sources
+        details: Connect and manage internal or external data sources, build your system's data model.
+        icon: <i class="fas fa-database"></i>
+        link: /data-sources
+      - title: Configure Interface
+        details: Master page, block, and action configuration methods to customize interactive interfaces and display logic.
+        icon: <i class="fas fa-cubes"></i>
+        link: /interface-builder
+      - title: Template Printing
+        details: Generate printable documents based on custom templates, such as orders, contracts, or invoices.
+        icon: <i class="fas fa-print"></i>
+        link: /template-print/
+      - title: Users & Permissions
+        details: Define roles, permissions and access control to ensure system security and compliance.
+        icon: <i class="fas fa-users"></i>
+        link: /users-permissions/users/
+      - title: Authentication & Verification
+        details: Support multiple login methods and verification mechanisms to ensure identity security and consistency.
+        icon: <i class="fas fa-shield-alt"></i>
+        link: /features/authentication
+      - title: Workflow
+        details: Design automated workflows to achieve logic orchestration and business automation.
+        icon: <i class="fas fa-project-diagram"></i>
+        link: /workflow
+      - title: Multi-app & Multi-space
+        details: Create multiple physically isolated application instances or logically isolated business spaces to support multi-tenant scenarios.
+        icon: <i class="fas fa-th"></i>
+        link: /features/multi-app
+      - title: Integration
+        details: Efficiently integrate NocoBase with external systems through API, Webhook, iFrame and other methods.
+        icon: <i class="fas fa-plug"></i>
+        link: /integration/
+      - title: System Configuration
+        details: Define brand and style, manage plugins and languages, achieve global control.
+        icon: <i class="fas fa-cog"></i>
+        link: /system-settings/
+      - title: Operations
+        details: Provide practical guidelines for backup, monitoring, logging and release.
+        icon: <i class="fas fa-tools"></i>
+        link: /features/operations
+      - title: Security
+        details: Cover data, interface and access level protection strategies to ensure platform operation security.
+        icon: <i class="fas fa-lock"></i>
+        link: /features/security
+
+  - title: More Plugins
+    details: Use more plugins to extend more capabilities.
+    items:
+      - title: Notifications
+        details: Configure email, SMS, in-app messages and other notification channels to achieve automatic message push.
+        icon: <i class="fas fa-bell"></i>
+        link: /features/notification-manager
+      - title: Data Visualization
+        details: Display data insights through charts and dashboards, support multi-dimensional analysis and display.
+        icon: <i class="fas fa-chart-bar"></i>
+        link: /features/data-visualization
+      - title: File Manager
+        details: Upload and manage files, implement unified file storage and access control.
+        icon: <i class="fas fa-folder"></i>
+        link: /features/file-manager
+      - title: Email Management
+        details: Integrate Google and Microsoft mailboxes in the system to achieve deep integration of emails and business data.
+        icon: <i class="fas fa-envelope"></i>
+        link: /features/email-manager
+      - title: Template Printing
+        details: Generate printable documents based on custom templates, such as orders, contracts or invoices.
+        icon: <i class="fas fa-print"></i>
+        link: /features/template-print
+      - title: Other Plugins
+        details: Explore more extension plugins to meet specific business or industry needs.
+        icon: <i class="fas fa-ellipsis-h"></i>
+        link: /features/
 
   - title: Plugin Development
     details: Rich extension and integration capabilities for NocoBase developers.
     items:
-      - title: More...
-        details: Explore more tutorials on plugin development.
-        link: /development
+      - title: Plugin Development Guide
+        details: Learn how to create, publish and maintain custom plugins.
+        icon: <i class="fas fa-code"></i>
+        link: /plugin-development
+      - title: FlowEngine
+        details: NocoBase 2.0 frontend no-code and low-code development engine.
+        icon: <i class="fas fa-cogs"></i>
+        link: /flow-engine
+      - title: Data Source Extension
+        details: Explore how to extend and optimize database interaction layer.
+        icon: <i class="fas fa-server"></i>
+        link: /database
 ---

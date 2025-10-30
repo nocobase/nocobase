@@ -6,7 +6,7 @@ packageName: '@nocobase/plugin-users'
 
 ## User Management
 
-This plugin provides a user management interface in the configuration center. After application initialization, an undeletable super admin account will be added. The super admin has Root permissions and can access all resources.
+This plugin provides a user management interface in the configuration center. After initializing the application, an undeletable super admin account is automatically created. The super admin has root permissions and can access all resources.
 
 ![](https://static-docs.nocobase.com/44bf40f56b45d4dd96c424fb08082cf6.png)
 
@@ -35,7 +35,7 @@ In addition, you can also add various different blocks of the Users collection t
 ## Settings
 
 :::info{title=Tip}
-The version of NocoBase needs to be v1.3.34-beta or above.
+Requires NocoBase v1.3.34-beta or later.
 :::
 
 Configure whether to allow editing user profiles and changing user passwords (applies to all users).

@@ -1,4 +1,4 @@
-**类型**
+**Type**
 
 ```typescript
 type WhiteList = string[];
@@ -14,9 +14,9 @@ interface CreateOptions extends SequelizeCreateOptions {
 }
 ```
 
-**详细信息**
+**Details**
 
-- `values`：要创建的记录的数据对象。
-- `whitelist`：指定要创建的记录的数据对象中，哪些字段**可以被写入**。若不传入此参数，则默认允许所有字段写入。
-- `blacklist`：指定要创建的记录的数据对象中，哪些字段**不允许被写入**。若不传入此参数，则默认允许所有字段写入。
-- `transaction`: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
+- `values`: The data object for the record to be created.
+- `whitelist`: Specifies which fields in the data object of the record to be created **can be written to**. If this parameter is not passed, all fields are allowed to be written to by default.
+- `blacklist`: Specifies which fields in the data object of the record to be created **are not allowed to be written to**. If this parameter is not passed, all fields are allowed to be written to by default.
+- `transaction`: The transaction object. If no transaction parameter is passed, this method will automatically create an internal transaction.

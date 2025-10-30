@@ -3,57 +3,57 @@ pageType: home
 pageName: development
 
 features:
-  - title: 核心架构
-    details: 掌握 NocoBase 的底层扩展机制与运行原理，包括插件系统、FlowEngine 与数据库内核模块，构建坚实的开发基础。
+  - title: Core Architecture
+    details: Master NocoBase's underlying extension mechanism and operating principles, including the plugin system, FlowEngine, and database core module, to build a solid development foundation.
     items:
       - title: Plugin Development
-        details: 学习如何创建、发布与维护自定义插件。
+        details: Learn how to create, publish, and maintain custom plugins.
         link: /plugin-development
         showOnHome: true
-      - title: 前端流引擎（FlowEngine）
-        details: NocoBase 2.0 的前端无代码、低代码开发引擎。
+      - title: Frontend FlowEngine
+        details: The no-code/low-code frontend development engine for NocoBase 2.0.
         link: /flow-engine
         showOnHome: true
-      - title: 数据库（Database）
-        details: NocoBase 内核的数据库模块，为插件提供统一的数据访问、建模与操作 API，是插件间数据交互的核心基础。
+      - title: Database
+        details: The database module of the NocoBase core, providing a unified API for data access, modeling, and operations for plugins. It is the core foundation for data interaction between plugins.
         link: /database
         showOnHome: true
-  - title: 界面与交互
-    details: 学习如何扩展与定制前端界面，构建符合业务需求的组件、字段与操作逻辑，提升系统的可视化与交互体验。
+  - title: Interface & Interaction
+    details: Learn how to extend and customize the frontend interface, build components, fields, and action logic that meet business needs, and enhance the system's visualization and interactive experience.
     items:
-      - title: 区块（Blocks）
-        details: 创建、复用与配置自定义区块组件，构建灵活的界面布局。
+      - title: Blocks
+        details: Create, reuse, and configure custom block components to build flexible interface layouts.
         link: /ui-development/blocks
         showOnHome: true
-      - title: 字段（Fields）
-        details: 定义新的字段组件类型，丰富数据输入与展示方式。
+      - title: Fields
+        details: Define new field component types to enrich data input and display methods.
         link: /ui-development/fields
         showOnHome: true
-      - title: 操作（Actions）
-        details: 扩展或定制操作行为，实现多样化的业务流程与用户交互。
+      - title: Actions
+        details: Extend or customize action behaviors to implement diverse business processes and user interactions.
         link: /ui--development/actions
         showOnHome: true
-  - title: 插件生态
-    details: 通过插件扩展现有插件的能力，构建层次化、模块化的插件生态体系，提升系统的可扩展性与协作能力。
+  - title: Plugin Ecosystem
+    details: Extend the capabilities of existing plugins through other plugins, building a hierarchical and modular plugin ecosystem to enhance system extensibility and collaboration.
     items:
-      - title: 数据源扩展
-        details: 扩展或集成外部数据源，连接第三方数据库或服务，实现跨系统的数据访问与同步。
+      - title: Data Source Extension
+        details: Extend or integrate external data sources, connect to third-party databases or services, and achieve cross-system data access and synchronization.
         link: /data-source/development
         showOnHome: true
-      - title: 工作流扩展
-        details: 扩展或集成工作流相关功能，实现自动化与流程化的业务场景。
+      - title: Workflow Extension
+        details: Extend or integrate workflow-related features to implement automated and process-oriented business scenarios.
         link: /workflow/development
         showOnHome: true
-      - title: 通知渠道扩展
-        details: 开发新的通知方式或集成外部通信服务，支持多渠道消息分发。
+      - title: Notification Channel Extension
+        details: Develop new notification methods or integrate external communication services to support multi-channel message distribution.
         link: /notification-manager/development
-      - title: 用户认证扩展
-        details: 实现自定义认证逻辑或对接第三方登录系统，增强安全与接入能力。
+      - title: User Authentication Extension
+        details: Implement custom authentication logic or connect with third-party login systems to enhance security and access capabilities.
         link: /auth-manager/development
-      - title: 文件存储扩展
-        details: 集成云存储服务或自定义存储方案，实现文件上传、下载与管理的灵活扩展。
+      - title: File Storage Extension
+        details: Integrate cloud storage services or custom storage solutions to achieve flexible extension of file upload, download, and management.
         link: /file-manager/development
-      - title: 文件预览扩展
-        details: 扩展文件预览能力，支持更多文件格式的在线预览与渲染。
+      - title: File Preview Extension
+        details: Extend file preview capabilities to support online preview and rendering of more file formats.
         link: /file-manager/development
 ---

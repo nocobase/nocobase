@@ -2,5 +2,5 @@
 
 ## createModel()
 
-* **类型**： `string`
-* **默认值**： `docs`
+* **Type**: `string`
+* **Default value**: `docs`

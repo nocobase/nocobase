@@ -1,28 +1,28 @@
 # Collection
 
-## 概览
+## Overview
 
-`Collection` 用于定义系统中的数据模型，如模型名称、字段、索引、关联等信息。
-一般通过 `Database` 实例的 `collection` 方法作为代理入口调用。
+`Collection` is used to define data models in the system, such as model names, fields, indexes, associations, and other information.
+It is generally called through the `collection` method of a `Database` instance as a proxy entry.
 
 ```javascript
 const { Database } = require('@nocobase/database')
 
-// 创建数据库实例
+// Create a database instance
 const db = new Database({...});
 
-// 定义数据模型
+// Define a data model
 db.collection({
   name: 'users',
-  // 定义模型字段
+  // Define model fields
   fields: [
-    // 标量字段
+    // Scalar field
     {
       name: 'name',
       type: 'string',
     },
 
-    // 关联字段
+    // Association field
     {
       name: 'profile',
       type: 'hasOne' // 'hasMany', 'belongsTo', 'belongsToMany'
@@ -31,30 +31,30 @@ db.collection({
 });
 ```
 
-更多字段类型请参考 [Fields](/api/database/field)。
+For more field types, please refer to [Fields](/api/database/field).
 
-## 构造函数
+## Constructor
 
-**签名**
+**Signature**
 
 - `constructor(options: CollectionOptions, context: CollectionContext)`
 
-**参数**
+**Parameters**
 
-| 参数名                | 类型                                                        | 默认值 | 描述                                                                                   |
+| Parameter | Type | Default | Description |
 | --------------------- | ----------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------- |
-| `options.name`        | `string`                                                    | -      | collection 标识                                                                        |
-| `options.tableName?`  | `string`                                                    | -      | 数据库表名，如不传则使用 `options.name` 的值                                           |
-| `options.fields?`     | `FieldOptions[]`                                            | -      | 字段定义，详见 [Field](./field)                                                        |
-| `options.model?`      | `string \| ModelStatic<Model>`                              | -      | Sequelize 的 Model 类型，如果使用的是 `string`，则需要调用之前在 db 上注册过该模型名称 |
-| `options.repository?` | `string \| RepositoryType`                                  | -      | 数据仓库类型，如果使用 `string`，则需要调用之前在 db 上注册过该仓库类型                |
-| `options.sortable?`   | `string \| boolean \| { name?: string; scopeKey?: string }` | -      | 数据可排序字段配置，默认不排序                                                         |
-| `options.autoGenId?`  | `boolean`                                                   | `true` | 是否自动生成唯一主键，默认为 `true`                                                    |
-| `context.database`    | `Database`                                                  | -      | 所在的上下文环境数据库                                                                 |
+| `options.name` | `string` | - | collection identifier |
+| `options.tableName?` | `string` | - | Database table name. If not provided, the value of `options.name` will be used. |
+| `options.fields?` | `FieldOptions[]` | - | Field definitions. See [Field](./field) for details. |
+| `options.model?` | `string \| ModelStatic<Model>` | - | Sequelize Model type. If a `string` is used, the model name must have been previously registered on the db. |
+| `options.repository?` | `string \| RepositoryType` | - | Repository type. If a `string` is used, the repository type must have been previously registered on the db. |
+| `options.sortable?` | `string \| boolean \| { name?: string; scopeKey?: string }` | - | Sortable field configuration. Not sortable by default. |
+| `options.autoGenId?` | `boolean` | `true` | Whether to automatically generate a unique primary key. Defaults to `true`. |
+| `context.database` | `Database` | - | The database in the current context. |
 
-**示例**
+**Example**
 
-创建一张文章表：
+Create a posts collection:
 
 ```ts
 const posts = new Collection(
@@ -72,63 +72,63 @@ const posts = new Collection(
     ],
   },
   {
-    // 已存在的数据库实例
+    // Existing database instance
     database: db,
   },
 );
 ```
 
-## 实例成员
+## Instance Members
 
 ### `options`
 
-数据表配置初始参数。与构造函数的 `options` 参数一致。
+Initial configuration parameters for the collection. Same as the `options` parameter of the constructor.
 
 ### `context`
 
-当前数据表所属的上下文环境，目前主要是数据库实例。
+The context to which the current collection belongs, currently mainly the database instance.
 
 ### `name`
 
-数据表名称。
+Collection name.
 
 ### `db`
 
-所属数据库实例。
+The database instance it belongs to.
 
 ### `filterTargetKey`
 
-作为主键的字段名。
+The field name used as the primary key.
 
 ### `isThrough`
 
-是否为中间表。
+Whether it is a through collection.
 
 ### `model`
 
-匹配 Sequelize 的 Model 类型。
+Matches the Sequelize Model type.
 
 ### `repository`
 
-数据仓库实例。
+Repository instance.
 
-## 字段配置方法
+## Field Configuration Methods
 
 ### `getField()`
 
-获取数据表已定义对应名称的字段对象。
+Gets the field object with the corresponding name defined in the collection.
 
-**签名**
+**Signature**
 
 - `getField(name: string): Field`
 
-**参数**
+**Parameters**
 
-| 参数名 | 类型     | 默认值 | 描述     |
+| Parameter | Type | Default | Description |
 | ------ | -------- | ------ | -------- |
-| `name` | `string` | -      | 字段名称 |
+| `name` | `string` | - | Field name |
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.collection({
@@ -146,20 +146,20 @@ const field = posts.getField('title');
 
 ### `setField()`
 
-对数据表设置字段。
+Sets a field for the collection.
 
-**签名**
+**Signature**
 
 - `setField(name: string, options: FieldOptions): Field`
 
-**参数**
+**Parameters**
 
-| 参数名    | 类型           | 默认值 | 描述                            |
+| Parameter | Type | Default | Description |
 | --------- | -------------- | ------ | ------------------------------- |
-| `name`    | `string`       | -      | 字段名称                        |
-| `options` | `FieldOptions` | -      | 字段配置，详见 [Field](./field) |
+| `name` | `string` | - | Field name |
+| `options` | `FieldOptions` | - | Field configuration. See [Field](./field) for details. |
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.collection({ name: 'posts' });
@@ -169,20 +169,20 @@ posts.setField('title', { type: 'string' });
 
 ### `setFields()`
 
-对数据表批量设置多个字段。
+Sets multiple fields for the collection in batch.
 
-**签名**
+**Signature**
 
 - `setFields(fields: FieldOptions[], resetFields = true): Field[]`
 
-**参数**
+**Parameters**
 
-| 参数名        | 类型             | 默认值 | 描述                            |
+| Parameter | Type | Default | Description |
 | ------------- | ---------------- | ------ | ------------------------------- |
-| `fields`      | `FieldOptions[]` | -      | 字段配置，详见 [Field](./field) |
-| `resetFields` | `boolean`        | `true` | 是否重置已存在的字段            |
+| `fields` | `FieldOptions[]` | - | Field configuration. See [Field](./field) for details. |
+| `resetFields` | `boolean` | `true` | Whether to reset existing fields. |
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.collection({ name: 'posts' });
@@ -195,19 +195,19 @@ posts.setFields([
 
 ### `removeField()`
 
-移除数据表已定义对应名称的字段对象。
+Removes the field object with the corresponding name defined in the collection.
 
-**签名**
+**Signature**
 
 - `removeField(name: string): void | Field`
 
-**参数**
+**Parameters**
 
-| 参数名 | 类型     | 默认值 | 描述     |
+| Parameter | Type | Default | Description |
 | ------ | -------- | ------ | -------- |
-| `name` | `string` | -      | 字段名称 |
+| `name` | `string` | - | Field name |
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.collection({
@@ -225,13 +225,13 @@ posts.removeField('title');
 
 ### `resetFields()`
 
-重置（清空）数据表的字段。
+Resets (clears) the fields of the collection.
 
-**签名**
+**Signature**
 
 - `resetFields(): void`
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.collection({
@@ -249,19 +249,19 @@ posts.resetFields();
 
 ### `hasField()`
 
-判断数据表是否已定义对应名称的字段对象。
+Checks if a field object with the corresponding name is defined in the collection.
 
-**签名**
+**Signature**
 
 - `hasField(name: string): boolean`
 
-**参数**
+**Parameters**
 
-| 参数名 | 类型     | 默认值 | 描述     |
+| Parameter | Type | Default | Description |
 | ------ | -------- | ------ | -------- |
-| `name` | `string` | -      | 字段名称 |
+| `name` | `string` | - | Field name |
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.collection({
@@ -279,19 +279,19 @@ posts.hasField('title'); // true
 
 ### `findField()`
 
-查找数据表中符合条件的字段对象。
+Finds a field object in the collection that meets the criteria.
 
-**签名**
+**Signature**
 
 - `findField(predicate: (field: Field) => boolean): Field | undefined`
 
-**参数**
+**Parameters**
 
-| 参数名      | 类型                        | 默认值 | 描述     |
+| Parameter | Type | Default | Description |
 | ----------- | --------------------------- | ------ | -------- |
-| `predicate` | `(field: Field) => boolean` | -      | 查找条件 |
+| `predicate` | `(field: Field) => boolean` | - | Search criteria |
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.collection({
@@ -309,19 +309,19 @@ posts.findField((field) => field.name === 'title');
 
 ### `forEachField()`
 
-遍历数据表中的字段对象。
+Iterates over the field objects in the collection.
 
-**签名**
+**Signature**
 
 - `forEachField(callback: (field: Field) => void): void`
 
-**参数**
+**Parameters**
 
-| 参数名     | 类型                     | 默认值 | 描述     |
+| Parameter | Type | Default | Description |
 | ---------- | ------------------------ | ------ | -------- |
-| `callback` | `(field: Field) => void` | -      | 回调函数 |
+| `callback` | `(field: Field) => void` | - | Callback function |
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.collection({
@@ -337,24 +337,24 @@ const posts = db.collection({
 posts.forEachField((field) => console.log(field.name));
 ```
 
-## 索引配置方法
+## Index Configuration Methods
 
 ### `addIndex()`
 
-添加数据表索引。
+Adds an index to the collection.
 
-**签名**
+**Signature**
 
 - `addIndex(index: string | string[] | { fields: string[], unique?: boolean,[key: string]: any })`
 
-**参数**
+**Parameters**
 
-| 参数名  | 类型                                                         | 默认值 | 描述                 |
+| Parameter | Type | Default | Description |
 | ------- | ------------------------------------------------------------ | ------ | -------------------- |
-| `index` | `string \| string[]`                                         | -      | 需要配置索引的字段名 |
-| `index` | `{ fields: string[], unique?: boolean, [key: string]: any }` | -      | 完整配置             |
+| `index` | `string \| string[]` | - | Field name(s) to be indexed. |
+| `index` | `{ fields: string[], unique?: boolean, [key: string]: any }` | - | Full configuration. |
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.collection({
@@ -375,19 +375,19 @@ posts.addIndex({
 
 ### `removeIndex()`
 
-移除数据表索引。
+Removes an index from the collection.
 
-**签名**
+**Signature**
 
 - `removeIndex(fields: string[])`
 
-**参数**
+**Parameters**
 
-| 参数名   | 类型       | 默认值 | 描述                     |
+| Parameter | Type | Default | Description |
 | -------- | ---------- | ------ | ------------------------ |
-| `fields` | `string[]` | -      | 需要移除索引的字段名组合 |
+| `fields` | `string[]` | - | Combination of field names for the index to be removed. |
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.collection({
@@ -409,17 +409,17 @@ const posts = db.collection({
 posts.removeIndex(['title']);
 ```
 
-## 表配置方法
+## Collection Configuration Methods
 
 ### `remove()`
 
-删除数据表。
+Deletes the collection.
 
-**签名**
+**Signature**
 
 - `remove(): void`
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.collection({
@@ -435,17 +435,17 @@ const posts = db.collection({
 posts.remove();
 ```
 
-## 数据库操作方法
+## Database Operation Methods
 
 ### `sync()`
 
-同步数据表定义到数据库。除了 Sequelize 中默认的 `Model.sync` 的逻辑，还会一并处理关系字段对应的数据表。
+Syncs the collection definition to the database. In addition to the default logic of `Model.sync` in Sequelize, it also processes collections corresponding to association fields.
 
-**签名**
+**Signature**
 
 - `sync(): Promise<void>`
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.collection({
@@ -463,19 +463,19 @@ await posts.sync();
 
 ### `existsInDb()`
 
-判断数据表是否存在于数据库中。
+Checks if the collection exists in the database.
 
-**签名**
+**Signature**
 
 - `existsInDb(options?: Transactionable): Promise<boolean>`
 
-**参数**
+**Parameters**
 
-| 参数名                 | 类型          | 默认值 | 描述     |
+| Parameter | Type | Default | Description |
 | ---------------------- | ------------- | ------ | -------- |
-| `options?.transaction` | `Transaction` | -      | 事务实例 |
+| `options?.transaction` | `Transaction` | - | Transaction instance |
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.collection({
@@ -495,20 +495,20 @@ console.log(existed); // false
 
 ### `removeFromDb()`
 
-**签名**
+**Signature**
 
 - `removeFromDb(): Promise<void>`
 
-**示例**
+**Example**
 
 ```ts
 const books = db.collection({
   name: 'books',
 });
 
-// 同步书籍表到数据库
+// Sync the books collection to the database
 await db.sync();
 
-// 删除数据库中的书籍表
+// Remove the books collection from the database
 await books.removeFromDb();
 ```

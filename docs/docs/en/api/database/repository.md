@@ -1,8 +1,8 @@
 # Repository
 
-## 概览
+## Overview
 
-在一个给定的 `Collection` 对象上，可以获取到它的 `Repository` 对象来对数据表进行读写操作。
+On a given `Collection` object, you can get its `Repository` object to perform read and write operations on the collection.
 
 ```javascript
 const { UserCollection } = require('./collections');
@@ -19,11 +19,11 @@ user.name = 'new name';
 await user.save();
 ```
 
-### 查询
+### Query
 
-#### 基础查询
+#### Basic Query
 
-在 `Repository` 对象上，调用 `find*` 相关方法，可执行查询操作，查询方法都支持传入 `filter` 参数，用于过滤数据。
+On the `Repository` object, call `find*` related methods to perform query operations. All query methods support passing a `filter` parameter to filter data.
 
 ```javascript
 // SELECT * FROM users WHERE id = 1
@@ -34,9 +34,9 @@ userRepository.find({
 });
 ```
 
-#### 操作符
+#### Operators
 
-`Repository` 中的 `filter` 参数，还提供了多种操作符，执行更加多样的查询操作。
+The `filter` parameter in `Repository` also provides a variety of operators to perform more diverse query operations.
 
 ```javascript
 // SELECT * FROM users WHERE age > 18
@@ -56,39 +56,39 @@ userRepository.find({
 });
 ```
 
-操作符的更多详细信息请参考 [Filter Operators](/api/database/operators)。
+For more details on operators, please refer to [Filter Operators](/api/database/operators).
 
-#### 字段控制
+#### Field Control
 
-在查询操作时，通过 `fields`, `except`, `appends` 参数可以控制输出字段。
+When performing a query operation, you can control the output fields through the `fields`, `except`, and `appends` parameters.
 
-- `fields`: 指定输出字段
-- `except`: 排除输出字段
-- `appends`: 追加输出关联字段
+- `fields`: Specify output fields
+- `except`: Exclude output fields
+- `appends`: Append associated fields to the output
 
 ```javascript
-// 获取的结果只包含 id 和 name 字段
+// The result will only include id and name fields
 userRepository.find({
   fields: ['id', 'name'],
 });
 
-// 获取的结果不包含 password 字段
+// The result will not include the password field
 userRepository.find({
   except: ['password'],
 });
 
-// 获取的结果会包含关联对象 posts 的数据
+// The result will include data from the associated object posts
 userRepository.find({
   appends: ['posts'],
 });
 ```
 
-#### 关联字段查询
+#### Querying Association Fields
 
-`filter` 参数支持按关联字段进行过滤，例如：
+The `filter` parameter supports filtering by association fields, for example:
 
 ```javascript
-// 查询 user 对象，其所关联的 posts 存在 title 为 'post title' 的对象
+// Query for user objects whose associated posts have an object with the title 'post title'
 userRepository.find({
   filter: {
     'posts.title': 'post title',
@@ -96,10 +96,10 @@ userRepository.find({
 });
 ```
 
-关联字段也可进行嵌套
+Association fields can also be nested.
 
 ```javascript
-// 查询 user 对象，查询结果满足其 posts 的 comments 包含 keywords
+// Query for user objects where the comments of their posts contain keywords
 await userRepository.find({
   filter: {
     'posts.comments.content': {
@@ -109,9 +109,9 @@ await userRepository.find({
 });
 ```
 
-#### 排序
+#### Sorting
 
-通过 `sort` 参数，可以对查询结果进行排序。
+You can sort the query results using the `sort` parameter.
 
 ```javascript
 // SELECT * FROM users ORDER BY age
@@ -130,7 +130,7 @@ await userRepository.find({
 });
 ```
 
-也可按照关联对象的字段进行排序
+You can also sort by the fields of associated objects.
 
 ```javascript
 await userRepository.find({
@@ -138,11 +138,11 @@ await userRepository.find({
 });
 ```
 
-### 创建
+### Create
 
-#### 基础创建
+#### Basic Create
 
-通过 `Repository` 创建新的数据对象。
+Create new data objects through the `Repository`.
 
 ```javascript
 await userRepository.create({
@@ -151,7 +151,7 @@ await userRepository.create({
 });
 // INSERT INTO users (name, age) VALUES ('张三', 18)
 
-// 支持批量创建
+// Supports bulk creation
 await userRepository.create([
   {
     name: '张三',
@@ -164,9 +164,9 @@ await userRepository.create([
 ]);
 ```
 
-#### 创建关联
+#### Creating Associations
 
-创建时可以同时创建关联对象，和查询类似，也支持关联对象的嵌套使用，例如：
+When creating, you can also create associated objects simultaneously. Similar to querying, nested use of associated objects is also supported, for example:
 
 ```javascript
 await userRepository.create({
@@ -187,10 +187,10 @@ await userRepository.create({
     },
   ],
 });
-// 创建用户的同时，创建 post 与用户关联，创建 tags 与 post 相关联。
+// When creating a user, a post is created and associated with the user, and tags are created and associated with the post.
 ```
 
-若关联对象已在数据库中，可传入其ID，创建时会建立与关联对象的关联关系。
+If the associated object already exists in the database, you can pass its ID to establish an association with it during creation.
 
 ```javascript
 const tag1 = await tagRepository.findOne({
@@ -208,7 +208,7 @@ await userRepository.create({
       content: 'post content',
       tags: [
         {
-          id: tag1.id, // 建立与已存在关联对象的关联关系
+          id: tag1.id, // Establish an association with an existing associated object
         },
         {
           name: 'tag2',
@@ -219,11 +219,11 @@ await userRepository.create({
 });
 ```
 
-### 更新
+### Update
 
-#### 基础更新
+#### Basic Update
 
-获取到数据对象后，可直接在数据对象(`Model`)上修改属性，然后调用 `save` 方法保存修改。
+After getting a data object, you can directly modify its properties on the data object (`Model`) and then call the `save` method to save the changes.
 
 ```javascript
 const user = await userRepository.findOne({
@@ -236,12 +236,12 @@ user.age = 20;
 await user.save();
 ```
 
-数据对象 `Model` 继承自 Sequelize Model，对 `Model` 的操作可参考 [Sequelize Model](https://sequelize.org/master/manual/model-basics.html)。
+The data object `Model` inherits from the Sequelize Model. For operations on the `Model`, please refer to [Sequelize Model](https://sequelize.org/master/manual/model-basics.html).
 
-也可通过 `Repository` 更新数据：
+You can also update data through the `Repository`:
 
 ```javascript
-// 修改满足筛选条件的数据记录
+// Update data records that meet the filter criteria
 await userRepository.update({
   filter: {
     name: '张三',
@@ -252,7 +252,7 @@ await userRepository.update({
 });
 ```
 
-更新时，可以通过 `whitelist` 、`blacklist` 参数控制更新字段，例如：
+When updating, you can control which fields are updated using the `whitelist` and `blacklist` parameters, for example:
 
 ```javascript
 await userRepository.update({
@@ -263,13 +263,13 @@ await userRepository.update({
     age: 20,
     name: '李四',
   },
-  whitelist: ['age'], // 仅更新 age 字段
+  whitelist: ['age'], // Only update the age field
 });
 ```
 
-#### 更新关联字段
+#### Updating Association Fields
 
-在更新时，可以设置关联对象，例如：
+When updating, you can set associated objects, for example:
 
 ```javascript
 const tag1 = tagRepository.findOne({
@@ -286,10 +286,10 @@ await postRepository.update({
     title: 'new post title',
     tags: [
       {
-        id: tag1.id, // 与 tag1 建立关联
+        id: tag1.id, // Establish an association with tag1
       },
       {
-        name: 'tag2', // 创建新的 tag 并建立关联
+        name: 'tag2', // Create a new tag and establish an association
       },
     ],
   },
@@ -300,14 +300,14 @@ await postRepository.update({
     id: 1,
   },
   values: {
-    tags: null, // 解除 post 与 tags 的关联
+    tags: null, // Disassociate the post from the tags
   },
 });
 ```
 
-### 删除
+### Delete
 
-可调用 `Repository` 中的 `destroy()`方法进行删除操作。删除时需指定筛选条件：
+You can call the `destroy()` method in the `Repository` to perform a delete operation. You need to specify filter criteria when deleting:
 
 ```javascript
 await userRepository.destroy({
@@ -317,15 +317,15 @@ await userRepository.destroy({
 });
 ```
 
-## 构造函数
+## Constructor
 
-通常不会直接由开发者调用，主要通过 `db.registerRepositories()` 注册类型以后，在 `db.colletion()` 的参数中指定对应已注册的仓库类型，并完成实例化。
+Usually not called directly by developers. It is mainly instantiated after registering the type through `db.registerRepositories()` and specifying the corresponding registered repository type in the parameters of `db.collection()`.
 
-**签名**
+**Signature**
 
 - `constructor(collection: Collection)`
 
-**示例**
+**Example**
 
 ```ts
 import { Repository } from '@nocobase/database';
@@ -352,31 +352,31 @@ const books = db.getRepository('books') as MyRepository;
 await books.myQuery('SELECT * FROM books;');
 ```
 
-## 实例成员
+## Instance Members
 
 ### `database`
 
-上下文所在的数据库管理实例。
+The database management instance of the context.
 
 ### `collection`
 
-对应的数据表管理实例。
+The corresponding collection management instance.
 
 ### `model`
 
-对应的数据模型类。
+The corresponding model class.
 
-## 实例方法
+## Instance Methods
 
 ### `find()`
 
-从数据库查询数据集，可指定筛选条件、排序等。
+Queries a dataset from the database, allowing specification of filter conditions, sorting, etc.
 
-**签名**
+**Signature**
 
 - `async find(options?: FindOptions): Promise<Model[]>`
 
-**类型**
+**Type**
 
 ```typescript
 type Filter = FilterWithOperator | FilterWithValue | FilterAnd | FilterOr;
@@ -405,15 +405,14 @@ interface CommonFindOptions extends Transactionable {
 type FindOptions = SequelizeFindOptions & CommonFindOptions & FilterByTk;
 ```
 
-**详细信息**
+**Details**
 
 #### `filter: Filter`
 
-查询条件，用于过滤数据结果。传入的查询参数中，`key` 为查询的字段名，`value` 可传要查询的值，
-也可配合使用操作符进行其他条件的数据筛选。
+Query condition used to filter data results. In the passed query parameters, the `key` is the field name to query, and the `value` can be the value to query or used with operators for other conditional data filtering.
 
 ```typescript
-// 查询 name 为 foo，并且 age 大于 18 的记录
+// Query for records where name is 'foo' and age is greater than 18
 repository.find({
   filter: {
     name: 'foo',
@@ -424,15 +423,14 @@ repository.find({
 });
 ```
 
-更多操作符请参考 [查询操作符](./operators.md)。
+For more operators, please refer to [Query Operators](./operators.md).
 
 #### `filterByTk: TargetKey`
 
-通过 `TargetKey` 查询数据，为 `filter` 参数的便捷方法。`TargetKey` 具体是哪一个字段，
-可在 `Collection` 中进行[配置](./collection.md#filtertargetkey)，默认为 `primaryKey`。
+Queries data by `TargetKey`, which is a convenient method for the `filter` parameter. The specific field for `TargetKey` can be [configured](./collection.md#filtertargetkey) in the `Collection`, defaulting to `primaryKey`.
 
 ```typescript
-// 默认情况下，查找 id 为 1 的记录
+// By default, finds the record with id = 1
 repository.find({
   filterByTk: 1,
 });
@@ -440,30 +438,29 @@ repository.find({
 
 #### `fields: string[]`
 
-查询列，用于控制数据字段结果。传入此参数之后，只会返回指定的字段。
+Query columns, used to control the data field results. After passing this parameter, only the specified fields will be returned.
 
 #### `except: string[]`
 
-排除列，用于控制数据字段结果。传入此参数之后，传入的字段将不会输出。
+Excluded columns, used to control the data field results. After passing this parameter, the passed fields will not be output.
 
 #### `appends: string[]`
 
-追加列，用于加载关联数据。传入此参数之后，指定的关联字段将一并输出。
+Appended columns, used to load associated data. After passing this parameter, the specified association fields will also be output.
 
 #### `sort: string[] | string`
 
-指定查询结果排序方式，传入参数为字段名称，默认按照升序 `asc` 排序，若需按降序 `desc` 排序，
-可在字段名称前加上 `-` 符号，如：`['-id', 'name']`，表示按 `id desc, name asc` 排序。
+Specifies the sorting method for the query results. The parameter is the field name, which defaults to ascending `asc` order. For descending `desc` order, add a `-` symbol before the field name, e.g., `['-id', 'name']`, which means sort by `id desc, name asc`.
 
 #### `limit: number`
 
-限制结果数量，同 `SQL` 中的 `limit`
+Limits the number of results, same as `limit` in `SQL`.
 
 #### `offset: number`
 
-查询偏移量，同 `SQL` 中的 `offset`
+Query offset, same as `offset` in `SQL`.
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.getRepository('posts');
@@ -481,15 +478,15 @@ const results = await posts.find({
 
 ### `findOne()`
 
-从数据库查询特定条件的单条数据。相当于 Sequelize 中的 `Model.findOne()`。
+Queries a single piece of data from the database that meets specific criteria. Equivalent to `Model.findOne()` in Sequelize.
 
-**签名**
+**Signature**
 
 - `async findOne(options?: FindOneOptions): Promise<Model | null>`
 
 <embed src="./shared/find-one.md"></embed>
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.getRepository('posts');
@@ -501,13 +498,13 @@ const result = await posts.findOne({
 
 ### `count()`
 
-从数据库查询特定条件的数据总数。相当于 Sequelize 中的 `Model.count()`。
+Queries the total number of data entries that meet specific criteria from the database. Equivalent to `Model.count()` in Sequelize.
 
-**签名**
+**Signature**
 
 - `count(options?: CountOptions): Promise<number>`
 
-**类型**
+**Type**
 
 ```typescript
 interface CountOptions
@@ -517,7 +514,7 @@ interface CountOptions
 }
 ```
 
-**示例**
+**Example**
 
 ```ts
 const books = db.getRepository('books');
@@ -531,13 +528,13 @@ const count = await books.count({
 
 ### `findAndCount()`
 
-从数据库查询特定条件的数据集和结果数。相当于 Sequelize 中的 `Model.findAndCountAll()`。
+Queries a dataset and the total number of results that meet specific criteria from the database. Equivalent to `Model.findAndCountAll()` in Sequelize.
 
-**签名**
+**Signature**
 
 - `async findAndCount(options?: FindAndCountOptions): Promise<[Model[], number]>`
 
-**类型**
+**Type**
 
 ```typescript
 type FindAndCountOptions = Omit<
@@ -547,21 +544,21 @@ type FindAndCountOptions = Omit<
   CommonFindOptions;
 ```
 
-**详细信息**
+**Details**
 
-查询参数与 `find()` 相同。返回值为一个数组，第一个元素为查询结果，第二个元素为结果总数。
+The query parameters are the same as `find()`. The return value is an array where the first element is the query result and the second element is the total count.
 
 ### `create()`
 
-向数据表插入一条新创建的数据。相当于 Sequelize 中的 `Model.create()`。当要创建的数据对象携带关系字段的信息时，会一并创建或更新相应的关系数据记录。
+Inserts a new record into the collection. Equivalent to `Model.create()` in Sequelize. When the data object to be created carries information about relationship fields, the corresponding relationship data records will be created or updated as well.
 
-**签名**
+**Signature**
 
 - `async create<M extends Model>(options: CreateOptions): Promise<M>`
 
 <embed src="./shared/create-options.md"></embed>
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.getRepository('posts');
@@ -570,9 +567,9 @@ const result = await posts.create({
   values: {
     title: 'NocoBase 1.0 发布日志',
     tags: [
-      // 有关系表主键值时为更新该条数据
+      // When the primary key of the association table exists, it updates the data
       { id: 1 },
-      // 没有主键值时为创建新数据
+      // When there is no primary key value, it creates new data
       { name: 'NocoBase' },
     ],
   },
@@ -581,13 +578,13 @@ const result = await posts.create({
 
 ### `createMany()`
 
-向数据表插入多条新创建的数据。相当于多次调用 `create()` 方法。
+Inserts multiple new records into the collection. Equivalent to calling the `create()` method multiple times.
 
-**签名**
+**Signature**
 
 - `createMany(options: CreateManyOptions): Promise<Model[]>`
 
-**类型**
+**Type**
 
 ```typescript
 interface CreateManyOptions extends BulkCreateOptions {
@@ -595,12 +592,12 @@ interface CreateManyOptions extends BulkCreateOptions {
 }
 ```
 
-**详细信息**
+**Details**
 
-- `records`：要创建的记录的数据对象数组。
-- `transaction`: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
+- `records`: An array of data objects for the records to be created.
+- `transaction`: Transaction object. If no transaction parameter is passed, the method will automatically create an internal transaction.
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.getRepository('posts');
@@ -610,9 +607,9 @@ const results = await posts.createMany({
     {
       title: 'NocoBase 1.0 发布日志',
       tags: [
-        // 有关系表主键值时为更新该条数据
+        // When the primary key of the association table exists, it updates the data
         { id: 1 },
-        // 没有主键值时为创建新数据
+        // When there is no primary key value, it creates new data
         { name: 'NocoBase' },
       ],
     },
@@ -626,15 +623,15 @@ const results = await posts.createMany({
 
 ### `update()`
 
-更新数据表中的数据。相当于 Sequelize 中的 `Model.update()`。当要更新的数据对象携带关系字段的信息时，会一并创建或更新相应的关系数据记录。
+Updates data in the collection. Equivalent to `Model.update()` in Sequelize. When the data object to be updated carries information about relationship fields, the corresponding relationship data records will be created or updated as well.
 
-**签名**
+**Signature**
 
 - `async update<M extends Model>(options: UpdateOptions): Promise<M>`
 
 <embed src="./shared/update-options.md"></embed>
 
-**示例**
+**Example**
 
 ```ts
 const posts = db.getRepository('posts');
@@ -644,9 +641,9 @@ const result = await posts.update({
   values: {
     title: 'NocoBase 1.0 发布日志',
     tags: [
-      // 有关系表主键值时为更新该条数据
+      // When the primary key of the association table exists, it updates the data
       { id: 1 },
-      // 没有主键值时为创建新数据
+      // When there is no primary key value, it creates new data
       { name: 'NocoBase' },
     ],
   },
@@ -655,13 +652,13 @@ const result = await posts.update({
 
 ### `destroy()`
 
-删除数据表中的数据。相当于 Sequelize 中的 `Model.destroy()`。
+Deletes data from the collection. Equivalent to `Model.destroy()` in Sequelize.
 
-**签名**
+**Signature**
 
 - `async destory(options?: TargetKey | TargetKey[] | DestoryOptions): Promise<number>`
 
-**类型**
+**Type**
 
 ```typescript
 interface DestroyOptions extends SequelizeDestroyOptions {
@@ -672,9 +669,9 @@ interface DestroyOptions extends SequelizeDestroyOptions {
 }
 ```
 
-**详细信息**
+**Details**
 
-- `filter`：指定要删除的记录的过滤条件。Filter 详细用法可参考 [`find()`](#find) 方法。
-- `filterByTk`：按 TargetKey 指定要删除的记录的过滤条件。
-- `truncate`: 是否清空表数据，在没有传入 `filter` 或 `filterByTk` 参数时有效。
-- `transaction`: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
+- `filter`: Specifies the filter conditions for the records to be deleted. For detailed usage of Filter, refer to the [`find()`](#find) method.
+- `filterByTk`: Specifies the filter conditions for the records to be deleted by TargetKey.
+- `truncate`: Whether to truncate the collection data, effective when no `filter` or `filterByTk` parameter is passed.
+- `transaction`: Transaction object. If no transaction parameter is passed, the method will automatically create an internal transaction.

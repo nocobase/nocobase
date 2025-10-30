@@ -2,11 +2,11 @@
 
 NocoBase 日志基于 <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a> 封装。默认情况下，NocoBase 将日志分为接口请求日志、系统运行日志和 SQL 执行日志，其中接口请求日志和 SQL 执行日志由应用内部打印，插件开发者通常只需要打印插件相关的系统运行日志。
 
-本文档主要介绍在开发插件的时候，如何创建和打印日志。日志的更多介绍可以参考：[日志插件](../../handbook/logger/index.md)。
+本文档主要介绍在开发插件的时候，如何创建和打印日志。
 
 ## 默认打印方法
 
-NocoBase 提供了系统运行日志的打印方法，日志按照规定字段打印，同时输出到指定文件。 参考：[日志插件 - 系统日志](../../handbook/logger/index.md#系统日志)。
+NocoBase 提供了系统运行日志的打印方法，日志按照规定字段打印，同时输出到指定文件。
 
 ```ts
 // 默认打印方法
@@ -79,7 +79,7 @@ const logger = createLogger({
 
 ### `app.createLogger`
 
-在多应用的场景下，有时候我们希望自定义的输出目录和文件，可以输出到当前应用名称的目录下。参考：[日志插件 - 日志目录](../../handbook/logger/index.md#日志目录)。
+在多应用的场景下，有时候我们希望自定义的输出目录和文件，可以输出到当前应用名称的目录下。
 
 ```ts
 app.createLogger({

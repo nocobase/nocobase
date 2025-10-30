@@ -1,8 +1,8 @@
 # HasOneRepository
 
-## 概览
+## Overview
 
-`HasOneRepository` 为 `HasOne` 类型的关联 Repository。
+`HasOneRepository` is the repository for `HasOne` type associations.
 
 ```typescript
 const User = db.collection({
@@ -22,26 +22,26 @@ const user = await User.repository.create({
   values: { name: 'u1' },
 });
 
-// 获取到关联 Repository
+// Get the association repository
 const userProfileRepository = User.repository
   .relation('profile')
   .of(user.get('id'));
 
-// 也可直接初始化
+// Can also be initialized directly
 new HasOneRepository(User, 'profile', user.get('id'));
 ```
 
-## 类方法
+## Class Methods
 
 ### `find()`
 
-查找关联对象
+Finds the associated object
 
-**签名**
+**Signature**
 
 - `async find(options?: SingleRelationFindOption): Promise<Model<any> | null>`
 
-**类型**
+**Type**
 
 ```typescript
 interface SingleRelationFindOption extends Transactionable {
@@ -52,28 +52,28 @@ interface SingleRelationFindOption extends Transactionable {
 }
 ```
 
-**详细信息**
+**Details**
 
-查询参数与 [`Repository.find()`](../repository.md#find) 一致。
+The query parameters are the same as [`Repository.find()`](../repository.md#find).
 
-**示例**
+**Example**
 
 ```typescript
 const profile = await UserProfileRepository.find();
-// 关联对象不存在时，返回 null
+// Returns null if the associated object does not exist
 ```
 
 ### `create()`
 
-创建关联对象
+Creates an associated object
 
-**签名**
+**Signature**
 
 - `async create(options?: CreateOptions): Promise<Model>`
 
 <embed src="../shared/create-options.md"></embed>
 
-**示例**
+**Example**
 
 ```typescript
 const profile = await UserProfileRepository.create({
@@ -94,15 +94,15 @@ console.log(profile.toJSON());
 
 ### `update()`
 
-更新关联对象
+Updates the associated object
 
-**签名**
+**Signature**
 
 - `async update(options: UpdateOptions): Promise<Model>`
 
 <embed src="../shared/update-options.md"></embed>
 
-**示例**
+**Example**
 
 ```typescript
 const profile = await UserProfileRepository.update({
@@ -114,17 +114,17 @@ profile.get('avatar'); // 'avatar2'
 
 ### `remove()`
 
-移除关联对象，仅解除关联关系，不删除关联对象
+Removes the associated object. This only unlinks the association, it does not delete the associated object.
 
-**签名**
+**Signature**
 
 - `async remove(options?: Transactionable): Promise<void>`
 
-**详细信息**
+**Details**
 
-- `transaction`: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
+- `transaction`: Transaction object. If no transaction parameter is passed, the method will automatically create an internal transaction.
 
-**示例**
+**Example**
 
 ```typescript
 await UserProfileRepository.remove();
@@ -135,17 +135,17 @@ await UserProfileRepository.remove();
 
 ### `destroy()`
 
-删除关联对象
+Deletes the associated object
 
-**签名**
+**Signature**
 
 - `async destroy(options?: Transactionable): Promise<Boolean>`
 
-**详细信息**
+**Details**
 
-- `transaction`: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
+- `transaction`: Transaction object. If no transaction parameter is passed, the method will automatically create an internal transaction.
 
-**示例**
+**Example**
 
 ```typescript
 await UserProfileRepository.destroy();
@@ -155,13 +155,13 @@ await UserProfileRepository.destroy();
 
 ### `set()`
 
-设置关联对象
+Sets the associated object
 
-**签名**
+**Signature**
 
 - `async set(options: TargetKey | SetOption): Promise<void>`
 
-**类型**
+**Type**
 
 ```typescript
 interface SetOption extends Transactionable {
@@ -169,12 +169,12 @@ interface SetOption extends Transactionable {
 }
 ```
 
-**详细信息**
+**Details**
 
-- tk: 设置关联对象的 targetKey
-- transaction: 事务对象。如果没有传入事务参数，该方法会自动创建一个内部事务。
+- tk: The targetKey of the associated object to be set.
+- transaction: Transaction object. If no transaction parameter is passed, the method will automatically create an internal transaction.
 
-**示例**
+**Example**
 
 ```typescript
 const newProfile = await Profile.repository.create({

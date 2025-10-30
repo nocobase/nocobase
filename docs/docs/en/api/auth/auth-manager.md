@@ -1,51 +1,51 @@
 # AuthManager
 
-## 概览
+## Overview
 
-`AuthManager` 是 NocoBase 中的用户认证管理模块，用于注册不同的用户认证类型。
+`AuthManager` is the user authentication management module in NocoBase, used to register different user authentication types.
 
-### 基本使用
+### Basic Usage
 
 ```ts
 const authManager = new AuthManager({
-  // 用于从请求头中获取当前认证器标识
+  // Used to get the current authenticator identifier from the request header
   authKey: 'X-Authenticator',
 });
 
-// 设置 AuthManager 的存储和获取认证器的方法
+// Set the methods for AuthManager to store and retrieve authenticators
 authManager.setStorer({
   get: async (name: string) => {
     return db.getRepository('authenticators').find({ filter: { name } });
   },
 });
 
-// 注册一种认证类型
+// Register an authentication type
 authManager.registerTypes('basic', {
   auth: BasicAuth,
   title: 'Password',
 });
 
-// 使用鉴权中间件
+// Use the authentication middleware
 app.resourceManager.use(authManager.middleware());
 ```
 
-### 概念解释
+### Concepts
 
-- **认证类型 (`AuthType`)**: 不同的用户认证方式，比如：密码、短信、OIDC, SAML 等。
-- **认证器 (`Authenticator`)**: 认证方式实体，实际存储到数据表中，对应某种认证类型 (`AuthType`) 的配置记录。一种认证方式可以有多个认证器，对应多个配置，提供不同的用户认证方法。
-- **认证器标识 (`Authenticator name`)**: 认证器的唯一标识，用来确定当前请求使用的认证方式。
+- **`AuthType`**: Different user authentication methods, such as password, SMS, OIDC, SAML, etc.
+- **`Authenticator`**: The entity for an authentication method, actually stored in a collection, corresponding to a configuration record of a certain `AuthType`. One authentication method can have multiple authenticators, corresponding to multiple configurations, providing different user authentication methods.
+- **`Authenticator name`**: The unique identifier for an authenticator, used to determine the authentication method for the current request.
 
-## 类方法
+## Class Methods
 
 ### `constructor()`
 
-构造函数，创建一个 `AuthManager` 实例。
+Constructor, creates an `AuthManager` instance.
 
-#### 签名
+#### Signature
 
 - `constructor(options: AuthManagerOptions)`
 
-#### 类型
+#### Types
 
 ```ts
 export interface JwtOptions {
@@ -60,32 +60,32 @@ export type AuthManagerOptions = {
 };
 ```
 
-#### 详细信息
+#### Details
 
 ##### AuthManagerOptions
 
-| 属性      | 类型                        | 描述                                  | 默认值            |
+| Property | Type | Description | Default |
 | --------- | --------------------------- | ------------------------------------- | ----------------- |
-| `authKey` | `string`                    | 可选，请求头中保存当前认证器标识的key | `X-Authenticator` |
-| `default` | `string`                    | 可选, 默认认证器标识                  | `basic`           |
-| `jwt`     | [`JwtOptions`](#jwtoptions) | 可选，如果采用 JWT 做鉴权，可以配置   | -                 |
+| `authKey` | `string` | Optional, the key in the request header that holds the current authenticator identifier. | `X-Authenticator` |
+| `default` | `string` | Optional, the default authenticator identifier. | `basic` |
+| `jwt` | [`JwtOptions`](#jwtoptions) | Optional, can be configured if using JWT for authentication. | - |
 
 ##### JwtOptions
 
-| 属性        | 类型     | 描述               | 默认值            |
+| Property | Type | Description | Default |
 | ----------- | -------- | ------------------ | ----------------- |
-| `secret`    | `string` | token 密钥         | `X-Authenticator` |
-| `expiresIn` | `string` | 可选, token 有效期 | `7d`              |
+| `secret` | `string` | Token secret | `X-Authenticator` |
+| `expiresIn` | `string` | Optional, token expiration time. | `7d` |
 
 ### `setStorer()`
 
-设置认证器数据的存储和获取方法。
+Sets the methods for storing and retrieving authenticator data.
 
-#### 签名
+#### Signature
 
 - `setStorer(storer: Storer)`
 
-#### 类型
+#### Types
 
 ```ts
 export interface Authenticator = {
@@ -99,30 +99,30 @@ export interface Storer {
 }
 ```
 
-#### 详细信息
+#### Details
 
 ##### Authenticator
 
-| 属性       | 类型                  | 描述           |
+| Property | Type | Description |
 | ---------- | --------------------- | -------------- |
-| `authType` | `string`              | 认证类型       |
-| `options`  | `Record<string, any>` | 认证器相关配置 |
+| `authType` | `string` | Authentication type |
+| `options` | `Record<string, any>` | Authenticator-related configuration |
 
 ##### Storer
 
-`Storer` 是认证器存储的接口，包含一个方法。
+`Storer` is the interface for authenticator storage, containing one method.
 
-- `get(name: string): Promise<Authenticator>` - 通过认证器标识获取认证器。在 NocoBase 中实际返回的类型是 [AuthModel](/auth-verification/auth/dev/api#authmodel).
+- `get(name: string): Promise<Authenticator>` - Gets an authenticator by its identifier. In NocoBase, the actual returned type is [AuthModel](/auth-verification/auth/dev/api#authmodel).
 
 ### `registerTypes()`
 
-注册认证类型。
+Registers an authentication type.
 
-#### 签名
+#### Signature
 
 - `registerTypes(authType: string, authConfig: AuthConfig)`
 
-#### 类型
+#### Types
 
 ```ts
 export type AuthExtend<T extends Auth> = new (config: Config) => T;
@@ -133,43 +133,43 @@ type AuthConfig = {
 };
 ```
 
-#### 详细信息
+#### Details
 
-| 属性    | 类型               | 描述                              |
+| Property | Type | Description |
 | ------- | ------------------ | --------------------------------- |
-| `auth`  | `AuthExtend<Auth>` | 认证类型实现, 参考 [Auth](./auth) |
-| `title` | `string`           | 可选。该认证类型在前端展示的标题  |
+| `auth` | `AuthExtend<Auth>` | The authentication type implementation, see [Auth](./auth) |
+| `title` | `string` | Optional. The title of this authentication type displayed on the frontend. |
 
 ### `listTypes()`
 
-获取已注册的认证类型列表。
+Gets the list of registered authentication types.
 
-#### 签名
+#### Signature
 
 - `listTypes(): { name: string; title: string }[]`
 
-#### 详细信息
+#### Details
 
-| 属性    | 类型     | 描述         |
+| Property | Type | Description |
 | ------- | -------- | ------------ |
-| `name`  | `string` | 认证类型标识 |
-| `title` | `string` | 认证类型标题 |
+| `name` | `string` | Authentication type identifier |
+| `title` | `string` | Authentication type title |
 
 ### `get()`
 
-获取认证器。
+Gets an authenticator.
 
-#### 签名
+#### Signature
 
 - `get(name: string, ctx: Context)`
 
-#### 详细信息
+#### Details
 
-| 属性   | 类型      | 描述       |
+| Property | Type | Description |
 | ------ | --------- | ---------- |
-| `name` | `string`  | 认证器标识 |
-| `ctx`  | `Context` | 请求上下文 |
+| `name` | `string` | Authenticator identifier |
+| `ctx` | `Context` | Request context |
 
 ### `middleware()`
 
-鉴权中间件。获取当前认证器，进行用户认证。
+Authentication middleware. Gets the current authenticator and performs user authentication.

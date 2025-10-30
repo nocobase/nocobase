@@ -1,48 +1,48 @@
 # RelationRepository
 
-`RelationRepository` 是关系类型的 `Repository` 对象，`RelationRepository` 可以实现在不加载关联的情况下对关联数据进行操作。基于 `RelationRepository`，每种关联都派生出对应的实现，分别为
+`RelationRepository` is a `Repository` object for association types. `RelationRepository` allows operating on associated data without loading the association. Based on `RelationRepository`, each association type has a corresponding derived implementation:
 
 - [`HasOneRepository`](#has-one-repository)
 - `HasManyRepository`
 - `BelongsToRepository`
 - `BelongsToManyRepository`
 
-## 构造函数
+## Constructor
 
-**签名**
+**Signature**
 
 - `constructor(sourceCollection: Collection, association: string, sourceKeyValue: string | number)`
 
-**参数**
+**Parameters**
 
-| 参数名             | 类型               | 默认值 | 描述                                                      |
-| ------------------ | ------------------ | ------ | --------------------------------------------------------- |
-| `sourceCollection` | `Collection`       | -      | 关联中的参照关系（referencing relation）对应的 Collection |
-| `association`      | `string`           | -      | 关联名称                                                  |
-| `sourceKeyValue`   | `string \| number` | -      | 参照关系中对应的 key 值                                   |
+| Parameter Name | Type | Default Value | Description |
+| :--- | :--- | :--- | :--- |
+| `sourceCollection` | `Collection` | - | The `Collection` corresponding to the referencing relation in the association |
+| `association` | `string` | - | Association name |
+| `sourceKeyValue` | `string \| number` | - | The corresponding key value in the referencing relation |
 
-## 基类属性
+## Base Class Properties
 
 ### `db: Database`
 
-数据库对象
+Database object
 
 ### `sourceCollection`
 
-关联中的参照关系（referencing relation）对应的 Collection
+The `Collection` corresponding to the referencing relation in the association
 
 ### `targetCollection`
 
-关联中被参照关系（referenced relation）对应的 Collection
+The `Collection` corresponding to the referenced relation in the association
 
 ### `association`
 
-sequelize 中的与当前关联对应的 association 对象
+The association object in sequelize corresponding to the current association
 
 ### `associationField`
 
-collection 中的与当前关联对应的字段
+The field in the collection corresponding to the current association
 
 ### `sourceKeyValue`
 
-参照关系中对应的 key 值
+The corresponding key value in the referencing relation

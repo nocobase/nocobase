@@ -1,42 +1,42 @@
-# 生产环境部署
+# Production Environment Deployment
 
-在生产环境中部署 NocoBase 时，由于不同系统和环境的构建方式存在差异，安装依赖可能较为繁琐。为获得完整功能体验，我们推荐使用 **Docker** 进行部署。如果系统环境无法使用 Docker，也可以使用 **create-nocobase-app** 进行部署。
+When deploying NocoBase in a production environment, installing dependencies can be cumbersome due to differences in build methods across various systems and environments. For a complete functional experience, we recommend deploying with **Docker**. If your system environment cannot use Docker, you can also deploy using **create-nocobase-app**.
 
 :::warning
 
-不建议直接在生产环境中使用源码部署。源码依赖较多、体积庞大，且全量编译对 CPU 和内存要求较高。如果确实需要使用源码部署，建议先构建自定义 Docker 镜像，再进行部署。
+It is not recommended to deploy directly from source code in a production environment. The source code has many dependencies, is large in size, and a full compilation has high CPU and memory requirements. If you must deploy from source code, it is recommended to first build a custom Docker image and then deploy it.
 
 :::
 
-## 部署流程
+## Deployment Process
 
-生产环境的部署可参考已有的安装和升级步骤。
+For production environment deployment, you can refer to the existing installation and upgrade steps.
 
-### 全新安装
+### New Installation
 
-- [Docker 安装](../installation/docker.mdx)
-- [create-nocobase-app 安装](../installation/create-nocobase-app.mdx)
+- [Docker Installation](../installation/docker.mdx)
+- [create-nocobase-app Installation](../installation/create-nocobase-app.mdx)
 
-### 升级应用
+### Upgrading the Application
 
-- [Docker 安装的升级](../installation/docker.mdx)
-- [create-nocobase-app 安装的升级](../installation/create-nocobase-app.mdx)
+- [Upgrading a Docker Installation](../installation/docker.mdx)
+- [Upgrading a create-nocobase-app Installation](../installation/create-nocobase-app.mdx)
 
-### 第三方插件的安装与升级
+### Installing and Upgrading Third-Party Plugins
 
-- [安装与升级插件](../install-upgrade-plugins.mdx)
+- [Installing and Upgrading Plugins](../install-upgrade-plugins.mdx)
 
-## 静态资源代理
+## Static Asset Proxy
 
-在生产环境中，建议将静态资源交由代理服务器管理，例如：
+In a production environment, it is recommended to manage static assets with a proxy server, for example:
 
 - [nginx](./static-resource-proxy/nginx.md) 
 - [caddy](./static-resource-proxy/caddy.md)
 - [cdn](./static-resource-proxy/cdn.md)
 
-## 常用运维命令
+## Common Operations Commands
 
-根据不同的安装方式，可以使用以下命令管理 NocoBase 进程：
+Depending on the installation method, you can use the following commands to manage the NocoBase process:
 
 - [docker compose](./common-commands/docker-compose.md)
 - [pm2](./common-commands/pm2.md)

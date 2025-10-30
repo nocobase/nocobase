@@ -1,29 +1,29 @@
 # BaseInterface
 
-## 概览
+## Overview
 
-BaseInterface 是所有 Interface 类型的基础类，用户可以自行继承此类实现自定义的 Interface 逻辑。
+BaseInterface is the base class for all Interface types. Users can inherit this class to implement custom Interface logic.
 
 ```typescript
 class CustomInterface extends BaseInterface {
   async toValue(value: string, ctx?: any): Promise<any> {
-    // 自定义的 toValue 逻辑
+    // Custom toValue logic
   }
 
   toString(value: any, ctx?: any) {
-    // 自定义的 toString 逻辑
+    // Custom toString logic
   }
 }
-// 注册 Interface
+// Register the Interface
 db.interfaceManager.registerInterfaceType('customInterface', CustomInterface)
 ```
 
-## 接口
+## API
 
 ### toValue(value: string, ctx?: any): Promise<any>
 
-将外部的字符串转换为 interface 的实际值，值可直接传递给 Repository 进行写入操作
+Converts an external string to the actual value of the interface. The value can be directly passed to the Repository for write operations.
 
 ### toString(value: any, ctx?: any)
 
-将 interface 的实际值转换为 string 类型，string 类型可用作导出、展示时使用
+Converts the actual value of the interface to a string type. The string type can be used for exporting or display purposes.

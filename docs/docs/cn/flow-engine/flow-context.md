@@ -6,7 +6,7 @@ NocoBase 流引擎的上下文体系分为三层，分别对应不同的作用�
 - **FlowModelContext（模型上下文）**：用于模型树内部共享上下文，子模型自动代理父模型上下文，支持同名覆盖，适用于模型级别的逻辑和数据隔离。
 - **FlowRuntimeContext（流运行时上下文）**：每次流执行时创建，贯穿整个流运行周期，适用于流中的数据传递、变量存储、运行状态记录等。支持 `mode: 'runtime' | 'settings'` 两种模式，分别对应运行态和配置态。
 
-所有的 `FlowEngineContext`（全局上下文）、`FlowModelContext`（模型上下文）、`FlowRuntimeContext`（流运行时上下文）等，都是 `FlowContext` 的子类或实例。`FlowContext` 更多说明详见 [FlowContext](/flow-context/flow-context)
+所有的 `FlowEngineContext`（全局上下文）、`FlowModelContext`（模型上下文）、`FlowRuntimeContext`（流运行时上下文）等，都是 `FlowContext` 的子类或实例。
 
 ---
 

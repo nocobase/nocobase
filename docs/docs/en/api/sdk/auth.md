@@ -1,70 +1,70 @@
 # Auth
 
-## 概览
+## Overview
 
-`Auth` 类主要用于在客户端存取用户信息，请求用户认证相关接口。
+The `Auth` class is mainly used on the client side to access user information and request user authentication-related APIs.
 
-## 实例属性
+## Instance Properties
 
 ### `locale`
 
-当前用户使用的语言。
+The language used by the current user.
 
 ### `role`
 
-当前用户使用的角色。
+The role used by the current user.
 
 ### `token`
 
-API 接口 `token`.
+API `token`.
 
 ### `authenticator`
 
-当前用户认证时所用的认证器。参考 [用户认证](/auth-verification/auth/)。
+The authenticator used for the current user's authentication. See [User Authentication](/auth-verification/auth/).
 
-## 类方法
+## Class Methods
 
 ### `signIn()`
 
-用户登录。
+User sign in.
 
-#### 签名
+#### Signature
 
 - `async signIn(values: any, authenticator?: string): Promise<AxiosResponse<any>>`
 
-#### 详细信息
+#### Details
 
-| 参数名          | 类型     | 描述                 |
-| --------------- | -------- | -------------------- |
-| `values`        | `any`    | 登录接口请求参数     |
-| `authenticator` | `string` | 登录使用的认证器标识 |
+| Parameter Name  | Type     | Description                                          |
+| --------------- | -------- | ---------------------------------------------------- |
+| `values`        | `any`    | Request parameters for the sign-in API               |
+| `authenticator` | `string` | The identifier of the authenticator used for sign-in |
 
 ### `signUp()`
 
-用户注册。
+User sign up.
 
-#### 签名
+#### Signature
 
 - `async signUp(values: any, authenticator?: string): Promise<AxiosResponse<any>>`
 
-#### 详细信息
+#### Details
 
-| 参数名          | 类型     | 描述                 |
-| --------------- | -------- | -------------------- |
-| `values`        | `any`    | 注册接口请求参数     |
-| `authenticator` | `string` | 注册使用的认证器标识 |
+| Parameter Name  | Type     | Description                                          |
+| --------------- | -------- | ---------------------------------------------------- |
+| `values`        | `any`    | Request parameters for the sign-up API               |
+| `authenticator` | `string` | The identifier of the authenticator used for sign-up |
 
 ### `signOut()`
 
-注销登录。
+Sign out.
 
-#### 签名
+#### Signature
 
 - `async signOut(values: any, authenticator?: string): Promise<AxiosResponse<any>>`
 
-#### 详细信息
+#### Details
 
-| 参数名          | 类型     | 描述                 |
-| --------------- | -------- | -------------------- |
-| `values`        | `any`    | 注销接口请求参数     |
-| `authenticator` | `string` | 注销使用的认证器标识 |
+| Parameter Name  | Type     | Description                                           |
+| --------------- | -------- | ----------------------------------------------------- |
+| `values`        | `any`    | Request parameters for the sign-out API               |
+| `authenticator` | `string` | The identifier of the authenticator used for sign-out |

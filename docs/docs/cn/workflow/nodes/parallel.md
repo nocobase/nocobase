@@ -30,4 +30,4 @@
 
 ## 示例
 
-参考 [延时节点](/handbook/workflow-delay#示例) 中的例子。
+参考 [延时节点](./delay.md) 中的例子。

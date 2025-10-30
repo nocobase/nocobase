@@ -4,19 +4,19 @@ pageType: home
 pageName: guide
 
 features:
-  - title: 核心功能
-    details: 深入理解 NocoBase 核心概念，掌握开发配置的核心能力。
+  - title: Core Features
+    details: Gain a deep understanding of NocoBase's core concepts and master the core capabilities of development and configuration.
     items:
       - title: Data Sources
-        details: 连接与管理内部或外部数据源，构建系统的数据模型。
+        details: Connect and manage internal or external data sources to build the system's data model.
         link: /data-sources
         showOnHome: true
-      - title: 配置界面
-        details: 掌握页面、区块、操作的配置方法，自定义交互界面与展示逻辑。
+      - title: Interface Configuration
+        details: Master the configuration of pages, blocks, and actions to customize interactive interfaces and display logic.
         link: /interface-builder
         showOnHome: true
-      - title: AI 员工
-        details: 与 AI 员工并肩协作，让他们参与系统搭建、数据分析、翻译、决策等业务场景。
+      - title: AI Employees
+        details: Collaborate with AI employees and let them participate in business scenarios such as system building, data analysis, translation, and decision-making.
         link: /ai-employees
         showOnHome: true
       - title: Users & Permissions
@@ -27,73 +27,73 @@ features:
         details: 支持多种登录方式与验证机制，确保身份安全与一致性。
         link: /auth-verification/auth
         showOnHome: true
-      - title: 工作流
-        details: 设计自动化工作流，实现逻辑编排和业务自动运转。
+      - title: Workflow
+        details: Design automated workflows to achieve logical orchestration and automatic business operations.
         link: /workflow
         showOnHome: true
       - title: Notification
         details: 配置邮件、短信、站内信 等通知渠道，实现消息自动推送。
         link: /notification-manager
         showOnHome: true
-      - title: 多应用和多空间
-        details: 创建多个物理隔离的应用实例或者逻辑隔离的业务空间，支持多租户场景。
+      - title: Multi-app and Multi-workspace
+        details: Create multiple physically isolated application instances or logically isolated business workspaces to support multi-tenant scenarios.
         link: /multi-app
         showOnHome: true
-  - title: 运维与安全
-    details: 系统运维管理、数据安全与监控能力。
+  - title: Operations and Security
+    details: System operations management, data security, and monitoring capabilities.
     items:
-      - title: 变量和密钥
-        details: 集中配置和管理环境变量和密钥，用于敏感数据存储、配置数据重用、环境配置隔离等。
+      - title: Variables and Secrets
+        details: Centrally configure and manage environment variables and secrets for sensitive data storage, configuration data reuse, and environment configuration isolation.
         link: /ops-and-security/variables-and-secrets
-      - title: 备份管理器
-        details: 提供数据备份及还原等功能。
+      - title: Backup Manager
+        details: Provides data backup and restore functionalities.
         link: /ops-and-security/backup-manager
-      - title: 迁移管理
-        details: 用于将应用配置从一个应用环境迁移到另一个应用环境。
+      - title: Migration Manager
+        details: Used to migrate application configurations from one application environment to another.
         link: /ops-and-security/migration-manager
       - title: Security
         details: 覆盖数据、接口与访问层面的防护策略，确保平台运行安全。
         link: /security/guide
         showOnHome: true
-      - title: 日志和监控
-        details: 记录系统运行与用户操作。
+      - title: Logging and Monitoring
+        details: Record system operations and user actions.
         link: /ops-and-security/logging-and-monitoring
-      - title: 集群模式
-        details: 支持多节点部署与负载均衡，确保系统在高并发场景下的稳定性与可扩展性。
+      - title: Cluster Mode
+        details: Supports multi-node deployment and load balancing to ensure system stability and scalability in high-concurrency scenarios.
         link: /ops-and-security/cluster-mode
-  - title: 系统管理
-    details: 系统配置、插件管理与界面定制。
+  - title: System Management
+    details: System configuration, plugin management, and interface customization.
     items:
-      - title: 插件管理
-        details: 查看、安装、启用、禁用插件。
+      - title: Plugin Manager
+        details: View, install, enable, and disable plugins.
         link: /system-management/plugin-manager
-      - title: 系统设置
-        details: 设置系统全局信息，比如系统名称、主 LOGO、启用的语言等。
+      - title: System Settings
+        details: Set global system information, such as system name, main LOGO, and enabled languages.
         link: /system-management/system-settings
-      - title: 自定义品牌
-        details: 可定制品牌名字和更多品牌相关信息。
+      - title: Custom Brand
+        details: Customize the brand name and more brand-related information.
         link: /system-management/custom-brand
-      - title: 主题编辑器
-        details: 自定义系统界面主题，包括颜色、样式和布局，提升品牌体验。
+      - title: Theme Editor
+        details: Customize the system interface theme, including colors, styles, and layout, to enhance the brand experience.
         link: /system-management/theme-editor
-      - title: 本地化管理
-        details: 管理语言和区域设置，实现多语言内容展示与国际化支持。
+      - title: Localization Management
+        details: Manage language and regional settings to enable multi-language content display and internationalization support.
         link: /system-management/localization
-  - title: 更多功能
-    details: 按需启用常用能力模块，覆盖文件、可视化、邮件、模板打印等。
+  - title: More Features
+    details: Enable common capability modules on demand, covering files, visualization, email, template printing, etc.
     items:
-      - title: 文件管理器
-        details: 上传与管理文件，实现统一的文件存储与访问控制。
+      - title: File Manager
+        details: Upload and manage files to achieve unified file storage and access control.
         link: /file-manager
-      - title: 数据可视化
-        details: 通过图表和仪表盘展示数据洞察，支持多维度分析与展示。
+      - title: Data Visualization
+        details: Display data insights through charts and dashboards, supporting multi-dimensional analysis and presentation.
         link: /data-visualization
         showOnHome: true
-      - title: 邮件管理
-        details: 在系统中集成 Google 和 微软邮箱，实现邮件与业务数据深度集成。
+      - title: Email Manager
+        details: Integrate Google and Microsoft mailboxes into the system for deep integration of email and business data.
         link: /email-manager
         showOnHome: true
-      - title: 模板打印
-        details: 基于自定义模板生成可打印文档，如订单、合同或发票。
+      - title: Template Print
+        details: Generate printable documents based on custom templates, such as orders, contracts, or invoices.
         link: /template-print
 ---
