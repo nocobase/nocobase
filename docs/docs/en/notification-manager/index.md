@@ -21,7 +21,7 @@ The currently supported channels include:
 - [In-App Message](/notification-manager/notification-in-app-message)
 - [Email](/notification-manager/notification-email) (built-in SMTP protocol)
 
-For additional channels, refer to the [Channel Expansion](/notification-manager/development/extension) documentation.
+For additional channels, refer to the [Channel extension](./development/extension) documentation.
 
 ## Notification Logs
 

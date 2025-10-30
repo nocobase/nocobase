@@ -19,11 +19,11 @@ features:
         details: 与 AI 员工并肩协作，让他们参与系统搭建、数据分析、翻译、决策等业务场景。
         link: /ai-employees
         showOnHome: true
-      - title: 用户和权限
+      - title: Users & Permissions
         details: 定义角色、权限与访问控制，保障系统的安全与合规。
         link: /users-permissions/user
         showOnHome: true
-      - title: 认证和验证
+      - title: Authentication & Verification
         details: 支持多种登录方式与验证机制，确保身份安全与一致性。
         link: /auth-verification/auth
         showOnHome: true
@@ -31,7 +31,7 @@ features:
         details: 设计自动化工作流，实现逻辑编排和业务自动运转。
         link: /workflow
         showOnHome: true
-      - title: 通知
+      - title: Notification
         details: 配置邮件、短信、站内信 等通知渠道，实现消息自动推送。
         link: /notification-manager
         showOnHome: true
@@ -51,9 +51,9 @@ features:
       - title: 迁移管理
         details: 用于将应用配置从一个应用环境迁移到另一个应用环境。
         link: /ops-and-security/migration-manager
-      - title: 安全
+      - title: Security
         details: 覆盖数据、接口与访问层面的防护策略，确保平台运行安全。
-        link: /security
+        link: /security/guide
         showOnHome: true
       - title: 日志和监控
         details: 记录系统运行与用户操作。
