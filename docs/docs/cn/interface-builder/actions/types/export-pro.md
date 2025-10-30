@@ -1,8 +1,8 @@
-# 导出 Pro
+---
+pkg: "@nocobase/plugin-action-export-pro"
+---
 
-:::tip 提示
-该功能由商业插件 `plugin-action-export-pro`提供。请查看商业授权了解详情.
-:::
+# 导出 Pro
 
 ## 介绍
 
