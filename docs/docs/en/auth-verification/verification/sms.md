@@ -25,7 +25,7 @@ Currently, the supported SMS service providers are:
 - <a href="https://www.aliyun.com/product/sms" target="_blank">Aliyun Cloud SMS</a>
 - <a href="https://cloud.tencent.com/product/sms" target="_blank">Tencent Cloud SMS</a>
 
-Developers can also extend support for other SMS service providers in the form of plugins. See: [Extending SMS Service Providers](../../../handbook/verification/sms/dev)
+Developers can also extend support for other SMS service providers in the form of plugins. See: [Extending SMS Service Providers](./dev/sms-type)
 
 ## User Binding
 

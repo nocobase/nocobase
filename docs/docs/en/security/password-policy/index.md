@@ -71,7 +71,7 @@ Set the time interval (in seconds) for calculating the maximum number of invalid
 
 ### Lockout Duration (Seconds)
 
-Set the duration for which a user is locked out after exceeding the invalid password login limit (0 means no restriction). During the lockout period, the user is prohibited from accessing the system through any authentication method, including API keys. If manual unlocking is required, refer to [User Lockout](./user-lockout.md).
+Set the duration for which a user is locked out after exceeding the invalid password login limit (0 means no restriction). During the lockout period, the user is prohibited from accessing the system through any authentication method, including API keys. If manual unlocking is required, refer to [User Lockout](./lockout.md).
 
 ### Scenarios
 

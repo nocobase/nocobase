@@ -1,6 +1,6 @@
 # Extend SMS Provider
 
-This article primarily explains how to extend the SMS provider functionality in the [Auth: SMS](./index.md) feature via a plugin.
+This article primarily explains how to extend the SMS provider functionality in the [Auth: SMS](../sms) feature via a plugin.
 
 ## Client
 

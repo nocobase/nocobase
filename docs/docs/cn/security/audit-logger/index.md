@@ -94,4 +94,4 @@ pkg: '@nocobase/plugin-audit-logger'
 
 ## 添加其他审计资源
 
-如果你通过插件扩展了其他资源操作，并希望将这些资源操作行为记录到审计日志中，可以参考 [API](../../api/server/audit-manager.md).
+如果你通过插件扩展了其他资源操作，并希望将这些资源操作行为记录到审计日志中，可以参考 [API](/api/server/audit-manager.md).

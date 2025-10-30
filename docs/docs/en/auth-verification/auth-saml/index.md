@@ -34,7 +34,7 @@ Add - SAML
 
 ## Field Mapping
 
-Field mapping needs to be configured on the IdP's configuration platform, you can refer to the [example](../auth-saml/example/google.md).
+Field mapping needs to be configured on the IdP's configuration platform, you can refer to the [example](./examples/google.md).
 
 The fields available for mapping in NocoBase are:
 

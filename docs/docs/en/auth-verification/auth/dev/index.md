@@ -63,11 +63,11 @@ class CustomAuth extends BaseAuth {
 
 In a NocoBase application, the related collections are defined by default as:
 
-| Collections           | Description                                                                                                          | Plugin                                                         |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `users`               | Store user information, such as email, nickname, and password                                                        | [User Plugin (`@nocobase/plugin-users`)](../../users/index.md) |
-| `authenticators`      | Store authenticator (authentication type entity) information, corresponding to authentication type and configuration | User Authentication Plugin (`@nocobase/plugin-auth`)           |
-| `usersAuthenticators` | Associates users and authenticators, saves user information under the corresponding authenticator                    | User Authentication Plugin (`@nocobase/plugin-auth`)           |
+| Collections           | Description                                                                                                          | Plugin                                                            |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `users`               | Store user information, such as email, nickname, and password                                                        | [User Plugin (`@nocobase/plugin-users`)](/users-permissions/user) |
+| `authenticators`      | Store authenticator (authentication type entity) information, corresponding to authentication type and configuration | User Authentication Plugin (`@nocobase/plugin-auth`)              |
+| `usersAuthenticators` | Associates users and authenticators, saves user information under the corresponding authenticator                    | User Authentication Plugin (`@nocobase/plugin-auth`)              |
 
 In general, extended login methods use `users` and `usersAuthenticators` to store corresponding user data. Only in special cases do you need to add a new Collection yourself.
 

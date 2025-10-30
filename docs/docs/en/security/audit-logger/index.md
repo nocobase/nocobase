@@ -96,4 +96,4 @@ Currently, the following resource operations will be recorded in the audit log:
 
 ## Adding Other Audit Resources
 
-If you have extended other resource operations through plugins and wish to record these resource operation behaviors in the audit log, please refer to [API](../../api/server/audit-manager.md).
+If you have extended other resource operations through plugins and wish to record these resource operation behaviors in the audit log, please refer to [API](/api/server/audit-manager.md).
