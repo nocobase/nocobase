@@ -8,7 +8,7 @@ hero:
   actions:
     - theme: brand
       text: 快速上手
-      link: /get-started/quickstart
+      link: /get-started/how-nocobase-works
     - theme: alt
       text: GitHub
       link: https://github.com/nocobase/nocobase
