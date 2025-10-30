@@ -12,8 +12,8 @@ import type { ButtonProps } from 'antd/es/button';
 import { saveAs } from 'file-saver';
 import { ActionModel, Cascader, ActionSceneEnum } from '@nocobase/client';
 import { css } from '@emotion/css';
-import { useFields } from './useFields';
-import { NAMESPACE } from './locale';
+import { getOptionFields } from './getOptionFields';
+import { NAMESPACE } from '../locale';
 
 const initExportSettings = (fields) => {
   const exportSettings = fields
@@ -98,6 +98,7 @@ ExportActionModel.registerFlow({
       title: escapeT('Exportable fields'),
       uiSchema: (ctx) => {
         const currentBlock = ctx.model.context.blockModel;
+        const data = getOptionFields(currentBlock.collection.getFields(), ctx.t);
         return {
           exportSettings: {
             type: 'array',
@@ -137,13 +138,7 @@ ExportActionModel.registerFlow({
                         },
                         // labelInValue: true,
                         changeOnSelect: false,
-                      },
-                      'x-use-component-props': () => {
-                        // eslint-disable-next-line react-hooks/rules-of-hooks
-                        const data = useFields(currentBlock.collection.name);
-                        return {
-                          options: data,
-                        };
+                        options: data,
                       },
                     },
                     title: {

@@ -1268,10 +1268,12 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
       // 目前只有表单的“字段赋值”有 value 属性
       if ('value' in newProps && model.context.form) {
-        model.context.form.setFieldValue(
-          model.isFork ? model.context.fieldPathArray : model.props.name,
-          newProps.value,
-        );
+        const path = model.isFork ? model.context.fieldPathArray : model.props.name;
+        if (!_.isEqual(model.context.form.getFieldValue(path), newProps.value)) {
+          model.context.form.setFieldValue(path, newProps.value);
+          model.context.blockModel?.dispatchEvent('formValuesChange', {});
+          model.context.blockModel?.emitter.emit('formValuesChange', {});
+        }
       }
 
       model.__props = null;

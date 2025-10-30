@@ -14,7 +14,7 @@ export * from './useExportAction';
 import { Plugin, useCollection, useActionAvailable } from '@nocobase/client';
 import { ExportPluginProvider } from './ExportPluginProvider';
 import { exportActionSchemaSettings } from './schemaSettings';
-import { ExportActionModel } from './ExportActionModel';
+import { ExportActionModel } from './models/ExportActionModel';
 
 export class PluginActionExportClient extends Plugin {
   async load() {
