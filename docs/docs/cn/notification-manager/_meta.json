@@ -6,13 +6,24 @@
   },
   {
     "type": "custom-link",
-    "label": "通知：站内信",
-    "link": "/notification-manager/notification-in-app-message"
-  },
-  {
-    "type": "custom-link",
-    "label": "通知：电子邮件",
-    "link": "/notification-manager/notification-email"
+    "label": "通知渠道",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "站内信",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "电子邮件",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "企业微信",
+        "link": "/notification-manager/wecom"
+      }
+    ]
   },
   {
     "type": "custom-link",
