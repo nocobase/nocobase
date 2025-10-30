@@ -4,16 +4,16 @@
 
 ## Introduction
 
-The Template Printing plugin allows you to edit template files in Word, Excel, and PowerPoint (supporting `.docx`, `.xlsx`, `.pptx` formats), set placeholders and logical structures within the templates, and dynamically generate pre-formatted files such as `.docx`, `.xlsx`, `.pptx`, and PDF files. This plugin is widely used for generating various business documents, such as quotations, invoices, contracts, etc.
+The Template Printing plugin lets you design templates in Word, Excel, and PowerPoint (supporting `.docx`, `.xlsx`, `.pptx`), define placeholders and logical structures in the template, and dynamically generate pre-formatted outputs such as `.docx`, `.xlsx`, `.pptx`, and PDF. It is widely used to produce business documents like quotations, invoices, contracts, etc.
 
 ### Key Features
 
-- **Multi-format Support**: Compatible with Word, Excel, and PowerPoint templates to meet different document generation needs.
-- **Dynamic Data Filling**: Automatically fills and generates document content through placeholders and logical structures.
-- **Flexible Template Management**: Supports adding, editing, deleting, and categorizing templates for easy maintenance and use.
-- **Rich Template Syntax**: Supports basic replacement, array access, loops, conditional output, and other template syntax to meet complex document generation needs.
-- **Formatter Support**: Provides conditional output, date formatting, number formatting, and other functions to enhance the readability and professionalism of documents.
-- **Efficient Output Formats**: Supports direct generation of PDF files for easy sharing and printing.
+- **Multi-format support**: Compatible with Word, Excel, and PowerPoint templates to meet different document generation needs.
+- **Dynamic data filling**: Automatically populates and generates document content via placeholders and logical structures.
+- **Flexible template management**: Add, edit, delete, and categorize templates for easy maintenance and reuse.
+- **Rich template syntax**: Supports basic replacement, array access, loops, and conditional statements to handle complex document logic.
+- **Formatter support**: Provides conditional output, date formatting, number formatting, etc., to improve readability and professionalism.
+- **Efficient output**: Supports direct PDF generation for convenient sharing and printing.
 
 ## Installation
 
