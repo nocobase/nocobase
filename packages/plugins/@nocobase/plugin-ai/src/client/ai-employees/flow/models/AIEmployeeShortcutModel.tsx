@@ -14,15 +14,16 @@ import { avatars } from '../../avatars';
 import { AIEmployee, TriggerTaskOptions, ContextItem as ContextItemType } from '../../types';
 import { useChatBoxActions } from '../../chatbox/hooks/useChatBoxActions';
 import { ProfileCard } from '../../ProfileCard';
-import { RemoteSelect, useToken } from '@nocobase/client';
+import { RemoteSelect, TextAreaWithContextSelector, useToken } from '@nocobase/client';
 import { useAIEmployeesData } from '../../hooks/useAIEmployeesData';
 import { AddContextButton } from '../../AddContextButton';
 import { useField } from '@formily/react';
 import { ArrayField, ObjectField } from '@formily/core';
 import { ContextItem } from '../../chatbox/ContextItem';
-import { aiSelection } from '../../stores/ai-selection';
 import { dialogController } from '../../stores/dialog-controller';
 import { namespace } from '../../../locale';
+import { ContextItem as WorkContextItem } from '../../types';
+import { useChatMessagesStore } from '../../chatbox/stores/chat-messages';
 
 const { Meta } = Card;
 
@@ -33,9 +34,23 @@ type ShortcutProps = TriggerTaskOptions & {
     size?: number;
     mask?: boolean;
   };
+  context: ShortcutContext;
+  auto?: boolean;
 };
 
-const Shortcut: React.FC<ShortcutProps> = ({ aiEmployee: { username }, tasks, showNotice, builtIn, style = {} }) => {
+type ShortcutContext = {
+  workContext?: WorkContextItem[];
+};
+
+const Shortcut: React.FC<ShortcutProps> = ({
+  aiEmployee: { username },
+  tasks,
+  showNotice,
+  builtIn,
+  style = {},
+  context,
+  auto,
+}) => {
   const { size, mask } = style;
   const [focus, setFocus] = useState(false);
 
@@ -43,6 +58,7 @@ const Shortcut: React.FC<ShortcutProps> = ({ aiEmployee: { username }, tasks, sh
   const aiEmployee = aiEmployeesMap[username];
 
   const { triggerTask } = useChatBoxActions();
+  const addContextItems = useChatMessagesStore.use.addContextItems();
 
   const currentAvatar = useMemo(() => {
     const avatar = aiEmployee?.avatar;
@@ -80,7 +96,10 @@ const Shortcut: React.FC<ShortcutProps> = ({ aiEmployee: { username }, tasks, sh
           }}
           onMouseLeave={() => setFocus(false)}
           onClick={() => {
-            triggerTask({ aiEmployee, tasks });
+            triggerTask({ aiEmployee, tasks, auto });
+            if (context?.workContext?.length) {
+              addContextItems(context.workContext);
+            }
           }}
         />
       </Popover>
@@ -261,13 +280,13 @@ AIEmployeeShortcutModel.registerFlow({
                           { ns: namespace },
                         ),
                       },
-                      'x-component': 'Input.TextArea',
+                      'x-component': TextAreaWithContextSelector,
                     },
                     user: {
                       title: escapeT('Default user message', { ns: namespace }),
                       type: 'string',
                       'x-decorator': 'FormItem',
-                      'x-component': 'Input.TextArea',
+                      'x-component': TextAreaWithContextSelector,
                     },
                     workContext: {
                       title: escapeT('Work context', { ns: namespace }),
