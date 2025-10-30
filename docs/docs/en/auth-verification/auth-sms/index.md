@@ -1,56 +1,31 @@
-# SMS Authentication
+# Auth: SMS
 
 ## Introduction
 
-The SMS authentication plugin allows users to register and log in to NocoBase via SMS.
+The SMS authentication plugin supports users to register through SMS and log in to NocoBase.
 
-> Requires the SMS verification code feature provided by the [`@nocobase/plugin-verification` plugin](/auth-verification/verification/).
+> It needs to be used in conjunction with the SMS verification code function provided by the [`@nocobase/plugin-verification` plugin](../verification/index.md)
 
 ## Add SMS Authentication
 
-Go to the User Authentication plugin management page.
+Enter the user authentication plugin management page.
 
-
-![](https://static-docs.nocobase.com/202502282112517.png)
-
+![](https://static-docs.nocobase.com/202411130004459.png)
 
 Add - SMS
 
+![](https://static-docs.nocobase.com/29c8916492fd5e1564a872b31ad3ac0d.png)
 
-![](https://static-docs.nocobase.com/202502282113553.png)
-
-
-## New Version Configuration
-
-:::info{title=Info}
-The new configuration was introduced in `1.6.0-alpha.30` and is planned for stable support starting from `1.7.0`.
-:::
-
-
-![](https://static-docs.nocobase.com/202502282114821.png)
-
-
-**Verificator:** Bind an SMS verificator to send SMS verification codes. If no verificator is available, you need to go to the Verification management page to create an SMS verificator first.  
-References:
-
-- [Verification](../verification/index.md)
-- [Verification: SMS](../verification/sms/index.md)
-
-Sign up automatically when the user does not exist: When this option is checked, if the phone number used by the user does not exist, a new user will be registered with the phone number as the nickname.
-
-## Old Version Configuration
-
+## Configuration
 
 ![](https://static-docs.nocobase.com/a4d35ec63ba22ae2ea9e3e8e1cbb783d.png)
 
+For the configuration of the SMS verification code function, see the [Verification Plugin (@nocobase/plugin-verification) Documentation](../verification/index.md), the SMS login authentication function will use the configured and set default SMS verification code Provider to send SMS.
 
-The SMS login authentication feature will use the configured and default SMS verification code Provider to send SMS messages.
+Sign up automatically when the user does not exist: When this option is checked, when the user's mobile phone number does not exist, a new user will be registered using the mobile phone number as the nickname.
 
-Sign up automatically when the user does not exist: When this option is checked, if the phone number used by the user does not exist, a new user will be registered with the phone number as the nickname.
+## Log In
 
-## Login
-
-Visit the login page to use it.
-
+Visit the login page to use.
 
 ![](https://static-docs.nocobase.com/8d630739201bc27d8b0de076ab4f75e2.png)

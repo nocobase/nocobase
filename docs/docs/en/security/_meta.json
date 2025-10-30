@@ -1,0 +1,43 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Security guide",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Token policy",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Password policy",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Password policy",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "User lockout",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "IP restriction",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Audit logger",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Two factor authentication (2FA)",
+    "link": "/auth-verification/2fa/"
+  }
+]

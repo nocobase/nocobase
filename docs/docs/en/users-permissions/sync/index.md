@@ -1,50 +1,47 @@
-# User Data Sync
+---
+pkg: '@nocobase/plugin-user-data-sync'
+---
+
+# User Data Synchronization
 
 ## Introduction
 
-Register and manage user data sync sources. By default, an HTTP API is provided, and other data sources can be extended through plugins. It supports syncing data to the **User** and **Department** collections by default, and other sync target resources can also be extended through plugins.
+This feature allows you to register and manage user data synchronization sources. By default, an HTTP API is provided, but additional data sources can be supported through plugins. It supports syncing data to the **Users** and **Departments** tables by default, with the possibility to extend synchronization to other target resources using plugins.
 
-## Data Source Management and Data Sync
+## Installation
 
+This is a built-in plugin and does not require separate installation.
+
+## Data Source Management and Synchronization
 
 ![](https://static-docs.nocobase.com/202412041043465.png)
 
-
 :::info
-When a plugin that provides a user data sync source is not installed, you can sync user data via HTTP API. See [Data Source - HTTP API](./sources/api.md).
+If no plugins providing user data synchronization sources are installed, user data can be synchronized using the HTTP API. Refer to [Data Source - HTTP API](./sources/api.md).
 :::
 
-## Add Data Source
+## Adding a Data Source
 
-After installing a plugin that provides a user data sync source, you can add the corresponding data source. Only enabled data sources will display the Sync and Tasks buttons.
+Once you install a plugin that provides a user data synchronization source, you can add the corresponding data source. Only enabled data sources will display the "Sync" and "Task" buttons.
 
-> Taking WeCom as an example
-
+> Example: WeCom (Enterprise WeChat)
 
 ![](https://static-docs.nocobase.com/202412041053785.png)
 
+## Synchronizing Data
 
-## Sync Data
-
-Click the "Sync" button to start data synchronization.
-
+Click the **Sync** button to start synchronizing data.
 
 ![](https://static-docs.nocobase.com/202412041055022.png)
 
-
-Click the "Tasks" button to view the sync status. After a successful sync, you can go to the user and department lists to view the data.
-
+Click the **Task** button to view the synchronization status. After successful synchronization, you can view the data in the Users and Departments lists.
 
 ![](https://static-docs.nocobase.com/202412041202337.png)
 
-
-For failed sync tasks, you can click "Retry".
-
+For failed synchronization tasks, you can click **Retry**.
 
 ![](https://static-docs.nocobase.com/202412041058337.png)
 
-
-When a sync fails, you can check the system logs to investigate the cause. At the same time, the original data sync records are saved in the `user-data-sync` directory under the application log directory.
-
+In case of synchronization failures, you can troubleshoot the issue through system logs. Additionally, raw synchronization records are stored in the `user-data-sync` directory under the application logs folder.
 
 ![](https://static-docs.nocobase.com/202412041205655.png)

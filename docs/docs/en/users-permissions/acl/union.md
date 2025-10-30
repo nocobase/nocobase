@@ -1,81 +1,66 @@
 # Role Union
 
-Role union is a permission management mode. Based on system settings, system developers can choose to use independent roles, allow role union, or only use role union to meet different permission requirements.
-
+Role Union is a permission management mode. According to system settings, system developers can choose to use `Independent roles`, `Allow roles union`, or `Roles union only`, to meet different permission requirements.
 
 ![20250312184651](https://static-docs.nocobase.com/20250312184651.png)
 
+## Independent roles
 
-## Independent Roles
+By default, the system uses independent roles. Users must switch between the roles they possess individually.
 
-The system defaults to independent roles: role union is not used, and users need to switch between their owned roles one by one.
-
-
-![20250312184729](https://static-docs.nocobase.com/20250312184729.png)
-
-
+![20250312184729](https://static-docs.nocobase.com/20250312184729.png)  
 ![20250312184826](https://static-docs.nocobase.com/20250312184826.png)
 
+## Allow roles union
 
-## Allow Role Union
-
-Allows system developers to use role union, meaning they can use the permissions of all their owned roles simultaneously, while also allowing users to switch between their roles one by one.
-
+System developers can enable `Allow roles union`, allowing users to simultaneously have permissions of all assigned roles while still permitting users to switch roles individually.
 
 ![20250312185006](https://static-docs.nocobase.com/20250312185006.png)
 
+## Roles union only
 
-## Only Role Union
-
-Forces users to only use role union, and they cannot switch roles one by one.
-
+Users are enforced to only use Role Union and cannot switch roles individually.
 
 ![20250312185105](https://static-docs.nocobase.com/20250312185105.png)
 
+## Rules for Role Union
 
-## Role Union Rules
+Role union grants the maximum permissions across all roles. Below are the explanations for resolving permission conflicts when roles have different settings on the same permission.
 
-The union is to grant the maximum permissions of all roles. The following explains how to determine role permissions when role settings for the same item conflict.
+### Operation Permission Merge
 
-### Action Permission Merging
-
-Example: Role 1 (role1) is configured to allow UI & Menu, Role 2 (role2) is configured to allow installing, activating, and disabling plugins.
-
+Example:  
+Role1 is configured to `Allows to configure interface` and Role2 is configured to `Allows to install, activate, disable plugins`
 
 ![20250312190133](https://static-docs.nocobase.com/20250312190133.png)
 
-
-
 ![20250312190352](https://static-docs.nocobase.com/20250312190352.png)
 
-
-Logging in with the **All Permissions** role, the user will have both of these permissions simultaneously.
-
+When logging in with the **Full Permissions** role, the user will have both permissions simultaneously.
 
 ![20250312190621](https://static-docs.nocobase.com/20250312190621.png)
 
-
-### Data Scope Merging
+### Data Scope Merge
 
 #### Data Rows
 
-Scenario 1: Multiple roles set conditions on the same field
+Scenario 1: Multiple roles setting conditions on the same field
 
-Role A, configured condition: Age < 30
+Role A filter: Age < 30
 
 | UserID | Name | Age |
 | ------ | ---- | --- |
 | 1      | Jack | 23  |
 | 2      | Lily | 29  |
 
-Role B, configured condition: Age > 25
+Role B filter: Age > 25
 
 | UserID | Name | Age |
 | ------ | ---- | --- |
 | 2      | Lily | 29  |
 | 3      | Sam  | 32  |
 
-After merging:
+**After merging:**
 
 | UserID | Name | Age |
 | ------ | ---- | --- |
@@ -83,23 +68,23 @@ After merging:
 | 2      | Lily | 29  |
 | 3      | Sam  | 32  |
 
-Scenario 2: Different roles set conditions on different fields
+Scenario 2: Different roles setting conditions on different fields
 
-Role A, configured condition: Age < 30
+Role A filter: Age < 30
 
 | UserID | Name | Age |
 | ------ | ---- | --- |
 | 1      | Jack | 23  |
 | 2      | Lily | 29  |
 
-Role B, configured condition: Name contains "Ja"
+Role B filter: Name contains "Ja"
 
 | UserID | Name   | Age |
 | ------ | ------ | --- |
 | 1      | Jack   | 23  |
 | 3      | Jasmin | 27  |
 
-After merging:
+**After merging:**
 
 | UserID | Name   | Age |
 | ------ | ------ | --- |
@@ -109,44 +94,44 @@ After merging:
 
 #### Data Columns
 
-Role A, configured visible fields: Name, Age
+Role A visible columns: Name, Age
 
 | UserID | Name | Age |
 | ------ | ---- | --- |
 | 1      | Jack | 23  |
 | 2      | Lily | 29  |
 
-Role B, configured visible fields: Name, Sex
+Role B visible columns: Name, Sex
 
 | UserID | Name | Sex   |
 | ------ | ---- | ----- |
 | 1      | Jack | Man   |
 | 2      | Lily | Woman |
 
-After merging:
+**After merging:**
 
 | UserID | Name | Age | Sex   |
 | ------ | ---- | --- | ----- |
 | 1      | Jack | 23  | Man   |
 | 2      | Lily | 29  | Woman |
 
-#### Row and Column Mix
+#### Mixed Rows and Columns
 
-Role A, configured condition is Age < 30, visible fields are Name, Age
+Role A filter: Age < 30, columns Name, Age
 
 | UserID | Name | Age |
 | ------ | ---- | --- |
 | 1      | Jack | 23  |
 | 2      | Lily | 29  |
 
-Role B, configured condition is Name contains "Ja", visible fields are Name, Sex
+Role B filter: Name contains "Ja", columns Name, Sex
 
 | UserID | Name  | Sex   |
 | ------ | ----- | ----- |
 | 3      | Jade  | Woman |
 | 4      | James | Man   |
 
-After merging:
+**After merging:**
 
 | UserID | Name  | Age                                              | Sex                                                 |
 | ------ | ----- | ------------------------------------------------ | --------------------------------------------------- |
@@ -155,12 +140,12 @@ After merging:
 | 3      | Jade  | <span style="background-color:#FFDDDD">27</span> | Woman                                               |
 | 4      | James | <span style="background-color:#FFDDDD">31</span> | Man                                                 |
 
-**Note: Some marked data is not visible in either individual role, but becomes visible under the merged role.**
+**Note: Cells with red background indicate data invisible in individual roles but visible in the merged role.**
 
 #### Summary
 
-Role merging rules for data scope:
+Role merging data-scope rules:
 
-1. For rows, permission is granted if the condition of any role is met.
-2. For columns, the visible fields are combined.
-3. When both row and column permissions are set, they are merged separately (rows with rows, and columns with columns), not as a (row + column) set with another (row + column) set.
+1. Between rows, if any condition is satisfied, the row has permissions.
+2. Between columns, fields are combined.
+3. When rows and columns are both configured, rows and columns are merged separately, not by row-column combinations.

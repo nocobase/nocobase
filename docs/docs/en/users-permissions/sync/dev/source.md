@@ -1,14 +1,14 @@
-# Extend Synchronized Data Sources
+# Extending Synchronized Data Sources
 
 ## Overview
 
-NocoBase supports extending user data synchronization source types as needed.
+NocoBase allows users to extend data source types for user data synchronization as needed.
 
-## Server-side
+## Server Side
 
 ### Data Source Interface
 
-The built-in user data synchronization plugin provides registration and management of data source types. To extend a data source type, you need to inherit the `SyncSource` abstract class provided by the plugin and implement the corresponding standard interfaces.
+The built-in user data synchronization plugin provides registration and management for data source types. To extend a data source type, inherit the `SyncSource` abstract class provided by the plugin and implement the relevant standard interfaces.
 
 ```ts
 import { SyncSource, UserData } from '@nocobase/plugin-user-data-sync';
@@ -20,7 +20,7 @@ class CustomSyncSource extends SyncSource {
 }
 ```
 
-`SyncSource` provides an `options` property to get the custom configuration of the data source.
+The `SyncSource` class includes an `options` property to retrieve custom configurations for the data source.
 
 ```ts
 import { SyncSource, UserData } from '@nocobase/plugin-user-data-sync';
@@ -35,34 +35,35 @@ class CustomSyncSource extends SyncSource {
 }
 ```
 
-### UserData Field Description
+### Description of `UserData` Fields
 
-| Field | Description |
-| ------------ | ----------------------------------------- |
-| `dataType` | Data type, optional values are `user` and `department` |
-| `uniqueKey` | Unique identifier field |
-| `records` | Data records |
-| `sourceName` | Data source name |
+| Field        | Description                                    |
+| ------------ | ---------------------------------------------- |
+| `dataType`   | Data type, options are `user` and `department` |
+| `uniqueKey`  | Unique identifier field                        |
+| `records`    | Data records                                   |
+| `sourceName` | Data source name                               |
 
-If dataType is `user`, then records contains the following fields:
+If `dataType` is `user`, the `records` field contains the following fields:
 
-| Field | Description |
-| ------------- | -------------- |
-| `id` | User ID |
-| `nickname` | User nickname |
-| `avatar` | User avatar |
-| `email` | Email |
-| `phone` | Phone number |
-| `departments` | Array of department IDs to which the user belongs |
+| Field         | Description             |
+| ------------- | ----------------------- |
+| `id`          | User ID                 |
+| `nickname`    | User nickname           |
+| `avatar`      | User avatar             |
+| `email`       | Email                   |
+| `phone`       | Phone number            |
+| `departments` | Array of department IDs |
 
-If dataType is `department`, then records contains the following fields:
-| Field | Description |
-| -------- | ---------------------- |
-| `id` | Department ID |
-| `name` | Department name |
+If `dataType` is `department`, the `records` field contains the following fields:
+
+| Field      | Description          |
+| ---------- | -------------------- |
+| `id`       | Department ID        |
+| `name`     | Department name      |
 | `parentId` | Parent department ID |
 
-### Data Source Interface Implementation Example
+### Example Implementation of the Data Source Interface
 
 ```ts
 import { SyncSource, UserData } from '@nocobase/plugin-user-data-sync';
@@ -95,9 +96,9 @@ class CustomSyncSource extends SyncSource {
 }
 ```
 
-### Data Source Type Registration
+### Registering a Data Source Type
 
-The extended data source needs to be registered.
+The extended data source must be registered with the data management module.
 
 ```ts
 import UserDataSyncPlugin from '@nocobase/plugin-user-data-sync';
@@ -108,7 +109,7 @@ class CustomSourcePlugin extends Plugin {
       UserDataSyncPlugin,
     ) as UserDataSyncPlugin;
     if (syncPlugin) {
-      syncPlugin.sourceManager.reigsterType('custom-source-type', {
+      syncPlugin.sourceManager.registerType('custom-source-type', {
         syncSource: CustomSyncSource,
         title: 'Custom Source',
       });
@@ -117,9 +118,11 @@ class CustomSourcePlugin extends Plugin {
 }
 ```
 
-## Client-side
+---
 
-The client-side user interface is registered through the `registerType` interface provided by the user data synchronization plugin's client:
+## Client Side
+
+The client user interface registers data source types using the `registerType` method provided by the user data synchronization plugin's client interface:
 
 ```ts
 import SyncPlugin from '@nocobase/plugin-user-data-sync/client';
@@ -129,17 +132,15 @@ class CustomSourcePlugin extends Plugin {
     const sync = this.app.pm.get(SyncPlugin);
     sync.registerType(authType, {
       components: {
-        AdminSettingsForm, // Admin settings form
+        AdminSettingsForm, // Backend management form
       },
     });
   }
 }
 ```
 
-### Admin Settings Form
+### Backend Management Form
 
+![Backend Management Form](https://static-docs.nocobase.com/202412041429835.png)
 
-![](https://static-docs.nocobase.com/202412041429835.png)
-
-
-The upper part is the common data source configuration, and the lower part is the section for the registrable custom configuration form.
+The top section provides general data source configuration, while the bottom section allows for registration of custom configuration forms.
