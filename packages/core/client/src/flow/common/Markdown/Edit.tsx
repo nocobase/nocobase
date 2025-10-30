@@ -8,8 +8,9 @@
  */
 
 import { useAPIClient, useCompile, usePlugin, useZIndexContext, getZIndex } from '@nocobase/client';
-import { Button } from 'antd';
+import { Button, QRCode } from 'antd';
 import { css } from '@emotion/css';
+import { createRoot } from 'react-dom/client';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
 import { FlowContextSelector, useFlowContext, useFlowModel } from '@nocobase/flow-engine';
 import React, { useEffect, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
@@ -92,6 +93,13 @@ const Edit = (props) => {
           vditor.disabled();
         } else {
           vditor.enable();
+          document.querySelectorAll('qr-code').forEach((el) => {
+            const value = el.getAttribute('value') || '';
+            const container = document.createElement('div');
+            el.replaceWith(container);
+            const root = createRoot(container);
+            root.render(<QRCode value={value} />);
+          });
         }
       },
       input(value) {

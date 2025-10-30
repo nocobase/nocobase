@@ -1,13 +1,12 @@
 [
   {
     "type": "custom-link",
-    "label": "快速开始",
-    "link": "/get-started"
-  },
-  {
-    "type": "custom-link",
     "label": "NocoBase 如何工作",
     "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "type": "file",
+    "name": "quickstart"
   },
   {
     "type": "custom-link",
@@ -16,17 +15,17 @@
       {
         "type": "custom-link",
         "label": "Docker 安装",
-        "link": "/get-started/install-nocobase/docker"
+        "link": "/get-started/installation/docker"
       },
       {
         "type": "custom-link",
         "label": "create-nocobase-app 安装",
-        "link": "/get-started/install-nocobase/create-nocobase-app"
+        "link": "/get-started/installation/create-nocobase-app"
       },
       {
         "type": "custom-link",
         "label": "Git 源码安装",
-        "link": "/get-started/install-nocobase/git"
+        "link": "/get-started/installation/git"
       }
     ]
   },
@@ -37,24 +36,19 @@
       {
         "type": "custom-link",
         "label": "Docker 安装的升级",
-        "link": "/get-started/upgrade-nocobase/docker"
+        "link": "/get-started/upgrading/docker"
       },
       {
         "type": "custom-link",
         "label": "create-nocobase-app 安装的升级",
-        "link": "/get-started/upgrade-nocobase/create-nocobase-app"
+        "link": "/get-started/upgrading/create-nocobase-app"
       },
       {
         "type": "custom-link",
         "label": "Git 源码安装的升级",
-        "link": "/get-started/upgrade-nocobase/git"
+        "link": "/get-started/upgrading/git"
       }
     ]
-  },
-  {
-    "type": "custom-link",
-    "label": "安装与升级插件",
-    "link": "/get-started/install-upgrade-plugins"
   },
   {
     "type": "custom-link",
@@ -63,12 +57,54 @@
       {
         "type": "custom-link",
         "label": "生产环境部署",
-        "link": "/get-started/deploy/production"
+        "link": "/get-started/deployment/production"
       },
       {
         "type": "custom-link",
         "label": "内网部署",
-        "link": "/get-started/deploy/internal"
+        "link": "/get-started/deployment/internal"
+      },
+      {
+        "type": "custom-link",
+        "label": "集群部署",
+        "link": "/get-started/deployment/cluster"
+      },
+      {
+        "type": "custom-link",
+        "label": "静态资源代理",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nginx",
+            "link": "/get-started/deployment/static-resource-proxy/nginx"
+          },
+          {
+            "type": "custom-link",
+            "label": "caddy",
+            "link": "/get-started/deployment/static-resource-proxy/caddy"
+          },
+          {
+            "type": "custom-link",
+            "label": "cdn",
+            "link": "/get-started/deployment/static-resource-proxy/cdn"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "常用运维命令",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "docker compose",
+            "link": "/get-started/deployment/common-commands/docker-compose"
+          },
+          {
+            "type": "custom-link",
+            "label": "pm2",
+            "link": "/get-started/deployment/common-commands/pm2"
+          }
+        ]
       },
       {
         "type": "custom-link",
@@ -79,7 +115,7 @@
   },
   {
     "type": "custom-link",
-    "label": "备份与还原",
-    "link": "/get-started/backup-and-restore"
+    "label": "安装与升级插件",
+    "link": "/get-started/install-upgrade-plugins"
   }
 ]

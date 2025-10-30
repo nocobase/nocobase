@@ -14,6 +14,7 @@ import {
   createSafeWindow,
   createSafeNavigator,
   escapeT,
+  compileRunJs,
 } from '@nocobase/flow-engine';
 import React from 'react';
 import { CodeEditor } from '../../components/code-editor';
@@ -151,8 +152,9 @@ ctx.element.innerHTML = \`
             get: () => new ElementProxy(element),
           });
           const navigator = createSafeNavigator();
+          const compiled = await compileRunJs(code);
           await ctx.runjs(
-            code,
+            compiled,
             { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
             { version },
           );

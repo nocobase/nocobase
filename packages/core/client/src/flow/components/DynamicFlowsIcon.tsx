@@ -145,7 +145,6 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   const ctx = useFlowContext();
   const flowEngine = model.flowEngine;
   const [submitLoading, setSubmitLoading] = React.useState(false);
-  const refresh = useUpdate();
   const t = model.translate.bind(model);
 
   // 创建新流的默认值
@@ -161,7 +160,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
 
   // 删除流
   const handleDeleteFlow = (flow: FlowDefinition) => {
-    flow.destroy();
+    flow.remove();
   };
 
   // 上移流
@@ -205,9 +204,13 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
 
   // 获取可用的动作类型
   const getActionList = () => {
-    return [...model.getActions().values()].filter((action) =>
-      _.castArray(action.scene).includes(ActionScene.DYNAMIC_EVENT_FLOW),
-    );
+    return [...model.getActions().values()]
+      .filter((action) => _.castArray(action.scene).includes(ActionScene.DYNAMIC_EVENT_FLOW))
+      .sort((a, b) => {
+        const sortA = a.sort ?? 0;
+        const sortB = b.sort ?? 0;
+        return sortA - sortB;
+      });
   };
 
   // 添加步骤
@@ -347,7 +350,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
                           marginBottom: '8px',
                         }}
                       >
-                        <span style={{ fontWeight: 500, color: '#262626' }}>
+                        <span style={{ fontWeight: 600, color: '#262626' }}>
                           {t(actionDef.title)}
                           <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
                         </span>

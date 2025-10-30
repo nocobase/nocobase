@@ -1129,7 +1129,9 @@ export const SchemaSettingsLinkageRules = function LinkageRules(props) {
   const category = props?.category ?? LinkageRuleCategory.default;
   const elementType =
     props?.type ||
-    (fieldSchema?.['x-action'] || ['Action', 'Action.Link'].includes(fieldSchema['x-component']) ? 'button' : 'field');
+    (fieldSchema?.['x-action'] || ['Action', 'Action.Link', 'WorkbenchAction'].includes(fieldSchema['x-component'])
+      ? 'button'
+      : 'field');
 
   const gridSchema = findGridSchema(fieldSchema) || fieldSchema;
   const options = useLinkageCollectionFilterOptions(collectionName);

@@ -1,6 +1,0 @@
-# Database
-
-## collection()
-
-## sync()
-

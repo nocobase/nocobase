@@ -24,6 +24,7 @@ interface Props {
   fieldUid: string;
   value: any;
   onChange: (value: any) => void;
+  placeholder?: string;
 }
 
 /**
@@ -31,7 +32,7 @@ interface Props {
  * - 使用临时的 VariableFieldFormModel 包裹字段模型，确保常量编辑为真实字段组件
  * - 支持变量引用，并提供 Constant / Null 两种快捷项
  */
-export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChange }) => {
+export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChange, placeholder }) => {
   const flowCtx = useFlowContext();
 
   // 在当前表单网格中定位到选中的字段模型（FormItemModel 实例）
@@ -48,7 +49,7 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
   const { collection, dataSource, blockModel } = itemModel?.context || {};
   const init = itemModel?.getStepParams?.('fieldSettings', 'init') || {};
   const fieldPath: string | undefined = init?.fieldPath;
-  const fieldName = fieldPath.split('.').slice(-1)[0];
+  const fieldName = fieldPath?.split('.').slice(-1)[0];
 
   // 生成临时根模型 + 子字段模型
   const [tempRoot, setTempRoot] = React.useState<any>(null);
@@ -77,6 +78,9 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
                   fieldPath,
                 },
               },
+            },
+            props: {
+              placeholder,
             },
           },
         ],

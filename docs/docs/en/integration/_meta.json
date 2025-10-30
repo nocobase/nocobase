@@ -1,0 +1,42 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Overview",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API Keys",
+    "link": "/integration/api-keys/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API Doc",
+    "link": "/integration/api-doc/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Embed",
+    "link": "/integration/embed/"
+  },
+  {
+    "type": "custom-link",
+    "label": "iframe",
+    "link": "/integration/block-iframe/"
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Workflow Webhook",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Workflow HTTP request",
+    "link": "/integration/"
+  }
+]

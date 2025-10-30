@@ -50,6 +50,14 @@ export function defineBaseContextMeta() {
     },
     methods: {
       t: 'Internationalization function for translating text. Parameters: (key: string, variables?: object) => string. Example: `ctx.t("Hello {name}", { name: "World" })`',
+      render: {
+        description:
+          'Render into container. Accepts ReactElement, DOM Node/Fragment, or HTML string. Parameters: (vnode: ReactElement | Node | DocumentFragment | string, container?: HTMLElement|ElementProxy) => Root|null. Example: `ctx.render(<div>Hello</div>)` or `ctx.render("<b>hi</b>")`',
+        detail: 'ReactDOM Root',
+        completion: {
+          insertText: `ctx.render(<div />)`,
+        },
+      },
       requireAsync:
         'Asynchronously load external libraries from URL. Parameters: (url: string) => Promise<any>. Example: `const lodash = await ctx.requireAsync("https://cdn.jsdelivr.net/npm/lodash")`',
       importAsync:
@@ -127,6 +135,14 @@ export function defineBaseContextMeta() {
       },
       methods: {
         t: '国际化函数，用于翻译文案。参数：(key: string, variables?: object) => string。示例：`ctx.t("你好 {name}", { name: "世界" })`',
+        render: {
+          description:
+            '渲染到容器。vnode 支持 ReactElement、DOM 节点/片段、或 HTML 字符串。参数：(vnode: ReactElement | Node | DocumentFragment | string, container?: HTMLElement|ElementProxy) => Root|null。示例：`ctx.render(<div />)` 或 `ctx.render("<b>hi</b>")`',
+          detail: 'ReactDOM Root',
+          completion: {
+            insertText: `ctx.render(<div />)`,
+          },
+        },
         requireAsync:
           '按 URL 异步加载外部库。参数：(url: string) => Promise<any>。示例：`const lodash = await ctx.requireAsync("https://cdn.jsdelivr.net/npm/lodash")`',
         importAsync:

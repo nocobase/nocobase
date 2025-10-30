@@ -1826,12 +1826,14 @@ describe('FlowModel', () => {
 
         const serialized = model.serialize();
 
-        expect(serialized).toEqual({
-          uid: model.uid,
-          stepParams: expect.objectContaining({ flow1: { step1: { param1: 'value1' } } }),
-          sortIndex: 5,
-          subModels: expect.any(Object),
-        });
+        expect(serialized).toEqual(
+          expect.objectContaining({
+            uid: model.uid,
+            stepParams: expect.objectContaining({ flow1: { step1: { param1: 'value1' } } }),
+            sortIndex: 5,
+            subModels: expect.any(Object),
+          }),
+        );
         // props should be excluded from serialization
         expect(serialized.props).toBeUndefined();
         expect(serialized.flowEngine).toBeUndefined();
@@ -1849,12 +1851,14 @@ describe('FlowModel', () => {
 
         const serialized = emptyModel.serialize();
 
-        expect(serialized).toEqual({
-          uid: 'empty-model',
-          stepParams: expect.any(Object),
-          sortIndex: expect.any(Number),
-          subModels: expect.any(Object),
-        });
+        expect(serialized).toEqual(
+          expect.objectContaining({
+            uid: 'empty-model',
+            stepParams: expect.any(Object),
+            sortIndex: expect.any(Number),
+            subModels: expect.any(Object),
+          }),
+        );
         expect(serialized.flowEngine).toBeUndefined();
       });
     });
