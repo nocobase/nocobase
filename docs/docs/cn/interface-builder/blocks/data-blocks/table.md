@@ -65,8 +65,8 @@
 
 ![20251023185425](https://static-docs.nocobase.com/20251023185425.png)
 
-- [Js field](/interface-builder/fields/specific/js-field)
-- [Js column](/interface-builder/fields/specific/js-column)
+- [JS Field](/interface-builder/fields/specific/js-field)
+- [JS Column](/interface-builder/fields/specific/js-column)
 
 ## 配置操作
 
@@ -84,7 +84,7 @@
 - [批量更新](/interface-builder/actions/types/bulk-update)
 - [导出附件](/interface-builder/actions/types/export-attachments)
 - [触发工作流](/interface-builder/actions/types/trigger-workflow)
-- [JS action ](/interface-builder/actions/types/js-action)
+- [JS Action](/interface-builder/actions/types/js-action)
 - [AI 员工](/interface-builder/actions/types/ai-employee)
 
 ### 行操作
@@ -99,6 +99,5 @@
 - [更新记录](/interface-builder/actions/types/update-record)
 - [模板打印](/interface-builder/actions/types/template-print)
 - [触发工作流](/interface-builder/actions/types/trigger-workflow)
-- [JS action ](/interface-builder/actions/types/js-action)
+- [JS Action](/interface-builder/actions/types/js-action)
 - [AI 员工](/interface-builder/actions/types/ai-employee)
-

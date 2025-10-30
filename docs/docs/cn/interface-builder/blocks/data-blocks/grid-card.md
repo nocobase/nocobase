@@ -55,7 +55,7 @@
 - [导出附件](/interface-builder/actions/types/export-attachments)
 - [触发工作流](/interface-builder/actions/types/trigger-workflow)
 - [AI 员工](/interface-builder/actions/types/ai-employee)
-- [JS action ](/interface-builder/actions/types/js-action)
+- [JS Action](/interface-builder/actions/types/js-action)
 
 ### 行操作
 
@@ -69,5 +69,4 @@
 - [模板打印](/interface-builder/actions/types/template-print)
 - [触发工作流](/interface-builder/actions/types/trigger-workflow)
 - [AI 员工](/interface-builder/actions/types/ai-employee)
-- [JS action ](/interface-builder/actions/types/js-action)
-
+- [JS Action](/interface-builder/actions/types/js-action)

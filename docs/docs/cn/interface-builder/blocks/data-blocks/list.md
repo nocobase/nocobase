@@ -60,7 +60,7 @@
 - [批量更新](/interface-builder/actions/types/bulk-update)
 - [导出附件](/interface-builder/actions/types/export-attachments)
 - [触发工作流](/interface-builder/actions/types/trigger-workflow)
-- [JS action ](/interface-builder/actions/types/js-action)
+- [JS Action](/interface-builder/actions/types/js-action)
 - [AI 员工](/interface-builder/actions/types/ai-employee)
 
 ### 行操作
@@ -75,6 +75,5 @@
 - [更新记录](/interface-builder/actions/types/update-record)
 - [模板打印](/interface-builder/actions/types/template-print)
 - [触发工作流](/interface-builder/actions/types/trigger-workflow)
-- [JS action ](/interface-builder/actions/types/js-action)
+- [JS Action](/interface-builder/actions/types/js-action)
 - [AI 员工](/interface-builder/actions/types/ai-employee)
-
