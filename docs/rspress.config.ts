@@ -72,7 +72,7 @@ export default defineConfig({
       description: '帮助你快速学习和掌握 NocoBase',
     },
   ],
-  lang: 'cn',
+  lang: 'en',
   themeConfig: {
     socialLinks: [
       {
