@@ -103,8 +103,7 @@
 - 控制字段的 **显示/隐藏**
 - 设置字段是否 **必填**
 - **赋值**
-- 配置选项字段的 **选项范围**
-- 限定时间字段的 **可选时间范围**
+- 执行javaScript处理自定义业务逻辑
 
 👉 详情查看：[区块/字段联动规则](/interface-builder/blocks/block-settings/field-linkage-rule)
 
