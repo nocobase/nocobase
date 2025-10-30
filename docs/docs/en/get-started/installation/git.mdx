@@ -1,10 +1,10 @@
-# Git 源码安装
+# Install from Git Source
 
-:::tip 前提条件
+:::tip Prerequisites
 
-- 安装了 Git、Node.js 20+、Yarn 1.22.x
-- 配置并启动了所需数据库 MySQL 8.0.17+、MariaDB 10.9+、PostgreSQL 10+ 任选其一
-- 由于国内网络环境的原因，建议你更换国内镜像（非必须）
+- Git, Node.js 20+, and Yarn 1.22.x are installed
+- A required database is configured and running: MySQL 8.0.17+, MariaDB 10.9+, or PostgreSQL 10+
+- Due to network conditions, it is recommended to switch to a mirror registry (optional)
 
 ```bash
 $ yarn config set disable-self-update-check true
@@ -13,26 +13,26 @@ $ yarn config set registry https://registry.npmmirror.com/
 
 :::
 
-## 1. 将 NocoBase 下载到本地
+## 1. Download NocoBase to your local machine
 
-选择 NocoBase 版本（[版本对比](../quickstart.md)），执行相应的命令。
+Choose a NocoBase version ([Version Comparison](../quickstart.md)) and run the corresponding command.
 
 <Tabs>
-<Tab label="latest 版本">
+<Tab label="latest version">
 
 ```bash
 git clone https://github.com/nocobase/nocobase.git -b main --depth=1 my-nocobase
 ```
 
 </Tab>
-<Tab label="beta 版本">
+<Tab label="beta version">
 
 ```bash
 git clone https://github.com/nocobase/nocobase.git -b next --depth=1 my-nocobase
 ```
 
 </Tab>
-<Tab label="alpha 版本">
+<Tab label="alpha version">
 
 ```bash
 git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocobase
@@ -41,23 +41,23 @@ git clone https://github.com/nocobase/nocobase.git -b develop --depth=1 my-nocob
 </Tab>
 </Tabs>
 
-## 2. 切换目录
+## 2. Change directory
 
 ```bash
 cd my-nocobase
 ```
 
-## 3. 安装依赖
+## 3. Install dependencies
 
-📢 由于网络环境、系统配置等因素影响，接下来这一步骤可能需要十几分钟时间。
+📢 This step may take more than ten minutes, depending on your network environment, system configuration, and other factors.
 
 ```bash
 yarn install --frozen-lockfile
 ```
 
-## 4. 设置环境变量
+## 4. Set environment variables
 
-NocoBase 所需的环境变量储存在根目录 `.env` 文件里，根据实际情况修改环境变量。
+The environment variables required by NocoBase are stored in the `.env` file in the root directory. Modify the environment variables according to your actual situation.
 
 ```bash
 TZ=Asia/Shanghai
@@ -69,38 +69,38 @@ DB_USER=nocobase
 DB_PASSWORD=nocobase
 ```
 
-:::warning 环境变量说明
+:::warning Environment Variable Descriptions
 
-- `TZ` 用于设置应用的时区，默认为操作系统时区；
-- `APP_KEY` 是应用的密钥，用于生成用户 token 等（如果 APP_KEY 修改了，旧的 token 也会随之失效）。它可以是任意随机字符串。请修改为自己的秘钥，并确保不对外泄露；
-- `DB_*` 为数据库相关，如果不是例子默认的数据库服务，请根据实际情况修改。
+- `TZ` is used to set the application's time zone, which defaults to the operating system's time zone;
+- `APP_KEY` is the application's secret key, used for generating user tokens, etc. (If `APP_KEY` is changed, old tokens will become invalid). It can be any random string. Please change it to your own secret key and ensure it is not exposed;
+- `DB_*` are database-related. If you are not using the default database service from the example, please modify them according to your actual situation.
 
 :::
 
-## 5. 安装 NocoBase
+## 5. Install NocoBase
 
 ```bash
-yarn nocobase install --lang=zh-CN
+yarn nocobase install --lang=en-US
 ```
 
-## 6. 启动 NocoBase
+## 6. Start NocoBase
 
 ```bash
 yarn dev
 ```
 
-:::tip 生产环境提示
+:::tip Production Environment Tip
 
-源码安装的 NocoBase 不建议直接在生产环境部署（生产环境请参考 [生产环境部署](../deployment/production.md)）。
+It is not recommended to deploy NocoBase installed from source code directly in a production environment (for production environments, please refer to [Production Deployment](../deployment/production.md)).
 
 :::
 
-## 7. 登录 NocoBase
+## 7. Log in to NocoBase
 
-使用浏览器打开 [http://localhost:13000](http://localhost:13000)，初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
+Open [http://localhost:13000](http://localhost:13000) in your browser. The initial account and password are `admin@nocobase.com` and `admin123`.
 
-:::warning 账号安全提示
+:::warning Account Security Warning
 
-首次登录后，请及时修改默认密码以确保系统安全。
+After logging in for the first time, please change the default password promptly to ensure system security.
 
 :::

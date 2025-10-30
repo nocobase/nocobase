@@ -1,58 +1,58 @@
 ---
 versions:
-  - label: Latest（稳定版）
-    features: 功能稳定、测试完善，仅进行缺陷修复。
-    audience: 希望获得稳定体验的用户、生产环境部署。
+  - label: Latest (Stable)
+    features: Stable features, well-tested, only bug fixes.
+    audience: Users who want a stable experience, production environment deployment.
     stability: ★★★★★
-    production_recommendation: 推荐
-  - label: Beta（测试版）
-    features: 包含即将发布的新功能，经过初步测试，可能存在少量问题。
-    audience: 希望提前体验新功能并提供反馈的用户。
+    production_recommendation: Recommended
+  - label: Beta
+    features: Includes upcoming new features, has undergone initial testing, and may have a few issues.
+    audience: Users who want to experience new features in advance and provide feedback.
     stability: ★★★★☆
-    production_recommendation: 谨慎使用
-  - label: Alpha（开发版）
-    features: 开发中的版本，功能最新但可能不完整或不稳定。
-    audience: 对前沿开发感兴趣的技术用户、贡献者。
+    production_recommendation: Use with caution
+  - label: Alpha (Development)
+    features: A version under development, with the latest features but may be incomplete or unstable.
+    audience: Technical users and contributors interested in cutting-edge development.
     stability: ★★☆☆☆
-    production_recommendation: 谨慎使用
+    production_recommendation: Use with caution
 
 install_methods:
-  - label: Docker 安装（推荐）
-    features: 无需编写代码，安装简单，适合快速体验。
-    scenarios: 无代码用户、希望快速部署到服务器的用户。
+  - label: Docker Installation (Recommended)
+    features: No coding required, simple installation, suitable for a quick experience.
+    scenarios: No-code users, users who want to quickly deploy to a server.
     technical_requirement: ★☆☆☆☆
-    upgrade_method: 拉取最新镜像并重启容器
-  - label: create-nocobase-app 安装
-    features: 业务代码独立，支持插件扩展和界面定制。
-    scenarios: 前端/全栈开发者、团队项目、低代码开发。
+    upgrade_method: Pull the latest image and restart the container
+  - label: create-nocobase-app Installation
+    features: Independent business code, supports plugin extensions and interface customization.
+    scenarios: Front-end/full-stack developers, team projects, low-code development.
     technical_requirement: ★★★☆☆
-    upgrade_method: 使用 yarn 更新依赖
-  - label: Git 源码安装
-    features: 直接获取最新源码，可参与贡献与调试。
-    scenarios: 技术开发者、希望体验未发布版本的用户。
+    upgrade_method: Update dependencies using yarn
+  - label: Git Source Code Installation
+    features: Get the latest source code directly, can participate in contribution and debugging.
+    scenarios: Technical developers, users who want to experience unreleased versions.
     technical_requirement: ★★★★★
-    upgrade_method: 通过 Git 流程同步更新
+    upgrade_method: Synchronize updates through the Git process
 ---
 
-# 安装方式和版本对比
+# Getting Started
 
-你可以通过不同方式安装 NocoBase。
+You can install NocoBase in different ways.
 
-## 版本对比
+## Version Comparison
 
-| 项目 | **Latest（稳定版）** | **Beta（测试版）** | **Alpha（开发版）** |
+| Item | **Latest (Stable)** | **Beta** | **Alpha (Development)** |
 |------|------------------------|----------------------|-----------------------|
-| **特点** | 功能稳定、测试完善，仅进行缺陷修复。 | 包含即将发布的新功能，经过初步测试，可能存在少量问题。 | 开发中的版本，功能最新但可能不完整或不稳定。 |
-| **适用人群** | 希望获得稳定体验的用户、生产环境部署。 | 希望提前体验新功能并提供反馈的用户。 | 对前沿开发感兴趣的技术用户、贡献者。 |
-| **稳定性** | ★★★★★ | ★★★★☆ | ★★☆☆☆ |
-| **是否推荐生产使用** | 推荐 | 谨慎使用 | 谨慎使用 |
+| **Features** | Stable features, well-tested, only bug fixes. | Includes upcoming new features, has undergone initial testing, and may have a few issues. | A version under development, with the latest features but may be incomplete or unstable. |
+| **Audience** | Users who want a stable experience, production environment deployment. | Users who want to experience new features in advance and provide feedback. | Technical users and contributors interested in cutting-edge development. |
+| **Stability** | ★★★★★ | ★★★★☆ | ★★☆☆☆ |
+| **Recommended for Production** | Recommended | Use with caution | Use with caution |
 
-## 安装方式对比
+## Installation Method Comparison
 
-| 项目 | **Docker 安装（推荐）** | **create-nocobase-app 安装** | **Git 源码安装** |
+| Item | **Docker Installation (Recommended)** | **create-nocobase-app Installation** | **Git Source Code Installation** |
 |------|--------------------------|------------------------------|------------------|
-| **特点** | 无需编写代码，安装简单，适合快速体验。 | 业务代码独立，支持插件扩展和界面定制。 | 直接获取最新源码，可参与贡献与调试。 |
-| **适用场景** | 无代码用户、希望快速部署到服务器的用户。 | 前端/全栈开发者、团队项目、低代码开发。 | 技术开发者、希望体验未发布版本的用户。 |
-| **技术要求** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
-| **升级方式** | 拉取最新镜像并重启容器 | 使用 yarn 更新依赖 | 通过 Git 流程同步更新 |
-| **教程** | [<code>安装</code>](#) [<code>升级</code>](#) [<code>部署</code>](#) | [<code>安装</code>](#) [<code>升级</code>](#) [<code>部署</code>](#) | [<code>安装</code>](#) [<code>升级</code>](#) [<code>部署</code>](#) |
+| **Features** | No coding required, simple installation, suitable for a quick experience. | Independent business code, supports plugin extensions and interface customization. | Get the latest source code directly, can participate in contribution and debugging. |
+| **Scenarios** | No-code users, users who want to quickly deploy to a server. | Front-end/full-stack developers, team projects, low-code development. | Technical developers, users who want to experience unreleased versions. |
+| **Technical Requirement** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
+| **Upgrade Method** | Pull the latest image and restart the container | Update dependencies using yarn | Synchronize updates through the Git process |
+| **Tutorials** | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) |

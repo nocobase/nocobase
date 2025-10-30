@@ -1,36 +1,36 @@
-# create-nocobase-app 安装的升级
+# Upgrading a create-nocobase-app Installation
 
-:::warning 升级前的准备
+:::warning Preparation before upgrading
 
-- 请务必先备份数据库
-- 停止运行中的 NocoBase
+- Be sure to back up the database first
+- Stop the running NocoBase instance
 
 :::
 
-## 1. 停止运行中的 NocoBase
+## 1. Stop the running NocoBase instance
 
-如果是非后台运行的进程，通过 `Ctrl + C` 停止，生产环境执行 `pm2-stop` 命令来停止。
+If it's not a background process, stop it with `Ctrl + C`. In a production environment, execute the `pm2-stop` command to stop it.
 
 ```bash
 yarn nocobase pm2-stop
 ```
 
-## 2. 执行升级命令
+## 2. Execute the upgrade command
 
-直接执行 `yarn nocobase upgrade` 升级命令即可
+Simply execute the `yarn nocobase upgrade` command.
 
 ```bash
-# 切换到对应的目录
+# Switch to the corresponding directory
 cd my-nocobase-app
-# 执行更新命令
+# Execute the upgrade command
 yarn nocobase upgrade
-# 启动
+# Start
 yarn dev
 ```
 
-### 升级到指定版本
+### Upgrading to a specific version
 
-修改项目根目录的 `package.json` 文件，修改 `@nocobase/cli` 和 `@nocobase/devtools` 的版本号即可（只能升级不能降级）。如：
+Modify the `package.json` file in the project's root directory, and change the version numbers for `@nocobase/cli` and `@nocobase/devtools` (you can only upgrade, not downgrade). For example:
 
 ```diff
 {
@@ -45,7 +45,7 @@ yarn dev
 }
 ```
 
-然后执行升级命令
+Then execute the upgrade command
 
 ```bash
 yarn install

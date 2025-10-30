@@ -1,10 +1,10 @@
-# create-nocobase-app 安装
+# create-nocobase-app Installation
 
-:::tip 前提条件
+:::tip Prerequisites
 
-- 安装了 Node.js 20+、Yarn 1.22.x
-- 配置并启动了所需数据库 MySQL 8.0.17+、MariaDB 10.9+、PostgreSQL 10+ 任选其一
-- 由于国内网络环境的原因，建议你更换国内镜像（非必须）
+- Node.js 20+, Yarn 1.22.x are installed
+- One of the required databases is configured and running: MySQL 8.0.17+, MariaDB 10.9+, or PostgreSQL 10+
+- Due to network conditions in mainland China, it is recommended to switch to a domestic mirror (optional)
 
 ```bash
 $ yarn config set disable-self-update-check true
@@ -13,12 +13,12 @@ $ yarn config set registry https://registry.npmmirror.com/
 
 :::
 
-## 1. 创建 NocoBase 项目
+## 1. Create a NocoBase Project
 
-选择 NocoBase 版本（[版本对比](../quickstart.md)）和数据库类型，执行相应的命令。
+Select the NocoBase version ([Version Comparison](../quickstart.md)) and database type, then execute the corresponding command.
 
 <Tabs>
-<Tab label="latest 版本">
+<Tab label="latest version">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -66,7 +66,7 @@ yarn create nocobase-app my-nocobase-app -d mariadb \
 
 </Tab>
 
-<Tab label="beta 版本">
+<Tab label="beta version">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -114,7 +114,7 @@ npx create-nocobase-app@beta my-nocobase-app -d mariadb \
 
 </Tab>
 
-<Tab label="alpha 版本">
+<Tab label="alpha version">
 
 <Tabs>
 <Tab label="PostgreSQL">
@@ -163,31 +163,31 @@ npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
 </Tab>
 </Tabs>
 
-:::warning 环境变量说明
+:::warning Environment Variables
 
-- `TZ` 用于设置应用的时区，默认为操作系统时区
-- `APP_KEY` 是应用的密钥，用于生成用户 token 等（如果 APP_KEY 修改了，旧的 token 也会随之失效）。它可以是任意随机字符串。**请修改为自己的秘钥，并确保不对外泄露**
-- `DB_*` 为数据库相关配置，请根据实际情况修改为你的数据库连接信息
+- `TZ` is used to set the application's time zone, which defaults to the operating system's time zone.
+- `APP_KEY` is the application's secret key, used for generating user tokens, etc. (If `APP_KEY` is changed, old tokens will become invalid). It can be any random string. **Please change it to your own secret key and ensure it is not exposed.**
+- `DB_*` are database-related configurations. Please modify them to match your database connection information according to your actual setup.
 
 :::
 
-## 2. 切换目录
+## 2. Change Directory
 
 ```bash
 cd my-nocobase-app
 ```
 
-## 3. 安装依赖
+## 3. Install Dependencies
 
-📢 由于网络环境、系统配置等因素影响，这一步可能需要十几分钟时间。
+📢 Depending on your network environment, system configuration, and other factors, this step may take over ten minutes.
 
 ```bash
 yarn install
 ```
 
-:::tip 生产环境提示
+:::tip Production Environment Tip
 
-生产环境部署时，为了减少体积，可以只安装必要的依赖：
+When deploying in a production environment, you can install only the necessary dependencies to reduce the size:
 
 ```bash
 yarn install --production
@@ -195,34 +195,34 @@ yarn install --production
 
 :::
 
-## 4. 安装 NocoBase
+## 4. Install NocoBase
 
 ```bash
-yarn nocobase install --lang=zh-CN
+yarn nocobase install --lang=en-US
 ```
 
-安装过程会自动创建数据库表结构和初始化数据。
+The installation process will automatically create the database table structure and initialize data.
 
-## 5. 启动 NocoBase
+## 5. Start NocoBase
 
-**开发环境**
+**Development Environment**
 
 ```bash
 yarn dev
 ```
 
-**生产环境**
+**Production Environment**
 
 ```bash
 yarn start
 ```
 
-## 6. 登录 NocoBase
+## 6. Log in to NocoBase
 
-使用浏览器打开 [http://localhost:13000](http://localhost:13000)，初始化账号和密码是 `admin@nocobase.com` 和 `admin123`。
+Open [http://localhost:13000](http://localhost:13000) in your browser. The initial account and password are `admin@nocobase.com` and `admin123`.
 
-:::warning 账号安全提示
+:::warning Account Security Tip
 
-首次登录后，请及时修改默认密码以确保系统安全。
+After your first login, please change the default password immediately to ensure system security.
 
 :::

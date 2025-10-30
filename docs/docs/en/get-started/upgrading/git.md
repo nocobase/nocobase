@@ -1,61 +1,61 @@
-# Git 源码安装的升级
+# Upgrading a Git Source Installation
 
-:::warning 升级前的准备
+:::warning Preparation Before Upgrading
 
-- 请务必先备份数据库
-- 停止运行中的 NocoBase（`Ctrl + C`）
+- Be sure to back up your database first
+- Stop the running NocoBase instance (`Ctrl + C`)
 
 :::
 
-## 1. 切换到 NocoBase 项目目录
+## 1. Switch to the NocoBase project directory
 
 ```bash
 cd my-nocobase-app
 ```
 
-## 2. 拉取最新代码
+## 2. Pull the latest code
 
 ```bash
 git pull
 ```
 
-## 3. 删除缓存和旧依赖（非必须）
+## 3. Delete cache and old dependencies (optional)
 
-如果正常的升级流程失败，可以尝试清空缓存和依赖之后重新下载
+If the normal upgrade process fails, you can try clearing the cache and dependencies and then re-downloading them.
 
 ```bash
-# 删除 nocobase 缓存
+# Clear nocobase cache
 yarn nocobase clean
-# 删除依赖
-yarn rimraf -rf node_modules # 等同于 rm -rf node_modules
+# Delete dependencies
+yarn rimraf -rf node_modules # equivalent to rm -rf node_modules
 ```
 
-## 4. 更新依赖
+## 4. Update dependencies
 
-📢 由于网络环境、系统配置等因素影响，接下来这一步骤可能需要十几分钟时间。
+📢 Due to factors such as network environment and system configuration, this next step may take more than ten minutes.
 
 ```bash
 yarn install
 ```
 
-## 5. 执行升级命令
+## 5. Run the upgrade command
 
 ```bash
 yarn nocobase upgrade
 ```
 
-## 6. 启动 NocoBase
+## 6. Start NocoBase
 
 ```bash
 yarn dev
 ```
 
-:::tip 生产环境提示
+:::tip Production Environment Tip
 
-源码安装的 NocoBase 不建议直接在生产环境部署（生产环境请参考 [生产环境部署](../deployment/production.md)）。
+It is not recommended to deploy a NocoBase installation from source code directly in a production environment (for production environments, please refer to [Production Deployment](../deployment/production.md)).
 
 :::
 
-## 7. 第三方插件的升级
+## 7. Upgrading third-party plugins
 
-参考 [安装与升级插件](../install-upgrade-plugins.mdx)
+Refer to [Install and Upgrade Plugins](../install-upgrade-plugins.mdx)

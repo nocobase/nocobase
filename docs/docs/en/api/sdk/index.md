@@ -1,10 +1,10 @@
 # APIClient
 
-## 概览
+## Overview
 
-`APIClient` 基于 <a href="https://axios-http.com/" target="_blank">`axios`</a> 封装，用于在客户端通过 HTTP， 请求 NocoBase 的资源操作。
+`APIClient` is a wrapper based on <a href="https://axios-http.com/" target="_blank">`axios`</a>, used to request NocoBase resource actions on the client side via HTTP.
 
-### 基本使用
+### Basic Usage
 
 ```ts
 class PluginSampleAPIClient extends Plugin {
@@ -16,31 +16,31 @@ class PluginSampleAPIClient extends Plugin {
 }
 ```
 
-## 实例属性
+## Instance Properties
 
 ### `axios`
 
-`axios` 实例，可以访问 `axios` API, 比如 `apiClient.axios.interceptors`.
+The `axios` instance, which can be used to access the `axios` API, for example, `apiClient.axios.interceptors`.
 
 ### `auth`
 
-客户端鉴权类，参考 [Auth](./auth.md).
+Client-side authentication class, see [Auth](./auth.md).
 
 ### `storage`
 
-客户端存储类，参考 [Storage](./storage.md).
+Client-side storage class, see [Storage](./storage.md).
 
-## 类方法
+## Class Methods
 
 ### `constructor()`
 
-构造函数，创建一个 `APIClient` 实例。
+Constructor, creates an `APIClient` instance.
 
-#### 签名
+#### Signature
 
 - `constructor(instance?: APIClientOptions)`
 
-#### 类型
+#### Type
 
 ```ts
 interface ExtendedOptions {
@@ -55,13 +55,13 @@ export type APIClientOptions =
 
 ### `request()`
 
-发起 HTTP 请求。
+Initiates an HTTP request.
 
-#### 签名
+#### Signature
 
 - `request<T = any, R = AxiosResponse<T>, D = any>(config: AxiosRequestConfig<D> | ResourceActionOptions): Promise<R>`
 
-#### 类型
+#### Type
 
 ```ts
 type ResourceActionOptions<P = any> = {
@@ -72,11 +72,11 @@ type ResourceActionOptions<P = any> = {
 };
 ```
 
-#### 详细信息
+#### Details
 
 ##### AxiosRequestConfig
 
-通用的 axios 请求参数。参考 <a href="https://axios-http.com/docs/req_config" target="_blank">Request Config</a>.
+General axios request parameters. See <a href="https://axios-http.com/docs/req_config" target="_blank">Request Config</a>.
 
 ```ts
 const res = await apiClient.request({ url: '' });
@@ -84,7 +84,7 @@ const res = await apiClient.request({ url: '' });
 
 ##### ResourceActionOptions
 
-NocoBase 资源操作请求参数。
+NocoBase resource action request parameters.
 
 ```ts
 const res = await apiClient.request({
@@ -96,17 +96,17 @@ const res = await apiClient.request({
 });
 ```
 
-| 属性            | 类型     | 描述                                                                                 |
-| --------------- | -------- | ------------------------------------------------------------------------------------ |
-| `resource`      | `string` | 1. 资源名称，比如 `a`<br />2. 资源的关联对象名称，比如 `a.b`                         |
-| `resourceOf`    | `any`    | 当 `resource` 为资源的关联对象名称时，资源的主键值。比如 `a.b` 时，代表 `a` 的主键值 |
-| `action`        | `string` | 操作名称                                                                             |
-| `params`        | `any`    | 请求参数对象，主要是 URL 参数，请求体放到 `params.values` 中                         |
-| `params.values` | `any`    | 请求体对象                                                                           |
+| Property        | Type     | Description                                                                                                                                              |
+| --------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resource`      | `string` | 1. Resource name, e.g., `a`<br />2. Name of the resource's associated object, e.g., `a.b`                                                                |
+| `resourceOf`    | `any`    | When `resource` is the name of the resource's associated object, it is the primary key value of the resource. For example, for `a.b`, it represents the primary key value of `a`. |
+| `action`        | `string` | Action name                                                                                                                                              |
+| `params`        | `any`    | Request parameter object, mainly URL parameters. The request body is placed in `params.values`.                                                          |
+| `params.values` | `any`    | Request body object                                                                                                                                      |
 
 ### `resource()`
 
-获取 NocoBase 资源操作方法对象。
+Gets the NocoBase resource action method object.
 
 ```ts
 const resource = apiClient.resource('users');
@@ -123,11 +123,11 @@ const res = await resource.list({
 });
 ```
 
-#### 签名
+#### Signature
 
 - `resource(name: string, of?: any, headers?: AxiosRequestHeaders): IResource`
 
-#### 类型
+#### Type
 
 ```ts
 export interface ActionParams {
@@ -142,10 +142,10 @@ export type IResource = {
 };
 ```
 
-#### 详细信息
+#### Details
 
-| 参数名    | 类型                  | 描述                                                                                 |
-| --------- | --------------------- | ------------------------------------------------------------------------------------ |
-| `name`    | `string`              | 1. 资源名称，比如 `a`<br />2. 资源的关联对象名称，比如 `a.b`                         |
-| `of`      | `any`                 | 当 `resource` 为资源的关联对象名称时，资源的主键值。比如 `a.b` 时，代表 `a` 的主键值 |
-| `headers` | `AxiosRequestHeaders` | 后续要发起资源操作请求时，携带的 HTTP 请求头                                         |
+| Parameter | Type                  | Description                                                                                                                                              |
+| --------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`    | `string`              | 1. Resource name, e.g., `a`<br />2. Name of the resource's associated object, e.g., `a.b`                                                                |
+| `of`      | `any`                 | When `name` is the name of the resource's associated object, it is the primary key value of the resource. For example, for `a.b`, it represents the primary key value of `a`. |
+| `headers` | `AxiosRequestHeaders` | The HTTP headers to be carried when subsequent resource action requests are initiated.                                                                   |

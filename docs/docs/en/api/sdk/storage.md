@@ -1,10 +1,10 @@
 # Storage
 
-## 概览
+## Overview
 
-`Storage` 类用于客户端信息存储，默认使用 `localStorage`.
+The `Storage` class is used for client-side information storage, using `localStorage` by default.
 
-### 基本使用
+### Basic Usage
 
 ```ts
 export abstract class Storage {
@@ -19,36 +19,36 @@ export class CustomStorage extends Storage {
 }
 ```
 
-## 类方法
+## Class Methods
 
 ### `setItem()`
 
-存储内容。
+Stores content.
 
-#### 签名
+#### Signature
 
 - `setItem(key: string, value: string): void`
 
 ### `getItem()`
 
-获取内容。
+Gets content.
 
-#### 签名
+#### Signature
 
 - `getItem(key: string): string | null`
 
 ### `removeItem()`
 
-删除内容。
+Removes content.
 
-#### 签名
+#### Signature
 
 - `removeItem(key: string): void`
 
 ### `clear()`
 
-清除所有内容。
+Clears all content.
 
-#### 签名
+#### Signature
 
 - `clear(): void`

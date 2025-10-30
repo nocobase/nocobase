@@ -1,21 +1,21 @@
-# 全局环境变量
+# Global Environment Variables
 
 ## TZ
 
-用于设置应用的时区，默认为操作系统时区。
+Used to set the application's time zone, defaults to the operating system's time zone.
 
 https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 
 :::warning
-与时间相关的操作会依据该时区进行处理，修改 TZ 可能会影响数据库里的日期值，详情查看「[日期 & 时间概述](#)」
+Time-related operations will be processed according to this time zone. Modifying TZ may affect the date values in the database. For details, see '[Date & Time Overview](#)'
 :::
 
 ## APP_ENV
 
-应用环境，默认值 `development`，可选项包括：
+Application environment, default value is `development`. Options include:
 
-- `production` 生产环境
-- `development` 开发环境
+- `production` Production environment
+- `development` Development environment
 
 ```bash
 APP_ENV=production
@@ -23,10 +23,10 @@ APP_ENV=production
 
 ## APP_KEY
 
-应用的密钥，用于生成用户 token 等，修改为自己的应用密钥，并确保不对外泄露
+The application's secret key, used for generating user tokens, etc. Change it to your own application key and ensure it is not disclosed.
 
 :::warning
-如果 APP_KEY 修改了，旧的 token 也会随之失效
+If APP_KEY is changed, old tokens will become invalid.
 :::
 
 ```bash
@@ -35,7 +35,7 @@ APP_KEY=app-key-test
 
 ## APP_PORT
 
-应用端口，默认值 `13000`
+Application port, default value is `13000`.
 
 ```bash
 APP_PORT=13000
@@ -43,7 +43,7 @@ APP_PORT=13000
 
 ## API_BASE_PATH
 
-NocoBase API 地址前缀，默认值 `/api/`
+NocoBase API address prefix, default value is `/api/`.
 
 ```bash
 API_BASE_PATH=/api/
@@ -55,41 +55,41 @@ API_BASE_PATH=/api/
 
 > `v1.6.0+`
 
-多核（集群）启动模式，如配置了该变量，会透传至 `pm2 start` 命令中作为 `-i <instances>` 的参数。可选项与 pm2 `-i` 参数一致（参考 [PM2: Cluster Mode](https://pm2.keymetrics.io/docs/usage/cluster-mode/)），包括：
+Multi-core (cluster) startup mode. If this variable is configured, it will be passed through to the `pm2 start` command as the `-i <instances>` parameter. The options are consistent with the pm2 `-i` parameter (see [PM2: Cluster Mode](https://pm2.keymetrics.io/docs/usage/cluster-mode/)), including:
 
-- `max`：使用 CPU 最大核数
-- `-1`：使用 CPU 最大核数 -1
-- `<number>`：指定核数
+- `max`: use the maximum number of CPU cores
+- `-1`: use the maximum number of CPU cores minus 1
+- `<number>`: specify the number of cores
 
-默认值为空，代表不开启。
+The default value is empty, which means it is not enabled.
 
-:::warning{title="注意"}
-该模式需要配合集群模式相关的插件使用，否则应用的功能可能出现异常。
+:::warning{title="Note"}
+This mode needs to be used with cluster mode-related plugins, otherwise the application's functionality may be abnormal.
 :::
 
-更多可参考：[集群模式](#)。
+For more information, see: [Cluster Mode](#).
 
 ## PLUGIN_PACKAGE_PREFIX
 
-插件包名前缀，默认为：`@nocobase/plugin-,@nocobase/preset-`。
+Plugin package name prefix, defaults to: `@nocobase/plugin-,@nocobase/preset-`.
 
-例如，添加 `hello` 插件到 `my-nocobase-app` 项目，插件的完整包名则为 `@my-nocobase-app/plugin-hello`。
+For example, to add the `hello` plugin to the `my-nocobase-app` project, the full package name of the plugin would be `@my-nocobase-app/plugin-hello`.
 
-PLUGIN_PACKAGE_PREFIX 可以配置为：
+PLUGIN_PACKAGE_PREFIX can be configured as:
 
 ```bash
 PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase-preset-,@my-nocobase-app/plugin-
 ```
 
-则插件名称和包名对应关系如下：
+Then the mapping between plugin names and package names is as follows:
 
-- `users` 插件的包名为 `@nocobase/plugin-users`
-- `nocobase` 插件的包名为 `@nocobase/preset-nocobase`
-- `hello` 插件的包名为 `@my-nocobase-app/plugin-hello`
+- The package name for the `users` plugin is `@nocobase/plugin-users`
+- The package name for the `nocobase` plugin is `@nocobase/preset-nocobase`
+- The package name for the `hello` plugin is `@my-nocobase-app/plugin-hello`
 
 ## DB_DIALECT
 
-数据库类型，可选项包括：
+Database type, options include:
 
 - `mariadb`
 - `mysql`
@@ -101,9 +101,9 @@ DB_DIALECT=mysql
 
 ## DB_HOST
 
-数据库主机（使用 MySQL 或 PostgreSQL 数据库时需要配置）
+Database host (required when using MySQL or PostgreSQL database).
 
-默认值 `localhost`
+Default value is `localhost`.
 
 ```bash
 DB_HOST=localhost
@@ -111,10 +111,10 @@ DB_HOST=localhost
 
 ## DB_PORT
 
-数据库端口（使用 MySQL 或 PostgreSQL 数据库时需要配置）
+Database port (required when using MySQL or PostgreSQL database).
 
-- MySQL、MariaDB 默认端口 3306
-- PostgreSQL 默认端口 5432
+- MySQL, MariaDB default port 3306
+- PostgreSQL default port 5432
 
 ```bash
 DB_PORT=3306
@@ -122,7 +122,7 @@ DB_PORT=3306
 
 ## DB_DATABASE
 
-数据库名（使用 MySQL 或 PostgreSQL 数据库时需要配置）
+Database name (required when using MySQL or PostgreSQL database).
 
 ```bash
 DB_DATABASE=nocobase
@@ -130,7 +130,7 @@ DB_DATABASE=nocobase
 
 ## DB_USER
 
-数据库用户（使用 MySQL 或 PostgreSQL 数据库时需要配置）
+Database user (required when using MySQL or PostgreSQL database).
 
 ```bash
 DB_USER=nocobase
@@ -138,7 +138,7 @@ DB_USER=nocobase
 
 ## DB_PASSWORD
 
-数据库密码（使用 MySQL 或 PostgreSQL 数据库时需要配置）
+Database password (required when using MySQL or PostgreSQL database).
 
 ```bash
 DB_PASSWORD=nocobase
@@ -146,7 +146,7 @@ DB_PASSWORD=nocobase
 
 ## DB_TABLE_PREFIX
 
-数据表前缀
+Table prefix.
 
 ```bash
 DB_TABLE_PREFIX=nocobase_
@@ -154,18 +154,18 @@ DB_TABLE_PREFIX=nocobase_
 
 ## DB_UNDERSCORED
 
-数据库表名、字段名是否转为 snake case 风格，默认为 `false`。如果使用 MySQL（MariaDB）数据库，并且 `lower_case_table_names=1`，则 DB_UNDERSCORED 必须为 `true`
+Whether to convert database table names and field names to snake case style, defaults to `false`. If you are using a MySQL (MariaDB) database and `lower_case_table_names=1`, then DB_UNDERSCORED must be `true`.
 
 :::warning
-当 `DB_UNDERSCORED=true` 时，数据库实际的表名和字段名与界面所见的并不一致，如 `orderDetails` 数据库里的是 `order_details`
+When `DB_UNDERSCORED=true`, the actual table and field names in the database will not be consistent with what is seen in the interface. For example, `orderDetails` in the database will be `order_details`.
 :::
 
 ## DB_LOGGING
 
-数据库日志开关，默认值 `off`，可选项包括：
+Database logging switch, default value is `off`. Options include:
 
-- `on` 打开
-- `off` 关闭
+- `on` on
+- `off` off
 
 ```bash
 DB_LOGGING=on
@@ -173,12 +173,11 @@ DB_LOGGING=on
 
 ## LOGGER_TRANSPORT
 
-日志输出方式，多个用 `,` 分隔。开发环境默认值 `console`, 生产环境默认值 `console,dailyRotateFile`.
-可选项：
+Log output transport, multiple values are separated by `,`. The default value in development environment is `console`, and in production environment is `console,dailyRotateFile`. Options:
 
 - `console` - `console.log`
-- `file` - `文件`
-- `dailyRotateFile` - `按天滚动文件`
+- `file` - `File`
+- `dailyRotateFile` - `Daily rotating file`
 
 ```bash
 LOGGER_TRANSPORT=console,dailyRotateFile
@@ -186,7 +185,7 @@ LOGGER_TRANSPORT=console,dailyRotateFile
 
 ## LOGGER_BASE_PATH
 
-基于文件的日志存储路径，默认为 `storage/logs`。
+File-based log storage path, defaults to `storage/logs`.
 
 ```bash
 LOGGER_BASE_PATH=storage/logs
@@ -194,7 +193,7 @@ LOGGER_BASE_PATH=storage/logs
 
 ## LOGGER_LEVEL
 
-输出日志级别，开发环境默认值 `debug`, 生产环境默认值 `info`. 可选项：
+Output log level. The default value in development environment is `debug`, and in production environment is `info`. Options:
 
 - `error`
 - `warn`
@@ -206,14 +205,14 @@ LOGGER_BASE_PATH=storage/logs
 LOGGER_LEVEL=info
 ```
 
-数据库日志输出级别为 `debug`, 由 `DB_LOGGING` 控制是否输出，不受 `LOGGER_LEVEL` 影响。
+The database log output level is `debug`, and whether it is output is controlled by `DB_LOGGING`, not affected by `LOGGER_LEVEL`.
 
 ## LOGGER_MAX_FILES
 
-最大保留日志文件数。
+Maximum number of log files to keep.
 
-- `LOGGER_TRANSPORT` 为 `file` 时，默认值为 `10`.
-- `LOGGER_TRANSPORT` 为 `dailyRotateFile`, 使用 `[n]d` 代表天数。默认值为 `14d`.
+- When `LOGGER_TRANSPORT` is `file`, the default value is `10`.
+- When `LOGGER_TRANSPORT` is `dailyRotateFile`, use `[n]d` to represent days. The default value is `14d`.
 
 ```bash
 LOGGER_MAX_FILES=14d
@@ -221,10 +220,10 @@ LOGGER_MAX_FILES=14d
 
 ## LOGGER_MAX_SIZE
 
-按大小滚动日志。
+Rotate logs by size.
 
-- `LOGGER_TRANSPORT` 为 `file` 时，单位为 `byte`, 默认值为 `20971520 (20 * 1024 * 1024)`.
-- `LOGGER_TRANSPORT` 为 `dailyRotateFile`, 可以使用 `[n]k`, `[n]m`, `[n]g`. 默认不配置。
+- When `LOGGER_TRANSPORT` is `file`, the unit is `byte`, and the default value is `20971520 (20 * 1024 * 1024)`.
+- When `LOGGER_TRANSPORT` is `dailyRotateFile`, you can use `[n]k`, `[n]m`, `[n]g`. Not configured by default.
 
 ```bash
 LOGGER_MAX_SIZE=20971520
@@ -232,7 +231,7 @@ LOGGER_MAX_SIZE=20971520
 
 ## LOGGER_FORMAT
 
-日志打印格式，开发环境默认 `console`, 生产环境默认 `json`. 可选项:
+Log printing format. The default in development environment is `console`, and in production environment is `json`. Options:
 
 - `console`
 - `json`
@@ -243,11 +242,11 @@ LOGGER_MAX_SIZE=20971520
 LOGGER_FORMAT=json
 ```
 
-参考：[日志格式](#)
+See: [Log Format](#)
 
 ## CACHE_DEFAULT_STORE
 
-使用缓存方式的唯一标识，指定服务端默认缓存方式，默认值 `memory`, 内置可选项：
+The unique identifier for the cache store to use, specifying the server-side default cache store. Default value is `memory`. Built-in options:
 
 - `memory`
 - `redis`
@@ -258,7 +257,7 @@ CACHE_DEFAULT_STORE=memory
 
 ## CACHE_MEMORY_MAX
 
-内存缓存项目最大个数，默认值 `2000`。
+Maximum number of items in memory cache, default value is `2000`.
 
 ```bash
 CACHE_MEMORY_MAX=2000
@@ -266,7 +265,7 @@ CACHE_MEMORY_MAX=2000
 
 ## CACHE_REDIS_URL
 
-Redis连接，可选。示例：`redis://localhost:6379`
+Redis connection, optional. Example: `redis://localhost:6379`
 
 ```bash
 CACHE_REDIS_URL=redis://localhost:6379
@@ -274,7 +273,7 @@ CACHE_REDIS_URL=redis://localhost:6379
 
 ## TELEMETRY_ENABLED
 
-启动遥测数据收集，默认为 `off`.
+Enable telemetry data collection, defaults to `off`.
 
 ```bash
 TELEMETRY_ENABLED=on
@@ -282,7 +281,7 @@ TELEMETRY_ENABLED=on
 
 ## TELEMETRY_METRIC_READER
 
-启用的监控指标采集器，默认为 `console`. 其他值需要参考对应采集器插件注册的名字，如 `prometheus`. 多个使用 `,` 分隔。
+Enabled monitoring metric readers, defaults to `console`. Other values should refer to the registered names of the corresponding reader plugins, such as `prometheus`. Multiple values are separated by `,`.
 
 ```bash
 TELEMETRY_METRIC_READER=console,prometheus
@@ -290,7 +289,7 @@ TELEMETRY_METRIC_READER=console,prometheus
 
 ## TELEMETRY_TRACE_PROCESSOR
 
-启用的链路数据处理器，默认为 `console`. 其他值需要参考对应处理器插件注册的名字。多个使用 `,` 分隔。
+Enabled trace data processors, defaults to `console`. Other values should refer to the registered names of the corresponding processor plugins. Multiple values are separated by `,`.
 
 ```bash
 TELEMETRY_TRACE_PROCESSOR=console

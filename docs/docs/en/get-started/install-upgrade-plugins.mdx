@@ -1,26 +1,26 @@
-# 安装与升级插件
+# Install and Upgrade Plugins
 
-## 内置插件
+## Built-in Plugins
 
-NocoBase 内置插件会随内核版本自动更新，无需手动操作。
+NocoBase built-in plugins are automatically updated with the core version and require no manual action.
 
-## 商业插件
+## Commercial Plugins
 
-请登录 NocoBase Service 查阅使用文档，了解商业插件的安装与升级方式。
+Please log in to NocoBase Service and refer to the documentation to learn how to install and upgrade commercial plugins.
 
-## 第三方插件
+## Third-party Plugins
 
-从 2.0 版本开始，插件不再支持在线安装。请先将插件包下载到本地，然后手动上传并解压至 `./storage/plugins` 目录。如果该插件已启用，请在上传并解压完成后，执行以下命令完成插件升级。
+Starting from version 2.0, online installation of plugins is no longer supported. Please download the plugin package to your local machine first, then manually upload and extract it to the `./storage/plugins` directory. If the plugin is already enabled, run the following command to complete the plugin upgrade after uploading and extracting.
 
-> ⚠️ **注意**：为避免缓存问题，请在执行前确保 NocoBase 应用已停止运行。
+> ⚠️ **Note**: To avoid cache issues, please ensure that the NocoBase application is stopped before execution.
 
 ```bash
 yarn nocobase upgrade --skip-code-update
 ```
 
-### 正确的插件解压方式
+### Correct Way to Extract a Plugin
 
-以下示例演示如何将插件包正确解压到指定目录：
+The following example demonstrates how to correctly extract a plugin package to the specified directory:
 
 ```bash
 mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
@@ -29,13 +29,13 @@ mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
   --strip-components=1
 ```
 
-该命令会将插件解压到指定目录，并且不会多一层 `package` 目录
+This command will extract the plugin to the specified directory without an extra `package` directory layer.
 
 ```bash
 /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas
 ```
 
-### 正确的目录结构示例
+### Example of a Correct Directory Structure
 
 ```bash
 ./plugin-auth-cas/dist/server/migrations/20240425200816-change-locale-module.js

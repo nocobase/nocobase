@@ -1,7 +1,7 @@
 [
   {
     "type": "custom-link",
-    "label": "NocoBase 如何工作",
+    "label": "How NocoBase Works",
     "link": "/get-started/how-nocobase-works"
   },
   {
@@ -10,68 +10,68 @@
   },
   {
     "type": "custom-link",
-    "label": "安装 NocoBase",
+    "label": "Install NocoBase",
     "items": [
       {
         "type": "custom-link",
-        "label": "Docker 安装",
+        "label": "Docker Installation",
         "link": "/get-started/installation/docker"
       },
       {
         "type": "custom-link",
-        "label": "create-nocobase-app 安装",
+        "label": "create-nocobase-app Installation",
         "link": "/get-started/installation/create-nocobase-app"
       },
       {
         "type": "custom-link",
-        "label": "Git 源码安装",
+        "label": "Git Source Installation",
         "link": "/get-started/installation/git"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "升级 NocoBase",
+    "label": "Upgrade NocoBase",
     "items": [
       {
         "type": "custom-link",
-        "label": "Docker 安装的升级",
+        "label": "Upgrade Docker Installation",
         "link": "/get-started/upgrading/docker"
       },
       {
         "type": "custom-link",
-        "label": "create-nocobase-app 安装的升级",
+        "label": "Upgrade create-nocobase-app Installation",
         "link": "/get-started/upgrading/create-nocobase-app"
       },
       {
         "type": "custom-link",
-        "label": "Git 源码安装的升级",
+        "label": "Upgrade Git Source Installation",
         "link": "/get-started/upgrading/git"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "部署",
+    "label": "Deployment",
     "items": [
       {
         "type": "custom-link",
-        "label": "生产环境部署",
+        "label": "Production Environment Deployment",
         "link": "/get-started/deployment/production"
       },
       {
         "type": "custom-link",
-        "label": "内网部署",
+        "label": "Intranet Deployment",
         "link": "/get-started/deployment/internal"
       },
       {
         "type": "custom-link",
-        "label": "集群部署",
+        "label": "Cluster Deployment",
         "link": "/get-started/deployment/cluster"
       },
       {
         "type": "custom-link",
-        "label": "静态资源代理",
+        "label": "Static Resource Proxy",
         "items": [
           {
             "type": "custom-link",
@@ -92,7 +92,7 @@
       },
       {
         "type": "custom-link",
-        "label": "常用运维命令",
+        "label": "Common Operations Commands",
         "items": [
           {
             "type": "custom-link",
@@ -108,14 +108,14 @@
       },
       {
         "type": "custom-link",
-        "label": "如何部署才更快",
+        "label": "How to Deploy Faster",
         "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "安装与升级插件",
+    "label": "Install and Upgrade Plugins",
     "link": "/get-started/install-upgrade-plugins"
   }
 ]
