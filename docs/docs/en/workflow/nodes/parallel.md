@@ -34,4 +34,4 @@ Regardless of the mode, each branch will be executed in order from left to right
 
 ## Example
 
-Refer to the example in [Delay Node](/handbook/workflow-delay#示例).
+Refer to the example in [Delay Node](./delay.md).
