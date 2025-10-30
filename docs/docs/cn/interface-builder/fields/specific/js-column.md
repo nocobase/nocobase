@@ -20,6 +20,7 @@ JS 列的每个单元格渲染时可使用以下上下文能力：
 - `ctx.i18n.t()` / `ctx.t()`：国际化；
 - `ctx.onRefReady(ctx.ref, cb)`：容器就绪后再渲染；
 - `ctx.React` / `ctx.ReactDOM` / `ctx.antd`：支持 JSX，直接由 `ctx.ReactDOM` 渲染。
+- `ctx.render(vnode)`：渲染 React 元素/HTML/DOM 到默认容器 `ctx.element`（当前单元格），多次渲染会复用 Root，并覆盖容器现有内容。
 
 ## 编辑器与片段
 

@@ -16,6 +16,7 @@ JS Block 的运行时上下文已注入常用能力，可直接使用：
 - `ctx.i18n.t()` / `ctx.t()`：内置国际化能力；
 - `ctx.onRefReady(ctx.ref, cb)`：容器就绪后再渲染，避免时序问题；
 - `ctx.React` / `ctx.ReactDOM` / `ctx.antd`：支持 JSX，直接在编辑器里书写 JSX 即可由 `ctx.ReactDOM` 渲染。
+- `ctx.render(vnode)`：将 React 元素、HTML 字符串或 DOM 节点渲染到默认容器 `ctx.element`；多次调用会复用同一 React Root，并覆盖容器现有内容。
 
 ## 添加区块
 
