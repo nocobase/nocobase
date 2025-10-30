@@ -6,7 +6,7 @@
 
 在开始之前，请确保你已经成功安装 NocoBase。如果尚未安装，可以参考以下安装指南：
 
-- [使用 create-nocobase-app 安装](../get-started/installation/create-nocobase-app.mdx)
+- [使用 create-nocobase-app 安装](/get-started/installation/create-nocobase-app)
 - [从 Git 源码安装](/get-started/installation/git)
 
 安装完成后，就可以正式开启你的插件开发之旅了。
