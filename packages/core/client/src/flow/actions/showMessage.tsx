@@ -24,6 +24,7 @@ export const showMessage = defineAction({
   name: 'showMessage',
   title: escapeT('Show message'),
   scene: ActionScene.DYNAMIC_EVENT_FLOW,
+  sort: 500,
   uiSchema: {
     value: {
       type: 'object',

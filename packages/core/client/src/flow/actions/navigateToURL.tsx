@@ -24,6 +24,7 @@ export const navigateToURL = defineAction({
   name: 'navigateToURL',
   title: escapeT('Navigate to URL'),
   scene: ActionScene.DYNAMIC_EVENT_FLOW,
+  sort: 400,
   uiSchema: {
     value: {
       type: 'object',

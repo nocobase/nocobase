@@ -17,6 +17,7 @@ export const setTargetDataScope = defineAction({
   name: 'setTargetDataScope',
   title: tval('Set data scope'),
   scene: [ActionScene.DYNAMIC_EVENT_FLOW],
+  sort: 200,
   uiSchema: {
     targetBlockUid: {
       type: 'string',

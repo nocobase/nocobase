@@ -27,6 +27,7 @@ export const showNotification = defineAction({
   name: 'showNotification',
   title: escapeT('Show notification'),
   scene: ActionScene.DYNAMIC_EVENT_FLOW,
+  sort: 600,
   uiSchema: {
     value: {
       type: 'object',
