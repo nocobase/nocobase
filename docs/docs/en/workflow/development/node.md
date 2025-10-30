@@ -140,15 +140,15 @@ If a node returns a failed execution status during execution, the engine will ha
 
 Ultimately, the next state of the entire workflow is determined at the nodes of the main workflow. If a node in the main workflow returns a failure, the entire workflow ends with a failed status.
 
-If any node returns a "pending" status after execution, the entire execution process will be temporarily interrupted and suspended, waiting for an event defined by the corresponding node to trigger the resumption of the workflow. For example, the [Manual Node](../manual/nodes/manual), when executed, will pause at that node with a "pending" status, waiting for manual intervention to decide whether to approve. If the manually entered status is approval, the subsequent workflow nodes will continue; otherwise, it will be handled according to the failure logic described earlier.
+If any node returns a "pending" status after execution, the entire execution process will be temporarily interrupted and suspended, waiting for an event defined by the corresponding node to trigger the resumption of the workflow. For example, the Manual Node, when executed, will pause at that node with a "pending" status, waiting for manual intervention to decide whether to approve. If the manually entered status is approval, the subsequent workflow nodes will continue; otherwise, it will be handled according to the failure logic described earlier.
 
-For more instruction return statuses, please refer to the [Workflow API Reference](./api#JOB_STATUS) section.
+For more instruction return statuses, please refer to the Workflow API Reference section.
 
 ### Early Exit
 
 In some special workflows, it may be necessary to end the workflow directly within a node. You can return `null` to indicate exiting the current workflow, and subsequent nodes will not be executed.
 
-This situation is common in flow control type nodes, such as the [Parallel Branch Node](../manual/nodes/parallel) ([code reference](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L87)), where the current node's workflow exits, but new workflows are started for each sub-branch and continue to execute.
+This situation is common in flow control type nodes, such as the Parallel Branch Node ([code reference](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/server/ParallelInstruction.ts#L87)), where the current node's workflow exits, but new workflows are started for each sub-branch and continue to execute.
 
 :::warn{title=Note}
 Scheduling branch workflows with extended nodes has a certain complexity and requires careful handling and thorough testing.
@@ -156,7 +156,7 @@ Scheduling branch workflows with extended nodes has a certain complexity and req
 
 ### Learn More
 
-For the definitions of various parameters for defining node types, see the [Workflow API Reference](.api#instruction) section.
+For the definitions of various parameters for defining node types, see the Workflow API Reference section.
 
 ## Client-side
 
@@ -296,7 +296,7 @@ This way, in subsequent nodes, you can use the following interface to select var
 
 
 :::info{title="Note"}
-When a structure in the result is an array of deeply nested objects, you can also use `children` to describe the path, but it cannot include array indices. This is because in NocoBase workflow's variable handling, the variable path description for an array of objects is automatically flattened into an array of deep values when used, and you cannot access a specific value by its index. You can refer to the content in the "[Workflow: Advanced Usage](../manual/advanced#using-variables)" section.
+When a structure in the result is an array of deeply nested objects, you can also use `children` to describe the path, but it cannot include array indices. This is because in NocoBase workflow's variable handling, the variable path description for an array of objects is automatically flattened into an array of deep values when used, and you cannot access a specific value by its index.
 :::
 
 ### Node Availability
@@ -333,4 +333,4 @@ isAvailable({ engine, workflow, upstream, branchIndex }) {
 
 ### Learn More
 
-For the definitions of various parameters for defining node types, see the [Workflow API Reference](./api#instruction-1) section.
+For the definitions of various parameters for defining node types, see the Workflow API Reference section.
