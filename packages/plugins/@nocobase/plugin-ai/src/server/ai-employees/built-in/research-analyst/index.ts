@@ -27,6 +27,14 @@ export default {
         name: 'frontend-formFiller',
         autoCall: true,
       },
+      {
+        name: 'dataSource-dataSourceCounting',
+        autoCall: true,
+      },
+      {
+        name: 'dataSource-dataSourceQuery',
+        autoCall: true,
+      },
     ],
   },
 };

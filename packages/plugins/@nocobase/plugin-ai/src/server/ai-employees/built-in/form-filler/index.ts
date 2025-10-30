@@ -13,5 +13,17 @@ export default {
   username: 'avery',
   description: 'AI employee for form filling',
   profile,
-  skillSettings: { skills: [{ name: 'frontend-formFiller', autoCall: true }] },
+  skillSettings: {
+    skills: [
+      { name: 'frontend-formFiller', autoCall: true },
+      {
+        name: 'dataSource-dataSourceCounting',
+        autoCall: true,
+      },
+      {
+        name: 'dataSource-dataSourceQuery',
+        autoCall: true,
+      },
+    ],
+  },
 };
