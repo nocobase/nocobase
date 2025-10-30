@@ -14,13 +14,12 @@ import { avatars } from '../../avatars';
 import { AIEmployee, TriggerTaskOptions, ContextItem as ContextItemType } from '../../types';
 import { useChatBoxActions } from '../../chatbox/hooks/useChatBoxActions';
 import { ProfileCard } from '../../ProfileCard';
-import { RemoteSelect, useToken } from '@nocobase/client';
+import { RemoteSelect, TextAreaWithContextSelector, useToken } from '@nocobase/client';
 import { useAIEmployeesData } from '../../hooks/useAIEmployeesData';
 import { AddContextButton } from '../../AddContextButton';
 import { useField } from '@formily/react';
 import { ArrayField, ObjectField } from '@formily/core';
 import { ContextItem } from '../../chatbox/ContextItem';
-import { aiSelection } from '../../stores/ai-selection';
 import { dialogController } from '../../stores/dialog-controller';
 import { namespace } from '../../../locale';
 import { ContextItem as WorkContextItem } from '../../types';
@@ -281,13 +280,13 @@ AIEmployeeShortcutModel.registerFlow({
                           { ns: namespace },
                         ),
                       },
-                      'x-component': 'Input.TextArea',
+                      'x-component': TextAreaWithContextSelector,
                     },
                     user: {
                       title: escapeT('Default user message', { ns: namespace }),
                       type: 'string',
                       'x-decorator': 'FormItem',
-                      'x-component': 'Input.TextArea',
+                      'x-component': TextAreaWithContextSelector,
                     },
                     workContext: {
                       title: escapeT('Work context', { ns: namespace }),
