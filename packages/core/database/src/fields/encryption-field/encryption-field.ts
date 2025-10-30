@@ -11,6 +11,59 @@ import { DataTypes, Model } from 'sequelize';
 import { EncryptionError } from './errors/EncryptionError';
 import { aesDecrypt, aesEncrypt, decryptFieldKey } from './utils';
 import { BaseColumnFieldOptions, Field } from '../field';
+import { uid } from '@nocobase/utils';
+import crypto from 'crypto';
+
+class EncryptedField {
+  private static encoding: Record<string, BufferEncoding> = {
+    iv: 'utf8',
+    value: 'hex',
+  };
+  private _serializedValue: string | null;
+
+  constructor(
+    private _iv: string,
+    private _value: unknown,
+  ) {}
+
+  get iv() {
+    return this._iv;
+  }
+
+  get value() {
+    return this._value as string;
+  }
+
+  get ivBuffer() {
+    return Buffer.from(this._iv, EncryptedField.encoding.iv) as unknown as Uint8Array;
+  }
+
+  get valueBuffer() {
+    return Buffer.from(this.value, EncryptedField.encoding.value) as unknown as Uint8Array;
+  }
+
+  get serializedValue() {
+    if (this._serializedValue) {
+      return this._serializedValue;
+    }
+    this._serializedValue = Buffer.concat([this.ivBuffer, this.valueBuffer]).toString(EncryptedField.encoding.value);
+    return this._serializedValue;
+  }
+
+  static create(iv: string, encrypted: unknown) {
+    return new EncryptedField(iv, encrypted);
+  }
+
+  static fromSerializedValue(serializedValue: string) {
+    const buff = Buffer.from(serializedValue, EncryptedField.encoding.value);
+    const iv = buff.subarray(0, 16);
+    const encrypted = buff.subarray(16);
+    return new EncryptedField(
+      iv.toString(EncryptedField.encoding.iv),
+      encrypted.toString(EncryptedField.encoding.value),
+    );
+  }
+}
 
 export interface EncryptionFieldOptions extends BaseColumnFieldOptions {
   type: 'encryption';
@@ -23,17 +76,30 @@ export class EncryptionField extends Field {
   }
 
   init() {
-    const { name, iv, encryptedKey } = this.options;
-    this.writeListener = async (model: Model) => {
+    const { name, encryptedKey } = this.options;
+    this.writeListener = async (model: Model, options) => {
       if (!model.changed(name as any)) {
         return;
       }
+      const previousInstance = (await (model.constructor as any).findByPk(options.filterByTk)) ?? {};
+      const previousValue = previousInstance[`_original_encrypted_value_${name}`];
+
       const value = model.get(name) as string;
       if (value !== undefined && value !== null) {
         try {
           const fieldKey = await decryptFieldKey(encryptedKey);
-          const encrypted = await aesEncrypt(fieldKey, value, iv);
-          model.set(name, encrypted);
+
+          let ivString: string;
+          if (model.isNewRecord || !previousValue) {
+            ivString = uid(16); // crypto.randomBytes(16).toString('hex');
+          } else {
+            const encryptedField = EncryptedField.fromSerializedValue(previousValue);
+            ivString = encryptedField.iv;
+          }
+
+          const encrypted = await aesEncrypt(fieldKey, value, ivString);
+          const encryptedField = EncryptedField.create(ivString, encrypted);
+          model.set(name, encryptedField.serializedValue);
         } catch (error) {
           console.error(error);
           if (error instanceof EncryptionError) {
@@ -55,7 +121,11 @@ export class EncryptionField extends Field {
           if (value !== undefined && value !== null) {
             try {
               const fieldKey = await decryptFieldKey(encryptedKey);
-              instance.set(name, await aesDecrypt(fieldKey, value, iv));
+              const encryptedField = EncryptedField.fromSerializedValue(value);
+              instance.set(name, await aesDecrypt(fieldKey, encryptedField.value, encryptedField.iv));
+              Object.defineProperty(instance, `_original_encrypted_value_${name}`, {
+                value,
+              });
             } catch (error) {
               console.error(error);
               if (error instanceof EncryptionError) {
