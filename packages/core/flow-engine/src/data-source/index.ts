@@ -486,7 +486,7 @@ export class Collection {
     if (otherKeys.length === 0) {
       return field;
     }
-    if (!field.targetCollection) {
+    if (!field?.targetCollection) {
       return null;
     }
     return field.targetCollection.getFieldByPath(otherKeys.join('.'));
