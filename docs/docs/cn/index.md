@@ -1,6 +1,8 @@
 ---
 pageType: home
 
+pageName: home
+
 hero:
   name: NocoBase 文档
   text: 帮助你快速学习和掌握 NocoBase
