@@ -175,7 +175,7 @@ export const useChatBoxActions = () => {
           send({
             aiEmployee,
             systemMessage,
-            messages: [userMessage],
+            messages: [userMessage ?? { type: 'text', content: '' }],
             attachments,
             workContext,
             skillSettings,
