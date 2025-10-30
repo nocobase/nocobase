@@ -19,6 +19,10 @@ export class AIContextDatasourceManager {
     return await this.innerQuery(ctx, { ...options, filter: options.filter ? transformFilter(options.filter) : null });
   }
 
+  async query(ctx: Context, options: InnerQueryOptions): Promise<QueryResult | null> {
+    return await this.innerQuery(ctx, { ...options, filter: options.filter });
+  }
+
   provideWorkContextResolveStrategy(): WorkContextResolveStrategy {
     return async (ctx: Context, contextItem: WorkContext): Promise<string> => {
       if (!contextItem.content) {
@@ -39,6 +43,7 @@ export class AIContextDatasourceManager {
       this.plugin.log.warn(`Datasource ${datasource} not found`);
       return {
         options,
+        total: 0,
         records: [],
       };
     }
@@ -47,6 +52,7 @@ export class AIContextDatasourceManager {
       this.plugin.log.warn(`Collection ${collectionName} not found`);
       return {
         options,
+        total: 0,
         records: [],
       };
     }
@@ -65,6 +71,7 @@ export class AIContextDatasourceManager {
       if (!can || typeof can !== 'object') {
         return {
           options,
+          total: 0,
           records: [],
         };
       }
@@ -105,8 +112,9 @@ export class AIContextDatasourceManager {
       });
     }
 
-    const { fields, filter, sort, limit } = options;
-    const result = await collection.repository.find({ fields, filter, sort, limit });
+    const { fields, filter, sort, offset, limit } = options;
+    const result = await collection.repository.find({ fields, filter, sort, offset: offset ?? 0, limit });
+    const total = await collection.repository.count({ fields, filter });
 
     const records = result.map((x) =>
       fields.map((field) => {
@@ -122,6 +130,7 @@ export class AIContextDatasourceManager {
 
     return {
       options,
+      total: total as number,
       records,
     };
   }
@@ -130,7 +139,7 @@ export class AIContextDatasourceManager {
 export type PreviewOptions = Pick<
   AIContextDatasource,
   'datasource' | 'collectionName' | 'fields' | 'appends' | 'filter' | 'sort' | 'limit'
->;
+> & { offset?: number };
 
 export type QueryOptions = {
   id: string;
@@ -138,6 +147,7 @@ export type QueryOptions = {
 
 export type QueryResult = {
   options: InnerQueryOptions;
+  total: number;
   records: {
     name: string;
     type: string;

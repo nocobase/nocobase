@@ -6,6 +6,12 @@
   },
   {
     "type": "dir",
+    "name": "auth",
+    "label": "@nocobase/auth",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
     "name": "cli",
     "label": "@nocobase/cli",
     "collapsed": true
@@ -32,6 +38,12 @@
     "type": "dir",
     "name": "server",
     "label": "@nocobase/server",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "sdk",
+    "label": "@nocobase/sdk",
     "collapsed": true
   }
 ]
