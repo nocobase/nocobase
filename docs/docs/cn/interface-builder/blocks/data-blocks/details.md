@@ -73,5 +73,5 @@
 - [弹窗](/interface-builder/actions/types/pop-up)
 - [更新记录](/interface-builder/actions/types/update-record)
 - [触发工作流](/interface-builder/actions/types/trigger-workflow)
-- [JS action ](/interface-builder/actions/types/js-action)
+- [JS Action](/interface-builder/actions/types/js-action)
 - [AI 员工](/interface-builder/actions/types/ai-employee)

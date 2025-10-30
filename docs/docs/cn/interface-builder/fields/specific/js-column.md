@@ -1,14 +1,14 @@
-# JSColumn
+# JS Column
 
 ## 介绍
 
-JS Item 用于表格中的“自定义列”，通过 JavaScript 渲染每一行的单元格内容。不绑定具体字段，适合衍生列、跨字段组合展示、状态徽章、按钮操作、远程数据汇总等场景。
+JS Column 用于表格中的“自定义列”，通过 JavaScript 渲染每一行的单元格内容。不绑定具体字段，适合衍生列、跨字段组合展示、状态徽章、按钮操作、远程数据汇总等场景。
 
 ![jscolumn-add-20251029](https://static-docs.nocobase.com/jscolumn-add-20251029.png)
 
 ## 运行时上下文 API
 
-JS 列的每个单元格渲染时可使用以下上下文能力：
+JS Column 的每个单元格渲染时可使用以下上下文能力：
 
 - `ctx.element`：当前单元格的 DOM 容器（ElementProxy），支持 `innerHTML`、`querySelector`、`addEventListener` 等；
 - `ctx.record`：当前行记录对象（只读）；
@@ -24,7 +24,7 @@ JS 列的每个单元格渲染时可使用以下上下文能力：
 
 ## 编辑器与片段
 
-JSColumn 的脚本编辑器支持语法高亮、错误提示与内置代码片段（Snippets）。
+JS Column 的脚本编辑器支持语法高亮、错误提示与内置代码片段（Snippets）。
 
 - `Snippets`：打开内置代码片段列表，可搜索并一键插入到当前光标位置。
 - `Run`：直接运行当前代码，运行日志输出到底部 `Logs` 面板，支持 `console.log/info/warn/error` 与错误高亮定位。

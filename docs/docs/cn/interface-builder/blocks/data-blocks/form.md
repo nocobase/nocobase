@@ -63,5 +63,5 @@
 
 - [提交](/interface-builder/actions/types/submit)
 - [触发工作流](/interface-builder/actions/types/trigger-workflow)
-- [JS action ](/interface-builder/actions/types/js-action)
+- [JS Action](/interface-builder/actions/types/js-action)
 - [AI 员工](/interface-builder/actions/types/ai-employee)

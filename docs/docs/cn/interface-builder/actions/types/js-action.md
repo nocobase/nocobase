@@ -1,4 +1,4 @@
-# JSAction
+# JS Action
 
 ## 介绍
 
