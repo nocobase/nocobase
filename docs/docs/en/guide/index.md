@@ -20,11 +20,11 @@ features:
         link: /ai-employees
         showOnHome: true
       - title: Users & Permissions
-        details: 定义角色、权限与访问控制，保障系统的安全与合规。
+        details: Define roles, permissions, and access controls to ensure system security and compliance.
         link: /users-permissions/user
         showOnHome: true
       - title: Authentication & Verification
-        details: 支持多种登录方式与验证机制，确保身份安全与一致性。
+        details: Support multiple authentication methods and verification mechanisms to ensure identity security and consistency.
         link: /auth-verification/auth
         showOnHome: true
       - title: Workflow
@@ -32,7 +32,7 @@ features:
         link: /workflow
         showOnHome: true
       - title: Notification
-        details: 配置邮件、短信、站内信 等通知渠道，实现消息自动推送。
+        details: Configure notification channels such as email, SMS, and in-app messages to enable automated message delivery.
         link: /notification-manager
         showOnHome: true
       - title: Multi-app and Multi-workspace
@@ -47,12 +47,12 @@ features:
         link: /ops-and-security/variables-and-secrets
       - title: Backup Manager
         details: Provides data backup and restore functionalities.
-        link: /ops-and-security/backup-manager
+        link: /backup-manager
       - title: Migration Manager
         details: Used to migrate application configurations from one application environment to another.
-        link: /ops-and-security/migration-manager
+        link: /migration-manager
       - title: Security
-        details: 覆盖数据、接口与访问层面的防护策略，确保平台运行安全。
+        details: Implement protective strategies covering data, API, and access layers to ensure platform security and stability.
         link: /security/guide
         showOnHome: true
       - title: Logging and Monitoring

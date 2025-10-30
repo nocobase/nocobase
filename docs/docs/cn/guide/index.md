@@ -44,23 +44,23 @@ features:
     items:
       - title: 变量和密钥
         details: 集中配置和管理环境变量和密钥，用于敏感数据存储、配置数据重用、环境配置隔离等。
-        link: /ops-and-security/variables-and-secrets
+        link: /variables-and-secrets
       - title: 备份管理器
         details: 提供数据备份及还原等功能。
-        link: /ops-and-security/backup-manager
+        link: /backup-manager
       - title: 迁移管理
         details: 用于将应用配置从一个应用环境迁移到另一个应用环境。
-        link: /ops-and-security/migration-manager
+        link: /migration-manager
       - title: 安全
         details: 覆盖数据、接口与访问层面的防护策略，确保平台运行安全。
         link: /security/guide
         showOnHome: true
       - title: 日志和监控
         details: 记录系统运行与用户操作。
-        link: /ops-and-security/logging-and-monitoring
+        link: /logging-and-monitoring
       - title: 集群模式
         details: 支持多节点部署与负载均衡，确保系统在高并发场景下的稳定性与可扩展性。
-        link: /ops-and-security/cluster-mode
+        link: /cluster-mode
   - title: 系统管理
     details: 系统配置、插件管理与界面定制。
     items:
