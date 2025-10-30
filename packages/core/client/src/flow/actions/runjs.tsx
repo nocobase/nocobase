@@ -21,6 +21,7 @@ export const runjs = defineAction({
   name: 'runjs',
   title: escapeT('Execute JavaScript'),
   scene: [ActionScene.DYNAMIC_EVENT_FLOW],
+  sort: 10000, // 排到最后
   uiSchema: {
     code: {
       type: 'string',
