@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-block-workbench"
+---
 # 区块：操作面板
-
-:::tip 提示
-该功能由插件 `plugin-block-workbench` 提供。
-:::
 
 ## 介绍
 

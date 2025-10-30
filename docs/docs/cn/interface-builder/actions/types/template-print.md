@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-action-template-print"
+---
 # 模板打印
-
-:::tip 提示
-该功能由商业插件 `plugin-action-template-print`提供。请查看商业授权了解详情.
-:::
 
 <style>
 .markdown h4 {

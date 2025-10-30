@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-action-export"
+---
 # 导出#
-
-:::tip 提示
-该功能由插件 `plugin-action-export` 提供。
-:::
 
 ## 介绍
 
@@ -28,4 +27,4 @@
 ![20251029171557](https://static-docs.nocobase.com/20251029171557.png)
 
 - [联动规则](/interface-builder/actions/action-settings/linkage-rule)：动态显示/隐藏按钮；
-- [编辑按钮](/interface-builder/actions/action-settings/edit-button)：编辑按钮的标题、颜色、图标；
+- [编辑按钮](/interface-builder/actions/action-settings/edit-button)：编辑按钮的标题、类型、图标；
