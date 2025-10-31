@@ -204,6 +204,7 @@ export class FlowExecutor {
     const logger = model.context.logger;
 
     try {
+      this.engine?.emitter?.emit(`event:${eventName}:start`, { model, eventName, inputArgs });
       await model.onDispatchEventStart?.(eventName, options, inputArgs);
     } catch (err) {
       if (isBeforeRender && err instanceof FlowExitException) {
@@ -295,6 +296,7 @@ export class FlowExecutor {
       } catch (hookErr) {
         logger.error({ err: hookErr }, `BaseModel.dispatchEvent: End hook error for event '${eventName}'`);
       }
+      this.engine?.emitter?.emit(`event:${eventName}:end`, { model, eventName, inputArgs, results: result });
       return result;
     } catch (error) {
       // 进入错误钩子并记录

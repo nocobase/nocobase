@@ -35,6 +35,13 @@ export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
     '_applyFlowCache',
     'executor',
     'context',
+    'emitter',
+    // 语义化封装方法需要在本地执行，保证使用本地 emitter
+    'onModelCreated',
+    'onModelMounted',
+    'onModelDestroyed',
+    'onEventStart',
+    'onEventEnd',
     'previousEngine',
     'nextEngine',
     // 栈指针维护方法需要在本地执行，而非代理到父引擎

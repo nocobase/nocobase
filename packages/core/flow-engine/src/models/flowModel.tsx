@@ -888,6 +888,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
           // 添加生命周期钩子：当渲染目标变化时，解绑旧目标并绑定新目标
           React.useEffect(() => {
+            renderTarget?.flowEngine?.emitter?.emit('model:mounted', { model: renderTarget });
             if (typeof renderTarget.onMount === 'function') {
               renderTarget.onMount();
             }

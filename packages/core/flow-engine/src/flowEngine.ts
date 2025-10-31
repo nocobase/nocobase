@@ -17,6 +17,7 @@ import { FlowSettings } from './flowSettings';
 import { ErrorFlowModel, FlowModel } from './models';
 import { ReactView } from './ReactView';
 import { APIResource, FlowResource, MultiRecordResource, SingleRecordResource, SQLResource } from './resources';
+import { Emitter } from './emitter';
 import type {
   ActionDefinition,
   ApplyFlowCacheEntry,
@@ -29,6 +30,27 @@ import type {
   ResourceType,
 } from './types';
 import { isInheritedFrom } from './utils';
+
+// =============================
+// Engine typed events map
+// =============================
+export type EngineEventMap =
+  // 模型生命周期
+  {
+    'model:created': { model: FlowModel };
+    'model:mounted': { model: FlowModel };
+    'model:destroyed': { uid: string; model?: FlowModel };
+  } & {
+    // 任意事件开始/结束
+    [K in `event:${string}:start`]: { model: FlowModel; eventName: string; inputArgs?: Record<string, unknown> };
+  } & {
+    [K in `event:${string}:end`]: {
+      model: FlowModel;
+      eventName: string;
+      inputArgs?: Record<string, unknown>;
+      results?: unknown[];
+    };
+  };
 
 /**
  * FlowEngine is the core class of the flow engine, responsible for managing flow models, actions, model repository, and more.
@@ -53,6 +75,10 @@ import { isInheritedFrom } from './utils';
  * const model = engine.createModel({ use: 'MyModel', uid: 'xxx' });
  */
 export class FlowEngine {
+  /**
+   * 强类型事件发射器（生命周期与事件分发钩子）
+   */
+  public emitter: Emitter<EngineEventMap> = new Emitter();
   /**
    * Global action registry
    */
@@ -163,6 +189,37 @@ export class FlowEngine {
       },
     });
     this.executor = new FlowExecutor(this);
+  }
+
+  // =============================
+  // 语义化事件订阅封装（便于 TS 提示与统一用法）
+  // =============================
+  onModelCreated(cb: (payload: EngineEventMap['model:created']) => void, options?: { tag?: string }) {
+    return this.emitter.on('model:created', cb, options);
+  }
+
+  onModelMounted(cb: (payload: EngineEventMap['model:mounted']) => void, options?: { tag?: string }) {
+    return this.emitter.on('model:mounted', cb, options);
+  }
+
+  onModelDestroyed(cb: (payload: EngineEventMap['model:destroyed']) => void, options?: { tag?: string }) {
+    return this.emitter.on('model:destroyed', cb, options);
+  }
+
+  onEventStart<T extends string>(
+    eventName: T,
+    cb: (payload: EngineEventMap[`event:${T}:start`]) => void,
+    options?: { tag?: string },
+  ) {
+    return this.emitter.on(`event:${eventName}:start` as `event:${T}:start`, cb, options);
+  }
+
+  onEventEnd<T extends string>(
+    eventName: T,
+    cb: (payload: EngineEventMap[`event:${T}:end`]) => void,
+    options?: { tag?: string },
+  ) {
+    return this.emitter.on(`event:${eventName}:end` as `event:${T}:end`, cb, options);
   }
 
   /** 上一个引擎（根引擎为 undefined） */
@@ -446,6 +503,7 @@ export class FlowEngine {
     this._modelInstances.set(modelInstance.uid, modelInstance);
 
     modelInstance.onInit(options);
+    this.emitter?.emit('model:created', { model: modelInstance });
 
     // 在模型实例化阶段应用 flow 级 defaultParams（仅填充缺失的 stepParams，不覆盖）
     // 不阻塞创建流程：允许 defaultParams 为异步函数
@@ -565,6 +623,9 @@ export class FlowEngine {
       }
     }
     this._modelInstances.delete(uid);
+    // 先清理以该 uid 为 tag 的监听，再发 destroyed 事件
+    this.emitter?.offByTag?.(uid);
+    this.emitter?.emit('model:destroyed', { uid, model: modelInstance });
     return true;
   }
 
