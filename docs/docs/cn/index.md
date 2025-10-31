@@ -5,7 +5,7 @@ pageName: home
 
 hero:
   name: NocoBase 文档
-  text: 帮助你快速学习和掌握 NocoBase
+  text: 快速学习和掌握 NocoBase
   # tagline: 了解如何上手并实现 NocoBase
   actions:
     - theme: brand
