@@ -146,7 +146,22 @@ JSFieldModel.registerFlow({
       defaultParams(ctx) {
         return {
           version: 'v1',
-          code: DEFAULT_CODE,
+          code: `
+function JsReadonlyField() {
+  const React = ctx.React;
+  const { Input } = ctx.antd;
+  return (
+    <Input
+      value={String(ctx.value ?? '')}
+      disabled
+      readOnly
+      style={{ width: '100%' }}
+    />
+  );
+}
+
+ctx.render(<JsReadonlyField />);
+`,
         };
       },
       async handler(ctx, params) {
