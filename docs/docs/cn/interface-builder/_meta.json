@@ -428,6 +428,11 @@
             "type": "custom-link",
             "label": "批量更新",
             "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Action",
+            "link": "/interface-builder/actions/types/js-action"
           }
         ]
       },
