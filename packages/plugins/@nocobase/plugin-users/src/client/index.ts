@@ -23,6 +23,8 @@ class PluginUsersClient extends Plugin {
   async load() {
     this.app.pluginSettingsManager.add('users-permissions', {
       title: tval('Users & Permissions', { ns: 'users' }),
+      isPinned: true,
+      sort: 200,
       icon: 'TeamOutlined',
     });
     this.app.pluginSettingsManager.add('users-permissions.users', {

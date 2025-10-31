@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "基础用法",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "循环处理",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "格式化工具"
+  }
+]

@@ -7,61 +7,35 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { v4 as uuidv4 } from 'uuid';
-import EventEmitter from 'events';
 import { Logger } from '@nocobase/logger';
-import { TaskOptions, TaskStatus, CancelError } from './interfaces/async-task-manager';
-import { ITask } from './interfaces/task';
+import { CancelError } from './interfaces/async-task-manager';
+import { ITask, TaskModel } from './interfaces/task';
 import Application from '@nocobase/server';
-import PluginErrorHandler, { ErrorHandler } from '@nocobase/plugin-error-handler';
+import { TASK_STATUS } from '../common/constants';
 
-export abstract class TaskType extends EventEmitter implements ITask {
+type TaskOptions = {
+  onProgress?: (record: TaskModel) => void;
+};
+
+export class TaskType implements ITask {
   static type: string;
   static cancelable = true;
 
-  public status: TaskStatus;
+  static defaults(data) {
+    return data;
+  }
+
   protected logger: Logger;
   protected app: Application;
-
-  public progress: {
-    total: number;
-    current: number;
-  } = {
-    total: 0,
-    current: 0,
-  };
-
-  public startedAt: Date;
-  public fulfilledAt: Date;
-  public taskId: string;
-  public tags: Record<string, string>;
-  public createdAt: Date;
-  public context?: any;
-  public title;
   protected abortController: AbortController = new AbortController();
 
-  private _isCancelled = false;
+  public onProgress: (record: TaskModel) => void;
 
-  get isCancelled() {
-    return this._isCancelled;
+  get isCanceled() {
+    return this.record.status === TASK_STATUS.CANCELED;
   }
 
-  constructor(
-    protected options: TaskOptions,
-    tags?: Record<string, string>,
-  ) {
-    super();
-
-    this.status = {
-      type: 'pending',
-      indicator: 'spinner',
-    };
-
-    this.taskId = uuidv4();
-    this.tags = tags || {};
-    this.createdAt = new Date();
-    this.options.argv?.push(`--taskId=${this.taskId}`);
-  }
+  constructor(public record: TaskModel) {}
 
   setLogger(logger: Logger) {
     this.logger = logger;
@@ -71,39 +45,41 @@ export abstract class TaskType extends EventEmitter implements ITask {
     this.app = app;
   }
 
-  setContext(context: any) {
-    this.context = context;
-  }
-
   /**
    * Cancel the task
    */
   async cancel() {
-    this._isCancelled = true;
-    this.abortController.abort();
-    this.logger?.debug(`Task ${this.taskId} cancelled`);
-    return true;
-  }
-
-  async statusChange(status: TaskStatus) {
-    this.status = status;
-    this.emit('statusChange', this.status);
+    if (this.record.status === TASK_STATUS.RUNNING) {
+      this.abortController.abort();
+    }
+    if (this.isCanceled) {
+      return this;
+    }
+    this.logger?.debug(`Task ${this.record.id} cancelled`);
+    return this;
   }
 
   /**
    * Execute the task implementation
    * @returns Promise that resolves with the task result
    */
-  abstract execute(): Promise<any>;
+  execute(): Promise<any> {
+    return Promise.resolve();
+  }
 
   /**
    * Report task progress
    * @param progress Progress information containing total and current values
    */
   reportProgress(progress: { total: number; current: number }) {
-    this.progress = progress;
-    this.logger?.debug(`Task ${this.taskId} progress update - current: ${progress.current}, total: ${progress.total}`);
-    this.emit('progress', progress);
+    this.record.set({
+      progressTotal: progress.total,
+      progressCurrent: progress.current,
+    });
+    this.logger?.trace(
+      `Task ${this.record.id} progress update - current: ${progress.current}, total: ${progress.total}`,
+    );
+    this.onProgress?.(this.record);
   }
 
   /**
@@ -115,94 +91,53 @@ export abstract class TaskType extends EventEmitter implements ITask {
    * - Event emission
    */
   async run() {
-    this.startedAt = new Date();
-    this.logger?.info(`Starting task ${this.taskId}, type: ${(this.constructor as typeof TaskType).type}`);
+    this.logger?.info(`Starting task ${this.record.id}, type: ${(this.constructor as typeof TaskType).type}`);
 
-    this.status = {
-      type: 'running',
-      indicator: 'progress',
-    };
-
-    this.emit('statusChange', this.status);
+    if (this.isCanceled) {
+      this.logger?.info(`Task ${this.record.id} was cancelled before execution`);
+      if (this.record.status !== TASK_STATUS.CANCELED) {
+        await this.record.update({
+          status: TASK_STATUS.CANCELED,
+        });
+      }
+      return;
+    }
+    await this.record.update({
+      startedAt: new Date(),
+      status: TASK_STATUS.RUNNING,
+    });
 
     try {
-      if (this._isCancelled) {
-        this.logger?.info(`Task ${this.taskId} was cancelled before execution`);
-        this.status = {
-          type: 'cancelled',
-        };
-        this.emit('statusChange', this.status);
-        return;
-      }
+      const result = await this.execute();
 
-      const executePromise = this.execute();
-      const result = await executePromise;
-
-      this.status = {
-        type: 'success',
-        indicator: 'success',
-        payload: result,
-      };
-
-      this.logger?.info(`Task ${this.taskId} completed successfully with result: ${JSON.stringify(result)}`);
-      this.emit('statusChange', this.status);
+      this.logger?.info(`Task ${this.record.id} completed successfully with result: ${JSON.stringify(result)}`);
+      await this.record.update({
+        status: TASK_STATUS.SUCCEEDED,
+        doneAt: new Date(),
+        result,
+      });
     } catch (error) {
       if (error instanceof CancelError) {
-        this.statusChange({ type: 'cancelled' });
-        this.logger?.info(`Task ${this.taskId} was cancelled during execution`);
+        // this.cancel();
+        this.logger?.info(`Task ${this.record.id} was cancelled during execution`);
         return;
       } else {
-        this.status = {
-          type: 'failed',
-          indicator: 'error',
-          errors: [{ message: this.renderErrorMessage(error) }],
-        };
+        await this.record.update({
+          status: TASK_STATUS.FAILED,
+          doneAt: new Date(),
+          error: error.toString(),
+        });
 
-        this.logger?.error(`Task ${this.taskId} failed with error: ${error.message}`);
-        this.emit('statusChange', this.status);
+        this.logger?.error(`Task ${this.record.id} failed with error: ${error.message}`);
+        throw error;
       }
     } finally {
-      this.fulfilledAt = new Date();
-      const duration = this.fulfilledAt.getTime() - this.startedAt.getTime();
-      this.logger?.info(`Task ${this.taskId} finished in ${duration}ms`);
+      const duration = this.record.doneAt.getTime() - this.record.startedAt.getTime();
+      this.logger?.info(`Task ${this.record.id} finished in ${duration}ms`);
     }
   }
 
-  private renderErrorMessage(error: Error) {
-    const errorHandlerPlugin = this.app.pm.get('error-handler') as PluginErrorHandler;
-    if (!errorHandlerPlugin || !this.context) {
-      return error.message;
-    }
-
-    const errorHandler: ErrorHandler = errorHandlerPlugin.errorHandler;
-
-    errorHandler.renderError(error, this.context);
-    return this.context.body.errors[0].message;
-  }
-
-  toJSON(options?: { raw?: boolean }) {
-    const json = {
-      cancelable: (this.constructor as typeof TaskType).cancelable,
-      taskId: this.taskId,
-      status: { ...this.status },
-      progress: this.progress,
-      tags: this.tags,
-      createdAt: this.createdAt,
-      startedAt: this.startedAt,
-      fulfilledAt: this.fulfilledAt,
-      title: this.title,
-    };
-
-    // If not in raw mode and the status is success with a file path, transform the status format
-    if (!options?.raw && json.status.type === 'success' && json.status.payload?.filePath) {
-      json.status = {
-        type: 'success',
-        indicator: 'success',
-        resultType: 'file',
-        payload: {},
-      };
-    }
-
-    return json;
+  toJSON() {
+    return this.record.toJSON();
   }
 }

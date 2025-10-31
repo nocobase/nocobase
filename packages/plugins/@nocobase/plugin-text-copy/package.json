@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-text-copy",
-  "version": "1.8.33",
+  "version": "2.0.0-alpha.27",
   "main": "./dist/server/index.js",
   "displayName": "Text copy",
   "displayName.zh-CN": "文本复制",
@@ -16,9 +16,9 @@
     "react-i18next": "^11.15.1"
   },
   "peerDependencies": {
-    "@nocobase/client": "1.x",
-    "@nocobase/server": "1.x",
-    "@nocobase/test": "1.x"
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
   },
   "keywords": [
     "Clipboard",

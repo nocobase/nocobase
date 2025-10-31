@@ -75,20 +75,10 @@ const RequestSchemaComponent: React.FC<RemoteSchemaComponentProps> = (props) => 
   }
 
   return noForm ? (
-    <SchemaComponent
-      components={components}
-      scope={scope}
-      schema={transformedSchema}
-      parentSchema={parentSchema}
-    />
+    <SchemaComponent components={components} scope={scope} schema={transformedSchema} parentSchema={parentSchema} />
   ) : (
     <FormProvider form={form}>
-      <SchemaComponent
-        components={components}
-        scope={scope}
-        schema={transformedSchema}
-        parentSchema={parentSchema}
-      />
+      <SchemaComponent components={components} scope={scope} schema={transformedSchema} parentSchema={parentSchema} />
     </FormProvider>
   );
 };

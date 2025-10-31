@@ -8,10 +8,9 @@
  */
 
 import { MagicAttributeModel } from '@nocobase/database';
-import { Plugin } from '@nocobase/server';
 import PluginLocalizationServer from '@nocobase/plugin-localization';
-import { tval } from '@nocobase/utils';
-import { uid } from '@nocobase/utils';
+import { Plugin } from '@nocobase/server';
+import { tval, uid } from '@nocobase/utils';
 import path, { resolve } from 'path';
 import { uiSchemaActions } from './actions/ui-schema-action';
 import { UiSchemaModel } from './model';

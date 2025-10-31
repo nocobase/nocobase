@@ -121,6 +121,13 @@ export const collectionSchema: ISchema = {
           type: 'void',
           'x-component': 'ConfigurationTabs',
         },
+        __aiCollector__: {
+          type: 'void',
+          'x-component': 'AIResourceContextCollector',
+          'x-component-props': {
+            uid: `collections:list`,
+          },
+        },
       },
     },
   },
@@ -152,6 +159,15 @@ export const collectionTableSchema: ISchema = {
           },
           'x-align': 'left',
         },
+        // refresh: {
+        //   type: 'void',
+        //   title: '{{ t("Refresh") }}',
+        //   'x-component': 'Action',
+        //   'x-use-component-props': 'useRefreshActionProps',
+        //   'x-component-props': {
+        //     icon: 'ReloadOutlined',
+        //   },
+        // },
         delete: {
           type: 'void',
           title: '{{ t("Delete") }}',
@@ -161,6 +177,10 @@ export const collectionTableSchema: ISchema = {
             isBulk: true,
           },
         },
+        syncFromDatabase: {
+          type: 'void',
+          'x-component': 'SyncFromDatabaseAction',
+        },
         create: {
           type: 'void',
           title: '{{ t("Create collection") }}',
@@ -168,6 +188,10 @@ export const collectionTableSchema: ISchema = {
           'x-component-props': {
             type: 'primary',
           },
+        },
+        extendable: {
+          type: 'void',
+          'x-component': 'ExtendableActions',
         },
       },
     },

@@ -17,8 +17,16 @@ export async function getBasicInfo(context, next) {
     result = Array.from(storagesCache.values()).find((item) => item.default);
   } else {
     const isNumber = /^[1-9]\d*$/.test(filterByTk);
+    let key: string | number = filterByTk;
+    if (isNumber) {
+      const bigIntVal = BigInt(filterByTk);
+      // 在 JS 安全整数范围内，才转成 Number
+      if (bigIntVal <= BigInt(Number.MAX_SAFE_INTEGER)) {
+        key = Number(filterByTk);
+      }
+    }
     result = isNumber
-      ? storagesCache.get(Number.parseInt(filterByTk, 10))
+      ? storagesCache.get(key)
       : Array.from(storagesCache.values()).find((item) => item.name === filterByTk);
   }
   if (!result) {
@@ -35,4 +43,49 @@ export async function getBasicInfo(context, next) {
   };
 
   next();
+}
+
+export async function check(context, next) {
+  console.log(1111111111, context.db);
+  const { fileCollectionName } = context.action.params;
+  console.log(fileCollectionName);
+  let storage;
+
+  const fileCollection = context.db.getCollection(fileCollectionName || 'attachments');
+  const storageName = fileCollection?.options?.storage;
+  if (storageName) {
+    storage = await context.db.getRepository('storages').findOne({
+      where: {
+        name: storageName,
+      },
+    });
+  } else {
+    storage = await context.db.getRepository('storages').findOne({
+      where: {
+        default: true,
+      },
+    });
+  }
+
+  if (!storage) {
+    context.throw(400, context.t('Storage configuration not found. Please configure a storage provider first.'));
+  }
+
+  const isSupportToUploadFiles =
+    storage.type !== 's3-compatible' || (storage.options?.baseUrl && storage.options?.public);
+
+  const storageInfo = {
+    id: storage.id,
+    title: storage.title,
+    name: storage.name,
+    type: storage.type,
+    rules: storage.rules,
+  };
+
+  context.body = {
+    isSupportToUploadFiles: !!isSupportToUploadFiles,
+    storage: storageInfo,
+  };
+
+  await next();
 }

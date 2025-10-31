@@ -46,6 +46,14 @@ export class WebSocketClient {
     });
   }
 
+  // TODO for plugin-multi-app
+  getSubAppName = (app: Application) => {
+    const publicPath = app.getPublicPath();
+    const pattern = `^${publicPath}${'_app'}/([^/]*)/`;
+    const match = location.pathname.match(new RegExp(pattern));
+    return match ? match[1] : null;
+  };
+
   getURL() {
     if (!this.app) {
       return;
@@ -54,8 +62,14 @@ export class WebSocketClient {
     if (!apiBaseURL) {
       return;
     }
-    const subApp = getSubAppName(this.app.getPublicPath());
-    const queryString = subApp ? `?__appName=${subApp}` : '';
+
+    let queryString = '';
+    if (this.getSubAppName(this.app)) {
+      queryString = `?_app=${this.getSubAppName(this.app)}`;
+    } else {
+      const subApp = getSubAppName(this.app.getPublicPath());
+      queryString = subApp ? `?__appName=${subApp}` : '';
+    }
     const wsPath = this.options.basename || '/ws';
     if (this.options.url) {
       const url = new URL(this.options.url);
@@ -82,7 +96,7 @@ export class WebSocketClient {
   }
 
   get pingInterval() {
-    return this.options?.pingInterval || 30000;
+    return this.options?.pingInterval || 300000;
   }
 
   get readyState() {

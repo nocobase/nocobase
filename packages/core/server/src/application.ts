@@ -26,6 +26,7 @@ import { ResourceOptions, Resourcer } from '@nocobase/resourcer';
 import { Telemetry, TelemetryOptions } from '@nocobase/telemetry';
 
 import { LockManager, LockManagerOptions } from '@nocobase/lock-manager';
+import { Snowflake } from '@nocobase/snowflake-id';
 import {
   applyMixins,
   AsyncEmitter,
@@ -34,7 +35,6 @@ import {
   ToposortOptions,
   wrapMiddlewareWithLogging,
 } from '@nocobase/utils';
-
 import { Command, CommandOptions, ParseOptions } from 'commander';
 import { randomUUID } from 'crypto';
 import glob from 'glob';
@@ -77,10 +77,13 @@ import packageJson from '../package.json';
 import { availableActions } from './acl/available-action';
 import AesEncryptor from './aes-encryptor';
 import { AuditManager } from './audit-manager';
-import { Environment } from './environment';
-import { ServiceContainer } from './service-container';
-import { EventQueue, EventQueueOptions } from './event-queue';
 import { BackgroundJobManager, BackgroundJobManagerOptions } from './background-job-manager';
+import { Environment } from './environment';
+import { EventQueue, EventQueueOptions } from './event-queue';
+import { RedisConfig, RedisConnectionManager } from './redis-connection-manager';
+import { ServiceContainer } from './service-container';
+import { setupSnowflakeIdField } from './snowflake-id-field';
+import { WorkerIdAllocator } from './worker-id-allocator';
 
 export type PluginType = string | typeof Plugin;
 export type PluginConfiguration = PluginType | [PluginType, any];
@@ -107,8 +110,9 @@ export interface AppTelemetryOptions extends TelemetryOptions {
 }
 
 export interface ApplicationOptions {
-  instanceId?: string;
+  instanceId?: number;
   database?: IDatabaseOptions | Database;
+  redisConfig?: RedisConfig;
   cacheManager?: CacheManagerOptions;
   /**
    * this property is deprecated and should not be used.
@@ -208,8 +212,12 @@ export type MaintainingCommandStatus = {
   error?: Error;
 };
 
+interface SnowflakeIdGenerator {
+  generate(): number | BigInt;
+}
+
 export class Application<StateT = DefaultState, ContextT = DefaultContext> extends Koa implements AsyncEmitter {
-  public readonly instanceId: string;
+  private _instanceId: number;
   /**
    * @internal
    */
@@ -244,6 +252,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   /**
    * @internal
    */
+  public redisConnectionManager: RedisConnectionManager;
+  public workerIdAllocator: WorkerIdAllocator;
+  public snowflakeIdGenerator: SnowflakeIdGenerator;
+
   public pubSubManager: PubSubManager;
   public syncMessageManager: SyncMessageManager;
   public requestLogger: Logger;
@@ -262,7 +274,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   constructor(public options: ApplicationOptions) {
     super();
-    this.instanceId = options.instanceId || nanoid();
     this.context.reqId = randomUUID();
     this.rawOptions = this.name == 'main' ? lodash.cloneDeep(options) : {};
     this.init();
@@ -274,11 +285,19 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   private static staticCommands = [];
 
+  static registerStaticCommand(callback: (app: Application) => void) {
+    this.staticCommands.push(callback);
+  }
+
   static addCommand(callback: (app: Application) => void) {
     this.staticCommands.push(callback);
   }
 
   private _sqlLogger: Logger;
+
+  get instanceId() {
+    return this._instanceId;
+  }
 
   get sqlLogger() {
     return this._sqlLogger;
@@ -463,6 +482,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (!WORKER_MODE) {
       return true;
     }
+    if (WORKER_MODE === '-') {
+      return false;
+    }
     const topics = WORKER_MODE.trim().split(',');
     if (key) {
       if (WORKER_MODE === '*') {
@@ -598,6 +620,26 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     return (this.cli as any)._findCommand(name);
   }
 
+  private async disposeServices() {
+    if (this.redisConnectionManager) {
+      await this.redisConnectionManager.close();
+    }
+
+    if (this.cacheManager) {
+      await this.cacheManager.close();
+    }
+
+    if (this.pubSubManager) {
+      await this.pubSubManager.close();
+    }
+
+    if (this.telemetry.started) {
+      await this.telemetry.shutdown();
+    }
+
+    await this.workerIdAllocator.release();
+  }
+
   /**
    * @internal
    */
@@ -612,17 +654,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     await this.emitAsync('beforeStop');
     await this.emitAsync('afterStop');
 
-    if (this.cacheManager) {
-      await this.cacheManager.close();
-    }
-
-    if (this.pubSubManager) {
-      await this.pubSubManager.close();
-    }
-
-    if (this.telemetry.started) {
-      await this.telemetry.shutdown();
-    }
+    await this.disposeServices();
 
     this.closeLogger();
 
@@ -653,13 +685,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       this.setMaintainingMessage('app reload');
       this.log.info(`app.reload()`, { method: 'load' });
 
-      if (this.cacheManager) {
-        await this.cacheManager.close();
-      }
-
-      if (this.telemetry.started) {
-        await this.telemetry.shutdown();
-      }
+      await this.disposeServices();
 
       const oldDb = this.db;
 
@@ -675,7 +701,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     if (this.cacheManager) {
       await this.cacheManager.close();
     }
-
     this._cacheManager = await this.createCacheManager();
 
     this.log.debug('init plugins');
@@ -688,6 +713,16 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     if (options?.hooks !== false) {
       await this.emitAsync('beforeLoad', this, options);
+    }
+
+    if (!this._instanceId) {
+      this._instanceId = await this.workerIdAllocator.getWorkerId();
+      this.log.info(`allocate worker id: ${this._instanceId}`, { method: 'load' });
+    }
+    if (!this.snowflakeIdGenerator) {
+      this.snowflakeIdGenerator = new Snowflake({
+        workerId: this._instanceId,
+      });
     }
 
     // Telemetry is initialized after beforeLoad hook
@@ -982,13 +1017,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       log.error(e.message, { method: 'stop', err: e.stack });
     }
 
-    if (this.cacheManager) {
-      await this.cacheManager.close();
-    }
-
-    if (this.telemetry.started) {
-      await this.telemetry.shutdown();
-    }
+    await this.disposeServices();
 
     await this.emitAsync('afterStop', this, options);
     this.emit('__stopped', this, options);
@@ -1071,6 +1100,12 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   async upgrade(options: any = {}) {
     this.log.info('upgrading...');
+    const pkgVersion = this.getPackageVersion();
+    const appVersion = await this.version.get();
+    if (process.env.SKIP_SAME_VERSION_UPGRADE === 'true' && pkgVersion === appVersion) {
+      this.log.info(`app is already the latest version (${appVersion})`);
+      return;
+    }
     await this.reInit();
     const migrator1 = await this.loadCoreMigrations();
     await migrator1.beforeLoad.up();
@@ -1225,6 +1260,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   protected init() {
     const options = this.options;
+    this._instanceId = options.instanceId;
 
     this.initLogger(options.logger);
 
@@ -1238,6 +1274,13 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     }
 
     this.createMainDataSource(options);
+
+    this.redisConnectionManager = new RedisConnectionManager({
+      redisConfig: options.redisConfig,
+      logger: this._logger.child({ module: 'redis-connection-manager' }),
+    });
+
+    this.workerIdAllocator = new WorkerIdAllocator();
 
     this._cronJobManager = new CronJobManager(this);
     this._env = new Environment();
@@ -1345,6 +1388,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
     // can not use await here
     this.dataSourceManager.dataSources.set('main', mainDataSourceInstance);
+
+    setupSnowflakeIdField(this);
   }
 
   protected createDatabase(options: ApplicationOptions) {

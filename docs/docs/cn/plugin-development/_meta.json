@@ -1,0 +1,201 @@
+[
+  {
+    "type": "custom-link",
+    "label": "快速入门",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "插件开发概述",
+        "link": "/plugin-development"
+      },
+      {
+        "type": "custom-link",
+        "label": "编写第一个插件",
+        "link": "/plugin-development/write-your-first-plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "项目目录结构",
+        "link": "/plugin-development/project-structure"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "服务端开发",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/plugin-development/server"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin",
+        "link": "/plugin-development/server/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Application",
+        "link": "/plugin-development/server/app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Collections",
+        "link": "/plugin-development/server/collections"
+      },
+      {
+        "type": "custom-link",
+        "label": "Database",
+        "link": "/plugin-development/server/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "DataSourceManager",
+        "link": "/plugin-development/server/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ResourceManager",
+        "link": "/plugin-development/server/resource-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL",
+        "link": "/plugin-development/server/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "Middleware",
+        "link": "/plugin-development/server/middleware"
+      },
+      {
+        "type": "custom-link",
+        "label": "Command",
+        "link": "/plugin-development/server/command"
+      },
+      {
+        "type": "custom-link",
+        "label": "Event",
+        "link": "/plugin-development/server/event"
+      },
+      {
+        "type": "custom-link",
+        "label": "Context",
+        "link": "/plugin-development/server/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migration",
+        "link": "/plugin-development/server/migration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logger",
+        "link": "/plugin-development/server/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "I18n",
+        "link": "/plugin-development/server/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "Test",
+        "link": "/plugin-development/server/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "客户端开发",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/plugin-development/client"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plugin",
+        "link": "/plugin-development/client/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowEngine",
+        "link": "/plugin-development/client/flow-engine"
+      },
+      {
+        "type": "custom-link",
+        "label": "Context",
+        "link": "/plugin-development/client/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Router",
+        "link": "/plugin-development/client/router"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowModel",
+        "link": "/plugin-development/client/flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL",
+        "link": "/plugin-development/client/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "DataSourceManager",
+        "link": "/plugin-development/client/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Resource",
+        "link": "/plugin-development/client/resource"
+      },
+      {
+        "type": "custom-link",
+        "label": "Request",
+        "link": "/plugin-development/client/request"
+      },
+      {
+        "type": "custom-link",
+        "label": "Styles & Themes",
+        "link": "/plugin-development/client/styles-themes"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logger",
+        "link": "/plugin-development/client/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Test",
+        "link": "/plugin-development/client/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "其他",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "语言列表",
+        "link": "/plugin-development/languages"
+      },
+      {
+        "type": "custom-link",
+        "label": "依赖管理",
+        "link": "/plugin-development/dependency-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "构建",
+        "link": "/plugin-development/build"
+      }
+    ]
+  }
+]

@@ -54,7 +54,7 @@ export type UploadFileOptions = {
 
 export class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<StorageClassType>();
-  storagesCache = new Map<number, StorageModel>();
+  storagesCache = new Map<number | string, StorageModel>();
 
   afterDestroy = async (record: Model, options) => {
     const { collection } = record.constructor as typeof Model;
@@ -266,6 +266,7 @@ export class PluginFileManagerServer extends Plugin {
 
     this.app.acl.allow('attachments', ['upload', 'create'], 'loggedIn');
     this.app.acl.allow('storages', 'getBasicInfo', 'loggedIn');
+    this.app.acl.allow('storages', 'check', 'loggedIn');
 
     this.app.acl.appendStrategyResource('attachments');
 

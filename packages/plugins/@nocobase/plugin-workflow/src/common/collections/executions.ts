@@ -18,7 +18,7 @@ export default {
   shared: true,
   fields: [
     {
-      type: 'bigInt',
+      type: 'snowflakeId',
       name: 'id',
       interface: 'id',
       uiSchema: {
@@ -29,7 +29,7 @@ export default {
         'x-read-pretty': true,
       },
       primaryKey: true,
-      autoIncrement: true,
+      allowNull: false,
     },
     {
       type: 'belongsTo',
@@ -81,6 +81,11 @@ export default {
       },
     },
     {
+      type: 'boolean',
+      name: 'dispatched',
+      defaultValue: false,
+    },
+    {
       type: 'json',
       name: 'stack',
     },
@@ -113,4 +118,5 @@ export default {
       },
     },
   ],
+  indexes: [{ fields: ['dispatched', 'id'] }],
 };

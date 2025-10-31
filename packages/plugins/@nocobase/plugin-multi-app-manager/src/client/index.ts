@@ -11,6 +11,8 @@ import { Plugin } from '@nocobase/client';
 import { MultiAppManagerProvider } from './MultiAppManagerProvider';
 // import { AppManager } from './AppManager';
 import { lazy } from '@nocobase/client';
+import { formSchema } from './settings/schemas/applications';
+import _merge from 'lodash/merge';
 const { AppManager } = lazy(() => import('./AppManager'), 'AppManager');
 
 import { NAMESPACE } from '../locale';
@@ -20,11 +22,16 @@ export class PluginMultiAppManagerClient extends Plugin {
     this.app.use(MultiAppManagerProvider);
 
     this.app.pluginSettingsManager.add(NAMESPACE, {
-      title: `{{t("Multi-app manager", { ns: "${NAMESPACE}" })}}`,
+      title: `{{t("Multi-app manager (deprecated)", { ns: "${NAMESPACE}" })}}`,
       icon: 'AppstoreOutlined',
       Component: AppManager,
+      sort: 1000,
       aclSnippet: 'pm.multi-app-manager.applications',
     });
+  }
+
+  extendFormSchema(schema: any) {
+    _merge(formSchema, schema);
   }
 }
 

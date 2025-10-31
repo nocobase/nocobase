@@ -40,6 +40,12 @@ import { DataSourceApplicationProvider } from '../data-source/components/DataSou
 import { DataBlockProvider } from '../data-source/data-block/DataBlockProvider';
 import { DataSourceManager, type DataSourceManagerOptions } from '../data-source/data-source/DataSourceManager';
 
+import {
+  FlowEngine,
+  FlowEngineContext,
+  FlowEngineGlobalsContextProvider,
+  FlowEngineProvider,
+} from '@nocobase/flow-engine';
 import type { CollectionFieldInterfaceFactory } from '../data-source';
 import { OpenModeProvider } from '../modules/popup/OpenModeProvider';
 import { AppSchemaComponentProvider } from './AppSchemaComponentProvider';
@@ -131,14 +137,25 @@ export class Application {
   public globalVars: Record<string, any> = {};
   public globalVarCtxs: Record<string, any> = {};
   public jsonLogic: JsonLogic;
+  public flowEngine: FlowEngine;
+  public context: FlowEngineContext & {
+    pluginSettingsRouter: PluginSettingsManager;
+    pluginManager: PluginManager;
+  };
   loading = true;
   maintained = false;
   maintaining = false;
   error = null;
   hasLoadError = false;
+  locales = null;
 
   private wsAuthorized = false;
-  private variables: Variable[] = [];
+  private readonly variables: Variable[] = [];
+  apps: {
+    Component?: ComponentType;
+  } = {
+    Component: null,
+  };
 
   get pm() {
     return this.pluginManager;
@@ -191,6 +208,14 @@ export class Application {
     this.pluginManager = new PluginManager(options.plugins, options.loadRemotePlugins, this);
     this.schemaInitializerManager = new SchemaInitializerManager(options.schemaInitializers, this);
     this.dataSourceManager = new DataSourceManager(options.dataSourceManager, this);
+    this.flowEngine = new FlowEngine();
+    this.context = this.flowEngine.context as any;
+    this.context.defineProperty('pluginManager', {
+      get: () => this.pluginManager,
+    });
+    this.context.defineProperty('pluginSettingsRouter', {
+      get: () => this.pluginSettingsManager,
+    });
     this.addDefaultProviders();
     this.addReactRouterComponents();
     this.addProviders(options.providers || []);
@@ -251,7 +276,12 @@ export class Application {
   }
 
   private initRequireJs() {
-    this.requirejs = getRequireJs();
+    // 避免重复初始化 requirejs
+    if (window['requirejs']) {
+      this.requirejs = window['requirejs'];
+      return;
+    }
+    window['requirejs'] = this.requirejs = getRequireJs();
     defineGlobalDeps(this.requirejs);
     window.define = this.requirejs.define;
   }
@@ -270,6 +300,32 @@ export class Application {
     this.use(AntdAppProvider);
     this.use(DataSourceApplicationProvider, { dataSourceManager: this.dataSourceManager });
     this.use(OpenModeProvider);
+    this.flowEngine.context.defineProperty('app', {
+      value: this,
+    });
+    this.flowEngine.context.defineProperty('api', {
+      value: this.apiClient,
+    });
+    this.flowEngine.context.defineProperty('i18n', {
+      value: this.i18n,
+    });
+    this.flowEngine.context.defineProperty('router', {
+      get: () => this.router.router,
+      cache: false,
+    });
+    this.flowEngine.context.defineProperty('documentTitle', {
+      get: () => document.title,
+    });
+    this.flowEngine.context.defineProperty('route', {
+      get: () => {},
+      observable: true,
+    });
+    this.flowEngine.context.defineProperty('location', {
+      get: () => location,
+      observable: true,
+    });
+    this.use(FlowEngineProvider, { engine: this.flowEngine });
+    this.use(FlowEngineGlobalsContextProvider);
   }
 
   private addReactRouterComponents() {
@@ -360,6 +416,7 @@ export class Application {
       this.loading = true;
       await this.loadWebSocket();
       await this.pm.load();
+      await this.flowEngine.flowSettings.load();
     } catch (error) {
       this.hasLoadError = true;
 
@@ -548,6 +605,7 @@ export class Application {
   getGlobalVarCtx(key) {
     return get(this.globalVarCtxs, key);
   }
+
   addUserCenterSettingsItem(item: SchemaSettingsItemType & { aclSnippet?: string }) {
     const useVisibleProp = item.useVisible || (() => true);
     const useVisible = () => {
@@ -586,5 +644,9 @@ export class Application {
    */
   getVariables() {
     return this.variables;
+  }
+
+  setAppsComponent({ Component }: { Component: ComponentType }) {
+    this.apps.Component = Component;
   }
 }

@@ -8,7 +8,7 @@
  */
 
 import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
-import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, parseBigIntValue } from '@nocobase/utils';
 import chalk from 'chalk';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
@@ -31,10 +31,12 @@ import {
   Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
+import mysql from 'mysql2';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { CollectionFactory } from './collection-factory';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
 import DatabaseUtils from './database-utils';
+import { BaseDialect } from './dialects/base-dialect';
 import ReferencesMap from './features/references-map';
 import { referentialIntegrityCheck } from './features/referential-integrity-check';
 import { ArrayFieldRepository } from './field-repository/array-field-repository';
@@ -84,7 +86,6 @@ import {
 import { patchSequelizeQueryInterface, snakeCase } from './utils';
 import { BaseValueParser, registerFieldValueParsers } from './value-parsers';
 import { ViewCollection } from './view-collection';
-import { BaseDialect } from './dialects/base-dialect';
 
 export type MergeOptions = merge.Options;
 
@@ -129,6 +130,12 @@ export type AddMigrationsOptions = {
 };
 
 type OperatorFunc = (value: any, ctx?: RegisterOperatorsContext) => any;
+
+type RunSQLOptions = {
+  filter?: Record<string, any>;
+  bind?: Record<string, any> | Array<any>;
+  type?: 'selectVar' | 'selectRow' | 'selectRows';
+} & Transactionable;
 
 export class Database extends EventEmitter implements AsyncEmitter {
   static dialects = new Map<string, typeof BaseDialect>();
@@ -255,6 +262,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const sequelizeOptions = this.sequelizeOptions(this.options);
     this.sequelize = new Sequelize(sequelizeOptions);
 
+    if (options.dialect === 'mysql') {
+      this.wrapSequelizeRunForMySQL();
+    }
+
     this.queryInterface = buildQueryInterface(this);
 
     this.collections = new Map();
@@ -373,7 +384,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   /**
    * @internal
    */
-  sequelizeOptions(options) {
+  sequelizeOptions(options: DatabaseOptions) {
     return this.dialect.getSequelizeOptions(options);
   }
 
@@ -382,8 +393,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
    */
   initListener() {
     this.on('afterConnect', async (client) => {
-      if (this.inDialect('postgres')) {
-        await client.query('SET search_path = public');
+      if (this.isPostgresCompatibleDialect()) {
+        await client.query('SET search_path TO public');
       }
     });
 
@@ -518,6 +529,33 @@ export class Database extends EventEmitter implements AsyncEmitter {
     return this.inDialect('postgres');
   }
 
+  /*
+   * https://github.com/sidorares/node-mysql2/issues/1239#issuecomment-766867699
+   * https://github.com/sidorares/node-mysql2/pull/1407#issuecomment-1325789581
+   * > I'm starting to think simple "always send (parameter.toString()) as VAR_STRING" unless the type is explicitly specified by user" might be actually the best behaviour
+   */
+  wrapSequelizeRunForMySQL() {
+    const that = this;
+    // @ts-ignore
+    const run = this.sequelize.dialect.Query.prototype.run;
+    // @ts-ignore
+    this.sequelize.dialect.Query.prototype.run = function (sql: string, parameters: any[]) {
+      if (!/^update\s+/i.test(sql.trim()) || !parameters?.length) {
+        return run.apply(this, [sql, parameters]);
+      }
+      try {
+        parameters.forEach((p, index) => {
+          if (typeof p === 'number') {
+            parameters[index] = p.toString();
+          }
+        });
+      } catch (err) {
+        that.logger.error(err);
+      }
+      return run.apply(this, [sql, parameters]);
+    };
+  }
+
   /**
    * Add collection to database
    * @param options
@@ -527,9 +565,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   ): Collection<Attributes, CreateAttributes> {
     options = lodash.cloneDeep(options);
 
-    if (this.options.underscored) {
-      options.underscored = true;
-    }
+    options.underscored = options.underscored ?? this.options.underscored;
 
     this.logger.trace(`beforeDefineCollection: ${safeJsonStringify(options)}`, {
       databaseInstanceId: this.instanceId,
@@ -1014,6 +1050,75 @@ export class Database extends EventEmitter implements AsyncEmitter {
         return;
       },
     });
+  }
+
+  // 如果需要手动引用标识符，可以添加辅助方法
+  quoteIdentifier(identifier: string): string {
+    return this.sequelize.getQueryInterface().queryGenerator['quoteIdentifier'](identifier);
+  }
+
+  quoteTable(tableName: string): string {
+    return this.sequelize.getQueryInterface().quoteIdentifiers(tableName);
+  }
+
+  private async runSQLWithSchema(finalSQL: string, bind: any, transaction?: any) {
+    if (!this.options.schema || !this.isPostgresCompatibleDialect()) {
+      return this.sequelize.query(finalSQL, { bind, transaction });
+    }
+
+    const execute = async (t: any) => {
+      await this.sequelize.query(`SET LOCAL search_path TO ${this.options.schema}`, { transaction: t });
+      return this.sequelize.query(finalSQL, { bind, transaction: t });
+    };
+
+    return transaction ? execute(transaction) : this.sequelize.transaction(execute);
+  }
+
+  async runSQL(sql: string, options: RunSQLOptions = {}) {
+    const { filter, bind, type, transaction } = options;
+    let finalSQL = sql;
+    if (!finalSQL.replace(/\s+/g, ' ').trim()) {
+      throw new Error('SQL cannot be empty');
+    }
+    const queryGenerator = this.sequelize.getQueryInterface().queryGenerator as any;
+    if (filter) {
+      let where = {};
+      const tmpCollection = new Collection({ name: 'tmp', underscored: false }, { database: this });
+      const r = tmpCollection.repository;
+      where = r.buildQueryOptions({ filter }).where;
+      const wSQL = queryGenerator.getWhereConditions(where, null, null, { bindParam: true });
+
+      if (wSQL) {
+        // 标准化 SQL，去除多余空格
+        let normalizedSQL = sql.replace(/\s+/g, ' ').trim();
+        if (normalizedSQL.endsWith(';')) {
+          normalizedSQL = normalizedSQL.slice(0, -1).trim();
+        }
+        finalSQL = `SELECT * FROM (${normalizedSQL}) AS tmp WHERE ${wSQL}`;
+      }
+    }
+    this.logger.debug('runSQL', { finalSQL });
+    const result = await this.runSQLWithSchema(finalSQL, bind, transaction);
+    let data: any = result[0];
+    if (type === 'selectVar') {
+      if (Array.isArray(data)) {
+        data = data[0];
+      }
+      return Object.values(data || {}).shift();
+    }
+    if (type === 'selectRow') {
+      if (Array.isArray(data)) {
+        data = data[0];
+      }
+      return data || null;
+    }
+    if (type === 'selectRows') {
+      if (!Array.isArray(data)) {
+        return [data].filter(Boolean);
+      }
+      return data;
+    }
+    return data;
   }
 }
 

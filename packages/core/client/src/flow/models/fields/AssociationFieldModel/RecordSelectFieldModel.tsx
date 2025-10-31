@@ -1,0 +1,419 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+import {
+  CollectionField,
+  createCollectionContextMeta,
+  createCurrentRecordMetaFactory,
+  EditableItemModel,
+  escapeT,
+  FilterableItemModel,
+  FlowModel,
+  MultiRecordResource,
+  useFlowModel,
+} from '@nocobase/flow-engine';
+import { Select } from 'antd';
+import { css } from '@emotion/css';
+import { debounce } from 'lodash';
+import React from 'react';
+import { AssociationFieldModel } from './AssociationFieldModel';
+
+function toValue(record: any | any[], fieldNames, multiple = false) {
+  if (!record) return multiple ? [] : undefined;
+
+  const { value: valueKey } = fieldNames;
+
+  const convert = (item: any) => {
+    if (typeof item !== 'object' || item === null || item == undefined) return undefined;
+    return {
+      label: <LabelByField option={item} fieldNames={fieldNames} />,
+      value: item[valueKey],
+    };
+  };
+
+  if (multiple) {
+    if (!Array.isArray(record)) return [];
+    return record.map(convert).filter(Boolean);
+  }
+
+  return convert(record);
+}
+
+export function LabelByField(props) {
+  const { option, fieldNames } = props;
+  const currentModel = useFlowModel();
+  const field: any = currentModel.subModels.field as FlowModel;
+  const key = option[fieldNames.value];
+  const fieldModel = field.createFork({}, key);
+  fieldModel.context.defineProperty('record', {
+    get: () => option,
+    meta: createCurrentRecordMetaFactory(fieldModel.context, () => (fieldModel.context as any).collection),
+  });
+  const labelValue = option?.[fieldNames.label] || option.label;
+  const titleCollectionField = currentModel.context.collectionField.targetCollection.getField(fieldNames.label);
+  fieldModel.setProps({ value: labelValue, clickToOpen: false, ...titleCollectionField.getComponentProps() });
+  return (
+    <span style={{ pointerEvents: 'none' }} key={key}>
+      {labelValue ? fieldModel.render() : 'N/A'}
+    </span>
+  );
+}
+
+export function LazySelect(props) {
+  const { fieldNames, value, multiple, allowMultiple, options = [], ...others } = props;
+  const isMultiple = multiple && allowMultiple;
+  const realOptions =
+    options && options.length
+      ? options
+      : isMultiple
+        ? Array.isArray(value)
+          ? value.filter(Boolean)
+          : []
+        : value && typeof value === 'object'
+          ? [value]
+          : [];
+  return (
+    <Select
+      style={{ width: '100%' }}
+      {...others}
+      allowClear
+      showSearch
+      maxTagCount="responsive"
+      filterOption={false}
+      labelInValue
+      fieldNames={fieldNames}
+      options={realOptions}
+      value={toValue(value, fieldNames, isMultiple)}
+      mode={isMultiple ? 'multiple' : undefined}
+      onChange={(value, option) => {
+        props.onChange(option);
+      }}
+      optionRender={({ data }) => {
+        return <LabelByField option={data} fieldNames={fieldNames} />;
+      }}
+      labelRender={(data) => {
+        return (
+          <div
+            className={css`
+              div {
+                white-space: nowrap !important;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              }
+            `}
+          >
+            {data.label}
+          </div>
+        );
+      }}
+    />
+  );
+}
+
+export class RecordSelectFieldModel extends AssociationFieldModel {
+  declare resource: MultiRecordResource;
+
+  get collectionField(): CollectionField {
+    return this.context.collectionField;
+  }
+
+  onInit(options) {
+    super.onInit(options);
+    // For association fields, expose target collection to variable selectors
+    this.context.defineProperty('collection', {
+      get: () => this.context.collectionField?.targetCollection,
+      meta: createCollectionContextMeta(
+        () => this.context.collectionField?.targetCollection,
+        this.context.t('Current collection'),
+      ),
+    });
+  }
+
+  set onPopupScroll(fn) {
+    this.setProps({ onPopupScroll: fn });
+  }
+  set onDropdownVisibleChange(fn) {
+    this.setProps({ onDropdownVisibleChange: fn });
+  }
+  set onSearch(fn) {
+    this.setProps({ onSearch: fn });
+  }
+
+  setDataSource(dataSource) {
+    this.setProps({ options: dataSource });
+  }
+  getDataSource() {
+    return this.props.options;
+  }
+
+  getFilterValue() {
+    const fieldNames = this.props.fieldNames || { label: 'label', value: 'value' };
+    return Array.isArray(this.props.value)
+      ? this.props.value.map((item) => item[fieldNames.value])
+      : this.props.value?.[fieldNames.value];
+  }
+
+  render() {
+    return <LazySelect {...this.props} />;
+  }
+}
+
+const paginationState = {
+  page: 1,
+  pageSize: 40,
+  loading: false,
+  hasMore: true,
+};
+
+// 事件绑定
+RecordSelectFieldModel.registerFlow({
+  key: 'eventSettings',
+  sort: 900,
+  steps: {
+    bindEvent: {
+      handler(ctx, params) {
+        const labelFieldName = ctx.model.props.fieldNames.label;
+
+        ctx.model.onDropdownVisibleChange = (open) => {
+          if (open) {
+            ctx.model.dispatchEvent('dropdownOpen', {
+              apiClient: ctx.app.apiClient,
+              form: ctx.model.context.form,
+            });
+          } else {
+            ctx.model.resource.removeFilterGroup(labelFieldName);
+            paginationState.page = 1;
+          }
+        };
+        ctx.model.onPopupScroll = (e) => {
+          ctx.model.dispatchEvent('popupScroll', {
+            event: e,
+            apiClient: ctx.app.apiClient,
+          });
+        };
+        ctx.model.onSearch = (searchText) => {
+          ctx.model.dispatchEvent('search', {
+            searchText,
+            apiClient: ctx.app.apiClient,
+          });
+        };
+      },
+    },
+  },
+});
+
+//点击打开下拉时加载数据
+RecordSelectFieldModel.registerFlow({
+  key: 'dropdownOpenSettings',
+  on: 'dropdownOpen',
+  steps: {
+    setScope: {
+      async handler(ctx, params) {
+        const labelFieldValue = ctx.model.props.fieldNames.value;
+        const resource = ctx.model.resource;
+        const options = ctx.model.getDataSource();
+        resource.setPage(1);
+        await ctx.model.applyFlow('selectSettings');
+        await resource.refresh();
+        const { count } = resource.getMeta();
+        const data = resource.getData();
+        //已经全部加载
+        if (options && count === options.length && data[0][labelFieldValue] === options[0][labelFieldValue]) {
+          return;
+        }
+        ctx.model.setDataSource(data);
+        if (data.length < paginationState.pageSize) {
+          paginationState.hasMore = false;
+        } else {
+          paginationState.hasMore = true;
+          paginationState.page++;
+        }
+      },
+    },
+  },
+});
+
+//鼠标滚动后分页加载数据
+RecordSelectFieldModel.registerFlow({
+  key: 'popupScrollSettings',
+  on: 'popupScroll',
+  steps: {
+    step1: {
+      async handler(ctx, params) {
+        const event = ctx.inputArgs?.event;
+        const { scrollTop, scrollHeight, clientHeight } = event.target;
+        // 只在接近底部时才触发加载
+        if (scrollTop + clientHeight < scrollHeight - 20) {
+          return;
+        }
+        if (paginationState.loading || !paginationState.hasMore) {
+          return;
+        }
+        paginationState.loading = true;
+
+        try {
+          const resource = ctx.model.resource;
+          resource.setPage(paginationState.page);
+          await resource.refresh();
+          const data = resource.getData();
+          const currentDataSource = ctx.model.getDataSource() || [];
+          ctx.model.setDataSource([...currentDataSource, ...data]);
+          if (data.length < paginationState.pageSize) {
+            paginationState.hasMore = false;
+            paginationState.page = 1;
+          } else {
+            paginationState.page++;
+          }
+        } catch (error) {
+          console.error('Scroll pagination request failed:', error);
+        } finally {
+          paginationState.loading = false;
+        }
+      },
+    },
+  },
+});
+
+async function originalHandler(ctx, params) {
+  try {
+    const targetCollection = ctx.model.collectionField.targetCollection;
+    const labelFieldName = ctx.model.props.fieldNames.label;
+    const targetLabelField = targetCollection.getField(labelFieldName);
+
+    const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+      targetLabelField.options.interface,
+    );
+    const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
+
+    const searchText = ctx.inputArgs.searchText?.trim();
+
+    const resource = ctx.model.resource;
+    const key = `${labelFieldName}.${operator}`;
+    if (searchText === '') {
+      resource.removeFilterGroup(labelFieldName);
+    } else {
+      resource.setPage(1);
+      resource.addFilterGroup(labelFieldName, {
+        [key]: searchText,
+      });
+    }
+    await resource.refresh();
+    const data = resource.getData();
+    ctx.model.setDataSource(data);
+    if (data.length < paginationState.pageSize) {
+      paginationState.hasMore = false;
+    } else {
+      paginationState.hasMore = true;
+      paginationState.page++;
+    }
+  } catch (error) {
+    console.error('AssociationSelectField search flow error:', error);
+    ctx.model.setDataSource([]);
+  }
+}
+
+const debouncedHandler = debounce(originalHandler, 500);
+
+// 模糊搜索
+RecordSelectFieldModel.registerFlow({
+  key: 'searchSettings',
+  on: 'search',
+  steps: {
+    step1: {
+      handler: debouncedHandler,
+    },
+  },
+});
+
+RecordSelectFieldModel.registerFlow({
+  key: 'recordSelectSettings',
+  sort: 200,
+  steps: {
+    init: {
+      handler(ctx) {
+        const resource = ctx.createResource(MultiRecordResource);
+        const collectionField = ctx.model.context.collectionField;
+        const { target, dataSourceKey } = collectionField;
+        resource.setDataSourceKey(dataSourceKey);
+        resource.setResourceName(target);
+        // resource.setAPIClient(ctx.api);
+        resource.setPageSize(paginationState.pageSize);
+        const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
+        if (isOToAny) {
+          const key = `${collectionField.foreignKey}.$is`;
+          resource.addFilterGroup(collectionField.name, {
+            [key]: null,
+          });
+        }
+        ctx.model.resource = resource;
+      },
+    },
+  },
+});
+
+//专有配置项
+RecordSelectFieldModel.registerFlow({
+  key: 'selectSettings',
+  title: escapeT('Association select settings'),
+  sort: 800,
+  steps: {
+    fieldNames: {
+      use: 'titleField',
+    },
+    dataScope: {
+      use: 'dataScope',
+    },
+    sortingRule: {
+      use: 'sortingRule',
+    },
+    allowMultiple: {
+      title: escapeT('Allow multiple'),
+      uiSchema(ctx) {
+        if (ctx.collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)) {
+          return {
+            allowMultiple: {
+              'x-component': 'Switch',
+              type: 'boolean',
+              'x-decorator': 'FormItem',
+            },
+          };
+        } else {
+          return null;
+        }
+      },
+      defaultParams(ctx) {
+        return {
+          allowMultiple:
+            ctx.collectionField &&
+            ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.model.context.collectionField.type),
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowMultiple: params?.allowMultiple,
+        });
+      },
+    },
+  },
+});
+
+RecordSelectFieldModel.define({
+  label: escapeT('Select'),
+});
+
+EditableItemModel.bindModelToInterface(
+  'RecordSelectFieldModel',
+  ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
+  { isDefault: true },
+);
+
+FilterableItemModel.bindModelToInterface(
+  'RecordSelectFieldModel',
+  ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'updatedBy', 'createdBy', 'mbm'],
+  { isDefault: true },
+);

@@ -30,6 +30,7 @@ export class DateFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['dateOnly'];
   hasDefaultValue = true;
+  validationType = 'date';
   properties = {
     ...defaultProps,
     ...dateTimeProps,

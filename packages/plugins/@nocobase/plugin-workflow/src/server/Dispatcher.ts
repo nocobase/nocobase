@@ -56,7 +56,7 @@ export default class Dispatcher {
     const execution: ExecutionModel = await ExecutionRepo.findOne({
       filterByTk: event.executionId,
     });
-    if (!execution || execution.status !== EXECUTION_STATUS.QUEUEING) {
+    if (!execution || execution.dispatched) {
       this.plugin
         .getLogger('dispatcher')
         .info(`execution (${event.executionId}) from queue not found or not in queueing status, skip`);
@@ -141,7 +141,7 @@ export default class Dispatcher {
   }
 
   public async start(execution: ExecutionModel) {
-    if (execution.status !== EXECUTION_STATUS.STARTED) {
+    if (execution.status) {
       return;
     }
     this.plugin.getLogger(execution.workflowId).info(`starting deferred execution (${execution.id})`);
@@ -291,8 +291,9 @@ export default class Dispatcher {
           key: workflow.key,
           eventKey: options.eventKey ?? randomUUID(),
           stack: options.stack,
-          manually: options.manually,
+          dispatched: deferred ?? false,
           status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
+          manually: options.manually,
         },
         { transaction },
       );
@@ -309,6 +310,7 @@ export default class Dispatcher {
       workflow.stats = await workflow.getStats({ transaction });
     }
     await workflow.stats.increment('executed', { transaction });
+    // NOTE: https://sequelize.org/api/v6/class/src/model.js~model#instance-method-increment
     if (this.plugin.db.options.dialect !== 'postgres') {
       await workflow.stats.reload({ transaction });
     }
@@ -346,7 +348,8 @@ export default class Dispatcher {
 
     try {
       const execution = await this.createExecution(...event);
-      if (execution?.status === EXECUTION_STATUS.QUEUEING) {
+      // NOTE: cache first execution for most cases
+      if (!execution?.dispatched) {
         if (this.serving() && !this.executing && !this.pending.length) {
           logger.info(`local pending list is empty, adding execution (${execution.id}) to pending list`);
           this.pending.push({ execution });
@@ -385,13 +388,11 @@ export default class Dispatcher {
       await this.plugin.db.sequelize.transaction({ isolationLevel }, async (transaction) => {
         const ExecutionModelClass = this.plugin.db.getModel('executions');
         const [affected] = await ExecutionModelClass.update(
-          { status: EXECUTION_STATUS.STARTED },
+          { dispatched: true, status: EXECUTION_STATUS.STARTED },
           {
             where: {
               id: execution.id,
-              status: {
-                [Op.is]: EXECUTION_STATUS.QUEUEING,
-              },
+              dispatched: false,
             },
             transaction,
           },
@@ -420,9 +421,7 @@ export default class Dispatcher {
         async (transaction) => {
           const execution = (await this.plugin.db.getRepository('executions').findOne({
             filter: {
-              status: {
-                [Op.is]: EXECUTION_STATUS.QUEUEING,
-              },
+              dispatched: false,
               'workflow.enabled': true,
             },
             sort: 'id',
@@ -432,6 +431,7 @@ export default class Dispatcher {
             this.plugin.getLogger(execution.workflowId).info(`execution (${execution.id}) fetched from db`);
             await execution.update(
               {
+                dispatched: true,
                 status: EXECUTION_STATUS.STARTED,
               },
               { transaction },
@@ -451,9 +451,9 @@ export default class Dispatcher {
 
   private async process(execution: ExecutionModel, job?: JobModel, options: Transactionable = {}): Promise<Processor> {
     const logger = this.plugin.getLogger(execution.workflowId);
-    if (execution.status === EXECUTION_STATUS.QUEUEING) {
+    if (!execution.dispatched) {
       const transaction = await this.plugin.useDataSourceTransaction('main', options.transaction);
-      await execution.update({ status: EXECUTION_STATUS.STARTED }, { transaction });
+      await execution.update({ dispatched: true, status: EXECUTION_STATUS.STARTED }, { transaction });
       logger.info(`execution (${execution.id}) from pending list updated to started`);
     }
     const processor = this.plugin.createProcessor(execution, options);

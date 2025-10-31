@@ -31,6 +31,8 @@ export class NumberFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['double', 'float', 'decimal'];
   hasDefaultValue = true;
+  validationType = 'number';
+  excludeValidationOptions = ['integer'];
   properties = {
     ...defaultProps,
     unique,

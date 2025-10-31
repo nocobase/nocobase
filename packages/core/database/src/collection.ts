@@ -12,6 +12,7 @@ import { EventEmitter } from 'events';
 import { default as _, default as lodash } from 'lodash';
 import safeJsonStringify from 'safe-json-stringify';
 import {
+  DataTypes,
   ModelOptions,
   ModelStatic,
   QueryInterfaceDropTableOptions,
@@ -22,10 +23,12 @@ import {
 } from 'sequelize';
 import { BuiltInGroup } from './collection-group-manager';
 import { Database } from './database';
-import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
+import { BelongsToField, Field, FieldOptions, HasManyField, RelationField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
+import { buildJoiSchema } from './utils/field-validation';
+import Joi from 'joi';
 
 export type RepositoryType = typeof Repository;
 
@@ -148,6 +151,7 @@ export class Collection<
   isThrough?: boolean;
   fields: Map<string, any> = new Map<string, any>();
   model: ModelStatic<Model>;
+
   repository: Repository<TModelAttributes, TCreationAttributes>;
 
   constructor(options: CollectionOptions, context: CollectionContext) {
@@ -174,6 +178,10 @@ export class Collection<
 
     this.setRepository(options.repository);
     this.setSortable(options.sortable);
+  }
+
+  get underscored() {
+    return this.options.underscored;
   }
 
   get filterTargetKey(): string | string[] {
@@ -210,6 +218,10 @@ export class Collection<
     return (this.options.titleField as string) || this.model.primaryKeyAttribute;
   }
 
+  get titleFieldInstance() {
+    return this.getField(this.titleField);
+  }
+
   get db() {
     return this.context.database;
   }
@@ -230,6 +242,59 @@ export class Collection<
     }
   }
 
+  validate(options: { values: Record<string, any> | Record<string, any>[]; operation: 'create' | 'update' }) {
+    const { values: updateValues, operation } = options;
+    if (!updateValues) {
+      return;
+    }
+    const values = Array.isArray(updateValues) ? updateValues : [updateValues];
+
+    const helper = (field: Field, value: Object) => {
+      const val = value[field.name];
+      if (!field.options.validation) {
+        return;
+      }
+
+      if (field instanceof RelationField) {
+        const rules = field.options?.validation?.rules || [];
+        const required = rules.some((rule) => rule.name === 'required');
+
+        if (required) {
+          const { error } = Joi.any().empty(null).required().label(`${this.name}.${field.name}`).validate(val);
+          if (error) {
+            throw error;
+          }
+        }
+
+        return;
+      }
+
+      const joiSchema = buildJoiSchema(field.options.validation, {
+        label: `${this.name}.${field.name}`,
+        value: val,
+      });
+      const { error } = joiSchema.validate(val);
+      if (error) {
+        throw error;
+      }
+    };
+    for (const value of values) {
+      if (operation === 'create') {
+        for (const [, field] of this.fields) {
+          helper(field, value);
+        }
+      }
+      if (operation === 'update') {
+        for (const key of Object.keys(value)) {
+          const field = this.getField(key);
+          if (field) {
+            helper(field, value);
+          }
+        }
+      }
+    }
+  }
+
   isMultiFilterTargetKey() {
     return Array.isArray(this.filterTargetKey) && this.filterTargetKey.length > 1;
   }
@@ -237,7 +302,7 @@ export class Collection<
   tableName() {
     const { name, tableName } = this.options;
     const tName = tableName || name;
-    return this.options.underscored ? snakeCase(tName) : tName;
+    return this.underscored ? snakeCase(tName) : tName;
   }
 
   /**
@@ -387,7 +452,7 @@ export class Collection<
   }
 
   checkFieldType(name: string, options: FieldOptions) {
-    if (!this.options.underscored) {
+    if (!this.underscored) {
       return;
     }
 
@@ -566,7 +631,7 @@ export class Collection<
     if (this.model.options.timestamps !== false) {
       // timestamps 相关字段不删除
       let timestampsFields = ['createdAt', 'updatedAt', 'deletedAt'];
-      if (this.db.options.underscored) {
+      if (this.underscored) {
         timestampsFields = timestampsFields.map((fieldName) => snakeCase(fieldName));
       }
       if (timestampsFields.includes(field.columnName())) {
@@ -961,6 +1026,7 @@ export class Collection<
       modelName: name,
       sequelize: this.context.database.sequelize,
       tableName: this.tableName(),
+      underscored: this.underscored,
     };
 
     return attr;
