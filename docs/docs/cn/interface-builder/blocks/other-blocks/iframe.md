@@ -11,7 +11,7 @@ IFrame 区块允许将外部网页或内容嵌入到当前页面中。用户可�
 
 ## 模板语法
 
-在 HTML 模式 下，区块内容支持使用 Liquid 模板语法。
+在 HTML 模式 下，区块内容支持使用 **[Liquid 模板引擎](https://shopify.github.io/liquid/basics/introduction/)** 语法。
 
 ![20251026205331](https://static-docs.nocobase.com/20251026205331.png)
 
