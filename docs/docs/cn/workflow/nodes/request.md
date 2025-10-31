@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-request'
+---
+
 # HTTP 请求
 
 ## 介绍

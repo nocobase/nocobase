@@ -1,4 +1,8 @@
- 操作前事件
+---
+pkg: '@nocobase/plugin-workflow-request-interceptor'
+---
+
+# 操作前事件
 
 ## 介绍
 
