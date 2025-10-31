@@ -126,7 +126,19 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         message.success(t('UID copied to clipboard'));
       } catch (error) {
         console.error(t('Copy failed'), ':', error);
-        message.error(t('Copy failed, please copy [{{uid}}] manually.', { uid }));
+        // 如果不是 HTTPS 协议，给出更具体的提示：HTTP 下剪贴板 API 不可用
+        const isHttps = typeof window !== 'undefined' && window.location?.protocol === 'https:';
+        if (!isHttps) {
+          message.error(
+            t(
+              'Copy failed under HTTP. Clipboard API is unavailable on non-HTTPS pages. Please copy [{{uid}}] manually.',
+              { uid },
+            ),
+          );
+          return;
+        } else {
+          message.error(t('Copy failed, please copy [{{uid}}] manually.', { uid }));
+        }
       }
     },
     [message, t],
