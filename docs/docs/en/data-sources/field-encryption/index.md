@@ -1,6 +1,8 @@
-# Encryption
+---
+pkg: "@nocobase/plugin-field-encryption"
+---
 
-<PluginInfo commercial="true" name="field-encryption"></PluginInfo>
+# Encryption
 
 ## Introduction
 

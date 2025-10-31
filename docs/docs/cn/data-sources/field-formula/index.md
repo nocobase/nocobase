@@ -1,6 +1,8 @@
-# 计算公式
+---
+pkg: "@nocobase/plugin-field-formula"
+---
 
-<PluginInfo name="field-formula"></PluginInfo>
+# 计算公式
 
 ## 介绍
 

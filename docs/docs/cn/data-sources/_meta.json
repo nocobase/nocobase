@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "概述",
-    "link": "/data-sources/data-modeling"
+    "link": "/data-sources/"
   },
   {
     "type": "custom-link",
@@ -104,6 +104,16 @@
         "type": "custom-link",
         "label": "日历表",
         "link": "/data-sources/calendar/calendar-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "评论表",
+        "link": "/data-sources/collection-comment/"
+      },
+      {
+        "type": "custom-link",
+        "label": "表达式表",
+        "link": "/data-sources/collection-expression/collection"
       },
       {
         "type": "custom-link",
@@ -220,11 +230,6 @@
             "type": "custom-link",
             "label": "复选框",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
-          },
-          {
-            "type": "custom-link",
-            "label": "中国行政区",
-            "link": "/data-sources/field-china-region/"
           }
         ]
       },
@@ -380,6 +385,21 @@
             "type": "custom-link",
             "label": "最后修改日期",
             "link": "/data-sources/data-modeling/collection-fields/system-info/updated-at"
+          },
+          {
+            "type": "custom-link",
+            "label": "创建人",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/created-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "最后修改人",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "空间",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/space"
           },
           {
             "type": "custom-link",

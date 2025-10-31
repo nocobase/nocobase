@@ -1,6 +1,8 @@
-# Sequence
+---
+pkg: "@nocobase/plugin-field-sequence"
+---
 
-<PluginInfo name="field-sequence"></PluginInfo>
+# Sequence
 
 ## Introduction
 

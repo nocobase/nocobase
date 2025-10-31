@@ -1,6 +1,8 @@
-# Sort Field
+---
+pkg: "@nocobase/plugin-field-sort"
+---
 
-<PluginInfo name="field-sort"></PluginInfo>
+# Sort Field
 
 ## Introduction
 

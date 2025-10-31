@@ -1,6 +1,8 @@
-# Data Field: Attachment (URL)
+---
+pkg: "@nocobase/plugin-field-attachment-url"
+---
 
-<PluginInfo name="field-attachment-url"></PluginInfo>
+# Data Field: Attachment (URL)
 
 ## Introduction
 

@@ -1,6 +1,8 @@
-# Tree Collection
+---
+pkg: "@nocobase/plugin-collection-tree"
+---
 
-<PluginInfo name="collection-tree"></PluginInfo>
+# Tree Collection
 
 ## Introduction
 

@@ -1,6 +1,8 @@
-# 排序字段
+---
+pkg: "@nocobase/plugin-field-sort"
+---
 
-<PluginInfo name="field-sort"></PluginInfo>
+# 排序字段
 
 ## 介绍
 

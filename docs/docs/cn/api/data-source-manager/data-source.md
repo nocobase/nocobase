@@ -10,11 +10,11 @@
 
 ### resourceManager
 
-数据源的 resourceManager 实例，详见：[`resourceManager`](/api/resourcer/resource-manager)
+数据源的 resourceManager 实例
 
 ### acl
 
-数据源的 ACL 实例，详见： [`ACL`](/api/acl/acl)
+数据源的 ACL 实例
 
 ## API
 
