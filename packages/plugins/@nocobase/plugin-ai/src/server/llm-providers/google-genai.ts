@@ -136,6 +136,10 @@ export class GoogleGenAIProvider extends LLMProvider {
     }
     return [];
   }
+
+  protected isToolConflict(): boolean {
+    return true;
+  }
 }
 
 export class GoogleGenAIEmbeddingProvider extends EmbeddingProvider {

@@ -12,7 +12,7 @@ import { ContextItem, WorkContextOptions } from '../types';
 import { BuildOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 // @ts-ignore
-import { FlowModel, FlowModelContext, useFlowEngine } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelContext, MultiRecordResource, useFlowEngine } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { aiSelection } from '../stores/ai-selection';
 import { CollectionBlockModel, FormBlockModel, FormItemModel } from '@nocobase/client';
@@ -70,20 +70,29 @@ const toSimplifyForm = (model: FormBlockModel) => {
 
 const toCollection = async (model: CollectionBlockModel) => {
   const collection = FlowUtils.getCollection(model);
-  return {
-    dataScope: {
-      filter: model?.resource?.getFilter(),
-    },
-    collection: {
-      ...collection,
-    },
-    prompt: `You can use the tools dataSource-dataSourceQuery to query data from a data source and dataSource-dataSourceCounting to get record counts.
+  if (model.resource instanceof MultiRecordResource) {
+    return {
+      dataScope: {
+        filter: model?.resource?.getFilter(),
+      },
+      collection: {
+        ...collection,
+      },
+      prompt: `You can use the tools dataSource-dataSourceQuery to query data from a data source and dataSource-dataSourceCounting to get record counts.
 When analyzing user messages, if any words or phrases are related or similar to a known collectionName, prioritize retrieving relevant data before responding.
 When the user asks about quantities, totals, or record counts, you must first call dataSource-dataSourceCounting to obtain accurate numbers before answering.
 Always apply dataScope.filter when calling dataSource-dataSourceQuery or dataSource-dataSourceCounting. Ensure that the filter structure is properly transformed to match the tools’ input format.
 Do not mention or reveal any details about tools, data sources, or internal processes in your reply.
 Unless the user explicitly requests it, do not directly output large amounts of raw data—summarize, filter, or aggregate the results naturally in your response.`,
-  };
+    };
+  } else {
+    return {
+      collection: {
+        ...collection,
+      },
+      data: await FlowUtils.getResource(model),
+    };
+  }
 };
 
 const toSimplifyComponentTree = async (model: FlowModel) => {

@@ -23,11 +23,14 @@ vi.mock('@nocobase/flow-engine', async () => {
       type="button"
       data-testid="variable-input"
       onClick={() =>
-        onChange?.('name', {
-          interface: 'input',
-          uiSchema: { 'x-component': 'Input', 'x-component-props': { placeholder: 'Enter value' } },
-          paths: ['collection', 'name'],
-        })
+        onChange?.(
+          (globalThis as any).__TEST_PATH__ || 'name',
+          (globalThis as any).__TEST_META__ || {
+            interface: 'input',
+            uiSchema: { 'x-component': 'Input', 'x-component-props': { placeholder: 'Enter value' } },
+            paths: ['collection', 'name'],
+          },
+        )
       }
     >
       mock-variable-input
@@ -52,6 +55,14 @@ function CreateModel() {
       operators: [
         { value: '$eq', label: 'Equals' },
         { value: '$null', label: 'Is null', noValue: true },
+      ],
+      children: [
+        {
+          name: 'containsText',
+          title: 'Contains text',
+          schema: { 'x-component': 'Input' },
+          operators: [{ value: '$includes', label: 'contains' }],
+        },
       ],
     };
   }
@@ -114,5 +125,57 @@ describe('VariableFilterItem', () => {
     rerender(<VariableFilterItem value={nextValue} model={model} rightAsVariable />);
     // Only left VariableInput remains（右侧在 noValue 操作符下不渲染）
     expect(screen.queryAllByTestId('variable-input')).toHaveLength(1);
+  });
+
+  it('resets operator and value when operators of current field become empty', async () => {
+    const value = { path: '', operator: '$eq', value: 'abc' } as any;
+    const model1 = CreateModel();
+
+    const { rerender } = render(<VariableFilterItem value={value} model={model1} rightAsVariable={false} />);
+    // 选择字段，当前接口有 $eq 操作符
+    fireEvent.click(screen.getByTestId('variable-input'));
+    expect(value.operator).toBe('$eq');
+
+    // 构造一个没有 operators 的同名接口，替换 app，使当前字段不再有任何可用操作符
+    const model2 = CreateModel();
+    class InputInterfaceAlt extends CollectionFieldInterface {
+      name = 'input';
+      group = 'basic';
+      filterable = {
+        operators: [{ value: '$null', label: 'Is null', noValue: true }],
+      };
+    }
+    (model2.context.app as any).addFieldInterfaces([InputInterfaceAlt]);
+    rerender(<VariableFilterItem value={value} model={model2} rightAsVariable={false} />);
+
+    // effect: 当 operator 列表为空时，应清空已选 operator 和右值
+    expect(value.operator).toBe('');
+    expect(value.value).toBe('');
+  });
+
+  it('prefers child operators injected via x-filter-operators over interface defaults', async () => {
+    const value = { path: '', operator: '', value: '' } as any;
+    const model = CreateModel();
+
+    // 通过全局变量注入 child meta（包含 x-filter-operators）
+    (globalThis as any).__TEST_PATH__ = 'containsText';
+    (globalThis as any).__TEST_META__ = {
+      interface: 'input',
+      uiSchema: {
+        'x-component': 'Input',
+        'x-filter-operators': [{ value: '$includes', label: 'contains' }],
+      },
+      paths: ['collection', 'containsText'],
+    };
+
+    const { rerender } = render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    // 选择子项后，将 operator 设置为子项自带的 $includes
+    value.operator = '$includes';
+    rerender(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+
+    // 由于 $includes 存在于子项的 x-filter-operators 中，effect 不应清空它
+    expect(value.operator).toBe('$includes');
   });
 });

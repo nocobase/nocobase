@@ -51,7 +51,6 @@ export class FilterActionModel extends ActionModel {
       fields.map((field) => field.name),
     );
     this.map.set(this.props.filterableFieldNames, result);
-
     return result;
   }
 
@@ -106,22 +105,23 @@ FilterActionModel.registerFlow({
           'x-component': (props) => {
             // eslint-disable-next-line react-hooks/rules-of-hooks
             const { model } = useFlowSettingsContext();
-            const options = model.context.blockModel.collection.getFields().map((field) => {
-              return {
-                label: field.title,
-                value: field.name,
-              };
-            });
+            const dm = model?.context?.app?.dataSourceManager;
+            const fiMgr = dm?.collectionFieldInterfaceManager;
+            const filterable = getFilterableFields(model.context.blockModel.collection, fiMgr);
+            const options = filterable.map((field: any) => ({ label: field.title, value: field.name }));
             return <Select {...props} options={options} />;
           },
           'x-component-props': {
             mode: 'multiple',
-            placeholder: escapeT('Please select non-filterable fields'),
+            placeholder: escapeT('Please select filterable fields'),
           },
         },
       },
       defaultParams(ctx) {
-        const names = ctx.blockModel.collection.getFields().map((field) => field.name);
+        // 默认仅包含“可筛选”的字段（与 1.0 一致），以避免 JSON 等未提供 operators 的字段出现在默认允许集合中
+        const dm = ctx?.model?.context?.app?.dataSourceManager;
+        const fiMgr = dm?.collectionFieldInterfaceManager;
+        const names = getFilterableFields(ctx.blockModel.collection, fiMgr).map((field: any) => field.name);
         return {
           filterableFieldNames: names || [],
         };
@@ -219,6 +219,18 @@ FilterActionModel.registerFlow({
     },
   },
 });
+
+function getFilterableFields(collection: any, fiMgr: any) {
+  const fields = collection?.getFields?.() || [];
+  if (!fiMgr) return [];
+  return fields.filter((field: any) => {
+    if (field.target === 'attachments') return false;
+    if (!field?.interface) return false;
+    if (field?.filterable === false) return false;
+    const fi = fiMgr.getFieldInterface(field.interface);
+    return !!fi?.filterable;
+  });
+}
 
 function clearInputValue(value: any) {
   if (Array.isArray(value)) {

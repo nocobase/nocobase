@@ -520,7 +520,7 @@ describe('workflow > Plugin', () => {
       const e1s = await w1.getExecutions();
       expect(e1s.length).toBe(1);
       expect(e1s[0].dispatched).toBe(true);
-      expect(e1s[0].status).toBe(EXECUTION_STATUS.QUEUEING);
+      expect(e1s[0].status).toBe(EXECUTION_STATUS.STARTED);
 
       plugin.start(e1s[0]);
 

@@ -1,0 +1,161 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Quick Start",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Plugin Development Overview",
+        "link": "/plugin-development"
+      },
+      {
+        "type": "custom-link",
+        "label": "Write Your First Plugin",
+        "link": "/plugin-development/write-your-first-plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "Project Structure",
+        "link": "/plugin-development/project-structure"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Server Development",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/plugin-development/server"
+      },
+      {
+        "type": "custom-link",
+        "label": "Collections and Fields",
+        "link": "/plugin-development/server/collections-and-fields"
+      },
+      {
+        "type": "custom-link",
+        "label": "Resources and Actions",
+        "link": "/plugin-development/server/resources-and-actions"
+      },
+      {
+        "type": "custom-link",
+        "label": "Access Control",
+        "link": "/plugin-development/server/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "Middlewares",
+        "link": "/plugin-development/server/middlewares"
+      },
+      {
+        "type": "custom-link",
+        "label": "Command Line",
+        "link": "/plugin-development/server/cli"
+      },
+      {
+        "type": "custom-link",
+        "label": "Server Events",
+        "link": "/plugin-development/server/events"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migrations",
+        "link": "/plugin-development/server/migrations"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logs",
+        "link": "/plugin-development/server/logs"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tests",
+        "link": "/plugin-development/server/tests"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Client Development",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/plugin-development/client"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowContext",
+        "link": "/plugin-development/client/flow-context"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowEngine",
+        "link": "/plugin-development/client/flow-engine"
+      },
+      {
+        "type": "custom-link",
+        "label": "Router",
+        "link": "/plugin-development/client/router"
+      },
+      {
+        "type": "custom-link",
+        "label": "DataSourceManager",
+        "link": "/plugin-development/client/data-sources"
+      },
+      {
+        "type": "custom-link",
+        "label": "Resource",
+        "link": "/plugin-development/client/resource"
+      },
+      {
+        "type": "custom-link",
+        "label": "Request",
+        "link": "/plugin-development/client/request"
+      },
+      {
+        "type": "custom-link",
+        "label": "Styles and Theme",
+        "link": "/plugin-development/client/styles-and-theme"
+      },
+      {
+        "type": "custom-link",
+        "label": "Logs",
+        "link": "/plugin-development/client/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tests",
+        "link": "/plugin-development/client/tests"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Common",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Internationalization",
+        "link": "/plugin-development/common/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "Languages",
+        "link": "/plugin-development/common/languages"
+      },
+      {
+        "type": "custom-link",
+        "label": "Dependency Management",
+        "link": "/plugin-development/common/dependency-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Build",
+        "link": "/plugin-development/common/build"
+      }
+    ]
+  }
+]

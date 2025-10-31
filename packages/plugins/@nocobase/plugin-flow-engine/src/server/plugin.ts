@@ -10,12 +10,12 @@
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
+import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 import PluginUISchemaStorageServer from './server';
 import { GlobalContext, HttpRequestContext } from './template/contexts';
 import { JSONValue, resolveJsonTemplate } from './template/resolver';
 import { variables } from './variables/registry';
 import { prefetchRecordsForResolve } from './variables/utils';
-import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 
 export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
   private globalContext!: GlobalContext;
@@ -39,6 +39,7 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     // Initialize a shared GlobalContext once, using server environment variables
     this.globalContext = new GlobalContext(this.app.environment?.getVariables?.());
     this.app.acl.allow('flowSql', 'runById', 'loggedIn');
+    this.app.acl.allow('flowSql', 'getBind', 'loggedIn');
     this.app.acl.allow('variables', 'resolve', 'loggedIn');
     // 赋值动作权限
     this.app.acl.allow('fieldAssignments', 'apply', 'loggedIn');

@@ -31,48 +31,78 @@
       },
       {
         "type": "custom-link",
-        "label": "数据表和字段",
-        "link": "/plugin-development/server/collections-and-fields"
+        "label": "Plugin",
+        "link": "/plugin-development/server/plugin"
       },
       {
         "type": "custom-link",
-        "label": "资源与操作",
-        "link": "/plugin-development/server/resources-and-actions"
+        "label": "Application",
+        "link": "/plugin-development/server/app"
       },
       {
         "type": "custom-link",
-        "label": "权限控制",
+        "label": "Collections",
+        "link": "/plugin-development/server/collections"
+      },
+      {
+        "type": "custom-link",
+        "label": "Database",
+        "link": "/plugin-development/server/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "DataSourceManager",
+        "link": "/plugin-development/server/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ResourceManager",
+        "link": "/plugin-development/server/resource-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL",
         "link": "/plugin-development/server/acl"
       },
       {
         "type": "custom-link",
-        "label": "中间件",
-        "link": "/plugin-development/server/middlewares"
+        "label": "Middleware",
+        "link": "/plugin-development/server/middleware"
       },
       {
         "type": "custom-link",
-        "label": "命令行",
-        "link": "/plugin-development/server/cli"
+        "label": "Command",
+        "link": "/plugin-development/server/command"
       },
       {
         "type": "custom-link",
-        "label": "服务端事件",
-        "link": "/plugin-development/server/events"
+        "label": "Event",
+        "link": "/plugin-development/server/event"
       },
       {
         "type": "custom-link",
-        "label": "升级脚本",
-        "link": "/plugin-development/server/migrations"
+        "label": "Context",
+        "link": "/plugin-development/server/context"
       },
       {
         "type": "custom-link",
-        "label": "日志",
-        "link": "/plugin-development/server/logs"
+        "label": "Migration",
+        "link": "/plugin-development/server/migration"
       },
       {
         "type": "custom-link",
-        "label": "测试",
-        "link": "/plugin-development/server/tests"
+        "label": "Logger",
+        "link": "/plugin-development/server/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "I18n",
+        "link": "/plugin-development/server/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "Test",
+        "link": "/plugin-development/server/test"
       }
     ]
   },
@@ -87,8 +117,8 @@
       },
       {
         "type": "custom-link",
-        "label": "FlowContext",
-        "link": "/plugin-development/client/flow-context"
+        "label": "Plugin",
+        "link": "/plugin-development/client/plugin"
       },
       {
         "type": "custom-link",
@@ -97,13 +127,28 @@
       },
       {
         "type": "custom-link",
-        "label": "路由",
+        "label": "Context",
+        "link": "/plugin-development/client/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Router",
         "link": "/plugin-development/client/router"
       },
       {
         "type": "custom-link",
+        "label": "FlowModel",
+        "link": "/plugin-development/client/flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL",
+        "link": "/plugin-development/client/acl"
+      },
+      {
+        "type": "custom-link",
         "label": "DataSourceManager",
-        "link": "/plugin-development/client/data-sources"
+        "link": "/plugin-development/client/data-source-manager"
       },
       {
         "type": "custom-link",
@@ -117,44 +162,39 @@
       },
       {
         "type": "custom-link",
-        "label": "样式和主题",
-        "link": "/plugin-development/client/styles-and-theme"
+        "label": "Styles & Themes",
+        "link": "/plugin-development/client/styles-themes"
       },
       {
         "type": "custom-link",
-        "label": "日志",
+        "label": "Logger",
         "link": "/plugin-development/client/logger"
       },
       {
         "type": "custom-link",
-        "label": "测试",
-        "link": "/plugin-development/client/tests"
+        "label": "Test",
+        "link": "/plugin-development/client/test"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "通用",
+    "label": "其他",
     "items": [
       {
         "type": "custom-link",
-        "label": "国际化",
-        "link": "/plugin-development/common/i18n"
-      },
-      {
-        "type": "custom-link",
         "label": "语言列表",
-        "link": "/plugin-development/common/languages"
+        "link": "/plugin-development/languages"
       },
       {
         "type": "custom-link",
         "label": "依赖管理",
-        "link": "/plugin-development/common/dependency-management"
+        "link": "/plugin-development/dependency-management"
       },
       {
         "type": "custom-link",
         "label": "构建",
-        "link": "/plugin-development/common/build"
+        "link": "/plugin-development/build"
       }
     ]
   }

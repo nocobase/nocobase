@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-action-import"
+---
 # 导入
-
-:::tip 提示
-该功能由插件 `plugin-action-import` 提供。
-:::
 
 ## 介绍
 
