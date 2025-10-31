@@ -197,5 +197,6 @@
   "Data source records counting": "数据源记录数统计",
   "Use dataSource, collectionName, and collection fields to query data from the database, get total count of records": "使用 dataSource、collectionName 和 collection fields 从数据库中获取记录总数",
   "Data source query": "数据源查询操作",
-  "Use dataSource, collectionName, and collection fields to query data from the database": "使用 dataSource、collectionName 和 collection fields 从数据库中查询数据。"
+  "Use dataSource, collectionName, and collection fields to query data from the database": "使用 dataSource、collectionName 和 collection fields 从数据库中查询数据。",
+  "You are currently using the Gemini LLM service. When Web Search is enabled, AI employees will temporarily be unable to use skills": "当前您正在使用 Gemini LLM 服务。启用 Web Search 功能时，AI 员工将暂时无法使用技能"
 }
