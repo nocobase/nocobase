@@ -66,4 +66,4 @@ dataSourceManager.afterAddDataSource((dataSource) => {
 
 ## 数据源扩展
 
-完整的数据源扩展请参考 [数据源扩展](/data-source/development) 章节
+完整的数据源扩展请参考数据源扩展章节

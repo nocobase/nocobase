@@ -1,6 +1,8 @@
-# 普通表
+---
+pkg: "@nocobase/plugin-data-source-main"
+---
 
-<PluginInfo name="data-source-main"></PluginInfo>
+# 普通表
 
 ## 介绍
 

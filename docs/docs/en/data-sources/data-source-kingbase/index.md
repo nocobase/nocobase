@@ -1,6 +1,8 @@
-# Data Source - KingbaseES Database
+---
+pkg: "@nocobase/plugin-data-source-kingbase"
+---
 
-<PluginInfo licenseBundled="true" name="data-source-kingbase"></PluginInfo>
+# Data Source - KingbaseES Database
 
 ## Introduction
 
