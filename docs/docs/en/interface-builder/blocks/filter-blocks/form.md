@@ -72,5 +72,5 @@ Supported configurations:
 
 ![20251031182849](https://static-docs.nocobase.com/20251031182849.png)
 
-- **Number of rows when collapsed**: Sets how many rows of form fields are displayed in the collapsed state.
-- **Collapsed by default**: When enabled, the filter form is displayed in collapsed state by default.
+- **Collapsed rows**: Sets how many rows of form fields are displayed in the collapsed state.
+- **Default collapsed**: When enabled, the filter form is displayed in collapsed state by default.
