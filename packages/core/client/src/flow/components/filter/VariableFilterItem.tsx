@@ -11,6 +11,9 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Input, InputNumber, Select, Space, Switch } from 'antd';
 import merge from 'lodash/merge';
 import { observer } from '@formily/reactive-react';
+import { createForm, onFieldValueChange } from '@formily/core';
+import type { Form, GeneralField, Field } from '@formily/core';
+import type { ISchema } from '@formily/json-schema';
 import {
   VariableInput,
   type MetaTreeNode,
@@ -22,6 +25,7 @@ import {
 import _ from 'lodash';
 import { NumberPicker } from '@formily/antd-v5';
 import { lazy } from '../../../lazy-helper';
+import { FormProvider, SchemaComponent } from '../../../schema-component/core';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
   () => import('../../../schema-component'),
@@ -31,7 +35,8 @@ const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
 export interface VariableFilterItemValue {
   path: string;
   operator: string;
-  value: string | boolean;
+  // 尽量收敛为常见联合类型，避免到处传播 unknown
+  value: string | number | boolean | null | Array<string | number> | Record<string, unknown>;
 }
 
 export interface VariableFilterItemProps {
@@ -52,33 +57,87 @@ export interface VariableFilterItemProps {
 }
 
 function createStaticInputRenderer(
-  schema: any,
+  schema: ISchema,
   meta: MetaTreeNode | null,
   t: (s: string) => string,
-): (p: { value?: any; onChange?: (v: any) => void }) => JSX.Element {
-  const xComp = schema?.['x-component'];
+): (
+  p: { value?: VariableFilterItemValue['value']; onChange?: (v: VariableFilterItemValue['value']) => void } & Record<
+    string,
+    unknown
+  >,
+) => JSX.Element {
+  const xComp = (schema as ISchema)?.['x-component'] as string | undefined;
   const fieldProps = meta?.uiSchema?.['x-component-props'] || {};
   const opProps = schema?.['x-component-props'] || {};
   const combinedProps = merge({}, fieldProps, opProps);
   const selectOptions = schema?.enum || [];
 
+  // 这里保持 any，避免在不同组件 props 上产生不必要的类型冲突
   const commonProps: any = {
     style: { width: 200, ...(combinedProps?.style || {}) },
     placeholder: combinedProps?.placeholder || t('Enter value'),
     ...combinedProps,
   };
 
-  return (p: any) => {
+  return (
+    p: { value?: VariableFilterItemValue['value']; onChange?: (v: VariableFilterItemValue['value']) => void } & Record<
+      string,
+      unknown
+    >,
+  ) => {
     const { value, onChange, ...rest } = p || {};
-    if (xComp === 'InputNumber') return <InputNumber {...commonProps} {...rest} value={value} onChange={onChange} />;
-    if (xComp === 'NumberPicker') return <NumberPicker {...commonProps} {...rest} value={value} onChange={onChange} />;
-    if (xComp === 'Switch') return <Switch {...commonProps} {...rest} checked={!!value} onChange={onChange} />;
+    if (xComp === 'InputNumber')
+      return (
+        <InputNumber
+          {...commonProps}
+          {...rest}
+          value={typeof value === 'number' ? value : undefined}
+          onChange={(v) => onChange?.(v as unknown as VariableFilterItemValue['value'])}
+        />
+      );
+    if (xComp === 'NumberPicker')
+      return (
+        <NumberPicker
+          {...commonProps}
+          {...rest}
+          value={typeof value === 'number' ? value : undefined}
+          onChange={(v) => onChange?.(v as unknown as VariableFilterItemValue['value'])}
+        />
+      );
+    if (xComp === 'Switch')
+      return <Switch {...commonProps} {...rest} checked={!!value} onChange={(checked) => onChange?.(checked)} />;
     if (xComp === 'Select')
-      return <Select options={selectOptions} {...commonProps} {...rest} value={value} onChange={onChange} />;
+      return (
+        <Select
+          options={selectOptions}
+          {...commonProps}
+          {...rest}
+          value={
+            Array.isArray(value) || typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+              ? (value as unknown)
+              : undefined
+          }
+          onChange={(v) => onChange?.(v as unknown as VariableFilterItemValue['value'])}
+        />
+      );
     if (xComp === 'DateFilterDynamicComponent')
-      return <DateFilterDynamicComponentLazy {...commonProps} {...rest} value={value} onChange={onChange} />;
+      return (
+        <DateFilterDynamicComponentLazy
+          {...commonProps}
+          {...rest}
+          value={value as unknown}
+          onChange={(v: unknown) => onChange?.(v as VariableFilterItemValue['value'])}
+        />
+      );
     // 普通文本输入：透传组合输入事件，避免 IME 被中断
-    return <Input {...commonProps} {...rest} value={value} onChange={(e) => onChange?.(e?.target?.value)} />;
+    return (
+      <Input
+        {...commonProps}
+        {...rest}
+        value={typeof value === 'string' ? value : value == null ? '' : String(value)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange?.(e.target.value)}
+      />
+    );
   };
 }
 
@@ -95,13 +154,30 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     // 左侧选中的元数据节点
     const [leftMeta, setLeftMeta] = useState<MetaTreeNode | null>(null);
 
-    // 基于字段接口的动态操作符元数据（与原筛选逻辑一致：来源于 collectionFieldInterfaceManager + visible 过滤）
-    const operatorMetaList: any[] = useMemo(() => {
-      if (!leftMeta?.interface) return [];
+    type OperatorMeta = {
+      value: string;
+      label: string | React.ReactNode;
+      noValue?: boolean;
+      schema?: ISchema;
+      visible?: (meta: MetaTreeNode) => boolean;
+    };
+    type FieldInterfaceDef = {
+      filterable?: {
+        operators?: OperatorMeta[];
+        children?: Array<{ name: string; title?: string; schema?: ISchema; operators?: OperatorMeta[] }>;
+      };
+    };
+
+    // 基于字段接口的动态操作符元数据（优先使用子菜单 schema 中自定义的 operators，其次再用接口默认 operators）
+    const operatorMetaList: OperatorMeta[] = useMemo(() => {
+      if (!leftMeta) return [];
       const dm = model.context.app?.dataSourceManager;
-      const fi = dm?.collectionFieldInterfaceManager?.getFieldInterface(leftMeta.interface);
-      const ops = fi?.filterable?.operators || [];
-      return ops.filter((op) => !op.visible || op.visible(leftMeta as any));
+      const fi = leftMeta.interface
+        ? (dm?.collectionFieldInterfaceManager?.getFieldInterface(leftMeta.interface) as FieldInterfaceDef | undefined)
+        : undefined;
+      const schemaOps: OperatorMeta[] | undefined = (leftMeta as any)?.uiSchema?.['x-filter-operators'];
+      const baseOps = (Array.isArray(schemaOps) && schemaOps.length ? schemaOps : fi?.filterable?.operators) || [];
+      return baseOps.filter((op) => !op.visible || op.visible(leftMeta));
     }, [leftMeta, model]);
 
     useEffect(() => {
@@ -115,7 +191,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     const operatorOptions = useMemo(() => {
       return operatorMetaList.map((op) => ({
         value: op.value,
-        label: typeof op.label === 'string' ? t(op.label) : (op.label as any)?.toString?.() || String(op.label),
+        label: typeof op.label === 'string' ? t(op.label) : op.label,
       }));
     }, [operatorMetaList, t]);
 
@@ -153,6 +229,8 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         const cur = operatorMetaList.find((op) => op.value === operatorValue);
         if (cur?.noValue) {
           value.value = true;
+        } else {
+          value.value = undefined;
         }
       },
       [operatorMetaList, value],
@@ -166,7 +244,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     );
 
     // 轻量动态输入渲染：使用 formily 动态 schema 渲染 mergedSchema
-    const mergedSchema = useMemo(() => {
+    const mergedSchema: ISchema = useMemo(() => {
       const fieldSchema = leftMeta?.uiSchema || {};
       const opSchema = currentOpMeta?.schema || {};
       return merge({}, fieldSchema, opSchema);
@@ -186,16 +264,98 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       [mergedSchema, leftMeta, stableT],
     );
 
+    // 判断是否需要使用 SchemaComponent 动态渲染（支持更多 x-component，如行政区、代码编辑器等）
+    const isStaticSupported = useCallback((xComp?: string) => {
+      if (!xComp) return true; // 无声明时回落到 Input，静态可处理
+      return (
+        xComp === 'Input' ||
+        xComp === 'InputNumber' ||
+        xComp === 'NumberPicker' ||
+        xComp === 'Switch' ||
+        xComp === 'Select' ||
+        xComp === 'DateFilterDynamicComponent'
+      );
+    }, []);
+
+    const DynamicRightValue = useMemo(() => {
+      // 组件类型保持稳定，避免输入过程中重挂载导致失焦
+      function Dynamic({ dynValue }: { dynValue: unknown }) {
+        const onChangeValueRef = React.useRef<(v: unknown) => void>(() => {});
+        // 将外部变更回调保持最新引用
+        const onChangeValue = useCallback(
+          (v: VariableFilterItemValue['value']) => {
+            value.value = v;
+          },
+          [value],
+        );
+        useEffect(() => {
+          onChangeValueRef.current = onChangeValue;
+        }, [onChangeValue]);
+
+        const formRef = React.useRef<Form | null>(null);
+        if (!formRef.current) {
+          formRef.current = createForm({
+            values: { value: dynValue },
+            effects() {
+              const hasValue = (f: GeneralField): f is Field => 'value' in f;
+              onFieldValueChange('value', (field: GeneralField) => {
+                if (hasValue(field)) {
+                  onChangeValueRef.current(field.value as unknown);
+                }
+              });
+            },
+          });
+        }
+        // 同步外部值到表单，但不重建表单，避免失焦
+        useEffect(() => {
+          formRef.current?.setValues({ value: dynValue });
+        }, [dynValue]);
+
+        const schemaRHS: ISchema = useMemo(
+          () =>
+            merge(
+              {
+                name: 'value',
+                'x-component': 'Input',
+                'x-component-props': {
+                  style: { width: 200 },
+                  placeholder: stableT('Enter value'),
+                },
+                'x-read-pretty': false,
+                'x-validator': undefined,
+                'x-decorator': undefined,
+              },
+              mergedSchema || {},
+            ),
+          [mergedSchema, stableT],
+        );
+
+        return (
+          <FormProvider form={formRef.current!}>
+            <div style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}>
+              <SchemaComponent schema={schemaRHS} />
+            </div>
+          </FormProvider>
+        );
+      }
+      return Dynamic;
+    }, [mergedSchema, stableT, value]);
+
     //
 
     const renderRightValueComponent = useCallback(() => {
-      const Comp = staticInputRenderer;
-      return (
-        <div style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}>
-          <Comp value={rightValue} onChange={(val: any) => (value.value = val)} />
-        </div>
-      );
-    }, [staticInputRenderer, rightValue, value]);
+      const xComp = mergedSchema?.['x-component'] as string | undefined;
+      if (isStaticSupported(xComp)) {
+        const Comp = staticInputRenderer;
+        return (
+          <div style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}>
+            <Comp value={rightValue} onChange={(val) => (value.value = val)} />
+          </div>
+        );
+      }
+      const DynamicRightInput = DynamicRightValue;
+      return <DynamicRightInput dynValue={rightValue} />;
+    }, [DynamicRightValue, isStaticSupported, mergedSchema, rightValue, staticInputRenderer]);
 
     // Null 占位组件（仿照 DefaultValue.tsx 的实现）
     const NullComponent = useMemo(() => {
@@ -239,18 +399,77 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         resolvePathFromValue: (val) => {
           if (val === null) return ['null'];
           // 变量表达式：使用内置解析；其他静态值走 constant
-          const parsed = parseValueToPath(val as any);
+          const parsed = typeof val === 'string' ? parseValueToPath(val) : undefined;
           if (parsed) return parsed;
           return ['constant'];
         },
       };
     }, [NullComponent, staticInputRenderer]);
 
+    // 为 2.0 左侧字段选择器追加“接口 filterable.children”定义（如 chinaRegion 的“省市区名称”子项），
+    // 以恢复 1.0 左侧子菜单的能力。
+    const enhancedMetaTree = useMemo(() => {
+      type MetaTreeProvider = () => MetaTreeNode[] | Promise<MetaTreeNode[]>;
+      return async () => {
+        const dm = model.context.app?.dataSourceManager;
+        const fiMgr = dm?.collectionFieldInterfaceManager;
+
+        const baseTree = model.context.getPropertyMetaTree('{{ ctx.collection }}');
+        const nodes: MetaTreeNode[] = Array.isArray(baseTree) ? baseTree : await (baseTree as MetaTreeProvider)();
+
+        const enhanceNode = async (node: MetaTreeNode): Promise<MetaTreeNode> => {
+          const fi = node.interface
+            ? (fiMgr?.getFieldInterface(node.interface) as FieldInterfaceDef | undefined)
+            : undefined;
+          const extraChildren: MetaTreeNode[] = [];
+          const filterable = fi?.filterable;
+          const childrenDefs = filterable?.children as
+            | Array<{ name: string; title?: string; schema?: ISchema; operators?: OperatorMeta[] }>
+            | undefined;
+          if (Array.isArray(childrenDefs) && childrenDefs.length) {
+            for (const c of childrenDefs) {
+              extraChildren.push({
+                name: c.name,
+                title: c.title || c.name,
+                type: (c.schema?.type as string) || 'string',
+                // 为子项赋予一个可用的接口，以便拿到操作符（使用 input => string operators）
+                interface: c.schema?.['x-component'] === 'Select' ? 'select' : 'input',
+                // 将子项 operators 注入到 schema 上，供 operatorMetaList 优先读取
+                uiSchema: { ...(c.schema || {}), 'x-filter-operators': c.operators },
+                paths: [...(node.paths || []), c.name],
+                parentTitles: [...(node.parentTitles || []), node.title],
+              });
+            }
+          }
+          // 合并原有 children（可能是数组或按需加载函数）与 extraChildren
+          if (typeof node.children === 'function') {
+            const original = node.children;
+            return {
+              ...node,
+              children: async () => {
+                const base = await original();
+                return [...(Array.isArray(base) ? base : []), ...extraChildren];
+              },
+            } as MetaTreeNode;
+          }
+          const merged = [...(Array.isArray(node.children) ? (node.children as MetaTreeNode[]) : []), ...extraChildren];
+          return { ...node, children: merged.length ? merged : node.children } as MetaTreeNode;
+        };
+
+        // 逐个节点增强；（当前根层已经是集合字段列表，无需递归处理更深层）
+        const out: MetaTreeNode[] = [];
+        for (const n of nodes) {
+          out.push(await enhanceNode(n));
+        }
+        return out;
+      };
+    }, [model]);
+
     return (
       <Space wrap style={{ width: '100%' }}>
         <VariableInput
           value={path}
-          metaTree={() => model.context.getPropertyMetaTree('{{ ctx.collection }}')}
+          metaTree={enhancedMetaTree}
           onChange={handleLeftChange}
           converters={customConverters}
           showValueComponent={false}

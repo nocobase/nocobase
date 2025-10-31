@@ -925,7 +925,7 @@
   "No resource selected for refresh": "No resource selected for refresh",
   "No resource or record selected for deletion": "No resource or record selected for deletion",
   "Record deleted successfully": "Record deleted successfully",
-  "Please select non-filterable fields": "Please select non-filterable fields",
+  "Please select filterable fields": "Please select filterable fields",
   "Update record action": "Update record",
   "Basic configuration": "Basic configuration",
   "Configure page": "Configure page",
