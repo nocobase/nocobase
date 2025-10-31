@@ -395,17 +395,18 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       ),
     );
 
-    await waitFor(() => (globalThis as any).__lastDropdownMenu);
-    const menu = (globalThis as any).__lastDropdownMenu;
-    const items = (menu?.items || []) as any[];
-    // current model key
-    const currentCopy = items.find((it) => String(it.key) === 'copy-pop-uid:popupSettings:stage');
-    expect(currentCopy).toBeTruthy();
-    // sub model key
-    const subCopy = items.find((it) => String(it.key).startsWith('copy-pop-uid:items[0]:popupSettings:stage'));
-    expect(subCopy).toBeTruthy();
+    // 等待“Copy popup UID”对应的菜单项出现，避免异步时序导致的偶发失败
+    await waitFor(() => {
+      const m = (globalThis as any).__lastDropdownMenu;
+      const is = (m?.items || []) as any[];
+      const current = is.find((it) => String(it.key) === 'copy-pop-uid:popupSettings:stage');
+      const sub = is.find((it) => String(it.key).startsWith('copy-pop-uid:items[0]:popupSettings:stage'));
+      expect(current).toBeTruthy();
+      expect(sub).toBeTruthy();
+    });
 
-    // click and verify clipboard
+    // click and verify clipboard（直接使用最新的 menu）
+    const menu = (globalThis as any).__lastDropdownMenu;
     menu.onClick?.({ key: 'copy-pop-uid:popupSettings:stage' });
     expect((navigator as any).clipboard.writeText).toHaveBeenCalledWith('parent-2');
 
