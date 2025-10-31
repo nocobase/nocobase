@@ -8,7 +8,13 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import type { PropertyMetaFactory } from '@nocobase/flow-engine';
+import type {
+  FlowContext,
+  PropertyMeta,
+  PropertyMetaFactory,
+  CollectionField,
+  Collection,
+} from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
   createCurrentRecordMetaFactory,
@@ -71,12 +77,129 @@ export class FormBlockModel<
     const [form] = Form.useForm();
     this.context.defineProperty('form', { get: () => form });
     const recordMeta: PropertyMetaFactory = createRecordMetaFactory(() => this.collection, 'Current form');
+    // 增强：为 formValues 提供基于“已选关联值”的服务端解析锚点
+    const formValuesMeta: PropertyMetaFactory = async () => {
+      const base = await recordMeta?.();
+      const self = this;
+      return {
+        ...(base || {
+          type: 'object',
+          title: this.translate('Current form') || 'Current form',
+          properties: async () => ({}),
+        }),
+        // 根据表单中“已选中的关联字段值”构建 RecordRef 映射，用于 variables:resolve 的 contextParams
+        buildVariablesParams: (ctx: FlowContext) => {
+          const params: Record<string, any> = {};
+          const collection = self.collection;
+          const dataSourceKey = collection?.dataSourceKey || 'main';
+          const formValues =
+            (ctx as FlowContext & { formValues?: Record<string, unknown> }).formValues ||
+            self.context.form?.getFieldsValue?.() ||
+            {};
+
+          if (!collection) {
+            return params;
+          }
+
+          const ensureTarget = (field: CollectionField) => {
+            // 优先使用字段上的 targetCollection；否则通过 dataSourceManager 获取
+            const targetName = field?.target;
+            if (!targetName) return null;
+            const targetCollection: Collection | undefined =
+              field?.targetCollection || self.context?.dataSourceManager?.getCollection?.(dataSourceKey, targetName);
+            if (!targetCollection) {
+              // 尽早暴露问题：字段声明了 target 但无法解析到目标集合
+              // eslint-disable-next-line no-console
+              console.warn('[FormBlockModel] Missing targetCollection for association field', {
+                field: field?.name,
+                targetName,
+                dataSourceKey,
+              });
+            }
+            return { targetName, targetCollection } as {
+              targetName: string;
+              targetCollection?: Collection & { getPrimaryKey?: () => string };
+            } | null;
+          };
+
+          const toId = (val: unknown, primaryKey: string) => {
+            if (val == null) return undefined;
+            if (typeof val === 'string' || typeof val === 'number') return val;
+            if (typeof val === 'object') {
+              const obj = val as Record<string, unknown>;
+              return obj?.[primaryKey] ?? obj?.id;
+            }
+            return undefined;
+          };
+
+          // 遍历集合的顶层字段，收集关联字段
+          const fields = (collection.getFields?.() ?? []) as CollectionField[];
+          for (const field of fields) {
+            const name = field?.name;
+            if (!name) continue;
+            // 非关联字段跳过
+            if (!field?.target) continue;
+
+            const associationValue = (formValues as Record<string, unknown>)?.[name as string];
+            if (associationValue == null) continue;
+
+            const info = ensureTarget(field);
+            if (!info?.targetCollection) continue;
+            const primaryKey = info.targetCollection.getPrimaryKey() || 'id';
+
+            if (Array.isArray(associationValue)) {
+              const recordRefs = (associationValue as unknown[])
+                .map((item) => {
+                  const id = toId(item, primaryKey);
+                  if (id == null) return null;
+                  return { collection: info.targetName, dataSourceKey, filterByTk: id };
+                })
+                .filter(Boolean);
+              if (recordRefs.length) params[name] = recordRefs;
+            } else {
+              const id = toId(associationValue, primaryKey);
+              if (id != null) {
+                params[name] = { collection: info.targetName, dataSourceKey, filterByTk: id };
+              }
+            }
+          }
+
+          return params;
+        },
+      } as PropertyMeta;
+    };
+
     this.context.defineProperty('formValues', {
       get: () => {
         return this.context.form.getFieldsValue();
       },
       cache: false,
-      meta: recordMeta,
+      meta: formValuesMeta,
+      resolveOnServer: (p: string) => {
+        if (!p || !p.includes('.')) return false;
+        const m = p.match(/^([^.]+)/);
+        const base = m?.[1];
+        if (!base) return false;
+        try {
+          const collection: any = this.collection as any;
+          let field: any = collection?.getField?.(base);
+          if (!field) {
+            const fields: any[] = collection?.getFields?.() ?? [];
+            field = fields.find((f) => f?.name === base);
+          }
+          if (!field && this.context?.dataSourceManager?.getCollectionField) {
+            const dataSourceKey = collection?.dataSourceKey;
+            const colName = collection?.name;
+            if (dataSourceKey && colName) {
+              field = this.context.dataSourceManager.getCollectionField(`${dataSourceKey}.${colName}.${base}`);
+            }
+          }
+          const isAssociation = !!(field?.target || field?.isAssociationField?.());
+          return isAssociation;
+        } catch (e) {
+          return false;
+        }
+      },
     });
   }
 

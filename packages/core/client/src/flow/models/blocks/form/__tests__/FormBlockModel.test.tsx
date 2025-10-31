@@ -1,0 +1,237 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import React from 'react';
+import { render } from '@testing-library/react';
+import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
+import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+// 直接从 models 聚合导入，避免局部文件相互引用顺序导致的循环依赖
+import { FormBlockModel } from '../../../..';
+// 最小化 mock：避免在导入 models 聚合时触发 Create/Edit 表单模型的静态初始化
+vi.mock('../CreateFormModel.tsx', () => ({}));
+vi.mock('../EditFormModel.tsx', () => ({}));
+
+// -----------------------------
+// Helpers
+// -----------------------------
+
+async function createTestFormModelSubclass() {
+  return class TestFormModel extends (FormBlockModel as any) {
+    constructor(options: any) {
+      super(options);
+    }
+    renderComponent(): React.ReactNode {
+      return null;
+    }
+  };
+}
+
+async function setupFormModel() {
+  const engine = new FlowEngine();
+  const TestFormModel = await createTestFormModelSubclass();
+  const model = new TestFormModel({ uid: 'form-1', flowEngine: engine } as any);
+
+  // Mock collections & fields: orders(customer: belongsTo customers, assignees: belongsToMany users)
+  const mockUsersCollection = { name: 'users', dataSourceKey: 'main', getPrimaryKey: () => 'id' } as any;
+  const mockCustomersCollection = { name: 'customers', dataSourceKey: 'main', getPrimaryKey: () => 'id' } as any;
+  const mockOrdersCollection = {
+    name: 'orders',
+    dataSourceKey: 'main',
+    getPrimaryKey: () => 'id',
+    fields: [
+      { name: 'customer', target: 'customers', targetCollection: mockCustomersCollection },
+      { name: 'assignees', target: 'users', targetCollection: mockUsersCollection },
+      { name: 'note' },
+    ],
+    getFields() {
+      return this.fields;
+    },
+  } as any;
+  // 通过 resourceSettings 的 init 参数 + dataSourceManager 注入集合上下文
+  (model as any).getResourceSettingsInitParams = () => ({ dataSourceKey: 'main', collectionName: 'orders' });
+
+  const dsm = {
+    getCollection: (dsKey: string, name: string) => {
+      if (dsKey !== 'main') return undefined;
+      if (name === 'customers') return mockCustomersCollection;
+      if (name === 'users') return mockUsersCollection;
+      if (name === 'orders') return mockOrdersCollection;
+      return undefined;
+    },
+  } as any;
+  (model.context as any).defineProperty('dataSourceManager', { value: dsm });
+  // 直接覆盖 ctx.collection，避免 meta 工厂在异步解析时拿不到集合
+  (model.context as any).defineProperty('collection', { value: mockOrdersCollection });
+
+  return model;
+}
+
+// -----------------------------
+// FlowModel 核心行为（集中到本文件）
+// -----------------------------
+
+describe('FlowModel core behaviors (collected)', () => {
+  let engine: FlowEngine;
+
+  beforeEach(() => {
+    engine = new FlowEngine();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('getEventFlows(beforeRender) includes explicit and implicit flows, excludes manual or other events', () => {
+    class TestModel extends FlowModel {}
+    engine.registerModels({ TestModel });
+    const model = engine.createModel<TestModel>({ use: 'TestModel', uid: 'm-flow-1' });
+
+    model.flowRegistry.addFlow('A', {
+      title: 'ExplicitBefore',
+      on: 'beforeRender',
+      steps: { s: { title: 'S', handler: () => {} } },
+    } as any);
+    model.flowRegistry.addFlow('B', {
+      title: 'ImplicitBefore',
+      steps: { s: { title: 'S', handler: () => {} } },
+    } as any);
+    model.flowRegistry.addFlow('C', {
+      title: 'ManualSkip',
+      manual: true,
+      steps: { s: { title: 'S', handler: () => {} } },
+    } as any);
+    model.flowRegistry.addFlow('D', {
+      title: 'OtherEvent',
+      on: 'formValuesChange',
+      steps: { s: { title: 'S', handler: () => {} } },
+    } as any);
+
+    const flows = model.getEventFlows('beforeRender');
+    const titles = flows.map((f) => f.title);
+    expect(titles).toContain('ExplicitBefore');
+    expect(titles).toContain('ImplicitBefore');
+    expect(titles).not.toContain('ManualSkip');
+    expect(titles).not.toContain('OtherEvent');
+  });
+
+  it('dispatchEvent defaults for beforeRender; and records last params', async () => {
+    const spy = vi.fn().mockResolvedValue([]);
+    (engine as any).executor.dispatchEvent = spy;
+    const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'm-flow-2' });
+
+    await model.dispatchEvent('beforeRender', { foo: 1 });
+    expect(spy).toHaveBeenCalledTimes(1);
+    const [, e1, i1, o1] = spy.mock.calls[0];
+    expect(e1).toBe('beforeRender');
+    expect(i1).toEqual({ foo: 1 });
+    expect(o1).toMatchObject({ sequential: true, useCache: true });
+
+    await model.dispatchEvent('somethingElse', { bar: 2 });
+    const [, e2, i2, o2] = spy.mock.calls[1];
+    expect(e2).toBe('somethingElse');
+    expect(i2).toEqual({ bar: 2 });
+    expect(o2).toEqual({ sequential: undefined, useCache: undefined });
+  });
+
+  it('stepParams change triggers debounced rerun of last beforeRender', async () => {
+    vi.useFakeTimers();
+    const spy = vi.fn().mockResolvedValue([]);
+    (engine as any).executor.dispatchEvent = spy;
+    const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'm-flow-3' });
+
+    await model.dispatchEvent('beforeRender', { ping: 1 });
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    model.setStepParams('anyFlow', 'anyStep', { x: 1 });
+    await vi.advanceTimersByTimeAsync(150);
+    expect(spy).toHaveBeenCalledTimes(2);
+    const [, e2, i2] = spy.mock.calls[1];
+    expect(e2).toBe('beforeRender');
+    expect(i2).toEqual({ ping: 1 });
+  });
+
+  it('applyFlow delegates to executor.runFlow', async () => {
+    const spyRun = vi.fn().mockResolvedValue('ok');
+    (engine as any).executor.runFlow = spyRun;
+    const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'm-flow-4' });
+    const res = await model.applyFlow('demoFlow', { a: 1 });
+    expect(spyRun).toHaveBeenCalledTimes(1);
+    const [target, key, args] = spyRun.mock.calls[0];
+    expect(target).toBe(model);
+    expect(key).toBe('demoFlow');
+    expect(args).toEqual({ a: 1 });
+    expect(res).toBe('ok');
+  });
+});
+
+// -----------------------------
+// FormBlockModel 行为
+// -----------------------------
+
+describe('FormBlockModel (form/formValues injection & server resolve anchors)', () => {
+  it('injects form & formValues; resolveOnServer guard; buildVariablesParams anchors by selected associations', async () => {
+    const model = await setupFormModel();
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    // 使用一个简易的 FakeForm，避免未挂载 Form 的限制
+    const store: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (values: Record<string, any>) => Object.assign(store, values),
+      getFieldsValue: () => ({ ...store }),
+      setFieldValue: (k: string, v: any) => (store[k] = v),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    fakeForm.setFieldsValue({ customer: 9, assignees: [{ id: 3 }, { id: 5 }], note: 'hello' });
+
+    // cache=false check
+    const v1 = (model.context as any).formValues;
+    expect(v1.customer).toBe(9);
+    fakeForm.setFieldsValue({ customer: 11 });
+    const v2 = (model.context as any).formValues;
+    expect(v2.customer).toBe(11);
+
+    const opt = (model.context as any).getPropertyOptions('formValues');
+    expect(typeof opt.resolveOnServer).toBe('function');
+    expect(opt.resolveOnServer('')).toBe(false);
+    expect(opt.resolveOnServer('customer')).toBe(false);
+    expect(opt.resolveOnServer('customer.name')).toBe(true);
+    expect(opt.resolveOnServer('assignees[0].name')).toBe(true);
+
+    const metaFactory = opt.meta as () => Promise<any>;
+    const meta = await metaFactory();
+    expect(typeof meta.buildVariablesParams).toBe('function');
+    fakeForm.setFieldsValue({ customer: 9, assignees: [{ id: 3 }, { id: 5 }], note: 'hello' });
+    const params = await meta.buildVariablesParams(model.context);
+
+    expect(params.customer).toMatchObject({ collection: 'customers', dataSourceKey: 'main', filterByTk: 9 });
+    expect(Array.isArray(params.assignees)).toBe(true);
+    expect(params.assignees[0]).toMatchObject({ collection: 'users', dataSourceKey: 'main', filterByTk: 3 });
+    expect(params.assignees[1]).toMatchObject({ collection: 'users', dataSourceKey: 'main', filterByTk: 5 });
+    expect(params.note).toBeUndefined();
+  });
+
+  it('registers formValuesChange event and eventSettings flow', async () => {
+    const engine = new FlowEngine();
+    const TestFormModel = await createTestFormModelSubclass();
+    const model = new TestFormModel({ uid: 'form-2', flowEngine: engine } as any);
+
+    // event registered
+    const ev = model.getEvent('formValuesChange');
+    expect(ev?.name).toBe('formValuesChange');
+
+    // flow registered (eventSettings)
+    const flows = model.getFlows();
+    expect(flows.has('eventSettings')).toBe(true);
+  });
+});
