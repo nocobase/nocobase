@@ -12,6 +12,9 @@
     "react": "18.x",
     "react-i18next": "^11.15.1"
   },
+  "nocobase": {
+    "deprecated": true
+  },
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/database": "2.x",

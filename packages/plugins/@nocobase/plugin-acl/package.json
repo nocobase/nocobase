@@ -12,6 +12,9 @@
   "keywords": [
     "Users & permissions"
   ],
+  "nocobase": {
+    "defaultEnabled": true
+  },
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.9",
     "jsonwebtoken": "^9.0.2",

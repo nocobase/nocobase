@@ -18,7 +18,7 @@ export function PluginList() {
         <p className="rp-home-feature-desc">{frontmatter.description}</p>
       </div>
       <div className="rp-home-feature rp-plugin-list">
-        {siteData.pages.filter(page => page.frontmatter?.packageName && page.lang === lang && page.routePath.includes('/plugins/')).map(page => {
+        {siteData.pages.filter(page => !page.frontmatter?.deprecated && page.frontmatter?.packageName && page.lang === lang && page.routePath.includes('/plugins/')).map(page => {
           return <PluginCard
             float={true}
             name={page.frontmatter.displayName as string}
@@ -118,7 +118,7 @@ export function Pricing({ frontmatter }: { frontmatter: PluginInfoFrontmatter })
   return (
     <>
       {frontmatter.isFree && (
-        <Badge>免费</Badge>
+        <Badge>Free</Badge>
       )}
       {frontmatter.points && (
         <PluginPrice />
@@ -127,60 +127,5 @@ export function Pricing({ frontmatter }: { frontmatter: PluginInfoFrontmatter })
         <a target="_blank" href="https://www.nocobase.com/cn/commercial" style={{ textDecoration: 'none' }}><Badge type="info">{EditionLevels[frontmatter.editionLevel]}+</Badge></a>
       )}
     </>
-  );
-}
-
-const getGridClass = (feature?: { span: number }): string => {
-  switch (feature?.span) {
-    case 2:
-      return 'rp-home-feature__item--span-2';
-    case 3:
-      return 'rp-home-feature__item--span-3';
-    case 4:
-      return 'rp-home-feature__item--span-4';
-    case 6:
-      return 'rp-home-feature__item--span-6';
-    case undefined:
-      return 'rp-home-feature__item--span-4';
-    default:
-      return '';
-  }
-};
-
-function CardItem({ page }: { page: { frontmatter: PluginInfoFrontmatter, routePath: string } }): JSX.Element {
-  const { frontmatter, routePath } = page;
-  const { displayName, packageName, description } = frontmatter;
-
-  const navigate = useNavigate();
-
-  return (
-    <div
-      key={packageName}
-      className={`rp-home-feature__item ${getGridClass()}`}
-    >
-      <div className="rp-home-feature__item-wrapper">
-        <article
-          key={packageName}
-          className={`rp-home-feature__card ${routePath ? 'rp-home-feature__card--clickable' : ''}`}
-          onClick={() => {
-            if (routePath) {
-              navigate(routePath);
-            }
-          }}
-        >
-          <div className="rp-home-feature__title-wrapper">
-            <h2 className="rp-home-feature__title">{displayName}</h2>
-          </div>
-          <p
-            style={{
-              minHeight: '6em',
-            }}
-            className="rp-home-feature__detail"
-            {...renderHtmlOrText(description)}
-          ></p>
-          <Pricing frontmatter={frontmatter} />
-        </article>
-      </div>
-    </div>
   );
 }
