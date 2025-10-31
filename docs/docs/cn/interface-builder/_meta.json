@@ -16,6 +16,7 @@
       {
         "type": "custom-link",
         "label": "数据区块",
+        "collapsed": true,
         "items": [
           {
             "type": "custom-link",
@@ -52,6 +53,7 @@
       {
         "type": "custom-link",
         "label": "筛选区块",
+        "collapsed": true,
         "items": [
           {
             "type": "custom-link",
@@ -63,6 +65,7 @@
       {
         "type": "custom-link",
         "label": "其他区块",
+        "collapsed": true,
         "items": [
           {
             "type": "custom-link",
@@ -89,6 +92,7 @@
       {
         "type": "custom-link",
         "label": "区块设置项",
+        "collapsed": true,
         "items": [
           {
             "type": "custom-link",
@@ -142,6 +146,7 @@
       {
         "type": "custom-link",
         "label": "通用配置项",
+        "collapsed": true,
         "items": [
           {
             "type": "custom-link",
@@ -168,6 +173,7 @@
       {
         "type": "custom-link",
         "label": "特有配置项",
+        "collapsed": true,
         "items": [
           {
             "type": "custom-link",
@@ -229,6 +235,7 @@
       {
         "type": "custom-link",
         "label": "字段配置项",
+        "collapsed": true,
         "items": [
           {
             "type": "custom-link",
@@ -294,7 +301,6 @@
       }
     ]
   },
-
   {
     "type": "custom-link",
     "label": "操作",
@@ -307,6 +313,7 @@
       {
         "type": "custom-link",
         "label": "操作配置项",
+        "collapsed": true,
         "items": [
           {
             "type": "custom-link",
@@ -343,6 +350,7 @@
       {
         "type": "custom-link",
         "label": "操作类型",
+        "collapsed": true,
         "items": [
           {
             "type": "custom-link",
