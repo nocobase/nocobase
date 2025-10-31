@@ -5,7 +5,7 @@ pageName: home
 
 hero:
   name: NocoBase Documentation
-  text: Help you learn and master NocoBase quickly
+  text: Learn and master NocoBase quickly
   actions:
     - theme: brand
       text: Get Started
