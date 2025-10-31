@@ -1,3 +1,7 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
+
 # 配置流程
 
 ## 概览

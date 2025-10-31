@@ -1,3 +1,7 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
+
 # 常见问题
 
 ## 微软账户授权登录后，邮件无法接收

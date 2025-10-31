@@ -1,11 +1,15 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
+
 # 邮件中心
 
 <PluginInfo commercial="true" name="email-manager"></PluginInfo>
 
 ## 介绍
-在邮件插件开启后，默认会有邮件管理中心，用于账号接入，邮件管理，功能配置等
+在邮件插件开启后，默认会有邮件管理中心，用于账号接入、邮件管理、功能配置等
 
-点击右上方邮件消息图标，可以进入到邮件消息管理页面
+点击右上方邮件消息图标，可以进入到邮件管理页面
 
 ![](https://static-docs.nocobase.com/mail-1733816161753.png)
 ## 账号关联

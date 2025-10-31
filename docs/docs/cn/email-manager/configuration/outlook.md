@@ -1,3 +1,7 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
+
 # 微软配置
 
 ### 注册账户

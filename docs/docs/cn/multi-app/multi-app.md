@@ -1,6 +1,9 @@
+---
+pkg: "@nocobase/plugin-multi-app"
+---
+
 # 多应用
 
-<PluginInfo name="multi-app" licenseBundled="professional"></PluginInfo>
 
 ## 介绍
 

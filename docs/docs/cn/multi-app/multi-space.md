@@ -1,3 +1,7 @@
+---
+pkg: "@nocobase/plugin-multi-space"
+---
+
 # 多空间
 
 <PluginInfo name="multi-space" licenseBundled="professional"></PluginInfo>

@@ -1,3 +1,7 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
+
 # 谷歌配置
 
 ### 前置条件
