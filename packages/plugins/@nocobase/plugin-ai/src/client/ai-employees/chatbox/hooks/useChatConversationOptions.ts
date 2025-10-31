@@ -10,9 +10,18 @@
 import { useAPIClient } from '@nocobase/client';
 import { useChatConversationsStore } from '../stores/chat-conversations';
 import { useEffect, useState } from 'react';
+import { useChatMessagesStore } from '../stores/chat-messages';
+import _ from 'lodash';
+import { useChatBoxStore } from '../stores/chat-box';
+import { useT } from '../../../locale';
 
 export const useChatConversationOptions = () => {
+  const t = useT();
   const api = useAPIClient();
+  const currentEmployee = useChatBoxStore.use.currentEmployee();
+  const messages = useChatMessagesStore.use.messages();
+  const setMessages = useChatMessagesStore.use.setMessages();
+  const removeMessage = useChatMessagesStore.use.removeMessage();
   const sessionId = useChatConversationsStore.use.currentConversation();
   const webSearch = useChatConversationsStore.use.webSearch();
   const setWebSearch = useChatConversationsStore.use.setWebSearch();
@@ -39,6 +48,35 @@ export const useChatConversationOptions = () => {
       .catch(() => {});
   }, [api, sessionId, setWebSearch]);
 
+  useEffect(() => {
+    if (currentEmployee?.webSearch === true && currentEmployee?.toolsConflict === true) {
+      const hintMessageKey = 'web-search-not-supported';
+      if (webSearch) {
+        setMessages(
+          _.unionBy(
+            [
+              ...messages,
+              {
+                key: hintMessageKey,
+                role: 'hint',
+                content: {
+                  type: 'text',
+                  content: t(
+                    'You are currently using the Gemini LLM service. When Web Search is enabled, AI employees will temporarily be unable to use skills',
+                  ),
+                },
+                loading: false,
+              },
+            ],
+            'key',
+          ),
+        );
+      } else {
+        removeMessage(hintMessageKey);
+      }
+    }
+  }, [webSearch, currentEmployee]);
+
   const updateWebSearch = async (webSearch: boolean) => {
     if (sessionId) {
       setLoading(true);
@@ -55,9 +93,14 @@ export const useChatConversationOptions = () => {
     }
   };
 
+  const resetDefaultWebSearch = async () => {
+    setWebSearch(true);
+  };
+
   return {
     loading,
     webSearch,
     updateWebSearch,
+    resetDefaultWebSearch,
   };
 };

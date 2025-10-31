@@ -961,10 +961,10 @@ const LinkageRulesUI = observer(
           />
         </div>
         <Space onClick={(e) => e.stopPropagation()}>
-          <Tooltip title="Delete">
+          <Tooltip title={t('Delete')}>
             <Button type="text" size="small" icon={<DeleteOutlined />} onClick={() => handleDeleteRule(index)} />
           </Tooltip>
-          <Tooltip title="Move up">
+          <Tooltip title={t('Move up')}>
             <Button
               type="text"
               size="small"
@@ -973,7 +973,7 @@ const LinkageRulesUI = observer(
               disabled={index === 0}
             />
           </Tooltip>
-          <Tooltip title="Move down">
+          <Tooltip title={t('Move down')}>
             <Button
               type="text"
               size="small"
@@ -982,7 +982,7 @@ const LinkageRulesUI = observer(
               disabled={index === rules.length - 1}
             />
           </Tooltip>
-          <Tooltip title="Copy">
+          <Tooltip title={t('Copy')}>
             <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => handleCopyRule(index)} />
           </Tooltip>
           <Switch
@@ -1108,7 +1108,7 @@ const LinkageRulesUI = observer(
                             {t(actionDef.title)}
                             <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
                           </span>
-                          <Tooltip title="Delete action">
+                          <Tooltip title={t('Delete action')}>
                             <Button
                               type="text"
                               size="small"
@@ -1268,10 +1268,12 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
       // 目前只有表单的“字段赋值”有 value 属性
       if ('value' in newProps && model.context.form) {
-        model.context.form.setFieldValue(
-          model.isFork ? model.context.fieldPathArray : model.props.name,
-          newProps.value,
-        );
+        const path = model.isFork ? model.context.fieldPathArray : model.props.name;
+        if (!_.isEqual(model.context.form.getFieldValue(path), newProps.value)) {
+          model.context.form.setFieldValue(path, newProps.value);
+          model.context.blockModel?.dispatchEvent('formValuesChange', {});
+          model.context.blockModel?.emitter.emit('formValuesChange', {});
+        }
       }
 
       model.__props = null;

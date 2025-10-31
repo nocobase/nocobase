@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow'
+---
+
 # 概述
 
 ## 介绍
@@ -25,7 +29,7 @@
 
 工作流是 NocoBase 的内置插件，无需额外安装或配置。
 
-## 下一步
+## 了解更多
 
 - [快速开始](./getting-started)
 - [触发器](./triggers/index)

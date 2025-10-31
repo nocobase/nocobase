@@ -5,7 +5,7 @@ import {
   LlmsCopyButton,
   LlmsViewOptions,
 } from '@rspress/plugin-llms/runtime';
-import { useFrontmatter, useNavigate, usePageData } from '@rspress/runtime';
+import { useFrontmatter, useNavigate, usePageData, usePages } from '@rspress/runtime';
 import type { Feature } from '@rspress/shared';
 import type { JSX } from 'react';
 import { PluginCard } from './components/PluginCard';
@@ -45,6 +45,7 @@ function getCustomMDXComponent() {
 export { getCustomMDXComponent };
 
 import './index.scss';
+import { transformHref } from './utils';
 
 export interface HomeLayoutProps {
   beforeHero?: React.ReactNode;
@@ -141,6 +142,7 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
 
   const link = rawLink;
   const navigate = useNavigate();
+  const lang = useLang();
 
   return (
     <div
@@ -153,7 +155,8 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
           className={`rp-home-feature__card ${link ? 'rp-home-feature__card--clickable' : ''}`}
           onClick={() => {
             if (link) {
-              navigate(link);
+              navigate(transformHref(link, lang));
+              window.scrollTo(0, 0);
             }
           }}
         >
@@ -172,20 +175,21 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
 
 export function HomeFeature() {
   const { frontmatter } = useFrontmatter();
-  const { siteData } = usePageData();
+  const { pages } = usePages();
+  const lang = useLang();
   if (frontmatter?.pageName === 'home') {
     return (
       <div>
         {frontmatter?.features?.map((feature: any, index: number) => {
           let items = feature?.items || [];
           if (index === 1) {
-            const page: any = siteData.pages.find(page => page.frontmatter?.pageName === 'guide');
+            const page: any = pages.find(page => page.lang === lang && page.frontmatter?.pageName === 'guide');
             if (page) {
               const allItems = page.frontmatter?.features?.flatMap((feature: any) => feature?.items || []);
               items = [...allItems.filter((item: any) => item.showOnHome), ...items];
             }
           } else if (index === 2) {
-            const page: any = siteData.pages.find(page => page.frontmatter?.pageName === 'development');
+            const page: any = pages.find(page => page.lang === lang && page.frontmatter?.pageName === 'development');
             if (page) {
               // 把 page.frontmatter?.features 里的 items 都拍平合并，取前 8 个
               const allItems = page.frontmatter?.features?.flatMap((feature: any) => feature?.items || []);

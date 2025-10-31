@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-action-import-pro"
+---
 # 导入 Pro
-
-:::tip 提示
-该功能由商业插件 `plugin-action-import-pro`提供。请查看商业授权了解详情.
-:::
 
 ## 介绍
 

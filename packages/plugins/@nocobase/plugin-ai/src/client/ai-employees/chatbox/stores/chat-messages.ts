@@ -35,6 +35,7 @@ export interface ChatMessagesActions {
   addMessage: (msg: Message) => void;
   addMessages: (msgs: Message[]) => void;
   updateLastMessage: (updater: (msg: Message) => Message) => void;
+  removeMessage: (key: string) => void;
 
   addAttachments: (attachments: Attachment | Attachment[]) => void;
   removeAttachment: (filename: string) => void;
@@ -89,6 +90,11 @@ const store = create<ChatMessagesState & ChatMessagesActions>((set, get) => ({
       if (i >= 0) prev[i] = fn(prev[i]);
       return { messages: prev };
     }),
+
+  removeMessage: (key) =>
+    set((state) => ({
+      messages: state.messages.filter((msg) => msg.key !== key),
+    })),
 
   setResponseLoading: (v) =>
     set(() => ({

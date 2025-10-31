@@ -9,7 +9,7 @@
 
 // ActionGroupModel.test.tsx
 import { beforeEach, describe, expect, it } from 'vitest';
-import { ActionGroupModel } from '../ActionGroupModel';
+import { ActionGroupModel } from '../../..'; // 可解决循环依赖问题
 
 describe('ActionGroupModel.registerActionModels', () => {
   class MockAction1 {}

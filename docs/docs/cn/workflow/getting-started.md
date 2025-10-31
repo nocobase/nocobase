@@ -85,9 +85,9 @@
 
 更深入的使用可以进一步参考以下内容：
 
-- [触发器](./triggers/index.md)
-- [节点](./nodes/index.md)
-- [使用变量](./advanced/variables.md)
-- [执行计划](./advanced/executions.md)
-- [版本管理](./advanced/revisions.md)
-- [高级配置](./advanced/options.md)
+- [触发器](./triggers/index)
+- [节点](./nodes/index)
+- [使用变量](./advanced/variables)
+- [执行计划](./advanced/executions)
+- [版本管理](./advanced/revisions)
+- [高级配置](./advanced/options)

@@ -31,7 +31,7 @@
 每个区块右上角都有三个小图标，从左到右分别为：
 
 1. 拖拽布局
-2. 事件流
+2. [事件流](/interface-builder/event-flow)
 3. 区块参数配置
 
 ![20251023224032](https://static-docs.nocobase.com/20251023224032.png)

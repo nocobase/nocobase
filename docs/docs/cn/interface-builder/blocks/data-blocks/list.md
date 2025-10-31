@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-block-list"
+---
 # 列表区块
-
-:::tip 提示 
-该功能由插件 `plugin-block-list` 提供。
-:::
 
 ## 介绍
 

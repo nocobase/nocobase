@@ -119,14 +119,6 @@ export const PluginCard: React.FC<PluginCardProps> = ({
           </div>
           <p style={{ minHeight: '4em', margin: '0 0 0.5rem 0', fontSize: '14px', color: '#8c8c8c', lineHeight: 1.4 }}>
             {description}
-            {detailLink && (
-              <>
-                {' '}
-                <a href={detailLink} style={{ color: '#1890ff', fontSize: '14px', textDecoration: 'none' }}>
-                  详情
-                </a>
-              </>
-            )}
           </p>
         </div>
 
@@ -144,7 +136,7 @@ export const PluginCard: React.FC<PluginCardProps> = ({
                 marginRight: '8px',
               }}
             >
-              免费
+              Free
             </span>
           )}
           {editionLevel && (
