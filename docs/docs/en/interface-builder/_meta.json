@@ -14,8 +14,9 @@
             "link": "/interface-builder/blocks"
           },
           {
-            "type": "custom-link",
+            "type": "dir",
             "label": "Data Blocks",
+            "collapsed": true,
             "items": [
               {
                 "type": "custom-link",
@@ -50,8 +51,9 @@
             ]
           },
           {
-            "type": "custom-link",
+            "type": "dir",
             "label": "Filter Blocks",
+            "collapsed": true,
             "items": [
               {
                 "type": "custom-link",
@@ -61,7 +63,8 @@
             ]
           },
           {
-            "type": "custom-link",
+            "type": "dir",
+            "collapsed": true,
             "label": "Other Blocks",
             "items": [
               {
@@ -87,7 +90,8 @@
             ]
           },
           {
-            "type": "custom-link",
+            "type": "dir",
+            "collapsed": true,
             "label": "Block Settings",
             "items": [
               {
@@ -139,7 +143,8 @@
             "link": "/interface-builder/fields"
           },
           {
-            "type": "custom-link",
+            "type": "dir",
+            "collapsed": true,
             "label": "Generic Settings",
             "items": [
               {
@@ -165,7 +170,8 @@
             ]
           },
           {
-            "type": "custom-link",
+            "type": "dir",
+            "collapsed": true,
             "label": "Specific Settings",
             "items": [
               {
@@ -226,7 +232,8 @@
             ]
           },
           {
-            "type": "custom-link",
+            "type": "dir",
+            "collapsed": true,
             "label": "Field Settings",
             "items": [
               {
@@ -303,7 +310,8 @@
             "link": "/interface-builder/actions"
           },
           {
-            "type": "custom-link",
+            "type": "dir",
+            "collapsed": true,
             "label": "Action Settings",
             "items": [
               {
@@ -339,7 +347,8 @@
             ]
           },
           {
-            "type": "custom-link",
+            "type": "dir",
+            "collapsed": true,
             "label": "Action Types",
             "items": [
               {
