@@ -47,7 +47,7 @@
   {
     "type": "custom-link",
     "label": "文件表",
-    "link": "/file-manager/storage/file-collection"
+    "link": "/file-manager/file-collection"
   },
   {
     "type": "custom-link",
