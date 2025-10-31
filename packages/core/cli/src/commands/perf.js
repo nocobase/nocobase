@@ -53,8 +53,8 @@ module.exports = (cli) => {
           dotenv.config({ path: envFilePath, override: true });
         }
       }
-      if (!process.env.API_BASE_URL) {
-        throw new Error('Please set API_BASE_URL in environment variables or in .env.perf file');
+      if (!process.env.TARGET_ORIGIN) {
+        throw new Error('Please set TARGET_ORIGIN in environment variables or in .env.perf file');
       }
       const args = command.args.filter((arg) => arg !== file);
       await run(`k6`, ['run', f, ...(args.length ? ['--', ...args] : [])]);

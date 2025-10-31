@@ -70,7 +70,10 @@ function toFrontmatter({
     ...(Array.isArray(supportedVersions) && supportedVersions.length
       ? ['supportedVersions:', ...supportedVersions.map((v) => `  - ${v}`)]
       : []),
-    `description: "${yamlEscape(description || '')}"`,
+    'description: |',
+    ...String(description || '')
+      .split('\n')
+      .map((line) => `  ${line}`),
     `isFree: ${isFree ? 'true' : 'false'}`,
     `builtIn: ${builtIn ? 'true' : 'false'}`,
     `defaultEnabled: ${defaultEnabled ? 'true' : 'false'}`,

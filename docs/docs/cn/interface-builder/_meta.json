@@ -14,7 +14,7 @@
         "link": "/interface-builder/blocks"
       },
       {
-        "type": "custom-link",
+        "type": "dir",
         "label": "数据区块",
         "collapsed": true,
         "items": [
@@ -51,7 +51,7 @@
         ]
       },
       {
-        "type": "custom-link",
+        "type": "dir",
         "label": "筛选区块",
         "collapsed": true,
         "items": [
@@ -63,7 +63,7 @@
         ]
       },
       {
-        "type": "custom-link",
+        "type": "dir",
         "label": "其他区块",
         "collapsed": true,
         "items": [
@@ -90,7 +90,7 @@
         ]
       },
       {
-        "type": "custom-link",
+        "type": "dir",
         "label": "区块设置项",
         "collapsed": true,
         "items": [
@@ -144,7 +144,7 @@
         "link": "/interface-builder/fields"
       },
       {
-        "type": "custom-link",
+        "type": "dir",
         "label": "通用配置项",
         "collapsed": true,
         "items": [
@@ -171,7 +171,7 @@
         ]
       },
       {
-        "type": "custom-link",
+        "type": "dir",
         "label": "特有配置项",
         "collapsed": true,
         "items": [
@@ -233,7 +233,7 @@
         ]
       },
       {
-        "type": "custom-link",
+        "type": "dir",
         "label": "字段配置项",
         "collapsed": true,
         "items": [
@@ -311,7 +311,7 @@
         "link": "/interface-builder/actions"
       },
       {
-        "type": "custom-link",
+        "type": "dir",
         "label": "操作配置项",
         "collapsed": true,
         "items": [
@@ -348,7 +348,7 @@
         ]
       },
       {
-        "type": "custom-link",
+        "type": "dir",
         "label": "操作类型",
         "collapsed": true,
         "items": [

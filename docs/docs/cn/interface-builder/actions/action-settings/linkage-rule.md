@@ -12,13 +12,9 @@
 
 ![20251030224601](https://static-docs.nocobase.com/20251030224601.png)
 
-- 支持的按钮属性修改
+支持对按钮属性修改。
 
 ![20251029150452](https://static-docs.nocobase.com/20251029150452.png)
-
-- 执行JavaScript
-
-![20251030230741](https://static-docs.nocobase.com/20251030230741.png)
 
 ## 常量
 

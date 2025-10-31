@@ -292,6 +292,7 @@ export default class Dispatcher {
           eventKey: options.eventKey ?? randomUUID(),
           stack: options.stack,
           dispatched: deferred ?? false,
+          status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
           manually: options.manually,
         },
         { transaction },

@@ -1,7 +1,8 @@
 ---
 displayName: "Multi-app share collection"
 packageName: '@nocobase/plugin-multi-app-share-collection'
-description: ""
+description: |
+  
 isFree: true
 builtIn: true
 defaultEnabled: false
