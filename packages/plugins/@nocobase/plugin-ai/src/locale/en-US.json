@@ -196,5 +196,6 @@
   "Data source records counting": "ata source records counting",
   "Use dataSource, collectionName, and collection fields to query data from the database, get total count of records": "Use dataSource, collectionName, and collection fields to query data from the database, get total count of records",
   "Data source query": "Data source query",
-  "Use dataSource, collectionName, and collection fields to query data from the database": "Use dataSource, collectionName, and collection fields to query data from the database"
+  "Use dataSource, collectionName, and collection fields to query data from the database": "Use dataSource, collectionName, and collection fields to query data from the database",
+  "You are currently using the Gemini LLM service. When Web Search is enabled, AI employees will temporarily be unable to use skills": "You are currently using the Gemini LLM service. When Web Search is enabled, AI employees will temporarily be unable to use skills"
 }

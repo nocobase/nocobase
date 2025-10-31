@@ -1,13 +1,15 @@
 import { Badge } from '@rspress/core/theme';
-import { Link, useFrontmatter } from "@rspress/runtime";
+import { Link, useFrontmatter, useLang } from "@rspress/runtime";
 import { PluginPrice } from './PluginPrice';
 import { EditionLevels } from './EditionLevels';
+import { transformHref } from '../utils';
 
 export type PluginInfoFrontmatter = {
   displayName?: string;
   packageName: string;
   supportedVersions: string[];
-  defaultInstalled: boolean;
+  defaultEnabled: boolean;
+  builtIn: boolean;
   isFree?: boolean;
   points?: number;
   editionLevel: number;
@@ -27,12 +29,12 @@ const tdStyle: React.CSSProperties = {
 const firstTdStyle: React.CSSProperties = {
   ...tdStyle,
   backgroundColor: 'var(--rp-c-bg-soft)',
-  width: "150px",
+  width: "200px",
 };
 
 export function PluginInfo() {
   const { frontmatter } = useFrontmatter() as { frontmatter: PluginInfoFrontmatter };
-
+  const lang = useLang();
   if (!frontmatter?.displayName) {
     return null;
   }
@@ -43,39 +45,49 @@ export function PluginInfo() {
       <table style={{ width: "100%", borderCollapse: "collapse" }}>
         <tbody>
           <tr style={trStyle}>
-            <td style={firstTdStyle}>包名</td>
+            <td style={firstTdStyle}>Package name</td>
             <td style={tdStyle}><code>{frontmatter.packageName}</code></td>
           </tr>
+          {frontmatter.supportedVersions && (
+            <tr style={trStyle}>
+              <td style={firstTdStyle}>Supported versions</td>
+              <td style={tdStyle}>
+                {frontmatter.supportedVersions.map(v => <code style={{ marginRight: 4 }} key={v}>{v}</code>)}
+              </td>
+            </tr>
+          )}
           <tr style={trStyle}>
-            <td style={firstTdStyle}>支持版本</td>
+            <td style={firstTdStyle}>Built-in</td>
             <td style={tdStyle}>
-              {frontmatter.supportedVersions.map(v => <code style={{ marginRight: 4 }} key={v}>{v}</code>)}
+              {frontmatter.builtIn ? <code>Yes</code> : <code>No</code>}
+              {!frontmatter.builtIn && (
+                <Link target="_blank" style={{ marginLeft: 4, fontSize: "14px" }} className="rp-link" to={transformHref(`/get-started/install-upgrade-plugins`, lang)}>
+                  How to install plugins?
+                </Link>
+              )}
             </td>
           </tr>
           <tr style={trStyle}>
-            <td style={firstTdStyle}>默认安装</td>
+            <td style={firstTdStyle}>Default enabled</td>
             <td style={tdStyle}>
-              {frontmatter.defaultInstalled ? <code>是</code> : <code>否</code>}
-              {!frontmatter.defaultInstalled && (
-                <Link style={{ marginLeft: 4, fontSize: "14px" }} className="rp-link" to="#">如何安装插件？</Link>
-              )}
+              {frontmatter.defaultEnabled ? <code>Yes</code> : <code>No</code>}
             </td>
           </tr>
           {frontmatter.isFree && (
             <tr style={trStyle}>
-              <td style={firstTdStyle}>定价</td>
-              <td style={tdStyle}><Badge>免费</Badge></td>
+              <td style={firstTdStyle}>Pricing</td>
+              <td style={tdStyle}><Badge>Free</Badge></td>
             </tr>
           )}
           {frontmatter.points && (
             <tr style={trStyle}>
-              <td style={firstTdStyle}>定价</td>
+              <td style={firstTdStyle}>Pricing</td>
               <td style={tdStyle}><PluginPrice /></td>
             </tr>
           )}
           {frontmatter.editionLevel && Number(frontmatter.editionLevel) > 0 && (
             <tr style={trStyle}>
-              <td style={firstTdStyle}>定价</td>
+              <td style={firstTdStyle}>Pricing</td>
               <td style={tdStyle}>
                 <div style={{ display: "inline-flex", gap: "2px" }}>
                   <Badge type="info">
@@ -85,12 +97,6 @@ export function PluginInfo() {
               </td>
             </tr>
           )}
-          {/* <tr>
-            <td style={firstTdStyle}>描述</td>
-            <td style={tdStyle}>
-              {frontmatter.description}
-            </td>
-          </tr> */}
         </tbody>
       </table>
       {/* <p>{frontmatter.description}</p> */}
