@@ -1,4 +1,4 @@
-# Quick Start
+# Getting started
 
 ## Configure Your First Workflow
 
