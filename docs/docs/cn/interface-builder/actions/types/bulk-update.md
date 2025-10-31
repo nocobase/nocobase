@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-action-bulk-update"
+---
 # 批量更新
-
-:::tip 提示
-该功能由插件 `plugin-action-bulk-update` 提供。
-:::
 
 ## 介绍
 

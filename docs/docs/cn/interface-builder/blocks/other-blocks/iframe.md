@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-block-iframe"
+---
 # Iframe 区块
-
-:::tip 提示
-该功能由插件 `plugin-block-iframe` 提供。
-:::
 
 ## 介绍
 

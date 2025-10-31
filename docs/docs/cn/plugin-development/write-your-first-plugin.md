@@ -129,3 +129,4 @@ yarn nocobase tar @my-project/plugin-hello
 
 ## 第 5 步：上传到其他 NocoBase 应用
 
+上传并解压至目标应用的 `./storage/plugins` 目录，详情查看 [安装与升级插件](../get-started/install-upgrade-plugins.mdx)。

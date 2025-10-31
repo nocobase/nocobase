@@ -16,8 +16,8 @@ http://localhost:13000/admin/settings/api-keys/configuration
 
 **Notes**
 
-- The added API key is for the current user, and the role is the role to which the current user belongs
-- Please make sure that the `APP_KEY` environment variable has been configured and is kept confidential. If the APP_KEY changes, all added API keys will become invalid.
+- The API key you add belongs to the current user and inherits the current user's role.
+- Ensure the `APP_KEY` environment variable is configured and kept confidential. If `APP_KEY` changes, all previously added API keys will become invalid.
 
 ### How to configure APP_KEY
 

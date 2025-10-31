@@ -4,7 +4,7 @@
 
 变量是一组标记，用来标识当前上下文中的某个值，可以在配置区块数据范围、字段默认值、联动规则、工作流等场景下使用。
 
-![2024-09-25_20-08-38-2024-09-25-20-11-51](https://static-docs.nocobase.com/2024-09-25_20-08-38-2024-09-25-20-11-51.png)
+![20251030114458](https://static-docs.nocobase.com/20251030114458.png)
 
 ## 现在已经支持的变量
 
@@ -45,10 +45,10 @@
 
 **示例：**
 
-1. 用户选择 **Account** 字段的值。
-2. 系统根据所选 Account 的 **name** 自动筛选 **Owner** 字段的选项。
+1. 用户选择 **Owner** 字段的值。
+2. 系统根据所选 Owner 的 **userName** 自动筛选 **Account** 字段的选项。
 
-![20251027115147](https://static-docs.nocobase.com/20251027115147.png)
+![20251030151928](https://static-docs.nocobase.com/20251030151928.png)
 
 <!-- ![20240416171743_rec_](https://static-docs.nocobase.com/20240416171743_rec_.gif) -->
 

@@ -17,4 +17,4 @@
 
 - [联动规则](/interface-builder/actions/action-settings/linkage-rule)：动态显示/隐藏按钮；
 - [编辑按钮](/interface-builder/actions/action-settings/edit-button)：编辑按钮的标题、类型、图标；
-- [编辑弹窗](/interface-builder/actions/action-settings/edit-popup)：弹窗/抽屉/子页面；
+- [编辑弹窗](/interface-builder/actions/action-settings/edit-popup)：打开方式、尺寸大小

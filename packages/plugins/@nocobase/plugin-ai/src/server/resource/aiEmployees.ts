@@ -11,6 +11,8 @@ import actions, { Context, Next } from '@nocobase/actions';
 import * as templates from '../ai-employees/templates';
 import PluginAIServer from '../plugin';
 import type { AIEmployee } from '../../collections/ai-employees';
+import { SkillSettings } from '../../client/ai-employees/admin/SkillSettings';
+import _ from 'lodash';
 
 export const list = async (ctx: Context, next: Next) => {
   const { paginate } = ctx.action.params || {};
@@ -31,6 +33,24 @@ export const list = async (ctx: Context, next: Next) => {
   });
 
   await next();
+};
+
+export const create = async (ctx: Context, next: Next) => {
+  const { skillSettings } = ctx.action.params.values ?? {};
+  const skills = skillSettings.skills ?? [];
+  skills.push(
+    {
+      name: 'dataSource-dataSourceCounting',
+      autoCall: true,
+    },
+    {
+      name: 'dataSource-dataSourceQuery',
+      autoCall: true,
+    },
+  );
+  skillSettings.skills = _.uniqBy(skills, 'name');
+
+  await actions.create(ctx as Context, next);
 };
 
 export const listByUser = async (ctx: Context, next: Next) => {

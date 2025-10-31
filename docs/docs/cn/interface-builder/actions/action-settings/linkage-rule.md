@@ -8,9 +8,17 @@
 
 ## 使用说明
 
+满足条件时（无条件默认通过），触发执行属性设置/执行JavaScript，支持在条件判断中使用常量/变量，
+
+![20251030224601](https://static-docs.nocobase.com/20251030224601.png)
+
+- 支持的按钮属性修改
+
 ![20251029150452](https://static-docs.nocobase.com/20251029150452.png)
 
-满足条件时（无条件默认通过），触发执行属性设置，支持在条件判断中使用常量/变量，
+- 执行JavaScript
+
+![20251030230741](https://static-docs.nocobase.com/20251030230741.png)
 
 ## 常量
 
@@ -41,4 +49,3 @@
 ![20251029152200](https://static-docs.nocobase.com/20251029152200.png)
 
 更多关于变量内容参考 [变量](/interface-builder/variables)。
-
