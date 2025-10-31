@@ -34,6 +34,11 @@ export class AppCommand extends Command {
     return names.includes(name);
   }
 
+  findCommand(name: string) {
+    // @ts-ignore
+    return this._findCommand(name);
+  }
+
   isHandleByIPCServer() {
     return this._handleByIPCServer;
   }

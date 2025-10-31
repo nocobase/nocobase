@@ -1,7 +1,8 @@
 ---
 displayName: "翻译测试工具"
 packageName: '@nocobase/plugin-locale-tester'
-description: ""
+description: |
+  
 isFree: true
 builtIn: true
 defaultEnabled: false

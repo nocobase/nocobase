@@ -1,7 +1,8 @@
 ---
 displayName: "多应用数据表共享"
 packageName: '@nocobase/plugin-multi-app-share-collection'
-description: ""
+description: |
+  
 isFree: true
 builtIn: true
 defaultEnabled: false

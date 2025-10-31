@@ -1,7 +1,8 @@
 ---
 displayName: "Audit logs (deprecated)"
 packageName: '@nocobase/plugin-audit-logs'
-description: "This plugin is deprecated. There will be a new audit log plugin in the future."
+description: |
+  This plugin is deprecated. There will be a new audit log plugin in the future.
 isFree: true
 builtIn: true
 defaultEnabled: false

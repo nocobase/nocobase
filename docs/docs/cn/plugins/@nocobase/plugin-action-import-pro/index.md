@@ -1,7 +1,8 @@
 ---
 displayName: "操作：导入记录 Pro"
 packageName: '@nocobase/plugin-action-import-pro'
-description: "增强数据导入功能。异步导入，支持大数据量。支持识别数据处理、更新数据、工作流触发等特性。"
+description: |
+  增强数据导入功能。异步导入，支持大数据量。支持识别数据处理、更新数据、工作流触发等特性。
 isFree: false
 builtIn: false
 defaultEnabled: false

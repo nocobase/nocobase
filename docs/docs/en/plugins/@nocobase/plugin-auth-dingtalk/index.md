@@ -1,7 +1,8 @@
 ---
 displayName: "Auth: DingTalk"
 packageName: '@nocobase/plugin-auth-dingtalk'
-description: "DingTalk authentication."
+description: |
+  DingTalk authentication.
 isFree: false
 builtIn: false
 defaultEnabled: false

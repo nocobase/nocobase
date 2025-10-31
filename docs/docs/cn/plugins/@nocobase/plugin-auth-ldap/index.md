@@ -1,7 +1,8 @@
 ---
 displayName: "认证：LDAP"
 packageName: '@nocobase/plugin-auth-ldap'
-description: "通过 LDAP 协议认证身份。"
+description: |
+  通过 LDAP 协议认证身份。
 isFree: false
 builtIn: false
 defaultEnabled: false
