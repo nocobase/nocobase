@@ -10,7 +10,7 @@
 ## 设计器（工具栏）
 
 - 拖拽
-- 事件流
+- [事件流](/interface-builder/event-flow)
 - 参数配置
 
 ![20251028231600](https://static-docs.nocobase.com/20251028231600.png)

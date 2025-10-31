@@ -13,8 +13,8 @@
 和区块一样，字段组件的右上角也有三个图标，分别为：
 
 - 拖拽布局
-- 字段事件流
-- 字段参数配置
+- [事件流](/interface-builder/event-flow)
+- 参数配置
 
 ![20251025165432](https://static-docs.nocobase.com/20251025165432.png)
 
