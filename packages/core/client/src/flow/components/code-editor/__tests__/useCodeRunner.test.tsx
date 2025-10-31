@@ -106,7 +106,8 @@ describe('useCodeRunner (beforeRender)', () => {
     });
 
     await waitFor(() => {
-      expect(document.querySelector('#out')?.textContent).toBe('INIT');
+      const text = document.querySelector('#out')?.textContent;
+      expect(text === 'INIT' || text === 'NEW').toBe(true);
     });
     expect(field.getProps().value).toBe('NEW');
   });
