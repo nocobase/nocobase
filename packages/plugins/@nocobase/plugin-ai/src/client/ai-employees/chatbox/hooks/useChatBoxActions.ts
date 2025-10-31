@@ -179,7 +179,7 @@ export const useChatBoxActions = () => {
             attachments,
             workContext,
             skillSettings,
-            webSearch: false,
+            webSearch: true,
           });
         }
         return;
