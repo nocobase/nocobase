@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-verification'
+---
+
 # Verification
 
 :::info{title=Note}

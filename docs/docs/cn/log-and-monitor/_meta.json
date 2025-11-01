@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "日志",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "服务端日志",
+        "link": "/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "服务端日志、审计日志、历史记录",
+        "link": "/log-and-monitor/overview"
+      }
+    ]
+  }
+]

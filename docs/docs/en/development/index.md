@@ -46,10 +46,10 @@ features:
         showOnHome: true
       - title: Notification Channel Extension
         details: Develop new notification methods or integrate external communication services to support multi-channel message distribution.
-        link: /notification-manager/development
+        link: /notification-manager/development/extension
       - title: User Authentication Extension
         details: Implement custom authentication logic or connect with third-party login systems to enhance security and access capabilities.
-        link: /auth-manager/development
+        link: /auth-verification/auth/dev
       - title: File Storage Extension
         details: Integrate cloud storage services or custom storage solutions to achieve flexible extension of file upload, download, and management.
         link: /file-manager/development

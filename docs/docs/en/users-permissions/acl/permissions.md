@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-acl'
+---
+
 # Configuring Permissions
 
 ## General Permission Settings

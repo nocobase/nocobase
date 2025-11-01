@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-verification-totp-authenticator'
+---
+
 # Verification: TOTP Authenticator
 
 <PluginInfo name="verification-totp-authenticator" licenseBundled="enterprise"></PluginInfo>

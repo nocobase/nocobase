@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-auth'
+---
+
 # 认证器管理
 
 ## 用户认证管理

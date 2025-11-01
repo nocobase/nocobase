@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-auth'
+---
+
 # Authenticators
 
 ## User Authentication Management

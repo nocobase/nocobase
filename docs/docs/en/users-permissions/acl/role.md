@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-acl'
+---
+
 # Management Center
 
 ## Role Management

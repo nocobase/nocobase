@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-departments'
+---
+
 # Departments
 
 ## Department Management
