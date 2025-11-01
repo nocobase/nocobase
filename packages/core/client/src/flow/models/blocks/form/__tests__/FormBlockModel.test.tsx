@@ -215,9 +215,9 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     const params = await meta.buildVariablesParams(model.context);
 
     expect(params.customer).toMatchObject({ collection: 'customers', dataSourceKey: 'main', filterByTk: 9 });
-    expect(Array.isArray(params.assignees)).toBe(true);
-    expect(params.assignees[0]).toMatchObject({ collection: 'users', dataSourceKey: 'main', filterByTk: 3 });
-    expect(params.assignees[1]).toMatchObject({ collection: 'users', dataSourceKey: 'main', filterByTk: 5 });
+    expect(params.assignees).toMatchObject({ collection: 'users', dataSourceKey: 'main' });
+    expect(Array.isArray(params.assignees.filterByTk)).toBe(true);
+    expect(params.assignees.filterByTk).toEqual([3, 5]);
     expect(params.note).toBeUndefined();
   });
 
@@ -233,5 +233,81 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     // flow registered (eventSettings)
     const flows = model.getFlows();
     expect(flows.has('eventSettings')).toBe(true);
+  });
+
+  it('builds non-empty contextParams for ctx.formValues.* deep association path', async () => {
+    const model = await setupFormModel();
+    // 注入 api mock 到引擎上下文，拦截 variables:resolve 的请求
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const payload = config?.data?.values || {};
+        const batch = payload.batch || [];
+        const cp = batch[0]?.contextParams || {};
+        const keys = Object.keys(cp).sort();
+        // 聚合为单键，不再使用索引键
+        expect(keys).toEqual(['formValues.assignees']);
+        expect(cp['formValues.assignees']).toMatchObject({ collection: 'users' });
+        expect(Array.isArray(cp['formValues.assignees'].filterByTk)).toBe(true);
+        expect(cp['formValues.assignees'].filterByTk).toEqual([3, 5]);
+        return { data: { ok: true } } as any;
+      }),
+    } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    // 设置 form 值，包含对多关联 assignees（数组）
+    const mem: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (v: any) => Object.assign(mem, v),
+      getFieldsValue: () => ({ ...mem }),
+      setFieldValue: (k: string, v: any) => (mem[k] = v),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    fakeForm.setFieldsValue({ assignees: [{ id: 3 }, { id: 5 }] });
+
+    // 解析一个会触发服务端解析的变量模板
+    const tpl = { who: '{{ ctx.formValues.assignees[0].name }}' } as any;
+    await (model.context as any).resolveJsonTemplate(tpl);
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('builds contextParams for single association (no index at top level)', async () => {
+    const model = await setupFormModel();
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const payload = config?.data?.values || {};
+        const batch = payload.batch || [];
+        const cp = batch[0]?.contextParams || {};
+        const keys = Object.keys(cp).sort();
+        expect(keys).toEqual(['formValues.customer']);
+        expect(cp['formValues.customer']).toMatchObject({ collection: 'customers', filterByTk: 9 });
+        return { data: { ok: true } } as any;
+      }),
+    } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller2() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller2));
+
+    const mem2: Record<string, any> = {};
+    const fakeForm2 = {
+      setFieldsValue: (v: any) => Object.assign(mem2, v),
+      getFieldsValue: () => ({ ...mem2 }),
+      setFieldValue: (k: string, v: any) => (mem2[k] = v),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm2 });
+    fakeForm2.setFieldsValue({ customer: { id: 9 } });
+
+    const tpl2 = { who: '{{ ctx.formValues.customer.name }}' } as any;
+    await (model.context as any).resolveJsonTemplate(tpl2);
+    expect(api.request).toHaveBeenCalledTimes(1);
   });
 });
