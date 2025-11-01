@@ -302,6 +302,9 @@ export class ResourceManager {
   }
 
   use(middlewares: HandlerType | HandlerType[], options: ToposortOptions = {}) {
+    if (!options.tag && !options.group && !options.before && !options.after) {
+      options.tag = 'default';
+    }
     this.middlewares.add(middlewares, options);
   }
 
@@ -414,13 +417,13 @@ export class ResourceManager {
  * @deprecated
  */
 // eslint-disable-next-line @typescript-eslint/no-empty-interface
-export interface ResourcerOptions extends ResourceManagerOptions {}
+export interface ResourcerOptions extends ResourceManagerOptions { }
 
 /**
  * This class is deprecated and should not be used.
  * Use {@link ResourceManager} instead.
  * @deprecated
  */
-export class Resourcer extends ResourceManager {}
+export class Resourcer extends ResourceManager { }
 
 export default ResourceManager;
