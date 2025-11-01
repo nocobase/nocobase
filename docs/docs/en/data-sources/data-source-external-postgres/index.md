@@ -1,6 +1,8 @@
-# External Data Source - PostgreSQL
+---
+pkg: "@nocobase/plugin-data-source-external-postgres"
+---
 
-<PluginInfo commercial="true" name="data-source-external-postgres"></PluginInfo>
+# External Data Source - PostgreSQL
 
 ## Introduction
 

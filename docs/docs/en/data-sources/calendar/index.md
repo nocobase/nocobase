@@ -1,6 +1,8 @@
-# Calendar Block
+---
+pkg: "@nocobase/plugin-calendar"
+---
 
-<PluginInfo name="calendar"></PluginInfo>
+# Calendar Block
 
 ## Introduction
 

@@ -1,6 +1,8 @@
-# 加密
+---
+pkg: "@nocobase/plugin-field-encryption"
+---
 
-<PluginInfo commercial="true" name="field-encryption"></PluginInfo>
+# 加密
 
 ## 介绍
 

@@ -1,6 +1,8 @@
-# External Data Source - MSSQL
+---
+pkg: "@nocobase/plugin-data-source-external-mssql"
+---
 
-<PluginInfo commercial="true" name="data-source-external-mssql"></PluginInfo>
+# External Data Source - MSSQL
 
 ## Introduction
 

@@ -1,6 +1,8 @@
-# 外部数据源 - Oracle
+---
+pkg: "@nocobase/plugin-data-source-external-oracle"
+---
 
-<PluginInfo commercial="true" name="data-source-external-oracle"></PluginInfo>
+# 外部数据源 - Oracle
 
 ## 介绍
 

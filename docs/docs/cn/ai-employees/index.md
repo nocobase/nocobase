@@ -3,19 +3,6 @@ pkg: "@nocobase/plugin-ai"
 ---
 
 # AI 员工 · 入门
-{/* 
-<PluginCard
-  name="AI 员工"
-  developer="NocoBase"
-  description="NocoBase 2.0 核心插件，提供角色化智能助手能力，
-  支持多种 AI 模型（OpenAI、Claude、Gemini、DeepSeek、Qwen），
-  理解页面上下文并完成业务任务，支持自定义 AI 员工。"
-  detailLink="/ai-employees/built-in/viz"
-  isFree={true}
-  version="v2.0.0+"
-  float={true}
-/>
- */}
 
 ## 1. 简介
 > 官方 CRM Demo 已预置常用 AI 员工与任务，无需配置、快速体验。
