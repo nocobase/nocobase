@@ -375,6 +375,8 @@ export class Action {
       this.getHandler(),
     ].filter(Boolean);
 
+    console.log('Action handlers', this.resource.resourcer.getMiddlewares());
+
     return handlers.map((fn) => wrapMiddlewareWithLogging(fn));
   }
 

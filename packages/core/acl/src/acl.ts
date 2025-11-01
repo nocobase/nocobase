@@ -16,9 +16,9 @@ import { ACLAvailableAction, AvailableActionOptions } from './acl-available-acti
 import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
 import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager, ConditionFunc } from './allow-manager';
+import { NoPermissionError } from './errors/no-permission-error';
 import FixedParamsManager, { Merger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
-import { NoPermissionError } from './errors/no-permission-error';
 import { mergeAclActionParams, removeEmptyParams } from './utils';
 
 interface CanResult {
@@ -403,6 +403,8 @@ export class ACL extends EventEmitter {
         resourceName,
         actionName,
       };
+
+      console.log('ACL middleware', acl.middlewares.nodes);
 
       return await compose(acl.middlewares.nodes)(ctx, next);
     };
