@@ -53,6 +53,12 @@ async function setupFormModel() {
       return this.fields;
     },
   } as any;
+  // 为最小化字段 mock 补充 isAssociationField 方法，以匹配引擎在元数据构建中的调用
+  mockOrdersCollection.fields.forEach((f: any) => {
+    if (typeof f.isAssociationField !== 'function') {
+      f.isAssociationField = () => !!f.target;
+    }
+  });
   // 通过 resourceSettings 的 init 参数 + dataSourceManager 注入集合上下文
   (model as any).getResourceSettingsInitParams = () => ({ dataSourceKey: 'main', collectionName: 'orders' });
 
