@@ -1,6 +1,8 @@
-# 验证：短信
+---
+pkg: '@nocobase/plugin-verification'
+---
 
-<PluginInfo name="verification"></PluginInfo>
+# 验证：短信
 
 ## 介绍
 

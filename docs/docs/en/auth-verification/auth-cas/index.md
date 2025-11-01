@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-auth-cas'
+---
+
 # Auth: CAS
 
 <PluginInfo commercial="true" name="auth-cas"></PluginInfo>

@@ -1,6 +1,8 @@
-# Auth: SAML 2.0
+---
+pkg: '@nocobase/plugin-auth-saml'
+---
 
-<PluginInfo commercial="true" name="auth-saml"></PluginInfo>
+# Auth: SAML 2.0
 
 ## Introduction
 

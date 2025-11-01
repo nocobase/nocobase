@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-acl'
+---
+
 # Application in UI
 
 ## Data Block Permissions

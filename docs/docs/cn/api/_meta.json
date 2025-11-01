@@ -42,6 +42,12 @@
   },
   {
     "type": "dir",
+    "name": "logger",
+    "label": "@nocobase/logger",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
     "name": "server",
     "label": "@nocobase/server",
     "collapsed": true

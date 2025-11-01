@@ -1,6 +1,8 @@
-# 通知：电子邮件
+---
+pkg: '@nocobase/plugin-notification-email'
+---
 
-<PluginInfo name="notification-email"></PluginInfo>
+# 通知：电子邮件
 
 ## 介绍
 

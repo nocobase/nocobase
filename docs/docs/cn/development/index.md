@@ -46,10 +46,10 @@ features:
         showOnHome: true
       - title: 通知渠道扩展
         details: 开发新的通知方式或集成外部通信服务，支持多渠道消息分发。
-        link: /notification-manager/development
+        link: /notification-manager/development/extension
       - title: 用户认证扩展
         details: 实现自定义认证逻辑或对接第三方登录系统，增强安全与接入能力。
-        link: /auth-manager/development
+        link: /auth-verification/auth/dev
       - title: 文件存储扩展
         details: 集成云存储服务或自定义存储方案，实现文件上传、下载与管理的灵活扩展。
         link: /file-manager/development
