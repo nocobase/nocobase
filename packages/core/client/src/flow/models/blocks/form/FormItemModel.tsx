@@ -23,6 +23,7 @@ import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../details/DetailsItemModel';
 import { EditFormModel } from './EditFormModel';
 import _ from 'lodash';
+import { coerceForToOneField } from '../../../internal/utils/associationValueCoercion';
 
 const interfacesOfUnsupportedDefaultValue = [
   'o2o',
@@ -283,7 +284,9 @@ FormItemModel.registerFlow({
         if (interfacesOfUnsupportedDefaultValue?.includes?.(iface)) {
           return;
         }
-        ctx.model.setProps({ initialValue: params.defaultValue });
+        const collectionField = ctx.model.collectionField;
+        const finalDefault = coerceForToOneField(collectionField, params.defaultValue);
+        ctx.model.setProps({ initialValue: finalDefault });
       },
     },
     required: {
