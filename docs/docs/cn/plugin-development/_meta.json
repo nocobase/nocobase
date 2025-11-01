@@ -31,82 +31,82 @@
       },
       {
         "type": "custom-link",
-        "label": "Plugin",
+        "label": "Plugin 插件",
         "link": "/plugin-development/server/plugin"
       },
       {
         "type": "custom-link",
-        "label": "Collections",
+        "label": "Collections 数据表和字段",
         "link": "/plugin-development/server/collections"
       },
       {
         "type": "custom-link",
-        "label": "数据库操作",
+        "label": "Database 数据库操作",
         "link": "/plugin-development/server/database"
       },
       {
         "type": "custom-link",
-        "label": "数据源管理",
+        "label": "DataSourceManager 数据源管理",
         "link": "/plugin-development/server/data-source-manager"
       },
       {
         "type": "custom-link",
-        "label": "资源管理",
+        "label": "ResourceManager 资源管理",
         "link": "/plugin-development/server/resource-manager"
       },
       {
         "type": "custom-link",
-        "label": "ACL",
+        "label": "ACL 权限控制",
         "link": "/plugin-development/server/acl"
       },
       {
         "type": "custom-link",
-        "label": "中间件",
+        "label": "Middleware 中间件",
         "link": "/plugin-development/server/middleware"
       },
       {
         "type": "custom-link",
-        "label": "缓存",
+        "label": "Cache 缓存",
         "link": "/plugin-development/server/cache"
       },
       {
         "type": "custom-link",
-        "label": "定时任务",
+        "label": "CronJobManager 定时任务",
         "link": "/plugin-development/server/cron-job"
       },
       {
         "type": "custom-link",
-        "label": "事件",
+        "label": "Event事件",
         "link": "/plugin-development/server/event"
       },
       {
         "type": "custom-link",
-        "label": "请求上下文",
+        "label": "Context 请求上下文",
         "link": "/plugin-development/server/context"
       },
       {
         "type": "custom-link",
-        "label": "Migration",
+        "label": "Migration 升级脚本",
         "link": "/plugin-development/server/migration"
       },
       {
         "type": "custom-link",
-        "label": "日志",
+        "label": "Logger日志",
         "link": "/plugin-development/server/logger"
       },
       {
         "type": "custom-link",
-        "label": "国际化",
+        "label": "I18n 国际化",
         "link": "/plugin-development/server/i18n"
       },
       {
         "type": "custom-link",
-        "label": "命令行",
+        "label": "CLI 命令行",
         "link": "/plugin-development/server/command"
       },
       {
         "type": "custom-link",
-        "label": "测试",
+        "label": "Test 测试",
         "link": "/plugin-development/server/test"
       }
     ]
