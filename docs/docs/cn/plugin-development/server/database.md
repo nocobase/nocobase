@@ -1,4 +1,4 @@
-# Database
+# Database 数据库
 
 `Database` 是数据库类型数据源（`DataSource`）的重要组成部分。每个数据库类型的数据源都会有一个对应的 `Database` 实例，可以通过 `dataSource.db` 访问。主数据源的数据库实例还提供了便捷的 `app.db` 别名。熟悉 `db` 的常用方法，是编写服务端插件的基础。
 

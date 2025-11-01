@@ -1,4 +1,4 @@
-# Migration
+# Migration 升级脚本
 
 在 NocoBase 插件的开发与更新过程中，插件的数据库结构或配置可能会发生不兼容的变化。为了保证升级的平滑执行，NocoBase 提供了 **Migration** 机制，通过编写 migration 文件来处理这些变更。本文将带你系统了解 Migration 的使用方法和开发流程。
 
