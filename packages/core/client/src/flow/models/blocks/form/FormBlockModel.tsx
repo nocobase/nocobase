@@ -70,27 +70,24 @@ export class FormBlockModel<
     const recordMeta: PropertyMetaFactory = createRecordMetaFactory(() => this.collection, 'Current form');
     const formValuesMeta: PropertyMetaFactory = async () => {
       const base = await recordMeta?.();
-      // 仅收集“已配置进表单”的顶层字段（FormGridModel.items 中的 FormItemModel.fieldPath 的第一段）
       const getActiveTopLevelFieldNames = (): Set<string> => {
-        const grid = (this.subModels as DefaultCollectionBlockModelStructure['subModels'] | undefined)?.grid;
-        const items = (grid?.subModels as { items?: unknown[] } | undefined)?.items ?? [];
+        const items = this.subModels.grid?.subModels?.items ?? [];
         const names = new Set<string>();
-        for (const it of items as Array<{ getStepParams?: (...args: any[]) => any }>) {
-          const fp = it?.getStepParams?.('fieldSettings', 'init')?.fieldPath as unknown;
-          if (typeof fp !== 'string' || fp.length === 0) continue;
-          const top = fp.split('.')[0];
+        for (const it of items) {
+          const fp = it?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
+          const top = fp.toString().split('.')[0];
           if (top) names.add(top);
         }
         return names;
       };
       const activeTopLevel = getActiveTopLevelFieldNames();
       const filterTopLevelProperties = async (meta: PropertyMeta): Promise<PropertyMeta> => {
-        const clone: PropertyMeta = { ...meta };
+        const clone = { ...meta };
         const propsResolved = typeof meta.properties === 'function' ? await meta.properties() : meta.properties;
         if (propsResolved && typeof propsResolved === 'object' && activeTopLevel.size > 0) {
-          const filtered: Record<string, PropertyMeta> = {};
-          for (const k of Object.keys(propsResolved as Record<string, PropertyMeta>)) {
-            if (activeTopLevel.has(k)) filtered[k] = (propsResolved as Record<string, PropertyMeta>)[k];
+          const filtered = {};
+          for (const k of Object.keys(propsResolved)) {
+            if (activeTopLevel.has(k)) filtered[k] = propsResolved[k];
           }
           clone.properties = filtered;
         } else {
@@ -108,74 +105,53 @@ export class FormBlockModel<
         // 根据表单中“已选中的关联字段值”构建 RecordRef 映射，用于 variables:resolve 的 contextParams
         buildVariablesParams: (ctx: FlowContext) => {
           const params: Record<string, any> = {};
-          // 优先使用运行时上下文中的 blockModel（右侧配置面板解析时可引用到左侧实际表单块）
-          const ownerModel = (ctx as FlowContext & { blockModel?: FormBlockModel }).blockModel ?? this;
-          const collection = (ownerModel?.collection ?? this.collection) as Collection;
-          const dataSourceKey = collection?.dataSourceKey ?? 'main';
-          const formValues =
-            // 优先使用 ctx.formValues（若存在）
-            (ctx as unknown as { formValues?: unknown })?.formValues ??
-            ownerModel?.context?.form?.getFieldsValue?.() ??
-            this?.context?.form?.getFieldsValue?.() ??
-            {};
-
-          if (!collection) {
-            return params;
-          }
-
-          const ensureTarget = (field: CollectionField) => {
-            // 优先使用字段上的 targetCollection；否则通过 dataSourceManager 获取
-            const targetName = field?.target;
-            if (!targetName) return null;
-            const targetCollection: Collection | undefined =
-              field?.targetCollection ?? this.context?.dataSourceManager?.getCollection?.(dataSourceKey, targetName);
-            return targetCollection ? { targetName, targetCollection } : null;
-          };
+          const formValues = ctx.formValues;
 
           const toId = (val: unknown, primaryKey: string) => {
             if (val == null) return undefined;
             if (typeof val === 'string' || typeof val === 'number') return val;
             if (typeof val === 'object') {
-              const obj = val as Record<string, unknown>;
-              const got = (obj as Record<string, unknown>)[primaryKey] ?? (obj as Record<string, unknown>).id;
-              return typeof got === 'string' || typeof got === 'number' ? got : undefined;
+              return val[primaryKey];
             }
             return undefined;
           };
 
           // 遍历集合的顶层字段，收集关联字段
-          const fields = (collection.getFields?.() ?? []) as CollectionField[];
+          const fields = (this.collection.getFields?.() ?? []) as CollectionField[];
           for (const field of fields) {
             const name = field?.name;
-            if (!name) continue;
-            // 非关联字段跳过
-            if (!field?.target) continue;
+            if (!name || !field.target) continue;
 
-            const associationValue = (formValues as Record<string, unknown>)?.[name as string];
+            const associationValue = formValues[name];
             if (associationValue == null) continue;
 
-            const info = ensureTarget(field);
-            if (!info?.targetCollection) continue;
-            const primaryKey = info.targetCollection.filterTargetKey || 'id';
+            if (!field?.targetCollection) continue;
+            const primaryKey = field.targetCollection.filterTargetKey;
 
             if (Array.isArray(associationValue)) {
-              const ids = (associationValue as unknown[])
-                .map((item) => toId(item, primaryKey))
-                .filter((v) => v != null);
+              const ids = associationValue.map((item) => toId(item, primaryKey)).filter((v) => v != null);
               if (ids.length) {
-                params[name] = { collection: info.targetName, dataSourceKey, filterByTk: ids };
+                params[name] = {
+                  collection: field.target,
+                  dataSourceKey: field.targetCollection.dataSourceKey,
+                  filterByTk: ids,
+                };
               }
             } else {
               const id = toId(associationValue, primaryKey);
               if (id != null) {
-                params[name] = { collection: info.targetName, dataSourceKey, filterByTk: id };
+                params[name] = {
+                  collection: field.target,
+                  dataSourceKey: field.targetCollection.dataSourceKey,
+                  filterByTk: id,
+                };
               }
             }
           }
 
           return params;
         },
-      } as PropertyMeta;
+      };
     };
     formValuesMeta.title = this.translate('Current form');
     return formValuesMeta;
@@ -206,16 +182,7 @@ export class FormBlockModel<
           const fields = collection?.getFields?.() ?? [];
           field = fields.find((f) => f?.name === baseFieldName);
         }
-        if (!field && this.context?.dataSourceManager?.getCollectionField) {
-          const dataSourceKey = collection?.dataSourceKey;
-          const colName = collection?.name;
-          if (dataSourceKey && colName) {
-            field = this.context.dataSourceManager.getCollectionField(
-              `${dataSourceKey}.${colName}.${baseFieldName}`,
-            ) as CollectionField | undefined;
-          }
-        }
-        return !!(field?.isAssociationField?.() || (field as unknown as { target?: string })?.target);
+        return !!field?.isAssociationField?.();
       },
     });
   }

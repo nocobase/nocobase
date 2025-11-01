@@ -249,7 +249,9 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       ),
     );
 
-    await waitFor(() => (globalThis as any).__lastDropdownMenu);
+    await waitFor(() => {
+      expect((globalThis as any).__lastDropdownMenu).toBeTruthy();
+    });
     const menu = (globalThis as any).__lastDropdownMenu;
     menu.onClick?.({ key: 'flowC:general' });
     expect(openSpy).toHaveBeenCalledWith({ flowKey: 'flowC', stepKey: 'general' });

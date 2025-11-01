@@ -10,21 +10,20 @@
 import React from 'react';
 import { render } from '@testing-library/react';
 import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
-import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
+import { FlowEngine, FlowModel, SingleRecordResource } from '@nocobase/flow-engine';
 // 直接从 models 聚合导入，避免局部文件相互引用顺序导致的循环依赖
 import { FormBlockModel } from '../../../..';
-// 最小化 mock：避免在导入 models 聚合时触发 Create/Edit 表单模型的静态初始化
-vi.mock('../CreateFormModel.tsx', () => ({}));
-vi.mock('../EditFormModel.tsx', () => ({}));
-
 // -----------------------------
 // Helpers
 // -----------------------------
 
 async function createTestFormModelSubclass() {
-  return class TestFormModel extends (FormBlockModel as any) {
+  return class TestFormModel extends FormBlockModel {
     constructor(options: any) {
       super(options);
+    }
+    createResource(ctx) {
+      return ctx.createResource(SingleRecordResource);
     }
     renderComponent(): React.ReactNode {
       return null;
@@ -34,47 +33,66 @@ async function createTestFormModelSubclass() {
 
 async function setupFormModel() {
   const engine = new FlowEngine();
-  const TestFormModel = await createTestFormModelSubclass();
-  const model = new TestFormModel({ uid: 'form-1', flowEngine: engine } as any);
+  const dsm = engine.context.dataSourceManager;
+  const ds = dsm.getDataSource('main');
 
-  // Mock collections & fields: orders(customer: belongsTo customers, assignees: belongsToMany users)
-  const mockUsersCollection = { name: 'users', dataSourceKey: 'main', getPrimaryKey: () => 'id' } as any;
-  const mockCustomersCollection = { name: 'customers', dataSourceKey: 'main', getPrimaryKey: () => 'id' } as any;
-  const mockOrdersCollection = {
-    name: 'orders',
-    dataSourceKey: 'main',
-    getPrimaryKey: () => 'id',
+  // 仿照 flow-engine 的数据源单测创建真实的 collections
+  ds.addCollection({
+    name: 'users',
+    filterTargetKey: 'id',
     fields: [
-      { name: 'customer', target: 'customers', targetCollection: mockCustomersCollection },
-      { name: 'assignees', target: 'users', targetCollection: mockUsersCollection },
-      { name: 'note' },
+      { name: 'id', type: 'integer', interface: 'number' },
+      { name: 'name', type: 'string', interface: 'text' },
+      { name: 'org', type: 'belongsTo', target: 'orgs', interface: 'm2o' },
     ],
-    getFields() {
-      return this.fields;
-    },
-  } as any;
-  // 为最小化字段 mock 补充 isAssociationField 方法，以匹配引擎在元数据构建中的调用
-  mockOrdersCollection.fields.forEach((f: any) => {
-    if (typeof f.isAssociationField !== 'function') {
-      f.isAssociationField = () => !!f.target;
-    }
   });
-  // 通过 resourceSettings 的 init 参数 + dataSourceManager 注入集合上下文
-  (model as any).getResourceSettingsInitParams = () => ({ dataSourceKey: 'main', collectionName: 'orders' });
+  ds.addCollection({
+    name: 'customers',
+    filterTargetKey: 'id',
+    fields: [
+      { name: 'id', type: 'integer', interface: 'number' },
+      { name: 'name', type: 'string', interface: 'text' },
+      { name: 'level', type: 'belongsTo', target: 'levels', interface: 'm2o' },
+    ],
+  });
+  ds.addCollection({
+    name: 'orgs',
+    filterTargetKey: 'id',
+    fields: [
+      { name: 'id', type: 'integer', interface: 'number' },
+      { name: 'name', type: 'string', interface: 'text' },
+    ],
+  });
+  ds.addCollection({
+    name: 'levels',
+    filterTargetKey: 'id',
+    fields: [
+      { name: 'id', type: 'integer', interface: 'number' },
+      { name: 'name', type: 'string', interface: 'text' },
+    ],
+  });
+  ds.addCollection({
+    name: 'orders',
+    filterTargetKey: 'id',
+    fields: [
+      { name: 'customer', type: 'belongsTo', target: 'customers', interface: 'm2o' },
+      { name: 'assignees', type: 'belongsToMany', target: 'users', interface: 'm2m' },
+      { name: 'note', type: 'string', interface: 'text' },
+    ],
+  });
 
-  const dsm = {
-    getCollection: (dsKey: string, name: string) => {
-      if (dsKey !== 'main') return undefined;
-      if (name === 'customers') return mockCustomersCollection;
-      if (name === 'users') return mockUsersCollection;
-      if (name === 'orders') return mockOrdersCollection;
-      return undefined;
+  const TestFormModel = await createTestFormModelSubclass();
+  // 使用引擎注册并创建模型，确保 onInit 等生命周期按真实场景执行
+  engine.registerModels({ TestFormModel });
+  const model = engine.createModel<any>({
+    use: 'TestFormModel',
+    uid: 'form-1',
+    stepParams: {
+      resourceSettings: {
+        init: { dataSourceKey: 'main', collectionName: 'orders' },
+      },
     },
-  } as any;
-  (model.context as any).defineProperty('dataSourceManager', { value: dsm });
-  // 直接覆盖 ctx.collection，避免 meta 工厂在异步解析时拿不到集合
-  (model.context as any).defineProperty('collection', { value: mockOrdersCollection });
-
+  });
   return model;
 }
 
@@ -211,8 +229,9 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     expect(typeof opt.resolveOnServer).toBe('function');
     expect(opt.resolveOnServer('')).toBe(false);
     expect(opt.resolveOnServer('customer')).toBe(false);
-    expect(opt.resolveOnServer('customer.name')).toBe(true);
-    expect(opt.resolveOnServer('assignees[0].name')).toBe(true);
+    // 二级关联字段
+    expect(opt.resolveOnServer('customer.level.name')).toBe(true);
+    expect(opt.resolveOnServer('assignees.org.name')).toBe(true);
 
     const metaFactory = opt.meta as () => Promise<any>;
     const meta = await metaFactory();
@@ -277,7 +296,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     fakeForm.setFieldsValue({ assignees: [{ id: 3 }, { id: 5 }] });
 
     // 解析一个会触发服务端解析的变量模板
-    const tpl = { who: '{{ ctx.formValues.assignees[0].name }}' } as any;
+    const tpl = { who: '{{ ctx.formValues.assignees.org.name }}' } as any;
     await (model.context as any).resolveJsonTemplate(tpl);
     expect(api.request).toHaveBeenCalledTimes(1);
   });
@@ -312,7 +331,7 @@ describe('FormBlockModel (form/formValues injection & server resolve anchors)', 
     (model.context as any).defineProperty('form', { value: fakeForm2 });
     fakeForm2.setFieldsValue({ customer: { id: 9 } });
 
-    const tpl2 = { who: '{{ ctx.formValues.customer.name }}' } as any;
+    const tpl2 = { who: '{{ ctx.formValues.customer.level.name }}' } as any;
     await (model.context as any).resolveJsonTemplate(tpl2);
     expect(api.request).toHaveBeenCalledTimes(1);
   });
