@@ -1,6 +1,8 @@
-# Many-to-Many (Array)
+---
+pkg: "@nocobase/plugin-field-m2m-array"
+---
 
-<PluginInfo name="field-m2m-array"></PluginInfo>
+# Many-to-Many (Array)
 
 ## Introduction
 

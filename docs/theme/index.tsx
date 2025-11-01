@@ -12,6 +12,8 @@ import { PluginCard } from './components/PluginCard';
 import { PluginInfo } from './components/PluginInfo';
 import { PluginList } from './components/PluginList';
 import { ProvidedBy } from './components/ProvidedBy';
+import './index.scss';
+import { transformHref } from './utils';
 
 function getCustomMDXComponent() {
   const { h1: H1, ...mdxComponents } = basicGetCustomMDXComponent();
@@ -43,9 +45,6 @@ function getCustomMDXComponent() {
 }
 
 export { getCustomMDXComponent };
-
-import './index.scss';
-import { transformHref } from './utils';
 
 export interface HomeLayoutProps {
   beforeHero?: React.ReactNode;
@@ -156,7 +155,10 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
           onClick={() => {
             if (link) {
               navigate(transformHref(link, lang));
-              window.scrollTo(0, 0);
+              window.scrollTo({
+                top: 0,
+                behavior: 'smooth',
+              });
             }
           }}
         >

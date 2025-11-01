@@ -31,6 +31,7 @@ export type AIEmployee = {
   };
   builtIn?: boolean;
   webSearch?: boolean;
+  toolsConflict?: boolean;
 };
 
 export type SkillSettings = {

@@ -1,6 +1,8 @@
-# 日历表
+---
+pkg: "@nocobase/plugin-calendar"
+---
 
-<PluginInfo name="calendar"></PluginInfo>
+# 日历表
 
 ## 介绍
 

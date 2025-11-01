@@ -1,6 +1,8 @@
-# 数据源管理
+---
+pkg: "@nocobase/plugin-data-source-manager"
+---
 
-<PluginInfo name="data-source-manager"></PluginInfo>
+# 数据源管理
 
 ## 介绍
 

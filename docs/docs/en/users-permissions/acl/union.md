@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-acl'
+---
+
 # Role Union
 
 Role Union is a permission management mode. According to system settings, system developers can choose to use `Independent roles`, `Allow roles union`, or `Roles union only`, to meet different permission requirements.

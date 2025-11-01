@@ -23,6 +23,7 @@ import { FlowRuntimeContext, observer, useFlowContext } from '@nocobase/flow-eng
 import { useLocation } from 'react-router-dom';
 import { isHide } from '../built-in/utils';
 import { AIEmployeeShortcutModel } from '../flow/models';
+import { useChatConversationOptions } from './hooks/useChatConversationOptions';
 
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
@@ -68,6 +69,8 @@ export const ChatButton: React.FC = observer(() => {
     return () => clearTimeout(timer);
   }, [contextAware.aiEmployees.length, folded]);
 
+  const { resetDefaultWebSearch } = useChatConversationOptions();
+
   const items = useMemo(() => {
     return aiEmployees
       ?.filter((employee) => !isHide(employee))
@@ -77,6 +80,7 @@ export const ChatButton: React.FC = observer(() => {
           <AIEmployeeListItem
             aiEmployee={employee}
             onClick={() => {
+              resetDefaultWebSearch();
               setOpen(true);
               switchAIEmployee(employee);
             }}

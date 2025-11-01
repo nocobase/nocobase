@@ -1,6 +1,8 @@
-# 主数据库
+---
+pkg: "@nocobase/plugin-data-source-main"
+---
 
-<PluginInfo name="data-source-main"></PluginInfo>
+# 主数据库
 
 ## 介绍
 

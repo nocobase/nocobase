@@ -1,6 +1,8 @@
-# Main DataBase
+---
+pkg: "@nocobase/plugin-data-source-main"
+---
 
-<PluginInfo name="data-source-main"></PluginInfo>
+# Main DataBase
 
 ## Introduction
 

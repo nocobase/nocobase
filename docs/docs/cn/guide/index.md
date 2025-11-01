@@ -57,7 +57,7 @@ features:
         showOnHome: true
       - title: 日志和监控
         details: 记录系统运行与用户操作。
-        link: /logging-and-monitoring
+        link: /log-and-monitor/logger/
       - title: 集群模式
         details: 支持多节点部署与负载均衡，确保系统在高并发场景下的稳定性与可扩展性。
         link: /cluster-mode
@@ -96,4 +96,7 @@ features:
       - title: 模板打印
         details: 基于自定义模板生成可打印文档，如订单、合同或发票。
         link: /template-print
+      - title: 历史记录
+        details: 追踪并保存数据表记录的变更历史。
+        link: /record-history/
 ---

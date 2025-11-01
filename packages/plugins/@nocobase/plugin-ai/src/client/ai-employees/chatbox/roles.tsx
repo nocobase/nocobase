@@ -10,7 +10,7 @@
 import React from 'react';
 import { GetProp, Popover, Avatar, Space, Spin } from 'antd';
 import { Bubble } from '@ant-design/x';
-import { AIMessage, ErrorMessage, TaskMessage, UserMessage } from './MessageRenderer';
+import { AIMessage, ErrorMessage, HintMessage, TaskMessage, UserMessage } from './MessageRenderer';
 import { AIEmployee } from '../types';
 import { ProfileCard } from '../ProfileCard';
 import { avatars } from '../avatars';
@@ -36,6 +36,11 @@ export const defaultRoles: GetProp<typeof Bubble.List, 'roles'> = {
     placement: 'start',
     variant: 'borderless',
     messageRender: (msg: any) => <ErrorMessage msg={msg} />,
+  },
+  hint: {
+    placement: 'start',
+    variant: 'borderless',
+    messageRender: (msg: any) => <HintMessage msg={msg} />,
   },
   task: {
     placement: 'start',

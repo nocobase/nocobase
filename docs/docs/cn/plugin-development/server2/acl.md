@@ -26,6 +26,7 @@ this.app.acl.registerSnippet({
 ```
 
 ### 3. 自定义可配置的操作
+
 如果需要让某些自定义操作也能在界面上配置权限，可以使用 `setAvailableAction` 注册：
 
 ```ts

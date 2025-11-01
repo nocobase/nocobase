@@ -1,6 +1,8 @@
-# 可视化数据表管理
+---
+pkg: "@nocobase/plugin-graph-collection-manager"
+---
 
-<PluginInfo name="graph-collection-manager"></PluginInfo>
+# 可视化数据表管理
 
 ## 介绍
 

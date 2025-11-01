@@ -285,6 +285,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   private static staticCommands = [];
 
+  static registerStaticCommand(callback: (app: Application) => void) {
+    this.staticCommands.push(callback);
+  }
+
   static addCommand(callback: (app: Application) => void) {
     this.staticCommands.push(callback);
   }

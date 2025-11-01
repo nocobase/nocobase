@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-action-trigger'
+---
+
 # 操作后事件
 
 ## 介绍

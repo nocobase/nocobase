@@ -11,9 +11,12 @@ NocoBase 的数据源可以是常见的各类数据库、API（SDK）平台和�
 NocoBase 提供了[数据源管理插件](/data-sources/data-source-manager)，用于管理各数据源及其数据表。数据源管理插件只是提供所有数据源的管理界面，并不提供接入数据源的能力，它需要和各种数据源插件搭配使用。目前支持的数据源包括：
 
 - [Main Database](/data-sources/data-source-main)：NocoBase 主数据库，支持 MySQL、PostgreSQL、MariaDB 等关系型数据库。
+- [KingbaseES](/data-sources/data-source-kingbase)：使用人大金仓（KingbaseES）数据库作为数据源，可以作为主数据库，也可以作为外部数据库使用。
 - [External MySQL](/data-sources/data-source-external-mysql)：使用外部的 MySQL 数据库作为数据源。
 - [External MariaDB](/data-sources/data-source-external-mariadb)：使用外部的 MariaDB 数据库作为数据源。
 - [External PostgreSQL](/data-sources/data-source-external-postgres)：使用外部的 PostgreSQL 数据库作为数据源。
+- [External MSSQL](/data-sources/data-source-external-mssql)：使用外部的 MSSQL（SQL Server）数据库作为数据源。
+- [External Oracle](/data-sources/data-source-external-oracle)：使用外部的 Oracle 数据库作为数据源。
 
 ![20240512083651](https://static-docs.nocobase.com/20240512083651.png)
 
@@ -31,16 +34,15 @@ NocoBase 提供了[数据源管理插件](/data-sources/data-source-manager)，�
 
 | 数据表 | 描述 |
 | - | - |
-| [普通表](/data-sources/data-source-main/general-collection) | 内置了常用的系统字段 |
-| [继承表](/data-sources/data-source-main/inheritance-collection) | 创建一个父表，然后从该父表派生出子表，子表会继承父表的字段，同时还可以定义自己的字段 |
-| [树表](/data-sources/collection-tree) | 树结构表，目前只支持邻接表设计 |
-| [日历表](/data-sources/calendar/calendar-collection) | 用于创建日历相关的事件表 |
-| [文件表](/data-sources/file-manager/file-collection) | 用于文件存储的管理 |
-|  | 用于存储对数据的评论或反馈 |
-|  | 用于工作流的动态表达式场景 |
-| [SQL 表](/data-sources/collection-sql) | 并不是实际的数据库表，而是快速的将 SQL 查询，结构化的展示出来 |
-| [视图表](/data-sources/collection-view) | 连接已有的数据库视图 |
-| [外部数据表（FDW）](/data-sources/collection-fdw) | 基于数据库的 FDW 技术实现的连接远程数据表 |
+| [普通数据表](/data-sources/data-source-main/general-collection) | 内置了常用的系统字段 |
+| [日历数据表](/data-sources/calendar/calendar-collection) | 用于创建日历相关的事件表 |
+| 评论表 | 用于存储对数据的评论或反馈 |
+| [树结构表](/data-sources/collection-tree) | 树结构表，目前只支持邻接表设计 |
+| [文件数据表](/data-sources/file-manager/file-collection) | 用于文件存储的管理 |
+| [SQL 数据表](/data-sources/collection-sql) | 并不是实际的数据库表，而是快速的将 SQL 查询，结构化的展示出来 |
+| [连接数据库视图](/data-sources/collection-view) | 连接已有的数据库视图 |
+| 表达式表 | 用于工作流的动态表达式场景 |
+| [连接外部数据](/data-sources/collection-fdw) | 基于数据库的 FDW 技术实现的连接远程数据表 |
 
 ![20240512102212](https://static-docs.nocobase.com/20240512102212.png)
 

@@ -1,6 +1,8 @@
-# External Data Source - MySQL
+---
+pkg: "@nocobase/plugin-data-source-external-mysql"
+---
 
-<PluginInfo commercial="true" name="data-source-external-mysql"></PluginInfo>
+# External Data Source - MySQL
 
 ## Introduction
 

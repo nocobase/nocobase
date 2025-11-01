@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-date-calculation'
+---
+
 # 日期计算
 
 ## 介绍

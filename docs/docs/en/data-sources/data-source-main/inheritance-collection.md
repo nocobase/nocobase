@@ -1,6 +1,8 @@
-# Inheritance Collection
+---
+pkg: "@nocobase/plugin-data-source-main"
+---
 
-<PluginInfo name="data-source-main"></PluginInfo>
+# Inheritance Collection
 
 ## Introduction
 

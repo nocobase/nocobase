@@ -5,6 +5,7 @@
 下拉选择器支持从目标表的已有数据选择数据关联或为目标表添加数据后关联，下拉选项支持模糊搜索。
 
 ![20251029205901](https://static-docs.nocobase.com/20251029205901.png)
+
 ## 字段配置项
 
 ### 设置数据范围
@@ -28,7 +29,10 @@
 限制对多的关系数据仅允许关联一条数据。
 
 ![20251029210145](https://static-docs.nocobase.com/20251029210145.png)
+
 ### 标题字段
+
+标题字段是选项显示的标签字段。
 
 ![20251029210507](https://static-docs.nocobase.com/20251029210507.gif)
 
@@ -36,4 +40,4 @@
 
 更多内容参考 [标题字段](/interface-builder/fields/field-settings/title-field)
 
-- [字段组件](/interface-builder/fields/association-field)；
+[字段组件](/interface-builder/fields/association-field)；

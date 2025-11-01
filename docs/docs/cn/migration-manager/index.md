@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-migration-manager'
+---
+
 # 迁移管理
 
 ## 介绍

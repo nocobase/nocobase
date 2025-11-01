@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-verification'
+---
+
 # 验证
 
 :::info{title=提示}

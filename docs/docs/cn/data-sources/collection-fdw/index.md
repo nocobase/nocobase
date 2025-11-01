@@ -1,6 +1,8 @@
-# 连接外部数据表（FDW）
+---
+pkg: "@nocobase/plugin-collection-fdw"
+---
 
-<PluginInfo name="collection-fdw"></PluginInfo>
+# 连接外部数据表（FDW）
 
 ## 介绍
 

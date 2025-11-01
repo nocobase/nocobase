@@ -1,6 +1,8 @@
-# 树表
+---
+pkg: "@nocobase/plugin-collection-tree"
+---
 
-<PluginInfo name="collection-tree"></PluginInfo>
+# 树表
 
 ## 介绍
 

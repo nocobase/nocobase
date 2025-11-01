@@ -1,6 +1,8 @@
-# 验证：TOTP 认证器
+---
+pkg: '@nocobase/plugin-verification-totp-authenticator'
+---
 
-<PluginInfo name="verification-totp-authenticator" licenseBundled="enterprise"></PluginInfo>
+# 验证：TOTP 认证器
 
 ## 介绍
 

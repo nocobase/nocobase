@@ -1,6 +1,8 @@
-# Graph Collection Manager
+---
+pkg: "@nocobase/plugin-graph-collection-manager"
+---
 
-<PluginInfo name="graph-collection-manager"></PluginInfo>
+# Graph Collection Manager
 
 ## Introduction
 

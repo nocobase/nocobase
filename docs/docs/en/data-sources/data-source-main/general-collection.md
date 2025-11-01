@@ -1,6 +1,8 @@
-# General Collection
+---
+pkg: "@nocobase/plugin-data-source-main"
+---
 
-<PluginInfo name="data-source-main"></PluginInfo>
+# General Collection
 
 ## Introduction
 It is used in most scenarios. A general collection can be used unless a special collection template is needed.

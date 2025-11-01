@@ -1,6 +1,8 @@
-# Formula
+---
+pkg: "@nocobase/plugin-field-formula"
+---
 
-<PluginInfo name="field-formula"></PluginInfo>
+# Formula
 
 ## Introduction
 

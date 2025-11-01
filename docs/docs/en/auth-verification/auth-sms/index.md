@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-auth-sms'
+---
+
 # Auth: SMS
 
 ## Introduction

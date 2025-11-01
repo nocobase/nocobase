@@ -1,6 +1,8 @@
-# Data Source Manager
+---
+pkg: "@nocobase/plugin-data-source-manager"
+---
 
-<PluginInfo name="data-source-manager"></PluginInfo>
+# Data Source Manager
 
 ## Introduction
 

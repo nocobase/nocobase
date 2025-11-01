@@ -1,6 +1,8 @@
-# 双因素身份认证 (2FA)
+---
+pkg: '@nocobase/plugin-two-factor-authentication'
+---
 
-<PluginInfo name="two-factor-authentication" licenseBundled="enterprise"></PluginInfo>
+# 双因素身份认证 (2FA)
 
 ## 介绍
 

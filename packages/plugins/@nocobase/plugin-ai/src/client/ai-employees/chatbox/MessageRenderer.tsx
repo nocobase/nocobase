@@ -321,6 +321,10 @@ export const ErrorMessage: React.FC<{
   );
 });
 
+export const HintMessage: React.FC<{ msg: any }> = memo(({ msg }) => {
+  return <Alert message={<>{msg.content} </>} type="info" showIcon closable />;
+});
+
 export const TaskMessage: React.FC<{
   msg: {
     content: Task[];

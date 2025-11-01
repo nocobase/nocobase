@@ -1,6 +1,8 @@
-# 自动编码
+---
+pkg: "@nocobase/plugin-field-sequence"
+---
 
-<PluginInfo name="field-sequence"></PluginInfo>
+# 自动编码
 
 ## 介绍
 
