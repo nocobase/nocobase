@@ -123,19 +123,14 @@ describe('destroy action with acl', () => {
       },
     });
 
-    app.resourcer.use(
-      (ctx, next) => {
-        ctx.state.currentRole = 'user';
-        ctx.state.currentRoles = ['user'];
-        ctx.state.currentUser = {
-          id: 1,
-        };
-        return next();
-      },
-      {
-        before: 'acl',
-      },
-    );
+    app.acl.use((ctx, next) => {
+      ctx.state.currentRole = 'user';
+      ctx.state.currentRoles = ['user'];
+      ctx.state.currentUser = {
+        id: 1,
+      };
+      return next();
+    });
 
     const a1 = await A.repository.findOne({ filter: { title: 'a1' } });
 
