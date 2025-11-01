@@ -121,7 +121,7 @@ export class FormBlockModel<
       return {
         ...(filteredBase || {
           type: 'object',
-          title: this.translate('Current form') || 'Current form',
+          title: this.translate('Current form'),
           properties: async () => ({}),
         }),
         // 根据表单中“已选中的关联字段值”构建 RecordRef 映射，用于 variables:resolve 的 contextParams
@@ -202,6 +202,7 @@ export class FormBlockModel<
         },
       } as PropertyMeta;
     };
+    formValuesMeta.title = this.translate('Current form');
 
     this.context.defineProperty('formValues', {
       get: () => {
