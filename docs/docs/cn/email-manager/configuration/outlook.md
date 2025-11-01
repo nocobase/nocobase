@@ -4,6 +4,9 @@ pkg: "@nocobase/plugin-email-manager"
 
 # 微软配置
 
+### 前置条件
+想要后续用户能够将Outlook邮箱接入到NocoBase，必须部署在支持访问微软服务的服务器上，后台将会调用微软API
+
 ### 注册账户
 
 1. 打开 https://azure.microsoft.com/en-us/pricing/purchase-options/azure-account

@@ -6,7 +6,7 @@ pkg: "@nocobase/plugin-email-manager"
 
 ### 前置条件
 
-1. 想要后续用户能够将谷歌邮箱接入到NocoBase，必须部署在支持访问谷歌服务的服务器上，后台将会调用Google API
+想要后续用户能够将谷歌邮箱接入到NocoBase，必须部署在支持访问谷歌服务的服务器上，后台将会调用Google API
     
 ### 注册账户
 
