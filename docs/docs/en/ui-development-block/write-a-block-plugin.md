@@ -1,6 +1,6 @@
 # Write Your First Block Plugin
 
-Before starting, it's recommended to read "[Write Your First Plugin](../plugin-development/write-your-first-plugin.md)" to quickly create a basic plugin. Next, we'll extend a simple Block based on that.
+Before starting, it's recommended to read "[Write Your First Plugin](../plugin-development/write-your-first-plugin.md)" to learn how to quickly create a basic plugin. Next, we'll extend it by adding a simple Block feature.
 
 ## Step 1: Create Block Model File
 
@@ -8,7 +8,7 @@ Create a new file in the plugin directory: `client/models/SimpleBlockModel.tsx`
 
 ## Step 2: Write Model Content
 
-Implement a basic block model in the file and define its rendering logic:
+Define and implement a basic block model in the file, including its rendering logic:
 
 ```tsx
 import { BlockModel } from '@nocobase/client';
@@ -33,7 +33,7 @@ SimpleBlockModel.define({
 
 ## Step 3: Register Block Model
 
-Edit the `client/models/index.ts` file and export the new model:
+Export the newly created model in the `client/models/index.ts` file:
 
 ```ts
 import { ModelConstructor } from '@nocobase/flow-engine';
@@ -46,7 +46,7 @@ export default {
 
 ## Step 4: Activate and Experience the Block
 
-After enabling the plugin, you'll see the new **Hello block** in the "Add Block" dropdown menu.
+After enabling the plugin, you'll see the new **Hello block** option in the "Add Block" dropdown menu.
 
 Demo effect:
 
@@ -54,11 +54,11 @@ Demo effect:
 
 ## Step 5: Add Configuration Capability to Block
 
-Next, we'll add configurable capabilities to the block through **Flow**, allowing users to edit block content in the interface.
+Next, we'll add configurable functionality to the block through **Flow**, enabling users to edit block content in the interface.
 
 Continue editing the `SimpleBlockModel.tsx` file:
 
-```ts
+```tsx
 import { BlockModel } from '@nocobase/client';
 import React from 'react';
 import { tExpr } from '../locale';
@@ -106,6 +106,11 @@ Demo effect:
 
 ## Summary
 
-- This article introduces how to create and register a simple block model, and how to add configurable functionality through Flow.
-- Complete source code reference: [Simple Block Example](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block)
+This article introduces how to create a simple block plugin, including:
+
+- How to define and implement a block model
+- How to register a block model
+- How to add configurable functionality through Flow
+
+Complete source code reference: [Simple Block Example](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block)
 

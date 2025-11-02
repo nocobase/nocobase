@@ -1,14 +1,14 @@
 # 编写第一个区块插件
 
-在开始之前，建议先阅读「[编写第一个插件](../plugin-development/write-your-first-plugin.md)」，快速创建一个基础插件。接下来，我们将在此基础上扩展一个简单的区块（Block）。
+在开始之前，建议先阅读「[编写第一个插件](../plugin-development/write-your-first-plugin.md)」，了解如何快速创建基础插件。接下来，我们将在此基础上扩展一个简单的区块（Block）功能。
 
 ## 第 1 步：创建区块模型文件
 
-在插件目录下新增文件：`client/models/SimpleBlockModel.tsx`
+在插件目录下创建文件：`client/models/SimpleBlockModel.tsx`
 
 ## 第 2 步：编写模型内容
 
-在文件中实现一个基础区块模型，并定义其渲染逻辑：
+在文件中定义并实现一个基础区块模型，包括其渲染逻辑：
 
 ```tsx
 import { BlockModel } from '@nocobase/client';
@@ -33,7 +33,7 @@ SimpleBlockModel.define({
 
 ## 第 3 步：注册区块模型
 
-编辑 `client/models/index.ts` 文件，将新模型导出：
+在 `client/models/index.ts` 文件中导出新创建的模型：
 
 ```ts
 import { ModelConstructor } from '@nocobase/flow-engine';
@@ -46,7 +46,7 @@ export default {
 
 ## 第 4 步：激活并体验区块
 
-启用插件后，在「添加区块」的下拉菜单中，你将看到新增的 **Hello block** 区块。
+启用插件后，在「添加区块」的下拉菜单中，你可以看到新增的 **Hello block** 区块选项。
 
 效果演示：
 
@@ -54,11 +54,11 @@ export default {
 
 ## 第 5 步：为区块添加配置能力
 
-接下来，我们通过 **Flow** 为区块增加可配置能力，让用户在界面上可编辑区块内容。
+接下来，我们通过 **Flow** 为区块添加可配置功能，使用户可以在界面上编辑区块内容。
 
 继续编辑 `SimpleBlockModel.tsx` 文件：
 
-```ts
+```tsx
 import { BlockModel } from '@nocobase/client';
 import React from 'react';
 import { tExpr } from '../locale';
@@ -106,5 +106,10 @@ SimpleBlockModel.registerFlow({
 
 ## 总结
 
-- 本文介绍了如何创建并注册一个简单的区块模型，以及如何通过 Flow 添加配置化功能。  
-- 完整源码参考：[Simple Block 示例](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block)
+本文介绍了如何创建一个简单的区块插件，包括：
+
+- 如何定义并实现区块模型
+- 如何注册区块模型
+- 如何通过 Flow 为区块添加配置化功能
+
+完整源码参考：[Simple Block 示例](https://github.com/nocobase/nocobase/tree/develop/packages/plugins/%40nocobase-example/plugin-simple-block)
