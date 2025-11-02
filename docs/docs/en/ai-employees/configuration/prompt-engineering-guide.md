@@ -315,3 +315,5 @@ First, write the positive parts (role, workflow, examples), then add constraints
 **Get it working, then refine it.**
 Start with a "working" version, and continuously collect issues, add examples, and refine rules in real tasks.
 Remember: **First, tell it how to do things right (positive guidance), then constrain it from doing things wrong (moderate restriction).**
+
+---

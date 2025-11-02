@@ -303,7 +303,7 @@ A：如果是页面级的配置，需要手动点选区块。
 * [提示词工程指南](./prompt-engineering-guide.md) - 编写高质量提示词的技巧和最佳实践
 * [配置 LLM 服务](/ai-employees/quick-start/llm-service) - 大模型服务的详细配置说明
 * [创建 AI 员工](/ai-employees/quick-start/ai-employees) - AI 员工的创建和基础配置
-* [与 AI 员工对话](/ai-employees/quick-start/chat) - 如何与 AI 员工进行有效对话
+* [与 AI 员工协作](/ai-employees/quick-start/collaborate) - 如何与 AI 员工进行有效对话
 
 **进阶功能：**
 

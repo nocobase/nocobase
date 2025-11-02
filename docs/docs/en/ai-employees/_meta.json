@@ -21,7 +21,7 @@
       {
         "type": "custom-link",
         "label": "Collaborate with AI Employee",
-        "link": "/ai-employees/quick-start/chat"
+        "link": "/ai-employees/quick-start/collaborate"
       }
     ]
   },
@@ -41,7 +41,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Orin: Data Modeler",
+        "label": "Orin: Data Modeling Expert",
         "link": "/ai-employees/built-in/data-modeling"
       },
       {

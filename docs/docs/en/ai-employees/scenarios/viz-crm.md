@@ -2,8 +2,6 @@
 
 > Using the CRM example, learn how to make your AI insight analyst truly understand your business and unleash its full potential.
 
----
-
 ## 1. Introduction: Making Viz Go from "Seeing Data" to "Understanding Business"
 
 In the NocoBase system, **Viz** is a pre-built AI insight analyst.
