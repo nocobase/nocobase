@@ -1,11 +1,11 @@
 import { NoSSR, useLang } from '@rspress/core/runtime';
-import { Badge, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme';
+import { Badge, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, Link, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme';
 import {
   LlmsContainer,
   LlmsCopyButton,
   LlmsViewOptions,
 } from '@rspress/plugin-llms/runtime';
-import { useFrontmatter, useNavigate, usePageData, usePages } from '@rspress/runtime';
+import { useFrontmatter, useNavigate, usePageData, usePages, useSite } from '@rspress/runtime';
 import type { Feature } from '@rspress/shared';
 import type { JSX } from 'react';
 import { PluginCard } from './components/PluginCard';
@@ -13,7 +13,7 @@ import { PluginInfo } from './components/PluginInfo';
 import { PluginList } from './components/PluginList';
 import { ProvidedBy } from './components/ProvidedBy';
 import './index.scss';
-import { transformHref } from './utils';
+import { transformHref, useLangPrefix } from './utils';
 
 function getCustomMDXComponent() {
   const { h1: H1, ...mdxComponents } = basicGetCustomMDXComponent();
@@ -141,7 +141,7 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
 
   const link = rawLink;
   const navigate = useNavigate();
-  const lang = useLang();
+  const langPrefix = useLangPrefix();
 
   return (
     <div
@@ -154,7 +154,7 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
           className={`rp-home-feature__card ${link ? 'rp-home-feature__card--clickable' : ''}`}
           onClick={() => {
             if (link) {
-              navigate(transformHref(link, lang));
+              navigate(transformHref(link, langPrefix));
               window.scrollTo({
                 top: 0,
                 behavior: 'smooth',
@@ -163,7 +163,11 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
           }}
         >
           <div className="rp-home-feature__title-wrapper">
-            <h2 className="rp-home-feature__title">{title}</h2>
+            <h2 className="rp-home-feature__title">
+              {link ? (
+                <Link href={transformHref(link, langPrefix)}>{title}</Link>
+              ) : title}
+            </h2>
           </div>
           <p
             className="rp-home-feature__detail"

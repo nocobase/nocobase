@@ -16,6 +16,7 @@ import insightsAnalyst from '../ai-employees/built-in/insights-analyst';
 import researchAnalyst from '../ai-employees/built-in/research-analyst';
 import translator from '../ai-employees/built-in/translator';
 import nocobaseAssistant from '../ai-employees/built-in/nocobase-assistant';
+import emailAssistant from '../ai-employees/built-in/email-assistant';
 import type { AIEmployee } from '../../collections/ai-employees';
 import _ from 'lodash';
 
@@ -38,6 +39,7 @@ export class BuiltInManager {
     researchAnalyst,
     translator,
     nocobaseAssistant,
+    emailAssistant,
   ];
   private builtInEmployeeMap = Object.fromEntries(this.builtInEmployees.map((x) => [x.username, x]));
 
@@ -127,13 +129,6 @@ export class BuiltInManager {
         const { nickname, avatar, position, bio, greeting, about } = p;
         await aiEmployeesRepo.update({
           values: {
-            nickname,
-            position,
-            avatar,
-            bio,
-            greeting,
-            about,
-            skillSettings,
             builtIn: true,
           },
           filter: {
