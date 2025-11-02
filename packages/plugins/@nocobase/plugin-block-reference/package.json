@@ -19,6 +19,11 @@
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },
+  "nocobase": {
+    "supportedVersions": [
+      "2.x"
+    ]
+  },
   "keywords": [
     "nocobase",
     "plugin",
