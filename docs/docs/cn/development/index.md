@@ -23,15 +23,15 @@ features:
     items:
       - title: 区块（Blocks）
         details: 创建、复用与配置自定义区块组件，构建灵活的界面布局。
-        link: /ui-development/blocks
+        link: /ui-development-block
         showOnHome: true
       - title: 字段（Fields）
         details: 定义新的字段组件类型，丰富数据输入与展示方式。
-        link: /ui-development/fields
+        link: /ui-development-field
         showOnHome: true
       - title: 操作（Actions）
         details: 扩展或定制操作行为，实现多样化的业务流程与用户交互。
-        link: /ui--development/actions
+        link: /ui-development-action
         showOnHome: true
   - title: 插件生态
     details: 通过插件扩展现有插件的能力，构建层次化、模块化的插件生态体系，提升系统的可扩展性与协作能力。

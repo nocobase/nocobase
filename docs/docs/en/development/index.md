@@ -23,15 +23,15 @@ features:
     items:
       - title: Blocks
         details: Create, reuse, and configure custom block components to build flexible interface layouts.
-        link: /ui-development/blocks
+        link: /ui-development-block
         showOnHome: true
       - title: Fields
         details: Define new field component types to enrich data input and display methods.
-        link: /ui-development/fields
+        link: /ui-development-field
         showOnHome: true
       - title: Actions
         details: Extend or customize action behaviors to implement diverse business processes and user interactions.
-        link: /ui--development/actions
+        link: /ui-development-action
         showOnHome: true
   - title: Plugin Ecosystem
     details: Extend the capabilities of existing plugins through other plugins, building a hierarchical and modular plugin ecosystem to enhance system extensibility and collaboration.
