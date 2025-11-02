@@ -1,11 +1,11 @@
 import { Badge, Link } from "@rspress/core/theme";
-import { useLang, useFrontmatter, usePages } from "@rspress/runtime";
-import { transformHref } from "../utils";
+import { useFrontmatter, usePages } from "@rspress/runtime";
+import { transformHref, useLangPrefix } from "../utils";
 import { EditionLevels, EditionLevelsEN } from "./EditionLevels";
 
 export function ProvidedBy() {
   const { frontmatter } = useFrontmatter();
-  const lang = useLang();
+  const lang = useLangPrefix();
   const { pages } = usePages();
   if (!frontmatter?.pkg) {
     return null;
