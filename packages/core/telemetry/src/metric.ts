@@ -69,11 +69,24 @@ export class Metric {
 
     let readerNames = this.readerName;
     if (typeof readerNames === 'string') {
-      readerNames = readerNames.split(',');
+      readerNames = readerNames
+        .split(',')
+        .map((n) => n.trim())
+        .filter(Boolean);
     }
 
-    console.log(readerNames);
-    const readers = readerNames.map((name) => this.readers.get(name)());
+    const readers: MetricReader[] = [];
+
+    for (const name of readerNames) {
+      const reader = this.readers.get(name);
+
+      if (!reader) {
+        continue;
+      }
+
+      readers.push(reader());
+    }
+
     this.activeReaders = readers;
 
     const providerOptions: MeterProviderOptions = {

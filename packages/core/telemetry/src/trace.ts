@@ -60,7 +60,18 @@ export class Trace {
       names = names.split(',');
     }
 
-    const processors = names.map((name) => this.getProcessor(name)());
+    const processors: SpanProcessor[] = [];
+
+    for (const name of names) {
+      const processor = this.getProcessor(name);
+
+      if (!processor) {
+        continue;
+      }
+
+      processors.push(processor());
+    }
+
     this.activeProcessors = processors;
 
     const config: NodeTracerConfig = {
