@@ -1,37 +1,37 @@
-# Migration Scripts
+# Migration
 
-During the development and update process of NocoBase plugins, incompatible changes may occur in the plugin's database structure or configuration. To ensure a smooth upgrade process, NocoBase provides a **Migration** mechanism to handle these changes by writing migration files. This article will provide a systematic overview of how to use and develop Migrations.
+During NocoBase plugin development and updates, plugin database structures or configurations may undergo incompatible changes. To ensure smooth upgrades, NocoBase provides a **Migration** mechanism to handle these changes by writing migration files. This guide will help you systematically understand Migration usage and development workflow.
 
-## Concept of Migration
+## Migration Concept
 
-Migrations are scripts that run automatically when a plugin is upgraded, used to solve the following issues:
+Migration is a script that automatically executes during plugin upgrades, used to solve the following problems:
 
-- Table structure adjustments (adding new fields, modifying field types, etc.)
-- Data migration (such as batch updating field values)
+- Data table structure adjustments (adding fields, modifying field types, etc.)
+- Data migration (such as batch updates of field values)
 - Plugin configuration or internal logic updates
 
-Migrations are executed at three different stages:
+Migration execution timing is divided into three types:
 
-| Type | Trigger Time | Execution Scenario |
-|------|----------|----------|
-| `beforeLoad` | Before any plugin configurations are loaded | |
-| `afterSync`  | After collection configurations are synchronized with the database (table structure has been changed) | |
-| `afterLoad`  | After all plugin configurations are loaded | |
+| Type        | Trigger Timing                                      | Execution Scenario |
+| ----------- | --------------------------------------------------- | ------------------ |
+| `beforeLoad` | Before all plugin configurations are loaded         |                    |
+| `afterSync`  | After data table configurations are synchronized with database (table structure already changed) | |
+| `afterLoad`  | After all plugin configurations are loaded          |                    |
 
-## Creating a Migration File
+## Create Migration Files
 
-Migration files should be placed in the `src/server/migrations/*.ts` directory of your plugin. NocoBase provides the `create-migration` command to quickly generate a migration file.
+Migration files should be placed in `src/server/migrations/*.ts` in the plugin directory. NocoBase provides the `create-migration` command to quickly generate migration files.
 
 ```bash
 yarn nocobase create-migration [options] <name>
 ```
 
-Options
+Optional Parameters
 
-| Parameter | Description |
-|------|------|
-| `--pkg <pkg>` | Specify the plugin package name |
-| `--on [on]`  | Specify the execution stage. Options are `beforeLoad`, `afterSync`, or `afterLoad`. |
+| Parameter      | Description |
+| -------------- | ----------- |
+| `--pkg <pkg>`  | Specify plugin package name |
+| `--on [on]`    | Specify execution timing, options: `beforeLoad`, `afterSync`, `afterLoad` |
 
 Example
 
@@ -39,13 +39,13 @@ Example
 $ yarn nocobase create-migration update-ui --pkg=@nocobase/plugin-client
 ```
 
-The generated migration file will be located at:
+Generated migration file path:
 
 ```
 /nocobase/packages/plugins/@nocobase/plugin-client/src/server/migrations/20240107173313-update-ui.ts
 ```
 
-The initial content of the file is:
+File initial content:
 
 ```ts
 import { Migration } from '@nocobase/server';
@@ -55,39 +55,39 @@ export default class extends Migration {
   appVersion = '<0.19.0-alpha.3';
 
   async up() {
-    // Write your upgrade logic here
+    // Write upgrade logic here
   }
 }
 ```
 
-> ⚠️ `appVersion` is used to identify the target version for the upgrade. This migration will run in environments with a version lower than the one specified.
+> ⚠️ `appVersion` is used to identify the version targeted by the upgrade. Environments with versions less than the specified version will execute this migration.
 
-## Writing a Migration
+## Writing Migration
 
-Within the migration file, you can access the following common properties and APIs via `this` to interact with the database, plugin, and application instance:
+In Migration files, you can access the following common properties and APIs through `this` to conveniently operate database, plugins, and application instances:
 
 Common Properties
 
 - **`this.app`**  
-  The current NocoBase application instance. It can be used to access global services, plugins, or configurations.  
+  Current NocoBase application instance. Can be used to access global services, plugins, or configuration.  
   ```ts
   const config = this.app.config.get('database');
   ```
 
 - **`this.db`**  
-  The database service instance, providing an interface to operate on models (Collections).  
+  Database service instance, provides interfaces for operating models (Tables).  
   ```ts
   const users = await this.db.getRepository('users').findAll();
   ```
 
 - **`this.plugin`**  
-  The current plugin instance, which can be used to access custom methods of the plugin.  
+  Current plugin instance, can be used to access plugin custom methods.  
   ```ts
   const settings = this.plugin.customMethod();
   ```
 
 - **`this.sequelize`**  
-  The Sequelize instance, which can be used to execute raw SQL or transaction operations.  
+  Sequelize instance, can directly execute raw SQL or transaction operations.  
   ```ts
   await this.sequelize.transaction(async (transaction) => {
     await this.sequelize.query('UPDATE users SET active = 1', { transaction });
@@ -95,7 +95,7 @@ Common Properties
   ```
 
 - **`this.queryInterface`**  
-  Sequelize's QueryInterface, often used for modifying table structures, such as adding fields or deleting tables.  
+  Sequelize's QueryInterface, commonly used to modify table structures, such as adding fields, deleting tables, etc.  
   ```ts
   await this.queryInterface.addColumn('users', 'age', {
     type: this.sequelize.Sequelize.INTEGER,
@@ -103,7 +103,7 @@ Common Properties
   });
   ```
 
-Migration Writing Example
+Writing Migration Example
 
 ```ts
 import { Migration } from '@nocobase/server';
@@ -113,40 +113,40 @@ export default class extends Migration {
   appVersion = '<0.19.0-alpha.3';
 
   async up() {
-    // Use queryInterface to add a field
+    // Use queryInterface to add field
     await this.queryInterface.addColumn('users', 'nickname', {
       type: this.sequelize.Sequelize.STRING,
       allowNull: true,
     });
 
-    // Use db to access the data model
+    // Use db to access data models
     const users = await this.db.getRepository('users').findAll();
     for (const user of users) {
       user.nickname = user.username;
       await user.save();
     }
 
-    // Execute a custom method of the plugin
+    // Execute plugin custom method
     await this.plugin.customMethod();
   }
 }
 ```
 
-In addition to the common properties listed above, Migration provides a rich set of APIs. For detailed documentation, please refer to the [Migration API](/api/server/migration).
+In addition to the common properties listed above, Migration also provides rich APIs. For detailed documentation, see [Migration API](/api/server/migration).
 
-## Triggering a Migration
+## Trigger Migration
 
-Migrations are triggered by the `nocobase upgrade` command:
+Migration execution is triggered by the `nocobase upgrade` command:
 
 ```bash
 $ yarn nocobase upgrade
 ```
 
-During an upgrade, the system determines the execution order based on the migration's type and `appVersion`.
+During upgrade, the system will determine execution order based on Migration type and `appVersion`.
 
-## Testing a Migration
+## Testing Migration
 
-During plugin development, it is recommended to use a **Mock Server** to test whether the migration executes correctly, to avoid corrupting real data.
+In plugin development, it's recommended to use **Mock Server** to test whether migration executes correctly, avoiding damage to real data.
 
 ```ts
 import { createMockServer, MockServer } from '@nocobase/test';
@@ -167,20 +167,24 @@ describe('Migration Test', () => {
 
   test('run upgrade migration', async () => {
     await app.runCommand('upgrade');
-    // Write validation logic, e.g., check if a field exists or if data was migrated successfully
+    // Write verification logic, such as checking if field exists, if data migration succeeded
   });
 });
 ```
 
-> Tip: Using a Mock Server allows you to quickly simulate an upgrade scenario and verify the execution order and data changes of the migration.
+> Tip: Using Mock Server can quickly simulate upgrade scenarios and verify Migration execution order and data changes.
 
-## Development Best Practices
+## Development Practice Recommendations
 
-1. **Split Migrations**  
-   For each upgrade, try to generate a separate migration file to maintain atomicity, which makes troubleshooting easier.
-2. **Specify the Execution Stage**  
-   Choose `beforeLoad`, `afterSync`, or `afterLoad` based on the operation's target to avoid dependencies on unloaded modules.
-3. **Pay Attention to Versioning**  
-   Use `appVersion` to clearly define the applicable version for the migration to prevent it from running repeatedly.
-4. **Ensure Test Coverage**  
-   Verify the migration on a Mock Server before running the upgrade in a real environment.
+1. **Split Migration**  
+   Try to generate one migration file per upgrade, maintain atomicity, convenient for troubleshooting.
+
+2. **Specify Execution Timing**  
+   Choose `beforeLoad`, `afterSync`, or `afterLoad` based on operation objects, avoid depending on unloaded modules.
+
+3. **Pay Attention to Version Control**  
+   Use `appVersion` to clearly specify the version applicable to migration, prevent repeated execution.
+
+4. **Test Coverage**  
+   Verify migration on Mock Server before executing upgrade in real environment.
+

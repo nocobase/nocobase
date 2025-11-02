@@ -1,6 +1,5 @@
 ---
 pkg: "@nocobase/plugin-action-template-print"
-pkg: "@nocobase/plugin-action-template-print"
 ---
 
 # Template Printing

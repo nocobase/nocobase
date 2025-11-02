@@ -9,7 +9,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-points: 8
+points: 2
 ---
 
 # 操作：导入记录 Pro

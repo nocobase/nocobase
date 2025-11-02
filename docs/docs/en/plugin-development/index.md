@@ -1,82 +1,82 @@
 # Plugin Development Overview
 
-NocoBase uses a **micro-kernel architecture**, where the core is only responsible for plugin lifecycle scheduling, dependency management, and encapsulating basic capabilities. All business features are provided in the form of plugins. Therefore, understanding the organizational structure, lifecycle, and management of plugins is the first step to customizing NocoBase.
+NocoBase adopts a **microkernel architecture**, where the core is only responsible for plugin lifecycle scheduling, dependency management, and basic capability encapsulation. All business functions are provided as plugins. Therefore, understanding the plugin's organizational structure, lifecycle, and management approach is the first step in customizing NocoBase.
 
 ## Core Concepts
 
-- **Plug and play**: Plugins can be installed, enabled, or disabled on demand, allowing for flexible combination of business features without modifying code.
-- **Front-end and back-end integration**: A plugin usually includes both server-side and client-side implementations to maintain consistency between data logic and interface behavior.
+- **Plug and Play**: Plugins can be installed, enabled, or disabled as needed, allowing flexible combination of business functions without modifying code.
+- **Full-stack Integration**: Plugins typically include both server-side and client-side implementations, ensuring consistency between data logic and UI interactions.
 
 ## Basic Plugin Structure
 
-Each plugin is an independent npm package, typically with the following directory structure:
+Each plugin is an independent npm package, typically containing the following directory structure:
 
 ```bash
 plugin-hello/
 ├─ package.json          # Plugin name, dependencies, and NocoBase plugin metadata
-├─ client.js             # Front-end build artifact, loaded at runtime
-├─ server.js             # Server-side build artifact, loaded at runtime
+├─ client.js             # Frontend build artifact for runtime loading
+├─ server.js             # Server-side build artifact for runtime loading
 ├─ src/
 │  ├─ client/            # Client-side source code, can register blocks, actions, fields, etc.
-│  └─ server/            # Server-side source code, can register resources, events, command lines, etc.
+│  └─ server/            # Server-side source code, can register resources, events, commands, etc.
 ```
 
 ## Directory Conventions and Loading Order
 
-NocoBase scans the following directories for plugins by default:
+NocoBase scans the following directories by default to load plugins:
 
 ```bash
 my-nocobase-app/
 ├── packages/
-│   └── plugins/          # Plugins in source code development (highest priority)
+│   └── plugins/          # Plugins under development (highest priority)
 └── storage/
-    └── plugins/          # Compiled plugins, such as uploaded or published plugins
+    └── plugins/          # Compiled plugins, e.g., uploaded or published plugins
 ```
 
-- `packages/plugins`: Directory for plugins in local development, supporting real-time compilation and debugging.
-- `storage/plugins`: Stores compiled plugins, such as commercial or third-party plugins.
+- `packages/plugins`: Used for local plugin development, supporting real-time compilation and debugging.
+- `storage/plugins`: Stores compiled plugins, such as commercial editions or third-party plugins.
 
 ## Plugin Lifecycle and States
 
 A plugin typically goes through the following stages:
 
-1.  **Create**: Create a plugin template via the CLI.
-2.  **Pull**: Download the plugin package locally, but it has not yet been written to the database.
-3.  **Enable**: When enabled for the first time, it performs "registration + initialization"; subsequent enabling only loads the logic.
-4.  **Disable**: Stop the plugin from running.
-5.  **Remove**: Completely remove the plugin from the system.
+1. **Create**: Create a plugin template via CLI.
+2. **Pull**: Download the plugin package to local, but not yet written to the database.
+3. **Enable**: On first enable, execute "register + initialize"; subsequent enables only load logic.
+4. **Disable**: Stop the plugin from running.
+5. **Remove**: Completely remove the plugin from the system.
 
 :::tip
 
-- `pull` is only responsible for downloading the plugin package; the actual installation process is triggered by the first `enable`.
+- `pull` only downloads the plugin package; the actual installation process is triggered by the first `enable`.
 - If a plugin is only `pull`ed but not enabled, it will not be loaded.
 
 :::
 
-### CLI Command Example
+### CLI Command Examples
 
 ```bash
-# 1. Create a plugin skeleton
+# 1. Create plugin skeleton
 yarn pm create @my-project/plugin-hello
 
-# 2. Pull the plugin package (download or link)
+# 2. Pull plugin package (download or link)
 yarn pm pull @my-project/plugin-hello
 
-# 3. Enable the plugin (automatically installs on first enable)
+# 3. Enable plugin (first enable will auto-install)
 yarn pm enable @my-project/plugin-hello
 
-# 4. Disable the plugin
+# 4. Disable plugin
 yarn pm disable @my-project/plugin-hello
 
-# 5. Remove the plugin
+# 5. Remove plugin
 yarn pm remove @my-project/plugin-hello
 ```
 
-## Plugin Manager Interface
+## Plugin Management Interface
 
-Access the Plugin Manager in your browser to visually view and manage plugins:
+Access the plugin manager in the browser to view and manage plugins intuitively:
 
-**Default address:** [http://localhost:13000/admin/settings/plugin-manager](http://localhost:13000/admin/settings/plugin-manager)
-
+**Default URL:** [http://localhost:13000/admin/settings/plugin-manager](http://localhost:13000/admin/settings/plugin-manager)
 
 ![Plugin Manager](https://static-docs.nocobase.com/20251030195350.png)
+

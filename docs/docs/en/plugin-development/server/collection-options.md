@@ -28,33 +28,33 @@ export interface CollectionOptions {
 }
 ```
 
-### `name` - Collection Name
+### `name` - Data Table Name
 - **Type**: `string`
 - **Required**: ✅
-- **Description**: The unique identifier for the collection, which must be unique throughout the application.
+- **Description**: Unique identifier for the data table, must be unique across the entire application
 - **Example**:
 ```typescript
 {
-  name: 'users'  // users collection
+  name: 'users'  // User data table
 }
 ```
 
-### `title` - Collection Title
+### `title` - Data Table Title
 - **Type**: `string`
 - **Required**: ❌
-- **Description**: The display title for the collection, used for front-end interface display.
+- **Description**: Display title of the data table, used for frontend interface display
 - **Example**:
 ```typescript
 {
   name: 'users',
-  title: 'User Management'  // Displayed as "User Management" on the interface
+  title: 'User Management'  // Displays as "User Management" in the interface
 }
 ```
 
 ### `migrationRules` - Migration Rules
 - **Type**: `MigrationRule[]`
 - **Required**: ❌
-- **Description**: Processing rules for data migration.
+- **Description**: Processing rules during data migration
 - **Example**:
 ```typescript
 {
@@ -64,17 +64,17 @@ export interface CollectionOptions {
 }
 ```
 
-### `inherits` - Inherit Collection
+### `inherits` - Inherit Data Tables
 - **Type**: `string[] | string`
 - **Required**: ❌
-- **Description**: Inherits field definitions from other collections. Supports single or multiple collection inheritance.
+- **Description**: Inherit field definitions from other data tables, supports single or multiple data table inheritance
 - **Example**:
 
 ```typescript
 // Single inheritance
 {
   name: 'admin_users',
-  inherits: 'users',  // Inherits all fields from the users collection
+  inherits: 'users',  // Inherit all fields from users data table
   fields: [
     {
       type: 'string',
@@ -86,7 +86,7 @@ export interface CollectionOptions {
 // Multiple inheritance
 {
   name: 'super_admin_users',
-  inherits: ['users', 'admin_users'],  // Inherits from multiple collections
+  inherits: ['users', 'admin_users'],  // Inherit multiple data tables
   fields: [...]
 }
 ```
@@ -94,7 +94,7 @@ export interface CollectionOptions {
 ### `filterTargetKey` - Filter Target Key
 - **Type**: `string | string[]`
 - **Required**: ❌
-- **Description**: The target key used for filtering queries, supporting single or multiple keys.
+- **Description**: Target key used for filtering queries, supports single or multiple keys
 - **Example**:
 ```typescript
 {
@@ -114,8 +114,8 @@ export interface CollectionOptions {
 ### `fields` - Field Definitions
 - **Type**: `FieldOptions[]`
 - **Required**: ❌
-- **Default**: `[]`
-- **Description**: An array of field definitions for the collection. Each field includes information such as type, name, and configuration.
+- **Default Value**: `[]`
+- **Description**: Array of field definitions for the data table, each field contains type, name, configuration, etc.
 - **Example**:
 ```typescript
 {
@@ -141,7 +141,7 @@ export interface CollectionOptions {
     {
       type: 'date',
       name: 'createdAt',
-      title: 'Creation Time'
+      title: 'Created At'
     }
   ]
 }
@@ -150,17 +150,17 @@ export interface CollectionOptions {
 ### `model` - Custom Model
 - **Type**: `string | ModelStatic<Model>`
 - **Required**: ❌
-- **Description**: Specifies a custom Sequelize model class, which can be the class name or the model class itself.
+- **Description**: Specify a custom Sequelize model class, can be a class name or the model class itself
 - **Example**:
 ```typescript
-// Specify model class name using a string
+// Use string to specify model class name
 {
   name: 'users',
   model: 'UserModel',
   fields: [...]
 }
 
-// Use the model class
+// Use model class
 import { UserModel } from './models/UserModel';
 {
   name: 'users',
@@ -172,17 +172,17 @@ import { UserModel } from './models/UserModel';
 ### `repository` - Custom Repository
 - **Type**: `string | RepositoryType`
 - **Required**: ❌
-- **Description**: Specifies a custom repository class for handling data access logic.
+- **Description**: Specify a custom repository class for handling data access logic
 - **Example**:
 ```typescript
-// Specify repository class name using a string
+// Use string to specify repository class name
 {
   name: 'users',
   repository: 'UserRepository',
   fields: [...]
 }
 
-// Use the repository class
+// Use repository class
 import { UserRepository } from './repositories/UserRepository';
 {
   name: 'users',
@@ -191,11 +191,11 @@ import { UserRepository } from './repositories/UserRepository';
 }
 ```
 
-### `autoGenId` - Auto-generate ID
+### `autoGenId` - Auto Generate ID
 - **Type**: `boolean`
 - **Required**: ❌
-- **Default**: `true`
-- **Description**: Whether to automatically generate a primary key ID.
+- **Default Value**: `true`
+- **Description**: Whether to automatically generate primary key ID
 - **Example**:
 ```typescript
 {
@@ -204,13 +204,13 @@ import { UserRepository } from './repositories/UserRepository';
   fields: [...]
 }
 
-// Disable auto-generation of ID (requires manual primary key specification)
+// Disable auto-generated ID (need to manually specify primary key)
 {
   name: 'external_data',
   autoGenId: false,
-fields: [
-  {
-    type: 'string',
+  fields: [
+    {
+      type: 'string',
       name: 'id',
       primaryKey: true
     }
@@ -221,8 +221,8 @@ fields: [
 ### `timestamps` - Enable Timestamps
 - **Type**: `boolean`
 - **Required**: ❌
-- **Default**: `true`
-- **Description**: Whether to enable the creation time and update time fields.
+- **Default Value**: `true`
+- **Description**: Whether to enable created at and updated at fields
 - **Example**:
 ```typescript
 {
@@ -232,30 +232,30 @@ fields: [
 }
 ```
 
-### `createdAt` - Creation Time Field
+### `createdAt` - Created At Field
 - **Type**: `boolean | string`
 - **Required**: ❌
-- **Default**: `true`
-- **Description**: Configuration for the creation time field.
+- **Default Value**: `true`
+- **Description**: Configuration for the created at field
 - **Example**:
 ```typescript
 {
   name: 'users',
-  createdAt: 'created_at',  // Custom creation time field name
+  createdAt: 'created_at',  // Custom created at field name
   fields: [...]
 }
 ```
 
-### `updatedAt` - Update Time Field
+### `updatedAt` - Updated At Field
 - **Type**: `boolean | string`
 - **Required**: ❌
-- **Default**: `true`
-- **Description**: Configuration for the update time field.
+- **Default Value**: `true`
+- **Description**: Configuration for the updated at field
 - **Example**:
 ```typescript
 {
   name: 'users',
-  updatedAt: 'updated_at',  // Custom update time field name
+  updatedAt: 'updated_at',  // Custom updated at field name
   fields: [...]
 }
 ```
@@ -263,8 +263,8 @@ fields: [
 ### `deletedAt` - Soft Delete Field
 - **Type**: `boolean | string`
 - **Required**: ❌
-- **Default**: `false`
-- **Description**: Configuration for the soft delete field.
+- **Default Value**: `false`
+- **Description**: Configuration for the soft delete field
 - **Example**:
 ```typescript
 {
@@ -275,11 +275,11 @@ fields: [
 }
 ```
 
-### `paranoid` - Paranoid Mode
+### `paranoid` - Soft Delete Mode
 - **Type**: `boolean`
 - **Required**: ❌
-- **Default**: `false`
-- **Description**: Whether to enable paranoid mode (soft delete).
+- **Default Value**: `false`
+- **Description**: Whether to enable soft delete mode
 - **Example**:
 ```typescript
 {
@@ -290,16 +290,16 @@ fields: [
 }
 ```
 
-### `underscored` - Underscored Naming
+### `underscored` - Underscore Naming
 - **Type**: `boolean`
 - **Required**: ❌
-- **Default**: `false`
-- **Description**: Whether to use the underscored naming convention.
+- **Default Value**: `false`
+- **Description**: Whether to use underscore naming style
 - **Example**:
 ```typescript
 {
   name: 'users',
-  underscored: true,  // Use underscored naming convention
+  underscored: true,  // Use underscore naming style
   fields: [...]
 }
 ```
@@ -307,7 +307,7 @@ fields: [
 ### `indexes` - Index Configuration
 - **Type**: `ModelIndexesOptions[]`
 - **Required**: ❌
-- **Description**: Database index configuration.
+- **Description**: Database index configuration
 - **Example**:
 ```typescript
 {
@@ -327,7 +327,7 @@ fields: [
 
 ## Field Parameter Configuration
 
-NocoBase supports various field types, all defined based on the `FieldOptions` union type. Field configuration includes basic properties, data type-specific properties, relationship properties, and front-end rendering properties.
+NocoBase supports multiple field types, and all fields are defined based on the `FieldOptions` union type. Field configuration includes basic properties, data type-specific properties, relationship properties, and frontend rendering properties.
 
 ### Basic Field Options
 
@@ -349,7 +349,7 @@ interface BaseFieldOptions<T extends BasicType = BasicType> {
   field?: string;
   comment?: string;
 
-  // Front-end related
+  // Frontend related
   title?: string;
   description?: string;
   interface?: string;
@@ -363,9 +363,9 @@ interface BaseFieldOptions<T extends BasicType = BasicType> {
 {
   type: 'string',
   name: 'username',
-  allowNull: false,        // Not nullable
+  allowNull: false,        // Don't allow null values
   unique: true,           // Unique constraint
-  defaultValue: '',       // Default to an empty string
+  defaultValue: '',       // Default empty string
   index: true,            // Create index
   comment: 'User login name'    // Database comment
 }
@@ -375,7 +375,7 @@ interface BaseFieldOptions<T extends BasicType = BasicType> {
 
 - **Type**: `string`
 - **Required**: ❌
-- **Description**: The column name of the field in the database, which must be unique within the collection.
+- **Description**: Column name in the database, must be unique within the collection
 - **Example**:
 ```typescript
 {
@@ -385,17 +385,17 @@ interface BaseFieldOptions<T extends BasicType = BasicType> {
 }
 ```
 
-### `hidden` - Hidden Field
+### `hidden` - Hide Field
 
 - **Type**: `boolean`
-- **Default**: `false`
-- **Description**: Whether to hide this field by default in lists/forms.
+- **Default Value**: `false`
+- **Description**: Whether to hide this field by default in lists/forms
 - **Example**:
 ```typescript
 {
   type: 'string',
   name: 'internalId',
-  hidden: true,  // Hide the internal ID field
+  hidden: true,  // Hide internal ID field
   title: 'Internal ID'
 }
 ```
@@ -405,14 +405,14 @@ interface BaseFieldOptions<T extends BasicType = BasicType> {
 ```typescript
 interface ValidationOptions<T extends BasicType = BasicType> {
   type: T;                          // Validation type
-  rules: FieldValidationRule<T>[];  // Array of validation rules
+  rules: FieldValidationRule<T>[];  // Validation rules array
   [key: string]: any;              // Other validation options
 }
 
 interface FieldValidationRule<T extends BasicType> {
-  key: string;                      // Rule key
+  key: string;                      // Rule key name
   name: FieldValidationRuleName<T>; // Rule name
-  args?: {                         // Rule arguments
+  args?: {                         // Rule parameters
     [key: string]: any;
   };
   paramsType?: 'object';           // Parameter type
@@ -420,7 +420,7 @@ interface FieldValidationRule<T extends BasicType> {
 ```
 
 - **Type**: `ValidationOptions<T>`
-- **Description**: Use Joi to define server-side validation rules.
+- **Description**: Use Joi to define server-side validation rules
 - **Example**:
 ```typescript
 {
@@ -436,17 +436,17 @@ interface FieldValidationRule<T extends BasicType> {
 }
 ```
 
-### `allowNull` - Allow Null
+### `allowNull` - Allow Null Values
 
 - **Type**: `boolean`
-- **Default**: `true`
-- **Description**: Controls whether the database allows writing `NULL` values.
+- **Default Value**: `true`
+- **Description**: Control whether the database allows writing `NULL` values
 - **Example**:
 ```typescript
 {
   type: 'string',
   name: 'username',
-  allowNull: false,  // Not nullable
+  allowNull: false,  // Don't allow null values
   title: 'Username'
 }
 ```
@@ -454,13 +454,13 @@ interface FieldValidationRule<T extends BasicType> {
 ### `defaultValue` - Default Value
 
 - **Type**: `any`
-- **Description**: The default value for the field, used when no value is provided for this field upon record creation.
+- **Description**: Default value for the field, used when creating records without providing this field value
 - **Example**:
 ```typescript
 {
   type: 'string',
   name: 'status',
-  defaultValue: 'draft',  // Defaults to draft status
+  defaultValue: 'draft',  // Default to draft status
   title: 'Status'
 }
 ```
@@ -468,8 +468,8 @@ interface FieldValidationRule<T extends BasicType> {
 ### `unique` - Unique Constraint
 
 - **Type**: `boolean | string`
-- **Default**: `false`
-- **Description**: Whether it is unique; a string can be used to specify the constraint name.
+- **Default Value**: `false`
+- **Description**: Whether to be unique; string can specify constraint name
 - **Example**:
 ```typescript
 {
@@ -483,8 +483,8 @@ interface FieldValidationRule<T extends BasicType> {
 ### `primaryKey` - Primary Key
 
 - **Type**: `boolean`
-- **Default**: `false`
-- **Description**: Declares this field as the primary key.
+- **Default Value**: `false`
+- **Description**: Declare this field as the primary key
 - **Example**:
 ```typescript
 {
@@ -498,14 +498,14 @@ interface FieldValidationRule<T extends BasicType> {
 ### `autoIncrement` - Auto Increment
 
 - **Type**: `boolean`
-- **Default**: `false`
-- **Description**: Enables auto-increment (only applicable to numeric fields).
+- **Default Value**: `false`
+- **Description**: Enable auto increment (only applicable to numeric fields)
 - **Example**:
 ```typescript
 {
   type: 'integer',
   name: 'id',
-  autoIncrement: true,  // Auto-increment
+  autoIncrement: true,  // Auto increment
   primaryKey: true
 }
 ```
@@ -513,13 +513,13 @@ interface FieldValidationRule<T extends BasicType> {
 ### `field` - Database Column Name
 
 - **Type**: `string`
-- **Description**: Specifies the actual database column name (consistent with Sequelize's `field`).
+- **Description**: Specify actual database column name (consistent with Sequelize `field`)
 - **Example**:
 ```typescript
 {
   type: 'string',
   name: 'userId',
-  field: 'user_id',  // Column name in the database
+  field: 'user_id',  // Column name in database
   title: 'User ID'
 }
 ```
@@ -527,7 +527,7 @@ interface FieldValidationRule<T extends BasicType> {
 ### `comment` - Database Comment
 
 - **Type**: `string`
-- **Description**: Database field comment, used for documentation purposes.
+- **Description**: Database field comment, used for documentation
 - **Example**:
 ```typescript
 {
@@ -541,13 +541,13 @@ interface FieldValidationRule<T extends BasicType> {
 ### `title` - Display Title
 
 - **Type**: `string`
-- **Description**: The display title for the field, often used for front-end interface display.
+- **Description**: Field display title, commonly used for frontend interface display
 - **Example**:
 ```typescript
 {
   type: 'string',
   name: 'username',
-  title: 'Username',  // Title displayed on the front-end
+  title: 'Username',  // Title displayed in frontend
   allowNull: false
 }
 ```
@@ -555,7 +555,7 @@ interface FieldValidationRule<T extends BasicType> {
 ### `description` - Field Description
 
 - **Type**: `string`
-- **Description**: Descriptive information about the field, used to help users understand its purpose.
+- **Description**: Field description information, used to help users understand field purpose
 - **Example**:
 ```typescript
 {
@@ -573,14 +573,14 @@ interface FieldValidationRule<T extends BasicType> {
 ### `interface` - Interface Component
 
 - **Type**: `string`
-- **Description**: Recommended front-end field interface component.
+- **Description**: Recommended frontend field interface component
 - **Example**:
 ```typescript
 {
   type: 'string',
   name: 'content',
   title: 'Content',
-  interface: 'textarea',  // Recommended to use the textarea component
+  interface: 'textarea',  // Recommend using textarea component
   uiSchema: {
     'x-component': 'Input.TextArea'
   }
@@ -591,17 +591,17 @@ interface FieldValidationRule<T extends BasicType> {
 
 ### `type: 'string'` - String Field
 
-- **Description**: Used to store short text data, supports length limit and automatic trim.
+- **Description**: Used to store short text data, supports length limits and automatic trim
 - **Database Type**: `VARCHAR`
 - **Specific Properties**:
   - `length`: String length limit
-  - `trim`: Whether to automatically trim leading and trailing spaces
+  - `trim`: Whether to automatically remove leading and trailing spaces
 
 ```ts
 interface StringFieldOptions extends BaseColumnFieldOptions<'string'> {
   type: 'string';
   length?: number;    // String length limit
-  trim?: boolean;     // Whether to automatically trim leading and trailing spaces
+  trim?: boolean;     // Whether to automatically remove leading and trailing spaces
 }
 ```
 
@@ -612,13 +612,13 @@ interface StringFieldOptions extends BaseColumnFieldOptions<'string'> {
   name: 'username',
   title: 'Username',
   length: 50,           // Maximum 50 characters
-  trim: true,           // Automatically trim spaces
-    allowNull: false,
-    unique: true,
-    validation: {
-      type: 'string',
-      rules: [
-        { key: 'min', name: 'min', args: { limit: 3 } },
+  trim: true,           // Automatically remove spaces
+  allowNull: false,
+  unique: true,
+  validation: {
+    type: 'string',
+    rules: [
+      { key: 'min', name: 'min', args: { limit: 3 } },
       { key: 'max', name: 'max', args: { limit: 20 } }
     ]
   }
@@ -627,7 +627,7 @@ interface StringFieldOptions extends BaseColumnFieldOptions<'string'> {
 
 ### `type: 'text'` - Text Field
 
-- **Description**: Used to store long text data, supports different length text types in MySQL.
+- **Description**: Used to store long text data, supports MySQL different length text types
 - **Database Type**: `TEXT`, `MEDIUMTEXT`, `LONGTEXT`
 - **Specific Properties**:
   - `length`: MySQL text length type (tiny/medium/long)
@@ -654,20 +654,20 @@ interface TextFieldOptions extends BaseColumnFieldOptions {
 
 ### `type: 'integer'` - Integer Field
 
-- **Description**: Used to store integer data, supports auto-increment and primary key.
+- **Description**: Used to store integer data, supports auto increment and primary key
 - **Database Type**: `INTEGER`
 
 ```ts
 interface IntegerFieldOptions extends BaseColumnFieldOptions<'number'> {
   type: 'integer';
-  // Inherits all options from the Sequelize INTEGER type
+  // Inherits all options from Sequelize INTEGER type
 }
 ```
 
 **Example**:
 ```typescript
-  {
-    type: 'integer',
+{
+  type: 'integer',
   name: 'id',
   title: 'ID',
   primaryKey: true,
@@ -676,9 +676,9 @@ interface IntegerFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'bigInt'` - BigInt Field
+### `type: 'bigInt'` - Big Integer Field
 
-- **Description**: Used to store large integer data, with a larger range than integer.
+- **Description**: Used to store big integer data, with a larger range than integer
 - **Database Type**: `BIGINT`
 
 ```ts
@@ -700,17 +700,17 @@ interface BigIntFieldOptions extends BaseColumnFieldOptions<'number'> {
 
 ### `type: 'float'` - Float Field
 
-- **Description**: Used to store single-precision floating-point numbers.
+- **Description**: Used to store single-precision floating-point numbers
 - **Database Type**: `FLOAT`
 - **Specific Properties**:
   - `precision`: Precision (total number of digits)
-  - `scale`: Scale (number of decimal places)
+  - `scale`: Decimal places
 
 ```ts
 interface FloatFieldOptions extends BaseColumnFieldOptions<'number'> {
   type: 'float';
   precision?: number;  // Precision
-  scale?: number;      // Scale
+  scale?: number;      // Decimal places
 }
 ```
 
@@ -727,13 +727,13 @@ interface FloatFieldOptions extends BaseColumnFieldOptions<'number'> {
 }
 ```
 
-### `type: 'double'` - Double Field
+### `type: 'double'` - Double Precision Float Field
 
-- **Description**: Used to store double-precision floating-point numbers, with higher precision than float.
+- **Description**: Used to store double-precision floating-point numbers, with higher precision than float
 - **Database Type**: `DOUBLE`
 - **Specific Properties**:
   - `precision`: Precision (total number of digits)
-  - `scale`: Scale (number of decimal places)
+  - `scale`: Decimal places
 
 ```ts
 interface DoubleFieldOptions extends BaseColumnFieldOptions<'number'> {
@@ -747,8 +747,8 @@ interface DoubleFieldOptions extends BaseColumnFieldOptions<'number'> {
 ```typescript
 {
   type: 'double',
-    name: 'price',
-      title: 'Price',
+  name: 'price',
+  title: 'Price',
   precision: 10,
   scale: 2,
   allowNull: false,
@@ -758,11 +758,11 @@ interface DoubleFieldOptions extends BaseColumnFieldOptions<'number'> {
 
 ### `type: 'real'` - Real Field
 
-- **Description**: Used to store real numbers, database-dependent.
+- **Description**: Used to store real numbers, database-related
 - **Database Type**: `REAL`
 - **Specific Properties**:
   - `precision`: Precision (total number of digits)
-  - `scale`: Scale (number of decimal places)
+  - `scale`: Decimal places
 
 ```ts
 interface RealFieldOptions extends BaseColumnFieldOptions<'number'> {
@@ -777,7 +777,7 @@ interface RealFieldOptions extends BaseColumnFieldOptions<'number'> {
 {
   type: 'real',
   name: 'rate',
-  title: 'Rate',
+  title: 'Exchange Rate',
   precision: 8,
   scale: 4,
   allowNull: true
@@ -786,17 +786,17 @@ interface RealFieldOptions extends BaseColumnFieldOptions<'number'> {
 
 ### `type: 'decimal'` - Decimal Field
 
-- **Description**: Used to store exact decimal numbers, suitable for financial calculations.
+- **Description**: Used to store precise decimals, suitable for financial calculations
 - **Database Type**: `DECIMAL`
 - **Specific Properties**:
   - `precision`: Precision (total number of digits)
-  - `scale`: Scale (number of decimal places)
+  - `scale`: Decimal places
 
 ```ts
 interface DecimalFieldOptions extends BaseColumnFieldOptions<'number'> {
   type: 'decimal';
   precision?: number;  // Precision (total number of digits)
-  scale?: number;      // Scale (number of decimal places)
+  scale?: number;      // Decimal places
 }
 ```
 
@@ -823,7 +823,7 @@ interface DecimalFieldOptions extends BaseColumnFieldOptions<'number'> {
 
 ### `type: 'boolean'` - Boolean Field
 
-- **Description**: Used to store true/false values, typically for toggle states.
+- **Description**: Used to store true/false values, commonly used for switch states
 - **Database Type**: `BOOLEAN` or `TINYINT(1)`
 
 ```typescript
@@ -845,7 +845,7 @@ interface BooleanFieldOptions extends BaseColumnFieldOptions<'boolean'> {
 
 ### `type: 'radio'` - Radio Field
 
-- **Description**: Used to store a single selection value, typically for binary choices.
+- **Description**: Used to store radio values, commonly used for binary choices
 - **Database Type**: `BOOLEAN` or `TINYINT(1)`
 
 ```typescript
@@ -865,11 +865,11 @@ interface RadioFieldOptions extends BaseColumnFieldOptions<'boolean'> {
 }
 ```
 
-### Date/Time Types
+### Date Time Types
 
 ### `type: 'date'` - Date Field
 
-- **Description**: Used to store date data, without time information.
+- **Description**: Used to store date data, does not include time information
 - **Database Type**: `DATE`
 - **Specific Properties**:
   - `timezone`: Whether to include timezone information
@@ -894,7 +894,7 @@ interface DateFieldOptions extends BaseColumnFieldOptions<'date'> {
 
 ### `type: 'time'` - Time Field
 
-- **Description**: Used to store time data, without date information.
+- **Description**: Used to store time data, does not include date information
 - **Database Type**: `TIME`
 - **Specific Properties**:
   - `timezone`: Whether to include timezone information
@@ -917,9 +917,9 @@ interface TimeFieldOptions extends BaseColumnFieldOptions<'time'> {
 }
 ```
 
-### `type: 'datetimeTz'` - Datetime with Timezone Field
+### `type: 'datetimeTz'` - DateTime with Timezone Field
 
-- **Description**: Used to store datetime data with a timezone.
+- **Description**: Used to store date-time data with timezone
 - **Database Type**: `TIMESTAMP WITH TIME ZONE`
 - **Specific Properties**:
   - `timezone`: Whether to include timezone information
@@ -936,7 +936,7 @@ interface DatetimeTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 {
   type: 'datetimeTz',
   name: 'createdAt',
-  title: 'Creation Time',
+  title: 'Created At',
   allowNull: false,
   timezone: true,
   defaultToCurrentTime: true,
@@ -944,9 +944,9 @@ interface DatetimeTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 }
 ```
 
-### `type: 'datetimeNoTz'` - Datetime without Timezone Field
+### `type: 'datetimeNoTz'` - DateTime without Timezone Field
 
-- **Description**: Used to store datetime data without a timezone.
+- **Description**: Used to store date-time data without timezone
 - **Database Type**: `TIMESTAMP` or `DATETIME`
 - **Specific Properties**:
   - `timezone`: Whether to include timezone information
@@ -963,7 +963,7 @@ interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 {
   type: 'datetimeNoTz',
   name: 'updatedAt',
-  title: 'Update Time',
+  title: 'Updated At',
   allowNull: false,
   timezone: false,
   defaultToCurrentTime: true,
@@ -973,7 +973,7 @@ interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 
 ### `type: 'dateOnly'` - Date Only Field
 
-- **Description**: Used to store data containing only the date, without time.
+- **Description**: Used to store data containing only dates, without time
 - **Database Type**: `DATE`
 - **Example**:
 ```typescript
@@ -987,7 +987,7 @@ interface DatetimeNoTzFieldOptions extends BaseColumnFieldOptions<'datetime'> {
 
 ### `type: 'unixTimestamp'` - Unix Timestamp Field
 
-- **Description**: Used to store Unix timestamp data.
+- **Description**: Used to store Unix timestamp data
 - **Database Type**: `BIGINT`
 - **Specific Properties**:
   - `epoch`: Epoch time
@@ -1014,7 +1014,7 @@ interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestam
 
 ### `type: 'json'` - JSON Field
 
-- **Description**: Used to store data in JSON format, supporting complex data structures.
+- **Description**: Used to store JSON format data, supports complex data structures
 - **Database Type**: `JSON` or `TEXT`
 - **Example**:
 ```typescript
@@ -1029,14 +1029,14 @@ interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestam
 
 ### `type: 'jsonb'` - JSONB Field
 
-- **Description**: Used to store data in JSONB format (PostgreSQL specific), supporting indexing and querying.
+- **Description**: Used to store JSONB format data (PostgreSQL specific), supports indexing and queries
 - **Database Type**: `JSONB` (PostgreSQL)
 - **Example**:
 ```typescript
 {
   type: 'jsonb',
   name: 'config',
-  title: 'Configuration',
+  title: 'Config',
   allowNull: true,
   defaultValue: {}
 }
@@ -1046,7 +1046,7 @@ interface UnixTimestampFieldOptions extends BaseColumnFieldOptions<'unixTimestam
 
 ### `type: 'array'` - Array Field
 
-- **Description**: Used to store array data, supporting various element types.
+- **Description**: Used to store array data, supports multiple element types
 - **Database Type**: `JSON` or `ARRAY`
 - **Specific Properties**:
   - `dataType`: Storage type (json/array)
@@ -1075,7 +1075,7 @@ interface ArrayFieldOptions extends BaseColumnFieldOptions<'array'> {
 
 ### `type: 'set'` - Set Field
 
-- **Description**: Used to store set data, similar to an array but with a uniqueness constraint.
+- **Description**: Used to store set data, similar to array but with uniqueness constraint
 - **Database Type**: `JSON` or `ARRAY`
 - **Specific Properties**:
   - `dataType`: Storage type (json/array)
@@ -1094,7 +1094,7 @@ interface SetFieldOptions extends BaseColumnFieldOptions<'set'> {
 {
   type: 'set',
   name: 'categories',
-      title: 'Categories',
+  title: 'Categories',
   dataType: 'json',
   elementType: 'STRING',
   allowNull: true,
@@ -1106,15 +1106,15 @@ interface SetFieldOptions extends BaseColumnFieldOptions<'set'> {
 
 ### `type: 'uuid'` - UUID Field
 
-- **Description**: Used to store unique identifiers in UUID format.
+- **Description**: Used to store UUID format unique identifiers
 - **Database Type**: `UUID` or `VARCHAR(36)`
 - **Specific Properties**:
-  - `autoFill`: Auto-fill
+  - `autoFill`: Auto fill
 
 ```ts
 interface UUIDFieldOptions extends BaseColumnFieldOptions<'uuid'> {
   type: 'uuid';
-  autoFill?: boolean;  // Auto-fill
+  autoFill?: boolean;  // Auto fill
 }
 ```
 
@@ -1132,18 +1132,18 @@ interface UUIDFieldOptions extends BaseColumnFieldOptions<'uuid'> {
 
 ### `type: 'nanoid'` - Nanoid Field
 
-- **Description**: Used to store short unique identifiers in Nanoid format.
+- **Description**: Used to store short unique identifiers in Nanoid format
 - **Database Type**: `VARCHAR`
 - **Specific Properties**:
   - `size`: ID length
-  - `customAlphabet`: Custom alphabet
-  - `autoFill`: Auto-fill
+  - `customAlphabet`: Custom character set
+  - `autoFill`: Auto fill
 
 ```ts
 interface NanoidFieldOptions extends BaseColumnFieldOptions<'nanoid'> {
   type: 'nanoid';
   size?: number;  // ID length
-  customAlphabet?: string;  // Custom alphabet
+  customAlphabet?: string;  // Custom character set
   autoFill?: boolean;
 }
 ```
@@ -1164,7 +1164,7 @@ interface NanoidFieldOptions extends BaseColumnFieldOptions<'nanoid'> {
 
 ### `type: 'uid'` - Custom UID Field
 
-- **Description**: Used to store unique identifiers in a custom format.
+- **Description**: Used to store custom format unique identifiers
 - **Database Type**: `VARCHAR`
 - **Specific Properties**:
   - `prefix`: Prefix
@@ -1193,7 +1193,7 @@ interface UidFieldOptions extends BaseColumnFieldOptions<'uid'> {
 
 ### `type: 'snowflakeId'` - Snowflake ID Field
 
-- **Description**: Used to store unique identifiers generated by the Snowflake algorithm.
+- **Description**: Used to store unique identifiers generated by the snowflake algorithm
 - **Database Type**: `BIGINT`
 - **Example**:
 ```typescript
@@ -1210,7 +1210,7 @@ interface UidFieldOptions extends BaseColumnFieldOptions<'uid'> {
 
 ### `type: 'password'` - Password Field
 
-- **Description**: Used to store encrypted password data.
+- **Description**: Used to store encrypted password data
 - **Database Type**: `VARCHAR`
 - **Specific Properties**:
   - `length`: Hash length
@@ -1239,7 +1239,7 @@ interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
 
 ### `type: 'encryption'` - Encryption Field
 
-- **Description**: Used to store encrypted sensitive data.
+- **Description**: Used to store encrypted sensitive data
 - **Database Type**: `VARCHAR`
 - **Example**:
 ```typescript
@@ -1254,7 +1254,7 @@ interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
 
 ### `type: 'virtual'` - Virtual Field
 
-- **Description**: Used to store computed virtual data, which is not stored in the database.
+- **Description**: Used to store calculated virtual data, not stored in the database
 - **Database Type**: None (virtual field)
 - **Example**:
 ```typescript
@@ -1267,19 +1267,19 @@ interface PasswordFieldOptions extends BaseColumnFieldOptions<'password'> {
 
 ### `type: 'context'` - Context Field
 
-- **Description**: Used to read data from the execution context (e.g., current user information).
-- **Database Type**: Determined by `dataType`
+- **Description**: Used to read data from runtime context (such as current user information)
+- **Database Type**: Determined by dataType
 - **Specific Properties**:
   - `dataIndex`: Data index path
   - `dataType`: Data type
-  - `createOnly`: Set only on creation
+  - `createOnly`: Set only when creating
 
 ```ts
 interface ContextFieldOptions extends BaseFieldOptions {
   type: 'context';
   dataIndex?: string;  // Data index path
   dataType?: string;   // Data type
-  createOnly?: boolean; // Set only on creation
+  createOnly?: boolean; // Set only when creating
 }
 ```
 
@@ -1296,26 +1296,26 @@ interface ContextFieldOptions extends BaseFieldOptions {
 }
 ```
 
-### Association Fields
+### Relationship Fields
 
-### `type: 'belongsTo'` - Belongs To Association
+### `type: 'belongsTo'` - Belongs To Relationship
 
-- **Description**: Represents a many-to-one association, where the current record belongs to another record.
+- **Description**: Represents a many-to-one relationship, the current record belongs to another record
 - **Database Type**: Foreign key field
 - **Specific Properties**:
-  - `target`: Target collection name
+  - `target`: Target data table name
   - `foreignKey`: Foreign key field name
-  - `targetKey`: Target key field name
-  - `onDelete`: Cascade action on delete
-  - `onUpdate`: Cascade action on update
+  - `targetKey`: Target table key field name
+  - `onDelete`: Cascade operation when deleting
+  - `onUpdate`: Cascade operation when updating
   - `constraints`: Whether to enable foreign key constraints
 
 ```ts
 interface BelongsToFieldOptions extends BaseRelationFieldOptions {
   type: 'belongsTo';
-  target: string;  // Target collection name
+  target: string;  // Target data table name
   foreignKey?: string;  // Foreign key field name
-  targetKey?: string;   // Target key field name
+  targetKey?: string;   // Target table key field name
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   onUpdate?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   constraints?: boolean;  // Whether to enable foreign key constraints
@@ -1324,8 +1324,8 @@ interface BelongsToFieldOptions extends BaseRelationFieldOptions {
 
 **Example**:
 ```typescript
-  {
-    type: 'belongsTo',
+{
+  type: 'belongsTo',
   name: 'author',
   title: 'Author',
   target: 'users',
@@ -1337,16 +1337,16 @@ interface BelongsToFieldOptions extends BaseRelationFieldOptions {
 }
 ```
 
-### `type: 'hasOne'` - Has One Association
+### `type: 'hasOne'` - Has One Relationship
 
-- **Description**: Represents a one-to-one association, where the current record has one associated record.
+- **Description**: Represents a one-to-one relationship, the current record has one related record
 - **Database Type**: Foreign key field
 - **Specific Properties**:
-  - `target`: Target collection name
+  - `target`: Target data table name
   - `foreignKey`: Foreign key field name
-  - `sourceKey`: Source key field name
-  - `onDelete`: Cascade action on delete
-  - `onUpdate`: Cascade action on update
+  - `sourceKey`: Source table key field name
+  - `onDelete`: Cascade operation when deleting
+  - `onUpdate`: Cascade operation when updating
   - `constraints`: Whether to enable foreign key constraints
 
 ```ts
@@ -1354,7 +1354,7 @@ interface HasOneFieldOptions extends BaseRelationFieldOptions {
   type: 'hasOne';
   target: string;
   foreignKey?: string;
-  sourceKey?: string;  // Source key field name
+  sourceKey?: string;  // Source table key field name
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   onUpdate?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   constraints?: boolean;
@@ -1376,18 +1376,18 @@ interface HasOneFieldOptions extends BaseRelationFieldOptions {
 }
 ```
 
-### `type: 'hasMany'` - Has Many Association
+### `type: 'hasMany'` - Has Many Relationship
 
-- **Description**: Represents a one-to-many association, where the current record has multiple associated records.
+- **Description**: Represents a one-to-many relationship, the current record has multiple related records
 - **Database Type**: Foreign key field
 - **Specific Properties**:
-  - `target`: Target collection name
+  - `target`: Target data table name
   - `foreignKey`: Foreign key field name
-  - `sourceKey`: Source key field name
-  - `sortBy`: Sort by field
-  - `sortable`: Whether it is sortable
-  - `onDelete`: Cascade action on delete
-  - `onUpdate`: Cascade action on update
+  - `sourceKey`: Source table key field name
+  - `sortBy`: Sort field
+  - `sortable`: Whether sortable
+  - `onDelete`: Cascade operation when deleting
+  - `onUpdate`: Cascade operation when updating
   - `constraints`: Whether to enable foreign key constraints
 
 ```ts
@@ -1396,8 +1396,8 @@ interface HasManyFieldOptions extends BaseRelationFieldOptions {
   target: string;
   foreignKey?: string;
   sourceKey?: string;
-  sortBy?: string[];  // Sort by field
-  sortable?: boolean; // Whether it is sortable
+  sortBy?: string[];  // Sort field
+  sortable?: boolean; // Whether sortable
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   onUpdate?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
   constraints?: boolean;
@@ -1406,14 +1406,14 @@ interface HasManyFieldOptions extends BaseRelationFieldOptions {
 
 **Example**:
 ```typescript
-  {
-    type: 'hasMany',
+{
+  type: 'hasMany',
   name: 'posts',
-  title: 'Article List',
+  title: 'Posts List',
   target: 'articles',
   foreignKey: 'authorId',
   sourceKey: 'id',
-    sortBy: ['createdAt'],
+  sortBy: ['createdAt'],
   sortable: true,
   onDelete: 'CASCADE',
   onUpdate: 'CASCADE',
@@ -1421,28 +1421,28 @@ interface HasManyFieldOptions extends BaseRelationFieldOptions {
 }
 ```
 
-### `type: 'belongsToMany'` - Belongs To Many Association
+### `type: 'belongsToMany'` - Belongs To Many Relationship
 
-- **Description**: Represents a many-to-many association, connecting two collections via a through collection.
-- **Database Type**: Through collection
+- **Description**: Represents a many-to-many relationship, connecting two data tables through an intermediate table
+- **Database Type**: Intermediate table
 - **Specific Properties**:
-  - `target`: Target collection name
-  - `through`: Through collection name
+  - `target`: Target data table name
+  - `through`: Intermediate table name
   - `foreignKey`: Foreign key field name
-  - `otherKey`: Other key in the through collection
-  - `sourceKey`: Source key field name
-  - `targetKey`: Target key field name
-  - `onDelete`: Cascade action on delete
-  - `onUpdate`: Cascade action on update
+  - `otherKey`: Foreign key on the other side of the intermediate table
+  - `sourceKey`: Source table key field name
+  - `targetKey`: Target table key field name
+  - `onDelete`: Cascade operation when deleting
+  - `onUpdate`: Cascade operation when updating
   - `constraints`: Whether to enable foreign key constraints
 
 ```ts
 interface BelongsToManyFieldOptions extends BaseRelationFieldOptions {
   type: 'belongsToMany';
   target: string;
-  through: string;  // Through collection name
+  through: string;  // Intermediate table name
   foreignKey?: string;
-  otherKey?: string;  // Other key in the through collection
+  otherKey?: string;  // Foreign key on the other side of the intermediate table
   sourceKey?: string;
   targetKey?: string;
   onDelete?: 'CASCADE' | 'SET NULL' | 'RESTRICT' | 'NO ACTION';
@@ -1468,3 +1468,4 @@ interface BelongsToManyFieldOptions extends BaseRelationFieldOptions {
   constraints: false
 }
 ```
+

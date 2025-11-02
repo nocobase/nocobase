@@ -1,68 +1,68 @@
-# ACL Permission Control
+# ACL
 
-ACL (Access Control List) is used to control permissions for resource operations. You can assign permissions to roles, or bypass role restrictions to directly constrain permissions. The ACL system provides a flexible permission management mechanism, supporting various methods such as permission snippets, middleware, and conditional checks.
+ACL (Access Control List) is used to control resource operation permissions. You can grant permissions to roles, or skip role restrictions and directly constrain permissions. The ACL system provides a flexible permission management mechanism, supporting permission snippets, middleware, conditional judgment, and other methods.
 
 :::tip Note
 
-The ACL object belongs to a data source (`dataSource.acl`). The ACL for the main data source can be accessed via the `app.acl` shortcut. For information on using ACL with other data sources, see the [Data Source Manager](./data-source-manager.md) chapter.
+ACL objects belong to data sources (`dataSource.acl`). The main data source's ACL can be accessed via `app.acl`. For usage of other data sources' ACL, see the [Data Source Management](./data-source-manager.md) chapter.
 
 :::
 
-## Registering Permission Snippets
+## Register Permission Snippets
 
-Permission snippets allow you to register commonly used permission combinations as reusable units. When a role is bound to a snippet, it gains the corresponding set of permissions. This reduces redundant configuration and improves the efficiency of permission management.
+Permission snippets (Snippet) can register commonly used permission combinations as reusable permission units. After a role is bound to a snippet, it obtains the corresponding set of permissions, reducing duplicate configuration and improving permission management efficiency.
 
 ```ts
 acl.registerSnippet({
-  name: 'ui.customRequests', // The ui.* prefix indicates permissions configurable in the UI
-  actions: ['customRequests:*'], // Corresponds to resource actions, supports wildcards
+  name: 'ui.customRequests', // ui.* prefix indicates permissions that can be configured on the interface
+  actions: ['customRequests:*'], // Corresponding resource operations, supports wildcards
 });
 ```
 
-## Bypassing Role Constraints (allow)
+## Permissions That Skip Role Constraints (allow)
 
-`acl.allow()` is used to permit certain operations to bypass role constraints. It is suitable for public APIs, scenarios requiring dynamic permission checks, or situations where permissions need to be determined based on the request context.
+`acl.allow()` is used to allow certain operations to bypass role constraints, suitable for public APIs, scenarios requiring dynamic judgment, or cases where permission judgment needs to be based on request context.
 
 ```ts
 // Public access, no login required
 acl.allow('app', 'getLang', 'public');
 
-// Accessible to logged-in users only
+// Accessible to logged-in users
 acl.allow('app', 'getInfo', 'loggedIn');
 
-// Based on a custom condition
+// Based on custom condition judgment
 acl.allow('orders', ['create', 'update'], (ctx) => {
   return ctx.auth.user?.isAdmin ?? false;
 });
 ```
 
-**`condition` parameter:**
+**condition parameter description:**
 
-- `'public'`: Any user (including unauthenticated users) can access. No authentication is required.
-- `'loggedIn'`: Only authenticated users can access. A valid user identity is required.
-- `(ctx) => Promise<boolean>` or `(ctx) => boolean`: A custom function that dynamically determines access based on the request context, allowing for complex permission logic.
+- `'public'`: Any user (including unauthenticated users) can access without any authentication
+- `'loggedIn'`: Only logged-in users can access, requires valid user identity
+- `(ctx) => Promise<boolean>` or `(ctx) => boolean`: Custom function that dynamically determines whether access is allowed based on request context, can implement complex permission logic
 
-## Registering Permission Middleware (use)
+## Register Permission Middleware (use)
 
-`acl.use()` registers custom permission middleware, allowing you to insert custom logic into the permission checking process. It is often used with `ctx.permission` to define custom permission rules. This is suitable for unconventional access control scenarios, such as public forms that require custom password validation or dynamic permission checks based on request parameters.
+`acl.use()` is used to register custom permission middleware, allowing custom logic to be inserted into the permission check flow. Usually used together with `ctx.permission` for custom permission rules. Suitable for scenarios requiring unconventional permission control, such as public forms needing custom password verification, dynamic permission judgment based on request parameters, etc.
 
-**Typical Use Cases:**
+**Typical application scenarios:**
 
-- Public forms: No user or role, but permissions are constrained by a custom password.
-- Permission control based on request parameters, IP addresses, etc.
-- Custom permission rules to skip or modify the default permission checking process.
+- Public form scenarios: No user, no role, but permissions need to be constrained through custom passwords
+- Permission control based on request parameters, IP addresses, and other conditions
+- Custom permission rules, skipping or modifying the default permission check flow
 
-**Controlling Permissions with `ctx.permission`:**
+**Control permissions through `ctx.permission`:**
 
 ```ts
 acl.use(async (ctx, next) => {
   const { resourceName, actionName } = ctx.action;
   
-  // Example: A public form requires password validation to skip permission checks
+  // Example: Public form needs password verification to skip permission check
   if (resourceName === 'publicForms' && actionName === 'submit') {
     const password = ctx.request.body?.password;
     if (password === 'your-secret-password') {
-      // Validation passed, skip permission check
+      // Verification passed, skip permission check
       ctx.permission = {
         skip: true,
       };
@@ -71,19 +71,19 @@ acl.use(async (ctx, next) => {
     }
   }
   
-  // Proceed with the permission check (continue the ACL flow)
+  // Execute permission check (continue ACL flow)
   await next();
 });
 ```
 
-**`ctx.permission` Properties:**
+**`ctx.permission` property description:**
 
-- `skip: true`: Skips subsequent ACL permission checks, granting access directly.
-- Can be set dynamically within the middleware based on custom logic for flexible permission control.
+- `skip: true`: Skip subsequent ACL permission checks and directly allow access
+- Can be dynamically set in middleware based on custom logic to achieve flexible permission control
 
-## Adding Fixed Data Constraints for Specific Actions (addFixedParams)
+## Add Fixed Data Constraints for Specific Operations (addFixedParams)
 
-`addFixedParams` can add fixed data scope (filter) constraints to operations on certain resources. These constraints are applied directly, bypassing role restrictions, and are typically used to protect critical system data.
+`addFixedParams` can add fixed data scope (filter) constraints to certain resource operations. These constraints bypass role restrictions and are directly applied, usually used to protect critical system data.
 
 ```ts
 acl.addFixedParams('roles', 'destroy', () => {
@@ -98,69 +98,70 @@ acl.addFixedParams('roles', 'destroy', () => {
   };
 });
 
-// Even if a user has permission to delete roles, they cannot delete the system roles: root, admin, and member.
+// Even if a user has permission to delete roles, they cannot delete system roles like root, admin, member
 ```
 
-> **Tip:** `addFixedParams` can be used to prevent sensitive data from being accidentally deleted or modified, such as built-in system roles or administrator accounts. These constraints are combined with role permissions, ensuring that protected data cannot be manipulated even by users with the necessary permissions.
+> **Tip:** `addFixedParams` can be used to prevent sensitive data from being accidentally deleted or modified, such as system built-in roles, administrator accounts, etc. These constraints work in combination with role permissions, ensuring that even with permissions, protected data cannot be operated.
 
-## Checking Permissions (can)
+## Check Permissions (can)
 
-`acl.can()` is used to determine if a role has permission to perform a specific action. It returns a permission result object or `null`. It is often used for dynamic permission checks within business logic, such as in middleware or action handlers, to decide whether to allow certain operations based on a role.
+`acl.can()` is used to check whether a role has permission to execute a specified operation, returning a permission result object or `null`. Commonly used to dynamically check permissions in business logic, such as determining whether certain operations are allowed based on roles in middleware or operation handlers.
 
 ```ts
 const result = acl.can({
-  roles: ['admin', 'manager'], // Can be a single role or an array of roles
+  roles: ['admin', 'manager'], // Can pass a single role or role array
   resource: 'orders',
   action: 'delete',
 });
 
 if (result) {
-  console.log(`Role ${result.role} can perform the ${result.action} action`);
-  // result.params contains the fixed parameters set by addFixedParams
+  console.log(`Role ${result.role} can execute ${result.action} operation`);
+  // result.params contains fixed parameters set through addFixedParams
   console.log('Fixed parameters:', result.params);
 } else {
-  console.log('Permission denied for this action');
+  console.log('No permission to execute this operation');
 }
 ```
 
-> **Tip:** If multiple roles are provided, they are checked sequentially, and the result for the first role that has permission is returned.
+> **Tip:** If multiple roles are passed, each role will be checked sequentially, returning the union result of roles.
 
-**Type Definitions:**
+**Type definitions:**
 
 ```ts
 interface CanArgs {
-  role?: string;      // A single role
-  roles?: string[];   // Multiple roles (checked sequentially; returns the first one with permission)
+  role?: string;      // Single role
+  roles?: string[];   // Multiple roles (checked sequentially, returns the first role with permission)
   resource: string;   // Resource name
-  action: string;    // Action name
+  action: string;    // Operation name
 }
 
 interface CanResult {
-  role: string;       // The role that has permission
+  role: string;       // Role with permission
   resource: string;   // Resource name
-  action: string;    // Action name
-  params?: any;       // Fixed parameter info (if set via addFixedParams)
+  action: string;    // Operation name
+  params?: any;       // Fixed parameter information (if set through addFixedParams)
 }
 ```
 
-## Registering Configurable Actions (setAvailableAction)
+## Register Configurable Operations (setAvailableAction)
 
-If you want a custom action to be configurable in the UI (e.g., displayed on the role management page), you need to register it using `setAvailableAction`. After registration, the action will appear in the permission configuration interface, allowing administrators to configure its permissions for different roles.
+If you want custom operations to be configurable on the interface (such as displaying in the role management page), you need to use `setAvailableAction` to register. Registered operations will appear in the permission configuration interface, where administrators can configure operation permissions for different roles.
 
 ```ts
 acl.setAvailableAction('importXlsx', {
-  displayName: '{{t("Import")}}', // Display name in the UI, supports i18n
-  type: 'new-data',               // Action type
-  onNewRecord: true,              // Whether it takes effect on new record creation
+  displayName: '{{t("Import")}}', // Interface display name, supports internationalization
+  type: 'new-data',               // Operation type
+  onNewRecord: true,              // Whether to take effect when creating new records
 });
 ```
 
-**Parameters:**
+**Parameter description:**
 
-- **displayName**: The name displayed in the permission configuration UI. It supports internationalization (using the `{{t("key")}}` format).
-- **type**: The action type, which determines its category in the permission settings.
-  - `'new-data'`: Actions that create new data (e.g., import, add new).
-  - `'existing-data'`: Actions that modify existing data (e.g., update, delete).
-- **onNewRecord**: Whether the action takes effect when a new record is created. This is only valid for the `'new-data'` type.
+- **displayName**: Name displayed in the permission configuration interface, supports internationalization (using `{{t("key")}}` format)
+- **type**: Operation type, determines the classification of this operation in permission configuration
+  - `'new-data'`: Operations that create new data (such as import, create, etc.)
+  - `'existing-data'`: Operations that modify existing data (such as update, delete, etc.)
+- **onNewRecord**: Whether to take effect when creating new records, only valid for `'new-data'` type
 
-After registration, this action will appear in the permission configuration interface, where administrators can configure its permissions on the role management page.
+After registration, this operation will appear in the permission configuration interface, where administrators can configure the operation's permissions in the role management page.
+

@@ -13,9 +13,7 @@ In our example, there are roughly the following main collections (omitting other
 - **contract_line_items**: Stores multiple items under the contract (product name, specification, quantity, unit price, delivery date, etc.)
 
 
-
 ![template_print-2025-11-01-16-34-04](https://static-docs.nocobase.com/template_print-2025-11-01-16-34-04.png)
-
 
 
 Since the current system only supports printing single records, we will click "Print" on the "Contract Details" page, and the system will automatically retrieve the corresponding contracts record, as well as associated parties and other information, and fill them into Word or PDF documents.
@@ -29,9 +27,7 @@ Since the current system only supports printing single records, we will click "P
 Note that our "Template Print" is a commercial plugin that needs to be purchased and activated before printing operations can be performed.
 
 
-
 ![template_print-2025-11-01-17-31-51](https://static-docs.nocobase.com/template_print-2025-11-01-17-31-51.png)
-
 
 
 **Confirm Plugin Activation:**
@@ -39,15 +35,11 @@ Note that our "Template Print" is a commercial plugin that needs to be purchased
 On any page, create a details block (such as users) and check if there is a corresponding template configuration option in the action configuration:
 
 
-
 ![template_print-2025-11-01-17-32-09](https://static-docs.nocobase.com/template_print-2025-11-01-17-32-09.png)
 
 
 
-
-
 ![template_print-2025-11-01-17-32-30](https://static-docs.nocobase.com/template_print-2025-11-01-17-32-30.png)
-
 
 
 ### 2.2 Collection Creation
@@ -138,61 +130,45 @@ Create the main entity collection, contract collection, and product item collect
 **Enter Sample Data:**
 
 
-
 ![template_print-2025-11-01-17-32-59](https://static-docs.nocobase.com/template_print-2025-11-01-17-32-59.png)
-
-
 
 
 
 ![template_print-2025-11-01-17-33-11](https://static-docs.nocobase.com/template_print-2025-11-01-17-33-11.png)
 
 
-
 **Configure linkage rules to automatically calculate total price and balance payment:**
-
 
 
 ![template_print-2025-11-01-17-33-21](https://static-docs.nocobase.com/template_print-2025-11-01-17-33-21.png)
 
 
-
 **Create a view block, confirm the data, and enable the "Template Print" action:**
-
 
 
 ![template_print-2025-11-01-17-33-33](https://static-docs.nocobase.com/template_print-2025-11-01-17-33-33.png)
 
 
-
 ### 2.4 Template Print Plugin Configuration
-
 
 
 ![template_print-2025-11-01-17-33-45](https://static-docs.nocobase.com/template_print-2025-11-01-17-33-45.png)
 
 
-
 Add a template configuration, such as "Supply and Purchase Contract":
-
 
 
 ![template_print-2025-11-01-17-33-57](https://static-docs.nocobase.com/template_print-2025-11-01-17-33-57.png)
 
 
 
-
-
 ![template_print-2025-11-01-17-34-08](https://static-docs.nocobase.com/template_print-2025-11-01-17-34-08.png)
-
 
 
 Next, we go to the Fields List tab, where we can see all the fields of the current object. After clicking "Copy", we can start filling in the template.
 
 
-
 ![template_print-2025-11-01-17-35-19](https://static-docs.nocobase.com/template_print-2025-11-01-17-35-19.png)
-
 
 
 ### 2.5 Contract File Preparation
@@ -221,15 +197,11 @@ Next, you can copy and paste the fields from your collection into Word.
 For example, the contract number at the top, or the contract signing entity object. We click copy and paste it directly into the corresponding blank space in the contract.
 
 
-
 ![template_print-2025-11-01-17-31-11](https://static-docs.nocobase.com/template_print-2025-11-01-17-31-11.gif)
 
 
 
-
-
 ![template_print-2025-11-01-17-30-51](https://static-docs.nocobase.com/template_print-2025-11-01-17-30-51.png)
-
 
 
 ### 3.2 Data Formatting
@@ -267,7 +239,7 @@ For example, if the original field we copied is `{d.created_at}`, and we need to
 {d.created_at:formatD(YYYY-MM-DD HH:mm:ss)}  // Output: 2025-01-01 14:30:00
 ```
 
-#### Amount Formatting
+#### Number Formatting
 
 Suppose there is an amount field, such as `{d.total_amount}` in the contract. We can use the `formatN()` function to format numbers, specifying decimal places and thousands separator.
 
@@ -384,18 +356,14 @@ The `i` in each row will increment, ensuring that each row displays different pr
 2. Upload the prepared [Word contract file (.docx)](https://static-docs.nocobase.com/template_print-2025-11-01-17-37-11.docx), which already contains all placeholders
 
 
-
 ![template_print-2025-11-01-17-36-06](https://static-docs.nocobase.com/template_print-2025-11-01-17-36-06.png)
-
 
 
 3. After completion, the system will list the template in the optional template list for future use
 4. We click "Use" to activate this template
 
 
-
 ![template_print-2025-11-01-17-36-13](https://static-docs.nocobase.com/template_print-2025-11-01-17-36-13.png)
-
 
 
 At this point, exit the current popup and click download template to get the generated complete template.

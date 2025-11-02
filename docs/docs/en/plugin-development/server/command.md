@@ -1,19 +1,19 @@
 # Command
 
-In NocoBase, a Command is used to execute operations related to the application or plugins in the command line, such as running system tasks, performing migrations or sync operations, initializing configurations, or interacting with a running application instance. Developers can define custom commands for plugins and register them through the `app` object, which can be executed in the CLI as `nocobase <command>`.
+In NocoBase, commands are used to execute operations related to applications or plugins in the command line, such as running system tasks, executing migration or sync operations, initializing configuration, or interacting with running application instances. Developers can define custom commands for plugins and register them through the `app` object, executing them in CLI as `nocobase <command>`.
 
 ## Command Types
 
-In NocoBase, commands are registered in two ways:
+In NocoBase, command registration is divided into two types:
 
-| Type | Registration Method | Plugin Enabled Required | Typical Scenarios |
-|------|------------|------------------|-----------|
-| Dynamic Command | `app.command()` | ✅ Yes | Plugin business-related commands |
-| Static Command | `Application.registerStaticCommand()` | ❌ No | Installation, initialization, maintenance commands |
+| Type        | Registration Method                          | Does Plugin Need to be Enabled | Typical Scenarios |
+| ----------- | -------------------------------------------- | ----------------------------- | ----------------- |
+| Dynamic Command | `app.command()`                            | ✅ Yes                        | Plugin business-related commands |
+| Static Command | `Application.registerStaticCommand()`       | ❌ No                         | Installation, initialization, maintenance commands |
 
 ## Dynamic Commands
 
-Use `app.command()` to define plugin commands, which can only be executed after the plugin is enabled. Command files should be placed in the plugin's `src/server/commands/*.ts` directory.
+Use `app.command()` to define plugin commands. Commands can only be executed after the plugin is enabled. Command files should be placed in `src/server/commands/*.ts` in the plugin directory.
 
 Example
 
@@ -35,9 +35,9 @@ export default function (app: Application) {
 
 Description
 
-- `app.command('echo')`: Defines a command named `echo`.
-- `.option('-v, --version')`: Adds an option to the command.
-- `.action()`: Defines the command's execution logic.
+- `app.command('echo')`: Defines a command named `echo`.  
+- `.option('-v, --version')`: Adds an option to the command.  
+- `.action()`: Defines command execution logic.  
 - `app.version.get()`: Gets the current application version.
 
 Execute Command
@@ -49,7 +49,7 @@ nocobase echo -v
 
 ## Static Commands
 
-Registered using `Application.registerStaticCommand()`, static commands can be executed without enabling the plugin, making them suitable for tasks like installation, initialization, migration, or debugging. They are registered in the plugin class's `staticImport()` method.
+Use `Application.registerStaticCommand()` to register. Static commands can be executed without enabling plugins, suitable for installation, initialization, migration, or debugging tasks. Register in the plugin class's `staticImport()` method.
 
 Example
 
@@ -82,34 +82,34 @@ nocobase echo --version
 
 Description
 
-- `Application.registerStaticCommand()` registers the command before the application is instantiated.
-- Static commands are typically used to execute global tasks that are independent of the application or plugin state.
+- `Application.registerStaticCommand()` registers commands before the application is instantiated.  
+- Static commands are usually used to execute global tasks unrelated to application or plugin state.  
 
 ## Command API
 
-The command object provides three optional helper methods to control the command's execution context:
+Command objects provide three optional helper methods to control command execution context:
 
-| Method | Function | Example |
-|------|------|------|
-| `ipc()` | Communicate with the running application instance (via IPC) | `app.command('reload').ipc().action()` |
-| `auth()` | Verify that the database configuration is correct | `app.command('seed').auth().action()` |
-| `preload()` | Preload application configuration (executes `app.load()`) | `app.command('sync').preload().action()` |
+| Method     | Purpose                                    | Example                               |
+| ---------- | ------------------------------------------ | ------------------------------------- |
+| `ipc()`    | Communicate with running application instances (via IPC) | `app.command('reload').ipc().action()` |
+| `auth()`   | Verify database configuration is correct   | `app.command('seed').auth().action()` |
+| `preload()` | Preload application configuration (execute `app.load()`) | `app.command('sync').preload().action()` |
 
-Configuration Details
+Configuration Description
 
-- **`ipc()`**
-  By default, a command executes in a new application instance.
-  When `ipc()` is enabled, the command interacts with the currently running application instance via inter-process communication (IPC), which is suitable for real-time operations like refreshing the cache or sending notifications.
+- **`ipc()`**  
+  By default, commands execute in a new application instance.  
+  After enabling `ipc()`, commands interact with the currently running application instance through inter-process communication (IPC), suitable for real-time operation commands (such as refreshing cache, sending notifications).
 
-- **`auth()`**
-  Checks if the database configuration is available before executing the command.
-  If the database configuration is incorrect or the connection fails, the command will not proceed. This is often used for tasks involving database writes or reads.
+- **`auth()`**  
+  Check whether database configuration is available before command execution.  
+  If database configuration is incorrect or connection fails, the command will not continue. Commonly used for tasks involving database writes or reads.
 
-- **`preload()`**
-  Preloads the application configuration before executing the command, which is equivalent to running `app.load()`.
-  Suitable for commands that depend on the configuration or plugin context.
+- **`preload()`**  
+  Preload application configuration before executing the command, equivalent to executing `app.load()`.  
+  Suitable for commands that depend on configuration or plugin context.
 
-For more API methods, please refer to [AppCommand](/api/server/app-command).
+For more API methods, see [AppCommand](/api/server/app-command).
 
 ## Common Examples
 
@@ -127,7 +127,7 @@ app
   });
 ```
 
-Reload Cache on a Running Instance (IPC Mode)
+Reload Cache for Running Instance (IPC Mode)
 
 ```ts
 app
@@ -138,7 +138,7 @@ app
   });
 ```
 
-Statically Register an Installation Command
+Static Registration of Installation Command
 
 ```ts
 Application.registerStaticCommand((app) => {
@@ -149,3 +149,4 @@ Application.registerStaticCommand((app) => {
     });
 });
 ```
+

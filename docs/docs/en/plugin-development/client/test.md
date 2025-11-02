@@ -2,12 +2,13 @@
 
 :::tip
 
-This chapter introduces how to write and run tests for the front-end of your plugin. It covers:
+This chapter will introduce how to write and run tests for the frontend part of plugins. Content will include:
 - Test environment configuration and dependencies;
-- Writing unit tests with Vitest and Testing Library;
-- How to mock the NocoBase front-end runtime environment;
-- Automatically running tests in CI.
+- Writing unit tests using Vitest and Testing Library;
+- How to simulate NocoBase frontend runtime environment;
+- Automatically execute tests in CI.
 
-We will add detailed examples and best practices in future releases.
+We will supplement detailed examples and best practices in future versions.
 
 :::
+

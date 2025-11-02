@@ -1,5 +1,4 @@
 ---
-pkg: "@nocobase/plugin-logger"
 pkg: '@nocobase/plugin-logger'
 ---
 
@@ -11,8 +10,7 @@ Logs are an important tool for us to locate system issues. NocoBase's server log
 
 ## Log Configuration
 
-Log-related parameters such as log level, output method, and printing format can be configured through [environment variables](/get-started/installation/env.md#logger_transport)
-.
+Log-related parameters such as log level, output method, and printing format can be configured through [environment variables](/get-started/installation/env.md#logger_transport).
 
 ## Log Formats
 
@@ -139,8 +137,6 @@ The main directory structure of NocoBase log files is:
 | `reqId`     | Request ID                           |
 
 ## Log Packaging and Downloading
-
-
 
 1. Navigate to the log management page.
 2. Select the log files you wish to download.

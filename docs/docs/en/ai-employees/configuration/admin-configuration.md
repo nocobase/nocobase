@@ -13,7 +13,6 @@ Before configuring, please ensure your environment meets the following condition
 * The **AI Employee plugin** is enabled
 * At least one available **Large Language Model service** (e.g., OpenAI, Claude, DeepSeek, GLM, etc.)
 
-
 ### 2. Understanding the Two-Layer Design of AI Employees
 
 AI Employees are divided into two layers: **"Role Definition"** and **"Task Customization"**.
@@ -67,7 +66,6 @@ If it fails, please check your network, API key, or model name.
 
 
 ![Test connection](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-18-25.png)
-
 
 
 ### Step 2: Create an AI Employee
@@ -128,7 +126,6 @@ Skills determine what an employee "can do".
 
 
 ![Configure skills](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
-
 
 
 ### Step 4: Configure Knowledge Base (Optional)

@@ -1,29 +1,29 @@
 # Middleware
 
-NocoBase Server's Middleware is essentially **Koa middleware**. You can manipulate the `ctx` object to handle requests and responses just like in Koa. However, since NocoBase needs to manage logic at different business layers, it would be very difficult to maintain and manage if all middleware were placed together.
+NocoBase Server middleware is essentially **Koa middleware**. You can operate the `ctx` object to handle requests and responses just like in Koa. However, since NocoBase needs to manage logic at different business layers, if all middleware is placed together, it becomes very difficult to maintain and manage.
 
-For this reason, NocoBase divides middleware into **four levels**:
+For this reason, NocoBase divides middleware into **four layers**:
 
-1.  **Data source-level middleware**: `app.dataSourceManager.use()`
-    Only acts on requests for a **specific data source**. It is often used for logic such as database connections, field validation, or transaction processing for that data source.
+1. **Data Source Level Middleware**: `app.dataSourceManager.use()`  
+   Only affects requests for **a specific data source**, commonly used for database connections, field validation, or transaction processing logic for that data source.
 
-2.  **Resource-level middleware**: `app.resourceManager.use()`
-    Only takes effect on defined resources (Resource). It is suitable for handling resource-level logic, such as data permissions, formatting, etc.
+2. **Resource Level Middleware**: `app.resourceManager.use()`  
+   Only effective for defined resources (Resources), suitable for handling resource-level logic, such as data permissions, formatting, etc.
 
-3.  **ACL-level middleware**: `app.acl.use()`
-    Executes before permission checks to validate user permissions or roles.
+3. **Permission Level Middleware**: `app.acl.use()`  
+   Executes before permission judgment, used to verify user permissions or roles.
 
-4.  **Application-level middleware**: `app.use()`
-    Executes for every request. It is suitable for logging, general error handling, response processing, etc.
+4. **Application Level Middleware**: `app.use()`  
+   Executes for every request, suitable for logging, general error handling, response processing, etc.
 
 ## Middleware Registration
 
-Middleware is usually registered in a plugin's `load` method, for example:
+Middleware is usually registered in the plugin's `load` method, for example:
 
 ```ts
 export class MyPlugin extends Plugin {
   load() {
-    // Application-level middleware
+    // Application level middleware
     this.app.use(async (ctx, next) => {
       console.log('App middleware');
       await next();
@@ -35,7 +35,7 @@ export class MyPlugin extends Plugin {
       await next();
     });
 
-    // ACL middleware
+    // Permission middleware
     this.app.acl.use(async (ctx, next) => {
       console.log('ACL middleware');
       await next();
@@ -55,23 +55,23 @@ export class MyPlugin extends Plugin {
 
 The middleware execution order is as follows:
 
-1.  First, the ACL middleware added by `acl.use()` is executed.
-2.  Then, the resource middleware added by `resourceManager.use()` is executed.
-3.  Then, the data source middleware added by `dataSourceManager.use()` is executed.
-4.  Finally, the application middleware added by `app.use()` is executed.
+1. First execute permission middleware added by `acl.use()`
+2. Then execute resource middleware added by `resourceManager.use()`  
+3. Then execute data source middleware added by `dataSourceManager.use()`  
+4. Finally execute application middleware added by `app.use()`  
 
-## `before` / `after` / `tag` Insertion Mechanism
+## before / after / tag Insertion Mechanism
 
-To control the middleware order more flexibly, NocoBase provides `before`, `after`, and `tag` parameters:
+For more flexible control of middleware order, NocoBase provides `before`, `after`, and `tag` parameters:
 
--   **tag**: Assigns a tag to a middleware, which can be referenced by subsequent middleware.
--   **before**: Inserts the middleware before the one with the specified tag.
--   **after**: Inserts the middleware after the one with the specified tag.
+- **tag**: Mark the middleware for reference by subsequent middleware  
+- **before**: Insert before the middleware with the specified tag  
+- **after**: Insert after the middleware with the specified tag  
 
 Example:
 
 ```ts
-// Normal middleware
+// Regular middleware
 app.use(m1, { tag: 'restApi' });
 app.resourcer.use(m2, { tag: 'parseToken' });
 app.resourcer.use(m3, { tag: 'checkRole' });
@@ -85,14 +85,14 @@ app.resourcer.use(m5, { after: 'parseToken', before: 'checkRole' });
 
 :::tip
 
-If no position is specified, the default execution order for new middleware is:
-`acl.use()` -> `resourceManager.use()` -> `dataSourceManager.use()` -> `app.use()`
+If no position is specified, newly added middleware default execution order is:  
+`acl.use()` -> `resourceManager.use()` -> `dataSourceManager.use()` -> `app.use()`  
 
 :::
 
 ## Onion Model Example
 
-The middleware execution order follows Koa's **onion model**, meaning it first enters the middleware stack and is the last to exit.
+Middleware execution order follows Koa's **onion model**, entering the middleware stack first and exiting last.  
 
 ```ts
 app.use(async (ctx, next) => {
@@ -129,19 +129,20 @@ app.resourcer.define({
 });
 ```
 
-Example output order when accessing different APIs:
+Access different interfaces, output order examples:
 
--   **Normal request**: `/api/hello`
-    Output: `[1,2]` (Resource is not defined, so `resourceManager` and `acl` middleware are not executed)
+- **Regular request**: `/api/hello`  
+  Output: `[1,2]` (resource not defined, doesn't execute `resourceManager` and `acl` middleware)  
 
--   **Resource request**: `/api/test:list`
-    Output: `[5,3,7,1,2,8,4,6]`
-    Middleware executes according to its level and the onion model.
+- **Resource request**: `/api/test:list`  
+  Output: `[5,3,7,1,2,8,4,6]`  
+  Middleware executes by layer and onion model
 
 ## Summary
 
--   NocoBase Middleware is an extension of Koa Middleware.
--   Four levels: Application -> Data Source -> Resource -> ACL
--   You can use `before` / `after` / `tag` to flexibly control the execution order.
--   Follows the Koa onion model, ensuring middleware is composable and nestable.
--   Data source-level middleware only acts on requests for a specified data source, and resource-level middleware only acts on requests for defined resources.
+- NocoBase Middleware is an extension of Koa Middleware  
+- Four layers: Application -> Data Source -> Resource -> Permission
+- Can use `before` / `after` / `tag` to flexibly control execution order  
+- Follows Koa onion model, ensuring middleware is composable and nestable  
+- Data source level middleware only affects specified data source requests, resource level middleware only affects defined resource requests
+
