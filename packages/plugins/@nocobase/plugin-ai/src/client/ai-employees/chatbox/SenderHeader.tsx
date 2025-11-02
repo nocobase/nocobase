@@ -53,15 +53,8 @@ export const SenderHeader: React.FC = () => {
     if (!currentEmployee) {
       return null;
     }
-    return !responseLoading
-      ? avatars(currentEmployee.avatar)
-      : avatars(currentEmployee.avatar, {
-          brows: ['variant10'],
-          gesture: ['pointLongArm'],
-          gestureProbability: 100,
-          translateX: -15,
-        });
-  }, [responseLoading, currentEmployee]);
+    return avatars(currentEmployee.avatar);
+  }, [currentEmployee]);
 
   return (
     <div
