@@ -9,6 +9,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
+points: 4
 ---
 
 # Workflow: JavaScript

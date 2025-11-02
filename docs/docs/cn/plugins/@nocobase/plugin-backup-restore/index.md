@@ -6,6 +6,9 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
 ---
 
 # 应用的备份与还原（废弃）
+
+> 注意：本插件已废弃（deprecated）。

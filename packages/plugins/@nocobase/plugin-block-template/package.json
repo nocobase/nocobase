@@ -15,6 +15,9 @@
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },
+  "nocobase": {
+    "deprecated": true
+  },
   "keywords": [
     "Block",
     "Template"

@@ -26,6 +26,7 @@ export function PluginList() {
             detailLink={page.routePath}
             isFree={page.frontmatter.isFree as boolean}
             editionLevel={page.frontmatter.editionLevel as number}
+            supportedVersions={page.frontmatter.supportedVersions as string[]}
             pricing={page.frontmatter.points ? {
               plan1: {
                 label: '永久使用, 1 年升级',
