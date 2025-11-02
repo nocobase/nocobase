@@ -12,6 +12,8 @@ NocoBase provides a data source management plugin for managing data sources and 
 - [External MySQL](/data-sources/data-source-external-mysql): Use an external MySQL database as a data source.
 - [External MariaDB](/data-sources/data-source-external-mariadb): Use an external MariaDB database as a data source.
 - [External PostgreSQL](/data-sources/data-source-external-postgres): Use an external PostgreSQL database as a data source.
+- [External MSSQL](/data-sources/data-source-external-mssql): Use an external MSSQL (SQL Server) database as a data source.
+- [External Oracle](/data-sources/data-source-external-oracle): Use an external Oracle database as a data source.
 
 In addition, more types can be extended through plugins, which can be common types of databases or platforms that provide APIs (SDKs).
 

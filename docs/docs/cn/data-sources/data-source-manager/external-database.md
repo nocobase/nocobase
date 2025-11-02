@@ -2,7 +2,7 @@
 
 ## 介绍
 
-使用外部已有的数据库作为数据源，目前已支持的外部数据库有 MySQL、MariaDB、PostgreSQL。
+使用外部已有的数据库作为数据源，目前已支持的外部数据库有 MySQL、MariaDB、PostgreSQL、MSSQL、Oracle。
 
 ## 使用说明
 

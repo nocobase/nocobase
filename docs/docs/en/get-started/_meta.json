@@ -66,16 +66,6 @@
       },
       {
         "type": "custom-link",
-        "label": "Intranet Deployment",
-        "link": "/get-started/deployment/internal"
-      },
-      {
-        "type": "custom-link",
-        "label": "Cluster Deployment",
-        "link": "/get-started/deployment/cluster"
-      },
-      {
-        "type": "custom-link",
         "label": "Static Resource Proxy",
         "items": [
           {
