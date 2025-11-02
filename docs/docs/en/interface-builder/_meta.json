@@ -79,6 +79,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Reference block",
+            "link": "/interface-builder/blocks/other-blocks/block-reference"
+          },
+          {
+            "type": "custom-link",
             "label": "Markdown",
             "link": "/interface-builder/blocks/other-blocks/markdown"
           },
