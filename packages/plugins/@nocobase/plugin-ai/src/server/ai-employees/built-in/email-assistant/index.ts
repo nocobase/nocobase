@@ -10,17 +10,13 @@
 import profile from './profile';
 
 export default {
-  username: 'viz',
-  description: 'Insights analyst',
+  username: 'ellis',
+  description: 'Email expert',
   profile,
   skillSettings: {
     skills: [
       {
-        name: 'dataModeling-getCollectionNames',
-        autoCall: true,
-      },
-      {
-        name: 'dataModeling-getCollectionMetadata',
+        name: 'frontend-formFiller',
         autoCall: true,
       },
       {
