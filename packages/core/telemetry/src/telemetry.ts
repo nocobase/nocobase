@@ -7,14 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { Resource } from '@opentelemetry/resources';
-import { InstrumentationOption, registerInstrumentations } from '@opentelemetry/instrumentation';
+import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+import { Instrumentation, registerInstrumentations } from '@opentelemetry/instrumentation';
 import { Metric, MetricOptions } from './metric';
 import { Trace, TraceOptions } from './trace';
 
 export interface TelemetryOptions {
   serviceName?: string;
+  appName?: string;
   version?: string;
   trace?: TraceOptions;
   metric?: MetricOptions;
@@ -22,17 +23,19 @@ export interface TelemetryOptions {
 
 export class Telemetry {
   serviceName: string;
+  appName: string;
   version: string;
-  instrumentations: InstrumentationOption[] = [];
+  instrumentations: Instrumentation[] = [];
   trace: Trace;
   metric: Metric;
   started = false;
 
   constructor(options?: TelemetryOptions) {
-    const { trace, metric, serviceName, version } = options || {};
+    const { trace, metric, serviceName, appName, version } = options || {};
     this.trace = new Trace({ tracerName: `${serviceName}-trace`, version, ...trace });
     this.metric = new Metric({ meterName: `${serviceName}-meter`, version, ...metric });
     this.serviceName = serviceName || 'nocobase';
+    this.appName = appName;
     this.version = version || '';
   }
 
@@ -41,12 +44,11 @@ export class Telemetry {
       instrumentations: this.instrumentations,
     });
 
-    const resource = Resource.default().merge(
-      new Resource({
-        [SemanticResourceAttributes.SERVICE_NAME]: this.serviceName,
-        [SemanticResourceAttributes.SERVICE_VERSION]: this.version,
-      }),
-    );
+    const resource = resourceFromAttributes({
+      [ATTR_SERVICE_NAME]: this.serviceName,
+      [ATTR_SERVICE_VERSION]: this.version,
+      'app.name': this.appName,
+    });
 
     this.trace.init(resource);
     this.metric.init(resource);
@@ -65,7 +67,7 @@ export class Telemetry {
     this.started = false;
   }
 
-  addInstrumentation(...instrumentation: InstrumentationOption[]) {
+  addInstrumentation(...instrumentation: Instrumentation[]) {
     this.instrumentations.push(...instrumentation);
   }
 }

@@ -340,10 +340,12 @@ export default class PluginWorkflowServer extends Plugin {
     });
 
     this.meter = this.app.telemetry.metric.getMeter();
-    const counter = this.meter.createObservableGauge('workflow.events.counter');
-    counter.addCallback((result) => {
-      result.observe(this.dispatcher.getEventsCount());
-    });
+    if (this.meter) {
+      const counter = this.meter.createObservableGauge('workflow.events.counter');
+      counter.addCallback((result) => {
+        result.observe(this.dispatcher.getEventsCount());
+      });
+    }
 
     this.app.acl.registerSnippet({
       name: `pm.${this.name}.workflows`,

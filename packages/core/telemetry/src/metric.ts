@@ -13,7 +13,7 @@ import {
   PeriodicExportingMetricReader,
   ConsoleMetricExporter,
   MeterProvider,
-  View,
+  type MeterProviderOptions,
 } from '@opentelemetry/sdk-metrics';
 import { Resource } from '@opentelemetry/resources';
 import opentelemetry from '@opentelemetry/api';
@@ -31,14 +31,16 @@ export class Metric {
   version: string;
   readerName: string | string[];
   readers = new Registry<GetMetricReader>();
-  provider: MeterProvider;
-  views: View[] = [];
+  provider?: MeterProvider;
+  resource?: Resource;
+  activeReaders: MetricReader[] = [];
 
   constructor(options?: MetricOptions) {
     const { meterName, readerName, version } = options || {};
     this.readerName = readerName || 'console';
     this.meterName = meterName || 'nocobase-meter';
     this.version = version || '';
+
     this.registerReader(
       'console',
       () =>
@@ -49,8 +51,7 @@ export class Metric {
   }
 
   init(resource: Resource) {
-    this.provider = new MeterProvider({ resource, views: this.views });
-    opentelemetry.metrics.setGlobalMeterProvider(this.provider);
+    this.resource = resource;
   }
 
   registerReader(name: string, reader: GetMetricReader) {
@@ -61,26 +62,38 @@ export class Metric {
     return this.readers.get(name);
   }
 
-  addView(...view: View[]) {
-    this.views.push(...view);
+  start() {
+    if (!this.resource) {
+      throw new Error('Metric.init(resource) must be called before start()');
+    }
+
+    let readerNames = this.readerName;
+    if (typeof readerNames === 'string') {
+      readerNames = readerNames.split(',');
+    }
+
+    console.log(readerNames);
+    const readers = readerNames.map((name) => this.readers.get(name)());
+    this.activeReaders = readers;
+
+    const providerOptions: MeterProviderOptions = {
+      resource: this.resource,
+      readers,
+    };
+
+    this.provider = new MeterProvider(providerOptions);
+    opentelemetry.metrics.setGlobalMeterProvider(this.provider);
   }
 
   getMeter(name?: string, version?: string) {
+    if (!this.provider) {
+      return null;
+    }
     return this.provider.getMeter(name || this.meterName, version || this.version);
   }
 
-  start() {
-    let readerName = this.readerName;
-    if (typeof readerName === 'string') {
-      readerName = readerName.split(',');
-    }
-    readerName.forEach((name) => {
-      const reader = this.getReader(name)();
-      this.provider.addMetricReader(reader);
-    });
-  }
-
-  shutdown() {
-    return this.provider.shutdown();
+  async shutdown() {
+    await Promise.all(this.activeReaders.map((r) => r.shutdown()));
+    await this.provider?.shutdown();
   }
 }

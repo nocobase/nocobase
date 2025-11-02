@@ -539,7 +539,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   /**
    * This method is deprecated and should not be used.
-   * Use {@link #this.version.get()} instead.
+   * Use {@link #this.getPackageVersion} instead.
    * @deprecated
    */
   getVersion() {
@@ -1315,8 +1315,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     this._telemetry = new Telemetry({
-      serviceName: `nocobase-${this.name}`,
-      version: this.getVersion(),
+      appName: this.name,
+      version: this.getPackageVersion(),
       ...options.telemetry,
     });
 
