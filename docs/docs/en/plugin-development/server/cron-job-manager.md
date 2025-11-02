@@ -1,6 +1,6 @@
-# CronJobManager Scheduled Task Management
+# CronJobManager
 
-`CronJobManager` is a scheduled task manager provided by NocoBase, based on [cron](https://www.npmjs.com/package/cron). It allows plugins to register scheduled tasks on the server-side to periodically execute specific logic.
+`CronJobManager` is a scheduled task manager provided by NocoBase based on [cron](https://www.npmjs.com/package/cron). It allows plugins to register scheduled tasks on the server for periodically executing specific logic.
 
 ## Basic Usage
 
@@ -10,13 +10,13 @@ import { Plugin } from '@nocobase/server';
 export default class PluginCronDemo extends Plugin {
   async load() {
     this.app.cronJobManager.addJob({
-      cronTime: '0 0 * * *', // Executes at 00:00 every day
+      cronTime: '0 0 * * *', // Execute daily at 00:00
       onTick: async () => {
-        console.log('Daily task: Clean up temporary data');
+        console.log('Daily task: clean temporary data');
         await this.cleanTemporaryData();
       },
       timeZone: 'Asia/Shanghai',
-      start: true, // Start automatically
+      start: true, // Auto start
     });
   }
 
@@ -28,7 +28,7 @@ export default class PluginCronDemo extends Plugin {
 
 ## Parameter Description
 
-The `CronJobParameters` type is defined as follows (from [cron](https://www.npmjs.com/package/cron)):
+The `CronJobParameters` type definition is as follows (from [cron](https://www.npmjs.com/package/cron)):
 
 ```ts
 export declare interface CronJobParameters {
@@ -44,39 +44,40 @@ export declare interface CronJobParameters {
 }
 ```
 
-| Parameter        | Type                         | Description                                                                                                                              |
-| ---------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| **cronTime**     | `string \| Date \| DateTime` | The time expression for the scheduled task. Supports standard cron expressions, for example, `0 0 * * *` means execute at 00:00 every day. |
-| **onTick**       | `function`                   | The main function of the task. It will be triggered at the specified time.                                                               |
-| **onComplete**   | `function`                   | Executed when the job is stopped by `job.stop()` or when `onTick` completes its execution.                                               |
-| **timeZone**     | `string`                     | Specifies the execution time zone (e.g., `Asia/Shanghai`).                                                                               |
-| **context**      | `any`                        | The context for executing `onTick`.                                                                                                      |
-| **runOnInit**    | `boolean`                    | Whether to execute the job once immediately upon initialization.                                                                         |
-| **utcOffset**    | `string \| number`           | Specifies the UTC offset.                                                                                                                |
-| **unrefTimeout** | `boolean`                    | Controls whether the event loop remains active.                                                                                          |
+| Parameter     | Type                        | Description |
+| ------------- | --------------------------- | ----------- |
+| **cronTime**  | `string \| Date \| DateTime` | Scheduled task time expression. Supports standard cron expressions, for example `0 0 * * *` means execute daily at 00:00. |
+| **onTick**    | `function`                  | Task main function. Will be triggered at the specified time. |
+| **onComplete** | `function`                  | Executes when task is stopped by `job.stop()` or when `onTick` actively calls completion. |
+| **timeZone**  | `string`                    | Specify execution timezone (e.g., `Asia/Shanghai`). |
+| **context**   | `any`                       | Context when executing `onTick`. |
+| **runOnInit** | `boolean`                   | Whether to execute once immediately on initialization. |
+| **utcOffset** | `string \| number`           | Specify timezone offset. |
+| **unrefTimeout** | `boolean`                  | Control whether event loop stays active. |
 
 ## Cron Expression Examples
 
-| Expression     | Meaning                     |
-| -------------- | --------------------------- |
-| `* * * * *`    | Execute once every minute   |
-| `0 * * * *`    | Execute once every hour     |
-| `0 0 * * *`    | Execute at 00:00 every day  |
-| `0 9 * * 1`    | Execute at 09:00 every Monday |
-| `*/10 * * * *` | Execute once every 10 minutes |
+| Expression        | Meaning                    |
+| ----------------- | -------------------------- |
+| `* * * * *`       | Execute every minute       |
+| `0 * * * *`       | Execute every hour         |
+| `0 0 * * *`       | Execute daily at 00:00      |
+| `0 9 * * 1`       | Execute every Monday at 09:00 |
+| `*/10 * * * *`    | Execute every 10 minutes   |
 
 > 💡 You can use [crontab.guru](https://crontab.guru/) to help generate expressions.
 
-## Controlling Job Start and Stop
+## Control Task Start and Stop
 
 ```ts
 const job = app.cronJobManager.addJob({ ... });
-job.start(); // Start the job
-job.stop();  // Stop the job
+job.start(); // Start task
+job.stop();  // Stop task
 ```
 
 :::tip
 
-Scheduled tasks start and stop along with the application. You typically do not need to manually `start` or `stop` them unless necessary.
+Scheduled tasks start when the application starts and stop when the application stops. Generally, you don't need to manually start or stop unless necessary.
 
 :::
+

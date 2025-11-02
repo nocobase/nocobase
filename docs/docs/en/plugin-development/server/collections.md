@@ -1,10 +1,10 @@
 # Collections
 
-In NocoBase plugin development, the **Collection** is one of the core concepts. You can add or modify collection structures within a plugin by defining or extending a Collection. Unlike collections created through the data source management interface, **Collections defined in code are typically system-level metadata tables** and will not appear in the data source management list.
+In NocoBase plugin development, **Collection (data table)** is one of the core concepts. You can add or modify data table structures in plugins by defining or extending Collections. Unlike data tables created through the data source management interface, **Collections defined in code are usually system-level metadata tables** and won't appear in the data source management list.
 
-## Define a Collection
+## Defining Data Tables
 
-According to the conventional directory structure, Collection files should be placed in the `./src/server/collections` directory. Use `defineCollection()` to create a new collection, and `extendCollection()` to extend an existing one.
+Following the conventional directory structure, Collection files should be placed in the `./src/server/collections` directory. Use `defineCollection()` to create new tables and `extendCollection()` to extend existing tables.
 
 ```ts
 import { defineCollection } from '@nocobase/database';
@@ -29,11 +29,11 @@ export default defineCollection({
 
 In the example above:
 
-- `name`: The collection name (a table with the same name will be automatically generated in the database).
-- `title`: The display name of the collection in the interface.
-- `fields`: A collection of fields, where each field includes properties like `type` and `name`.
+- `name`: Table name (a table with the same name will be automatically generated in the database).
+- `title`: Display name of the table in the interface.
+- `fields`: Field collection, each field contains `type`, `name`, and other attributes.
 
-When you need to add fields to or modify the configuration of a Collection from another plugin, you can use `extendCollection()`:
+When you need to add fields or modify configurations for other plugins' Collections, you can use `extendCollection()`:
 
 ```ts
 import { extendCollection } from '@nocobase/database';
@@ -50,26 +50,27 @@ export default extendCollection({
 });
 ```
 
-After activating the plugin, the system will automatically add the `isPublished` field to the existing `articles` collection.
+After activating the plugin, the system will automatically add the `isPublished` field to the existing `articles` table.
 
 :::tip
-The conventional directory structure is loaded before the `load()` method of any plugin is executed, thus avoiding dependency issues caused by some collections not being loaded yet.
+The conventional directory will complete loading before all plugins' `load()` methods execute, thus avoiding dependency issues caused by some data tables not being loaded.
 :::
 
-## Synchronize Database Schema
+## Synchronizing Database Structure
 
-When a plugin is activated for the first time, the system automatically synchronizes the Collection configuration with the database schema. If the plugin is already installed and running, you need to manually run the upgrade command after adding or modifying a Collection:
+When a plugin is first activated, the system will automatically synchronize Collection configurations with the database structure. If the plugin is already installed and running, after adding or modifying Collections, you need to manually execute the upgrade command:
 
 ```bash
 yarn nocobase upgrade
 ```
 
-If an exception or dirty data occurs during synchronization, you can rebuild the table structure by reinstalling the application:
+If exceptions or dirty data occur during synchronization, you can rebuild the table structure by reinstalling the application:
 
 ```bash
 yarn nocobase install -f
 ```
 
-## Automatic Resource Generation
+## Auto-generating Resources
 
-After defining a Collection, the system automatically generates a corresponding Resource for it, allowing you to perform CRUD operations on this resource directly via the API. For details, see [Resource Manager](./resource-manager.md).
+After defining a Collection, the system will automatically generate corresponding Resources, which can directly perform CRUD operations on the resource via API. See [Resource Manager](./resource-manager.md).
+

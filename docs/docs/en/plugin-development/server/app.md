@@ -7,8 +7,9 @@ In plugin development, `app` is a very commonly used object. Common objects incl
 ## resourceManager
 ## acl
 ## cacheManager
-## cornJobManager
+## cronJobManager
 ## i18n
 ## cli
 ## dataSourceManager
 ## pm
+

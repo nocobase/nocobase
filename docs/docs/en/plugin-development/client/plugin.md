@@ -1,27 +1,27 @@
 # Plugin
 
-In NocoBase, a **Client Plugin** is the primary way to extend and customize frontend functionality. By inheriting from the `Plugin` base class provided by `@nocobase/client`, developers can register logic, add page components, extend menus, or integrate third-party features at different lifecycle stages.
+In NocoBase, **Client Plugin** is the main way to extend and customize frontend functionality. By extending the `Plugin` base class provided by `@nocobase/client`, developers can register logic, add page components, extend menus, or integrate third-party functionality at different lifecycle stages.
 
 ## Plugin Class Structure
 
-A basic client plugin structure is as follows:
+A basic client-side plugin structure is as follows:
 
 ```ts
 import { Plugin } from '@nocobase/client';
 
 export class PluginHelloClient extends Plugin {
   async afterAdd() {
-    // Executes after the plugin is added
+    // Executed after plugin is added
     console.log('Plugin added');
   }
 
   async beforeLoad() {
-    // Executes before the plugin loads
+    // Executed before plugin loads
     console.log('Before plugin load');
   }
 
   async load() {
-    // Executes when the plugin loads, registers routes, UI components, etc.
+    // Executed when plugin loads, register routes, UI components, etc.
     console.log('Plugin loaded');
   }
 }
@@ -31,30 +31,31 @@ export default PluginHelloClient;
 
 ## Lifecycle Description
 
-Each plugin goes through the following lifecycle stages in order every time the browser is refreshed or the application is initialized:
+Each plugin goes through the following lifecycle in sequence when the browser refreshes or the application initializes:
 
-| Lifecycle Method | Execution Time | Description |
-|--------------|-----------|------|
-| **afterAdd()** | Executes immediately after the plugin is added to the plugin manager | At this point, the plugin instance has been created, but not all plugins have completed initialization. It is suitable for lightweight initialization, such as reading configurations or binding basic events. |
-| **beforeLoad()** | Executes before the `load()` method of all plugins | You can access all enabled plugin instances (`this.app.pm.get()`). It is suitable for executing preparatory logic that depends on other plugins. |
-| **load()** | Executes when the plugin loads | This method is executed after the `beforeLoad()` of all plugins has completed. It is suitable for registering core logic such as frontend routes and UI components. |
+| Lifecycle Method | Execution Timing | Description |
+| ---------------- | ---------------- | ----------- |
+| **afterAdd()**   | Executed immediately after the plugin is added to the plugin manager | The plugin instance has been created at this point, but not all plugins have finished initializing. Suitable for lightweight initialization, such as reading configuration or binding basic events. |
+| **beforeLoad()** | Executed before all plugins' `load()` | Can access all enabled plugin instances (`this.app.pm.get()`). Suitable for preparation logic that depends on other plugins. |
+| **load()**       | Executed when the plugin loads | This method is executed after all plugins' `beforeLoad()` complete. Suitable for registering frontend routes, UI components, and other core logic. |
 
 ## Execution Order
 
-Each time the browser is refreshed, the execution order is `afterAdd()` → `beforeLoad()` → `load()`.
+Every time the browser refreshes, `afterAdd()` → `beforeLoad()` → `load()` will be executed
 
 ## Plugin Context and FlowEngine
 
-Starting from NocoBase 2.0, the client-side extension APIs are primarily centralized in the **FlowEngine**. In the plugin class, you can get the engine instance via `this.engine`.
+Starting from NocoBase 2.0, client-side extension APIs are mainly concentrated in **FlowEngine**. In the plugin class, you can get the engine instance through `this.engine`.
 
 ```ts
-// Access the engine context in the load() method
+// Access engine context in load() method
 async load() {
   const { app, router, apiClient } = this.engine.context;
   console.log('Current app:', app);
 }
 ```
 
-For more details, see:
-- [FlowEngine](./flow-engine.md)
+For more content, see:  
+- [FlowEngine](/flow-engine)  
 - [Context](./context.md)
+

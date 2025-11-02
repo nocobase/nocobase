@@ -1,18 +1,17 @@
-# Events
+# Event
 
-NocoBase's server triggers corresponding events during the application lifecycle, plugin lifecycle, and database operations. Plugin developers can listen to these events to implement extended logic, automated operations, or custom behaviors.
+NocoBase's server (Server) triggers corresponding events (Event) during application lifecycle, plugin lifecycle, and database operations. Plugin developers can listen to these events to implement extension logic, automated operations, or custom behaviors.
 
 NocoBase's event system is mainly divided into two levels:
 
-- **`app.on()` - Application-level events**: Listen to application lifecycle events, such as starting, installing, and enabling plugins.
-- **`db.on()` - Database-level events**: Listen to operation events at the data model layer, such as creating, updating, and deleting records.
+- **`app.on()` - Application Level Events**: Listen to application lifecycle events, such as startup, installation, enabling plugins, etc.
+- **`db.on()` - Database Level Events**: Listen to data model level operation events, such as creating, updating, deleting records, etc.
 
-
-Both inherit from Node.js's `EventEmitter` and support standard interfaces like `.on()`, `.off()`, and `.emit()`. NocoBase also extends support for `emitAsync` to asynchronously trigger events and wait for all listeners to complete execution.
+Both inherit from Node.js's `EventEmitter`, supporting standard `.on()`, `.off()`, `.emit()` interfaces. NocoBase also extends support for `emitAsync`, used to asynchronously trigger events and wait for all listeners to complete execution.
 
 ## Where to Register Event Listeners
 
-Event listeners should generally be registered in the plugin's `beforeLoad()` method. This ensures that the events are ready during the plugin loading phase, allowing subsequent logic to respond correctly.
+Event listeners should generally be registered in the plugin's `beforeLoad()` method, ensuring events are ready during the plugin loading phase, and subsequent logic can respond correctly.
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -35,25 +34,25 @@ export default class PluginHelloServer extends Plugin {
 }
 ```
 
-## Listening to Application Events `app.on()`
+## Listen to Application Events `app.on()`
 
-Application events are used to capture lifecycle changes of the NocoBase application and its plugins, suitable for initialization logic, resource registration, or plugin dependency checks.
+Application events are used to capture NocoBase application and plugin lifecycle changes, suitable for initialization logic, resource registration, or plugin dependency detection.
 
 ### Common Event Types
 
-| Event Name | Triggered When | Typical Use Cases |
-|-----------|------------|-----------|
-| `beforeLoad` / `afterLoad` | Before / After application load | Registering resources, initializing configuration |
-| `beforeStart` / `afterStart` | Before / After service start | Starting tasks, printing startup logs |
-| `beforeInstall` / `afterInstall` | Before / After application installation | Initializing data, importing templates |
-| `beforeStop` / `afterStop` | Before / After service stop | Cleaning up resources, saving state |
-| `beforeDestroy` / `afterDestroy` | Before / After application destruction | Deleting cache, disconnecting |
-| `beforeLoadPlugin` / `afterLoadPlugin` | Before / After plugin load | Modifying plugin configuration or extending functionality |
-| `beforeEnablePlugin` / `afterEnablePlugin` | Before / After plugin enable | Checking dependencies, initializing plugin logic |
-| `beforeDisablePlugin` / `afterDisablePlugin` | Before / After plugin disable | Cleaning up plugin resources |
-| `afterUpgrade` | After application upgrade is complete | Executing data migration or compatibility fixes |
+| Event Name                  | Trigger Timing | Typical Uses |
+| --------------------------- | -------------- | ------------ |
+| `beforeLoad` / `afterLoad`  | Before / after application load | Register resources, initialize configuration |
+| `beforeStart` / `afterStart` | Before / after service startup | Start tasks, print startup logs |
+| `beforeInstall` / `afterInstall` | Before / after application installation | Initialize data, import templates |
+| `beforeStop` / `afterStop`  | Before / after service stop | Clean up resources, save state |
+| `beforeDestroy` / `afterDestroy` | Before / after application destruction | Delete cache, disconnect connections |
+| `beforeLoadPlugin` / `afterLoadPlugin` | Before / after plugin load | Modify plugin configuration or extend functionality |
+| `beforeEnablePlugin` / `afterEnablePlugin` | Before / after plugin enable | Check dependencies, initialize plugin logic |
+| `beforeDisablePlugin` / `afterDisablePlugin` | Before / after plugin disable | Clean up plugin resources |
+| `afterUpgrade`              | After application upgrade completes | Execute data migration or compatibility fixes |
 
-Example: Listening to the application start event
+Example: Listen to application startup event
 
 ```ts
 app.on('afterStart', async () => {
@@ -61,7 +60,7 @@ app.on('afterStart', async () => {
 });
 ```
 
-Example: Listening to the plugin load event
+Example: Listen to plugin load event
 
 ```ts
 app.on('afterLoadPlugin', ({ plugin }) => {
@@ -69,25 +68,25 @@ app.on('afterLoadPlugin', ({ plugin }) => {
 });
 ```
 
-## Listening to Database Events `db.on()`
+## Listen to Database Events `db.on()`
 
-Database events can capture various data changes at the model layer and are suitable for operations like auditing, synchronization, and auto-filling.
+Database events can capture various data changes at the model level, suitable for auditing, synchronization, auto-filling, and other operations.
 
 ### Common Event Types
 
-| Event Name | Triggered When |
-|-----------|------------|
-| `beforeSync` / `afterSync` | Before / After synchronizing database structure |
-| `beforeValidate` / `afterValidate` | Before / After data validation |
-| `beforeCreate` / `afterCreate` | Before / After creating a record |
-| `beforeUpdate` / `afterUpdate` | Before / After updating a record |
-| `beforeSave` / `afterSave` | Before / After saving (includes create and update) |
-| `beforeDestroy` / `afterDestroy` | Before / After deleting a record |
-| `afterCreateWithAssociations` / `afterUpdateWithAssociations` / `afterSaveWithAssociations` | After an operation involving associated data |
-| `beforeDefineCollection` / `afterDefineCollection` | Before / After defining a collection |
-| `beforeRemoveCollection` / `afterRemoveCollection` | Before / After removing a collection |
+| Event Name                          | Trigger Timing |
+| ----------------------------------- | -------------- |
+| `beforeSync` / `afterSync`          | Before / after synchronizing database structure |
+| `beforeValidate` / `afterValidate`  | Before / after data validation |
+| `beforeCreate` / `afterCreate`      | Before / after creating records |
+| `beforeUpdate` / `afterUpdate`      | Before / after updating records |
+| `beforeSave` / `afterSave`          | Before / after save (includes create and update) |
+| `beforeDestroy` / `afterDestroy`    | Before / after deleting records |
+| `afterCreateWithAssociations` / `afterUpdateWithAssociations` / `afterSaveWithAssociations` | After operations including association data |
+| `beforeDefineCollection` / `afterDefineCollection` | Before / after defining collections |
+| `beforeRemoveCollection` / `afterRemoveCollection` | Before / after removing collections |
 
-Example: Listening to the after-create event
+Example: Listen to data created event
 
 ```ts
 db.on('afterCreate', async (model, options) => {
@@ -95,10 +94,11 @@ db.on('afterCreate', async (model, options) => {
 });
 ```
 
-Example: Listening to the before-update event
+Example: Listen to data update before event
 
 ```ts
 db.on('beforeUpdate', async (model, options) => {
   db.logger.info('Data is about to be updated!');
 });
 ```
+

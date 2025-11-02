@@ -1,12 +1,13 @@
-# ACL Access Control
+# ACL
 
 :::tip
 
-This chapter introduces how to use ACL (Access Control List) in frontend plugins for permission management. Topics include:
+This chapter will introduce how to use ACL (Access Control List) for permission management in frontend plugins. Content will include:
 
-- Permission checking;
+- Permission detection;
 - How to dynamically render content based on permissions;
 
-We will add detailed examples and best practices in future versions.
+We will supplement detailed examples and best practices in future versions.
 
 :::
+

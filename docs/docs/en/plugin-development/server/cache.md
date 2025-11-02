@@ -1,9 +1,9 @@
 # Cache
 
-NocoBase's Cache module is based on <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a>, providing caching functionality for plugin development. The system has two built-in cache types:
+NocoBase's Cache module is based on <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> and provides caching functionality for plugin development. The system has two built-in cache types:
 
-- **memory** - An in-memory cache based on lru-cache, provided by default by node-cache-manager.
-- **redis** - A Redis cache based on node-cache-manager-redis-yet.
+- **memory** - Memory cache based on lru-cache, provided by node-cache-manager by default
+- **redis** - Redis cache based on node-cache-manager-redis-yet
 
 More cache types can be extended and registered through the API.
 
@@ -26,35 +26,35 @@ await this.app.cache.del('key');
 
 ### ctx.cache
 
-In middleware or resource actions, you can access the cache via `ctx.cache`.
+In middleware or resource operations, you can access the cache through `ctx.cache`.
 
 ```ts
 async (ctx, next) => {
   let data = await ctx.cache.get('custom:data');
   if (!data) {
-    // Cache miss, fetch from the database
+    // Cache miss, get from database
     data = await this.getDataFromDatabase();
-    // Store in cache, expires in 1 hour
+    // Store in cache, valid for 1 hour
     await ctx.cache.set('custom:data', data, { ttl: 3600 });
   }
   await next();
 }
 ```
 
-## Creating a Custom Cache
+## Create Custom Cache
 
-If you need to create a separate cache instance (e.g., with a different namespace or configuration), you can use the `app.cacheManager.createCache()` method.
+If you need to create an independent cache instance (for example, different namespaces or configurations), you can use the `app.cacheManager.createCache()` method.
 
 ```ts
 import { Plugin } from '@nocobase/server';
 
 export default class PluginCacheDemo extends Plugin {
   async load() {
-    // Create a cache instance with a prefix
+    // Create a cache instance with prefix
     const myCache = await this.app.cacheManager.createCache({
       name: 'myPlugin',
-      prefix: 'plugin:cache:', // All keys will be automatically prefixed with this value
-      store: 'memory', // Use memory cache, optional, uses defaultStore by default
+      prefix: 'plugin:cache:', // All keys will automatically add this prefix
+      store: 'memory', // Use memory cache, optional, defaults to defaultStore
       max: 1000, // Maximum number of cache items
     });
 
@@ -67,13 +67,13 @@ export default class PluginCacheDemo extends Plugin {
 ### createCache Parameter Description
 
 | Parameter | Type | Description |
-| ---- | ---- | ---- |
-| `name` | `string` | The unique identifier for the cache, required |
-| `prefix` | `string` | Optional, a prefix for cache keys to avoid key conflicts |
-| `store` | `string` | Optional, the store type identifier (e.g., `'memory'`, `'redis'`), uses `defaultStore` by default |
-| `[key: string]` | `any` | Other custom configuration options related to the store |
+| -------- | ---- | ---------- |
+| `name` | `string` | Unique identifier for the cache, required |
+| `prefix` | `string` | Optional, prefix for cache keys, used to avoid key conflicts |
+| `store` | `string` | Optional, store type identifier (such as `'memory'`, `'redis'`), defaults to `defaultStore` |
+| `[key: string]` | `any` | Other store-related custom configuration items |
 
-### Getting an Existing Cache
+### Get Created Cache
 
 ```ts
 const myCache = this.app.cacheManager.getCache('myPlugin');
@@ -81,12 +81,12 @@ const myCache = this.app.cacheManager.getCache('myPlugin');
 
 ## Basic Cache Methods
 
-The Cache instance provides a rich set of cache operation methods, most of which are inherited from node-cache-manager.
+Cache instances provide rich cache operation methods, most of which are inherited from node-cache-manager.
 
 ### get / set
 
 ```ts
-// Set cache with an expiration time (unit: seconds)
+// Set cache with expiration time (unit: seconds)
 await cache.set('key', 'value', { ttl: 3600 });
 
 // Get cache
@@ -96,20 +96,20 @@ const value = await cache.get('key');
 ### del / reset
 
 ```ts
-// Delete a single key
+// Delete single key
 await cache.del('key');
 
-// Clear all caches
+// Clear all cache
 await cache.reset();
 ```
 
 ### wrap
 
-The `wrap()` method is a very useful tool. It first tries to get data from the cache. If there's a cache miss, it executes the function and stores the result in the cache.
+The `wrap()` method is a very useful tool that first attempts to get data from cache, and if there's a cache miss, executes the function and stores the result in cache.
 
 ```ts
 const data = await cache.wrap('user:1', async () => {
-  // This function is executed only on a cache miss
+  // This function only executes on cache miss
   return await this.fetchUserFromDatabase(1);
 }, { ttl: 3600 });
 ```
@@ -134,10 +134,10 @@ await cache.mdel(['key1', 'key2', 'key3']);
 ### keys / ttl
 
 ```ts
-// Get all keys (Note: Some stores may not support this)
+// Get all keys (note: some stores may not support this)
 const allKeys = await cache.keys();
 
-// Get the remaining TTL of a key (unit: seconds)
+// Get remaining expiration time for key (unit: seconds)
 const remainingTTL = await cache.ttl('key');
 ```
 
@@ -145,7 +145,7 @@ const remainingTTL = await cache.ttl('key');
 
 ### wrapWithCondition
 
-`wrapWithCondition()` is similar to `wrap()`, but allows you to decide whether to use the cache based on a condition.
+`wrapWithCondition()` is similar to `wrap()`, but can decide whether to use cache through conditions.
 
 ```ts
 const data = await cache.wrapWithCondition(
@@ -154,10 +154,10 @@ const data = await cache.wrapWithCondition(
     return await this.fetchUserFromDatabase(1);
   },
   {
-    // External parameter controls whether to use the cached result
-    useCache: true, // If set to false, the function will be re-executed even if a cache exists
+    // External parameters control whether to use cache result
+    useCache: true, // If set to false, function will re-execute even if cache exists
 
-    // Decide whether to cache based on the data result
+    // Decide whether to cache based on data result
     isCacheable: (value) => {
       // For example: only cache successful results
       return value && !value.error;
@@ -170,7 +170,7 @@ const data = await cache.wrapWithCondition(
 
 ### Object Cache Operations
 
-When the cached content is an object, you can use the following methods to directly manipulate the object's properties without fetching the entire object.
+When the cached content is an object, you can use the following methods to directly operate object properties without getting the entire object.
 
 ```ts
 // Set a property of an object
@@ -184,9 +184,9 @@ const name = await cache.getValueInObject('user:1', 'name');
 await cache.delValueInObject('user:1', 'age');
 ```
 
-## Registering a Custom Store
+## Register Custom Store
 
-If you need to use other cache types (such as Memcached, MongoDB, etc.), you can register them via `app.cacheManager.registerStore()`.
+If you need to use other cache types (such as Memcached, MongoDB, etc.), you can register them through `app.cacheManager.registerStore()`.
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -194,7 +194,7 @@ import { redisStore, RedisStore } from 'cache-manager-redis-yet';
 
 export default class PluginCacheDemo extends Plugin {
   async load() {
-    // Register Redis store (if not already registered by the system)
+    // Register Redis store (if system hasn't registered it)
     this.app.cacheManager.registerStore({
       name: 'redis',
       store: redisStore,
@@ -205,7 +205,7 @@ export default class PluginCacheDemo extends Plugin {
       url: 'redis://localhost:6379',
     });
 
-    // Create a cache using the newly registered store
+    // Create cache using newly registered store
     const redisCache = await this.app.createCache({
       name: 'redisCache',
       store: 'redis',
@@ -217,8 +217,9 @@ export default class PluginCacheDemo extends Plugin {
 
 ## Notes
 
-1.  **Memory Cache Limits**: When using the memory store, be sure to set a reasonable `max` parameter to avoid memory overflow.
-2.  **Cache Invalidation Strategy**: Remember to clear relevant caches when updating data to avoid stale data.
-3.  **Key Naming Conventions**: It is recommended to use meaningful namespaces and prefixes, such as `module:resource:id`.
-4.  **TTL Settings**: Set TTL reasonably based on the data update frequency to balance performance and consistency.
-5.  **Redis Connection**: When using Redis, ensure that connection parameters and passwords are correctly configured in a production environment.
+1. **Memory Cache Limits**: When using memory store, pay attention to setting reasonable `max` parameter to avoid memory overflow.
+2. **Cache Invalidation Strategy**: Remember to clear related cache when updating data to avoid dirty data.
+3. **Key Naming Conventions**: It's recommended to use meaningful namespaces and prefixes, such as `module:resource:id`.
+4. **TTL Settings**: Set TTL reasonably based on data update frequency to balance performance and consistency.
+5. **Redis Connection**: When using Redis, ensure connection parameters and passwords are correctly configured in production environment.
+

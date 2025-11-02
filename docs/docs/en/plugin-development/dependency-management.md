@@ -1,22 +1,22 @@
 # Dependency Management
 
-In NocoBase plugin development, dependencies are divided into two categories: **self dependencies** and **global dependencies**.
+In NocoBase plugin development, dependencies are divided into two categories: **own dependencies** and **global dependencies**.
 
-- **Global dependencies**: Provided by `@nocobase/server` and `@nocobase/client`, and do not need to be bundled separately in the plugin.
-- **Self dependencies**: Dependencies unique to the plugin (including server-side dependencies), which will be bundled into the plugin's build output.
+- **Global dependencies**: Provided by `@nocobase/server` and `@nocobase/client`, plugins don't need to bundle them separately.
+- **Own dependencies**: Plugins' unique dependencies (including server-side dependencies) will be bundled into the plugin artifacts.
 
 ## Development Principles
 
-Since self dependencies are bundled into the plugin's build output (including server dependencies, which are bundled into `dist/node_modules`), you should declare all dependencies in `devDependencies` instead of `dependencies` during plugin development. This helps avoid discrepancies between the development and production environments.
+Since own dependencies will be bundled into the plugin artifacts (including server dependencies being bundled into `dist/node_modules`), during plugin development, you can declare all dependencies in `devDependencies` instead of `dependencies`. This avoids differences between development and production environments.
 
-When a plugin needs to install the following dependencies, ensure that their **version numbers** are consistent with those in the global dependencies provided by `@nocobase/server` and `@nocobase/client` to avoid runtime conflicts.
+When a plugin needs to install the following dependencies, make sure the **version number** matches the global dependencies in `@nocobase/server` and `@nocobase/client`, otherwise runtime conflicts may occur.
 
 ## Global Dependencies
 
-The following dependencies are provided by NocoBase and do not need to be bundled in the plugin. If you must use them, ensure they are consistent with the framework's version.
+The following dependencies are provided by NocoBase and don't need to be bundled in plugins. If needed, they should match the framework version.
 
 ``` js
-// NocoBase core
+// nocobase core
 '@nocobase/acl',
 '@nocobase/actions',
 '@nocobase/auth',
@@ -51,7 +51,7 @@ The following dependencies are provided by NocoBase and do not need to be bundle
 'winston',
 'winston-daily-rotate-file',
 
-// Koa ecosystem
+// koa ecosystem
 'koa',
 '@koa/cors',
 '@koa/router',
@@ -98,7 +98,7 @@ The following dependencies are provided by NocoBase and do not need to be bundle
 '@formily/reactive',
 '@formily/reactive-react',
 
-// General utilities
+// Common utilities
 'dayjs',
 'mysql2',
 'pg',
@@ -110,15 +110,14 @@ The following dependencies are provided by NocoBase and do not need to be bundle
 'lodash',
 ```
 
-## Development Suggestions
+## Development Recommendations
 
-1.  **Maintain Dependency Consistency**\
-    If you need to use a package that already exists in the global dependencies, avoid installing a different version. Use the globally provided one directly.
+1. **Maintain Dependency Consistency**  
+   If you need to use packages that already exist in global dependencies, avoid installing different versions and use the global dependencies directly.
 
-2.  **Minimize Bundle Size**\
-    For common UI libraries (like `antd`), utility libraries (like `lodash`), and database drivers (like
-    `pg`, `mysql2`), you should rely on the globally provided versions to avoid duplicate bundling.
+2. **Minimize Bundle Size**  
+   For common UI libraries (such as `antd`), utility libraries (such as `lodash`), database drivers (such as `pg`, `mysql2`), you should rely on globally provided versions to avoid duplicate bundling.
 
-3.  **Ensure Consistency Between Development and Production Environments**\
-    Using `devDependencies` ensures consistency between development and the final build output, preventing environment discrepancies caused by improper configuration of
-    `dependencies` and `peerDependencies`.
+3. **Consistency Between Debug and Production Environments**  
+   Using `devDependencies` ensures consistency between development and final artifacts, avoiding environment differences caused by improper configuration of `dependencies` and `peerDependencies`.
+

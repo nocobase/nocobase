@@ -1,6 +1,6 @@
 # Styles & Themes
 
-To better adapt to NocoBase's dynamic theme capabilities, it is recommended to use [antd-style](https://ant-design.github.io/antd-style/guide) for writing styles in plugins. This can be combined with the existing [theme token](https://ant.design/docs/react/customize-theme#seedtoken) to handle the dynamic capabilities of themes. NocoBase also provides a [theme editor plugin](#) for convenient style adjustments.
+To better adapt to NocoBase's dynamic theme capabilities, in plugins, it's recommended to use [antd-style](https://ant-design.github.io/antd-style/guide) to write styles. Combined with existing [theme token](https://ant.design/docs/react/customize-theme#seedtoken) to handle theme dynamic capabilities. NocoBase also provides a [Theme Editor plugin](#) for convenient style adjustments.
 
 ## Writing Styles
 
@@ -10,7 +10,7 @@ To better adapt to NocoBase's dynamic theme capabilities, it is recommended to u
 import { createStyles } from 'antd-style';
 
 const useStyles = createStyles(({ token, css }) => ({
-  // Supports CSS object syntax
+  // Supports css object syntax
   container: {
     backgroundColor: token.colorBgLayout,
     borderRadius: token.borderRadiusLG,
@@ -24,7 +24,7 @@ const useStyles = createStyles(({ token, css }) => ({
     marginLeft: 'auto',
     marginRight: 'auto',
   },
-  // Also supports CSS string templates for a writing experience consistent with standard CSS
+  // Also supports css string templates for consistent writing experience with regular css
   card: css`
     color: ${token.colorTextTertiary};
     box-shadow: ${token.boxShadow};
@@ -44,25 +44,25 @@ const useStyles = createStyles(({ token, css }) => ({
 }));
 
 export default () => {
-  // The styles object is cached by default in the useStyles method, so there's no need to worry about re-render issues
+  // styles object is cached by default in useStyles method, so don't worry about re-render issues
   const { styles, cx, theme } = useStyles();
 
   return (
-    // Use cx to organize classNames
+    // Use cx to organize className
     <div
       className={cx('a-simple-create-style-demo-classname', styles.container)}
     >
       <div className={styles.card}>createStyles Demo</div>
-      {/* The theme object contains all tokens, theme information, etc. */}
+      {/* theme object contains all tokens and theme information */}
       <div>Current theme mode: {theme.appearance}</div>
     </div>
   );
 };
 ```
 
-For detailed usage, refer to the [createStyles API](https://ant-design.github.io/antd-style/api/create-styles).
+For detailed usage, see [createStyles API](https://ant-design.github.io/antd-style/api/create-styles)
 
-### Using createStylish to Create Reusable Styles
+### Using createStylish to Create a Reusable Style
 
 ```tsx
 import { createStyles, createStylish, css } from 'antd-style';
@@ -119,7 +119,7 @@ const useStylish = createStylish(({ token, css }) => {
 });
 
 const useStyles = createStyles({
-  // Supports CSS object syntax
+  // Supports css object syntax
   container: {
     backgroundColor: '#f5f5f5',
     maxWidth: 400,
@@ -129,7 +129,7 @@ const useStyles = createStyles({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Also supports CSS string templates for a writing experience consistent with standard CSS
+  // Also supports css string templates for consistent writing experience with regular css
   btn: css`
     padding: 24px;
   `,
@@ -149,7 +149,7 @@ export default () => {
 };
 ```
 
-For detailed usage, refer to the [createStylish API](https://ant-design.github.io/antd-style/api/create-stylish).
+For detailed usage, see [createStylish API](https://ant-design.github.io/antd-style/api/create-stylish)
 
 ### Using createGlobalStyle to Inject Global Styles
 
@@ -166,17 +166,17 @@ export default () => {
   return (
     <div>
       <Global />
-      <div className="some-class">This text is hotpink</div>
+      <div className="some-class">Favorite color</div>
     </div>
   );
 };
 ```
 
-For detailed usage, refer to the [createGlobalStyle API](https://ant-design.github.io/antd-style/api/global-styles).
+For detailed usage, see [createGlobalStyle API](https://ant-design.github.io/antd-style/api/global-styles)
 
 ## Customizing Themes
 
-### Using antd's theme tokens
+### Using antd's theme token
 
 createStyles Example
 
@@ -218,7 +218,7 @@ const App = () => {
     <div className={styles.container}>
       <Space direction={'vertical'} style={{ width: '100%' }} size={16}>
         <Space>
-          <Button title={'Description of the function button'} icon={<SmileOutlined />} />
+          <Button title={'Function button description'} icon={<SmileOutlined />} />
           Action Button
         </Space>
         <div className={styles.defaultCard}>Default Card</div>
@@ -263,7 +263,7 @@ export default () => {
   return (
     <ThemeProvider>
       <Global />
-      <button className="ant-custom-button">A button that doesn't exist in antd</button>
+      <button className="ant-custom-button">Button that doesn't exist in antd</button>
     </ThemeProvider>
   );
 };
@@ -271,7 +271,7 @@ export default () => {
 
 ## Debugging Themes
 
-### Using the Theme Editor Plugin
-
+### Using Theme Editor Plugin
 
 ![Theme Editor](https://static-docs.nocobase.com/440f844d056a485f9f0dc64a8ca1b4f4.png)
+

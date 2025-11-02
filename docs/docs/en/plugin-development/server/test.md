@@ -1,28 +1,28 @@
 # Test
 
-NocoBase provides a complete set of testing tools to help developers quickly verify the correctness of database logic, API endpoints, and feature implementations during plugin development. This article will introduce how to write, run, and organize these tests.
+NocoBase provides a complete set of testing tools to help developers quickly verify the correctness of database logic, API interfaces, and feature implementations during plugin development. This guide will introduce how to write, run, and organize these tests.
 
 ## Why Write Tests
 
-The benefits of writing automated tests in plugin development:
+Benefits of writing automated tests in plugin development:
 
-- Quickly verify if the database models, APIs, and business logic are correct
-- Avoid regression errors (automatically detect plugin compatibility after core upgrades)
-- Support running tests automatically in a Continuous Integration (CI) environment
-- Support testing plugin features without starting the full service
+- Quickly verify database models, APIs, and business logic are correct  
+- Avoid regression errors (automatically detect plugin compatibility after core upgrades)  
+- Support continuous integration (CI) environments to automatically run tests  
+- Support testing plugin functionality without starting the complete service  
 
-## Testing Environment Basics
+## Test Environment Basics
 
 NocoBase provides two core testing tools:
 
-| Tool | Description | Purpose |
-|------|------|------|
-| `createMockDatabase` | Creates an in-memory database instance | Test database models and logic |
-| `createMockServer` | Creates a complete application instance (including database, plugins, APIs, etc.) | Test business processes and API behavior |
+| Tool                | Description | Purpose |
+| ------------------- | ----------- | ------- |
+| `createMockDatabase` | Create in-memory database instance | Test database models and logic |
+| `createMockServer`   | Create complete application instance (includes database, plugins, APIs, etc.) | Test business processes and interface behavior |
 
-## Database Testing with `createMockDatabase`
+## Using `createMockDatabase` for Database Testing
 
-`createMockDatabase` is suitable for testing features directly related to the database, such as model definitions, field types, associations, CRUD operations, etc.
+`createMockDatabase` is suitable for testing functionality directly related to databases, such as model definitions, field types, relationships, CRUD operations, etc.
 
 ### Basic Example
 
@@ -65,7 +65,7 @@ describe('Database test', () => {
 });
 ```
 
-### Testing CRUD Operations
+### Test CRUD Operations
 
 ```ts
 const Posts = db.collection({
@@ -87,7 +87,7 @@ const updated = await db.getRepository('posts').findOne({ filterByTk: post.get('
 expect(updated.get('title')).toBe('Updated Title');
 ```
 
-### Testing Model Associations
+### Test Model Associations
 
 ```ts
 const Users = db.collection({
@@ -119,9 +119,9 @@ const result = await db.getRepository('users').findOne({
 expect(result.get('posts')).toHaveLength(1);
 ```
 
-## API Testing with `createMockServer`
+## Using `createMockServer` for API Testing
 
-`createMockServer` automatically creates a complete application instance including a database, plugins, and API routes, making it ideal for testing plugin APIs.
+`createMockServer` automatically creates a complete application instance including database, plugins, and API routes, very suitable for testing plugin interfaces.
 
 ### Basic Example
 
@@ -150,7 +150,7 @@ describe('User API test', () => {
 });
 ```
 
-### Testing API Query and Update
+### Test Interface Query and Update
 
 ```ts
 // Query user list
@@ -162,9 +162,9 @@ const update = await app.agent().post(`/users:update/${id}`).send({ username: 'n
 expect(update.body.username).toBe('newname');
 ```
 
-### Simulating Login State or Permission Testing
+### Simulate Login Status or Permission Testing
 
-You can enable the `auth` plugin when creating a `MockServer`, then use the login API to get a token or session:
+You can enable the `auth` plugin when creating `MockServer`, then use the login interface to obtain token or session:
 
 ```ts
 const res = await app
@@ -189,9 +189,9 @@ You can also use the simpler `login()` method
 await app.agent().login(userOrId);
 ```
 
-## Organizing Test Files in a Plugin
+## Organize Test Files in Plugins
 
-It is recommended to store test files related to server-side logic in the `./src/server/__tests__` folder of your plugin.
+It's recommended to store server-side logic-related test files in the plugin's `./src/server/__tests__` folder.
 
 ```bash
 packages/plugins/@my-project/plugin-hello/
@@ -202,7 +202,7 @@ packages/plugins/@my-project/plugin-hello/
 │       │   └── api.test.ts  # API related tests
 ```
 
-## Running Tests
+## Run Tests
 
 ```bash
 # Specify directory
@@ -210,3 +210,4 @@ yarn test packages/plugins/@my-project/plugin-hello/src/server
 # Specify file
 yarn test packages/plugins/@my-project/plugin-hello/src/server/__tests__/db.test.ts
 ```
+
