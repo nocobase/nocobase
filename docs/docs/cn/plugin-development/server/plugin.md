@@ -1,4 +1,4 @@
-# 插件
+# Plugin 插件
 
 在 NocoBase 中，服务端插件（Server Plugin）提供了一种模块化的方式，用于扩展和定制服务端的功能。开发者可以通过继承 `@nocobase/server` 的 `Plugin` 类，在不同的生命周期阶段注册事件、接口、权限配置等自定义逻辑。
 

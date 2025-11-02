@@ -1,6 +1,6 @@
 # 插件开发
 
-## 集群模式下的挑战
+## 背景问题
 
 在单节点环境中，插件通常可以通过进程内状态、事件或任务来完成需求；而在集群模式下，同一插件可能同时运行在多个实例上，面临以下典型问题：
 
@@ -10,7 +10,9 @@
 
 NocoBase 核心在应用层预置了多种中间件接口，帮助插件在集群环境下复用统一能力。下面将结合源码介绍缓存、同步消息、消息队列与分布式锁的用法及最佳实践。
 
-## 缓存组件（Cache）
+## 解决方案
+
+### 缓存组件（Cache）
 
 对于要保存在内存中的数据，建议使用系统内置的缓存组件进行管理。
 
@@ -36,7 +38,7 @@ async load() {
 }
 ```
 
-## 同步信号管理器（SyncMessageManager）
+### 同步信号管理器（SyncMessageManager）
 
 如果内存中的状态无法使用分布式缓存（如无法序列化），那么当状态随用户操作发生变化时，需要将变化通过同步信号通知到其他实例，以保持状态一致。
 
@@ -60,7 +62,7 @@ export class PluginDataSourceMainServer extends Plugin {
 }
 ```
 
-## 消息广播管理器（PubSubManager）
+### 消息广播管理器（PubSubManager）
 
 消息广播是同步信号的底层组件，也支持直接使用。当需要在实例间广播消息时，可通过该组件实现。
 
@@ -81,7 +83,7 @@ await this.app.pubSubManager.subscribe(channel, async ({ id }) => {
 await this.app.pubSubManager.publish(channel, { id: taskId }, { skipSelf: true });
 ```
 
-## 消息队列组件（EventQueue）
+### 消息队列组件（EventQueue）
 
 消息队列用于调度异步任务，适合处理长耗时或可重试的操作。
 
@@ -103,7 +105,7 @@ this.app.eventQueue.subscribe(`${plugin.name}.task`, {
 await this.app.eventQueue.publish(`${plugin.name}.task`, { id: taskId }, { maxRetries: 3 });
 ```
 
-## 分布式锁管理器（LockManager）
+### 分布式锁管理器（LockManager）
 
 在需要避免竞态操作时，可以使用分布式锁来序列化对资源的访问。
 
@@ -123,8 +125,8 @@ await this.app.lockManager.runExclusive(lockKey, async () => {
 
 ## 开发建议
 
+- **内存状态一致性**：尽量避免在开发中使用内存状态，改用缓存或同步消息保持状态一致。
 - **优先复用内置接口**：统一使用 `app.cache`、`app.syncMessageManager` 等能力，避免在插件中重复实现跨节点通信逻辑。
-- **确保适配器一致**：在多节点部署时，为 Pub/Sub、EventQueue、LockManager 配置同一后端（如 Redis、RabbitMQ），并在应用启动阶段完成连接。
 - **关注事务边界**：带事务的操作应使用 `transaction.afterCommit`（`syncMessageManager.publish` 已内置）以保证数据与消息一致。
 - **制定退避策略**：对于队列与广播任务，合理设置 `timeout`、`maxRetries`、`debounce`，防止在异常情况下产生新的流量洪峰。
 - **配套监控与日志**：善用应用日志记录通道名称、消息载荷、锁 key 等信息，方便排查集群下的偶发问题。

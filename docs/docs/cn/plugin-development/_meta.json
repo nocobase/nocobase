@@ -36,7 +36,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Collections 数据表和字段",
+        "label": "Collections 数据表",
         "link": "/plugin-development/server/collections"
       },
       {
@@ -71,12 +71,12 @@
       },
       {
         "type": "custom-link",
-        "label": "CronJobManager 定时任务",
-        "link": "/plugin-development/server/cron-job"
+        "label": "CronJobManager 定时任务管理",
+        "link": "/plugin-development/server/cron-job-manager"
       },
       {
         "type": "custom-link",
-        "label": "Event事件",
+        "label": "Event 事件",
         "link": "/plugin-development/server/event"
       },
       {

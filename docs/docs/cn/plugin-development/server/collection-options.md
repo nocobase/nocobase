@@ -1,76 +1,3 @@
-# 数据表和字段
-
-在 NocoBase 中，`collection` 对应数据库中的数据表，`field` 则是数据表里的字段。插件可以通过配置 collection 来声明表结构和字段定义，实现数据的持久化。
-
-## 存放位置与系统表
-
-在插件中，自定义的 collection 应放置在 `src/server/collections/*.ts` 目录下。
-需要注意的是，该目录下已有的大部分文件属于系统表，这些表不会显示在主数据源的管理界面中。
-
-## 定义新的 collection
-
-使用 `defineCollection()` 可以完整描述一张新数据表以及它的字段：
-
-```ts
-import { defineCollection } from '@nocobase/database';
-
-export default defineCollection({
-  name: 'articles',
-  title: '示例文章',
-  fields: [
-    { type: 'string', name: 'title', interface: 'input', uiSchema: { title: '标题', required: true } },
-    { type: 'text', name: 'content', interface: 'textarea', uiSchema: { title: '正文' } },
-    {
-      type: 'belongsTo',
-      name: 'author',
-      target: 'users',
-      foreignKey: 'authorId',
-      interface: 'recordPicker',
-      uiSchema: { title: '作者' },
-    },
-  ],
-});
-```
-
-常见字段配置说明：
-
-- `type`：字段在数据库里的类型，例如 `string`、`integer`、`boolean`、`belongsTo` 等。
-- `name`：字段在数据库中的名称，需保持唯一。
-- `interface` 与 `uiSchema`：用于生成前端界面，在搭建页面或使用区块时会自动生效。
-- 关系型字段需要额外配置属性（如 `target`、`foreignKey`），以描述关联关系。
-
-如果只关注后端存储，字段至少需要 `type` 和 `name`，其余配置可按需添加。
-
-## 扩展已有 collection
-
-当你想为系统内置或其他插件中已经存在的 collection 增加字段或变更配置，可以使用 `extendCollection()`：
-
-```ts
-import { extendCollection } from '@nocobase/database';
-
-export default extendCollection({
-  name: 'articles',
-  fields: [
-    { type: 'boolean', name: 'isPublished', defaultValue: false, interface: 'switch', uiSchema: { title: '发布状态' } },
-  ],
-});
-```
-
-`extendCollection()` 只会合并或追加配置，不会移除原有字段。它适用于在不直接修改原始文件的情况下扩展能力。
-
-## 同步数据库结构
-
-插件第一次激活时会自动同步 collection 配置与实际数据库结构。如果插件已经安装并在运行，新增或修改 collection 后需要执行升级命令进行同步：
-
-```bash
-yarn nocobase upgrade
-```
-
-若同步过程中出现脏数据，可以通过卸载后重新安装插件（`yarn nocobase install -f`）来重建表结构。
-
-:::info{title="提示"}
-collection 的字段声明会自动生成 RESTful 接口（如 `/api/examples:list`、`/api/examples:create` 等）。结合权限与区块即可打通从数据建模到页面搭建的全链路。
-:::
 
 ## Collection 配置参数说明
 
@@ -143,14 +70,15 @@ export interface CollectionOptions {
 - **必需**: ❌
 - **说明**: 继承其他数据表的字段定义，支持单个或多个数据表继承
 - **示例**:
+
 ```typescript
 // 单个继承
 {
   name: 'admin_users',
   inherits: 'users',  // 继承用户数据表的所有字段
-fields: [
-  {
-    type: 'string',
+  fields: [
+    {
+      type: 'string',
       name: 'admin_level'
     }
   ]
@@ -1541,67 +1469,3 @@ interface BelongsToManyFieldOptions extends BaseRelationFieldOptions {
   constraints: false
 }
 ```
-
-## 字段 type 扩展
-
-NocoBase 支持通过插件扩展自定义字段类型，开发者可以创建符合特定业务需求的字段类型。
-
-
-### 1. 定义字段类
-
-创建自定义字段类，继承自 `Field` 基类：
-
-```typescript
-import { Field, FieldContext } from '@nocobase/database';
-
-export class CustomField extends Field {
-  get dataType() {
-    // 返回对应的 Sequelize 数据类型
-    return DataTypes.STRING;
-  }
-
-  // 自定义字段逻辑
-  additionalSequelizeOptions() {
-    return {
-      // 自定义 Sequelize 选项
-    };
-  }
-}
-```
-
-### 2. 定义字段选项接口
-
-为自定义字段定义 TypeScript 接口：
-
-```typescript
-export interface CustomFieldOptions extends BaseColumnFieldOptions<'custom'> {
-  type: 'custom';
-  customProperty?: string;  // 自定义属性
-  customConfig?: {
-    option1?: string;
-    option2?: number;
-  };
-}
-```
-
-### 3. 注册字段类型
-
-在插件中注册自定义字段类型：
-
-```typescript
-import { Plugin } from '@nocobase/server';
-
-export class CustomFieldPlugin extends Plugin {
-  async afterAdd() {
-    // 注册字段类
-    this.app.db.registerFieldTypes({
-      custom: CustomField,
-    });
-  }
-}
-```
-
-## 下一步
-
-- collection 会自动生成对应的 REST 资源，了解更多请继续阅读《资源和操作》。
-- 在前端使用，请继续阅读客户端《字段扩展》篇

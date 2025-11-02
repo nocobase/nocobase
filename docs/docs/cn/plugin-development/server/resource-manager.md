@@ -1,8 +1,8 @@
-# ResourceManager
+# ResourceManager 资源管理
 
 NocoBase 的资源管理功能可以自动将现有的数据表（collection）和关联（association）转换为资源，并内置多种操作类型，帮助开发者快速构建 REST API 资源操作。与传统的 REST API 略有不同，NocoBase 的资源操作并不依赖 HTTP 请求方法，而是通过显式定义 `:action` 来确定执行的具体操作。
 
-## 资源自动化
+## 自动生成资源
 
 NocoBase 会自动将数据库中定义的 `collection` 和 `association` 转化为资源。例如，定义了 `posts` 和 `comments` 两个集合：
 
