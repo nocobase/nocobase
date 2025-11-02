@@ -1,3 +1,4 @@
+```markdown
 ---
 pkg: "@nocobase/plugin-multi-app-manager"
 ---
@@ -141,3 +142,4 @@ The version of a sub-app will automatically be upgraded along with the main app,
 
 #### 5. Resource Management
 The resource consumption of each sub-app is basically the same as the main app. Currently, a single application uses about 500-600MB of memory.
+```
