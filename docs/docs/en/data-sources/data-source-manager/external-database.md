@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Use an existing external database as a data source. Currently, the supported external databases are MySQL, MariaDB, and PostgreSQL.
+Use an existing external database as a data source. Currently, the supported external databases are MySQL, MariaDB, PostgreSQL, MSSQL, Oracle.
 
 ## Usage Instructions
 
