@@ -1,7 +1,7 @@
 import { Badge } from '@rspress/core/theme';
-import { useNavigate } from '@rspress/core/runtime';
+import { useLang, useNavigate } from '@rspress/runtime';
 import React from 'react';
-import { EditionLevels } from './EditionLevels';
+import { EditionLevels, EditionLevelsEN } from './EditionLevels';
 
 export interface PluginCardProps {
   name: string;
@@ -98,6 +98,7 @@ export const PluginCard: React.FC<PluginCardProps> = ({
     maxWidth: float ? '400px' : 'none',
     boxSizing: 'border-box',
   };
+  const lang = useLang();
 
   return (
     <>
@@ -136,7 +137,7 @@ export const PluginCard: React.FC<PluginCardProps> = ({
           )}
           {editionLevel && (
             <Badge type="danger">
-              {EditionLevels[editionLevel as number]}+
+              {lang === 'cn' ? EditionLevels[editionLevel as number] : EditionLevelsEN[editionLevel as number]}+
             </Badge>
           )}
           {version && (
@@ -168,11 +169,11 @@ export const PluginCard: React.FC<PluginCardProps> = ({
                   {pricing.plan1.points} <i className="uil uil-moon-eclipse" style={{ marginRight: '4px' }}></i>
                 </a>
                 <span style={{ color: '#8c8c8c' }}>/</span>
-                <span style={{ color: '#8c8c8c' }}>￥{pricing.plan1.price.toLocaleString('en-US')}</span>
+                <span style={{ color: '#8c8c8c' }}>{lang === 'cn' ? '￥' : '$'}{pricing.plan1.price.toLocaleString('en-US')}</span>
               </h6>
             )}
             {pricing.plan2 && (
-              <h6 style={{ margin: '0 0 0 auto', fontWeight: 'normal', color: '#8c8c8c', fontSize: '14px' }}>
+              <h6 style={{ margin: '0 0 0 8px', fontWeight: 'normal', color: '#8c8c8c', fontSize: '14px' }}>
                 <span style={{ fontWeight: 'normal', fontStyle: 'italic', fontSize: '12px', color: '#8c8c8c' }}>
                   {pricing.plan2.label}
                 </span>
@@ -181,7 +182,7 @@ export const PluginCard: React.FC<PluginCardProps> = ({
                   {pricing.plan2.points} <i className="uil uil-moon-eclipse" style={{ marginRight: '4px' }}></i>
                 </a>
                 <span style={{ color: '#8c8c8c' }}>/</span>
-                <span style={{ color: '#8c8c8c' }}>￥{pricing.plan2.price.toLocaleString('en-US')}</span>
+                <span style={{ color: '#8c8c8c' }}>{lang === 'cn' ? '￥' : '$'}{pricing.plan2.price.toLocaleString('en-US')}</span>
               </h6>
             )}
           </div>
