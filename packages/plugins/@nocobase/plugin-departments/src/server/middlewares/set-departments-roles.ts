@@ -38,7 +38,9 @@ export const setDepartmentsInfo = async (ctx: Context, next: Next) => {
     return next();
   }
   ctx.state.currentUser.departments = departments;
-  ctx.state.currentUser.mainDeparmtent = departments.find((dept) => dept.isMain);
+
+  // Use mainDepartmentId instead of isMain
+  ctx.state.currentUser.mainDeparmtent = departments.find((dept) => dept.id === currentUser.mainDepartmentId);
 
   const departmentIds = departments.map((dept) => dept.id);
   const roleRepo = ctx.db.getRepository('roles');
