@@ -4,7 +4,7 @@ The differences between main databases and external databases in NocoBase are pr
 
 ## 1. Database Type Support
 
-For more details, see: [Data Source Manager](https://docs.nocobase.com/data-sources/data-source-manager)
+For more details, see: [Data Source Manager](/data-sources/data-source-manager)
 
 ### Database Types
 
@@ -26,7 +26,7 @@ For more details, see: [Data Source Manager](https://docs.nocobase.com/data-sour
 
 ## 2. Collection Type Support
 
-For more details, see: [Collections](https://docs.nocobase.com/data-sources/data-modeling/collection)
+For more details, see: [Collections](/data-sources/data-modeling/collection)
 
 | Collection Type | Main Database | External Database | Description |
 |----------------|-------------------|---------------------|-------------|
@@ -43,20 +43,20 @@ For more details, see: [Collections](https://docs.nocobase.com/data-sources/data
 
 ## 3. Field Type Support
 
-For more details, see: [Collection Fields](https://docs.nocobase.com/data-sources/data-modeling/collection-fields)
+For more details, see: [Collection Fields](/data-sources/data-modeling/collection-fields)
 
 ### Basic Types
 
 | Field Type | Main Database | External Database |
 |-----------|----------------|-------------------|
-| Single text | ✅ | ✅ |
-| Long text | ✅ | ✅ |
+| Single Line Text | ✅ | ✅ |
+| Long Text | ✅ | ✅ |
 | Phone | ✅ | ✅ |
 | Email | ✅ | ✅ |
 | URL | ✅ | ✅ |
 | Integer | ✅ | ✅ |
 | Number | ✅ | ✅ |
-| Percent | ✅ | ✅ |
+| Percentage | ✅ | ✅ |
 | Password | ✅ | ✅ |
 | Color | ✅ | ✅ |
 | Icon | ✅ | ✅ |
@@ -67,8 +67,8 @@ For more details, see: [Collection Fields](https://docs.nocobase.com/data-source
 |-----------|----------------|-------------------|
 | Checkbox | ✅ | ✅ |
 | Single select | ✅ | ✅ |
-| Multiple select | ✅ | ✅ |
-| Radio group | ✅ | ✅ |
+| Multiple Select | ✅ | ✅ |
+| Radio Group | ✅ | ✅ |
 | Checkbox group | ✅ | ✅ |
 | China region | ✅ | ❌ |
 
@@ -79,7 +79,7 @@ For more details, see: [Collection Fields](https://docs.nocobase.com/data-source
 | Media | ✅ | ✅ |
 | Markdown | ✅ | ✅ |
 | Markdown(Vditor) | ✅ | ✅ |
-| Rich text | ✅ | ✅ |
+| Rich Text | ✅ | ✅ |
 | Attachment(Association) | ✅ | ❌ |
 | Attachment(URL) | ✅ | ✅ |
 
@@ -112,7 +112,7 @@ For more details, see: [Collection Fields](https://docs.nocobase.com/data-source
 | Formula | ✅ | ✅ |
 | Sequence | ✅ | ✅ |
 | JSON | ✅ | ✅ |
-| Collection select | ✅ | ❌ |
+| Collection selector | ✅ | ❌ |
 | Encryption | ✅ | ✅ |
 
 ### System Info Fields

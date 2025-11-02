@@ -1,3 +1,23 @@
+## Advanced Features
+
+### Pagination
+
+#### 1. Page Number Update
+
+##### Syntax
+Simply insert it in your Office software.
+
+##### Example
+In Microsoft Word:
+- Use the "Insert → Page Number" function  
+In LibreOffice:
+- Use the "Insert → Field → Page Number" function
+
+##### Result
+In the generated report, the page numbers on each page will update automatically.
+
+
+#### 2. Table of Contents Generation
 
 ##### Syntax
 Simply insert it in your Office software.
@@ -134,7 +154,9 @@ Whether for DOCX or XLSX, the final rendered image size will follow the dimensio
 
 2. Right-click on this image, edit its "Alt Text", and fill in the image field label you want to insert, for example `{d.imageUrl}`:
 
+
 ![20250414211130-2025-04-14-21-11-31](https://static-docs.nocobase.com/20250414211130-2025-04-14-21-11-31.png)
+
 
 3. Use the following example data for rendering:
 ```json
@@ -146,7 +168,9 @@ Whether for DOCX or XLSX, the final rendered image size will follow the dimensio
 
 4. In the rendered result, the temporary image will be replaced with the actual image:
 
+
 ![20250414203444-2025-04-14-20-34-46](https://static-docs.nocobase.com/20250414203444-2025-04-14-20-34-46.png)
+
 
 ##### Multiple Image Loop Replacement
 
@@ -170,11 +194,15 @@ If you want to insert a group of images in the template, such as a product list,
 
 2. Set up a loop area in the DOCX template, and insert temporary images in each loop item with Alt Text set to `{d.products[i].imageUrl}`, as shown below:
 
+
 ![20250414205418-2025-04-14-20-54-19](https://static-docs.nocobase.com/20250414205418-2025-04-14-20-54-19.png)
+
 
 3. After rendering, all temporary images will be replaced with their respective data images:
 
+
 ![20250414205503-2025-04-14-20-55-05](https://static-docs.nocobase.com/20250414205503-2025-04-14-20-55-05.png)
+
 
 #### Inserting Dynamic Images in XLSX Files
 
@@ -182,7 +210,9 @@ The operation method in Excel templates (XLSX) is basically the same, just note 
 
 1. After inserting an image, please ensure that you select "image within cell" rather than having the image float above the cell.
 
+
 ![20250414211643-2025-04-14-21-16-45](https://static-docs.nocobase.com/20250414211643-2025-04-14-21-16-45.png)
+
 
 2. After selecting the cell, click to view "Alt Text" to fill in the field label, such as `{d.imageUrl}`.
 
@@ -199,17 +229,18 @@ Barcode generation works the same way as Dynamic Images, requiring only three st
 
 2. Edit the image's "Alt Text" and write in the barcode format field label, for example `{d.code:barcode(qrcode)}`, where `qrcode` is the barcode type (see the supported list below)
 
+
 ![20250414214626-2025-04-14-21-46-28](https://static-docs.nocobase.com/20250414214626-2025-04-14-21-46-28.png)
+
 
 3. After rendering, the placeholder image will be automatically replaced with the corresponding barcode image:
 
+
 ![20250414214925-2025-04-14-21-49-26](https://static-docs.nocobase.com/20250414214925-2025-04-14-21-49-26.png)
+
 
 #### Supported Barcode Types
 
 | Barcode Name | Type   |
 | ------------ | ------ |
 | QR Code      | qrcode |
-
-
-

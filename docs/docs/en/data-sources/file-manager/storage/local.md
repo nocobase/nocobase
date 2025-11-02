@@ -1,12 +1,14 @@
 # Local storage
 
-The uploaded files will be saved in a local directory on the server. Suitable for scenarios small scale or experimental usage, which the quantity of files is finite.
+Uploaded files will be saved in a local directory on the server. This is suitable for small-scale or experimental scenarios where the total number of files managed by the system is relatively small.
 
 ## Options
 
+
 ![Example of file storage engine options](https://static-docs.nocobase.com/20240529115151.png)
 
-:::info{title=Hint}
+
+:::info{title=Note}
 This section only covers the specific options for the local storage engine. For common parameters, please refer to the [General Engine Parameters](./index.md#general-engine-parameters).
 :::
 

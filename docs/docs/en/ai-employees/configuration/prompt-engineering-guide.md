@@ -159,7 +159,7 @@ Example Chart:
 }
 
 # Negative Examples (Optional)
-- Mixing Chinese and English → Maintain language consistency
+- Mixing languages → Maintain language consistency
 - Overloaded charts → Each chart should express only one theme
 - Incomplete data → Truthfully state "No data available"
 ```
@@ -306,7 +306,7 @@ First, write the positive parts (role, workflow, examples), then add constraints
 
 **Further Reading**
 
-* [《AI Agent · Administrator Configuration Guide》](./admin-configuration.md): Put prompts into actual configuration
+* [AI Agent · Administrator Configuration Guide](./admin-configuration.md): Put prompts into actual configuration
 * Dedicated manuals for each AI agent: View complete role/task templates
 
 
@@ -315,3 +315,5 @@ First, write the positive parts (role, workflow, examples), then add constraints
 **Get it working, then refine it.**
 Start with a "working" version, and continuously collect issues, add examples, and refine rules in real tasks.
 Remember: **First, tell it how to do things right (positive guidance), then constrain it from doing things wrong (moderate restriction).**
+
+---

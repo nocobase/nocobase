@@ -32,13 +32,11 @@ cd C:\your\path\my-project
 # ...
 services:
   app:
-    # Recommended to use Aliyun image (more stable network in China)
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:1.7.14-full
+    # Use a specific version number for production
+    image: nocobase/nocobase:1.7.14-full
     # You can also use an alias version (may upgrade automatically, use with caution in production)
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
-    # image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:beta-full
-    # Docker Hub (may be slow/fail in China)
-    # image: nocobase/nocobase:1.7.14-full
+    # image: nocobase/nocobase:latest-full
+    # image: nocobase/nocobase:beta-full
 # ...
 ```
 
@@ -67,7 +65,7 @@ NocoBase does not support downgrading. If you need to roll back, please restore 
 
 **Q: Slow or failed image pull**
 
-Use a mirror accelerator, or use the Aliyun image `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:<tag>`
+This is often due to network issues. You can try configuring a Docker mirror to speed up downloads or simply try again later.
 
 **Q: Version has not changed**
 
@@ -75,4 +73,4 @@ Confirm that you have changed `image` to the new version number and successfully
 
 **Q: Commercial plugin download or update failed**
 
-For commercial plugins, please verify the license key in the system, and then restart the Docker container. For details, see [NocoBase Commercial License Activation Guide](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide).
+For commercial plugins, please verify the license key in the system, and then restart the Docker container. For details, see [NocoBase Commercial License Activation Guide](https://www.nocobase.com/blog/nocobase-commercial-license-activation-guide).

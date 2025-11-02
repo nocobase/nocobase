@@ -1,60 +1,60 @@
 # HTTP API
 
-附件字段和文件表的文件上传均支持通过 HTTP API 进行处理。根据附件或文件表使用的存储引擎不同，分别有不同的调用方式。
+File uploads for both attachment fields and file collections can be handled via the HTTP API. The method of invocation differs depending on the storage engine used by the attachment or file collection.
 
-## 服务端上传
+## Server-side Upload
 
-针对 S3、OSS、COS 等项目中内置的开源存储引擎，HTTP API 与用户界面上传功能调用的相同，文件均通过服务端上传。调用接口需要通过 `Authorization` 请求头传递基于用户登录的 JWT 令牌，否则将被拒绝访问。
+For built-in open-source storage engines like S3, OSS, and COS, the HTTP API call is the same as the one used by the user interface upload feature, where files are uploaded through the server. API calls require a user-based JWT token to be passed in the `Authorization` request header; otherwise, access will be denied.
 
-### 附件字段
+### Attachment Field
 
-通过对附件表（`attachments`）资源发起 `create` 操作，以 POST 形式发送请求，并通过 `file` 字段上传二进制内容。调用后文件会被上传至默认的存储引擎中。
+Initiate a `create` action on the attachments resource (`attachments`) by sending a POST request and upload the binary content through the `file` field. After the call, the file will be uploaded to the default storage engine.
 
 ```shell
-curl -X POST\
-    -H "Authorization: Bearer <JWT>"\
-    -F "file=@<path/to/file>"\
+curl -X POST \
+    -H "Authorization: Bearer <JWT>" \
+    -F "file=@<path/to/file>" \
     "http://localhost:3000/api/attachments:create"
 ```
 
-如需将文件上传至不同的存储引擎，可以通过 `attachmentField` 参数指定所属数据表字段已配置的存储引擎（如未配置，则上传至默认存储引擎）。
+To upload files to a different storage engine, you can use the `attachmentField` parameter to specify the storage engine configured for the collection field. If not configured, the file will be uploaded to the default storage engine.
 
 ```shell
-curl -X POST\
-    -H "Authorization: Bearer <JWT>"\
-    -F "file=@<path/to/file>"\
+curl -X POST \
+    -H "Authorization: Bearer <JWT>" \
+    -F "file=@<path/to/file>" \
     "http://localhost:3000/api/attachments:create?attachmentField=<collection_name>.<field_name>"
 ```
 
-### 文件表
+### File Collection
 
-对文件表上传将自动生成文件记录，通过对文件表资源发起 `create` 操作，以 POST 形式发送请求，并通过 `file` 字段上传二进制内容。
+Uploading to a file collection will automatically generate a file record. Initiate a `create` action on the file collection resource by sending a POST request and upload the binary content through the `file` field.
 
 ```shell
-curl -X POST\
-    -H "Authorization: Bearer <JWT>"\
-    -F "file=@<path/to/file>"\
+curl -X POST \
+    -H "Authorization: Bearer <JWT>" \
+    -F "file=@<path/to/file>" \
     "http://localhost:3000/api/<file_collection_name>:create"
 ```
 
-对文件表上传无需指定存储引擎，文件会被上传至该表配置的存储引擎中。
+When uploading to a file collection, there is no need to specify a storage engine; the file will be uploaded to the storage engine configured for that collection.
 
-## 客户端上传
+## Client-side Upload
 
-针对通过商业插件 S3-Pro 提供的 S3 兼容性的存储引擎，HTTP API 上传需要分为几个步骤进行调用。
+For S3-compatible storage engines provided through the commercial S3-Pro plugin, the HTTP API upload requires several steps.
 
-### 附件字段
+### Attachment Field
 
-1.  获取存储引擎信息
+1.  Get storage engine information
 
-    对存储表（`storages`）发起 `getBasicInfo` 操作，同时携带存储空间标识（storage name），请求存储引擎的配置信息
+    Initiate a `getBasicInfo` action on the storages collection (`storages`), including the storage name, to request the storage engine's configuration information.
 
     ```shell
     curl 'http://localhost:13000/api/storages:getBasicInfo/<storage_name>' \
       -H 'Authorization: Bearer <JWT>'
     ```
 
-    返回的存储引擎配置信息示例：
+    Example of returned storage engine configuration information:
 
     ```json
     {
@@ -66,9 +66,9 @@ curl -X POST\
     }
     ```
 
-2.  获取服务商的预签名信息
+2.  Get the presigned URL from the service provider
 
-    对 `fileStorageS3` 资源发起 `createPresignedUrl` 操作，以 POST 形式发送请求，并在 body 中携带文件相关信息，获取到预签名上传信息
+    Initiate a `createPresignedUrl` action on the `fileStorageS3` resource by sending a POST request with file-related information in the body to obtain the presigned upload information.
 
     ```shell
     curl 'http://localhost:13000/api/fileStorageS3:createPresignedUrl' \
@@ -79,21 +79,21 @@ curl -X POST\
       --data-raw '{"name":<name>,"size":<size>,"type":<type>,"storageId":<storageId>,"storageType":<storageType>}'
     ```
 
-    > 说明：
-    > 
-    > * name: 文件名
-    > * size: 文件大小（以 bytes 为单位）
-    > * type: 文件的 MIME 类型，可以参考：[常见 MIME 类型](https://developer.mozilla.org/zh-CN/docs/Web/HTTP/MIME_types/Common_types)
-    > * storageId: 存储引擎的id（第一步中返回的 `id` 字段）
-    > * storageType: 存储引擎类型（第一步中返回的 `type` 字段）
-    > 
-    > 示例请求数据：
-    > 
+    > Note:
+    >
+    > *   `name`: File name
+    > *   `size`: File size (in bytes)
+    > *   `type`: The MIME type of the file. You can refer to [Common MIME types](https://developer.mozilla.org/en-US/docs/Web/HTTP/MIME_types/Common_types)
+    > *   `storageId`: The ID of the storage engine (the `id` field returned in step 1).
+    > *   `storageType`: The type of the storage engine (the `type` field returned in step 1).
+    >
+    > Example request data:
+    >
     > ```
     > --data-raw '{"name":"a.png","size":4405,"type":"image/png","storageId":2,"storageType":"s3-compatible"}'
     > ```
 
-    获取到的预签名信息数据结构如下
+    The data structure of the obtained presigned information is as follows:
 
     ```json
     {
@@ -111,29 +111,32 @@ curl -X POST\
     }
     ```
 
-3.  文件上传
+3.  Upload the file
 
-    使用返回的 `putUrl` 发起 `PUT` 请求，将文件作为 body 上传。
+    Use the returned `putUrl` to make a `PUT` request, uploading the file as the body.
 
     ```shell
     curl '<putUrl>' \
       -X 'PUT' \
       -T <file_path>
     ```
-    > 说明：
-    > * putUrl：上一步返回的 `putUrl` 字段
-    > * file_path：需上传的本地文件路径
-    > 
-    > 示例请求数据：
+
+    > Note:
+    >
+    > *   `putUrl`: The `putUrl` field returned in the previous step.
+    > *   `file_path`: The local path of the file to be uploaded.
+    >
+    > Example request data:
+    >
     > ```
     > curl 'https://xxxxxxx' \
     >  -X 'PUT' \
     >  -T /Users/Downloads/a.png
     > ```
 
-4.  创建文件行记录
+4.  Create the file record
 
-    上传成功后，通过对附件表（`attachments`）资源发起 `create` 操作，以 POST 形式发送请求，创建文件记录。
+    After a successful upload, create the file record by initiating a `create` action on the attachments resource (`attachments`) with a POST request.
 
     ```shell
     curl 'http://localhost:13000/api/attachments:create?attachmentField=<collection_name>.<field_name>' \
@@ -144,25 +147,27 @@ curl -X POST\
       --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
     ```
 
-    > data-raw 中依赖数据说明：
-    > * title: 上一步返回的 `fileInfo.title` 字段
-    > * filename: 上一步返回的 `fileInfo.key` 字段
-    > * extname: 上一步返回的 `fileInfo.extname` 字段
-    > * path: 默认为空
-    > * size: 上一步返回的 `fileInfo.size` 字段
-    > * url: 默认为空
-    > * mimetype: 上一步返回的 `fileInfo.mimetype` 字段
-    > * meta: 上一步返回的 `fileInfo.meta` 字段
-    > * storageId: 第一步返回的 `id` 字段
-    > 
-    > 示例请求数据：
+    > Explanation of dependent data in `data-raw`:
+    >
+    > *   `title`: The `fileInfo.title` field returned in the previous step.
+    > *   `filename`: The `fileInfo.key` field returned in the previous step.
+    > *   `extname`: The `fileInfo.extname` field returned in the previous step.
+    > *   `path`: Empty by default.
+    > *   `size`: The `fileInfo.size` field returned in the previous step.
+    > *   `url`: Empty by default.
+    > *   `mimetype`: The `fileInfo.mimetype` field returned in the previous step.
+    > *   `meta`: The `fileInfo.meta` field returned in the previous step.
+    > *   `storageId`: The `id` field returned in step 1.
+    >
+    > Example request data:
+    >
     > ```
     >   --data-raw '{"title":"ATT00001","filename":"ATT00001-8nuuxkuz4jn.png","extname":".png","path":"","size":4405,"url":"","mimetype":"image/png","meta":{},"storageId":2}'
     > ```
 
-### 文件表
+### File Collection
 
-前三步操作与附件字段上传相同，但在第四步需要创建文件记录，通过对文件表资源发起 create 操作，以 POST 形式发送请求，并通过 body 上传文件信息。
+The first three steps are the same as for uploading to an attachment field. However, in the fourth step, you need to create the file record by initiating a `create` action on the file collection resource with a POST request, uploading the file information in the body.
 
 ```shell
 curl 'http://localhost:13000/api/<file_collection_name>:create' \
@@ -171,18 +176,20 @@ curl 'http://localhost:13000/api/<file_collection_name>:create' \
   --data-raw '{"title":<title>,"filename":<filename>,"extname":<extname>,"path":"","size":<size>,"url":"","mimetype":<mimetype>,"meta":<meta>,"storageId":<storageId>}'
 ```
 
-> data-raw 中依赖数据说明：
-> * title: 上一步返回的 `fileInfo.title` 字段
-> * filename: 上一步返回的 `fileInfo.key` 字段
-> * extname: 上一步返回的 `fileInfo.extname` 字段
-> * path: 默认为空
-> * size: 上一步返回的 `fileInfo.size` 字段
-> * url: 默认为空
-> * mimetype: 上一步返回的 `fileInfo.mimetype` 字段
-> * meta: 上一步返回的 `fileInfo.meta` 字段
-> * storageId: 第一步返回的 `id` 字段
-> 
-> 示例请求数据：
+> Explanation of dependent data in `data-raw`:
+>
+> *   `title`: The `fileInfo.title` field returned in the previous step.
+> *   `filename`: The `fileInfo.key` field returned in the previous step.
+> *   `extname`: The `fileInfo.extname` field returned in the previous step.
+> *   `path`: Empty by default.
+> *   `size`: The `fileInfo.size` field returned in the previous step.
+> *   `url`: Empty by default.
+> *   `mimetype`: The `fileInfo.mimetype` field returned in the previous step.
+> *   `meta`: The `fileInfo.meta` field returned in the previous step.
+> *   `storageId`: The `id` field returned in step 1.
+>
+> Example request data:
+>
 > ```
 >   --data-raw '{"title":"ATT00001","filename":"ATT00001-8nuuxkuz4jn.png","extname":".png","path":"","size":4405,"url":"","mimetype":"image/png","meta":{},"storageId":2}'
 > ```

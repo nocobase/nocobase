@@ -1,6 +1,8 @@
-# External Data Source - MariaDB
+---
+pkg: "@nocobase/plugin-data-source-external-mariadb"
+---
 
-<PluginInfo commercial="true" name="data-source-external-mariadb"></PluginInfo>
+# External Data Source - MariaDB
 
 ## Introduction
 
@@ -10,7 +12,9 @@ Use an external MariaDB database as a data source. Currently supported versions:
 
 This plugin is a commercial plugin, which needs to be uploaded and activated through the plugin manager.
 
+
 ![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
+
 
 ## Usage Instructions
 

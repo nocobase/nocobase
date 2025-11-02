@@ -130,3 +130,5 @@ yarn nocobase tar @my-project/plugin-hello
 After the build is complete, the packaged file is located by default at `storage/tar/@my-project/plugin-hello.tar.gz`.
 
 ## Step 5: Upload to Other NocoBase Applications
+
+Upload and unzip to the `./storage/plugins` directory of the target application. For details, see [Install and Upgrade Plugins](../get-started/install-upgrade-plugins.mdx).

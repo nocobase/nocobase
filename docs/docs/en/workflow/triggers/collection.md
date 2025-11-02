@@ -1,5 +1,7 @@
 # Collection Events
 
+## Introduction
+
 Triggers of the collection event type will listen for create, update, and delete events on a collection. When a data operation on that collection occurs and meets the configured conditions, it triggers the corresponding workflow. For example, scenarios like deducting product inventory after a new order is created, or waiting for manual review after a new comment is added.
 
 ## Basic Usage
@@ -51,24 +53,24 @@ Let's take the scenario of calculating the total price and deducting inventory a
 
 First, we create a Products collection and an Orders collection with the following data models:
 
-| Field Name    | Field Type        |
-| ------------- | ----------------- |
-| Product Name  | Single Line Text  |
-| Price         | Number            |
-| Inventory     | Integer           |
+| Field Name | Field Type |
+| --- | --- |
+| Product Name | Single Line Text |
+| Price | Number |
+| Inventory | Integer |
 
-| Field Name    | Field Type             |
-| ------------- | ---------------------- |
-| Order ID      | Auto Number            |
+| Field Name | Field Type |
+| --- | --- |
+| Order ID | Sequence |
 | Order Product | Many-to-One (Products) |
-| Order Total   | Number                 |
+| Order Total | Number |
 
 And add some basic product data:
 
-| Product Name  | Price | Inventory |
-| ------------- | ----  | --------- |
-| iPhone 14 Pro | 7999  | 10        |
-| iPhone 13 Pro | 5999  | 0         |
+| Product Name | Price | Inventory |
+| --- | --- | --- |
+| iPhone 14 Pro | 7999 | 10 |
+| iPhone 13 Pro | 5999 | 0 |
 
 Then, create a workflow based on the Orders collection event:
 

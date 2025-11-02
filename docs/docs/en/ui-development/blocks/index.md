@@ -1,3 +1,1 @@
----
-
----
+To proceed, please provide the Chinese source document and the existing English translation. I am ready to compare them and output the updated English document according to your instructions.

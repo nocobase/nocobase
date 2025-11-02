@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-action-trigger'
+---
+
 # Post-Action Event
 
 ## Introduction
@@ -124,7 +128,7 @@ Then, we create a table block for the "Reimbursement" collection on the interfac
 ![Example_Form Button Configuration_Bind Workflow](https://static-docs.nocobase.com/fc00bdcdb975bb8850e5cab235f854f3.png)
 
 
-After the form configuration is complete, return to the workflow's logic orchestration. For example, we require a manual review by an administrator when the amount is greater than 500 yuan, otherwise it is directly approved. After approval, a reimbursement record is created and further processed by the finance department (omitted).
+After the form configuration is complete, return to the workflow's logic orchestration. For example, we require a manual review by an administrator when the amount is greater than 500, otherwise it is directly approved. After approval, a reimbursement record is created and further processed by the finance department (omitted).
 
 
 ![Example_Processing Flow](https://static-docs.nocobase.com/059e8e3d5ffb34cc2da6880fa3dc490b.png)

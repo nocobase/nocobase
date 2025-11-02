@@ -26,7 +26,7 @@ After the page enters UI edit mode, on a block that supports setting `Actions`, 
 ![20251022135306](https://static-docs.nocobase.com/20251022135306.png)
 
 
-After the binding is complete, the AI Employee bound to the current block will be displayed in the block's Actions area each time you enter the page.
+After the binding is complete, the AI Employee bound to the current block will be displayed in the block's `Actions` area each time you enter the page.
 
 
 ![20251022135438](https://static-docs.nocobase.com/20251022135438.png)
@@ -50,11 +50,11 @@ Each tab represents an independent task. Click the '+' sign next to it to add a 
 
 Task configuration form:
 
-- In the `Tile` input box, enter the task title. Briefly describe the task content. This title will appear in the AI Employee's task list.
+- In the `Title` input box, enter the task title. Briefly describe the task content. This title will appear in the AI Employee's task list.
 - In the `Background` input box, enter the main content of the task. This content will be used as the system prompt when conversing with the AI Employee.
 - In the `Default user message` input box, enter the default user message to be sent. It will be automatically populated in the user input box after selecting the task.
 - In `Work context`, select the default application context information to send to the AI Employee. This operation is the same as in the dialog.
-- The `Skills` selection box displays the skills that the current AI Employee possesses. You can deselect a skill to make the AI Employee ignore and not use it when performing this task.
+- The `Skills` selection box shows the skills available to the current AI Employee. You can deselect a skill to make the AI Employee ignore and not use it when performing this task.
 - The `Send default user message automatically` checkbox configures whether to automatically send the default user message after clicking to execute the task.
 
 

@@ -14,7 +14,9 @@ This plugin allows you to use an external Oracle database as a data source. It s
 
 For Oracle server versions earlier than 12.1, you need to install the Oracle client.
 
+
 ![Oracle Client Installation](https://static-docs.nocobase.com/20241204164359.png)
+
 
 Example for Linux:
 
@@ -29,12 +31,10 @@ ldconfig
 
 If the client is not installed as described above, you will need to specify the path to the client (for more details, refer to the [node-oracledb documentation](https://node-oracledb.readthedocs.io/en/latest/user_guide/initialization.html)).
 
+
 ![Oracle Client Path Configuration](https://static-docs.nocobase.com/20241204165940.png)
 
-### Install the Plugin
 
-Follow the instructions in .
-
-## Use Cases
+## Usage
 
 For detailed instructions, refer to the [Data Source / External Database](/data-sources/data-source-manager/external-database) section.

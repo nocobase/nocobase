@@ -4,15 +4,15 @@ pkg: '@nocobase/plugin-password-policy'
 
 # Password Policy
 
-<PluginInfo licenseBundled="professional" name="password-policy"></PluginInfo>
-
 ## Introduction
 
 Set password rules, password expiration, and password login security policies for all users, and manage locked users.
 
 ## Password Rules
 
+
 ![](https://static-docs.nocobase.com/202412281329313.png)
+
 
 ### Minimum Password Length
 
@@ -29,7 +29,9 @@ The following options are supported:
 - Must contain at least 3 of the following: numbers, uppercase letters, lowercase letters, and special characters
 - No restrictions
 
+
 ![](https://static-docs.nocobase.com/202412281331649.png)
+
 
 ### Password Cannot Contain Username
 
@@ -41,11 +43,13 @@ Remember the number of recently used passwords by the user. Users cannot reuse t
 
 ## Password Expiration Configuration
 
+
 ![](https://static-docs.nocobase.com/202412281335588.png)
+
 
 ### Password Validity Period
 
-The validity period of the user's password. After the password expires, the administrator must reset the password before the user can log in using it. If other login methods are configured, the user can log in using those methods.
+The validity period of the user's password. Users must change their password before it expires to reset the validity period. If the password is not changed before expiration, the user will be unable to log in with the old password and will require an administrator to reset it. If other login methods are configured, the user can still log in using those methods.
 
 ### Password Expiration Notification Channel
 
@@ -59,7 +63,9 @@ Since password expiration may result in the inability to log in, including for a
 
 Set limits on invalid password login attempts.
 
+
 ![](https://static-docs.nocobase.com/202412281339724.png)
+
 
 ### Maximum Invalid Password Login Attempts
 
@@ -79,19 +85,25 @@ Set the duration for which a user is locked out after exceeding the invalid pass
 
 No restrictions on the number of invalid password attempts by users.
 
+
 ![](https://static-docs.nocobase.com/202412281343226.png)
+
 
 #### Limit Attempt Frequency, Do Not Lock User
 
 Example: A user can attempt to log in up to 5 times every 5 minutes.
 
+
 ![](https://static-docs.nocobase.com/202412281344412.png)
+
 
 #### Lock User After Exceeding Limit
 
 Example: If a user makes 5 consecutive invalid password login attempts within 5 minutes, the user is locked out for 2 hours.
 
+
 ![](https://static-docs.nocobase.com/202412281344952.png)
+
 
 ### Configuration Recommendations
 

@@ -2,7 +2,7 @@
 
 ## Create Logger
 
-### createLogger()
+### `createLogger()`
 
 Creates a custom logger.
 
@@ -24,14 +24,16 @@ interface LoggerOptions
 
 #### Details
 
-- `dirname`: Log directory
-- `filename`: Log file name
-- `format`: Log format
-- `transports`: Log transports
+| Property | Description |
+| :--- | :--- |
+| `dirname` | Log output directory |
+| `filename` | Log file name |
+| `format` | Log format |
+| `transports` | Log output method |
 
-### createSystemLogger()
+### `createSystemLogger()`
 
-Creates system runtime logs printed in a specified method. Refer to [Logger plugin - System log](../plugins/logger/index.md#system-log).
+Creates system runtime logs printed in a specified method. Refer to [Logger - System Log](/log-and-monitor/logger/index#system-log)
 
 #### Signature
 
@@ -47,7 +49,39 @@ export interface SystemLoggerOptions extends LoggerOptions {
 
 #### Details
 
-- `seperateError`: Whether to print `error` level logs separately
+| Property | Description |
+| :--- | :--- |
+| `seperateError` | Whether to output `error` level logs separately |
+
+### `requestLogger()`
+
+Middleware for API request and response logging.
+
+```ts
+app.use(requestLogger(app.name));
+```
+
+#### Signature
+
+- `requestLogger(appName: string, options?: RequestLoggerOptions): MiddewareType`
+
+#### Type
+
+```ts
+export interface RequestLoggerOptions extends LoggerOptions {
+  skip?: (ctx?: any) => Promise<boolean>;
+  requestWhitelist?: string[];
+  responseWhitelist?: string[];
+}
+```
+
+#### Details
+
+| Property | Type | Description | Default |
+| :--- | :--- | :--- | :--- |
+| `skip` | `(ctx?: any) => Promise<boolean>` | Skips logging for certain requests based on the request context. | - |
+| `requestWhitelist` | `string[]` | Whitelist of request information to be printed in the log. | `[ 'action', 'header.x-role', 'header.x-hostname', 'header.x-timezone', 'header.x-locale','header.x-authenticator', 'header.x-data-source', 'referer']` |
+| `responseWhitelist` | `string[]` | Whitelist of response information to be printed in the log. | `['status']` |
 
 ### app.createLogger()
 
@@ -81,7 +115,7 @@ class Plugin {
 }
 ```
 
-## Configuration
+## Log Configuration
 
 ### getLoggerLevel()
 
@@ -107,7 +141,7 @@ Gets the log output methods currently configured in the system.
 
 Gets the log format currently configured in the system.
 
-## Logger Transports
+## Log Output
 
 ### Transports
 
@@ -125,7 +159,7 @@ const transport = Transports.console({
 });
 ```
 
-## References
+## Related Documentation
 
-- [Development - Logger](/plugin-development/logger/index.md)
-- [Logger Plugin](/log-and-monitor/logger/index.md)
+- [Development Guide - Logger](/plugin-development/server/logger)
+- [Logger](/log-and-monitor/logger/index)

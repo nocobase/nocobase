@@ -9,13 +9,15 @@ By configuring linkage rules, you can achieve things like:
 - Hiding/showing certain blocks based on the current user role. Different roles see blocks with different data scopes, for example, administrators see blocks with complete information, while regular users can only see basic information blocks.
 - When an option is selected in a form, automatically fill or reset other field values.
 - When an option is selected in a form, disable certain input items.
-- Set field background color, font size, font weight, etc., based on conditions, highlighting a field when a certain condition is met.
+- When an option is selected in a form, set certain input items as required.
 - Control whether action buttons are visible or clickable under certain conditions.
 
 ## Condition Configuration
 
 
+
 ![20251029114532](https://static-docs.nocobase.com/20251029114532.png)
+
 
 
 ### Left-hand Variable
@@ -105,13 +107,12 @@ Field linkage rules are used to dynamically adjust the state of fields in a form
 - Controlling the **Show/Hide** state of a field
 - Setting whether a field is **Required**
 - **Assigning a value**
-- Configuring the **option scope** for select fields
-- Restricting the **selectable time range** for time fields
+- Executing JavaScript to handle custom business logic
 
 👉 For details, see: [Block/Field Linkage Rules](/interface-builder/blocks/block-settings/field-linkage-rule)
 
 ## Action Linkage Rules
 
-Action linkage rules currently support controlling action behaviors, such as hiding/disabling, based on the current record value and global variable values.
+Action linkage rules currently support controlling action behaviors, such as hiding/disabling, based on context variables like the current record value and current form, as well as global variables.
 
-👉 For details, see: [Action/Linkage Rules](/interface-builder/linkage-rule)
+👉 For details, see: [Action/Linkage Rules](/interface-builder/actions/action-settings/linkage-rule)

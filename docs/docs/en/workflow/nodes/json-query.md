@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-json-query'
+---
+
 # JSON Calculation
 
 ## Introduction

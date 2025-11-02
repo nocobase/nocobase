@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  LDAP authentication.
+  Authenticate users via the LDAP protocol.
 isFree: false
 builtIn: false
 defaultEnabled: false

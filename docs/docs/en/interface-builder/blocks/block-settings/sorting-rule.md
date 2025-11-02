@@ -16,12 +16,10 @@ Configuring sort rules means defining default sorting rules for a data block, so
 
 Currently, only sorting by fields of the current collection is supported.
 
-
 ### Single Sort Rule
 
 
 ![20251025164919](https://static-docs.nocobase.com/20251025164919.png)
-
 
 
 ### Multiple Sort Rules

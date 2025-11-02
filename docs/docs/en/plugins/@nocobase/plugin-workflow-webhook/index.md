@@ -1,5 +1,5 @@
 ---
-displayName: "Workflow: Webhook"
+displayName: "Workflow: Webhook Trigger"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
@@ -12,4 +12,4 @@ defaultEnabled: false
 points: 2
 ---
 
-# Workflow: Webhook
+# Workflow: Webhook Trigger

@@ -4,7 +4,7 @@ pkg: '@nocobase/plugin-auth-ldap'
 
 # Auth: LDAP
 
-<PluginInfo commercial="true" name="auth-ldap"></PluginInfo>
+
 
 ## Introduction
 
@@ -34,7 +34,7 @@ Add - LDAP
 - LDAP URL - LDAP server URL
 - Bind DN - DN used to test server connection and search for users
 - Bind password - Password of Bind DN
-- Test connection - Click the button to test server connection and Bind DN authentication.
+- Test connection - Click the button to test the server connection and validate the Bind DN.
 
 ### Search Configuration
 
@@ -49,7 +49,7 @@ Add - LDAP
 
 <img src="https://static-docs.nocobase.com/202405101612814.png"/>
 
-- Use this field to bind the user - Field used to bind existing users. If the login account is a username, choose username; if it is an email, choose email. Default is username.
+- Use this field to bind the user - Field used to bind to existing users. Select 'username' if the login account is a username, or 'email' if it's an email address. The default is username.
 - Attribute map - Mapping of user attributes to fields in the NocoBase user table.
 
 ## Sign In

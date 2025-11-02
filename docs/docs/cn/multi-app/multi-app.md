@@ -1,5 +1,5 @@
 ---
-pkg: "@nocobase/plugin-multi-app"
+pkg: "@nocobase/plugin-multi-app-manager"
 ---
 
 # 多应用
@@ -16,7 +16,7 @@ pkg: "@nocobase/plugin-multi-app"
 
 :::warning
 多应用插件本身不提供用户共享能力。  
-如需多应用间的用户打通，可结合 **[认证插件](/handbook/auth)** 使用。
+如需多应用间的用户打通，可结合 **[认证插件](/auth-verification)** 使用。
 :::
 
 

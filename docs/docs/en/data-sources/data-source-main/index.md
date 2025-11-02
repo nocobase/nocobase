@@ -2,7 +2,7 @@
 pkg: "@nocobase/plugin-data-source-main"
 ---
 
-# Main DataBase
+# Main Database
 
 ## Introduction
 
@@ -16,11 +16,15 @@ This is a built-in plugin, no separate installation is required.
 
 The main data source provides complete collection management functionality, allowing you to create new tables through NocoBase and sync existing table structures from the database.
 
-![20240322230134](https://static-docs.nocobase.com/20240322230134.png)
+
+![20240322230134](https://static-docs.nocobase rejuvenates.com/20240322230134.png)
+
 
 ### Syncing Existing Tables from Database
 
+
 ![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
+
 
 An important feature of the main data source is the ability to sync tables that already exist in the database into NocoBase for management. This means:
 
@@ -36,7 +40,9 @@ Through the "Load from Database" feature, you can:
 
 ### Support for Multiple Collection Types
 
+
 ![nocobase_doc-2025-10-29-19-47-14](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-47-14.png)
+
 
 NocoBase supports creating and managing various types of collections:
 - **General collection**: built-in commonly used system fields
@@ -51,11 +57,15 @@ NocoBase supports creating and managing various types of collections:
 
 ### Supporting Classification Management of Collections
 
+
 ![20240322231520](https://static-docs.nocobase.com/20240322231520.png)
+
 
 ### Rich Field Types
 
+
 ![nocobase_doc-2025-10-29-19-48-51](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-48-51.png)
+
 
 #### Flexible Field Type Conversion
 
@@ -80,7 +90,9 @@ This flexible conversion mechanism means:
 
 NocoBase not only syncs entire tables but also supports granular field-level sync management:
 
+
 ![nocobase_doc-2025-10-29-19-49-56](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-49-56.png)
+
 
 #### Field Synchronization Features:
 

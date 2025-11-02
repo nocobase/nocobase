@@ -115,9 +115,9 @@ Through the steps above, we have completed the configuration and triggering of a
 
 For more in-depth usage, you can refer to the following content:
 
-- [Triggers](./triggers/index.md)
-- [Nodes](./nodes/index.md)
-- [Using Variables](./advanced/variables.md)
-- [Executions](./advanced/executions.md)
-- [Version Management](./advanced/revisions.md)
-- [Advanced Options](./advanced/options.md)
+- [Triggers](./triggers/index)
+- [Nodes](./nodes/index)
+- [Using Variables](./advanced/variables)
+- [Executions](./advanced/executions)
+- [Version Management](./advanced/revisions)
+- [Advanced Options](./advanced/options)

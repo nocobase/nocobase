@@ -1,13 +1,13 @@
-# 扩展验证场景
+# Extending Validation Scenarios
 
-## 基本概念
+## Basic Concepts
 
-## 注册验证动作
+## Registering a Validation Action
 
-## 注册验证场景
+## Registering a Validation Scenario
 
-## 绑定场景和验证类型
+## Binding Scenarios and Validation Types
 
-## 自动验证
+## Automatic Validation
 
-## 手动验证
+## Manual Validation

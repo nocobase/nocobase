@@ -50,6 +50,8 @@ For more details, see [Required](/interface-builder/fields/field-settings/requir
 
 Some fields, such as association fields, support switching to other components.
 
+
 ![20251029122626](https://static-docs.nocobase.com/20251029122626.png)
+
 
 For more details, see [Field Component](/interface-builder/fields/field-settings/field-component)

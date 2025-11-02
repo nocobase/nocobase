@@ -118,8 +118,6 @@ class CustomSourcePlugin extends Plugin {
 }
 ```
 
----
-
 ## Client Side
 
 The client user interface registers data source types using the `registerType` method provided by the user data synchronization plugin's client interface:
@@ -141,6 +139,8 @@ class CustomSourcePlugin extends Plugin {
 
 ### Backend Management Form
 
-![Backend Management Form](https://static-docs.nocobase.com/202412041429835.png)
+
+![](https://static-docs.nocobase.com/202412041429835.png)
+
 
 The top section provides general data source configuration, while the bottom section allows for registration of custom configuration forms.

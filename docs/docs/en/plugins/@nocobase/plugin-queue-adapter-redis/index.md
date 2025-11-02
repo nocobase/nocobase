@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Used for hanlding message queue with Redis.
+  Handles application message queues using Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false

@@ -1,5 +1,5 @@
 ---
-displayName: "AI employees"
+displayName: "AI Employees"
 packageName: '@nocobase/plugin-ai'
 description: |
   Create AI employees with diverse skills to collaborate with humans, build systems, and handle business operations.
@@ -8,4 +8,4 @@ builtIn: true
 defaultEnabled: false
 ---
 
-# AI employees
+# AI Employees

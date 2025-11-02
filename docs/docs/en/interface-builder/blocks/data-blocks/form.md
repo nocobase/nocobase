@@ -19,7 +19,6 @@ The Form block is an important block for building data entry and editing interfa
 ![20251023191448](https://static-docs.nocobase.com/20251023191448.png)
 
 
-
 ### Block Linkage Rule
 
 Control block behavior (such as whether to display it or execute JavaScript) through linkage rules.
