@@ -445,5 +445,16 @@
         ]
       }
     ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Development",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/data-sources/development"
+      }
+    ]
   }
 ]

@@ -20,7 +20,7 @@ UI 扩展
 
 | 功能模块      | 说明                                                                                   | 相关章节                                      |
 |---------------|----------------------------------------------------------------------------------------|-----------------------------------------------|
-| **UI 配置化**  | 使用流引擎和流模型，实现组件属性的动态化配置与编排，支持复杂页面和交互的可视化定制   | [flow-engine.md](../../flow-engine/index.md) 和 [flow-model.md](../../flow-engine/flow-model.md) |
-| **区块扩展**  | 自定义页面区块，打造可复用的 UI 模块与布局                                         | [blocks](../../ui-development/blocks/index.md) |
-| **字段扩展**  | 自定义字段类型，实现复杂数据的展示与编辑  | [fields](../../ui-development/fields/index.md) |
-| **操作扩展**  | 自定义操作类型，实现复杂逻辑与交互处理  | [actions](../../ui-development/actions/index.md) |
+| **UI 配置化**  | 使用流引擎和流模型，实现组件属性的动态化配置与编排，支持复杂页面和交互的可视化定制   | [flow-engine](../../flow-engine/index.md) 和 [flow-model](../../flow-engine/flow-model.md) |
+| **区块扩展**  | 自定义页面区块，打造可复用的 UI 模块与布局                                         | [blocks](../../ui-development-block/index.md) |
+| **字段扩展**  | 自定义字段类型，实现复杂数据的展示与编辑  | [fields](../../ui-development-field/index.md) |
+| **操作扩展**  | 自定义操作类型，实现复杂逻辑与交互处理  | [actions](../../ui-development-action/index.md) |

@@ -79,6 +79,11 @@
           },
           {
             "type": "custom-link",
+            "label": "引用区块",
+            "link": "/interface-builder/blocks/other-blocks/block-reference"
+          },
+          {
+            "type": "custom-link",
             "label": "Markdown",
             "link": "/interface-builder/blocks/other-blocks/markdown"
           },
