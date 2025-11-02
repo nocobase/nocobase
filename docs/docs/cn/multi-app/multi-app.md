@@ -1,5 +1,5 @@
 ---
-pkg: "@nocobase/plugin-multi-app"
+pkg: "@nocobase/plugin-multi-app-manager"
 ---
 
 # 多应用

@@ -1,5 +1,5 @@
 ---
-pkg: '@nocobase/plugin-workflow-response'
+pkg: "@nocobase/plugin-workflow-response-message"
 ---
 
 # HTTP Response
