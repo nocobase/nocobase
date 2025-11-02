@@ -48,8 +48,8 @@ Open "Plugin manager" → find "Block: Reference" → click "Enable".
 
 ![Reference block settings](https://static-docs.nocobase.com/block-ref-settings-20251102.png)
 
-- Copy result:
-  - The new block has the same type as the original and only its own settings;
+- Copied block:
+  - The new block has the same type as the original and only its own settings.
   - It does not include "Reference settings".
 
 ## Error and fallback states
