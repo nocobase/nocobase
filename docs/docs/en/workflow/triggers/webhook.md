@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-webhook'
+---
+
 # Webhook
 
 ## Introduction

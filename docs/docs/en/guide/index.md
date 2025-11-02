@@ -96,7 +96,7 @@ features:
       - title: Template Print
         details: Generate printable documents based on custom templates, such as orders, contracts, or invoices.
         link: /template-print
-      - title: Record history
+      - title: Record History
         details: Tracks and stores the change history of collection records.
         link: /record-history/
 ---

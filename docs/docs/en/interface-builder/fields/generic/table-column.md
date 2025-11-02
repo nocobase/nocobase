@@ -48,8 +48,8 @@ In addition to association fields that support clicking to open a pop-up, regula
 
 When the column content overflows the table column width, you can set the overflow mode:
 
-- Ellipsis (default)
-- Wrap
+-   Ellipsis (default)
+-   Wrap
 
 
 ![20251025172549](https://static-docs.nocobase.com/20251025172549.png)
@@ -71,8 +71,8 @@ Some fields support multiple display formats. Users can switch field components 
 
 ### Display Style
 
-- Tag
-- Text
+-   Tag
+-   Text
 
 
 ![20251025172723](https://static-docs.nocobase.com/20251025172723.png)

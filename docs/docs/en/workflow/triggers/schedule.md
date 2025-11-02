@@ -1,5 +1,7 @@
 # Scheduled Task
 
+## Introduction
+
 A scheduled task is an event triggered by a time condition, which comes in two modes:
 
 - Custom time: Regular cron-like triggering based on system time.

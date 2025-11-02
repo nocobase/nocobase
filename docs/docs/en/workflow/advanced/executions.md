@@ -3,7 +3,9 @@
 After a workflow is triggered, a corresponding execution plan is created to track the execution process of this task. Each execution plan has a status value to indicate the current execution status, which can be viewed in the list and details of the execution history:
 
 
+
 ![Execution Plan Status](https://static-docs.nocobase.com/d4440d92ccafac6fac85da4415bb2a26.png)
+
 
 
 When all nodes in the main process branch are executed to the end of the process with a "Completed" status, the entire execution plan will end with a "Completed" status. When a node in the main process branch has a final status such as "Failed", "Error", "Cancelled", or "Rejected", the entire execution plan will be **terminated prematurely** with the corresponding status. When a node in the main process branch has a "Waiting" status, the entire execution plan will be paused, but will still show a "Running" status, until the waiting node is resumed. Different node types handle the waiting state differently. For example, a manual node needs to wait for manual processing, while a delay node needs to wait for the specified time to pass before continuing.
@@ -23,7 +25,9 @@ The statuses of an execution plan are as follows:
 In the [Quick Start](../getting-started.md) example, we already know that by viewing the details of a workflow's execution history, we can check whether all nodes were executed normally, as well as the execution status and result data of each executed node. In some advanced workflows and nodes, a node may have multiple results, such as the result of a loop node:
 
 
+
 ![Node results from multiple executions](https://static-docs.nocobase.com/bbda259fa2ddf62b0fc0f982efbedae9.png)
+
 
 
 :::info{title=Tip}
@@ -52,7 +56,9 @@ Except for the "Waiting" status, all other statuses are final states for node ex
 For example, when we use a condition node in "'Yes' to continue" mode, if the result is "No" during execution, the entire workflow will be terminated prematurely with a "Failed" status, and subsequent nodes will not be executed, as shown in the figure below:
 
 
+
 ![Node execution failed](https://static-docs.nocobase.com/993aecfa1465894bb574444f0a44313e.png)
+
 
 
 :::info{title=Tip}

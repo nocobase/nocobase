@@ -1,3 +1,1 @@
----
-
----
+I am ready to process your request. Please provide the Chinese source and the existing English translation in the designated sections. Once provided, I will return the updated English document here.

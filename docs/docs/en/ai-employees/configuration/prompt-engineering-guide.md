@@ -161,7 +161,7 @@ Example Chart:
 }
 
 # Negative Examples (Optional)
-- Mixing Chinese and English → Maintain language consistency
+- Mixing languages → Maintain language consistency
 - Overloaded charts → Each chart should express only one theme
 - Incomplete data → Truthfully state "No data available"
 ```
@@ -313,7 +313,7 @@ First, write the positive parts (role, workflow, examples), then add constraints
 
 **Further Reading**
 
-* [《AI Agent · Administrator Configuration Guide》](./admin-configuration.md): Put prompts into actual configuration
+* [AI Agent · Administrator Configuration Guide](./admin-configuration.md): Put prompts into actual configuration
 * Dedicated manuals for each AI agent: View complete role/task templates
 
 ---

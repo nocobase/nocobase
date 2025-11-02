@@ -1,5 +1,5 @@
 ---
-displayName: "Workflow: Custom variable"
+displayName: "Workflow: Custom variable node"
 packageName: '@nocobase/plugin-workflow-variable'
 description: |
   Used for creating custom variables or assigning value to it in workflows, to save temporary data in the process.
@@ -8,4 +8,4 @@ builtIn: false
 defaultEnabled: false
 ---
 
-# Workflow: Custom variable
+# Workflow: Custom variable node

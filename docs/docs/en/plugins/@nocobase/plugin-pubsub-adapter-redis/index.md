@@ -1,11 +1,11 @@
 ---
-displayName: "Redis pub sub adapter"
+displayName: "Redis Pub/Sub Adapter"
 packageName: '@nocobase/plugin-pubsub-adapter-redis'
 description: |
-  Used for hanlding pub/sub messages with Redis.
+  Handles application pub/sub messages using Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 ---
 
-# Redis pub sub adapter
+# Redis Pub/Sub Adapter

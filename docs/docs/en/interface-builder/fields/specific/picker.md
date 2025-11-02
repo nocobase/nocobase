@@ -19,6 +19,7 @@ In the table selector, you can also further manage the target association collec
 
 ![20251027204028](https://static-docs.nocobase.com/20251027204028.png)
 
+
 ## Field Configuration
 
 ### Title Field

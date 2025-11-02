@@ -171,8 +171,8 @@ interface SetOption extends Transactionable {
 
 **Details**
 
-- tk: The targetKey of the associated object to be set.
-- transaction: Transaction object. If no transaction parameter is passed, the method will automatically create an internal transaction.
+- `tk`: The targetKey of the associated object to be set.
+- `transaction`: Transaction object. If no transaction parameter is passed, the method will automatically create an internal transaction.
 
 **Example**
 

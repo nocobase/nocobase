@@ -2,7 +2,7 @@
 displayName: "Auth: CAS"
 packageName: '@nocobase/plugin-auth-cas'
 description: |
-  CAS authentication.
+  Authenticate identity through the CAS protocol.
 isFree: false
 builtIn: false
 defaultEnabled: false

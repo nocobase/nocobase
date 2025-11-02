@@ -39,6 +39,4 @@ Parameters:
 ```
 
 ##### Result
-The output is the duration or interval displayed in the specified unit or format.
-
-
+The output result is displayed as the corresponding duration or interval based on the input value and unit conversion.

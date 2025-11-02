@@ -34,7 +34,6 @@ The Frontend group allows the AI employee to interact with front-end components.
 ![20251022145954](https://static-docs.nocobase.com/20251022145954.png)
 
 
-
 ### Data modeling
 
 The Data modeling group of skills gives the AI employee the ability to call NocoBase's internal APIs for data modeling.

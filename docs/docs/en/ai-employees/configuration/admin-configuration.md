@@ -49,7 +49,9 @@ The model service is like the brain of an AI Employee and must be set up first.
 `System Settings → AI Employee → Model Services`
 
 
+
 ![Enter configuration page](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)
+
 
 
 Click **Add** and fill in the following information:
@@ -62,14 +64,18 @@ Click **Add** and fill in the following information:
 | Model Name | Specific model name (e.g., gpt-4, claude-opus) | Affects capabilities and cost |
 
 
+
 ![Create a large model service](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-45-27.png)
+
 
 
 After configuration, please **test the connection**.
 If it fails, please check your network, API key, or model name.
 
 
+
 ![Test connection](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-18-25.png)
+
 
 
 ---
@@ -92,13 +98,17 @@ Fill in the basic information:
 | Welcome Message | - | "Hello, I'm Viz…" |
 
 
+
 ![Basic information configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-21-09.png)
+
 
 
 Then, bind the **model service** you just configured.
 
 
+
 ![Bind large model service](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-22-27.png)
+
 
 
 **Prompt Writing Suggestions:**
@@ -133,7 +143,9 @@ Skills determine what an employee "can do".
 * Disable Auto usage before important operations
 
 
+
 ![Configure skills](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
+
 
 
 ---
@@ -151,7 +163,9 @@ If your AI employee needs to remember or reference a large amount of material, s
 This requires installing the vector database plugin.
 
 
+
 ![Configure knowledge base](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-32-54.png)
+
 
 
 **Applicable Scenarios:**
@@ -167,7 +181,9 @@ This requires installing the vector database plugin.
 After completion, you will see the new employee's avatar in the bottom right corner of the page.
 
 
+
 ![Verify configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-36-54.png)
+
 
 
 Please check each item:
@@ -207,14 +223,18 @@ Applicable to the entire page scope, such as "Analyze the data on this page".
 | Skills | Available tools | Query data, generate charts |
 
 
+
 ![Page-level task configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-40-34.png)
+
 
 
 **Multi-task Support:**
 A single AI employee can be configured with multiple tasks, which are presented as options for the user to choose from:
 
 
+
 ![Multi-task support](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-46-00.png)
+
 
 
 Suggestions:
@@ -235,17 +255,23 @@ Suitable for operating on a specific block, such as "Translate the current form"
 2. Add "AI Employee"
 
 
+
 ![Add AI Employee button](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-51-06.png)
 
 
+
 3. Bind the target employee
+
 
 
 ![Select AI Employee](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-52-26.png)
 
 
 
+
+
 ![Block-level task configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-53-35.png)
+
 
 
 | Comparison | Page-level | Block-level |
@@ -329,7 +355,9 @@ A: Check if all required fields are filled in, especially the model service and 
 A: For page-level configurations, you need to manually select the block.
 
 
+
 ![Manually select block](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-02-22.png)
+
 
 
 For block-level task configurations, the data context is automatically bound.

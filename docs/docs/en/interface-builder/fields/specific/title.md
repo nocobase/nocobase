@@ -49,4 +49,4 @@ Click to open a pop-up window where you can customize blocks for data management
 ![20251028160742](https://static-docs.nocobase.com/20251028160742.png)
 
 
-For more details, see [Field Component](/interface-builder/fields/association-field);
+For more details, see [Field Component](/interface-builder/fields/association-field).

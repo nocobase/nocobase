@@ -9,3 +9,5 @@ defaultEnabled: false
 ---
 
 # Two-factor authentication (2FA)
+
+---

@@ -4,17 +4,17 @@
 
 ### Auth
 
-Kernel API, reference: [Auth](/api/auth/auth.md)
+Kernel API, reference: [Auth](/api/auth/auth)
 
 ### BaseAuth
 
-Kernel API, reference: [BaseAuth](/api/auth/base-auth.md)
+Kernel API, reference: [BaseAuth](/api/auth/base-auth)
 
 ### AuthModel
 
 #### Overview
 
-`AuthModel` is the authenticator used in NocoBase applications (`Authenticator`, reference: [AuthManager - setStorer](/api/auth/auth-manager.md#setstorer) and [Auth - constructor](../../../api/auth/auth.md#constructor)) data model, providing some methods for interacting with the user data collection. In addition, methods provided by Sequelize Model can also be used.
+`AuthModel` is the authenticator used in NocoBase applications (`Authenticator`, reference: [AuthManager - setStorer](/api/auth/auth-manager#setstorer) and [Auth - constructor](/api/auth/auth#constructor)) data model, providing some methods for interacting with the user data collection. In addition, methods provided by Sequelize Model can also be used.
 
 ```ts
 import { AuthModel } from '@nocobase/plugin-auth';

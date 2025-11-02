@@ -1,4 +1,4 @@
-# API
+# API Reference
 
 ## Server Side
 
@@ -56,30 +56,41 @@ export default PluginNotificationExampleServer;
 The `send` method is used to dispatch notifications via a specified channel.
 
 ```ts
-send('in-app-message',
-  message: [
-    receivers: [1, 2, 3],
-    receiverType: 'userId',
-    content: 'In-app message test',
-    title: 'In-app message test title'
-  ],
-  triggerFrom: 'workflow')
+// In-app message
+send({
+  channelName: 'in-app-message',
+  message: {
+    title: 'In-app message test title',
+    content: 'In-app message test'
+  },
+  receivers: {
+    type: 'userId',
+    value: [1, 2, 3]
+  },
+  triggerFrom: 'workflow'
+});
 
-send('email',
-  message: [
-    receivers: ['a@163.com', 'b@163.com'],
-    receiverType: 'email',
-    content: 'Email test',
-    title: 'Email test title'
-  ],
-  triggerFrom: 'workflow')
+// Email
+send({
+  channelName: 'email',
+  message: {
+    title: 'Email test title',
+    content: 'Email test'
+  },
+  receivers: {
+    type: 'channel-self-defined',
+    channelType: 'email',
+    value: ['a@example.com', 'b@example.com']
+  },
+  triggerFrom: 'workflow'
+});
 ```
 
 ##### Signature
 
 `send(sendConfig: {channelName: String, message: Object, receivers: ReceiversType, triggerFrom: String })`
 
-The `receivers` field currently supports two formats: NocoBase user IDs`userId` or custom channel configurations`channel-self-defined`.
+The `receivers` field currently supports two formats: NocoBase user IDs `userId` or custom channel configurations `channel-self-defined`.
 
 ```ts
 type ReceiversType =

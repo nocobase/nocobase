@@ -4,12 +4,6 @@
 
 - Git, Node.js 20+, and Yarn 1.22.x are installed
 - A required database is configured and running: MySQL 8.0.17+, MariaDB 10.9+, or PostgreSQL 10+
-- Due to network conditions, it is recommended to switch to a mirror registry (optional)
-
-```bash
-$ yarn config set disable-self-update-check true
-$ yarn config set registry https://registry.npmmirror.com/
-```
 
 :::
 
@@ -60,7 +54,7 @@ yarn install --frozen-lockfile
 The environment variables required by NocoBase are stored in the `.env` file in the root directory. Modify the environment variables according to your actual situation.
 
 ```bash
-TZ=Asia/Shanghai
+TZ=UTC
 APP_KEY=your-secret-key
 DB_HOST=localhost
 DB_PORT=5432

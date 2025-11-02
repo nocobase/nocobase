@@ -28,7 +28,13 @@ Sub-forms are suitable for scenarios where you create new associated data before
 
 ### Field Component
 
+
+![20251030150601](https://static-docs.nocobase.com/20251030150601.png)
+
+
 [Field Component](/interface-builder/fields/association-field): Switch to other association field components, such as Dropdown, Data Selector, etc.
+
+### Linkage Rules
 
 [Linkage Rules](/interface-builder/linkage-rule): Configure linkage rules for sub-form fields.
 

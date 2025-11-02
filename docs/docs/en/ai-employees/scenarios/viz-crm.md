@@ -248,5 +248,3 @@ Whether you are using NocoBase, a private system, or your own custom workflow, y
 *   AI presentation.
 
 This way, Viz is no longer just an "AI that can generate charts," but a true analyst who understands your data, your definitions, and your business.
-
----

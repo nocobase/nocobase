@@ -2,7 +2,7 @@
 displayName: "Auth: DingTalk"
 packageName: '@nocobase/plugin-auth-dingtalk'
 description: |
-  DingTalk authentication.
+  Authenticate with a DingTalk account.
 isFree: false
 builtIn: false
 defaultEnabled: false

@@ -100,7 +100,7 @@ props: {
   description: 'A sample model instance',
   config: {
     theme: 'dark',
-    language: 'zh-CN'
+    language: 'en-US'
   },
   metadata: {
     version: '1.0.0',

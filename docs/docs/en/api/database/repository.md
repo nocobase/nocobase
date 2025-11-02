@@ -48,10 +48,10 @@ userRepository.find({
   },
 });
 
-// SELECT * FROM users WHERE age > 18 OR name LIKE '%张%'
+// SELECT * FROM users WHERE age > 18 OR name LIKE '%John%'
 userRepository.find({
   filter: {
-    $or: [{ age: { $gt: 18 } }, { name: { $like: '%张%' } }],
+    $or: [{ age: { $gt: 18 } }, { name: { $like: '%John%' } }],
   },
 });
 ```
@@ -146,19 +146,19 @@ Create new data objects through the `Repository`.
 
 ```javascript
 await userRepository.create({
-  name: '张三',
+  name: 'John Doe',
   age: 18,
 });
-// INSERT INTO users (name, age) VALUES ('张三', 18)
+// INSERT INTO users (name, age) VALUES ('John Doe', 18)
 
 // Supports bulk creation
 await userRepository.create([
   {
-    name: '张三',
+    name: 'John Doe',
     age: 18,
   },
   {
-    name: '李四',
+    name: 'Jane Smith',
     age: 20,
   },
 ]);
@@ -170,7 +170,7 @@ When creating, you can also create associated objects simultaneously. Similar to
 
 ```javascript
 await userRepository.create({
-  name: '张三',
+  name: 'John Doe',
   age: 18,
   posts: [
     {
@@ -200,7 +200,7 @@ const tag1 = await tagRepository.findOne({
 });
 
 await userRepository.create({
-  name: '张三',
+  name: 'John Doe',
   age: 18,
   posts: [
     {
@@ -228,7 +228,7 @@ After getting a data object, you can directly modify its properties on the data 
 ```javascript
 const user = await userRepository.findOne({
   filter: {
-    name: '张三',
+    name: 'John Doe',
   },
 });
 
@@ -244,7 +244,7 @@ You can also update data through the `Repository`:
 // Update data records that meet the filter criteria
 await userRepository.update({
   filter: {
-    name: '张三',
+    name: 'John Doe',
   },
   values: {
     age: 20,
@@ -257,11 +257,11 @@ When updating, you can control which fields are updated using the `whitelist` an
 ```javascript
 await userRepository.update({
   filter: {
-    name: '张三',
+    name: 'John Doe',
   },
   values: {
     age: 20,
-    name: '李四',
+    name: 'Jane Smith',
   },
   whitelist: ['age'], // Only update the age field
 });
@@ -521,7 +521,7 @@ const books = db.getRepository('books');
 
 const count = await books.count({
   filter: {
-    title: '三字经',
+    title: 'The Great Gatsby',
   },
 });
 ```
@@ -565,7 +565,7 @@ const posts = db.getRepository('posts');
 
 const result = await posts.create({
   values: {
-    title: 'NocoBase 1.0 发布日志',
+    title: 'NocoBase 1.0 Release Notes',
     tags: [
       // When the primary key of the association table exists, it updates the data
       { id: 1 },
@@ -605,7 +605,7 @@ const posts = db.getRepository('posts');
 const results = await posts.createMany({
   records: [
     {
-      title: 'NocoBase 1.0 发布日志',
+      title: 'NocoBase 1.0 Release Notes',
       tags: [
         // When the primary key of the association table exists, it updates the data
         { id: 1 },
@@ -614,7 +614,7 @@ const results = await posts.createMany({
       ],
     },
     {
-      title: 'NocoBase 1.1 发布日志',
+      title: 'NocoBase 1.1 Release Notes',
       tags: [{ id: 1 }],
     },
   ],
@@ -639,7 +639,7 @@ const posts = db.getRepository('posts');
 const result = await posts.update({
   filterByTk: 1,
   values: {
-    title: 'NocoBase 1.0 发布日志',
+    title: 'NocoBase 1.0 Release Notes',
     tags: [
       // When the primary key of the association table exists, it updates the data
       { id: 1 },
@@ -656,7 +656,7 @@ Deletes data from the collection. Equivalent to `Model.destroy()` in Sequelize.
 
 **Signature**
 
-- `async destory(options?: TargetKey | TargetKey[] | DestoryOptions): Promise<number>`
+- `async destroy(options?: TargetKey | TargetKey[] | DestroyOptions): Promise<number>`
 
 **Type**
 

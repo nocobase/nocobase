@@ -10,6 +10,7 @@ Required is a common rule for form validation. You can enable it directly in the
 
 When a collection field is set to required, it triggers backend validation, and the frontend also displays it as required by default (cannot be modified).
 
+
 ![20251025175418](https://static-docs.nocobase.com/20251025175418.png)
 
 
@@ -31,6 +32,4 @@ Example: The order number is required when the order date is not empty.
 ![20251028223004](https://static-docs.nocobase.com/20251028223004.png)
 
 
-### Event Flow
-
----
+### Workflow

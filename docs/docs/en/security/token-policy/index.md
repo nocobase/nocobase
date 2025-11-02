@@ -2,9 +2,7 @@
 pkg: '@nocobase/plugin-auth'
 ---
 
-# Token Policy
-
-<PluginInfo name="auth"></PluginInfo>
+# Token Security Policy
 
 ## Introduction
 
@@ -14,7 +12,9 @@ The Token Security Policy is a functional configuration designed to protect syst
 
 The configuration entry is located under Plugin Settings - Security - Token Policy:
 
+
 ![20250105111821-2025-01-05-11-18-24](https://static-docs.nocobase.com/20250105111821-2025-01-05-11-18-24.png)
+
 
 ## Session Validity Period
 

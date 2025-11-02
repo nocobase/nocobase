@@ -1,6 +1,10 @@
+---
+pkg: "@nocobase/plugin-wecom"
+---
+
 # Synchronize User Data from WeChat Work
 
-<PluginInfo commercial="true" name="wecom"></PluginInfo>
+
 
 ## Introduction
 
@@ -17,7 +21,9 @@ Refer to [User Authentication - WeChat Work](/auth-verification/auth-wecom/).
 Go to Users & Permissions - Sync - Add, and fill in the obtained information.
 
 
+
 ![](https://static-docs.nocobase.com/202412041251867.png)
+
 
 
 ## Configure Contacts Sync
@@ -25,13 +31,17 @@ Go to Users & Permissions - Sync - Add, and fill in the obtained information.
 Go to the WeChat Work admin console - Security and Management - Management Tools, and click on Contacts Sync.
 
 
+
 ![](https://static-docs.nocobase.com/202412041249958.png)
+
 
 
 Configure as shown in the figure, and set the trusted IP of the enterprise.
 
 
+
 ![](https://static-docs.nocobase.com/202412041250776.png)
+
 
 
 Now you can proceed with user data synchronization.
@@ -43,10 +53,13 @@ If you want changes to user and department data on the WeChat Work side to be sy
 After filling in the previous configuration information, you can copy the contacts callback notification URL.
 
 
+
 ![](https://static-docs.nocobase.com/202412041256547.png)
 
 
+
 Fill it into the WeChat Work settings, obtain the Token and EncodingAESKey, and complete the NocoBase user synchronization data source configuration.
+
 
 
 ![](https://static-docs.nocobase.com/202412041257947.png)

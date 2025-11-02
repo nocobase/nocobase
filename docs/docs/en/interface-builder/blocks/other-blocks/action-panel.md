@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-block-workbench"
+---
 # Block: Workbench
-
-:::tip
-This feature is provided by the `plugin-block-workbench` plugin.
-:::
 
 ## Introduction
 
@@ -29,6 +28,7 @@ Used to place various quick actions. Currently supports:
 
 - **Open Popup**: Opens a popup to display block content.
   
+
 ![20251023230522](https://static-docs.nocobase.com/20251023230522.png)
 
 

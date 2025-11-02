@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase.com/plugin-action-template-print"
+---
 # Template Print
-
-:::tip Tip
-This feature is provided by the commercial plugin `plugin-action-template-print`. Please check the commercial license for details.
-:::
 
 <style>
 .markdown h4 {
@@ -28,7 +27,7 @@ The Template Print plugin supports using Word, Excel, and PowerPoint to edit tem
 
 ### Install Plugins
 
-Refer to [Installing and Upgrading Commercial Plugins](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guiden)
+Refer to [Installing and Upgrading Commercial Plugins](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)
 
 ### Install LibreOffice (Optional)
 
@@ -141,7 +140,7 @@ Template Print currently supports Details blocks and Table blocks. The configura
 - In the dropdown menu, click the "Template Print" option to activate the plugin feature.
 
 
-![激活模板打印](https://static-docs.nocobase.com/20241212150539-2024-12-12-15-05-43.png)
+![Activate Template Print](https://static-docs.nocobase.com/20241212150539-2024-12-12-15-05-43.png)
 
 
 ### Configure Template
@@ -150,14 +149,14 @@ Template Print currently supports Details blocks and Table blocks. The configura
 - In the configuration menu of the "Template Print" button, select the "Configure template" option.
 
 
-![模板配置选项](https://static-docs.nocobase.com/20241212151858-2024-12-12-15-19-01.png)
+![Configure Template Option](https://static-docs.nocobase.com/20241212151858-2024-12-12-15-19-01.png)
 
 
 2. **Add a New Template**:
 - Click the "Add template" button to go to the template adding page.
 
 
-![添加模板按钮](https://static-docs.nocobase.com/20241212151243-2024-12-12-15-12-46.png)
+![Add Template Button](https://static-docs.nocobase.com/20241212151243-2024-12-12-15-12-46.png)
 
 
 3. **Fill in Template Information**:
@@ -165,16 +164,16 @@ Template Print currently supports Details blocks and Table blocks. The configura
 - Upload the corresponding template file (supports `.docx`, `.xlsx`, `.pptx` formats).
 
 
-![配置模板名称和文件](https://static-docs.nocobase.com/20241212151518-2024-12-12-15-15-21.png)
+![Configure Template Name and File](https://static-docs.nocobase.com/20241212151518-2024-12-12-15-15-21.png)
 
 
 4. **Edit and Save the Template**:
-- Go to the "Field List" page, copy the fields, and fill them into the template
+- Go to the "Field List" page, copy the fields, and fill them into the template.
   
-![字段列表](https://static-docs.nocobase.com/20250107141010.png)
+![Field List](https://static-docs.nocobase.com/20250107141010.png)
 
   
-![20241212152743-2024-12-12-15-27-45](https://static-docs.nocobase.com/20241212152743-2024-12-12-15-27-45.png)
+![Fill Template](https://static-docs.nocobase.com/20241212152743-2024-12-12-15-27-45.png)
 
 - After filling it out, click the "Save" button to complete adding the template.
 
@@ -184,7 +183,7 @@ Template Print currently supports Details blocks and Table blocks. The configura
 - Click the "Download" button to download the configured template file.
 - Click the "Delete" button to remove templates that are no longer needed. The system will prompt for confirmation to avoid accidental deletion.
   
-![模板管理](https://static-docs.nocobase.com/20250107140436.png)
+![Template Management](https://static-docs.nocobase.com/20250107140436.png)
 
 
 #### Table Block
@@ -193,7 +192,7 @@ The usage for the Table block is basically the same as for the Details block, wi
 1. Supports printing multiple data records: You need to check the records to be printed first, with a maximum of 100 records at a time.
    
 
-![20250416215633-2025-04-16-21-56-35](https://static-docs.nocobase.com/20250416215633-2025-04-16-21-56-35.png)
+![Print Multiple Records from Table](https://static-docs.nocobase.com/20250416215633-2025-04-16-21-56-35.png)
 
 
 2. Isolated template management: Templates for Table blocks and Details blocks are not interchangeable—because their data structures are different (one is an object, the other is an array).
@@ -255,10 +254,10 @@ Dataset:
 ```json
 {
   "customer": {
-    "name": "Li Lei",
+    "name": "John Doe",
     "contact": {
-      "email": "lilei@example.com",
-      "phone": "13800138000"
+      "email": "john.doe@example.com",
+      "phone": "555-0100"
     }
   }
 }
@@ -273,9 +272,9 @@ Phone Number: {d.customer.contact.phone}
 
 Rendered result:
 ```
-Customer Name: Li Lei
-Email Address: lilei@example.com
-Phone Number: 13800138000
+Customer Name: John Doe
+Email Address: john.doe@example.com
+Phone Number: 555-0100
 ```
 
 ### Accessing Arrays
@@ -2503,7 +2502,7 @@ For both DOCX and XLSX, the size of the final rendered image will follow the dim
 2. Right-click on this image, edit its "Alt Text", and enter the image field tag you want to insert, for example, `{d.imageUrl}`:
    
 
-![20250414211130-2025-04-14-21-11-31](https://static-docs.nocobase.com/20250414211130-2025-04-14-21-11-31.png)
+![Edit Alt Text for Dynamic Image](https://static-docs.nocobase.com/20250414211130-2025-04-14-21-11-31.png)
 
 
 3. Render with the following example data:
@@ -2517,7 +2516,7 @@ For both DOCX and XLSX, the size of the final rendered image will follow the dim
 4. After rendering, the temporary image will be replaced with the actual image:
 
 
-![20250414203444-2025-04-14-20-34-46](https://static-docs.nocobase.com/20250414203444-2025-04-14-20-34-46.png)
+![Rendered Dynamic Image](https://static-docs.nocobase.com/20250414203444-2025-04-14-20-34-46.png)
 
 
 ##### Multiple Image Loop Replacement
@@ -2542,13 +2541,13 @@ If you want to insert a group of images in the template, such as a product list,
 2. In the DOCX template, set up a loop area, and insert a temporary image in each loop item with the alt text set to `{d.products[i].imageUrl}`, as shown below:
 
 
-![20250414205418-2025-04-14-20-54-19](https://static-docs.nocobase.com/20250414205418-2025-04-14-20-54-19.png)
+![Looping Dynamic Images Template](https://static-docs.nocobase.com/20250414205418-2025-04-14-20-54-19.png)
 
 
 3. After rendering, all temporary images will be replaced by their respective data images:
    
 
-![20250414205503-2025-04-14-20-55-05](https://static-docs.nocobase.com/20250414205503-2025-04-14-20-55-05.png)
+![Rendered Looping Images](https://static-docs.nocobase.com/20250414205503-2025-04-14-20-55-05.png)
 
 
 #### Inserting Dynamic Images in XLSX Files
@@ -2558,7 +2557,7 @@ The operation in an Excel template (XLSX) is basically the same, just note the f
 1. After inserting an image, make sure you have selected "Picture in Cell", not the image floating above the cell.
 
 
-![20250414211643-2025-04-14-21-16-45](https://static-docs.nocobase.com/20250414211643-2025-04-14-21-16-45.png)
+![Picture in Cell in Excel](https://static-docs.nocobase.com/20250414211643-2025-04-14-21-16-45.png)
 
 
 2. With the cell selected, click to view "Alt Text" to enter the field tag, such as `{d.imageUrl}`.
@@ -2577,13 +2576,13 @@ The method for generating barcodes is the same as for dynamic images, requiring 
 2. Edit the "Alt Text" of the image and write the barcode format field tag, for example, `{d.code:barcode(qrcode)}`, where `qrcode` is the type of barcode (see the supported list below)
 
 
-![20250414214626-2025-04-14-21-46-28](https://static-docs.nocobase.com/20250414214626-2025-04-14-21-46-28.png)
+![Barcode Alt Text](https://static-docs.nocobase.com/20250414214626-2025-04-14-21-46-28.png)
 
 
 3. After rendering, this placeholder image will be automatically replaced with the corresponding barcode image:
    
 
-![20250414214925-2025-04-14-21-49-26](https://static-docs.nocobase.com/20250414214925-2025-04-14-21-49-26.png)
+![Rendered Barcode](https://static-docs.nocobase.com/20250414214925-2025-04-14-21-49-26.png)
 
 
 #### Supported Barcode Types
@@ -2620,8 +2619,6 @@ In the Excel template, set a light gray background for all target cells and inse
 - **Use "Center Across Selection"**: If you need text to be centered horizontally across multiple cells, use the "Center Across Selection" feature instead of merging cells.
 - **Limit the position of merged cells**: If you must use merged cells, only merge them at the top or right side of the table. Avoid merging at the bottom or left side to prevent the loss of the merge effect during rendering.
 
-
-
 ### 3. Content below a loop rendering area causes format corruption
 
 **Problem Description**: In an Excel template, if there is other content (e.g., order summary, notes) below a looping area that grows dynamically based on data entries (e.g., order details), the rows generated by the loop will expand downwards during rendering, directly overwriting or pushing the static content below, leading to format corruption and content overlap in the final document.
@@ -2636,25 +2633,20 @@ In the Excel template, set a light gray background for all target cells and inse
 
 **Incorrect way**: Placing the "Order Summary" information immediately below the looping "Order Details" table.
 
-![20250820080712](https://static-docs.nocobase.com/20250820080712.png)
+![Incorrect Layout](https://static-docs.nocobase.com/20250820080712.png)
 
 
 **Correct way 1 (Adjust layout)**: Move the "Order Summary" information above the "Order Details" table, making the looping area the bottom element of the page.
 
-![20250820082226](https://static-docs.nocobase.com/20250820082226.png)
+![Correct Layout 1](https://static-docs.nocobase.com/20250820082226.png)
 
 
 **Correct way 2 (Reserve blank rows)**: Reserve a large number of blank rows between "Order Details" and "Order Summary" to ensure there is enough space for the loop content to expand.
 
-![20250820081510](https://static-docs.nocobase.com/20250820081510.png)
+![Correct Layout 2](https://static-docs.nocobase.com/20250820081510.png)
 
 
 **Correct way 3**: Use a Word template.
-
-
-
-
-
 
 ### 4. Error message appears during template rendering
 

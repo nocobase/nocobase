@@ -2,7 +2,7 @@
 displayName: "Workflow: Dynamic calculation node"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |
-  Useful plugin for doing dynamic calculation based on expression collection records in workflow.
+  For performing dynamic expression calculations on collection records in a workflow.
 isFree: true
 builtIn: true
 defaultEnabled: false

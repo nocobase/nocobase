@@ -2,7 +2,7 @@
 
 ## Introduction
 
-A default value is the initial value of a field in a new state. You can set a default value for a field when configuring it in a collection, or specify a default value for a field in an Add Form block. It can be set as a constant or a variable.
+A default value is the initial value of a field when a new record is created. You can set a default value for a field when configuring it in a collection, or specify a default value for a field in an Add Form block. It can be set as a constant or a variable.
 
 ## Where to Set Default Values
 
@@ -29,9 +29,9 @@ Add new in a sub-form
 ![20251028163455](https://static-docs.nocobase.com/20251028163455.png)
 
 
-When editing existing data, if the data is empty, it will not be filled with the default value. Only newly added data will be filled with the default value.
+When editing existing data, an empty field will not be populated with the default value. Only newly added data will be filled with the default value.
 
-### Default Values for Association Data
+### Default Values for Association Fields
 
 Only **Many-to-One** and **Many-to-Many** type relationships have default values when using selector components (Select, RecordPicker).
 
@@ -44,7 +44,7 @@ Only **Many-to-One** and **Many-to-Many** type relationships have default values
 ### What Variables are Available
 
 - Current user;
-- Current record, the concept of a current record only exists for data that already exists;
+- Current record; this only applies to existing records;
 - Current form, ideally only lists the fields in the form;
 - Current object, a concept within sub-forms (the data object for each row in the sub-form);
 - URL parameters
@@ -58,7 +58,7 @@ Divided into two categories: non-association fields and association fields.
 
 - The variable object must be a collection record;
 - It must be a collection in the inheritance chain, which can be the current collection or a parent/child collection;
-- The "Form selected records" variable is only available for "Many-to-Many" and "One-to-Many/Many-to-One" association fields;
+- The "Table selected records" variable is only available for "Many-to-Many" and "One-to-Many/Many-to-One" association fields;
 - **For multi-level scenarios, it needs to be flattened and deduplicated**
 
 ```typescript

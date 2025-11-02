@@ -1,6 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-template-print"
+---
+
 # Template Printing
 
-<PluginInfo commercial="true" name="action-template-print"></PluginInfo>
+
 
 ## Introduction
 

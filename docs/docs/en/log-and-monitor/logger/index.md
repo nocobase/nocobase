@@ -21,9 +21,9 @@ NocoBase supports configuring four different log formats.
 The default format in development environment, messages are highlighted in color.
 
 ```
-2023-12-30 22:40:06 [info ] response                                     method=GET path=/api/uiSchemas:getJsonSchema/nocobase-admin-menu res={"status":200} action={"actionName":"getJsonSchema","resourceName":"uiSchemas","params":{"filterByTk":"nocobase-admin-menu","resourceName":"uiSchemas","resourceIndex":"nocobase-admin-menu","actionName":"getJsonSchema"}} userId=1 status=200 cost=5 app=main reqId=ccf4e3bd-beb0-4350-af6e-b1fc1d9b6c3f
+2023-12-30 22:40:06 [info]  response                                     method=GET path=/api/uiSchemas:getJsonSchema/nocobase-admin-menu res={"status":200} action={"actionName":"getJsonSchema","resourceName":"uiSchemas","params":{"filterByTk":"nocobase-admin-menu","resourceName":"uiSchemas","resourceIndex":"nocobase-admin-menu","actionName":"getJsonSchema"}} userId=1 status=200 cost=5 app=main reqId=ccf4e3bd-beb0-4350-af6e-b1fc1d9b6c3f
 2023-12-30 22:43:12 [debug] Database dialect: mysql                      module=application method=install app=main reqId=31ffa8b5-f377-456b-a295-0c8a28938228
-2023-12-30 22:43:12 [warn ] app is installed                             module=application method=install app=main reqId=31ffa8b5-f377-456b-a295-0c8a28938228
+2023-12-30 22:43:12 [warn]  app is installed                             module=application method=install app=main reqId=31ffa8b5-f377-456b-a295-0c8a28938228
 ```
 
 ### `json`
@@ -51,7 +51,7 @@ The default format in production environment.
 
 ### `logfmt`
 
-Check out https://brandur.org/logfmt for more information.
+> https://brandur.org/logfmt.
 
 ```
 level=info timestamp=2023-12-21 14:18:02 reqId=8b59a40d-68ee-4c97-8001-71a47a92805a
@@ -100,7 +100,7 @@ The main directory structure of NocoBase log files is:
 | `req` / `res` | Request/Response content             |
 | `action`      | Requested resources and parameters   |
 | `status`      | Response status code                 |
-| `cost`        | Request time                         |
+| `cost`        | Request duration                     |
 | `app`         | Current application name             |
 | `reqId`       | Request ID                           |
 
@@ -138,13 +138,13 @@ The main directory structure of NocoBase log files is:
 
 ## Log Packaging and Downloading
 
-<PluginInfo name="logger"></PluginInfo>
-
 1. Navigate to the log management page.
 2. Select the log files you wish to download.
-3. Click the download button.
+3. Click the Download button.
+
 
 ![2024-04-10_10-50-50](https://static-docs.nocobase.com/2024-04-10_10-50-50.png)
+
 
 ## Related Documents
 

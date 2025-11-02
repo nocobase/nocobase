@@ -8,25 +8,43 @@ Event flow allows you to trigger custom actions when certain events occur, such 
 
 Let's walk through a simple example to understand how to configure event flows. We'll create a linkage between two tables where clicking a row in the left table automatically filters the data in the right table.
 
+
 ![20251031092211_rec_](https://static-docs.nocobase.com/20251031092211_rec_.gif)
+
 
 Configuration steps:
 
 1. Click the "lightning" icon in the top-right corner of the left table block to open the event flow configuration panel.
+
 ![20251031092425](https://static-docs.nocobase.com/20251031092425.png)
+
 2. Click "Add event flow", select "Row click" as the "Trigger event", which means the flow will trigger when a table row is clicked.
+
 ![20251031092637](https://static-docs.nocobase.com/20251031092637.png)
+
 3. "Trigger condition" is used to configure conditions. The event flow will only trigger when these conditions are met. In this case, we don't need to configure any conditions, so the flow will trigger on any row click.
+
 ![20251031092717](https://static-docs.nocobase.com/20251031092717.png)
+
 4. Hover over "Add step" to add operation steps. Select "Set data scope" to configure the data scope for the right table.
+
 ![20251031092755](https://static-docs.nocobase.com/20251031092755.png)
+
 5. Copy the UID of the right table and paste it into the "Target block UID" input field. A condition configuration panel will appear below, where you can configure the data scope for the right table.
+
 ![20251031092915](https://static-docs.nocobase.com/20251031092915.png)
+
 6. Configure a condition as shown below:
+
 ![20251031093233](https://static-docs.nocobase.com/20251031093233.png)
+
 7. After configuring the data scope, you need to refresh the block to display the filtered results. Add a "Refresh target blocks" step and enter the UID of the right table.
+
 ![20251031093150](https://static-docs.nocobase.com/20251031093150.png)
+
+
 ![20251031093341](https://static-docs.nocobase.com/20251031093341.png)
+
 8. Finally, click the save button in the bottom-right corner to complete the configuration.
 
 ## Event types
@@ -61,7 +79,9 @@ Custom variables have scope. For example, a variable defined in a block's event 
 
 Use values from a form block as a variable. Configuration:
 
+
 ![20251031093516](https://static-docs.nocobase.com/20251031093516.png)
+
 
 - Variable title: Variable title
 - Variable identifier: Variable identifier
@@ -75,7 +95,9 @@ More variable types will be supported in the future.
 
 Set the data scope for a target block. Configuration:
 
+
 ![20251031093609](https://static-docs.nocobase.com/20251031093609.png)
+
 
 - Target block UID: Target block UID
 - Condition: Filter condition
@@ -84,7 +106,9 @@ Set the data scope for a target block. Configuration:
 
 Refresh target blocks. Multiple blocks can be configured. Configuration:
 
+
 ![20251031093657](https://static-docs.nocobase.com/20251031093657.png)
+
 
 - Target block UID: Target block UID
 
@@ -92,7 +116,9 @@ Refresh target blocks. Multiple blocks can be configured. Configuration:
 
 Navigate to a URL. Configuration:
 
+
 ![20251031093742](https://static-docs.nocobase.com/20251031093742.png)
+
 
 - URL: Target URL, supports variables
 - Search parameters: Query parameters in the URL
@@ -102,14 +128,16 @@ Navigate to a URL. Configuration:
 
 Display global feedback messages.
 
-#### When to use show message
+#### When to use
 
 - Provide success, warning, and error feedback.
 - Display centered at the top and auto-dismiss, providing lightweight feedback without interrupting user operations.
 
-#### Show message configuration
+#### Configuration
+
 
 ![20251031093825](https://static-docs.nocobase.com/20251031093825.png)
+
 
 - Message type: Message type
 - Message content: Message content
@@ -119,7 +147,7 @@ Display global feedback messages.
 
 Display global notification alerts.
 
-#### When to use show notification
+#### When to use
 
 Display notification alerts in the four corners of the system. Commonly used for:
 
@@ -127,9 +155,11 @@ Display notification alerts in the four corners of the system. Commonly used for
 - Interactive notifications that provide users with next steps.
 - System-initiated notifications.
 
-#### Show notification configuration
+#### Configuration
+
 
 ![20251031093934](https://static-docs.nocobase.com/20251031093934.png)
+
 
 - Notification type: Notification type
 - Notification title: Notification title
@@ -138,6 +168,8 @@ Display notification alerts in the four corners of the system. Commonly used for
 
 ### Execute JavaScript
 
+
 ![20251031094046](https://static-docs.nocobase.com/20251031094046.png)
+
 
 Execute JavaScript code.
