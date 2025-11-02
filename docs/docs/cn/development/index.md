@@ -38,7 +38,7 @@ features:
     items:
       - title: 数据源扩展
         details: 扩展或集成外部数据源，连接第三方数据库或服务，实现跨系统的数据访问与同步。
-        link: /data-source/development
+        link: /data-sources/development
         showOnHome: true
       - title: 工作流扩展
         details: 扩展或集成工作流相关功能，实现自动化与流程化的业务场景。

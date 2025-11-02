@@ -38,7 +38,7 @@ features:
     items:
       - title: Data Source Extension
         details: Extend or integrate external data sources, connect to third-party databases or services, and achieve cross-system data access and synchronization.
-        link: /data-source/development
+        link: /data-sources/development
         showOnHome: true
       - title: Workflow Extension
         details: Extend or integrate workflow-related features to implement automated and process-oriented business scenarios.
