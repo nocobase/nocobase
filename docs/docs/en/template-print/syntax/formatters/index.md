@@ -1,4 +1,3 @@
-
 ## Formatters
 
 Formatters are used to convert raw data into text that is easy to read. They are applied to data using a colon (`:`) and can be chained so that the output of each formatter becomes the input for the next. Some formatters support constant parameters or dynamic parameters.
@@ -107,5 +106,3 @@ The examples yield 8, 8, 28, and 6 respectively.
 > {d.subObject.qtyB:add(..subArray[i].qtyE)}
 > {d.subObject.qtyB:add(d.subArray[i].qtyE)}
 > ```
-
-

@@ -78,5 +78,3 @@ In this example:
 * The plugin extends the route for the `/` path using the `this.router.add` method;
 * `createMockClient` provides a clean mock application for easy demonstration and testing;
 * `app.getRootComponent()` returns the root component, which can be directly mounted to the page.
-
----

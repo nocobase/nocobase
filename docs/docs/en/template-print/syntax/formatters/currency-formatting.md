@@ -51,5 +51,3 @@ Parameters:
 
 ##### Result
 The output is the converted currency value.
-
-

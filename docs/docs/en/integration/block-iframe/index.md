@@ -1,33 +1,42 @@
-# Iframe Block
+---
+pkg: "@nocobase/plugin-block-iframe"
+---
 
-<PluginInfo name="block-iframe"></PluginInfo>
+# Iframe Block
 
 ## Introduction
 
 The IFrame block allows embedding external web pages or content into the current page. Users can integrate external applications seamlessly by configuring a URL or directly inserting HTML code. With HTML, users can flexibly customize content to meet specific display needs, making it ideal for customized scenarios. This approach enables loading external resources without redirection, enhancing user experience and page interactivity.
+
 ## Installation
 
 It's a built-in plugin, no installation is required.
 
 ## Adding Blocks
 
+
 ![20240408220259](https://static-docs.nocobase.com/20240408220259.png)
+
 
 Configure the URL or Html to directly embed the external application.
 
+
 ![20240408220322](https://static-docs.nocobase.com/20240408220322.png)
+
 
 ## Template engine
 
-### string template
+### String Template
 
-The default rendering engine supports variables
+The default template engine.
 
 ### Handlebars
 
+
 ![20240811205239](https://static-docs.nocobase.com/20240811205239.png)
 
-For more information, refer to Handlebars template documentation
+
+For more information, refer to the Handlebars template documentation.
 
 ## Passing Variables
 
@@ -35,9 +44,13 @@ For more information, refer to Handlebars template documentation
 
 #### Support for Selecting Variables from the Variable Selector in the Current Block Context
 
+
 ![20240603120321](https://static-docs.nocobase.com/20240603120321.png)
 
+
+
 ![20240603120629](https://static-docs.nocobase.com/20240603120629.gif)
+
 
 #### Support for Injecting Variables into the Application and Using Them through Code
 
@@ -45,14 +58,14 @@ You can also inject custom variables into the application through code and use t
 
 ```html
 <!doctype html>
-<html lang="zh">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vue3 CDN Example</title>
-    <script src="https://cdn.bootcdn.net/ajax/libs/vue/3.5.9/vue.global.prod.js"></script>
+    <script src="https://unpkg.com/vue@3.5.9/dist/vue.global.prod.js"></script>
     <script src="https://unpkg.com/element-plus"></script>
-    <script src="https://unpkg.com/element-plus/dist/locale/zh-cn"></script>
+    <script src="https://unpkg.com/element-plus/dist/locale/en.min.js"></script>
     <link
       rel="stylesheet"
       href="https://unpkg.com/element-plus/dist/index.css"
@@ -110,17 +123,19 @@ You can also inject custom variables into the application through code and use t
 </html>
 ```
 
+
 ![20250320163250](https://static-docs.nocobase.com/20250320163250.png)
+
 
 Example: A simple calendar component created with React and Ant Design (antd), using dayjs to handle dates
 
 ```html
 <!doctype html>
-<html lang="zh">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>React CDN Example </title>
+    <title>React CDN Example</title>
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <link
@@ -190,10 +205,14 @@ Example: A simple calendar component created with React and Ant Design (antd), u
 </html>
 ```
 
+
 ![20250320164537](https://static-docs.nocobase.com/20250320164537.png)
 
-### Url supports variables
+
+### URL supports variables
+
 
 ![20240603142219](https://static-docs.nocobase.com/20240603142219.png)
 
-For more information on variables, refer to Variables documentation
+
+For more information on variables, refer to the Variables documentation.

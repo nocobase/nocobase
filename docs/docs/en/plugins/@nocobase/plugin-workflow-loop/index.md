@@ -2,7 +2,7 @@
 displayName: "Workflow: Loop node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |
-  Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.
+  Used to repeat a sub-process for each value in an array. It can also be used to repeat a sub-process a fixed number of times.
 isFree: true
 builtIn: true
 defaultEnabled: false

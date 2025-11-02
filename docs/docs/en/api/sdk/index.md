@@ -148,4 +148,4 @@ export type IResource = {
 | --------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `name`    | `string`              | 1. Resource name, e.g., `a`<br />2. Name of the resource's associated object, e.g., `a.b`                                                                |
 | `of`      | `any`                 | When `name` is the name of the resource's associated object, it is the primary key value of the resource. For example, for `a.b`, it represents the primary key value of `a`. |
-| `headers` | `AxiosRequestHeaders` | The HTTP headers to be carried when subsequent resource action requests are initiated.                                                                   |
+| `headers` | `AxiosRequestHeaders` | HTTP headers to include in subsequent resource action requests.                                                                                          |

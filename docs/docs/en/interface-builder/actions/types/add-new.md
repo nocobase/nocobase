@@ -11,7 +11,6 @@ The Add action adds a record to the current block's collection. By configuring a
 ![20251029152324](https://static-docs.nocobase.com/20251029152324.png)
 
 
-
 ## Action Configuration
 
 

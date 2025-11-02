@@ -45,7 +45,7 @@ Parameters:
 // Outputs "2:homer, 3:bart"
 
 [{'id':2,'name':'homer'},{'id':3,'name':'bart'}]:arrayMap(' - ')
-// Outputs "2:homer - 3:homer"
+// Outputs "2:homer - 3:bart"
 
 [{'id':2,'name':'homer'},{'id':3,'name':'bart'}]:arrayMap(' ; ', '|')
 // Outputs "2|homer ; 3|bart"
@@ -85,8 +85,3 @@ Parameter:
 
 ##### Example and Result
 In use, the output will display the row number according to the sequence of the array elements.
-
-
-
-Below is the translated text back into English with the same structure using secondary (##) and tertiary (###) headings:
-

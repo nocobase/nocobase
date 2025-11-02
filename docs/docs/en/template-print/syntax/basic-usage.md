@@ -54,10 +54,10 @@ Dataset:
 ```json
 {
   "customer": {
-    "name": "Li Lei",
+    "name": "Alex Smith",
     "contact": {
-      "email": "lilei@example.com",
-      "phone": "13800138000"
+      "email": "alex.smith@example.com",
+      "phone": "+1-555-012-3456"
     }
   }
 }
@@ -72,9 +72,9 @@ Phone Number: {d.customer.contact.phone}
 
 Rendered Result:
 ```
-Customer Name: Li Lei
-Email Address: lilei@example.com
-Phone Number: 13800138000
+Customer Name: Alex Smith
+Email Address: alex.smith@example.com
+Phone Number: +1-555-012-3456
 ```
 
 ### Accessing Arrays
@@ -105,6 +105,3 @@ Rendered Result:
 ```
 The first employee's last name is Anderson, and the first name is James
 ```
-
-
-

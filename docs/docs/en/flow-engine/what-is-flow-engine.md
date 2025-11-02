@@ -47,7 +47,7 @@ You can think of a **Flow** as a **stream of water**:
 *   **Flows are configurable and controllable**
     The direction and volume of a water stream can be adjusted with a sluice gate; the execution method and parameters of a Flow can also be controlled through configuration (stepParams).
 
-### Analogy Summary
+Analogy Summary
 
 *   A **component** is like a water wheel that needs a stream of water to turn.
 *   A **Model** is the base and controller of this water wheel, responsible for receiving the water stream and driving its operation.

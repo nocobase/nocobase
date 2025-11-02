@@ -25,7 +25,7 @@ Enter the necessary information for the new knowledge base:
 - In `Vector store`, select the vector store, refer to [Vector Store](/ai-employees/knowledge-base/vector-store);
 - In the `Description` input box, enter the knowledge base description;
 
-Click the `Submit` button to create the vector store information.
+Click the `Submit` button to create the knowledge base.
 
 
 ![20251023095909](https://static-docs.nocobase.com/20251023095909.png)

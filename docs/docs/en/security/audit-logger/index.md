@@ -4,15 +4,17 @@ pkg: '@nocobase/plugin-audit-logger'
 
 # Audit Logger
 
-<PluginInfo licenseBundled="enterprise" name="audit-logger"></PluginInfo>
-
 ## Introduction
 
 The audit log is used to record and track user activities and resource operation history within the system.
 
+
 ![](https://static-docs.nocobase.com/202501031627719.png)
 
+
+
 ![](https://static-docs.nocobase.com/202501031627922.png)
+
 
 ## Parameter Description
 
@@ -25,7 +27,7 @@ The audit log is used to record and track user activities and resource operation
 | **Data source**       | The data source                                                                                                                           |
 | **Target collection** | The target collection                                                                                                                     |
 | **Target record UK**  | The unique identifier of the target collection                                                                                            |
-| **Source collection** | The source collection of the relation field                                                                                               |
+| **Source collection** | The source collection of the association field                                                                                            |
 | **Source record UK**  | The unique identifier of the source collection                                                                                            |
 | **Status**            | The HTTP status code of the operation request response                                                                                    |
 | **Created at**        | The time of the operation                                                                                                                 |
@@ -80,19 +82,19 @@ Currently, the following resource operations will be recorded in the audit log:
 
 ### Collection Operations
 
-| Operation        | Description                  |
-| ---------------- | ---------------------------- |
-| `create`         | Create record                |
-| `update`         | Update record                |
-| `destroy`        | Delete record                |
-| `updateOrCreate` | Update or create record      |
-| `firstOrCreate`  | Query or create record       |
-| `move`           | Move record                  |
-| `set`            | Set relation field record    |
-| `add`            | Add relation field record    |
-| `remove`         | Remove relation field record |
-| `export`         | Export record                |
-| `import`         | Import record                |
+| Operation        | Description                       |
+| ---------------- | --------------------------------- |
+| `create`         | Create record                     |
+| `update`         | Update record                     |
+| `destroy`        | Delete record                     |
+| `updateOrCreate` | Update or create record           |
+| `firstOrCreate`  | Query or create record            |
+| `move`           | Move record                       |
+| `set`            | Set association field record      |
+| `add`            | Add association field record      |
+| `remove`         | Remove association field record   |
+| `export`         | Export record                     |
+| `import`         | Import record                     |
 
 ## Adding Other Audit Resources
 

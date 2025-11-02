@@ -62,6 +62,8 @@ function toFrontmatter({
   defaultEnabled,
   deprecated,
   supportedVersions,
+  points,
+  editionLevel,
 }) {
   const lines = [
     '---',
@@ -78,6 +80,8 @@ function toFrontmatter({
     `builtIn: ${builtIn ? 'true' : 'false'}`,
     `defaultEnabled: ${defaultEnabled ? 'true' : 'false'}`,
     ...(deprecated ? ['deprecated: true'] : []),
+    ...(points !== undefined && points !== null ? [`points: ${points}`] : []),
+    ...(editionLevel !== undefined && editionLevel !== null ? [`editionLevel: ${editionLevel}`] : []),
     '---',
     '',
     `# ${displayName}`,
@@ -150,6 +154,8 @@ function generateForPlugin(dir, { isPro }) {
   const supportedVersions = Array.isArray(pkgJson?.nocobase?.supportedVersions)
     ? pkgJson.nocobase.supportedVersions.filter(Boolean)
     : undefined;
+  const points = pkgJson?.nocobase?.points;
+  const editionLevel = pkgJson?.nocobase?.editionLevel;
 
   const targetBase = path.join('@nocobase', pluginName);
 
@@ -171,6 +177,8 @@ function generateForPlugin(dir, { isPro }) {
       defaultEnabled,
       deprecated,
       supportedVersions,
+      points,
+      editionLevel,
     });
     fs.writeFileSync(cnFile, contentCN, 'utf8');
     // eslint-disable-next-line no-console
@@ -187,6 +195,8 @@ function generateForPlugin(dir, { isPro }) {
       defaultEnabled,
       deprecated,
       supportedVersions,
+      points,
+      editionLevel,
     });
     fs.writeFileSync(enFile, contentEN, 'utf8');
     // eslint-disable-next-line no-console

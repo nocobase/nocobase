@@ -6,6 +6,9 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
 ---
 
 # Block: template (deprecated)
+
+> Note: This plugin is deprecated.

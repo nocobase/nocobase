@@ -9,6 +9,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
+points: 2
 ---
 
 # 工作流：Webhook 触发器

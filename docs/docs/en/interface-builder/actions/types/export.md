@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-action-export"
+---
 # Export
-
-:::tip
-This feature is provided by the `plugin-action-export` plugin.
-:::
 
 ## Introduction
 

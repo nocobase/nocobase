@@ -20,8 +20,8 @@
       },
       {
         "type": "custom-link",
-        "label": "与 AI 员工对话",
-        "link": "/ai-employees/quick-start/chat"
+        "label": "与 AI 员工协作",
+        "link": "/ai-employees/quick-start/collaborate"
       }
     ]
   },
@@ -31,8 +31,8 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "如何启用",
-        "link": "/ai-employees/built-in/enable"
+        "label": "概述",
+        "link": "/ai-employees/built-in/index"
       },
       {
         "type": "custom-link",
@@ -41,13 +41,13 @@
       },
       {
         "type": "custom-link",
-        "label": "Orin：数据建模师",
+        "label": "Orin：数据建模专家",
         "link": "/ai-employees/built-in/data-modeling"
       },
       {
         "type": "custom-link",
-        "label": "Dex：数据整理助手",
-        "link": "/ai-employees/built-in/form-filler"
+        "label": "Dex：数据整理专家",
+        "link": "/ai-employees/built-in/data-organizer"
       },
       {
         "type": "custom-link",

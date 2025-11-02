@@ -6,6 +6,10 @@ pkg: "@nocobase/plugin-data-source-main"
 
 ## Introduction
 
+:::warning
+Supported only when the main database is PostgreSQL.
+:::
+
 You can create a parent collection and derive child collection from that parent collection. The child collection will inherit the structure of the parent collection, and can also define its own columns. This design pattern helps organize and manage data with similar structures but possible differences.
 
 Here are some common features of support for inheritable collections:
@@ -18,5 +22,6 @@ Here are some common features of support for inheritable collections:
 This design pattern helps to reduce data redundancy, simplify the database model, and make the data easier to maintain. However, it needs to be used with caution as inheritable collections can increase the complexity of queries, especially when dealing with the entire inheritance hierarchy. Databases that support inheritable collections generally provide specific syntax and tools to manage and query these collection structures.
 
 ## User Manual
+
 
 ![20240324085907](https://static-docs.nocobase.com/20240324085907.png)

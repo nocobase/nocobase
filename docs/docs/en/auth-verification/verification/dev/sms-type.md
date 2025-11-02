@@ -1,6 +1,6 @@
 # Extend SMS Provider
 
-This article primarily explains how to extend the SMS provider functionality in the [Auth: SMS](../sms) feature via a plugin.
+This article primarily explains how to extend the SMS provider functionality in the [Verification: SMS](../sms) feature via a plugin.
 
 ## Client
 
@@ -8,7 +8,9 @@ This article primarily explains how to extend the SMS provider functionality in 
 
 When configuring the SMS verifier, after selecting an SMS provider type, a configuration form associated with that provider type will appear. This configuration form needs to be registered by the developer on the client side.
 
+
 ![](https://static-docs.nocobase.com/202503011221912.png)
+
 
 ```ts
 import { Plugin, SchemaComponent } from '@nocobase/client';

@@ -10,4 +10,5 @@ A calendar Collection is a specialized data table designed to store dates and da
 
 ## User Manual
 
+
 ![20240512182454](https://static-docs.nocobase.com/20240512182454.png)

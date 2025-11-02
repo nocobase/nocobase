@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-loop'
+---
+
 # Loop
 
 ## Introduction
@@ -70,21 +74,24 @@ For example, when an order is placed, you need to check the stock for each produ
 
 1.  Create three collections: Products <-(1:m)-- Order Details --(m:1)-> Orders. The data model is as follows:
 
-    | Field Name        | Field Type          |
-    | ----------------- | ------------------- |
-    | Order Item Details| Many-to-One (Details) |
-    | Order Total Price | Number              |
+    **Orders Collection**
+    | Field Name | Field Type |
+    | ------------ | -------------- |
+    | Order Details | One-to-Many (Order Details) |
+    | Order Total Price | Number |
 
-    | Field Name | Field Type          |
-    | ---------- | ------------------- |
-    | Product    | One-to-Many (Product) |
-    | Quantity   | Number              |
+    **Order Details Collection**
+    | Field Name | Field Type |
+    | -------- | -------------- |
+    | Product | Many-to-One (Product) |
+    | Quantity | Number |
 
-    | Field Name    | Field Type        |
-    | ------------- | ----------------- |
-    | Product Name  | Single Line Text  |
-    | Price         | Number            |
-    | Stock         | Integer           |
+    **Products Collection**
+    | Field Name | Field Type |
+    | -------- | -------- |
+    | Product Name | Single Line Text |
+    | Price | Number |
+    | Stock | Integer |
 
 2.  Create a workflow. For the trigger, select "Collection Event," and choose the "Orders" collection to trigger "After record added." You also need to configure it to preload the relationship data of the "Order Details" collection and the Products collection under the details:
 

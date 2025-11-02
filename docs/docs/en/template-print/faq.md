@@ -39,15 +39,22 @@ In the Excel template, set a light gray background for all target cells and inse
 **Example**:
 
 **Wrong approach**: Placing "Order Summary" information immediately below the looping "Order Details" table.
+
 ![20250820080712](https://static-docs.nocobase.com/20250820080712.png)
 
+
 **Correct approach 1 (Adjust layout)**: Move "Order Summary" information above the "Order Details" table, making the loop area the bottom element of the page.
+
 ![20250820082226](https://static-docs.nocobase.com/20250820082226.png)
 
+
 **Correct approach 2 (Reserve blank rows)**: Reserve many blank rows between "Order Details" and "Order Summary" to ensure loop content has enough expansion space.
+
 ![20250820081510](https://static-docs.nocobase.com/20250820081510.png)
 
+
 **Correct approach 3**: Use Word templates.
+
 
 
 

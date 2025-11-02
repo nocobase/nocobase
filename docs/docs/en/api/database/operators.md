@@ -8,7 +8,7 @@ const repository = db.getRepository('books');
 repository.find({
   filter: {
     title: {
-      $eq: '春秋',
+      $eq: 'The Great Gatsby',
     },
   },
 });
@@ -30,13 +30,13 @@ Checks if the field value is equal to the specified value. Equivalent to SQL's `
 repository.find({
   filter: {
     title: {
-      $eq: '春秋',
+      $eq: 'The Great Gatsby',
     },
   },
 });
 ```
 
-Equivalent to `title: '春秋'`.
+Equivalent to `title: 'The Great Gatsby'`.
 
 ### `$ne`
 
@@ -48,7 +48,7 @@ Checks if the field value is not equal to the specified value. Equivalent to SQL
 repository.find({
   filter: {
     title: {
-      $ne: '春秋',
+      $ne: 'The Great Gatsby',
     },
   },
 });
@@ -112,7 +112,7 @@ Checks if the field value is in the specified array. Equivalent to SQL's `IN`.
 repository.find({
   filter: {
     title: {
-      $in: ['春秋', '战国'],
+      $in: ['The Great Gatsby', 'Moby Dick'],
     },
   },
 });
@@ -128,7 +128,7 @@ Checks if the field value is not in the specified array. Equivalent to SQL's `NO
 repository.find({
   filter: {
     title: {
-      $notIn: ['春秋', '战国'],
+      $notIn: ['The Great Gatsby', 'Moby Dick'],
     },
   },
 });
@@ -177,7 +177,7 @@ Logical AND. Equivalent to SQL's `AND`.
 ```ts
 repository.find({
   filter: {
-    $and: [{ title: '诗经' }, { isbn: '1234567890' }],
+    $and: [{ title: 'The Book of Songs' }, { isbn: '1234567890' }],
   },
 });
 ```
@@ -191,7 +191,7 @@ Logical OR. Equivalent to SQL's `OR`.
 ```ts
 repository.find({
   filter: {
-    $or: [{ title: '诗经' }, { publishedAt: { $lt: '0000-00-00T00:00:00Z' } }],
+    $or: [{ title: 'The Book of Songs' }, { publishedAt: { $lt: '0000-00-00T00:00:00Z' } }],
   },
 });
 ```
@@ -352,7 +352,7 @@ Checks if the string field contains the specified substring.
 repository.find({
   filter: {
     title: {
-      $includes: '三字经',
+      $includes: 'Classic',
     },
   },
 });
@@ -368,7 +368,7 @@ Checks if the string field does not contain the specified substring.
 repository.find({
   filter: {
     title: {
-      $notIncludes: '三字经',
+      $notIncludes: 'Classic',
     },
   },
 });
@@ -384,7 +384,7 @@ Checks if the string field starts with the specified substring.
 repository.find({
   filter: {
     title: {
-      $startsWith: '三字经',
+      $startsWith: 'Classic',
     },
   },
 });
@@ -400,7 +400,7 @@ Checks if the string field does not start with the specified substring.
 repository.find({
   filter: {
     title: {
-      $notStatsWith: '三字经',
+      $notStatsWith: 'Classic',
     },
   },
 });
@@ -416,7 +416,7 @@ Checks if the string field ends with the specified substring.
 repository.find({
   filter: {
     title: {
-      $endsWith: '三字经',
+      $endsWith: 'Classic',
     },
   },
 });
@@ -432,7 +432,7 @@ Checks if the string field does not end with the specified substring.
 repository.find({
   filter: {
     title: {
-      $notEndsWith: '三字经',
+      $notEndsWith: 'Classic',
     },
   },
 });
@@ -448,7 +448,7 @@ Checks if the field value contains the specified string. Equivalent to SQL's `LI
 repository.find({
   filter: {
     title: {
-      $like: '计算机',
+      $like: 'Computer',
     },
   },
 });
@@ -464,7 +464,7 @@ Checks if the field value does not contain the specified string. Equivalent to S
 repository.find({
   filter: {
     title: {
-      $notLike: '计算机',
+      $notLike: 'Computer',
     },
   },
 });
@@ -512,7 +512,7 @@ Checks if the field value matches the specified regular expression. Equivalent t
 repository.find({
   filter: {
     title: {
-      $regexp: '^计算机',
+      $regexp: '^Computer',
     },
   },
 });
@@ -528,7 +528,7 @@ Checks if the field value does not match the specified regular expression. Equiv
 repository.find({
   filter: {
     title: {
-      $notRegexp: '^计算机',
+      $notRegexp: '^Computer',
     },
   },
 });
@@ -680,7 +680,7 @@ Checks if the array field's value matches the values in the specified array.
 repository.find({
   filter: {
     tags: {
-      $match: ['文学', '历史'],
+      $match: ['Literature', 'History'],
     },
   },
 });
@@ -696,7 +696,7 @@ Checks if the array field's value does not match the values in the specified arr
 repository.find({
   filter: {
     tags: {
-      $notMatch: ['文学', '历史'],
+      $notMatch: ['Literature', 'History'],
     },
   },
 });
@@ -712,7 +712,7 @@ Checks if the array field's value contains any of the values in the specified ar
 repository.find({
   filter: {
     tags: {
-      $anyOf: ['文学', '历史'],
+      $anyOf: ['Literature', 'History'],
     },
   },
 });
@@ -728,7 +728,7 @@ Checks if the array field's value contains none of the values in the specified a
 repository.find({
   filter: {
     tags: {
-      $noneOf: ['文学', '历史'],
+      $noneOf: ['Literature', 'History'],
     },
   },
 });

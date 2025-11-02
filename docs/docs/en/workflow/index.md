@@ -31,7 +31,7 @@ From a more general perspective, workflows in NocoBase applications can solve pr
 
 Workflow is a built-in plugin of NocoBase. No additional installation or configuration required.
 
-## Next Steps
+## Learn More
 
 - [Getting Started](./getting-started)
 - [Triggers](./triggers/index)

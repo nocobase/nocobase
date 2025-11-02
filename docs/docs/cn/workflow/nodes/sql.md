@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-sql'
+---
+
 # SQL 操作
 
 ## 介绍

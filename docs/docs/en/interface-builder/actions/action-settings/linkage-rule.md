@@ -10,11 +10,17 @@ Action linkage rules allow users to dynamically control the state of an action (
 
 ## How to Use
 
+When the condition is met (it passes by default if no condition is set), it triggers the execution of property settings or JavaScript. Constants and variables are supported in the conditional judgment.
+
+
+![20251030224601](https://static-docs.nocobase.com/20251030224601.png)
+
+
+The rule supports modifying button properties.
+
 
 ![20251029150452](https://static-docs.nocobase.com/20251029150452.png)
 
-
-When the condition is met (if no condition is set, it passes by default), the property settings are triggered. Constants/variables are supported in the conditional judgment.
 
 ## Constants
 
