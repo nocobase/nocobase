@@ -2,7 +2,7 @@
 
 > Quickly extract and fill forms, making messy information structured.
 
-The AI Agent plugin has a built-in form-filling assistant, `Dex`. When you need to fill out a form, summon it to help you fill in the data.
+`Dex` is a data organization expert. It extracts required information from unstructured data or files, organizes it into structured information, and can use tools to fill out forms.
 
 
 ![20251022155210](https://static-docs.nocobase.com/20251022155210.png)

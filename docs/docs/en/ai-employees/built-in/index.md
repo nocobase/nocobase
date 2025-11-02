@@ -1,10 +1,24 @@
 # Built-in AI Employees
 
+## Overview
+
+NocoBase includes the following built-in AI employees. They are equipped with complete skills, tools, and knowledge bases. You just need to configure an LLM for them to start working.
+
+- `Orin`: Data modeling expert
+- `Avery`: Form filler
+- `Viz`: Insights analyst
+- `Lexi`: Translator
+- `Nathan`: Frontend code engineer
+- `Cole`: NocoBase assistant
+- `Vera`: Research analyst
+- `Dex`: Data organizer
+- `Ellis`: Email expert
+
 ## How to Enable
 
 Go to the AI Employees plugin configuration page, click the `AI employees` tab to enter the AI employee management page.
 
-You can see that the system has multiple built-in AI employees, but none of them are enabled. You cannot chat with these AI employees on the application page yet.
+You can see that the system has multiple built-in AI employees, but none of them are enabled. You cannot collabrate with these AI employees on the application page yet.
 
 
 ![20251022121248](https://static-docs.nocobase.com/20251022121248.png)
@@ -39,4 +53,4 @@ Then you can see this built-in AI employee in the AI employee quick launch butto
 
 ### Note
 
-Some built-in AI employees will not appear in the AI employee quick launch button in the lower right corner after being enabled. For example, Orin will only appear on the main data configuration page; Nathan will only appear in the JS editor.
+Some built-in AI employees will not appear in the AI employee list in the lower right corner after being enabled. For example, Orin will only appear on the main data configuration page; Nathan will only appear in the JS editor.

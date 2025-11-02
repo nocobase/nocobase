@@ -13,7 +13,6 @@ Before configuring, please ensure your environment meets the following condition
 * The **AI Employee plugin** is enabled
 * At least one available **Large Language Model service** (e.g., OpenAI, Claude, DeepSeek, GLM, etc.)
 
----
 
 ### 2. Understanding the Two-Layer Design of AI Employees
 
@@ -35,7 +34,6 @@ The benefits of this design are:
 * Upgrading or replacing tasks does not affect the employee itself
 * Background and tasks are independent, making maintenance easier
 
----
 
 ## II. Configuration Process (in 5 steps)
 
@@ -49,9 +47,7 @@ The model service is like the brain of an AI Employee and must be set up first.
 `System Settings → AI Employee → Model Services`
 
 
-
 ![Enter configuration page](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)
-
 
 
 Click **Add** and fill in the following information:
@@ -64,21 +60,16 @@ Click **Add** and fill in the following information:
 | Model Name | Specific model name (e.g., gpt-4, claude-opus) | Affects capabilities and cost |
 
 
-
 ![Create a large model service](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-45-27.png)
-
 
 
 After configuration, please **test the connection**.
 If it fails, please check your network, API key, or model name.
 
 
-
 ![Test connection](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-18-25.png)
 
 
-
----
 
 ### Step 2: Create an AI Employee
 
@@ -98,17 +89,13 @@ Fill in the basic information:
 | Welcome Message | - | "Hello, I'm Viz…" |
 
 
-
 ![Basic information configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-21-09.png)
-
 
 
 Then, bind the **model service** you just configured.
 
 
-
 ![Bind large model service](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-22-27.png)
-
 
 
 **Prompt Writing Suggestions:**
@@ -121,7 +108,6 @@ Then, bind the **model service** you just configured.
 > The clearer the prompt, the more stable the AI's performance.
 > You can refer to the [Prompt Engineering Guide](./prompt-engineering-guide.md).
 
----
 
 ### Step 3: Configure Skills
 
@@ -143,12 +129,9 @@ Skills determine what an employee "can do".
 * Disable Auto usage before important operations
 
 
-
 ![Configure skills](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-26-06.png)
 
 
-
----
 
 ### Step 4: Configure Knowledge Base (Optional)
 
@@ -163,9 +146,7 @@ If your AI employee needs to remember or reference a large amount of material, s
 This requires installing the vector database plugin.
 
 
-
 ![Configure knowledge base](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-32-54.png)
-
 
 
 **Applicable Scenarios:**
@@ -174,16 +155,13 @@ This requires installing the vector database plugin.
 * To support document Q&A and retrieval
 * To train domain-specific assistants
 
----
 
 ### Step 5: Verify the Effect
 
 After completion, you will see the new employee's avatar in the bottom right corner of the page.
 
 
-
 ![Verify configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-36-54.png)
-
 
 
 Please check each item:
@@ -194,7 +172,6 @@ Please check each item:
 
 If all pass, the configuration is successful 🎉
 
----
 
 ## III. Task Configuration: Getting the AI to Work
 
@@ -205,7 +182,6 @@ AI tasks define the employee's behavior on a specific page or block.
 
 > 💡 For detailed instructions, please refer to: [Tasks](/ai-employees/advanced/task)
 
----
 
 ### 1. Page-level Tasks
 
@@ -223,18 +199,14 @@ Applicable to the entire page scope, such as "Analyze the data on this page".
 | Skills | Available tools | Query data, generate charts |
 
 
-
 ![Page-level task configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-40-34.png)
-
 
 
 **Multi-task Support:**
 A single AI employee can be configured with multiple tasks, which are presented as options for the user to choose from:
 
 
-
 ![Multi-task support](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-46-00.png)
-
 
 
 Suggestions:
@@ -243,7 +215,6 @@ Suggestions:
 * The name should be clear and easy to understand
 * Keep the number of tasks within 5–7
 
----
 
 ### 2. Block-level Tasks
 
@@ -255,23 +226,17 @@ Suitable for operating on a specific block, such as "Translate the current form"
 2. Add "AI Employee"
 
 
-
 ![Add AI Employee button](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-51-06.png)
 
 
-
 3. Bind the target employee
-
 
 
 ![Select AI Employee](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-52-26.png)
 
 
 
-
-
 ![Block-level task configuration](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-53-35.png)
-
 
 
 | Comparison | Page-level | Block-level |
@@ -280,7 +245,6 @@ Suitable for operating on a specific block, such as "Translate the current form"
 | Granularity | Global analysis | Detailed processing |
 | Typical Use | Trend analysis | Form translation, field extraction |
 
----
 
 ## IV. Best Practices
 
@@ -294,7 +258,6 @@ Suitable for operating on a specific block, such as "Translate the current form"
 | Task Goal | Single and clear | Avoids confusing the AI |
 | Workflow | Use after encapsulating complex tasks | Higher success rate |
 
----
 
 ### 2. Practical Suggestions
 
@@ -312,7 +275,6 @@ Suitable for operating on a specific block, such as "Translate the current form"
 3. Optimize prompts and task configurations
 4. Test and iterate
 
----
 
 ## V. FAQ
 
@@ -328,7 +290,6 @@ A: Check if all required fields are filled in, especially the model service and 
 * Cost-sensitive → Qwen, GLM
 * Long text → Gemini, Claude
 
----
 
 ### 2. Usage Stage
 
@@ -355,14 +316,11 @@ A: Check if all required fields are filled in, especially the model service and 
 A: For page-level configurations, you need to manually select the block.
 
 
-
 ![Manually select block](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-02-22.png)
-
 
 
 For block-level task configurations, the data context is automatically bound.
 
----
 
 ## VI. Further Reading
 
@@ -396,7 +354,6 @@ To make your AI employees more powerful, you can continue reading the following 
 * [LLM Node - Multimodal Chat](/ai-employees/workflow/nodes/llm/multimodal-chat) - Handling multimodal inputs like images and files
 * [LLM Node - Structured Output](/ai-employees/workflow/nodes/llm/structured-output) - Getting structured AI responses
 
----
 
 ## Conclusion
 

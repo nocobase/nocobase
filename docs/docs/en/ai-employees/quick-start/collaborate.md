@@ -2,18 +2,15 @@
 
 ## Introduction
 
-After creating an AI employee, you can start a conversation with your AI employee on any page in NocoBase.
+After creating an AI Employee, you can collaborate with them on any page within NocoBase.
 
-Click the AI employee quick launch button in the bottom right corner of the page, select an AI employee, and start the conversation.
+You can click the employee’s avatar in the bottom-right employee list to summon them and start working together.
 
+![20251102121159-2025-11-02-12-12-01](https://static-docs.nocobase.com/20251102121159-2025-11-02-12-12-01.png)
 
-![20251021233745](https://static-docs.nocobase.com/20251021233745.png)
+You can also station AI Employees wherever you need them — on tables, forms, or other components — and activate them directly with a click.
 
-
-Click the AI employee's avatar to enter the conversation page.
-
-
-![20251021233814](https://static-docs.nocobase.com/20251021233814.png)
+![20251102121036-2025-11-02-12-10-38](https://static-docs.nocobase.com/20251102121036-2025-11-02-12-10-38.png)
 
 
 ## Basic Operations in the Chatbox
