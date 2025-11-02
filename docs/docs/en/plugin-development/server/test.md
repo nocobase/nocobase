@@ -65,7 +65,7 @@ describe('Database test', () => {
 });
 ```
 
-### Test CRUD Operations
+### Testing CRUD Operations
 
 ```ts
 const Posts = db.collection({
@@ -87,7 +87,7 @@ const updated = await db.getRepository('posts').findOne({ filterByTk: post.get('
 expect(updated.get('title')).toBe('Updated Title');
 ```
 
-### Test Model Associations
+### Testing Model Associations
 
 ```ts
 const Users = db.collection({
@@ -121,7 +121,7 @@ expect(result.get('posts')).toHaveLength(1);
 
 ## Using `createMockServer` for API Testing
 
-`createMockServer` automatically creates a complete application instance including database, plugins, and API routes, very suitable for testing plugin interfaces.
+`createMockServer` automatically creates a complete application instance including database, plugins, and API routes, making it ideal for testing plugin interfaces.
 
 ### Basic Example
 
@@ -150,7 +150,7 @@ describe('User API test', () => {
 });
 ```
 
-### Test Interface Query and Update
+### Testing API Queries and Updates
 
 ```ts
 // Query user list
@@ -162,7 +162,7 @@ const update = await app.agent().post(`/users:update/${id}`).send({ username: 'n
 expect(update.body.username).toBe('newname');
 ```
 
-### Simulate Login Status or Permission Testing
+### Simulating Login Status or Permission Testing
 
 You can enable the `auth` plugin when creating `MockServer`, then use the login interface to obtain token or session:
 
@@ -189,7 +189,7 @@ You can also use the simpler `login()` method
 await app.agent().login(userOrId);
 ```
 
-## Organize Test Files in Plugins
+## Organizing Test Files in Plugins
 
 It's recommended to store server-side logic-related test files in the plugin's `./src/server/__tests__` folder.
 
@@ -202,7 +202,7 @@ packages/plugins/@my-project/plugin-hello/
 │       │   └── api.test.ts  # API related tests
 ```
 
-## Run Tests
+## Running Tests
 
 ```bash
 # Specify directory

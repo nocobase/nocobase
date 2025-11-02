@@ -15,7 +15,7 @@ Migration execution timing is divided into three types:
 | Type        | Trigger Timing                                      | Execution Scenario |
 | ----------- | --------------------------------------------------- | ------------------ |
 | `beforeLoad` | Before all plugin configurations are loaded         |                    |
-| `afterSync`  | After data table configurations are synchronized with database (table structure already changed) | |
+| `afterSync`  | After collection configurations are synchronized with the database (the collection structure has already been changed) | |
 | `afterLoad`  | After all plugin configurations are loaded          |                    |
 
 ## Create Migration Files
@@ -75,7 +75,7 @@ Common Properties
   ```
 
 - **`this.db`**  
-  Database service instance, provides interfaces for operating models (Tables).  
+  Database service instance, provides interfaces for operating on models (Collections).  
   ```ts
   const users = await this.db.getRepository('users').findAll();
   ```
@@ -177,14 +177,14 @@ describe('Migration Test', () => {
 ## Development Practice Recommendations
 
 1. **Split Migration**  
-   Try to generate one migration file per upgrade, maintain atomicity, convenient for troubleshooting.
+   Try to generate one migration file per upgrade, to maintain atomicity and simplify troubleshooting.
 
 2. **Specify Execution Timing**  
    Choose `beforeLoad`, `afterSync`, or `afterLoad` based on operation objects, avoid depending on unloaded modules.
 
-3. **Pay Attention to Version Control**  
-   Use `appVersion` to clearly specify the version applicable to migration, prevent repeated execution.
+3. **Handle Versioning**  
+   Use `appVersion` to clearly specify the version applicable to the migration to prevent repeated execution.
 
 4. **Test Coverage**  
-   Verify migration on Mock Server before executing upgrade in real environment.
+   Verify the migration on a Mock Server before executing the upgrade in a real environment.
 

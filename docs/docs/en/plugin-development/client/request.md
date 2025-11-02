@@ -55,7 +55,7 @@ For more available configurations, see [Axios Default Config](https://axios-http
 
 ## Request and Response Interceptors
 
-Interceptors can process requests before they are sent or responses after they return. For example, uniformly adding request headers, serializing parameters, or unified error prompts.
+Interceptors can process requests before they are sent or responses after they return. For example, consistently adding request headers, serializing parameters, or displaying unified error messages.
 
 ### Request Interceptor Example
 
@@ -170,5 +170,5 @@ const MyComponent = () => {
 };
 ```
 
-This approach makes request logic more declarative, automatically managing loading states, error prompts, and refresh logic, which is very suitable for use in components.
+This approach makes request logic more declarative, automatically managing loading states, error handling, and refresh logic, which is very suitable for use in components.
 

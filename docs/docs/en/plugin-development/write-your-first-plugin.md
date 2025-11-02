@@ -30,7 +30,7 @@ After the command runs successfully, it will generate basic files in the `packag
   ├─ server.d.ts
   ├─ server.js
   └─ src
-     ├─ index.ts                 # Default exports server-side plugin
+     ├─ index.ts                 # Default export server-side plugin
      ├─ client                   # Client-side code location
      │  ├─ index.tsx             # Default exported client-side plugin class
      │  ├─ plugin.tsx            # Plugin entry (extends @nocobase/client Plugin)

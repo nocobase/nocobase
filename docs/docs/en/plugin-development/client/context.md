@@ -2,7 +2,7 @@
 
 :::tip
 
-We will supplement detailed examples and best practices in future versions.
+We will add detailed examples and best practices in future versions.
 
 :::
 

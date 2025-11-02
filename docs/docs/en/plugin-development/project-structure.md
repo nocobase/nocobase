@@ -30,7 +30,7 @@ my-nocobase-app/
 
 The `packages/` directory contains NocoBase's core modules and extensible packages. The content depends on the project source:
 
-- **Projects created via `create-nocobase-app`**: Default only includes `packages/plugins/`, used to store custom plugin source code. Each subdirectory is an independent npm package.
+- **Projects created via `create-nocobase-app`**: By default, it only includes `packages/plugins/`, used to store custom plugin source code. Each subdirectory is an independent npm package.
 - **Cloned official source repository**: You can see more subdirectories, such as `core/`, `plugins/`, `pro-plugins/`, `presets/`, etc., corresponding to framework core, built-in plugins, and official preset solutions.
 
 Regardless of the case, `packages/plugins` is the main location for developing and debugging custom plugins.
@@ -43,20 +43,20 @@ Regardless of the case, `packages/plugins` is the main location for developing a
 - `logs/`: Runtime logs and debug output.
 - `uploads/`: User-uploaded files and media resources.
 - `plugins/`: Packaged plugins uploaded via UI or imported via CLI.
-- `tar/`: Plugin compressed packages generated after executing `yarn build <plugin> --tar`.
+- `tar/`: Compressed plugin packages generated after executing `yarn build <plugin> --tar`.
 
 > It's usually recommended to add the `storage` directory to `.gitignore` and handle it separately during deployment or backup.
 
 ## Environment Configuration and Project Scripts
 
-- `.env`, `.env.test`, `.env.e2e`: Used for local running, unit/integration testing, and end-to-end testing respectively.
-- `scripts/`: Stores common maintenance scripts (such as database initialization, release helper tools, etc.).
+- `.env`, `.env.test`, `.env.e2e`: Used for running locally, unit/integration testing, and end-to-end testing respectively.
+- `scripts/`: Stores common maintenance scripts (such as database initialization, release utilities, etc.).
 
 ## Plugin Loading Paths and Priority
 
 Plugins may exist in multiple locations. NocoBase will load them in the following priority order when starting:
 
-1. Source version in `packages/plugins` (for local development and debugging).
+1. Source code version in `packages/plugins` (for local development and debugging).
 2. Packaged version in `storage/plugins` (uploaded via UI or imported via CLI).
 3. Dependency packages in `node_modules` (installed via npm/yarn or framework built-in).
 
@@ -82,16 +82,16 @@ packages/plugins/@my-project/plugin-hello/
 │   ├── locale/              # Multi-language resources (shared between frontend and backend)
 │   ├── swagger/             # OpenAPI/Swagger documentation
 │   └── server/              # Server-side code
-│       ├── collections/     # Data table / collection definitions
+│       ├── collections/     # Collection definitions
 │       ├── commands/        # Custom commands
 │       ├── migrations/      # Database migration scripts
 │       ├── plugin.ts        # Server-side plugin main class
 │       └── index.ts         # Server-side entry
-├── index.ts                 # Frontend/backend bridge export
+├── index.ts                 # Frontend and backend bridge export
 ├── client.d.ts              # Frontend type declarations
 ├── client.js                # Frontend build artifact
 ├── server.d.ts              # Server-side type declarations
-├── server.js                 # Server-side build artifact
+├── server.js                # Server-side build artifact
 ├── .npmignore               # Publish ignore configuration
 └── package.json
 ```

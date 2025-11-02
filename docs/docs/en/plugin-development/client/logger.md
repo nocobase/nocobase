@@ -110,7 +110,7 @@ Pino only outputs logs greater than or equal to the current `level` configuratio
 
 ## Best Practices in Plugin Development
 
-1. **Use Context Loggers**  
+1. **Use the Context Logger**  
    Use `ctx.logger` in plugin, model, or application contexts to automatically carry source information.
 
 2. **Distinguish Log Levels**  
@@ -124,5 +124,5 @@ Pino only outputs logs greater than or equal to the current `level` configuratio
 4. **Use Structured Data**  
    Pass object parameters instead of concatenating strings, which helps with log analysis and filtering.
 
-Through the above methods, developers can more efficiently track plugin execution processes, troubleshoot issues, and maintain structured and extensible logging systems.
+By following these practices, developers can more efficiently track plugin execution, troubleshoot issues, and maintain a structured and extensible logging system.
 

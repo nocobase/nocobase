@@ -1,13 +1,13 @@
 # Dependency Management
 
-In NocoBase plugin development, dependencies are divided into two categories: **own dependencies** and **global dependencies**.
+In NocoBase plugin development, dependencies are divided into two categories: **plugin dependencies** and **global dependencies**.
 
 - **Global dependencies**: Provided by `@nocobase/server` and `@nocobase/client`, plugins don't need to bundle them separately.
-- **Own dependencies**: Plugins' unique dependencies (including server-side dependencies) will be bundled into the plugin artifacts.
+- **Plugin dependencies**: Plugins' unique dependencies (including server-side dependencies) will be bundled into the plugin artifacts.
 
 ## Development Principles
 
-Since own dependencies will be bundled into the plugin artifacts (including server dependencies being bundled into `dist/node_modules`), during plugin development, you can declare all dependencies in `devDependencies` instead of `dependencies`. This avoids differences between development and production environments.
+Since plugin dependencies will be bundled into the plugin artifacts (including server dependencies being bundled into `dist/node_modules`), during plugin development, you can declare all dependencies in `devDependencies` instead of `dependencies`. This avoids differences between development and production environments.
 
 When a plugin needs to install the following dependencies, make sure the **version number** matches the global dependencies in `@nocobase/server` and `@nocobase/client`, otherwise runtime conflicts may occur.
 
