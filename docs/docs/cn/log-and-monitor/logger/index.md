@@ -149,4 +149,4 @@ NocoBase 日志文件的主要目录结构为：
 ## 相关文档
 
 - [插件开发 - 服务端 - 日志](/plugin-development/server/logger)
-- [API参考 - @nocobase/logger](/api/logger)
+- [API参考 - @nocobase/logger](/api/logger/logger)

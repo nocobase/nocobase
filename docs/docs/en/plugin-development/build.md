@@ -21,10 +21,10 @@ export default defineConfig({
     return config
   },
   beforeBuild: (log) => {
-    // Callback function before the build starts, you can perform some operations here.
+    // A callback function that runs before the build starts. You can perform some operations here.
   },
   afterBuild: (log: PkgLog) => {
-    // Callback function after the build is complete, you can perform some operations here.
+    // A callback function that runs after the build is complete. You can perform some operations here.
   };
 });
 ```

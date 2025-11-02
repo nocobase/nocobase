@@ -149,4 +149,4 @@ The main directory structure of NocoBase log files is:
 ## Related Documents
 
 - [Plugin Development - Server - Logging](/plugin-development/server/logger)
-- [API Reference - @nocobase/logger](/api/logger)
+- [API Reference - @nocobase/logger](/api/logger/logger)

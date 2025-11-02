@@ -1,6 +1,6 @@
 # Collections
 
-In NocoBase plugin development, the **Collection** is one of the most core concepts. You can add or modify collection structures within a plugin by defining or extending a Collection. Unlike collections created through the data source management interface, **Collections defined in code are typically system-level metadata tables** and will not appear in the data source management list.
+In NocoBase plugin development, the **Collection** is one of the core concepts. You can add or modify collection structures within a plugin by defining or extending a Collection. Unlike collections created through the data source management interface, **Collections defined in code are typically system-level metadata tables** and will not appear in the data source management list.
 
 ## Define a Collection
 

@@ -1,10 +1,10 @@
 # ResourceManager
 
-NocoBase's ResourceManager can automatically convert existing collections and associations into resources. It has various built-in action types to help developers quickly build REST API resource actions. Slightly different from traditional REST APIs, NocoBase's resource actions do not rely on HTTP request methods, but rather determine the specific operation to be executed by explicitly defining `:action`.
+NocoBase's ResourceManager feature can automatically convert existing collections and associations into resources. It has various built-in action types to help developers quickly build REST API resource actions. Slightly different from traditional REST APIs, NocoBase's resource actions do not rely on HTTP request methods, but rather determine the specific operation to be executed by explicitly defining `:action`.
 
 ## Auto-generated Resources
 
-NocoBase automatically converts `collection` and `association` defined in the database into resources. For example, if two collections, `posts` and `comments`, are defined:
+NocoBase automatically converts `collection` and `association` defined in the database into resources. For example, if two collections, `posts` and `tags`, are defined:
 
 ```ts
 db.defineCollection({
@@ -34,7 +34,7 @@ Request examples:
 | `GET` | `/api/posts:get/1` | Get |
 | `POST` | `/api/posts:create` | Create |
 | `POST` | `/api/posts:update/1` | Update |
-| `POST` | `/api/posts:destroy/1` | Destroy |
+| `POST` | `/api/posts:destroy/1` | Delete |
 
 | Request Method | Path | Action |
 | --- | --- | --- |
@@ -42,7 +42,7 @@ Request examples:
 | `GET` | `/api/tags:get/1` | Get |
 | `POST` | `/api/tags:create` | Create |
 | `POST` | `/api/tags:update/1` | Update |
-| `POST` | `/api/tags:destroy/1` | Destroy |
+| `POST` | `/api/tags:destroy/1` | Delete |
 
 | Request Method | Path | Action |
 | --- | --- | --- |
@@ -50,7 +50,7 @@ Request examples:
 | `GET` | `/api/posts/1/tags:get/1` | Get a single `tag` under a `post` |
 | `POST` | `/api/posts/1/tags:create` | Create a single `tag` under a `post` |
 | `POST` | `/api/posts/1/tags:update/1` | Update a single `tag` under a `post` |
-| `POST` | `/api/posts/1/tags:destroy/1` | Destroy a single `tag` under a `post` |
+| `POST` | `/api/posts/1/tags:destroy/1` | Delete a single `tag` under a `post` |
 | `POST` | `/api/posts/1/tags:add` | Add associated `tags` to a `post` |
 | `POST` | `/api/posts/1/tags:remove` | Remove associated `tags` from a `post` |
 | `POST` | `/api/posts/1/tags:set` | Set all associated `tags` for a `post` |
@@ -136,7 +136,7 @@ POST /api/posts:publish
 POST /api/posts/1/comments:pin
 ```
 
-Naming convention: `resourceName:actionName`. Use dot notation for associations (e.g., `posts.comments`).
+Naming convention: `resourceName:actionName`. Use dot notation for associations (`posts.comments`).
 
 ## Custom Resources
 

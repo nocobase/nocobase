@@ -119,6 +119,6 @@ The following dependencies are provided by NocoBase and do not need to be bundle
     For common UI libraries (like `antd`), utility libraries (like `lodash`), and database drivers (like
     `pg`, `mysql2`), you should rely on the globally provided versions to avoid duplicate bundling.
 
-3.  **Ensure Consistency Between Debugging and Production Environments**\
+3.  **Ensure Consistency Between Development and Production Environments**\
     Using `devDependencies` ensures consistency between development and the final build output, preventing environment discrepancies caused by improper configuration of
     `dependencies` and `peerDependencies`.

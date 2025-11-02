@@ -1,6 +1,6 @@
 # Storage Engine: Aliyun OSS
 
-This is a storage engine based on Aliyun OSS. Before using it, you need to prepare the relevant account and permissions.
+A storage engine based on Aliyun OSS. Before use, you need to prepare the relevant account and permissions.
 
 ## Configuration Parameters
 

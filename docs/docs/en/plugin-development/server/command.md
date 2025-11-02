@@ -21,7 +21,7 @@ Example
 import { Application } from '@nocobase/server';
 
 export default function (app: Application) {
-  app.
+  app
     .command('echo')
     .option('-v, --version')
     .action(async ([options]) => {

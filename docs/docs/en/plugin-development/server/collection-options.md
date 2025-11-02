@@ -275,7 +275,7 @@ fields: [
 }
 ```
 
-### `paranoid` - Paranoid Mode (Soft Delete)
+### `paranoid` - Paranoid Mode
 - **Type**: `boolean`
 - **Required**: ❌
 - **Default**: `false`

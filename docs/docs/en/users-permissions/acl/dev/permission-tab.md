@@ -31,7 +31,7 @@ class PluginMobileClient extends Plugin {
 }
 ```
 
-First, we need to obtain an instance of the `PluginACLClient` plugin ([other methods to obtain plugin instances](/development/client/life-cycle#get-plugin-instance)), and add a new permission configuration tab using the `settingsUI.addPermissionsTab` method. In this example, we added a permission configuration tab named "Mobile Menu".
+First, we need to obtain an instance of the `PluginACLClient` plugin ([other methods to obtain plugin instances](/plugin-development/client/plugin#get-plugin-instance)), and add a new permission configuration tab using the `settingsUI.addPermissionsTab` method. In this example, we added a permission configuration tab named "Mobile Menu".
 
 The value of the `settingsUI` property is an instance of a class named `ACLSettingsUI`, and its type information is as follows:
 

@@ -99,6 +99,6 @@ Example: Listening to the before-update event
 
 ```ts
 db.on('beforeUpdate', async (model, options) => {
-  db.logger.info('Data has been created!');
+  db.logger.info('Data is about to be updated!');
 });
 ```

@@ -65,8 +65,8 @@ DB_PASSWORD=nocobase
 
 :::warning Environment Variable Descriptions
 
-- `TZ` is used to set the application's time zone, which defaults to the operating system's time zone;
-- `APP_KEY` is the application's secret key, used for generating user tokens, etc. (If `APP_KEY` is changed, old tokens will become invalid). It can be any random string. Please change it to your own secret key and ensure it is not exposed;
+- `TZ` is used to set the application's time zone, which defaults to the operating system's time zone.
+- `APP_KEY` is the application's secret key, used for generating user tokens, etc. (If `APP_KEY` is changed, old tokens will become invalid). It can be any random string. Please change it to your own secret key and ensure it is not exposed.
 - `DB_*` are database-related. If you are not using the default database service from the example, please modify them according to your actual situation.
 
 :::
@@ -79,15 +79,21 @@ yarn nocobase install --lang=en-US
 
 ## 6. Start NocoBase
 
+
+**Development environment**
+
 ```bash
 yarn dev
 ```
 
-:::tip Production Environment Tip
+**Production environment (not recommended)**
 
-It is not recommended to deploy NocoBase installed from source code directly in a production environment (for production environments, please refer to [Production Deployment](../deployment/production.md)).
+It is not recommended to deploy from source in a production environment. For production, please refer to [Production Deployment](../deployment/production.md).
 
-:::
+```bash
+yarn build
+yarn start
+```
 
 ## 7. Log in to NocoBase
 

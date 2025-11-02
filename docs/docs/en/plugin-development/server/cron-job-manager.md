@@ -44,25 +44,25 @@ export declare interface CronJobParameters {
 }
 ```
 
-| Parameter | Type | Description |
-| ---------------- | ---------- | ---------- |
-| **cronTime** | `string \| Date \| DateTime` | The time expression for the scheduled task. Supports standard cron expressions, for example, `0 0 * * *` means execute at 00:00 every day. |
-| **onTick** | `function` | The main function of the task. It will be triggered at the specified time. |
-| **onComplete** | `function` | Executed when the job is stopped by `job.stop()` or when `onTick` completes its execution. |
-| **timeZone** | `string` | Specifies the execution time zone (e.g., `Asia/Shanghai`). |
-| **context** | `any` | The context for executing `onTick`. |
-| **runOnInit** | `boolean` | Whether to execute the job once immediately upon initialization. |
-| **utcOffset** | `string \| number` | Specifies the UTC offset. |
-| **unrefTimeout** | `boolean` | Controls whether the event loop remains active. |
+| Parameter        | Type                         | Description                                                                                                                              |
+| ---------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **cronTime**     | `string \| Date \| DateTime` | The time expression for the scheduled task. Supports standard cron expressions, for example, `0 0 * * *` means execute at 00:00 every day. |
+| **onTick**       | `function`                   | The main function of the task. It will be triggered at the specified time.                                                               |
+| **onComplete**   | `function`                   | Executed when the job is stopped by `job.stop()` or when `onTick` completes its execution.                                               |
+| **timeZone**     | `string`                     | Specifies the execution time zone (e.g., `Asia/Shanghai`).                                                                               |
+| **context**      | `any`                        | The context for executing `onTick`.                                                                                                      |
+| **runOnInit**    | `boolean`                    | Whether to execute the job once immediately upon initialization.                                                                         |
+| **utcOffset**    | `string \| number`           | Specifies the UTC offset.                                                                                                                |
+| **unrefTimeout** | `boolean`                    | Controls whether the event loop remains active.                                                                                          |
 
 ## Cron Expression Examples
 
-| Expression | Meaning |
-| -------------- | ------------ |
-| `* * * * *` | Execute once every minute |
-| `0 * * * *` | Execute once every hour |
-| `0 0 * * *` | Execute at 00:00 every day |
-| `0 9 * * 1` | Execute at 09:00 every Monday |
+| Expression     | Meaning                     |
+| -------------- | --------------------------- |
+| `* * * * *`    | Execute once every minute   |
+| `0 * * * *`    | Execute once every hour     |
+| `0 0 * * *`    | Execute at 00:00 every day  |
+| `0 9 * * 1`    | Execute at 09:00 every Monday |
 | `*/10 * * * *` | Execute once every 10 minutes |
 
 > 💡 You can use [crontab.guru](https://crontab.guru/) to help generate expressions.

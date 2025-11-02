@@ -54,7 +54,7 @@ export default class PluginCacheDemo extends Plugin {
     const myCache = await this.app.cacheManager.createCache({
       name: 'myPlugin',
       prefix: 'plugin:cache:', // All keys will be automatically prefixed with this value
-      store: 'memory', // Use memory cache, optional, uses `defaultStore` by default
+      store: 'memory', // Use memory cache, optional, uses defaultStore by default
       max: 1000, // Maximum number of cache items
     });
 
@@ -64,7 +64,7 @@ export default class PluginCacheDemo extends Plugin {
 }
 ```
 
-### `createCache` Parameter Description
+### createCache Parameter Description
 
 | Parameter | Type | Description |
 | ---- | ---- | ---- |

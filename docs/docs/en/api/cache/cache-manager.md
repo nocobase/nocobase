@@ -48,18 +48,18 @@ type StoreOptions = {
 
 ##### CacheManagerOptions
 
-| Property | Type | Description |
-| -------------- | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `defaultStore` | `string` | The unique identifier for the default cache type. |
-| `stores` | `Record<string, StoreOptions>` | Registers cache types. The key is the unique identifier for the cache type, and the value is an object containing the registration method and global configuration for the cache type.<br />In `node-cache-manager`, the method to create a cache is `await caching(store, config)`. The object to be provided here is [`StoreOptions`](#storeoptions). |
+| Property       | Type                           | Description                                                                                                                                                                                                                         |
+| -------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `defaultStore` | `string`                       | The unique identifier for the default cache type.                                                                                                                                                                                   |
+| `stores`       | `Record<string, StoreOptions>` | Registers cache types. The key is the unique identifier for the cache type, and the value is an object containing the registration method and global configuration for the cache type.<br />In `node-cache-manager`, the method to create a cache is `await caching(store, config)`. The object to be provided here is [`StoreOptions`](#storeoptions). |
 
 ##### StoreOptions
 
-| Property | Type | Description |
-| --------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `store` | `memory` \| `FactoryStore<Store, any>` | The store factory method, corresponding to the first parameter of `caching`. |
-| `close` | `(store: Store) => Promise<void>` | Optional. For middleware like Redis that requires a connection, a callback method to close the connection must be provided. The input parameter is the object returned by the store factory method. |
-| `[key: string]` | `any` | Other global store configurations, corresponding to the second parameter of `caching`. |
+| Property        | Type                                   | Description                                                                                                                                                                                            |
+| --------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `store`         | `memory` \| `FactoryStore<Store, any>` | The store factory method, corresponding to the first parameter of `caching`.                                                                                                                         |
+| `close`         | `(store: Store) => Promise<void>`      | Optional. For middleware like Redis that requires a connection, a callback method to close the connection must be provided. The input parameter is the object returned by the store factory method. |
+| `[key: string]` | `any`                                  | Other global store configurations, corresponding to the second parameter of `caching`.                                                                                                               |
 
 #### Default `options`
 
@@ -145,12 +145,12 @@ await cacheManager.createCache({
 
 ##### options
 
-| Property | Type | Description |
-| --------------- | -------- | ----------------------------- |
-| `name` | `string` | Unique identifier for the cache. |
-| `store` | `string` | Unique identifier for the store. |
-| `prefix` | `string` | Optional, cache key prefix. |
-| `[key: string]` | `any` | Other custom configuration items related to the store. |
+| Property        | Type     | Description                                           |
+| --------------- | -------- | ----------------------------------------------------- |
+| `name`          | `string` | Unique identifier for the cache.                      |
+| `store`         | `string` | Unique identifier for the store.                      |
+| `prefix`        | `string` | Optional, cache key prefix.                           |
+| `[key: string]` | `any`    | Other custom configuration items related to the store. |
 
 If `store` is omitted, `defaultStore` will be used. In this case, the caching method will change according to the system's default caching method.
 

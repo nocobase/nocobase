@@ -8,7 +8,7 @@ For this reason, NocoBase divides middleware into **four levels**:
     Only acts on requests for a **specific data source**. It is often used for logic such as database connections, field validation, or transaction processing for that data source.
 
 2.  **Resource-level middleware**: `app.resourceManager.use()`
-    Only takes effect on defined resources. It is suitable for handling resource-level logic, such as data permissions, formatting, etc.
+    Only takes effect on defined resources (Resource). It is suitable for handling resource-level logic, such as data permissions, formatting, etc.
 
 3.  **ACL-level middleware**: `app.acl.use()`
     Executes before permission checks to validate user permissions or roles.
@@ -136,7 +136,7 @@ Example output order when accessing different APIs:
 
 -   **Resource request**: `/api/test:list`
     Output: `[5,3,7,1,2,8,4,6]`
-    Middleware executes according to its level and the onion model
+    Middleware executes according to its level and the onion model.
 
 ## Summary
 

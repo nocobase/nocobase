@@ -2,7 +2,7 @@
 
 The `Repository` interface defines a series of model operation methods for adapting the CRUD operations of the data source.
 
-## API
+## API 
 
 ### find()
 
@@ -16,7 +16,7 @@ Returns a list of models that match the query parameters.
 
 Returns a model that matches the query parameters. If there are multiple matching models, only the first one is returned.
 
-#### Signature
+#### Signature 
 
 - `findOne(options?: any): Promise<IModel>`
 

@@ -14,20 +14,20 @@ This section only introduces the specific parameters for the Amazon S3 storage e
 
 ### Region
 
-Enter the region of the S3 storage, for example: `us-west-1`.
+Enter the S3 storage region, for example: `us-west-1`.
 
 :::info{title=Note}
-You can view the region information of your bucket in the [Amazon S3 console](https://console.aws.amazon.com/s3/), and you only need to use the region prefix (not the full domain name).
+You can view the region information for your bucket in the [Amazon S3 console](https://console.aws.amazon.com/s3/), and you only need to use the region prefix (not the full domain name).
 :::
 
 ### AccessKey ID
 
-Enter the ID of the Amazon S3 authorized access key.
+Enter the Amazon S3 AccessKey ID.
 
 ### AccessKey Secret
 
-Enter the Secret of the Amazon S3 authorized access key.
+Enter the Amazon S3 AccessKey Secret.
 
 ### Bucket
 
-Enter the bucket name of the S3 storage.
+Enter the S3 bucket name.

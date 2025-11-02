@@ -96,16 +96,16 @@ Add - WeCom
 ![](https://static-docs.nocobase.com/202412041459250.png)
 
 
-| Option | Description | Version Requirement |
-| ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| When a phone number does not match an existing user, <br />should a new user be created automatically | When a phone number does not match an existing user, whether to automatically create a new user. | - |
-| Company ID | Company ID, obtained from the WeCom admin console. | - |
-| AgentId | Obtained from the custom-built application configuration in the WeCom admin console. | - |
-| Secret | Obtained from the custom-built application configuration in the WeCom admin console. | - |
-| Origin | The current application domain. | - |
-| Workbench application redirect link | The application path to redirect to after a successful login. | `v1.4.0` |
-| Automatic login | Automatically log in when the application link is opened in the WeCom browser. When multiple WeCom authenticators are configured, only one can have this option enabled. | `v1.4.0` |
-| Workbench application homepage link | Workbench application homepage link. | - |
+| Option                                                                                                | Description                                                                                                                                                                                   | Version Requirement |
+| ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| When a phone number does not match an existing user, <br />should a new user be created automatically | When a phone number does not match an existing user, whether to automatically create a new user.                                                                                            | -                   |
+| Company ID                                                                                            | Company ID, obtained from the WeCom admin console.                                                                                                                                            | -                   |
+| AgentId                                                                                               | Obtained from the custom-built application configuration in the WeCom admin console.                                                                                                          | -                   |
+| Secret                                                                                                | Obtained from the custom-built application configuration in the WeCom admin console.                                                                                                          | -                   |
+| Origin                                                                                                | The current application domain.                                                                                                                                                               | -                   |
+| Workbench application redirect link                                                                   | The application path to redirect to after a successful login.                                                                                                                                 | `v1.4.0`            |
+| Automatic login                                                                                       | Automatically log in when the application link is opened in the WeCom browser. When multiple WeCom authenticators are configured, only one can have this option enabled.                          | `v1.4.0`            |
+| Workbench application homepage link                                                                   | Workbench application homepage link.                                                                                                                                                          | -                   |
 
 ## Configure WeCom Application Homepage
 

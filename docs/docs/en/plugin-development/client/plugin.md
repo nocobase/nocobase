@@ -41,7 +41,7 @@ Each plugin goes through the following lifecycle stages in order every time the 
 
 ## Execution Order
 
-Each time the browser is refreshed, the execution order is `afterAdd()` → `beforeLoad()` → `load()`
+Each time the browser is refreshed, the execution order is `afterAdd()` → `beforeLoad()` → `load()`.
 
 ## Plugin Context and FlowEngine
 
