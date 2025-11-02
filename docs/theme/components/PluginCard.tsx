@@ -9,6 +9,7 @@ export interface PluginCardProps {
   description: string;
   detailLink?: string;
   isFree?: boolean;
+  supportedVersions?: string[];
   version?: string;
   editionLevel?: number;
   pricing?: {
@@ -79,6 +80,7 @@ export const PluginCard: React.FC<PluginCardProps> = ({
   isFree = false,
   editionLevel,
   version,
+  supportedVersions = [],
   pricing,
   float = false,
 }) => {
@@ -107,6 +109,12 @@ export const PluginCard: React.FC<PluginCardProps> = ({
         <div style={{ marginTop: '0.5rem', flexGrow: 1 }}>
           <h6 style={{ margin: '0 0 0.25rem 0', fontSize: '16px', fontWeight: 600, color: '#262626' }}>
             {name}
+            {/* {' '}
+            {supportedVersions.length === 1 && supportedVersions[0] === '2.x' && (
+              <Badge type="info">
+                {supportedVersions[0]}
+              </Badge>
+            )} */}
           </h6>
           <div
             style={{
@@ -124,36 +132,12 @@ export const PluginCard: React.FC<PluginCardProps> = ({
 
         <div style={{ marginTop: '1rem' }}>
           {isFree && (
-            <span
-              style={{
-                display: 'inline-block',
-                padding: '4px 12px',
-                background: 'rgba(47, 85, 212, 0.1)',
-                color: '#2f55d4',
-                borderRadius: '4px',
-                fontSize: '12px',
-                fontWeight: 500,
-                marginRight: '8px',
-              }}
-            >
-              Free
-            </span>
+            <Badge type="tip">Free</Badge>
           )}
           {editionLevel && (
-            <span
-              style={{
-                display: 'inline-block',
-                padding: '4px 12px',
-                background: 'rgba(47, 85, 212, 0.1)',
-                color: '#2f55d4',
-                borderRadius: '4px',
-                fontSize: '12px',
-                fontWeight: 500,
-                marginRight: '8px',
-              }}
-            >
+            <Badge type="danger">
               {EditionLevels[editionLevel as number]}+
-            </span>
+            </Badge>
           )}
           {version && (
             <span

@@ -6,6 +6,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 2
 ---
 
 # Data source: KingbaseES

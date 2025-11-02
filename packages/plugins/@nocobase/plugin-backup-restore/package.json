@@ -14,6 +14,9 @@
     "url": "git+https://github.com/nocobase/nocobase.git",
     "directory": "packages/plugins/plugin-backup-restore"
   },
+  "nocobase": {
+    "deprecated": true
+  },
   "devDependencies": {
     "@koa/multer": "^3.0.2",
     "@types/archiver": "^5.3.1",
