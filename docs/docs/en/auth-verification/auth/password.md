@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-auth'
+---
+
 # Password Authentication
 
 ## Configuration Interface

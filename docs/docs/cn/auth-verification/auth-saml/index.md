@@ -1,6 +1,8 @@
-# 认证：SAML 2.0
+---
+pkg: '@nocobase/plugin-auth-saml'
+---
 
-<PluginInfo commercial="true" name="auth-saml"></PluginInfo>
+# 认证：SAML 2.0
 
 ## 介绍
 

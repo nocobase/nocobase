@@ -249,7 +249,9 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       ),
     );
 
-    await waitFor(() => (globalThis as any).__lastDropdownMenu);
+    await waitFor(() => {
+      expect((globalThis as any).__lastDropdownMenu).toBeTruthy();
+    });
     const menu = (globalThis as any).__lastDropdownMenu;
     menu.onClick?.({ key: 'flowC:general' });
     expect(openSpy).toHaveBeenCalledWith({ flowKey: 'flowC', stepKey: 'general' });
@@ -280,7 +282,9 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       ),
     );
 
-    await waitFor(() => (globalThis as any).__lastDropdownMenu);
+    await waitFor(() => {
+      expect((globalThis as any).__lastDropdownMenu).toBeTruthy();
+    });
     const menu = (globalThis as any).__lastDropdownMenu;
     menu.onClick?.({ key: 'copy-uid' });
     expect((navigator as any).clipboard.writeText).toHaveBeenCalledWith('m-copy');
@@ -306,7 +310,9 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       ),
     );
 
-    await waitFor(() => (globalThis as any).__lastDropdownMenu);
+    await waitFor(() => {
+      expect((globalThis as any).__lastDropdownMenu).toBeTruthy();
+    });
     const menu = (globalThis as any).__lastDropdownMenu;
     menu.onClick?.({ key: 'delete' });
     expect(destroySpy).toHaveBeenCalled();
@@ -344,12 +350,14 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       ),
     );
 
-    await waitFor(() => (globalThis as any).__lastDropdownMenu);
-    const menu = (globalThis as any).__lastDropdownMenu;
-    const items = (menu?.items || []) as any[];
-    const subMenu = items.find((it) => Array.isArray(it?.children));
-    expect(subMenu).toBeTruthy();
-    expect(subMenu.children.some((it: any) => String(it.key).startsWith('items[0]:childFlow:cstep'))).toBe(true);
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      expect(menu).toBeTruthy();
+      const items = (menu?.items || []) as any[];
+      const subMenu = items.find((it) => Array.isArray(it?.children));
+      expect(subMenu).toBeTruthy();
+      expect(subMenu!.children.some((it: any) => String(it.key).startsWith('items[0]:childFlow:cstep'))).toBe(true);
+    });
   });
 
   it('adds "Copy popup UID" for popupSettings flow (current model and sub-model)', async () => {

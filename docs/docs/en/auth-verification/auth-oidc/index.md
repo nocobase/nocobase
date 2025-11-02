@@ -1,6 +1,8 @@
-# Auth: OIDC
+---
+pkg: '@nocobase/plugin-auth-oidc'
+---
 
-<PluginInfo commercial="true" name="auth-oidc"></PluginInfo>
+# Auth: OIDC
 
 ## Introduction
 

@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-custom-action-trigger'
+---
+
 # 自定义操作事件
 
 ## 介绍

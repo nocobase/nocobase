@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-json-variable-mapping'
+---
+
 # JSON 变量映射
 
 > v1.6.0

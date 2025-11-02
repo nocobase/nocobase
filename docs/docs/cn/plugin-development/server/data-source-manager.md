@@ -1,4 +1,4 @@
-# 数据源管理
+# DataSourceManager 数据源管理
 
 NocoBase 提供了 `DataSourceManager`，用于多数据源管理。每个 `DataSource` 都有自己的 `Database`、`ResourceManager` 和 `ACL` 实例，便于开发者灵活地管理和扩展多个数据源。
 

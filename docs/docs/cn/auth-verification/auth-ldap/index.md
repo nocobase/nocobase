@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-auth-ldap'
+---
+
 # 认证：LDAP
 
 <PluginInfo commercial="true" name="auth-ldap"></PluginInfo>

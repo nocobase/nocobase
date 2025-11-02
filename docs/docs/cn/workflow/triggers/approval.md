@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-approval'
+---
+
 # 审批
 
 ## 介绍

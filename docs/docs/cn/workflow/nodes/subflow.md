@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-subflow'
+---
+
 # 调用工作流
 
 ## 介绍

@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-verification'
+---
+
 # Auth: SMS
 
 <PluginInfo name="verification"></PluginInfo>

@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-departments'
+---
+
 # 部门
 
 ## 部门管理

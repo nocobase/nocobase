@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-departments'
+---
+
 # Department Role Management
 
 By associating one or more roles with a department, members of the current department can have these roles.

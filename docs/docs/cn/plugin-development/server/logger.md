@@ -1,4 +1,4 @@
-# Logger
+# Logger 日志
 
 NocoBase 日志基于 <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a> 封装。默认情况下，NocoBase 将日志分为接口请求日志、系统运行日志和 SQL 执行日志，其中接口请求日志和 SQL 执行日志由应用内部打印，插件开发者通常只需要打印插件相关的系统运行日志。
 

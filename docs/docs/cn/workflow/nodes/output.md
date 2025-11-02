@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-subflow'
+---
+
 # 流程输出
 
 ## 介绍

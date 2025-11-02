@@ -1,6 +1,8 @@
-# Auth: Two-Factor Authentication (2FA)
+---
+pkg: '@nocobase/plugin-two-factor-authentication'
+---
 
-<PluginInfo name="two-factor-authentication" licenseBundled="enterprise"></PluginInfo>
+# Auth: Two-Factor Authentication (2FA)
 
 ## Introduction
 

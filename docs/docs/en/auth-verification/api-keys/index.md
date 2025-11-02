@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-api-keys'
+---
+
 # API Keys
 
 ## Introduction

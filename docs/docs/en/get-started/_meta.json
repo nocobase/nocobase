@@ -26,6 +26,11 @@
         "type": "custom-link",
         "label": "Git Source Installation",
         "link": "/get-started/installation/git"
+      },
+      {
+        "type": "custom-link",
+        "label": "Environment Variables",
+        "link": "/get-started/installation/env"
       }
     ]
   },

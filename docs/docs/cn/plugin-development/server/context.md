@@ -1,4 +1,4 @@
-# Context
+# Context 上下文
 
 在 NocoBase 中，每一个请求都会生成一个 `ctx` 对象，它是 Context 的实例。Context 封装了请求和响应信息，同时提供了 NocoBase 特有的功能，例如数据库访问、缓存操作、权限管理、国际化和日志记录等。  
 

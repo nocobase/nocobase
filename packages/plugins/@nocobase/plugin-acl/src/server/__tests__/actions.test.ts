@@ -124,7 +124,7 @@ describe('destroy action with acl', () => {
     });
 
     const user = await app.db.getRepository('users').findOne();
-    app.resourcer.use(
+    app.acl.use(
       (ctx, next) => {
         ctx.state.currentRole = 'user';
         ctx.state.currentRoles = ['user'];
