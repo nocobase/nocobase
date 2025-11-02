@@ -2,7 +2,7 @@
 
 > Helps you write and optimize frontend code to implement complex interactive logic.
 
-The AI Employee plugin has a built-in programming assistant, `Nathan`. In scenarios that require writing JavaScript, such as `JSBlock`, `JSField`, `JSItem`, `JSColumn`, `JSAction`, `Event Flow`, and `Linkage`, you will find `Nathan`'s avatar in the upper right corner of the code editor. Click it to open the AI Employee dialog box and let him help you write or modify the code in the editor.
+`Nathan` is the built-in frontend engineer. In scenarios that require writing JavaScript, such as `JSBlock`, `JSField`, `JSItem`, `JSColumn`, `JSAction`, `Event Flow`, and `Linkage`, you will find `Nathan`'s avatar in the upper right corner of the code editor. Click it to open the AI Employee dialog box and let him help you write or modify the code in the editor.
 
 
 ![20251022163405](https://static-docs.nocobase.com/20251022163405.png)

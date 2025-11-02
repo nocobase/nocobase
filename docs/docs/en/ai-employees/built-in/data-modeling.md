@@ -2,7 +2,7 @@
 
 > Intelligently design collections and optimize database structure.
 
-The AI Agent plugin has a built-in data modeling assistant, `Orin`. On the main data source configuration page, you can have `Orin` help you create or modify collections.
+`Orin` is the built-in data model expert. On the main data source configuration page, you can have `Orin` help you create or modify collections.
 
 
 ![20251022160628](https://static-docs.nocobase.com/20251022160628.png)

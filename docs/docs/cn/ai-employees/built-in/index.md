@@ -1,10 +1,24 @@
 # 内置 AI 员工
 
+## 介绍
+
+NocoBase 中内置了以下 AI 员工，他们已经具备了完整的技能、工具、知识库，你只需要为他们配置好 LLM 即可开始投入工作。
+
+- `Orin`: Data modeling expert
+- `Avery`: Form filler
+- `Viz`: Insights analyst
+- `Lexi`: Translator
+- `Nathan`: Frontend code engineer
+- `Cole`: NocoBase assistant
+- `Vera`: Research analyst
+- `Dex`: Data organizer
+- `Ellis`: Email expert
+
 ## 如何启用
 
 进入 AI 员工插件配置页面，点击 `AI employees` 标签页，进入 AI 员工管理页。
 
-可以看到系统已经内置多个 AI 员工了，但是都不是启用状态，在应用页面里还无法和这些AI员工对话。
+可以看到系统已经内置多个 AI 员工了，但是都不是启用状态，在应用页面里还无法和这些AI员工协作。
 
 ![20251022121248](https://static-docs.nocobase.com/20251022121248.png)
 
@@ -31,4 +45,4 @@
 
 ### 注意
 
-部分内置 AI 员工启用后也不会出现在右下角的 AI 员工快捷唤起按钮中，比如 Orin 只会在主数据配置页面出现；Nathan 只会在JS编辑器上出现。
+部分内置 AI 员工启用后也不会出现在右下角的 AI 员工列表中，比如 Orin 只会在主数据配置页面出现；Nathan 只会在 JS 编辑器上出现。
