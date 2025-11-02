@@ -6,7 +6,7 @@ NocoBase provides `DataSourceManager` for managing multiple data sources. Each `
 
 Each `DataSource` instance contains the following:
 
-- **`dataSource.collectionManager`**: Used to manage data tables and fields.
+- **`dataSource.collectionManager`**: Used to manage collections and fields.
 - **`dataSource.resourceManager`**: Handles resource-related operations (such as CRUD, etc.).
 - **`dataSource.acl`**: Access control (ACL) for resource operations.
 

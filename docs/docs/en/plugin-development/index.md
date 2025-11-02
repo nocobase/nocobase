@@ -41,8 +41,8 @@ my-nocobase-app/
 A plugin typically goes through the following stages:
 
 1. **Create**: Create a plugin template via CLI.
-2. **Pull**: Download the plugin package to local, but not yet written to the database.
-3. **Enable**: On first enable, execute "register + initialize"; subsequent enables only load logic.
+2. **Pull**: Download the plugin package locally, but it is not yet written to the database.
+3. **Enable**: On its first enablement, it executes "register + initialize"; subsequent enablements only load the logic.
 4. **Disable**: Stop the plugin from running.
 5. **Remove**: Completely remove the plugin from the system.
 
@@ -62,7 +62,7 @@ yarn pm create @my-project/plugin-hello
 # 2. Pull plugin package (download or link)
 yarn pm pull @my-project/plugin-hello
 
-# 3. Enable plugin (first enable will auto-install)
+# 3. Enable plugin (auto-installs on first enablement)
 yarn pm enable @my-project/plugin-hello
 
 # 4. Disable plugin

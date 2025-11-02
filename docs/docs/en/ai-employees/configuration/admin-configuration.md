@@ -42,7 +42,7 @@ The model service is like the brain of an AI Employee and must be set up first.
 > 💡 For detailed configuration instructions, please refer to: [Configure LLM Service](/ai-employees/quick-start/llm-service)
 
 **Path:**
-`System Settings → AI Employee → Model Services`
+`System Settings → AI Employee → Model Service`
 
 
 ![Enter configuration page](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-15-40-47.png)

@@ -37,7 +37,7 @@ Each plugin goes through the following lifecycle in sequence when the browser re
 | ---------------- | ---------------- | ----------- |
 | **afterAdd()**   | Executed immediately after the plugin is added to the plugin manager | The plugin instance has been created at this point, but not all plugins have finished initializing. Suitable for lightweight initialization, such as reading configuration or binding basic events. |
 | **beforeLoad()** | Executed before all plugins' `load()` | Can access all enabled plugin instances (`this.app.pm.get()`). Suitable for preparation logic that depends on other plugins. |
-| **load()**       | Executed when the plugin loads | This method is executed after all plugins' `beforeLoad()` complete. Suitable for registering frontend routes, UI components, and other core logic. |
+| **load()**       | Executed when the plugin loads | This method is executed after all plugins' `beforeLoad()` completes. Suitable for registering frontend routes, UI components, and other core logic. |
 
 ## Execution Order
 

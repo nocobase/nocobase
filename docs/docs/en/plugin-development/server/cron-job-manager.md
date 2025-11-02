@@ -48,12 +48,12 @@ export declare interface CronJobParameters {
 | ------------- | --------------------------- | ----------- |
 | **cronTime**  | `string \| Date \| DateTime` | Scheduled task time expression. Supports standard cron expressions, for example `0 0 * * *` means execute daily at 00:00. |
 | **onTick**    | `function`                  | Task main function. Will be triggered at the specified time. |
-| **onComplete** | `function`                  | Executes when task is stopped by `job.stop()` or when `onTick` actively calls completion. |
-| **timeZone**  | `string`                    | Specify execution timezone (e.g., `Asia/Shanghai`). |
+| **onComplete** | `function`                  | Executes when the task is stopped by `job.stop()` or after the `onTick` function completes. |
+| **timeZone**  | `string`                    | Specify the execution time zone (e.g., `Asia/Shanghai`). |
 | **context**   | `any`                       | Context when executing `onTick`. |
 | **runOnInit** | `boolean`                   | Whether to execute once immediately on initialization. |
-| **utcOffset** | `string \| number`           | Specify timezone offset. |
-| **unrefTimeout** | `boolean`                  | Control whether event loop stays active. |
+| **utcOffset** | `string \| number`           | Specify the time zone offset. |
+| **unrefTimeout** | `boolean`                  | Controls whether the event loop stays active. |
 
 ## Cron Expression Examples
 
@@ -77,7 +77,7 @@ job.stop();  // Stop task
 
 :::tip
 
-Scheduled tasks start when the application starts and stop when the application stops. Generally, you don't need to manually start or stop unless necessary.
+Scheduled tasks start and stop along with the application. You generally don't need to manually start or stop them.
 
 :::
 

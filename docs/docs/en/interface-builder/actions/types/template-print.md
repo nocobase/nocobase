@@ -1694,7 +1694,7 @@ Parameters:
 '20101001':diffD('20101201', 'h')           // Outputs 1464
 '20101001':diffD('20101201', 'weeks')       // Outputs 8
 '20101001':diffD('20101201', 'days')        // Outputs 61
-'2010+10+01':diffD('2010=12=01', 'ms', 'YYYY+MM+DD', 'YYYY=MM=DD')  // Outputs 5270400000
+'2010+10+01':diffD('2010=12=01', 'ms', 'YYYY+MM+DD', 'YYYY=MM+DD')  // Outputs 5270400000
 ```
 
 ##### Result
@@ -2499,7 +2499,7 @@ Below, we will explain the operations for DOCX and XLSX with specific examples.
 For both DOCX and XLSX, the size of the final rendered image will follow the dimensions of the temporary image in the template. This means the actual replaced image will automatically scale to the same size as the placeholder you inserted. If you want the rendered image to be 150×150, please use a temporary image in the template and adjust it to that size.
 :::
 
-2. Right-click on this image, edit its "Alt Text", and enter the image field tag you want to insert, for example, `{d.imageUrl}`:
+2. Right-click on this image, edit its “Alt Text”, and enter the image field tag you want to insert, for example, `{d.imageUrl}`:
    
 
 ![Edit Alt Text for Dynamic Image](https://static-docs.nocobase.com/20250414211130-2025-04-14-21-11-31.png)
@@ -2560,7 +2560,7 @@ The operation in an Excel template (XLSX) is basically the same, just note the f
 ![Picture in Cell in Excel](https://static-docs.nocobase.com/20250414211643-2025-04-14-21-16-45.png)
 
 
-2. With the cell selected, click to view "Alt Text" to enter the field tag, such as `{d.imageUrl}`.
+2. With the cell selected, click to view “Alt Text” to enter the field tag, such as `{d.imageUrl}`.
 
 ### Barcodes
 :::info

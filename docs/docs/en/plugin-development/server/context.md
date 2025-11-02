@@ -2,7 +2,7 @@
 
 In NocoBase, each request generates a `ctx` object, which is an instance of Context. Context encapsulates request and response information while providing NocoBase-specific functionality, such as database access, cache operations, permission management, internationalization, and logging.
 
-NocoBase's `Application` is based on Koa, so `ctx` is essentially a Koa Context, but NocoBase extends rich APIs on top of it, allowing developers to conveniently handle business logic in Middleware and Actions. Each request has an independent `ctx`, ensuring data isolation and security between requests.
+NocoBase's `Application` is based on Koa, so `ctx` is essentially a Koa Context, but NocoBase extends it with rich APIs, allowing developers to conveniently handle business logic in Middleware and Actions. Each request has an independent `ctx`, ensuring data isolation and security between requests.
 
 ## ctx.action
 
@@ -23,7 +23,7 @@ resourceManager.use(async (ctx) => {
 
 Internationalization (i18n) support.  
 
-- `ctx.i18n` provides language environment information  
+- `ctx.i18n` provides locale information  
 - `ctx.t()` is used to translate strings based on language  
 
 ```ts
@@ -35,7 +35,7 @@ resourceManager.use(async (ctx) => {
 
 ## ctx.db
 
-`ctx.db` provides database access interface, allowing direct model operations and query execution.  
+`ctx.db` provides an interface for database access, allowing you to directly operate on models and execute queries.  
 
 ```ts
 resourceManager.use(async (ctx) => {
@@ -46,7 +46,7 @@ resourceManager.use(async (ctx) => {
 
 ## ctx.cache
 
-`ctx.cache` provides cache operations, supporting reading and writing cache, commonly used to accelerate data access or save temporary state.  
+`ctx.cache` provides cache operations, supporting reading from and writing to the cache, commonly used to accelerate data access or save temporary state.  
 
 ```ts
 resourceManager.use(async (ctx) => {
@@ -69,7 +69,7 @@ resourceManager.use(async (ctx) => {
 
 ## ctx.auth.user
 
-`ctx.auth.user` gets the currently authenticated user information, suitable for use in permission checks or business logic.  
+`ctx.auth.user` retrieves the currently authenticated user's information, suitable for use in permission checks or business logic.  
 
 ```ts
 resourceManager.use(async (ctx) => {
@@ -120,5 +120,5 @@ resourceManager.use(async (ctx) => {
 - Each request corresponds to an independent `ctx` object  
 - `ctx` is an extension of Koa Context, integrating NocoBase functionality  
 - Common properties include: `ctx.db`, `ctx.cache`, `ctx.auth`, `ctx.state`, `ctx.logger`, `ctx.can()`, `ctx.t()`, etc.  
-- Using `ctx` in Middleware and Actions allows convenient operations on requests, responses, permissions, logs, and database  
+- Using `ctx` in Middleware and Actions allows for convenient handling of requests, responses, permissions, logs, and the database  
 

@@ -72,5 +72,5 @@ yarn nocobase install -f
 
 ## Auto-generating Resources
 
-After defining a Collection, the system will automatically generate corresponding Resources, which can directly perform CRUD operations on the resource via API. See [Resource Manager](./resource-manager.md).
+After defining a Collection, the system will automatically generate a corresponding Resource, on which you can directly perform CRUD operations via API. See [Resource Manager](./resource-manager.md).
 

@@ -86,7 +86,7 @@ Database events can capture various data changes at the model level, suitable fo
 | `beforeDefineCollection` / `afterDefineCollection` | Before / after defining collections |
 | `beforeRemoveCollection` / `afterRemoveCollection` | Before / after removing collections |
 
-Example: Listen to data created event
+Example: Listen for the event after data creation
 
 ```ts
 db.on('afterCreate', async (model, options) => {
@@ -94,11 +94,11 @@ db.on('afterCreate', async (model, options) => {
 });
 ```
 
-Example: Listen to data update before event
+Example: Listen for the event before data update
 
 ```ts
 db.on('beforeUpdate', async (model, options) => {
-  db.logger.info('Data is about to be updated!');
+  db.logger.info('Data is about to be updated!'); // The original Chinese text had a copy-paste error, this is the corrected log message.
 });
 ```
 

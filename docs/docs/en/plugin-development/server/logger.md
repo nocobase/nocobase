@@ -2,7 +2,7 @@
 
 NocoBase logging is based on <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. By default, NocoBase divides logs into API request logs, system runtime logs, and SQL execution logs. API request logs and SQL execution logs are printed internally by the application. Plugin developers usually only need to print plugin-related system runtime logs.
 
-This document mainly introduces how to create and print logs during plugin development.
+This document explains how to create and print logs during plugin development.
 
 ## Default Printing Methods
 
@@ -25,9 +25,9 @@ class CustomPlugin extends Plugin {
 }
 ```
 
-All the above methods follow the following usage:
+All of the above methods follow the usage below:
 
-The first parameter is the log message, and the second parameter is an optional metadata object, which can be any key-value pairs. Among them, `module`, `submodule`, and `method` will be extracted as separate fields, and the remaining fields will be placed in the `meta` field.
+The first parameter is the log message, and the second parameter is an optional metadata object, which can be any key-value pairs. where `module`, `submodule`, and `method` will be extracted as separate fields, and the remaining fields will be placed in the `meta` field.
 
 ```ts
 app.log.info('message', {
@@ -60,7 +60,7 @@ const logger = createSystemLogger({
 
 ## Custom Logger
 
-If you don't want to use the system-provided printing method and want to use Winston's native methods, you can create logs through the following methods.
+If you want to use Winston's native methods instead of the system-provided ones, you can create logs using the following methods.
 
 ### `createLogger`
 
@@ -74,12 +74,12 @@ const logger = createLogger({
 
 `options` extends the original `winston.LoggerOptions`.
 
-- `transports` - Can use `'console' | 'file' | 'dailyRotateFile'` to apply preset output methods.
-- `format` - Can use `'logfmt' | 'json' | 'delimiter'` to apply preset printing formats.
+- `transports` - Use `'console' | 'file' | 'dailyRotateFile'` to apply preset output methods.
+- `format` - Use `'logfmt' | 'json' | 'delimiter'` to apply preset printing formats.
 
 ### `app.createLogger`
 
-In multi-app scenarios, sometimes we want custom output directories and files, which can be output to the current application name's directory.
+In multi-app scenarios, sometimes we want custom output directories and files, which can be output to a directory named after the current application.
 
 ```ts
 app.createLogger({
@@ -90,7 +90,7 @@ app.createLogger({
 
 ### `plugin.createLogger`
 
-Usage scenario and method same as `app.createLogger`.
+The use case and method are the same as `app.createLogger`.
 
 ```ts
 class CustomPlugin extends Plugin {

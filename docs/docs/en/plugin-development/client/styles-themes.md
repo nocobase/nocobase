@@ -1,6 +1,6 @@
 # Styles & Themes
 
-To better adapt to NocoBase's dynamic theme capabilities, in plugins, it's recommended to use [antd-style](https://ant-design.github.io/antd-style/guide) to write styles. Combined with existing [theme token](https://ant.design/docs/react/customize-theme#seedtoken) to handle theme dynamic capabilities. NocoBase also provides a [Theme Editor plugin](#) for convenient style adjustments.
+To better adapt to NocoBase's dynamic theme capabilities, in plugins, it's recommended to use [antd-style](https://ant-design.github.io/antd-style/guide) to write styles. This can be combined with the existing [theme token](https://ant.design/docs/react/customize-theme#seedtoken) to handle the dynamic capabilities of themes. NocoBase also provides a [Theme Editor plugin](#) for convenient style adjustments.
 
 ## Writing Styles
 
@@ -166,7 +166,7 @@ export default () => {
   return (
     <div>
       <Global />
-      <div className="some-class">Favorite color</div>
+      <div className="some-class">Globally styled text</div>
     </div>
   );
 };
@@ -218,11 +218,11 @@ const App = () => {
     <div className={styles.container}>
       <Space direction={'vertical'} style={{ width: '100%' }} size={16}>
         <Space>
-          <Button title={'Function button description'} icon={<SmileOutlined />} />
-          Action Button
+          <Button title={'Description for the function button'} icon={<SmileOutlined />} />
+          Action button
         </Space>
-        <div className={styles.defaultCard}>Default Card</div>
-        <div className={styles.primaryCard}>Primary Card</div>
+        <div className={styles.defaultCard}>Default card</div>
+        <div className={styles.primaryCard}>Primary card</div>
       </Space>
     </div>
   );

@@ -43,7 +43,7 @@ Plugin lifecycle methods execute in the following order. Each method has its spe
 | **beforeLoad()**          | Executed before all plugins' `load()` | Can access all **enabled plugin instances** at this point. Suitable for registering database models, listening to database events, registering middleware, and other preparation work. |
 | **load()**                | Executed when plugin loads | All plugins' `beforeLoad()` complete before `load()` starts. Suitable for registering resources, API interfaces, services, and other core business logic. |
 | **install()**              | Executed when plugin is first activated | Only executed once when plugin is first enabled, generally used for initializing database table structures, inserting initial data, and other installation logic. |
-| **afterEnable()**         | Executed after plugin is enabled | Executed every time plugin is enabled, can be used to start scheduled tasks, register planned tasks, establish connections, and other post-enable actions. |
+| **afterEnable()**         | Executed after plugin is enabled | Executed every time plugin is enabled, can be used to start scheduled tasks, register scheduled tasks, establish connections, and other post-enable actions. |
 | **afterDisable()**        | Executed after plugin is disabled | Executed when plugin is disabled, can be used to clean up resources, stop tasks, close connections, and other cleanup work. |
 | **remove()**               | Executed when plugin is removed | Executed when plugin is completely removed, used to write uninstallation logic, such as deleting database tables, cleaning files, etc. |
 | **handleSyncMessage(message)** | Message synchronization in multi-node deployment | When the application runs in multi-node mode, used to handle messages synchronized from other nodes. |
@@ -56,8 +56,8 @@ Typical execution flow of lifecycle methods:
 2. **Application Startup Phase**: `afterAdd()` → `beforeLoad()` → `load()`
 3. **First Plugin Enable Phase**: `afterAdd()` → `beforeLoad()` → `load()` → `install()`
 4. **Second Plugin Enable Phase**: `afterAdd()` → `beforeLoad()` → `load()`
-4. **Plugin Disable Phase**: `afterDisable()` is executed when plugin is disabled
-5. **Plugin Remove Phase**: `remove()` is executed when plugin is removed
+5. **Plugin Disable Phase**: `afterDisable()` is executed when plugin is disabled
+6. **Plugin Remove Phase**: `remove()` is executed when plugin is removed
 
 ## app and Related Members
 

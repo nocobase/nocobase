@@ -8,10 +8,10 @@ For this reason, NocoBase divides middleware into **four layers**:
    Only affects requests for **a specific data source**, commonly used for database connections, field validation, or transaction processing logic for that data source.
 
 2. **Resource Level Middleware**: `app.resourceManager.use()`  
-   Only effective for defined resources (Resources), suitable for handling resource-level logic, such as data permissions, formatting, etc.
+   Only effective for defined resources (Resource), suitable for handling resource-level logic, such as data permissions, formatting, etc.
 
 3. **Permission Level Middleware**: `app.acl.use()`  
-   Executes before permission judgment, used to verify user permissions or roles.
+   Executes before permission checks, used to verify user permissions or roles.
 
 4. **Application Level Middleware**: `app.use()`  
    Executes for every request, suitable for logging, general error handling, response processing, etc.
@@ -73,19 +73,19 @@ Example:
 ```ts
 // Regular middleware
 app.use(m1, { tag: 'restApi' });
-app.resourcer.use(m2, { tag: 'parseToken' });
-app.resourcer.use(m3, { tag: 'checkRole' });
+app.resourceManager.use(m2, { tag: 'parseToken' });
+app.resourceManager.use(m3, { tag: 'checkRole' });
 
 // m4 will be placed before m1
 app.use(m4, { before: 'restApi' });
 
 // m5 will be inserted between m2 and m3
-app.resourcer.use(m5, { after: 'parseToken', before: 'checkRole' });
+app.resourceManager.use(m5, { after: 'parseToken', before: 'checkRole' });
 ```
 
 :::tip
 
-If no position is specified, newly added middleware default execution order is:  
+If no position is specified, the default execution order for newly added middleware is:  
 `acl.use()` -> `resourceManager.use()` -> `dataSourceManager.use()` -> `app.use()`  
 
 :::
@@ -102,7 +102,7 @@ app.use(async (ctx, next) => {
   ctx.body.push(2);
 });
 
-app.resourcer.use(async (ctx, next) => {
+app.resourceManager.use(async (ctx, next) => {
   ctx.body = ctx.body || [];
   ctx.body.push(3);
   await next();
@@ -116,7 +116,7 @@ app.acl.use(async (ctx, next) => {
   ctx.body.push(6);
 });
 
-app.resourcer.define({
+app.resourceManager.define({
   name: 'test',
   actions: {
     async list(ctx, next) {
@@ -129,14 +129,14 @@ app.resourcer.define({
 });
 ```
 
-Access different interfaces, output order examples:
+Output examples for different interfaces:
 
 - **Regular request**: `/api/hello`  
   Output: `[1,2]` (resource not defined, doesn't execute `resourceManager` and `acl` middleware)  
 
 - **Resource request**: `/api/test:list`  
   Output: `[5,3,7,1,2,8,4,6]`  
-  Middleware executes by layer and onion model
+  Middleware executes according to the layer order and the onion model.
 
 ## Summary
 

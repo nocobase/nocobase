@@ -102,11 +102,11 @@ Each language configuration consists of a **Locale Code** and a **Display Name (
 * Language configurations are typically used for:
 
   * **Interface Display**: Display the `label` in the language switching menu.
-  * **Internationalization File Loading**: Load corresponding translation JSON files based on the `locale code`.
+  * **Internationalization File Loading**: Load corresponding translation JSON files based on the `Locale Code`.
 
 * When adding a new language, you need to:
 
-  1. Follow the BCP 47 standard to define the locale code;
+  1. Follow the BCP 47 standard to define the Locale Code;
   2. Provide a clear localized name as the `label`;
   3. Provide corresponding translation files.
 
