@@ -14,7 +14,7 @@
         "link": "/interface-builder/blocks"
       },
       {
-        "type": "dir",
+        "type": "custom-link",
         "label": "数据区块",
         "collapsed": true,
         "items": [
@@ -51,7 +51,7 @@
         ]
       },
       {
-        "type": "dir",
+        "type": "custom-link",
         "label": "筛选区块",
         "collapsed": true,
         "items": [
@@ -63,7 +63,7 @@
         ]
       },
       {
-        "type": "dir",
+        "type": "custom-link",
         "label": "其他区块",
         "collapsed": true,
         "items": [
@@ -90,7 +90,7 @@
         ]
       },
       {
-        "type": "dir",
+        "type": "custom-link",
         "label": "区块设置项",
         "collapsed": true,
         "items": [
@@ -144,7 +144,7 @@
         "link": "/interface-builder/fields"
       },
       {
-        "type": "dir",
+        "type": "custom-link",
         "label": "通用配置项",
         "collapsed": true,
         "items": [
@@ -171,7 +171,7 @@
         ]
       },
       {
-        "type": "dir",
+        "type": "custom-link",
         "label": "特有配置项",
         "collapsed": true,
         "items": [
@@ -233,7 +233,7 @@
         ]
       },
       {
-        "type": "dir",
+        "type": "custom-link",
         "label": "字段配置项",
         "collapsed": true,
         "items": [
@@ -311,7 +311,7 @@
         "link": "/interface-builder/actions"
       },
       {
-        "type": "dir",
+        "type": "custom-link",
         "label": "操作配置项",
         "collapsed": true,
         "items": [
@@ -348,7 +348,7 @@
         ]
       },
       {
-        "type": "dir",
+        "type": "custom-link",
         "label": "操作类型",
         "collapsed": true,
         "items": [
@@ -453,17 +453,28 @@
   },
   {
     "type": "custom-link",
-    "label": "联动规则",
-    "link": "/interface-builder/linkage-rule"
-  },
-  {
-    "type": "custom-link",
-    "label": "事件流",
-    "link": "/interface-builder/event-flow"
-  },
-  {
-    "type": "custom-link",
-    "label": "变量",
-    "link": "/interface-builder/variables"
+    "label": "进阶",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "联动规则",
+        "link": "/interface-builder/linkage-rule"
+      },
+      {
+        "type": "custom-link",
+        "label": "事件流",
+        "link": "/interface-builder/event-flow"
+      },
+      {
+        "type": "custom-link",
+        "label": "变量",
+        "link": "/interface-builder/variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "RunJS",
+        "link": "/interface-builder/runjs"
+      }
+    ]
   }
 ]
