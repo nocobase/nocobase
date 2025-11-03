@@ -46,7 +46,7 @@ export function SubTableField(props) {
       showSizeChanger: true, // 显示每页条数切换
       showTotal: (total) => `Total ${total} items`, // 显示总条数
     };
-  }, [currentPage, currentPageSize]);
+  }, [currentPage, currentPageSize, value]);
 
   // 新增一行
   const handleAdd = () => {
@@ -60,8 +60,13 @@ export function SubTableField(props) {
 
   // 删除行
   const handleDelete = (index: number) => {
+    console.log(index);
     const newValue = [...(value || [])];
     newValue.splice(index, 1);
+    console.log(newValue);
+    const lastPage = Math.ceil(newValue.length / currentPageSize);
+    console.log(lastPage);
+    setCurrentPage(lastPage);
     onChange?.(newValue);
   };
 
@@ -76,12 +81,13 @@ export function SubTableField(props) {
     .map((col) => ({
       ...col,
       render: (text, record, rowIdx) => {
+        const pageRowIdx = (currentPage - 1) * currentPageSize + rowIdx;
         if (!col.render) {
           return;
         }
         return col?.render({
           record,
-          rowIdx,
+          rowIdx: pageRowIdx,
           id: `field-${col.dataIndex}-${rowIdx}`,
           value: text,
           onChange: (value) => {
@@ -99,13 +105,14 @@ export function SubTableField(props) {
         align: 'center',
         fixed: 'right',
         render: (v, record, index) => {
+          const pageRowIdx = (currentPage - 1) * currentPageSize + index;
           if (!allowDisassociation && !record.isNew) {
             return;
           }
           return (
             <div
               onClick={() => {
-                handleDelete(index);
+                handleDelete(pageRowIdx);
               }}
             >
               <CloseOutlined style={{ cursor: 'pointer', color: 'gray' }} />
