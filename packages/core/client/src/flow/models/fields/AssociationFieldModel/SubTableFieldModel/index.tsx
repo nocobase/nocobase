@@ -226,6 +226,31 @@ SubTableFieldModel.registerFlow({
         });
       },
     },
+    pageSize: {
+      title: escapeT('Page size'),
+      uiSchema: {
+        pageSize: {
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: [
+            { label: '5', value: 5 },
+            { label: '10', value: 10 },
+            { label: '20', value: 20 },
+            { label: '50', value: 50 },
+            { label: '100', value: 100 },
+            { label: '200', value: 200 },
+          ],
+        },
+      },
+      defaultParams: {
+        pageSize: 10,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          pageSize: params.pageSize,
+        });
+      },
+    },
   },
 });
 

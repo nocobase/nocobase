@@ -11,7 +11,7 @@ import { CloseOutlined, ZoomInOutlined } from '@ant-design/icons';
 import { Table, Form, Space } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 export function SubTableField(props) {
   const { t } = useTranslation();
@@ -25,12 +25,44 @@ export function SubTableField(props) {
     allowSelectExistingRecord,
     onSelectExitRecordClick,
     allowDisassociation,
+    pageSize,
   } = props;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPageSize, setCurrentPageSize] = useState(pageSize);
+  useEffect(() => {
+    setCurrentPageSize(pageSize);
+  }, [pageSize]);
+
+  // 前端分页
+  const pagination = useMemo(() => {
+    return {
+      current: currentPage, // 当前页码
+      pageSize: currentPageSize, // 每页条目数
+      total: value.length, // 数据总条数
+      onChange: (page, size) => {
+        setCurrentPage(page); // 更新当前页码
+        setCurrentPageSize(size); // 更新每页显示条目数
+      },
+      showSizeChanger: true, // 显示每页条数切换
+      showTotal: (total) => `Total ${total} items`, // 显示总条数
+    };
+  }, [currentPage, currentPageSize]);
+
   // 新增一行
   const handleAdd = () => {
     const newRow = { isNew: true };
     columns.forEach((col) => (newRow[col.dataIndex] = undefined));
+    const newValue = [...(value || []), newRow];
+    const lastPage = Math.ceil(newValue.length / currentPageSize);
+    setCurrentPage(lastPage);
     onChange?.([...(value || []), newRow]);
+  };
+
+  // 删除行
+  const handleDelete = (index: number) => {
+    const newValue = [...(value || [])];
+    newValue.splice(index, 1);
+    onChange?.(newValue);
   };
 
   // 编辑单元格
@@ -38,12 +70,7 @@ export function SubTableField(props) {
     const newData = value.map((row, idx) => (idx === rowIdx ? { ...row, [dataIndex]: cellValue } : row));
     onChange?.(newData);
   };
-  // 删除行
-  const handleDelete = (index: number) => {
-    const newValue = [...(value || [])];
-    newValue.splice(index, 1);
-    onChange?.(newValue);
-  };
+
   // 渲染可编辑单元格
   const editableColumns = columns
     .map((col) => ({
@@ -96,7 +123,7 @@ export function SubTableField(props) {
         rowKey={(row, idx) => idx}
         tableLayout="fixed"
         scroll={{ x: 'max-content' }}
-        pagination={false}
+        pagination={pagination}
         locale={{
           emptyText: <span> {!disabled ? t('Please add or select record') : t('No data')}</span>,
         }}
