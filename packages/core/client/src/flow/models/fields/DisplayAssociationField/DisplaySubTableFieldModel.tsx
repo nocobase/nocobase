@@ -144,24 +144,6 @@ DisplaySubTableFieldModel.registerFlow({
         await ctx.model.applySubModelsBeforeRenderFlows('columns');
       },
     },
-    defaultSorting: {
-      use: 'sortingRule',
-      title: escapeT('Default sorting'),
-      async handler(ctx, params) {
-        const sortArr = params.sort.map((item) => {
-          return item.direction === 'desc' ? `-${item.field}` : item.field;
-        });
-        // @ts-ignore
-        const resource = ctx.blockModel?.resource as MultiRecordResource;
-        const sortAppend = `${ctx.collectionField.name}(sort=${sortArr})`;
-        console.log(sortAppend);
-        if (!resource) {
-          return;
-        }
-        resource.removeAppends(ctx.collectionField.name);
-        resource.addAppends(sortAppend);
-      },
-    },
     pageSize: {
       title: escapeT('Page size'),
       uiSchema: {
