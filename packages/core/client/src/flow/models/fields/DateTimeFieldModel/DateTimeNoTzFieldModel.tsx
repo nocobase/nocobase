@@ -40,4 +40,4 @@ export class DateTimeNoTzFieldModel extends DateTimeFieldModel {
   }
 }
 
-EditableItemModel.bindModelToInterface('DateTimeNoTzFieldModel', ['datetimeNoTz']);
+EditableItemModel.bindModelToInterface('DateTimeNoTzFieldModel', ['datetimeNoTz'], { isDefault: true });
