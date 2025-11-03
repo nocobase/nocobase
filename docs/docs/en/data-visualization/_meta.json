@@ -25,7 +25,7 @@
       },
       {
         "type": "custom-link",
-        "label": "Preview and save",
+        "label": "Preview and Save",
         "link": "/data-visualization/guide/preview-and-save"
       },
       {
@@ -37,16 +37,6 @@
         "type": "custom-link",
         "label": "Page filters and linkage",
         "link": "/data-visualization/guide/filters-and-linkage"
-      },
-      {
-        "type": "custom-link",
-        "label": "FAQ",
-        "link": "/data-visualization/guide/faq"
-      },
-      {
-        "type": "custom-link",
-        "label": "Best practices",
-        "link": "/data-visualization/guide/best-practices"
       }
     ]
   },
@@ -70,5 +60,15 @@
         "link": "/data-visualization/guide/chart-events"
       }
     ]
+  },
+  {
+    "type": "custom-link",
+    "label": "FAQ",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Best practices",
+    "link": "/data-visualization/best-practices"
   }
 ]

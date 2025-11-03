@@ -243,7 +243,6 @@ export const FlowRoute = () => {
     return () => {
       dispose?.();
       prevViewListRef.current.forEach((viewItem) => {
-        viewStateRef.current[getKey(viewItem)]?.close?.(true);
         flowEngine.removeModel(viewItem.params.viewUid);
         delete viewStateRef.current[getKey(viewItem)];
       });
