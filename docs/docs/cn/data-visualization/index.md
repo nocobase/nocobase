@@ -1,3 +1,7 @@
+---
+pkg: "@nocobase/plugin-data-visualization"
+---
+
 # 概述
 
 NocoBase 的数据可视化插件，提供了可视化的数据查询和丰富的图表组件。

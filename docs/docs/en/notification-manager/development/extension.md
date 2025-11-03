@@ -1,6 +1,6 @@
-## Extension
+# Extending Notification Channel Types
 
-NocoBase supports the expansion of notification channel types, such as SMS notifications and app push notifications,etc.
+NocoBase supports extending notification channel types on demand, such as for SMS notifications and app push notifications.
 
 ## Client
 
@@ -125,7 +125,7 @@ export default ChannelConfigForm;
 
 #### MessageConfigForm
 
-The message configuration form mainly includes the configuration for recipients (`receivers`) and message content (`content`). Create a new file named `MessageConfigForm.tsx` in the `src/client` directory:
+The message configuration form mainly includes the configuration for recipients (`receivers`) and message content (`content`). Create a new file named `MessageConfigForm.tsx` in the `src/client` directory. The component receives `variableOptions` as a variable parameter. The content form is configured in the workflow node and typically needs to consume workflow node variables. The specific file content is as follows:
 
 ```ts
 import React from 'react';
@@ -222,9 +222,7 @@ class PluginNotificationExampleClient extends Plugin {
   async load() {
     const notification = this.pm.get(PluginNotificationManagerClient);
     notification.registerChannelType({
-      title: tval('Example SMS', {
-        ns: '@nocobase/plugin-notification-example',
-      }),
+      title: tval('Example SMS', { ns: '@nocobase/plugin-notification-example' }),
       type: 'example-sms',
       components: {
         ChannelConfigForm,
@@ -237,11 +235,11 @@ class PluginNotificationExampleClient extends Plugin {
 export default PluginNotificationExampleClient;
 ```
 
-At this point, the development of the client is complete
+At this point, the development of the client is complete.
 
 ### Server Development
 
-The core of server development involves extending the `BaseNotificationChannel` abstract class and implementing the `send` method. In the `src/server` directory, add a file named `example-server.ts`:
+The core of server development involves extending the `BaseNotificationChannel` abstract class and implementing the `send` method. The `send` method contains the business logic for the extension plugin to send notifications. Since this is an example, we will simply print the received arguments. In the `src/server` directory, add a file named `example-server.ts`:
 
 ```ts
 import { BaseNotificationChannel } from '@nocobase/plugin-notification-manager';
@@ -283,13 +281,20 @@ export default PluginNotificationExampleServer;
 ### Channel Configuration
 
 Upon visiting the Notification management channel page, you can see that the `Example SMS` channel has been enabled.
+
 ![20241009164207-2024-10-09-16-42-08](https://static-docs.nocobase.com/20241009164207-2024-10-09-16-42-08.png)
 
+
 Add a sample channel.
+
 ![20250418074409-2025-04-18-07-44-09](https://static-docs.nocobase.com/20250418074409-2025-04-18-07-44-09.png)
 
+
 Create a new workflow and configure the notification node.
+
 ![20250418074832-2025-04-18-07-48-32](https://static-docs.nocobase.com/20250418074832-2025-04-18-07-48-32.png)
 
+
 Trigger the workflow execution to view the following information output in the console.
+
 ![20250418081746-2025-04-18-08-17-48](https://static-docs.nocobase.com/20250418081746-2025-04-18-08-17-48.png)

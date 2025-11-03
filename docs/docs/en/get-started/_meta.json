@@ -26,6 +26,11 @@
         "type": "custom-link",
         "label": "Git Source Installation",
         "link": "/get-started/installation/git"
+      },
+      {
+        "type": "custom-link",
+        "label": "Environment Variables",
+        "link": "/get-started/installation/env"
       }
     ]
   },
@@ -58,16 +63,6 @@
         "type": "custom-link",
         "label": "Production Environment Deployment",
         "link": "/get-started/deployment/production"
-      },
-      {
-        "type": "custom-link",
-        "label": "Intranet Deployment",
-        "link": "/get-started/deployment/internal"
-      },
-      {
-        "type": "custom-link",
-        "label": "Cluster Deployment",
-        "link": "/get-started/deployment/cluster"
       },
       {
         "type": "custom-link",
@@ -109,7 +104,7 @@
       {
         "type": "custom-link",
         "label": "How to Deploy Faster",
-        "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
+        "link": "https://www.nocobase.com/en/tutorials/how-to-deploy-nocobase-faster"
       }
     ]
   },

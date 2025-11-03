@@ -8,9 +8,7 @@ The filter form supports selecting fields from the current collection and associ
 ![20251029120214](https://static-docs.nocobase.com/20251029120214.png)
 
 
-
 ## Field Configuration
-
 
 
 ![20251029120523](https://static-docs.nocobase.com/20251029120523.png)
@@ -20,6 +18,7 @@ The filter form supports selecting fields from the current collection and associ
 
 
 ![20251029120352](https://static-docs.nocobase.com/20251029120352.png)
+
 
 ### Operator
 

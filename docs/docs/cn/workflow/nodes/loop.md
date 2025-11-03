@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-loop'
+---
+
 # 循环
 
 ## 介绍

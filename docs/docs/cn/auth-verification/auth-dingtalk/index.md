@@ -1,6 +1,8 @@
-# 认证：钉钉
+---
+pkg: '@nocobase/plugin-auth-dingtalk'
+---
 
-<PluginInfo commercial="true" name="auth-dingtalk"></PluginInfo>
+# 认证：钉钉
 
 ## 介绍
 

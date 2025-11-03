@@ -10,7 +10,7 @@ The sub-table is suitable for handling to-many relationship fields. It supports 
 ![20251027223350](https://static-docs.nocobase.com/20251027223350.png)
 
 
-Different types of fields in the sub-table display different field components. Large fields (such as Rich Text, JSON, Multi-line Text) are edited through a pop-up modal.
+Different types of fields in the sub-table display different field components. Large fields (such as Rich Text, JSON, Long Text) are edited through a pop-up modal.
 
 
 ![20251027223426](https://static-docs.nocobase.com/20251027223426.png)
@@ -36,6 +36,7 @@ The default component for a relationship field is the Dropdown (supports Dropdow
 
 Supports selecting and associating existing data.
 
+
 ![20251027224008](https://static-docs.nocobase.com/20251027224008.png)
 
 
@@ -45,8 +46,7 @@ Supports selecting and associating existing data.
 
 ### Field Component
 
-[Field Component](/interface-builder/fields/association-field): Switch to other relationship field components, such as Dropdown, Data Picker, etc.;
-
+[Field Component](/interface-builder/fields/association-field): Switch to other relationship field components, such as Dropdown, Data Picker, etc.
 
 ### Allow unlinking existing data
 

@@ -1,6 +1,8 @@
-# External Data Source - MySQL
+---
+pkg: "@nocobase/plugin-data-source-external-mysql"
+---
 
-<PluginInfo commercial="true" name="data-source-external-mysql"></PluginInfo>
+# External Data Source - MySQL
 
 ## Introduction
 
@@ -10,7 +12,9 @@ Use an external MySQL database as a data source. Currently supported versions: M
 
 This plugin is a commercial plugin, which needs to be uploaded and activated through the plugin manager.
 
+
 ![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
+
 
 ## Usage Instructions
 

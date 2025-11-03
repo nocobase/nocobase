@@ -5,7 +5,7 @@ ActionDefinition defines reusable actions that can be referenced in multiple flo
 ## Type Definition
 
 ```ts
-interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx extends FlowContext = FlowContext> {
+interface ActionDefinition<TModel extends FlowModel = FlowModel, TCCtx extends FlowContext = FlowContext> {
   name: string;
   title?: string;
   handler: (ctx: TCtx, params: any) => Promise<any> | any;

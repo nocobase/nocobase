@@ -1,6 +1,8 @@
-# 认证：OIDC
+---
+pkg: '@nocobase/plugin-auth-oidc'
+---
 
-<PluginInfo commercial="true" name="auth-oidc"></PluginInfo>
+# 认证：OIDC
 
 ## 介绍
 

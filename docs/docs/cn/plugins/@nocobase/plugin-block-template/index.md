@@ -6,6 +6,9 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
 ---
 
 # 区块：模板（已废弃）
+
+> 注意：本插件已废弃（deprecated）。

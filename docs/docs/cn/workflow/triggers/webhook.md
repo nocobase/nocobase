@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-webhook'
+---
+
 # Webhook
 
 ## 简介

@@ -15,7 +15,9 @@ The Table block is one of the core built-in data blocks in **NocoBase**, primari
 ## Block Settings
 
 
+
 ![20251023150819](https://static-docs.nocobase.com/20251023150819.png)
+
 
 
 ### Block Linkage Rules
@@ -23,7 +25,9 @@ The Table block is one of the core built-in data blocks in **NocoBase**, primari
 Control block behavior (e.g., whether to display or execute JavaScript) through linkage rules.
 
 
+
 ![20251023194550](https://static-docs.nocobase.com/20251023194550.png)
+
 
 
 For more details, see [Linkage Rules](/interface-builder/linkage-rule)
@@ -33,7 +37,9 @@ For more details, see [Linkage Rules](/interface-builder/linkage-rule)
 Example: By default, filter orders where the "Status" is "Paid".
 
 
+
 ![20251023150936](https://static-docs.nocobase.com/20251023150936.png)
+
 
 
 For more details, see [Set Data Scope](/interface-builder/blocks/block-settings/data-scope)
@@ -43,7 +49,9 @@ For more details, see [Set Data Scope](/interface-builder/blocks/block-settings/
 Example: Display orders in descending order by date.
 
 
+
 ![20251023155114](https://static-docs.nocobase.com/20251023155114.png)
+
 
 
 For more details, see [Set Sorting Rules](/interface-builder/blocks/block-settings/sorting-rule)
@@ -53,11 +61,15 @@ For more details, see [Set Sorting Rules](/interface-builder/blocks/block-settin
 Activate "Enable Quick Edit" in the block settings and table column settings to customize which columns can be quickly edited.
 
 
+
 ![20251023190149](https://static-docs.nocobase.com/20251023190149.png)
 
 
 
+
+
 ![20251023190519](https://static-docs.nocobase.com/20251023190519.gif)
+
 
 ## Configure Fields
 
@@ -66,7 +78,9 @@ Activate "Enable Quick Edit" in the block settings and table column settings to 
 > **Note**: Fields from inherited collections (i.e., parent collection fields) are automatically merged and displayed in the current field list.
 
 
+
 ![20251023185113](https://static-docs.nocobase.com/20251023185113.png)
+
 
 
 ### Fields of Associated Collections
@@ -74,43 +88,51 @@ Activate "Enable Quick Edit" in the block settings and table column settings to 
 > **Note**: Supports displaying fields from associated collections (currently only supports to-one relationships).
 
 
+
 ![20251023185239](https://static-docs.nocobase.com/20251023185239.png)
+
 
 
 ### Other Custom Columns
 
 
+
 ![20251023185425](https://static-docs.nocobase.com/20251023185425.png)
 
 
-- [Js field](/interface-builder/fields/specific/js-field)
-- [Js column](/interface-builder/fields/specific/js-column)
+
+- [JS Field](/interface-builder/fields/specific/js-field)
+- [JS Column](/interface-builder/fields/specific/js-column)
 
 ## Configure Actions
 
 ### Global Actions
 
 
+
 ![20251023171655](https://static-docs.nocobase.com/20251023171655.png)
 
 
+
 - [Filter](/interface-builder/actions/types/filter)
-- [Add new](/interface-builder/actions/types/add-new)
+- [Add New](/interface-builder/actions/types/add-new)
 - [Delete](/interface-builder/actions/types/delete)
 - [Refresh](/interface-builder/actions/types/refresh)
 - [Import](/interface-builder/actions/types/import)
 - [Export](/interface-builder/actions/types/export)
 - [Template Print](/interface-builder/actions/types/template-print)
-- [Bulk update](/interface-builder/actions/types/bulk-update)
-- [Export attachments](/interface-builder/actions/types/export-attachments)
-- [Trigger workflow](/interface-builder/actions/types/trigger-workflow)
-- [JS action ](/interface-builder/actions/types/js-action)
+- [Bulk Update](/interface-builder/actions/types/bulk-update)
+- [Export Attachments](/interface-builder/actions/types/export-attachments)
+- [Trigger Workflow](/interface-builder/actions/types/trigger-workflow)
+- [JS Action](/interface-builder/actions/types/js-action)
 - [AI Employee](/interface-builder/actions/types/ai-employee)
 
 ### Row Actions
 
 
+
 ![20251023181019](https://static-docs.nocobase.com/20251023181019.png)
+
 
 
 - [View](/interface-builder/actions/types/view)
@@ -118,8 +140,8 @@ Activate "Enable Quick Edit" in the block settings and table column settings to 
 - [Delete](/interface-builder/actions/types/delete)
 - [Pop-up](/interface-builder/actions/types/pop-up)
 - [Link](/interface-builder/actions/types/link)
-- [Update record](/interface-builder/actions/types/update-record)
+- [Update Record](/interface-builder/actions/types/update-record)
 - [Template Print](/interface-builder/actions/types/template-print)
-- [Trigger workflow](/interface-builder/actions/types/trigger-workflow)
-- [JS action ](/interface-builder/actions/types/js-action)
+- [Trigger Workflow](/interface-builder/actions/types/trigger-workflow)
+- [JS Action](/interface-builder/actions/types/js-action)
 - [AI Employee](/interface-builder/actions/types/ai-employee)

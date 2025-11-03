@@ -32,16 +32,16 @@ POST /api/userData:push
 
 #### UserRecord
 
-| Parameter     | Type       | Description                                                                 |
-| ------------- | ---------- | --------------------------------------------------------------------------- |
-| `uid`         | `string`   | Required. Unique identifier for the source user data. Immutable for a user. |
-| `nickname`    | `string`   | Optional. User's nickname.                                                  |
-| `username`    | `string`   | Optional. Username.                                                         |
-| `email`       | `string`   | Optional. User's email address.                                             |
-| `phone`       | `string`   | Optional. User's phone number.                                              |
-| `departments` | `string[]` | Optional. Array of department UIDs the user belongs to.                     |
-| `isDeleted`   | `boolean`  | Optional. Indicates whether the record is deleted.                          |
-| `<field>`     | `any`      | Optional. Custom fields in the user table.                                  |
+| Parameter     | Type       | Description                                                                                                 |
+| ------------- | ---------- | ----------------------------------------------------------------------------------------------------------- |
+| `uid`         | `string`   | Required. Unique identifier for the source user data, used to associate the source data with the system user. Immutable for a user. |
+| `nickname`    | `string`   | Optional. User's nickname.                                                                                  |
+| `username`    | `string`   | Optional. Username.                                                                                         |
+| `email`       | `string`   | Optional. User's email address.                                                                             |
+| `phone`       | `string`   | Optional. User's phone number.                                                                              |
+| `departments` | `string[]` | Optional. Array of department UIDs the user belongs to.                                                     |
+| `isDeleted`   | `boolean`  | Optional. Indicates whether the record is deleted.                                                          |
+| `<field>`     | `any`      | Optional. Custom fields in the user table.                                                                  |
 
 ### Department Data Format
 
@@ -58,18 +58,18 @@ Pushing department data requires the [Departments](../../departments) plugin to 
 
 #### DepartmentRecord
 
-| Parameter   | Type      | Description                                                            |
-| ----------- | --------- | ---------------------------------------------------------------------- |
-| `uid`       | `string`  | Required. Unique identifier for the source department data. Immutable. |
-| `title`     | `string`  | Required. Department title.                                            |
-| `parentUid` | `string`  | Optional. UID of the parent department.                                |
-| `isDeleted` | `boolean` | Optional. Indicates whether the record is deleted.                     |
-| `<field>`   | `any`     | Optional. Custom fields in the department table.                       |
+| Parameter   | Type      | Description                                                                                                       |
+| ----------- | --------- | ------------------------------------------------------------------------------------------------------------------- |
+| `uid`       | `string`  | Required. Unique identifier for the source department data, used to associate the source data with the system department. Immutable. |
+| `title`     | `string`  | Required. Department title.                                                                                         |
+| `parentUid` | `string`  | Optional. UID of the parent department.                                                                             |
+| `isDeleted` | `boolean` | Optional. Indicates whether the record is deleted.                                                                  |
+| `<field>`   | `any`     | Optional. Custom fields in the department table.                                                                    |
 
 :::info
 
-1. Data pushing is idempotent, ensuring consistent results with multiple pushes.
-2. If a parent department is not yet created when pushing department data, it cannot be associated. Re-push the data after creating the parent department.
-3. Similarly, if a department is not yet created when pushing user data, it cannot associate users with their departments. Push the department data first, then re-push the user data.
+1. Pushing data is an idempotent operation.
+2. If a parent department does not exist when pushing department data, the association cannot be made. You can push the data again after the parent department has been created.
+3. If a user's department does not exist when pushing user data, the user cannot be associated with that department. You can push the user data again after the department data has been pushed.
 
 :::

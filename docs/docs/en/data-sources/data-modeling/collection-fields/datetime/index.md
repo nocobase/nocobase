@@ -38,9 +38,11 @@ Below is a comparison table for NocoBase, MySQL, and PostgreSQL:
 
 ### With Time Zone
 
-This includes `DateTime (without Time Zone)` and `Unix Timestamp`.
+This includes `DateTime (with Time Zone)` and `Unix Timestamp`.
+
 
 ![20240824191933](https://static-docs.nocobase.com/20240824191933.png)
+
 
 **Note:**
 - To accommodate a broader range of dates, NocoBase uses the DATETIME type in MySQL for DateTime (with Time Zone) fields. The date value stored is converted based on the server's TZ environment variable, meaning that if the TZ environment variable changes, the stored DateTime value will also change.
@@ -48,7 +50,9 @@ This includes `DateTime (without Time Zone)` and `Unix Timestamp`.
 
 ### Without Time Zone
 
+
 ![20240824185600](https://static-docs.nocobase.com/20240824185600.png)
+
 
 ## UTC
 

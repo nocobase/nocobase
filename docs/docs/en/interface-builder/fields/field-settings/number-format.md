@@ -20,7 +20,7 @@ Number formatting refers to the visual enhancement and standardization of numeri
 - Precision
 - Scientific notation.
 
-Example: Format the order amount, including adding a currency symbol (RMB symbol ¥), a thousand separator (such as a comma or period), and decimal precision, to make the amount clear and easy to read.
+Example: Format an order amount by adding a currency symbol (e.g., $), a thousand separator (such as a comma or period), and decimal precision to make the amount clear and easy to read.
 
 
 ![20251028215249](https://static-docs.nocobase.com/20251028215249.gif)

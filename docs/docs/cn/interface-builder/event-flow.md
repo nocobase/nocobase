@@ -6,7 +6,7 @@
 
 ## 如何使用
 
-下面会以一个简单的例子，来说明如何配置事件流。让我们来实现两个表格之前的联动，当点击左侧表格的某一行时，自动筛选右侧表格的数据。
+下面会以一个简单的例子，来说明如何配置事件流。让我们来实现两个表格之间的联动，当点击左侧表格的某一行时，自动筛选右侧表格的数据。
 
 ![20251031092211_rec_](https://static-docs.nocobase.com/20251031092211_rec_.gif)
 
@@ -86,7 +86,7 @@
 
 ![20251031093657](https://static-docs.nocobase.com/20251031093657.png)
 
-- Target block uid：目标区块 UID
+- Target block UID：目标区块 UID
 
 ### 导航到 URL（Navigate to URL）
 
@@ -134,7 +134,7 @@
 - Notification type：通知类型
 - Notification title：通知标题
 - Notification description：通知描述
-- Placement：位置，可选的有 左上、右上、左下、右下
+- Placement：位置，可选项有：左上、右上、左下、右下
 
 ### 执行 JavaScript（Execute JavaScript）
 

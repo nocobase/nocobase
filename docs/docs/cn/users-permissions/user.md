@@ -1,5 +1,5 @@
 ---
-packageName: '@nocobase/plugin-users'
+pkg: '@nocobase/plugin-users'
 ---
 
 # 用户

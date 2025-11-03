@@ -2,27 +2,32 @@
 
 In Custom mode, configure charts by writing JS in the editor. Based on `ctx.data`, return a complete ECharts `option`. This suits merging multiple series, complex tooltips, and dynamic styles. In principle, all ECharts features and chart types are supported.
 
+
 ![clipboard-image-1761524637](https://static-docs.nocobase.com/clipboard-image-1761524637.png)
+
 
 ## Data context
 - `ctx.data.objects`: array of objects (each row as an object)
 - `ctx.data.rows`: 2D array (with header)
 - `ctx.data.columns`: 2D array grouped by columns
 
-Recommended:
-Consolidate data in `dataset.source`. See ECharts docs:
+**Recommended usage:**
+Consolidate data in `dataset.source`. For detailed usage, please refer to the ECharts documentation:
 
-[Dataset](https://echarts.apache.org/handbook/en/concepts/dataset/#map-row-or-column-of-dataset-to-series)
+ [Dataset](https://echarts.apache.org/handbook/en/concepts/dataset/#map-row-or-column-of-dataset-to-series)
 
-[Axis](https://echarts.apache.org/handbook/en/concepts/axis)
+ [Axis](https://echarts.apache.org/handbook/en/concepts/axis) 
+ 
+ [Examples](https://echarts.apache.org/examples/en/index.html)
 
-[Examples](https://echarts.apache.org/examples/en/index.html)
 
 Let’s start with a simple example.
 
-## Example 1: monthly order volume column chart
+## Example 1: Monthly order bar chart
+
 
 ![20251027082816](https://static-docs.nocobase.com/20251027082816.png)
+
 
 ```js
 return {
@@ -38,9 +43,12 @@ return {
 }
 ```
 
-## Example 2: reading sales trend chart
+
+## Example 2: Sales trend chart
+
 
 ![clipboard-image-1761525188](https://static-docs.nocobase.com/clipboard-image-1761525188.png)
+
 
 ```js
 return {
@@ -140,21 +148,25 @@ return {
 }
 ```
 
-Recommendations:
+**Recommendations:**
 - Keep a pure function style: generate `option` only from `ctx.data` and avoid side effects.
-- Changes to query column names affect indexing; standardize names and confirm in View data before editing code.
-- For large datasets, avoid heavy synchronous JS computation; aggregate in the query stage when needed.
+- Changes to query column names affect indexing; standardize names and confirm in "View data" before editing code.
+- For large datasets, avoid complex synchronous computations in JS; aggregate during the query stage when necessary.
+
 
 ## More examples
 
-See the NocoBase [Demo app](https://demo3.sg.nocobase.com/admin/5xrop8s0bui)
+For more usage examples, you can refer to the NocoBase [Demo app](https://demo3.sg.nocobase.com/admin/5xrop8s0bui).
 
-You can also browse ECharts [Examples](https://echarts.apache.org/examples/en/index.html), pick the desired effect, and adapt/copy the JS configuration code.
+You can also browse the official ECharts [Examples](https://echarts.apache.org/examples/en/index.html) to find your desired chart effect, then reference and copy the JS configuration code.
+ 
 
-## Preview and save
+## Preview and Save
+
 
 ![20251027083938](https://static-docs.nocobase.com/20251027083938.png)
 
-- Click Preview on the right, or the bottom Preview button, to refresh the chart and validate the JS configuration.
-- Click Save to persist the current JS configuration to the database.
-- Click Cancel to revert to the last saved state.
+
+- Click "Preview" on the right side or at the bottom to refresh the chart and validate the JS configuration.
+- Click "Save" to persist the current JS configuration to the database.
+- Click "Cancel" to revert to the last saved state.

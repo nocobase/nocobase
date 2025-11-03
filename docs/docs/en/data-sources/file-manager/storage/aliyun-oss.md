@@ -1,21 +1,23 @@
 # Aliyun OSS
 
-Storage engine based on Aliyun OSS, you need to prepare relevant accounts and permissions in advance.
+Storage engine based on Aliyun OSS. You need to prepare the relevant accounts and permissions in advance.
 
-## Options
+## Configuration
 
-![Example of Aliyun OSS options](https://static-docs.nocobase.com/20240712220011.png)
 
-:::info{title=Hint}
-Only the special parameters of the Aliyun OSS storage engine are introduced here. For common parameters, please refer to the [Common Engine Parameters](./index.md#common-engine-parameters).
+![Example of Aliyun OSS configuration](https://static-docs.nocobase.com/20240712220011.png)
+
+
+:::info{title=Note}
+Only the specific parameters for the Aliyun OSS storage engine are introduced here. For common parameters, please refer to [Common Engine Parameters](./index.md#common-engine-parameters).
 :::
 
 ### Region
 
 Specify the region of the OSS storage, for example: `oss-cn-hangzhou`.
 
-:::info{title=Hint}
-You can view the region information of the storage bucket in the [Aliyun OSS console](https://oss.console.aliyun.com/), and only need to take the prefix part of the region (without the complete domain name).
+:::info{title=Note}
+You can view the region information of the storage bucket in the [Aliyun OSS console](https://oss.console.aliyun.com/). You only need to use the prefix part of the region (without the full domain name).
 :::
 
 ### AccessKey ID

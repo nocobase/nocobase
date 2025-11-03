@@ -34,4 +34,4 @@ Example: The "Order Opportunity Information" block is displayed only when the or
 ![20251029114022](https://static-docs.nocobase.com/20251029114022.png)
 
 
-For more information on linkage rules, see [Linkage Rules](/interface-builder/linkage-rule)
+For more information on linkage rules, see [Linkage Rules](/interface-builder/linkage-rule).

@@ -1,19 +1,24 @@
 # Custom interaction events
 
-Write JS in the events editor and register interactions via the ECharts instance `chart` to enable linkage, such as navigating to a new page or opening a drill‑down dialog.
+Write JS in the events editor and register interactions via the ECharts instance `chart` to enable linkage, such as navigating to a new page or opening a drill-down dialog.
+
 
 ![clipboard-image-1761489617](https://static-docs.nocobase.com/clipboard-image-1761489617.png)
 
-## Register and unregister
+
+## Register and Unregister
 - Register: `chart.on(eventName, handler)`
 - Unregister: `chart.off(eventName, handler)` or `chart.off(eventName)` to clear events by name
 
-Notes:
-For safety, always unregister before registering!
+**Note:**
+For safety, it's strongly recommended to unregister an event before registering it again!
 
-## handler params structure
+
+## Handler params structure
+
 
 ![20251026222859](https://static-docs.nocobase.com/20251026222859.png)
+
 
 Common fields include `params.data` and `params.name`.
 
@@ -46,7 +51,7 @@ chart.on('click', (params) => {
 });
 ```
 
-## Example: click to open details dialog (drill‑down)
+## Example: click to open details dialog (drill-down)
 ```js
 chart.off('click');
 chart.on('click', (params) => {
@@ -58,16 +63,18 @@ chart.on('click', (params) => {
 });
 ```
 
+
 ![clipboard-image-1761490321](https://static-docs.nocobase.com/clipboard-image-1761490321.png)
+
 
 In the newly opened dialog, use chart context variables via `ctx.view.inputArgs.XXX`.
 
-## Preview and save
-- Click Preview to load and execute the event code.
-- Click Save to persist the current event configuration.
-- Click Cancel to revert to the last saved state.
+## Preview and Save
+- Click "Preview" to load and execute the event code.
+- Click "Save" to persist the current event configuration.
+- Click "Cancel" to revert to the last saved state.
 
-Recommendations:
-- Always `chart.off('event')` before binding to avoid duplicate execution or memory growth.
-- Keep operations light inside handlers (`dispatchAction`, `setOption`) to avoid blocking rendering.
-- Validate together with Chart options and Data query to ensure handler fields match the current data.
+**Recommendations:**
+- Always use `chart.off('event')` before binding to avoid duplicate executions or increased memory usage.
+- Use lightweight operations (e.g., `dispatchAction`, `setOption`) inside event handlers to avoid blocking the rendering process.
+- Validate against chart options and data queries to ensure that the fields handled in the event are consistent with the current data.

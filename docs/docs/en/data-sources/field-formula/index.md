@@ -1,13 +1,17 @@
-# Formula
+---
+pkg: "@nocobase/plugin-field-formula"
+---
 
-<PluginInfo name="field-formula"></PluginInfo>
+# Formula
 
 ## Introduction
 
 ## Field Configuration
 
+
 ![20240512173541](https://static-docs.nocobase.com/20240512173541.png)
 
-## Instructions
+
+## Example
 
 To be added.

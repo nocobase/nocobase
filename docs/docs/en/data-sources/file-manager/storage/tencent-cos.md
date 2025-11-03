@@ -1,10 +1,12 @@
 # Tencent COS
 
-The storage engine based on Tencent Cloud COS, you need to prepare relevant accounts and permissions in advance.
+A storage engine based on Tencent Cloud COS. Before use, you need to prepare the relevant account and permissions.
 
 ## Options
 
+
 ![Example of Tencent COS options](https://static-docs.nocobase.com/20240712222125.png)
+
 
 :::info{title=Hint}
 This section only covers the specific options for the Tencent Cloud COS storage engine. For common parameters, please refer to [Common Engine Parameters](./index.md#common-engine-parameters).

@@ -18,13 +18,13 @@ Go to the AI Agent plugin configuration page, click the `Vector store` tab, and 
 
 Click the `Add new` button in the upper right corner to add a new `PGVector` vector database connection:
 
-- In the `Name` input box, enter the connection name;
-- In the `Host` input box, enter the vector database IP address;
-- In the `Port` input box, enter the vector database port number;
-- In the `Username` input box, enter the vector database username;
-- In the `Password` input box, enter the vector database password;
-- In the `Database` input box, enter the database name;
-- In the `Table name` input box, enter the table name, which is used when creating a new table to store vector data;
+- In the `Name` input box, enter the connection name.
+- In the `Host` input box, enter the vector database IP address.
+- In the `Port` input box, enter the vector database port number.
+- In the `Username` input box, enter the vector database username.
+- In the `Password` input box, enter the vector database password.
+- In the `Database` input box, enter the database name.
+- In the `Table name` input box, enter the table name, which is used when creating a new table to store vector data.
 
 After entering all the necessary information, click the `Test` button to test if the vector database service is available, and click the `Submit` button to save the connection information.
 

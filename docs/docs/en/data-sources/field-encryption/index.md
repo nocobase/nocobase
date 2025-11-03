@@ -1,12 +1,16 @@
-# Encryption
+---
+pkg: "@nocobase/plugin-field-encryption"
+---
 
-<PluginInfo commercial="true" name="field-encryption"></PluginInfo>
+# Encryption
 
 ## Introduction
 
 Sensitive business data, such as customer phone numbers, email addresses, and card numbers, can be encrypted to ensure privacy. Once encrypted, this data is securely stored in the database as ciphertext.
 
+
 ![20240802175127](https://static-docs.nocobase.com/20240802175127.png)
+
 
 ## Environment Variables
 
@@ -22,13 +26,17 @@ ENCRYPTION_FIELD_KEY='2%&glK;<UA}eMxJVc53-4G(rTi0vg@J]'
 
 ## Field Configuration
 
+
 ![20240802173721](https://static-docs.nocobase.com/20240802173721.png)
 
-## Filtering Limitations After Encryption
+
+## Impact on Filtering After Encryption
 
 Once a field is encrypted, it only supports the following filtering operations: equals, not equals, exists, and does not exist.
 
+
 ![20240802174042](https://static-docs.nocobase.com/20240802174042.png)
+
 
 ## Example
 

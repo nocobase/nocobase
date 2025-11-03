@@ -1,8 +1,14 @@
+---
+pkg: "@nocobase/plugin-data-visualization"
+---
+
 # Overview
 
 The NocoBase data visualization plugin provides visual data querying and a rich set of chart components. With simple configuration, you can quickly build dashboards, present insights, and support multi‑dimensional analysis and display.
 
+
 ![clipboard-image-1761749573](https://static-docs.nocobase.com/clipboard-image-1761749573.png)
+
 
 ## Basic concepts
 - Chart block: A configurable chart component on a page that supports data query, chart options, and interaction events.

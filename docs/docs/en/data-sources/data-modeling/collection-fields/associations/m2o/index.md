@@ -4,11 +4,15 @@ In a library database, there are two entities: books and authors. An author can 
 
 ER Diagram:
 
+
 ![alt text](https://static-docs.nocobase.com/eaeeac974844db05c75cf0deeedf3652.png)
+
 
 Field Configuration:
 
+
 ![alt text](https://static-docs.nocobase.com/3b4484ebb98d82f832f3dbf752bd84c9.png)
+
 
 ## Parameter Description
 

@@ -1,6 +1,8 @@
-# Connect Foreign Data Tables(FDW)
+---
+pkg: "@nocobase/plugin-collection-fdw"
+---
 
-<PluginInfo name="collection-fdw"></PluginInfo>
+# Connect Foreign Data Tables(FDW)
 
 ## Introduction
 

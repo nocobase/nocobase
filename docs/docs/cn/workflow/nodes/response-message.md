@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-response-message'
+---
+
 # 响应消息
 
 ## 介绍

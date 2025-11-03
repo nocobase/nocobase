@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-auth-sms'
+---
+
 # 短信认证
 
 ## 介绍

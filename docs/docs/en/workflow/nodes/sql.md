@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-sql'
+---
+
 # SQL Action
 
 ## Introduction

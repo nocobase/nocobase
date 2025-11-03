@@ -1,6 +1,8 @@
-# Tree Collection
+---
+pkg: "@nocobase/plugin-collection-tree"
+---
 
-<PluginInfo name="collection-tree"></PluginInfo>
+# Tree Collection
 
 ## Introduction
 
@@ -8,6 +10,9 @@ A tree structure collection is a data collection design pattern used for organiz
 
 ## User Manual
 
+
 ![20240324143228](https://static-docs.nocobase.com/20240324143228.png)
+
+
 
 ![20240324143555](https://static-docs.nocobase.com/20240324143555.png)

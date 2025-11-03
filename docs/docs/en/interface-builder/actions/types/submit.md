@@ -7,11 +7,11 @@ The submit action is used to save form data (specific to form blocks). It can al
 
 ![20251029190938](https://static-docs.nocobase.com/20251029190938.png)
 
+
 ## Action Configuration
 
 
 ![20251029190958](https://static-docs.nocobase.com/20251029190958.png)
-
 
 
 ### Bind to workflow
@@ -23,7 +23,6 @@ The bound workflow is triggered only after the data is submitted successfully.
 
 
 For more details, see [Bind to workflow](/interface-builder/actions/action-settings/bind-workflow)
-
 
 - [Edit button](/interface-builder/actions/action-settings/edit-button)
 - [Confirmation](/interface-builder/actions/action-settings/double-check)

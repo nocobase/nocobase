@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-approval'
+---
+
 # Approval
 
 ## Introduction
@@ -11,7 +15,7 @@ The Approval plugin provides a dedicated workflow type (trigger) "Approval (even
 When creating a workflow, select the "Approval" type to create an approval workflow:
 
 
-![审批触发器_创建审批流程](https://static-docs.nocobase.com/f52dda854f46a669e0c1c7fb487a17ea.png)
+![Approval Trigger_Create Approval Workflow](https://static-docs.nocobase.com/f52dda854f46a669e0c1c7fb487a17ea.png)
 
 
 Afterward, in the workflow configuration interface, click the trigger to open a dialog for more configuration.
@@ -23,13 +27,13 @@ Afterward, in the workflow configuration interface, click the trigger to open a 
 NocoBase's Approval plugin is designed for flexibility and can be used with any custom collection. This means the approval configuration does not need to reconfigure the data model but directly reuses an existing collection. Therefore, after entering the trigger configuration, you first need to select a collection to determine which collection's data creation or update will trigger this workflow:
 
 
-![审批触发器_触发器配置_选择数据表](https://static-docs.nocobase.com/8732a4419b1e28d2752b8f601132c82d.png)
+![Approval Trigger_Trigger Configuration_Select Collection](https://static-docs.nocobase.com/8732a4419b1e28d2752b8f601132c82d.png)
 
 
 Then, in the form for creating (or editing) data for the corresponding collection, bind this workflow to the submit button:
 
 
-![发起审批_绑定工作流](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+![Initiate Approval_Bind Workflow](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
 
 
 After that, when a user submits this form, the corresponding approval workflow will be triggered. The submitted data is not only saved in the corresponding collection but is also snapshotted into the approval flow for subsequent approvers to review and use.
@@ -39,7 +43,7 @@ After that, when a user submits this form, the corresponding approval workflow w
 If an approval workflow allows the initiator to withdraw it, you need to enable the "Withdraw" button in the initiator's interface configuration:
 
 
-![审批触发器_触发器配置_允许撤回](https://static-docs.nocobase.com/20251029232544.png)
+![Approval Trigger_Trigger Configuration_Allow Withdraw](https://static-docs.nocobase.com/20251029232544.png)
 
 
 Once enabled, an approval initiated by this workflow can be withdrawn by the initiator before any approver processes it. However, after any approver in a subsequent approval node has processed it, it can no longer be withdrawn.
@@ -53,7 +57,7 @@ After enabling or deleting the withdraw button, you need to click save and submi
 Finally, you need to configure the initiator's form interface. This interface will be used for submission actions when initiating from the approval center block and when re-initiating after a withdrawal. Click the configure button to open the dialog:
 
 
-![审批触发器_触发器配置_发起人表单](https://static-docs.nocobase.com/ca8b7e362d912138cf7d73bb60b37ac1.png)
+![Approval Trigger_Trigger Configuration_Initiator Form](https://static-docs.nocobase.com/ca8b7e362d912138cf7d73bb60b37ac1.png)
 
 
 You can add a form for the initiator's interface based on the bound collection, or add descriptive text (Markdown) for prompts and guidance. The form is mandatory; otherwise, the initiator will not be able to perform any actions upon entering this interface.
@@ -61,13 +65,13 @@ You can add a form for the initiator's interface based on the bound collection, 
 After adding a form block, just like in a regular form configuration interface, you can add field components from the corresponding collection and arrange them as needed to organize the content to be filled in the form:
 
 
-![审批触发器_触发器配置_发起人表单_字段配置](https://static-docs.nocobase.com/5a1e7f9c9d8de092c7b55585dad7d633.png)
+![Approval Trigger_Trigger Configuration_Initiator Form_Field Configuration](https://static-docs.nocobase.com/5a1e7f9c9d8de092c7b55585dad7d633.png)
 
 
 In addition to the direct submit button, you can also add a "Save as Draft" action button to support a temporary storage process:
 
 
-![审批触发器_触发器配置_发起人表单_操作配置](https://static-docs.nocobase.com/2f4850d2078e94538995a9df70d3d2d1.png)
+![Approval Trigger_Trigger Configuration_Initiator Form_Action Configuration](https://static-docs.nocobase.com/2f4850d2078e94538995a9df70d3d2d1.png)
 
 
 ## Approval Node
@@ -79,7 +83,7 @@ In an approval workflow, you need to use the dedicated "Approval" node to config
 After configuring and enabling an approval workflow, you can bind it to the submit button of the corresponding collection's form, allowing users to initiate an approval upon submission:
 
 
-![发起审批_绑定工作流](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
+![Initiate Approval_Bind Workflow](https://static-docs.nocobase.com/2872ff108c61d7bf6d0bfb19886774c6.png)
 
 
 After binding the workflow, when a user submits the current form, an approval is initiated.
@@ -144,7 +148,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 Here, the URL parameter `triggerWorkflows` is the workflow's key; multiple workflow keys are separated by commas. This key can be obtained by hovering the mouse over the workflow name at the top of the workflow canvas:
 
 
-![工作流_key_查看方式](https://static-docs.nocobase.com/20240426135108.png)
+![Workflow_Key_View_Method](https://static-docs.nocobase.com/20240426135108.png)
 
 
 Upon a successful call, the approval workflow for the corresponding `posts` collection will be triggered.
