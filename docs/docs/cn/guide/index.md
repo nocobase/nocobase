@@ -11,7 +11,7 @@ features:
         details: 连接与管理内部或外部数据源，构建系统的数据模型。
         link: /data-sources
         showOnHome: true
-      - title: 配置界面
+      - title: 界面搭建
         details: 掌握页面、区块、操作的配置方法，自定义交互界面与展示逻辑。
         link: /interface-builder
         showOnHome: true

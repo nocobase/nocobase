@@ -21,7 +21,7 @@ type BootOptions = {
 
 type AppBootstrapper = (bootOptions: BootOptions) => Promise<void>;
 
-type AppStatus = 'initializing' | 'initialized' | 'running' | 'commanding' | 'stopped' | 'error' | 'not_found';
+export type AppStatus = 'initializing' | 'initialized' | 'running' | 'commanding' | 'stopped' | 'error' | 'not_found';
 
 export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private static instance: AppSupervisor;
