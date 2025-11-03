@@ -1,14 +1,14 @@
 # Overview
 
-A trigger is the entry point for a workflow's execution. When an event that meets the trigger's conditions occurs while the application is running, the workflow will be triggered and executed. The type of trigger is also the type of workflow, selected when creating the workflow, and cannot be modified after creation. The currently supported trigger types are as follows:
+A trigger is the entry point for a workflow. When an event that meets the trigger's conditions occurs while the application is running, the workflow will be triggered and executed. The type of trigger is also the type of workflow, selected when creating the workflow, and cannot be modified after creation. The currently supported trigger types are as follows:
 
-- [Collection Events](./collection.md) (Built-in)
-- [Schedule](./schedule.md) (Built-in)
-- [Before Action](./pre-action.md) (Provided by @nocobase/plugin-workflow-request-interceptor plugin)
-- [After Action](./post-action.md) (Provided by @nocobase/plugin-workflow-action-trigger plugin)
-- [Custom Action](./custom-action.md) (Provided by @nocobase/plugin-workflow-custom-action-trigger plugin)
-- [Approval](./approval.md) (Provided by @nocobase/plugin-workflow-approval plugin)
-- [Webhook](./webhook.md) (Provided by @nocobase/plugin-workflow-webhook plugin)
+- [Collection Events](./collection) (Built-in)
+- [Schedule](./schedule) (Built-in)
+- [Before Action](./pre-action) (Provided by @nocobase/plugin-workflow-request-interceptor plugin)
+- [After Action](./post-action) (Provided by @nocobase/plugin-workflow-action-trigger plugin)
+- [Custom Action](./custom-action) (Provided by @nocobase/plugin-workflow-custom-action-trigger plugin)
+- [Approval](./approval) (Provided by @nocobase/plugin-workflow-approval plugin)
+- [Webhook](./webhook) (Provided by @nocobase/plugin-workflow-webhook plugin)
 
 The timing of when each event is triggered is shown in the figure below:
 
