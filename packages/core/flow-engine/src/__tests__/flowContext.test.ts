@@ -1282,6 +1282,58 @@ describe('FlowContext resolveOnServer selective server resolution', () => {
     // server was called
     expect(api.request).toHaveBeenCalledTimes(1);
   });
+
+  it('skips server call when all vars require contextParams but none provided', async () => {
+    const engine = new FlowEngine();
+    const api = { request: vi.fn() } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    engine.context.defineProperty('foo', {
+      value: { a: 1 },
+      resolveOnServer: true,
+      serverOnlyWhenContextParams: true,
+      meta: async () => ({
+        type: 'object',
+        title: 'Foo',
+        // no buildVariablesParams -> empty contextParams
+      }),
+    });
+
+    const tpl = { a: '{{ ctx.foo.a }}' } as any;
+    const out = await (engine.context as any).resolveJsonTemplate(tpl);
+    expect(out).toEqual({ a: 1 });
+    // skipped server, because all server vars (only foo) require contextParams but none present
+    expect(api.request).not.toHaveBeenCalled();
+  });
+
+  it('still calls server when at least one var has contextParams (even if others require contextParams but none)', async () => {
+    const engine = new FlowEngine();
+    const api = { request: vi.fn(async () => ({ data: { ok: true } })) } as any;
+    engine.context.defineProperty('api', { value: api });
+
+    // foo: requires contextParams but none will be provided
+    engine.context.defineProperty('foo', {
+      value: { a: 1 },
+      resolveOnServer: true,
+      serverOnlyWhenContextParams: true,
+      meta: async () => ({ type: 'object', title: 'Foo' }),
+    });
+
+    // user: provides contextParams via builder
+    engine.context.defineProperty('user', {
+      value: { id: 9 },
+      resolveOnServer: true,
+      meta: async () => ({
+        type: 'object',
+        title: 'User',
+        buildVariablesParams: () => ({ collection: 'users', filterByTk: 9, dataSourceKey: 'main' }),
+      }),
+    });
+
+    const tpl = { a: '{{ ctx.foo.a }}', u: '{{ ctx.user.id }}' } as any;
+    await (engine.context as any).resolveJsonTemplate(tpl);
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
 });
 
 describe('FlowContext.getPropertyOptions()', () => {
