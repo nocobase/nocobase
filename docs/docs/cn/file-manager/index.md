@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+---
+
 # 文件管理器
 
 ## 介绍
