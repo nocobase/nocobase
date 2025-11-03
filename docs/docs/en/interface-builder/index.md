@@ -1,8 +1,8 @@
-# Interface Builder
+# UI Builder
 
 ## WYSIWYG
 
-NocoBase uses a WYSIWYG interface configuration mode. Click the Configure Interface button to switch between Edit mode and View mode.
+NocoBase provides a WYSIWYG UI building experience. Click the UI Builder button to toggle between Edit mode and View mode.
 
 View mode:
 
@@ -18,7 +18,7 @@ Edit mode:
 
 ## Layout Template
 
-NocoBase has a built-in layout template. The top and left are navigation areas, and the right is the content area.
+NocoBase ships with a default layout template: navigation on the top and left, and a content area on the right.
 
 
 ![未命名.002](https://static-docs.nocobase.com/未命名.002.jpeg)
@@ -26,7 +26,7 @@ NocoBase has a built-in layout template. The top and left are navigation areas, 
 
 ## Configuration Options
 
-After entering Edit mode, orange configurable items will appear on the interface. Usually, the entry point for the configuration options of each configurable element is located in its upper right corner. Almost all elements can be configured in real-time on the interface to view the effects. Here are a few examples:
+In Edit mode, orange markers indicate configurable elements. The entry point for an element’s settings is usually in its top‑right corner. Most elements support real‑time configuration with instant preview. Examples:
 
 Menu configuration options:
 

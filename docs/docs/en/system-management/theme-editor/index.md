@@ -8,7 +8,7 @@ The Theme Editor plugin is used to modify the styles of the entire front-end pag
 
 ## Usage Instructions
 
-### Enabling The Theme Plugin
+### Enabling the Theme Editor Plugin
 
 First, update NocoBase to the latest version (v0.11.1 or above). Then, search for the `Theme Editor` card in the Plugin Manager page. Click the Enable button at the bottom right of the card and wait for the page to refresh.
 
@@ -40,7 +40,7 @@ Click the `Edit` button at the bottom left of the card. A Theme Editor will pop 
 
 ### Setting User-Selectable Themes
 
-Newly added themes are available for users to switch to by default. If you do not want users to switch to a certain theme, turn off the `User selectable` switch at the bottom right of the theme card, making it unavailable for users to choose.
+Newly added themes are available for users to switch to by default. If you do not want users to switch to a certain theme, turn off the `User selectable` switch at the bottom right of the theme card, which prevents users from switching to that theme.
 
 ![20240409133331](https://static-docs.nocobase.com/20240409133331.png)
 
@@ -52,6 +52,6 @@ Initially, the default theme is `Default Theme`. To set a specific theme as the 
 
 ### Deleting a Theme
 
-Click the `Delete` button below the card, then click the confirmation button in the pop-up dialog to remove the theme.
+Click the `Delete` button below the card, then confirm in the pop-up dialog to delete the theme.
 
 ![20240409133435](https://static-docs.nocobase.com/20240409133435.png)

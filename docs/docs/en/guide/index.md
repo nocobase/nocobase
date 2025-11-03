@@ -11,7 +11,7 @@ features:
         details: Connect and manage internal or external data sources to build the system's data model.
         link: /data-sources
         showOnHome: true
-      - title: Interface Configuration
+      - title: UI Builder
         details: Master the configuration of pages, blocks, and actions to customize interactive interfaces and display logic.
         link: /interface-builder
         showOnHome: true

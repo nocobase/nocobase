@@ -18,12 +18,12 @@ Please log in to NocoBase Service and refer to the documentation to learn how to
 
 NocoBase supports online plugin installation through the interface, but the current experience is not ideal. Reasons include:
 
-- Due to Node.js process runtime limitations, after installing or updating plugins, you need to stop the process and then execute upgrade for the changes to take effect;
+- Due to Node.js process runtime limitations, after installing or updating plugins, you need to stop the process and then run the `upgrade` command for the changes to take effect;
 - In multi-app scenarios, online installation struggles to handle plugin synchronization across multiple sub-applications simultaneously;
 - Batch plugin updates are not supported;
-- Online installation or updates can easily cause application process termination.
+- Online installation or updates can easily cause abnormal application process termination.
 
-Therefore, it is recommended to use command-line or manual upload methods to install and upgrade plugins. It is recommended to combine with CI/CD workflows, using command-line methods to download, extract, and upgrade plugins, ensuring consistency and reliability for each update deployment.
+Therefore, it is recommended to use command-line or manual upload methods to install and upgrade plugins. We recommend integrating this with CI/CD workflows, using command-line methods to download, extract, and upgrade plugins, ensuring consistency and reliability for each update deployment.
 
 :::
 
@@ -34,7 +34,7 @@ yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.
 yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
 ```
 
-If the plugin is already installed and needs to be upgraded, execute:
+If the plugin is already installed and needs to be upgraded, run the following command:
 
 ```bash
 yarn nocobase upgrade --skip-code-update
