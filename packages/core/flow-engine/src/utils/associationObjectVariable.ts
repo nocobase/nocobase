@@ -7,15 +7,6 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * 本项目采用 AGPL-3.0 与 NocoBase 商业许可的双许可证模式。
- * 详细信息请参阅：https://www.nocobase.com/agreement。
- */
-
 import type { Collection, CollectionField } from '../data-source';
 import type { FlowContext, PropertyMeta, PropertyMetaFactory } from '../flowContext';
 import { createCollectionContextMeta } from './createCollectionContextMeta';
@@ -83,7 +74,7 @@ function toFilterByTk(value: unknown, primaryKey: string | string[]) {
  * 仅当访问路径以“关联字段名”开头（且继续访问其子属性）时，返回 true 交由服务端解析；
  * 否则在前端解析即可。
  *
- * @param collectionAccessor 返回当前对象所在集合的访问器
+ * @param collectionAccessor 返回当前对象所在collection
  * @returns `(subPath) => boolean` 判断是否需要服务端解析
  */
 export function createAssociationSubpathResolver(
@@ -102,7 +93,7 @@ export function createAssociationSubpathResolver(
 /**
  * 构建“对象类变量”的 PropertyMetaFactory：
  * - 暴露集合字段结构（通过 createCollectionContextMeta）用于变量选择器；
- * - 提供 buildVariablesParams：基于对象当前值，收集所有“已选择的关联字段”的 RecordRef，
+ * - 提供 buildVariablesParams：基于对象当前值，收集所有“已选择的关联字段”
  *   以便服务端在 variables:resolve 时按需补全关联数据。
  *
  * @param collectionAccessor 获取集合对象，用于字段/元信息来源
