@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-auth'
+---
+
 # 密码认证
 
 ## 配置界面

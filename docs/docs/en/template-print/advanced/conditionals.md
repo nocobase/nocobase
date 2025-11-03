@@ -1,9 +1,10 @@
 ## Conditional Statements
 
-Conditional statements allow you to dynamically control the display or hiding of content in the document based on data values. Template provides three main ways to write conditions:
+Conditional statements allow you to dynamically control the display or hiding of content in the document based on data values. There are three main ways to write conditions:
 
 - **Inline conditions**: Directly output text (or replace it with other text).
-- **Conditional blocks**: Display or hide a section of the document, suitable for multiple Template tags, paragraphs, tables, etc.
+- **Conditional blocks**: Display or hide a section of the document, suitable for multiple tags, paragraphs, tables, etc.
+- **Smart conditions**: Directly remove or keep target elements (like rows, paragraphs, images, etc.) with a single tag, for a more concise syntax.
 
 All conditions begin with a logical evaluation formatter (e.g., ifEQ, ifGT, etc.), followed by action formatters (such as show, elseShow, drop, keep, etc.).
 
@@ -30,6 +31,7 @@ The logical operators and action formatters supported in conditional statements 
 - **Action Formatters**
   - **:show(text) / :elseShow(text)**: Used in inline conditions to directly output the specified text.
   - **:hideBegin / :hideEnd** and **:showBegin / :showEnd**: Used in conditional blocks to hide or show sections of the document.
+  - **:drop(element) / :keep(element)**: Used in smart conditions to remove or keep specified document elements.
 
 The following sections introduce the detailed syntax, examples, and results for each usage.
 
@@ -427,25 +429,3 @@ When the condition is met, the content in between is hidden, resulting in:
 Banana
 Grapes
 ```
-
-## Computation
-
-## Advanced Features
-
-### Pagination
-
-#### 1. Page Number Update
-
-##### Syntax
-Simply insert it in your Office software.
-
-##### Example
-In Microsoft Word:
-- Use the "Insert → Page Number" function
-
-In LibreOffice:
-- Use the "Insert → Field → Page Number" function
-
-##### Result
-In the generated report, the page numbers will update automatically.
-

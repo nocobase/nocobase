@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-variable'
+---
+
 # 变量
 
 ## 介绍

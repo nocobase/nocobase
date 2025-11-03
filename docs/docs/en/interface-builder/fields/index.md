@@ -15,8 +15,8 @@ Fields are generally not used alone but exist as child elements of data-type blo
 Like blocks, the upper right corner of a field component also has three icons, which are:
 
 - Drag to layout
-- Field event flow
-- Field parameter configuration
+- [Event flow](/interface-builder/event-flow)
+- Configuration
 
 
 ![20251025165432](https://static-docs.nocobase.com/20251025165432.png)

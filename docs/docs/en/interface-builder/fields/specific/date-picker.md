@@ -9,11 +9,11 @@ The Date field supports custom date and time formats.
 ### Collection Fields
 
 
-
 ![20240417114311](https://static-docs.nocobase.com/20240417114311.png)
 
 
 > The date format set in the collection field will serve as the field's default format. It can be overridden by the date format in the field settings within the block configuration.
+
 ### Field Settings
 
 

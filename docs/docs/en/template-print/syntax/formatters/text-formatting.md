@@ -118,7 +118,7 @@ Removes diacritical marks from text, converting it to an unaccented format.
 ##### Example
 ```
 'crÃ¨me brulÃ©e':unaccent()   // Outputs "creme brulee"
-'CRÃME BRULÃE':unaccent()   // Outputs "CREME BRULEE"
+'CRÃˆME BRULÃ‰E':unaccent()   // Outputs "CREME BRULEE"
 'Ãªtre':unaccent()           // Outputs "etre"
 'Ã©Ã¹Ã¯ÃªÃ¨Ã ':unaccent()       // Outputs "euieea"
 ```
@@ -130,11 +130,8 @@ All examples output the text with accents removed.
 #### 8. :convCRLF
 
 ##### Syntax Explanation
-Converts carriage return and newline characters (`
-` or `
-`) into document-specific line break tags. This is useful for formats such as DOCX, PPTX, ODT, ODP, and ODS.  
-**Note:** When using `:html` before `:convCRLF`, the `
-` will be converted to a `<br>` tag.
+Converts carriage return and newline characters (`\r\n` or `\n`) into document-specific line break tags. This is useful for formats such as DOCX, PPTX, ODT, ODP, and ODS.  
+**Note:** When using `:html` before `:convCRLF`, `\r\n` is converted to a `<br>` tag.
 
 ##### Example
 ```
@@ -332,7 +329,5 @@ Examples and results depend on the actual translation dictionary configuration.
 #### 19. :preserveCharRef
 
 ##### Syntax Explanation
-By default, Template removes certain illegal characters from XML (such as `&`, `>`, `<`, etc.). This formatter preserves character references (for example, `&#xa7;` remains unchanged) and is suitable for specific XML generation scenarios.  
+By default, certain illegal characters from XML (such as `&`, `>`, `<`, etc.) are removed. This formatter preserves character references (for example, `&#xa7;` remains unchanged) and is suitable for specific XML generation scenarios.  
 Examples and results depend on the specific use case.
-
-

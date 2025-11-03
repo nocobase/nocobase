@@ -1,9 +1,12 @@
-# Database view
+---
+pkg: "@nocobase/plugin-collection-view"
+---
 
-<PluginInfo name="collection-view"></PluginInfo>
+# Database View
 
 ## Introduction
 
-## Manu book
+## Manual
+
 
 ![20240324145718](https://static-docs.nocobase.com/20240324145718.png)

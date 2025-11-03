@@ -2,19 +2,15 @@
 
 > Generate charts and insights with one click, and let the data speak for itself.
 
----
-
 ## 1. Who is Viz
 
-**Viz** is an **AI Insight Analyst** built into the NocoBase interface.
+**Viz** is a built-in **AI Insight Analyst**.
 He can read the data on your current page (such as Leads, Opportunities, Accounts) and automatically generate trend charts, comparison charts, KPI cards, and concise conclusions, making business analysis easy and intuitive.
 
 He is not just a cold reporting tool, but an analyst who can understand questions and tell stories.
 
 > 💡 Want to know "why sales have recently declined"?
 > Just say a sentence to Viz, and he can tell you where the decline occurred, what the possible reasons are, and what steps you can take next.
-
----
 
 ## 2. What you can do with Viz
 
@@ -26,8 +22,6 @@ He is not just a cold reporting tool, but an analyst who can understand question
 | 🧩 **Aggregate data perspectives** | Compare across multiple dimensions like region, product, source | "Show revenue comparison by region" |
 
 Whether it's for monthly business reviews, channel ROI, or sales funnels, Viz can generate charts and interpretations in seconds.
-
----
 
 ## 3. How to Use
 
@@ -41,7 +35,9 @@ Whether it's for monthly business reviews, channel ROI, or sales funnels, Viz ca
   * Monthly review analysis
 
   
+
 ![Example on Leads page](https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-16-46-00.png)
+
 
 
 * **Bottom-right global panel**
@@ -52,8 +48,6 @@ Whether it's for monthly business reviews, channel ROI, or sales funnels, Viz ca
   ```
 
   Viz will automatically use the data context of your current page.
-
----
 
 ### 3.2 Interaction Method
 
@@ -74,8 +68,6 @@ Then which region has the fastest growth?
 
 Each follow-up question will delve deeper based on the previous analysis results, without needing to re-enter data conditions.
 
----
-
 ## 4. Common Analysis Scenarios
 
 | Scenario | What you want to know | Viz's output |
@@ -90,8 +82,6 @@ Each follow-up question will delve deeper based on the previous analysis results
 > 📈 All charts are generated in valid ECharts format, with one key point per chart, and are accompanied by a brief conclusion.
 > If there is insufficient data, Viz will state it directly rather than fabricating results.
 
----
-
 ## 5. Tips for Chatting with Viz
 
 | Practice | Effect |
@@ -101,8 +91,6 @@ Each follow-up question will delve deeper based on the previous analysis results
 | ✅ Focus on trends, not details | Viz excels at identifying the direction of change and key reasons |
 | ✅ Use natural language | No need for command-style syntax, just ask as if you were chatting |
 
----
-
 ## 6. Who is Viz Best For?
 
 | Role | Use Case |
@@ -111,8 +99,6 @@ Each follow-up question will delve deeper based on the previous analysis results
 | **Marketer** | Analyze ad spend ROI, promotion effectiveness, customer retention |
 | **Operations Analyst** | Quickly pull data, discover anomalies, validate hypotheses |
 | **Management** | Understand business status at a glance, get signals for decision-making |
-
----
 
 ## 7. Usage Suggestions
 
@@ -126,8 +112,6 @@ Each follow-up question will delve deeper based on the previous analysis results
 
 3. **Ask follow-up questions progressively**
    After reading the analysis report, continue to ask "why" and "how to improve," and Viz will automatically follow up.
-
----
 
 ## 8. Summary
 

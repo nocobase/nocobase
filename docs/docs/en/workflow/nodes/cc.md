@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-cc'
+---
+
 # Carbon Copy <Badge>v1.8.2+</Badge>
 
 ## Introduction

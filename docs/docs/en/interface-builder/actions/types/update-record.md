@@ -7,6 +7,7 @@ Custom row action to update data. Configure field update logic through field ass
 
 ![20251029194309](https://static-docs.nocobase.com/20251029194309.png)
 
+
 ## Action settings
 
 

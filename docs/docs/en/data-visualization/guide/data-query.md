@@ -5,7 +5,9 @@ The chart configuration panel is divided into three sections: Data query, Chart 
 This section focuses on the Data query panel, covering the two query modes (Builder/SQL) and common features.
 
 ## Panel layout
+
 ![clipboard-image-1761466636](https://static-docs.nocobase.com/clipboard-image-1761466636.png)
+
 
 > Tips: To configure more easily, collapse other panels first.
 
@@ -41,11 +43,13 @@ From top to bottom:
 - Sort: Choose the field and ascending/descending order.
 - Pagination: Set `Limit` and `Offset` to control returned rows; when debugging, start with a small `Limit`.
 
-### Run query and view result
+### Run query and View result
 - Click Run query. After the response, use View data to switch between `Table / JSON` and check columns and values.
 - Before mapping chart fields, confirm column names and types here to avoid empty charts or errors later.
 
+
 ![20251026174338](https://static-docs.nocobase.com/20251026174338.png)
+
 
 ### Field mapping afterwards
 Later, in Chart options, map fields based on the selected data source and collection.
@@ -65,13 +69,16 @@ ORDER BY mon ASC
 LIMIT 100;
 ```
 
+
 ![20251026175952](https://static-docs.nocobase.com/20251026175952.png)
 
-### Run query and view result
+
+### Run query and View result
 - Click Run query. After the response, use View data to switch between `Table / JSON` and check columns and values.
 - Before mapping chart fields, confirm column names and types here to avoid empty charts or errors later.
 
 ### Field mapping afterwards
 Later, in Chart options, map fields based on the query result columns.
 
-For more on SQL mode, see Advanced — query data in SQL mode.
+> [!TIP]
+> For more on SQL mode, see Advanced — Query data in SQL mode.

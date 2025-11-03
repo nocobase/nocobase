@@ -8,14 +8,14 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import type { PropertyMetaFactory } from '@nocobase/flow-engine';
-import {
-  AddSubModelButton,
-  createCurrentRecordMetaFactory,
-  createRecordMetaFactory,
-  escapeT,
-  FlowSettingsButton,
+import type {
+  FlowContext,
+  PropertyMeta,
+  PropertyMetaFactory,
+  CollectionField,
+  Collection,
 } from '@nocobase/flow-engine';
+import { AddSubModelButton, createRecordMetaFactory, escapeT, FlowSettingsButton } from '@nocobase/flow-engine';
 import { Form, FormInstance } from 'antd';
 import { omit } from 'lodash';
 import React from 'react';
@@ -66,24 +66,129 @@ export class FormBlockModel<
     this.form.setFieldValue(fieldName, value);
   }
 
+  protected createFormValuesMetaFactory(): PropertyMetaFactory {
+    const recordMeta: PropertyMetaFactory = createRecordMetaFactory(() => this.collection, 'Current form');
+    const formValuesMeta: PropertyMetaFactory = async () => {
+      const base = await recordMeta?.();
+      const getActiveTopLevelFieldNames = (): Set<string> => {
+        const items = this.subModels.grid?.subModels?.items ?? [];
+        const names = new Set<string>();
+        for (const it of items) {
+          const fp = it?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
+          const top = fp?.toString().split('.')[0];
+          if (top) names.add(top);
+        }
+        return names;
+      };
+      const activeTopLevel = getActiveTopLevelFieldNames();
+      const filterTopLevelProperties = async (meta: PropertyMeta): Promise<PropertyMeta> => {
+        const clone = { ...meta };
+        const propsResolved = typeof meta.properties === 'function' ? await meta.properties() : meta.properties;
+        if (propsResolved && typeof propsResolved === 'object' && activeTopLevel.size > 0) {
+          const filtered = {};
+          for (const k of Object.keys(propsResolved)) {
+            if (activeTopLevel.has(k)) filtered[k] = propsResolved[k];
+          }
+          clone.properties = filtered;
+        } else {
+          clone.properties = propsResolved;
+        }
+        return clone;
+      };
+      const filteredBase = base ? await filterTopLevelProperties(base) : base;
+      return {
+        ...(filteredBase || {
+          type: 'object',
+          title: this.translate('Current form'),
+          properties: async () => ({}),
+        }),
+        // 根据表单中“已选中的关联字段值”构建 RecordRef 映射，用于 variables:resolve 的 contextParams
+        buildVariablesParams: (ctx: FlowContext) => {
+          const params: Record<string, any> = {};
+          const formValues = ctx.formValues;
+
+          const toId = (val: unknown, primaryKey: string) => {
+            if (val == null) return undefined;
+            if (typeof val === 'string' || typeof val === 'number') return val;
+            if (typeof val === 'object') {
+              return val[primaryKey];
+            }
+            return undefined;
+          };
+
+          // 遍历集合的顶层字段，收集关联字段
+          const fields = (this.collection.getFields?.() ?? []) as CollectionField[];
+          for (const field of fields) {
+            const name = field?.name;
+            if (!name || !field.target) continue;
+
+            const associationValue = formValues[name];
+            if (associationValue == null) continue;
+
+            if (!field?.targetCollection) continue;
+            const primaryKey = field.targetCollection.filterTargetKey;
+
+            if (Array.isArray(associationValue)) {
+              const ids = associationValue.map((item) => toId(item, primaryKey)).filter((v) => v != null);
+              if (ids.length) {
+                params[name] = {
+                  collection: field.target,
+                  dataSourceKey: field.targetCollection.dataSourceKey,
+                  filterByTk: ids,
+                };
+              }
+            } else {
+              const id = toId(associationValue, primaryKey);
+              if (id != null) {
+                params[name] = {
+                  collection: field.target,
+                  dataSourceKey: field.targetCollection.dataSourceKey,
+                  filterByTk: id,
+                };
+              }
+            }
+          }
+
+          return params;
+        },
+      };
+    };
+    formValuesMeta.title = this.translate('Current form');
+    return formValuesMeta;
+  }
+
   useHooksBeforeRender() {
     // eslint-disable-next-line react-hooks/rules-of-hooks
     const [form] = Form.useForm();
     this.context.defineProperty('form', { get: () => form });
-    const recordMeta: PropertyMetaFactory = createRecordMetaFactory(() => this.collection, 'Current form');
+    // 增强：为 formValues 提供基于“已选关联值”的服务端解析锚点
+    const formValuesMeta: PropertyMetaFactory = this.createFormValuesMetaFactory();
+
     this.context.defineProperty('formValues', {
       get: () => {
         return this.context.form.getFieldsValue();
       },
       cache: false,
-      meta: recordMeta,
+      meta: formValuesMeta,
+      resolveOnServer: (p: string) => {
+        if (!p || !p.includes('.')) return false;
+        const m = p.match(/^([^.[]+)/);
+        const baseFieldName = m?.[1];
+        if (!baseFieldName) return false;
+
+        const collection = this.collection as Collection;
+        let field: CollectionField | undefined = collection?.getField?.(baseFieldName);
+        if (!field) {
+          const fields = collection?.getFields?.() ?? [];
+          field = fields.find((f) => f?.name === baseFieldName);
+        }
+        return !!field?.isAssociationField?.();
+      },
     });
   }
 
   onInit(options) {
     super.onInit(options);
-
-    const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(this.context, () => this.collection);
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
@@ -113,7 +218,7 @@ export class FormBlockModel<
 export function FormComponent({
   model,
   children,
-  layoutProps = {} as any,
+  layoutProps = {},
   initialValues,
   ...rest
 }: {

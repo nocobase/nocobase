@@ -1,3 +1,6 @@
+---
+pkg: "@nocobase/plugin-action-export-pro"
+---
 # Export Attachments
 
 :::tip Tip
@@ -11,7 +14,10 @@ Attachment export supports exporting attachment-related fields as a compressed p
 #### Attachment Export Configuration
 
 
+
 ![20251029173251](https://static-docs.nocobase.com/20251029173251.png)
+
+
 
 
 
@@ -19,7 +25,10 @@ Attachment export supports exporting attachment-related fields as a compressed p
 
 
 
+
+
 ![20251029173345](https://static-docs.nocobase.com/20251029173345.png)
+
 
 
 - Configure the attachment fields to be exported; multiple selections are supported.

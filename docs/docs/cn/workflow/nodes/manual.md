@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-manual'
+---
+
 # 人工处理
 
 ## 介绍

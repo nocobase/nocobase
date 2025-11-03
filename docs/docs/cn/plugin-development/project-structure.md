@@ -72,7 +72,7 @@ yarn pm create @my-project/plugin-hello
 
 生成的目录结构如下：
 
-```text
+```bash
 packages/plugins/@my-project/plugin-hello/
 ├── dist/                    # 构建输出（按需生成）
 ├── src/                     # 源代码目录

@@ -1,6 +1,8 @@
-# Verification: TOTP Authenticator
+---
+pkg: '@nocobase/plugin-verification-totp-authenticator'
+---
 
-<PluginInfo name="verification-totp-authenticator" licenseBundled="enterprise"></PluginInfo>
+# Verification: TOTP Authenticator
 
 ## Introduction
 
@@ -10,21 +12,29 @@ The TOTP Authenticator allows users to bind any authenticator that complies with
 
 Navigate to the Verification Management page.
 
+
 ![](https://static-docs.nocobase.com/202502271726791.png)
+
 
 Add - TOTP Authenticator
 
+
 ![](https://static-docs.nocobase.com/202502271745028.png)
+
 
 Apart from a unique identifier and title, no additional configuration is required for the TOTP authenticator.
 
+
 ![](https://static-docs.nocobase.com/202502271746034.png)
+
 
 ## User Binding
 
 After adding the authenticator, users can bind the TOTP authenticator in their personal verification management area.
 
+
 ![](https://static-docs.nocobase.com/202502272252324.png)
+
 
 :::warning
 The plugin does not currently provide a recovery code mechanism. Once the TOTP authenticator is bound, users are advised to keep it secure. If the authenticator is accidentally lost, they can use an alternative verification method to verify their identity, unbind the authenticator, and then rebind it.
@@ -33,5 +43,6 @@ The plugin does not currently provide a recovery code mechanism. Once the TOTP a
 ## User Unbinding
 
 Unbinding the authenticator requires verification using the already bound verification method.
+
 
 ![](https://static-docs.nocobase.com/202502282103205.png)

@@ -5,7 +5,7 @@
 Variables are a set of tokens used to identify a value in the current context. They can be used in scenarios such as configuring block data scopes, field default values, linkage rules, and workflows.
 
 
-![2024-09-25_20-08-38-2024-09-25-20-11-51](https://static-docs.nocobase.com/2024-09-25_20-08-38-2024-09-25-20-11-51.png)
+![20251030114458](https://static-docs.nocobase.com/20251030114458.png)
 
 
 ## Currently Supported Variables
@@ -48,7 +48,9 @@ The values of the current form, used only in form blocks. Use cases include:
 
 
 <!-- 
+
 ![20240416171129_rec_](https://static-docs.nocobase.com/20240416171129_rec_.gif)
+
  -->
 
 #### Data scope settings for association fields
@@ -57,21 +59,24 @@ Used to dynamically filter the options of a downstream field based on an upstrea
 
 **Example:**
 
-1. The user selects a value for the **Account** field.
-2. The system automatically filters the options for the **Owner** field based on the selected Account's **name**.
+1. The user selects a value for the **Owner** field.
+2. The system automatically filters the options for the **Account** field based on the selected Owner's **userName**.
 
 
-![20251027115147](https://static-docs.nocobase.com/20251027115147.png)
+![20251030151928](https://static-docs.nocobase.com/20251030151928.png)
 
 
 <!-- 
+
 ![20240416171743_rec_](https://static-docs.nocobase.com/20240416171743_rec_.gif)
+
  -->
 
 <!-- #### Field value assignment configuration for submit actions
 
 
 ![20240416171215_rec_](https://static-docs.nocobase.com/20240416171215_rec_.gif)
+
  -->
 
 <!-- ### Current Object
@@ -91,6 +96,7 @@ Currently used only for field configuration in sub-forms and sub-tables within a
 
 
 ![20240416173043_rec_](https://static-docs.nocobase.com/20240416173043_rec_.gif)
+
  -->
 
 <!-- ### Parent Object
@@ -150,6 +156,7 @@ Blocks within a popup can use the "Current Popup Record" variable. Related use c
 
 
 ![20240416224014_rec_](https://static-docs.nocobase.com/20240416224014_rec_.gif)
+
  -->
 
 <!-- ### Selected Table Records

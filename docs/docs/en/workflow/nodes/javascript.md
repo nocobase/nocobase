@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-javascript'
+---
+
 # JavaScript Script
 
 ## Introduction
@@ -76,7 +80,7 @@ console.log(global); // will throw error: "global is not defined"
 
 ### Input Parameters
 
-Parameters configured in the node become global variables within the script and can be used directly. Parameters passed to the script only support basic types, such as `boolean`, `number`, `string`, `number`, `object`, and arrays. A `Date` object will be converted to an ISO format string when passed in. Other complex types, such as instances of custom classes, cannot be passed directly.
+Parameters configured in the node become global variables within the script and can be used directly. Parameters passed to the script only support basic types, such as `boolean`, `number`, `string`, `object`, and arrays. A `Date` object will be converted to an ISO format string when passed in. Other complex types, such as instances of custom classes, cannot be passed directly.
 
 ### Return Value
 

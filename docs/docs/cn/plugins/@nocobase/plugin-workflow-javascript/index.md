@@ -9,6 +9,7 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
+points: 4
 ---
 
 # 工作流：JavaScript 节点

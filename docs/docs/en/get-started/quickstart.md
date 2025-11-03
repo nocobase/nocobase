@@ -34,7 +34,7 @@ install_methods:
     upgrade_method: Synchronize updates through the Git process
 ---
 
-# Getting Started
+# Installation and Version Comparison
 
 You can install NocoBase in different ways.
 

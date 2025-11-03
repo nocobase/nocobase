@@ -4,6 +4,6 @@
 
 ## Field configuration
 
-## Instructions
+## Example
 
 to be added.

@@ -241,7 +241,7 @@ Executes after the step parameters are saved, and can be used to trigger other o
 **Example**:
 ```ts
 afterParamsSave: (ctx, params, previousParams) => {
-  // Log records
+  // Record logs
   console.log('Step params saved:', params);
   
   // Trigger other operations

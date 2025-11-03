@@ -1,6 +1,8 @@
-# Attachment Field
+---
+pkg: "@nocobase/plugin-file-manager"
+---
 
-<PluginInfo name="file-manager"></PluginInfo>
+# Attachment Field
 
 ## Introduction
 
@@ -8,7 +10,9 @@ The attachment field is a specialized relational field that connects directly to
 
 ## Field Configuration
 
+
 ![20240512180916](https://static-docs.nocobase.com/20240512180916.png)
+
 
 ## Example
 

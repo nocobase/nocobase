@@ -9,13 +9,13 @@ You can configure it to query a single record or multiple records. The query res
 In the workflow configuration interface, click the plus ("+") button in the flow to add a "Query Data" node:
 
 
-![查询数据_添加](https://static-docs.nocobase.com/c1ef2b851b437806faf7a39c6ab9d33a.png)
+![Add Query Data Node](https://static-docs.nocobase.com/c1ef2b851b437806faf7a39c6ab9d33a.png)
 
 
 ## Node Configuration
 
 
-![查询节点_节点配置](https://static-docs.nocobase.com/20240520131324.png)
+![Query Node Configuration](https://static-docs.nocobase.com/20240520131324.png)
 
 
 ### Collection
@@ -26,8 +26,8 @@ Select the collection from which to query data.
 
 The result type is divided into "Single Record" and "Multiple Records":
 
-- Single Record: The result is an object, which is only the first matching record, or null.
-- Multiple Records: The result will be an array containing records that match the conditions. If no records match, it will be an empty array. You can process them one by one using a Loop node.
+-   Single Record: The result is an object, which is only the first matching record, or `null`.
+-   Multiple Records: The result will be an array containing records that match the conditions. If no records match, it will be an empty array. You can process them one by one using a Loop node.
 
 ### Filter Conditions
 

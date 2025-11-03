@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-file-storage-s3-pro'
+---
+
 # 存储引擎：S3 (Pro)
 
 ## 介绍

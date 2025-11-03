@@ -1,9 +1,9 @@
-# Checkbox-group
+# Checkbox group
 
 ## Introduction
 
 ## Field configuration
 
-## Instructions
+## Example
 
-to be added.
+To be added.

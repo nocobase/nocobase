@@ -1,22 +1,28 @@
+---
+pkg: '@nocobase/plugin-api-keys'
+---
+
 # API Keys
 
 ## Introduction
-
-## Installation
 
 ## Usage Instructions
 
 http://localhost:13000/admin/settings/api-keys/configuration
 
+
 ![](https://static-docs.nocobase.com/d64ccbdc8a512a0224e9f81dfe14a0a8.png)
+
 
 ### Add API Key
 
+
 ![](https://static-docs.nocobase.com/46141872fc0ad9a96fa5b14e97fcba12.png)
+
 
 **Notes**
 
-- The added API key is for the current user, and the role is the role to which the current user belongs
+- The API key is created for the current user and inherits the user's role.
 - Please make sure that the `APP_KEY` environment variable has been configured and is kept confidential. If the APP_KEY changes, all added API keys will become invalid.
 
 ### How to configure APP_KEY

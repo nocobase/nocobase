@@ -4,11 +4,15 @@ In a course enrollment system, there are two entities: students and courses. A s
 
 ER Diagram:
 
+
 ![alt text](https://static-docs.nocobase.com/0e9921228e1ee375dc639431bb89782c.png)
+
 
 Field Configuration:
 
+
 ![alt text](https://static-docs.nocobase.com/8e2739ac5d44fb46f30e2da42ca87a82.png)
+
 
 ## Parameter Description
 

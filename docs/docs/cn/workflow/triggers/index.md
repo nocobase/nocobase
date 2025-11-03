@@ -2,13 +2,13 @@
 
 触发器是工作流的执行入口，当应用运行过程中，满足触发器条件的事件产生时，工作流将会被触发执行。触发器的类型也即工作流的类型，在创建工作流时选择，创建后不可修改。目前已支持的触发器类型如下：
 
-- [数据表事件](./collection.md)（内置）
-- [定时任务](./schedule.md)（内置）
-- [操作前事件](./pre-action.md)（插件 @nocobase/plugin-workflow-request-interceptor 提供）
-- [操作后事件](./post-action.md)（插件 @nocobase/plugin-workflow-action-trigger 提供）
-- [自定义操作事件](./custom-action.md)（插件 @nocobase/plugin-workflow-custom-action-trigger 提供）
-- [审批](./approval.md)（插件 @nocobase/plugin-workflow-approval 提供）
-- [Webhook](./webhook.md)（插件 @nocobase/plugin-workflow-webhook 提供）
+- [数据表事件](./collection)（内置）
+- [定时任务](./schedule)（内置）
+- [操作前事件](./pre-action)（插件 @nocobase/plugin-workflow-request-interceptor 提供）
+- [操作后事件](./post-action)（插件 @nocobase/plugin-workflow-action-trigger 提供）
+- [自定义操作事件](./custom-action)（插件 @nocobase/plugin-workflow-custom-action-trigger 提供）
+- [审批](./approval)（插件 @nocobase/plugin-workflow-approval 提供）
+- [Webhook](./webhook)（插件 @nocobase/plugin-workflow-webhook 提供）
 
 各个事件的触发时机如下图所示：
 

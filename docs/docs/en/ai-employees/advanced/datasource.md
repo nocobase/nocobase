@@ -1,3 +1,8 @@
+---
+pkg: "@nocobase/plugin-ai"
+deprecated: true
+---
+
 # Advanced
 
 ## Introduction

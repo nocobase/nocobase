@@ -1,6 +1,8 @@
-# 通知管理
+---
+pkg: '@nocobase/plugin-notification-manager'
+---
 
-<PluginInfo name="notification-manager"></PluginInfo>
+# 通知管理
 
 ## 介绍
 

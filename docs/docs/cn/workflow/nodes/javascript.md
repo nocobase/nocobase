@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-javascript'
+---
+
 # JavaScript 脚本
 
 ## 介绍

@@ -445,5 +445,16 @@
         ]
       }
     ]
+  },
+  {
+    "type": "custom-link",
+    "label": "开发",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/data-sources/development"
+      }
+    ]
   }
 ]

@@ -1,12 +1,16 @@
-# Routes
+---
+pkg: "@nocobase/plugin-client"
+---
 
-<PluginInfo name="client"></PluginInfo>
+# Route Manager
 
 ## Introduction
 
 The route manager is a tool for managing the routes of the main page of the system, supporting `desktop` and `mobile` endpoints. Routes created using the route manager will be synchronized to the menu (can be configured to not display in the menu). Conversely, menus added in the page menu will also be synchronized to the route manager list.
 
+
 ![20250107115449](https://static-docs.nocobase.com/20250107115449.png)
+
 
 ## User Manual
 
@@ -30,11 +34,13 @@ Click the "Add new" button in the upper right corner to create a new route:
 5. Set whether to enable page tabs (Enable page tabs)
 6. For page type, the system will automatically generate a unique route path (Path)
 
+
 ![20250124131803](https://static-docs.nocobase.com/20250124131803.png)
+
 
 ### Route Actions
 
-Each route entry supports the following Actions:
+Each route entry supports the following actions:
 
 - Add child: Add a sub-route
 - Edit: Edit the route configuration
@@ -43,7 +49,7 @@ Each route entry supports the following Actions:
 
 ### Batch Actions
 
-The top toolbar provides the following batch Action functions:
+The top toolbar provides the following batch actions:
 
 - Refresh: Refresh the route list
 - Delete: Delete the selected route

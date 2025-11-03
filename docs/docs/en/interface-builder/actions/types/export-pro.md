@@ -1,3 +1,7 @@
+---
+pkg: "@nocobase/plugin-action-export-pro"
+---
+
 # Export Pro
 
 :::tip Tip
@@ -27,7 +31,6 @@ This plugin depends on the Asynchronous Task Management plugin. You need to enab
 
 
 ![20251029172914](https://static-docs.nocobase.com/20251029172914.png)
-
 
 
 On the export button, you can configure the export mode. There are three optional modes:
@@ -63,10 +66,10 @@ When you find that the export process is abnormally slow (see reference below), 
 
 | Data Characteristics | Index Type | Data Volume | Export Duration |
 |---------|---------|--------|---------|
-| No Association Fields | Primary Key / Unique Constraint | 1 million | 3-6 minutes |  
-| No Association Fields | Regular Index | 1 million | 6-10 minutes | 
+| No Association Fields | Primary Key / Unique Constraint | 1 million | 3～6 minutes |  
+| No Association Fields | Regular Index | 1 million | 6～10 minutes | 
 | No Association Fields | Composite Index (non-unique) | 1 million | 30 minutes | 
-| Association Fields<br>(One-to-One, One-to-Many,<br>Many-to-One, Many-to-Many) | Primary Key / Unique Constraint | 500,000 | 15-30 minutes | Association fields reduce performance |
+| Association Fields<br>(One-to-One, One-to-Many,<br>Many-to-One, Many-to-Many) | Primary Key / Unique Constraint | 500,000 | 15～30 minutes | Association fields reduce performance |
 
 To ensure efficient exports, we recommend that you:
 1. The collection must meet the following conditions:

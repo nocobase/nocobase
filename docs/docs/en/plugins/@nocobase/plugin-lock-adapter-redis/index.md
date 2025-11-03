@@ -1,11 +1,15 @@
 ---
-displayName: "Redis lock adapter"
+displayName: "Redis Distributed Lock Adapter"
 packageName: '@nocobase/plugin-lock-adapter-redis'
+supportedVersions:
+  - 1.x
+  - 2.x
 description: |
-  Distributed lock implemention based on Redis.
+  Distributed lock implementation based on Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
+editionLevel: 3
 ---
 
-# Redis lock adapter
+# Redis Distributed Lock Adapter

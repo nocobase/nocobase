@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-aggregate'
+---
+
 # 聚合查询
 
 ## 介绍
