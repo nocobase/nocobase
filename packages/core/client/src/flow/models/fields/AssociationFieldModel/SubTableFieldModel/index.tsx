@@ -56,6 +56,8 @@ const HeaderWrapperComponent = React.memo((props) => {
 export class SubTableFieldModel extends AssociationFieldModel {
   selectedRows = observable.ref([]);
   updateAssociation = true;
+  setCurrentPage;
+  currentPageSize;
   get collection() {
     return this.context.collection;
   }
@@ -114,9 +116,12 @@ export class SubTableFieldModel extends AssociationFieldModel {
     this.context.blockModel.emitter.on('onFieldReset', () => {
       this.props.onChange([]);
     });
-    this.onSelectExitRecordClick = (e) => {
+    this.onSelectExitRecordClick = (setCurrentPage, currentPageSize) => {
+      this.setCurrentPage = setCurrentPage;
+      this.currentPageSize = currentPageSize;
       this.dispatchEvent('openView', {
-        event: e,
+        setCurrentPage,
+        currentPageSize,
       });
     };
   }
@@ -125,6 +130,8 @@ export class SubTableFieldModel extends AssociationFieldModel {
     this.setProps({ onSelectExitRecordClick: fn });
   }
   change() {
+    const lastPage = Math.ceil(this.selectedRows.value.length / this.currentPageSize);
+    this.setCurrentPage(lastPage);
     this.props.onChange(this.selectedRows.value);
   }
 }
@@ -331,7 +338,15 @@ SubTableFieldModel.registerFlow({
               selectedRowKeys: undefined,
               onChange: (_, selectedRows) => {
                 const prev = ctx.model.props.value || [];
-                const merged = [...prev, ...selectedRows];
+                const merged = [
+                  ...prev,
+                  ...selectedRows.map((v) => {
+                    return {
+                      ...v,
+                      isNew: true,
+                    };
+                  }),
+                ];
 
                 // 去重，防止同一个值重复
                 const unique = merged.filter(
@@ -339,7 +354,6 @@ SubTableFieldModel.registerFlow({
                     index ===
                     self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
                 );
-
                 ctx.model.selectedRows.value = unique;
               },
             },

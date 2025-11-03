@@ -160,7 +160,7 @@ export function SubTableField(props) {
                 </a>
               )}
               {!disabled && allowSelectExistingRecord && (
-                <a onClick={onSelectExitRecordClick} style={{ marginTop: 8 }}>
+                <a onClick={() => onSelectExitRecordClick(setCurrentPage, currentPageSize)} style={{ marginTop: 8 }}>
                   <ZoomInOutlined /> {t('Select record')}
                 </a>
               )}
