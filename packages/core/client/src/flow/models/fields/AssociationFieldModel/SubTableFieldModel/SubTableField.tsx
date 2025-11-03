@@ -44,7 +44,7 @@ export function SubTableField(props) {
       },
       current: currentPage,
       pageSize: currentPageSize,
-      total: value.length,
+      total: value?.length,
       onChange: (page, size) => {
         setCurrentPage(page);
         setCurrentPageSize(size);

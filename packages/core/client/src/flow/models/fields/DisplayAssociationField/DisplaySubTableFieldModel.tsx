@@ -44,7 +44,7 @@ const DisplayTable = (props) => {
     return {
       current: currentPage, // 当前页码
       pageSize: currentPageSize, // 每页条目数
-      total: value.length, // 数据总条数
+      total: value?.length, // 数据总条数
       onChange: (page, size) => {
         setCurrentPage(page); // 更新当前页码
         setCurrentPageSize(size); // 更新每页显示条目数
