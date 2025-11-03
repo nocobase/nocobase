@@ -56,6 +56,12 @@ export const errors: AppErrors = {
     maintaining: true,
   },
 
+  APP_PREPARING: {
+    status: 503,
+    message: ({ appName }) => `application ${appName} is preparing`,
+    maintaining: true,
+  },
+
   APP_STARTING: {
     status: 503,
     message: ({ app }) => app.maintainingMessage,

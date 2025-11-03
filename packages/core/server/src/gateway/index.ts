@@ -301,10 +301,15 @@ export class Gateway extends EventEmitter {
       void AppSupervisor.getInstance().bootStrapApp(handleApp);
     }
 
-    let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
+    let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'preparing');
 
     if (appStatus === 'not_found') {
       this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
+      return;
+    }
+
+    if (appStatus === 'preparing') {
+      this.responseErrorWithCode('APP_PREPARING', res, { appName: handleApp });
       return;
     }
 

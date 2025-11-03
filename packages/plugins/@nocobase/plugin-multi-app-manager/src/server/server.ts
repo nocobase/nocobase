@@ -253,7 +253,7 @@ export class PluginMultiAppManagerServer extends Plugin {
             context: options.context,
           });
 
-          await subApp.runCommand('start', '--quickstart');
+          await AppSupervisor.getInstance().getApp(subApp.name);
         };
 
         const startPromise = quickstart();
@@ -385,21 +385,9 @@ export class PluginMultiAppManagerServer extends Plugin {
           },
         });
 
-        const promises = [];
-
         for (const subAppInstance of subApps) {
-          promises.push(
-            (async () => {
-              if (!appSupervisor.hasApp(subAppInstance.name)) {
-                await AppSupervisor.getInstance().getApp(subAppInstance.name);
-              } else if (appSupervisor.getAppStatus(subAppInstance.name) === 'initialized') {
-                (await AppSupervisor.getInstance().getApp(subAppInstance.name)).runCommand('start', '--quickstart');
-              }
-            })(),
-          );
+          AppSupervisor.getInstance().getApp(subAppInstance.name);
         }
-
-        await Promise.all(promises);
       } catch (err) {
         console.error('Auto register sub applications failed: ', err);
       }
