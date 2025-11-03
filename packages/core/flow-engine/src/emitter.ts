@@ -29,15 +29,16 @@ export class Emitter<E extends EventsMap = Record<string, unknown>> {
    */
   // overloads for typed和通用用法
   on<K extends keyof E>(event: K, callback: (payload: E[K]) => void, options?: { tag?: string }): () => void;
-  on(event: string, callback: (payload: unknown) => void, options?: { tag?: string }): () => void;
-  on(event: string, callback: (payload: unknown) => void, options?: { tag?: string }) {
-    (this.events[event] ||= []).push(callback as (payload: unknown) => void);
-    const off = () => this.off(event as keyof E, callback as any);
+  on(event: string, callback: (payload: any) => void, options?: { tag?: string }): () => void;
+  on(event: string, callback: (payload: any) => void, options?: { tag?: string }) {
+    const key = String(event);
+    (this.events[key] ||= []).push(callback as (payload: unknown) => void);
+    const off = () => this._offRaw(key, callback as (payload: unknown) => void);
     // 记录 off 引用，便于后续 off 时同步从 tagMap 清理
-    let inner = this.callbackRefMap.get(event);
+    let inner = this.callbackRefMap.get(key);
     if (!inner) {
       inner = new Map();
-      this.callbackRefMap.set(event, inner);
+      this.callbackRefMap.set(key, inner);
     }
     let offSet = inner.get(callback as (payload: unknown) => void);
     if (!offSet) {
@@ -61,8 +62,8 @@ export class Emitter<E extends EventsMap = Record<string, unknown>> {
    * 仅订阅一次，触发后自动移除
    */
   once<K extends keyof E>(event: K, callback: (payload: E[K]) => void, options?: { tag?: string }): () => void;
-  once(event: string, callback: (payload: unknown) => void, options?: { tag?: string }): () => void;
-  once(event: string, callback: (payload: unknown) => void, options?: { tag?: string }) {
+  once(event: string, callback: (payload: any) => void, options?: { tag?: string }): () => void;
+  once(event: string, callback: (payload: any) => void, options?: { tag?: string }) {
     const off = this.on(
       event as keyof E,
       (payload: unknown) => {
@@ -78,15 +79,19 @@ export class Emitter<E extends EventsMap = Record<string, unknown>> {
   }
 
   off<K extends keyof E>(event: K, callback: (payload: E[K]) => void): void;
-  off(event: string, callback: (payload: unknown) => void): void;
-  off(event: string | keyof E, callback: (payload: unknown) => void) {
+  off(event: string, callback: (payload: any) => void): void;
+  off(event: string | keyof E, callback: (payload: any) => void) {
     const key = String(event);
-    const arr = this.events[key] || [];
-    this.events[key] = arr.filter((fn) => fn !== (callback as any));
+    this._offRaw(key, callback as (payload: unknown) => void);
+  }
+
+  private _offRaw(eventKey: string, callback: (payload: unknown) => void) {
+    const arr = this.events[eventKey] || [];
+    this.events[eventKey] = arr.filter((fn) => fn !== callback);
     // 同步移除 tagMap 中与该 (event, callback) 关联的 off 引用
-    const inner = this.callbackRefMap.get(key);
+    const inner = this.callbackRefMap.get(eventKey);
     if (inner) {
-      const offSet = inner.get(callback as (payload: unknown) => void);
+      const offSet = inner.get(callback);
       if (offSet) {
         // 从所有 tag 的 set 中删除这些 off 引用
         for (const tagSet of this.tagMap.values()) {
@@ -94,17 +99,17 @@ export class Emitter<E extends EventsMap = Record<string, unknown>> {
             tagSet.delete(offRef);
           }
         }
-        inner.delete(callback as (payload: unknown) => void);
+        inner.delete(callback);
       }
       if (inner.size === 0) {
-        this.callbackRefMap.delete(key);
+        this.callbackRefMap.delete(eventKey);
       }
     }
   }
 
   emit<K extends keyof E>(event: K, payload: E[K]): void;
-  emit(event: string, payload?: unknown): void;
-  emit(event: string | keyof E, payload?: unknown) {
+  emit(event: string, payload?: any): void;
+  emit(event: string | keyof E, payload?: any) {
     if (this.paused) {
       return;
     }

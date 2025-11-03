@@ -50,6 +50,13 @@ export type EngineEventMap =
       inputArgs?: Record<string, unknown>;
       results?: unknown[];
     };
+  } & {
+    [K in `event:${string}:error`]: {
+      model: FlowModel;
+      eventName: string;
+      inputArgs?: Record<string, unknown>;
+      error: unknown;
+    };
   };
 
 /**
@@ -220,6 +227,14 @@ export class FlowEngine {
     options?: { tag?: string },
   ) {
     return this.emitter.on(`event:${eventName}:end` as `event:${T}:end`, cb, options);
+  }
+
+  onEventError<T extends string>(
+    eventName: T,
+    cb: (payload: EngineEventMap[`event:${T}:error`]) => void,
+    options?: { tag?: string },
+  ) {
+    return this.emitter.on(`event:${eventName}:error` as `event:${T}:error`, cb, options);
   }
 
   /** 上一个引擎（根引擎为 undefined） */
@@ -503,7 +518,7 @@ export class FlowEngine {
     this._modelInstances.set(modelInstance.uid, modelInstance);
 
     modelInstance.onInit(options);
-    this.emitter?.emit('model:created', { model: modelInstance });
+    this.emitter.emit('model:created', { model: modelInstance });
 
     // 在模型实例化阶段应用 flow 级 defaultParams（仅填充缺失的 stepParams，不覆盖）
     // 不阻塞创建流程：允许 defaultParams 为异步函数
@@ -624,8 +639,8 @@ export class FlowEngine {
     }
     this._modelInstances.delete(uid);
     // 先清理以该 uid 为 tag 的监听，再发 destroyed 事件
-    this.emitter?.offByTag?.(uid);
-    this.emitter?.emit('model:destroyed', { uid, model: modelInstance });
+    this.emitter.offByTag(uid);
+    this.emitter.emit('model:destroyed', { uid, model: modelInstance });
     return true;
   }
 

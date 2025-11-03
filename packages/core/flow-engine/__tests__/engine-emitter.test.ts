@@ -256,6 +256,37 @@ describe('FlowEngine emitter lifecycle', () => {
     await m.dispatchEvent('custom', { x: 1 });
     expect(count).toBe(2);
   });
+
+  it('emits event:<name>:error when start hook throws (non-beforeRender)', async () => {
+    const engine = new FlowEngine();
+    const m = engine.createModel({ use: 'FlowModel' });
+    const seq: string[] = [];
+    engine.onEventError('bad', ({ eventName }) => {
+      seq.push(`error:${eventName}`);
+    });
+    // inject start hook error
+    (m as any).onDispatchEventStart = () => {
+      throw new Error('boom');
+    };
+    await m.dispatchEvent('bad').catch(() => {});
+    expect(seq).toEqual(['error:bad']);
+  });
+
+  it('emits event:beforeRender:error and rethrows on error in start hook', async () => {
+    const engine = new FlowEngine();
+    const m = engine.createModel({ use: 'FlowModel' });
+    let called = 0;
+    engine.onEventError('beforeRender', () => called++);
+    (m as any).onDispatchEventStart = () => {
+      throw new Error('render-fail');
+    };
+    let rejected = false;
+    await m.dispatchEvent('beforeRender').catch(() => {
+      rejected = true;
+    });
+    expect(rejected).toBe(true);
+    expect(called).toBe(1);
+  });
 });
 
 describe('FlowEngine emitter scoping', () => {

@@ -204,7 +204,7 @@ export class FlowExecutor {
     const logger = model.context.logger;
 
     try {
-      this.engine?.emitter?.emit(`event:${eventName}:start`, { model, eventName, inputArgs });
+      this.engine.emitter.emit(`event:${eventName}:start`, { model, eventName, inputArgs });
       await model.onDispatchEventStart?.(eventName, options, inputArgs);
     } catch (err) {
       if (isBeforeRender && err instanceof FlowExitException) {
@@ -217,6 +217,8 @@ export class FlowExecutor {
       } finally {
         logger.error({ err }, `BaseModel.dispatchEvent: Start hook error for event '${eventName}'`);
       }
+      // 发射 error 事件
+      this.engine.emitter.emit(`event:${eventName}:error`, { model, eventName, inputArgs, error: err });
       if (throwOnError) throw err;
       return;
     }
@@ -296,7 +298,7 @@ export class FlowExecutor {
       } catch (hookErr) {
         logger.error({ err: hookErr }, `BaseModel.dispatchEvent: End hook error for event '${eventName}'`);
       }
-      this.engine?.emitter?.emit(`event:${eventName}:end`, { model, eventName, inputArgs, results: result });
+      this.engine.emitter.emit(`event:${eventName}:end`, { model, eventName, inputArgs, results: result });
       return result;
     } catch (error) {
       // 进入错误钩子并记录
@@ -309,6 +311,8 @@ export class FlowExecutor {
         { err: error },
         `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`,
       );
+      // 发射 error 事件
+      this.engine.emitter.emit(`event:${eventName}:error`, { model, eventName, inputArgs, error });
       if (throwOnError) throw error;
     }
   }

@@ -18,7 +18,9 @@ import { FlowEngine } from './flowEngine';
  * - 使用 Proxy 实现“最小代理”，保持与父引擎的全局一致性。
  *
  * 注意：
- * - 本地化的字段仅有：`_modelInstances`、`_applyFlowCache`、`executor`、`context`；
+ * - 本地化的字段：`_modelInstances`、`_applyFlowCache`、`executor`、`context`、`emitter`、
+ *   以及基于 emitter 的语义封装方法（onModelCreated/onModelMounted/onModelDestroyed/onEventStart/onEventEnd），
+ *   以及视图栈指针维护方法（previousEngine/nextEngine/unlinkFromStack/linkAfter）。
  * - 其它字段/方法均通过 Proxy 转发到父引擎；
  * - 这满足“同一 uid 在不同视图中互不污染（实例/缓存隔离）”与“共享全局注册/仓库”的诉求。
  */
