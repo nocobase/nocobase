@@ -75,7 +75,7 @@ export class FormBlockModel<
         const names = new Set<string>();
         for (const it of items) {
           const fp = it?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
-          const top = fp.toString().split('.')[0];
+          const top = fp?.toString().split('.')[0];
           if (top) names.add(top);
         }
         return names;
