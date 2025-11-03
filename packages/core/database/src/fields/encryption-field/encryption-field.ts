@@ -9,21 +9,20 @@
 
 import { DataTypes, Model } from 'sequelize';
 import { EncryptionError } from './errors/EncryptionError';
-import { aesDecrypt, aesEncrypt, decryptFieldKey } from './utils';
+import { aesDecrypt, aesEncrypt, decryptFieldKey, generateSignature } from './utils';
 import { BaseColumnFieldOptions, Field } from '../field';
 import { uid } from '@nocobase/utils';
-import crypto from 'crypto';
 
 class EncryptedField {
-  private static encoding: Record<string, BufferEncoding> = {
+  static encoding: Record<string, BufferEncoding> = {
     iv: 'utf8',
     value: 'hex',
   };
-  private _serializedValue: string | null;
 
   constructor(
-    private _iv: string,
-    private _value: unknown,
+    private readonly _iv: string,
+    private readonly _value: unknown,
+    private readonly _serializedField: string,
   ) {}
 
   get iv() {
@@ -31,37 +30,29 @@ class EncryptedField {
   }
 
   get value() {
-    return this._value as string;
+    return this._value;
   }
 
-  get ivBuffer() {
-    return Buffer.from(this._iv, EncryptedField.encoding.iv) as unknown as Uint8Array;
+  get serializedField() {
+    return this._serializedField;
   }
 
-  get valueBuffer() {
-    return Buffer.from(this.value, EncryptedField.encoding.value) as unknown as Uint8Array;
+  static async serializer({ key, iv, value }: { key: Buffer; iv: string; value: unknown }): Promise<EncryptedField> {
+    const encrypted = await aesEncrypt(key, value as string, iv);
+    const signature = generateSignature(key, value as string);
+    const ivBuffer = Buffer.from(iv, EncryptedField.encoding.iv) as unknown as Uint8Array;
+    const encryptedBuffer = Buffer.from(encrypted, EncryptedField.encoding.value) as unknown as Uint8Array;
+    const serializedValue = Buffer.concat([ivBuffer, encryptedBuffer]).toString(EncryptedField.encoding.value);
+    return new EncryptedField(iv, value, `${signature}.${serializedValue}`);
   }
 
-  get serializedValue() {
-    if (this._serializedValue) {
-      return this._serializedValue;
-    }
-    this._serializedValue = Buffer.concat([this.ivBuffer, this.valueBuffer]).toString(EncryptedField.encoding.value);
-    return this._serializedValue;
-  }
-
-  static create(iv: string, encrypted: unknown) {
-    return new EncryptedField(iv, encrypted);
-  }
-
-  static fromSerializedValue(serializedValue: string) {
+  static async deserializer(key: Buffer, serializedField: string): Promise<EncryptedField> {
+    const [_signature, serializedValue] = serializedField.split('.');
     const buff = Buffer.from(serializedValue, EncryptedField.encoding.value);
-    const iv = buff.subarray(0, 16);
-    const encrypted = buff.subarray(16);
-    return new EncryptedField(
-      iv.toString(EncryptedField.encoding.iv),
-      encrypted.toString(EncryptedField.encoding.value),
-    );
+    const iv = buff.subarray(0, 16).toString(EncryptedField.encoding.iv);
+    const encrypted = buff.subarray(16).toString(EncryptedField.encoding.value);
+    const value = await aesDecrypt(key, encrypted, iv);
+    return new EncryptedField(iv, value, serializedField);
   }
 }
 
@@ -87,19 +78,18 @@ export class EncryptionField extends Field {
       const value = model.get(name) as string;
       if (value !== undefined && value !== null) {
         try {
-          const fieldKey = await decryptFieldKey(encryptedKey);
+          const key = await decryptFieldKey(encryptedKey);
 
-          let ivString: string;
+          let iv: string;
           if (model.isNewRecord || !previousValue) {
-            ivString = uid(16); // crypto.randomBytes(16).toString('hex');
+            iv = uid(16);
           } else {
-            const encryptedField = EncryptedField.fromSerializedValue(previousValue);
-            ivString = encryptedField.iv;
+            const encryptedField = await EncryptedField.deserializer(key, previousValue);
+            iv = encryptedField.iv;
           }
 
-          const encrypted = await aesEncrypt(fieldKey, value, ivString);
-          const encryptedField = EncryptedField.create(ivString, encrypted);
-          model.set(name, encryptedField.serializedValue);
+          const encryptedField = await EncryptedField.serializer({ key, iv, value });
+          model.set(name, encryptedField.serializedField);
         } catch (error) {
           console.error(error);
           if (error instanceof EncryptionError) {
@@ -120,9 +110,9 @@ export class EncryptionField extends Field {
           const value = instance.get?.(name);
           if (value !== undefined && value !== null) {
             try {
-              const fieldKey = await decryptFieldKey(encryptedKey);
-              const encryptedField = EncryptedField.fromSerializedValue(value);
-              instance.set(name, await aesDecrypt(fieldKey, encryptedField.value, encryptedField.iv));
+              const key = await decryptFieldKey(encryptedKey);
+              const encryptedField = await EncryptedField.deserializer(key, value);
+              instance.set(name, encryptedField.value);
               Object.defineProperty(instance, `_original_encrypted_value_${name}`, {
                 value,
               });
@@ -131,9 +121,7 @@ export class EncryptionField extends Field {
               if (error instanceof EncryptionError) {
                 throw error;
               } else {
-                throw new EncryptionError(
-                  'Decryption failed, the environment variable `ENCRYPTION_FIELD_KEY` may be incorrect',
-                );
+                throw new EncryptionError('Decryption failed');
               }
             }
           }

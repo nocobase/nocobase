@@ -110,12 +110,12 @@ export function decryptFieldKeySync(encrypted: string, keyEntry?: KeyStoreEntry)
   return Buffer.from(aseDecryptSync(key, encrypted) as string, 'base64');
 }
 
-export function aesEncrypt(key: Buffer, text: string, ivString: string = defaultIvString) {
+export function aesEncrypt(key: Buffer, text: string, ivString: string = defaultIvString): Promise<string> {
   checkValueAndIv('Encrypt', text, ivString);
 
   return new Promise((resolve, reject) => {
     const iv = Buffer.from(ivString, 'utf8');
-    const cipher = crypto.createCipheriv(algorithm, key, iv);
+    const cipher = crypto.createCipheriv(algorithm, key as unknown as Uint8Array, iv as unknown as Uint8Array);
 
     let encrypted = '';
 
@@ -143,7 +143,7 @@ export function aesDecrypt(key: Buffer, encrypted: string, ivString: string = de
 
   return new Promise((resolve, reject) => {
     const iv = Buffer.from(ivString, 'utf8');
-    const decipher = crypto.createDecipheriv(algorithm, key, iv);
+    const decipher = crypto.createDecipheriv(algorithm, key as unknown as Uint8Array, iv as unknown as Uint8Array);
 
     let decrypted = '';
 
@@ -170,7 +170,7 @@ export function aesEncryptSync(key: Buffer, text: string, ivString: string = def
   checkValueAndIv('Encrypt', text, ivString);
 
   const iv = Buffer.from(ivString, 'utf8');
-  const cipher = crypto.createCipheriv(algorithm, key, iv);
+  const cipher = crypto.createCipheriv(algorithm, key as unknown as Uint8Array, iv as unknown as Uint8Array);
   let encrypted = cipher.update(text, 'utf8', 'hex');
   encrypted += cipher.final('hex');
   return encrypted;
@@ -180,7 +180,7 @@ export function aseDecryptSync(key: Buffer, encrypted: string, ivString: string 
   checkValueAndIv('Decrypt', encrypted, ivString);
 
   const iv = Buffer.from(ivString, 'utf8');
-  const decipher = crypto.createDecipheriv(algorithm, key, iv);
+  const decipher = crypto.createDecipheriv(algorithm, key as unknown as Uint8Array, iv as unknown as Uint8Array);
   let decrypted = decipher.update(encrypted, 'hex', 'utf8');
   decrypted += decipher.final('utf8');
   return decrypted;
@@ -205,4 +205,10 @@ export function checkValueAndIv(type: 'Decrypt' | 'Encrypt', value: string, iv: 
   if (iv.length !== 16) {
     throw new EncryptionError(msg + 'The `iv` must be a 16-character string');
   }
+}
+
+export function generateSignature(key: Buffer, message: string): string {
+  const hmac = crypto.createHmac('sha256', key as unknown as Uint8Array);
+  hmac.update(message);
+  return hmac.digest('hex');
 }
