@@ -90,7 +90,7 @@ return {
 ```
 
 ### Preview and Save
-- In Custom mode, after editing, click the Preview button on the right to update the chart.
+- In Custom mode, after editing, click the Preview button on the right to update the chart preview.
 - At the bottom, click Save to apply and persist; click Cancel to revert all changes made this time.
 
 

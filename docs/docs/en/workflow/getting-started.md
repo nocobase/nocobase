@@ -1,4 +1,4 @@
-# Getting started
+# Getting Started
 
 ## Configure Your First Workflow
 
@@ -14,7 +14,7 @@ The management interface lists all created workflows:
 ![Workflow Management](https://static-docs.nocobase.com/20251027222900.png)
 
 
-Click the "Add new" button to create a new workflow and select Collection Event:
+Click the "Add New" button to create a new workflow and select Collection Event:
 
 
 ![Create Workflow](https://static-docs.nocobase.com/20251027222951.png)

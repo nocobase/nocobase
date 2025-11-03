@@ -6,21 +6,21 @@
   },
   {
     "type": "custom-link",
-    "label": "Quick start",
+    "label": "Quick Start",
     "link": "/data-visualization/quick-start"
   },
   {
     "type": "custom-link",
-    "label": "Guide",
+    "label": "Features",
     "items": [
       {
         "type": "custom-link",
-        "label": "Data query",
+        "label": "Data Query",
         "link": "/data-visualization/guide/data-query"
       },
       {
         "type": "custom-link",
-        "label": "Chart options",
+        "label": "Chart Options",
         "link": "/data-visualization/guide/chart-options"
       },
       {
@@ -30,12 +30,12 @@
       },
       {
         "type": "custom-link",
-        "label": "Use context variables",
+        "label": "Using Context Variables",
         "link": "/data-visualization/guide/context-variables"
       },
       {
         "type": "custom-link",
-        "label": "Page filters and linkage",
+        "label": "Page Filters and Linkage",
         "link": "/data-visualization/guide/filters-and-linkage"
       }
     ]
@@ -46,17 +46,17 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Query data in SQL mode",
+        "label": "Query Data in SQL Mode",
         "link": "/data-visualization/guide/sql-data-query"
       },
       {
         "type": "custom-link",
-        "label": "Custom chart configuration",
+        "label": "Custom Chart Configuration",
         "link": "/data-visualization/guide/custom-chart-options"
       },
       {
         "type": "custom-link",
-        "label": "Chart events",
+        "label": "Custom Interaction Events",
         "link": "/data-visualization/guide/chart-events"
       }
     ]
@@ -68,7 +68,7 @@
   },
   {
     "type": "custom-link",
-    "label": "Best practices",
+    "label": "Best Practices",
     "link": "/data-visualization/best-practices"
   }
 ]
