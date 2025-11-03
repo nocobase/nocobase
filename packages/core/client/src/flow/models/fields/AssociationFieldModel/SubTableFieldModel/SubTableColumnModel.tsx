@@ -116,6 +116,7 @@ export class SubTableColumnModel<
           return null;
         }
         const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
+        console.log(binding, field.name);
         if (!binding) return null;
         const fieldModel = binding.modelName;
         const fullName = ctx.fieldPath ? `${ctx.fieldPath}.${field.name}` : field.name;
@@ -161,6 +162,11 @@ export class SubTableColumnModel<
         return this.context.collectionField.collection.name;
       },
       cache: false,
+    });
+    this.emitter.on('onSubModelAdded', (subModel: FieldModel) => {
+      if (this.collectionField) {
+        subModel.setProps(this.collectionField.getComponentProps());
+      }
     });
   }
 

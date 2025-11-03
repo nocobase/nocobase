@@ -1,4 +1,4 @@
-# Preview and save
+# Preview and Save
 
 - Preview: Temporarily render changes from the configuration panel into the page chart to verify the result.
 - Save: Persist changes from the configuration panel to the database.
@@ -23,7 +23,7 @@
 - Chart configuration errors (missing Basic mapping, exceptions from Custom JS): shown in the chart area or console while keeping the page operable.
 - Confirm column names and data types in View data before field mapping or writing Custom code to reduce errors.
 
-## Save and cancel
+## Save and Cancel
 - Save: write current changes into the block configuration and apply them to the page immediately.
 - Cancel: discard current unsaved changes and revert to the last saved state.
 - Save scope:

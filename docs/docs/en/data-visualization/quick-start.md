@@ -72,7 +72,7 @@ In the chart options panel, choose the chart type and configure its options.
 ![clipboard-image-1761555586](https://static-docs.nocobase.com/clipboard-image-1761555586.png)
 
 
-## Preview and save
+## Preview and Save
 Changes update the preview in real time on the left, but they are not saved until you click “Save”.
 
 You can also use the buttons at the bottom:
