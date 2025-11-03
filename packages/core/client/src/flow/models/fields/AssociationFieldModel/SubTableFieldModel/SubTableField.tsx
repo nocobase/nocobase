@@ -36,6 +36,11 @@ export function SubTableField(props) {
   // 前端分页
   const pagination = useMemo(() => {
     return {
+      style: {
+        position: 'absolute',
+        right: '0px',
+        bottom: '0px',
+      },
       current: currentPage, // 当前页码
       pageSize: currentPageSize, // 每页条目数
       total: value.length, // 数据总条数
@@ -60,12 +65,9 @@ export function SubTableField(props) {
 
   // 删除行
   const handleDelete = (index: number) => {
-    console.log(index);
     const newValue = [...(value || [])];
     newValue.splice(index, 1);
-    console.log(newValue);
     const lastPage = Math.ceil(newValue.length / currentPageSize);
-    console.log(lastPage);
     setCurrentPage(lastPage);
     onChange?.(newValue);
   };
@@ -135,19 +137,23 @@ export function SubTableField(props) {
           emptyText: <span> {!disabled ? t('Please add or select record') : t('No data')}</span>,
         }}
         components={components || {}}
+        footer={() => (
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Space size={'middle'}>
+              {!disabled && allowAddNew !== false && (
+                <a onClick={handleAdd} style={{ marginTop: 8 }}>
+                  <PlusOutlined /> {t('Add new')}
+                </a>
+              )}
+              {!disabled && allowSelectExistingRecord && (
+                <a onClick={onSelectExitRecordClick} style={{ marginTop: 8 }}>
+                  <ZoomInOutlined /> {t('Select record')}
+                </a>
+              )}
+            </Space>
+          </div>
+        )}
       />
-      <Space size={'middle'}>
-        {!disabled && allowAddNew !== false && (
-          <a onClick={handleAdd} style={{ marginTop: 8 }}>
-            <PlusOutlined /> {t('Add new')}
-          </a>
-        )}
-        {!disabled && allowSelectExistingRecord && (
-          <a onClick={onSelectExitRecordClick} style={{ marginTop: 8 }}>
-            <ZoomInOutlined /> {t('Select record')}
-          </a>
-        )}
-      </Space>
     </Form.Item>
   );
 }
