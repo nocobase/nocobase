@@ -89,9 +89,12 @@ return {
 }
 ```
 
-### Preview and save
-- In Custom mode, after editing, click the Preview button on the right to update the chart.
+### Preview and Save
+- In Custom mode, after editing, click the Preview button on the right to update the chart preview.
 - At the bottom, click Save to apply and persist; click Cancel to revert all changes made this time.
 
 
 ![20251026192816](https://static-docs.nocobase.com/20251026192816.png)
+
+> [!TIP]
+> For more on chart options, see Advanced — Custom chart configuration.

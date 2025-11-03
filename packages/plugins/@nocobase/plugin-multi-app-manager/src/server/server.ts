@@ -8,10 +8,11 @@
  */
 
 import { Database, IDatabaseOptions, Transactionable } from '@nocobase/database';
-import Application, { AppSupervisor, Gateway, Plugin } from '@nocobase/server';
+import Application, { AppStatus, AppSupervisor, Gateway, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import path from 'path';
 import { ApplicationModel } from '../server';
+import { Meter } from '@nocobase/telemetry';
 
 export type AppDbCreator = (
   app: Application,
@@ -149,6 +150,7 @@ export class PluginMultiAppManagerServer extends Plugin {
   appDbCreator: AppDbCreator = defaultDbCreator;
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
   subAppUpgradeHandler: SubAppUpgradeHandler = defaultSubAppUpgradeHandle;
+  meter: Meter;
 
   static getDatabaseConfig(app: Application): IDatabaseOptions {
     let oldConfig =
@@ -219,8 +221,42 @@ export class PluginMultiAppManagerServer extends Plugin {
     }
   }
 
+  setMetrics() {
+    this.meter = this.app.telemetry.metric.getMeter();
+    if (!this.meter) {
+      return;
+    }
+    const subAppCountGauge = this.meter.createObservableGauge('sub_app_count', {
+      description: 'Number of sub applications',
+    });
+    subAppCountGauge.addCallback((observableResult) => {
+      const supervisor = AppSupervisor.getInstance();
+      const apps = Object.values(supervisor.apps || {});
+      const counts: Record<AppStatus, number> = {
+        initializing: 0,
+        initialized: 0,
+        running: 0,
+        commanding: 0,
+        stopped: 0,
+        error: 0,
+        not_found: 0,
+      };
+
+      for (const app of apps) {
+        const status = supervisor.getAppStatus(app.name) as AppStatus;
+        if (counts[status] !== undefined) {
+          counts[status]++;
+        }
+      }
+
+      for (const [status, count] of Object.entries(counts)) {
+        observableResult.observe(count, { status });
+      }
+    });
+  }
+
   async load() {
-    await this.importCollections(path.resolve(__dirname, 'collections'));
+    this.setMetrics();
 
     // after application created
     this.db.on(

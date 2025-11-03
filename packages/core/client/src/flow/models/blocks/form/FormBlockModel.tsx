@@ -8,14 +8,14 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import type {
-  FlowContext,
-  PropertyMeta,
-  PropertyMetaFactory,
-  CollectionField,
-  Collection,
+import type { PropertyMeta, PropertyMetaFactory } from '@nocobase/flow-engine';
+import {
+  AddSubModelButton,
+  escapeT,
+  FlowSettingsButton,
+  createAssociationAwareObjectMetaFactory,
+  createAssociationSubpathResolver,
 } from '@nocobase/flow-engine';
-import { AddSubModelButton, createRecordMetaFactory, escapeT, FlowSettingsButton } from '@nocobase/flow-engine';
 import { Form, FormInstance } from 'antd';
 import { omit } from 'lodash';
 import React from 'react';
@@ -67,94 +67,45 @@ export class FormBlockModel<
   }
 
   protected createFormValuesMetaFactory(): PropertyMetaFactory {
-    const recordMeta: PropertyMetaFactory = createRecordMetaFactory(() => this.collection, 'Current form');
-    const formValuesMeta: PropertyMetaFactory = async () => {
-      const base = await recordMeta?.();
+    // 基于通用函数创建 MetaFactory（含 buildVariablesParams）
+    const baseFactory: PropertyMetaFactory = createAssociationAwareObjectMetaFactory(
+      () => this.collection,
+      this.translate('Current form'),
+      () => this.form?.getFieldsValue?.() || {},
+    );
+
+    // UI 优化：仅显示当前表单网格中已启用的顶层字段
+    const factory: PropertyMetaFactory = async () => {
+      const base = (await baseFactory()) as PropertyMeta | null;
+      if (!base) return null;
+
       const getActiveTopLevelFieldNames = (): Set<string> => {
         const items = this.subModels.grid?.subModels?.items ?? [];
         const names = new Set<string>();
         for (const it of items) {
           const fp = it?.getStepParams?.('fieldSettings', 'init')?.fieldPath;
-          const top = fp.toString().split('.')[0];
+          const top = fp?.toString().split('.')[0];
           if (top) names.add(top);
         }
         return names;
       };
       const activeTopLevel = getActiveTopLevelFieldNames();
-      const filterTopLevelProperties = async (meta: PropertyMeta): Promise<PropertyMeta> => {
-        const clone = { ...meta };
-        const propsResolved = typeof meta.properties === 'function' ? await meta.properties() : meta.properties;
-        if (propsResolved && typeof propsResolved === 'object' && activeTopLevel.size > 0) {
-          const filtered = {};
-          for (const k of Object.keys(propsResolved)) {
-            if (activeTopLevel.has(k)) filtered[k] = propsResolved[k];
-          }
-          clone.properties = filtered;
-        } else {
-          clone.properties = propsResolved;
+
+      const propsResolved = typeof base.properties === 'function' ? await base.properties() : base.properties;
+      const filteredBase: PropertyMeta = { ...base };
+      if (propsResolved && activeTopLevel.size > 0) {
+        const filtered: Record<string, PropertyMeta> = {};
+        for (const k of Object.keys(propsResolved)) {
+          if (activeTopLevel.has(k)) filtered[k] = propsResolved[k];
         }
-        return clone;
-      };
-      const filteredBase = base ? await filterTopLevelProperties(base) : base;
-      return {
-        ...(filteredBase || {
-          type: 'object',
-          title: this.translate('Current form'),
-          properties: async () => ({}),
-        }),
-        // 根据表单中“已选中的关联字段值”构建 RecordRef 映射，用于 variables:resolve 的 contextParams
-        buildVariablesParams: (ctx: FlowContext) => {
-          const params: Record<string, any> = {};
-          const formValues = ctx.formValues;
-
-          const toId = (val: unknown, primaryKey: string) => {
-            if (val == null) return undefined;
-            if (typeof val === 'string' || typeof val === 'number') return val;
-            if (typeof val === 'object') {
-              return val[primaryKey];
-            }
-            return undefined;
-          };
-
-          // 遍历集合的顶层字段，收集关联字段
-          const fields = (this.collection.getFields?.() ?? []) as CollectionField[];
-          for (const field of fields) {
-            const name = field?.name;
-            if (!name || !field.target) continue;
-
-            const associationValue = formValues[name];
-            if (associationValue == null) continue;
-
-            if (!field?.targetCollection) continue;
-            const primaryKey = field.targetCollection.filterTargetKey;
-
-            if (Array.isArray(associationValue)) {
-              const ids = associationValue.map((item) => toId(item, primaryKey)).filter((v) => v != null);
-              if (ids.length) {
-                params[name] = {
-                  collection: field.target,
-                  dataSourceKey: field.targetCollection.dataSourceKey,
-                  filterByTk: ids,
-                };
-              }
-            } else {
-              const id = toId(associationValue, primaryKey);
-              if (id != null) {
-                params[name] = {
-                  collection: field.target,
-                  dataSourceKey: field.targetCollection.dataSourceKey,
-                  filterByTk: id,
-                };
-              }
-            }
-          }
-
-          return params;
-        },
-      };
+        filteredBase.properties = filtered;
+      } else {
+        filteredBase.properties = propsResolved;
+      }
+      return filteredBase;
     };
-    formValuesMeta.title = this.translate('Current form');
-    return formValuesMeta;
+    factory.title = this.translate('Current form');
+    return factory;
   }
 
   useHooksBeforeRender() {
@@ -170,20 +121,8 @@ export class FormBlockModel<
       },
       cache: false,
       meta: formValuesMeta,
-      resolveOnServer: (p: string) => {
-        if (!p || !p.includes('.')) return false;
-        const m = p.match(/^([^.[]+)/);
-        const baseFieldName = m?.[1];
-        if (!baseFieldName) return false;
-
-        const collection = this.collection as Collection;
-        let field: CollectionField | undefined = collection?.getField?.(baseFieldName);
-        if (!field) {
-          const fields = collection?.getFields?.() ?? [];
-          field = fields.find((f) => f?.name === baseFieldName);
-        }
-        return !!field?.isAssociationField?.();
-      },
+      resolveOnServer: createAssociationSubpathResolver(() => this.collection),
+      serverOnlyWhenContextParams: true,
     });
   }
 

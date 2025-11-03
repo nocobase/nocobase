@@ -2,7 +2,7 @@
 
 In NocoBase, **RunJS** provides a lightweight extension method suitable for scenarios of **quick experimentation and temporary logic processing**. Without creating plugins or modifying source code, you can personalize interfaces or interactions through JavaScript.
 
-Through it, you can directly input JS code in the interface designer to achieve:
+Through it, you can directly input JS code in the UI builder to achieve:
 
 - Custom rendering content (fields, blocks, columns, items, etc.)  
 - Custom interaction logic (button clicks, event linkage)  

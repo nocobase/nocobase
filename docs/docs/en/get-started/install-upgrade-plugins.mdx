@@ -10,7 +10,39 @@ Please log in to NocoBase Service and refer to the documentation to learn how to
 
 ## Third-party Plugins
 
-Starting from version 2.0, online installation of plugins is no longer supported. Please download the plugin package to your local machine first, then manually upload and extract it to the `./storage/plugins` directory. If the plugin is already enabled, run the following command to complete the plugin upgrade after uploading and extracting.
+### Online Plugin Installation
+
+![20251103102344](https://static-docs.nocobase.com/20251103102344.png)
+
+:::warning Note
+
+NocoBase supports online plugin installation through the interface, but the current experience is not ideal. Reasons include:
+
+- Due to Node.js process runtime limitations, after installing or updating plugins, you need to stop the process and then run the `upgrade` command for the changes to take effect;
+- In multi-app scenarios, online installation struggles to handle plugin synchronization across multiple sub-applications simultaneously;
+- Batch plugin updates are not supported;
+- Online installation or updates can easily cause abnormal application process termination.
+
+Therefore, it is recommended to use command-line or manual upload methods to install and upgrade plugins. We recommend integrating this with CI/CD workflows, using command-line methods to download, extract, and upgrade plugins, ensuring consistency and reliability for each update deployment.
+
+:::
+
+### Installing Plugins via Command Line
+
+```bash
+yarn pm pull https://github.com/nocobase/plugin-auth-cas/releases/download/v1.4.0/plugin-auth-cas-1.4.0.tgz
+yarn pm pull /your/path/plugin-auth-cas-1.4.0.tgz
+```
+
+If the plugin is already installed and needs to be upgraded, run the following command:
+
+```bash
+yarn nocobase upgrade --skip-code-update
+```
+
+### Manual Upload and Extraction
+
+Please download the plugin package to your local machine first, then manually upload and extract it to the `./storage/plugins` directory. If the plugin is already enabled, execute the following command to complete the plugin upgrade after uploading and extracting.
 
 > ⚠️ **Note**: To avoid cache issues, please ensure that the NocoBase application is stopped before execution.
 
@@ -29,7 +61,7 @@ mkdir -p /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas && \
   --strip-components=1
 ```
 
-This command will extract the plugin to the specified directory without an extra `package` directory layer.
+This command will extract the plugin to the specified directory without creating an extra `package` directory layer.
 
 ```bash
 /my-nocobase/storage/plugins/@nocobase/plugin-auth-cas

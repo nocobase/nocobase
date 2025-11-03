@@ -51,4 +51,4 @@ export class DateOnlyFieldModel extends DateTimeFieldModel {
   }
 }
 
-EditableItemModel.bindModelToInterface('DateOnlyFieldModel', ['date']);
+EditableItemModel.bindModelToInterface('DateOnlyFieldModel', ['date'], { isDefault: true });
