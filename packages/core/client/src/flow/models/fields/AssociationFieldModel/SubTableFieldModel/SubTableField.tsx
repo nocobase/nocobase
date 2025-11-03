@@ -9,6 +9,7 @@
 
 import { CloseOutlined, ZoomInOutlined } from '@ant-design/icons';
 import { Table, Form, Space } from 'antd';
+import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
 import React, { useEffect, useMemo, useState } from 'react';
@@ -41,16 +42,18 @@ export function SubTableField(props) {
         right: '0px',
         bottom: '0px',
       },
-      current: currentPage, // 当前页码
-      pageSize: currentPageSize, // 每页条目数
-      total: value.length, // 数据总条数
+      current: currentPage,
+      pageSize: currentPageSize,
+      total: value.length,
       onChange: (page, size) => {
-        setCurrentPage(page); // 更新当前页码
-        setCurrentPageSize(size); // 更新每页显示条目数
+        setCurrentPage(page);
+        setCurrentPageSize(size);
       },
-      showSizeChanger: true, // 显示每页条数切换
-      showTotal: (total) => `Total ${total} items`, // 显示总条数
-    };
+      showSizeChanger: true,
+      showTotal: (total) => {
+        return t('Total {{count}} items', { count: total });
+      },
+    } as any;
   }, [currentPage, currentPageSize, value]);
 
   // 新增一行
@@ -137,8 +140,19 @@ export function SubTableField(props) {
           emptyText: <span> {!disabled ? t('Please add or select record') : t('No data')}</span>,
         }}
         components={components || {}}
+        className={css`
+          .ant-table-footer {
+            background-color: transparent;
+          }
+        `}
         footer={() => (
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
             <Space size={'middle'}>
               {!disabled && allowAddNew !== false && (
                 <a onClick={handleAdd} style={{ marginTop: 8 }}>
