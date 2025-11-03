@@ -43,7 +43,7 @@ From top to bottom:
 - Sort: Choose the field and ascending/descending order.
 - Pagination: Set `Limit` and `Offset` to control returned rows; when debugging, start with a small `Limit`.
 
-### Run query and view result
+### Run query and View result
 - Click Run query. After the response, use View data to switch between `Table / JSON` and check columns and values.
 - Before mapping chart fields, confirm column names and types here to avoid empty charts or errors later.
 
@@ -73,11 +73,12 @@ LIMIT 100;
 ![20251026175952](https://static-docs.nocobase.com/20251026175952.png)
 
 
-### Run query and view result
+### Run query and View result
 - Click Run query. After the response, use View data to switch between `Table / JSON` and check columns and values.
 - Before mapping chart fields, confirm column names and types here to avoid empty charts or errors later.
 
 ### Field mapping afterwards
 Later, in Chart options, map fields based on the query result columns.
 
-For more on SQL mode, see Advanced — query data in SQL mode.
+> [!TIP]
+> For more on SQL mode, see Advanced — Query data in SQL mode.
