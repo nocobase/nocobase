@@ -6,7 +6,7 @@ Write JS in the events editor and register interactions via the ECharts instance
 ![clipboard-image-1761489617](https://static-docs.nocobase.com/clipboard-image-1761489617.png)
 
 
-## Register and unregister
+## Register and Unregister
 - Register: `chart.on(eventName, handler)`
 - Unregister: `chart.off(eventName, handler)` or `chart.off(eventName)` to clear events by name
 
@@ -14,7 +14,7 @@ Write JS in the events editor and register interactions via the ECharts instance
 For safety, it's strongly recommended to unregister an event before registering it again!
 
 
-## handler params structure
+## Handler params structure
 
 
 ![20251026222859](https://static-docs.nocobase.com/20251026222859.png)
@@ -69,7 +69,7 @@ chart.on('click', (params) => {
 
 In the newly opened dialog, use chart context variables via `ctx.view.inputArgs.XXX`.
 
-## Preview and save
+## Preview and Save
 - Click "Preview" to load and execute the event code.
 - Click "Save" to persist the current event configuration.
 - Click "Cancel" to revert to the last saved state.

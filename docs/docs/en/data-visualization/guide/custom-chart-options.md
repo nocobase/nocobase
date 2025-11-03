@@ -23,7 +23,7 @@ Consolidate data in `dataset.source`. For detailed usage, please refer to the EC
 
 Let’s start with a simple example.
 
-## Example 1: Monthly order volume bar chart
+## Example 1: Monthly order bar chart
 
 
 ![20251027082816](https://static-docs.nocobase.com/20251027082816.png)
@@ -44,7 +44,7 @@ return {
 ```
 
 
-## Example 2: Sales Trend Chart
+## Example 2: Sales trend chart
 
 
 ![clipboard-image-1761525188](https://static-docs.nocobase.com/clipboard-image-1761525188.png)
@@ -161,7 +161,7 @@ For more usage examples, you can refer to the NocoBase [Demo app](https://demo3.
 You can also browse the official ECharts [Examples](https://echarts.apache.org/examples/en/index.html) to find your desired chart effect, then reference and copy the JS configuration code.
  
 
-## Preview and save
+## Preview and Save
 
 
 ![20251027083938](https://static-docs.nocobase.com/20251027083938.png)
