@@ -168,6 +168,11 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
       options,
     );
     await this.runAction('destroy', config);
+    const currentPage = this.getPage();
+    const lastPage = Math.ceil((this.getCount() - _.castArray(filterByTk).length) / this.getPageSize());
+    if (currentPage > lastPage) {
+      this.setPage(lastPage);
+    }
     await this.refresh();
   }
 
