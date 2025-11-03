@@ -85,15 +85,21 @@ yarn nocobase install --lang=zh-CN
 
 ## 6. 启动 NocoBase
 
+
+**开发环境**
+
 ```bash
 yarn dev
 ```
 
-:::tip 生产环境提示
+**生产环境（不推荐）**
 
-源码安装的 NocoBase 不建议直接在生产环境部署（生产环境请参考 [生产环境部署](../deployment/production.md)）。
+不建议直接在生产环境中使用源码部署，生产环境请参考 [生产环境部署](../deployment/production.md)。
 
-:::
+```bash
+yarn build
+yarn start
+```
 
 ## 7. 登录 NocoBase
 

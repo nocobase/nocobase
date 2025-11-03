@@ -12,7 +12,7 @@ By default, NocoBase uses JWT (JSON Web Token) for authentication of server-side
 
 ### Token Policy
 
-NocoBase supports the setting of the following Token policies:
+NocoBase supports the setting of the following security policies for user Tokens:
 
 | Configuration Item          | Description                                                                                                                                                                                                                                                                                                                      |
 | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -31,16 +31,6 @@ Usually, we recommend administrators:
 By default, user Tokens are stored in the browser's LocalStorage. After closing the browser page and opening it again, if the Token is still valid, the user does not need to log in again.
 
 If you want users to log in again every time they enter the page, you can set the environment variable `API_CLIENT_STORAGE_TYPE=sessionStorage` to save the user Token to the browser's SessionStorage, so as to achieve the purpose of users logging in again every time they open the page.
-
-### Root User
-
-When NocoBase is initially installed, the application will initialize a root user. It is recommended that users modify the root user's information by setting system environment variables to avoid malicious exploitation.
-
-- `INIT_ROOT_USERNAME` - root username
-- `INIT_ROOT_EMAIL` - root user email
-- `INIT_ROOT_PASSWORD` - root user password, please set a strong password.
-
-During subsequent use of the system, it is recommended that users set up and use other administrator accounts, and avoid directly using the root user to operate the application.
 
 ### Password Policy
 
@@ -81,7 +71,9 @@ Usually, we recommend:
 - Change the default NocoBase root username, email, and password to prevent malicious use.
 - Since both password expiration or account locking will prevent access to the system, including administrator accounts, it is recommended to set up multiple accounts in the system that have permission to reset passwords and unlock users.
 
+
 ![](https://static-docs.nocobase.com/202501031618900.png)
+
 
 ### User Lockout
 
@@ -89,7 +81,9 @@ Usually, we recommend:
 
 Manage users who are locked out for exceeding the invalid password login limit. You can actively unlock them or actively add abnormal users to the lockout list. After a user is locked, they will be prohibited from accessing the system through any authentication method, including API keys.
 
+
 ![](https://static-docs.nocobase.com/202501031618399.png)
+
 
 ### API Keys
 
@@ -100,14 +94,18 @@ NocoBase supports calling system APIs through API keys. Users can add API keys i
 - Generally, we recommend that users set a validity period for API keys and avoid using the "Never expire" option.
 - If an API key is found to be abnormally used and may be at risk of leakage, users can delete the corresponding API key to invalidate it.
 
+
 ![](https://static-docs.nocobase.com/46141872fc0ad9a96fa5b14e97fcba12.png)
+
 
 ### Single Sign-On (SSO)
 
 > Commercial Plugin
 
 NocoBase provides a rich set of SSO authentication plugins, supporting multiple mainstream protocols such as OIDC, SAML 2.0, LDAP, and CAS. At the same time, NocoBase also has a complete set of authentication method extension interfaces, which can support the rapid development and access of other authentication types. You can easily connect your existing IdP with NocoBase to centrally manage user identities on the IdP to enhance security.
+
 ![](https://static-docs.nocobase.com/202501031619427.png)
+
 
 ### Two-factor authentication
 
@@ -129,11 +127,23 @@ NocoBase supports setting blacklists or whitelists for user access IPs.
 
 By setting different roles in the system and setting corresponding permissions for roles, you can finely control the permissions of users to access resources. Administrators need to configure reasonably according to the needs of actual scenarios to reduce the risk of system resource leakage.
 
+### Root User
+
+When NocoBase is initially installed, the application will initialize a root user. It is recommended that users modify the root user's information by setting system environment variables to avoid malicious exploitation.
+
+- `INIT_ROOT_USERNAME` - root username
+- `INIT_ROOT_EMAIL` - root user email
+- `INIT_ROOT_PASSWORD` - root user password, please set a strong password.
+
+During subsequent use of the system, it is recommended that users set up and use other administrator accounts, and avoid directly using the root user to operate the application.
+
 ### Roles and Permissions
 
 NocoBase controls the permissions of users to access resources by setting roles in the system, authorizing different roles, and binding users to corresponding roles. Each user can have multiple roles, and users can switch roles to operate resources from different perspectives. If the department plugin is installed, you can also bind roles and departments, so that users can have the roles bound on their respective departments.
 
+
 ![](https://static-docs.nocobase.com/202501031620965.png)
+
 
 ### System Configuration Permissions
 
@@ -148,7 +158,9 @@ System configuration permissions include the following settings:
 ### Menu Permissions
 
 Menu permissions are used to control the permission of users to enter different menu pages, including desktop and mobile.
+
 ![](https://static-docs.nocobase.com/202501031620717.png)
+
 
 ### Data Permissions
 
@@ -156,17 +168,23 @@ NocoBase provides fine-grained control over the permissions of users to access d
 
 #### Global Control
 
+
 ![](https://static-docs.nocobase.com/202501031620866.png)
+
 
 #### Table-level, Field-level Control
 
+
 ![](https://static-docs.nocobase.com/202501031621047.png)
+
 
 #### Data Scope Control
 
 Set the scope of data that users can operate. Note that the scope of data here is different from the scope of data configured in the block. The scope of data configured in the block is usually only used for front-end filtering of data. If you need to strictly control the permission of users to access data resources, you need to configure it here, which is controlled by the server.
 
+
 ![](https://static-docs.nocobase.com/202501031621712.png)
+
 
 ## Data Security
 
@@ -184,13 +202,17 @@ When using third-party services in NocoBase, we recommend that you configure the
 By default, the key is encrypted using the AES-256-CBC algorithm. NocoBase will automatically generate a 32-bit encryption key and save it to storage/.data/environment/aes_key.dat. Users should properly keep the key file to prevent it from being stolen. If you need to migrate data, the key file needs to be migrated together.
 :::
 
+
 ![](https://static-docs.nocobase.com/202501031622612.png)
+
 
 ### File Storage
 
 If you need to store sensitive files, it is recommended to use a cloud storage service compatible with the S3 protocol and use the commercial plugin File storage: S3 (Pro) to enable private reading and writing of files. If you need to use it in the internal network environment, it is recommended to use storage applications that support private deployment and are compatible with the S3 protocol, such as MinIO.
 
+
 ![](https://static-docs.nocobase.com/202501031623549.png)
+
 
 ### Application Backup
 
@@ -204,7 +226,9 @@ Professional and above editions can use the backup manager for backups. The back
 - Synchronize backup files to cloud storage: Isolate backup files from the application service itself to prevent the loss of backup files while the service is unavailable due to server failure.
 - Backup file encryption: Set a password for backup files to reduce the risk of data loss caused by backup file leakage.
 
+
 ![](https://static-docs.nocobase.com/202501031623107.png)
+
 
 ## Runtime Environment Security
 
@@ -240,7 +264,9 @@ NocoBase supports complete intranet deployment, refer to
 
 In actual use, we recommend enterprise users to isolate testing and production environments to ensure the security of application data and the runtime environment in the production environment. With the migration management plugin, you can migrate application data between different environments.
 
+
 ![](https://static-docs.nocobase.com/202501031627729.png)
+
 
 ## Auditing and Monitoring
 
@@ -253,9 +279,13 @@ NocoBase's audit log function records users' activity records in the system. By 
 - Check users' access information such as IP, device, and operation time to detect abnormal behaviors in time.
 - Trace the operation history of data resources in the system.
 
+
 ![](https://static-docs.nocobase.com/202501031627719.png)
 
+
+
 ![](https://static-docs.nocobase.com/202501031627922.png)
+
 
 ### Application Logs
 

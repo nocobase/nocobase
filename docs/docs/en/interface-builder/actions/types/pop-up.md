@@ -22,4 +22,4 @@ Configure blocks in the modal as needed.
 
 - [Edit button](/interface-builder/actions/action-settings/edit-button): Edit the button's title, type, and icon.
 - [Linkage rule](/interface-builder/linkage-rule): Dynamically control the button's state (visible/disabled).
-- [Edit modal](/interface-builder/actions/action-settings/edit-popup): Modal/Drawer.
+- [Edit modal](/interface-builder/actions/action-settings/edit-popup): Set the open mode (modal or drawer) and size.

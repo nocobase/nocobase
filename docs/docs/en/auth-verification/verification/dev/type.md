@@ -1,11 +1,11 @@
-# 扩展验证类型
+# Extending Validation Types
 
-## 客户端
+## Client-side
 
-### 注册配置表单
+### Register the configuration form
 
-## 服务端
+## Server-side
 
-### 实现验证类
+### Implement the validation class
 
-### 注册验证类型
+### Register the validation type

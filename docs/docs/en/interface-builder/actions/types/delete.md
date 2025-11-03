@@ -17,4 +17,4 @@ The delete action is used to delete data records by configuring a row delete but
 
 - [Edit button](/interface-builder/actions/action-settings/edit-button)
 - [Linkage rule](/interface-builder/actions/action-settings/linkage-rule)
-- [Confirmation](/interface-builder/actions/action-settings/double-check)
+- [Double check](/interface-builder/actions/action-settings/double-check)

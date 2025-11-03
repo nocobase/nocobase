@@ -1,13 +1,19 @@
+---
+pkg: "@nocobase/plugin-ai"
+---
+
 # Text Chat
 
-<PluginInfo name="ai"></PluginInfo>
+
 
 ## Introduction
 
 Using the LLM node in a workflow, you can initiate a conversation with an online LLM service, leveraging the capabilities of large models to assist in completing a series of business processes.
 
 
+
 ![](https://static-docs.nocobase.com/202503041012091.png)
+
 
 
 ## Create LLM Node
@@ -15,7 +21,9 @@ Using the LLM node in a workflow, you can initiate a conversation with an online
 Since conversations with LLM services are often time-consuming, the LLM node can only be used in asynchronous workflows.
 
 
+
 ![](https://static-docs.nocobase.com/202503041013363.png)
+
 
 
 ## Select Model
@@ -25,7 +33,9 @@ First, select a connected LLM service. If no LLM service is connected yet, you n
 After selecting a service, the application will attempt to retrieve a list of available models from the LLM service for you to choose from. Some online LLM services may have APIs for fetching models that do not conform to standard API protocols; in such cases, users can also manually enter the model ID.
 
 
+
 ![](https://static-docs.nocobase.com/202503041013084.png)
+
 
 
 ## Set Invocation Parameters
@@ -33,7 +43,9 @@ After selecting a service, the application will attempt to retrieve a list of av
 You can adjust the parameters for calling the LLM model as needed.
 
 
+
 ![](https://static-docs.nocobase.com/202503041014778.png)
+
 
 
 ### Response format
@@ -54,18 +66,23 @@ The array of messages sent to the LLM model can include a set of historical mess
 For user messages, provided the model supports it, you can add multiple pieces of content in a single prompt, corresponding to the `content` parameter. If the model you are using only supports the `content` parameter as a string (which is the case for most models that do not support multi-modal conversations), please split the message into multiple prompts, with each prompt containing only one piece of content. This way, the node will send the content as a string.
 
 
+
 ![](https://static-docs.nocobase.com/202503041016140.png)
+
 
 
 You can use variables in the message content to reference the workflow context.
 
 
+
 ![](https://static-docs.nocobase.com/202503041017879.png)
+
 
 
 ## Using the LLM Node's Response Content
 
 You can use the response content of the LLM node as a variable in other nodes.
+
 
 
 ![](https://static-docs.nocobase.com/202503041018508.png)

@@ -17,6 +17,7 @@ Control block behavior (e.g., whether to display it or execute JavaScript) throu
 
 ![20251023195004](https://static-docs.nocobase.com/20251023195004.png)
 
+
 For more details, see [Linkage Rules](/interface-builder/linkage-rule)
 
 ### Set Data Scope
@@ -59,8 +60,8 @@ For more details, see [Linkage Rules](/interface-builder/linkage-rule)
 ![20251023201258](https://static-docs.nocobase.com/20251023201258.png)
 
 
-
 ### Other Fields
+
 - JS Field
 - JS Item
 - Divider
@@ -77,8 +78,6 @@ For more details, see [Linkage Rules](/interface-builder/linkage-rule)
 ![20251023202017](https://static-docs.nocobase.com/20251023202017.png)
 
 
-
-
 ## Configure Actions
 
 
@@ -91,5 +90,5 @@ For more details, see [Linkage Rules](/interface-builder/linkage-rule)
 - [Pop-up](/interface-builder/actions/types/pop-up)
 - [Update Record](/interface-builder/actions/types/update-record)
 - [Trigger Workflow](/interface-builder/actions/types/trigger-workflow)
-- [JS action](/interface-builder/actions/types/js-action)
+- [JS Action](/interface-builder/actions/types/js-action)
 - [AI Employee](/interface-builder/actions/types/ai-employee)

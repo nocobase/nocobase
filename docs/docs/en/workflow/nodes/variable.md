@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-variable'
+---
+
 # Variable
 
 ## Introduction
@@ -9,7 +13,7 @@ You can declare variables in a flow or assign values to declared variables. This
 In the workflow configuration interface, click the plus ("+") button in the flow to add a "Variable" node:
 
 
-![Add Variable Node](https://static-docs.nocobase.com/53b1e48e777bfff7f2a08271526ef3ee.png)
+![Add Variable Node](https://static-docs.nocobase/53b1e48e777bfff7f2a08271526ef3ee.png)
 
 
 ## Configure Node

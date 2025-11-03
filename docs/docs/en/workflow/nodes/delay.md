@@ -12,8 +12,7 @@ Built-in plugin, no installation required.
 
 ## Create Node
 
-In the workflow configuration interface, click the plus ("+")
- button in the flow to add a "Delay" node:
+In the workflow configuration interface, click the plus ("+") button in the flow to add a "Delay" node:
 
 
 ![Create Delay Node](https://static-docs.nocobase.com/d0816999c9f7acaec1c409bd8fb6cc36.png)

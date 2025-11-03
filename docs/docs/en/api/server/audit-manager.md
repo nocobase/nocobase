@@ -1,10 +1,10 @@
 # AuditManager
 
-## 概览
+## Overview
 
-`AuditManager` 是 NocoBase 中的资源审计管理模块，用于注册需要参与审计的资源接口。
+`AuditManager` is the resource audit management module in NocoBase, used to register resource interfaces that need to be audited.
 
-### 基本使用
+### Basic Usage
 
 ```ts
 import { Plugin } from '@nocobase/server';
@@ -16,11 +16,11 @@ class PluginCustomAuditResourceServer extends Plugin {
 }
 ```
 
-## 类方法
+## Class Methods
 
 ### `setLogger()`
 
-设置审计日志的输出方法。
+Sets the output method for audit logs.
 
 ```ts
 const auditManager = new AuditManager();
@@ -29,11 +29,11 @@ auditManager.setLogger({
 })
 ```
 
-#### 签名
+#### Signature
 
 - `setLogger(logger: AuditLogger)`
 
-#### 类型
+#### Type
 
 ```ts
 export interface AuditLog {
@@ -60,13 +60,13 @@ export interface AuditLogger {
 
 ### `registerAction()`
 
-注册参与审计的资源操作。
+Registers a resource action to be audited.
 
-#### 签名
+#### Signature
 
 - `registerAction(action: Action)`
 
-#### 类型
+#### Type
 
 ```ts
 export interface UserInfo {
@@ -91,29 +91,29 @@ type Action =
     };
 ```
 
-#### 详细信息
+#### Details
 
-支持几种写法:
+Several writing styles are supported:
 
-1. 对所有资源生效
+1. Apply to all resources
 
 ```ts
 registerActions(['create']);
 ```
 
-2. 对某个资源的所有操作生效 `resource:*`
+2. Apply to all actions of a specific resource `resource:*`
 
 ```ts
 registerActions(['app:*']);
 ```
 
-3. 对某个资源的某个操作生效 `resouce:action`
+3. Apply to a specific action of a specific resource `resource:action`
 
 ```ts
 registerAction(['pm:update']);
 ```
 
-4. 支持传入针对操作自定义的 `getMetaData`, `getUserInfo`, `getSourceAndTarget` 方法
+4. Supports passing custom `getMetaData`, `getUserInfo`, and `getSourceAndTarget` methods for the action
 
 ```ts
 registerActions([
@@ -122,7 +122,7 @@ registerActions([
 ]);
 ```
 
-当注册的接口有重叠时，颗粒度细的注册方方式优先级更高，例如：
+When registered interfaces overlap, the more specific registration method has higher priority. For example:
 
 1. `registerActions('create')`
 
@@ -130,12 +130,12 @@ registerActions([
 
 3. `registerAction({ name: 'user:create', getMetaData })`
 
-对于 `user:create` 接口，生效的是 `3`.
+For the `user:create` interface, `3` will take effect.
 
 ### `registerActions()`
 
-注册多个参与审计的资源操作。
+Registers multiple resource actions to be audited.
 
-#### 签名
+#### Signature
 
-- `registerAction(actions: Action[])`
+- `registerActions(actions: Action[])`

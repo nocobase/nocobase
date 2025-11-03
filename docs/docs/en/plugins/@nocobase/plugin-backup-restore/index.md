@@ -6,6 +6,9 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
+deprecated: true
 ---
 
 # App backup & restore (deprecated)
+
+> Note: This plugin is deprecated.

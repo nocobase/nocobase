@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-action-import"
+---
 # Import
-
-:::tip Tip
-This feature is provided by the `plugin-action-import` plugin.
-:::
 
 ## Introduction
 
@@ -29,7 +28,7 @@ After converting to JSON:
   "Number1": 123,
   "Percentage": 0.25,
   "Number2": null,
-  "Number3": null,
+  "Number3": null
 }
 ```
 
@@ -37,8 +36,8 @@ After converting to JSON:
 
 Supported input text (English is case-insensitive):
 
-- `Yes`, `Y`, `True`, `1`, `是`
-- `No`, `N`, `False`, `0`, `否`
+- `Yes`, `Y`, `True`, `1`
+- `No`, `N`, `False`, `0`
 
 | Field1 | Field2 | Field3 | Field4 | Field5 |
 | ------ | ------ | ------ | ------ | ------ |
@@ -52,7 +51,7 @@ After converting to JSON:
   "Field2": true,
   "Field3": true,
   "Field4": true,
-  "Field5": false,
+  "Field5": false
 }
 ```
 
@@ -68,7 +67,7 @@ After converting to JSON:
 {
   "DateOnly": "2023-01-18T00:00:00.000Z",
   "Local(+08:00)": "2023-01-18T14:22:22.000Z",
-  "GMT": "2023-01-18T22:22:22.000Z",
+  "GMT": "2023-01-18T22:22:22.000Z"
 }
 ```
 
@@ -82,7 +81,7 @@ For example, the options for the `Priority` field include:
 | ------------ | ------------ |
 | low          | Low          |
 | medium       | Medium       |
-| high         | Low          |
+| high         | High         |
 
 Both option values and option labels can be used as import text.
 
@@ -94,7 +93,7 @@ Both option values and option labels can be used as import text.
 After converting to JSON:
 
 ```ts
-[{ Priority: 'high' }, { Priority: 'low' }];
+[{ "Priority": "high" }, { "Priority": "low" }]
 ```
 
 ### China Administrative Division Fields
@@ -107,8 +106,8 @@ After converting to JSON:
 
 ```ts
 {
-  "Region1": ["11","1101"],
-  "Region2": ["12","1201"]
+  "Region1": ["11", "1101"],
+  "Region2": ["12", "1201"]
 }
 ```
 
@@ -146,7 +145,7 @@ After converting to JSON:
 ```ts
 {
   "Department": [1], // 1 is the record ID for the department named "Development Team"
-  "Category": [1,2], // 1,2 are the record IDs for categories titled "Category1" and "Category2"
+  "Category": [1, 2] // 1,2 are the record IDs for categories titled "Category1" and "Category2"
 }
 ```
 
@@ -160,7 +159,7 @@ After converting to JSON:
 
 ```ts
 {
-  "JSON": {"key":"value"}
+  "JSON": { "key": "value" }
 }
 ```
 
@@ -174,10 +173,10 @@ After converting to JSON:
 
 ```ts
 {
-  "Point": [1,2],
-  "Line": [[1,2], [3,4]],
-  "Polygon": [[1,2], [3,4], [1,2]],
-  "Circle": [1,2,3]
+  "Point": [1, 2],
+  "Line": [[1, 2], [3, 4]],
+  "Polygon": [[1, 2], [3, 4], [1, 2]],
+  "Circle": [1, 2, 3]
 }
 ```
 
@@ -218,10 +217,9 @@ After converting to JSON:
 
 ```ts
 {
-  "Point": [1,2]
+  "Point": [1, 2]
 }
 ```
-
 
 ## Action Settings
 

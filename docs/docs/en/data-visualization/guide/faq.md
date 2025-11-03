@@ -24,7 +24,7 @@ Answer: In visual configuration, select fields based on chart type. For example,
 
 ## Preview/save issues
 ### Do I need to preview manually after changes?
-Answer: In visual mode, changes are auto‑previewed. In SQL and Custom modes, to avoid frequent refreshes, finish editing and click Preview manually.
+Answer: In visual mode, changes are auto-previewed. In SQL and Custom modes, to avoid frequent refreshes, finish editing and click Preview manually.
 
 ### After closing the dialog, the chart preview is lost?
 Answer: Preview is for temporary viewing. Save changes before closing; unsaved changes are not retained.

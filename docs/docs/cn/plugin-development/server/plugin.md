@@ -72,7 +72,7 @@ export default PluginHelloServer;
 | **resourceManager** | `ResourceManager` | 用于注册和管理 REST API 资源与操作处理器。详见 [资源管理](./resource-manager.md)。 |
 | **acl** | `ACL` | 访问控制层，用于定义权限、角色和资源访问策略，实现细粒度的权限控制。详见 [权限控制](./acl.md)。 |
 | **cacheManager** | `CacheManager` | 管理系统级缓存，支持 Redis、内存缓存等多种缓存后端，提升应用性能。详见 [缓存](./cache.md) |
-| **cronJobManager** | `CronJobManager` | 用于注册、启动和管理定时任务，支持 Cron 表达式配置。详见 [定时任务](./cron-job.md) |
+| **cronJobManager** | `CronJobManager` | 用于注册、启动和管理定时任务，支持 Cron 表达式配置。详见 [定时任务](./cron-job-manager.md) |
 | **i18n** | `I18n` | 国际化支持，提供多语言翻译和本地化功能，便于插件支持多语言。详见 [国际化](./i18n.md) |
 | **cli** | `CLI` | 管理命令行接口，注册和执行自定义命令，扩展 NocoBase CLI 功能。详见 [命令行](./command.md) |
 | **dataSourceManager** | `DataSourceManager` | 管理多个数据源实例及其连接，支持多数据源场景。详见 [数据源管理](./collections.md) |

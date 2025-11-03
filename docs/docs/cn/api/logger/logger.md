@@ -33,7 +33,7 @@ interface LoggerOptions
 
 ### `createSystemLogger()`
 
-创建以规定方式打印的系统运行日志。参考 [日志 - 系统日志](../handbook/logger/index.md#系统日志)
+创建以规定方式打印的系统运行日志。参考 [日志 - 系统日志](#)
 
 #### 签名
 
@@ -161,5 +161,5 @@ const transport = Transports.console({
 
 ## 相关文档
 
-- [开发指南 - 日志](/plugin-development/development/server/logger.md)
-- [日志](/log-and-monitor/logger/index.md)
+- [开发指南 - 日志](/plugin-development/server/logger)
+- [日志](/log-and-monitor/logger/index)

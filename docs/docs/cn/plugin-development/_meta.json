@@ -71,11 +71,6 @@
       },
       {
         "type": "custom-link",
-        "label": "CronJobManager 定时任务管理",
-        "link": "/plugin-development/server/cron-job-manager"
-      },
-      {
-        "type": "custom-link",
         "label": "Event 事件",
         "link": "/plugin-development/server/event"
       },
@@ -101,8 +96,13 @@
       },
       {
         "type": "custom-link",
-        "label": "CLI 命令行",
+        "label": "Command 命令行",
         "link": "/plugin-development/server/command"
+      },
+      {
+        "type": "custom-link",
+        "label": "CronJobManager 定时任务管理",
+        "link": "/plugin-development/server/cron-job-manager"
       },
       {
         "type": "custom-link",
@@ -122,62 +122,57 @@
       },
       {
         "type": "custom-link",
-        "label": "Plugin",
+        "label": "Plugin 插件",
         "link": "/plugin-development/client/plugin"
       },
       {
         "type": "custom-link",
-        "label": "FlowEngine",
-        "link": "/plugin-development/client/flow-engine"
-      },
-      {
-        "type": "custom-link",
-        "label": "Context",
+        "label": "Context 上下文",
         "link": "/plugin-development/client/context"
       },
       {
         "type": "custom-link",
-        "label": "Router",
+        "label": "Router 路由",
         "link": "/plugin-development/client/router"
       },
       {
         "type": "custom-link",
-        "label": "FlowModel",
-        "link": "/plugin-development/client/flow-model"
-      },
-      {
-        "type": "custom-link",
-        "label": "ACL",
+        "label": "ACL 权限控制",
         "link": "/plugin-development/client/acl"
       },
       {
         "type": "custom-link",
-        "label": "DataSourceManager",
+        "label": "DataSourceManager 数据源管理",
         "link": "/plugin-development/client/data-source-manager"
       },
       {
         "type": "custom-link",
-        "label": "Resource",
+        "label": "Resource 资源",
         "link": "/plugin-development/client/resource"
       },
       {
         "type": "custom-link",
-        "label": "Request",
+        "label": "Request 请求",
         "link": "/plugin-development/client/request"
       },
       {
         "type": "custom-link",
-        "label": "Styles & Themes",
+        "label": "Styles & Themes 样式与主题",
         "link": "/plugin-development/client/styles-themes"
       },
       {
         "type": "custom-link",
-        "label": "Logger",
+        "label": "Logger 日志",
         "link": "/plugin-development/client/logger"
       },
       {
         "type": "custom-link",
-        "label": "Test",
+        "label": "I18n 国际化",
+        "link": "/plugin-development/client/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "Test 测试",
         "link": "/plugin-development/client/test"
       }
     ]
@@ -186,6 +181,11 @@
     "type": "custom-link",
     "label": "其他",
     "items": [
+      {
+        "type": "custom-link",
+        "label": "插件升级指南",
+        "link": "/plugin-development/plugin-upgrade-guide"
+      },
       {
         "type": "custom-link",
         "label": "语言列表",

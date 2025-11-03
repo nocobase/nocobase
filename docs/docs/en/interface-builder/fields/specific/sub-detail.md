@@ -37,5 +37,3 @@ Supports nested display of multi-level association fields. Example: Orders/Order
 
 
 [Field Component](/interface-builder/fields/association-field): Switch to other read-only association field components, such as the Title field component, Sub-table (only supported for to-many association fields), etc.
-
----

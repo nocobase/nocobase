@@ -10,21 +10,29 @@ The Auth: SAML 2.0 plugin follows the SAML 2.0 (Security Assertion Markup Langua
 
 ## Activate Plugin
 
+
 ![](https://static-docs.nocobase.com/6a12f3d8073c47532a4f8aac900e4296.png)
+
 
 ## Add SAML Authentication
 
 Enter the user authentication plugin management page.
 
+
 ![](https://static-docs.nocobase.com/202411130004459.png)
+
 
 Add - SAML
 
+
 ![](https://static-docs.nocobase.com/5076fe56086b7799be308bbaf7c4425d.png)
+
 
 ## Configuration
 
+
 ![](https://static-docs.nocobase.com/976b66e589973c322d81dcddd22c6146.png)
+
 
 - SSO URL - Provided by IdP, used for single sign-on
 - Public Certificate - Provided by IdP
@@ -41,7 +49,7 @@ Field mapping needs to be configured on the IdP's configuration platform, you ca
 The fields available for mapping in NocoBase are:
 
 - email (required)
-- phone (only effective for platforms that support `phone` in scope, such as Alibaba Cloud, Lark)
+- phone (only effective for IdPs that support `phone` in their scope)
 - nickname
 - username
 - firstName
@@ -54,5 +62,6 @@ Currently, user organization and role mapping are not supported.
 ## Sign In
 
 Visit the sign in page and click the button under the sign in form to initiate third-party login.
+
 
 ![](https://static-docs.nocobase.com/74963865c9d36a294948e6adeb5b24bc.png)

@@ -202,5 +202,3 @@ Converts the number to French format (using `,` as the decimal separator). Not r
 
 ##### Example and Result
 Depends on the specific conversion case.
-
-

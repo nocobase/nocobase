@@ -4,15 +4,15 @@ pkg: '@nocobase/plugin-ip-restriction'
 
 # IP Restrictions
 
-<PluginInfo licenseBundled="enterprise" name="ip-restriction"></PluginInfo>
-
 ## Introduction
 
 NocoBase allows administrators to set up whitelists or blacklists for user access IPs to restrict unauthorized external network connections or block known malicious IP addresses, thereby reducing security risks. It also supports administrators in querying access denial logs to identify risky IPs.
 
 ## Configuration Rules
 
+
 ![2025-01-23-10-07-34-20250123100733](https://static-docs.nocobase.com/2025-01-23-10-07-34-20250123100733.png)
+
 
 ### IP Filtering Modes
 
@@ -27,11 +27,15 @@ Used to define IP addresses that are allowed or denied access to the system. Its
 
 After a user is denied access, the access IP is written to the system logs, and the corresponding log file can be downloaded for analysis.
 
+
 ![2025-01-17-13-33-51-20250117133351](https://static-docs.nocobase.com/2025-01-17-13-33-51-20250117133351.png)
+
 
 Log Example:
 
+
 ![2025-01-14-14-42-06-20250114144205](https://static-docs.nocobase.com/2025-01-14-14-42-06-20250114144205.png)
+
 
 ## Configuration Recommendations
 

@@ -1,13 +1,19 @@
+---
+pkg: "@nocobase/plugin-ai-ee"
+---
+
 # Structured Output
 
-<PluginInfo name="ai-ee" licenseBundled="true"></PluginInfo>
+
 
 ## Introduction
 
 In some application scenarios, users may want the LLM model to respond with structured content in JSON format. This can be achieved by configuring "Structured Output".
 
 
+
 ![](https://static-docs.nocobase.com/202503041306405.png)
+
 
 
 ## Configuration
@@ -43,7 +49,10 @@ The way a model generates structured content depends on the **model** used and i
 The structured content of the model's response is saved as a JSON object in the node's Structured content field and can be used by subsequent nodes.
 
 
+
 ![](https://static-docs.nocobase.com/202503041330291.png)
+
+
 
 
 

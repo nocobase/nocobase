@@ -162,7 +162,13 @@ export class PluginClientServer extends Plugin {
   setACL() {
     this.app.acl.registerSnippet({
       name: `ui.desktopRoutes`,
-      actions: ['desktopRoutes:create', 'desktopRoutes:update', 'desktopRoutes:move', 'desktopRoutes:destroy'],
+      actions: [
+        'desktopRoutes:create',
+        'desktopRoutes:update',
+        'desktopRoutes:move',
+        'desktopRoutes:destroy',
+        'desktopRoutes:updateOrCreate',
+      ],
     });
 
     this.app.acl.registerSnippet({
@@ -170,8 +176,7 @@ export class PluginClientServer extends Plugin {
       actions: ['desktopRoutes:list', 'roles.desktopRoutes:*'],
     });
 
-    this.app.acl.allow('desktopRoutes', 'listAccessible', 'loggedIn');
-    this.app.acl.allow('desktopRoutes', 'getAccessible', 'loggedIn');
+    this.app.acl.allow('desktopRoutes', ['listAccessible', 'getAccessible'], 'loggedIn');
   }
 
   /**

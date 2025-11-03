@@ -1,25 +1,25 @@
 # Write Your First Plugin
 
-This article will guide you through creating a block plugin from scratch that can be used on a page, helping you understand the basic structure and development process of a NocoBase plugin.
+This guide will walk you through creating a block plugin that can be used in pages from scratch, helping you understand the basic structure and development workflow of NocoBase plugins.
 
 ## Prerequisites
 
-Before you begin, make sure you have successfully installed NocoBase. If you haven't installed it yet, you can refer to the following installation guides:
+Before getting started, make sure you have successfully installed NocoBase. If not, you can refer to the following installation guides:
 
-- [Install with create-nocobase-app](/get-started/installation/create-nocobase-app)
+- [Install using create-nocobase-app](/get-started/installation/create-nocobase-app)
 - [Install from Git source](/get-started/installation/git)
 
-Once the installation is complete, you can officially start your plugin development journey.
+Once installation is complete, you can officially start your plugin development journey.
 
-## Step 1: Create a Plugin Skeleton via CLI
+## Step 1: Create Plugin Skeleton via CLI
 
-Execute the following command in the root directory of the repository to quickly generate an empty plugin:
+Execute the following command in the repository root directory to quickly generate an empty plugin:
 
 ```bash
 yarn pm create @my-project/plugin-hello
 ```
 
-After the command runs successfully, it will generate basic files in the `packages/plugins/@my-project/plugin-hello` directory, with the default structure as follows:
+After the command runs successfully, it will generate basic files in the `packages/plugins/@my-project/plugin-hello` directory. The default structure is as follows:
 
 ```bash
 ├─ /packages/plugins/@my-project/plugin-hello
@@ -30,37 +30,37 @@ After the command runs successfully, it will generate basic files in the `packag
   ├─ server.d.ts
   ├─ server.js
   └─ src
-     ├─ index.ts                 # Default export for the server-side plugin
-     ├─ client                   # Location for client-side code
+     ├─ index.ts                 # Default export server-side plugin
+     ├─ client                   # Client-side code location
      │  ├─ index.tsx             # Default exported client-side plugin class
-     │  ├─ plugin.tsx            # Plugin entry point (extends @nocobase/client Plugin)
-     │  ├─ models                # Optional: Front-end models (e.g., workflow nodes)
+     │  ├─ plugin.tsx            # Plugin entry (extends @nocobase/client Plugin)
+     │  ├─ models                # Optional: frontend models (such as flow nodes)
      │  │  └─ index.ts
      │  └─ utils
      │     ├─ index.ts
      │     └─ useT.ts
-     ├─ server                   # Location for server-side code
+     ├─ server                   # Server-side code location
      │  ├─ index.ts              # Default exported server-side plugin class
-     │  ├─ plugin.ts             # Plugin entry point (extends @nocobase/server Plugin)
-     │  ├─ collections           # Optional: Server-side collections
-     │  ├─ migrations            # Optional: Data migrations
+     │  ├─ plugin.ts             # Plugin entry (extends @nocobase/server Plugin)
+     │  ├─ collections           # Optional: server-side collections
+     │  ├─ migrations            # Optional: data migrations
      │  └─ utils
      │     └─ index.ts
      ├─ utils
      │  ├─ index.ts
      │  └─ tExpr.ts
-     └─ locale                   # Optional: Multi-language
+     └─ locale                   # Optional: multi-language
         ├─ en-US.json
         └─ zh-CN.json
 ```
 
-After creation, you can visit the Plugin Manager page in your browser (default address: http://localhost:13000/admin/settings/plugin-manager) to confirm that the plugin has appeared in the list.
+After creation, you can access the plugin manager page in your browser (default URL: http://localhost:13000/admin/settings/plugin-manager) to confirm whether the plugin appears in the list.
 
-## Step 2: Implement a Simple Client-side Block
+## Step 2: Implement a Simple Client Block
 
-Next, we will add a custom block model to the plugin to display a welcome text.
+Next, we'll add a custom block model to the plugin to display a welcome message.
 
-1. **Add a block model file** `client/models/HelloBlockModel.tsx`:
+1. **Create a new block model file** `client/models/HelloBlockModel.tsx`:
 
 ```tsx pure
 import { BlockModel } from '@nocobase/client';
@@ -83,7 +83,7 @@ HelloBlockModel.define({
 });
 ```
 
-2. **Register the block model**. Edit `client/models/index.ts` and export the new model so it can be loaded by the front-end runtime:
+2. **Register the block model**. Edit `client/models/index.ts` to export the new model for frontend runtime loading:
 
 ```ts
 import { ModelConstructor } from '@nocobase/flow-engine';
@@ -94,11 +94,11 @@ export default {
 } as Record<string, ModelConstructor>;
 ```
 
-After saving the code, if you are running the development script, you should see hot-reloading logs in the terminal output.
+After saving the code, if you're running a development script, you should see hot-reload logs in the terminal output.
 
-## Step 3: Activate and Experience the Plugin
+## Step 3: Activate and Test the Plugin
 
-You can enable the plugin via the command line or the interface:
+You can enable the plugin via command line or interface:
 
 - **Command Line**
 
@@ -106,17 +106,15 @@ You can enable the plugin via the command line or the interface:
   yarn pm enable @my-project/plugin-hello
   ```
 
-- **Admin Interface**: Go to the Plugin Manager, find `@my-project/plugin-hello`, and click "Activate".
+- **Management Interface**: Access the plugin manager, find `@my-project/plugin-hello`, and click "Activate".
 
-After activation, create a new "Modern page (v2)" page. When adding a block, you will see "Hello block". Insert it into the page to see the welcome content you just wrote.
-
+After activation, create a new "Modern page (v2)" page. When adding blocks, you'll see "Hello block". Insert it into the page to see the welcome content you just wrote.
 
 ![20250928174529](https://static-docs.nocobase.com/20250928174529.png)
 
-
 ## Step 4: Build and Package
 
-When you are ready to distribute the plugin to other environments, you need to build and then package it:
+When you're ready to distribute the plugin to other environments, you need to build and package it first:
 
 ```bash
 yarn build @my-project/plugin-hello --tar
@@ -125,8 +123,11 @@ yarn build @my-project/plugin-hello
 yarn nocobase tar @my-project/plugin-hello
 ```
 
-> Tip: If the plugin is created in the source code repository, the first build will trigger a type check for the entire repository, which may take a long time. It is recommended to ensure that dependencies are installed and the repository is in a buildable state.
+> Note: If the plugin is created in the source repository, the first build will trigger a full repository type check, which may take some time. It's recommended to ensure dependencies are installed and the repository is in a buildable state.
 
-After the build is complete, the packaged file is located by default at `storage/tar/@my-project/plugin-hello.tar.gz`.
+After the build completes, the package file is located at `storage/tar/@my-project/plugin-hello.tar.gz` by default.
 
-## Step 5: Upload to Other NocoBase Applications
+## Step 5: Upload to Another NocoBase Application
+
+Upload and extract to the target application's `./storage/plugins` directory. For details, see [Install and Upgrade Plugins](../get-started/install-upgrade-plugins.mdx).
+

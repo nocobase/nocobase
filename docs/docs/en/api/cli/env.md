@@ -14,8 +14,8 @@ Time-related operations will be processed according to this time zone. Modifying
 
 Application environment, default value is `development`. Options include:
 
-- `production` Production environment
-- `development` Development environment
+- `production` - Production environment
+- `development` - Development environment
 
 ```bash
 APP_ENV=production
@@ -164,8 +164,8 @@ When `DB_UNDERSCORED=true`, the actual table and field names in the database wil
 
 Database logging switch, default value is `off`. Options include:
 
-- `on` on
-- `off` off
+- `on` - Enabled
+- `off` - Disabled
 
 ```bash
 DB_LOGGING=on

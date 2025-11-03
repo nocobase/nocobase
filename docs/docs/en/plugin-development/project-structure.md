@@ -1,99 +1,101 @@
-# Project Directory Structure
+# Project Structure
 
-Whether you clone the source code via Git or initialize a project using `create-nocobase-app`, the resulting NocoBase project is essentially a multi-package repository based on Yarn Workspace.
+Whether you clone the source code from Git or initialize a project using `create-nocobase-app`, the generated NocoBase project is essentially a **Yarn Workspace**-based monorepo.
 
 ## Top-Level Directory Overview
 
-The following example uses `my-nocobase-app/` as the root directory. There might be minor differences in various environments.
+The following example uses `my-nocobase-app/` as the project directory. There may be slight differences in different environments:
 
-```text
+```bash
 my-nocobase-app/
 ├── packages/              # Project source code
-│   ├── plugins/           # Plugin source code under development (uncompiled)
-├── storage/               # Runtime data and dynamic artifacts
+│   ├── plugins/           # Plugins under development (uncompiled)
+├── storage/               # Runtime data and dynamically generated content
 │   ├── apps/
 │   ├── db/
 │   ├── logs/
 │   ├── uploads/
-│   ├── plugins/           # Compiled plugins, including those uploaded from the interface
-│   └── tar/               # Generated plugin tarballs
-├── scripts/               # Common scripts and utility commands
-├── .env*                  # Environment-specific variable configurations
+│   ├── plugins/           # Compiled plugins (including those uploaded via UI)
+│   └── tar/               # Plugin package files (.tar)
+├── scripts/               # Utility scripts and tool commands
+├── .env*                  # Environment variable configurations for different environments
 ├── lerna.json             # Lerna workspace configuration
-├── package.json           # Root package configuration, declares workspaces and scripts
-├── tsconfig*.json         # TypeScript configuration (client, server, path mapping)
-├── vitest.config.mts      # Vitest test configuration
-└── playwright.config.ts   # Playwright E2E configuration
+├── package.json           # Root package configuration, declares workspace and scripts
+├── tsconfig*.json         # TypeScript configurations (frontend, backend, path mapping)
+├── vitest.config.mts      # Vitest unit test configuration
+└── playwright.config.ts   # Playwright E2E test configuration
 ```
 
-## The `packages/` Subdirectory
+## packages/ Subdirectory Description
 
-The `packages/` directory houses NocoBase's core capabilities and extensible packages. Its actual content depends on the project's origin:
+The `packages/` directory contains NocoBase's core modules and extensible packages. The content depends on the project source:
 
-- **Projects created with `create-nocobase-app`**: By default, only `packages/plugins/` is provided for placing your own plugin source code. Structurally, each subdirectory is an independent npm package.
-- **Cloning the official source code repository directly**: You will see more subdirectories like `core/`, `plugins/`, `pro-plugins/`, and `presets/`, which contain the framework core, built-in plugins, and official presets.
+- **Projects created via `create-nocobase-app`**: By default, it only includes `packages/plugins/`, used to store custom plugin source code. Each subdirectory is an independent npm package.
+- **Cloned official source repository**: You can see more subdirectories, such as `core/`, `plugins/`, `pro-plugins/`, `presets/`, etc., corresponding to framework core, built-in plugins, and official preset solutions.
 
-Regardless of the method, `packages/plugins` is the preferred location for developers to write and debug custom plugins.
+Regardless of the case, `packages/plugins` is the main location for developing and debugging custom plugins.
 
-## The `storage/` Runtime Directory
+## storage/ Runtime Directory
 
-`storage/` stores data and build artifacts generated at runtime. The meanings of common subdirectories are as follows:
+`storage/` stores runtime-generated data and build outputs. Common subdirectory descriptions are as follows:
 
-- `apps/`: Application configurations and cache in multi-app scenarios.
-- `logs/`: Runtime logs, debug output.
-- `uploads/`: Attachments and media resources uploaded by users.
-- `plugins/`: Packaged plugins uploaded via the interface or pulled from a remote source (if installed).
-- `tar/`: Plugin tarballs generated after running `yarn build <plugin> --tar` (appears after the command is executed).
+- `apps/`: Configuration and cache for multi-app scenarios.
+- `logs/`: Runtime logs and debug output.
+- `uploads/`: User-uploaded files and media resources.
+- `plugins/`: Packaged plugins uploaded via UI or imported via CLI.
+- `tar/`: Compressed plugin packages generated after executing `yarn build <plugin> --tar`.
 
-> The `storage` directory is usually configured to be ignored by Git and requires separate handling during deployment or backup.
+> It's usually recommended to add the `storage` directory to `.gitignore` and handle it separately during deployment or backup.
 
 ## Environment Configuration and Project Scripts
 
-- `.env`, `.env.test`, `.env.e2e`: Environment variables for local execution, unit/integration testing, and end-to-end testing, respectively.
-- `scripts/`: Maintenance scripts (e.g., database initialization, release helper scripts).
+- `.env`, `.env.test`, `.env.e2e`: Used for running locally, unit/integration testing, and end-to-end testing respectively.
+- `scripts/`: Stores common maintenance scripts (such as database initialization, release utilities, etc.).
 
-## Plugin Storage Paths and Priority
+## Plugin Loading Paths and Priority
 
-Plugins can exist in multiple directories simultaneously. NocoBase loads them according to the following priority at startup:
+Plugins may exist in multiple locations. NocoBase will load them in the following priority order when starting:
 
-1. Source code version in `packages/plugins` (suitable for integrated development and debugging).
-2. Packaged version in `storage/plugins` (uploaded via the interface or imported via CLI).
-3. Dependency package in `node_modules` (installed via npm/yarn or built into the framework).
+1. Source code version in `packages/plugins` (for local development and debugging).
+2. Packaged version in `storage/plugins` (uploaded via UI or imported via CLI).
+3. Dependency packages in `node_modules` (installed via npm/yarn or framework built-in).
 
-When a plugin with the same name exists in both the source code and packaged directories, the source code version is loaded with priority, making it convenient to override the live version locally for debugging.
+When a plugin with the same name exists in both the source directory and the packaged directory, the system will prioritize loading the source version, facilitating local overrides and debugging.
 
-## Single Plugin Directory Template
+## Plugin Directory Template
 
-Initialize a plugin using the CLI:
+Create a plugin using the CLI:
 
 ```bash
 yarn pm create @my-project/plugin-hello
 ```
 
-Example of the generated structure:
+The generated directory structure is as follows:
 
-```text
+```bash
 packages/plugins/@my-project/plugin-hello/
-├── dist/                    # Build artifacts (generated on demand)
+├── dist/                    # Build output (generated as needed)
 ├── src/                     # Source code directory
-│   ├── client/              # Client-side code (blocks, pages, models, etc.)
+│   ├── client/              # Frontend code (blocks, pages, models, etc.)
 │   │   ├── plugin.ts        # Client-side plugin main class
-│   │   └── index.ts         # Client-side entry point
-│   ├── locale/              # Locale resources (shared between client and server)
+│   │   └── index.ts         # Client-side entry
+│   ├── locale/              # Multi-language resources (shared between frontend and backend)
 │   ├── swagger/             # OpenAPI/Swagger documentation
 │   └── server/              # Server-side code
 │       ├── collections/     # Collection definitions
 │       ├── commands/        # Custom commands
 │       ├── migrations/      # Database migration scripts
 │       ├── plugin.ts        # Server-side plugin main class
-│       └── index.ts         # Server-side entry point
-├── index.ts                 # Default export (bridges client and server)
-├── client.d.ts              # Client-side type declarations
-├── client.js                # Client-side build output (generated after build)
+│       └── index.ts         # Server-side entry
+├── index.ts                 # Frontend and backend bridge export
+├── client.d.ts              # Frontend type declarations
+├── client.js                # Frontend build artifact
 ├── server.d.ts              # Server-side type declarations
-├── server.js                # Server-side build output (generated after build)
+├── server.js                # Server-side build artifact
 ├── .npmignore               # Publish ignore configuration
 └── package.json
 ```
 
-> The `dist`, `client.js`, and `server.js` files generated after the build are loaded when the plugin is enabled. For daily development, you only need to modify the `src/` directory. Before publishing, run `yarn build <plugin>` or `yarn build <plugin> --tar`.
+> After the build completes, the `dist/` directory and `client.js`, `server.js` files will be loaded when the plugin is enabled.
+> During development, you only need to modify the `src/` directory. Before publishing, execute `yarn build <plugin>` or `yarn build <plugin> --tar`.
+

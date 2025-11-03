@@ -35,11 +35,11 @@ For example, when a query node queries multiple pieces of data, the node result 
 [
   {
     "id": 1,
-    "title": "标题1"
+    "title": "Title 1"
   },
   {
     "id": 2,
-    "title": "标题2"
+    "title": "Title 2"
   }
 ]
 ```
@@ -47,7 +47,7 @@ For example, when a query node queries multiple pieces of data, the node result 
 However, when using it as a variable in subsequent nodes, if the selected variable is in the form of `Node data/Query node/Title`, you will get an array mapped to the corresponding field values:
 
 ```json
-["标题1", "标题2"]
+["Title 1", "Title 2"]
 ```
 
 If it is a multi-dimensional array (such as a many-to-many association field), you will get a one-dimensional array with the corresponding field flattened.
@@ -56,7 +56,7 @@ If it is a multi-dimensional array (such as a many-to-many association field), y
 
 ### System Time
 
-Gets the system time at the moment of execution, based on the node being executed. The time zone of this time is the one set on the server.
+Gets the system time at the moment the node is executed. The time zone of this time is the one set on the server.
 
 ### Date Range Parameters
 

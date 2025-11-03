@@ -12,10 +12,9 @@ The NocoBase backup manager plugin provides features for fully backing up of the
 The Backup Manager plugin is included in the Professional and Enterprise editions. For Community and Standard edition users, you can directly back up the database; see details at: [`How to Backup and Restore NocoBase`](https://www.nocobase.com/en/blog/nocobase-backup-restore)
 :::
 
-
 ## Install Database Client
 
-Visit the official website to download the client that matches the version of the database you are using:
+The Backup Manager depends on the client for the corresponding database. Before use, please visit the official website to download the client that matches your database version:
 
 - MySQL: https://dev.mysql.com/downloads/
 - PostgreSQL: https://www.postgresql.org/download/
@@ -114,13 +113,17 @@ docker compose exec app bash -c "mysql -V"
 
 ## Usage Instructions
 
+
 ![](https://static-docs.nocobase.com/202510302154966.png)
+
 
 ### Create New Backup
 
 Click the "New backup" button to create a new backup based on the backup configuration and display the backup status in the backup list.
 
+
 ![](https://static-docs.nocobase.com/202510302154912.png)
+
 
 ### Restore Backup
 
@@ -145,7 +148,9 @@ Click the "Restore" button of the backup item in the backup list, enter the back
 
 > If you need to restore the backup to a lower version of the database, you need to enable the tolerant mode.
 
+
 ![](https://static-docs.nocobase.com/202510302156882.png)
+
 
 #### Restore from local backup file
 
@@ -155,7 +160,9 @@ Click the `Restore from local backup` button, select the local backup file in th
 
 > If you need to restore the backup to a lower version of the database, you need to enable the tolerant mode.
 
+
 ![](https://static-docs.nocobase.com/202510302155602.png)
+
 
 #### Download Backup File
 
@@ -169,13 +176,15 @@ Click the `Delete` button of the backup item in the backup list to delete the ba
 
 Switch to the "Settings" tab, modify the backup settings, and click `Save` to take effect.
 
+
 ![](https://static-docs.nocobase.com/202510302156326.png)
+
 
 ### Backup Settings Description
 
-- `Automatic backup`: When enable `Run automatic backup on the cron schedule`, you can set automatic backups at specified times.
+- `Automatic backup`: After enabling `Run automatic backup on the cron schedule`, you can set automatic backups at specified times.
 - `Maximum number of backups`: Set the maximum number of locally saved backup files. After exceeding the number, the earliest backup files will be automatically deleted.
-- `Sync backup to cloud storage`: Set the cloud storage location where the backup files are automatically uploaded after successful backup, only support cloud storage.
+- `Sync backup to cloud storage`: Set the cloud storage where the backup files are automatically uploaded after a successful backup.
 - `Backup local storage files`: Whether to include files uploaded by users to the server's local storage (storage/uploads) in the backup.
 - `Restore password`: If a restore password is set, it must be entered when restoring the backup.
 

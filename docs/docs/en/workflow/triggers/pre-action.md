@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-request-interceptor'
+---
+
 # Before Action Event
 
 ## Introduction
@@ -15,7 +19,7 @@ Using it with the "Response message" node allows you to configure a response mes
 When creating a workflow, select the type "Before action event":
 
 
-![创建操作前事件](https://static-docs.nocobase.com/2add03f2bdb0a836baae5fe9864fc4b6.png)
+![Create Before Action Event](https://static-docs.nocobase.com/2add03f2bdb0a836baae5fe9864fc4b6.png)
 
 
 ### Select Collection
@@ -23,7 +27,7 @@ When creating a workflow, select the type "Before action event":
 In the trigger of an interception workflow, the first thing to configure is the collection corresponding to the action:
 
 
-![拦截事件配置_数据表](https://static-docs.nocobase.com/8f7122caca8159d334cf776f838d53d6.png)
+![Interceptor Event Configuration_Collection](https://static-docs.nocobase.com/8f7122caca8159d334cf776f838d53d6.png)
 
 
 Then select the interception mode. You can choose to intercept only the action button bound to this workflow, or to intercept all selected actions for this collection (regardless of which form it comes from, and without needing to bind the corresponding workflow):
@@ -31,7 +35,7 @@ Then select the interception mode. You can choose to intercept only the action b
 ### Interception Mode
 
 
-![拦截事件配置_拦截模式](https://static-docs.nocobase.com/145a7f7c3ba440bb6ca93a5ee84f16e2.png)
+![Interceptor Event Configuration_Interception Mode](https://static-docs.nocobase.com/145a7f7c3ba440bb6ca93a5ee84f16e2.png)
 
 
 Currently supported action types are "Create", "Update", and "Delete". Multiple action types can be selected simultaneously.
@@ -41,13 +45,13 @@ Currently supported action types are "Create", "Update", and "Delete". Multiple 
 If the "Trigger interception only when a form bound to this workflow is submitted" mode is selected in the trigger configuration, you also need to go back to the form interface and bind this workflow to the corresponding action button:
 
 
-![新增订单_绑定工作流](https://static-docs.nocobase.com/bae3931e60f9bcc51bbc222e40e891e5.png)
+![Add Order_Bind Workflow](https://static-docs.nocobase.com/bae3931e60f9bcc51bbc222e40e891e5.png)
 
 
 In the bind workflow configuration, select the corresponding workflow. Usually, the default context for triggering data, "Entire form data", is sufficient:
 
 
-![选择要绑定的工作流](https://static-docs.nocobase.com/78e2f023029bd570c91ee4cd19b7a0a7.png)
+![Select Workflow to Bind](https://static-docs.nocobase.com/78e2f023029bd570c91ee4cd19b7a0a7.png)
 
 
 :::info{title=Note}
@@ -84,13 +88,13 @@ Additionally, for a delete action, the "ID" in the action parameters is a single
 After configuring the trigger, you can customize the relevant judgment logic in the workflow. Typically, you will use the branch mode of the "Condition" node to decide whether to "End workflow" and return a preset "Response message" based on the results of specific business conditions:
 
 
-![拦截流程配置](https://static-docs.nocobase.com/cfddda5d8012fd3d0ca09f04ea610539.png)
+![Interceptor Workflow Configuration](https://static-docs.nocobase.com/cfddda5d8012fd3d0ca09f04ea610539.png)
 
 
 At this point, the configuration of the corresponding workflow is complete. You can now try to submit data that does not meet the conditions configured in the workflow's condition node to trigger the interception logic. You will then see the returned response message:
 
 
-![提示出错的响应消息](https://static-docs.nocobase.com/06bd4a6b6ec499c853f0c39987f63a6a.png)
+![Error Response Message](https://static-docs.nocobase.com/06bd4a6b6ec499c853f0c39987f63a6a.png)
 
 
 ### Response Message Status
@@ -98,7 +102,7 @@ At this point, the configuration of the corresponding workflow is complete. You 
 If the "End workflow" node is configured to exit with a "Success" status, the action request will still be intercepted when this node is executed, but the returned response message will be displayed with a "Success" status (instead of "Error"):
 
 
-![成功状态的响应消息](https://static-docs.nocobase.com/9559bbf56067144759451294b18c790e.png)
+![Success Status Response Message](https://static-docs.nocobase.com/9559bbf56067144759451294b18c790e.png)
 
 
 ## Example
@@ -108,25 +112,25 @@ Combining the basic instructions above, let's take an "Order Submission" scenari
 Other steps are the same as in the instructions. However, since an order involves multiple products, in addition to adding a many-to-many relationship "Order" <-- M:1 -- "Order Item" -- 1:M --> "Product" in the data model, you also need to add a "Loop" node in the "Before action event" workflow to iteratively check if the inventory of each product is sufficient:
 
 
-![示例_循环检测流程](https://static-docs.nocobase.com/8307de47d5629595ab6cf00f8aa898e3.png)
+![Example_Loop Check Workflow](https://static-docs.nocobase.com/8307de47d5629595ab6cf00f8aa898e3.png)
 
 
 The object for the loop is selected as the "Order Item" array from the submitted order data:
 
 
-![示例_循环对象配置](https://static-docs.nocobase.com/ed662b54cc1f5425e2b472053f89baba.png)
+![Example_Loop Object Configuration](https://static-docs.nocobase.com/ed662b54cc1f5425e2b472053f89baba.png)
 
 
 The condition node within the loop is used to determine if the inventory of the current product object in the loop is sufficient:
 
 
-![示例_循环中的条件判断](https://static-docs.nocobase.com/4af91112934b0a04a4ce55e657c0833b.png)
+![Example_Condition in Loop](https://static-docs.nocobase.com/4af91112934b0a04a4ce55e657c0833b.png)
 
 
 Other configurations are the same as in the basic usage. When the order is finally submitted, if any product has insufficient inventory, the order submission will be intercepted, and a corresponding prompt message will be returned. During testing, try submitting an order with multiple products, where one has insufficient inventory and another has sufficient inventory. You can see the returned response message:
 
 
-![示例_提交后的响应消息](https://static-docs.nocobase.com/dd9e81084aa237bda0241d399ac19270.png)
+![Example_Response Message after Submission](https://static-docs.nocobase.com/dd9e81084aa237bda0241d399ac19270.png)
 
 
 As you can see, the response message does not indicate that the first product, "iPhone 15 pro," is out of stock, but only that the second product, "iPhone 14 pro," is. This is because in the loop, the first product has sufficient inventory, so it is not intercepted, while the second product has insufficient inventory, which intercepts the order submission.
@@ -149,7 +153,7 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 The URL parameter `triggerWorkflows` is the key of the workflow; multiple workflow keys are separated by commas. This key can be obtained by hovering the mouse over the workflow name at the top of the workflow canvas:
 
 
-![工作流_key_查看方式](https://static-docs.nocobase.com/20240426135108.png)
+![Workflow_Key_View_Method](https://static-docs.nocobase.com/20240426135108.png)
 
 
 After the above call is made, the Before Action Event for the corresponding `posts` collection will be triggered. After the corresponding workflow is processed synchronously, the data will be created and returned normally.

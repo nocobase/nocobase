@@ -1,8 +1,8 @@
-# Development
+# Extension Development
 
-## Extend client file type
+## Extending Frontend File Types
 
-For uploaded files, the client UI can display different previews based on file types. The attachment field of file-manager uses a built-in browser-based (iframe) file preview capacity, supporting most file types (such as images, videos, audio, and PDFs) for direct preview in the browser. When a file type is not supported for browser preview or requires special interaction, additional preview components can be extended based on the file type.
+For uploaded files, the client UI can display different previews based on file types. The attachment field of the file manager uses a built-in browser-based (iframe) file preview, supporting most file types (such as images, videos, audio, and PDFs) for direct preview in the browser. When a file type is not supported for browser preview or requires special interaction, additional preview components can be extended based on the file type.
 
 ### Example
 
@@ -96,7 +96,7 @@ export class AttachmentFileTypes {
 
 #### `attachmentFileTypes`
 
-`attachmentFileTypes` is a global instance which could be imported from `@nocobase/client` package:
+`attachmentFileTypes` is a global instance imported from the `@nocobase/client` package:
 
 ```ts
 import { attachmentFileTypes } from '@nocobase/client';
@@ -104,34 +104,34 @@ import { attachmentFileTypes } from '@nocobase/client';
 
 #### `attachmentFileTypes.add()`
 
-Register file type descriptor to the file type registry. The type of the descriptor is `AttachmentFileType`.
+Registers a new file type descriptor with the file type registry. The descriptor's type is `AttachmentFileType`.
 
 #### `AttachmentFileType`
 
 ##### `match()`
 
-The match method of file type.
+A method for matching file formats.
 
-The argument `file` is the uploaded file data object, including some properties could be used to check types.
+The `file` parameter is a data object for the uploaded file, containing properties that can be used for type checking:
 
-* `mimetype`: Mimetype
-* `extname`: Extension name of file, including "."
-* `path`: Relative path of the file storing
-* `url`: File URL
+*   `mimetype`: The file's mimetype.
+*   `extname`: The file extension, including the `.`.
+*   `path`: The relative storage path of the file.
+*   `url`: The file's URL.
 
-The return value type is `boolean`, means matched or not.
+Returns a `boolean` indicating whether the file is a match.
 
 ##### `Previewer`
 
-Component used to preview file.
+A React component for previewing the file.
 
 Props:
 
-* `index`: Index value in attachemnts list
-* `list`: Attachemnt list
-* `onSwitchIndex`: Method to switch preview index
+*   `index`: The index of the file in the attachment list.
+*   `list`: The list of attachments.
+*   `onSwitchIndex`: A function to switch the previewed file by its index.
 
-For `onSwitchIndex`, any index value in the list could be used, to switch to other file. If `null` is used as argument, the preview component will be closed.
+The `onSwitchIndex` function can be called with any index from the `list` to switch to another file. Calling it with `null` closes the preview component.
 
 ```ts
 onSwitchIndex(null);

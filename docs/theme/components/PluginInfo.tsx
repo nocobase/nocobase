@@ -1,8 +1,8 @@
 import { Badge } from '@rspress/core/theme';
-import { Link, useFrontmatter, useLang } from "@rspress/runtime";
+import { Link, useFrontmatter } from "@rspress/runtime";
 import { PluginPrice } from './PluginPrice';
-import { EditionLevels } from './EditionLevels';
-import { transformHref } from '../utils';
+import { EditionLevels, EditionLevelsEN } from './EditionLevels';
+import { transformHref, useLangPrefix } from '../utils';
 
 export type PluginInfoFrontmatter = {
   displayName?: string;
@@ -34,7 +34,7 @@ const firstTdStyle: React.CSSProperties = {
 
 export function PluginInfo() {
   const { frontmatter } = useFrontmatter() as { frontmatter: PluginInfoFrontmatter };
-  const lang = useLang();
+  const lang = useLangPrefix();
   if (!frontmatter?.displayName) {
     return null;
   }
@@ -82,7 +82,7 @@ export function PluginInfo() {
           {frontmatter.points && (
             <tr style={trStyle}>
               <td style={firstTdStyle}>Pricing</td>
-              <td style={tdStyle}><PluginPrice /></td>
+              <td style={tdStyle}><PluginPrice points={Number(frontmatter.points)} /></td>
             </tr>
           )}
           {frontmatter.editionLevel && Number(frontmatter.editionLevel) > 0 && (
@@ -90,8 +90,8 @@ export function PluginInfo() {
               <td style={firstTdStyle}>Pricing</td>
               <td style={tdStyle}>
                 <div style={{ display: "inline-flex", gap: "2px" }}>
-                  <Badge type="info">
-                    {EditionLevels[frontmatter.editionLevel]}+
+                  <Badge type="danger">
+                    {lang === 'cn' ? EditionLevels[frontmatter.editionLevel] : EditionLevelsEN[frontmatter.editionLevel]}+
                   </Badge>
                 </div>
               </td>

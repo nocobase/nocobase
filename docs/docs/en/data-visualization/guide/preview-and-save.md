@@ -5,7 +5,9 @@
 
 ## Entry points
 
+
 ![clipboard-image-1761479218](https://static-docs.nocobase.com/clipboard-image-1761479218.png)
+
 
 - In visual (Basic) mode, changes are applied to the preview automatically by default.
 - In SQL and Custom modes, click the Preview button on the right to apply changes to the preview.

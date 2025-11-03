@@ -74,13 +74,12 @@ Using Flow instead of static props allows for:
 #### 1. Define the Flow for button properties
 
 ```tsx pure
-
 const buttonSettings = defineFlow({
   key: 'buttonSettings',
   
   title: 'Button Settings',
   steps: {
-    setProps: {
+    general: {
       title: 'General Configuration',
       uiSchema: {
         title: {
@@ -266,7 +265,7 @@ const model = this.flowEngine.createModel({
 
 ---
 
-## Model Comparison: ReactComponent vs. FlowModel
+## Model Comparison: ReactComponent vs FlowModel
 
 Flow does not change how components are implemented. It simply adds support for PropsFlow and EventFlow to a ReactComponent, allowing the component's properties and events to be configured and orchestrated visually.
 

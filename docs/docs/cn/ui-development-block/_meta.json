@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "快速入门",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "介绍",
+        "link": "/ui-development-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "编写一个区块插件",
+        "link": "/ui-development-block/write-a-block-plugin"
+      }
+    ]
+  }
+]

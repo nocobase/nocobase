@@ -4,11 +4,15 @@ The relationship between a class and its students is an example of a one-to-many
 
 ER Diagram:
 
+
 ![alt text](https://static-docs.nocobase.com/9475f044d123d28ac8e56a077411f8dc.png)
+
 
 Field Configuration:
 
+
 ![alt text](https://static-docs.nocobase.com/a608ce54821172dad7e8ab760107ff4e.png)
+
 
 ## Parameter Description
 
