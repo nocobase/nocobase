@@ -10,7 +10,8 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { AddSubModelButton, escapeT, FlowSettingsButton } from '@nocobase/flow-engine';
 import { Table } from 'antd';
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
 import { adjustColumnOrder } from '../../blocks/table/utils';
@@ -25,6 +26,71 @@ const AddFieldColumn = ({ model }) => {
     >
       <FlowSettingsButton icon={<SettingOutlined />}>{model.translate('Fields')}</FlowSettingsButton>
     </AddSubModelButton>
+  );
+};
+
+const DisplayTable = (props) => {
+  const { pageSize, value, size, collection, baseColumns, enableIndexColumn = true, model } = props;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPageSize, setCurrentPageSize] = useState(pageSize);
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    setCurrentPageSize(pageSize);
+  }, [pageSize]);
+
+  // 前端分页
+  const pagination = useMemo(() => {
+    return {
+      current: currentPage, // 当前页码
+      pageSize: currentPageSize, // 每页条目数
+      total: value?.length, // 数据总条数
+      onChange: (page, size) => {
+        setCurrentPage(page); // 更新当前页码
+        setCurrentPageSize(size); // 更新每页显示条目数
+      },
+      showSizeChanger: true, // 显示每页条数切换
+      showTotal: (total) => {
+        return t('Total {{count}} items', { count: total });
+      },
+    } as any;
+  }, [currentPage, currentPageSize, value]);
+
+  const getColumns = () => {
+    return adjustColumnOrder(
+      [
+        enableIndexColumn && {
+          key: '__index__',
+          width: 48,
+          align: 'center',
+          fixed: 'left',
+          render: (props, record, index) => {
+            const pageRowIdx = (currentPage - 1) * currentPageSize + index;
+            return pageRowIdx + 1;
+          },
+        },
+        ...baseColumns.concat({
+          key: 'empty',
+        }),
+        {
+          key: 'addColumn',
+          fixed: 'right',
+          width: 100,
+          title: <AddFieldColumn model={model} />,
+        },
+      ].filter(Boolean),
+    ) as any;
+  };
+  return (
+    <Table
+      tableLayout="fixed"
+      size={size}
+      rowKey={collection.filterTargetKey}
+      scroll={{ x: 'max-content' }}
+      dataSource={value}
+      columns={getColumns()}
+      pagination={pagination}
+    />
   );
 };
 export class DisplaySubTableFieldModel extends FieldModel {
@@ -55,57 +121,52 @@ export class DisplaySubTableFieldModel extends FieldModel {
     await this.dispatchEvent('beforeRender');
   }
 
-  getColumns() {
-    const { enableIndexColumn = true } = this.props;
+  getBaseColumns() {
     const baseColumns = this.mapSubModels('columns', (column: any) => column.getColumnProps()).filter((v) => {
       return !v.hidden;
     });
 
-    return adjustColumnOrder(
-      [
-        enableIndexColumn && {
-          key: '__index__',
-          width: 48,
-          align: 'center',
-          fixed: 'left',
-          render: (props, record, index) => {
-            return index + 1;
-          },
-        },
-        ...baseColumns.concat({
-          key: 'empty',
-        }),
-        {
-          key: 'addColumn',
-          fixed: 'right',
-          width: 100,
-          title: <AddFieldColumn model={this} />,
-        },
-      ].filter(Boolean),
-    ) as any;
+    return baseColumns;
   }
   public render() {
     return (
-      <Table
-        tableLayout="fixed"
-        size={this.props.size}
-        rowKey={this.collection.filterTargetKey}
-        // virtual={this.props.virtual}
-        scroll={{ x: 'max-content' }}
-        dataSource={this.props.value}
-        columns={this.getColumns()}
-        pagination={false}
-      />
+      <DisplayTable {...this.props} collection={this.collection} baseColumns={this.getBaseColumns()} model={this} />
     );
   }
 }
 
 DisplaySubTableFieldModel.registerFlow({
   key: 'TableAssociation',
+  title: escapeT('Association table settings'),
   steps: {
     init: {
       async handler(ctx) {
         await ctx.model.applySubModelsBeforeRenderFlows('columns');
+      },
+    },
+    pageSize: {
+      title: escapeT('Page size'),
+      uiSchema: {
+        pageSize: {
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: [
+            { label: '5', value: 5 },
+            { label: '10', value: 10 },
+            { label: '20', value: 20 },
+            { label: '50', value: 50 },
+            { label: '100', value: 100 },
+            { label: '200', value: 200 },
+          ],
+        },
+      },
+      defaultParams: {
+        pageSize: 10,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          pageSize: params.pageSize,
+        });
       },
     },
   },

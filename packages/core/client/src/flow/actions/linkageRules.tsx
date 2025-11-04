@@ -1270,6 +1270,18 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
       model.hidden = !!newProps.hiddenModel;
 
+      if (newProps.required === true) {
+        const rules = (model.props.rules || []).filter((rule) => !rule.required);
+        rules.push({
+          required: true,
+          message: ctx.t('The field value is required'),
+        });
+        model.setProps('rules', rules);
+      } else if (newProps.required === false) {
+        const rules = (model.props.rules || []).filter((rule) => !rule.required);
+        model.setProps('rules', rules);
+      }
+
       if (newProps.hiddenText) {
         model.setProps('title', '');
       }

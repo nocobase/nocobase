@@ -21,7 +21,7 @@ UI Extensions
 | Module          | Description                                                                                   | Related Chapter                                      |
 | --------------- | --------------------------------------------------------------------------------------------- | ---------------------------------------------------- |
 | **UI Configuration** | Use FlowEngine and flow models to implement dynamic configuration and orchestration of component properties, supporting visual customization of complex pages and interactions | [flow-engine.md](../../flow-engine/index.md) and [flow-model.md](../../flow-engine/flow-model.md) |
-| **Block Extensions** | Customize page blocks, create reusable UI modules and layouts                                         | [blocks](../../ui-development/blocks/index.md)       |
-| **Field Extensions** | Customize field types, implement display and editing of complex data | [fields](../../ui-development/fields/index.md)        |
-| **Action Extensions** | Customize action types, implement complex logic and interaction handling | [actions](../../ui-development/actions/index.md)     |
+| **Block Extensions** | Customize page blocks, create reusable UI modules and layouts                                         | [blocks](../../interface-builder/blocks/index.md)       |
+| **Field Extensions** | Customize field types, implement display and editing of complex data | [fields](../../interface-builder/fields/index.md)        |
+| **Action Extensions** | Customize action types, implement complex logic and interaction handling | [actions](../../interface-builder/actions/index.md)     |
 
