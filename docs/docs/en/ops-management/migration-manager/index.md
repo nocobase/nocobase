@@ -91,7 +91,7 @@ Select independent rules and the tables to be processed by the current independe
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
 
-Application environment variable check (learn more about [Environment Variables](/variables-and-secrets))
+Application environment variable check (learn more about [Environment Variables](../variables-and-secrets/index.md))
 
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
