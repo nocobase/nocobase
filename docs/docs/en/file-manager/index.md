@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+---
+
 # File Manager
 
 ## Introduction

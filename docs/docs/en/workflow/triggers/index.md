@@ -4,11 +4,11 @@ A trigger is the entry point for a workflow. When an event that meets the trigge
 
 - [Collection Events](./collection) (Built-in)
 - [Schedule](./schedule) (Built-in)
-- [Before Action](./pre-action) (Provided by @nocobase/plugin-workflow-request-interceptor plugin)
-- [After Action](./post-action) (Provided by @nocobase/plugin-workflow-action-trigger plugin)
-- [Custom Action](./custom-action) (Provided by @nocobase/plugin-workflow-custom-action-trigger plugin)
-- [Approval](./approval) (Provided by @nocobase/plugin-workflow-approval plugin)
-- [Webhook](./webhook) (Provided by @nocobase/plugin-workflow-webhook plugin)
+- [Before Action](./pre-action) (Provided by the @nocobase/plugin-workflow-request-interceptor plugin)
+- [After Action](./post-action) (Provided by the @nocobase/plugin-workflow-action-trigger plugin)
+- [Custom Action](./custom-action) (Provided by the @nocobase/plugin-workflow-custom-action-trigger plugin)
+- [Approval](./approval) (Provided by the @nocobase/plugin-workflow-approval plugin)
+- [Webhook](./webhook) (Provided by the @nocobase/plugin-workflow-webhook plugin)
 
 The timing of when each event is triggered is shown in the figure below:
 
