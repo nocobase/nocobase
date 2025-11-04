@@ -142,7 +142,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
     return (
-      <FormItem {...this.props} name={fieldPath}>
+      <FormItem {...this.props} name={fieldPath} validateFirst={true}>
         <FieldModelRenderer model={modelForRender} name={fieldPath} />
       </FormItem>
     );

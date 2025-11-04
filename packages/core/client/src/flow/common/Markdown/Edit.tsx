@@ -289,9 +289,10 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
 
   const handleTextChange = useCallback(
     (e) => {
-      const next = e ?? '';
-      setInnerValue(next);
-      onChange?.(next);
+      const val = e ?? '';
+      const result = val.replace(/^\s+/g, '');
+      setInnerValue(result);
+      onChange?.(result);
     },
     [onChange],
   );
