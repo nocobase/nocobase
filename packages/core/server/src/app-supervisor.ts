@@ -74,9 +74,12 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
 
     this.bootstrapQueue = new PQueue({
-      concurrency: process.env.SUBAPP_BOOTSTRAP_CONCURRENCY ? parseInt(process.env.SUBAPP_BOOTSTRAP_CONCURRENCY) : 10,
-      intervalCap: process.env.SUBAPP_BOOTSTRAP_INTERVAL_CAP ? parseInt(process.env.SUBAPP_BOOTSTRAP_INTERVAL_CAP) : 10,
-      interval: process.env.SUBAPP_BOOTSTRAP_INTERVAL ? parseInt(process.env.SUBAPP_BOOTSTRAP_INTERVAL) : 1000,
+      concurrency: process.env.SUBAPP_BOOTSTRAP_CONCURRENCY ? parseInt(process.env.SUBAPP_BOOTSTRAP_CONCURRENCY) : 30,
+      intervalCap: process.env.SUBAPP_BOOTSTRAP_INTERVAL_CAP
+        ? parseInt(process.env.SUBAPP_BOOTSTRAP_INTERVAL_CAP)
+        : Infinity,
+      interval: process.env.SUBAPP_BOOTSTRAP_INTERVAL ? parseInt(process.env.SUBAPP_BOOTSTRAP_INTERVAL) : 0,
+      timeout: 1 * 60 * 1000,
     });
   }
 

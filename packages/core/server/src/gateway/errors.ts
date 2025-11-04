@@ -76,7 +76,7 @@ export const errors: AppErrors = {
 
   APP_INITIALIZED: {
     status: 503,
-    message: ({ app }) => `application ${app?.name} is initialized, waiting for command`,
+    message: ({ app }) => `application ${app?.name} is initialized, please refresh the page`,
     maintaining: true,
   },
 

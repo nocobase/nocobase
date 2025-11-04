@@ -156,7 +156,7 @@ const getProps = (app: Application) => {
 
   if (app.error.code === 'APP_INITIALIZED') {
     return {
-      status: 'warning',
+      status: 'info',
       title: 'App initialized',
       subTitle: app.error?.message,
     };
