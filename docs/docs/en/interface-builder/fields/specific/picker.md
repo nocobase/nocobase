@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Data Selector, in the form of a popup table selector, supports selecting existing data from the target collection for association or adding data to the target collection and then associating it.
+The Data Selector, as a popup table selector, supports selecting existing data from the target table for association or adding new data to the target table for association.
 
 
 ![20251027203343](https://static-docs.nocobase.com/20251027203343.png)

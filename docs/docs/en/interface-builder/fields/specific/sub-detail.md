@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Sub-details is the component corresponding to the Sub-form in read-only mode. Compared to the Label and Title components, Sub-details can not only display more data from the current collection but can also be configured to display data from related collections. Multi-level relationship data is clearly displayed in the form of nested details.
+Sub-details is the component corresponding to the Sub-form in view mode. Compared to the Label and Title components, Sub-details can not only display more data from the current collection but can also be configured to display data from related collections. Multi-level relationship data is clearly displayed as nested details.
 
 ## Usage
 

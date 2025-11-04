@@ -6,13 +6,13 @@ Sub-forms are suitable for scenarios where you create new associated data before
 
 ## Usage
 
-### Sub-form for to-many association fields
+### Sub-form for many-to-many association fields
 
 
 ![20251029205655](https://static-docs.nocobase.com/20251029205655.png)
 
 
-### Sub-form for to-one association fields
+### Sub-form for one-to-many association fields
 
 
 ![20251027202218](https://static-docs.nocobase.com/20251027202218.png)

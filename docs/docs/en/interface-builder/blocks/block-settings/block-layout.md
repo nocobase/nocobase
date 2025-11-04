@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Form-like blocks such as Form blocks, Details blocks, and List blocks support layout settings. Layout options include vertical layout (labels and input fields are arranged row by row) and horizontal layout (labels and input fields are placed side by side). Users can adjust the block field layout according to specific needs to ensure that information input or viewing is both clear and efficient.
+Form-related blocks such as Form, Details, and List blocks support layout configuration. Layout options include vertical layout (labels and input fields are arranged row by row) and horizontal layout (labels and input fields are placed side by side). Users can adjust the block field layout according to specific needs to ensure that information input or viewing is both clear and efficient.
 
 ### Vertical (Default)
 
@@ -14,7 +14,7 @@ The default layout is vertical.
 
 ### Horizontal
 
-The horizontal layout displays labels and input fields side-by-side, which effectively saves space. For fields with long titles, you can choose to set them to wrap or show an ellipsis to ensure a clean and aesthetically pleasing interface.
+The horizontal layout displays labels and input fields side-by-side, effectively saving space. For fields with long titles, you can choose to wrap or truncate them with an ellipsis to ensure a clean and visually pleasing layout.
 
 
 ![20251024120237](https://static-docs.nocobase.com/20251024120237.png)

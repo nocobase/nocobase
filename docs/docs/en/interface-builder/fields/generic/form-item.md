@@ -1,8 +1,8 @@
-# Form Fields
+# Field Configuration in Forms
 
 ## Introduction
 
-Different types of fields in a form have different configuration options, allowing users to extend the field's configuration options through plugins to meet more personalized needs.
+Different types of fields in a form have unique configuration options, which can be extended through plugins to meet more personalized needs.
 
 
 ![20251025174555](https://static-docs.nocobase.com/20251025174555.png)

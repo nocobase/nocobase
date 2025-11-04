@@ -6,21 +6,21 @@ pkg: "@nocobase/plugin-data-source-kingbase"
 
 ## Introduction
 
-Use KingbaseES database as a data source, which can be either the primary database or an external database.
+KingbaseES can be used as a data source, either as the **primary database** or an **external database**.
 
 :::warning
-Currently, only KingbaseES databases running in pg mode are supported.
+Currently, only KingbaseES databases running in **pg mode** are supported.
 :::
 
 ## Installation
 
 ### Using as the Primary Database
 
-Refer to the Installation documentation for the setup procedures. The main difference lies in the environment variables.
+Refer to the installation documentation for setup steps. The key difference lies in the environment variable configuration.
 
 #### Environment Variables
 
-Edit the .env file to add or modify the following environment variable configurations:
+Edit the `.env` file and add or modify the following variables:
 
 ```bash
 # Adjust DB parameters as needed
@@ -42,12 +42,12 @@ networks:
     driver: bridge
 
   app:
-    image: nocobase/nocobase:latest
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - kingbase
+      - postgres
     environment:
       # Application key for generating user tokens, etc.
       # Changing APP_KEY invalidates old tokens
@@ -72,7 +72,7 @@ networks:
 
   # Kingbase service for testing purposes only
   kingbase:
-    image: nocobase/kingbase:v009r001c001b0030_single_x86
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
     restart: always
     privileged: true
@@ -89,7 +89,7 @@ networks:
     command: ["/usr/sbin/init"]
 ```
 
-#### Installation Using create-nocobase-app
+#### Installing via `create-nocobase-app`
 
 ```bash
 yarn create nocobase-app my-nocobase-app -d kingbase \
@@ -103,7 +103,7 @@ yarn create nocobase-app my-nocobase-app -d kingbase \
 
 ### Using as an External Database
 
-Execute the installation or upgrade command
+Run the installation or upgrade command:
 
 ```bash
 yarn nocobase install
@@ -113,11 +113,9 @@ yarn nocobase upgrade
 
 Activate the Plugin
 
-
 ![20241024121815](https://static-docs.nocobase.com/20241024121815.png)
-
 
 ## User Guide
 
-- Primary Database: Refer to [Main data source](/data-sources/data-source-main)
-- External Database: See [Data Source / External Database](/data-sources/data-source-manager/external-database)
+- **Primary Database**: See [Main Database](/data-sources/data-source-main/)
+- **External Database**: See [Data Source / External Database](/data-sources/data-source-manager/external-database)

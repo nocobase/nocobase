@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Field configurations for Details, List, and Grid blocks are basically the same, primarily controlling how fields are displayed in read-only mode.
+Field configurations for Details, List, and Grid blocks are similar, primarily controlling how fields are displayed in the respective block.
 
 
 ![20251025172851](https://static-docs.nocobase.com/20251025172851.png)
@@ -28,7 +28,7 @@ Supports simple unit conversion, thousand separators, prefixes and suffixes, pre
 
 For more details, see [Number Formatting](/interface-builder/fields/field-settings/number-format)
 
-### Enable Click to Open
+### Enable Click-to-Open
 
 Besides association fields, regular fields can also be configured to open a pop-up on click. You can also set how the pop-up opens (Drawer, Dialog, or Sub-page).
 

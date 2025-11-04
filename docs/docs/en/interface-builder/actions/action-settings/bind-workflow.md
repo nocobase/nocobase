@@ -2,7 +2,7 @@
 
 ## Introduction
 
-On some action buttons, you can configure a bound workflow to associate the action with a workflow, achieving automated data processing.
+On some action buttons, you can configure a bound workflow to automate data processing by associating the action with the workflow.
 
 
 ![20251029144822](https://static-docs.nocobase.com/20251029144822.png)

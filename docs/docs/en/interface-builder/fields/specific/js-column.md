@@ -2,7 +2,7 @@
 
 ## Introduction
 
-JS Column is used for "custom columns" in tables, rendering the content of each row's cell via JavaScript. It is not bound to a specific field and is suitable for scenarios such as derived columns, combined displays across fields, status badges, action buttons, and remote data aggregation.
+JS Column is used for "custom columns" in tables, rendering the content of each row's cell via JavaScript. It is not tied to a specific field and is suitable for scenarios like derived columns, cross-field combinations, status badges, action buttons, and remote data aggregation.
 
 
 ![jscolumn-add-20251029](https://static-docs.nocobase.com/jscolumn-add-20251029.png)

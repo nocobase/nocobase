@@ -157,11 +157,11 @@ npx create-nocobase-app@alpha my-nocobase-app -d mariadb \
 </Tab>
 </Tabs>
 
-:::warning Environment Variables
+:::warning Environment Variables Explanation
 
 - `TZ` is used to set the application's time zone, which defaults to the operating system's time zone.
-- `APP_KEY` is the application's secret key, used for generating user tokens, etc. (If `APP_KEY` is changed, old tokens will become invalid). It can be any random string. **Please change it to your own secret key and ensure it is not exposed.**
-- `DB_*` are database-related configurations. Please modify them to match your database connection information according to your actual setup.
+- `APP_KEY` is the application's secret key used to generate user tokens and other data. (If `APP_KEY` changes, old tokens will become invalid.) It can be any random string. **Please modify it to your own secret key and make sure it is not exposed.**
+- `DB_*` are database-related configuration variables. Please modify them according to your actual database connection information.
 
 :::
 
@@ -173,7 +173,7 @@ cd my-nocobase-app
 
 ## 3. Install Dependencies
 
-📢 Depending on your network environment, system configuration, and other factors, this step may take over ten minutes.
+📢 Depending on your network environment, system configuration, and other factors, this step may take more than ten minutes.
 
 ```bash
 yarn install
@@ -195,7 +195,7 @@ yarn install --production
 yarn nocobase install --lang=en-US
 ```
 
-The installation process will automatically create the database table structure and initialize data.
+The installation process will automatically create the database table structure and initialize the data.
 
 ## 5. Start NocoBase
 
@@ -213,10 +213,11 @@ yarn start
 
 ## 6. Log in to NocoBase
 
-Open [http://localhost:13000](http://localhost:13000) in your browser. The initial account and password are `admin@nocobase.com` and `admin123`.
+Open [http://localhost:13000](http://localhost:13000) in your browser.  
+The default account and password are `admin@nocobase.com` and `admin123`.
 
-:::warning Account Security Tip
+:::warning Account Security Notice
 
-After your first login, please change the default password immediately to ensure system security.
+After the first login, please change the default password promptly to ensure system security.
 
 :::

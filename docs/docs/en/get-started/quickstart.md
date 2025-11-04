@@ -1,37 +1,37 @@
 ---
 versions:
   - label: Latest (Stable)
-    features: Stable features, well-tested, only bug fixes.
-    audience: Users who want a stable experience, production environment deployment.
+    features: Stable features, well tested, only bug fixes.
+    audience: Users who require a stable experience and production deployments.
     stability: ★★★★★
     production_recommendation: Recommended
   - label: Beta
-    features: Includes upcoming new features, has undergone initial testing, and may have a few issues.
-    audience: Users who want to experience new features in advance and provide feedback.
+    features: Includes upcoming features that have undergone initial testing and may have a few issues.
+    audience: Users who want early access to new features and can provide feedback.
     stability: ★★★★☆
     production_recommendation: Use with caution
   - label: Alpha (Development)
-    features: A version under development, with the latest features but may be incomplete or unstable.
-    audience: Technical users and contributors interested in cutting-edge development.
+    features: Development version with the latest features, which may be incomplete or unstable.
+    audience: Technically proficient users and contributors interested in cutting-edge development.
     stability: ★★☆☆☆
     production_recommendation: Use with caution
 
 install_methods:
   - label: Docker Installation (Recommended)
-    features: No coding required, simple installation, suitable for a quick experience.
-    scenarios: No-code users, users who want to quickly deploy to a server.
+    features: No code required; simple installation; suitable for quick trials.
+    scenarios: No-code users; users who want to quickly deploy to a server.
     technical_requirement: ★☆☆☆☆
-    upgrade_method: Pull the latest image and restart the container
+    upgrade_method: Pull the latest image and restart the container.
   - label: create-nocobase-app Installation
-    features: Independent business code, supports plugin extensions and interface customization.
-    scenarios: Front-end/full-stack developers, team projects, low-code development.
+    features: Independent application codebase; supports plugin extensions and UI customization.
+    scenarios: Front-end/full-stack developers; team projects; low-code development.
     technical_requirement: ★★★☆☆
-    upgrade_method: Update dependencies using yarn
+    upgrade_method: Update dependencies with yarn.
   - label: Git Source Code Installation
-    features: Get the latest source code directly, can participate in contribution and debugging.
-    scenarios: Technical developers, users who want to experience unreleased versions.
+    features: Obtain the latest source code; suitable for contribution and debugging.
+    scenarios: Technical developers; users who want to try unreleased versions.
     technical_requirement: ★★★★★
-    upgrade_method: Synchronize updates through the Git process
+    upgrade_method: Synchronize updates through Git.
 ---
 
 # Installation and Version Comparison
@@ -41,9 +41,9 @@ You can install NocoBase in different ways.
 ## Version Comparison
 
 | Item | **Latest (Stable)** | **Beta** | **Alpha (Development)** |
-|------|------------------------|----------------------|-----------------------|
-| **Features** | Stable features, well-tested, only bug fixes. | Includes upcoming new features, has undergone initial testing, and may have a few issues. | A version under development, with the latest features but may be incomplete or unstable. |
-| **Audience** | Users who want a stable experience, production environment deployment. | Users who want to experience new features in advance and provide feedback. | Technical users and contributors interested in cutting-edge development. |
+|------|---------------------|----------|-------------------------|
+| **Features** | Stable features; well tested; only bug fixes. | Includes upcoming features that have undergone initial testing and may have a few issues. | Development version with the latest features, which may be incomplete or unstable. |
+| **Audience** | Users who require a stable experience and production deployments. | Users who want early access to new features and can provide feedback. | Technically proficient users and contributors interested in cutting-edge development. |
 | **Stability** | ★★★★★ | ★★★★☆ | ★★☆☆☆ |
 | **Recommended for Production** | Recommended | Use with caution | Use with caution |
 
@@ -51,8 +51,8 @@ You can install NocoBase in different ways.
 
 | Item | **Docker Installation (Recommended)** | **create-nocobase-app Installation** | **Git Source Code Installation** |
 |------|--------------------------|------------------------------|------------------|
-| **Features** | No coding required, simple installation, suitable for a quick experience. | Independent business code, supports plugin extensions and interface customization. | Get the latest source code directly, can participate in contribution and debugging. |
-| **Scenarios** | No-code users, users who want to quickly deploy to a server. | Front-end/full-stack developers, team projects, low-code development. | Technical developers, users who want to experience unreleased versions. |
-| **Technical Requirement** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
-| **Upgrade Method** | Pull the latest image and restart the container | Update dependencies using yarn | Synchronize updates through the Git process |
+| **Features** | No code required; simple installation; suitable for quick trials. | Independent application codebase; supports plugin extensions and UI customization. | Obtain the latest source code; suitable for contribution and debugging. |
+| **Scenarios** | No-code users; users who want to quickly deploy to a server. | Front-end/full-stack developers; team projects; low-code development. | Technical developers; users who want to try unreleased versions. |
+| **Technical Requirements** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
+| **Upgrade Method** | Pull the latest image and restart the container. | Update dependencies with yarn. | Synchronize updates through Git. |
 | **Tutorials** | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) | [<code>Installation</code>](#) [<code>Upgrade</code>](#) [<code>Deployment</code>](#) |

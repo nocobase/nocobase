@@ -1,10 +1,10 @@
 # Field
 
-In the UI, a field is a field component, which is a carrier for unit data. Different types of data are presented with different field components. Fields can only be attached to blocks and cannot be used independently.
+In the UI, a field is a component that serves as a container for unit data. Different data types are represented by different field components. Fields can only be attached to blocks and cannot function independently.
 
 ## Fields in a Block
 
-Fields are generally not used alone but exist as child elements of data-type blocks. Data-type blocks usually have a "Configure fields" option, and the list of fields is provided by the current collection.
+Fields are typically not used independently but exist as child elements within data-type blocks. Data-type blocks usually have a "Configure fields" option, and the list of fields is provided by the current collection.
 
 
 ![20251029204240](https://static-docs.nocobase.com/20251029204240.png)
@@ -12,9 +12,9 @@ Fields are generally not used alone but exist as child elements of data-type blo
 
 ## Field Designer (Toolbar)
 
-Like blocks, the upper right corner of a field component also has three icons, which are:
+Similar to blocks, the upper right corner of a field component also contains three icons, which are:
 
-- Drag to layout
+- Drag to rearrange
 - [Event flow](/interface-builder/event-flow)
 - Configuration
 
@@ -24,7 +24,7 @@ Like blocks, the upper right corner of a field component also has three icons, w
 
 ## Field Layout
 
-You can customize the layout of fields within a block by dragging and dropping.
+You can customize the field layout within a block by dragging and dropping.
 
 
 ![20251025165605](https://static-docs.nocobase.com/20251025165605.gif)
@@ -32,7 +32,7 @@ You can customize the layout of fields within a block by dragging and dropping.
 
 ## Field Configuration Options
 
-In addition to general field configuration options, different types of fields support specific configuration options.
+In addition to general configuration options, different field types support specific configuration options.
 
 
 ![20251025170120](https://static-docs.nocobase.com/20251025170120.png)

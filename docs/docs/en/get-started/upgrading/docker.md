@@ -1,6 +1,6 @@
 # Upgrading a Docker Installation
 
-:::warning Before you upgrade
+:::warning Before upgrading
 
 - Be sure to back up your database
 
@@ -8,10 +8,10 @@
 
 ## 1. Switch to the directory where docker-compose.yml is located
 
-For example
+For example:
 
 ```bash
-# MacOS, Linux...
+# macOS, Linux...
 cd /your/path/my-project/
 # Windows
 cd C:\your\path\my-project
@@ -19,12 +19,12 @@ cd C:\your\path\my-project
 
 ## 2. Update the image version number
 
-:::tip About Version Numbers
+:::tip Version Number Descriptions
 
-- Alias versions, like `latest`, `latest-full`, `beta`, `beta-full`, `alpha`, `alpha-full`, usually don't need to be changed.
-- Numeric version numbers, like `1.7.14`, `1.7.14-full`, need to be changed to the target version number.
-- Only upgrades are supported; downgrades are not!!!
-- It is recommended to pin to a specific numeric version in a production environment to avoid unintentional automatic upgrades. [View all versions](https://hub.docker.com/r/nocobase/nocobase/tags)
+- Alias versions such as `latest`, `latest-full`, `beta`, `beta-full`, `alpha`, and `alpha-full` usually do not need to be changed.
+- Numeric version numbers such as `1.7.14` or `1.7.14-full` should be updated to the target version number.
+- Only upgrades are supported; downgrades are not supported.
+- It is recommended to pin to a specific numeric version in production environments to avoid unintended automatic upgrades. [View all versions](https://hub.docker.com/r/nocobase/nocobase/tags)
 
 :::
 
@@ -32,9 +32,9 @@ cd C:\your\path\my-project
 # ...
 services:
   app:
-    # Use a specific version number for production
+    # Use a fixed numeric version for production
     image: nocobase/nocobase:1.7.14-full
-    # You can also use an alias version (may upgrade automatically, use with caution in production)
+    # Alternatively, alias versions may upgrade automatically (use with caution)
     # image: nocobase/nocobase:latest-full
     # image: nocobase/nocobase:beta-full
 # ...
@@ -49,28 +49,28 @@ docker compose pull app
 # Recreate the container
 docker compose up -d app
 
-# Check the status of the app process
+# Check the app process status
 docker compose logs -f app
 ```
 
 ## 4. Upgrading third-party plugins
 
-Refer to [Install and Upgrade Plugins](../install-upgrade-plugins.mdx)
+Refer to [Install and Upgrade Plugins](../install-upgrade-plugins.md).
 
 ## 5. Rollback instructions
 
-NocoBase does not support downgrading. If you need to roll back, please restore the database backup from before the upgrade and change the image version back to the original version.
+NocoBase does not support downgrading. To roll back, restore the database backup created before the upgrade and change the image version back to the previous one.
 
 ## 6. Frequently Asked Questions (FAQ)
 
 **Q: Slow or failed image pull**
 
-This is often due to network issues. You can try configuring a Docker mirror to speed up downloads or simply try again later.
+This may be caused by network issues. Please try using a Docker mirror to improve download speed, or try again after a few minutes.
 
 **Q: Version has not changed**
 
-Confirm that you have changed `image` to the new version number and successfully executed `docker compose pull app` and `up -d app`.
+Confirm that you have updated the `image` to the new version number and successfully executed `docker compose pull app` and `docker compose up -d app`.
 
 **Q: Commercial plugin download or update failed**
 
-For commercial plugins, please verify the license key in the system, and then restart the Docker container. For details, see [NocoBase Commercial License Activation Guide](https://www.nocobase.com/blog/nocobase-commercial-license-activation-guide).
+For commercial plugins, please verify the license key in the system, then restart the Docker container. For details, see [NocoBase Commercial License Activation Guide](https://www.nocobase.com/blog/nocobase-commercial-license-activation-guide).

@@ -6,26 +6,22 @@ pkg: "@nocobase/plugin-comments"
 
 ## Introduction
 
-Comment collection is a specialized data table template designed for storing user comments and feedback. With the comment feature, you can add commenting capabilities to any data table, allowing users to discuss, provide feedback, or annotate specific records. The comment collection supports rich text editing, providing flexible content creation capabilities.
-
+A comment collection is a specialized data table template designed to store user comments and feedback. With the comment feature, you can add commenting capabilities to any data table, allowing users to discuss, provide feedback, or annotate specific records. The comment collection supports rich text editing, providing flexible content creation capabilities.
 
 ![comment-collection-2025-11-01-00-39-01](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-39-01.png)
 
-
 ## Features
 
-- **Rich Text Editing**: Includes Markdown (vditor) editor by default, supporting rich text content creation
-- **Link to Any Data Table**: Can associate comments with records in any data table through relationship fields
-- **Multi-level Comments**: Supports replying to comments, building a comment tree structure
-- **User Tracking**: Automatically records comment creator and creation time
+- **Rich Text Editing**: Includes Markdown (vditor) editor by default, supporting rich text content creation.
+- **Link to Any Data Table**: Can associate comments with records in any data table through relationship fields.
+- **Multi-level Comments**: Supports replying to comments, building a comment tree structure.
+- **User Tracking**: Automatically records the comment creator and creation time.
 
 ## User Guide
 
 ### Creating a Comment Collection
 
-
 ![comment-collection-2025-11-01-00-37-10](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-37-10.png)
-
 
 1. Go to the data table management page
 2. Click the "Create Collection" button
@@ -40,9 +36,7 @@ Comment collection is a specialized data table template designed for storing use
 
 To link comments to a target data table, you need to configure relationship fields:
 
-
 ![](https://static-docs.nocobase.com/Solution/demoE3v1-19N.gif)
-
 
 1. Add a "Many-to-One" relationship field in the comment table
 2. Select the target data table to link to (e.g., tasks table, articles table, etc.)
@@ -50,9 +44,7 @@ To link comments to a target data table, you need to configure relationship fiel
 
 ### Using Comment Blocks on Pages
 
-
 ![Enable Comments Collection](https://static-docs.nocobase.com/Solution/demoE3v1-20.gif)
-
 
 1. Go to the page where you want to add comment functionality
 2. Add a block in the details or popup of the target record

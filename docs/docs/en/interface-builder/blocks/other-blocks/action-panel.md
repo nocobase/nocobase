@@ -1,7 +1,7 @@
 ---
 pkg: "@nocobase/plugin-block-workbench"
 ---
-# Block: Workbench
+# Workbench Block
 
 ## Introduction
 

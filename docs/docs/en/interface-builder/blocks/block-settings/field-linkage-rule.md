@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Field linkage rules allow for the dynamic adjustment of the state of fields in Form/Details blocks based on user actions. Currently, the blocks that support field linkage rules include:
+Field linkage rules dynamically adjust field properties in Form/Details blocks based on user actions. The following blocks support field interaction rules:
 
 - [Form Block](/interface-builder/blocks/data-blocks/form)
 - [Details Block](/interface-builder/blocks/data-blocks/details)
@@ -16,8 +16,8 @@ In a Form block, linkage rules can dynamically adjust the behavior of fields bas
 
 - **Control field visibility (show/hide)**: Decide whether the current field is displayed based on the values of other fields.
 - **Set field as required**: Dynamically set a field as required or not required under specific conditions.
-- **Assign value**: Automatically assign a value to a field based on conditions.
-- **Execute specified JavaScript**: Write JavaScript according to business requirements.
+- **Assign value**: Automatically populate a field based on conditions.
+- **Run custom JavaScript**: Write JavaScript according to business requirements.
 
 ### **Details Block**
 
@@ -31,7 +31,7 @@ In a Details block, linkage rules are mainly used to dynamically control the vis
 
 ### Assign Value
 
-Example: When an order is checked as a supplementary order, the order status is automatically assigned the value 'Pending Review'.
+Example: When an order is checked as a supplementary order, the order status is automatically set to 'Pending Review'.
 
 
 ![20251029115348](https://static-docs.nocobase.com/20251029115348.png)
@@ -39,7 +39,7 @@ Example: When an order is checked as a supplementary order, the order status is 
 
 ### Required
 
-Example: When the order status is 'Paid', the order amount field is required.
+Example: When the order status is 'Paid', the order amount field becomes required.
 
 
 ![20251029115031](https://static-docs.nocobase.com/20251029115031.png)
@@ -47,7 +47,7 @@ Example: When the order status is 'Paid', the order amount field is required.
 
 ### Show/Hide
 
-Example: The payment account and total amount are displayed only when the order status is 'Pending Payment'.
+Example: The payment account and total amount are displayed only if the order status is 'Pending Payment'.
 
 
 ![20251030223710](https://static-docs.nocobase.com/20251030223710.png)

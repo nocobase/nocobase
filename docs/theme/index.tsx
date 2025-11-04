@@ -1,19 +1,13 @@
 import { NoSSR, useLang } from '@rspress/core/runtime';
-import { Badge, getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, Link, renderHtmlOrText, Tab, Tabs } from '@rspress/core/theme';
+import { getCustomMDXComponent as basicGetCustomMDXComponent, Layout as BasicLayout, HomeFooter, HomeHero, renderHtmlOrText } from '@rspress/core/theme';
 import {
   LlmsContainer,
   LlmsCopyButton,
   LlmsViewOptions,
 } from '@rspress/plugin-llms/runtime';
-import { useFrontmatter, useNavigate, usePageData, usePages, useSite } from '@rspress/runtime';
+import { useFrontmatter, useNavigate, usePageData } from '@rspress/runtime';
 import type { Feature } from '@rspress/shared';
 import type { JSX } from 'react';
-import { PluginCard } from './components/PluginCard';
-import { PluginInfo } from './components/PluginInfo';
-import { PluginList } from './components/PluginList';
-import { ProvidedBy } from './components/ProvidedBy';
-import './index.scss';
-import { transformHref, useLangPrefix } from './utils';
 
 function getCustomMDXComponent() {
   const { h1: H1, ...mdxComponents } = basicGetCustomMDXComponent();
@@ -27,24 +21,18 @@ function getCustomMDXComponent() {
           {/* LlmsViewOptions 组件可根据需要添加  */}
           <LlmsViewOptions />
         </LlmsContainer>
-        <PluginInfo />
-        <ProvidedBy />
       </>
     );
   };
-
   return {
     ...mdxComponents,
     h1: MyH1,
-    PluginCard,
-    Badge,
-    Tabs,
-    Tab,
-    NoSSR,
   };
 }
 
 export { getCustomMDXComponent };
+
+  import './index.scss';
 
 export interface HomeLayoutProps {
   beforeHero?: React.ReactNode;
@@ -91,7 +79,6 @@ export function HomeLayout(props: HomeLayoutProps) {
         {afterHero}
         {beforeFeatures}
         <HomeFeature />
-        <PluginList />
         {afterFeatures}
       </div>
       <HomeFooter />
@@ -121,27 +108,26 @@ export const Layout = () => {
   // const lang = useLang();
   return (
     <BasicLayout
-    // beforeNav={
-    //   <NoSSR>
-    //     <div className="rp-banner">
-    //       {
-    //         lang === 'en'
-    //           ? '🚧 NocoBase 2.0 documentation is incomplete and currently being written'
-    //           : '🚧 NocoBase 2.0 文档尚不完整，内容正在编写中'
-    //       }
-    //     </div>
-    //   </NoSSR>
-    // }
+      // beforeNav={
+      //   <NoSSR>
+      //     <div className="rp-banner">
+      //       {
+      //         lang === 'en'
+      //           ? '🚧 NocoBase 2.0 documentation is incomplete and currently being written'
+      //           : '🚧 NocoBase 2.0 文档尚不完整，内容正在编写中'
+      //       }
+      //     </div>
+      //   </NoSSR>
+      // }
     />
   );
 };
 
 function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
-  const { title, details, link: rawLink } = feature;
+  const { icon, title, details, link: rawLink } = feature;
 
   const link = rawLink;
   const navigate = useNavigate();
-  const langPrefix = useLangPrefix();
 
   return (
     <div
@@ -154,20 +140,19 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
           className={`rp-home-feature__card ${link ? 'rp-home-feature__card--clickable' : ''}`}
           onClick={() => {
             if (link) {
-              navigate(transformHref(link, langPrefix));
-              window.scrollTo({
-                top: 0,
-                behavior: 'smooth',
-              });
+              navigate(link);
             }
           }}
         >
           <div className="rp-home-feature__title-wrapper">
-            <h2 className="rp-home-feature__title">
-              {link ? (
-                <Link href={transformHref(link, langPrefix)}>{title}</Link>
-              ) : title}
-            </h2>
+            {icon ? (
+              <div
+                className="rp-home-feature__icon"
+                {...renderHtmlOrText(icon)}
+              ></div>
+            ) : null}
+
+            <h2 className="rp-home-feature__title">{title}</h2>
           </div>
           <p
             className="rp-home-feature__detail"
@@ -181,48 +166,11 @@ function HomeFeatureItem({ feature }: { feature: Feature }): JSX.Element {
 
 export function HomeFeature() {
   const { frontmatter } = useFrontmatter();
-  const { pages } = usePages();
-  const lang = useLang();
-  if (frontmatter?.pageName === 'home') {
-    return (
-      <div>
-        {frontmatter?.features?.map((feature: any, index: number) => {
-          let items = feature?.items || [];
-          if (index === 1) {
-            const page: any = pages.find(page => page.lang === lang && page.frontmatter?.pageName === 'guide');
-            if (page) {
-              const allItems = page.frontmatter?.features?.flatMap((feature: any) => feature?.items || []);
-              items = [...allItems.filter((item: any) => item.showOnHome), ...items];
-            }
-          } else if (index === 2) {
-            const page: any = pages.find(page => page.lang === lang && page.frontmatter?.pageName === 'development');
-            if (page) {
-              // 把 page.frontmatter?.features 里的 items 都拍平合并，取前 8 个
-              const allItems = page.frontmatter?.features?.flatMap((feature: any) => feature?.items || []);
-              items = [...allItems.filter((item: any) => item.showOnHome), ...feature?.items];
-            }
-          }
-          return (
-            <div key={feature.title || `feature-${index}`}>
-              <div className="rp-home-feature-container">
-                <h2 className="rp-home-feature-header">{feature.title}</h2>
-                <p className="rp-home-feature-desc">{feature.details}</p>
-              </div>
-              <div className="rp-home-feature">
-                {items?.map((item: any) => {
-                  return <HomeFeatureItem key={item.title} feature={item} />;
-                })}
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    );
-  }
+  const features = frontmatter?.features;
 
   return (
     <div>
-      {frontmatter?.features?.map((feature: any, index: number) => {
+      {features?.map((feature: any, index: number) => {
         return (
           <div key={feature.title || `feature-${index}`}>
             <div className="rp-home-feature-container">

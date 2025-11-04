@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Details block is used to display the field values of each data record. It supports flexible field layouts and has built-in data action functions, making it convenient for users to view and manage information.
+The Details block is used to display the field values of each data record. It supports flexible field layouts and comes with built-in data action options, making it convenient for users to view and manage information.
 
 ## Block Settings
 
@@ -52,7 +52,7 @@ For more details, see [Linkage Rules](/interface-builder/linkage-rule)
 ![20251023201012](https://static-docs.nocobase.com/20251023201012.png)
 
 
-### Fields from Associated Collections
+### Fields of Related Collections
 
 > **Note**: Displaying fields from associated collections is supported (currently only for to-one relationships).
 

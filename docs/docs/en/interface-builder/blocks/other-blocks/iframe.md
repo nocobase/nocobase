@@ -5,13 +5,13 @@ pkg: "@nocobase/plugin-block-iframe"
 
 ## Introduction
 
-The Iframe block allows you to embed external web pages or content into the current page. Users can easily integrate external applications into the page by configuring a URL or directly inserting HTML code. When using an HTML page, users can flexibly customize the content to meet specific display needs. This method is particularly suitable for scenarios that require customized displays, as it can load external resources without redirection, enhancing the user experience and page interactivity.
+The Iframe block allows you to embed external web pages or custom content directly into a NocoBase page. Users can either configure a URL or insert HTML code to seamlessly integrate external applications. When using HTML mode, you can fully customize the content to fit specific display requirements. This approach is particularly useful for creating tailored visualizations or embedding third-party tools without redirection, enhancing user experience and interactivity.
 
 
 ![20251026205102](https://static-docs.nocobase.com/20251026205102.png)
 
 
-## Template Syntax
+## Template Syntax Support
 
 In HTML mode, the block content supports using the **[Liquid template engine](https://shopify.github.io/liquid/basics/introduction/)** syntax.
 
@@ -21,7 +21,7 @@ In HTML mode, the block content supports using the **[Liquid template engine](ht
 
 ## Variable Support
 
-### HTML Variable Support
+### HTML Variable Parsing
 
 - Supports selecting variables from the current block context using the variable selector.
 
@@ -186,7 +186,7 @@ Example: A simple calendar component created with React and Ant Design (antd), u
 ![20250320164537](https://static-docs.nocobase.com/20250320164537.png)
 
 
-### URL Variable Support
+### URL Variable Parsing
 
 
 ![20251026212608](https://static-docs.nocobase.com/20251026212608.png)

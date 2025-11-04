@@ -7,7 +7,7 @@ pkg: "@nocobase/plugin-block-list"
 
 The List block displays data in a list format, suitable for data display scenarios such as task lists, news, and product information.
 
-## Block Configuration
+## Block Settings
 
 
 ![20251023202835](https://static-docs.nocobase.com/20251023202835.png)
@@ -51,7 +51,7 @@ For more details, see [Set Sorting Rules](/interface-builder/blocks/block-settin
 ![20251023203611](https://static-docs.nocobase.com/20251023203611.png)
 
 
-For list field configuration, see [Details Field](/interface-builder/fields/generic/detail-form-item)
+For configuration of list fields, see [Detail Field](/interface-builder/fields/generic/detail-form-item)
 
 ## Configure Actions
 

@@ -2,13 +2,13 @@
 
 ## How to Set Environment Variables?
 
-### Git Source Code or `create-nocobase-app` Installation Method
+### Git Source or `create-nocobase-app` Installation
 
-Set environment variables in the `.env` file in the project's root directory. After modifying the environment variables, kill the application process and restart it.
+Set environment variables in the `.env` file at the project root. After modifying the variables, kill the application process and restart it.
 
-### Docker Installation Method
+### Docker Installation
 
-Modify the `docker-compose.yml` configuration and set the environment variables in the `environment` parameter. Example:
+Modify the `docker-compose.yml` configuration and set environment variables under the `environment` section. Example:
 
 ```yml
 services:
@@ -18,7 +18,7 @@ services:
       - APP_ENV=production
 ```
 
-You can also use `env_file` to set environment variables in the `.env` file. Example:
+You can also use `env_file` to load variables from a `.env` file. Example:
 
 ```yml
 services:
@@ -27,9 +27,9 @@ services:
     env_file: .env
 ```
 
-After modifying the environment variables, rebuild the app container:
+After changing environment variables, rebuild the `app` container:
 
-```yml
+```bash
 docker-compose up -d app
 ```
 
@@ -37,20 +37,20 @@ docker-compose up -d app
 
 ### TZ
 
-Used to set the application's time zone, with the default being the system's time zone.
+Sets the application's time zone. The default is the operating system's time zone.
 
 https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
 
 :::warning
-Time-related operations will be handled according to this time zone. Changing TZ may affect date values in the database. For more details, refer to [Date & Time Overview](/data-sources/data-modeling/collection-fields/datetime).
+Time-related operations are processed according to this time zone. Changing `TZ` may affect date values in the database. For details, see [Date & Time Overview](/data-sources/data-modeling/collection-fields/datetime).
 :::
 
 ### APP_ENV
 
-Application environment, default is `development`, options include:
+Application environment. The default is `development`. Options:
 
-- `production` production environment
-- `development` development environment
+- `production` — production environment
+- `development` — development environment
 
 ```bash
 APP_ENV=production
@@ -58,10 +58,10 @@ APP_ENV=production
 
 ### APP_KEY
 
-The application's secret key, used for generating user tokens, etc. Change it to your own application key and ensure it is not leaked.
+The application's secret key used to generate user tokens and other sensitive data. Change it to your own key and ensure it is not exposed.
 
 :::warning
-If APP_KEY is changed, old tokens will become invalid.
+If `APP_KEY` is changed, existing tokens will become invalid.
 :::
 
 ```bash
@@ -70,7 +70,7 @@ APP_KEY=app-key-test
 
 ### APP_PORT
 
-Application port, default is `13000`.
+Application port. Default: `13000`.
 
 ```bash
 APP_PORT=13000
@@ -78,7 +78,7 @@ APP_PORT=13000
 
 ### API_BASE_PATH
 
-NocoBase API address prefix, default is `/api/`.
+Prefix for NocoBase API endpoints. Default: `/api/`.
 
 ```bash
 API_BASE_PATH=/api/
@@ -90,33 +90,33 @@ API_BASE_PATH=/api/
 
 > `v1.6.0+`
 
-The multi-core (cluster) mode for starting app. If this variable is configured, it will be passed to the `pm2 start` command as the `-i <instances>` parameter. The options are consistent with the pm2 `-i` parameter (refer to [PM2: Cluster Mode](https://pm2.keymetrics.io/docs/usage/cluster-mode/)), including:
+Multi-core (cluster) startup mode. If configured, the value is passed to `pm2 start` as the `-i <instances>` argument. Options match PM2’s `-i` parameter (see [PM2: Cluster Mode](https://pm2.keymetrics.io/docs/usage/cluster-mode/)):
 
-- `max`: Use the maximum number of CPU cores
-- `-1`: Use the maximum number of CPU cores minus one
-- `<number>`: Specify the number of cores
+- `max` — use all CPU cores
+- `-1` — use (CPU cores - 1)
+- `<number>` — specify the number of instances
 
-The default value is empty, meaning it is not enabled.
+The default is empty (disabled).
 
 :::warning{title="Attention"}
-This mode requires the use of plugins related to cluster mode. Otherwise, the functionality of the application may encounter unexpected issues.
+This mode must be used together with plugins designed for cluster mode; otherwise, application functionality may be affected.
 :::
 
-For more information, see [Cluster Mode](/cluster-mode).
+See also: [Cluster Mode](/cluster-mode).
 
 ### PLUGIN_PACKAGE_PREFIX
 
-Plugin package prefix, default is `@nocobase/plugin-,@nocobase/preset-`.
+Plugin package name prefix. Default: `@nocobase/plugin-,@nocobase/preset-`.
 
-For example, to add the `hello` plugin to the `my-nocobase-app` project, the plugin's full package name would be `@my-nocobase-app/plugin-hello`.
+For example, adding a `hello` plugin to the `my-nocobase-app` project yields the full package name `@my-nocobase-app/plugin-hello`.
 
-PLUGIN_PACKAGE_PREFIX can be configured as:
+You can configure `PLUGIN_PACKAGE_PREFIX` as:
 
 ```bash
 PLUGIN_PACKAGE_PREFIX=@nocobase/plugin-,@nocobase-preset-,@my-nocobase-app/plugin-
 ```
 
-The correspondence between plugin name and package name is as follows:
+Name-to-package mappings then become:
 
 - `users` plugin package name is `@nocobase/plugin-users`
 - `nocobase` plugin package name is `@nocobase/preset-nocobase`
@@ -124,7 +124,7 @@ The correspondence between plugin name and package name is as follows:
 
 ### DB_DIALECT
 
-Database type, options include:
+Database type. Options:
 
 - `mariadb`
 - `mysql`
@@ -136,9 +136,7 @@ DB_DIALECT=mysql
 
 ### DB_HOST
 
-Database host (required when using MySQL or PostgreSQL databases).
-
-Default is `localhost`.
+Database host (required when using MySQL or PostgreSQL). Default: `localhost`.
 
 ```bash
 DB_HOST=localhost
@@ -146,10 +144,10 @@ DB_HOST=localhost
 
 ### DB_PORT
 
-Database port (required when using MySQL or PostgreSQL databases).
+Database port (required when using MySQL or PostgreSQL).
 
-- Default port for MySQL and MariaDB is 3306
-- Default port for PostgreSQL is 5432
+- MySQL/MariaDB default: `3306`
+- PostgreSQL default: `5432`
 
 ```bash
 DB_PORT=3306
@@ -157,7 +155,7 @@ DB_PORT=3306
 
 ### DB_DATABASE
 
-Database name (required when using MySQL or PostgreSQL databases).
+Database name (required when using MySQL or PostgreSQL).
 
 ```bash
 DB_DATABASE=nocobase
@@ -165,7 +163,7 @@ DB_DATABASE=nocobase
 
 ### DB_USER
 
-Database user (required when using MySQL or PostgreSQL databases).
+Database user (required when using MySQL or PostgreSQL).
 
 ```bash
 DB_USER=nocobase
@@ -173,7 +171,7 @@ DB_USER=nocobase
 
 ### DB_PASSWORD
 
-Database password (required when using MySQL or PostgreSQL databases).
+Database password (required when using MySQL or PostgreSQL).
 
 ```bash
 DB_PASSWORD=nocobase
@@ -181,7 +179,7 @@ DB_PASSWORD=nocobase
 
 ### DB_TABLE_PREFIX
 
-Data table prefix.
+Table name prefix.
 
 ```bash
 DB_TABLE_PREFIX=nocobase_
@@ -189,18 +187,18 @@ DB_TABLE_PREFIX=nocobase_
 
 ### DB_UNDERSCORED
 
-Whether database table and field names are converted to snake case style. Default is `false`. If using a MySQL (MariaDB) database with `lower_case_table_names=1`, then `DB_UNDERSCORED` must be set to `true`.
+Whether to convert table and field names to snake_case. Default: `false`. If you use MySQL (MariaDB) with `lower_case_table_names=1`, `DB_UNDERSCORED` **must** be `true`.
 
 :::warning
-When `DB_UNDERSCORED=true`, the actual table and field names in the database will not match what is displayed in the UI. For example, `orderDetails` will be stored as `order_details` in the database.
+When `DB_UNDERSCORED=true`, actual table and field names differ from those shown in the UI; for example, `orderDetails` becomes `order_details` in the database.
 :::
 
 ### DB_LOGGING
 
-Database log switch, default is `off`, options include:
+Database logging switch. Default: `off`. Options:
 
-- `on` on
-- `off` off
+- `on` — enabled
+- `off` — disabled
 
 ```bash
 DB_LOGGING=on
@@ -208,36 +206,36 @@ DB_LOGGING=on
 
 ### DB_POOL_MAX
 
-Maximum number of connections in the pool. Default is `5`.
+Maximum number of connections in the pool. Default: `5`.
 
 ### DB_POOL_MIN
 
-Minimum number of connections in the pool. Default is `0`.
+Minimum number of connections in the pool. Default: `0`.
 
 ### DB_POOL_IDLE
 
-The maximum time, in milliseconds, that a connection can be idle before being released. Default is `10000` (10 seconds).
+Maximum idle time before a connection is released (ms). Default: `10000` (10 seconds).
 
 ### DB_POOL_ACQUIRE
 
-The maximum time, in milliseconds, that the pool will try to get a connection before throwing an error. Default is `60000` (60 seconds).
+Maximum time to acquire a connection before throwing an error (ms). Default: `60000` (60 seconds).
 
 ### DB_POOL_EVICT
 
-The time interval, in milliseconds, after which the connection pool will remove idle connections. Default is `1000` (1 second).
+Interval for removing idle connections (ms). Default: `1000` (1 second).
 
 ### DB_POOL_MAX_USES
 
-The number of times a connection can be used before it is discarded and replaced. Default is `0` (unlimited).
+Number of times a connection can be used before being discarded and replaced. Default: `0` (unlimited).
 
 ### LOGGER_TRANSPORT
 
-Log output method, multiple values separated by `,`. Default is `console` in development, `console,dailyRotateFile` in production.
+Log transports (comma-separated). Default: `console` in development; `console,dailyRotateFile` in production.
 Options:
 
-- `console` - `console.log`
-- `file` - Output to a file
-- `dailyRotateFile` - Output to daily rotating files
+- `console` — `console.log`
+- `file` — write to file
+- `dailyRotateFile` — rotate daily files
 
 ```bash
 LOGGER_TRANSPORT=console,dailyRotateFile
@@ -245,7 +243,7 @@ LOGGER_TRANSPORT=console,dailyRotateFile
 
 ### LOGGER_BASE_PATH
 
-File-based log storage path, default is `storage/logs`.
+Base path for file logs. Default: `storage/logs`.
 
 ```bash
 LOGGER_BASE_PATH=storage/logs
@@ -253,7 +251,7 @@ LOGGER_BASE_PATH=storage/logs
 
 ### LOGGER_LEVEL
 
-Output log level. Default is `debug` in development and `info` in production. Options:
+Log level. Default: `debug` (development), `info` (production). Options:
 
 - `error`
 - `warn`
@@ -265,14 +263,14 @@ Output log level. Default is `debug` in development and `info` in production. Op
 LOGGER_LEVEL=info
 ```
 
-The database log output level is `debug`, controlled by `DB_LOGGING`, and is unaffected by `LOGGER_LEVEL`.
+Database logs use level `debug`, controlled by `DB_LOGGING` and not affected by `LOGGER_LEVEL`.
 
 ### LOGGER_MAX_FILES
 
-Maximum number of log files to keep.
+Maximum retained log files.
 
-- When `LOGGER_TRANSPORT` is `file`: Default is `10`.
-- When `LOGGER_TRANSPORT` is `dailyRotateFile`: Use `[n]d` to represent days. Default is `14d`.
+- If `LOGGER_TRANSPORT=file`: default `10`.
+- If `LOGGER_TRANSPORT=dailyRotateFile`: use `[n]d` to indicate days. Default `14d`.
 
 ```bash
 LOGGER_MAX_FILES=14d
@@ -280,10 +278,10 @@ LOGGER_MAX_FILES=14d
 
 ### LOGGER_MAX_SIZE
 
-Log rotation by size.
+Rotate logs by size.
 
-- When `LOGGER_TRANSPORT` is `file`: Unit is `byte`. Default is `20971520 (20 * 1024 * 1024)`.
-- When `LOGGER_TRANSPORT` is `dailyRotateFile`: Use `[n]k`, `[n]m`, `[n]g`. Default is not set.
+- If `LOGGER_TRANSPORT=file`: bytes; default `20971520 (20 * 1024 * 1024)`.
+- If `LOGGER_TRANSPORT=dailyRotateFile`: use `[n]k`, `[n]m`, `[n]g`; no default.
 
 ```bash
 LOGGER_MAX_SIZE=20971520
@@ -291,7 +289,7 @@ LOGGER_MAX_SIZE=20971520
 
 ### LOGGER_FORMAT
 
-Log print format. Default is `console` in development and `json` in production. Options:
+Log format. Default: `console` (development), `json` (production). Options:
 
 - `console`
 - `json`
@@ -302,11 +300,11 @@ Log print format. Default is `console` in development and `json` in production. 
 LOGGER_FORMAT=json
 ```
 
-Reference: [Log Format](/log-and-monitor/logger/index.md#log-format)
+See: [Log Format](/log-and-monitor/logger/index.md#log-format)
 
 ### CACHE_DEFAULT_STORE
 
-Unique identifier for the caching method, specifying the server's default cache. Default is `memory`. Built-in options include:
+Identifier for the caching method; sets the server’s default cache. Default: `memory`. Built-in options:
 
 - `memory`
 - `redis`
@@ -317,7 +315,7 @@ CACHE_DEFAULT_STORE=memory
 
 ### CACHE_MEMORY_MAX
 
-Maximum number of items in the memory cache. Default is `2000`.
+Maximum number of cached items in memory. Default: `2000`.
 
 ```bash
 CACHE_MEMORY_MAX=2000
@@ -325,7 +323,7 @@ CACHE_MEMORY_MAX=2000
 
 ### CACHE_REDIS_URL
 
-Redis connection URL, optional. Example: `redis://localhost:6379`
+Redis connection URL (optional). Example: `redis://localhost:6379`.
 
 ```bash
 CACHE_REDIS_URL=redis://localhost:6379
@@ -333,7 +331,7 @@ CACHE_REDIS_URL=redis://localhost:6379
 
 ### TELEMETRY_ENABLED
 
-Enable telemetry data collection. Default is `off`.
+Enable telemetry data collection. Default: `off`.
 
 ```bash
 TELEMETRY_ENABLED=on
@@ -341,7 +339,7 @@ TELEMETRY_ENABLED=on
 
 ### TELEMETRY_METRIC_READER
 
-Enabled monitoring metric collectors. Default is `console`. Other values should refer to the names registered by corresponding collector plugins, such as `prometheus`. Multiple values are separated by `,`.
+Enabled metric readers. Default: `console`. Other values depend on collector plugins (e.g., `prometheus`). Use commas to separate multiple values.
 
 ```bash
 TELEMETRY_METRIC_READER=console,prometheus
@@ -349,7 +347,7 @@ TELEMETRY_METRIC_READER=console,prometheus
 
 ### TELEMETRY_TRACE_PROCESSOR
 
-Enabled trace data processors. Default is `console`. Other values should refer to the names registered by corresponding processor plugins. Multiple values are separated by `,`.
+Enabled trace processors. Default: `console`. Other values depend on processor plugins. Use commas to separate multiple values.
 
 ```bash
 TELEMETRY_TRACE_PROCESSOR=console
@@ -359,11 +357,11 @@ TELEMETRY_TRACE_PROCESSOR=console
 
 ### APPEND_PRESET_LOCAL_PLUGINS
 
-Used to append preset local plugins. The value is the package name (the `name` parameter in `package.json`), with multiple plugins separated by commas.
+Append preset (inactive) plugins by package name (`package.json:name`). Separate multiple plugins with commas.
 
 :::info
-1. Ensure the plugin is downloaded locally and can be found in the `node_modules` directory. For more details, see [Plugin Organization](/plugin-development/project-structure).
-2. After adding the environment variable, the plugin will appear on the plugin manager page only after an initial installation (`nocobase install`) or upgrade (`nocobase upgrade`).
+1. Ensure the plugins are downloaded locally and available under `node_modules`. See [Plugin Organization](/plugin-development/project-structure) for details.  
+2. After setting this variable, plugins appear in the Plugin Manager only after an initial install (`nocobase install`) or an upgrade (`nocobase upgrade`).
 :::
 
 ```bash
@@ -372,11 +370,11 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 
 ### APPEND_PRESET_BUILT_IN_PLUGINS
 
-Used to append built-in plugins that are installed by default. The value is the package name (the `name` parameter in `package.json`), with multiple plugins separated by commas.
+Append built-in plugins that are installed by default, by package name (`package.json:name`). Separate multiple plugins with commas.
 
 :::info
-1. Ensure the plugin is downloaded locally and can be found in the `node_modules` directory. For more details, see [Plugin Organization](/plugin-development/project-structure).
-2. After adding the environment variable, the plugin will be automatically installed or upgraded during the initial installation (`nocobase install`) or upgrade (`nocobase upgrade`).
+1. Ensure the plugins are downloaded locally and available under `node_modules`. See [Plugin Organization](/plugin-development/project-structure) for details.  
+2. After setting this variable, plugins are automatically installed/upgraded during initial install (`nocobase install`) or upgrade (`nocobase upgrade`).
 :::
 
 ```bash
@@ -385,7 +383,7 @@ APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 
 ## Temporary Environment Variables
 
-The installation of NocoBase can be assisted by setting temporary environment variables, such as:
+You can assist installation by setting temporary environment variables, for example:
 
 ```bash
 yarn cross-env \
@@ -408,7 +406,7 @@ yarn nocobase install -l en-US -e demo@nocobase.com -p admin123 -n "Super Admin"
 
 ### INIT_APP_LANG
 
-Language at the time of installation. Default is `en-US`. Options include:
+Installation language. Default: `en-US`. Options:
 
 - `en-US`
 - `zh-CN`

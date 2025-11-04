@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The JS Field is used to custom render content in a field's position using JavaScript. It is commonly used in details blocks, read-only items in forms, or as "Other custom items" in table columns. It is suitable for personalized displays, combining derived information, rendering status badges, rich text, or charts.
+JS Field is used to render custom content at the field's location using JavaScript. It is commonly used in details blocks, read-only items in forms, or as "Other custom items" in table columns. It is suitable for personalized displays, combining derived information, rendering status badges, rich text, or charts.
 
 
 ![jsfield-readonly-add-20251029](https://static-docs.nocobase.com/jsfield-readonly-add-20251029.png)

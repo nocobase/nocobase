@@ -1,6 +1,6 @@
 # Upgrading a create-nocobase-app Installation
 
-:::warning Preparation before upgrading
+:::warning Before upgrading
 
 - Be sure to back up the database first
 - Stop the running NocoBase instance
@@ -9,18 +9,19 @@
 
 ## 1. Stop the running NocoBase instance
 
-If it's not a background process, stop it with `Ctrl + C`. In a production environment, execute the `pm2-stop` command to stop it.
+If it’s not a background process, stop it with `Ctrl + C`.  
+In a production environment, execute the following command:
 
 ```bash
 yarn nocobase pm2-stop
 ```
 
-## 2. Execute the upgrade command
+## 2. Run the upgrade command
 
-Simply execute the `yarn nocobase upgrade` command.
+Run the following command to upgrade NocoBase:
 
 ```bash
-# Switch to the corresponding directory
+# switch to the project directory
 cd my-nocobase-app
 # Execute the upgrade command
 yarn nocobase upgrade
@@ -30,7 +31,8 @@ yarn dev
 
 ### Upgrading to a specific version
 
-Modify the `package.json` file in the project's root directory, and change the version numbers for `@nocobase/cli` and `@nocobase/devtools` (you can only upgrade, not downgrade). For example:
+Modify the `package.json` file in the project root directory and update the version numbers for `@nocobase/cli` and `@nocobase/devtools` (upgrades only, downgrades are not supported).  
+For example, to upgrade to a specific version:
 
 ```diff
 {
@@ -45,7 +47,7 @@ Modify the `package.json` file in the project's root directory, and change the v
 }
 ```
 
-Then execute the upgrade command
+Then run the upgrade command:
 
 ```bash
 yarn install

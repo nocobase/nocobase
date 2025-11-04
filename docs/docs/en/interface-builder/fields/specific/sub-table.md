@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The sub-table is suitable for handling to-many relationship fields. It supports batch creation and association of new data in the target collection, or selecting and associating existing data.
+The sub-table is designed for handling many-to-many relationship fields. It supports batch creation and association of new data in the target collection, or selecting and associating existing data.
 
 ## Usage Instructions
 
@@ -24,7 +24,7 @@ Orders (One-to-Many) > Order Products (One-to-One) > Opportunity
 ![20251027223530](https://static-docs.nocobase.com/20251027223530.png)
 
 
-The default component for a relationship field is the Dropdown (supports Dropdown/Data Picker).
+The default component for relationship fields is the Dropdown (supports both Dropdown and Data Picker).
 
 
 ![20251027223754](https://static-docs.nocobase.com/20251027223754.png)
@@ -32,7 +32,7 @@ The default component for a relationship field is the Dropdown (supports Dropdow
 
 ## Field Configuration Options
 
-### Allow selecting existing data (disabled by default)
+### Allow selecting existing data (disabled by default).
 
 Supports selecting and associating existing data.
 

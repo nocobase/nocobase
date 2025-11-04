@@ -1,14 +1,8 @@
-/* Import Nunito font from local (Landrick style) */
-@import '@fontsource/nunito/300.css';
-@import '@fontsource/nunito/400.css';
-@import '@fontsource/nunito/600.css';
-@import '@fontsource/nunito/700.css';
+/* Import Nunito font from Google Fonts (Landrick style) */
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700&display=swap');
 
-/* Import FontAwesome for icons - local version */
-@import '@fortawesome/fontawesome-free/css/all.min.css';
-
-/* Import Unicons for icons (matching website style) - local version */
-@import '@iconscout/unicons/css/line.css';
+/* Import FontAwesome for icons */
+@import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css');
 
 html:not(.rp-dark) {
   --rp-code-font-size: 14px;
@@ -214,8 +208,7 @@ h1[class*="rp-text"] {
 }
 
 /* Remove the gradient mask overlay that causes the shadow effect */
-/* Only target the mask in the hero section, not the search modal backdrop */
-.rp-m-auto.rp-pt-0 [class*="mask_"] {
+[class*="mask_"] {
   display: none !important;
 }
 
@@ -333,7 +326,7 @@ h1[class*="rp-text"] {
 }
 
 .rp-home-feature-header {
-  color: var(--rp-c-text-1);
+  color: var(--landingpage-title-color, #0b0c0e);
   text-align: center;
   margin: 0 0 1rem 0;
   /* Matching website h3.title style - Bootstrap h3 default */
@@ -430,20 +423,49 @@ h1[class*="rp-text"] {
   &__card {
     height: 100%;
     padding: 2rem;
-    border-radius: 0.375rem;
-    border: 1px solid transparent;
-    background: var(--rp-home-feature-bg);
-    transition: all 0.3s;
+    /* White background card with subtle shadow */
+    border-radius: 0.375rem !important;
+    border: none !important;
+    background: #ffffff !important;
+    box-shadow: 0 0.125rem 0.25rem rgba(60, 72, 88, 0.15) !important;
+    transition: all 0.15s ease-in-out !important;
+    position: relative;
 
     &--clickable {
       cursor: pointer;
     }
 
+    /* Gradient square background - default rotated 50deg, white at bottom-left */
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0.85rem;
+      left: 2rem;
+      width: 4rem;
+      height: 4rem;
+      background: linear-gradient(45deg, rgba(255, 255, 255, 0.95), rgba(47, 85, 212, 0.06));
+      border-radius: 6px;
+      transform: rotate(50deg);
+      transition: all 0.3s ease-in-out;
+      pointer-events: none;
+      z-index: 0;
+    }
+
     &:hover {
-      background: var(--rp-c-bg);
-      box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
-      transform: translateY(-2px);
-      border: 1px solid var(--rp-c-divider);
+      &::before {
+        background: rgba(47, 85, 212, 0.1);
+        animation: square-rotate 6s linear infinite;
+      }
+    }
+  }
+
+  /* Square rotate animation - uniform speed, 5 seconds per rotation */
+  @keyframes square-rotate {
+    0% {
+      transform: rotate(50deg);
+    }
+    100% {
+      transform: rotate(410deg);
     }
   }
 
@@ -452,6 +474,27 @@ h1[class*="rp-text"] {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Icon styling - more to the left */
+  &__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.75rem;
+    color: #2f55d4 !important;
+    position: relative;
+    z-index: 2;
+    margin-bottom: 1rem;
+    padding-left: 0;
+
+    i {
+      color: #2f55d4 !important;
+    }
   }
 
   &__title {

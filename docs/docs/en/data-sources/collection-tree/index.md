@@ -6,7 +6,7 @@ pkg: "@nocobase/plugin-collection-tree"
 
 ## Introduction
 
-A tree structure collection is a data collection design pattern used for organizing hierarchical data. This collection structure mirrors a tree, where each data item may have one or more child items, and those child items can, in turn, have their own descendants.
+A tree structure collection is a data collection design pattern used for organizing hierarchical data. This collection structure resembles a tree, where each data item can have one or more child items, and those child items can, in turn, have their own descendants.
 
 ## User Manual
 
