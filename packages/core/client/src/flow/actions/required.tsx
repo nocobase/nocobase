@@ -49,6 +49,12 @@ export const required = defineAction({
         message: ctx.t('The field value is required'),
       });
     }
+    if (hasRequiredInCollection && !rules.some((v) => v.required)) {
+      rules.push({
+        required: true,
+        message: ctx.t('The field value is required'),
+      });
+    }
     ctx.model.setProps({ rules, required: params.required || hasRequiredInCollection });
   },
 });

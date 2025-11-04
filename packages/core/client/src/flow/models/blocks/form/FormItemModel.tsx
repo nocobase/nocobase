@@ -289,6 +289,10 @@ FormItemModel.registerFlow({
         ctx.model.setProps({ initialValue: finalDefault });
       },
     },
+    validation: {
+      title: escapeT('Validation'),
+      use: 'validation',
+    },
     required: {
       title: escapeT('Required'),
       use: 'required',
@@ -303,10 +307,6 @@ FormItemModel.registerFlow({
       use: 'pattern',
     },
 
-    validation: {
-      title: escapeT('Validation'),
-      use: 'validation',
-    },
     fieldNames: {
       use: 'titleField',
       uiSchema: async (ctx) => {
