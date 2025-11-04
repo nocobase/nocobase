@@ -269,7 +269,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
     if (needQueryData) {
       // 等待确保 stepParams 已更新
-      await sleep(100);
+      await sleep(200);
       // 刷新请求数据
       await this.resource.refresh();
       this.setDataResult(); // 写入结果，用于展示数据，并联动更新 column 配置
