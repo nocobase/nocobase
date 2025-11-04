@@ -313,7 +313,7 @@ export class PluginMultiAppManagerServer extends Plugin {
           await subApp.runCommand('start', '--quickstart');
         } else {
           quickstart().catch((err) => {
-            this.app.log.error(err);
+            this.log.error(err);
           });
         }
       },
@@ -443,7 +443,7 @@ export class PluginMultiAppManagerServer extends Plugin {
           AppSupervisor.getInstance().getApp(subAppInstance.name);
         }
       } catch (err) {
-        this.app.log.error('Auto register sub applications failed: ', err);
+        this.log.error('Auto register sub applications failed: ', err);
       }
     });
 
