@@ -5,6 +5,14 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.1](https://github.com/nocobase/nocobase/compare/v1.9.0...v1.9.1) - 2025-11-04
+
+### 🐛 修复
+
+- **[工作流：审批]** 并行分支中不再支持创建审批节点，避免流程状态导致的问题 by @mytharcher
+
+- **[邮件管理]** 添加同步日志 by @jiannx
+
 ## [v1.9.0](https://github.com/nocobase/nocobase/compare/v1.8.33...v1.9.0) - 2025-11-02
 
 ## 新特性
