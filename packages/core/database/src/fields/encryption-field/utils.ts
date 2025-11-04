@@ -6,20 +6,24 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import crypto from 'crypto';
+import crypto, { BinaryToTextEncoding } from 'crypto';
 import { EncryptionError } from './errors/EncryptionError';
 import path from 'path';
 import { customAlphabet } from 'nanoid';
 import fs from 'fs-extra';
+import { AESCodec } from './codec';
 
 const nanoid = customAlphabet('0123456789', 21);
 
 const algorithm = 'aes-256-cbc';
 
-const defaultIvString = process.env.ENCRYPTION_FIELD_IV || 'Vc53-4G(rTi0vg@a'; // 如果没有设置 IV，使用默认值
-
 const encryptionFieldPrimeKeyPath =
   process.env.ENCRYPTION_FIELD_KEY_PATH || path.resolve(process.cwd(), 'storage', 'encryption-field-keys');
+
+export const Generator = {
+  iv: () => crypto.randomBytes(16),
+  key: () => crypto.randomBytes(32),
+};
 
 export type KeyStoreEntry = {
   id: string;
@@ -38,29 +42,32 @@ export class KeyStore {
 }
 
 export function loadPrimeKey(targetKeyPath?: string): KeyStoreEntry {
+  const subfix = '.key';
+  const encoding = 'base64';
   const keyPath = targetKeyPath || encryptionFieldPrimeKeyPath;
-  const toEntry = (keyPath: string, base64Key: string) => ({
-    id: path.basename(keyPath, '.dat'),
-    key: Buffer.from(base64Key, 'base64'),
+  const toEntry = (keyPath: string, key: string) => ({
+    id: path.basename(keyPath, subfix),
+    key: Buffer.from(key, encoding),
   });
-  if (keyPath.endsWith('.dat')) {
+
+  if (keyPath.endsWith(subfix)) {
     if (!fs.existsSync(keyPath)) {
       throw new EncryptionError('The environment variable `ENCRYPTION_FIELD_KEY_PATH` point to a non-existent file.');
     }
-    const base64Key = fs.readFileSync(keyPath, 'utf8');
-    return toEntry(keyPath, base64Key);
+    const fieldKey = fs.readFileSync(keyPath, 'utf8');
+    return toEntry(keyPath, fieldKey);
   } else {
     if (!fs.existsSync(keyPath)) {
       fs.mkdirSync(keyPath, { recursive: true });
     }
     const primeKeyPath = readFirstFile(keyPath);
     if (primeKeyPath) {
-      const base64Key = fs.readFileSync(primeKeyPath, 'utf8');
-      return toEntry(primeKeyPath, base64Key);
+      const fieldKey = fs.readFileSync(primeKeyPath, 'utf8');
+      return toEntry(primeKeyPath, fieldKey);
     }
     const id = nanoid();
-    const key = crypto.randomBytes(32);
-    fs.writeFileSync(path.resolve(keyPath, `${id}.dat`), key.toString('base64'));
+    const key = Generator.key();
+    fs.writeFileSync(path.resolve(keyPath, id + subfix), key.toString(encoding), { encoding: 'utf8' });
     return { id, key };
   }
 }
@@ -77,138 +84,71 @@ function readFirstFile(dir) {
   return null;
 }
 
-export async function generateFieldKey() {
-  const fieldKey = crypto.randomBytes(32);
-  return await encryptFieldKey(fieldKey);
-}
-
-export async function encryptFieldKey(fieldKey: Buffer, keyEntry?: KeyStoreEntry) {
+export async function encryptFieldKey(fieldKey: Buffer, iv: Buffer, keyEntry?: KeyStoreEntry) {
+  const codec = new AESCodec(algorithm);
   const { id, key } = keyEntry ?? KeyStore.loadPrimeKey();
   return {
     id,
-    fieldKey,
-    encrypted: await aesEncrypt(key, fieldKey.toString('base64')),
+    encrypted: await codec.encrypt(key, iv, fieldKey),
   };
 }
 
-export function encryptFieldKeySync(fieldKey: Buffer, keyEntry?: KeyStoreEntry) {
-  const { id, key } = keyEntry ?? KeyStore.loadPrimeKey();
-  return {
-    id,
-    fieldKey,
-    encrypted: aesEncryptSync(key, fieldKey.toString('base64')),
-  };
-}
-
-export async function decryptFieldKey(encrypted: string, keyEntry?: KeyStoreEntry) {
+export async function decryptFieldKey(iv: string, encrypted: string, keyEntry?: KeyStoreEntry) {
+  const codec = new AESCodec(algorithm);
   const { key } = keyEntry ?? KeyStore.loadPrimeKey();
-  return Buffer.from((await aesDecrypt(key, encrypted)) as string, 'base64');
+  return await codec.decrypt(key, Buffer.from(iv, 'base64'), Buffer.from(encrypted, 'base64'));
 }
 
-export function decryptFieldKeySync(encrypted: string, keyEntry?: KeyStoreEntry) {
+export function decryptFieldKeySync(iv: string, encrypted: string, keyEntry?: KeyStoreEntry) {
+  const codec = new AESCodec(algorithm);
   const { key } = keyEntry ?? KeyStore.loadPrimeKey();
-  return Buffer.from(aseDecryptSync(key, encrypted) as string, 'base64');
+  return codec.decryptSync(key, Buffer.from(iv, 'base64'), Buffer.from(encrypted, 'base64'));
 }
 
-export function aesEncrypt(key: Buffer, text: string, ivString: string = defaultIvString): Promise<string> {
-  checkValueAndIv('Encrypt', text, ivString);
-
-  return new Promise((resolve, reject) => {
-    const iv = Buffer.from(ivString, 'utf8');
-    const cipher = crypto.createCipheriv(algorithm, key as unknown as Uint8Array, iv as unknown as Uint8Array);
-
-    let encrypted = '';
-
-    cipher.setEncoding('hex');
-
-    cipher.on('data', (chunk) => {
-      encrypted += chunk;
-    });
-
-    cipher.on('end', () => {
-      resolve(encrypted);
-    });
-
-    cipher.on('error', (err) => {
-      reject(err);
-    });
-
-    cipher.write(text);
-    cipher.end();
-  });
-}
-
-export function aesDecrypt(key: Buffer, encrypted: string, ivString: string = defaultIvString) {
-  checkValueAndIv('Decrypt', encrypted, ivString);
-
-  return new Promise((resolve, reject) => {
-    const iv = Buffer.from(ivString, 'utf8');
-    const decipher = crypto.createDecipheriv(algorithm, key as unknown as Uint8Array, iv as unknown as Uint8Array);
-
-    let decrypted = '';
-
-    decipher.setEncoding('utf8');
-
-    decipher.on('data', (chunk) => {
-      decrypted += chunk;
-    });
-
-    decipher.on('end', () => {
-      resolve(decrypted);
-    });
-
-    decipher.on('error', (err) => {
-      reject(err);
-    });
-
-    decipher.write(encrypted, 'hex');
-    decipher.end();
-  });
-}
-
-export function aesEncryptSync(key: Buffer, text: string, ivString: string = defaultIvString) {
-  checkValueAndIv('Encrypt', text, ivString);
-
-  const iv = Buffer.from(ivString, 'utf8');
-  const cipher = crypto.createCipheriv(algorithm, key as unknown as Uint8Array, iv as unknown as Uint8Array);
-  let encrypted = cipher.update(text, 'utf8', 'hex');
-  encrypted += cipher.final('hex');
-  return encrypted;
-}
-
-export function aseDecryptSync(key: Buffer, encrypted: string, ivString: string = defaultIvString) {
-  checkValueAndIv('Decrypt', encrypted, ivString);
-
-  const iv = Buffer.from(ivString, 'utf8');
-  const decipher = crypto.createDecipheriv(algorithm, key as unknown as Uint8Array, iv as unknown as Uint8Array);
-  let decrypted = decipher.update(encrypted, 'hex', 'utf8');
-  decrypted += decipher.final('utf8');
-  return decrypted;
-}
-
-export function checkValueAndIv(type: 'Decrypt' | 'Encrypt', value: string, iv: string) {
-  const msg = `${type} Failed: `;
-  if (typeof value !== 'string') {
-    throw new EncryptionError(msg + 'The value must be a string, but got ' + typeof value);
-  }
-
-  if (type === 'Decrypt') {
-    if (value.length % 2 !== 0) {
-      throw new EncryptionError(msg + `The encrypted value is invalid, not a hex string. The value is "${value}"`);
-    }
-  }
-
-  if (typeof iv !== 'string') {
-    throw new EncryptionError(msg + 'The `iv` must be a string, but got ' + typeof iv);
-  }
-
-  if (iv.length !== 16) {
-    throw new EncryptionError(msg + 'The `iv` must be a 16-character string');
-  }
-}
-
-export function generateSignature(key: Buffer, message: string): string {
+export function generateSignature(key: Buffer, message: string, encoding: BinaryToTextEncoding = 'base64'): string {
   const hmac = crypto.createHmac('sha256', key as unknown as Uint8Array);
   hmac.update(message);
-  return hmac.digest('hex');
+  return hmac.digest(encoding);
+}
+
+export class EncryptedField {
+  static codec: AESCodec = new AESCodec('aes-256-cbc');
+  static encoding: BufferEncoding = 'base64';
+  static delimiter = '.';
+
+  constructor(
+    private readonly _iv: Buffer,
+    private readonly _value: unknown,
+    private readonly _serializedField: string,
+  ) {}
+
+  get iv() {
+    return this._iv;
+  }
+
+  get value() {
+    return this._value;
+  }
+
+  get serializedField() {
+    return this._serializedField;
+  }
+
+  static async serializer({ key, iv, value }: { key: Buffer; iv: Buffer; value: string }): Promise<EncryptedField> {
+    const encrypted = await EncryptedField.codec.encrypt(key, iv, Buffer.from(value, 'utf8'));
+    const signature = generateSignature(key, String(value));
+    const ivBuffer = iv as unknown as Uint8Array;
+    const encryptedBuffer = encrypted as unknown as Uint8Array;
+    const serializedValue = Buffer.concat([ivBuffer, encryptedBuffer]).toString(EncryptedField.encoding);
+    return new EncryptedField(iv, value, signature + EncryptedField.delimiter + serializedValue);
+  }
+
+  static async deserializer(key: Buffer, serializedField: string): Promise<EncryptedField> {
+    const [_signature, serializedValue] = serializedField.split(EncryptedField.delimiter);
+    const buff = Buffer.from(serializedValue, EncryptedField.encoding);
+    const iv = buff.subarray(0, 16);
+    const encrypted = buff.subarray(16);
+    const value = await EncryptedField.codec.decrypt(key, iv, encrypted);
+    return new EncryptedField(iv, value.toString('utf8'), serializedField);
+  }
 }

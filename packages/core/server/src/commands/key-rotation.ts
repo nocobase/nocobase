@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { decryptFieldKey, encryptFieldKey, loadPrimeKey } from '@nocobase/database';
+import { decryptFieldKey, encryptFieldKey, Generator, loadPrimeKey } from '@nocobase/database';
 import Application from '../application';
 
 const REPL = require('repl');
@@ -24,6 +24,7 @@ export default (app: Application) => {
     .preload()
     .action(async (options) => {
       console.log('Start rotating...', options.keyPath);
+      const encoding = 'base64';
       if (!options.keyPath) {
         throw new Error('Key path is required');
       }
@@ -32,21 +33,23 @@ export default (app: Application) => {
       const fieldList = await app.db.getRepository('fields').find({ filter: { type: 'encryption' } });
       const records = [];
       for (const field of fieldList) {
-        const { primeKeyId, encryptedKey } = field.options ?? {};
+        const { primeKeyId, iv: fieldIV, encryptedKey } = field.options ?? {};
         if (!primeKeyId || primeKeyId === primeKey.id) {
           continue;
         }
         if (primeKeyId !== extPrimeKey.id) {
           throw new Error(`Key id not match: ${primeKeyId}`);
         }
-        const fieldKey = await decryptFieldKey(encryptedKey, extPrimeKey);
-        const { id, encrypted } = await encryptFieldKey(fieldKey, primeKey);
+        const fieldKey = await decryptFieldKey(fieldIV, encryptedKey, extPrimeKey);
+        const iv = Generator.iv();
+        const { id, encrypted } = await encryptFieldKey(fieldKey, iv, primeKey);
         records.push({
           key: field.key,
           options: {
             ...field.options,
             primeKeyId: id,
-            encryptedKey: encrypted,
+            iv: iv.toString(encoding),
+            encryptedKey: encrypted.toString(encoding),
           },
         });
       }
