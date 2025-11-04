@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The JS Block is a highly flexible "custom rendering block" that allows you to write JavaScript directly to generate interfaces, bind events, call data APIs, or integrate third-party libraries. It is suitable for personalized visualizations, temporary experiments, and lightweight extension scenarios that are difficult to cover with built-in blocks.
+The JS Block is a highly flexible custom rendering block that lets you write JavaScript directly to build interfaces, bind events, call APIs, or integrate third-party libraries. It is suitable for personalized visualizations, temporary experiments, and lightweight extension scenarios that are difficult to cover with built-in blocks.
 
 ## Runtime Context API
 
@@ -43,7 +43,7 @@ Additionally, you can directly summon the AI employee "Frontend Engineer · Nath
 ## Runtime Environment and Security
 
 - **Container**: The system provides a secure DOM container `ctx.element` (ElementProxy) for the script, which only affects the current block and does not interfere with other areas of the page.
-- **Sandbox**: The script runs in a controlled environment. `window`/`document`/`navigator` use secure proxy objects, allowing common APIs while restricting risky behaviors.
+- **Sandbox**: The script runs in a controlled environment. `window`/`document`/`navigator` use secure proxy objects, allowing common web APIs while restricting unsafe operations.
 - **Re-rendering**: The block automatically re-renders when it is hidden and then shown again (to avoid re-executing the initial mount script).
 
 ## Common Usage (Simplified Examples)

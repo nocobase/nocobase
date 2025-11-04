@@ -1,6 +1,6 @@
 # Upgrading a Git Source Installation
 
-:::warning Preparation Before Upgrading
+:::warning Before upgrading
 
 - Be sure to back up your database first
 - Stop the running NocoBase instance (`Ctrl + C`)
@@ -21,18 +21,19 @@ git pull
 
 ## 3. Delete cache and old dependencies (optional)
 
-If the normal upgrade process fails, you can try clearing the cache and dependencies and then re-downloading them.
+If the standard upgrade process fails, try clearing the cache and dependencies before re-downloading them.
 
 ```bash
-# Clear nocobase cache
+# clear NocoBase cache
 yarn nocobase clean
-# Delete dependencies
+
+# delete dependencies
 yarn rimraf -rf node_modules # equivalent to rm -rf node_modules
 ```
 
 ## 4. Update dependencies
 
-📢 Due to factors such as network environment and system configuration, this next step may take more than ten minutes.
+📢 Depending on your network environment and system configuration, this step may take several minutes (up to ten or more).
 
 ```bash
 yarn install
@@ -52,10 +53,11 @@ yarn dev
 
 :::tip Production Environment Tip
 
-It is not recommended to deploy a NocoBase installation from source code directly in a production environment (for production environments, please refer to [Production Deployment](../deployment/production.md)).
+It is not recommended to deploy a source-based NocoBase installation directly in a production environment.  
+For production deployment, refer to [Production Deployment](../deployment/production.md).
 
 :::
 
-## 7. Upgrading third-party plugins
+## 7. Upgrade third-party plugins
 
 Refer to [Install and Upgrade Plugins](../install-upgrade-plugins.mdx)

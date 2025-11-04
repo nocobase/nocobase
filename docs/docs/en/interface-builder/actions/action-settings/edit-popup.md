@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Any action or field that opens a modal when clicked supports configuring the modal's open mode, size, etc.
+Any action or field that opens a popup when clicked supports configuring the popup's open mode, size, etc.
 
 
 ![20251027212617](https://static-docs.nocobase.com/20251027212617.png)
@@ -40,7 +40,7 @@ Any action or field that opens a modal when clicked supports configuring the mod
 
 ## Popup UID
 
-“Popup UID” is the UID of the component that opens the popup; it also appears in the URL as the viewUID of `view/:viewUid`. You can obtain it from the triggering field or button via the settings menu action “Copy popup UID”. Setting the popup uid enables popup reuse.
+“Popup UID” is the UID of the component that opens the popup; it also appears in the URL as the viewUid of `view/:viewUid`. You can obtain it from the triggering field or button via the settings menu action “Copy popup UID”. Setting the popup uid enables popup reuse.
 
 ![popup-copy-uid-20251102](https://static-docs.nocobase.com/popup-copy-uid-20251102.png)
 

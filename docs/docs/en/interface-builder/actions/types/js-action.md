@@ -18,7 +18,7 @@ JS Action is used to execute JavaScript when a button is clicked, allowing for c
 - `ctx.record`: The current row record for record-level context (e.g., table row button).
 - `ctx.form`: The AntD Form instance for form-level context (e.g., form toolbar button).
 - `ctx.collection`: Metadata of the current collection.
-- The code editor supports `Snippets` and `Run` for pre-execution (see below).
+- The code editor supports `Snippets` and `Run` for executing the code (see below)."
 
 - `ctx.requireAsync(url)`: Asynchronously loads an AMD/UMD library from a URL.
 - `ctx.importAsync(url)`: Dynamically imports an ESM module from a URL.

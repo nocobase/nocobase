@@ -24,12 +24,12 @@ Choose a NocoBase version ([Version Comparison](../quickstart.md)) and database 
 :::tip Configuration Notes
 
 - **Choose an image**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
-  - For production environments, it is recommended to pin a specific version number to avoid unintentional automatic upgrades. [View all versions](https://hub.docker.com/r/nocobase/nocobase/tags)
+  - For production environments, it is recommended to fix the version to a specific number to avoid unintentional automatic upgrades. [View all versions](https://hub.docker.com/r/nocobase/nocobase/tags)
   - Docker Hub image: `nocobase/nocobase:latest-full`
   - The **full image** includes PostgreSQL 16/17 client, MySQL 8.0 client, Oracle 19.25 client required for backup and migration management plugins, as well as LibreOffice required for template printing (PDF).
   - If you need to build your own image, you can refer to the official [Dockerfile (slim version)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) and [Dockerfile-full (full version)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full)
 - **Modify `APP_KEY`**: Please replace `your-secret-key` with a random string, which is used to encrypt sensitive information such as user tokens.
-- **Use an existing database**: If you already have a database service, please change `DB_HOST` to the database server address, and delete or comment out the database service configuration (e.g., `postgres`, `mysql`, `mariadb` services).
+- **Use an existing database**: If you already have a database service, please change `DB_HOST` to the database server address, and delete or comment out the database service configuration (e.g., `postgres`, `mysql`, or `mariadb` services).
 - **Port mapping**: By default, port 80 of the container is mapped to port 13000 of the host. You can modify it as needed.
 
 :::
@@ -220,10 +220,9 @@ services:
 # Pull the latest image
 docker compose pull
 
-# Run in the background (installation will run automatically on the first run)
+# Run in the background (the installation process will run automatically on the first launch)
 docker compose up -d
 
-# View installation and running logs
 docker compose logs -f app
 
 app-postgres-app-1  | nginx started
@@ -240,7 +239,8 @@ app-postgres-app-1  | 🚀 NocoBase server running at: http://localhost:13000/
 
 ## 4. Log in to NocoBase
 
-Open [http://localhost:13000](http://localhost:13000) in your browser. The initial account and password are `admin@nocobase.com` and `admin123`.
+Open [http://localhost:13000](http://localhost:13000) in your browser.  
+The initial account and password are `admin@nocobase.com` and `admin123`.
 
 :::warning Account Security Notice
 

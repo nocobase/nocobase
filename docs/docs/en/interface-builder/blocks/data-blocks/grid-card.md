@@ -1,7 +1,7 @@
 ---
 pkg: "@nocobase/plugin-block-grid-card"
 ---
-# Grid Card
+# Grid Card Block
 
 ## Introduction
 
@@ -19,7 +19,7 @@ The Grid Card block displays summary information of data records in a card forma
 ![20251023205425](https://static-docs.nocobase.com/20251023205425.png)
 
 
-For more information, see [Set data scope](/interface-builder/blocks/block-settings/data-scope)
+For more details, see [Set Data Scope](/interface-builder/blocks/block-settings/data-scope)
 
 ### Set the number of columns per row
 
@@ -47,7 +47,7 @@ Supports configuring the number of columns for different screen sizes.
 ![20251023210629](https://static-docs.nocobase.com/20251023210629.png)
 
 
-For Grid Card block field settings, see [Details Field](/interface-builder/fields/generic/detail-form-item)
+For Grid Card Block field configuration, see [Details Field](/interface-builder/fields/generic/detail-form-item)
 
 ## Configure Actions
 
@@ -63,11 +63,11 @@ For Grid Card block field settings, see [Details Field](/interface-builder/field
 - [Refresh](/interface-builder/actions/types/refresh)
 - [Import](/interface-builder/actions/types/import)
 - [Export](/interface-builder/actions/types/export)
-- [Template print](/interface-builder/actions/types/template-print)
-- [Bulk update](/interface-builder/actions/types/bulk-update)
+- [Template Print](/interface-builder/actions/types/template-print)
+- [Bulk Update](/interface-builder/actions/types/bulk-update)
 - [Export attachments](/interface-builder/actions/types/export-attachments)
 - [Trigger workflow](/interface-builder/actions/types/trigger-workflow)
-- [AI employee](/interface-builder/actions/types/ai-employee)
+- [AI Employee](/interface-builder/actions/types/ai-employee)
 - [JS Action](/interface-builder/actions/types/js-action)
 
 ### Row Actions
@@ -81,7 +81,7 @@ For Grid Card block field settings, see [Details Field](/interface-builder/field
 - [Link](/interface-builder/actions/types/link)
 - [Pop-up](/interface-builder/actions/types/pop-up)
 - [Update record](/interface-builder/actions/types/update-record)
-- [Template print](/interface-builder/actions/types/template-print)
+- [Template Print](/interface-builder/actions/types/template-print)
 - [Trigger workflow](/interface-builder/actions/types/trigger-workflow)
-- [AI employee](/interface-builder/actions/types/ai-employee)
+- [AI Employee](/interface-builder/actions/types/ai-employee)
 - [JS Action](/interface-builder/actions/types/js-action)

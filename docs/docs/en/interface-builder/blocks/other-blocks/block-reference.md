@@ -40,12 +40,12 @@ Open "Plugin manager" → find "Block: Reference" → click "Enable".
 
 ![Reference block settings](https://static-docs.nocobase.com/block-reference-settings-20251102.png)
 
-- Copy result:
+- Copied Block:
   - The new block has the same type as the original and only its own settings;
   - It does not include "Reference settings".
 
 ## Error and fallback states
-- Invalid or missing target: shows an error state. Reconfigure in the Reference block settings (Reference settings → Block UID) and save to recover.  
+- Invalid or missing target: shows an error state. Reconfigure it under Reference Block Settings (Reference settings → Block UID) and save to recover.  
 
 ![Error state when target block is invalid](https://static-docs.nocobase.com/block-reference-error-20251102.png)
 

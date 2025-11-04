@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The Markdown block can be used without binding to a data source. It uses Markdown syntax to define text content and can be used to display formatted text.
+The Markdown block works independently from any data source. It uses Markdown syntax to define and display formatted text content.
 
 ## Add Block
 
@@ -26,7 +26,7 @@ It uses the **[Liquid template engine](https://shopify.github.io/liquid/basics/i
 - **Looping**: Use `{% for item in list %}...{% endfor %}` to iterate over arrays or collections to generate lists, tables, or repeating modules.
 - **Built-in Filters**: Provides a rich set of filters (such as `upcase`, `downcase`, `date`, `truncate`, etc.) to format and process data.
 - **Extensibility**: Supports custom variables and functions, making template logic reusable and maintainable.
-- **Security and Isolation**: Template rendering is executed in a sandboxed environment, preventing the direct execution of dangerous code and enhancing security.
+- **Security and Isolation**: Template rendering is executed in a sandboxed environment, preventing direct code execution and improving overall security.
 
 With the Liquid template engine, developers and content creators can **easily achieve dynamic content display, personalized document generation, and template rendering for complex data structures**, significantly improving efficiency and flexibility.
 

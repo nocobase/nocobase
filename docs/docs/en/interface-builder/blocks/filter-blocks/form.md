@@ -1,18 +1,18 @@
-# Filter form
+# Filter Form
 
 ## Introduction
 
 The filter form allows users to filter data by filling in form fields. It can be used to filter table blocks, chart blocks, list blocks, and more.
 
-## How to use
+## How to Use
 
-Let's start with a simple example to quickly understand how to use the filter form. Suppose we have a table block containing user information, and we want to filter the data using a filter form, like this:
+Let's start with a simple example to quickly understand how the filter form works. Suppose we have a table block containing user information, and we want to filter the data using a filter form, like this:
 
 
 ![20251031163036_rec_](https://static-docs.nocobase.com/20251031163036_rec_.gif)
 
 
-Configuration steps:
+Configuration steps are as follows:
 
 1. Enable Edit mode and add a "Filter form" block and a "Table" block to the page.
 
@@ -27,7 +27,7 @@ Configuration steps:
 ![20251031163036_rec_](https://static-docs.nocobase.com/20251031163036_rec_.gif)
 
 
-## Advanced usage
+## Advanced Usage
 
 The filter form block supports more advanced configurations. Here are some common use cases.
 
@@ -77,14 +77,14 @@ In addition to selecting fields from collections, you can also create form field
 ![20251031182235_rec_](https://static-docs.nocobase.com/20251031182235_rec_.gif)
 
 
-Currently supported field models:
+Currently supported field types:
 
-- Input: Single-line text input
-- Number: Numeric input
+- Input: Single-line text field
+- Number: Numeric input field
 - Date: Date picker
-- Select: Dropdown (can be configured for single or multiple selection)
+- Select: Dropdown (supports single or multiple selection)
 - Radio group: Radio buttons
-- Checkbox group: Checkboxes
+- Checkbox group: Checkbox group
 
 ### Collapse
 

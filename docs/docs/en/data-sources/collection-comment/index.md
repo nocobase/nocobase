@@ -6,16 +6,16 @@ pkg: "@nocobase/plugin-comments"
 
 ## Introduction
 
-Comment collection is a specialized data table template designed for storing user comments and feedback. With the comment feature, you can add commenting capabilities to any data table, allowing users to discuss, provide feedback, or annotate specific records. The comment collection supports rich text editing, providing flexible content creation capabilities.
+A comment collection is a specialized data table template designed to store user comments and feedback. With the comment feature, you can add commenting capabilities to any data table, allowing users to discuss, provide feedback, or annotate specific records. The comment collection supports rich text editing, providing flexible content creation capabilities.
 
 ![comment-collection-2025-11-01-00-39-01](https://static-docs.nocobase.com/comment-collection-2025-11-01-00-39-01.png)
 
 ## Features
 
-- **Rich Text Editing**: Includes Markdown (vditor) editor by default, supporting rich text content creation
-- **Link to Any Data Table**: Can associate comments with records in any data table through relationship fields
-- **Multi-level Comments**: Supports replying to comments, building a comment tree structure
-- **User Tracking**: Automatically records comment creator and creation time
+- **Rich Text Editing**: Includes Markdown (vditor) editor by default, supporting rich text content creation.
+- **Link to Any Data Table**: Can associate comments with records in any data table through relationship fields.
+- **Multi-level Comments**: Supports replying to comments, building a comment tree structure.
+- **User Tracking**: Automatically records the comment creator and creation time.
 
 ## User Guide
 

@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Configuring sort rules means defining default sorting rules for a data block, so that the data in the block will be presented in a specific order.
+Configuring sort rules involves defining default sorting criteria for a data block, so that the data in the block is displayed in a specific order.
 
 ## User Guide
 
@@ -14,7 +14,7 @@ Configuring sort rules means defining default sorting rules for a data block, so
 ![20251025164821](https://static-docs.nocobase.com/20251025164821.png)
 
 
-Currently, only sorting by fields of the current collection is supported.
+Currently, sorting is supported only by fields within the current collection.
 
 ### Single Sort Rule
 
@@ -24,7 +24,7 @@ Currently, only sorting by fields of the current collection is supported.
 
 ### Multiple Sort Rules
 
-This is suitable for complex sorting needs, such as sorting by order status first, and then by order time within the same order status.
+This is suitable for more complex sorting needs, such as first sorting by order status, and then by order time within the same status.
 
 
 ![20251025165000](https://static-docs.nocobase.com/20251025165000.png)

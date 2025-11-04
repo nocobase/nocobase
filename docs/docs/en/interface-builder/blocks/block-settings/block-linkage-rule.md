@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Block linkage rules allow users to dynamically control the display of blocks, managing the presentation of elements at the block level. As blocks serve as containers for fields and action buttons, these rules enable users to flexibly control the display of the entire view from the block dimension.
+Block linkage rules allow users to dynamically control the visibility of blocks, managing how elements are displayed at the block level. Since blocks act as containers for fields and action buttons, these rules provide flexible, view-level control over the interface display.
 
 
 ![20251029112218](https://static-docs.nocobase.com/20251029112218.png)
@@ -12,7 +12,7 @@ Block linkage rules allow users to dynamically control the display of blocks, ma
 ![20251029112338](https://static-docs.nocobase.com/20251029112338.png)
 
 
-> **Note**: Before executing block linkage rules, the block's display must first undergo an **ACL permission check**. Only when a user has the corresponding access permissions will the logic for the block linkage rules be evaluated. In other words, block linkage rules only take effect after the ACL view permission requirements are met. If there are no block linkage rules, the block is displayed by default.
+> **Note**: Before block linkage rules are applied, the block's display must first undergo an **ACL permission check**. The logic for block linkage rules is only evaluated when the user has the required access permissions. In other words, block linkage rules only take effect after the ACL view permission requirements are met. If there are no block linkage rules, the block is displayed by default.
 
 ### Controlling Blocks with Global Variables
 
@@ -26,7 +26,7 @@ Block linkage rules allow users to dynamically control the display of blocks, ma
 
 ### Controlling Blocks with Contextual Variables
 
-Blocks can also be controlled by variables in the context. For example, you can use contextual variables like "Current record", "Current form", and "Current popup record" to dynamically show or hide blocks.
+Blocks can also be controlled by contextual variables. For example, you can use contextual variables like "Current record", "Current form", and "Current popup record" to dynamically show or hide blocks.
 
 Example: The "Order Opportunity Information" block is displayed only when the order status is "Paid".
 
@@ -34,4 +34,4 @@ Example: The "Order Opportunity Information" block is displayed only when the or
 ![20251029114022](https://static-docs.nocobase.com/20251029114022.png)
 
 
-For more information on linkage rules, see [Linkage Rules](/interface-builder/linkage-rule).
+For more details, see [Linkage Rules](/interface-builder/linkage-rule).

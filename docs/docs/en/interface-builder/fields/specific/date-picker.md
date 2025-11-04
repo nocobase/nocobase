@@ -4,9 +4,9 @@
 
 The Date field supports custom date and time formats.
 
-## Where to Set the Date Format
+## Where to Configure the Date Format
 
-### Collection Fields
+### Data Table Fields
 
 
 ![20240417114311](https://static-docs.nocobase.com/20240417114311.png)

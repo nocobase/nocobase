@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The filter form supports selecting fields from the current collection and associated collections (fields of nested associations) as filter fields.
+The filter form supports selecting fields from the current collection and related collections (fields within relationships) as filter fields.
 
 
 ![20251029120214](https://static-docs.nocobase.com/20251029120214.png)
@@ -14,7 +14,7 @@ The filter form supports selecting fields from the current collection and associ
 ![20251029120523](https://static-docs.nocobase.com/20251029120523.png)
 
 
-## Associated Fields
+## Related Fields
 
 
 ![20251029120352](https://static-docs.nocobase.com/20251029120352.png)

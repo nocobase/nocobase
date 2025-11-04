@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The File Manager is an association field component for handling relationships where the target collection is the files collection.
+The File Manager is an association field component for handling relationships where the target table is the files table.
 
 
 ![20251027194124](https://static-docs.nocobase.com/20251027194124.png)

@@ -14,7 +14,7 @@ Setting the data scope for an association field is similar to setting the data s
 
 Example: Only non-deleted products can be selected for association.
 
-> The field list contains fields from the target collection of the association field.
+> The field list consists of fields from the target collection of the association field.
 
 
 ![20251028211434](https://static-docs.nocobase.com/20251028211434.png)
@@ -30,9 +30,9 @@ Example: Only products whose service date is later than the order date can be se
 
 For more information about variables, see [Variables](/interface-builder/variables)
 
-### Association Field Linkage
+### Association Field Dependencies
 
-Linkage between association fields is achieved by setting the data scope.
+Dependencies between fields are established by setting the data scope.
 
 Example: The Orders collection has a One-to-Many association field "Opportunity Product" and a Many-to-One association field "Opportunity". The Opportunity Product collection has a Many-to-One association field "Opportunity". In the order form block, the selectable data for "Opportunity Product" is filtered to show only the opportunity products associated with the currently selected "Opportunity" in the form.
 

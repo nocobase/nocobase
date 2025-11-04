@@ -2,19 +2,19 @@
 pkg: "@nocobase/plugin-data-source-main"
 ---
 
-# Main DataBase
+# Main Database
 
 ## Introduction
 
-NocoBase's main database can be used to store both business data and the metadata of the application, including system table data and custom table data. The main database supports relational databases such as MySQL, PostgreSQL, etc. During the installation of the NocoBase application, the main database must be installed synchronously and cannot be deleted.
+NocoBase's main database can be used to store both business data and the application's metadata, including system table data and custom table data. The main database supports relational databases such as MySQL and PostgreSQL. During the installation of the NocoBase application, the main database must be installed synchronously and cannot be deleted.
 
 ## Installation
 
-This is a built-in plugin, no separate installation is required.
+This is a built-in plugin, so no separate installation is required.
 
 ## Collection Management
 
-The main data source provides complete collection management functionality, allowing you to create new tables through NocoBase and sync existing table structures from the database.
+The main data source provides full collection management capabilities. You can create new tables through NocoBase or synchronize existing table structures from your database.
 
 ![20240322230134](https://static-docs.nocobase.com/20240322230134.png)
 
@@ -22,11 +22,11 @@ The main data source provides complete collection management functionality, allo
 
 ![nocobase_doc-2025-10-29-19-46-34](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-46-34.png)
 
-An important feature of the main data source is the ability to sync tables that already exist in the database into NocoBase for management. This means:
+An important feature of the main data source is the ability to sync existing tables from the database into NocoBase for management. This means:
 
-- **Protect Existing Investment**: If you already have numerous business tables in your database, there's no need to recreate them - you can sync and use them directly
-- **Flexible Integration**: Tables created through other tools (such as SQL scripts, database management tools, etc.) can be brought under NocoBase management
-- **Progressive Migration**: Support for gradually migrating existing systems to NocoBase, rather than all-at-once refactoring
+- **Protect Existing Investments**: If your database already contains many business tables, there’s no need to recreate them — simply sync and use them directly.
+- **Flexible Integration**: Tables created through other tools (such as SQL scripts or database management tools) can also be managed in NocoBase.
+- **Progressive Migration**: Supports gradually migrating existing systems to NocoBase, rather than refactoring all at once.
 
 Through the "Load from Database" feature, you can:
 1. Browse all tables in the database
@@ -53,48 +53,48 @@ NocoBase supports creating and managing various types of collections:
 
 ![20240322231520](https://static-docs.nocobase.com/20240322231520.png)
 
-### Rich Field Types
+### Provides a Rich Variety of Field Types
 
 ![nocobase_doc-2025-10-29-19-48-51](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-48-51.png)
 
 #### Flexible Field Type Conversion
 
-NocoBase supports flexible field type conversion based on the same database type.
+NocoBase supports flexible field type conversion within the same database type.
 
-**Example: String Type Field Conversion Options**
+**Example: String Field Conversion Options**
 
-When a database field is of String type, it can be converted to any of the following forms in NocoBase:
+When a field in the database is of String type, it can be converted in NocoBase to any of the following:
 
-- **Basic**: Single line text, Long text, Phone, Email, URL, Password, Color, Icon
-- **Choices**: Single select, Radio group
-- **Media**: Markdown, Markdown(Vditor), Rich Text, Attachment (URL)
-- **Date & Time**: Datetime (with time zone), Datetime (without time zone)
-- **Advanced**: Sequence, Collection selector, Encryption
+- **Basic**: Single line text, Long text, Phone, Email, URL, Password, Color, Icon  
+- **Choice**: Dropdown (single select), Radio group  
+- **Media**: Markdown, Markdown (Vditor), Rich Text, Attachment (URL)  
+- **Date & Time**: Datetime (with timezone), Datetime (without timezone)  
+- **Advanced**: Auto sequence, Collection selector, Encryption  
 
-This flexible conversion mechanism means:
-- **No Database Structure Modification Required**: The field's underlying storage type remains unchanged; only its representation in NocoBase changes
-- **Adapt to Business Changes**: As business needs evolve, you can quickly adjust field display and interaction methods
-- **Data Safety**: The conversion process does not affect the integrity of existing data
+This flexible conversion mechanism means:  
+- **No database structure modification required**: The field’s underlying storage type remains unchanged — only its presentation in NocoBase changes.  
+- **Adaptable to business changes**: As business needs evolve, you can quickly adjust how fields are displayed or interacted with.  
+- **Data integrity ensured**: The conversion process does not affect existing data integrity.  
 
 ### Flexible Field-Level Synchronization
 
-NocoBase not only syncs entire tables but also supports granular field-level sync management:
+NocoBase supports not only full table synchronization but also fine-grained field-level synchronization management.
 
 ![nocobase_doc-2025-10-29-19-49-56](https://static-docs.nocobase.com/nocobase_doc-2025-10-29-19-49-56.png)
 
-#### Field Synchronization Features:
+#### Field Synchronization Features
 
-1. **Real-time Sync**: When the database table structure changes, newly added fields can be synced at any time
-2. **Selective Sync**: You can selectively sync the fields you need, rather than all fields
-3. **Automatic Type Recognition**: Automatically identifies database field types and maps them to NocoBase field types
-4. **Maintain Data Integrity**: The sync process does not affect existing data
+1. **Real-time synchronization**: When database structures change, newly added fields can be synced anytime.  
+2. **Selective synchronization**: Sync only the fields you need instead of all fields.  
+3. **Automatic type recognition**: Automatically identifies field types and maps them to NocoBase types.  
+4. **Data integrity preservation**: Syncing does not affect existing data.  
 
-#### Use Cases:
+#### Use Cases
 
-- **Database Schema Evolution**: When business needs change and new fields need to be added to the database, they can be quickly synced to NocoBase
-- **Team Collaboration**: When other team members or DBAs add fields to the database, they can be synced promptly
-- **Hybrid Management Mode**: Some fields managed through NocoBase, others through traditional methods - flexible combinations
+- **Database schema evolution**: When business requirements change, newly added fields can be synced quickly into NocoBase.  
+- **Team collaboration**: If DBAs or team members add fields directly in the database, they can be synced promptly.  
+- **Hybrid management model**: Combine management through NocoBase and traditional methods as needed.  
 
-This flexible synchronization mechanism allows NocoBase to integrate well into existing technical architectures, without requiring changes to existing database management practices, while still enjoying the convenience of low-code development that NocoBase provides.
+This flexible synchronization mechanism allows NocoBase to integrate smoothly into existing technical architectures without altering existing database management workflows, while still benefiting from NocoBase’s low-code convenience.
 
-See more in the [Collection Fields / Overview](/data-sources/data-modeling/collection-fields) section.
+For more details, see [Collection Fields / Overview](/data-sources/data-modeling/collection-fields).

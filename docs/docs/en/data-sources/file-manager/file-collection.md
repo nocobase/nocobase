@@ -6,7 +6,7 @@ pkg: "@nocobase/plugin-file-manager"
 
 ## Introduction
 
-Files are records in a specially structured collection known as a file collection. It is used to store file metadata and can be managed through the File Manager.
+Files are records in a specially structured collection known as a **file collection**. It is used to store file metadata and can be managed through the **File Manager**.
 
 ## User Manual
 
