@@ -22,7 +22,7 @@ type BootOptions = {
 
 type AppBootstrapper = (bootOptions: BootOptions) => Promise<void>;
 
-type AppStatus =
+export type AppStatus =
   | 'preparing'
   | 'initializing'
   | 'initialized'
