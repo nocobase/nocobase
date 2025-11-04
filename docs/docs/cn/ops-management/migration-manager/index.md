@@ -6,11 +6,11 @@ pkg: '@nocobase/plugin-migration-manager'
 
 ## 介绍
 
-用于将应用配置从一个应用环境迁移到另一个应用环境。迁移管理更侧重「应用配置」的迁移，如果需要全量的迁移，建议使用「[备份管理器](/backup-manager)」的备份还原。
+用于将应用配置从一个应用环境迁移到另一个应用环境。迁移管理更侧重「应用配置」的迁移，如果需要全量的迁移，建议使用「[备份管理器](../backup-manager/index.mdx)」的备份还原。
 
 ## 安装
 
-依赖 [备份管理](/backup-manager) 插件，请确保已经安装并激活。
+依赖 [备份管理](../backup-manager/index.mdx) 插件，请确保已经安装并激活。
 
 ## 流程与原理
 
@@ -66,7 +66,7 @@ pkg: '@nocobase/plugin-migration-manager'
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-应用环境变量检测（了解何为 [环境变量](/variables-and-secrets)）
+应用环境变量检测（了解何为 [环境变量](../variables-and-secrets/index.md)）
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 
@@ -80,6 +80,6 @@ pkg: '@nocobase/plugin-migration-manager'
 
 ## 回滚
 
-执行迁移前，会自动对当前应用进行备份。如果迁移失败或结果不符合预期，可通过 [备份管理器](/backup-manager) 进行回滚恢复。
+执行迁移前，会自动对当前应用进行备份。如果迁移失败或结果不符合预期，可通过 [备份管理器](../backup-manager/index.mdx) 进行回滚恢复。
 
 ![20250105195029](https://static-docs.nocobase.com/20250105195029.png)

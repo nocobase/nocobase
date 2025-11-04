@@ -1,0 +1,96 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Release Management",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Backup Manager",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migration Manager",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Security",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/ops-management/security/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Variables & Secrets",
+        "link": "/ops-management/variables-and-secrets/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Token Policy",
+        "link": "/ops-management/security/token-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Password Policy",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Password Policy",
+            "link": "/ops-management/security/password-policy/"
+          },
+          {
+            "type": "custom-link",
+            "label": "User Lockout",
+            "link": "/ops-management/security/password-policy/lockout"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "IP Restriction",
+        "link": "/ops-management/security/ip-restriction/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Audit Logger",
+        "link": "/ops-management/security/audit-logger/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Two-Factor Authentication (2FA)",
+        "link": "/auth-verification/2fa/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Logs & Monitoring",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/ops-management/log-and-monitor/overview"
+      },
+      {
+        "type": "custom-link",
+        "label": "Server Logger",
+        "link": "/ops-management/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Record History",
+        "link": "/ops-management/log-and-monitor/record-history"
+      }
+    ]
+  }
+]

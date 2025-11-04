@@ -6,11 +6,11 @@ pkg: '@nocobase/plugin-migration-manager'
 
 ## Introduction
 
-The Migration Manager helps you transfer application configurations from one environment to another. Its main focus is on migrating “application configurations.” If you need a complete data migration, we recommend using the “[Backup Manager](/backup-manager)” to back up and restore your entire application.
+The Migration Manager helps you transfer application configurations from one environment to another. Its main focus is on migrating “application configurations.” If you need a complete data migration, we recommend using the “[Backup Manager](../backup-manager/index.mdx)” to back up and restore your entire application.
 
 ## Installation
 
-The Migration Manager depends on the [Backup Manager](/backup-manager). Make sure that the Backup Manager plugin is already installed and activated.
+The Migration Manager depends on the [Backup Manager](../backup-manager/index.mdx). Make sure that the Backup Manager plugin is already installed and activated.
 
 ## Process and Principles
 
@@ -111,7 +111,7 @@ If any are missing, a pop-up will prompt the user to enter the required new envi
 
 ## Rollback
 
-Before any migration runs, the current application is automatically backed up. If the migration fails or the results are not as expected, you can roll back using the [Backup Manager](/backup-manager).
+Before any migration runs, the current application is automatically backed up. If the migration fails or the results are not as expected, you can roll back using the [Backup Manager](../backup-manager/index.mdx).
 
 
 ![20250105195029](https://static-docs.nocobase.com/20250105195029.png)

@@ -4,7 +4,7 @@
 
 ### System Logs
 
-> See [System Logs](./logger/index#system-logs)
+> See [System Logs](./logger/index.md#system-logs)
 
 - Record runtime information of the application system, track code execution chains, and trace exceptions or runtime errors.
 - Logs are categorized by severity levels and functional modules.
@@ -13,7 +13,7 @@
 
 ### Request Logs
 
-> See [Request Logs](./logger/index#request-logs)
+> See [Request Logs](./logger/index.md#request-logs)
 
 - Record HTTP API request and response details, focusing on request ID, API path, headers, response status code, and duration.
 - Output via terminal or stored as files.
@@ -21,7 +21,7 @@
 
 ## Audit Logs
 
-> See [Audit Logs](/security/audit-logger)
+> See [Audit Logs](../security/audit-logger/index.md)
 
 - Record user (or API) actions on system resources, focusing on resource type, target object, operation type, user information, and operation status.
 - To better track what users did and what results were produced, request parameters and responses are stored as metadata.
@@ -36,7 +36,7 @@
 
 ## Record History
 
-> See [Record History](/record-history/)
+> See [Record History](./record-history/index.md)
 
 - Records the **change history** of data content.
 - Tracks resource type, resource object, operation type, changed fields, and before/after values.
