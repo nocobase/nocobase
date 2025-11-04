@@ -62,3 +62,6 @@ export { buildSettingsViewInputArgs } from './buildSettingsViewInputArgs';
 
 // 安全全局对象（window/document）
 export { createSafeDocument, createSafeWindow, createSafeNavigator } from './safeGlobals';
+
+// Filter helpers
+export { pruneFilter } from './pruneFilter';
