@@ -12,13 +12,11 @@ import path from 'path';
 import { customAlphabet } from 'nanoid';
 import fs from 'fs-extra';
 import { AESCodec } from './codec';
+import _ from 'lodash';
 
 const nanoid = customAlphabet('0123456789', 21);
 
 const algorithm = 'aes-256-cbc';
-
-const encryptionFieldPrimeKeyPath =
-  process.env.ENCRYPTION_FIELD_KEY_PATH || path.resolve(process.cwd(), 'storage', 'encryption-field-keys');
 
 export const Generator = {
   iv: () => crypto.randomBytes(16),
@@ -39,12 +37,19 @@ export class KeyStore {
     }
     return KeyStore.entry;
   }
+
+  static reset() {
+    KeyStore.entry = null;
+  }
 }
 
 export function loadPrimeKey(targetKeyPath?: string): KeyStoreEntry {
   const subfix = '.key';
   const encoding = 'base64';
-  const keyPath = targetKeyPath || encryptionFieldPrimeKeyPath;
+  const keyPath =
+    targetKeyPath ??
+    process.env.ENCRYPTION_FIELD_KEY_PATH ??
+    path.resolve(process.cwd(), 'storage', 'encryption-field-keys');
   const toEntry = (keyPath: string, key: string) => ({
     id: path.basename(keyPath, subfix),
     key: Buffer.from(key, encoding),
@@ -135,6 +140,9 @@ export class EncryptedField {
   }
 
   static async serializer({ key, iv, value }: { key: Buffer; iv: Buffer; value: string }): Promise<EncryptedField> {
+    if (typeof value !== 'string') {
+      throw new EncryptionError('Encrypt Failed: The value must be a string, but got ' + typeof value);
+    }
     const encrypted = await EncryptedField.codec.encrypt(key, iv, Buffer.from(value, 'utf8'));
     const signature = generateSignature(key, String(value));
     const ivBuffer = iv as unknown as Uint8Array;
