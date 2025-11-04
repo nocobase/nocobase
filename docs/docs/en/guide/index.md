@@ -11,7 +11,7 @@ features:
         details: Connect and manage internal or external data sources to build the system's data model.
         link: /data-sources
         showOnHome: true
-      - title: Interface Configuration
+      - title: UI Builder
         details: Master the configuration of pages, blocks, and actions to customize interactive interfaces and display logic.
         link: /interface-builder
         showOnHome: true
@@ -44,23 +44,23 @@ features:
     items:
       - title: Variables and Secrets
         details: Centrally configure and manage environment variables and secrets for sensitive data storage, configuration data reuse, and environment configuration isolation.
-        link: /ops-and-security/variables-and-secrets
+        link: /ops-management/variables-and-secrets
       - title: Backup Manager
         details: Provides data backup and restore functionalities.
-        link: /backup-manager
+        link: /ops-management/backup-manager
       - title: Migration Manager
         details: Used to migrate application configurations from one application environment to another.
-        link: /migration-manager
+        link: /ops-management/migration-manager
       - title: Security
         details: Implement protective strategies covering data, API, and access layers to ensure platform security and stability.
-        link: /security/guide
+        link: /ops-management/security/guide
         showOnHome: true
       - title: Logging and Monitoring
         details: Record system operations and user actions.
-        link: /ops-and-security/logging-and-monitoring
+        link: /ops-management/log-and-monitor/overview
       - title: Cluster Mode
         details: Supports multi-node deployment and load balancing to ensure system stability and scalability in high-concurrency scenarios.
-        link: /ops-and-security/cluster-mode
+        link: /cluster-mode
   - title: System Management
     details: System configuration, plugin management, and interface customization.
     items:
@@ -96,4 +96,7 @@ features:
       - title: Template Print
         details: Generate printable documents based on custom templates, such as orders, contracts, or invoices.
         link: /template-print
+      - title: Record History
+        details: Tracks and stores the change history of collection records.
+        link: /record-history/
 ---

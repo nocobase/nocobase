@@ -23,6 +23,7 @@ import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../details/DetailsItemModel';
 import { EditFormModel } from './EditFormModel';
 import _ from 'lodash';
+import { coerceForToOneField } from '../../../internal/utils/associationValueCoercion';
 
 const interfacesOfUnsupportedDefaultValue = [
   'o2o',
@@ -283,8 +284,14 @@ FormItemModel.registerFlow({
         if (interfacesOfUnsupportedDefaultValue?.includes?.(iface)) {
           return;
         }
-        ctx.model.setProps({ initialValue: params.defaultValue });
+        const collectionField = ctx.model.collectionField;
+        const finalDefault = coerceForToOneField(collectionField, params.defaultValue);
+        ctx.model.setProps({ initialValue: finalDefault });
       },
+    },
+    validation: {
+      title: escapeT('Validation'),
+      use: 'validation',
     },
     required: {
       title: escapeT('Required'),
@@ -300,10 +307,6 @@ FormItemModel.registerFlow({
       use: 'pattern',
     },
 
-    validation: {
-      title: escapeT('Validation'),
-      use: 'validation',
-    },
     fieldNames: {
       use: 'titleField',
       uiSchema: async (ctx) => {

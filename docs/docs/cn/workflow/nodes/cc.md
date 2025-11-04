@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-cc'
+---
+
 # 抄送 <Badge>v1.8.2+</Badge>
 
 ## 介绍

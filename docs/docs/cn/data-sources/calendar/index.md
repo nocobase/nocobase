@@ -1,6 +1,8 @@
-# 日历区块
+---
+pkg: "@nocobase/plugin-calendar"
+---
 
-<PluginInfo name="calendar"></PluginInfo>
+# 日历区块
 
 ## 介绍
 

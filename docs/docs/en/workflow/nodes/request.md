@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-request'
+---
+
 # HTTP Request
 
 ## Introduction
@@ -15,13 +19,13 @@ Built-in plugin, no installation required.
 In the workflow configuration interface, click the plus ("+") button in the flow to add an "HTTP Request" node:
 
 
-![HTTP 请求_添加](https://static-docs.nocobase.com/46f2a6fc3f6869c80f8fbd362a54e644.png)
+![HTTP Request_Add](https://static-docs.nocobase.com/46f2a6fc3f6869c80f8fbd362a54e644.png)
 
 
 ## Node Configuration
 
 
-![HTTP请求节点_节点配置](https://static-docs.nocobase.com/2fcb29af66b892fa704add52e2974a52.png)
+![HTTP Request Node_Configuration](https://static-docs.nocobase.com/2fcb29af66b892fa704add52e2974a52.png)
 
 
 ### Request Method
@@ -73,7 +77,7 @@ Supports standard XML formatted text. You can insert variables from the workflow
 Supports key-value pairs for form data. Files can be uploaded when the data type is set to a file object. Files can only be selected via variables from existing file objects in the context, such as the results of a query on a file collection or related data from an associated file collection.
 
 :::info{title=Tip}
-When selecting file data, ensure that the variable corresponds to a single file object, not a list of files (in a many-to-many or one-to-many relationship query, the value of the relationship field will be an array).
+When selecting file data, ensure that the variable corresponds to a single file object, not a list of files (in a one-to-many or many-to-many relationship query, the value of the relationship field will be an array).
 :::
 
 ### Timeout Settings
@@ -95,7 +99,7 @@ Since version `v1.0.0-alpha.16`, three parts of the request node's response resu
 *   Response data
 
 
-![HTTP请求节点_响应结果使用](https://static-docs.nocobase.com/20240529110610.png)
+![HTTP Request Node_Using Response Result](https://static-docs.nocobase.com/20240529110610.png)
 
 
 The response status code is usually a standard HTTP status code in numeric form, such as `200`, `403`, etc. (as provided by the service provider).
@@ -104,10 +108,10 @@ The response headers are in JSON format. Both the headers and the JSON-formatted
 
 ## Example
 
-For example, we can use the request node to connect with a cloud platform to send notification SMS. Taking Alibaba Cloud's SMS API as an example, the configuration is as follows (you need to consult the documentation to adapt the relevant parameters):
+For example, we can use the request node to connect with a cloud platform to send notification SMS. The configuration for a cloud SMS API might look like the following (you will need to consult the specific API's documentation to adapt the parameters):
 
 
-![HTTP请求节点_节点配置](https://static-docs.nocobase.com/20240515124004.png)
+![HTTP Request Node_Configuration](https://static-docs.nocobase.com/20240515124004.png)
 
 
-When the workflow triggers this node, it will call Alibaba Cloud's SMS API with the configured content. If the request is successful, an SMS will be sent through the cloud SMS service.
+When the workflow triggers this node, it will call the SMS API with the configured content. If the request is successful, an SMS will be sent through the cloud SMS service.

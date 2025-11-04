@@ -77,14 +77,14 @@ const UserRepository = UserCollection.repository();
 
 // Create
 await UserRepository.create({
-  name: '张三',
+  name: 'John',
   age: 18,
 });
 
 // Query
 const user = await UserRepository.findOne({
   filter: {
-    name: '张三',
+    name: 'John',
   },
 });
 

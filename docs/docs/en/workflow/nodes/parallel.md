@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-parallel'
+---
+
 # Parallel Branch
 
 The parallel branch node can divide a workflow into multiple branches. Each branch can be configured with different nodes, and the execution method varies depending on the branch mode. Use the parallel branch node in scenarios where multiple actions need to be executed simultaneously.
@@ -11,13 +15,13 @@ Built-in plugin, no installation required.
 In the workflow configuration interface, click the plus ("+") button in the flow to add a "Parallel Branch" node:
 
 
-![并行分支_添加](https://static-docs.nocobase.com/9e0f3faa0b9335270647a30477559eac.png)
+![Add Parallel Branch](https://static-docs.nocobase.com/9e0f3faa0b9335270647a30477559eac.png)
 
 
 After adding a parallel branch node to the workflow, two sub-branches are added by default. You can also add more branches by clicking the add branch button. Any number of nodes can be added to each branch. Unnecessary branches can be removed by clicking the delete button at the start of the branch.
 
 
-![并行分支_分支管理](https://static-docs.nocobase.com/36088a8b7970c8a1771eb3ee9bc2a757.png)
+![Manage Parallel Branches](https://static-docs.nocobase.com/36088a8b7970c8a1771eb3ee9bc2a757.png)
 
 
 ## Node Configuration

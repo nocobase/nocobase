@@ -6,47 +6,37 @@
   },
   {
     "type": "custom-link",
-    "label": "Quick start",
+    "label": "Quick Start",
     "link": "/data-visualization/quick-start"
   },
   {
     "type": "custom-link",
-    "label": "Guide",
+    "label": "Features",
     "items": [
       {
         "type": "custom-link",
-        "label": "Data query",
+        "label": "Data Query",
         "link": "/data-visualization/guide/data-query"
       },
       {
         "type": "custom-link",
-        "label": "Chart options",
+        "label": "Chart Options",
         "link": "/data-visualization/guide/chart-options"
       },
       {
         "type": "custom-link",
-        "label": "Preview and save",
+        "label": "Preview and Save",
         "link": "/data-visualization/guide/preview-and-save"
       },
       {
         "type": "custom-link",
-        "label": "Use context variables",
+        "label": "Using Context Variables",
         "link": "/data-visualization/guide/context-variables"
       },
       {
         "type": "custom-link",
-        "label": "Page filters and linkage",
+        "label": "Page Filters and Linkage",
         "link": "/data-visualization/guide/filters-and-linkage"
-      },
-      {
-        "type": "custom-link",
-        "label": "FAQ",
-        "link": "/data-visualization/guide/faq"
-      },
-      {
-        "type": "custom-link",
-        "label": "Best practices",
-        "link": "/data-visualization/guide/best-practices"
       }
     ]
   },
@@ -56,19 +46,29 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Query data in SQL mode",
+        "label": "Query Data in SQL Mode",
         "link": "/data-visualization/guide/sql-data-query"
       },
       {
         "type": "custom-link",
-        "label": "Custom chart configuration",
+        "label": "Custom Chart Configuration",
         "link": "/data-visualization/guide/custom-chart-options"
       },
       {
         "type": "custom-link",
-        "label": "Chart events",
+        "label": "Custom Interaction Events",
         "link": "/data-visualization/guide/chart-events"
       }
     ]
+  },
+  {
+    "type": "custom-link",
+    "label": "FAQ",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Best Practices",
+    "link": "/data-visualization/best-practices"
   }
 ]

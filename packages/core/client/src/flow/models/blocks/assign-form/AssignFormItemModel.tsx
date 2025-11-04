@@ -374,13 +374,13 @@ AssignFormItemModel.registerFlow({
         ctx.model.setProps({ extra: params.description });
       },
     },
-    required: {
-      title: escapeT('Required'),
-      use: 'required',
-    },
     validation: {
       title: escapeT('Validation'),
       use: 'validation',
+    },
+    required: {
+      title: escapeT('Required'),
+      use: 'required',
     },
   },
 });

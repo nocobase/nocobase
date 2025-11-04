@@ -2,7 +2,7 @@
   {
     "type": "custom-link",
     "label": "Overview",
-    "link": "/data-sources/data-modeling"
+    "link": "/data-sources/"
   },
   {
     "type": "custom-link",
@@ -104,6 +104,16 @@
         "type": "custom-link",
         "label": "Calendar collection",
         "link": "/data-sources/calendar/calendar-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Comment collection",
+        "link": "/data-sources/collection-comment/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Expression collection",
+        "link": "/data-sources/collection-expression/collection"
       },
       {
         "type": "custom-link",
@@ -220,11 +230,6 @@
             "type": "custom-link",
             "label": "Checkbox group",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
-          },
-          {
-            "type": "custom-link",
-            "label": "China region",
-            "link": "/data-sources/field-china-region/"
           }
         ]
       },
@@ -383,6 +388,21 @@
           },
           {
             "type": "custom-link",
+            "label": "Created by",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/created-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "Last updated by",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "Space",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/space"
+          },
+          {
+            "type": "custom-link",
             "label": "Table OID",
             "link": "/data-sources/data-modeling/collection-fields/system-info/table-oid"
           }
@@ -423,6 +443,17 @@
             "link": "/data-sources/field-m2m-array/"
           }
         ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Development",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/data-sources/development"
       }
     ]
   }

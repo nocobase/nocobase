@@ -1,6 +1,8 @@
-# 继承表
+---
+pkg: "@nocobase/plugin-data-source-main"
+---
 
-<PluginInfo name="data-source-main"></PluginInfo>
+# 继承表
 
 ## 介绍
 

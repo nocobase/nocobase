@@ -1,6 +1,8 @@
-# 数据表字段：附件（URL）
+---
+pkg: "@nocobase/plugin-field-attachment-url"
+---
 
-<PluginInfo name="field-attachment-url"></PluginInfo>
+# 数据表字段：附件（URL）
 
 ## 介绍
 

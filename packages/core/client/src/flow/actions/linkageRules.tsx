@@ -32,6 +32,7 @@ import { CodeEditor } from '../components/code-editor';
 import { FieldAssignValueInput } from '../components/FieldAssignValueInput';
 import _ from 'lodash';
 import { SubFormFieldModel } from '../models';
+import { coerceForToOneField } from '../internal/utils/associationValueCoercion';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -606,12 +607,14 @@ export const linkageAssignField = defineAction({
       const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
       const fieldModel = gridModels.find((model: any) => model.uid === field);
       if (!fieldModel) return;
+      const collectionField = (fieldModel as any)?.collectionField;
+      const finalValue = coerceForToOneField(collectionField, assignValue);
       // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-      if (typeof assignValue === 'undefined') {
+      if (typeof finalValue === 'undefined') {
         setProps(fieldModel as FlowModel, {});
         return;
       }
-      setProps(fieldModel as FlowModel, { value: assignValue });
+      setProps(fieldModel as FlowModel, { value: finalValue });
     } catch (error) {
       console.warn(`Failed to assign value to field ${field}:`, error);
     }
@@ -696,12 +699,15 @@ export const subFormLinkageAssignField = defineAction({
 
       if (!model) return;
 
+      const collectionField = (formItemModel as any)?.collectionField;
+      const finalValue = coerceForToOneField(collectionField, assignValue);
+
       // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-      if (typeof assignValue === 'undefined') {
+      if (typeof finalValue === 'undefined') {
         setProps(model, {});
         return;
       }
-      setProps(model, { value: assignValue });
+      setProps(model, { value: finalValue });
     } catch (error) {
       console.warn(`Failed to assign value to field ${field}:`, error);
     }
@@ -775,12 +781,14 @@ export const setFieldsDefaultValue = defineAction({
       const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
       const fieldModel = gridModels.find((model: any) => model.uid === field);
       if (!fieldModel) return;
+      const collectionField = (fieldModel as any)?.collectionField;
+      const finalInitialValue = coerceForToOneField(collectionField, initialValue);
       // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-      if (typeof initialValue === 'undefined') {
+      if (typeof finalInitialValue === 'undefined') {
         setProps(fieldModel as FlowModel, {});
         return;
       }
-      setProps(fieldModel as FlowModel, { initialValue });
+      setProps(fieldModel as FlowModel, { initialValue: finalInitialValue });
     } catch (error) {
       console.warn(`Failed to assign value to field ${field}:`, error);
     }
@@ -1261,6 +1269,18 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
       model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
       model.hidden = !!newProps.hiddenModel;
+
+      if (newProps.required === true) {
+        const rules = (model.props.rules || []).filter((rule) => !rule.required);
+        rules.push({
+          required: true,
+          message: ctx.t('The field value is required'),
+        });
+        model.setProps('rules', rules);
+      } else if (newProps.required === false) {
+        const rules = (model.props.rules || []).filter((rule) => !rule.required);
+        model.setProps('rules', rules);
+      }
 
       if (newProps.hiddenText) {
         model.setProps('title', '');

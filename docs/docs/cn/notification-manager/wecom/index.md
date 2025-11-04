@@ -1,6 +1,8 @@
-# 通知：企业微信
+---
+pkg: '@nocobase/plugin-auth-wecom'
+---
 
-<PluginInfo commercial="true" name="wecom"></PluginInfo>
+# 通知：企业微信
 
 ## 介绍
 

@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-subflow'
+---
+
 # Invoke Workflow
 
 ## Introduction

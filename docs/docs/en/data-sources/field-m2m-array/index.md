@@ -1,6 +1,8 @@
-# Many-to-Many (Array)
+---
+pkg: "@nocobase/plugin-field-m2m-array"
+---
 
-<PluginInfo name="field-m2m-array"></PluginInfo>
+# Many-to-Many (Array)
 
 ## Introduction
 
@@ -15,21 +17,23 @@ This feature allows you to use array fields in a data Collection to store multip
 
 ### Field Configuration
 
-![many-to-many(array) field configuration](https://static-docs.nocobase.com/202407051108180.png)
+
+![many-to-many(array)
+ field configuration](https://static-docs.nocobase.com/202407051108180.png)
 
 ## Parameter Description
 
-### Source Collection
+### Source collection
 
-The source Collection, where the current field resides.
+The source collection, where the current field resides.
 
-### Target Collection
+### Target collection
 
-The target Collection with which the relationship is established.
+The target collection with which the relationship is established.
 
-### Foreign Key
+### Foreign key
 
-The array field in the source Collection that stores the target key from the target table.
+The array field in the source collection that stores the target key from the target table.
 
 The corresponding relationships for array field types are as follows:
 
@@ -37,6 +41,6 @@ The corresponding relationships for array field types are as follows:
 | -------- | ---------- | ------ | ------ |
 | `set`    | `array`    | `JSON` | `JSON` |
 
-### Target Key
+### Target key
 
-The field in the target Collection that corresponds to the values stored in the source table's array field. This field must be unique.
+The field in the target collection that corresponds to the values stored in the source table's array field. This field must be unique.

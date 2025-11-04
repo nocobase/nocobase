@@ -9,9 +9,10 @@
 
 import { CloseOutlined, ZoomInOutlined } from '@ant-design/icons';
 import { Table, Form, Space } from 'antd';
+import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 export function SubTableField(props) {
   const { t } = useTranslation();
@@ -25,12 +26,53 @@ export function SubTableField(props) {
     allowSelectExistingRecord,
     onSelectExitRecordClick,
     allowDisassociation,
+    pageSize,
   } = props;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPageSize, setCurrentPageSize] = useState(pageSize);
+  useEffect(() => {
+    setCurrentPageSize(pageSize);
+  }, [pageSize]);
+
+  // 前端分页
+  const pagination = useMemo(() => {
+    return {
+      style: {
+        position: 'absolute',
+        right: '0px',
+        bottom: '0px',
+      },
+      current: currentPage,
+      pageSize: currentPageSize,
+      total: value?.length,
+      onChange: (page, size) => {
+        setCurrentPage(page);
+        setCurrentPageSize(size);
+      },
+      showSizeChanger: true,
+      showTotal: (total) => {
+        return t('Total {{count}} items', { count: total });
+      },
+    } as any;
+  }, [currentPage, currentPageSize, value]);
+
   // 新增一行
   const handleAdd = () => {
     const newRow = { isNew: true };
     columns.forEach((col) => (newRow[col.dataIndex] = undefined));
+    const newValue = [...(value || []), newRow];
+    const lastPage = Math.ceil(newValue.length / currentPageSize);
+    setCurrentPage(lastPage);
     onChange?.([...(value || []), newRow]);
+  };
+
+  // 删除行
+  const handleDelete = (index: number) => {
+    const newValue = [...(value || [])];
+    newValue.splice(index, 1);
+    const lastPage = Math.ceil(newValue.length / currentPageSize);
+    setCurrentPage(lastPage);
+    onChange?.(newValue);
   };
 
   // 编辑单元格
@@ -38,23 +80,19 @@ export function SubTableField(props) {
     const newData = value.map((row, idx) => (idx === rowIdx ? { ...row, [dataIndex]: cellValue } : row));
     onChange?.(newData);
   };
-  // 删除行
-  const handleDelete = (index: number) => {
-    const newValue = [...(value || [])];
-    newValue.splice(index, 1);
-    onChange?.(newValue);
-  };
+
   // 渲染可编辑单元格
   const editableColumns = columns
     .map((col) => ({
       ...col,
       render: (text, record, rowIdx) => {
+        const pageRowIdx = (currentPage - 1) * currentPageSize + rowIdx;
         if (!col.render) {
           return;
         }
         return col?.render({
           record,
-          rowIdx,
+          rowIdx: pageRowIdx,
           id: `field-${col.dataIndex}-${rowIdx}`,
           value: text,
           onChange: (value) => {
@@ -72,13 +110,14 @@ export function SubTableField(props) {
         align: 'center',
         fixed: 'right',
         render: (v, record, index) => {
+          const pageRowIdx = (currentPage - 1) * currentPageSize + index;
           if (!allowDisassociation && !record.isNew) {
             return;
           }
           return (
             <div
               onClick={() => {
-                handleDelete(index);
+                handleDelete(pageRowIdx);
               }}
             >
               <CloseOutlined style={{ cursor: 'pointer', color: 'gray' }} />
@@ -96,24 +135,39 @@ export function SubTableField(props) {
         rowKey={(row, idx) => idx}
         tableLayout="fixed"
         scroll={{ x: 'max-content' }}
-        pagination={false}
+        pagination={pagination}
         locale={{
           emptyText: <span> {!disabled ? t('Please add or select record') : t('No data')}</span>,
         }}
         components={components || {}}
+        className={css`
+          .ant-table-footer {
+            background-color: transparent;
+          }
+        `}
+        footer={() => (
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            <Space size={'middle'}>
+              {!disabled && allowAddNew !== false && (
+                <a onClick={handleAdd} style={{ marginTop: 8 }}>
+                  <PlusOutlined /> {t('Add new')}
+                </a>
+              )}
+              {!disabled && allowSelectExistingRecord && (
+                <a onClick={() => onSelectExitRecordClick(setCurrentPage, currentPageSize)} style={{ marginTop: 8 }}>
+                  <ZoomInOutlined /> {t('Select record')}
+                </a>
+              )}
+            </Space>
+          </div>
+        )}
       />
-      <Space size={'middle'}>
-        {!disabled && allowAddNew !== false && (
-          <a onClick={handleAdd} style={{ marginTop: 8 }}>
-            <PlusOutlined /> {t('Add new')}
-          </a>
-        )}
-        {!disabled && allowSelectExistingRecord && (
-          <a onClick={onSelectExitRecordClick} style={{ marginTop: 8 }}>
-            <ZoomInOutlined /> {t('Select record')}
-          </a>
-        )}
-      </Space>
     </Form.Item>
   );
 }

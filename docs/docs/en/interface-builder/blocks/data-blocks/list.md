@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-block-list"
+---
 # List Block
-
-:::tip
-This feature is provided by the `plugin-block-list` plugin.
-:::
 
 ## Introduction
 
@@ -68,11 +67,11 @@ For list field configuration, see [Details Field](/interface-builder/fields/gene
 - [Refresh](/interface-builder/actions/types/refresh)
 - [Import](/interface-builder/actions/types/import)
 - [Export](/interface-builder/actions/types/export)
-- [Template Print](/interface-builder/actions/types/template-print)
+- [Template Print](/template-print/index)
 - [Bulk Update](/interface-builder/actions/types/bulk-update)
 - [Export Attachments](/interface-builder/actions/types/export-attachments)
 - [Trigger Workflow](/interface-builder/actions/types/trigger-workflow)
-- [JS action](/interface-builder/actions/types/js-action)
+- [JS Action](/interface-builder/actions/types/js-action)
 - [AI Employee](/interface-builder/actions/types/ai-employee)
 
 ### Row Actions
@@ -81,13 +80,12 @@ For list field configuration, see [Details Field](/interface-builder/fields/gene
 ![20251023204329](https://static-docs.nocobase.com/20251023204329.png)
 
 
-
 - [Edit](/interface-builder/actions/types/edit)
 - [Delete](/interface-builder/actions/types/delete)
 - [Link](/interface-builder/actions/types/link)
 - [Pop-up](/interface-builder/actions/types/pop-up)
 - [Update Record](/interface-builder/actions/types/update-record)
-- [Template Print](/interface-builder/actions/types/template-print)
+- [Template Print](/template-print/index)
 - [Trigger Workflow](/interface-builder/actions/types/trigger-workflow)
-- [JS action](/interface-builder/actions/types/js-action)
+- [JS Action](/interface-builder/actions/types/js-action)
 - [AI Employee](/interface-builder/actions/types/ai-employee)

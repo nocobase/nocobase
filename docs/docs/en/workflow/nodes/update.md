@@ -9,13 +9,13 @@ The collection and field assignment parts are the same as the "Create record" no
 In the workflow configuration interface, click the plus ("+") button in the flow to add an "Update data" node:
 
 
-![更新数据_添加](https://static-docs.nocobase.com/9ff24d7bc173b3a71decc1f70ca9fb66.png)
+![Add Update Data Node](https://static-docs.nocobase.com/9ff24d7bc173b3a71decc1f70ca9fb66.png)
 
 
 ## Node Configuration
 
 
-![更新节点_节点配置](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
+![Update Data Node Configuration](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
 
 
 ### Collection
@@ -26,8 +26,8 @@ Select the collection where data needs to be updated.
 
 There are two update modes:
 
-*   Bulk update: Does not trigger collection events for each updated record. It offers better performance and is suitable for large-volume update operations.
-*   Update one by one: Triggers collection events for each updated record. However, it may cause performance issues with large volumes of data and should be used with caution.
+*   **Bulk update**: Does not trigger collection events for each updated record. It offers better performance and is suitable for large-volume update operations.
+*   **Update one by one**: Triggers collection events for each updated record. However, it may cause performance issues with large volumes of data and should be used with caution.
 
 The choice usually depends on the target data for the update and whether other workflow events need to be triggered. If updating a single record based on the primary key, "Update one by one" is recommended. If updating multiple records based on conditions, "Bulk update" is recommended.
 
@@ -46,7 +46,7 @@ Note: Data updated by the "Update data" node in a workflow does not automaticall
 For example, when a new "Article" is created, you need to automatically update the "Article Count" field in the "Article Category" collection. This can be achieved using the "Update data" node:
 
 
-![更新节点_示例_节点配置](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
+![Update Data Node Example Configuration](https://static-docs.nocobase.com/98e0f941c57275fc835f08260d0b2e86.png)
 
 
 After the workflow is triggered, it will automatically update the "Article Count" field of the "Article Category" collection to the current article count + 1.

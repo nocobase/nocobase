@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-action-import-pro"
+---
 # Import Pro
-
-:::tip Tip
-This feature is provided by the commercial plugin `plugin-action-import-pro`. Please check the commercial license for details.
-:::
 
 ## Introduction
 
@@ -102,13 +101,13 @@ The options in the import configuration will be applied as default values. Admin
 
 ##### Mode Description
 
--   Skip duplicate records: Queries existing records based on the content of the "Identifier field". If the record already exists, this row is skipped; if it does not exist, it is imported as a new record.
--   Update duplicate records: Queries existing records based on the content of the "Identifier field". If the record already exists, this record is updated; if it does not exist, it is imported as a new record.
--   Only update duplicate records: Queries existing records based on the content of the "Identifier field". If the record already exists, this record is updated; if it does not exist, it is skipped.
+- Skip duplicate records: Queries existing records based on the content of the "Identifier field". If the record already exists, this row is skipped; if it does not exist, it is imported as a new record.
+- Update duplicate records: Queries existing records based on the content of the "Identifier field". If the record already exists, this record is updated; if it does not exist, it is imported as a new record.
+- Only update duplicate records: Queries existing records based on the content of the "Identifier field". If the record already exists, this record is updated; if it does not exist, it is skipped.
 
 ##### Identifier Field
 
 The system identifies whether a row is a duplicate record based on the value of this field.
 
--   [Linkage Rule](/interface-builder/actions/action-settings/linkage-rule): Dynamically show/hide buttons;
--   [Edit Button](/interface-builder/actions/action-settings/edit-button): Edit the title, type, and icon of the button;
+- [Linkage Rule](/interface-builder/actions/action-settings/linkage-rule): Dynamically show/hide buttons;
+- [Edit Button](/interface-builder/actions/action-settings/edit-button): Edit the title, type, and icon of the button;

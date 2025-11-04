@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-block-grid-card"
+---
 # Grid Card
-
-:::tip
-This feature is provided by the `plugin-block-grid-card` plugin.
-:::
 
 ## Introduction
 
@@ -20,7 +19,7 @@ The Grid Card block displays summary information of data records in a card forma
 ![20251023205425](https://static-docs.nocobase.com/20251023205425.png)
 
 
-For more information, see [Data Scope Settings](/interface-builder/blocks/block-settings/data-scope)
+For more information, see [Set data scope](/interface-builder/blocks/block-settings/data-scope)
 
 ### Set the number of columns per row
 
@@ -64,12 +63,12 @@ For Grid Card block field settings, see [Details Field](/interface-builder/field
 - [Refresh](/interface-builder/actions/types/refresh)
 - [Import](/interface-builder/actions/types/import)
 - [Export](/interface-builder/actions/types/export)
-- [Template print](/interface-builder/actions/types/template-print)
+- [Template print](/template-print/index)
 - [Bulk update](/interface-builder/actions/types/bulk-update)
 - [Export attachments](/interface-builder/actions/types/export-attachments)
 - [Trigger workflow](/interface-builder/actions/types/trigger-workflow)
 - [AI employee](/interface-builder/actions/types/ai-employee)
-- [JS action ](/interface-builder/actions/types/js-action)
+- [JS Action](/interface-builder/actions/types/js-action)
 
 ### Row Actions
 
@@ -82,7 +81,7 @@ For Grid Card block field settings, see [Details Field](/interface-builder/field
 - [Link](/interface-builder/actions/types/link)
 - [Pop-up](/interface-builder/actions/types/pop-up)
 - [Update record](/interface-builder/actions/types/update-record)
-- [Template print](/interface-builder/actions/types/template-print)
+- [Template print](/template-print/index)
 - [Trigger workflow](/interface-builder/actions/types/trigger-workflow)
 - [AI employee](/interface-builder/actions/types/ai-employee)
-- [JS action ](/interface-builder/actions/types/js-action)
+- [JS Action](/interface-builder/actions/types/js-action)

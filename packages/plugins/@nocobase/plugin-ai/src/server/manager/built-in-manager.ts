@@ -16,7 +16,9 @@ import insightsAnalyst from '../ai-employees/built-in/insights-analyst';
 import researchAnalyst from '../ai-employees/built-in/research-analyst';
 import translator from '../ai-employees/built-in/translator';
 import nocobaseAssistant from '../ai-employees/built-in/nocobase-assistant';
+import emailAssistant from '../ai-employees/built-in/email-assistant';
 import type { AIEmployee } from '../../collections/ai-employees';
+import _ from 'lodash';
 
 const DEFAULT_LANGUAGE = 'en-US';
 const DEFAULT_KNOWLEDGE_BASE = {
@@ -37,12 +39,16 @@ export class BuiltInManager {
     researchAnalyst,
     translator,
     nocobaseAssistant,
+    emailAssistant,
   ];
   private builtInEmployeeMap = Object.fromEntries(this.builtInEmployees.map((x) => [x.username, x]));
 
   constructor(protected plugin: PluginAIServer) {}
 
   setupBuiltInInfo(locale: string, aiEmployee: AIEmployee) {
+    if (!aiEmployee) {
+      return;
+    }
     const builtInEmployeeInfo = this.builtInEmployeeMap[aiEmployee.username];
     if (!builtInEmployeeInfo) {
       return;
@@ -55,7 +61,14 @@ export class BuiltInManager {
     aiEmployee.bio = bio;
     aiEmployee.greeting = greeting;
     aiEmployee.about = about;
-    aiEmployee.skillSettings = builtInEmployeeInfo.skillSettings;
+
+    const builtInSkills = builtInEmployeeInfo.skillSettings?.skills ?? [];
+    const skillSettings: { skills?: { name: string; autoCall?: boolean }[] } = aiEmployee.skillSettings ?? {};
+    const skills = skillSettings.skills ?? [];
+    aiEmployee.skillSettings = {
+      ...(builtInEmployeeInfo.skillSettings ?? {}),
+      skills: _.uniqBy([...skills, ...builtInSkills], 'name'),
+    };
   }
 
   async createOrUpdateAIEmployee(language = DEFAULT_LANGUAGE) {
@@ -116,13 +129,6 @@ export class BuiltInManager {
         const { nickname, avatar, position, bio, greeting, about } = p;
         await aiEmployeesRepo.update({
           values: {
-            nickname,
-            position,
-            avatar,
-            bio,
-            greeting,
-            about,
-            skillSettings,
             builtIn: true,
           },
           filter: {

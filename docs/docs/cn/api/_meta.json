@@ -12,6 +12,12 @@
   },
   {
     "type": "dir",
+    "name": "cache",
+    "label": "@nocobase/cache",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
     "name": "cli",
     "label": "@nocobase/cli",
     "collapsed": true
@@ -30,8 +36,20 @@
   },
   {
     "type": "dir",
+    "name": "data-source-manager",
+    "label": "@nocobase/data-source-manager",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
     "name": "flow-engine",
     "label": "@nocobase/flow-engine",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "logger",
+    "label": "@nocobase/logger",
     "collapsed": true
   },
   {

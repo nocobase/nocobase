@@ -25,7 +25,7 @@
       {
         "type": "custom-link",
         "label": "AWS S3",
-        "link": "/file-manager/storage/aws-s3"
+        "link": "/file-manager/storage/amazon-s3"
       },
       {
         "type": "custom-link",

@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-json-variable-mapping'
+---
+
 # JSON Variable Mapping
 
 > v1.6.0

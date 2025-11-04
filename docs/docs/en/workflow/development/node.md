@@ -203,7 +203,7 @@ export default class MyPlugin extends Plugin {
     const workflowPlugin = this.app.getPlugin<WorkflowPlugin>(WorkflowPlugin);
 
     // register instruction
-    workflowPlugin.registerInstruction('log', LogInstruction);
+    workflowPlugin.registerInstruction('randomString', MyInstruction);
   }
 }
 ```
@@ -229,7 +229,7 @@ export type VariableOption = {
 
 The core is the `value` property, which represents the segmented path value of the variable name. `label` is used for display on the interface, and `children` is used to represent a multi-level variable structure, which is used when the node's result is a deeply nested object.
 
-A usable variable is represented internally in the system as a path template string separated by `.`, for example, `{{jobsMapByNodeKey.2dw92cdf.abc}}`. Here, `$jobsMapByNodeKey` represents the result set of all nodes (internally defined, no need to handle), `2dw92cdf` is the node's `key`, and `abc` is a custom property in the node's result object.
+A usable variable is represented internally in the system as a path template string separated by `.`, for example, `{{jobsMapByNodeKey.2dw92cdf.abc}}`. Here, `jobsMapByNodeKey` represents the result set of all nodes (internally defined, no need to handle), `2dw92cdf` is the node's `key`, and `abc` is a custom property in the node's result object.
 
 Additionally, since a node's result can also be a simple value, when providing node variables, the first level **must** be the description of the node itself:
 
@@ -243,7 +243,9 @@ Additionally, since a node's result can also be a simple value, when providing n
 That is, the first level is the node's `key` and title. For example, in the calculation node's [code reference](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L77), when using the result of the calculation node, the interface options are as follows:
 
 
+
 ![Result of Calculation Node](https://static-docs.nocobase.com/20240514230014.png)
+
 
 
 When the node's result is a complex object, you can use `children` to continue describing nested properties. For example, a custom instruction might return the following JSON data:
@@ -292,7 +294,9 @@ useVariables(node, options): VariableOption {
 This way, in subsequent nodes, you can use the following interface to select variables from it:
 
 
+
 ![Mapped Result Variables](https://static-docs.nocobase.com/20240514230103.png)
+
 
 
 :::info{title="Note"}

@@ -1,6 +1,8 @@
-# 多对多（数组）
+---
+pkg: "@nocobase/plugin-field-m2m-array"
+---
 
-<PluginInfo name="field-m2m-array"></PluginInfo>
+# 多对多（数组）
 
 ## 介绍
 

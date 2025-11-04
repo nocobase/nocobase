@@ -20,7 +20,7 @@ import {
   FlowModel,
 } from '@nocobase/flow-engine';
 import { NumberPicker } from '@formily/antd-v5';
-import { normalizeUiSchemaEnumToOptions } from '../../internal/utils/enumOptionsUtils';
+import { enumToOptions, translateOptions } from '../../internal/utils/enumOptionsUtils';
 import { lazy } from '../../../lazy-helper';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
@@ -51,8 +51,8 @@ function createStaticInputRenderer(
   const combinedProps = merge({}, fieldComponentProps, operatorComponentProps);
 
   // 来自字段定义的本地枚举（uiSchema.enum），归一化为 antd Select 可识别的 options
-  const enumFromField = Array.isArray(fieldMeta?.uiSchema?.enum) ? fieldMeta?.uiSchema?.enum : undefined;
-  const optionsFromEnum = enumFromField ? normalizeUiSchemaEnumToOptions(enumFromField as any) : undefined;
+  const enumFromField = Array.isArray(fieldMeta?.uiSchema?.enum) ? (fieldMeta?.uiSchema?.enum as any) : undefined;
+  const optionsFromEnum = enumToOptions(enumFromField, t);
 
   const commonProps: any = {
     style: { width: 200, ...(combinedProps?.style || {}) },
@@ -69,8 +69,13 @@ function createStaticInputRenderer(
     if (xComponent === 'Switch') return <Switch {...commonProps} {...rest} checked={!!value} onChange={onChange} />;
     if (xComponent === 'Select') {
       // 若操作符或字段 props 未显式传入 options，则使用枚举兜底
-      const hasOptions = Array.isArray((commonProps as any)?.options) && (commonProps as any).options.length > 0;
-      const finalProps = hasOptions || !optionsFromEnum ? commonProps : { ...commonProps, options: optionsFromEnum };
+      let finalProps: any = commonProps;
+      const hasOptions = Array.isArray((finalProps as any)?.options) && (finalProps as any).options.length > 0;
+      if (hasOptions) {
+        finalProps = { ...finalProps, options: translateOptions((finalProps as any).options, t) };
+      } else if (optionsFromEnum) {
+        finalProps = { ...finalProps, options: optionsFromEnum };
+      }
       return <Select {...finalProps} {...rest} value={value} onChange={onChange} />;
     }
     if (xComponent === 'DateFilterDynamicComponent')

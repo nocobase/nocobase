@@ -1,47 +1,55 @@
-# Overview
+# External Database
 
 ## Introduction
 
-Use an existing external database as a data source. Currently, the supported external databases are MySQL, MariaDB, and PostgreSQL.
+Use an existing external database as a data source. Currently supported external databases include MySQL, MariaDB, PostgreSQL, MSSQL, and Oracle.
 
 ## Usage Instructions
 
 ### Adding an External Database
 
-After activating the plugin, you can select and add it from the Add new dropdown menu in the data source management.
+After activating the plugin, you can select and add it from the "Add new" dropdown menu in data source management.
+
 
 ![20240507204316](https://static-docs.nocobase.com/20240507204316.png)
 
-Fill in the information of the database you need to connect to.
+
+Fill in the information for the database you need to connect to.
+
 
 ![20240507204820](https://static-docs.nocobase.com/20240507204820.png)
 
-### Data Table Synchronization
 
-After establishing a connection with the external database, all data tables in the data source will be directly read. The external database does not support directly adding data tables or modifying table structures. If modifications are needed, they can be made through the database client, and then the "Refresh" button can be clicked on the interface to synchronize.
+### Collection Synchronization
+
+After establishing a connection with an external database, all collections within the data source will be read directly. External databases do not support adding collections or modifying the table structure directly. If modifications are needed, you can perform them through a database client and then click the "Refresh" button in the interface to synchronize.
+
 
 ![20240507204725](https://static-docs.nocobase.com/20240507204725.png)
 
+
 ### Configuring Fields
 
-The external database will automatically read the fields of the existing data tables and display them. You can quickly view and configure the title of the field, the data type (Field type), and the UI type (Field interface). You can also click the "Edit" button to modify more configurations.
+The external database will automatically read and display the fields of existing collections. You can quickly view and configure the field's title, data type (Field type), and UI type (Field interface). You can also click the "Edit" button to modify more configurations.
+
 
 ![20240507210537](https://static-docs.nocobase.com/20240507210537.png)
 
-Because the external database does not support modifying table structures, the only type available when adding new fields is the relationship field. Relationship fields are not real fields, but are used to establish connections between tables.
+
+Because external databases do not support modifying the table structure, the only available type when adding a new field is the association field. Association fields are not actual fields but are used to establish connections between collections.
+
 
 ![20240507220140](https://static-docs.nocobase.com/20240507220140.png)
 
-For more content, refer to the [Collection Fields/Overview](/data-sources/data-modeling/collection-fields) section.
+
+For more details, see the [Collection Fields/Overview](/data-sources/data-modeling/collection-fields) chapter.
 
 ### Field Type Mapping
 
-NocoBase will automatically map the corresponding data type (Field type) and UI type (Field Interface) for the field types of the external database.
+NocoBase automatically maps the field types from the external database to the corresponding data type (Field type) and UI type (Field Interface).
 
-- Data type (Field type): Used to define the kind, format, and structure of data that the field can store.
-- UI type (Field Interface): Refers to the type of control used to display and input field values in the user interface.
-
-The table below shows the mapping of field types for PostgreSQL, MySQL/MariaDB to NocoBase Data Type and NocoBase Interface Type.
+- Data type (Field type): Defines the kind, format, and structure of data that a field can store.
+- UI type (Field interface): Refers to the type of control used in the user interface to display and input field values.
 
 | PostgreSQL | MySQL/MariaDB | NocoBase Data Type | NocoBase Interface Type |
 | - | - | - | - |
@@ -59,7 +67,7 @@ The table below shows the mapping of field types for PostgreSQL, MySQL/MariaDB t
 | DATE | DATE | dateOnly | datetime |
 | TIME | TIME | time | time |
 | - | YEAR |  | datetime |
-| CIRCEL |  | circle | json<br/>circle |
+| CIRCLE |  | circle | json<br/>circle |
 | PATH<br/>GEOMETRY(LINESTRING) | LINESTRING | lineString | Json<br/>lineString |
 | POINT<br/>GEOMETRY(POINT) | POINT | point | json<br/>point |
 | POLYGON<br/>GEOMETRY(POLYGON) | POLYGON | polygon | json<br/>polygon |
@@ -73,16 +81,21 @@ The table below shows the mapping of field types for PostgreSQL, MySQL/MariaDB t
 
 ### Unsupported Field Types
 
-Unsupported field types will be displayed separately. These fields need to be developed for adaptation before they can be used.
+Unsupported field types are displayed separately. These fields require development adaptation before they can be used.
+
 
 ![20240507221854](https://static-docs.nocobase.com/20240507221854.png)
 
+
 ### Filter Target Key
 
-Data tables that are displayed as blocks must have a filter target key configured. The filter target key refers to filtering data based on a specific field, and the field value must be unique. The filter target key defaults to the primary key field of the data table. If it is a view or a data table without a primary key, or a data table with a composite primary key, you need to customize the filter target key.
+Collections displayed as blocks must have a Filter target key configured. The filter target key is used to filter data based on a specific field, and the field value must be unique. By default, the filter target key is the collection's primary key field. For views, collections without a primary key, or collections with a composite primary key, you need to define a custom filter target key.
+
 
 ![20240507210230](https://static-docs.nocobase.com/20240507210230.png)
 
-Only data tables that have set a filter target key can be added to the page.
+
+Only collections that have a filter target key configured can be added to the page.
+
 
 ![20240507222827](https://static-docs.nocobase.com/20240507222827.png)

@@ -4,8 +4,10 @@
 
 ## Field configuration
 
+
 ![20240512180122](https://static-docs.nocobase.com/20240512180122.png)
 
-## Instructions
+
+## Example
 
 to be added.

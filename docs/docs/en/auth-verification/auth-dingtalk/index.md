@@ -1,6 +1,8 @@
-# Authentication: DingTalk
+---
+pkg: '@nocobase/plugin-auth-dingtalk'
+---
 
-<PluginInfo commercial="true" name="auth-dingtalk"></PluginInfo>
+# Authentication: DingTalk
 
 ## Introduction
 
@@ -16,13 +18,13 @@ The Authentication: DingTalk plugin allows users to log in to NocoBase using the
 
 Refer to <a href="https://open.dingtalk.com/document/orgapp/tutorial-obtaining-user-personal-information" target="_blank">DingTalk Open Platform - Implement Login to Third-Party Websites</a> to create an application.
 
-Enter the application management console, and enable "Personal Phone Number Information" and "Read Permission for Personal Address Book Information".
+Go to the application management console and enable "Personal Phone Number Information" and "Address Book Personal Information Read Permission".
 
 
 ![](https://static-docs.nocobase.com/202406120006620.png)
 
 
-## Get Keys from DingTalk Developer Console
+## Get Credentials from DingTalk Developer Console
 
 Copy the Client ID and Client Secret.
 

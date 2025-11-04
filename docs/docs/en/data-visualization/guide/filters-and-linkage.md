@@ -8,7 +8,9 @@ The page filter (filter block) provides a unified input for filter conditions at
 - If the filter selects fields associated with a chart, their values are automatically merged into the chart query and trigger a refresh.
 - Filters can define custom fields and register them in context variables so they can be referenced in charts, tables, forms, and other data blocks.
 
+
 ![clipboard-image-1761487702](https://static-docs.nocobase.com/clipboard-image-1761487702.png)
+
 
 For more on using page filters and linking with charts or other data blocks, see the page filter documentation.
 

@@ -9,7 +9,13 @@
 
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { createCollectionContextMeta, escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
+import {
+  escapeT,
+  FlowModelRenderer,
+  useFlowModel,
+  createAssociationAwareObjectMetaFactory,
+  createAssociationSubpathResolver,
+} from '@nocobase/flow-engine';
 import { Button, Card, Divider, Form, Tooltip } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -78,7 +84,13 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
         return this.context.form.getFieldValue(this.props.name);
       },
       cache: false,
-      meta: createCollectionContextMeta(() => this.context.collection, this.context.t('Current object')),
+      meta: createAssociationAwareObjectMetaFactory(
+        () => this.context.collection,
+        this.context.t('Current object'),
+        () => this.context.form.getFieldValue(this.props.name),
+      ),
+      resolveOnServer: createAssociationSubpathResolver(() => this.context.collection),
+      serverOnlyWhenContextParams: true,
     });
   }
   onMount() {
@@ -172,10 +184,13 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                   return currentFork.context.form.getFieldValue([name, fieldName]);
                 },
                 cache: false,
-                meta: createCollectionContextMeta(
+                meta: createAssociationAwareObjectMetaFactory(
                   () => currentFork.context.collection,
                   currentFork.context.t('Current object'),
+                  () => currentFork.context.form.getFieldValue([name, fieldName]),
                 ),
+                resolveOnServer: createAssociationSubpathResolver(() => currentFork.context.collection),
+                serverOnlyWhenContextParams: true,
               });
 
               return (
@@ -230,7 +245,13 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
 
     this.context.defineProperty('currentObject', {
       value: null,
-      meta: createCollectionContextMeta(() => this.context.collection, this.context.t('Current object')),
+      meta: createAssociationAwareObjectMetaFactory(
+        () => this.context.collection,
+        this.context.t('Current object'),
+        (ctx) => ctx['currentObject'],
+      ),
+      resolveOnServer: createAssociationSubpathResolver(() => this.context.collection),
+      serverOnlyWhenContextParams: true,
     });
   }
   onMount() {

@@ -11,7 +11,7 @@ import profile from './profile';
 
 export default {
   username: 'viz',
-  description: 'Insights Analyst',
+  description: 'Insights analyst',
   profile,
   skillSettings: {
     skills: [

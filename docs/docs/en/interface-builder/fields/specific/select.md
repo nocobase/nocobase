@@ -7,6 +7,7 @@ The Dropdown supports associating data by selecting from existing data in the ta
 
 ![20251029205901](https://static-docs.nocobase.com/20251029205901.png)
 
+
 ## Field Configuration
 
 ### Set Data Scope
@@ -36,7 +37,10 @@ Restricts a to-many relationship to allow associating only one record.
 
 ![20251029210145](https://static-docs.nocobase.com/20251029210145.png)
 
+
 ### Title Field
+
+The title field is the label field displayed in the options.
 
 
 ![20251029210507](https://static-docs.nocobase.com/20251029210507.gif)
@@ -46,6 +50,4 @@ Restricts a to-many relationship to allow associating only one record.
 
 For more information, see [Title Field](/interface-builder/fields/field-settings/title-field)
 
-- [Field Component](/interface-builder/fields/association-field);
-
----
+[Field Component](/interface-builder/fields/association-field)

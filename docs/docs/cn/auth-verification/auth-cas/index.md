@@ -1,6 +1,8 @@
-# 认证：CAS
+---
+pkg: '@nocobase/plugin-auth-cas'
+---
 
-<PluginInfo commercial="true" name="auth-cas"></PluginInfo>
+# 认证：CAS
 
 ## 介绍
 

@@ -1,5 +1,5 @@
 ---
-displayName: "Collection field: Snapshot"
+displayName: "Collection field: Relationship Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
   When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.
@@ -9,6 +9,6 @@ defaultEnabled: false
 deprecated: true
 ---
 
-# Collection field: Snapshot
+# Collection field: Relationship Snapshot
 
 > Note: This plugin is deprecated.

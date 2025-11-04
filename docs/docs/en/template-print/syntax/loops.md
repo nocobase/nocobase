@@ -1,5 +1,3 @@
-Below is the English translation with second-level and third-level headings:
-
 ## Loop Handling
 
 Loop handling is used to repeatedly render data from arrays or objects by defining start and end markers for the loop. Below, several common scenarios are described.
@@ -447,8 +445,7 @@ People
 Model S
 Model 3
 ```
-
-*(Note: Rows containing "Falcon" in the template are removed by the intelligent filtering condition.)*
+(Note: Rows containing "Falcon" in the template are removed by the intelligent filtering condition.)
 
 
 ### Deduplication
@@ -488,7 +485,3 @@ Vehicles
 Hyundai
 Airbus
 ```
-
-
-Below is the English translation of the documentation, with headings and subheadings preserved:
-

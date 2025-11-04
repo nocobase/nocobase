@@ -20,8 +20,8 @@
       },
       {
         "type": "custom-link",
-        "label": "Chat with AI Employee",
-        "link": "/ai-employees/quick-start/chat"
+        "label": "Collaborate with AI Employee",
+        "link": "/ai-employees/quick-start/collaborate"
       }
     ]
   },
@@ -31,8 +31,8 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "How to Enable",
-        "link": "/ai-employees/built-in/enable"
+        "label": "Overview",
+        "link": "/ai-employees/built-in/index"
       },
       {
         "type": "custom-link",
@@ -41,13 +41,13 @@
       },
       {
         "type": "custom-link",
-        "label": "Orin: Data Modeler",
+        "label": "Orin: Data Modeling Expert",
         "link": "/ai-employees/built-in/data-modeling"
       },
       {
         "type": "custom-link",
         "label": "Dex: Data Organizer",
-        "link": "/ai-employees/built-in/form-filler"
+        "link": "/ai-employees/built-in/data-organizer"
       },
       {
         "type": "custom-link",

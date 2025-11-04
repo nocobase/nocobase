@@ -19,7 +19,6 @@ In a Form block, linkage rules can dynamically adjust the behavior of fields bas
 - **Assign value**: Automatically assign a value to a field based on conditions.
 - **Execute specified JavaScript**: Write JavaScript according to business requirements.
 
-
 ### **Details Block**
 
 In a Details block, linkage rules are mainly used to dynamically control the visibility (show/hide) of fields on the block.
@@ -48,7 +47,11 @@ Example: When the order status is 'Paid', the order amount field is required.
 
 ### Show/Hide
 
-Example: The payment account is displayed only when the order status is 'Pending Payment'.
+Example: The payment account and total amount are displayed only when the order status is 'Pending Payment'.
 
 
-![20251029115713](https://static-docs.nocobase.com/20251029115713.png)
+![20251030223710](https://static-docs.nocobase.com/20251030223710.png)
+
+
+
+![20251030223801](https://static-docs.nocobase.com/20251030223801.gif)

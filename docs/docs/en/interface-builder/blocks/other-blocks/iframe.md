@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-block-iframe"
+---
 # Iframe Block
-
-:::tip Tip
-This feature is provided by the `plugin-block-iframe` plugin.
-:::
 
 ## Introduction
 
@@ -14,7 +13,7 @@ The Iframe block allows you to embed external web pages or content into the curr
 
 ## Template Syntax
 
-In HTML mode, the block content supports Liquid template syntax.
+In HTML mode, the block content supports using the **[Liquid template engine](https://shopify.github.io/liquid/basics/introduction/)** syntax.
 
 
 ![20251026205331](https://static-docs.nocobase.com/20251026205331.png)
@@ -25,7 +24,8 @@ In HTML mode, the block content supports Liquid template syntax.
 ### HTML Variable Support
 
 - Supports selecting variables from the current block context using the variable selector.
-  
+
+
 ![20251026205441](https://static-docs.nocobase.com/20251026205441.png)
 
 
@@ -40,7 +40,7 @@ You can also inject custom variables into the application through code and use t
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vue3 CDN Example</title>
-    <script src="https://cdn.bootcdn.net/ajax/libs/vue/3.5.9/vue.global.prod.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
     <script src="https://unpkg.com/element-plus"></script>
     <script src="https://unpkg.com/element-plus/dist/locale/zh-cn"></script>
     <link
@@ -192,4 +192,4 @@ Example: A simple calendar component created with React and Ant Design (antd), u
 ![20251026212608](https://static-docs.nocobase.com/20251026212608.png)
 
 
-For more information on variables, see [Variables](/interface-builder/variables)
+For more information on variables, see [Variables](/interface-builder/variables).

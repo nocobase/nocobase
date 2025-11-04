@@ -38,7 +38,7 @@
 - 其他扩展
   - [HTTP 请求](./request.md)（插件 @nocobase/plugin-workflow-request 提供）
   - [JavaScript](./javascript.md)（插件 @nocobase/plugin-workflow-javascript 提供）
-  - [发送邮件](./mailer.md)（插件 @nocobase/plugin-workflow-mailer 提供）
+  - [邮件发送](./mailer.md)（插件 @nocobase/plugin-workflow-mailer 提供）
   - [通知](../../notification-manager/index.md#工作流通知节点)（插件 @nocobase/plugin-workflow-notification 提供）
   - [响应](./response.md)（插件 @nocobase/plugin-workflow-webhook 提供）
   - [响应消息](./response-message.md)（插件 @nocobase/plugin-workflow-response-message 提供）

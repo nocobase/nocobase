@@ -13,25 +13,47 @@ import {
   createSafeDocument,
   createSafeWindow,
   createSafeNavigator,
+  compileRunJs,
 } from '@nocobase/flow-engine';
 import React, { useEffect, useMemo, useRef } from 'react';
 import { Input } from 'antd';
 import { FieldModel } from '../base/FieldModel';
 import { CodeEditor } from '../../components/code-editor';
 
-const DEFAULT_CODE = `const v = ctx.getValue();
-ctx.element.innerHTML = \`<input class="ant-input ant-input-outlined js-input" style="width:100%;padding:4px 8px" value="${'${'}v ?? ''}" />\`;
+const DEFAULT_CODE = `
+// Render an editable antd Input via JSX and keep it in sync with form value.
+// - Uses ctx.getValue/ctx.setValue for two-way binding
+// - Listens to external value changes via 'js-field:value-change'
+function JsEditableField() {
+  const React = ctx.React;
+  const { Input } = ctx.antd;
+  const [value, setValue] = React.useState(ctx.getValue?.() ?? '');
 
-// Use container scoped query to avoid document.getElementById
-const el = ctx.element.querySelector('.js-input');
+  React.useEffect(() => {
+    const handler = (ev) => setValue(ev?.detail ?? '');
+    ctx.element?.addEventListener('js-field:value-change', handler);
+    return () => ctx.element?.removeEventListener('js-field:value-change', handler);
+  }, []);
 
-// Bind input event to keep the form value in sync
-el?.addEventListener('input', (e) => ctx.setValue(e.target.value));
+  const onChange = (e) => {
+    const v = e?.target?.value ?? '';
+    setValue(v);
+    ctx.setValue?.(v);
+  };
 
-// Listen for external value changes to update the input display
-ctx.element.addEventListener('js-field:value-change', (ev) => {
-  if (el) el.value = ev.detail ?? '';
-});
+  return (
+    <Input
+      value={value}
+      onChange={onChange}
+      disabled={!!ctx.disabled}
+      readOnly={!!ctx.readOnly}
+      style={{ width: '100%' }}
+    />
+  );
+}
+
+// Mount to the field container
+ctx.render(<JsEditableField />);
 `;
 
 const JSFormRuntime: React.FC<{
@@ -188,7 +210,12 @@ JSEditableFieldModel.registerFlow({
           ctx.defineProperty('disabled', { get: () => !!ctx.model.props?.disabled, cache: false });
           ctx.defineProperty('readOnly', { get: () => !!ctx.model.props?.readOnly, cache: false });
           const navigator = createSafeNavigator();
-          await ctx.runjs(code, { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator });
+          const compiled = await compileRunJs(code);
+          await ctx.runjs(compiled, {
+            window: createSafeWindow({ navigator }),
+            document: createSafeDocument(),
+            navigator,
+          });
         });
       },
     },

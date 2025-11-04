@@ -107,7 +107,7 @@ export class PluginManager {
       directory: resolve(__dirname, '../migrations'),
     });
 
-    this.app.resourcer.use(uploadMiddleware);
+    this.app.resourceManager.use(uploadMiddleware, { tag: 'upload', after: 'acl' });
   }
 
   /**

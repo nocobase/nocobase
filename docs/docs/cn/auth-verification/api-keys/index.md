@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-api-keys'
+---
+
 # API 密钥
 
 ## 介绍

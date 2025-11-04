@@ -2,7 +2,7 @@
 
 > 帮你编写和优化前端代码，实现复杂的交互逻辑。
 
-AI 员工插件内置了编程助手 `Nathan`，在 `JSBlock`, `JSField`, `JSItem`, `JSColumn`, `JSAction`, `Event Flow`, `Linkage` 等需要写JavaScript的场景下，代码编辑器右上角会有 `Nathan` 的头像，点击他打开 AI 员工对话框，让他帮你编写或修改代码编辑器中的代码。
+`Nathan` 是 NocoBase 中的前端开发专家，在 `JSBlock`, `JSField`, `JSItem`, `JSColumn`, `JSAction`, `Event Flow`, `Linkage` 等需要写JavaScript的场景下，代码编辑器右上角会有 `Nathan` 的头像，就可以让他帮你编写或修改代码编辑器中的代码。
 
 ![20251022163405](https://static-docs.nocobase.com/20251022163405.png)
 

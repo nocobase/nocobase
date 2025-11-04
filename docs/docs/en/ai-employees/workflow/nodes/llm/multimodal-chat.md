@@ -1,6 +1,8 @@
-# Multimodal Conversation
+---
+pkg: "@nocobase/plugin-ai-ee"
+---
 
-<PluginInfo name="ai-ee" licenseBundled="true"></PluginInfo>
+# Multimodal Conversation
 
 ## Images
 

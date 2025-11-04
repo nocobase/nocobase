@@ -52,5 +52,3 @@ FlowEngineContext (Global Context)
   ```
 
 This dual-mode design ensures data availability at runtime and facilitates variable referencing and expression generation during configuration, enhancing the flexibility and usability of the FlowEngine.
-
----

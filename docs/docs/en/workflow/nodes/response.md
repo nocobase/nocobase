@@ -1,3 +1,7 @@
+---
+pkg: "@nocobase/plugin-workflow-response-message"
+---
+
 # HTTP Response
 
 ## Introduction

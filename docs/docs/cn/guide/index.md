@@ -11,7 +11,7 @@ features:
         details: 连接与管理内部或外部数据源，构建系统的数据模型。
         link: /data-sources
         showOnHome: true
-      - title: 配置界面
+      - title: 界面搭建
         details: 掌握页面、区块、操作的配置方法，自定义交互界面与展示逻辑。
         link: /interface-builder
         showOnHome: true
@@ -44,20 +44,20 @@ features:
     items:
       - title: 变量和密钥
         details: 集中配置和管理环境变量和密钥，用于敏感数据存储、配置数据重用、环境配置隔离等。
-        link: /variables-and-secrets
+        link: /ops-management/variables-and-secrets
       - title: 备份管理器
         details: 提供数据备份及还原等功能。
-        link: /backup-manager
+        link: /ops-management/backup-manager
       - title: 迁移管理
         details: 用于将应用配置从一个应用环境迁移到另一个应用环境。
-        link: /migration-manager
+        link: /ops-management/migration-manager
       - title: 安全
         details: 覆盖数据、接口与访问层面的防护策略，确保平台运行安全。
-        link: /security/guide
+        link: /ops-management/security/guide
         showOnHome: true
       - title: 日志和监控
         details: 记录系统运行与用户操作。
-        link: /logging-and-monitoring
+        link: /ops-management/log-and-monitor/overview
       - title: 集群模式
         details: 支持多节点部署与负载均衡，确保系统在高并发场景下的稳定性与可扩展性。
         link: /cluster-mode
@@ -96,4 +96,7 @@ features:
       - title: 模板打印
         details: 基于自定义模板生成可打印文档，如订单、合同或发票。
         link: /template-print
+      - title: 历史记录
+        details: 追踪并保存数据表记录的变更历史。
+        link: /record-history/
 ---

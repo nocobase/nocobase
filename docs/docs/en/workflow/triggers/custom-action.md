@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-workflow-custom-action-trigger'
+---
+
 # Custom Action Event
 
 ## Introduction
@@ -20,9 +24,9 @@ When creating a workflow, select "Custom Action Event":
 
 The context type determines which block buttons the workflow can be bound to:
 
-* No Context: A global event that can be bound to action buttons in the Action Bar and data blocks.
-* Single Record: Can be bound to action buttons in data blocks such as table rows, forms, and details.
-* Multiple Records: Can be bound to bulk action buttons in a table.
+*   No Context: A global event that can be bound to action buttons in the Action Bar and data blocks.
+*   Single Record: Can be bound to action buttons in data blocks such as table rows, forms, and details.
+*   Multiple Records: Can be bound to bulk action buttons in a table.
 
 
 ![Trigger Configuration_Context Type](https://static-docs.nocobase.com/20250215135808.png)

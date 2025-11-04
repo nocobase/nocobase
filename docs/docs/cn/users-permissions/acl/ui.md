@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-acl'
+---
+
 # 在 UI 中的应用
 
 ## 数据区块的权限

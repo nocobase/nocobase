@@ -40,7 +40,6 @@ Brief conclusion (2-3 sentences) + ECharts chart JSON
 
 **Conclusion**: A good prompt clearly defines "who it is, what to do, how to do it, and to what standard," making the AI's performance stable and controllable.
 
----
 
 ## 2. The "Nine Elements" Golden Formula for Prompts
 
@@ -106,7 +105,6 @@ You excel at [Ability] and are skilled in [Specialty]. Please maintain this styl
 - [Incorrect way] → [Correct way]
 ```
 
----
 
 ## 3. Practical Example: Viz (Data Analysis)
 
@@ -161,7 +159,7 @@ Example Chart:
 }
 
 # Negative Examples (Optional)
-- Mixing Chinese and English → Maintain language consistency
+- Mixing languages → Maintain language consistency
 - Overloaded charts → Each chart should express only one theme
 - Incomplete data → Truthfully state "No data available"
 ```
@@ -172,7 +170,6 @@ Example Chart:
 * Choose a two-part "description + JSON" output for easy frontend integration
 * Specify "read-only SQL" to reduce risk
 
----
 
 ## 4. How to Improve Prompts Over Time
 
@@ -182,7 +179,7 @@ Example Chart:
 Start with a working version → Test on a small scale → Log issues → Add rules/examples to address issues → Test again
 ```
 
-<img src="https://static-docs.nocobase.com/00_QuickStart_cn-2025-09-29-17-20-21.jpg" alt="Optimization Process" width="50%">
+<img src="https://static-docs.nocobase.com/prompt-engineering-guide-2025-11-02-20-19-54.png" alt="Optimization Process" width="50%">
 
 It is recommended to test 5–10 typical tasks at once, completing one round within 30 minutes.
 
@@ -203,7 +200,6 @@ Empirical Ratio: **80% Positive : 20% Negative**.
 2. In "Reference Examples," provide a "single-metric chart"
 3. If the problem persists, add a hard constraint in "Hard Rules/Repetition"
 
----
 
 ## 5. Advanced Techniques
 
@@ -261,7 +257,6 @@ Output must include:
 3) Optional suggestions (if any)
 ```
 
----
 
 ## 6. Golden Rules (Practical Conclusions)
 
@@ -274,7 +269,6 @@ Output must include:
 7. Log issues and changes to create versions
 8. 80/20: First, explain "how to do it right," then constrain "what not to do wrong"
 
----
 
 ## 7. FAQ
 
@@ -302,7 +296,6 @@ First, write the positive parts (role, workflow, examples), then add constraints
 * Task (scenario/metrics/scope): Adjust according to business needs
 * Create a new version for any changes and log "why it was changed."
 
----
 
 ## 8. Next Steps
 
@@ -313,10 +306,9 @@ First, write the positive parts (role, workflow, examples), then add constraints
 
 **Further Reading**
 
-* [《AI Agent · Administrator Configuration Guide》](./admin-configuration.md): Put prompts into actual configuration
+* [AI Agent · Administrator Configuration Guide](./admin-configuration.md): Put prompts into actual configuration
 * Dedicated manuals for each AI agent: View complete role/task templates
 
----
 
 ## Conclusion
 

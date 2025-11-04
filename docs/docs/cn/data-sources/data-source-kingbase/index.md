@@ -1,6 +1,8 @@
-# 数据源 - 人大金仓（KingbaseES）
+---
+pkg: "@nocobase/plugin-data-source-kingbase"
+---
 
-<PluginInfo licenseBundled="true" name="data-source-kingbase"></PluginInfo>
+# 数据源 - 人大金仓（KingbaseES）
 
 ## 介绍
 

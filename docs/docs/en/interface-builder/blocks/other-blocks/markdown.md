@@ -8,7 +8,6 @@ The Markdown block can be used without binding to a data source. It uses Markdow
 
 You can add a Markdown block to a page or a popup.
 
-
 ![20251026230916](https://static-docs.nocobase.com/20251026230916.png)
 
 
@@ -30,7 +29,6 @@ It uses the **[Liquid template engine](https://shopify.github.io/liquid/basics/i
 - **Security and Isolation**: Template rendering is executed in a sandboxed environment, preventing the direct execution of dangerous code and enhancing security.
 
 With the Liquid template engine, developers and content creators can **easily achieve dynamic content display, personalized document generation, and template rendering for complex data structures**, significantly improving efficiency and flexibility.
-
 
 ## Using Variables
 

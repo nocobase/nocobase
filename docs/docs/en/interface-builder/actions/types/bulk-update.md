@@ -1,8 +1,7 @@
+---
+pkg: "@nocobase/plugin-action-bulk-update"
+---
 # Bulk Update
-
-:::tip
-This feature is provided by the `plugin-action-bulk-update` plugin.
-:::
 
 ## Introduction
 
@@ -38,4 +37,4 @@ As shown in the figure, configure the bulk update action in the orders table to 
 
 - [Edit button](/interface-builder/actions/action-settings/edit-button): Edit the button's title, type, and icon;
 - [Linkage rule](/interface-builder/actions/action-settings/linkage-rule): Dynamically show/hide the button;
-- [Confirmation](/interface-builder/actions/action-settings/double-check)
+- [Double check](/interface-builder/actions/action-settings/double-check)

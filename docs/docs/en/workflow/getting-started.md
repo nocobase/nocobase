@@ -1,4 +1,4 @@
-# Getting started
+# Getting Started
 
 ## Configure Your First Workflow
 
@@ -14,7 +14,7 @@ The management interface lists all created workflows:
 ![Workflow Management](https://static-docs.nocobase.com/20251027222900.png)
 
 
-Click the "Add" button to create a new workflow and select Collection Event:
+Click the "Add New" button to create a new workflow and select Collection Event:
 
 
 ![Create Workflow](https://static-docs.nocobase.com/20251027222951.png)
@@ -108,16 +108,16 @@ You can see that the result data of the calculation node contains the calculated
 
 Through the steps above, we have completed the configuration and triggering of a simple workflow and have been introduced to the following basic concepts:
 
-- **Workflow**: Used to define the basic information of a flow, including name, trigger type, and enabled status. You can configure any number of execution nodes within it. It is the entity that carries the flow.
+- **Workflow**: Used to define the basic information of a flow, including name, trigger type, and enabled status. You can configure any number of nodes within it. It is the entity that carries the flow.
 - **Trigger**: Each workflow contains one trigger, which can be configured with specific conditions for the workflow to be triggered. It is the entry point of the flow.
 - **Node**: A node is an instruction unit within a workflow that performs a specific action. Multiple nodes in a workflow form a complete execution flow through upstream and downstream relationships.
 - **Execution**: An execution is the specific execution object after a workflow is triggered, also known as an execution record or execution history. It contains information such as the execution status and trigger context data. There are also corresponding execution results for each node, which include the node's execution status and result data information.
 
 For more in-depth usage, you can refer to the following content:
 
-- [Triggers](./triggers/index.md)
-- [Nodes](./nodes/index.md)
-- [Using Variables](./advanced/variables.md)
-- [Executions](./advanced/executions.md)
-- [Version Management](./advanced/revisions.md)
-- [Advanced Options](./advanced/options.md)
+- [Triggers](./triggers/index)
+- [Nodes](./nodes/index)
+- [Using Variables](./advanced/variables)
+- [Executions](./advanced/executions)
+- [Version Management](./advanced/revisions)
+- [Advanced Options](./advanced/options)

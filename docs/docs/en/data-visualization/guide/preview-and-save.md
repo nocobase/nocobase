@@ -1,11 +1,13 @@
-# Preview and save
+# Preview and Save
 
 - Preview: Temporarily render changes from the configuration panel into the page chart to verify the result.
 - Save: Persist changes from the configuration panel to the database.
 
 ## Entry points
 
+
 ![clipboard-image-1761479218](https://static-docs.nocobase.com/clipboard-image-1761479218.png)
+
 
 - In visual (Basic) mode, changes are applied to the preview automatically by default.
 - In SQL and Custom modes, click the Preview button on the right to apply changes to the preview.
@@ -21,7 +23,7 @@
 - Chart configuration errors (missing Basic mapping, exceptions from Custom JS): shown in the chart area or console while keeping the page operable.
 - Confirm column names and data types in View data before field mapping or writing Custom code to reduce errors.
 
-## Save and cancel
+## Save and Cancel
 - Save: write current changes into the block configuration and apply them to the page immediately.
 - Cancel: discard current unsaved changes and revert to the last saved state.
 - Save scope:

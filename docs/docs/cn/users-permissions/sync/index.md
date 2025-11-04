@@ -1,3 +1,7 @@
+---
+pkg: '@nocobase/plugin-user-data-sync'
+---
+
 # 用户数据同步
 
 ## 介绍

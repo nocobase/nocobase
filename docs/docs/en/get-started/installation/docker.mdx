@@ -25,7 +25,6 @@ Choose a NocoBase version ([Version Comparison](../quickstart.md)) and database 
 
 - **Choose an image**: `latest` `latest-full` `beta` `beta-full` `alpha` `alpha-full` `1.7.14` `1.7.14-full`
   - For production environments, it is recommended to pin a specific version number to avoid unintentional automatic upgrades. [View all versions](https://hub.docker.com/r/nocobase/nocobase/tags)
-  - Alibaba Cloud image: `registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full`
   - Docker Hub image: `nocobase/nocobase:latest-full`
   - The **full image** includes PostgreSQL 16/17 client, MySQL 8.0 client, Oracle 19.25 client required for backup and migration management plugins, as well as LibreOffice required for template printing (PDF).
   - If you need to build your own image, you can refer to the official [Dockerfile (slim version)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile) and [Dockerfile-full (full version)](https://github.com/nocobase/nocobase/blob/main/docker/nocobase/Dockerfile-full)
@@ -46,7 +45,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -69,8 +68,8 @@ services:
       - DB_USER=nocobase
       # Database password
       - DB_PASSWORD=nocobase
-      # Timezone
-      - TZ=Asia/Shanghai
+      # Timezone, please change it to your local timezone, e.g., America/New_York
+      - TZ=Etc/UTC
 
     volumes:
       - ./storage:/app/nocobase/storage
@@ -80,7 +79,7 @@ services:
 
   # If you use an existing database service, you can skip starting postgres
   postgres:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/postgres:16
+    image: nocobase/postgres:16
     restart: always
     command: postgres -c wal_level=logical
     environment:
@@ -104,7 +103,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -129,8 +128,8 @@ services:
       - DB_PASSWORD=nocobase
       # Whether to convert table and field names to snake case
       - DB_UNDERSCORED=true
-      # Timezone
-      - TZ=Asia/Shanghai
+      # Timezone, please change it to your local timezone, e.g., America/New_York
+      - TZ=Etc/UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
@@ -139,7 +138,7 @@ services:
 
   # If you use an existing database service, you can skip starting mysql
   mysql:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mysql:8
+    image: nocobase/mysql:8
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
@@ -163,7 +162,7 @@ networks:
 
 services:
   app:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest-full
+    image: nocobase/nocobase:latest-full
     restart: always
     networks:
       - nocobase
@@ -188,8 +187,8 @@ services:
       - DB_PASSWORD=nocobase
       # Whether to convert table and field names to snake case
       - DB_UNDERSCORED=true
-      # Timezone
-      - TZ=Asia/Shanghai
+      # Timezone, please change it to your local timezone, e.g., America/New_York
+      - TZ=Etc/UTC
     volumes:
       - ./storage:/app/nocobase/storage
     ports:
@@ -198,7 +197,7 @@ services:
 
   # If you use an existing database service, you can skip starting mariadb
   mariadb:
-    image: registry.cn-shanghai.aliyuncs.com/nocobase/mariadb:11
+    image: nocobase/mariadb:11
     environment:
       MYSQL_DATABASE: nocobase
       MYSQL_USER: nocobase
