@@ -44,16 +44,12 @@ export class PubSubManager {
     this.handlerManager = new HandlerManager(this.publisherId);
   }
 
-  get channelPrefix() {
-    return this.options?.channelPrefix ? `${this.options.channelPrefix}.` : '';
-  }
-
   setAdapter(adapter: IPubSubAdapter) {
     this.adapter = adapter;
   }
 
   getFullChannel(channel: string) {
-    return [this.app.name, this.channelPrefix, channel].filter(Boolean).join('.');
+    return [this.app.name, this.options?.channelPrefix, channel].filter(Boolean).join('.');
   }
 
   async isConnected() {
