@@ -37,7 +37,7 @@ export default (app: Application) => {
         }
       } else if (options.quickstart) {
         if (await app.isInstalled()) {
-          await app.upgrade();
+          await app.upgrade({ quickstart: true });
         } else {
           await app.install();
         }

@@ -226,33 +226,49 @@ export class PluginMultiAppManagerServer extends Plugin {
     if (!this.meter) {
       return;
     }
-    const subAppCountGauge = this.meter.createObservableGauge('sub_app_count', {
-      description: 'Number of sub applications',
+    const subAppActiveGauge = this.meter.createObservableGauge('sub_app_count', {
+      description: 'Number of currently active sub applications',
     });
-    subAppCountGauge.addCallback((observableResult) => {
-      const supervisor = AppSupervisor.getInstance();
-      const apps = Object.values(supervisor.apps || {});
-      const counts: Record<AppStatus, number> = {
-        initializing: 0,
-        initialized: 0,
-        running: 0,
-        commanding: 0,
-        stopped: 0,
-        error: 0,
-        not_found: 0,
-      };
+    const subAppStatusGauge = this.meter.createObservableGauge('sub_app_status', {
+      description: 'Number of sub applications by cached status in supervisor.appStatus',
+    });
+    this.meter.addBatchObservableCallback(
+      (observableResult) => {
+        const supervisor = AppSupervisor.getInstance();
+        const apps = Object.values(supervisor.apps || {});
+        const allStatuses = supervisor.appStatus || {};
 
-      for (const app of apps) {
-        const status = supervisor.getAppStatus(app.name) as AppStatus;
-        if (counts[status] !== undefined) {
-          counts[status]++;
+        const createCounts = (): Record<AppStatus, number> => ({
+          preparing: 0,
+          initializing: 0,
+          initialized: 0,
+          running: 0,
+          commanding: 0,
+          stopped: 0,
+          error: 0,
+          not_found: 0,
+        });
+
+        const activeCounts = createCounts();
+        for (const app of apps) {
+          const status = supervisor.getAppStatus(app.name, 'stopped') as AppStatus;
+          if (activeCounts[status] !== undefined) activeCounts[status]++;
         }
-      }
 
-      for (const [status, count] of Object.entries(counts)) {
-        observableResult.observe(count, { status });
-      }
-    });
+        const cachedCounts = createCounts();
+        for (const status of Object.values(allStatuses)) {
+          if (cachedCounts[status as AppStatus] !== undefined) cachedCounts[status as AppStatus]++;
+        }
+
+        for (const [status, count] of Object.entries(activeCounts)) {
+          observableResult.observe(subAppActiveGauge, count, { status });
+        }
+        for (const [status, count] of Object.entries(cachedCounts)) {
+          observableResult.observe(subAppStatusGauge, count, { status });
+        }
+      },
+      [subAppActiveGauge, subAppStatusGauge],
+    );
   }
 
   async load() {
@@ -283,19 +299,28 @@ export class PluginMultiAppManagerServer extends Plugin {
 
         const quickstart = async () => {
           // create database
-          await this.appDbCreator(subApp, {
-            transaction,
-            applicationModel: model,
-            context: options.context,
-          });
+          try {
+            await this.appDbCreator(subApp, {
+              transaction,
+              applicationModel: model,
+              context: options.context,
+            });
+          } catch (error) {
+            this.log.error(error, { method: 'appDbCreator' });
+            AppSupervisor.getInstance().setAppStatus(subApp.name, 'error');
+            return;
+          }
 
-          await subApp.runCommand('start', '--quickstart');
+          await AppSupervisor.getInstance().getApp(subApp.name);
         };
 
-        const startPromise = quickstart();
-
         if (options?.context?.waitSubAppInstall) {
-          await startPromise;
+          await quickstart();
+          await subApp.runCommand('start', '--quickstart');
+        } else {
+          quickstart().catch((err) => {
+            this.log.error(err);
+          });
         }
       },
     );
@@ -333,6 +358,9 @@ export class PluginMultiAppManagerServer extends Plugin {
       }
 
       const mainApp = await appSupervisor.getApp('main');
+      if (!mainApp) {
+        return;
+      }
       const applicationRecord = (await mainApp.db.getRepository('applications').findOne({
         filter: {
           name,
@@ -346,10 +374,6 @@ export class PluginMultiAppManagerServer extends Plugin {
       const instanceOptions = applicationRecord.get('options');
 
       if (instanceOptions?.standaloneDeployment && appSupervisor.runningMode !== 'single') {
-        return;
-      }
-
-      if (!applicationRecord) {
         return;
       }
 
@@ -421,23 +445,11 @@ export class PluginMultiAppManagerServer extends Plugin {
           },
         });
 
-        const promises = [];
-
         for (const subAppInstance of subApps) {
-          promises.push(
-            (async () => {
-              if (!appSupervisor.hasApp(subAppInstance.name)) {
-                await AppSupervisor.getInstance().getApp(subAppInstance.name);
-              } else if (appSupervisor.getAppStatus(subAppInstance.name) === 'initialized') {
-                (await AppSupervisor.getInstance().getApp(subAppInstance.name)).runCommand('start', '--quickstart');
-              }
-            })(),
-          );
+          AppSupervisor.getInstance().getApp(subAppInstance.name);
         }
-
-        await Promise.all(promises);
       } catch (err) {
-        console.error('Auto register sub applications failed: ', err);
+        this.log.error('Auto register sub applications failed: ', err);
       }
     });
 

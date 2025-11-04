@@ -74,6 +74,7 @@ const collection = {
         type: 'string',
         title: i18nText('App status'),
         enum: [
+          { label: 'Preparing', value: 'preparing' },
           { label: 'Initializing', value: 'initializing' },
           { label: 'Initialized', value: 'initialized' },
           { label: 'Running', value: 'running' },
