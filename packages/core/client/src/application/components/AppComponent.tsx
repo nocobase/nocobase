@@ -30,11 +30,11 @@ export const AppComponent: FC<AppComponentProps> = observer(
       app.load();
     }, [app]);
     const AppError = app.getComponent('AppError');
-    if (app.loading) return app.renderComponent('AppSpin', { app });
     if (!app.maintained && app.maintaining) return app.renderComponent('AppMaintaining', { app });
     if (app.error?.code && !(app.maintained && app.maintaining)) {
       return <AppError app={app} error={app.error} />;
     }
+    if (app.loading) return app.renderComponent('AppSpin', { app });
     return (
       <ErrorBoundary
         FallbackComponent={(props) => <AppError app={app} error={app.error} {...props} />}
