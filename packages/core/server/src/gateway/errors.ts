@@ -58,7 +58,7 @@ export const errors: AppErrors = {
 
   APP_PREPARING: {
     status: 503,
-    message: ({ appName }) => `application ${appName} is preparing`,
+    message: ({ appName }) => `application ${appName} is preparing, please wait patiently`,
     maintaining: true,
   },
 
