@@ -70,7 +70,7 @@ describe('gateway', () => {
       expect(data).toMatchObject({
         error: {
           code: 'APP_INITIALIZING',
-          message: `application main is initializing`,
+          message: `application main is preparing`,
           status: 503,
           maintaining: true,
         },
@@ -100,7 +100,7 @@ describe('gateway', () => {
       const data = res.body;
       expect(data).toMatchObject({
         error: {
-          code: 'APP_COMMANDING',
+          code: 'APP_PREPARING',
           status: 503,
           maintaining: true,
         },

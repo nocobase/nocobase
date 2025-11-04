@@ -8,7 +8,7 @@
  */
 
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
-import { E_ALREADY_LOCKED, Mutex } from 'async-mutex';
+import { E_ALREADY_LOCKED, Mutex, tryAcquire } from 'async-mutex';
 import { EventEmitter } from 'events';
 import Application, { ApplicationOptions, MaintainingCommandStatus } from './application';
 import { getErrorLevel } from './errors/handler';
@@ -163,7 +163,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   async bootStrapApp(appName: string, options = {}) {
     const mutex = this.getMutexOfApp(appName);
     try {
-      await mutex.runExclusive(async () => {
+      await tryAcquire(mutex).runExclusive(async () => {
         if (this.hasApp(appName) && this.getAppStatus(appName) !== 'preparing') {
           return;
         }

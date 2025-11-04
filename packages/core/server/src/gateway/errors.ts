@@ -70,13 +70,13 @@ export const errors: AppErrors = {
 
   APP_STOPPED: {
     status: 503,
-    message: ({ app }) => `application ${app.name} is stopped`,
+    message: ({ app }) => `application ${app?.name} is stopped`,
     maintaining: true,
   },
 
   APP_INITIALIZED: {
     status: 503,
-    message: ({ app }) => `application ${app.name} is initialized, waiting for command`,
+    message: ({ app }) => `application ${app?.name} is initialized, waiting for command`,
     maintaining: true,
   },
 

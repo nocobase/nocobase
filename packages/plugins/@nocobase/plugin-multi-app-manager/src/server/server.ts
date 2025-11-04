@@ -308,10 +308,13 @@ export class PluginMultiAppManagerServer extends Plugin {
           await AppSupervisor.getInstance().getApp(subApp.name);
         };
 
-        const startPromise = quickstart();
-
         if (options?.context?.waitSubAppInstall) {
-          await startPromise;
+          await quickstart();
+          await subApp.runCommand('start', '--quickstart');
+        } else {
+          quickstart().catch((err) => {
+            this.app.log.error(err);
+          });
         }
       },
     );
@@ -349,6 +352,9 @@ export class PluginMultiAppManagerServer extends Plugin {
       }
 
       const mainApp = await appSupervisor.getApp('main');
+      if (!mainApp) {
+        return;
+      }
       const applicationRecord = (await mainApp.db.getRepository('applications').findOne({
         filter: {
           name,
@@ -362,10 +368,6 @@ export class PluginMultiAppManagerServer extends Plugin {
       const instanceOptions = applicationRecord.get('options');
 
       if (instanceOptions?.standaloneDeployment && appSupervisor.runningMode !== 'single') {
-        return;
-      }
-
-      if (!applicationRecord) {
         return;
       }
 
@@ -441,7 +443,7 @@ export class PluginMultiAppManagerServer extends Plugin {
           AppSupervisor.getInstance().getApp(subAppInstance.name);
         }
       } catch (err) {
-        console.error('Auto register sub applications failed: ', err);
+        this.app.log.error('Auto register sub applications failed: ', err);
       }
     });
 

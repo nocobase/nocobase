@@ -391,9 +391,6 @@ describe('multiple apps', () => {
     await app.stop();
 
     await app.db.reconnect();
-    await AppSupervisor.getInstance().getApp(subAppName, {
-      upgrading: true,
-    });
 
     await app.start();
     await sleep(10000);
