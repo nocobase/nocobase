@@ -116,7 +116,6 @@ export class SubTableColumnModel<
           return null;
         }
         const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
-        console.log(binding, field.name);
         if (!binding) return null;
         const fieldModel = binding.modelName;
         const fullName = ctx.fieldPath ? `${ctx.fieldPath}.${field.name}` : field.name;

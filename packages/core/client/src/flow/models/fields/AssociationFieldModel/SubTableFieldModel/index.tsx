@@ -56,6 +56,8 @@ const HeaderWrapperComponent = React.memo((props) => {
 export class SubTableFieldModel extends AssociationFieldModel {
   selectedRows = observable.ref([]);
   updateAssociation = true;
+  setCurrentPage;
+  currentPageSize;
   get collection() {
     return this.context.collection;
   }
@@ -114,9 +116,12 @@ export class SubTableFieldModel extends AssociationFieldModel {
     this.context.blockModel.emitter.on('onFieldReset', () => {
       this.props.onChange([]);
     });
-    this.onSelectExitRecordClick = (e) => {
+    this.onSelectExitRecordClick = (setCurrentPage, currentPageSize) => {
+      this.setCurrentPage = setCurrentPage;
+      this.currentPageSize = currentPageSize;
       this.dispatchEvent('openView', {
-        event: e,
+        setCurrentPage,
+        currentPageSize,
       });
     };
   }
@@ -125,6 +130,8 @@ export class SubTableFieldModel extends AssociationFieldModel {
     this.setProps({ onSelectExitRecordClick: fn });
   }
   change() {
+    const lastPage = Math.ceil(this.selectedRows.value.length / this.currentPageSize);
+    this.setCurrentPage(lastPage);
     this.props.onChange(this.selectedRows.value);
   }
 }
@@ -226,6 +233,31 @@ SubTableFieldModel.registerFlow({
         });
       },
     },
+    pageSize: {
+      title: escapeT('Page size'),
+      uiSchema: {
+        pageSize: {
+          'x-component': 'Select',
+          'x-decorator': 'FormItem',
+          enum: [
+            { label: '5', value: 5 },
+            { label: '10', value: 10 },
+            { label: '20', value: 20 },
+            { label: '50', value: 50 },
+            { label: '100', value: 100 },
+            { label: '200', value: 200 },
+          ],
+        },
+      },
+      defaultParams: {
+        pageSize: 10,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          pageSize: params.pageSize,
+        });
+      },
+    },
   },
 });
 
@@ -306,7 +338,15 @@ SubTableFieldModel.registerFlow({
               selectedRowKeys: undefined,
               onChange: (_, selectedRows) => {
                 const prev = ctx.model.props.value || [];
-                const merged = [...prev, ...selectedRows];
+                const merged = [
+                  ...prev,
+                  ...selectedRows.map((v) => {
+                    return {
+                      ...v,
+                      isNew: true,
+                    };
+                  }),
+                ];
 
                 // 去重，防止同一个值重复
                 const unique = merged.filter(
@@ -314,7 +354,6 @@ SubTableFieldModel.registerFlow({
                     index ===
                     self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
                 );
-
                 ctx.model.selectedRows.value = unique;
               },
             },
