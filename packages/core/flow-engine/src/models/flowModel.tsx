@@ -119,6 +119,9 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * 缓存的响应式包装器组件（每个实例一个）
    */
   private _reactiveWrapperCache?: React.ComponentType;
+  // 轻量生命周期标记（不参与序列化，仅供 scheduler 初始化判定）
+  private _isMounted?: boolean;
+  private _isReady?: boolean;
 
   flowRegistry: InstanceFlowRegistry;
   private _cleanRun?: boolean;
@@ -797,7 +800,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     options?: DispatchEventOptions,
     inputArgs?: Record<string, any>,
     results?: any[],
-  ): Promise<void> {}
+  ): Promise<void> {
+    if (eventName === 'beforeRender' && !this._isReady) {
+      this._isReady = true;
+    }
+  }
 
   /**
    * 通用事件分发钩子：错误
@@ -891,10 +898,28 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
             if (typeof renderTarget.onMount === 'function') {
               renderTarget.onMount();
             }
+            renderTarget._isMounted = true;
+            // 发射 mounted 生命周期事件（异步）
+            const mountedPromise = renderTarget.flowEngine?.emitter?.emitAsync('model:mounted', {
+              uid: renderTarget.uid,
+              model: renderTarget,
+            });
+            mountedPromise?.catch((err) => {
+              renderTarget?.context?.logger?.error?.({ err }, 'FlowModel: emit model:mounted failed');
+            });
             return () => {
               if (typeof renderTarget.onUnmount === 'function') {
                 renderTarget.onUnmount();
               }
+              renderTarget._isMounted = false;
+              // 发射 unmounted 生命周期事件（异步）
+              const unmountedPromise = renderTarget.flowEngine?.emitter?.emitAsync('model:unmounted', {
+                uid: renderTarget.uid,
+                model: renderTarget,
+              });
+              unmountedPromise?.catch((err) => {
+                renderTarget?.context?.logger?.error?.({ err }, 'FlowModel: emit model:unmounted failed');
+              });
             };
           }, [renderTarget]);
 
@@ -951,6 +976,15 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   setCleanRun(value: boolean) {
     const prev = this._cleanRun;
     this._cleanRun = !!value;
+  }
+
+  /** 是否已挂载（React 层） */
+  get isMounted() {
+    return !!this._isMounted;
+  }
+  /** 是否已完成首次 beforeRender（就绪） */
+  get isReady() {
+    return !!this._isReady;
   }
 
   /**
