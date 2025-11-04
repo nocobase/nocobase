@@ -15,6 +15,7 @@ import { getAllDataModels } from '../filter-manager/utils';
 import { FilterFormItemModel } from './FilterFormItemModel';
 
 export class FilterFormGridModel extends GridModel {
+  itemSettingsMenuLevel = 2;
   itemFlowSettings = {
     showBackground: true,
     style: {

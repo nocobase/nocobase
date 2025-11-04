@@ -1,0 +1,43 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Security Guide",
+    "link": "/ops-management/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Token Policy",
+    "link": "/ops-management/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Password Policy",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Password Policy",
+        "link": "/ops-management/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "User Lockout",
+        "link": "/ops-management/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "IP Restriction",
+    "link": "/ops-management/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Audit Logger",
+    "link": "/ops-management/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Two-Factor Authentication (2FA)",
+    "link": "/auth-verification/2fa/"
+  }
+]

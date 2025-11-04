@@ -94,7 +94,6 @@ export const QueryPanel: React.FC = observer(() => {
 
   // 图形化模式
   const handleBuilderChange = async (next: any) => {
-    console.log('handleBuilderChange', next);
     const query = form?.values?.query || {};
     form?.setValuesIn?.('query', {
       ...next,
@@ -136,7 +135,7 @@ export const QueryPanel: React.FC = observer(() => {
       // setShowResult(true);
     } catch (error: any) {
       configStore.setError(ctx.model.uid, error?.message);
-      // setShowResult(true);
+      setShowResult(true);
     } finally {
       setRunning(false);
     }

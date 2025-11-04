@@ -1,0 +1,96 @@
+[
+  {
+    "type": "custom-link",
+    "label": "发布管理",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "备份管理",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "迁移管理",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "安全指南",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/ops-management/security/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "变量与密钥",
+        "link": "/ops-management/variables-and-secrets/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Token 策略",
+        "link": "/ops-management/security/token-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "密码策略",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "密码策略",
+            "link": "/ops-management/security/password-policy/"
+          },
+          {
+            "type": "custom-link",
+            "label": "用户锁定",
+            "link": "/ops-management/security/password-policy/lockout"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "IP 限制",
+        "link": "/ops-management/security/ip-restriction/"
+      },
+      {
+        "type": "custom-link",
+        "label": "审计日志",
+        "link": "/ops-management/security/audit-logger/"
+      },
+      {
+        "type": "custom-link",
+        "label": "双因素身份认证 (2FA)",
+        "link": "/auth-verification/2fa/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "日志与监控",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/ops-management/log-and-monitor/overview"
+      },
+      {
+        "type": "custom-link",
+        "label": "服务端日志",
+        "link": "/ops-management/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "历史记录",
+        "link": "/ops-management/log-and-monitor/record-history"
+      }
+    ]
+  }
+]

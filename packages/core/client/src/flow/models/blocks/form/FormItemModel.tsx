@@ -142,7 +142,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
     return (
-      <FormItem {...this.props} name={fieldPath}>
+      <FormItem {...this.props} name={fieldPath} validateFirst={true}>
         <FieldModelRenderer model={modelForRender} name={fieldPath} />
       </FormItem>
     );
@@ -289,6 +289,10 @@ FormItemModel.registerFlow({
         ctx.model.setProps({ initialValue: finalDefault });
       },
     },
+    validation: {
+      title: escapeT('Validation'),
+      use: 'validation',
+    },
     required: {
       title: escapeT('Required'),
       use: 'required',
@@ -303,10 +307,6 @@ FormItemModel.registerFlow({
       use: 'pattern',
     },
 
-    validation: {
-      title: escapeT('Validation'),
-      use: 'validation',
-    },
     fieldNames: {
       use: 'titleField',
       uiSchema: async (ctx) => {

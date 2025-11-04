@@ -38,7 +38,7 @@ export const validation = defineAction({
   },
   handler(ctx, params) {
     if (params.validation) {
-      const rules = ctx.model.getProps().rules || [];
+      const rules = [];
       const schema = jioToJoiSchema(params.validation);
       const label = ctx.model.props.label;
       rules.push({
@@ -57,9 +57,14 @@ export const validation = defineAction({
         },
       });
       const hasRequiredInCollection = params.validation.rules.some((rule) => rule.name === 'required');
+      if (hasRequiredInCollection) {
+        ctx.model.setProps({
+          required: hasRequiredInCollection,
+        });
+      }
+      console.log(rules);
       ctx.model.setProps({
         rules,
-        required: hasRequiredInCollection,
         validation: params.validation,
       });
     }

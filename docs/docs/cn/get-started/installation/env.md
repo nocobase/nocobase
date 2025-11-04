@@ -302,7 +302,7 @@ LOGGER_MAX_SIZE=20971520
 LOGGER_FORMAT=json
 ```
 
-参考：[日志格式](/log-and-monitor/logger/index.md#日志格式)
+参考：[日志格式](/ops-management/log-and-monitor/logger/index.md#日志格式)
 
 ### CACHE_DEFAULT_STORE
 

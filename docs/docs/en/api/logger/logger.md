@@ -33,7 +33,7 @@ interface LoggerOptions
 
 ### `createSystemLogger()`
 
-Creates system runtime logs printed in a specified method. Refer to [Logger - System Log](/log-and-monitor/logger/index#system-log)
+Creates system runtime logs printed in a specified method. Refer to [Logger - System Log](/ops-management/log-and-monitor/logger/index.md#system-log)
 
 #### Signature
 
@@ -162,4 +162,4 @@ const transport = Transports.console({
 ## Related Documentation
 
 - [Development Guide - Logger](/plugin-development/server/logger)
-- [Logger](/log-and-monitor/logger/index)
+- [Logger](/ops-management/log-and-monitor/logger/index.md)
