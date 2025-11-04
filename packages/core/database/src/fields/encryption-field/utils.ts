@@ -12,7 +12,6 @@ import path from 'path';
 import { customAlphabet } from 'nanoid';
 import fs from 'fs-extra';
 import { AESCodec } from './codec';
-import _ from 'lodash';
 
 const nanoid = customAlphabet('0123456789', 21);
 
