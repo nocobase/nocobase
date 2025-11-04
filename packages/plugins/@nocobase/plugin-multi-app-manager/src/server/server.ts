@@ -299,11 +299,17 @@ export class PluginMultiAppManagerServer extends Plugin {
 
         const quickstart = async () => {
           // create database
-          await this.appDbCreator(subApp, {
-            transaction,
-            applicationModel: model,
-            context: options.context,
-          });
+          try {
+            await this.appDbCreator(subApp, {
+              transaction,
+              applicationModel: model,
+              context: options.context,
+            });
+          } catch (error) {
+            this.log.error(error, { method: 'appDbCreator' });
+            AppSupervisor.getInstance().setAppStatus(subApp.name, 'error');
+            return;
+          }
 
           await AppSupervisor.getInstance().getApp(subApp.name);
         };
