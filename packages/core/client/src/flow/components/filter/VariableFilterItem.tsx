@@ -25,6 +25,7 @@ import {
 import _ from 'lodash';
 import { NumberPicker } from '@formily/antd-v5';
 import { lazy } from '../../../lazy-helper';
+import { enumToOptions } from '../../internal/utils/enumOptionsUtils';
 import { FormProvider, SchemaComponent } from '../../../schema-component/core';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
@@ -70,7 +71,7 @@ function createStaticInputRenderer(
   const fieldProps = meta?.uiSchema?.['x-component-props'] || {};
   const opProps = schema?.['x-component-props'] || {};
   const combinedProps = merge({}, fieldProps, opProps);
-  const selectOptions = schema?.enum || [];
+  const selectOptions = enumToOptions(schema?.enum as any, t) || [];
 
   // 这里保持 any，避免在不同组件 props 上产生不必要的类型冲突
   const commonProps: any = {
