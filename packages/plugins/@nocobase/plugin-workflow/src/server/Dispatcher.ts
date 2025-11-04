@@ -44,7 +44,7 @@ export default class Dispatcher {
   private eventsCount = 0;
 
   get idle() {
-    return !this.executing && !this.pending.length && !this.events.length;
+    return this.ready && !this.executing && !this.pending.length && !this.events.length;
   }
 
   constructor(private readonly plugin: PluginWorkflowServer) {
