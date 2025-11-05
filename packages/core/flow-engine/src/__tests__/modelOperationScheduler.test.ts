@@ -59,13 +59,13 @@ describe('ModelOperationScheduler', () => {
     root.unmount();
   });
 
-  it('should execute immediately for existing target and also on unmounted when once=false', async () => {
+  it('should execute once for existing target even when when=unmounted', async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-unmount-1' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-unmount-1' });
 
     const fn = vi.fn();
-    engine.scheduleModelOperation(from, to.uid, fn, { when: 'unmounted', once: false });
+    engine.scheduleModelOperation(from, to.uid, fn, { when: 'unmounted' });
 
     const root = engine.reactView.createRoot(document.createElement('div'));
     await act(async () => {
@@ -77,8 +77,8 @@ describe('ModelOperationScheduler', () => {
       root.unmount();
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
-    // 卸载时再次触发（once=false）
-    expect(fn).toHaveBeenCalledTimes(2);
+    // once 语义：卸载后不再执行
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 
   it('should support predicate for when', async () => {
@@ -105,7 +105,7 @@ describe('ModelOperationScheduler', () => {
     expect(handle.status()).toBe('done');
   });
 
-  it('should respect immediate:"never" and run on next event', async () => {
+  it('should execute once immediately for existing target (beforeRender:end)', async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-imd-1' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-imd-1' });
@@ -114,67 +114,20 @@ describe('ModelOperationScheduler', () => {
     await engine.executor.dispatchEvent(to, 'beforeRender');
 
     const fn = vi.fn();
-    engine.scheduleModelOperation(from, to.uid, fn, { when: 'beforeRender:end', immediate: 'never' });
+    engine.scheduleModelOperation(from, to.uid, fn, { when: 'beforeRender:end' });
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(fn).toHaveBeenCalledTimes(0);
-
+    // 目标已存在，立即执行一次
+    expect(fn).toHaveBeenCalledTimes(1);
+    // 之后事件不会再次触发
     await engine.executor.dispatchEvent(to, 'beforeRender');
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('should drop duplicate when policy is drop', async () => {
-    const engine = newEngine();
-    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-drop-1' });
-    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-drop-1' });
-    const calls: string[] = [];
-
-    engine.scheduleModelOperation(from, to.uid, async () => calls.push('first'), {
-      when: 'beforeRender:end',
-      dedupeKey: 'k1',
-      policy: 'drop',
-    });
-    engine.scheduleModelOperation(from, to.uid, async () => calls.push('second'), {
-      when: 'beforeRender:end',
-      dedupeKey: 'k1',
-      policy: 'drop',
-    });
-
-    await engine.executor.dispatchEvent(to, 'beforeRender');
-    expect(calls).toEqual(['first']);
-  });
-
-  it('should run both when concurrency is parallel', async () => {
-    const engine = newEngine();
-    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-par-1' });
-    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-par-1' });
-    const calls: string[] = [];
-
-    engine.scheduleModelOperation(
-      from,
-      to.uid,
-      async () => {
-        calls.push('a');
-      },
-      { when: 'beforeRender:end', concurrency: 'parallel' },
-    );
-
-    engine.scheduleModelOperation(
-      from,
-      to.uid,
-      async () => {
-        calls.push('b');
-      },
-      { when: 'beforeRender:end', concurrency: 'parallel' },
-    );
-
-    await engine.executor.dispatchEvent(to, 'beforeRender');
-    // 不要求顺序，只需两次均执行
-    expect(calls.sort()).toEqual(['a', 'b']);
-  });
+  // 简化后：dedupe/policy/concurrency 已移除，不再校验
 
   it('should execute immediately if target already ready', async () => {
-    const engine = new FlowEngine();
+    const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-2' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-2' });
 
@@ -196,8 +149,8 @@ describe('ModelOperationScheduler', () => {
     expect(calls).toEqual(['immediate']);
   });
 
-  it('should run only once when once=true for beforeRender:end', async () => {
-    const engine = new FlowEngine();
+  it('should run only once for beforeRender:end', async () => {
+    const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-3' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-3' });
     const calls: number[] = [];
@@ -216,24 +169,24 @@ describe('ModelOperationScheduler', () => {
     expect(calls.length).toBe(1);
   });
 
-  it('should run repeatedly when once=false for beforeRender:end (including immediate for existing)', async () => {
+  it('should run only once for beforeRender:end regardless of events', async () => {
     const engine = new FlowEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-repeat-1' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-repeat-1' });
     const fn = vi.fn();
 
-    engine.scheduleModelOperation(from, to.uid, fn, { when: 'beforeRender:end', once: false });
+    engine.scheduleModelOperation(from, to.uid, fn, { when: 'beforeRender:end' });
 
     await engine.executor.dispatchEvent(to, 'beforeRender');
     await new Promise((resolve) => setTimeout(resolve, 0));
     await engine.executor.dispatchEvent(to, 'beforeRender');
     await new Promise((resolve) => setTimeout(resolve, 0));
-    // 已存在立即一次 + 两次 beforeRender:end
-    expect(fn).toHaveBeenCalledTimes(3);
+    // 已存在立即一次；之后事件不会再次触发
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('should cancel when source model destroyed', async () => {
-    const engine = new FlowEngine();
+  it('should still execute once even if source model destroyed later', async () => {
+    const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-4' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-4' });
     const fn = vi.fn();
@@ -243,11 +196,12 @@ describe('ModelOperationScheduler', () => {
     await from.destroy();
 
     await engine.executor.dispatchEvent(to, 'beforeRender');
-    expect(fn).not.toHaveBeenCalled();
+    // 简化策略：注册即执行一次，与来源后续生命周期无关
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 
   it('should trigger on target destroyed', async () => {
-    const engine = new FlowEngine();
+    const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-5' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-5' });
     const fn = vi.fn();
@@ -259,58 +213,7 @@ describe('ModelOperationScheduler', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('should replace previous scheduled with same dedupeKey', async () => {
-    const engine = new FlowEngine();
-    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-6' });
-    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-6' });
-    const calls: string[] = [];
-
-    engine.scheduleModelOperation(from, to.uid, async () => calls.push('old'), {
-      when: 'beforeRender:end',
-      dedupeKey: 'k1',
-      policy: 'replace',
-    });
-    engine.scheduleModelOperation(from, to.uid, async () => calls.push('new'), {
-      when: 'beforeRender:end',
-      dedupeKey: 'k1',
-      policy: 'replace',
-    });
-
-    await engine.executor.dispatchEvent(to, 'beforeRender');
-    expect(calls).toEqual(['new']);
-  });
-
-  it('should run in serial for same target', async () => {
-    const engine = new FlowEngine();
-    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-7' });
-    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-7' });
-    const order: string[] = [];
-
-    engine.scheduleModelOperation(
-      from,
-      to.uid,
-      async () => {
-        order.push('first-start');
-        await new Promise((resolve) => setTimeout(resolve, 10));
-        order.push('first-end');
-      },
-      { when: 'beforeRender:end', concurrency: 'serial' },
-    );
-
-    engine.scheduleModelOperation(
-      from,
-      to.uid,
-      async () => {
-        order.push('second');
-      },
-      { when: 'beforeRender:end', concurrency: 'serial' },
-    );
-
-    await engine.executor.dispatchEvent(to, 'beforeRender');
-    // 串行第一个包含 10ms 延时，等待所有计划执行完成
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(order).toEqual(['first-start', 'first-end', 'second']);
-  });
+  // replace/serial 顺序校验已移除，不再测试
 
   it('should schedule via block engine but execute in parent view engine scope', async () => {
     const root = new FlowEngine();
@@ -328,5 +231,98 @@ describe('ModelOperationScheduler', () => {
     await (view as FlowEngine).executor.dispatchEvent(to, 'beforeRender');
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('executes multiple scheduled callbacks exactly once (immediate + later events)', async () => {
+    const engine = newEngine();
+    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-multi-1' });
+    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-multi-1' });
+
+    const a = vi.fn();
+    const b = vi.fn();
+    // 目标已存在：注册后应各自立即执行一次
+    engine.scheduleModelOperation(from, to.uid, a, { when: 'mounted' });
+    engine.scheduleModelOperation(from, to.uid, b, { when: 'beforeRender:end' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(a).toHaveBeenCalledTimes(1);
+    expect(b).toHaveBeenCalledTimes(1);
+
+    // 后续生命周期事件不应再次触发
+    await engine.executor.dispatchEvent(to, 'beforeRender');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(a).toHaveBeenCalledTimes(1);
+    expect(b).toHaveBeenCalledTimes(1);
+  });
+
+  it('expires when target never appears (timeoutMs)', async () => {
+    const engine = newEngine();
+    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-expire-1' });
+    const missingUid = 'to-never-appears-1';
+
+    const fn = vi.fn();
+    const handle = engine.scheduleModelOperation(from, missingUid, fn, { when: 'ready', timeoutMs: 15 });
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    expect(handle.status()).toBe('expired');
+    expect(fn).not.toHaveBeenCalled();
+  });
+
+  it('cancelScheduledOperations by fromUid/toUid works and prevents execution', async () => {
+    const engine = newEngine();
+    const from1 = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-cancel-1' });
+    const from2 = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-cancel-2' });
+    const to1 = 'to-cancel-1';
+    const to2 = 'to-cancel-2';
+
+    const f1 = vi.fn();
+    const f2 = vi.fn();
+    const f3 = vi.fn();
+    const f4 = vi.fn();
+
+    const h1 = engine.scheduleModelOperation(from1, to1, f1, { when: 'created' });
+    const h2 = engine.scheduleModelOperation(from1, to2, f2, { when: 'created' });
+    const h3 = engine.scheduleModelOperation(from2, to1, f3, { when: 'created' });
+    const h4 = engine.scheduleModelOperation(from2, to2, f4, { when: 'created' });
+
+    // 取消 from1 的全部
+    engine.cancelScheduledOperations({ fromUid: from1.uid });
+    expect(h1.status()).toBe('cancelled');
+    expect(h2.status()).toBe('cancelled');
+
+    // 创建目标 to1，仅 h3 应触发；h4 仍待定
+    engine.createModel<FlowModel>({ use: 'FlowModel', uid: to1 });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(f3).toHaveBeenCalledTimes(1);
+    expect(h3.status()).toBe('done');
+
+    // 取消剩余 to2
+    engine.cancelScheduledOperations({ toUid: to2 });
+    expect(h4.status()).toBe('cancelled');
+    expect(f4).not.toHaveBeenCalled();
+  });
+
+  it('on target destroyed: only destroyed-matching executes; others are cancelled', async () => {
+    const engine = newEngine();
+    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-destroy-1' });
+    const toUid = 'to-destroy-1';
+
+    const onDestroyed = vi.fn();
+    const onReady = vi.fn();
+    const onMounted = vi.fn();
+
+    const h1 = engine.scheduleModelOperation(from, toUid, onDestroyed, { when: 'destroyed' });
+    const h2 = engine.scheduleModelOperation(from, toUid, onReady, { when: 'ready' });
+    const h3 = engine.scheduleModelOperation(from, toUid, onMounted, { when: 'mounted' });
+
+    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: toUid });
+    await to.destroy();
+    await new Promise((resolve) => setTimeout(resolve, 10));
+
+    expect(onDestroyed).toHaveBeenCalledTimes(1);
+    expect(h1.status()).toBe('done');
+
+    expect(onReady).not.toHaveBeenCalled();
+    expect(onMounted).not.toHaveBeenCalled();
+    expect(h2.status()).toBe('cancelled');
+    expect(h3.status()).toBe('cancelled');
   });
 });

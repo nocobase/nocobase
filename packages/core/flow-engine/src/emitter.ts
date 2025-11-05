@@ -32,9 +32,9 @@ export class Emitter {
   }
 
   /**
-   * 异步触发事件：按监听器注册顺序顺序等待执行完成。
+   * 异步触发事件：按监听器注册顺序依次（串行）等待执行完成。
    * - 若某个监听器抛错/Promise reject，将中断后续执行并将异常向上传递（便于调用方统一处理）。
-   * - 若需要并行触发，可在调用方自行使用 Promise.all 包装 this.events[event] 的回调。
+   * - 当前不提供并行触发能力；如需并发处理，请在监听器内部自行管理（例如在回调内使用 Promise.all）。
    */
   async emitAsync(event: string, ...args: any[]): Promise<void> {
     if (this.paused) return;

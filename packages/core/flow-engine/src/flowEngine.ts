@@ -206,8 +206,8 @@ export class FlowEngine {
     return this.getScheduler().schedule(fromModelOrUid, toUid, fn, options);
   }
 
-  /** 取消计划（便捷方法） */
-  public cancelScheduledOperations(filter: { fromUid?: string; toUid?: string; dedupeKey?: string }) {
+  /** 取消计划 */
+  public cancelScheduledOperations(filter: { fromUid?: string; toUid?: string }) {
     if (!this._modelOperationScheduler) return;
     this._modelOperationScheduler.cancel(filter);
   }

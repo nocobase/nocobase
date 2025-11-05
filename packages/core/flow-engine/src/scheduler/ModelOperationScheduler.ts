@@ -17,17 +17,7 @@ export type ScheduleWhen = WhenString | ((e: LifecycleEvent) => boolean);
 
 export interface ScheduleOptions {
   when?: ScheduleWhen;
-  once?: boolean;
-  /**
-   * immediate 执行策略：
-   * - 'always': 若目标模型当前已存在，则在注册时立即执行一次（不依赖 when 条件是否已达成）。
-   * - 'never': 不做即时执行，仅等待后续生命周期事件触发。
-   */
-  immediate?: 'never' | 'always';
   timeoutMs?: number;
-  dedupeKey?: string;
-  policy?: 'enqueue' | 'replace' | 'drop';
-  concurrency?: 'serial' | 'parallel';
 }
 
 export interface ScheduledHandle {
@@ -55,8 +45,7 @@ type ScheduledItem = {
   fromUid: string;
   toUid: string;
   fn: (model: FlowModel) => Promise<void> | void;
-  options: Required<Pick<ScheduleOptions, 'once' | 'immediate' | 'policy' | 'concurrency'>> &
-    Omit<ScheduleOptions, 'once' | 'immediate' | 'policy' | 'concurrency'>;
+  options: ScheduleOptions;
   status: ScheduledStatus;
   timeoutTimer?: ReturnType<typeof setTimeout>;
 };
@@ -65,15 +54,12 @@ export class ModelOperationScheduler {
   private itemsByTargetUid = new Map<string, Map<string, ScheduledItem>>();
   private itemIdsByFromUid = new Map<string, Set<string>>();
   // 无生命周期缓存：依赖事件触发即时处理
-  private serialLocksByTargetUid = new Map<string, Promise<void>>(); // per-target serial lock
   private itemsById = new Map<string, ScheduledItem>();
 
   private unbindHandlers: Array<() => void> = [];
 
   constructor(private engine: FlowEngine) {
     this.bindEngineLifecycle();
-    // 初始化：从现有模型上读取轻量标记（created/mounted/ready）
-    // 简化：不做初始化 priming（仅依靠 schedule 现存检查与 created 事件）
   }
 
   /** 外部调用入口 */
@@ -98,35 +84,10 @@ export class ModelOperationScheduler {
       fn,
       options: {
         when: options?.when,
-        once: options?.once !== false,
-        // 保持当前既有行为：目标存在则立即执行一次
-        immediate: options?.immediate ?? 'always',
         timeoutMs: options?.timeoutMs,
-        dedupeKey: options?.dedupeKey,
-        policy: options?.policy ?? 'replace',
-        concurrency: options?.concurrency ?? 'serial',
       },
       status: 'pending',
     };
-
-    // 去重策略：同 target + from + dedupeKey
-    if (item.options.dedupeKey) {
-      const exist = this.itemsByTargetUid.get(toUid);
-      if (exist) {
-        const sameKeys = Array.from(exist.values()).filter(
-          (x) => x.fromUid === fromUid && x.options.dedupeKey === item.options.dedupeKey,
-        );
-        if (sameKeys.length) {
-          if (item.options.policy === 'drop') {
-            return this.createHandle(item, true);
-          }
-          if (item.options.policy === 'replace') {
-            sameKeys.forEach((x) => this.internalCancel(x.id, 'replaced'));
-          }
-          // enqueue 则保留
-        }
-      }
-    }
 
     // 注册结构
     let targetMap = this.itemsByTargetUid.get(toUid);
@@ -152,25 +113,21 @@ export class ModelOperationScheduler {
       }, item.options.timeoutMs);
     }
 
-    // immediate：若目标模型当前已存在，则立即执行一次（与 when 无关）
-    if (item.options.immediate !== 'never') {
-      const modelNow = this.engine.getModel<FlowModel>(toUid);
-      if (modelNow) {
-        void this.tryExecute(item, { type: 'created', uid: toUid, model: modelNow });
-      }
+    const modelNow = this.engine.getModel<FlowModel>(toUid);
+    if (modelNow) {
+      void this.tryExecute(item, { type: 'created', uid: toUid, model: modelNow });
     }
 
     return this.createHandle(item);
   }
 
-  cancel(filter: { fromUid?: string; toUid?: string; dedupeKey?: string }) {
-    const { fromUid, toUid, dedupeKey } = filter || {};
+  cancel(filter: { fromUid?: string; toUid?: string }) {
+    const { fromUid, toUid } = filter || {};
     if (toUid && this.itemsByTargetUid.has(toUid)) {
       const map = this.itemsByTargetUid.get(toUid);
       if (map)
         for (const item of map.values()) {
           if (fromUid && item.fromUid !== fromUid) continue;
-          if (dedupeKey && item.options.dedupeKey !== dedupeKey) continue;
           this.internalCancel(item.id, 'cancelled');
         }
       return;
@@ -182,7 +139,6 @@ export class ModelOperationScheduler {
           const it = this.getItem(id);
           if (!it) continue;
           if (toUid && it.toUid !== toUid) continue;
-          if (dedupeKey && it.options.dedupeKey !== dedupeKey) continue;
           this.internalCancel(id, 'cancelled');
         }
     }
@@ -210,7 +166,6 @@ export class ModelOperationScheduler {
     }
     this.itemsByTargetUid.clear();
     this.itemIdsByFromUid.clear();
-    this.serialLocksByTargetUid.clear();
   }
 
   // ================= 内部实现 =================
@@ -291,10 +246,6 @@ export class ModelOperationScheduler {
       const should = this.shouldTrigger(item.options.when, event);
       if (!should) continue;
       void this.tryExecute(item, event);
-      if (item.options.once) {
-        // 如果 once，在执行完成后会被清理；此处先标记，防止同一个事件多次命中
-        // 不提前删除，避免并发条件下丢失句柄；改为在完成后 clean
-      }
     }
   }
 
@@ -326,42 +277,21 @@ export class ModelOperationScheduler {
             fromUid: item.fromUid,
             toUid: item.toUid,
             when: item.options.when,
-            dedupeKey: item.options.dedupeKey,
           },
           'ModelOperationScheduler: operation execution failed',
         );
         item.status = 'done';
       } finally {
-        // 执行完成后，清除超时计时器，避免非 once 任务后续被误判为超时
+        // 执行完成后，清除超时计时器，统一清理（一次性语义）
         if (item.timeoutTimer) {
           clearTimeout(item.timeoutTimer);
           item.timeoutTimer = undefined;
         }
-        // once 任务执行完成后清理；非 once 任务回到等待状态
-        if (item.options.once) this.cleanupItem(item.id);
-        else item.status = 'pending';
+        this.cleanupItem(item.id);
       }
     };
 
-    if (item.options.concurrency === 'serial') {
-      const prev = this.serialLocksByTargetUid.get(item.toUid) || Promise.resolve();
-      const next = prev
-        .then(run)
-        .catch((err) => {
-          // 理论上 run 不会抛错；如发生，记录日志便于排查
-          this.engine.logger?.error?.(
-            { err, toUid: item.toUid },
-            'ModelOperationScheduler: serial lock execution error',
-          );
-        })
-        .finally(() => {
-          if (this.serialLocksByTargetUid.get(item.toUid) === next) this.serialLocksByTargetUid.delete(item.toUid);
-        });
-      this.serialLocksByTargetUid.set(item.toUid, next);
-      await next;
-    } else {
-      await run();
-    }
+    await run();
   }
 
   private internalCancel(id: string, _reason?: any) {
