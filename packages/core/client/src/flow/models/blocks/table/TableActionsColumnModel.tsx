@@ -125,7 +125,6 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
     );
     return {
       ...this.props,
-      width: 100,
       title: this.props.tooltip ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           {titleContent}
@@ -141,7 +140,11 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
   }
 
   render() {
-    return (value, record, index) => <Columns record={record} model={this} index={index} />;
+    return (value, record, index) => (
+      <div style={{ width: this.props.width - 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        <Columns record={record} model={this} index={index} />
+      </div>
+    );
   }
 }
 
