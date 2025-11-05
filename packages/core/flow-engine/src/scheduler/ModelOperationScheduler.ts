@@ -17,16 +17,9 @@ export type ScheduleWhen = WhenString | ((e: LifecycleEvent) => boolean);
 
 export interface ScheduleOptions {
   when?: ScheduleWhen;
-  timeoutMs?: number;
 }
 
-export interface ScheduledHandle {
-  id: string;
-  cancel: (reason?: any) => boolean;
-  status: () => ScheduledStatus;
-}
-
-type ScheduledStatus = 'pending' | 'running' | 'done' | 'cancelled' | 'expired';
+export type ScheduledCancel = (reason?: any) => boolean;
 
 export interface LifecycleEvent {
   type: WhenString;
@@ -38,16 +31,12 @@ export interface LifecycleEvent {
   result?: any;
 }
 
-// 不再维护生命周期状态表：事件触发即处理，保持最小化。
-
 type ScheduledItem = {
   id: string;
   fromUid: string;
   toUid: string;
   fn: (model: FlowModel) => Promise<void> | void;
   options: ScheduleOptions;
-  status: ScheduledStatus;
-  timeoutTimer?: ReturnType<typeof setTimeout>;
 };
 
 export class ModelOperationScheduler {
@@ -68,7 +57,7 @@ export class ModelOperationScheduler {
     toUid: string,
     fn: (model: FlowModel) => Promise<void> | void,
     options?: ScheduleOptions,
-  ): ScheduledHandle {
+  ): ScheduledCancel {
     const fromUid = typeof fromModelOrUid === 'string' ? fromModelOrUid : fromModelOrUid?.uid;
     if (!fromUid) {
       throw new Error('scheduleModelOperation: invalid from model or uid');
@@ -86,9 +75,7 @@ export class ModelOperationScheduler {
         // 默认语义：仅当 when === 'created' 时，对“已存在的目标”进行一次立即执行；
         // 其它 when 不做立即执行，需等待后续真实生命周期事件。
         when: options?.when ?? 'created',
-        timeoutMs: options?.timeoutMs,
       },
-      status: 'pending',
     };
 
     // 注册结构
@@ -106,22 +93,13 @@ export class ModelOperationScheduler {
     fromSet.add(item.id);
     this.itemsById.set(item.id, item);
 
-    // 超时自动清理
-    if (item.options.timeoutMs && item.options.timeoutMs > 0) {
-      item.timeoutTimer = setTimeout(() => {
-        if (this.getItem(item.id)?.status === 'pending') {
-          this.internalExpire(item.id, 'timeout');
-        }
-      }, item.options.timeoutMs);
-    }
-
     const modelNow = this.engine.getModel<FlowModel>(toUid);
     if (modelNow && item.options.when === 'created') {
       // 仅 when === 'created' 时，对“已存在的目标”立即执行一次
-      void this.tryExecute(item, { type: 'created', uid: toUid, model: modelNow });
+      void this.tryExecuteOnce(item.id, { type: 'created', uid: toUid, model: modelNow });
     }
 
-    return this.createHandle(item);
+    return (reason?: any) => this.internalCancel(item.id, reason);
   }
 
   cancel(filter: { fromUid?: string; toUid?: string }) {
@@ -139,7 +117,7 @@ export class ModelOperationScheduler {
       const set = this.itemIdsByFromUid.get(fromUid);
       if (set)
         for (const id of Array.from(set)) {
-          const it = this.getItem(id);
+          const it = this.itemsById.get(id);
           if (!it) continue;
           if (toUid && it.toUid !== toUid) continue;
           this.internalCancel(id, 'cancelled');
@@ -149,7 +127,6 @@ export class ModelOperationScheduler {
 
   /** 引擎关闭时释放（当前场景由 GC 处理，无需显式暴露） */
   dispose() {
-    // 解绑生命周期事件监听
     try {
       for (const unbind of this.unbindHandlers) {
         try {
@@ -205,30 +182,20 @@ export class ModelOperationScheduler {
     this.unbindHandlers.push(() => emitter.off('model:unmounted', onUnmounted));
 
     const onDestroyed = (e: LifecycleEvent) => {
-      // 允许在销毁事件上匹配的任务先尝试执行（此时 e.model 仍可用，removeModel 中传入）
       const targetBucket = this.itemsByTargetUid.get(e.uid);
       const event = { ...e, type: 'destroyed' as const };
-      const triggered = new Set<string>();
       if (targetBucket && targetBucket.size) {
-        for (const item of targetBucket.values()) {
-          if (item.status !== 'pending') continue;
-          if (this.shouldTrigger(item.options.when, event)) {
-            triggered.add(item.id);
-            void this.tryExecute(item, event);
+        const ids = Array.from(targetBucket.keys());
+        for (const id of ids) {
+          const it = this.itemsById.get(id);
+          if (!it) continue;
+          if (this.shouldTrigger(it.options.when, event)) {
+            void this.tryExecuteOnce(id, event);
+          } else {
+            this.internalCancel(id, 'targetDestroyed');
           }
         }
       }
-      // 在下一轮任务队列中清理“未触发”的目标相关任务，避免和 tryExecute 的并发冲突
-      setTimeout(() => {
-        const map = this.itemsByTargetUid.get(e.uid);
-        if (map) {
-          for (const item of Array.from(map.values())) {
-            if (!triggered.has(item.id)) this.internalCancel(item.id, 'targetDestroyed');
-          }
-          if (map.size === 0) this.itemsByTargetUid.delete(e.uid);
-        }
-        // 无生命周期缓存，略
-      }, 0);
     };
     emitter.on('model:destroyed', onDestroyed);
     this.unbindHandlers.push(() => emitter.off('model:destroyed', onDestroyed));
@@ -237,11 +204,13 @@ export class ModelOperationScheduler {
   private processLifecycleEvent(targetUid: string, event: LifecycleEvent) {
     const targetBucket = this.itemsByTargetUid.get(targetUid);
     if (!targetBucket || targetBucket.size === 0) return;
-    for (const item of Array.from(targetBucket.values())) {
-      if (item.status !== 'pending') continue;
+    const ids = Array.from(targetBucket.keys());
+    for (const id of ids) {
+      const item = this.itemsById.get(id);
+      if (!item) continue;
       const should = this.shouldTrigger(item.options.when, event);
       if (!should) continue;
-      void this.tryExecute(item, event);
+      void this.tryExecuteOnce(id, event);
     }
   }
 
@@ -251,65 +220,28 @@ export class ModelOperationScheduler {
     return when === event.type;
   }
 
-  private async tryExecute(item: ScheduledItem, event: LifecycleEvent) {
-    const run = async () => {
-      if (item.status !== 'pending') return;
-      item.status = 'running';
-      try {
-        const model = event.model || this.engine.getModel<FlowModel>(item.toUid);
-        if (!model) {
-          // 目标不存在（已销毁或未创建），将其视作取消
-          this.internalCancel(item.id, 'noTarget');
-          return;
-        }
-        await Promise.resolve(item.fn(model));
-        item.status = 'done';
-      } catch (err) {
-        // 失败即结束（可靠性由注册者自行保证）
-        this.engine.logger?.error?.(
-          {
-            err,
-            id: item.id,
-            fromUid: item.fromUid,
-            toUid: item.toUid,
-            when: item.options.when,
-          },
-          'ModelOperationScheduler: operation execution failed',
-        );
-        item.status = 'done';
-      } finally {
-        // 执行完成后，清除超时计时器，统一清理（一次性语义）
-        if (item.timeoutTimer) {
-          clearTimeout(item.timeoutTimer);
-          item.timeoutTimer = undefined;
-        }
-        this.cleanupItem(item.id);
-      }
-    };
-
-    await run();
+  private async tryExecuteOnce(id: string, event: LifecycleEvent) {
+    const item = this.takeItem(id);
+    if (!item) return;
+    try {
+      const model = event.model || this.engine.getModel<FlowModel>(item.toUid);
+      if (!model) return;
+      await Promise.resolve(item.fn(model));
+    } catch (err) {
+      this.engine.logger?.error?.(
+        { err, id, fromUid: item.fromUid, toUid: item.toUid, when: item.options.when },
+        'ModelOperationScheduler: operation execution failed',
+      );
+    }
   }
 
   private internalCancel(id: string, _reason?: any) {
-    const item = this.getItem(id);
-    if (!item) return false;
-    item.status = 'cancelled';
-    if (item.timeoutTimer) clearTimeout(item.timeoutTimer);
-    this.cleanupItem(id);
-    return true;
+    return !!this.takeItem(id);
   }
 
-  private internalExpire(id: string, _reason?: any) {
-    const item = this.getItem(id);
-    if (!item) return false;
-    item.status = 'expired';
-    this.cleanupItem(id);
-    return true;
-  }
-
-  private cleanupItem(id: string) {
-    const it = this.getItem(id);
-    if (!it) return;
+  private takeItem(id: string): ScheduledItem | undefined {
+    const it = this.itemsById.get(id);
+    if (!it) return undefined;
     const { toUid, fromUid } = it;
     const map = this.itemsByTargetUid.get(toUid);
     if (map) {
@@ -322,24 +254,7 @@ export class ModelOperationScheduler {
       if (set.size === 0) this.itemIdsByFromUid.delete(fromUid);
     }
     this.itemsById.delete(id);
-    // 清理计时器
-    if (it.timeoutTimer) {
-      clearTimeout(it.timeoutTimer);
-      it.timeoutTimer = undefined;
-    }
-  }
-
-  private getItem(id: string): ScheduledItem | undefined {
-    return this.itemsById.get(id);
-  }
-
-  private createHandle(item: ScheduledItem, cancelled = false): ScheduledHandle {
-    if (cancelled) item.status = 'cancelled';
-    return {
-      id: item.id,
-      cancel: (reason?: any) => this.internalCancel(item.id, reason),
-      status: () => item.status,
-    };
+    return it;
   }
 }
 

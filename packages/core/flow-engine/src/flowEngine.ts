@@ -19,7 +19,7 @@ import { ReactView } from './ReactView';
 import { APIResource, FlowResource, MultiRecordResource, SingleRecordResource, SQLResource } from './resources';
 import { Emitter } from './emitter';
 import ModelOperationScheduler from './scheduler/ModelOperationScheduler';
-import type { ScheduleOptions, ScheduledHandle } from './scheduler/ModelOperationScheduler';
+import type { ScheduleOptions, ScheduledCancel } from './scheduler/ModelOperationScheduler';
 import type {
   ActionDefinition,
   ApplyFlowCacheEntry,
@@ -202,7 +202,7 @@ export class FlowEngine {
     toUid: string,
     fn: (model: FlowModel) => Promise<void> | void,
     options?: ScheduleOptions,
-  ): ScheduledHandle {
+  ): ScheduledCancel {
     return this.getScheduler().schedule(fromModelOrUid, toUid, fn, options);
   }
 

@@ -95,18 +95,6 @@ describe('ModelOperationScheduler', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('should not expire when event triggers before timeout', async () => {
-    const engine = newEngine();
-    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-timeout-1' });
-    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-timeout-1' });
-
-    const handle = engine.scheduleModelOperation(from, to.uid, async () => {}, { when: 'ready', timeoutMs: 50 });
-    // 在超时前触发 beforeRender，从而触发 ready
-    await engine.executor.dispatchEvent(to, 'beforeRender');
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(handle.status()).toBe('done');
-  });
-
   it('should execute once when beforeRender ends (no immediate for existing target)', async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-imd-1' });
@@ -247,18 +235,6 @@ describe('ModelOperationScheduler', () => {
     expect(b).toHaveBeenCalledTimes(1);
   });
 
-  it('expires when target never appears (timeoutMs)', async () => {
-    const engine = newEngine();
-    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-expire-1' });
-    const missingUid = 'to-never-appears-1';
-
-    const fn = vi.fn();
-    const handle = engine.scheduleModelOperation(from, missingUid, fn, { when: 'ready', timeoutMs: 15 });
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(handle.status()).toBe('expired');
-    expect(fn).not.toHaveBeenCalled();
-  });
-
   it('cancelScheduledOperations by fromUid/toUid works and prevents execution', async () => {
     const engine = newEngine();
     const from1 = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-cancel-1' });
@@ -271,25 +247,25 @@ describe('ModelOperationScheduler', () => {
     const f3 = vi.fn();
     const f4 = vi.fn();
 
-    const h1 = engine.scheduleModelOperation(from1, to1, f1, { when: 'created' });
-    const h2 = engine.scheduleModelOperation(from1, to2, f2, { when: 'created' });
-    const h3 = engine.scheduleModelOperation(from2, to1, f3, { when: 'created' });
-    const h4 = engine.scheduleModelOperation(from2, to2, f4, { when: 'created' });
+    const c1 = engine.scheduleModelOperation(from1, to1, f1, { when: 'created' });
+    const c2 = engine.scheduleModelOperation(from1, to2, f2, { when: 'created' });
+    const c3 = engine.scheduleModelOperation(from2, to1, f3, { when: 'created' });
+    const c4 = engine.scheduleModelOperation(from2, to2, f4, { when: 'created' });
 
     // 取消 from1 的全部
     engine.cancelScheduledOperations({ fromUid: from1.uid });
-    expect(h1.status()).toBe('cancelled');
-    expect(h2.status()).toBe('cancelled');
+    expect(c1()).toBe(false);
+    expect(c2()).toBe(false);
 
     // 创建目标 to1，仅 h3 应触发；h4 仍待定
     engine.createModel<FlowModel>({ use: 'FlowModel', uid: to1 });
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(f3).toHaveBeenCalledTimes(1);
-    expect(h3.status()).toBe('done');
+    expect(c3()).toBe(false);
 
     // 取消剩余 to2
     engine.cancelScheduledOperations({ toUid: to2 });
-    expect(h4.status()).toBe('cancelled');
+    expect(c4()).toBe(false);
     expect(f4).not.toHaveBeenCalled();
   });
 
@@ -302,20 +278,20 @@ describe('ModelOperationScheduler', () => {
     const onReady = vi.fn();
     const onMounted = vi.fn();
 
-    const h1 = engine.scheduleModelOperation(from, toUid, onDestroyed, { when: 'destroyed' });
-    const h2 = engine.scheduleModelOperation(from, toUid, onReady, { when: 'ready' });
-    const h3 = engine.scheduleModelOperation(from, toUid, onMounted, { when: 'mounted' });
+    const cd = engine.scheduleModelOperation(from, toUid, onDestroyed, { when: 'destroyed' });
+    const cr = engine.scheduleModelOperation(from, toUid, onReady, { when: 'ready' });
+    const cm = engine.scheduleModelOperation(from, toUid, onMounted, { when: 'mounted' });
 
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: toUid });
     await to.destroy();
     await new Promise((resolve) => setTimeout(resolve, 10));
 
     expect(onDestroyed).toHaveBeenCalledTimes(1);
-    expect(h1.status()).toBe('done');
+    expect(cd()).toBe(false);
 
     expect(onReady).not.toHaveBeenCalled();
     expect(onMounted).not.toHaveBeenCalled();
-    expect(h2.status()).toBe('cancelled');
-    expect(h3.status()).toBe('cancelled');
+    expect(cr()).toBe(false);
+    expect(cm()).toBe(false);
   });
 });
