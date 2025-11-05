@@ -11,18 +11,24 @@ import { uid as genUid } from 'uid/secure';
 import type { FlowEngine } from '../flowEngine';
 import type { FlowModel } from '../models/flowModel';
 
-type WhenString = 'created' | 'mounted' | 'ready' | 'unmounted' | 'destroyed' | 'beforeRender:end';
+type LifecycleType =
+  | 'created'
+  | 'mounted'
+  | 'unmounted'
+  | 'destroyed'
+  | 'event:beforeRender:start'
+  | 'event:beforeRender:end';
 
-export type ScheduleWhen = WhenString | ((e: LifecycleEvent) => boolean);
+export type ScheduleWhen = LifecycleType | ((e: LifecycleEvent) => boolean);
 
 export interface ScheduleOptions {
   when?: ScheduleWhen;
 }
 
-export type ScheduledCancel = (reason?: any) => boolean;
+export type ScheduledCancel = () => boolean;
 
 export interface LifecycleEvent {
-  type: WhenString;
+  type: LifecycleType;
   uid: string;
   model?: FlowModel;
   runId?: string;
@@ -42,7 +48,6 @@ type ScheduledItem = {
 export class ModelOperationScheduler {
   private itemsByTargetUid = new Map<string, Map<string, ScheduledItem>>();
   private itemIdsByFromUid = new Map<string, Set<string>>();
-  // 无生命周期缓存：依赖事件触发即时处理
   private itemsById = new Map<string, ScheduledItem>();
 
   private unbindHandlers: Array<() => void> = [];
@@ -99,7 +104,7 @@ export class ModelOperationScheduler {
       void this.tryExecuteOnce(item.id, { type: 'created', uid: toUid, model: modelNow });
     }
 
-    return (reason?: any) => this.internalCancel(item.id, reason);
+    return () => this.internalCancel(item.id);
   }
 
   cancel(filter: { fromUid?: string; toUid?: string }) {
@@ -109,7 +114,7 @@ export class ModelOperationScheduler {
       if (map)
         for (const item of map.values()) {
           if (fromUid && item.fromUid !== fromUid) continue;
-          this.internalCancel(item.id, 'cancelled');
+          this.internalCancel(item.id);
         }
       return;
     }
@@ -120,7 +125,7 @@ export class ModelOperationScheduler {
           const it = this.itemsById.get(id);
           if (!it) continue;
           if (toUid && it.toUid !== toUid) continue;
-          this.internalCancel(id, 'cancelled');
+          this.internalCancel(id);
         }
     }
   }
@@ -142,7 +147,7 @@ export class ModelOperationScheduler {
 
     // 统一取消剩余任务（将触发 cleanupItem，从而移除 abort 监听与计时器）
     for (const map of this.itemsByTargetUid.values()) {
-      for (const item of map.values()) this.internalCancel(item.id, 'disposed');
+      for (const item of map.values()) this.internalCancel(item.id);
     }
     this.itemsByTargetUid.clear();
     this.itemIdsByFromUid.clear();
@@ -166,11 +171,14 @@ export class ModelOperationScheduler {
     emitter.on('model:mounted', onMounted);
     this.unbindHandlers.push(() => emitter.off('model:mounted', onMounted));
 
+    const onBeforeStart = (e: LifecycleEvent) => {
+      this.processLifecycleEvent(e.uid, { ...e, type: 'event:beforeRender:start' });
+    };
+    emitter.on('model:beforeRender:start', onBeforeStart);
+    this.unbindHandlers.push(() => emitter.off('model:beforeRender:start', onBeforeStart));
+
     const onBeforeEnd = (e: LifecycleEvent) => {
-      // 投递具体事件
-      this.processLifecycleEvent(e.uid, { ...e, type: 'beforeRender:end' });
-      // 同时提供“就绪”语义（首次与否由监听方自行控制，如有需要）
-      this.processLifecycleEvent(e.uid, { ...e, type: 'ready' as const });
+      this.processLifecycleEvent(e.uid, { ...e, type: 'event:beforeRender:end' });
     };
     emitter.on('model:beforeRender:end', onBeforeEnd);
     this.unbindHandlers.push(() => emitter.off('model:beforeRender:end', onBeforeEnd));
@@ -192,7 +200,7 @@ export class ModelOperationScheduler {
           if (this.shouldTrigger(it.options.when, event)) {
             void this.tryExecuteOnce(id, event);
           } else {
-            this.internalCancel(id, 'targetDestroyed');
+            this.internalCancel(id);
           }
         }
       }
@@ -235,7 +243,7 @@ export class ModelOperationScheduler {
     }
   }
 
-  private internalCancel(id: string, _reason?: any) {
+  private internalCancel(id: string) {
     return !!this.takeItem(id);
   }
 

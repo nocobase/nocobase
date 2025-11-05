@@ -20,7 +20,7 @@ function newEngine(): FlowEngine {
 }
 
 describe('ModelOperationScheduler', () => {
-  it('should execute on ready when beforeRender ends', async () => {
+  it("should execute on 'beforeRender:end' when beforeRender ends", async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-1' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-1' });
@@ -34,7 +34,7 @@ describe('ModelOperationScheduler', () => {
         expect(m.uid).toBe(to.uid);
         calls.push('ran');
       },
-      { when: 'ready' },
+      { when: 'beforeRender:end' },
     );
 
     await engine.executor.dispatchEvent(to, 'beforeRender');
@@ -108,9 +108,22 @@ describe('ModelOperationScheduler', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
+  it("should execute immediately when target already exists and when='created'", async () => {
+    const engine = newEngine();
+    // 先创建目标模型
+    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-created-immediate' });
+    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-created-immediate' });
+    const fn = vi.fn();
+
+    engine.scheduleModelOperation(from, to.uid, fn, { when: 'created' });
+    // 目标已存在，应在注册后立即执行一次
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
   // 简化后：dedupe/policy/concurrency 已移除，不再校验
 
-  it('should execute when ready after beforeRender ends (no immediate)', async () => {
+  it("should execute when 'beforeRender:end' after beforeRender ends (no immediate)", async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-2' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-2' });
@@ -120,15 +133,15 @@ describe('ModelOperationScheduler', () => {
       from,
       to.uid,
       async () => {
-        calls.push('ready');
+        calls.push('end');
       },
-      { when: 'ready' },
+      { when: 'beforeRender:end' },
     );
 
-    // 触发 beforeRender:end -> ready
+    // 触发 beforeRender:end
     await engine.executor.dispatchEvent(to, 'beforeRender');
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(calls).toEqual(['ready']);
+    expect(calls).toEqual(['end']);
   });
 
   it('should run only once for beforeRender:end', async () => {
@@ -275,11 +288,11 @@ describe('ModelOperationScheduler', () => {
     const toUid = 'to-destroy-1';
 
     const onDestroyed = vi.fn();
-    const onReady = vi.fn();
+    const onEnd = vi.fn();
     const onMounted = vi.fn();
 
     const cd = engine.scheduleModelOperation(from, toUid, onDestroyed, { when: 'destroyed' });
-    const cr = engine.scheduleModelOperation(from, toUid, onReady, { when: 'ready' });
+    const cr = engine.scheduleModelOperation(from, toUid, onEnd, { when: 'beforeRender:end' });
     const cm = engine.scheduleModelOperation(from, toUid, onMounted, { when: 'mounted' });
 
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: toUid });
@@ -289,7 +302,7 @@ describe('ModelOperationScheduler', () => {
     expect(onDestroyed).toHaveBeenCalledTimes(1);
     expect(cd()).toBe(false);
 
-    expect(onReady).not.toHaveBeenCalled();
+    expect(onEnd).not.toHaveBeenCalled();
     expect(onMounted).not.toHaveBeenCalled();
     expect(cr()).toBe(false);
     expect(cm()).toBe(false);
