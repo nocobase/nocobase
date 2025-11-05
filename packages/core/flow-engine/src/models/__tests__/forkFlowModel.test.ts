@@ -423,6 +423,24 @@ describe('ForkFlowModel', () => {
       });
     });
 
+    test('should clear local props with clearProps', () => {
+      const masterProps = { master: 'value', conflict: 'master' };
+      mockMaster.getProps = vi.fn(() => masterProps);
+
+      // 先设置一些本地属性
+      fork.setProps({ local: 'v', conflict: 'local' });
+      expect(fork.localProps).toEqual({ initial: 'value', local: 'v', conflict: 'local' });
+
+      // 调用 clearProps，应当返回一个空对象
+      const result = (fork as any).clearProps();
+      expect(result).toStrictEqual({});
+      expect(fork.localProps).toStrictEqual({});
+
+      // 清空后，合并的 props 应回退为仅 master 的 props
+      expect(fork.getProps()).toEqual(masterProps);
+      expect(fork.props).toEqual(masterProps);
+    });
+
     test('should get merged props from master and local', () => {
       const masterProps = { master: 'value', shared: 'master' };
       const localProps = { local: 'value', shared: 'local' };
