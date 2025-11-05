@@ -226,17 +226,13 @@ export class PluginMultiAppManagerServer extends Plugin {
     if (!this.meter) {
       return;
     }
-    const subAppActiveGauge = this.meter.createObservableGauge('sub_app_count', {
-      description: 'Number of currently active sub applications',
-    });
     const subAppStatusGauge = this.meter.createObservableGauge('sub_app_status', {
       description: 'Number of sub applications by cached status in supervisor.appStatus',
     });
     this.meter.addBatchObservableCallback(
       (observableResult) => {
         const supervisor = AppSupervisor.getInstance();
-        const apps = Object.values(supervisor.apps || {});
-        const allStatuses = supervisor.appStatus || {};
+        const allStatuses = { ...supervisor.appStatus };
 
         const createCounts = (): Record<AppStatus, number> => ({
           preparing: 0,
@@ -249,25 +245,19 @@ export class PluginMultiAppManagerServer extends Plugin {
           not_found: 0,
         });
 
-        const activeCounts = createCounts();
-        for (const app of apps) {
-          const status = supervisor.getAppStatus(app.name, 'stopped') as AppStatus;
-          if (activeCounts[status] !== undefined) activeCounts[status]++;
-        }
-
         const cachedCounts = createCounts();
-        for (const status of Object.values(allStatuses)) {
+        for (let status of Object.values(allStatuses)) {
+          if (!status) {
+            status = 'stopped';
+          }
           if (cachedCounts[status as AppStatus] !== undefined) cachedCounts[status as AppStatus]++;
         }
 
-        for (const [status, count] of Object.entries(activeCounts)) {
-          observableResult.observe(subAppActiveGauge, count, { status });
-        }
         for (const [status, count] of Object.entries(cachedCounts)) {
           observableResult.observe(subAppStatusGauge, count, { status });
         }
       },
-      [subAppActiveGauge, subAppStatusGauge],
+      [subAppStatusGauge],
     );
   }
 
