@@ -19,7 +19,7 @@ import { ReactView } from './ReactView';
 import { APIResource, FlowResource, MultiRecordResource, SingleRecordResource, SQLResource } from './resources';
 import { Emitter } from './emitter';
 import ModelOperationScheduler from './scheduler/ModelOperationScheduler';
-import type { ScheduleOptions } from './scheduler/ModelOperationScheduler';
+import type { ScheduleOptions, ScheduledHandle } from './scheduler/ModelOperationScheduler';
 import type {
   ActionDefinition,
   ApplyFlowCacheEntry,
@@ -202,12 +202,12 @@ export class FlowEngine {
     toUid: string,
     fn: (model: FlowModel) => Promise<void> | void,
     options?: ScheduleOptions,
-  ) {
+  ): ScheduledHandle {
     return this.getScheduler().schedule(fromModelOrUid, toUid, fn, options);
   }
 
   /** 取消计划 */
-  public cancelScheduledOperations(filter: { fromUid?: string; toUid?: string }) {
+  public cancelScheduledOperations(filter: { fromUid?: string; toUid?: string }): void {
     if (!this._modelOperationScheduler) return;
     this._modelOperationScheduler.cancel(filter);
   }

@@ -48,18 +48,18 @@ describe('ModelOperationScheduler', () => {
 
     const fn = vi.fn();
     const root = engine.reactView.createRoot(document.createElement('div'));
+    // 先注册，再触发 mounted 事件
+    engine.scheduleModelOperation(from, to.uid, fn, { when: 'mounted' });
     await act(async () => {
       root.render(to.render());
     });
-    // 先触发 mounted，再注册（immediate: always）
-    engine.scheduleModelOperation(from, to.uid, fn, { when: 'mounted' });
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(fn).toHaveBeenCalledTimes(1);
 
     root.unmount();
   });
 
-  it('should execute once for existing target even when when=unmounted', async () => {
+  it('should execute on unmounted when model is unmounted (no immediate)', async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-unmount-1' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-unmount-1' });
@@ -71,13 +71,13 @@ describe('ModelOperationScheduler', () => {
     await act(async () => {
       root.render(to.render());
     });
+    // 挂载后不会立即执行（等待卸载事件）
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn).toHaveBeenCalledTimes(0);
     await act(async () => {
       root.unmount();
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
-    // once 语义：卸载后不再执行
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
@@ -95,30 +95,26 @@ describe('ModelOperationScheduler', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('should not expire when model exists (immediate executes once)', async () => {
+  it('should not expire when event triggers before timeout', async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-timeout-1' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-timeout-1' });
 
-    const handle = engine.scheduleModelOperation(from, to.uid, async () => {}, { when: 'ready', timeoutMs: 10 });
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    const handle = engine.scheduleModelOperation(from, to.uid, async () => {}, { when: 'ready', timeoutMs: 50 });
+    // 在超时前触发 beforeRender，从而触发 ready
+    await engine.executor.dispatchEvent(to, 'beforeRender');
+    await new Promise((resolve) => setTimeout(resolve, 0));
     expect(handle.status()).toBe('done');
   });
 
-  it('should execute once immediately for existing target (beforeRender:end)', async () => {
+  it('should execute once when beforeRender ends (no immediate for existing target)', async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-imd-1' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-imd-1' });
 
-    // make at least one beforeRender completed first
-    await engine.executor.dispatchEvent(to, 'beforeRender');
-
     const fn = vi.fn();
     engine.scheduleModelOperation(from, to.uid, fn, { when: 'beforeRender:end' });
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    // 目标已存在，立即执行一次
-    expect(fn).toHaveBeenCalledTimes(1);
-    // 之后事件不会再次触发
+    // 触发一次 beforeRender:end
     await engine.executor.dispatchEvent(to, 'beforeRender');
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(fn).toHaveBeenCalledTimes(1);
@@ -126,27 +122,25 @@ describe('ModelOperationScheduler', () => {
 
   // 简化后：dedupe/policy/concurrency 已移除，不再校验
 
-  it('should execute immediately if target already ready', async () => {
+  it('should execute when ready after beforeRender ends (no immediate)', async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-2' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-2' });
-
-    // trigger ready first
-    await engine.executor.dispatchEvent(to, 'beforeRender');
 
     const calls: string[] = [];
     engine.scheduleModelOperation(
       from,
       to.uid,
       async () => {
-        calls.push('immediate');
+        calls.push('ready');
       },
       { when: 'ready' },
     );
 
-    // schedule immediate is async; wait a macrotask
+    // 触发 beforeRender:end -> ready
+    await engine.executor.dispatchEvent(to, 'beforeRender');
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(calls).toEqual(['immediate']);
+    expect(calls).toEqual(['ready']);
   });
 
   it('should run only once for beforeRender:end', async () => {
@@ -161,7 +155,7 @@ describe('ModelOperationScheduler', () => {
       async () => {
         calls.push(Date.now());
       },
-      { when: 'beforeRender:end', once: true },
+      { when: 'beforeRender:end' },
     );
 
     await engine.executor.dispatchEvent(to, 'beforeRender');
@@ -181,7 +175,6 @@ describe('ModelOperationScheduler', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     await engine.executor.dispatchEvent(to, 'beforeRender');
     await new Promise((resolve) => setTimeout(resolve, 0));
-    // 已存在立即一次；之后事件不会再次触发
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
@@ -233,22 +226,22 @@ describe('ModelOperationScheduler', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('executes multiple scheduled callbacks exactly once (immediate + later events)', async () => {
+  it('executes multiple scheduled callbacks exactly once (after events)', async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-multi-1' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-multi-1' });
 
     const a = vi.fn();
     const b = vi.fn();
-    // 目标已存在：注册后应各自立即执行一次
+    // 先注册，再触发事件
     engine.scheduleModelOperation(from, to.uid, a, { when: 'mounted' });
     engine.scheduleModelOperation(from, to.uid, b, { when: 'beforeRender:end' });
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(a).toHaveBeenCalledTimes(1);
-    expect(b).toHaveBeenCalledTimes(1);
 
-    // 后续生命周期事件不应再次触发
-    await engine.executor.dispatchEvent(to, 'beforeRender');
+    const root = engine.reactView.createRoot(document.createElement('div'));
+    await act(async () => {
+      root.render(to.render()); // 触发 mounted
+    });
+    await engine.executor.dispatchEvent(to, 'beforeRender'); // 触发 beforeRender:end
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(a).toHaveBeenCalledTimes(1);
     expect(b).toHaveBeenCalledTimes(1);

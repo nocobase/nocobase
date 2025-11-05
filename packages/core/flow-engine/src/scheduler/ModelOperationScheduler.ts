@@ -83,7 +83,9 @@ export class ModelOperationScheduler {
       toUid,
       fn,
       options: {
-        when: options?.when,
+        // 默认语义：仅当 when === 'created' 时，对“已存在的目标”进行一次立即执行；
+        // 其它 when 不做立即执行，需等待后续真实生命周期事件。
+        when: options?.when ?? 'created',
         timeoutMs: options?.timeoutMs,
       },
       status: 'pending',
@@ -114,7 +116,8 @@ export class ModelOperationScheduler {
     }
 
     const modelNow = this.engine.getModel<FlowModel>(toUid);
-    if (modelNow) {
+    if (modelNow && item.options.when === 'created') {
+      // 仅 when === 'created' 时，对“已存在的目标”立即执行一次
       void this.tryExecute(item, { type: 'created', uid: toUid, model: modelNow });
     }
 
@@ -202,13 +205,6 @@ export class ModelOperationScheduler {
     this.unbindHandlers.push(() => emitter.off('model:unmounted', onUnmounted));
 
     const onDestroyed = (e: LifecycleEvent) => {
-      // 先同步清理“以该 uid 作为来源（fromUid）的任务”，避免后续其它事件（如 beforeRender:end）抢先执行
-      const fromSet = this.itemIdsByFromUid.get(e.uid);
-      if (fromSet) {
-        for (const id of Array.from(fromSet)) this.internalCancel(id, 'sourceDestroyed');
-        if (fromSet.size === 0) this.itemIdsByFromUid.delete(e.uid);
-      }
-
       // 允许在销毁事件上匹配的任务先尝试执行（此时 e.model 仍可用，removeModel 中传入）
       const targetBucket = this.itemsByTargetUid.get(e.uid);
       const event = { ...e, type: 'destroyed' as const };
