@@ -20,7 +20,7 @@ function newEngine(): FlowEngine {
 }
 
 describe('ModelOperationScheduler', () => {
-  it("should execute on 'beforeRender:end' when beforeRender ends", async () => {
+  it("should execute on 'event:beforeRender:end' when beforeRender ends", async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-1' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-1' });
@@ -34,7 +34,7 @@ describe('ModelOperationScheduler', () => {
         expect(m.uid).toBe(to.uid);
         calls.push('ran');
       },
-      { when: 'beforeRender:end' },
+      { when: 'event:beforeRender:end' },
     );
 
     await engine.executor.dispatchEvent(to, 'beforeRender');
@@ -57,6 +57,34 @@ describe('ModelOperationScheduler', () => {
     expect(fn).toHaveBeenCalledTimes(1);
 
     root.unmount();
+  });
+
+  it("should execute on generic event start ('event:foo:start')", async () => {
+    const engine = newEngine();
+    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-evt-start-1' });
+    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-evt-start-1' });
+
+    const fn = vi.fn();
+    engine.scheduleModelOperation(from, to.uid, fn, { when: 'event:foo:start' });
+
+    // 触发自定义事件 'foo'，调度器监听到 model:event:foo:start 后应执行一次
+    await engine.executor.dispatchEvent(to, 'foo');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("should execute on generic event end ('event:foo:end')", async () => {
+    const engine = newEngine();
+    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-evt-end-1' });
+    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-evt-end-1' });
+
+    const fn = vi.fn();
+    engine.scheduleModelOperation(from, to.uid, fn, { when: 'event:foo:end' });
+
+    // 触发自定义事件 'foo'，应在事件结束后执行一次
+    await engine.executor.dispatchEvent(to, 'foo');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 
   it('should execute on unmounted when model is unmounted (no immediate)', async () => {
@@ -88,7 +116,7 @@ describe('ModelOperationScheduler', () => {
 
     const fn = vi.fn();
     engine.scheduleModelOperation(from, to.uid, fn, {
-      when: (e: LifecycleEvent) => e.type === 'beforeRender:end' && e.uid === to.uid,
+      when: (e: LifecycleEvent) => e.type === 'event:beforeRender:end' && e.uid === to.uid,
     });
 
     await engine.executor.dispatchEvent(to, 'beforeRender');
@@ -101,7 +129,7 @@ describe('ModelOperationScheduler', () => {
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-imd-1' });
 
     const fn = vi.fn();
-    engine.scheduleModelOperation(from, to.uid, fn, { when: 'beforeRender:end' });
+    engine.scheduleModelOperation(from, to.uid, fn, { when: 'event:beforeRender:end' });
     // 触发一次 beforeRender:end
     await engine.executor.dispatchEvent(to, 'beforeRender');
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -123,7 +151,7 @@ describe('ModelOperationScheduler', () => {
 
   // 简化后：dedupe/policy/concurrency 已移除，不再校验
 
-  it("should execute when 'beforeRender:end' after beforeRender ends (no immediate)", async () => {
+  it("should execute when 'event:beforeRender:end' after beforeRender ends (no immediate)", async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-2' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-2' });
@@ -135,7 +163,7 @@ describe('ModelOperationScheduler', () => {
       async () => {
         calls.push('end');
       },
-      { when: 'beforeRender:end' },
+      { when: 'event:beforeRender:end' },
     );
 
     // 触发 beforeRender:end
@@ -144,7 +172,7 @@ describe('ModelOperationScheduler', () => {
     expect(calls).toEqual(['end']);
   });
 
-  it('should run only once for beforeRender:end', async () => {
+  it("should run only once for 'event:beforeRender:end'", async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-3' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-3' });
@@ -156,7 +184,7 @@ describe('ModelOperationScheduler', () => {
       async () => {
         calls.push(Date.now());
       },
-      { when: 'beforeRender:end' },
+      { when: 'event:beforeRender:end' },
     );
 
     await engine.executor.dispatchEvent(to, 'beforeRender');
@@ -164,13 +192,13 @@ describe('ModelOperationScheduler', () => {
     expect(calls.length).toBe(1);
   });
 
-  it('should run only once for beforeRender:end regardless of events', async () => {
+  it("should run only once for 'event:beforeRender:end' regardless of events", async () => {
     const engine = new FlowEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-repeat-1' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-repeat-1' });
     const fn = vi.fn();
 
-    engine.scheduleModelOperation(from, to.uid, fn, { when: 'beforeRender:end' });
+    engine.scheduleModelOperation(from, to.uid, fn, { when: 'event:beforeRender:end' });
 
     await engine.executor.dispatchEvent(to, 'beforeRender');
     await new Promise((resolve) => setTimeout(resolve, 0));
@@ -185,7 +213,7 @@ describe('ModelOperationScheduler', () => {
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-4' });
     const fn = vi.fn();
 
-    engine.scheduleModelOperation(from, to.uid, fn, { when: 'beforeRender:end' });
+    engine.scheduleModelOperation(from, to.uid, fn, { when: 'event:beforeRender:end' });
     // destroy source before event
     await from.destroy();
 
@@ -219,7 +247,7 @@ describe('ModelOperationScheduler', () => {
 
     const fn = vi.fn();
     // 调用来源是 block 引擎
-    (block as FlowEngine).scheduleModelOperation(from, to.uid, fn, { when: 'beforeRender:end' });
+    (block as FlowEngine).scheduleModelOperation(from, to.uid, fn, { when: 'event:beforeRender:end' });
 
     // 事件由 view 引擎派发（与 block 调度兼容，调度对象由 view 引擎维护）
     await (view as FlowEngine).executor.dispatchEvent(to, 'beforeRender');
@@ -236,7 +264,7 @@ describe('ModelOperationScheduler', () => {
     const b = vi.fn();
     // 先注册，再触发事件
     engine.scheduleModelOperation(from, to.uid, a, { when: 'mounted' });
-    engine.scheduleModelOperation(from, to.uid, b, { when: 'beforeRender:end' });
+    engine.scheduleModelOperation(from, to.uid, b, { when: 'event:beforeRender:end' });
 
     const root = engine.reactView.createRoot(document.createElement('div'));
     await act(async () => {

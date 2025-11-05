@@ -16,8 +16,8 @@ type LifecycleType =
   | 'mounted'
   | 'unmounted'
   | 'destroyed'
-  | 'event:beforeRender:start'
-  | 'event:beforeRender:end';
+  | `event:${string}:start`
+  | `event:${string}:end`;
 
 export type ScheduleWhen = LifecycleType | ((e: LifecycleEvent) => boolean);
 
@@ -51,6 +51,7 @@ export class ModelOperationScheduler {
   private itemsById = new Map<string, ScheduledItem>();
 
   private unbindHandlers: Array<() => void> = [];
+  private subscribedEventNames = new Set<string>();
 
   constructor(private engine: FlowEngine) {
     this.bindEngineLifecycle();
@@ -97,6 +98,9 @@ export class ModelOperationScheduler {
     }
     fromSet.add(item.id);
     this.itemsById.set(item.id, item);
+
+    // 若是 event:xxx:start/end 语义，确保已订阅对应的 model:event 通道
+    this.ensureEventSubscriptionIfNeeded(item.options.when);
 
     const modelNow = this.engine.getModel<FlowModel>(toUid);
     if (modelNow && item.options.when === 'created') {
@@ -207,6 +211,33 @@ export class ModelOperationScheduler {
     };
     emitter.on('model:destroyed', onDestroyed);
     this.unbindHandlers.push(() => emitter.off('model:destroyed', onDestroyed));
+  }
+
+  private ensureEventSubscriptionIfNeeded(when?: ScheduleWhen) {
+    if (!when || typeof when !== 'string') return;
+    const parsed = this.parseEventWhen(when);
+    if (!parsed) return;
+    const { name } = parsed;
+    if (this.subscribedEventNames.has(name)) return;
+    this.subscribedEventNames.add(name);
+    const emitter = this.engine.emitter;
+    const onStart = (e: LifecycleEvent) => {
+      this.processLifecycleEvent(e.uid, { ...e, type: `event:${name}:start` as const });
+    };
+    const onEnd = (e: LifecycleEvent) => {
+      this.processLifecycleEvent(e.uid, { ...e, type: `event:${name}:end` as const });
+    };
+    emitter.on(`model:event:${name}:start`, onStart);
+    emitter.on(`model:event:${name}:end`, onEnd);
+    this.unbindHandlers.push(() => emitter.off(`model:event:${name}:start`, onStart));
+    this.unbindHandlers.push(() => emitter.off(`model:event:${name}:end`, onEnd));
+  }
+
+  private parseEventWhen(when?: ScheduleWhen): { name: string; phase: 'start' | 'end' } | null {
+    if (!when || typeof when !== 'string') return null;
+    const m = /^event:([^:]+):(start|end)$/.exec(when);
+    if (!m) return null;
+    return { name: m[1], phase: m[2] as 'start' | 'end' };
   }
 
   private processLifecycleEvent(targetUid: string, event: LifecycleEvent) {

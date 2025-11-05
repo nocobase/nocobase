@@ -66,7 +66,7 @@ describe('FlowModel scheduleModelOperation cross-model (target not created yet)'
     root.unmount();
   });
 
-  it("should apply modification when beforeRender ends (when: 'beforeRender:end')", async () => {
+  it("should apply modification when beforeRender ends (when: 'event:beforeRender:end')", async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-ready-1' });
     const targetUid = 'to-ready-1';
@@ -77,7 +77,7 @@ describe('FlowModel scheduleModelOperation cross-model (target not created yet)'
       async (m) => {
         m.setProps('readyMark', 'done');
       },
-      { when: 'beforeRender:end' },
+      { when: 'event:beforeRender:end' },
     );
 
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: targetUid });
