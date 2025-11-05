@@ -49,49 +49,6 @@ export const QueryPanel: React.FC = observer(() => {
   const [showResult, setShowResult] = useState(false);
   const [running, setRunning] = useState(false);
 
-  React.useEffect(() => {
-    // 在 SQL 模式下，隐藏并取消校验 builder 模式相关字段，避免全表单 submit 时的必填校验
-    const builderAddrs = ['collectionPath', 'measures', 'dimensions', 'filter', 'orders', 'limit', 'offset'];
-    if (mode === 'sql') {
-      builderAddrs.forEach((addr) => {
-        form.setFieldState(`query.${addr}`, (state: any) => {
-          state.display = 'none';
-          state.required = false;
-        });
-      });
-      // 处理 measures 与 dimensions 内部项的 required
-      form.query('query.measures.*.*').forEach((field: any) =>
-        field.setState((state: any) => {
-          state.display = 'none';
-          state.required = false;
-        }),
-      );
-      form.query('query.dimensions.*.*').forEach((field: any) =>
-        field.setState((state: any) => {
-          state.display = 'none';
-          state.required = false;
-        }),
-      );
-    } else {
-      // 切回 builder 模式时，仅恢复显示；required 由原组件/Schema 再决定
-      builderAddrs.forEach((addr) => {
-        form.setFieldState(`query.${addr}`, (state: any) => {
-          state.display = 'visible';
-        });
-      });
-      form.query('query.measures.*.*').forEach((field: any) =>
-        field.setState((state: any) => {
-          state.display = 'visible';
-        }),
-      );
-      form.query('query.dimensions.*.*').forEach((field: any) =>
-        field.setState((state: any) => {
-          state.display = 'visible';
-        }),
-      );
-    }
-  }, [mode, form]);
-
   // 图形化模式
   const handleBuilderChange = async (next: any) => {
     const query = form?.values?.query || {};

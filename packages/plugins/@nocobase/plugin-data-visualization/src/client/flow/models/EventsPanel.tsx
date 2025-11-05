@@ -48,11 +48,11 @@ export const EventsPanel: React.FC = observer(() => {
   const t = useT();
   const form = useForm();
   const ctx = useFlowSettingsContext<any>();
-  const mode = form?.values?.chart?.events?.mode || 'custom';
-  const rawValue = form?.values?.chart?.events?.raw;
+  const mode = form?.values?.events?.mode || 'custom';
+  const rawValue = form?.values?.events?.raw;
 
   return (
-    <ObjectField name="chart.events">
+    <ObjectField name="events">
       <div
         style={{
           display: 'flex',

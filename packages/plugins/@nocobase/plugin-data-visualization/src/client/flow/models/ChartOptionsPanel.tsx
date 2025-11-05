@@ -41,31 +41,31 @@ export const ChartOptionsPanel: React.FC = observer(() => {
   const columns = React.useMemo<string[]>(() => Object.keys(previewData?.[0] ?? {}), [previewData]);
 
   // 受控 value 与回写 formily
-  const mode = form?.values?.chart?.option?.mode || 'basic';
-  const builderValue = form?.values?.chart?.option?.builder;
-  const rawValue = form?.values?.chart?.option?.raw;
+  const mode = form?.values?.chartConfig?.mode || 'basic';
+  const builderValue = form?.values?.chartConfig?.builder;
+  const rawValue = form?.values?.chartConfig?.raw;
 
   // 当 raw 尚未初始化时，设置默认值（等效于原先 Field 的 initialValue 行为）
   React.useEffect(() => {
     if (mode === 'custom' && !rawValue) {
-      form?.setValuesIn?.('chart.option.raw', customInitialValue);
+      form?.setValuesIn?.('chartConfig.raw', customInitialValue);
     }
   }, [mode, rawValue, form]);
 
   // 图形化模式，修改自动触发预览
   const handleBuilderChange = async (next: any) => {
-    await form?.setValuesIn?.('chart.option.builder', next);
+    await form?.setValuesIn?.('chartConfig.builder', next);
     // 写入图表参数，统一走 onPreview 方便回滚
     await ctx.model.onPreview(form.values);
   };
 
   const handleRawChange = async (raw: string) => {
-    form?.setValuesIn?.('chart.option.raw', raw);
+    form?.setValuesIn?.('chartConfig.raw', raw);
     // 代码模式下，修改不自动触发预览，等待用户点击预览按钮
   };
 
   return (
-    <ObjectField name="chart.option">
+    <ObjectField name="chartConfig">
       <Alert
         message={t("Please click 'Run Query' to fetch data before configuring chart options")}
         type="warning"
@@ -73,7 +73,7 @@ export const ChartOptionsPanel: React.FC = observer(() => {
         closable
         style={{ marginBottom: 16, paddingLeft: 8 }}
       />
-
+      {/* 配置模式切换与预览 */}
       <div
         style={{
           display: 'flex',
@@ -87,7 +87,7 @@ export const ChartOptionsPanel: React.FC = observer(() => {
         <Radio.Group
           value={mode}
           onChange={(e) => {
-            form?.setValuesIn?.('chart.option.mode', e.target.value);
+            form?.setValuesIn?.('chartConfig.mode', e.target.value);
           }}
         >
           <Radio.Button value={'basic'}>

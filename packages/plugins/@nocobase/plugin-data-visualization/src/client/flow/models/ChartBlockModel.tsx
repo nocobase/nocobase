@@ -371,10 +371,8 @@ ChartBlockModel.registerFlow({
           query: {
             mode: 'builder',
           },
-          chart: {
-            option: {
-              mode: 'basic',
-            },
+          chartConfig: {
+            mode: 'basic',
           },
         };
       },
@@ -382,28 +380,30 @@ ChartBlockModel.registerFlow({
       async handler(ctx, params) {
         debugLog('---setting flow handler', params);
         let { query } = params;
-        const { chart } = params;
-        if (!query || !chart) {
-          return;
-        }
+        const { chartConfig, events } = params;
+
         try {
           // 数据部分
-          if (query.mode !== 'sql') {
-            // builder 模式下变量解析；sql 模式下交给 sqlResource 处理解析
-            query = await ctx.resolveJsonTemplate(query);
+          if (query) {
+            if (query.mode !== 'sql') {
+              // builder 模式下变量解析；sql 模式下交给 sqlResource 处理解析
+              query = await ctx.resolveJsonTemplate(query);
+            }
+            ctx.model.applyQuery(query);
           }
-          ctx.model.applyQuery(query);
 
           // 图表部分
-          await ctx.model.applyChartOptions({
-            mode: chart.option?.mode || 'basic',
-            builder: chart.option?.builder,
-            raw: chart.option?.raw,
-          });
+          if (chartConfig) {
+            await ctx.model.applyChartOptions({
+              mode: chartConfig?.mode || 'basic',
+              builder: chartConfig?.builder,
+              raw: chartConfig?.raw,
+            });
+          }
 
           // 事件部分
-          if (chart.events?.raw) {
-            await ctx.model.applyEvents(chart.events?.raw);
+          if (events?.raw) {
+            await ctx.model.applyEvents(events.raw);
           }
         } catch (error) {
           console.error('ChartBlockModel chartSettings configure flow handler() error:', error);
