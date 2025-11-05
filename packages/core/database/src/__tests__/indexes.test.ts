@@ -90,7 +90,6 @@ describe('database', () => {
     });
     await db.sync();
     const indexes = (await db.sequelize.getQueryInterface().showIndex('users2')) as any[];
-    console.log(indexes);
     expect(indexes.length).toBe(3);
   });
 });
