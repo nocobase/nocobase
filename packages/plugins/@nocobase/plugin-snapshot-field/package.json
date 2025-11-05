@@ -1,5 +1,6 @@
 {
   "name": "@nocobase/plugin-snapshot-field",
+  "private": true,
   "displayName": "Collection field: Snapshot",
   "displayName.zh-CN": "数据表字段：关系快照",
   "description": "When adding a new record, create a snapshot for its relational record and save in the new record. The snapshot will not be updated when the relational record is updated.",
