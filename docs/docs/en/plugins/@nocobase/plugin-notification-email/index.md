@@ -2,7 +2,7 @@
 displayName: "Notification: Email"
 packageName: '@nocobase/plugin-notification-email'
 description: |
-  Send notifications via email channel, currently only supports SMTP transport.
+  Used for sending email notifications with built-in SMTP transport.
 isFree: true
 builtIn: true
 defaultEnabled: false

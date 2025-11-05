@@ -2,7 +2,7 @@
 displayName: "Auth: SMS"
 packageName: '@nocobase/plugin-auth-sms'
 description: |
-  Authentication via SMS verification code.
+  SMS authentication.
 isFree: true
 builtIn: true
 defaultEnabled: false

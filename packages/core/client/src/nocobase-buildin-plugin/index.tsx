@@ -136,6 +136,15 @@ const getProps = (app: Application) => {
     };
   }
 
+  if (app.error.code === 'APP_PREPARING') {
+    return {
+      status: 'info',
+      icon: <LoadingOutlined />,
+      title: 'App preparing',
+      subTitle: app.error?.message,
+    };
+  }
+
   if (app.error.code === 'APP_INITIALIZING') {
     return {
       status: 'info',
@@ -147,7 +156,7 @@ const getProps = (app: Application) => {
 
   if (app.error.code === 'APP_INITIALIZED') {
     return {
-      status: 'warning',
+      status: 'info',
       title: 'App initialized',
       subTitle: app.error?.message,
     };

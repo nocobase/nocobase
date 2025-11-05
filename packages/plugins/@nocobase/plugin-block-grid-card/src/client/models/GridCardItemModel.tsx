@@ -82,6 +82,9 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
       resolveOnServer: true,
       meta: recordMeta,
     });
+    grid.context.defineProperty('fieldKey', {
+      get: () => index,
+    });
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     return (
       <Card bordered={false} role="button" aria-label="grid-card-item">

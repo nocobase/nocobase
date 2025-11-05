@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { MemoryPubSubAdapter, MockServer, createMockServer, sleep } from '@nocobase/test';
+import { MemoryPubSubAdapter, MockServer, createMockCluster, createMockServer, sleep } from '@nocobase/test';
 import { PubSubManager } from '../pub-sub-manager';
 
 describe('connect', () => {
@@ -165,29 +165,22 @@ describe('skipSelf, unsubscribe, debounce', () => {
 describe('Pub/Sub', () => {
   let publisher: MockServer;
   let subscriber: MockServer;
+  let cluster;
 
   beforeEach(async () => {
     const pubsub = new MemoryPubSubAdapter();
-    publisher = await createMockServer({
-      name: 'publisher',
-      pubSubManager: { channelPrefix: 'pubsub1' },
+    cluster = await createMockCluster({
       skipStart: true,
     });
-    publisher.pubSubManager.setAdapter(pubsub);
-    await publisher.start();
-
-    subscriber = await createMockServer({
-      name: 'subscriber',
-      pubSubManager: { channelPrefix: 'pubsub1' },
-      skipStart: true,
-    });
-    subscriber.pubSubManager.setAdapter(pubsub);
-    await subscriber.start();
+    [publisher, subscriber] = cluster.nodes;
+    for (const app of cluster.nodes) {
+      app.pubSubManager.setAdapter(pubsub);
+      await app.start();
+    }
   });
 
   afterEach(async () => {
-    await publisher.destroy();
-    await subscriber.destroy();
+    await cluster.destroy();
   });
 
   test('subscribe publish', async () => {
