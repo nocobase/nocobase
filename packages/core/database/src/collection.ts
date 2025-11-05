@@ -896,12 +896,14 @@ export class Collection<
       indexes
         .filter((item) => {
           return item.fields.every((field) => {
-            return attributes[field];
+            const name = this.normalizeFieldName(field);
+            return attributes[name];
           });
         })
         .map((item) => {
           item.fields = item.fields.map((field) => {
-            return attributes[field].field;
+            const name = this.normalizeFieldName(field);
+            return attributes[name].field;
           });
 
           return item;
