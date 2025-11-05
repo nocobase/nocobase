@@ -113,8 +113,8 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     return this._memoItemFlowSettings;
   }
 
-  onInit(options: any): void {
-    super.onInit(options);
+  onMount(): void {
+    super.onMount();
     this.emitter.on('onSubModelAdded', (model: FlowModel) => {
       if (!model.isNew) {
         return;
