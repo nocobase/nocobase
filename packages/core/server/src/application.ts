@@ -1148,7 +1148,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     //     },
     //   });
     // }, 'Sync');
-    await this.emitAsync('afterUpgrade', this, options);
+    if (!options.quickstart) {
+      await this.emitAsync('afterUpgrade', this, options);
+    }
     await this.restart();
     // this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
     // if (this._started) {

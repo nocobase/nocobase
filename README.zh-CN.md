@@ -1,6 +1,6 @@
 [English](./README.md) | 简体中文 | [日本語](./README.ja-JP.md)
  
-https://github.com/user-attachments/assets/ff1e4b3d-fc22-415d-a983-0c97ebc14096
+https://github.com/user-attachments/assets/466a28dd-24df-47af-9333-c97e4a613d88
 
 <p align="center">
 <a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
@@ -90,8 +90,6 @@ NocoBase 支持三种安装方式：
 
    如果你想体验最新未发布版本，或者想参与贡献，需要在源码上进行修改、调试，建议选择这种安装方式，对开发技术水平要求较高，如果代码有更新，可以走 git 流程拉取最新代码。
 
-## 一键部署
+## NocoBase 如何工作
 
-通过云厂商一键部署 NocoBase，并享受多种部署选项的灵活性：
-
-- [阿里云](https://computenest.console.aliyun.com/service/instance/create/default?type=user&ServiceName=NocoBase%20%E7%A4%BE%E5%8C%BA%E7%89%88)
+https://github.com/user-attachments/assets/ff1e4b3d-fc22-415d-a983-0c97ebc14096
