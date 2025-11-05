@@ -781,6 +781,13 @@ export class Collection<
     this.setField(options.name || name, options);
   }
 
+  private normalizeFieldName(val: string | string[]) {
+    if (!this.options.underscored) {
+      return val;
+    }
+    return Array.isArray(val) ? val.map((v) => lodash.snakeCase(v)) : lodash.snakeCase(val);
+  }
+
   addIndex(
     index:
       | string
@@ -827,7 +834,7 @@ export class Collection<
     }
 
     for (const item of indexes) {
-      if (lodash.isEqual(item.fields, indexName)) {
+      if (lodash.isEqual(this.normalizeFieldName(item.fields), this.normalizeFieldName(indexName))) {
         return;
       }
 
