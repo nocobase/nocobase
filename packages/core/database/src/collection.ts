@@ -886,14 +886,24 @@ export class Collection<
     // @ts-ignore
     const indexes: any[] = this.model._indexes;
 
+    const attributes = {};
+    for (const [name, field] of Object.entries(this.model.getAttributes())) {
+      attributes[this.normalizeFieldName(name)] = field;
+    }
+
     // @ts-ignore
     this.model._indexes = lodash.uniqBy(
       indexes
         .filter((item) => {
-          return item.fields.every((field) => this.model.rawAttributes[field]);
+          return item.fields.every((field) => {
+            return attributes[field];
+          });
         })
         .map((item) => {
-          item.fields = item.fields.map((field) => this.model.rawAttributes[field].field);
+          item.fields = item.fields.map((field) => {
+            return attributes[field].field;
+          });
+
           return item;
         }),
       'name',
