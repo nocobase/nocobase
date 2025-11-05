@@ -494,15 +494,11 @@ export class FlowEngine {
 
     modelInstance.onInit(options);
 
-    // 发射 created 生命周期事件（异步捕获异常，避免未处理拒绝）
-    this.emitter
-      .emitAsync('model:created', {
-        uid: modelInstance.uid,
-        model: modelInstance,
-      })
-      .catch((err) => {
-        this.logger?.error?.({ err }, 'FlowEngine: emit model:created failed');
-      });
+    // 发射 created 生命周期事件（严格模式：不吞错）
+    void this.emitter.emitAsync('model:created', {
+      uid: modelInstance.uid,
+      model: modelInstance,
+    });
 
     // 在模型实例化阶段应用 flow 级 defaultParams（仅填充缺失的 stepParams，不覆盖）
     // 不阻塞创建流程：允许 defaultParams 为异步函数
@@ -623,15 +619,11 @@ export class FlowEngine {
     }
     this._modelInstances.delete(uid);
 
-    // 发射 destroyed 生命周期事件（在移除后，但携带实例便于调度器传递）
-    this.emitter
-      .emitAsync('model:destroyed', {
-        uid,
-        model: modelInstance,
-      })
-      .catch((err) => {
-        this.logger?.error?.({ err }, 'FlowEngine: emit model:destroyed failed');
-      });
+    // 发射 destroyed 生命周期事件（在移除后，但携带实例便于调度器传递；严格模式：不吞错）
+    void this.emitter.emitAsync('model:destroyed', {
+      uid,
+      model: modelInstance,
+    });
     return true;
   }
 

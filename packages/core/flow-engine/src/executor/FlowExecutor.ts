@@ -204,18 +204,14 @@ export class FlowExecutor {
     const logger = model.context.logger;
 
     try {
-      // 发射 beforeRender:start 生命周期事件
+      // 发射 beforeRender:start 生命周期事件（严格模式：错误直接冒泡）
       if (isBeforeRender) {
-        try {
-          await this.engine.emitter.emitAsync('model:beforeRender:start', {
-            uid: model.uid,
-            model,
-            runId,
-            inputArgs,
-          });
-        } catch (emitErr) {
-          logger?.error?.({ err: emitErr }, 'FlowExecutor: emit model:beforeRender:start failed');
-        }
+        await this.engine.emitter.emitAsync('model:beforeRender:start', {
+          uid: model.uid,
+          model,
+          runId,
+          inputArgs,
+        });
       }
       await model.onDispatchEventStart?.(eventName, options, inputArgs);
     } catch (err) {
@@ -308,19 +304,15 @@ export class FlowExecutor {
       } catch (hookErr) {
         logger.error({ err: hookErr }, `BaseModel.dispatchEvent: End hook error for event '${eventName}'`);
       }
-      // 发射 beforeRender:end 生命周期事件
+      // 发射 beforeRender:end 生命周期事件（严格模式：错误直接冒泡）
       if (isBeforeRender) {
-        try {
-          await this.engine.emitter.emitAsync('model:beforeRender:end', {
-            uid: model.uid,
-            model,
-            runId,
-            inputArgs,
-            result,
-          });
-        } catch (emitErr) {
-          logger?.error?.({ err: emitErr }, 'FlowExecutor: emit model:beforeRender:end failed');
-        }
+        await this.engine.emitter.emitAsync('model:beforeRender:end', {
+          uid: model.uid,
+          model,
+          runId,
+          inputArgs,
+          result,
+        });
       }
       return result;
     } catch (error) {
@@ -334,19 +326,15 @@ export class FlowExecutor {
         { err: error },
         `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`,
       );
-      // 发射 beforeRender:end（错误场景）
+      // 发射 beforeRender:end（错误场景，严格模式：错误直接冒泡）
       if (isBeforeRender) {
-        try {
-          await this.engine.emitter.emitAsync('model:beforeRender:end', {
-            uid: model.uid,
-            model,
-            runId,
-            inputArgs,
-            error,
-          });
-        } catch (emitErr) {
-          logger?.error?.({ err: emitErr }, 'FlowExecutor: emit model:beforeRender:end (error) failed');
-        }
+        await this.engine.emitter.emitAsync('model:beforeRender:end', {
+          uid: model.uid,
+          model,
+          runId,
+          inputArgs,
+          error,
+        });
       }
       if (throwOnError) throw error;
     }

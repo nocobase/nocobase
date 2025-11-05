@@ -891,25 +891,19 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
             if (typeof renderTarget.onMount === 'function') {
               renderTarget.onMount();
             }
-            // 发射 mounted 生命周期事件（异步）
-            const mountedPromise = renderTarget.flowEngine?.emitter?.emitAsync('model:mounted', {
+            // 发射 mounted 生命周期事件（严格模式：不吞错，若有错误将以未处理拒绝暴露）
+            void renderTarget.flowEngine?.emitter?.emitAsync('model:mounted', {
               uid: renderTarget.uid,
               model: renderTarget,
-            });
-            mountedPromise?.catch((err) => {
-              renderTarget?.context?.logger?.error?.({ err }, 'FlowModel: emit model:mounted failed');
             });
             return () => {
               if (typeof renderTarget.onUnmount === 'function') {
                 renderTarget.onUnmount();
               }
-              // 发射 unmounted 生命周期事件（异步）
-              const unmountedPromise = renderTarget.flowEngine?.emitter?.emitAsync('model:unmounted', {
+              // 发射 unmounted 生命周期事件（严格模式：不吞错）
+              void renderTarget.flowEngine?.emitter?.emitAsync('model:unmounted', {
                 uid: renderTarget.uid,
                 model: renderTarget,
-              });
-              unmountedPromise?.catch((err) => {
-                renderTarget?.context?.logger?.error?.({ err }, 'FlowModel: emit model:unmounted failed');
               });
             };
           }, [renderTarget]);
