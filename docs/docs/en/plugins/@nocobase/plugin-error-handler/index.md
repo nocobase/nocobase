@@ -9,5 +9,3 @@ defaultEnabled: false
 ---
 
 # Error handler
-
----

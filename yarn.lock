@@ -11167,7 +11167,7 @@ amp@0.3.1, amp@~0.3.1:
 
 amqplib@^0.10.7:
   version "0.10.9"
-  resolved "https://registry.npmjs.org/amqplib/-/amqplib-0.10.9.tgz#5b744c21d624f9307d0399e4d339b7354675831c"
+  resolved "https://registry.npmmirror.com/amqplib/-/amqplib-0.10.9.tgz#5b744c21d624f9307d0399e4d339b7354675831c"
   integrity sha512-jwSftI4QjS3mizvnSnOrPGYiUnm1vI2OP1iXeOUz5pb74Ua0nbf6nPyyTzuiCLEE3fMpaJORXh2K/TQ08H5xGA==
   dependencies:
     buffer-more-ints "~1.0.0"
@@ -12737,7 +12737,7 @@ buffer-indexof-polyfill@~1.0.0:
 
 buffer-more-ints@~1.0.0:
   version "1.0.0"
-  resolved "https://registry.npmjs.org/buffer-more-ints/-/buffer-more-ints-1.0.0.tgz#ef4f8e2dddbad429ed3828a9c55d44f05c611422"
+  resolved "https://registry.npmmirror.com/buffer-more-ints/-/buffer-more-ints-1.0.0.tgz#ef4f8e2dddbad429ed3828a9c55d44f05c611422"
   integrity sha512-EMetuGFz5SLsT0QTnXzINh4Ksr+oo4i+UGTXEshiGCQWnsgSs7ZhJ8fzlwQ+OzEMs0MpDAMr1hxnblp5a4vcHg==
 
 buffer-writer@2.0.0:
@@ -28630,7 +28630,7 @@ querystring-es3@^0.2.0:
 
 querystringify@^2.1.1:
   version "2.2.0"
-  resolved "https://registry.npmjs.org/querystringify/-/querystringify-2.2.0.tgz#3345941b4153cb9d082d8eee4cda2016a9aef7f6"
+  resolved "https://registry.npmmirror.com/querystringify/-/querystringify-2.2.0.tgz#3345941b4153cb9d082d8eee4cda2016a9aef7f6"
   integrity sha512-FIqgj2EUvTa7R50u0rGsyTftzjYmv/a3hO345bZNrqabNqjtgiDMgmo4mkUjd+nzU5oF3dClKqFIPUKybUyqoQ==
 
 queue-microtask@^1.2.2:
@@ -30397,7 +30397,7 @@ requireindex@^1.2.0:
 
 requires-port@^1.0.0:
   version "1.0.0"
-  resolved "https://registry.npmjs.org/requires-port/-/requires-port-1.0.0.tgz#925d2601d39ac485e091cf0da5c6e694dc3dcaff"
+  resolved "https://registry.npmmirror.com/requires-port/-/requires-port-1.0.0.tgz#925d2601d39ac485e091cf0da5c6e694dc3dcaff"
   integrity sha512-KigOCHcocU3XODJxsu8i/j8T9tzT4adHiecwORRQ0ZZFcp7ahwXuRU1m+yuO90C5ZUyGeGfocHDI14M3L3yDAQ==
 
 resize-observer-polyfill@^1.5.1:
@@ -34365,7 +34365,7 @@ url-parse-lax@^3.0.0:
 
 url-parse@~1.5.10:
   version "1.5.10"
-  resolved "https://registry.npmjs.org/url-parse/-/url-parse-1.5.10.tgz#9d3c2f736c1d75dd3bd2be507dcc111f1e2ea9c1"
+  resolved "https://registry.npmmirror.com/url-parse/-/url-parse-1.5.10.tgz#9d3c2f736c1d75dd3bd2be507dcc111f1e2ea9c1"
   integrity sha512-WypcfiRhfeUP9vvF0j6rw0J3hrWrw6iZv3+22h6iRMJ/8z1Tj6XfLP4DsUix5MhMPnXpiHDoKyoZ/bdCkwBCiQ==
   dependencies:
     querystringify "^2.1.1"

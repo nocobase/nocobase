@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Authenticate identity through the CAS protocol.
+  CAS authentication.
 isFree: false
 builtIn: false
 defaultEnabled: false
