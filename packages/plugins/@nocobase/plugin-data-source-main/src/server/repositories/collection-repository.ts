@@ -168,6 +168,10 @@ export class CollectionRepository extends Repository {
     this.database.logger.debug('collections loaded');
   }
 
+  async db2cmCollections(collectionNames: string[]) {
+    await Promise.all(collectionNames.map((collectionName) => this.db2cm(collectionName)));
+  }
+
   async db2cm(collectionName: string) {
     const collection = this.database.getCollection(collectionName);
 

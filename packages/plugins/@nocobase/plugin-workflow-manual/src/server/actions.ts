@@ -47,7 +47,7 @@ export async function submit(context: Context, next) {
     task.status !== JOB_STATUS.PENDING ||
     task.job.status !== JOB_STATUS.PENDING ||
     task.execution.status !== EXECUTION_STATUS.STARTED ||
-    !task.workflow.enabled ||
+    // !task.workflow.enabled ||
     !actionKey ||
     actionItem?.status == null
   ) {
@@ -117,19 +117,19 @@ export async function listMine(context: Context, next) {
     filter: {
       $and: [
         { userId: context.state.currentUser.id },
-        {
-          $or: [
-            {
-              'workflow.enabled': true,
-            },
-            {
-              'workflow.enabled': false,
-              status: {
-                $ne: JOB_STATUS.PENDING,
-              },
-            },
-          ],
-        },
+        // {
+        //   $or: [
+        //     {
+        //       'workflow.enabled': true,
+        //     },
+        //     {
+        //       'workflow.enabled': false,
+        //       status: {
+        //         $ne: JOB_STATUS.PENDING,
+        //       },
+        //     },
+        //   ],
+        // },
       ],
     },
   });

@@ -25,6 +25,7 @@ import { ExpandableActionInitializer } from '../modules/actions/expand-collapse/
 import { FilterActionInitializer } from '../modules/actions/filter/FilterActionInitializer';
 import { LinkActionInitializer } from '../modules/actions/link/LinkActionInitializer';
 import { RefreshActionInitializer } from '../modules/actions/refresh/RefreshActionInitializer';
+import { EditTableActionInitializer } from '../modules/actions/edit-table/EditTableActionInitializer';
 import { CreateSubmitActionInitializer } from '../modules/actions/submit/CreateSubmitActionInitializer';
 import { UpdateSubmitActionInitializer } from '../modules/actions/submit/UpdateSubmitActionInitializer';
 import { UpdateRecordActionInitializer } from '../modules/actions/update-record/UpdateRecordActionInitializer';
@@ -189,6 +190,7 @@ export class SchemaInitializerPlugin extends Plugin {
       DisassociateActionInitializer,
       FilterActionInitializer,
       RefreshActionInitializer,
+      EditTableActionInitializer,
       DividerFormItemInitializer,
       AssociateActionInitializer,
       AssociateActionProvider,

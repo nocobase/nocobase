@@ -18,7 +18,7 @@ import { action } from '@formily/reactive';
 import { uid } from '@formily/shared';
 import { isPortalInBody } from '@nocobase/utils/client';
 import { useDeepCompareEffect, useMemoizedFn } from 'ahooks';
-import { Table as AntdTable, TableColumnProps } from 'antd';
+import { Table as AntdTable } from 'antd';
 import { default as classNames, default as cls } from 'classnames';
 import _, { omit } from 'lodash';
 import React, {
@@ -67,8 +67,13 @@ import { GetStyleRules } from '../../../schema-settings/LinkageRules/useActionVa
 import { HighPerformanceSpin } from '../../common/high-performance-spin/HighPerformanceSpin';
 import { useToken } from '../__builtins__';
 import { useAssociationFieldContext } from '../association-field/hooks';
+import { TableColumnProps, useTableColumnIntegration } from '../edit-table/hooks/useTableColumnIntegration';
 import { TableSkeleton } from './TableSkeleton';
 import { extractIndex, isCollectionFieldComponent, isColumnComponent } from './utils';
+
+// Interface for localStorage column settings (must match ColumnInfo from hooks/index.ts)
+
+// Interface for localStorage column settings (must match ColumnInfo from hooks/index.ts)
 
 type BodyRowComponentProps = {
   rowIndex?: number;
@@ -173,6 +178,7 @@ const useTableColumns = (
   const { schemaInWhitelist } = useACLFieldWhitelist();
   const { designable } = useDesignable();
   const { exists, render } = useSchemaInitializerRender(schema['x-initializer'], schema['x-initializer-props']);
+
   const columnsSchemas = useMemo(() => {
     return schema.reduceProperties((buf, s) => {
       if (isColumnComponent(s) && schemaInWhitelist(Object.values(s.properties || {}).pop())) {
@@ -209,8 +215,9 @@ const useTableColumns = (
   // 不能提取到外部，否则 NocoBaseRecursionField 的值在一开始会是 undefined。原因未知
   const TableColumnTitle = useMemo(() => withTooltipComponent(NocoBaseRecursionField), []);
 
-  const columns = useMemo(
-    () =>
+  // Generate base columns from schema
+  const baseColumns = useMemo(() => {
+    return (
       columnsSchemas?.map((columnSchema: Schema) => {
         const collectionFields = columnSchema.reduceProperties((buf, s) => {
           if (isCollectionFieldComponent(s)) {
@@ -218,12 +225,19 @@ const useTableColumns = (
           }
         }, []);
         const dataIndex = collectionFields?.length > 0 ? collectionFields[0].name : columnSchema.name;
-        const columnHidden = !!columnSchema['x-component-props']?.['columnHidden'];
+        const columnKey = columnSchema['x-uid'] || columnSchema.name;
+
+        // Get original schema settings
+        const schemaHidden = !!columnSchema['x-component-props']?.['columnHidden'];
+        const columnWidth = columnSchema['x-component-props']?.width || 100;
+        const columnFixed = columnSchema['x-component-props']?.fixed;
+
         const { uiSchema, defaultValue, interface: _interface } = collection?.getField(dataIndex) || {};
         columnSchema.title = t(columnSchema?.title, { ns: NAMESPACE_UI_SCHEMA });
         if (uiSchema) {
           uiSchema.default = defaultValue;
         }
+
         return {
           title: (
             <RefreshComponentProvider refresh={refresh}>
@@ -237,11 +251,13 @@ const useTableColumns = (
             </RefreshComponentProvider>
           ),
           dataIndex,
-          key: columnSchema.name,
+          key: columnKey,
           sorter: columnSchema['x-component-props']?.['sorter'],
-          columnHidden,
+          columnHidden: schemaHidden,
+          fixed: columnFixed,
           ...columnSchema['x-component-props'],
-          width: columnHidden && !designable ? 0 : columnSchema['x-component-props']?.width || 100,
+          width: columnWidth,
+          schema: columnSchema,
           render: (value, record, index) => {
             return (
               <RefreshComponentProvider refresh={refresh}>
@@ -262,28 +278,65 @@ const useTableColumns = (
               record,
               schema: columnSchema,
               rowIndex,
-              columnHidden,
+              columnHidden: schemaHidden,
             };
           },
           onHeaderCell: () => {
             return {
-              columnHidden,
+              columnHidden: schemaHidden,
             };
           },
-        } as TableColumnProps<any>;
-      }),
+        } as TableColumnProps;
+      }) || []
+    );
+  }, [
+    columnsSchemas,
+    collection,
+    refresh,
+    designable,
+    filterProperties,
+    schemaToolbarBigger,
+    field,
+    props.optimizeTextCellRender,
+  ]);
 
-    [
-      columnsSchemas,
-      collection,
-      refresh,
-      designable,
-      filterProperties,
-      schemaToolbarBigger,
-      field,
-      props.optimizeTextCellRender,
-    ],
+  // Helper function to check if the table schema contains an EditTable.Action in actions
+  function hasEditTableAction(schema) {
+    const actionsProps = schema?.parent?.properties?.actions?.properties;
+    if (!actionsProps) return false;
+    return Object.values(actionsProps).some((item) => item['x-component'] === 'EditTable.Action');
+  }
+
+  // Check if the current table contains the editTable action
+  const editTableActionExists = hasEditTableAction(schema);
+
+  // Always call the hook, but only enable integration logic when needed
+  // Use the columns from the hook (either integrated or baseColumns)
+  const { columns: integratedColumns } = useTableColumnIntegration(
+    baseColumns,
+    !designable && editTableActionExists, // enable only if not designable and editTableActionExists
   );
+
+  // Apply column hidden styles and width adjustments
+  const columns = useMemo(() => {
+    return integratedColumns.map((column) => ({
+      ...column,
+      width: column.columnHidden && !designable ? 0 : column.width,
+      onCell: (record, rowIndex) => {
+        return {
+          record,
+          schema: column.schema || {},
+          rowIndex,
+          columnHidden: column.columnHidden,
+        };
+      },
+      onHeaderCell: () => {
+        return {
+          columnHidden: column.columnHidden,
+        };
+      },
+    }));
+  }, [integratedColumns, designable]);
 
   const tableColumns = useMemo(() => {
     if (!exists) {
@@ -304,11 +357,12 @@ const useTableColumns = (
 
     if (props.showDel) {
       res.push({
-        title: '',
+        title: '' as any,
         key: 'delete',
         width: 60,
         align: 'center',
         fixed: 'right',
+        // @ts-ignore
         render: (v, record, index) => {
           if (props.showDel(record)) {
             return (

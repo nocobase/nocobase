@@ -96,6 +96,19 @@ class Package {
     return false;
   }
 
+  async isDepPackage() {
+    const pkg1 = path.resolve(process.cwd(), 'node_modules', this.packageName, 'package.json');
+    const pkg2 = path.resolve(process.cwd(), process.env.PLUGIN_STORAGE_PATH, this.packageName, 'package.json');
+    if (await fs.exists(pkg1) && await fs.exists(pkg2)) {
+      const readPath1 = fs.realpathSync(pkg1);
+      const readPath2 = fs.realpathSync(pkg2);
+      if (readPath1 !== readPath2) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   async isDownloaded(version) {
     const packageFile = path.resolve(process.env.PLUGIN_STORAGE_PATH, this.packageName, 'package.json');
     if (await fs.exists(packageFile)) {
@@ -110,6 +123,10 @@ class Package {
   async download(options = {}) {
     if (await this.isDevPackage()) {
       console.log(chalk.yellowBright(`Skipped: ${this.packageName} is dev package`));
+      return;
+    }
+    if (await this.isDepPackage()) {
+      console.log(chalk.yellowBright(`Skipped: ${this.packageName} is dependency package`));
       return;
     }
     if (await this.isDownloaded(options.version)) {

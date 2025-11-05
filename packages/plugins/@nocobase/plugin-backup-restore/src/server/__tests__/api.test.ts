@@ -16,7 +16,8 @@ describe('backup files', () => {
 
   beforeEach(async () => {
     app = await createApp();
-    adminAgent = await app.agent().login(1);
+    const user = await app.db.getRepository('users').findOne();
+    adminAgent = await app.agent().login(user.id);
   });
 
   afterEach(async () => {

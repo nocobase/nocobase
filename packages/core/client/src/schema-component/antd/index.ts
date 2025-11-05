@@ -25,6 +25,7 @@ export * from './cron';
 export * from './date-picker';
 export * from './details';
 export * from './divider';
+export * from './edit-table';
 export * from './error-fallback';
 export * from './expand-action';
 export * from './expiresRadio';
