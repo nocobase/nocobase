@@ -58,25 +58,26 @@ describe('ModelOperationScheduler', () => {
     root.unmount();
   });
 
-  it('should execute on unmounted when root unmounts', async () => {
+  it('should execute immediately for existing target and also on unmounted when once=false', async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-unmount-1' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-unmount-1' });
 
     const fn = vi.fn();
-    engine.scheduleModelOperation(from, to.uid, fn, { when: 'unmounted' });
+    engine.scheduleModelOperation(from, to.uid, fn, { when: 'unmounted', once: false });
 
     const root = engine.reactView.createRoot(document.createElement('div'));
     await act(async () => {
       root.render(to.render());
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(fn).toHaveBeenCalledTimes(0);
+    expect(fn).toHaveBeenCalledTimes(1);
     await act(async () => {
       root.unmount();
     });
     await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(fn).toHaveBeenCalledTimes(1);
+    // 卸载时再次触发（once=false）
+    expect(fn).toHaveBeenCalledTimes(2);
   });
 
   it('should support predicate for when', async () => {
@@ -93,14 +94,14 @@ describe('ModelOperationScheduler', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
-  it('should expire when timeout without condition met', async () => {
+  it('should not expire when model exists (immediate executes once)', async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-timeout-1' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-timeout-1' });
 
     const handle = engine.scheduleModelOperation(from, to.uid, async () => {}, { when: 'ready', timeoutMs: 10 });
     await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(handle.status()).toBe('expired');
+    expect(handle.status()).toBe('done');
   });
 
   it('should respect immediate:"never" and run on next event', async () => {
@@ -214,7 +215,7 @@ describe('ModelOperationScheduler', () => {
     expect(calls.length).toBe(1);
   });
 
-  it('should run repeatedly when once=false for beforeRender:end', async () => {
+  it('should run repeatedly when once=false for beforeRender:end (including immediate for existing)', async () => {
     const engine = new FlowEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-repeat-1' });
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-repeat-1' });
@@ -226,8 +227,8 @@ describe('ModelOperationScheduler', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     await engine.executor.dispatchEvent(to, 'beforeRender');
     await new Promise((resolve) => setTimeout(resolve, 0));
-
-    expect(fn).toHaveBeenCalledTimes(2);
+    // 已存在立即一次 + 两次 beforeRender:end
+    expect(fn).toHaveBeenCalledTimes(3);
   });
 
   it('should cancel when source model destroyed', async () => {

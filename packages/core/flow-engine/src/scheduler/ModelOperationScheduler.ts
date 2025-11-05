@@ -11,14 +11,7 @@ import { uid as genUid } from 'uid/secure';
 import type { FlowEngine } from '../flowEngine';
 import type { FlowModel } from '../models/flowModel';
 
-type WhenString =
-  | 'created'
-  | 'mounted'
-  | 'ready'
-  | 'unmounted'
-  | 'destroyed'
-  | 'beforeRender:start'
-  | 'beforeRender:end';
+type WhenString = 'created' | 'mounted' | 'ready' | 'unmounted' | 'destroyed' | 'beforeRender:end';
 
 export type ScheduleWhen = WhenString | ((e: LifecycleEvent) => boolean);
 
@@ -27,7 +20,6 @@ export interface ScheduleOptions {
   once?: boolean;
   immediate?: 'never' | 'ifReached';
   timeoutMs?: number;
-  abortSignal?: AbortSignal;
   dedupeKey?: string;
   policy?: 'enqueue' | 'replace' | 'drop';
   concurrency?: 'serial' | 'parallel';
@@ -37,7 +29,6 @@ export interface ScheduledHandle {
   id: string;
   cancel: (reason?: any) => boolean;
   status: () => ScheduledStatus;
-  toJSON: () => any;
 }
 
 type ScheduledStatus = 'pending' | 'running' | 'done' | 'cancelled' | 'expired';
@@ -68,9 +59,7 @@ type ScheduledItem = {
   options: Required<Pick<ScheduleOptions, 'once' | 'immediate' | 'policy' | 'concurrency'>> &
     Omit<ScheduleOptions, 'once' | 'immediate' | 'policy' | 'concurrency'>;
   status: ScheduledStatus;
-  createdAt: number;
   timeoutTimer?: ReturnType<typeof setTimeout>;
-  abortCleanup?: () => void;
 };
 
 export class ModelOperationScheduler {
@@ -80,25 +69,12 @@ export class ModelOperationScheduler {
   private runningLocks = new Map<string, Promise<void>>(); // per-target serial lock
   private byId = new Map<string, ScheduledItem>();
 
-  private listenersBound = false;
   private unbinds: Array<() => void> = [];
 
   constructor(private engine: FlowEngine) {
     this.bindEngineLifecycle();
     // 初始化：从现有模型上读取轻量标记（created/mounted/ready）
-    try {
-      this.engine.forEachModel<FlowModel>((m) => {
-        const state: ModelState = {
-          created: true,
-          mounted: m.isMounted === true,
-          ready: m.isReady === true,
-        };
-        this.modelState.set(m.uid, state);
-      });
-    } catch (err) {
-      // 容错：若无法读取，跳过初始化但记录警告，避免完全静默
-      this.engine.logger?.warn?.({ err }, 'ModelOperationScheduler: initialize model state failed');
-    }
+    // 简化：不做初始化 priming（仅依靠 schedule 现存检查与 created 事件）
   }
 
   /** 外部调用入口 */
@@ -126,13 +102,11 @@ export class ModelOperationScheduler {
         once: options?.once !== false,
         immediate: options?.immediate ?? 'ifReached',
         timeoutMs: options?.timeoutMs,
-        abortSignal: options?.abortSignal,
         dedupeKey: options?.dedupeKey,
         policy: options?.policy ?? 'replace',
         concurrency: options?.concurrency ?? 'serial',
       },
       status: 'pending',
-      createdAt: Date.now(),
     };
 
     // 去重策略：同 target + from + dedupeKey
@@ -169,24 +143,6 @@ export class ModelOperationScheduler {
     fromSet.add(item.id);
     this.byId.set(item.id, item);
 
-    // 监听外部取消
-    if (item.options.abortSignal) {
-      const signal = item.options.abortSignal;
-      const onAbort = () => this.internalCancel(item.id, 'aborted');
-      if (signal.aborted) onAbort();
-      else {
-        signal.addEventListener('abort', onAbort, { once: true });
-        item.abortCleanup = () => {
-          try {
-            signal.removeEventListener('abort', onAbort);
-          } catch (err) {
-            // 忽略移除监听的异常
-            void err;
-          }
-        };
-      }
-    }
-
     // 超时自动清理
     if (item.options.timeoutMs && item.options.timeoutMs > 0) {
       item.timeoutTimer = setTimeout(() => {
@@ -196,15 +152,11 @@ export class ModelOperationScheduler {
       }, item.options.timeoutMs);
     }
 
-    // immediate: 若条件已达成，立即尝试触发
+    // immediate：若目标模型当前已存在，则立即执行一次
     if (item.options.immediate !== 'never') {
-      const st = this.modelState.get(toUid);
-      if (st && this.hasReached(st, item.options.when)) {
-        // 直接触发一次
-        void this.tryExecute(item, { type: 'ready', uid: toUid });
-        if (item.options.once) {
-          // 立即触发 once 任务后，若已结束，会被清理；若执行中仍保留，结束后清理
-        }
+      const modelNow = this.engine.getModel<FlowModel>(toUid);
+      if (modelNow) {
+        void this.tryExecute(item, { type: 'created', uid: toUid, model: modelNow });
       }
     }
 
@@ -250,7 +202,6 @@ export class ModelOperationScheduler {
       }
     } finally {
       this.unbinds = [];
-      this.listenersBound = false;
     }
 
     // 统一取消剩余任务（将触发 cleanupItem，从而移除 abort 监听与计时器）
@@ -266,9 +217,6 @@ export class ModelOperationScheduler {
   // ================= 内部实现 =================
 
   private bindEngineLifecycle() {
-    if (this.listenersBound) return;
-    this.listenersBound = true;
-
     const emitter = this.engine.emitter;
     if (!emitter || typeof emitter.on !== 'function') return;
 
@@ -287,13 +235,6 @@ export class ModelOperationScheduler {
     };
     emitter.on('model:mounted', onMounted);
     this.unbinds.push(() => emitter.off('model:mounted', onMounted));
-
-    const onBeforeStart = (e: LifecycleEvent) => {
-      this.ensureState(e.uid);
-      this.processEvent(e.uid, { ...e, type: 'beforeRender:start' });
-    };
-    emitter.on('model:beforeRender:start', onBeforeStart);
-    this.unbinds.push(() => emitter.off('model:beforeRender:start', onBeforeStart));
 
     const onBeforeEnd = (e: LifecycleEvent) => {
       const st = this.ensureState(e.uid);
@@ -395,7 +336,7 @@ export class ModelOperationScheduler {
       case 'destroyed':
         return !!st.destroyed;
       default:
-        return false; // beforeRender:* 不做 immediate
+        return false; // beforeRender:end 不做 immediate
     }
   }
 
@@ -497,17 +438,10 @@ export class ModelOperationScheduler {
       if (set.size === 0) this.byFrom.delete(fromUid);
     }
     this.byId.delete(id);
-    // 清理计时器与 abort 监听
+    // 清理计时器
     if (it.timeoutTimer) {
       clearTimeout(it.timeoutTimer);
       it.timeoutTimer = undefined;
-    }
-    if (it.abortCleanup) {
-      try {
-        it.abortCleanup();
-      } finally {
-        it.abortCleanup = undefined;
-      }
     }
   }
 
@@ -521,7 +455,6 @@ export class ModelOperationScheduler {
       id: item.id,
       cancel: (reason?: any) => this.internalCancel(item.id, reason),
       status: () => item.status,
-      toJSON: () => ({ ...item, fn: undefined }),
     };
   }
 }
