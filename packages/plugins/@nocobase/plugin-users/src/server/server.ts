@@ -45,32 +45,8 @@ export default class PluginUsersServer extends Plugin {
       },
     });
 
-    // this.db.on('field.afterAdd', ({ collection, field }) => {
-    //   if (field.options.interface === 'createdBy') {
-    //     collection.setField('createdById', {
-    //       type: 'context',
-    //       dataType: 'bigInt',
-    //       dataIndex: 'state.currentUser.id',
-    //       createOnly: true,
-    //       visible: true,
-    //       index: true,
-    //     });
-    //   }
-    //
-    //   if (field.options.interface === 'updatedBy') {
-    //     collection.setField('updatedById', {
-    //       type: 'context',
-    //       dataType: 'bigInt',
-    //       dataIndex: 'state.currentUser.id',
-    //       visible: true,
-    //       index: true,
-    //     });
-    //   }
-    // });
-
-    this.db.on('afterDefineCollection', (collection: Collection) => {
-      const { createdBy, updatedBy } = collection.options;
-      if (createdBy === true) {
+    this.db.on('field.afterAdd', ({ collection, field }) => {
+      if (field.options.interface === 'createdBy') {
         collection.setField('createdById', {
           type: 'context',
           dataType: 'bigInt',
@@ -79,6 +55,30 @@ export default class PluginUsersServer extends Plugin {
           visible: true,
           index: true,
         });
+      }
+
+      if (field.options.interface === 'updatedBy') {
+        collection.setField('updatedById', {
+          type: 'context',
+          dataType: 'bigInt',
+          dataIndex: 'state.currentUser.id',
+          visible: true,
+          index: true,
+        });
+      }
+    });
+
+    this.db.on('afterDefineCollection', (collection: Collection) => {
+      const { createdBy, updatedBy } = collection.options;
+      if (createdBy === true) {
+        // collection.setField('createdById', {
+        //   type: 'context',
+        //   dataType: 'bigInt',
+        //   dataIndex: 'state.currentUser.id',
+        //   createOnly: true,
+        //   visible: true,
+        //   index: true,
+        // });
         collection.setField('createdBy', {
           type: 'belongsTo',
           target: 'users',
@@ -100,13 +100,13 @@ export default class PluginUsersServer extends Plugin {
         });
       }
       if (updatedBy === true) {
-        collection.setField('updatedById', {
-          type: 'context',
-          dataType: 'bigInt',
-          dataIndex: 'state.currentUser.id',
-          visible: true,
-          index: true,
-        });
+        // collection.setField('updatedById', {
+        //   type: 'context',
+        //   dataType: 'bigInt',
+        //   dataIndex: 'state.currentUser.id',
+        //   visible: true,
+        //   index: true,
+        // });
         collection.setField('updatedBy', {
           type: 'belongsTo',
           target: 'users',
