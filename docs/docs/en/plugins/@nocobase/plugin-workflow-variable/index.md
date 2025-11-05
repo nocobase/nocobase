@@ -1,5 +1,5 @@
 ---
-displayName: "Workflow: Custom variable node"
+displayName: "Workflow: Custom variable"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:
   - 1.x
@@ -12,4 +12,4 @@ defaultEnabled: false
 points: 2
 ---
 
-# Workflow: Custom variable node
+# Workflow: Custom variable

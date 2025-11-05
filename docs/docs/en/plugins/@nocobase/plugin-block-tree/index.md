@@ -12,5 +12,3 @@ points: 2
 ---
 
 # Block: Tree
-
----

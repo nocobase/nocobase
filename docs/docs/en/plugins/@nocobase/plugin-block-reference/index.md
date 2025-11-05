@@ -1,13 +1,13 @@
 ---
 displayName: "Block: Reference"
 packageName: '@nocobase/plugin-block-reference'
+supportedVersions:
+  - 2.x
 description: |
-  Reuse an existing block by UID. Supports Reference and Copy modes. Experimental — use with caution in production.
+  The plugin is experimental. Please use it with caution in production environments.
 isFree: true
 builtIn: true
 defaultEnabled: false
-supportedVersions:
-  - 2.x
 ---
 
-# Block：Reference
+# Block: Reference

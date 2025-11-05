@@ -1,5 +1,5 @@
 ---
-displayName: "Workflow: JavaScript Node"
+displayName: "Workflow: JavaScript"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:
   - 1.x
@@ -12,4 +12,4 @@ defaultEnabled: false
 points: 4
 ---
 
-# Workflow: JavaScript Node
+# Workflow: JavaScript
