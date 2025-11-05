@@ -794,7 +794,7 @@ export class Collection<
     if (!this.options.underscored) {
       return val;
     }
-    return Array.isArray(val) ? val.map((v) => lodash.snakeCase(v)) : lodash.snakeCase(val);
+    return Array.isArray(val) ? val.map((v) => snakeCase(v)) : snakeCase(val);
   }
 
   addIndex(
