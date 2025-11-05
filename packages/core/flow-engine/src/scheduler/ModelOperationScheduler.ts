@@ -175,17 +175,17 @@ export class ModelOperationScheduler {
     emitter.on('model:mounted', onMounted);
     this.unbindHandlers.push(() => emitter.off('model:mounted', onMounted));
 
-    const onBeforeStart = (e: LifecycleEvent) => {
+    const onGenericBeforeStart = (e: LifecycleEvent) => {
       this.processLifecycleEvent(e.uid, { ...e, type: 'event:beforeRender:start' });
     };
-    emitter.on('model:beforeRender:start', onBeforeStart);
-    this.unbindHandlers.push(() => emitter.off('model:beforeRender:start', onBeforeStart));
+    emitter.on('model:event:beforeRender:start', onGenericBeforeStart);
+    this.unbindHandlers.push(() => emitter.off('model:event:beforeRender:start', onGenericBeforeStart));
 
-    const onBeforeEnd = (e: LifecycleEvent) => {
+    const onGenericBeforeEnd = (e: LifecycleEvent) => {
       this.processLifecycleEvent(e.uid, { ...e, type: 'event:beforeRender:end' });
     };
-    emitter.on('model:beforeRender:end', onBeforeEnd);
-    this.unbindHandlers.push(() => emitter.off('model:beforeRender:end', onBeforeEnd));
+    emitter.on('model:event:beforeRender:end', onGenericBeforeEnd);
+    this.unbindHandlers.push(() => emitter.off('model:event:beforeRender:end', onGenericBeforeEnd));
 
     const onUnmounted = (e: LifecycleEvent) => {
       this.processLifecycleEvent(e.uid, { ...e, type: 'unmounted' });

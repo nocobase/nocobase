@@ -204,26 +204,12 @@ export class FlowExecutor {
     const logger = model.context.logger;
 
     try {
-      // 发射通用事件开始（不阻塞主流程，记录异常）
-      this.engine.emitter
-        .emitAsync(`model:event:${eventName}:start`, {
-          uid: model.uid,
-          model,
-          runId,
-          inputArgs,
-        })
-        .catch((emitErr) => {
-          logger?.error?.({ err: emitErr, eventName }, 'FlowExecutor: emit model:event:start failed');
-        });
-      // 发射 beforeRender:start 生命周期事件（严格模式：错误直接冒泡）
-      if (isBeforeRender) {
-        await this.engine.emitter.emitAsync('model:beforeRender:start', {
-          uid: model.uid,
-          model,
-          runId,
-          inputArgs,
-        });
-      }
+      await this.engine.emitter.emitAsync(`model:event:${eventName}:start`, {
+        uid: model.uid,
+        model,
+        runId,
+        inputArgs,
+      });
       await model.onDispatchEventStart?.(eventName, options, inputArgs);
     } catch (err) {
       if (isBeforeRender && err instanceof FlowExitException) {
@@ -315,27 +301,13 @@ export class FlowExecutor {
       } catch (hookErr) {
         logger.error({ err: hookErr }, `BaseModel.dispatchEvent: End hook error for event '${eventName}'`);
       }
-      // 发射通用事件结束（不阻塞主流程，记录异常）
-      this.engine.emitter
-        .emitAsync(`model:event:${eventName}:end`, {
-          uid: model.uid,
-          model,
-          runId,
-          inputArgs,
-          result,
-        })
-        .catch((emitErr) => {
-          logger?.error?.({ err: emitErr, eventName }, 'FlowExecutor: emit model:event:end failed');
-        });
-      if (isBeforeRender) {
-        await this.engine.emitter.emitAsync('model:beforeRender:end', {
-          uid: model.uid,
-          model,
-          runId,
-          inputArgs,
-          result,
-        });
-      }
+      await this.engine.emitter.emitAsync(`model:event:${eventName}:end`, {
+        uid: model.uid,
+        model,
+        runId,
+        inputArgs,
+        result,
+      });
       return result;
     } catch (error) {
       // 进入错误钩子并记录
@@ -348,28 +320,13 @@ export class FlowExecutor {
         { err: error },
         `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`,
       );
-      // 发射通用事件结束（错误场景，不阻塞）
-      this.engine.emitter
-        .emitAsync(`model:event:${eventName}:end`, {
-          uid: model.uid,
-          model,
-          runId,
-          inputArgs,
-          error,
-        })
-        .catch((emitErr) => {
-          logger?.error?.({ err: emitErr, eventName }, 'FlowExecutor: emit model:event:end (error) failed');
-        });
-      // 发射 beforeRender:end（错误场景，严格模式：错误直接冒泡）
-      if (isBeforeRender) {
-        await this.engine.emitter.emitAsync('model:beforeRender:end', {
-          uid: model.uid,
-          model,
-          runId,
-          inputArgs,
-          error,
-        });
-      }
+      await this.engine.emitter.emitAsync(`model:event:${eventName}:end`, {
+        uid: model.uid,
+        model,
+        runId,
+        inputArgs,
+        error,
+      });
       if (throwOnError) throw error;
     }
   }

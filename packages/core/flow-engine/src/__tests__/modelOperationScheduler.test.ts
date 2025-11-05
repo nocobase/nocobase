@@ -320,7 +320,7 @@ describe('ModelOperationScheduler', () => {
     const onMounted = vi.fn();
 
     const cd = engine.scheduleModelOperation(from, toUid, onDestroyed, { when: 'destroyed' });
-    const cr = engine.scheduleModelOperation(from, toUid, onEnd, { when: 'beforeRender:end' });
+    const cr = engine.scheduleModelOperation(from, toUid, onEnd, { when: 'event:beforeRender:end' });
     const cm = engine.scheduleModelOperation(from, toUid, onMounted, { when: 'mounted' });
 
     const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: toUid });
