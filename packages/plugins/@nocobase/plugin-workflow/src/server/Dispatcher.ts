@@ -44,7 +44,7 @@ export default class Dispatcher {
   private eventsCount = 0;
 
   get idle() {
-    return !this.executing && !this.pending.length && !this.events.length;
+    return this.ready && !this.executing && !this.pending.length && !this.events.length;
   }
 
   constructor(private readonly plugin: PluginWorkflowServer) {
@@ -185,26 +185,28 @@ export default class Dispatcher {
           this.plugin.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
         }
       } else {
-        if (!this.serving()) {
+        if (this.serving()) {
+          execution = await this.acquireQueueingExecution();
+          if (execution) {
+            next = [execution];
+          }
+        } else {
           this.plugin
             .getLogger('dispatcher')
             .warn(`${WORKER_JOB_WORKFLOW_PROCESS} is not serving on this instance, new dispatching will be ignored`);
-          return;
-        }
-        execution = await this.acquireQueueingExecution();
-        if (execution) {
-          next = [execution];
         }
       }
       if (next) {
         await this.process(...next);
       }
-      this.executing = null;
+      setImmediate(() => {
+        this.executing = null;
 
-      if (next || this.pending.length) {
-        this.plugin.getLogger('dispatcher').debug(`last process finished, will do another dispatch`);
-        this.dispatch();
-      }
+        if (next || this.pending.length) {
+          this.plugin.getLogger('dispatcher').debug(`last process finished, will do another dispatch`);
+          this.dispatch();
+        }
+      });
     })();
   }
 

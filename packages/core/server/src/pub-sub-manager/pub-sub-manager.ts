@@ -44,12 +44,12 @@ export class PubSubManager {
     this.handlerManager = new HandlerManager(this.publisherId);
   }
 
-  get channelPrefix() {
-    return this.options?.channelPrefix ? `${this.options.channelPrefix}.` : '';
-  }
-
   setAdapter(adapter: IPubSubAdapter) {
     this.adapter = adapter;
+  }
+
+  getFullChannel(channel: string) {
+    return [this.app.name, this.options?.channelPrefix, channel].filter(Boolean).join('.');
   }
 
   async isConnected() {
@@ -71,7 +71,7 @@ export class PubSubManager {
     // 如果没连接前添加的订阅，连接后需要把订阅添加上
     await this.handlerManager.each(async (channel, headler) => {
       this.app.logger.debug(`[PubSubManager] subscribe ${channel} added before connected`);
-      await this.adapter.subscribe(`${this.channelPrefix}${channel}`, headler);
+      await this.adapter.subscribe(this.getFullChannel(channel), headler);
     });
   }
 
@@ -90,7 +90,7 @@ export class PubSubManager {
 
     if (await this.isConnected()) {
       this.app.logger.debug(`[PubSubManager] subscribe ${channel} added after connected`);
-      await this.adapter.subscribe(`${this.channelPrefix}${channel}`, handler);
+      await this.adapter.subscribe(this.getFullChannel(channel), handler);
     }
   }
 
@@ -101,7 +101,7 @@ export class PubSubManager {
       return;
     }
 
-    return this.adapter.unsubscribe(`${this.channelPrefix}${channel}`, handler);
+    return this.adapter.unsubscribe(this.getFullChannel(channel), handler);
   }
 
   async publish(channel: string, message: any, options?: PubSubManagerPublishOptions) {
@@ -118,7 +118,7 @@ export class PubSubManager {
       message: message,
     });
 
-    await this.adapter.publish(`${this.channelPrefix}${channel}`, wrappedMessage);
+    await this.adapter.publish(this.getFullChannel(channel), wrappedMessage);
 
     this.app.logger.trace(`[PubSubManager] published message to channel ${channel}`);
   }
