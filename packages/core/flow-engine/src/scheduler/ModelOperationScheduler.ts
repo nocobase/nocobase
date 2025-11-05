@@ -18,7 +18,12 @@ export type ScheduleWhen = WhenString | ((e: LifecycleEvent) => boolean);
 export interface ScheduleOptions {
   when?: ScheduleWhen;
   once?: boolean;
-  immediate?: 'never' | 'ifReached';
+  /**
+   * immediate 执行策略：
+   * - 'always': 若目标模型当前已存在，则在注册时立即执行一次（不依赖 when 条件是否已达成）。
+   * - 'never': 不做即时执行，仅等待后续生命周期事件触发。
+   */
+  immediate?: 'never' | 'always';
   timeoutMs?: number;
   dedupeKey?: string;
   policy?: 'enqueue' | 'replace' | 'drop';
@@ -43,13 +48,7 @@ export interface LifecycleEvent {
   result?: any;
 }
 
-type ModelState = {
-  created?: boolean;
-  mounted?: boolean;
-  ready?: boolean; // first beforeRender:end reached
-  unmounted?: boolean;
-  destroyed?: boolean;
-};
+// 不再维护生命周期状态表：事件触发即处理，保持最小化。
 
 type ScheduledItem = {
   id: string;
@@ -63,13 +62,13 @@ type ScheduledItem = {
 };
 
 export class ModelOperationScheduler {
-  private byTarget = new Map<string, Map<string, ScheduledItem>>();
-  private byFrom = new Map<string, Set<string>>();
-  private modelState = new Map<string, ModelState>();
-  private runningLocks = new Map<string, Promise<void>>(); // per-target serial lock
-  private byId = new Map<string, ScheduledItem>();
+  private itemsByTargetUid = new Map<string, Map<string, ScheduledItem>>();
+  private itemIdsByFromUid = new Map<string, Set<string>>();
+  // 无生命周期缓存：依赖事件触发即时处理
+  private serialLocksByTargetUid = new Map<string, Promise<void>>(); // per-target serial lock
+  private itemsById = new Map<string, ScheduledItem>();
 
-  private unbinds: Array<() => void> = [];
+  private unbindHandlers: Array<() => void> = [];
 
   constructor(private engine: FlowEngine) {
     this.bindEngineLifecycle();
@@ -100,7 +99,8 @@ export class ModelOperationScheduler {
       options: {
         when: options?.when,
         once: options?.once !== false,
-        immediate: options?.immediate ?? 'ifReached',
+        // 保持当前既有行为：目标存在则立即执行一次
+        immediate: options?.immediate ?? 'always',
         timeoutMs: options?.timeoutMs,
         dedupeKey: options?.dedupeKey,
         policy: options?.policy ?? 'replace',
@@ -111,7 +111,7 @@ export class ModelOperationScheduler {
 
     // 去重策略：同 target + from + dedupeKey
     if (item.options.dedupeKey) {
-      const exist = this.byTarget.get(toUid);
+      const exist = this.itemsByTargetUid.get(toUid);
       if (exist) {
         const sameKeys = Array.from(exist.values()).filter(
           (x) => x.fromUid === fromUid && x.options.dedupeKey === item.options.dedupeKey,
@@ -129,19 +129,19 @@ export class ModelOperationScheduler {
     }
 
     // 注册结构
-    let targetMap = this.byTarget.get(toUid);
+    let targetMap = this.itemsByTargetUid.get(toUid);
     if (!targetMap) {
       targetMap = new Map();
-      this.byTarget.set(toUid, targetMap);
+      this.itemsByTargetUid.set(toUid, targetMap);
     }
     targetMap.set(item.id, item);
-    let fromSet = this.byFrom.get(fromUid);
+    let fromSet = this.itemIdsByFromUid.get(fromUid);
     if (!fromSet) {
       fromSet = new Set();
-      this.byFrom.set(fromUid, fromSet);
+      this.itemIdsByFromUid.set(fromUid, fromSet);
     }
     fromSet.add(item.id);
-    this.byId.set(item.id, item);
+    this.itemsById.set(item.id, item);
 
     // 超时自动清理
     if (item.options.timeoutMs && item.options.timeoutMs > 0) {
@@ -152,7 +152,7 @@ export class ModelOperationScheduler {
       }, item.options.timeoutMs);
     }
 
-    // immediate：若目标模型当前已存在，则立即执行一次
+    // immediate：若目标模型当前已存在，则立即执行一次（与 when 无关）
     if (item.options.immediate !== 'never') {
       const modelNow = this.engine.getModel<FlowModel>(toUid);
       if (modelNow) {
@@ -165,8 +165,8 @@ export class ModelOperationScheduler {
 
   cancel(filter: { fromUid?: string; toUid?: string; dedupeKey?: string }) {
     const { fromUid, toUid, dedupeKey } = filter || {};
-    if (toUid && this.byTarget.has(toUid)) {
-      const map = this.byTarget.get(toUid);
+    if (toUid && this.itemsByTargetUid.has(toUid)) {
+      const map = this.itemsByTargetUid.get(toUid);
       if (map)
         for (const item of map.values()) {
           if (fromUid && item.fromUid !== fromUid) continue;
@@ -175,8 +175,8 @@ export class ModelOperationScheduler {
         }
       return;
     }
-    if (fromUid && this.byFrom.has(fromUid)) {
-      const set = this.byFrom.get(fromUid);
+    if (fromUid && this.itemIdsByFromUid.has(fromUid)) {
+      const set = this.itemIdsByFromUid.get(fromUid);
       if (set)
         for (const id of Array.from(set)) {
           const it = this.getItem(id);
@@ -192,7 +192,7 @@ export class ModelOperationScheduler {
   dispose() {
     // 解绑生命周期事件监听
     try {
-      for (const unbind of this.unbinds) {
+      for (const unbind of this.unbindHandlers) {
         try {
           unbind();
         } catch (err) {
@@ -201,17 +201,16 @@ export class ModelOperationScheduler {
         }
       }
     } finally {
-      this.unbinds = [];
+      this.unbindHandlers = [];
     }
 
     // 统一取消剩余任务（将触发 cleanupItem，从而移除 abort 监听与计时器）
-    for (const map of this.byTarget.values()) {
+    for (const map of this.itemsByTargetUid.values()) {
       for (const item of map.values()) this.internalCancel(item.id, 'disposed');
     }
-    this.byTarget.clear();
-    this.byFrom.clear();
-    this.modelState.clear();
-    this.runningLocks.clear();
+    this.itemsByTargetUid.clear();
+    this.itemIdsByFromUid.clear();
+    this.serialLocksByTargetUid.clear();
   }
 
   // ================= 内部实现 =================
@@ -221,98 +220,77 @@ export class ModelOperationScheduler {
     if (!emitter || typeof emitter.on !== 'function') return;
 
     const onCreated = (e: LifecycleEvent) => {
-      const st = this.ensureState(e.uid);
-      st.created = true;
-      this.processEvent(e.uid, { ...e, type: 'created' });
+      this.processLifecycleEvent(e.uid, { ...e, type: 'created' });
     };
     emitter.on('model:created', onCreated);
-    this.unbinds.push(() => emitter.off('model:created', onCreated));
+    this.unbindHandlers.push(() => emitter.off('model:created', onCreated));
 
     const onMounted = (e: LifecycleEvent) => {
-      const st = this.ensureState(e.uid);
-      st.mounted = true;
-      this.processEvent(e.uid, { ...e, type: 'mounted' });
+      this.processLifecycleEvent(e.uid, { ...e, type: 'mounted' });
     };
     emitter.on('model:mounted', onMounted);
-    this.unbinds.push(() => emitter.off('model:mounted', onMounted));
+    this.unbindHandlers.push(() => emitter.off('model:mounted', onMounted));
 
     const onBeforeEnd = (e: LifecycleEvent) => {
-      const st = this.ensureState(e.uid);
-      const firstReady = !st.ready;
-      st.ready = true;
-      // 先投递具体事件
-      this.processEvent(e.uid, { ...e, type: 'beforeRender:end' });
-      // 再针对首次 ready 投递一次 ready 语义
-      if (firstReady) this.processEvent(e.uid, { ...e, type: 'ready' as const });
+      // 投递具体事件
+      this.processLifecycleEvent(e.uid, { ...e, type: 'beforeRender:end' });
+      // 同时提供“就绪”语义（首次与否由监听方自行控制，如有需要）
+      this.processLifecycleEvent(e.uid, { ...e, type: 'ready' as const });
     };
     emitter.on('model:beforeRender:end', onBeforeEnd);
-    this.unbinds.push(() => emitter.off('model:beforeRender:end', onBeforeEnd));
+    this.unbindHandlers.push(() => emitter.off('model:beforeRender:end', onBeforeEnd));
 
     const onUnmounted = (e: LifecycleEvent) => {
-      const st = this.ensureState(e.uid);
-      st.unmounted = true;
-      this.processEvent(e.uid, { ...e, type: 'unmounted' });
+      this.processLifecycleEvent(e.uid, { ...e, type: 'unmounted' });
     };
     emitter.on('model:unmounted', onUnmounted);
-    this.unbinds.push(() => emitter.off('model:unmounted', onUnmounted));
+    this.unbindHandlers.push(() => emitter.off('model:unmounted', onUnmounted));
 
     const onDestroyed = (e: LifecycleEvent) => {
-      const st = this.ensureState(e.uid);
-      st.destroyed = true;
       // 先同步清理“以该 uid 作为来源（fromUid）的任务”，避免后续其它事件（如 beforeRender:end）抢先执行
-      const fromSet = this.byFrom.get(e.uid);
+      const fromSet = this.itemIdsByFromUid.get(e.uid);
       if (fromSet) {
         for (const id of Array.from(fromSet)) this.internalCancel(id, 'sourceDestroyed');
-        if (fromSet.size === 0) this.byFrom.delete(e.uid);
+        if (fromSet.size === 0) this.itemIdsByFromUid.delete(e.uid);
       }
 
       // 允许在销毁事件上匹配的任务先尝试执行（此时 e.model 仍可用，removeModel 中传入）
-      const bucket = this.byTarget.get(e.uid);
-      const evt = { ...e, type: 'destroyed' as const };
+      const targetBucket = this.itemsByTargetUid.get(e.uid);
+      const event = { ...e, type: 'destroyed' as const };
       const triggered = new Set<string>();
-      if (bucket && bucket.size) {
-        for (const item of bucket.values()) {
+      if (targetBucket && targetBucket.size) {
+        for (const item of targetBucket.values()) {
           if (item.status !== 'pending') continue;
-          if (this.shouldTrigger(item.options.when, evt)) {
+          if (this.shouldTrigger(item.options.when, event)) {
             triggered.add(item.id);
-            void this.tryExecute(item, evt);
+            void this.tryExecute(item, event);
           }
         }
       }
       // 在下一轮任务队列中清理“未触发”的目标相关任务，避免和 tryExecute 的并发冲突
       setTimeout(() => {
-        const map = this.byTarget.get(e.uid);
+        const map = this.itemsByTargetUid.get(e.uid);
         if (map) {
           for (const item of Array.from(map.values())) {
             if (!triggered.has(item.id)) this.internalCancel(item.id, 'targetDestroyed');
           }
-          if (map.size === 0) this.byTarget.delete(e.uid);
+          if (map.size === 0) this.itemsByTargetUid.delete(e.uid);
         }
-        // 最后移除状态
-        this.modelState.delete(e.uid);
+        // 无生命周期缓存，略
       }, 0);
     };
     emitter.on('model:destroyed', onDestroyed);
-    this.unbinds.push(() => emitter.off('model:destroyed', onDestroyed));
+    this.unbindHandlers.push(() => emitter.off('model:destroyed', onDestroyed));
   }
 
-  private ensureState(uid: string): ModelState {
-    let st = this.modelState.get(uid);
-    if (!st) {
-      st = {};
-      this.modelState.set(uid, st);
-    }
-    return st;
-  }
-
-  private processEvent(toUid: string, evt: LifecycleEvent) {
-    const bucket = this.byTarget.get(toUid);
-    if (!bucket || bucket.size === 0) return;
-    for (const item of Array.from(bucket.values())) {
+  private processLifecycleEvent(targetUid: string, event: LifecycleEvent) {
+    const targetBucket = this.itemsByTargetUid.get(targetUid);
+    if (!targetBucket || targetBucket.size === 0) return;
+    for (const item of Array.from(targetBucket.values())) {
       if (item.status !== 'pending') continue;
-      const should = this.shouldTrigger(item.options.when, evt);
+      const should = this.shouldTrigger(item.options.when, event);
       if (!should) continue;
-      void this.tryExecute(item, evt);
+      void this.tryExecute(item, event);
       if (item.options.once) {
         // 如果 once，在执行完成后会被清理；此处先标记，防止同一个事件多次命中
         // 不提前删除，避免并发条件下丢失句柄；改为在完成后 clean
@@ -320,38 +298,18 @@ export class ModelOperationScheduler {
     }
   }
 
-  private hasReached(st: ModelState, when?: ScheduleWhen): boolean {
+  private shouldTrigger(when: ScheduleWhen | undefined, event: LifecycleEvent): boolean {
     if (!when) return false;
-    const key = typeof when === 'string' ? when : undefined;
-    if (!key) return false; // 函数谓词不支持 immediate 判定
-    switch (key) {
-      case 'created':
-        return !!st.created;
-      case 'mounted':
-        return !!st.mounted;
-      case 'ready':
-        return !!st.ready;
-      case 'unmounted':
-        return !!st.unmounted;
-      case 'destroyed':
-        return !!st.destroyed;
-      default:
-        return false; // beforeRender:end 不做 immediate
-    }
+    if (typeof when === 'function') return !!when(event);
+    return when === event.type;
   }
 
-  private shouldTrigger(when: ScheduleWhen | undefined, evt: LifecycleEvent): boolean {
-    if (!when) return false;
-    if (typeof when === 'function') return !!when(evt);
-    return when === evt.type;
-  }
-
-  private async tryExecute(item: ScheduledItem, evt: LifecycleEvent) {
+  private async tryExecute(item: ScheduledItem, event: LifecycleEvent) {
     const run = async () => {
       if (item.status !== 'pending') return;
       item.status = 'running';
       try {
-        const model = evt.model || this.engine.getModel<FlowModel>(item.toUid);
+        const model = event.model || this.engine.getModel<FlowModel>(item.toUid);
         if (!model) {
           // 目标不存在（已销毁或未创建），将其视作取消
           this.internalCancel(item.id, 'noTarget');
@@ -386,7 +344,7 @@ export class ModelOperationScheduler {
     };
 
     if (item.options.concurrency === 'serial') {
-      const prev = this.runningLocks.get(item.toUid) || Promise.resolve();
+      const prev = this.serialLocksByTargetUid.get(item.toUid) || Promise.resolve();
       const next = prev
         .then(run)
         .catch((err) => {
@@ -397,9 +355,9 @@ export class ModelOperationScheduler {
           );
         })
         .finally(() => {
-          if (this.runningLocks.get(item.toUid) === next) this.runningLocks.delete(item.toUid);
+          if (this.serialLocksByTargetUid.get(item.toUid) === next) this.serialLocksByTargetUid.delete(item.toUid);
         });
-      this.runningLocks.set(item.toUid, next);
+      this.serialLocksByTargetUid.set(item.toUid, next);
       await next;
     } else {
       await run();
@@ -427,17 +385,17 @@ export class ModelOperationScheduler {
     const it = this.getItem(id);
     if (!it) return;
     const { toUid, fromUid } = it;
-    const map = this.byTarget.get(toUid);
+    const map = this.itemsByTargetUid.get(toUid);
     if (map) {
       map.delete(id);
-      if (map.size === 0) this.byTarget.delete(toUid);
+      if (map.size === 0) this.itemsByTargetUid.delete(toUid);
     }
-    const set = this.byFrom.get(fromUid);
+    const set = this.itemIdsByFromUid.get(fromUid);
     if (set) {
       set.delete(id);
-      if (set.size === 0) this.byFrom.delete(fromUid);
+      if (set.size === 0) this.itemIdsByFromUid.delete(fromUid);
     }
-    this.byId.delete(id);
+    this.itemsById.delete(id);
     // 清理计时器
     if (it.timeoutTimer) {
       clearTimeout(it.timeoutTimer);
@@ -446,7 +404,7 @@ export class ModelOperationScheduler {
   }
 
   private getItem(id: string): ScheduledItem | undefined {
-    return this.byId.get(id);
+    return this.itemsById.get(id);
   }
 
   private createHandle(item: ScheduledItem, cancelled = false): ScheduledHandle {

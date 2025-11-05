@@ -10,6 +10,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { act } from 'react-dom/test-utils';
 import { FlowEngine, FlowModel, createViewScopedEngine, createBlockScopedEngine } from '..';
+import type { LifecycleEvent } from '../scheduler/ModelOperationScheduler';
 
 function newEngine(): FlowEngine {
   const engine = new FlowEngine();
@@ -50,7 +51,7 @@ describe('ModelOperationScheduler', () => {
     await act(async () => {
       root.render(to.render());
     });
-    // 先触发 mounted，再注册（immediate: ifReached）
+    // 先触发 mounted，再注册（immediate: always）
     engine.scheduleModelOperation(from, to.uid, fn, { when: 'mounted' });
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(fn).toHaveBeenCalledTimes(1);
@@ -87,7 +88,7 @@ describe('ModelOperationScheduler', () => {
 
     const fn = vi.fn();
     engine.scheduleModelOperation(from, to.uid, fn, {
-      when: (e) => e.type === 'beforeRender:end' && e.uid === to.uid,
+      when: (e: LifecycleEvent) => e.type === 'beforeRender:end' && e.uid === to.uid,
     });
 
     await engine.executor.dispatchEvent(to, 'beforeRender');
