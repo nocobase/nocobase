@@ -141,7 +141,20 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
 
   render() {
     return (value, record, index) => (
-      <div style={{ width: this.props.width - 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <div
+        className={css`
+          width: ${this.props.width - 8}px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          overflow: hidden;
+          transition: overflow 0.3s ease 0.8s; /* 加入延迟 */
+
+          &:hover {
+            overflow: visible; /* 鼠标悬停时，内容可见 */
+            background: #fafafa;
+          }
+        `}
+      >
         <Columns record={record} model={this} index={index} />
       </div>
     );
