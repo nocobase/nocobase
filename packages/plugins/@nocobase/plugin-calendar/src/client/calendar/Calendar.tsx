@@ -293,29 +293,30 @@ export const Calendar: any = withDynamicSchemaProps(
       const [visibleAddNewer, setVisibleAddNewer] = useState(false);
       const [currentSelectDate, setCurrentSelectDate] = useState(undefined);
       const apiClient = useAPIClient();
-      const locales = {
+ const locales = {
         'zh-CN': zhCN,
         'en-US': enUS,
+        'ru-RU': ruRU,
       };
       const locale = apiClient.auth.locale || 'en-US';
       const formats = useMemo(() => {
         return {
           monthHeaderFormat: (date, culture, local) =>
-            local.format(date, locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy', locales[locale]),
+            local.format(date, locale === 'zh-CN' ? 'yyyy年M月' : locale === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',  locales[locale]),
           dayHeaderFormat: (date, culture, local) => {
-            return local.format(date, props.locale === 'zh-CN' ? 'eee, M/d' : 'EEE, MMM d', locales[locale]);
+            return local.format(date, props.locale === 'zh-CN' ? 'eee, M/d' : props.locale === 'ru-RU' ? 'EEE, d MMM' : 'EEE, MMM d', locales[locale]);
           },
           agendaDateFormat: (date, culture, local) => {
-            return local.format(date, props.locale === 'zh-CN' ? 'M月d日' : 'M-dd', locales[locale]);
+            return local.format(date, props.locale === 'zh-CN' ? 'M月d日' : props.locale === 'ru-RU' ? 'd MMM' : 'M-dd', locales[locale]);
           },
 
           dayRangeHeaderFormat: ({ start, end }, culture, local) => {
             if (start.getMonth() === end.getMonth()) {
-              return local.format(start, locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy', locale);
+              return local.format(start, locale === 'zh-CN' ? 'yyyy年M月' : locale === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy', locale);
             }
-            return `${local.format(start, locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy', locale)} - ${local.format(
+            return `${local.format(start, locale === 'zh-CN' ? 'yyyy年M月' : locale === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy', locale)} - ${local.format(
               end,
-              locale === 'zh-CN' ? 'yyyy年M月' : 'MMM yyyy',
+              locale === 'zh-CN' ? 'yyyy年M月' : locale === 'ru-RU' ? 'LLLL yyyy' : 'MMM yyyy',
               locale,
             )}`;
           },
