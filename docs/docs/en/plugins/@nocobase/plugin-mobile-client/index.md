@@ -1,5 +1,5 @@
 ---
-displayName: "Mobile Client (Deprecated)"
+displayName: "Mobile client(Deprecated)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
   Provides the ability to configure mobile pages.
@@ -9,6 +9,6 @@ defaultEnabled: false
 deprecated: true
 ---
 
-# Mobile Client (Deprecated)
+# Mobile client(Deprecated)
 
 > Note: This plugin is deprecated.

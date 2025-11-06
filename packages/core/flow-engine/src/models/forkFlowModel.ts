@@ -208,6 +208,13 @@ export class ForkFlowModel<TMaster extends FlowModel = FlowModel> {
   }
 
   /**
+   * 清理局部 props，仅影响当前 fork
+   */
+  clearProps() {
+    return (this.localProps = {});
+  }
+
+  /**
    * render 依旧使用 master 的方法，但合并后的 props 需要透传
    */
   render() {
