@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { act } from 'react-dom/test-utils';
 import { FlowEngine, FlowModel } from '../..';
 
@@ -108,5 +108,22 @@ describe('FlowModel scheduleModelOperation cross-model (target not created yet)'
     from.scheduleModelOperation(target.uid, fn, { when: 'created' });
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('model.scheduleModelOperation delegates to engine.scheduleModelOperation', async () => {
+    const engine = newEngine();
+    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-model-proxy-delegate' });
+    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-model-proxy-delegate' });
+    const cb = vi.fn();
+    const spy = vi.spyOn(engine, 'scheduleModelOperation');
+
+    from.scheduleModelOperation(to.uid, cb, { when: 'created' });
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    const [argFrom, argUid, argFn, argOptions] = (spy as any).mock.calls[0];
+    expect(argFrom).toBe(from);
+    expect(argUid).toBe(to.uid);
+    expect(argFn).toBe(cb);
+    expect(argOptions).toEqual({ when: 'created' });
   });
 });

@@ -258,17 +258,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return this._options.parentId;
   }
 
-  /**
-   * 便捷方法：在目标模型指定生命周期达成时执行一次操作。
-   * 等价于调用 this.flowEngine.scheduleModelOperation(this, toUid, fn, options)。
-   * 注意：为保持简单一致性，此方法不返回取消函数；如需取消，请使用引擎方法。
-   */
   public scheduleModelOperation(
     toUid: string,
     fn: (model: FlowModel) => Promise<void> | void,
     options?: ScheduleOptions,
-  ): void {
-    this.flowEngine?.scheduleModelOperation(this, toUid, fn, options);
+  ) {
+    return this.flowEngine?.scheduleModelOperation(this, toUid, fn, options);
   }
 
   static get meta() {
