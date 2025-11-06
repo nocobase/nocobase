@@ -202,10 +202,21 @@ UpdateRecordActionModel.registerFlow({
           ctx.message.error(ctx.t('Record is required to perform this action'));
           return;
         }
+        let result = assignedValues;
+        const tkData = ctx.collection?.getFilterByTK(ctx.record);
+        if (Array.isArray(filterByTk)) {
+          result = {
+            ...assignedValues,
+            ...(tkData || {}),
+          };
+        } else {
+          result = {
+            ...assignedValues,
+            [filterByTk]: tkData,
+          };
+        }
 
-        await ctx.api
-          .resource(collection)
-          .update({ filterByTk, values: assignedValues, ...params.requestConfig?.params });
+        await ctx.api.resource(collection).update({ filterByTk, values: result, ...params.requestConfig?.params });
         // 刷新与提示
         ctx.blockModel?.resource?.refresh?.();
         ctx.message.success(ctx.t('Saved successfully'));
