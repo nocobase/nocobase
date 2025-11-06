@@ -11,7 +11,7 @@ import { CloseCircleOutlined, PlusOutlined } from '@ant-design/icons';
 import { observer } from '@formily/reactive-react';
 import { Button, Select, Space, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
-import React, { FC } from 'react';
+import React, { FC, ReactNode } from 'react';
 import { AntdIconProps } from '@ant-design/icons/lib/components/AntdIcon';
 
 /**
@@ -33,7 +33,7 @@ interface FilterGroupProps {
   value: Record<string, any>;
   /** 自定义筛选项组件 */
   FilterItem?: React.FC<FilterItemProps>;
-  CloseIcon?: React.FC<AntdIconProps>;
+  closeIcon?: ReactNode;
   /** 是否显示边框 */
   showBorder?: boolean;
   /** 移除当前组的回调 */
@@ -79,7 +79,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
       showBorder = false,
       onRemove,
       onChange,
-      CloseIcon = CloseCircleOutlined,
+      closeIcon = <CloseCircleOutlined />,
     } = props;
     const { token } = theme.useToken();
     const { t } = useTranslation();
@@ -144,16 +144,19 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
     return (
       <div style={style}>
         {showBorder && onRemove && (
-          <span role="button" aria-label="icon-close">
-            <CloseIcon
-              style={{
-                position: 'absolute',
-                right: 10,
-                top: 10,
-                color: token.colorIcon,
-              }}
-              onClick={onRemove}
-            />
+          <span
+            role="button"
+            aria-label="icon-close"
+            style={{
+              position: 'absolute',
+              right: 10,
+              top: 10,
+              color: token.colorIcon,
+              cursor: 'pointer',
+            }}
+            onClick={onRemove}
+          >
+            {closeIcon}
           </span>
         )}
 
@@ -199,9 +202,16 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                       <span
                         role="button"
                         aria-label="icon-close"
-                        style={{ marginLeft: 8, marginRight: 8, flex: '0 0 auto' }}
+                        style={{
+                          marginLeft: 8,
+                          marginRight: 8,
+                          flex: '0 0 auto',
+                          color: token.colorIcon,
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => handleRemoveItem(index)}
                       >
-                        <CloseIcon onClick={() => handleRemoveItem(index)} style={{ color: token.colorIcon }} />
+                        {closeIcon}
                       </span>
                     </Space>
                   </div>
@@ -217,9 +227,16 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                       <span
                         role="button"
                         aria-label="icon-close"
-                        style={{ marginLeft: 8, marginRight: 8, flex: '0 0 auto' }}
+                        style={{
+                          marginLeft: 8,
+                          marginRight: 8,
+                          flex: '0 0 auto',
+                          color: token.colorIcon,
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => handleRemoveItem(index)}
                       >
-                        <CloseIcon onClick={() => handleRemoveItem(index)} style={{ color: token.colorIcon }} />
+                        {closeIcon}
                       </span>
                     </Space>
                   </div>
@@ -234,9 +251,16 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                     <span
                       role="button"
                       aria-label="icon-close"
-                      style={{ marginLeft: 8, marginRight: 8, flex: '0 0 auto' }}
+                      style={{
+                        marginLeft: 8,
+                        marginRight: 8,
+                        flex: '0 0 auto',
+                        color: token.colorIcon,
+                        cursor: 'pointer',
+                      }}
+                      onClick={() => handleRemoveItem(index)}
                     >
-                      <CloseIcon onClick={() => handleRemoveItem(index)} style={{ color: token.colorIcon }} />
+                      {closeIcon}
                     </span>
                   </Space>
                 </div>
