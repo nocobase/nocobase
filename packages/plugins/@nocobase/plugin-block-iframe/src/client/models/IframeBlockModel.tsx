@@ -38,7 +38,6 @@ const HtmlEditorBase: React.FC<any> = (props) => {
         <FlowContextSelector
           onChange={(text) => {
             if (!text) return;
-            console.log(text, viewRef);
             const view = viewRef.current;
             if (!view) return;
             const { from, to } = view.state.selection.main;

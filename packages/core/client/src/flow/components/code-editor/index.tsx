@@ -165,31 +165,34 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         scene={resolvedScene}
         extraEditorRef={extraEditorRef.current}
         extraContent={
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <Button size="small" onClick={() => setSnippetOpen(true)}>
-              {tr('Snippets')}
-            </Button>
-            <>
-              <Button
-                size="small"
-                loading={running}
-                onClick={async () => {
-                  const code = viewRef.current?.state.doc.toString() || '';
-                  clearDiagnostics(viewRef.current);
-                  const res = await run(code);
-                  if (!res?.success) {
-                    const rawErr = res?.error;
-                    const errText = res?.timeout ? tr('Execution timed out') : String(rawErr || tr('Unknown error'));
-                    const pos = parseErrorLineColumn(rawErr);
-                    if (pos && viewRef.current) markErrorAt(viewRef.current, pos.line, pos.column, errText);
-                  }
-                }}
-              >
-                {tr('Run')}
+          RightExtra ? (
+            <RightExtra viewRef={viewRef} />
+          ) : (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Button size="small" onClick={() => setSnippetOpen(true)}>
+                {tr('Snippets')}
               </Button>
-            </>
-            {RightExtra && <RightExtra viewRef={viewRef} />}
-          </div>
+              <>
+                <Button
+                  size="small"
+                  loading={running}
+                  onClick={async () => {
+                    const code = viewRef.current?.state.doc.toString() || '';
+                    clearDiagnostics(viewRef.current);
+                    const res = await run(code);
+                    if (!res?.success) {
+                      const rawErr = res?.error;
+                      const errText = res?.timeout ? tr('Execution timed out') : String(rawErr || tr('Unknown error'));
+                      const pos = parseErrorLineColumn(rawErr);
+                      if (pos && viewRef.current) markErrorAt(viewRef.current, pos.line, pos.column, errText);
+                    }
+                  }}
+                >
+                  {tr('Run')}
+                </Button>
+              </>
+            </div>
+          )
         }
       />
       <EditorCore
