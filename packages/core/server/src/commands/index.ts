@@ -23,7 +23,6 @@ import start from './start';
 import stop from './stop';
 import upgrade from './upgrade';
 import consoleCommand from './console';
-import rotation from './key-rotation';
 
 export function registerCli(app: Application) {
   consoleCommand(app);
@@ -40,7 +39,6 @@ export function registerCli(app: Application) {
   destroy(app);
   start(app);
   refresh(app);
-  rotation(app);
 
   // development only with @nocobase/cli
   app.command('build').argument('[packages...]');
