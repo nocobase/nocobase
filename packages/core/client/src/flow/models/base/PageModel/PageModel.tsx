@@ -79,7 +79,12 @@ export class PageModel extends FlowModel<PageModelStructure> {
           <Droppable model={model}>
             <FlowModelRenderer
               model={model}
-              showFlowSettings={{ showBackground: true, showBorder: false }}
+              showFlowSettings={{
+                showBackground: true,
+                showBorder: false,
+                toolbarPosition: 'above',
+                style: { transform: 'translateY(8px)' },
+              }}
               extraToolbarItems={[
                 {
                   key: 'drag-handler',

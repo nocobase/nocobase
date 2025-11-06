@@ -53,7 +53,7 @@ showFlowSettings={{
   showBorder: true,        // Show border
   showDragHandle: true,    // Show drag handle
   style: {},              // Custom toolbar style
-  toolbarPosition: 'inside' // Toolbar position: 'inside' | 'above'
+  toolbarPosition: 'inside' // Toolbar position: 'inside' | 'above' | 'below'
 }}
 ```
 
