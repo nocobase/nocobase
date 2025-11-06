@@ -115,7 +115,7 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
         }}
       >
         {/* 参考 1.0：小号按钮 + 非 hover 去掉右/上边框，背景透明，贴合右上角 */}
-        <FlowContextSelector metaTree={metaTree} onChange={(val) => handleVariableSelected(val)} onlyLeafSelectable>
+        <FlowContextSelector metaTree={metaTree} onChange={(val) => handleVariableSelected(val)}>
           <Button
             type="default"
             className={css`
