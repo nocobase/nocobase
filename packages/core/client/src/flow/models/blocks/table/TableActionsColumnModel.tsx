@@ -152,8 +152,7 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
           transition: overflow 0.3s ease 0.8s; /* 加入延迟 */
 
           &:hover {
-            overflow: visible; /* 鼠标悬停时，内容可见 */
-            background: #fafafa;
+            overflow: ${this.flowEngine.flowSettings?.enabled ? 'visible' : 'hidden'}; /* 鼠标悬停时，内容可见 */
           }
         `}
       >
