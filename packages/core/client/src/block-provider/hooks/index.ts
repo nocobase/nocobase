@@ -1497,6 +1497,7 @@ export const useDetailsPaginationProps = () => {
   const ctx = useDetailsBlockContext();
   const count = ctx.service?.data?.meta?.count || 0;
   const current = ctx.service?.data?.meta?.page;
+  const { hasNext } = ctx.service?.data?.meta || {};
   if (!count && current) {
     return {
       simple: true,
@@ -1514,7 +1515,7 @@ export const useDetailsPaginationProps = () => {
       },
       showTotal: false,
       showTitle: false,
-      total: ctx.service?.data?.data?.length ? 1 * current + 1 : 1 * current,
+      total: ctx.service?.data?.data?.length < 1 || !hasNext ? 1 * current : 1 * current + 1,
       className: css`
         .ant-pagination-simple-pager {
           display: none !important;
