@@ -15,7 +15,6 @@ import React from 'react';
 export class MarkdownBlockModel extends BlockModel {
   render() {
     const { content } = this.props;
-    console.log(content);
     return (
       <Card
         className={css`
@@ -45,10 +44,14 @@ MarkdownBlockModel.registerFlow({
         const descriptionContent = (
           <>
             <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
-              {t('Syntax references')}:
+              {t('References')}:
             </span>
-            <a href={`https://shopify.github.io/liquid/basics/introduction/`} target="_blank" rel="noreferrer">
-              Liquid
+            <a
+              href={`https://v2.docs.nocobase.com/cn/interface-builder/blocks/other-blocks/markdown`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Markdown
             </a>
           </>
         );
@@ -69,7 +72,7 @@ MarkdownBlockModel.registerFlow({
       },
       useRawParams: true,
       defaultParams: {
-        content: "{{ 'This is a demo text, **supports Markdown syntax**.' | t }}",
+        content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
       },
       async handler(ctx, params) {
         const content = params.content;

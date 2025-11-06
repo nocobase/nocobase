@@ -80,7 +80,7 @@ const Edit = (props) => {
       lang,
       cache: { enable: false },
       undoDelay: 0,
-      preview: { math: { engine: 'KaTeX' } },
+      mode: 'sv', // 禁用预览
       toolbar: toolbarConfig,
       fullscreen: { index: 1200 },
       cdn,
@@ -282,17 +282,13 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
   const [innerValue, setInnerValue] = useState<string>(value || '');
   const ref = useRef<TextAreaRef>(null);
   const isConfigMode = !!flowCtx.model.flowEngine?.flowSettings?.enabled;
-  // 外部 value 变化时同步内部显示
-  useEffect(() => {
-    setInnerValue(value || '');
-  }, [value]);
 
   const handleTextChange = useCallback(
     (e) => {
       const val = e ?? '';
       const result = val.replace(/^\s+/g, '');
-      setInnerValue(result);
       onChange?.(result);
+      setInnerValue(result);
     },
     [onChange],
   );
@@ -332,7 +328,6 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
 
   // 使用函数形式提供变量树，保证与运行时上下文一致
   const metaTree = useMemo(() => () => flowCtx.getPropertyMetaTree?.(), [flowCtx]);
-
   return (
     <div style={{ position: 'relative', width: '100%', ...style }}>
       <Edit
@@ -353,7 +348,11 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
           }}
         >
           {/* 参考 1.0：小号按钮 + 非 hover 去掉右/上边框，背景透明，贴合右上角 */}
-          <FlowContextSelector metaTree={metaTree} onChange={(val) => handleVariableSelected(val)} onlyLeafSelectable>
+          <FlowContextSelector
+            metaTree={metaTree}
+            onChange={(val) => handleVariableSelected(val)}
+            onlyLeafSelectable={false}
+          >
             <Button
               type="default"
               className={css`
