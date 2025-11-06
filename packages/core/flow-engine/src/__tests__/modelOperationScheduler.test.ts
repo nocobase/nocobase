@@ -234,6 +234,21 @@ describe('ModelOperationScheduler', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
+  it('should remove scheduled item after execution (cancel returns false)', async () => {
+    const engine = newEngine();
+    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-auto-remove-1' });
+    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-auto-remove-1' });
+
+    const fn = vi.fn();
+    const cancel = engine.scheduleModelOperation(from, to.uid, fn, { when: 'event:beforeRender:end' });
+
+    await engine.executor.dispatchEvent(to, 'beforeRender');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(fn).toHaveBeenCalledTimes(1);
+    // 执行完成后应自动移除，再次取消应返回 false
+    expect(cancel()).toBe(false);
+  });
+
   it('should still execute once even if source model destroyed later', async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-4' });
