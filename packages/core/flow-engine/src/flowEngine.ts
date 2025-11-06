@@ -17,6 +17,9 @@ import { FlowSettings } from './flowSettings';
 import { ErrorFlowModel, FlowModel } from './models';
 import { ReactView } from './ReactView';
 import { APIResource, FlowResource, MultiRecordResource, SingleRecordResource, SQLResource } from './resources';
+import { Emitter } from './emitter';
+import ModelOperationScheduler from './scheduler/ModelOperationScheduler';
+import type { ScheduleOptions, ScheduledCancel } from './scheduler/ModelOperationScheduler';
 import type {
   ActionDefinition,
   ApplyFlowCacheEntry,
@@ -114,6 +117,15 @@ export class FlowEngine {
 
   private _resources = new Map<string, typeof FlowResource>();
 
+  /**
+   * 引擎事件总线（目前用于模型生命周期等事件）。
+   * ViewScopedFlowEngine 持有自己的实例，实现作用域隔离。
+   */
+  public emitter: Emitter = new Emitter();
+
+  /** 调度器：仅在 View 作用域引擎本地启用；根/Block 作用域默认不持有 */
+  private _modelOperationScheduler?: ModelOperationScheduler;
+
   logger: pino.Logger;
 
   /**
@@ -163,6 +175,35 @@ export class FlowEngine {
       },
     });
     this.executor = new FlowExecutor(this);
+  }
+
+  /** 获取/创建当前引擎的调度器（仅在本地作用域） */
+  public getScheduler(): ModelOperationScheduler {
+    if (!this._modelOperationScheduler) {
+      this._modelOperationScheduler = new ModelOperationScheduler(this);
+    }
+    return this._modelOperationScheduler;
+  }
+
+  /** 释放并清理当前引擎本地调度器（若存在） */
+  public disposeScheduler(): void {
+    if (this._modelOperationScheduler) {
+      try {
+        this._modelOperationScheduler.dispose();
+      } finally {
+        this._modelOperationScheduler = undefined;
+      }
+    }
+  }
+
+  /** 在目标模型生命周期达成时执行操作（仅在 View 引擎本地存储计划） */
+  public scheduleModelOperation(
+    fromModelOrUid: FlowModel | string,
+    toUid: string,
+    fn: (model: FlowModel) => Promise<void> | void,
+    options?: ScheduleOptions,
+  ): ScheduledCancel {
+    return this.getScheduler().schedule(fromModelOrUid, toUid, fn, options);
   }
 
   /** 上一个引擎（根引擎为 undefined） */
@@ -447,6 +488,12 @@ export class FlowEngine {
 
     modelInstance.onInit(options);
 
+    // 发射 created 生命周期事件（严格模式：不吞错）
+    void this.emitter.emitAsync('model:created', {
+      uid: modelInstance.uid,
+      model: modelInstance,
+    });
+
     // 在模型实例化阶段应用 flow 级 defaultParams（仅填充缺失的 stepParams，不覆盖）
     // 不阻塞创建流程：允许 defaultParams 为异步函数
     this._applyFlowDefinitionDefaultParams(modelInstance as FlowModel).catch((err) => {
@@ -565,6 +612,12 @@ export class FlowEngine {
       }
     }
     this._modelInstances.delete(uid);
+
+    // 发射 destroyed 生命周期事件（在移除后，但携带实例便于调度器传递；严格模式：不吞错）
+    void this.emitter.emitAsync('model:destroyed', {
+      uid,
+      model: modelInstance,
+    });
     return true;
   }
 

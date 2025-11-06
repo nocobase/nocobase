@@ -65,6 +65,9 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
       get: () => record,
       cache: false,
     });
+    grid.context.defineProperty('fieldKey', {
+      get: () => index,
+    });
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     return (
       <div key={this.context.index} style={{ width: '100%' }}>

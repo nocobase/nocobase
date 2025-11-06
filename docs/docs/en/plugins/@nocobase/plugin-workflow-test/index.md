@@ -1,5 +1,5 @@
 ---
-displayName: "Workflow: Test Kit"
+displayName: "Workflow: test kit"
 packageName: '@nocobase/plugin-workflow-test'
 description: |
   
@@ -8,6 +8,4 @@ builtIn: true
 defaultEnabled: false
 ---
 
-# Workflow: Test Kit
-
----
+# Workflow: test kit

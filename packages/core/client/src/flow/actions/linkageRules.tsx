@@ -1212,7 +1212,8 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     .forEach((rule) => {
       const { condition: conditions, actions } = rule;
 
-      if (evaluateConditions(conditions, evaluator)) {
+      const matched = evaluateConditions(conditions, evaluator);
+      if (matched) {
         actions.forEach((action) => {
           const setProps = (
             model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean },
@@ -1251,54 +1252,64 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       }
     });
 
-  // 2. 最后才实际更改相关 model 的状态
-  allModels.forEach(
-    (
-      model: FlowModel & {
-        __originalProps?: any;
-        __props?: any;
-        __shouldReset?: boolean;
-        isFork?: boolean;
-        forkId?: number;
-      },
-    ) => {
-      const newProps = {
-        ...model.__originalProps,
-        ...model.__props,
-      };
+  // 2. 合并去重（按 uid）后再实际更改相关 model 的状态，避免重复项把“已设置的临时属性”覆盖掉
+  const mergedByUid = new Map<
+    string,
+    FlowModel & { __originalProps?: any; __props?: any; isFork?: boolean; forkId?: number }
+  >();
+  const mergedPropsByUid = new Map<string, any>();
 
-      model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
-      model.hidden = !!newProps.hiddenModel;
-
-      if (newProps.required === true) {
-        const rules = (model.props.rules || []).filter((rule) => !rule.required);
-        rules.push({
-          required: true,
-          message: ctx.t('The field value is required'),
-        });
-        model.setProps('rules', rules);
-      } else if (newProps.required === false) {
-        const rules = (model.props.rules || []).filter((rule) => !rule.required);
-        model.setProps('rules', rules);
+  allModels.forEach((m: any) => {
+    const uid = m?.uid || String(m);
+    const curProps = m.__props || {};
+    if (!mergedByUid.has(uid)) {
+      mergedByUid.set(uid, m);
+      mergedPropsByUid.set(uid, { ...curProps });
+    } else {
+      // 合并属性：后写覆盖先写；优先选择 fork 模型作为应用目标
+      mergedPropsByUid.set(uid, { ...mergedPropsByUid.get(uid), ...curProps });
+      const exist = mergedByUid.get(uid) as any;
+      if (m.isFork && !exist.isFork) {
+        mergedByUid.set(uid, m);
       }
+    }
+  });
 
-      if (newProps.hiddenText) {
-        model.setProps('title', '');
+  mergedByUid.forEach((model: any, uid) => {
+    const patchProps = mergedPropsByUid.get(uid) || {};
+    const newProps = { ...model.__originalProps, ...patchProps };
+
+    model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
+    model.hidden = !!newProps.hiddenModel;
+
+    if (newProps.required === true) {
+      const rules = (model.props.rules || []).filter((rule) => !rule.required);
+      rules.push({
+        required: true,
+        message: ctx.t('The field value is required'),
+      });
+      model.setProps('rules', rules);
+    } else if (newProps.required === false) {
+      const rules = (model.props.rules || []).filter((rule) => !rule.required);
+      model.setProps('rules', rules);
+    }
+
+    if (newProps.hiddenText) {
+      model.setProps('title', '');
+    }
+
+    // 目前只有表单的“字段赋值”有 value 属性
+    if ('value' in newProps && model.context.form) {
+      const path = model.isFork ? model.context.fieldPathArray : model.props.name;
+      if (!_.isEqual(model.context.form.getFieldValue(path), newProps.value)) {
+        model.context.form.setFieldValue(path, newProps.value);
+        model.context.blockModel?.dispatchEvent('formValuesChange', {});
+        model.context.blockModel?.emitter.emit('formValuesChange', {});
       }
+    }
 
-      // 目前只有表单的“字段赋值”有 value 属性
-      if ('value' in newProps && model.context.form) {
-        const path = model.isFork ? model.context.fieldPathArray : model.props.name;
-        if (!_.isEqual(model.context.form.getFieldValue(path), newProps.value)) {
-          model.context.form.setFieldValue(path, newProps.value);
-          model.context.blockModel?.dispatchEvent('formValuesChange', {});
-          model.context.blockModel?.emitter.emit('formValuesChange', {});
-        }
-      }
-
-      model.__props = null;
-    },
-  );
+    model.__props = null;
+  });
 };
 
 export const blockLinkageRules = defineAction({

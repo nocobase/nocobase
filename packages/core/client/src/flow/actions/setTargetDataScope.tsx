@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionScene, defineAction, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
+import { ActionScene, defineAction, FlowModel, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
 import { isEmptyFilter, transformFilter, tval } from '@nocobase/utils/client';
 import { pruneFilter } from '@nocobase/flow-engine';
 import _ from 'lodash';
@@ -60,25 +60,21 @@ export const setTargetDataScope = defineAction({
     if (!targetBlockUid) {
       return;
     }
+    const model: FlowModel = ctx.model;
+    model.scheduleModelOperation(targetBlockUid, (targetModel) => {
+      const resource = targetModel['resource'] as MultiRecordResource;
+      if (!resource) {
+        return;
+      }
 
-    const targetModel = ctx.engine.getModel(targetBlockUid, true);
-    if (!targetModel) {
-      return;
-    }
+      const filter = pruneFilter(transformFilter(params.filter));
 
-    // @ts-ignore
-    const resource = targetModel.resource as MultiRecordResource;
-    if (!resource) {
-      return;
-    }
-
-    const filter = pruneFilter(transformFilter(params.filter));
-
-    if (isEmptyFilter(filter)) {
-      resource.removeFilterGroup(`setTargetDataScope_${ctx.model.uid}`);
-    } else {
-      resource.addFilterGroup(`setTargetDataScope_${ctx.model.uid}`, filter);
-    }
+      if (isEmptyFilter(filter)) {
+        resource.removeFilterGroup(`setTargetDataScope_${ctx.model.uid}`);
+      } else {
+        resource.addFilterGroup(`setTargetDataScope_${ctx.model.uid}`, filter);
+      }
+    });
   },
 });
 
