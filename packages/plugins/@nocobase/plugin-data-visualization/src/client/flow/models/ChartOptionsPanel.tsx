@@ -17,7 +17,7 @@ import { ChartOptionsBuilder } from './ChartOptionsBuilder';
 import { configStore } from './config-store';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 
-const customInitialValue = `return {
+export const chartOptionDefaultValue = `return {
   dataset: { source: ctx.data.objects || [] },
   xAxis: { type: 'category' },
   yAxis: {},
@@ -48,7 +48,7 @@ export const ChartOptionsPanel: React.FC = observer(() => {
   // 当 raw 尚未初始化时，设置默认值（等效于原先 Field 的 initialValue 行为）
   React.useEffect(() => {
     if (mode === 'custom' && !rawValue) {
-      form?.setValuesIn?.('chart.option.raw', customInitialValue);
+      form?.setValuesIn?.('chart.option.raw', chartOptionDefaultValue);
     }
   }, [mode, rawValue, form]);
 
@@ -131,7 +131,7 @@ export const ChartOptionsPanel: React.FC = observer(() => {
         <ChartOptionsBuilder columns={columns} initialValues={builderValue} onChange={handleBuilderChange} />
       ) : (
         <div>
-          <ChartOptionsEditor value={rawValue ?? customInitialValue} onChange={handleRawChange} />
+          <ChartOptionsEditor value={rawValue ?? chartOptionDefaultValue} onChange={handleRawChange} />
         </div>
       )}
     </ObjectField>
