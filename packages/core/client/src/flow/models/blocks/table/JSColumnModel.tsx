@@ -95,7 +95,6 @@ export class JSColumnModel extends TableCustomColumnModel {
 
     return {
       ...this.props,
-      width: 100,
       title: this.props.tooltip ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           {titleContent}
@@ -150,7 +149,13 @@ export class JSColumnModel extends TableCustomColumnModel {
           }
           // eslint-disable-next-line react-hooks/exhaustive-deps
         }, [ref?.current]);
-        return <span ref={ref} style={{ display: 'inline-block', maxWidth: '100%' }} />;
+        return (
+          <div
+            style={{ width: this.props.width - 8, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          >
+            <span ref={ref} style={{ maxWidth: '100%' }} />
+          </div>
+        );
       };
       StableComponent.displayName = 'JSColumnModelStableRenderer';
       this._RenderComponent = StableComponent;
