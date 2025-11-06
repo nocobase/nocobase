@@ -53,7 +53,7 @@ showFlowSettings={{
   showBorder: true,        // 显示边框
   showDragHandle: true,    // 显示拖拽手柄
   style: {},              // 自定义工具栏样式
-  toolbarPosition: 'inside' // 工具栏位置：'inside' | 'above'
+  toolbarPosition: 'inside' // 工具栏位置：'inside' | 'above' | 'below'
 }}
 ```
 
