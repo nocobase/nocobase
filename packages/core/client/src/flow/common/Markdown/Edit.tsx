@@ -302,6 +302,27 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
         return;
       }
 
+      // 🔹 获取选区（光标位置）
+      const position = editor.getCursorPosition();
+      if (position) {
+        const position = editor.getCursorPosition();
+        const top = position.top;
+
+        const content = editor.getValue();
+        const lines = content.split('\n');
+
+        const editorEl = document.querySelector('.vditor-reset');
+        const style = window.getComputedStyle(editorEl);
+        const lineHeight = parseFloat(style.lineHeight) || 20;
+        const cursorLineIndex = Math.floor(top / lineHeight);
+        const currentLine = lines[cursorLineIndex] ?? '';
+        // 🔹 判断当前行是否包含 {% 或 %}
+        if (currentLine.includes('{%') || currentLine.includes('%}')) {
+          // 移除 {{ 和 }}，只保留 xxx
+          toInsert = toInsert.replace(/^{{\s*(.*?)\s*}}$/, '$1');
+        }
+      }
+
       // 🔹 在当前光标位置插入文本
       editor.insertValue(toInsert);
 

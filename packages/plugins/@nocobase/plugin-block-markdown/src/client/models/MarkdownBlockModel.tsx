@@ -9,7 +9,7 @@
 
 import { BlockModel, css } from '@nocobase/client';
 import { escapeT } from '@nocobase/flow-engine';
-import { Card } from 'antd';
+import { Card, Space } from 'antd';
 import React from 'react';
 
 export class MarkdownBlockModel extends BlockModel {
@@ -42,7 +42,7 @@ MarkdownBlockModel.registerFlow({
       uiSchema(ctx) {
         const t = ctx.t;
         const descriptionContent = (
-          <>
+          <Space>
             <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
               {t('References')}:
             </span>
@@ -53,7 +53,7 @@ MarkdownBlockModel.registerFlow({
             >
               Markdown
             </a>
-          </>
+          </Space>
         );
 
         return {
@@ -77,7 +77,7 @@ MarkdownBlockModel.registerFlow({
       async handler(ctx, params) {
         const content = params.content;
         try {
-          const result = await ctx.liquid.renderWithFullContext(content, ctx);
+          const result = await ctx.liquid.renderWithFullContext(ctx.t(content), ctx);
           // 解析 Markdown
           const mdContent = ctx.markdown.render(ctx.t(result), { textOnly: false });
           ctx.model.setProps({
