@@ -204,6 +204,12 @@ export class FlowExecutor {
     const logger = model.context.logger;
 
     try {
+      await this.engine.emitter.emitAsync(`model:event:${eventName}:start`, {
+        uid: model.uid,
+        model,
+        runId,
+        inputArgs,
+      });
       await model.onDispatchEventStart?.(eventName, options, inputArgs);
     } catch (err) {
       if (isBeforeRender && err instanceof FlowExitException) {
@@ -295,6 +301,13 @@ export class FlowExecutor {
       } catch (hookErr) {
         logger.error({ err: hookErr }, `BaseModel.dispatchEvent: End hook error for event '${eventName}'`);
       }
+      await this.engine.emitter.emitAsync(`model:event:${eventName}:end`, {
+        uid: model.uid,
+        model,
+        runId,
+        inputArgs,
+        result,
+      });
       return result;
     } catch (error) {
       // 进入错误钩子并记录
@@ -307,6 +320,13 @@ export class FlowExecutor {
         { err: error },
         `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`,
       );
+      await this.engine.emitter.emitAsync(`model:event:${eventName}:error`, {
+        uid: model.uid,
+        model,
+        runId,
+        inputArgs,
+        error,
+      });
       if (throwOnError) throw error;
     }
   }
