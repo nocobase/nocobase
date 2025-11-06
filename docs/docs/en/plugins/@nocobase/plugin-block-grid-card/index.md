@@ -1,5 +1,5 @@
 ---
-displayName: "Block: Grid Card"
+displayName: "Block: GridCard"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |
   Display data in a grid list with pagination support.
@@ -8,4 +8,4 @@ builtIn: true
 defaultEnabled: false
 ---
 
-# Block: Grid Card
+# Block: GridCard

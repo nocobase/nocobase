@@ -5,7 +5,7 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
-  Authenticate with a DingTalk account.
+  DingTalk authentication.
 isFree: false
 builtIn: false
 defaultEnabled: false

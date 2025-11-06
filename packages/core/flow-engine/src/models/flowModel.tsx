@@ -52,6 +52,7 @@ import { FlowDefinition } from '../FlowDefinition';
 import { FlowSettingsOpenOptions } from '../flowSettings';
 import type { EventDefinition, FlowEvent, DispatchEventOptions } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
+import type { ScheduleOptions } from '../scheduler/ModelOperationScheduler';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
@@ -255,6 +256,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   get parentId() {
     return this._options.parentId;
+  }
+
+  public scheduleModelOperation(
+    toUid: string,
+    fn: (model: FlowModel) => Promise<void> | void,
+    options?: ScheduleOptions,
+  ) {
+    return this.flowEngine?.scheduleModelOperation(this, toUid, fn, options);
   }
 
   static get meta() {
@@ -891,10 +900,20 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
             if (typeof renderTarget.onMount === 'function') {
               renderTarget.onMount();
             }
+            // 发射 mounted 生命周期事件（严格模式：不吞错，若有错误将以未处理拒绝暴露）
+            void renderTarget.flowEngine?.emitter?.emitAsync('model:mounted', {
+              uid: renderTarget.uid,
+              model: renderTarget,
+            });
             return () => {
               if (typeof renderTarget.onUnmount === 'function') {
                 renderTarget.onUnmount();
               }
+              // 发射 unmounted 生命周期事件（严格模式：不吞错）
+              void renderTarget.flowEngine?.emitter?.emitAsync('model:unmounted', {
+                uid: renderTarget.uid,
+                model: renderTarget,
+              });
             };
           }, [renderTarget]);
 
