@@ -48,6 +48,16 @@ export const editMarkdownFlow = defineFlow<FlowModel>({
           },
         };
       },
+      uiMode: {
+        type: 'embed',
+        props: {
+          styles: {
+            body: {
+              transform: 'translateX(0)',
+            },
+          },
+        },
+      },
       useRawParams: true,
       defaultParams: {
         content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
