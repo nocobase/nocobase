@@ -30,6 +30,7 @@ describe('indexes', () => {
       name: 'users2',
       createdBy: true,
       updatedBy: true,
+      autoGenId: false,
       indexes: [
         {
           fields: ['testId'],
@@ -44,6 +45,6 @@ describe('indexes', () => {
     });
     await db.sync();
     const indexes = (await db.sequelize.getQueryInterface().showIndex('users2')) as any[];
-    expect(indexes.length).toBe(4);
+    expect(indexes.length).toBe(3);
   });
 });

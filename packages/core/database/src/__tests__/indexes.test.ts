@@ -24,6 +24,7 @@ describe('database', () => {
   test('indexes', async () => {
     const collection = db.collection({
       name: 'users1',
+      autoGenId: false,
       indexes: [
         {
           fields: ['userId'],
@@ -45,7 +46,7 @@ describe('database', () => {
     });
     await db.sync();
     const indexes = (await db.sequelize.getQueryInterface().showIndex('users1')) as any[];
-    expect(indexes.length).toBe(3);
+    expect(indexes.length).toBe(2);
   });
 
   test('indexes', async () => {
@@ -61,6 +62,7 @@ describe('database', () => {
     });
     db.collection({
       name: 'users2',
+      autoGenId: false,
       indexes: [
         {
           fields: ['userId'],
@@ -89,6 +91,6 @@ describe('database', () => {
     });
     await db.sync();
     const indexes = (await db.sequelize.getQueryInterface().showIndex('users2')) as any[];
-    expect(indexes.length).toBe(3);
+    expect(indexes.length).toBe(2);
   });
 });
