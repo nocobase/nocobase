@@ -111,11 +111,12 @@ export class TaskType implements ITask {
       const result = await this.execute();
 
       this.logger?.info(`Task ${this.record.id} completed successfully with result: ${JSON.stringify(result)}`);
-      await this.record.update({
+      this.record.set({
         status: TASK_STATUS.SUCCEEDED,
         doneAt: new Date(),
         result,
       });
+      await this.record.save();
     } catch (error) {
       if (error instanceof CancelError) {
         // this.cancel();
