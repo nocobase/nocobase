@@ -125,7 +125,7 @@ export class TaskType implements ITask {
         await this.record.update({
           status: TASK_STATUS.FAILED,
           doneAt: new Date(),
-          error: error.toString(),
+          result: { ...error, message: error.message },
         });
 
         this.logger?.error(`Task ${this.record.id} failed with error: ${error.message}`);
