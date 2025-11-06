@@ -36,6 +36,7 @@ interface CodeEditorProps {
   name?: string;
   language?: string;
   scene?: string | string[];
+  RightExtra?: React.FC<any>;
 }
 
 export * from './types';
@@ -56,7 +57,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   name,
   language,
   scene,
+  RightExtra,
 }) => {
+  console.log(RightExtra);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const runtimeCtx = useFlowContext<any>();
@@ -185,6 +188,7 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
                 {tr('Run')}
               </Button>
             </>
+            {RightExtra && <RightExtra viewRef={viewRef} />}
           </div>
         }
       />
