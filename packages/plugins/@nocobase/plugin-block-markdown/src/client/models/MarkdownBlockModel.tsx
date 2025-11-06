@@ -9,23 +9,13 @@
 
 import { BlockModel, css } from '@nocobase/client';
 import { escapeT } from '@nocobase/flow-engine';
-import { Card, Space } from 'antd';
+import { Space } from 'antd';
 import React from 'react';
 
 export class MarkdownBlockModel extends BlockModel {
-  render() {
+  renderComponent() {
     const { content } = this.props;
-    return (
-      <Card
-        className={css`
-          .ant-card-body {
-            padding: 0px 10px;
-          }
-        `}
-      >
-        {content}
-      </Card>
-    );
+    return content;
   }
 }
 
