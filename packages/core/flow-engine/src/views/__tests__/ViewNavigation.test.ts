@@ -173,6 +173,16 @@ describe('generatePathnameFromViewParams', () => {
     );
   });
 
+  it('should encode object filterByTk as encoded key-value string', () => {
+    const path = generatePathnameFromViewParams([{ viewUid: 'xxx', filterByTk: { id: 1, tenant: 'ac' } }]);
+    expect(path).toBe('/admin/xxx/filterbytk/' + encodeURIComponent('id=1&tenant=ac'));
+  });
+
+  it('should omit filterByTk segment for empty string or when absent', () => {
+    expect(generatePathnameFromViewParams([{ viewUid: 'xxx' }])).toBe('/admin/xxx');
+    expect(generatePathnameFromViewParams([{ viewUid: 'xxx', filterByTk: '' }])).toBe('/admin/xxx');
+  });
+
   it('should match parsePathnameToViewParams test cases', () => {
     // Test cases from parsePathnameToViewParams.test.ts
     expect(generatePathnameFromViewParams([{ viewUid: 'xxx' }])).toBe('/admin/xxx');
