@@ -30,7 +30,7 @@ const QueryMode: React.FC = connect(({ value = 'builder', onChange, onClick }) =
       }}
     >
       <Radio.Button value="builder" onClick={() => onClick?.()}>
-        <BuildOutlined /> {t('Query builder')}
+        <BuildOutlined /> {t('Builder')}
       </Radio.Button>
       <Radio.Button value="sql" onClick={() => onClick?.()}>
         <ConsoleSqlOutlined /> {t('SQL')}
@@ -65,6 +65,7 @@ export const QueryPanel: React.FC = observer(() => {
   // };
 
   const handleRunQuery = async () => {
+    console.log('---handleRunQuery', form.values?.query);
     try {
       setRunning(true);
       // 触发下层 QueryBuilder 的校验
@@ -120,9 +121,14 @@ export const QueryPanel: React.FC = observer(() => {
               <RightSquareOutlined />
               {t('Run query')}
             </Button>
-            <Button type="link" aria-expanded={showResult} onClick={() => setShowResult((v) => !v)}>
+            <Button
+              type="link"
+              aria-expanded={showResult}
+              onClick={() => setShowResult((v) => !v)}
+              style={{ padding: 0 }}
+            >
               {showResult ? t('Hide data') : t('View data')}
-              {showResult ? <DownOutlined /> : <RightOutlined />}
+              {showResult ? <DownOutlined style={{ fontSize: 12 }} /> : <RightOutlined style={{ fontSize: 12 }} />}
             </Button>
           </Space>
         </div>

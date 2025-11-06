@@ -17,7 +17,7 @@ import { ChartOptionsBuilder } from './ChartOptionsBuilder';
 import { configStore } from './config-store';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 
-const customInitialValue = `return {
+export const customInitialValue = `return {
   dataset: { source: ctx.data.objects || [] },
   xAxis: { type: 'category' },
   yAxis: {},
