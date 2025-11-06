@@ -206,12 +206,6 @@ export class FlowEngine {
     return this.getScheduler().schedule(fromModelOrUid, toUid, fn, options);
   }
 
-  /** 取消计划 */
-  public cancelScheduledOperations(filter: { fromUid?: string; toUid?: string }): void {
-    if (!this._modelOperationScheduler) return;
-    this._modelOperationScheduler.cancel(filter);
-  }
-
   /** 上一个引擎（根引擎为 undefined） */
   get previousEngine(): FlowEngine | undefined {
     return this._previousEngine;

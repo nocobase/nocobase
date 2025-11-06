@@ -320,7 +320,7 @@ export class FlowExecutor {
         { err: error },
         `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`,
       );
-      await this.engine.emitter.emitAsync(`model:event:${eventName}:end`, {
+      await this.engine.emitter.emitAsync(`model:event:${eventName}:error`, {
         uid: model.uid,
         model,
         runId,

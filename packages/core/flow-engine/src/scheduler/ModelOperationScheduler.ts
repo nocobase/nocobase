@@ -17,7 +17,8 @@ type LifecycleType =
   | 'unmounted'
   | 'destroyed'
   | `event:${string}:start`
-  | `event:${string}:end`;
+  | `event:${string}:end`
+  | `event:${string}:error`;
 
 export type ScheduleWhen = LifecycleType | ((e: LifecycleEvent) => boolean);
 
@@ -134,7 +135,7 @@ export class ModelOperationScheduler {
     }
   }
 
-  /** 引擎关闭时释放（当前场景由 GC 处理，无需显式暴露） */
+  /** 引擎关闭时释放 */
   dispose() {
     try {
       for (const unbind of this.unbindHandlers) {
@@ -156,8 +157,6 @@ export class ModelOperationScheduler {
     this.itemsByTargetUid.clear();
     this.itemIdsByFromUid.clear();
   }
-
-  // ================= 内部实现 =================
 
   private bindEngineLifecycle() {
     const emitter = this.engine.emitter;
@@ -227,17 +226,22 @@ export class ModelOperationScheduler {
     const onEnd = (e: LifecycleEvent) => {
       this.processLifecycleEvent(e.uid, { ...e, type: `event:${name}:end` as const });
     };
+    const onError = (e: LifecycleEvent) => {
+      this.processLifecycleEvent(e.uid, { ...e, type: `event:${name}:error` as const });
+    };
     emitter.on(`model:event:${name}:start`, onStart);
     emitter.on(`model:event:${name}:end`, onEnd);
+    emitter.on(`model:event:${name}:error`, onError);
     this.unbindHandlers.push(() => emitter.off(`model:event:${name}:start`, onStart));
     this.unbindHandlers.push(() => emitter.off(`model:event:${name}:end`, onEnd));
+    this.unbindHandlers.push(() => emitter.off(`model:event:${name}:error`, onError));
   }
 
-  private parseEventWhen(when?: ScheduleWhen): { name: string; phase: 'start' | 'end' } | null {
+  private parseEventWhen(when?: ScheduleWhen): { name: string; phase: 'start' | 'end' | 'error' } | null {
     if (!when || typeof when !== 'string') return null;
-    const m = /^event:([^:]+):(start|end)$/.exec(when);
+    const m = /^event:([^:]+):(start|end|error)$/.exec(when);
     if (!m) return null;
-    return { name: m[1], phase: m[2] as 'start' | 'end' };
+    return { name: m[1], phase: m[2] as 'start' | 'end' | 'error' };
   }
 
   private processLifecycleEvent(targetUid: string, event: LifecycleEvent) {

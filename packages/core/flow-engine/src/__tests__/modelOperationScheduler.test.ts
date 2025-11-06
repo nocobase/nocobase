@@ -87,6 +87,33 @@ describe('ModelOperationScheduler', () => {
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
+  it("should execute on generic event error ('event:foo:error')", async () => {
+    const engine = newEngine();
+    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-evt-error-1' });
+    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-evt-error-1' });
+
+    // 注册一个在 foo 事件下执行并抛错的 flow（顺序执行以抛出到外层）
+    to.flowRegistry.addFlows({
+      failOnFoo: {
+        on: { eventName: 'foo' },
+        steps: {
+          s1: {
+            title: 'throw',
+            handler: () => {
+              throw new Error('boom');
+            },
+          },
+        },
+      },
+    });
+
+    const fn = vi.fn();
+    engine.scheduleModelOperation(from, to.uid, fn, { when: 'event:foo:error' });
+
+    await engine.executor.dispatchEvent(to, 'foo', {}, { sequential: true });
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
   it('should execute on unmounted when model is unmounted (no immediate)', async () => {
     const engine = newEngine();
     const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-unmount-1' });
@@ -274,40 +301,6 @@ describe('ModelOperationScheduler', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(a).toHaveBeenCalledTimes(1);
     expect(b).toHaveBeenCalledTimes(1);
-  });
-
-  it('cancelScheduledOperations by fromUid/toUid works and prevents execution', async () => {
-    const engine = newEngine();
-    const from1 = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-cancel-1' });
-    const from2 = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-cancel-2' });
-    const to1 = 'to-cancel-1';
-    const to2 = 'to-cancel-2';
-
-    const f1 = vi.fn();
-    const f2 = vi.fn();
-    const f3 = vi.fn();
-    const f4 = vi.fn();
-
-    const c1 = engine.scheduleModelOperation(from1, to1, f1, { when: 'created' });
-    const c2 = engine.scheduleModelOperation(from1, to2, f2, { when: 'created' });
-    const c3 = engine.scheduleModelOperation(from2, to1, f3, { when: 'created' });
-    const c4 = engine.scheduleModelOperation(from2, to2, f4, { when: 'created' });
-
-    // 取消 from1 的全部
-    engine.cancelScheduledOperations({ fromUid: from1.uid });
-    expect(c1()).toBe(false);
-    expect(c2()).toBe(false);
-
-    // 创建目标 to1，仅 h3 应触发；h4 仍待定
-    engine.createModel<FlowModel>({ use: 'FlowModel', uid: to1 });
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(f3).toHaveBeenCalledTimes(1);
-    expect(c3()).toBe(false);
-
-    // 取消剩余 to2
-    engine.cancelScheduledOperations({ toUid: to2 });
-    expect(c4()).toBe(false);
-    expect(f4).not.toHaveBeenCalled();
   });
 
   it('on target destroyed: only destroyed-matching executes; others are cancelled', async () => {

@@ -86,4 +86,27 @@ describe('FlowModel scheduleModelOperation cross-model (target not created yet)'
     await new Promise((resolve) => setTimeout(resolve, 0));
     expect(to.getProps().readyMark).toBe('done');
   });
+
+  it("model.scheduleModelOperation proxies engine and runs on 'event:beforeRender:end'", async () => {
+    const engine = newEngine();
+    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-model-proxy-1' });
+    const to = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-model-proxy-1' });
+
+    const fn = vi.fn();
+    from.scheduleModelOperation(to.uid, fn, { when: 'event:beforeRender:end' });
+    await engine.executor.dispatchEvent(to, 'beforeRender');
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("model.scheduleModelOperation triggers immediately on 'created' when target exists", async () => {
+    const engine = newEngine();
+    const target = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'to-model-proxy-created' });
+    const from = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'from-model-proxy-created' });
+
+    const fn = vi.fn();
+    from.scheduleModelOperation(target.uid, fn, { when: 'created' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
 });

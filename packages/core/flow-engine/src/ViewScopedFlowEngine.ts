@@ -50,7 +50,6 @@ export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
     '_modelOperationScheduler',
     'getScheduler',
     'scheduleModelOperation',
-    'cancelScheduledOperations',
     'disposeScheduler',
     // 栈指针维护方法需要在本地执行，而非代理到父引擎
     'unlinkFromStack',
