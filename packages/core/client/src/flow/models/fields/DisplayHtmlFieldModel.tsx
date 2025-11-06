@@ -35,6 +35,6 @@ DisplayHtmlFieldModel.registerFlow({
   },
 });
 
-DisplayItemModel.bindModelToInterface('DisplayHtmlFieldModel', ['markdown', 'richText'], {
+DisplayItemModel.bindModelToInterface('DisplayHtmlFieldModel', ['richText'], {
   isDefault: true,
 });
