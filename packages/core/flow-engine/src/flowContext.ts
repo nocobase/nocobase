@@ -1422,21 +1422,24 @@ export class FlowModelContext extends BaseFlowModelContext {
           stepParams: {
             popupSettings: {
               openView: {
-                ..._.pick(opts, ['dataSourceKey', 'collectionName', 'associationName']),
+                // 持久化首次传入的关键展示/数据参数，供后续路由与再次打开复用
+                ..._.pick(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
               },
             },
           },
         });
         await model.save();
       }
-      if (model.getStepParams('popupSettings')?.openView?.dataSourceKey) {
-        model.setStepParams('popupSettings', {
-          openView: {
-            ...model.getStepParams('popupSettings')?.openView,
-            ..._.pick(opts, ['dataSourceKey', 'collectionName', 'associationName']),
-          },
-        });
-        await model.save();
+      // 若已存在 openView 配置，则按需合并更新（仅覆盖本次显式传入的字段）
+      if (model.getStepParams('popupSettings')?.openView) {
+        const prevOpenView = model.getStepParams('popupSettings')?.openView || {};
+        const incoming = _.pick(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']);
+        const nextOpenView = { ...prevOpenView, ...incoming };
+        // 仅当有变更时才保存，避免不必要的写入
+        if (!_.isEqual(prevOpenView, nextOpenView)) {
+          model.setStepParams('popupSettings', { openView: nextOpenView });
+          await model.save();
+        }
       }
 
       // 路由层级的 viewUid：优先使用 routeViewUid（仅用于路由展示）；
