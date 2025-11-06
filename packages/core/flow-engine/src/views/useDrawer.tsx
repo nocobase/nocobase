@@ -178,7 +178,7 @@ export function useDrawer() {
             ref={drawerRef}
             {...config}
             footer={currentFooter}
-            header={currentHeader}
+            header={config.header || currentHeader}
             hidden={config.inputArgs?.hidden?.value}
             afterClose={() => {
               closeFunc?.();
