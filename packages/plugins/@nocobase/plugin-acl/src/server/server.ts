@@ -530,8 +530,9 @@ export class PluginACLServer extends Plugin {
           collection = ctx.db.getCollection(resourceName);
         }
 
-        if (collection && collection.hasField('createdById')) {
-          ctx.permission.can.params.fields.push('createdById');
+        const fields = ctx.permission.can.params.fields;
+        if (collection && collection.hasField('createdById') && !fields.includes('createdById')) {
+          fields.push('createdById');
         }
       }
       return next();
