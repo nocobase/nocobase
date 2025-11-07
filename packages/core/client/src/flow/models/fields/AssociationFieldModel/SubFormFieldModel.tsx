@@ -89,7 +89,10 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
         this.context.t('Current object'),
         () => this.context.form.getFieldValue(this.props.name),
       ),
-      resolveOnServer: createAssociationSubpathResolver(() => this.context.collection),
+      resolveOnServer: createAssociationSubpathResolver(
+        () => this.context.collection,
+        () => this.context.form.getFieldValue(this.props.name),
+      ),
       serverOnlyWhenContextParams: true,
     });
   }
@@ -189,7 +192,10 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                   currentFork.context.t('Current object'),
                   () => currentFork.context.form.getFieldValue([name, fieldName]),
                 ),
-                resolveOnServer: createAssociationSubpathResolver(() => currentFork.context.collection),
+                resolveOnServer: createAssociationSubpathResolver(
+                  () => currentFork.context.collection,
+                  () => currentFork.context.form.getFieldValue([name, fieldName]),
+                ),
                 serverOnlyWhenContextParams: true,
               });
 
@@ -250,7 +256,10 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
         this.context.t('Current object'),
         (ctx) => ctx['currentObject'],
       ),
-      resolveOnServer: createAssociationSubpathResolver(() => this.context.collection),
+      resolveOnServer: createAssociationSubpathResolver(
+        () => this.context.collection,
+        () => this.context['currentObject'],
+      ),
       serverOnlyWhenContextParams: true,
     });
   }
