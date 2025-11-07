@@ -7,10 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { dayjs } from '@nocobase/utils/client';
-import { EditableItemModel } from '@nocobase/flow-engine';
-import { DatePicker } from 'antd';
+import { EditableItemModel, useFlowModelContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
+import { MobileDatePicker } from './MobileComponent/MobileDatePicker';
+import { DatePicker } from 'antd';
 
 function parseToDate(value: string | Date | dayjs.Dayjs | undefined, format?: string): Date | undefined {
   if (!value) return undefined;
@@ -47,6 +48,7 @@ function parseInitialValue(value: string | Date | undefined, format?: string): d
 
 export const DateTimeTzPicker = (props) => {
   const { value, format = 'YYYY-MM-DD HH:mm:ss', picker = 'date', showTime, ...rest } = props;
+  const ctx = useFlowModelContext();
   const componentProps = {
     ...rest,
     value: parseInitialValue(value, format),
@@ -58,6 +60,12 @@ export const DateTimeTzPicker = (props) => {
       rest.onChange(result);
     },
   };
+
+  // TODO: 移动端相关的代码需迁移到单独的插件中
+  if (ctx.isMobileLayout) {
+    return <MobileDatePicker {...componentProps} />;
+  }
+
   return <DatePicker {...componentProps} />;
 };
 
