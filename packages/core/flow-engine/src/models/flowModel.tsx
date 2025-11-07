@@ -738,7 +738,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     } & DispatchEventOptions,
   ): Promise<any[]> {
     const isBeforeRender = eventName === 'beforeRender';
-    // 缺省值由模型层提供：beforeRender 默认顺序执行 + 使用缓存；可被 options 覆盖
+    // 缺省值由模型层提供：beforeRender 默认顺序执行 + 使用缓存；其它事件默认顺序执行（不默认使用缓存）
     const defaults = isBeforeRender ? { sequential: true, useCache: true } : { sequential: true };
     const execOptions = {
       sequential: options?.sequential ?? (defaults as any).sequential,

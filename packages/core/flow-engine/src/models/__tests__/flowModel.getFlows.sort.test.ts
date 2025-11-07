@@ -99,4 +99,26 @@ describe('FlowModel.getFlows sorting and getEventFlows(beforeRender) order', () 
     const keys = Array.from(staticFlows.keys());
     expect(keys.indexOf('p')).toBeLessThan(keys.indexOf('c'));
   });
+
+  test('instance flows keep registration order when sort equal', () => {
+    // same sort for all instance flows -> keep registration order
+    model.registerFlow('i1', { title: 'I1', sort: 1, steps: {} } as any);
+    model.registerFlow('i2', { title: 'I2', sort: 1, steps: {} } as any);
+    model.registerFlow('i3', { title: 'I3', sort: 1, steps: {} } as any);
+
+    // add some static flows to ensure grouping doesn't affect instance intra-order
+    (TestFlowModel as any).registerFlow('s1', { title: 'S1', sort: 1, steps: {} });
+    (TestFlowModel as any).registerFlow('s2', { title: 'S2', sort: 2, steps: {} });
+
+    const keys = Array.from(model.getFlows().keys());
+    // Instance group appears first and preserves registration order
+    const posI1 = keys.indexOf('i1');
+    const posI2 = keys.indexOf('i2');
+    const posI3 = keys.indexOf('i3');
+    expect(posI1).toBeLessThan(posI2);
+    expect(posI2).toBeLessThan(posI3);
+
+    // Static group follows
+    expect(keys.slice(posI3 + 1)).toEqual(expect.arrayContaining(['s1', 's2']));
+  });
 });
