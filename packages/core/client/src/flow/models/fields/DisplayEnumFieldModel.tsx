@@ -62,7 +62,7 @@ DisplayEnumFieldModel.define({
 });
 DisplayItemModel.bindModelToInterface(
   'DisplayEnumFieldModel',
-  ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'],
+  ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup', 'collection', 'tableoid'],
   {
     isDefault: true,
   },

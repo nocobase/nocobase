@@ -321,6 +321,23 @@ export class CollectionManager {
     }
     return collection.getField(fieldName);
   }
+
+  getChildrenCollections(name) {
+    const childrens = [];
+    const collections = Array.from(this.collections.values());
+    const getChildrens = (name) => {
+      const inheritCollections = collections.filter((v: any) => {
+        return v.options.inherits?.includes(name);
+      });
+      inheritCollections.forEach((v) => {
+        const collectionKey = v.name;
+        childrens.push(v);
+        return getChildrens(collectionKey);
+      });
+      return childrens;
+    };
+    return getChildrens(name);
+  }
 }
 
 // Collection 负责管理自己的 Field
