@@ -12,7 +12,6 @@ import { observer } from '@formily/reactive-react';
 import { Button, Select, Space, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import React, { FC, ReactNode } from 'react';
-import { AntdIconProps } from '@ant-design/icons/lib/components/AntdIcon';
 
 /**
  * 筛选项组件的属性接口
@@ -73,15 +72,15 @@ interface FilterGroupProps {
  */
 export const FilterGroup: FC<FilterGroupProps> = observer(
   (props) => {
+    const { token } = theme.useToken();
     const {
       value = { logic: '$and', items: [] },
       FilterItem,
       showBorder = false,
       onRemove,
       onChange,
-      closeIcon = <CloseCircleOutlined />,
+      closeIcon = <CloseCircleOutlined style={{ color: token.colorIcon }} />,
     } = props;
-    const { token } = theme.useToken();
     const { t } = useTranslation();
 
     // 确保 value 有正确的默认结构
@@ -151,7 +150,6 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
               position: 'absolute',
               right: 10,
               top: 10,
-              color: token.colorIcon,
               cursor: 'pointer',
             }}
             onClick={onRemove}
@@ -206,7 +204,6 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                           marginLeft: 8,
                           marginRight: 8,
                           flex: '0 0 auto',
-                          color: token.colorIcon,
                           cursor: 'pointer',
                         }}
                         onClick={() => handleRemoveItem(index)}
@@ -231,7 +228,6 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                           marginLeft: 8,
                           marginRight: 8,
                           flex: '0 0 auto',
-                          color: token.colorIcon,
                           cursor: 'pointer',
                         }}
                         onClick={() => handleRemoveItem(index)}
@@ -255,7 +251,6 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                         marginLeft: 8,
                         marginRight: 8,
                         flex: '0 0 auto',
-                        color: token.colorIcon,
                         cursor: 'pointer',
                       }}
                       onClick={() => handleRemoveItem(index)}
