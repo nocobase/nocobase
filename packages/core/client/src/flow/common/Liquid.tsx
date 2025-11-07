@@ -82,14 +82,19 @@ export class LiquidEngine extends Liquid {
       if (typeof template === 'number') {
         template = String(template);
       }
-      // 1️⃣ 分析模板中的变量
+      // 1️⃣ 提取模板变量
       const vars = await this.fullVariables(template);
-      // 2️⃣ 构造 Liquid context
-      const liquidContext = this.transformLiquidContext(vars);
 
-      // 3️⃣ 只解析变量
-      const resolvedCtx = await ctx.resolveJsonTemplate(liquidContext);
-      // 4️⃣ 渲染模板
+      // 2️⃣ 构造 Liquid 上下文（每个变量独立，不合并）
+      const contexts = vars.map((v) => this.transformLiquidContext([v]));
+
+      // 3️⃣ 分别解析变量上下文
+      const resolvedList = await Promise.all(contexts.map((c) => ctx.resolveJsonTemplate(c)));
+
+      // 4️⃣ 合并多个解析结果（深度合并）
+      const resolvedCtx = resolvedList.reduce((acc, cur) => _.merge(acc, cur), {});
+
+      // 5️⃣ 渲染模板
       return await this.render(template, { ctx: resolvedCtx });
     } catch (err) {
       console.error('[Liquid] renderWithFullContext 错误:', err);
