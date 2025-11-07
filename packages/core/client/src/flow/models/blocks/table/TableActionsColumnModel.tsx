@@ -94,6 +94,10 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
   }
 
   getColumnProps() {
+    // 非配置态且列被标记为隐藏时，直接返回 null，从表格列中移除整列
+    if (this.hidden && !this.flowEngine.flowSettings?.enabled) {
+      return null;
+    }
     const titleContent = (
       <Droppable model={this}>
         <FlowsFloatContextMenu
