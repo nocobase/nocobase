@@ -16,7 +16,7 @@
   "Are you sure you want to revert all changes from the template?": "您确定要恢复所有对模板的更改吗？",
   "Are you sure you want to convert this template block to a normal block?": "您确定要将此模板区块转换为普通区块吗？",
   "Templates": "模板",
-  "Block templates": "区块模板",
+  "Block templates (deprecated)": "区块模板（已废弃）",
   "Submit": "提交",
   "Cancel": "取消",
   "Duplicate": "复制",

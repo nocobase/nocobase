@@ -33,6 +33,10 @@ export const createLLMSchema = {
           type: 'object',
           'x-component': 'Settings',
         },
+        testFlight: {
+          type: 'void',
+          'x-component': 'LLMTestFlight',
+        },
         footer: {
           type: 'void',
           'x-component': 'Action.Drawer.Footer',
@@ -125,7 +129,7 @@ export const llmsSchema = {
           'x-component': 'TableV2',
           'x-use-component-props': 'useTableBlockProps',
           'x-component-props': {
-            rowKey: 'id',
+            rowKey: 'name',
             rowSelection: {
               type: 'checkbox',
             },
@@ -206,6 +210,10 @@ export const llmsSchema = {
                             options: {
                               type: 'object',
                               'x-component': 'Settings',
+                            },
+                            testFlight: {
+                              type: 'void',
+                              'x-component': 'LLMTestFlight',
                             },
                             footer: {
                               type: 'void',

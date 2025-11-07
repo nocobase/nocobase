@@ -7,38 +7,38 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import execa from 'execa';
+import { Package } from '@lerna/package';
 import chalk from 'chalk';
+import execa from 'execa';
 import path from 'path';
-import {
-  PACKAGES_PATH,
-  getPluginPackages,
-  CORE_CLIENT,
-  CORE_APP,
-  getCjsPackages,
-  getPresetsPackages,
-  ROOT_PATH,
-  ESM_PACKAGES,
-} from './constant';
-import { buildClient } from './buildClient';
 import { buildCjs } from './buildCjs';
-import { buildPlugin } from './buildPlugin';
+import { buildClient } from './buildClient';
 import { buildDeclaration } from './buildDeclaration';
+import { buildEsm } from './buildEsm';
+import { buildPlugin } from './buildPlugin';
 import {
-  PkgLog,
-  getPkgLog,
-  toUnixPath,
+  CORE_APP,
+  CORE_CLIENT,
+  ESM_PACKAGES,
+  getCjsPackages,
+  getPluginPackages,
+  getPresetsPackages,
+  PACKAGES_PATH,
+  ROOT_PATH,
+} from './constant';
+import { tarPlugin } from './tarPlugin';
+import {
   getPackageJson,
+  getPkgLog,
   getUserConfig,
+  PkgLog,
+  readFromCache,
+  toUnixPath,
   UserConfig,
   writeToCache,
-  readFromCache,
 } from './utils';
-import { getPackages } from './utils/getPackages';
-import { Package } from '@lerna/package';
-import { tarPlugin } from './tarPlugin';
-import { buildEsm } from './buildEsm';
 import { addLicense } from './utils/addlicense';
+import { getPackages } from './utils/getPackages';
 
 const BUILD_ERROR = 'build-error';
 

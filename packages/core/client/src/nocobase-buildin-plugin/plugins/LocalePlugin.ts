@@ -8,14 +8,13 @@
  */
 
 import { setValidateLanguage } from '@formily/validator';
-import { App, ConfigProvider } from 'antd';
+import { App } from 'antd';
 import dayjs from 'dayjs';
 import { loadConstrueLocale } from '../../antd-config-provider/loadConstrueLocale';
 import { Plugin } from '../../application/Plugin';
 import { dayjsLocale } from '../../locale';
 
 export class LocalePlugin extends Plugin {
-  locales: any = {};
   async afterAdd() {
     const api = this.app.apiClient;
     const locale = api.auth.locale;
@@ -30,8 +29,7 @@ export class LocalePlugin extends Plugin {
         },
       });
       const data = res?.data;
-      this.locales = data?.data || {};
-      this.app.use(ConfigProvider, { locale: this.locales.antd, popupMatchSelectWidth: false });
+      this.engine.context.defineProperty('locales', { value: data?.data || {} });
       this.app.use(App, { component: false });
       if (data?.data?.lang) {
         api.auth.setLocale(data?.data?.lang);

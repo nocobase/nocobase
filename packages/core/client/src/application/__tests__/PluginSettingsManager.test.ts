@@ -203,6 +203,10 @@ describe('PluginSettingsManager', () => {
       {
         "children": undefined,
         "element": <AppNotFound />,
+        "handle": {
+          "path": "*",
+        },
+        "id": "not-found",
         "path": "*",
       }
     `);

@@ -1,0 +1,42 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概述",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API 密钥",
+    "link": "/integration/api-keys/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API 文档",
+    "link": "/integration/api-doc/"
+  },
+  {
+    "type": "custom-link",
+    "label": "嵌入",
+    "link": "/integration/embed/"
+  },
+  {
+    "type": "custom-link",
+    "label": "iframe",
+    "link": "/integration/block-iframe/"
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "工作流 Webhook",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "工作流 HTTP request",
+    "link": "/integration/"
+  }
+]

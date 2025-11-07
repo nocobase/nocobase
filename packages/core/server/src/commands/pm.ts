@@ -23,6 +23,23 @@ export default (app: Application) => {
       await app.pm.create(plugin, options);
     });
 
+  pm.command('pull')
+    .arguments('<packageNames...>')
+    .option('--registry [registry]')
+    .option('--auth-token [authToken]')
+    .option('--version [version]')
+    .action(async (packageNames, options, cli) => {
+      try {
+        let name = packageNames;
+        if (Array.isArray(packageNames) && packageNames.length === 1) {
+          name = packageNames[0];
+        }
+        await app.pm.pull(name, { ...options });
+      } catch (error) {
+        throw new PluginCommandError(`Failed to pull plugin`, { cause: error });
+      }
+    });
+
   pm.command('add')
     .ipc()
     .preload()

@@ -273,10 +273,12 @@ export const usePopupUtils = (
 
         // Prevent route confusion caused by repeated clicks
         if (getPopupLayerState(nextLevel)) {
+          closePopup(); // 已经打开过的弹窗，再次调用 openPopup 时，直接关闭当前弹窗。防止出现点击按钮没反应的问题
+          removePopupLayerState(nextLevel);
           return;
         }
-        navigate(withSearchParams(`${url}${pathname}`));
         setPopupLayerState(nextLevel, true);
+        navigate(withSearchParams(`${url}${pathname}`));
       } else {
         console.error(
           `[NocoBase] The popup schema is invalid, please check the schema: \n${JSON.stringify(schema, null, 2)}`,
@@ -304,28 +306,34 @@ export const usePopupUtils = (
     ],
   );
 
-  const closePopup = useCallback(() => {
-    if (!isPopupVisibleControlledByURL()) {
-      return setVisibleFromAction?.(false);
-    }
+  const closePopup = useCallback(
+    (level?: number) => {
+      if (!isPopupVisibleControlledByURL()) {
+        return setVisibleFromAction?.(false);
+      }
 
-    // 1. If there is a previous route in the route stack, navigate back to the previous route.
-    // 2. If the popup was opened directly via a URL and there is no previous route in the stack, navigate to the route of the previous popup.
-    if (getPopupLayerState(currentLevel)) {
-      navigate(-1);
-    } else {
-      navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
-    }
-    removePopupLayerState(currentLevel);
-    popupParams?.popupuid && deletePopupContext(popupParams.popupuid);
-  }, [
-    isPopupVisibleControlledByURL,
-    setVisibleFromAction,
-    navigate,
-    location?.pathname,
-    currentLevel,
-    popupParams?.popupuid,
-  ]);
+      const newPathName = removeLastPopupPath(location.pathname);
+
+      // 1. If there is a previous route in the route stack, navigate back to the previous route.
+      // 2. If the popup was opened directly via a URL and there is no previous route in the stack, navigate to the route of the previous popup.
+      if (getPopupLayerState(currentLevel)) {
+        navigate(-1);
+      } else {
+        navigate(withSearchParams(newPathName), { replace: true });
+      }
+      location.pathname = newPathName; // 立即更新 location.pathname 的值，防止重复调用 openPopup 时，导致错误拼接重复的 pathname
+      removePopupLayerState(currentLevel);
+      popupParams?.popupuid && deletePopupContext(popupParams.popupuid);
+    },
+    [
+      isPopupVisibleControlledByURL,
+      setVisibleFromAction,
+      navigate,
+      location?.pathname,
+      currentLevel,
+      popupParams?.popupuid,
+    ],
+  );
 
   const changeTab = useCallback(
     (key: string) => {

@@ -8,10 +8,11 @@
  */
 
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
-import { Mutex } from 'async-mutex';
+import { E_ALREADY_LOCKED, Mutex, tryAcquire } from 'async-mutex';
 import { EventEmitter } from 'events';
 import Application, { ApplicationOptions, MaintainingCommandStatus } from './application';
 import { getErrorLevel } from './errors/handler';
+import PQueue from 'p-queue';
 
 type BootOptions = {
   appName: string;
@@ -21,10 +22,19 @@ type BootOptions = {
 
 type AppBootstrapper = (bootOptions: BootOptions) => Promise<void>;
 
-type AppStatus = 'initializing' | 'initialized' | 'running' | 'commanding' | 'stopped' | 'error' | 'not_found';
+export type AppStatus =
+  | 'preparing'
+  | 'initializing'
+  | 'initialized'
+  | 'running'
+  | 'commanding'
+  | 'stopped'
+  | 'error'
+  | 'not_found';
 
 export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private static instance: AppSupervisor;
+  private bootstrapQueue: PQueue;
   public runningMode: 'single' | 'multiple' = 'multiple';
   public singleAppName: string | null = null;
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
@@ -50,7 +60,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     [appName: string]: AppStatus;
   } = {};
 
-  private appMutexes = {};
+  private appMutexes: {
+    [app: string]: Mutex;
+  } = {};
   private appBootstrapper: AppBootstrapper = null;
 
   private constructor() {
@@ -60,6 +72,17 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       this.runningMode = 'single';
       this.singleAppName = process.env.STARTUP_SUBAPP;
     }
+
+    this.bootstrapQueue = new PQueue({
+      concurrency: process.env.SUBAPP_BOOTSTRAP_CONCURRENCY
+        ? parseInt(process.env.SUBAPP_BOOTSTRAP_CONCURRENCY)
+        : Infinity,
+      intervalCap: process.env.SUBAPP_BOOTSTRAP_INTERVAL_CAP
+        ? parseInt(process.env.SUBAPP_BOOTSTRAP_INTERVAL_CAP)
+        : Infinity,
+      interval: process.env.SUBAPP_BOOTSTRAP_INTERVAL ? parseInt(process.env.SUBAPP_BOOTSTRAP_INTERVAL) : 0,
+      timeout: 1 * 60 * 1000,
+    });
   }
 
   public static getInstance(): AppSupervisor {
@@ -124,26 +147,45 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.appMutexes[appName];
   }
 
+  private async _bootStrapApp(appName: string, options = {}) {
+    this.setAppStatus(appName, 'initializing');
+
+    if (this.appBootstrapper) {
+      await this.appBootstrapper({
+        appSupervisor: this,
+        appName,
+        options,
+      });
+    }
+
+    if (!this.hasApp(appName)) {
+      this.setAppStatus(appName, 'not_found');
+    } else if (!this.getAppStatus(appName) || this.getAppStatus(appName) === 'initializing') {
+      this.setAppStatus(appName, 'initialized');
+    }
+  }
+
   async bootStrapApp(appName: string, options = {}) {
-    await this.getMutexOfApp(appName).runExclusive(async () => {
-      if (!this.hasApp(appName)) {
-        this.setAppStatus(appName, 'initializing');
-
-        if (this.appBootstrapper) {
-          await this.appBootstrapper({
-            appSupervisor: this,
-            appName,
-            options,
-          });
+    const mutex = this.getMutexOfApp(appName);
+    try {
+      await tryAcquire(mutex).runExclusive(async () => {
+        if (this.hasApp(appName) && this.getAppStatus(appName) !== 'preparing') {
+          return;
         }
-
-        if (!this.hasApp(appName)) {
-          this.setAppStatus(appName, 'not_found');
-        } else if (!this.getAppStatus(appName) || this.getAppStatus(appName) == 'initializing') {
-          this.setAppStatus(appName, 'initialized');
+        if (appName === 'main') {
+          return this._bootStrapApp(appName, options);
         }
+        this.setAppStatus(appName, 'preparing');
+        await this.bootstrapQueue.add(async () => {
+          await this._bootStrapApp(appName, options);
+        });
+      });
+    } catch (e) {
+      console.log(e);
+      if (e === E_ALREADY_LOCKED) {
+        return;
       }
-    });
+    }
   }
 
   async getApp(
@@ -206,7 +248,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     this.emit('afterAppAdded', app);
 
     if (!this.getAppStatus(app.name) || this.getAppStatus(app.name) == 'not_found') {
-      this.setAppStatus(app.name, 'initialized');
+      this.setAppStatus(app.name, 'preparing');
     }
 
     return app;
@@ -219,6 +261,22 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return apps.map((app) => app.name);
   }
 
+  async startApp(appName: string) {
+    const appInstance = await AppSupervisor.getInstance().getApp(appName);
+    await appInstance.runCommand('start', '--quickstart');
+  }
+
+  async stopApp(appName: string) {
+    if (!this.apps[appName]) {
+      console.log(`app ${appName} not exists`);
+      return;
+    }
+
+    // call app.stop
+    await this.apps[appName].runCommand('stop');
+    this.apps[appName] = null;
+  }
+
   async removeApp(appName: string) {
     if (!this.apps[appName]) {
       console.log(`app ${appName} not exists`);
@@ -227,6 +285,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     // call app.destroy
     await this.apps[appName].runCommand('destroy');
+    this.apps[appName] = null;
   }
 
   subApps() {

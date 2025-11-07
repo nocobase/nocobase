@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Basic Usage",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "Loop Processing",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "Formatters"
+  }
+]

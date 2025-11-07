@@ -216,7 +216,8 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                           return (
                             <Radio.Group {...props}>
                               {!isMobile && <Radio value={NocoBaseDesktopRouteType.group}>{t('Group')}</Radio>}
-                              <Radio value={NocoBaseDesktopRouteType.page}>{t('Page')}</Radio>
+                              <Radio value={NocoBaseDesktopRouteType.page}>{t('Classic page (v1)')}</Radio>
+                              <Radio value={NocoBaseDesktopRouteType.flowPage}>{t('Modern page (v2)')}</Radio>
                               <Radio value={NocoBaseDesktopRouteType.link}>{t('Link')}</Radio>
                             </Radio.Group>
                           );
@@ -429,7 +430,10 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                   const res = await createRoute({
                                     ..._.omit(form.values, ['href', 'params', 'url']),
                                     schemaUid:
-                                      NocoBaseDesktopRouteType.page === form.values.type ? pageSchemaUid : undefined,
+                                      NocoBaseDesktopRouteType.page === form.values.type ||
+                                      NocoBaseDesktopRouteType.flowPage === form.values.type
+                                        ? pageSchemaUid
+                                        : undefined,
                                     options,
                                     ...childrenObj,
                                   });
@@ -576,7 +580,10 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                     return null;
                   }
 
-                  if (recordData.type === NocoBaseDesktopRouteType.page) {
+                  if (
+                    recordData.type === NocoBaseDesktopRouteType.page ||
+                    recordData.type === NocoBaseDesktopRouteType.flowPage
+                  ) {
                     const path = `${basenameOfCurrentRouter.slice(0, -1)}${basename}/${recordData.schemaUid}`;
                     // 在点击 Access 按钮时，会用到
                     recordData._path = path;
@@ -670,6 +677,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                   )}
                                   <Radio value={NocoBaseDesktopRouteType.page} disabled={!isGroup}>
                                     {t('Page')}
+                                  </Radio>
+                                  <Radio value={NocoBaseDesktopRouteType.flowPage} disabled={!isGroup}>
+                                    {t('Flow Page')}
                                   </Radio>
                                   <Radio value={NocoBaseDesktopRouteType.link} disabled={!isGroup}>
                                     {t('Link')}
@@ -889,7 +899,8 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                           parentId: recordData.id,
                                           ..._.omit(form.values, ['href', 'params']),
                                           schemaUid:
-                                            NocoBaseDesktopRouteType.page === form.values.type
+                                            NocoBaseDesktopRouteType.page === form.values.type ||
+                                            NocoBaseDesktopRouteType.flowPage === form.values.type
                                               ? pageSchemaUid
                                               : undefined,
                                           options,
@@ -1315,12 +1326,14 @@ function TypeTag(props) {
   const colorMap = {
     [NocoBaseDesktopRouteType.group]: 'blue',
     [NocoBaseDesktopRouteType.page]: 'green',
+    [NocoBaseDesktopRouteType.flowPage]: 'purple',
     [NocoBaseDesktopRouteType.link]: 'red',
     [NocoBaseDesktopRouteType.tabs]: 'orange',
   };
   const valueMap = {
     [NocoBaseDesktopRouteType.group]: t('Group'),
     [NocoBaseDesktopRouteType.page]: t('Page'),
+    [NocoBaseDesktopRouteType.flowPage]: t('Flow Page'),
     [NocoBaseDesktopRouteType.link]: t('Link'),
     [NocoBaseDesktopRouteType.tabs]: t('Tab'),
   };

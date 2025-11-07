@@ -67,9 +67,11 @@ const MultiAppManager = () => {
 export const MultiAppManagerProvider = (props) => {
   return (
     <PinnedPluginListProvider
-      items={{
-        am: { order: 201, component: 'MultiAppManager', pin: true },
-      }}
+      items={
+        {
+          // am: { order: 201, component: 'MultiAppManager', pin: true },
+        }
+      }
     >
       <SchemaComponentOptions components={{ MultiAppManager, AppNameInput }}>{props.children}</SchemaComponentOptions>
     </PinnedPluginListProvider>

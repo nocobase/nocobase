@@ -9,7 +9,7 @@
 
 import crypto from 'crypto';
 import fs from 'fs-extra';
-import path from 'path';
+import path, { resolve } from 'path';
 import Application from './application';
 
 export class AesEncryptor {
@@ -88,11 +88,13 @@ export class AesEncryptor {
   }
 
   static async create(app: Application) {
-    let key: any = process.env.APP_AES_SECRET_KEY;
-    if (!key) {
-      const keyPath = await this.getKeyPath(app.name);
-      key = await AesEncryptor.getOrGenerateKey(keyPath);
+    if (process.env.APP_AES_SECRET_KEY) {
+      const key = Buffer.from(process.env.APP_AES_SECRET_KEY, 'hex');
+      return new AesEncryptor(key);
     }
+    const KEY_PATH = process.env.APP_AES_SECRET_KEY_PATH;
+    const keyPath = KEY_PATH ? resolve(process.cwd(), KEY_PATH) : await this.getKeyPath(app.name);
+    const key = await AesEncryptor.getOrGenerateKey(keyPath);
     return new AesEncryptor(key);
   }
 }

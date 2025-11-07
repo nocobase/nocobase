@@ -8,10 +8,11 @@
  */
 
 import { Database, IDatabaseOptions, Transactionable } from '@nocobase/database';
-import Application, { AppSupervisor, Gateway, Plugin } from '@nocobase/server';
+import Application, { AppStatus, AppSupervisor, Gateway, Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import path from 'path';
 import { ApplicationModel } from '../server';
+import { Meter } from '@nocobase/telemetry';
 
 export type AppDbCreator = (
   app: Application,
@@ -149,6 +150,7 @@ export class PluginMultiAppManagerServer extends Plugin {
   appDbCreator: AppDbCreator = defaultDbCreator;
   appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
   subAppUpgradeHandler: SubAppUpgradeHandler = defaultSubAppUpgradeHandle;
+  meter: Meter;
 
   static getDatabaseConfig(app: Application): IDatabaseOptions {
     let oldConfig =
@@ -219,8 +221,48 @@ export class PluginMultiAppManagerServer extends Plugin {
     }
   }
 
+  setMetrics() {
+    this.meter = this.app.telemetry.metric.getMeter();
+    if (!this.meter) {
+      return;
+    }
+    const subAppStatusGauge = this.meter.createObservableGauge('sub_app_status', {
+      description: 'Number of sub applications by cached status in supervisor.appStatus',
+    });
+    this.meter.addBatchObservableCallback(
+      (observableResult) => {
+        const supervisor = AppSupervisor.getInstance();
+        const allStatuses = { ...supervisor.appStatus };
+
+        const createCounts = (): Record<AppStatus, number> => ({
+          preparing: 0,
+          initializing: 0,
+          initialized: 0,
+          running: 0,
+          commanding: 0,
+          stopped: 0,
+          error: 0,
+          not_found: 0,
+        });
+
+        const cachedCounts = createCounts();
+        for (let status of Object.values(allStatuses)) {
+          if (!status) {
+            status = 'stopped';
+          }
+          if (cachedCounts[status as AppStatus] !== undefined) cachedCounts[status as AppStatus]++;
+        }
+
+        for (const [status, count] of Object.entries(cachedCounts)) {
+          observableResult.observe(subAppStatusGauge, count, { status });
+        }
+      },
+      [subAppStatusGauge],
+    );
+  }
+
   async load() {
-    await this.importCollections(path.resolve(__dirname, 'collections'));
+    this.setMetrics();
 
     // after application created
     this.db.on(
@@ -247,19 +289,28 @@ export class PluginMultiAppManagerServer extends Plugin {
 
         const quickstart = async () => {
           // create database
-          await this.appDbCreator(subApp, {
-            transaction,
-            applicationModel: model,
-            context: options.context,
-          });
+          try {
+            await this.appDbCreator(subApp, {
+              transaction,
+              applicationModel: model,
+              context: options.context,
+            });
+          } catch (error) {
+            this.log.error(error, { method: 'appDbCreator' });
+            AppSupervisor.getInstance().setAppStatus(subApp.name, 'error');
+            return;
+          }
 
-          await subApp.runCommand('start', '--quickstart');
+          await AppSupervisor.getInstance().getApp(subApp.name);
         };
 
-        const startPromise = quickstart();
-
         if (options?.context?.waitSubAppInstall) {
-          await startPromise;
+          await quickstart();
+          await subApp.runCommand('start', '--quickstart');
+        } else {
+          quickstart().catch((err) => {
+            this.log.error(err);
+          });
         }
       },
     );
@@ -297,6 +348,9 @@ export class PluginMultiAppManagerServer extends Plugin {
       }
 
       const mainApp = await appSupervisor.getApp('main');
+      if (!mainApp) {
+        return;
+      }
       const applicationRecord = (await mainApp.db.getRepository('applications').findOne({
         filter: {
           name,
@@ -310,10 +364,6 @@ export class PluginMultiAppManagerServer extends Plugin {
       const instanceOptions = applicationRecord.get('options');
 
       if (instanceOptions?.standaloneDeployment && appSupervisor.runningMode !== 'single') {
-        return;
-      }
-
-      if (!applicationRecord) {
         return;
       }
 
@@ -385,23 +435,11 @@ export class PluginMultiAppManagerServer extends Plugin {
           },
         });
 
-        const promises = [];
-
         for (const subAppInstance of subApps) {
-          promises.push(
-            (async () => {
-              if (!appSupervisor.hasApp(subAppInstance.name)) {
-                await AppSupervisor.getInstance().getApp(subAppInstance.name);
-              } else if (appSupervisor.getAppStatus(subAppInstance.name) === 'initialized') {
-                (await AppSupervisor.getInstance().getApp(subAppInstance.name)).runCommand('start', '--quickstart');
-              }
-            })(),
-          );
+          AppSupervisor.getInstance().getApp(subAppInstance.name);
         }
-
-        await Promise.all(promises);
       } catch (err) {
-        console.error('Auto register sub applications failed: ', err);
+        this.log.error('Auto register sub applications failed: ', err);
       }
     });
 
@@ -417,6 +455,32 @@ export class PluginMultiAppManagerServer extends Plugin {
           },
         });
         ctx.body = items;
+        await next();
+      },
+    });
+
+    this.app.resourcer.registerActionHandlers({
+      'applications:stop': async (ctx, next) => {
+        const { filterByTk } = ctx.action.params;
+        AppSupervisor.getInstance().stopApp(filterByTk);
+        ctx.body = 'ok';
+        await next();
+      },
+    });
+
+    this.app.resourcer.registerActionHandlers({
+      'applications:start': async (ctx, next) => {
+        const { filterByTk } = ctx.action.params;
+        AppSupervisor.getInstance().startApp(filterByTk);
+        ctx.body = 'ok';
+        await next();
+      },
+    });
+
+    this.app.resourcer.registerActionHandlers({
+      'applications:memoryUsage': async (ctx, next) => {
+        ctx.body = process.memoryUsage();
+        await next();
       },
     });
 

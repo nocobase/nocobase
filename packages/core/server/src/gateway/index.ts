@@ -23,7 +23,7 @@ import qs from 'qs';
 import handler from 'serve-handler';
 import { parse } from 'url';
 import { AppSupervisor } from '../app-supervisor';
-import { ApplicationOptions } from '../application';
+import { ApplicationOptions, Application } from '../application';
 import { getPackageDirByExposeUrl, getPackageNameByExposeUrl } from '../plugin-manager';
 import { applyErrorWithArgs, getErrorWithCode } from './errors';
 import { IPCSocketClient } from './ipc-socket-client';
@@ -31,6 +31,7 @@ import { IPCSocketServer } from './ipc-socket-server';
 import { WSServer } from './ws-server';
 import { isMainThread, workerData } from 'node:worker_threads';
 import process from 'node:process';
+import { Duplex } from 'node:stream';
 
 const compress = promisify(compression());
 
@@ -38,6 +39,13 @@ export interface IncomingRequest {
   url: string;
   headers: any;
 }
+
+export interface GatewayRequestContext {
+  req: IncomingMessage;
+  res: ServerResponse;
+  appName: string;
+}
+type GatewayMiddleware = (ctx: GatewayRequestContext, next: () => Promise<void>) => Promise<void> | void;
 
 export type AppSelector = (req: IncomingRequest) => string | Promise<string>;
 export type AppSelectorMiddleware = (ctx: AppSelectorMiddlewareContext, next: () => Promise<void>) => void;
@@ -69,6 +77,7 @@ function getSocketPath() {
 
 export class Gateway extends EventEmitter {
   private static instance: Gateway;
+  middlewares: Toposort<GatewayMiddleware>;
   /**
    * use main app as default app to handle request
    */
@@ -127,6 +136,10 @@ export class Gateway extends EventEmitter {
     return Gateway.instance;
   }
 
+  use(middleware: GatewayMiddleware, options?: ToposortOptions) {
+    this.middlewares.add(middleware, options);
+  }
+
   static async getIPCSocketClient() {
     const socketPath = getSocketPath();
     try {
@@ -144,6 +157,7 @@ export class Gateway extends EventEmitter {
   }
 
   public reset() {
+    this.middlewares = new Toposort<GatewayMiddleware>();
     this.selectorMiddlewares = new Toposort<AppSelectorMiddleware>();
 
     this.addAppSelectorMiddleware(
@@ -300,10 +314,15 @@ export class Gateway extends EventEmitter {
       void AppSupervisor.getInstance().bootStrapApp(handleApp);
     }
 
-    let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
+    let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'preparing');
 
     if (appStatus === 'not_found') {
       this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
+      return;
+    }
+
+    if (appStatus === 'preparing') {
+      this.responseErrorWithCode('APP_PREPARING', res, { appName: handleApp });
       return;
     }
 
@@ -335,7 +354,15 @@ export class Gateway extends EventEmitter {
       AppSupervisor.getInstance().touchApp(handleApp);
     }
 
-    app.callback()(req, res);
+    const ctx: GatewayRequestContext = { req, res, appName: handleApp };
+    const fn = compose([
+      ...this.middlewares.nodes,
+      async (_ctx) => {
+        await app.callback()(req, res);
+      },
+    ]);
+
+    await fn(ctx);
   }
 
   getAppSelectorMiddlewares() {
@@ -487,11 +514,30 @@ export class Gateway extends EventEmitter {
       return;
     }
 
-    this.server = http.createServer(this.getCallback());
+    this.server = http.createServer(async (req, res) => {
+      const appInstance = await AppSupervisor.getInstance().getApp('main');
+      for (const handler of Gateway.requestHandlers) {
+        try {
+          const result = await handler(req as IncomingRequest, res as ServerResponse, appInstance);
+          if (result !== false) {
+            return;
+          }
+        } catch (error) {
+          console.error('gateway request handler error:', error);
+        }
+      }
+      this.getCallback()(req, res);
+    });
 
     this.wsServer = new WSServer();
-
-    this.server.on('upgrade', (request, socket, head) => {
+    this.server.on('upgrade', async (request, socket, head) => {
+      const appInstance = await AppSupervisor.getInstance().getApp('main');
+      for (const handle of Gateway.wsServers) {
+        const result = await handle(request, socket, head, appInstance);
+        if (result !== false) {
+          return;
+        }
+      }
       const { pathname } = parse(request.url);
 
       if (pathname === process.env.WS_PATH) {
@@ -528,5 +574,39 @@ export class Gateway extends EventEmitter {
   close() {
     this.server?.close();
     this.wsServer?.close();
+  }
+
+  private static requestHandlers: ((req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void)[] =
+    [];
+
+  static registerRequestHandler(
+    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void,
+  ) {
+    Gateway.requestHandlers.push(handler);
+  }
+
+  static unregisterRequestHandler(
+    handler: (req: IncomingRequest, res: ServerResponse, app: Application) => boolean | void,
+  ) {
+    Gateway.requestHandlers = Gateway.requestHandlers.filter((h) => h !== handler);
+  }
+
+  private static wsServers: ((
+    req: IncomingMessage,
+    socket: Duplex,
+    head: Buffer,
+    app: Application,
+  ) => boolean | void)[] = [];
+
+  static registerWsHandler(
+    wsServer: (req: IncomingMessage, socket: Duplex, head: Buffer, app: Application) => boolean | void,
+  ) {
+    Gateway.wsServers.push(wsServer);
+  }
+
+  static unregisterWsHandler(
+    wsServer: (req: IncomingMessage, socket: Duplex, head: Buffer, app: Application) => boolean | void,
+  ) {
+    Gateway.wsServers = Gateway.wsServers.filter((ws) => ws !== wsServer);
   }
 }

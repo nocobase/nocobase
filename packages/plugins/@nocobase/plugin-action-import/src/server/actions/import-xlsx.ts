@@ -51,6 +51,7 @@ async function importXlsxAction(ctx: Context, next: Next) {
     workbook,
     explain: (ctx.request.body as any).explain,
     repository,
+    rowDefaultValues: ctx.action.params?.rowDefaultValues || {},
   });
 
   const importedCount = await importer.run({

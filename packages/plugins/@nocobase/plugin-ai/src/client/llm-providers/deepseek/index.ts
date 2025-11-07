@@ -8,7 +8,7 @@
  */
 
 import { LLMProviderOptions } from '../../manager/ai-manager';
-import { ProviderSettingsForm } from '../openai/ProviderSettings';
+import { ProviderSettingsForm } from '../openai/components/ProviderSettings';
 import { ModelSettingsForm } from './ModelSettings';
 
 export const deepseekProviderOptions: LLMProviderOptions = {

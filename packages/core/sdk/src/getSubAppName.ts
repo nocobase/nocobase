@@ -8,6 +8,12 @@
  */
 
 const getSubAppName = (publicPath = '/') => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  if (!window.location.pathname) {
+    return;
+  }
   const prefix = `${publicPath}apps/`;
   if (!window.location.pathname.startsWith(prefix)) {
     return;

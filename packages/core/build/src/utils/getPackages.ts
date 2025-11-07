@@ -8,11 +8,11 @@
  */
 
 import Topo from '@hapi/topo';
+import { Package } from '@lerna/package';
+import { getPackagesSync } from '@lerna/project';
 import fg from 'fast-glob';
 import path from 'path';
 import { PACKAGES_PATH, ROOT_PATH } from '../constant';
-import { getPackagesSync } from '@lerna/project';
-import { Package } from '@lerna/package';
 import { toUnixPath } from './utils';
 
 /**
@@ -63,6 +63,9 @@ export function getPackages(pkgs: string[]) {
 export function sortPackages(packages: Package[]): Package[] {
   const sorter = new Topo.Sorter<Package>();
   for (const pkg of packages) {
+    if (pkg.name === '@nocobase/docs') {
+      continue;
+    }
     const pkgJson = require(`${pkg.location}/package.json`,);
     const after = Object.keys({ ...pkgJson.dependencies, ...pkgJson.devDependencies, ...pkgJson.peerDependencies });
     sorter.add(pkg, { after, group: pkg.name });

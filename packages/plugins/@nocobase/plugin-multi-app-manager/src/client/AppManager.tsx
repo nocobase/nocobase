@@ -10,7 +10,7 @@
 import { SchemaComponent, useApp, useRecord } from '@nocobase/client';
 import { Card } from 'antd';
 import React from 'react';
-import { schema } from './settings/schemas/applications';
+import { getSchema } from './settings/schemas/applications';
 import { usePluginUtils } from './utils';
 import { JwtSecretInput } from './JwtSecretInput';
 
@@ -36,7 +36,7 @@ const AppVisitor = () => {
 export const AppManager = () => {
   return (
     <Card bordered={false}>
-      <SchemaComponent schema={schema} components={{ AppVisitor, JwtSecretInput }} />
+      <SchemaComponent schema={getSchema()} components={{ AppVisitor, JwtSecretInput }} />
     </Card>
   );
 };
