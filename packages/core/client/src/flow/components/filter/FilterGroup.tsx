@@ -202,7 +202,10 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                   FilterItem={FilterItem}
                   showBorder={true}
                   onRemove={() => handleRemoveItem(index)}
-                  onChange={onChange}
+                  onChange={(v) => {
+                    items[index] = v;
+                    onChange(value);
+                  }}
                 />
               );
             } else if (isConditionItem(item)) {

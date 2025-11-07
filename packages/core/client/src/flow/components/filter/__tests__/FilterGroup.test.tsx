@@ -9,7 +9,7 @@
 
 import React, { type ReactElement } from 'react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, cleanup, within } from '@testing-library/react';
 import { ConfigProvider } from 'antd';
 import { FilterGroup } from '../FilterGroup';
 
@@ -110,5 +110,34 @@ describe('FilterGroup closeIcon', () => {
 
     expect(onChange).toHaveBeenCalledTimes(1);
     expect(value.items).toHaveLength(0);
+  });
+
+  it('propagates changes from nested groups through onChange', () => {
+    const value = {
+      logic: '$and',
+      items: [
+        {
+          logic: '$and',
+          items: [],
+        },
+      ],
+    };
+    const onChange = vi.fn();
+
+    renderWithProviders(<FilterGroup value={value} onChange={onChange} />);
+
+    const groupHeaders = screen.getAllByText(/conditions in the group/);
+    expect(groupHeaders.length).toBeGreaterThan(1);
+    const nestedHeaderContainer = groupHeaders[1].closest('div');
+    const nestedGroupRoot = nestedHeaderContainer?.parentElement;
+    if (!nestedGroupRoot) {
+      throw new Error('Nested group container not found');
+    }
+
+    const nestedAddConditionButton = within(nestedGroupRoot).getByText('Add condition');
+    fireEvent.click(nestedAddConditionButton);
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(value.items[0].items).toHaveLength(1);
   });
 });
