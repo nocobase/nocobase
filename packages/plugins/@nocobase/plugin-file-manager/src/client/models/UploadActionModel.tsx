@@ -182,7 +182,7 @@ function UploadContent({ model }) {
             {loading ? <LoadingOutlined style={{ fontSize: 36 }} spin /> : <InboxOutlined />}
           </p>
           <p className={`ant-upload-text`}>{ctx.t('Click or drag file to this area to upload')}</p>
-          <ul>
+          <ul style={{ listStyleType: 'none' }}>
             <li className={`ant-upload-hint`}>{ctx.t('Support for a single or bulk upload.')}</li>
             <li className={`ant-upload-hint`}>{sizeHint}</li>
           </ul>

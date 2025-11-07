@@ -37,6 +37,7 @@
   "Alias": "Alias",
   "Format": "Format",
   "Chart options": "Chart options",
+  "Please click 'Run Query' to fetch data before configuring chart options": "Please click 'Run Query' to fetch data before configuring chart options",
   "The first 10 records of the query result:": "The first 10 records of the query result:",
   "Please run query to retrive data.": "Please run query to retrive data.",
   "Type": "Type",

@@ -37,6 +37,7 @@
   "Alias": "别名",
   "Format": "格式",
   "Chart options": "图表选项",
+  "Please click 'Run Query' to fetch data before configuring chart options": "请先点击”运行查询“获取数据，再配置图表选项",
   "The first 10 records of the query result:": "查询结果的前 10 条记录：",
   "Please run query to retrive data.": "请执行查询来获取数据。",
   "Type": "类型",

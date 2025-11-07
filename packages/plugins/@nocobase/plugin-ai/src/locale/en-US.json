@@ -182,5 +182,20 @@
   "references {{index}}": "references {{index}}",
   "Enable search": "Enable search",
   "Disable search": "Disable search",
-  "Conversation": "Conversation"
+  "Conversation": "Conversation",
+  "CodeEditor": "Code editor",
+  "CodeEditor actions": "Code editor actions",
+  "Get code snippet list": "Get code snippet list",
+  "Get code snippet content": "Get code snippet content",
+  "Start coding": "Start coding",
+  "Code review": "Code review",
+  "Diagnose and fix the error": "Diagnose and fix the error",
+  "please review the code": "please review the code",
+  "please fix the error": "please fix the error",
+  "Oops! Something went wrong. Let me diagnose and fix it.": "Oops! Something went wrong. Let me diagnose and fix it.",
+  "Data source records counting": "Data source records counting",
+  "Use dataSource, collectionName, and collection fields to query data from the database, get total count of records": "Use dataSource, collectionName, and collection fields to query data from the database, get total count of records",
+  "Data source query": "Data source query",
+  "Use dataSource, collectionName, and collection fields to query data from the database": "Use dataSource, collectionName, and collection fields to query data from the database",
+  "You are currently using the Gemini LLM service. When Web Search is enabled, AI employees will temporarily be unable to use skills": "You are currently using the Gemini LLM service. When Web Search is enabled, AI employees will temporarily be unable to use skills"
 }

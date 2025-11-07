@@ -18,6 +18,7 @@ export const customVariable = defineAction({
   name: 'customVariable',
   title: escapeT('Custom variable'),
   scene: [ActionScene.DYNAMIC_EVENT_FLOW],
+  sort: 100,
   uiSchema: {
     variables: {
       type: 'array',

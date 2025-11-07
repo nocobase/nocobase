@@ -262,6 +262,7 @@ export class EagerLoadingTree {
               group: `${node.model.name}.${primaryKeyField}`,
               transaction,
               include: processIncludes(includeForFilter, node.model),
+              raw: true,
             } as any)
           ).map((row) => {
             return { row, pk: row[primaryKeyField] };

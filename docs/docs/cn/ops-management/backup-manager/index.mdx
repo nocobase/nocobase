@@ -1,0 +1,206 @@
+---
+pkg: '@nocobase/plugin-backups'
+---
+
+# 备份管理
+
+## 介绍
+
+NocoBase 备份管理器插件，提供了 NocoBase 数据库及用户上传文件的全量备份、定时备份、备份的下载、删除及还原等功能。
+
+:::warning
+备份管理器插件包含在专业版和企业版中。对于社区版和标准版用户，可以直接备份数据库，详情参考：[`如何备份和还原 NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## 安装数据库客户端
+
+备份管理器依赖对应主数据的客户端，使用前请前往官网下载与所使用的数据库版本匹配的客户端：
+
+- MySQL：https://dev.mysql.com/downloads/
+- PostgreSQL：https://www.postgresql.org/download/
+
+Docker 版本，可以直接在 `./storage/scripts` 目录下，编写一段脚本
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+`install-database-client.sh` 的内容如下：
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# Check if pg_dump is installed
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump is not installed, starting PostgreSQL client installation..."
+
+    # Configure Aliyun mirrors
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # Install necessary tools and clean cache
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # Configure PostgreSQL source
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # Install PostgreSQL client
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "PostgreSQL client installation completed."
+else
+    echo "pg_dump is already installed, skipping PostgreSQL client installation."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "MySQL client is not installed, starting MySQL client installation..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "Updating package list and installing necessary tools..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "MySQL client installation completed."
+else
+    echo "MySQL client is already installed, skipping installation."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+然后重启 app 容器
+
+```bash
+docker compose restart app
+# 查看日志
+docker compose logs app
+```
+
+查看数据库客户端版本号，必须与数据库服务端的版本号一致
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## 使用说明
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### 新建备份
+
+点击新建备份按钮，即可根据备份配置新建备份，并在备份列表中显示备份状态。
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### 还原备份
+
+支持从备份列表中还原备份、上传本地备份文件还原备份。
+以下场景下不允许执行还原操作：
+
+- 当前 NocoBase 版本低于备份文件中的 NocoBase 版本时。
+- 当前 NocoBase 数据库与备份文件中的以下配置不一致时：
+  - dialect 数据库类型
+  - underscored 字段配置
+  - table prefix 表前缀
+  - schema 表结构
+- 未开启`容错模式`，且创建备份时数据库版本高于当前应用数据库版本。
+
+> **备份还原均为数据库全量操作，推荐在备份还原前先备份一份当前数据库**
+
+#### 从备份列表中还原
+
+点击备份列表中备份项的`还原`按钮，在弹出窗口中输入备份文件加密密码，点击确认还原备份。
+
+> 未加密备份文件无需输入密码。
+
+> 若需要将备份文件还原至低版本数据库，需要开启容错模式。
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### 上传本地备份文件还原
+
+点击`从本地备份还原`按钮，在弹出窗口中选择本地备份文件，输入备份文件加密密码，点击确认还原备份。
+
+> 未加密备份文件无需输入密码。
+
+> 若需要将备份文件还原至低版本数据库，需要开启容错模式。
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### 下载备份文件
+
+点击备份列表中备份项的`下载`按钮，即可下载备份文件。
+
+#### 删除备份
+
+点击备份列表中备份项的`删除`按钮，即可删除备份文件。
+
+## 备份设置
+
+切换至`设置`标签页，修改备份设置，点击保存即可生效。
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### 备份设置说明
+
+- `自动备份`: 开启 `根据 Cron 运行自动备份` 后，可设置按指定时间自动备份。
+- `最大备份数`: 设置备份文件本地最大保存数量，超出数量后将自动删除本地最早的备份文件。
+- `同步备份文件至云存储`: 设置备份文件备份成功后自动上传的云存储。
+- `备份本地存储文件`: 是否把用户上传到服务器本地存储中的文件(storage/uploads)包含在备份中。
+- `还原密码`: 如果设置了还原密码，恢复备份时需要输入该密码。
+
+> **还原密码请妥善保管，遗忘密码将无法还原备份文件。**

@@ -13,6 +13,7 @@ import {
   createSafeDocument,
   createSafeWindow,
   createSafeNavigator,
+  compileRunJs,
 } from '@nocobase/flow-engine';
 import { Card } from 'antd';
 import React from 'react';
@@ -148,15 +149,16 @@ ctx.element.innerHTML = \`
 \`;`.trim(),
         };
       },
-      handler(ctx, params) {
+      async handler(ctx, params) {
         const { code, version } = resolveRunJsParams(ctx, params);
         ctx.onRefReady(ctx.ref, async (element) => {
           ctx.defineProperty('element', {
             get: () => new ElementProxy(element),
           });
           const navigator = createSafeNavigator();
+          const compiled = await compileRunJs(code);
           await ctx.runjs(
-            code,
+            compiled,
             { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
             { version },
           );

@@ -27,6 +27,14 @@ export default {
         name: 'dataModeling-getCollectionMetadata',
         autoCall: true,
       },
+      {
+        name: 'dataSource-dataSourceCounting',
+        autoCall: true,
+      },
+      {
+        name: 'dataSource-dataSourceQuery',
+        autoCall: true,
+      },
     ],
   },
 };

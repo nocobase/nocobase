@@ -31,6 +31,7 @@ export type AIEmployee = {
   };
   builtIn?: boolean;
   webSearch?: boolean;
+  toolsConflict?: boolean;
 };
 
 export type SkillSettings = {
@@ -145,6 +146,7 @@ export type Task = {
 export type TriggerTaskOptions = {
   aiEmployee?: AIEmployee;
   tasks?: Task[];
+  auto?: boolean;
 };
 
 export type Tool = {

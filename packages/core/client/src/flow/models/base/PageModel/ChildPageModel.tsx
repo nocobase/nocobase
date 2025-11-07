@@ -13,6 +13,7 @@ import { DragEndEvent } from '@dnd-kit/core';
 import { Button } from 'antd';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import React, { useMemo } from 'react';
+import { PageHeader } from '@ant-design/pro-layout';
 
 export class ChildPageModel extends PageModel {
   tabBarExtraContent = {
@@ -31,6 +32,21 @@ export class ChildPageModel extends PageModel {
     }
 
     this.flowEngine.moveModel(event.active.id, event.over.id);
+  }
+
+  render() {
+    return (
+      <>
+        {this.props.displayTitle && this.props.title ? (
+          <PageHeader title={this.props.title} style={this.props.headerStyle} />
+        ) : (
+          this.context.view.type !== 'embed' && (
+            <div style={{ height: this.context.themeToken.paddingContentVerticalLG }}></div>
+          )
+        )}
+        {this.props.enableTabs ? this.renderTabs() : this.renderFirstTab()}
+      </>
+    );
   }
 }
 

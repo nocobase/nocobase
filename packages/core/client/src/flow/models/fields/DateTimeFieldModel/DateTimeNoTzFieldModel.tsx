@@ -23,6 +23,9 @@ export const DateTimeNoTzPicker = (props) => {
       picker={picker}
       showTime={showTime}
       onChange={(val: any) => {
+        if (!val) {
+          return onChange(val);
+        }
         const outputFormat = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
         if (showTime) {
           onChange(dayjs(val, format).format(outputFormat));
@@ -40,4 +43,4 @@ export class DateTimeNoTzFieldModel extends DateTimeFieldModel {
   }
 }
 
-EditableItemModel.bindModelToInterface('DateTimeNoTzFieldModel', ['datetimeNoTz']);
+EditableItemModel.bindModelToInterface('DateTimeNoTzFieldModel', ['datetimeNoTz'], { isDefault: true });

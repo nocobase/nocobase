@@ -13,30 +13,27 @@ import { EditableItemModel, FilterableItemModel, escapeT } from '@nocobase/flow-
 import dayjs from 'dayjs';
 import { FieldModel } from '../base';
 
-export class TimeFieldModel extends FieldModel {
-  setProps(props) {
-    const format = props['format'] || 'HH:mm:ss';
-    const onChange = props.onChange;
-    const componentProps = {
-      ...props,
-      picker: 'time',
-      format,
-      inputReadOnly: true,
-      value: dayjsable(props.value, 'HH:mm:ss'),
-      onChange: (value: dayjs.Dayjs | dayjs.Dayjs[]) => {
-        if (onChange) {
-          onChange(formatDayjsValue(value, 'HH:mm:ss') || null);
-        }
-      },
-    };
-    super.setProps({
-      ...props,
-      ...componentProps,
-    });
-  }
+const TimePickerCom = (props) => {
+  const format = props['format'] || 'HH:mm:ss';
+  const onChange = props.onChange;
+  const componentProps = {
+    ...props,
+    picker: 'time',
+    format,
+    inputReadOnly: true,
+    value: dayjsable(props.value, 'HH:mm:ss'),
+    onChange: (value: dayjs.Dayjs | dayjs.Dayjs[]) => {
+      if (onChange) {
+        onChange(formatDayjsValue(value, 'HH:mm:ss') || null);
+      }
+    },
+  };
+  return <TimePicker {...componentProps} />;
+};
 
+export class TimeFieldModel extends FieldModel {
   render() {
-    return <TimePicker {...this.props} style={{ width: '100%' }} />;
+    return <TimePickerCom {...this.props} style={{ width: '100%' }} />;
   }
 }
 

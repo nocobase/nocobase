@@ -23,6 +23,7 @@ import {
   useFlowContext,
   extractPropertyPath,
   FlowModel,
+  EditableItemModel,
 } from '@nocobase/flow-engine';
 import { get as lodashGet, set as lodashSet, isEqual } from 'lodash';
 import React, { useMemo } from 'react';
@@ -256,10 +257,19 @@ export const DefaultValue = connect((props: Props) => {
   // Build a temporary field model (isolated), using collectionField's recommended editable subclass
   const tempRoot = useMemo(() => {
     const host = model;
-    const origin = host?.subModels?.field;
+    const origin = host?.customFieldModelInstance || host?.subModels?.field;
     const init = host?.getStepParams?.('fieldSettings', 'init') || origin?.getStepParams?.('fieldSettings', 'init');
-    // 如果是关系的对多字段，统一使用 RecordSelectFieldModel 作为默认值渲染模型
-    const collectionField = origin?.collectionField;
+    // 解析 collectionField（优先使用原字段上的引用；必要时从 dataSourceManager 回落）
+    let collectionField = origin?.collectionField as any;
+    if (!collectionField && init?.dataSourceKey && init?.collectionName && init?.fieldPath) {
+      const key = `${init.dataSourceKey}.${init.collectionName}.${init.fieldPath}`;
+      collectionField = model?.context?.dataSourceManager?.getCollectionField?.(key);
+    }
+    // 尝试从可编辑绑定中获取字段模型（避免在 readPretty 下拿到展示型模型）
+    const editableBinding = collectionField
+      ? EditableItemModel.getDefaultBindingByField(model?.context as any, collectionField)
+      : null;
+    // 如果是关系的对多字段，或绑定缺失，采用兜底策略
     const relationType = collectionField?.type;
     const relationInterface = collectionField?.interface;
     const isToManyRelation =
@@ -269,9 +279,12 @@ export const DefaultValue = connect((props: Props) => {
       relationInterface === 'm2m' ||
       relationInterface === 'o2m' ||
       relationInterface === 'mbm';
-    // 优先用原字段模型；无法解析时回退到 InputFieldModel，避免误用区块模型（会依赖 dataSource/collection）
-    const fieldModelClass = isToManyRelation ? RecordSelectFieldModel : origin?.constructor || InputFieldModel;
-    const TempFieldClass = createTempFieldClass(fieldModelClass);
+
+    const FallbackClass = isToManyRelation ? RecordSelectFieldModel : InputFieldModel;
+    const BoundClass = editableBinding
+      ? (model?.context?.engine?.getModelClass?.(editableBinding.modelName) as any)
+      : null;
+    const TempFieldClass = createTempFieldClass(BoundClass || FallbackClass);
     const fieldSub = {
       use: TempFieldClass,
       uid: uid(),
@@ -279,7 +292,7 @@ export const DefaultValue = connect((props: Props) => {
       subKey: null,
       subType: null,
       stepParams: init ? { fieldSettings: { init } } : undefined,
-      props: { disabled: false },
+      props: { disabled: false, allowClear: true, ...host?.customFieldProps },
     };
     const created = model.context.engine.createModel({
       use: 'VariableFieldFormModel',
@@ -315,6 +328,12 @@ export const DefaultValue = connect((props: Props) => {
         const fieldModel = tempRoot?.subModels?.fields?.[0];
         if (!fieldModel) return;
         const { disabled, readOnly, readPretty, pattern, ...rest } = inputProps || {};
+        // 关联字段的选择值需要传入记录对象而不是 antd Option
+        const isAssociation = !!fieldModel?.context?.collectionField?.isAssociationField?.();
+        const toRecordValue = (v: any) => {
+          if (Array.isArray(v)) return v.map((i) => (i && typeof i === 'object' && 'data' in i ? i.data : i));
+          return v && typeof v === 'object' && 'data' in v ? (v as any).data : v;
+        };
         // 将 VariableInput 提供的受控属性透传到临时字段模型上，确保受控生效
         // - value: 由 VariableInput 控制
         // - onChange: 回传给 VariableInput，从而驱动 Formily/外层表单值
@@ -323,7 +342,7 @@ export const DefaultValue = connect((props: Props) => {
         fieldModel.setProps({
           disabled: false,
           // 仅透传事件，避免把输入框变为完全受控，从而影响输入法
-          onChange: rest?.onChange ?? inputProps?.onChange,
+          onChange: (val: any) => (rest?.onChange ?? inputProps?.onChange)?.(isAssociation ? toRecordValue(val) : val),
           onCompositionStart: rest?.onCompositionStart ?? inputProps?.onCompositionStart,
           onCompositionUpdate: rest?.onCompositionUpdate ?? inputProps?.onCompositionUpdate,
           onCompositionEnd: rest?.onCompositionEnd ?? inputProps?.onCompositionEnd,
@@ -338,6 +357,13 @@ export const DefaultValue = connect((props: Props) => {
           const initial = (rest?.value ?? inputProps?.value) as any;
           if (typeof initial !== 'undefined') {
             fieldModel.setProps({ defaultValue: initial });
+          }
+        }
+        // 关联字段在受控场景下需要同步 value 才能正常显示选中项
+        if (isAssociation) {
+          const current = (rest?.value ?? inputProps?.value) as any;
+          if (typeof current !== 'undefined') {
+            fieldModel.setProps({ value: toRecordValue(current) });
           }
         }
       }, [inputProps]);

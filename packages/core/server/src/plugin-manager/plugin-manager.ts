@@ -107,7 +107,7 @@ export class PluginManager {
       directory: resolve(__dirname, '../migrations'),
     });
 
-    this.app.resourcer.use(uploadMiddleware);
+    this.app.resourceManager.use(uploadMiddleware, { tag: 'upload', after: 'acl' });
   }
 
   /**
@@ -764,6 +764,42 @@ export class PluginManager {
     });
     if (!this.app.db.getCollection('applications')) {
       await removeDir();
+    }
+  }
+
+  async pull(urlOrName: string | string[], options?: PluginData, emitStartedEvent = true) {
+    if (Array.isArray(urlOrName)) {
+      for (const packageName of urlOrName) {
+        await this.addViaCLI(packageName, _.omit(options, 'name'), false);
+      }
+      return;
+    }
+    if (isURL(urlOrName)) {
+      await this.addByCompressedFileUrl(
+        {
+          ...options,
+          compressedFileUrl: urlOrName,
+        },
+        emitStartedEvent,
+      );
+    } else if (await fs.exists(urlOrName)) {
+      await this.addByCompressedFileUrl(
+        {
+          ...(options as any),
+          compressedFileUrl: urlOrName,
+        },
+        emitStartedEvent,
+      );
+    } else if (options?.registry) {
+      const { name, packageName } = await PluginManager.parseName(urlOrName);
+      options['name'] = name;
+      await this.addByNpm(
+        {
+          ...(options as any),
+          packageName,
+        },
+        emitStartedEvent,
+      );
     }
   }
 

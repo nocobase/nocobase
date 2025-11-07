@@ -12,7 +12,7 @@ import { ContextItem, WorkContextOptions } from '../types';
 import { BuildOutlined } from '@ant-design/icons';
 import { useT } from '../../locale';
 // @ts-ignore
-import { FlowModel, FlowModelContext, useFlowEngine } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelContext, MultiRecordResource, useFlowEngine } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { aiSelection } from '../stores/ai-selection';
 import { CollectionBlockModel, FormBlockModel, FormItemModel } from '@nocobase/client';
@@ -26,6 +26,7 @@ type SimplifyComponentNode = {
   component: string;
   props?: Record<string, unknown>;
   children?: Record<string, SimplifyComponentNode[]>;
+  data?: unknown;
 };
 
 const parseFlowModel = async (model: FlowModel) => {
@@ -35,9 +36,9 @@ const parseFlowModel = async (model: FlowModel) => {
   if (model instanceof FormBlockModel) {
     return toSimplifyForm(model);
   } else if (model instanceof CollectionBlockModel) {
-    return await toCollectionWithData(model);
+    return await toCollection(model);
   } else {
-    return toSimplifyComponentTree(model);
+    return await toSimplifyComponentTree(model);
   }
 };
 
@@ -67,18 +68,34 @@ const toSimplifyForm = (model: FormBlockModel) => {
   return result;
 };
 
-const toCollectionWithData = async (model: CollectionBlockModel) => {
+const toCollection = async (model: CollectionBlockModel) => {
   const collection = FlowUtils.getCollection(model);
-  const data = await FlowUtils.getResource(model);
-  return {
-    collection: {
-      ...collection,
-      data,
-    },
-  };
+  if (model.resource instanceof MultiRecordResource) {
+    return {
+      dataScope: {
+        filter: model?.resource?.getFilter(),
+      },
+      collection: {
+        ...collection,
+      },
+      prompt: `You can use the tools dataSource-dataSourceQuery to query data from a data source and dataSource-dataSourceCounting to get record counts.
+When analyzing user messages, if any words or phrases are related or similar to a known collectionName, prioritize retrieving relevant data before responding.
+When the user asks about quantities, totals, or record counts, you must first call dataSource-dataSourceCounting to obtain accurate numbers before answering.
+Always apply dataScope.filter when calling dataSource-dataSourceQuery or dataSource-dataSourceCounting. Ensure that the filter structure is properly transformed to match the tools’ input format.
+Do not mention or reveal any details about tools, data sources, or internal processes in your reply.
+Unless the user explicitly requests it, do not directly output large amounts of raw data—summarize, filter, or aggregate the results naturally in your response.`,
+    };
+  } else {
+    return {
+      collection: {
+        ...collection,
+      },
+      data: await FlowUtils.getResource(model),
+    };
+  }
 };
 
-const toSimplifyComponentTree = (model: FlowModel) => {
+const toSimplifyComponentTree = async (model: FlowModel) => {
   const result: SimplifyComponentNode = {
     uid: model.uid,
     title: model.title,
@@ -106,10 +123,12 @@ const toSimplifyComponentTree = (model: FlowModel) => {
       result.children[key] = [];
       const flowModels = _.isArray(value) ? value : [value];
       for (const flowModel of flowModels) {
-        result.children[key].push(toSimplifyComponentTree(flowModel));
+        result.children[key].push(await toSimplifyComponentTree(flowModel));
       }
     }
   }
+
+  result.data = await FlowUtils.getResource(model as any);
 
   return result;
 };
@@ -150,7 +169,7 @@ export const FlowModelsContext: WorkContextOptions = {
       return (
         <Space>
           <BuildOutlined />
-          <span>{model?.title || ''}</span>
+          <span>{model?.title || item?.title || ''}</span>
         </Space>
       );
     },

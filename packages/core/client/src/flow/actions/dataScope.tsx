@@ -8,7 +8,8 @@
  */
 
 import { defineAction, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { isEmptyFilter, removeNullCondition, transformFilter, tval } from '@nocobase/utils/client';
+import { isEmptyFilter, transformFilter, tval } from '@nocobase/utils/client';
+import { pruneFilter } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../components/filter';
@@ -50,7 +51,7 @@ export const dataScope = defineAction({
       return;
     }
 
-    const filter = removeNullCondition(transformFilter(params.filter));
+    const filter = pruneFilter(transformFilter(params.filter));
 
     if (isEmptyFilter(filter)) {
       resource.removeFilterGroup(ctx.model.uid);

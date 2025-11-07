@@ -136,7 +136,7 @@ class AIChatConversationImpl implements AIChatConversation {
     for (const msg of messages) {
       const attachments = msg.attachments;
       const workContext = msg.workContext;
-      let content = msg.content.content;
+      let content = msg.content?.content;
       if (!content && !attachments && !msg.toolCalls?.length) {
         continue;
       }

@@ -23,7 +23,6 @@ const snippet: SnippetModule = {
   },
   content: `
 const { Timeline, Card } = ctx.antd;
-const { createElement: h } = ctx.React;
 
 const res = await ctx.api.request({
   url: 'users:list',
@@ -37,28 +36,28 @@ const res = await ctx.api.request({
 const records = res?.data?.data || [];
 
 if (!records.length) {
-  ctx.element.innerHTML = '<div style="padding:16px;color:#999;">' + ctx.t('No data') + '</div>';
+  ctx.render('<div style="padding:16px;color:#999;">' + ctx.t('No data') + '</div>');
   return;
 }
 
-ctx.ReactDOM.createRoot(ctx.element).render(
-  h(Card, { title: ctx.t('Activity Timeline'), bordered: true },
-    h(Timeline, { mode: 'left' },
-      ...records.map(record =>
-        h(Timeline.Item, {
-          key: record.id,
-          label: record.createdAt ? new Date(record.createdAt).toLocaleString() : '',
-        },
-          h('div', {},
-            h('strong', {}, record.nickname || record.username || ctx.t('Unnamed user')),
-            record.email
-              ? h('div', { style: { color: '#999', fontSize: '12px', marginTop: '4px' } }, record.email)
-              : null,
-          )
-        )
-      )
-    )
-  )
+ctx.render(
+  <Card title={ctx.t('Activity Timeline')} bordered>
+    <Timeline mode="left">
+      {records.map((record) => (
+        <Timeline.Item
+          key={record.id}
+          label={record.createdAt ? new Date(record.createdAt).toLocaleString() : ''}
+        >
+          <div>
+            <strong>{record.nickname || record.username || ctx.t('Unnamed user')}</strong>
+            {record.email ? (
+              <div style={{ color: '#999', fontSize: '12px', marginTop: '4px' }}>{record.email}</div>
+            ) : null}
+          </div>
+        </Timeline.Item>
+      ))}
+    </Timeline>
+  </Card>
 );
 `,
 };

@@ -29,6 +29,14 @@ export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
   }
   local.context.addDelegate(parent.context);
 
+  // 视图引擎关闭时，主动释放本地调度器以避免残留任务与引用
+  const originalUnlink = local.unlinkFromStack.bind(local);
+  local.unlinkFromStack = function () {
+    // 释放本地调度器与其事件监听，避免残留引用
+    local.disposeScheduler?.();
+    return originalUnlink();
+  };
+
   // 默认全部代理到父引擎，只有少数字段（实例/缓存/执行器/上下文/链表指针）使用本地值
   const localOnly = new Set<keyof FlowEngine | string>([
     '_modelInstances',
@@ -37,6 +45,12 @@ export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
     'context',
     'previousEngine',
     'nextEngine',
+    // 调度器与事件总线局部化
+    'emitter',
+    '_modelOperationScheduler',
+    'getScheduler',
+    'scheduleModelOperation',
+    'disposeScheduler',
     // 栈指针维护方法需要在本地执行，而非代理到父引擎
     'unlinkFromStack',
     'linkAfter',

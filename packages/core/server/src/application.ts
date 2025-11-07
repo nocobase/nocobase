@@ -285,6 +285,10 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   private static staticCommands = [];
 
+  static registerStaticCommand(callback: (app: Application) => void) {
+    this.staticCommands.push(callback);
+  }
+
   static addCommand(callback: (app: Application) => void) {
     this.staticCommands.push(callback);
   }
@@ -535,7 +539,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
 
   /**
    * This method is deprecated and should not be used.
-   * Use {@link #this.version.get()} instead.
+   * Use {@link #this.getPackageVersion} instead.
    * @deprecated
    */
   getVersion() {
@@ -1144,7 +1148,9 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     //     },
     //   });
     // }, 'Sync');
-    await this.emitAsync('afterUpgrade', this, options);
+    if (!options.quickstart) {
+      await this.emitAsync('afterUpgrade', this, options);
+    }
     await this.restart();
     // this.log.debug(chalk.green(`✨  NocoBase has been upgraded to v${this.getVersion()}`));
     // if (this._started) {
@@ -1311,8 +1317,8 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     });
 
     this._telemetry = new Telemetry({
-      serviceName: `nocobase-${this.name}`,
-      version: this.getVersion(),
+      appName: this.name,
+      version: this.getPackageVersion(),
       ...options.telemetry,
     });
 
@@ -1337,7 +1343,7 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
       }
     });
 
-    this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth' });
+    this._dataSourceManager.use(this._authManager.middleware(), { tag: 'auth', before: 'default' });
     this._dataSourceManager.use(validateFilterParams, { tag: 'validate-filter-params', before: ['auth'] });
 
     this._dataSourceManager.use(parseVariables, {

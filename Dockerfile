@@ -38,7 +38,7 @@ RUN  yarn install && yarn build --no-dts && \
   yarn config set registry $VERDACCIO_URL && \
   cd /tmp/docs && \
   yarn install && \
-  yarn rspress build && \
+  yarn cross-env CHECK_DEAD_LINKS=false rspress build && \
   rm -rf /tmp/node_modules && \
   mkdir /app && \
   cd /app && \

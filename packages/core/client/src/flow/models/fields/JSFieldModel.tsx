@@ -13,6 +13,7 @@ import {
   createSafeWindow,
   createSafeDocument,
   createSafeNavigator,
+  compileRunJs,
 } from '@nocobase/flow-engine';
 import React, { useEffect, useRef } from 'react';
 import { FieldModel } from '../base/FieldModel';
@@ -145,7 +146,22 @@ JSFieldModel.registerFlow({
       defaultParams(ctx) {
         return {
           version: 'v1',
-          code: DEFAULT_CODE,
+          code: `
+function JsReadonlyField() {
+  const React = ctx.React;
+  const { Input } = ctx.antd;
+  return (
+    <Input
+      value={String(ctx.value ?? '')}
+      disabled
+      readOnly
+      style={{ width: '100%' }}
+    />
+  );
+}
+
+ctx.render(<JsReadonlyField />);
+`,
         };
       },
       async handler(ctx, params) {
@@ -160,8 +176,9 @@ JSFieldModel.registerFlow({
             cache: false,
           });
           const navigator = createSafeNavigator();
+          const compiled = await compileRunJs(code);
           await ctx.runjs(
-            code,
+            compiled,
             { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
             { version },
           );

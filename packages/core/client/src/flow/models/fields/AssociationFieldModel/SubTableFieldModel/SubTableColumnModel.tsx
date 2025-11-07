@@ -162,6 +162,11 @@ export class SubTableColumnModel<
       },
       cache: false,
     });
+    this.emitter.on('onSubModelAdded', (subModel: FieldModel) => {
+      if (this.collectionField) {
+        subModel.setProps(this.collectionField.getComponentProps());
+      }
+    });
   }
 
   async afterAddAsSubModel() {

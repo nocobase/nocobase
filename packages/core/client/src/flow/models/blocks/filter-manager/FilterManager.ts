@@ -438,6 +438,7 @@ export class FilterManager {
         }
 
         // 4.4 调用 refresh 方法
+        (targetModel as any).resource.setPage?.(1); // 重置到第一页
         await (targetModel as any).resource.refresh();
       } catch (error) {
         console.error(`Failed to refresh target model "${targetId}": ${error.message}`);

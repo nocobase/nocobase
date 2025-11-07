@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概述",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "管理员配置",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "配置流程",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "谷歌邮箱配置",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "微软邮箱配置",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "常见问题",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "功能介绍",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "邮件中心",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "邮件区块",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "邮件签名",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "邮件模板",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "进阶",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "邮件备注",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "邮件待办",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "邮件标签",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "批量发送",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "自动保存草稿",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

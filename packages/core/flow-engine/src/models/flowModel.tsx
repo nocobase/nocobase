@@ -52,6 +52,7 @@ import { FlowDefinition } from '../FlowDefinition';
 import { FlowSettingsOpenOptions } from '../flowSettings';
 import type { EventDefinition, FlowEvent, DispatchEventOptions } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
+import type { ScheduleOptions } from '../scheduler/ModelOperationScheduler';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
@@ -255,6 +256,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
   get parentId() {
     return this._options.parentId;
+  }
+
+  public scheduleModelOperation(
+    toUid: string,
+    fn: (model: FlowModel) => Promise<void> | void,
+    options?: ScheduleOptions,
+  ) {
+    return this.flowEngine?.scheduleModelOperation(this, toUid, fn, options);
   }
 
   static get meta() {
@@ -896,10 +905,20 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
             if (typeof renderTarget.onMount === 'function') {
               renderTarget.onMount();
             }
+            // 发射 mounted 生命周期事件（严格模式：不吞错，若有错误将以未处理拒绝暴露）
+            void renderTarget.flowEngine?.emitter?.emitAsync('model:mounted', {
+              uid: renderTarget.uid,
+              model: renderTarget,
+            });
             return () => {
               if (typeof renderTarget.onUnmount === 'function') {
                 renderTarget.onUnmount();
               }
+              // 发射 unmounted 生命周期事件（严格模式：不吞错）
+              void renderTarget.flowEngine?.emitter?.emitAsync('model:unmounted', {
+                uid: renderTarget.uid,
+                model: renderTarget,
+              });
             };
           }, [renderTarget]);
 
@@ -1191,7 +1210,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
 
     // 创建新的 fork 实例
-    const forkId = this.forks.size; // 当前集合大小作为索引
+    const forkId = uid(); // 当前集合大小作为索引
     const fork = new ForkFlowModel<this>(this as any, localProps, forkId);
     if (options?.register !== false) {
       this.forks.add(fork as any);
@@ -1336,6 +1355,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       ..._.omit(this._options, ['flowEngine']),
       stepParams: this.stepParams,
       sortIndex: this.sortIndex,
+      flowRegistry: {},
     };
     const subModels = this.subModels as {
       [key: string]: FlowModel | FlowModel[];
@@ -1352,8 +1372,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       }
     }
     for (const [key, flow] of this.flowRegistry.getFlows()) {
-      data['flowRegistry'] = data['flowRegistry'] || {};
-      data['flowRegistry'][key] = flow.toData();
+      data.flowRegistry[key] = flow.toData();
     }
     return data;
   }

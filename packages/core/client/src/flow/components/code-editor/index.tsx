@@ -36,6 +36,7 @@ interface CodeEditorProps {
   name?: string;
   language?: string;
   scene?: string | string[];
+  RightExtra?: React.FC<any>;
 }
 
 export * from './types';
@@ -56,7 +57,9 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
   name,
   language,
   scene,
+  RightExtra,
 }) => {
+  console.log(RightExtra);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const runtimeCtx = useFlowContext<any>();
@@ -136,8 +139,10 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
 
     buttonGroupHeight: 0,
     snippetEntries: [],
+    logs: [],
   });
   extraEditorRef.current.snippetEntries = snippetEntries;
+  extraEditorRef.current.logs = logs;
 
   // snippet group display handled in SnippetsDrawer
 
@@ -160,30 +165,34 @@ export const CodeEditor: React.FC<CodeEditorProps> = ({
         scene={resolvedScene}
         extraEditorRef={extraEditorRef.current}
         extraContent={
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <Button size="small" onClick={() => setSnippetOpen(true)}>
-              {tr('Snippets')}
-            </Button>
-            <>
-              <Button
-                size="small"
-                loading={running}
-                onClick={async () => {
-                  const code = viewRef.current?.state.doc.toString() || '';
-                  clearDiagnostics(viewRef.current);
-                  const res = await run(code);
-                  if (!res?.success) {
-                    const rawErr = res?.error;
-                    const errText = res?.timeout ? tr('Execution timed out') : String(rawErr || tr('Unknown error'));
-                    const pos = parseErrorLineColumn(rawErr);
-                    if (pos && viewRef.current) markErrorAt(viewRef.current, pos.line, pos.column, errText);
-                  }
-                }}
-              >
-                {tr('Run')}
+          RightExtra ? (
+            <RightExtra viewRef={viewRef} />
+          ) : (
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <Button size="small" onClick={() => setSnippetOpen(true)}>
+                {tr('Snippets')}
               </Button>
-            </>
-          </div>
+              <>
+                <Button
+                  size="small"
+                  loading={running}
+                  onClick={async () => {
+                    const code = viewRef.current?.state.doc.toString() || '';
+                    clearDiagnostics(viewRef.current);
+                    const res = await run(code);
+                    if (!res?.success) {
+                      const rawErr = res?.error;
+                      const errText = res?.timeout ? tr('Execution timed out') : String(rawErr || tr('Unknown error'));
+                      const pos = parseErrorLineColumn(rawErr);
+                      if (pos && viewRef.current) markErrorAt(viewRef.current, pos.line, pos.column, errText);
+                    }
+                  }}
+                >
+                  {tr('Run')}
+                </Button>
+              </>
+            </div>
+          )
         }
       />
       <EditorCore

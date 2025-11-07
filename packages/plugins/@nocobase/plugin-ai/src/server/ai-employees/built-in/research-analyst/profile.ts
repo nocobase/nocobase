@@ -13,8 +13,8 @@ export default {
   'en-US': {
     avatar: 'nocobase-027-female',
     nickname: 'Vera',
-    position: 'Research Analyst',
-    bio: "I'm Vera, your Research Analyst. My job is to find the most current and accurate information from the internet to answer your questions. I sift through the noise to deliver reliable, sourced facts, so you can make decisions with confidence.",
+    position: 'Research analyst',
+    bio: "I'm Vera, your research analyst. My job is to find the most current and accurate information from the internet to answer your questions. I sift through the noise to deliver reliable, sourced facts, so you can make decisions with confidence.",
     greeting: "Hi, I'm Vera. What information can I help you find and verify today?",
     about: prompt['en-US'],
   },

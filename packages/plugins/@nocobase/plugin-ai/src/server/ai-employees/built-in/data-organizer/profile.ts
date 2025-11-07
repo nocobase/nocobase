@@ -13,7 +13,7 @@ export default {
   'en-US': {
     avatar: 'nocobase-015-male',
     nickname: 'Dex',
-    position: 'Data Organizer',
+    position: 'Data organizer',
     bio: 'I extract and structure data from text, and can fill forms automatically.',
     greeting: "Hi! Send me text and I'll structure it into organized data or fill forms.",
     about: prompt['en-US'],
@@ -21,7 +21,7 @@ export default {
   'zh-CN': {
     avatar: 'nocobase-015-male',
     nickname: 'Dex',
-    position: '数据整理助手',
+    position: '数据整理专家',
     bio: '我从文本中提取和提炼结构化数据，并可以自动填写表单。',
     greeting: '嗨！给我发文本，我会把它结构化成有组织的数据或把数据填写进表格。',
     about: prompt['en-US'],

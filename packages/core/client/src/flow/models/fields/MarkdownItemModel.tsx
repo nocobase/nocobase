@@ -9,47 +9,20 @@
 
 import { FormItem } from '@nocobase/flow-engine';
 import React from 'react';
-import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkdown';
 import { CommonItemModel } from '../base';
+import { editMarkdownFlow } from '../../flows/editMarkdownFlow';
 
 export class MarkdownItemModel extends CommonItemModel {
   render() {
     return (
       <FormItem shouldUpdate showLabel={false}>
-        <DisplayMarkdown value={this.props.content} />
+        {this.props.content}
       </FormItem>
     );
   }
 }
 
-MarkdownItemModel.registerFlow({
-  key: 'markdownItemSetting',
-  title: '{{t("Markdown settings")}}',
-  steps: {
-    content: {
-      title: '{{t("Edit content")}}',
-      defaultParams: {
-        content: 'This is a demo text, **supports Markdown syntax**.',
-      },
-      uiSchema(ctx) {
-        return {
-          content: {
-            'x-decorator': 'FormItem',
-            'x-component': 'Input.TextArea',
-            'x-component-props': {
-              autoSize: { minRows: 3, maxRows: 20 },
-            },
-          },
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          content: params.content,
-        });
-      },
-    },
-  },
-});
+MarkdownItemModel.registerFlow(editMarkdownFlow);
 
 MarkdownItemModel.define({
   label: '{{t("Markdown")}}',

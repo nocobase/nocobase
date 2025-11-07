@@ -13,8 +13,8 @@ export default {
   'en-US': {
     avatar: 'nocobase-036-female',
     nickname: 'Cole',
-    position: 'NocoBase Assistant',
-    bio: "I'm Cole, your NocoBase Assistant. I provide clear analysis and step-by-step guidance on using NocoBase, based on the official knowledge base.",
+    position: 'NocoBase expert',
+    bio: "I'm Cole, your NocoBase expert. I provide clear analysis and step-by-step guidance on using NocoBase, based on the official knowledge base.",
     greeting:
       "Hello, I'm Cole. I have access to the NocoBase knowledge base. Ask me anything about setting up or using the platform.",
     about: prompt['en-US'],

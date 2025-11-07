@@ -40,6 +40,13 @@ export interface IncomingRequest {
   headers: any;
 }
 
+export interface GatewayRequestContext {
+  req: IncomingMessage;
+  res: ServerResponse;
+  appName: string;
+}
+type GatewayMiddleware = (ctx: GatewayRequestContext, next: () => Promise<void>) => Promise<void> | void;
+
 export type AppSelector = (req: IncomingRequest) => string | Promise<string>;
 export type AppSelectorMiddleware = (ctx: AppSelectorMiddlewareContext, next: () => Promise<void>) => void;
 
@@ -70,6 +77,7 @@ function getSocketPath() {
 
 export class Gateway extends EventEmitter {
   private static instance: Gateway;
+  middlewares: Toposort<GatewayMiddleware>;
   /**
    * use main app as default app to handle request
    */
@@ -128,6 +136,10 @@ export class Gateway extends EventEmitter {
     return Gateway.instance;
   }
 
+  use(middleware: GatewayMiddleware, options?: ToposortOptions) {
+    this.middlewares.add(middleware, options);
+  }
+
   static async getIPCSocketClient() {
     const socketPath = getSocketPath();
     try {
@@ -145,6 +157,7 @@ export class Gateway extends EventEmitter {
   }
 
   public reset() {
+    this.middlewares = new Toposort<GatewayMiddleware>();
     this.selectorMiddlewares = new Toposort<AppSelectorMiddleware>();
 
     this.addAppSelectorMiddleware(
@@ -227,7 +240,15 @@ export class Gateway extends EventEmitter {
   }
 
   responseErrorWithCode(code, res, options) {
+    const log = this.getLogger(options.appName, res);
     const error = applyErrorWithArgs(getErrorWithCode(code), options);
+    log.error(error.message, {
+      method: 'responseErrorWithCode',
+      code,
+      error,
+      statusCode: res.statusCode,
+      appName: options.appName,
+    });
     this.responseError(res, error);
   }
 
@@ -293,10 +314,15 @@ export class Gateway extends EventEmitter {
       void AppSupervisor.getInstance().bootStrapApp(handleApp);
     }
 
-    let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'initializing');
+    let appStatus = AppSupervisor.getInstance().getAppStatus(handleApp, 'preparing');
 
     if (appStatus === 'not_found') {
       this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
+      return;
+    }
+
+    if (appStatus === 'preparing') {
+      this.responseErrorWithCode('APP_PREPARING', res, { appName: handleApp });
       return;
     }
 
@@ -328,7 +354,15 @@ export class Gateway extends EventEmitter {
       AppSupervisor.getInstance().touchApp(handleApp);
     }
 
-    app.callback()(req, res);
+    const ctx: GatewayRequestContext = { req, res, appName: handleApp };
+    const fn = compose([
+      ...this.middlewares.nodes,
+      async (_ctx) => {
+        await app.callback()(req, res);
+      },
+    ]);
+
+    await fn(ctx);
   }
 
   getAppSelectorMiddlewares() {

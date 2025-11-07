@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { InputNumber, Select, Space, Divider, DatePickerProps, theme } from 'antd';
 import dayjs from 'dayjs';
 import { css } from '@emotion/css';
@@ -53,8 +53,13 @@ type SmartDatePickerProps = {
 );
 
 const SmartDatePicker: React.FC<SmartDatePickerProps> = (props) => {
-  const { isRange, defaultValue, ...rest } = props as any;
-  return isRange ? <FilterRangePicker {...rest} /> : <FilterDatePicker {...rest} />;
+  const { isRange, defaultValue, onChange: _onChange, ...rest } = props as any;
+  const onChange = useCallback((dates, dateStrings) => _onChange(dateStrings), [_onChange]);
+  return isRange ? (
+    <FilterRangePicker {...rest} onChange={onChange} />
+  ) : (
+    <FilterDatePicker {...rest} onChange={onChange} />
+  );
 };
 
 export const DateFilterDynamicComponent = (props) => {
@@ -120,7 +125,7 @@ export const DateFilterDynamicComponent = (props) => {
         open={open}
         onDropdownVisibleChange={setOpen}
         {...props}
-        allowClear
+        allowClear={false}
         style={{
           width: '100%',
           minWidth: 100,

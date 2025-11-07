@@ -8,25 +8,26 @@
  */
 
 import {
-  RemoteSchemaComponent,
-  AssociationField,
-  useDesignable,
-  Select,
-  DatePicker,
   Action,
+  AssociationField,
+  DatePicker,
+  RemoteSchemaComponent,
   SchemaComponentOptions,
+  Select,
   TimePicker,
+  useDesignable,
 } from '@nocobase/client';
-import React, { useCallback } from 'react';
-import { Outlet, useParams } from 'react-router-dom';
 import { Button as MobileButton, Dialog as MobileDialog } from 'antd-mobile';
-import { MobilePicker } from './components/MobilePicker';
+import React, { useCallback } from 'react';
+import { isMobile } from 'react-device-detect';
+import { Outlet, useParams } from 'react-router-dom';
 import {
+  MobileDateFilterWithPicker,
   MobileDateTimePicker,
   MobileRangePicker,
-  MobileDateFilterWithPicker,
   MobileTimePicker,
 } from './components/MobileDatePicker';
+import { MobilePicker } from './components/MobilePicker';
 
 const AssociationFieldMobile = (props) => {
   return <AssociationField {...props} popupMatchSelectWidth={true} />;
@@ -42,11 +43,10 @@ AssociationFieldMobile.ReadPretty = AssociationField.ReadPretty;
 AssociationFieldMobile.FileSelector = AssociationField.FileSelector;
 
 const DatePickerMobile = (props) => {
-  const { designable } = useDesignable();
-  if (designable !== false) {
-    return <DatePicker {...props} />;
-  } else {
+  if (isMobile) {
     return <MobileDateTimePicker {...props} />;
+  } else {
+    return <DatePicker {...props} />;
   }
 };
 DatePickerMobile.FilterWithPicker = (props) => {

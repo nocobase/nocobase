@@ -14,6 +14,7 @@ import {
   createSafeWindow,
   createSafeNavigator,
   escapeT,
+  compileRunJs,
 } from '@nocobase/flow-engine';
 import React from 'react';
 import { CodeEditor } from '../../components/code-editor';
@@ -136,12 +137,17 @@ JSItemModel.registerFlow({
         return {
           version: 'v1',
           code: `
-ctx.element.innerHTML = \`
-  <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6;">
-    <h3 style="color: #1890ff; margin: 0 0 12px 0; font-size: 18px; font-weight: 600;">JS Item</h3>
-    <div style="color:#555">This area is rendered by your JavaScript code.</div>
-  </div>
-\`;`.trim(),
+function JsItem() {
+  return (
+    <div style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif", lineHeight: 1.6 }}>
+      <h3 style={{ color: '#1890ff', margin: '0 0 12px 0', fontSize: 18, fontWeight: 600 }}>JS Item</h3>
+      <div style={{ color: '#555' }}>This area is rendered by your JavaScript code.</div>
+    </div>
+  );
+}
+
+ctx.render(<JsItem />);
+`.trim(),
         };
       },
       async handler(ctx, params) {
@@ -151,8 +157,9 @@ ctx.element.innerHTML = \`
             get: () => new ElementProxy(element),
           });
           const navigator = createSafeNavigator();
+          const compiled = await compileRunJs(code);
           await ctx.runjs(
-            code,
+            compiled,
             { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
             { version },
           );

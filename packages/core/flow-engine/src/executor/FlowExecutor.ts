@@ -16,6 +16,7 @@ import type { ActionDefinition, ApplyFlowCacheEntry, StepDefinition } from '../t
 import { FlowExitException, resolveDefaultParams } from '../utils';
 import { FlowExitAllException } from '../utils/exceptions';
 import { setupRuntimeContextSteps } from '../utils/setupRuntimeContextSteps';
+import { createEphemeralContext } from '../utils/createEphemeralContext';
 
 export class FlowExecutor {
   constructor(private readonly engine: FlowEngine) {}
@@ -100,9 +101,10 @@ export class FlowExecutor {
 
     for (const [stepKey, step] of Object.entries(stepDefs) as [string, StepDefinition][]) {
       // Resolve handler and params
-      let handler: ActionDefinition['handler'] | undefined;
+      let handler: ActionDefinition<FlowModel, FlowRuntimeContext>['handler'] | undefined;
       let combinedParams: Record<string, any> = {};
       let useRawParams: StepDefinition['useRawParams'] = step.useRawParams;
+      let runtimeCtx: FlowRuntimeContext;
       if (step.use) {
         const actionDefinition = model.getAction(step.use);
         if (!actionDefinition) {
@@ -111,14 +113,23 @@ export class FlowExecutor {
           );
           continue;
         }
+
+        // 为当前 step 创建“临时上下文”，并直接注入 action 与 step 提供的定义（step 覆盖 action）
+        runtimeCtx = await createEphemeralContext<FlowRuntimeContext>(flowContext, {
+          ...actionDefinition,
+          ...step,
+        });
+
         handler = step.handler || actionDefinition.handler;
         useRawParams = useRawParams ?? actionDefinition.useRawParams;
-        const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, flowContext);
-        const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
+        const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, runtimeCtx);
+        const stepDefaultParams = await resolveDefaultParams(step.defaultParams, runtimeCtx);
         combinedParams = { ...actionDefaultParams, ...stepDefaultParams };
       } else if (step.handler) {
+        // 对于内联 handler，为该步创建临时上下文并注入 step 定义
+        runtimeCtx = await createEphemeralContext<FlowRuntimeContext>(flowContext, step);
         handler = step.handler;
-        const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
+        const stepDefaultParams = await resolveDefaultParams(step.defaultParams, runtimeCtx);
         combinedParams = { ...stepDefaultParams };
       } else {
         flowContext.logger.error(
@@ -133,10 +144,10 @@ export class FlowExecutor {
       }
       if (typeof useRawParams === 'function') {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        useRawParams = await useRawParams(flowContext);
+        useRawParams = await useRawParams(runtimeCtx);
       }
       if (!useRawParams) {
-        combinedParams = await flowContext.resolveJsonTemplate(combinedParams);
+        combinedParams = await runtimeCtx.resolveJsonTemplate(combinedParams);
       }
       try {
         if (!handler) {
@@ -145,7 +156,7 @@ export class FlowExecutor {
           );
           continue;
         }
-        const currentStepResult = handler(flowContext, combinedParams);
+        const currentStepResult = handler(runtimeCtx, combinedParams);
         const isAwait = step.isAwait !== false;
         lastResult = isAwait ? await currentStepResult : currentStepResult;
 
@@ -193,6 +204,12 @@ export class FlowExecutor {
     const logger = model.context.logger;
 
     try {
+      await this.engine.emitter.emitAsync(`model:event:${eventName}:start`, {
+        uid: model.uid,
+        model,
+        runId,
+        inputArgs,
+      });
       await model.onDispatchEventStart?.(eventName, options, inputArgs);
     } catch (err) {
       if (isBeforeRender && err instanceof FlowExitException) {
@@ -299,6 +316,13 @@ export class FlowExecutor {
       } catch (hookErr) {
         logger.error({ err: hookErr }, `BaseModel.dispatchEvent: End hook error for event '${eventName}'`);
       }
+      await this.engine.emitter.emitAsync(`model:event:${eventName}:end`, {
+        uid: model.uid,
+        model,
+        runId,
+        inputArgs,
+        result,
+      });
       return result;
     } catch (error) {
       // 进入错误钩子并记录
@@ -311,6 +335,13 @@ export class FlowExecutor {
         { err: error },
         `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`,
       );
+      await this.engine.emitter.emitAsync(`model:event:${eventName}:error`, {
+        uid: model.uid,
+        model,
+        runId,
+        inputArgs,
+        error,
+      });
       if (throwOnError) throw error;
     }
   }

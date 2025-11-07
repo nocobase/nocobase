@@ -36,6 +36,8 @@ const Columns = observer<any>(({ record, model, index }) => {
     >
       {model.mapSubModels('actions', (action: ActionModel) => {
         const fork = action.createFork({}, `${index}`);
+        // TODO: reset fork 的状态, fork 复用存在旧状态污染问题
+        fork.invalidateFlowCache('beforeRender');
         const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
           () => (fork.context as any).collection,
           fork.context.t('Current record'),
@@ -92,6 +94,10 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
   }
 
   getColumnProps() {
+    // 非配置态且列被标记为隐藏时，直接返回 null，从表格列中移除整列
+    if (this.hidden && !this.flowEngine.flowSettings?.enabled) {
+      return null;
+    }
     const titleContent = (
       <Droppable model={this}>
         <FlowsFloatContextMenu
@@ -125,7 +131,6 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
     );
     return {
       ...this.props,
-      width: 100,
       title: this.props.tooltip ? (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           {titleContent}
@@ -141,7 +146,23 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
   }
 
   render() {
-    return (value, record, index) => <Columns record={record} model={this} index={index} />;
+    return (value, record, index) => (
+      <div
+        className={css`
+          width: ${this.props.width - 8}px;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          overflow: hidden;
+          transition: overflow 0.3s ease 0.8s; /* 加入延迟 */
+
+          &:hover {
+            overflow: ${this.flowEngine.flowSettings?.enabled ? 'visible' : 'hidden'}; /* 鼠标悬停时，内容可见 */
+          }
+        `}
+      >
+        <Columns record={record} model={this} index={index} />
+      </div>
+    );
   }
 }
 

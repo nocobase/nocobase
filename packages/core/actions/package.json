@@ -1,14 +1,14 @@
 {
   "name": "@nocobase/actions",
-  "version": "2.0.0-alpha.20",
+  "version": "2.0.0-alpha.36",
   "description": "",
   "license": "AGPL-3.0",
   "main": "./lib/index.js",
   "types": "./lib/index.d.ts",
   "dependencies": {
-    "@nocobase/cache": "2.0.0-alpha.20",
-    "@nocobase/database": "2.0.0-alpha.20",
-    "@nocobase/resourcer": "2.0.0-alpha.20"
+    "@nocobase/cache": "2.0.0-alpha.36",
+    "@nocobase/database": "2.0.0-alpha.36",
+    "@nocobase/resourcer": "2.0.0-alpha.36"
   },
   "repository": {
     "type": "git",

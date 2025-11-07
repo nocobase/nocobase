@@ -1,0 +1,100 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Users",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "Roles and permissions",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Roles",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "Permissions",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "Application in UI",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "Role union",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "Development",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Extend permission tabs",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Department",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Departments",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "Department roles",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "User data synchronization",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Synchronization management",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Data source",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Development",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Extending synchronized data sources",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "Extending sync target resources",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]
