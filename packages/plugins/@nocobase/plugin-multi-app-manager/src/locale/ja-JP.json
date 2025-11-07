@@ -10,5 +10,9 @@
   "Auto start": "自動起動",
   "Start mode": "起動モード",
   "Start on first visit": "初回訪問時に起動する",
-  "Start with main application": "メインアプリケーションと共に起動する"
+  "Start with main application": "メインアプリケーションと共に起動する",
+  "Authentication options": "認証オプション",
+  "JWT secret": "JWT秘密鍵",
+  "Automatically generate a JWT secret": "JWT秘密鍵を自動生成",
+  "An independent JWT secret ensures data and session isolation from other applications.": "独立したJWT秘密鍵により、他のアプリケーションからのデータとセッションの分離を確保します。"
 }

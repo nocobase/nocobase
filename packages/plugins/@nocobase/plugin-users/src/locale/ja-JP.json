@@ -4,5 +4,9 @@
   "Add user": "ユーザーを追加",
   "Remove user": "ユーザーを削除",
   "Are you sure you want to remove it?": "本当に削除してよろしいですか？",
-  "Random password": "ランダムパスワード"
+  "Random password": "ランダムパスワード",
+  "Users manager": "ユーザー管理",
+  "Allow edit profile": "プロファイル編集を許可",
+  "Allow change password": "パスワード変更を許可",
+  "User profile is not allowed to be edited": "ユーザープロファイルの編集は許可されていません"
 }

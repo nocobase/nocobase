@@ -1,4 +1,8 @@
 {
+  "The email is incorrect, please re-enter": "メールアドレスが間違っています。再入力してください",
   "Please fill in your email address": "メールアドレスを入力してください",
-  "The password is incorrect, please re-enter": "パスワードが正しくありません。再度入力してください。"
+  "The password is incorrect, please re-enter": "パスワードが正しくありません。再度入力してください。",
+  "Not a valid cellphone number, please re-enter": "有効な携帯電話番号ではありません。再入力してください",
+  "The phone number has been registered, please login directly": "この電話番号は既に登録されています。直接ログインしてください",
+  "The phone number is not registered, please register first": "この電話番号は登録されていません。最初に登録してください"
 }

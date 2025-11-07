@@ -1,9 +1,9 @@
 {
   "SQL action": "SQL操作",
-  "Execute a SQL statement in database": "SQLステートメントを実行する",
-  "Usage of SQL query result is not supported yet.": "SQLクエリ結果はまだサポートされていません",
   "Execute a SQL statement in database.": "データベース内でSQL文を実行します。",
   "Select a data source to execute SQL.": "SQLを実行するためのデータソースを選択します。",
   "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "SQLクエリ結果は<1>JSONクエリノード</1>を介して使用できます（商用プラグイン）。",
-  "Include meta information of this query in result": "結果にこのクエリのメタ情報を含める"
+  "Include meta information of this query in result": "結果にこのクエリのメタ情報を含める",
+  "Execute a SQL statement in database": "SQLステートメントを実行する",
+  "Usage of SQL query result is not supported yet.": "SQLクエリ結果はまだサポートされていません"
 }

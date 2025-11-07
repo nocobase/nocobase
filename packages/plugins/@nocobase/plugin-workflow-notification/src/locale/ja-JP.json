@@ -1,0 +1,4 @@
+{
+  "Notification": "通知",
+  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "通知を送信します。上流ノードの変数を内容やその他の設定として使用できます。"
+}

@@ -1,0 +1,23 @@
+{
+  "Email": "メール",
+  "From": "送信者",
+  "To": "宛先",
+  "CC": "CC",
+  "BCC": "BCC",
+  "Add email address": "メールアドレスを追加",
+  "Subject": "件名",
+  "Content": "内容",
+  "Host": "ホスト",
+  "Port": "ポート",
+  "Secure": "セキュアモード",
+  "Account": "アカウント",
+  "Password": "パスワード",
+  "Configure": "設定",
+  "The email address that will be used as the sender": "送信者として使用するメールアドレス",
+  "SMTP mail": "SMTP メール",
+  "SMTP server host": "SMTP サーバーホスト",
+  "Content type": "コンテンツタイプ",
+  "Plain text": "プレーンテキスト",
+  "Transport": "転送方式",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "通常、ポート465を使用する場合はtrueに設定し、そうでなければfalseに設定してください。"
+}

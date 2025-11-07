@@ -5,7 +5,19 @@
   "Permissions": "権限",
   "Roles & Permissions": "ロールと権限",
   "General": "一般",
-  "Menu": "メニュー",
+  "Desktop menu": "デスクトップメニュー",
   "Plugin settings": "プラグインの設定",
-  "Data sources": "データソース"
+  "Data sources": "データソース",
+  "Independent roles": "独立役割",
+  "Allow roles union": "役割の結合を許可",
+  "Roles union only": "役割結合のみ",
+  "Role mode": "役割モード",
+  "Saved successfully": "正常に保存されました",
+  "Please select role mode": "役割モードを選択してください",
+  "Full permissions": "全権限",
+  "Role mode doc": "https://docs-cn.nocobase.com/handbook/acl/manual",
+  "Do not use role union. Users need to switch between their roles individually.": "役割結合を使用しません。ユーザーは個別に役割を切り替える必要があります。",
+  "Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.": "ユーザーが役割結合を使用できるようにします。これは、すべての役割の権限を同時に使用するか、個別の役割を切り替えることができることを意味します。",
+  "Force users to use only role union. They cannot switch between individual roles.": "ユーザーに役割結合のみを使用することを強制します。個別の役割を切り替えることはできません。",
+  "Menu": "メニュー"
 }
