@@ -235,3 +235,75 @@ jobs:
           DB_TEST_PREFIX: test_
           ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
     timeout-minutes: 60
+
+  postgres-test-coverage:
+    strategy:
+      matrix:
+        node_version: ['20']
+        underscored: [true]
+        schema: [public]
+        collection_schema: [public]
+        cache_redis: ['']
+        include:
+          - node_version: 20
+            underscored: true
+            schema: public
+            collection_schema: public
+            cache_redis: redis://redis:6379/0
+    runs-on: ubuntu-latest
+    container: node:${{ matrix.node_version }}
+    services:
+      # Label used to access the service container
+      postgres:
+        # Docker Hub image
+        image: postgres:11
+        # Provide the password for postgres
+        env:
+          POSTGRES_USER: nocobase
+          POSTGRES_PASSWORD: password
+        # Set health checks to wait until postgres has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis/redis-stack-server:latest
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+      - name: Use Node.js ${{ matrix.node_version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node_version }}
+          cache: 'yarn'
+
+      - name: Install project dependencies
+        run: yarn install
+      - name: Test with postgres
+        run: |
+          ./node_modules/.bin/tsx packages/core/test/src/scripts/test-db-creator.ts &
+          sleep 1
+          yarn test-coverage:server
+        env:
+          LOGGER_LEVEL: error
+          DB_DIALECT: postgres
+          DB_HOST: postgres
+          DB_PORT: 5432
+          DB_USER: nocobase
+          DB_PASSWORD: password
+          DB_DATABASE: nocobase
+          DB_UNDERSCORED: ${{ matrix.underscored }}
+          DB_SCHEMA: ${{ matrix.schema }}
+          COLLECTION_MANAGER_SCHEMA: ${{ matrix.collection_schema }}
+          DB_TEST_DISTRIBUTOR_PORT: 23450
+          DB_TEST_PREFIX: test
+          ENCRYPTION_FIELD_KEY: 1%&glK;<UA}aIxJVc53-4G(rTi0vg@J]
+          CACHE_REDIS_URL: ${{ matrix.cache_redis }}
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-coverage-report
+          path: packages/**/coverage
+    timeout-minutes: 60
