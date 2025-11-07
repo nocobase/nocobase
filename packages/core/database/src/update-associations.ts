@@ -324,7 +324,6 @@ export async function updateSingleAssociation(
     return true;
   }
 
-  const createAccessor = association.accessors.create;
   let dataKey: string;
   let M: ModelStatic<Model>;
   if (association.associationType === 'BelongsTo') {
@@ -358,7 +357,11 @@ export async function updateSingleAssociation(
           delete updateValues[association.foreignKey];
         }
 
-        await instance.update(updateValues, { ...options, transaction });
+        const { repository, filterTargetKey } = instance.constructor['collection'];
+        const filterByTk = Array.isArray(filterTargetKey)
+          ? filterTargetKey.reduce((keys, key) => (keys[key] = instance.get(key)), {})
+          : instance.get(filterTargetKey);
+        await repository.update({ ...options, filterByTk, values: updateValues, transaction });
       }
 
       await updateAssociations(instance, value, {
@@ -372,18 +375,20 @@ export async function updateSingleAssociation(
     }
   }
 
-  (association.target as typeof Model).collection.validate({
+  const TargetModel = association.target as typeof Model;
+  const targetCollection = TargetModel.collection;
+  targetCollection.validate({
     values: value,
     operation: 'create',
   });
-  const instance = await model[createAccessor](value, { context, transaction });
 
-  await updateAssociations(instance, value, {
-    ...options,
-    transaction,
-    associationContext: association,
-    updateAssociationValues: keys,
-  });
+  if (association instanceof HasOne) {
+    value[association.foreignKey] = model.get(dataKey);
+  }
+  const instance = await targetCollection.repository.create({ values: value, context, transaction });
+  if (association instanceof BelongsTo) {
+    await model.update({ [association.foreignKey]: instance.get(dataKey) }, { transaction });
+  }
 
   model.setDataValue(key, instance);
   // @ts-ignore
@@ -422,8 +427,7 @@ export async function updateMultipleAssociation(
   const keys = getKeysByPrefix(updateAssociationValues, key);
 
   const setAccessor = association.accessors.set;
-
-  const createAccessor = association.accessors.create;
+  const addAccessor = association.accessors.add;
 
   if (isUndefinedOrNull(value)) {
     await model[setAccessor](null, { transaction, context, individualHooks: true, validate: false });
@@ -463,7 +467,7 @@ export async function updateMultipleAssociation(
       // @ts-ignore
       const targetKey = (association as any).targetKey || association.options.targetKey || 'id';
 
-      if (item[targetKey]) {
+      if (item[targetKey] != null) {
         const attributes = {
           [targetKey]: item[targetKey],
         };
@@ -503,28 +507,35 @@ export async function updateMultipleAssociation(
 
     const throughValue = item[through];
 
-    if (throughValue) {
-      accessorOptions['through'] = throughValue;
-    }
-
     if (pk !== targetKey && !isUndefinedOrNull(item[pk]) && isUndefinedOrNull(item[targetKey])) {
       throw new Error(`${targetKey} field value is empty`);
     }
 
-    if (isUndefinedOrNull(item[targetKey])) {
+    if (item[targetKey] == null) {
       // create new record
-      (association.target as typeof Model).collection.validate({
+      const TargetModel = association.target as typeof Model;
+      const targetCollection = TargetModel.collection;
+      targetCollection.validate({
         values: item,
         operation: 'create',
       });
-      const instance = await model[createAccessor](item, accessorOptions);
 
-      await updateAssociations(instance, item, {
-        ...options,
-        transaction,
-        associationContext: association,
-        updateAssociationValues: keys,
-      });
+      if (association instanceof HasMany) {
+        item[association.foreignKey] = model.get((model.constructor as ModelStatic<Model>).primaryKeyAttribute);
+      }
+      const instance = await targetCollection.repository.create({ ...accessorOptions, values: item });
+      if (association instanceof BelongsToMany) {
+        const ThroughModel = (<any>association).through.model as typeof Model;
+        await ThroughModel.create(
+          {
+            [association.foreignKey]: model.get(association.sourceKey),
+            [association.otherKey]: instance.get(association.targetKey),
+            ...throughValue,
+          },
+          accessorOptions,
+        );
+      }
+
       newItems.push(instance);
     } else {
       // set & update record
@@ -537,11 +548,16 @@ export async function updateMultipleAssociation(
       });
       if (!instance) {
         // create new record
-        (association.target as typeof Model).collection.validate({
+        const TargetModel = association.target as typeof Model;
+        const targetCollection = TargetModel.collection;
+        targetCollection.validate({
           values: item,
           operation: 'create',
         });
-        instance = await model[createAccessor](item, accessorOptions);
+
+        instance = await targetCollection.repository.create({ ...accessorOptions, values: item });
+        await model[addAccessor](instance, accessorOptions);
+
         await updateAssociations(instance, item, {
           ...options,
           transaction,
@@ -551,7 +567,6 @@ export async function updateMultipleAssociation(
         newItems.push(instance);
         continue;
       }
-      const addAccessor = association.accessors.add;
 
       await model[addAccessor](instance, accessorOptions);
 
@@ -566,7 +581,11 @@ export async function updateMultipleAssociation(
           values: item,
           operation: 'update',
         });
-        await instance.update(item, { ...options, transaction });
+        const { repository, filterTargetKey } = instance.constructor['collection'];
+        const filterByTk = Array.isArray(filterTargetKey)
+          ? filterTargetKey.reduce((keys, key) => (keys[key] = instance.get(key)), {})
+          : instance.get(filterTargetKey);
+        await repository.update({ ...options, filterByTk, values: item, transaction });
       }
       await updateAssociations(instance, item, {
         ...options,

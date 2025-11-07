@@ -346,9 +346,11 @@ describe('update associations', () => {
       await User.model.create<any>({ name: 'user02' });
       const user1 = await User.model.create<any>({ name: 'user1' });
       await updateAssociations(user1, {
-        posts: {
-          name: 'post1',
-        },
+        posts: [
+          {
+            name: 'post1',
+          },
+        ],
       });
       expect(user1.toJSON()).toMatchObject({
         name: 'user1',
@@ -571,6 +573,11 @@ describe('update associations', () => {
       const comment1 = await Comment.model.findOne({
         where: { name: 'comment1' },
       });
+      const posts = await Post.model.findAll();
+      const comments = await Comment.model.findAll();
+
+      expect(posts.length).toBe(2);
+      expect(comments.length).toBe(4);
 
       expect(post1).toMatchObject({
         userId: user.get('id'),

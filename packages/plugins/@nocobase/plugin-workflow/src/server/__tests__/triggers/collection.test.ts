@@ -157,9 +157,10 @@ describe('workflow > triggers > collection', () => {
 
       await sleep(500);
 
-      const executions = await workflow.getExecutions();
-      expect(executions.length).toBe(1);
-      expect(executions[0].context.data.title).toBe('c1');
+      const executions = await workflow.getExecutions({ order: [['id', 'ASC']] });
+      expect(executions.length).toBe(2);
+      expect(executions[0].context.data.title).toBeFalsy();
+      expect(executions[1].context.data.title).toBe('c1');
     });
 
     it('skipWorkflow', async () => {
@@ -1262,6 +1263,74 @@ describe('workflow > triggers > collection', () => {
 
       const p2s = await AnotherPostRepo.find();
       expect(p2s.length).toBe(1);
+    });
+  });
+
+  describe('association triggering', () => {
+    it('trigger create event on belongsTo item', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 1,
+          collection: 'categories',
+        },
+      });
+      const p1 = await PostRepo.create({ values: { title: 't1', category: { title: 'c1' } } });
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.title).toBe('c1');
+    });
+
+    it('trigger update event on belongsTo item', async () => {
+      const c1 = await CategoryRepo.create({ values: { title: 'c1' } });
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 2,
+          collection: 'categories',
+        },
+      });
+      const p1 = await PostRepo.create({
+        values: { title: 't1', category: { id: c1.id, title: 'c2' } },
+        updateAssociationValues: ['category'],
+      });
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.title).toBe('c2');
+    });
+
+    it('trigger update event on hasMany items', async () => {
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+      const c1 = await CategoryRepo.create({ values: { title: 'c1' } });
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        sync: true,
+        config: {
+          mode: 2,
+          collection: 'posts',
+          changed: ['title'],
+        },
+      });
+      const p1Updated = p1.set('title', 't2').get();
+      await CategoryRepo.update({
+        filterByTk: c1.id,
+        values: { ...c1.get(), posts: [p1Updated] },
+        updateAssociationValues: ['posts'],
+      });
+      await p1.reload();
+      expect(p1.title).toBe('t2');
+
+      const executions = await workflow.getExecutions();
+      expect(executions.length).toBe(1);
+      expect(executions[0].context.data.title).toBe('t2');
     });
   });
 });
