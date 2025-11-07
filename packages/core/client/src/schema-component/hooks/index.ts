@@ -19,3 +19,4 @@ export * from './useFieldTitle';
 export * from './useProps';
 export * from './useBlockSize';
 export * from './useFieldModeOptions';
+export * from './useIsShowTableSelectRecord';
