@@ -16,4 +16,4 @@ export class VditorFieldModel extends FieldModel {
     return markdown.edit(this.props);
   }
 }
-EditableItemModel.bindModelToInterface('VditorFieldModel', ['vditor'], { isDefault: true });
+EditableItemModel.bindModelToInterface('VditorFieldModel', ['vditor', 'markdown'], { isDefault: true });

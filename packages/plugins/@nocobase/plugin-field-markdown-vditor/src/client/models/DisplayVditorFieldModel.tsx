@@ -65,4 +65,4 @@ DisplayVditorFieldModel.registerFlow({
   },
 });
 
-DisplayItemModel.bindModelToInterface('DisplayVditorFieldModel', ['vditor'], { isDefault: true });
+DisplayItemModel.bindModelToInterface('DisplayVditorFieldModel', ['vditor', 'markdown'], { isDefault: true });
