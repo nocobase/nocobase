@@ -130,12 +130,29 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   }
 
   async update(filterByTk: string | number, data: Partial<TDataItem>, options?: AxiosRequestConfig): Promise<void> {
+    const collection = this.context.collection;
+    const filterTargetKey = collection.filterTargetKey;
+    let result = data;
+    const tkData = collection?.getFilterByTK(this.context.record);
+    if (Array.isArray(filterTargetKey)) {
+      result = {
+        ...data,
+        ...(tkData || {}),
+      };
+    } else {
+      result = {
+        ...data,
+        [filterTargetKey]: tkData,
+      };
+    }
+    console.log(result);
+
     const config = this.mergeRequestConfig(
       {
         params: {
           filterByTk,
         },
-        data,
+        data: result,
       },
       this.updateActionOptions,
       options,

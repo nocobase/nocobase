@@ -80,8 +80,26 @@ const renderToolbarItems = (
     });
 };
 
+const toolbarPositionToCSS = {
+  inside: `
+    top: 2px;
+  `,
+  above: `
+    top: 0px;
+    transform: translateY(-100%);
+    padding-bottom: 2px;
+    margin-bottom: -2px;
+  `,
+  below: `
+    top: 0px;
+    transform: translateY(100%);
+    padding-top: 2px;
+    margin-top: -2px;
+  `,
+};
+
 // 使用与 NocoBase 一致的悬浮工具栏样式
-const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition }) => css`
+const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition = 'inside' }) => css`
   position: relative;
   display: inline;
 
@@ -147,10 +165,7 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition
       display: none; // 防止遮挡其它 icons
       position: absolute;
       right: 2px;
-      top: ${toolbarPosition === 'above' ? '0px' : '2px'};
-      ${toolbarPosition === 'above' ? 'transform: translateY(-100%);' : ''}
-      ${toolbarPosition === 'above' ? 'padding-bottom: 2px;' : ''}
-      ${toolbarPosition === 'above' ? 'margin-bottom: -2px;' : ''}
+      ${toolbarPositionToCSS[toolbarPosition] || ''}
       line-height: 16px;
       pointer-events: all;
 
@@ -297,7 +312,7 @@ interface ModelProvidedProps {
   /**
    * @default 'inside'
    */
-  toolbarPosition?: 'inside' | 'above';
+  toolbarPosition?: 'inside' | 'above' | 'below';
 }
 
 interface ModelByIdProps {
@@ -332,7 +347,7 @@ interface ModelByIdProps {
   /**
    * @default 'inside'
    */
-  toolbarPosition?: 'inside' | 'above';
+  toolbarPosition?: 'inside' | 'above' | 'below';
 }
 
 type FlowsFloatContextMenuProps = ModelProvidedProps | ModelByIdProps;

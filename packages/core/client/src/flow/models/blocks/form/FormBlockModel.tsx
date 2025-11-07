@@ -121,7 +121,10 @@ export class FormBlockModel<
       },
       cache: false,
       meta: formValuesMeta,
-      resolveOnServer: createAssociationSubpathResolver(() => this.collection),
+      resolveOnServer: createAssociationSubpathResolver(
+        () => this.collection,
+        () => this.form.getFieldsValue(),
+      ),
       serverOnlyWhenContextParams: true,
     });
   }

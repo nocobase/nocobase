@@ -400,4 +400,65 @@ describe('objectVariable utilities', () => {
     expect(resolved).toEqual({ a: 7 });
     expect((ctx as any).api.request).not.toHaveBeenCalled();
   });
+
+  it('local-first: toOne association subpath uses local value and skips server', async () => {
+    const { engine, collection } = setupEngineWithCollections();
+    const obj = { author: { id: 7, name: 'LocalName' } };
+    const ctx = engine.context as any;
+
+    (ctx as any).api = { request: vi.fn() };
+
+    const metaFactory = createAssociationAwareObjectMetaFactory(
+      () => collection,
+      'Current object',
+      () => obj,
+    );
+
+    ctx.defineProperty('obj', {
+      get: () => obj,
+      cache: false,
+      meta: metaFactory,
+      // 启用“本地优先”：传入 valueAccessor，以便当本地已有该子路径时跳过服务端
+      resolveOnServer: createAssociationSubpathResolver(
+        () => collection,
+        () => obj,
+      ),
+      serverOnlyWhenContextParams: true,
+    });
+
+    const template = { x: '{{ ctx.obj.author.name }}' } as any;
+    const resolved = await (ctx as any).resolveJsonTemplate(template);
+    expect(resolved).toEqual({ x: 'LocalName' });
+    expect((ctx as any).api.request).not.toHaveBeenCalled();
+  });
+
+  it('local-first: toMany association subpath (index + dot) uses local value and skips server', async () => {
+    const { engine, collection } = setupEngineWithCollections();
+    const obj = { tags: [{ id: 11, name: 'T1' }] };
+    const ctx = engine.context as any;
+
+    (ctx as any).api = { request: vi.fn() };
+
+    const metaFactory = createAssociationAwareObjectMetaFactory(
+      () => collection,
+      'Current object',
+      () => obj,
+    );
+
+    ctx.defineProperty('obj', {
+      get: () => obj,
+      cache: false,
+      meta: metaFactory,
+      resolveOnServer: createAssociationSubpathResolver(
+        () => collection,
+        () => obj,
+      ),
+      serverOnlyWhenContextParams: true,
+    });
+
+    const template = { x: '{{ ctx.obj.tags[0].name }}' } as any;
+    const resolved = await (ctx as any).resolveJsonTemplate(template);
+    expect(resolved).toEqual({ x: 'T1' });
+    expect((ctx as any).api.request).not.toHaveBeenCalled();
+  });
 });
