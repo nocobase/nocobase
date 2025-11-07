@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { Liquid } from 'liquidjs';
-
+import { merge } from 'lodash';
 export class LiquidEngine extends Liquid {
   constructor(options: any) {
     super({
@@ -92,7 +92,7 @@ export class LiquidEngine extends Liquid {
       const resolvedList = await Promise.all(contexts.map((c) => ctx.resolveJsonTemplate(c)));
 
       // 4️⃣ 合并多个解析结果（深度合并）
-      const resolvedCtx = resolvedList.reduce((acc, cur) => _.merge(acc, cur), {});
+      const resolvedCtx = resolvedList.reduce((acc, cur) => merge(acc, cur), {});
 
       // 5️⃣ 渲染模板
       return await this.render(template, { ctx: resolvedCtx });
