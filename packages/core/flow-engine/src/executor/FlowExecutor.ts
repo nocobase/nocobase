@@ -240,7 +240,24 @@ export class FlowExecutor {
     // 组装执行函数（返回值用于缓存；beforeRender 返回 results:any[]，其它返回 true）
     const execute = async () => {
       if (sequential) {
-        const ordered = flows.slice().sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+        // 顺序执行：动态流（实例级）优先，其次静态流；各自组内再按 sort 升序，最后保持原始顺序稳定
+        const flowsWithIndex = flows.map((f, i) => ({ f, i }));
+        const ordered = flowsWithIndex
+          .slice()
+          .sort((a, b) => {
+            const regA = a.f['flowRegistry'] as any;
+            const regB = b.f['flowRegistry'] as any;
+            const typeA = regA?.constructor?._type as 'instance' | 'global' | undefined;
+            const typeB = regB?.constructor?._type as 'instance' | 'global' | undefined;
+            const groupA = typeA === 'instance' ? 0 : 1; // 实例=0，静态=1
+            const groupB = typeB === 'instance' ? 0 : 1;
+            if (groupA !== groupB) return groupA - groupB;
+            const sa = a.f.sort ?? 0;
+            const sb = b.f.sort ?? 0;
+            if (sa !== sb) return sa - sb;
+            return a.i - b.i; // 稳定排序：保持原有相对顺序
+          })
+          .map((x) => x.f);
         const results: any[] = [];
         for (const flow of ordered) {
           try {
