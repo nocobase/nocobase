@@ -13,6 +13,19 @@ import { Button, Select, Space, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import React, { FC, ReactNode } from 'react';
 
+const itemKeyMap = new WeakMap<Record<string, any>, string>();
+let itemKeyCounter = 0;
+
+const getFilterItemKey = (item: Record<string, any>) => {
+  let key = itemKeyMap.get(item);
+  if (!key) {
+    itemKeyCounter += 1;
+    key = `filter-item-${itemKeyCounter}`;
+    itemKeyMap.set(item, key);
+  }
+  return key;
+};
+
 /**
  * 筛选项组件的属性接口
  */
@@ -108,6 +121,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
 
     const handleLogicChange = (newLogic: '$and' | '$or') => {
       value.logic = newLogic;
+      onChange?.(value);
     };
 
     const handleAddCondition = () => {
@@ -143,27 +157,28 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
     return (
       <div style={style}>
         {showBorder && onRemove && (
-          <span
-            role="button"
+          <button
+            type="button"
             aria-label="icon-close"
             style={{
               position: 'absolute',
               right: 10,
               top: 10,
               cursor: 'pointer',
+              background: 'transparent',
+              border: 0,
+              padding: 0,
             }}
             onClick={onRemove}
           >
             {closeIcon}
-          </span>
+          </button>
         )}
 
         <div style={{ marginBottom: 8, color: token.colorText }}>
           <span>
             {t('Meet')}{' '}
             <Select
-              // @ts-ignore
-              role="button"
               data-testid="filter-select-all-or-any"
               style={{ width: 'auto' }}
               value={logic}
@@ -182,58 +197,73 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
               // 嵌套的筛选组
               return (
                 <FilterGroup
-                  key={index}
+                  key={getFilterItemKey(item)}
                   value={item}
                   FilterItem={FilterItem}
                   showBorder={true}
                   onRemove={() => handleRemoveItem(index)}
-                  onChange={onChange}
+                  onChange={(v) => {
+                    items[index] = v;
+                    onChange(value);
+                  }}
                 />
               );
             } else if (isConditionItem(item)) {
               // 单个筛选条件
               if (FilterItem) {
                 return (
-                  <div key={index} style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}>
+                  <div
+                    key={getFilterItemKey(item)}
+                    style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}
+                  >
                     <Space style={{ flex: 1, minWidth: 0 }}>
                       <FilterItem value={item} />
-                      <span
-                        role="button"
+                      <button
+                        type="button"
                         aria-label="icon-close"
                         style={{
                           marginLeft: 8,
                           marginRight: 8,
                           flex: '0 0 auto',
                           cursor: 'pointer',
+                          background: 'transparent',
+                          border: 0,
+                          padding: 0,
                         }}
                         onClick={() => handleRemoveItem(index)}
                       >
                         {closeIcon}
-                      </span>
+                      </button>
                     </Space>
                   </div>
                 );
               } else {
                 // 如果没有提供 FilterItem，显示简单的文本表示
                 return (
-                  <div key={index} style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}>
+                  <div
+                    key={getFilterItemKey(item)}
+                    style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}
+                  >
                     <Space style={{ flex: 1, minWidth: 0 }}>
                       <span>
                         {item.path} {item.operator} {String(item.value)}
                       </span>
-                      <span
-                        role="button"
+                      <button
+                        type="button"
                         aria-label="icon-close"
                         style={{
                           marginLeft: 8,
                           marginRight: 8,
                           flex: '0 0 auto',
                           cursor: 'pointer',
+                          background: 'transparent',
+                          border: 0,
+                          padding: 0,
                         }}
                         onClick={() => handleRemoveItem(index)}
                       >
                         {closeIcon}
-                      </span>
+                      </button>
                     </Space>
                   </div>
                 );
@@ -241,22 +271,25 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
             } else {
               // 未知类型的项，显示占位符
               return (
-                <div key={index} style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}>
+                <div key={getFilterItemKey(item)} style={{ marginBottom: 8, display: 'flex', alignItems: 'flex-end' }}>
                   <Space style={{ flex: 1, minWidth: 0 }}>
                     <span style={{ color: token.colorTextTertiary }}>Invalid filter item</span>
-                    <span
-                      role="button"
+                    <button
+                      type="button"
                       aria-label="icon-close"
                       style={{
                         marginLeft: 8,
                         marginRight: 8,
                         flex: '0 0 auto',
                         cursor: 'pointer',
+                        background: 'transparent',
+                        border: 0,
+                        padding: 0,
                       }}
                       onClick={() => handleRemoveItem(index)}
                     >
                       {closeIcon}
-                    </span>
+                    </button>
                   </Space>
                 </div>
               );
