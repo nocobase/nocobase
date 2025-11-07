@@ -65,3 +65,4 @@ export { createSafeDocument, createSafeWindow, createSafeNavigator } from './saf
 
 // Filter helpers
 export { pruneFilter } from './pruneFilter';
+export { isBeforeRenderFlow } from './flows';
