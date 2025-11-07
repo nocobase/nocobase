@@ -245,10 +245,12 @@ export class FlowExecutor {
         const ordered = flowsWithIndex
           .slice()
           .sort((a, b) => {
-            const regA: any = (a.f as any)['flowRegistry'];
-            const regB: any = (b.f as any)['flowRegistry'];
-            const groupA = regA && 'model' in regA ? 0 : 1; // 实例=0，静态=1
-            const groupB = regB && 'model' in regB ? 0 : 1;
+            const regA = a.f['flowRegistry'] as any;
+            const regB = b.f['flowRegistry'] as any;
+            const typeA = regA?.constructor?._type as 'instance' | 'global' | undefined;
+            const typeB = regB?.constructor?._type as 'instance' | 'global' | undefined;
+            const groupA = typeA === 'instance' ? 0 : 1; // 实例=0，静态=1
+            const groupB = typeB === 'instance' ? 0 : 1;
             if (groupA !== groupB) return groupA - groupB;
             const sa = a.f.sort ?? 0;
             const sb = b.f.sort ?? 0;
