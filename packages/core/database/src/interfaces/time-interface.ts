@@ -14,7 +14,7 @@ dayjs.extend(utc);
 export class TimeInterface extends BaseInterface {
   toValue(value: any, ctx?: any) {
     if (this.validate(value)) {
-      const result = dayjs.utc(value).format('HH:mm:ss');
+      const result = dayjs(value).format('HH:mm:ss');
       return result;
     }
     return value;
