@@ -12,7 +12,7 @@ import { Select } from 'antd';
 import { Button, CheckList, Popup, SearchBar } from 'antd-mobile';
 import React, { useEffect, useMemo, useState } from 'react';
 
-export function MobilePicker(props) {
+export function MobileSelect(props) {
   const { value, onChange, disabled, options = [], mode } = props;
   const ctx = useFlowModelContext();
   const t = ctx.t;
