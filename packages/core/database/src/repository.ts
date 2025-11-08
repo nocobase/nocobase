@@ -634,7 +634,7 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
       const filterByTk =
         Array.isArray(filterTargetKey) && filterTargetKey.length > 1
           ? lodash.pick(instance, filterTargetKey)
-          : instance.get(filterTargetKey as string);
+          : instance.get(filterTargetKey.toString());
       return await this.update({
         filterByTk,
         values,
