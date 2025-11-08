@@ -983,9 +983,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
               model: renderTarget,
             });
             return () => {
-              {
-                renderTarget?.context?.logger?.debug?.({ type: 'model.unmount' });
-              }
+              renderTarget?.context?.logger?.debug?.({ type: 'model.unmount' });
               if (typeof renderTarget.onUnmount === 'function') {
                 renderTarget.onUnmount();
               }
@@ -1128,9 +1126,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (this._options.delegateToParent !== false) {
       this.context.addDelegate(this.parent.context);
     }
-    {
-      this.context?.logger?.debug?.({ type: 'model.parent.set', parentId: parent.uid });
-    }
+    this.context?.logger?.debug?.({ type: 'model.parent.set', parentId: parent.uid });
   }
 
   removeParentDelegate() {
@@ -1138,9 +1134,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       return;
     }
     this.context.removeDelegate(this.parent.context);
-    {
-      this.context?.logger?.debug?.({ type: 'model.parent.delegate.removed', parentId: this.parent?.uid });
-    }
+    this.context?.logger?.debug?.({ type: 'model.parent.delegate.removed', parentId: this.parent?.uid });
   }
 
   addSubModel<T extends FlowModel>(subKey: string, options: CreateModelOptions | T) {
@@ -1173,16 +1167,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const maxSortIndex = Math.max(...(subModels[subKey] as FlowModel[]).map((item) => item.sortIndex || 0), 0);
     model.sortIndex = maxSortIndex + 1;
     subModels[subKey].push(model);
-    {
-      actualParent?.context?.logger?.debug?.({
-        type: 'model.sub.add',
-        modelId: model.uid,
-        modelType: model.constructor.name,
-        subKey,
-        subType: 'array',
-        sortIndex: model.sortIndex,
-      });
-    }
+    actualParent?.context?.logger?.debug?.({
+      type: 'model.sub.add',
+      modelId: model.uid,
+      modelType: model.constructor.name,
+      subKey,
+      subType: 'array',
+      sortIndex: model.sortIndex,
+    });
     actualParent.emitter.emit('onSubModelAdded', model);
     return model;
   }
@@ -1209,15 +1201,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
     model.setParent(actualParent);
     (actualParent.subModels as any)[subKey] = model;
-    {
-      actualParent?.context?.logger?.debug?.({
-        type: 'model.sub.set',
-        modelId: model.uid,
-        modelType: model.constructor.name,
-        subKey,
-        subType: 'object',
-      });
-    }
+    actualParent?.context?.logger?.debug?.({
+      type: 'model.sub.set',
+      modelId: model.uid,
+      modelType: model.constructor.name,
+      subKey,
+      subType: 'object',
+    });
     actualParent.emitter.emit('onSubModelAdded', model);
     return model;
   }

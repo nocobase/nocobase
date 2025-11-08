@@ -101,9 +101,6 @@ describe('FlowEngine logging integration', () => {
     expect(snap.find((r) => r.type === 'event.end' && (r as any).eventName === 'submit')).toBeTruthy();
   });
 
-  // 说明：该用例在不同运行环境下的可观测性存在差异（与变量使用提取和日志级别相关），
-  // 为降低不稳定性，已移除此断言，其他用例已覆盖日志通路的核心行为。
-
   it('logs step.error and event.dispatch.error when step throws', async () => {
     const engine = new FlowEngine();
     (engine.logger as any).level = 'debug';
