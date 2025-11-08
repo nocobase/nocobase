@@ -74,6 +74,9 @@ export const setTargetDataScope = defineAction({
       } else {
         resource.addFilterGroup(`setTargetDataScope_${ctx.model.uid}`, filter);
       }
+      if (resource.hasData()) {
+        resource.refresh();
+      }
     });
   },
 });
