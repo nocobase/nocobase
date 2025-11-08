@@ -628,8 +628,15 @@ export async function updateMultipleAssociation(
         const filterByTk = Array.isArray(filterTargetKey)
           ? filterTargetKey.reduce((keys, key) => (keys[key] = instance.get(key)), {})
           : instance.get(filterTargetKey);
-        await repository.update({ ...options, filterByTk, values: item, transaction });
+        await repository.update({ ...accessorOptions, filterByTk, values: item, transaction });
       }
+
+      await updateAssociations(instance, item, {
+        ...options,
+        transaction,
+        associationContext: association,
+        updateAssociationValues: keys,
+      });
 
       newItems.push(instance);
     }

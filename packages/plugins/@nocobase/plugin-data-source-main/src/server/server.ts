@@ -185,14 +185,7 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.app.db.on('fields.beforeCreate', beforeCreateForValidateField(this.app.db));
 
-    const afterCreateForForeignKeyFieldHook = afterCreateForForeignKeyField(this.app.db);
-    this.app.db.on('fields.afterCreate', async (model, options) => {
-      const { context, transaction } = options;
-      if (context) {
-        await model.load({ transaction });
-        await afterCreateForForeignKeyFieldHook(model, options);
-      }
-
+    this.app.db.on('fields.afterCreate', async (model, { transaction }) => {
       const Field = this.app.db.getCollection('fields');
       const reverseKey = model.get('reverseKey');
 
@@ -291,6 +284,16 @@ export class PluginDataSourceMainServer extends Plugin {
 
       if (model.get('type') === 'hasMany' && model.get('sortable') && model.get('sortBy')) {
         await model.syncSortByField({ transaction });
+      }
+    });
+
+    const afterCreateForForeignKeyFieldHook = afterCreateForForeignKeyField(this.app.db);
+
+    this.app.db.on('fields.afterCreate', async (model: FieldModel, options) => {
+      const { context, transaction } = options;
+      if (context) {
+        await model.load({ transaction });
+        await afterCreateForForeignKeyFieldHook(model, options);
       }
     });
 
