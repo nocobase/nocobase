@@ -20,7 +20,7 @@ const DEFAULT_EVENTS_RAW = `// chart.off('click');
 //   ctx.openView(ctx.model.uid + '-1', {
 //     mode: 'dialog',
 //     size: 'large',
-//     defineProperties: {}, // 打开新视图传递数据
+//     defineProperties: {}, // inject context into the new view
 //   });
 // });
 `;

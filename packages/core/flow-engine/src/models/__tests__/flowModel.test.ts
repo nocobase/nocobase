@@ -904,7 +904,7 @@ describe('FlowModel', () => {
           expect(_dispatchEventSpy).toHaveBeenCalledWith(
             'normalEvent',
             { data: 'test' },
-            expect.objectContaining({ sequential: undefined }),
+            expect.objectContaining({ sequential: true }),
           );
           expect(_dispatchEventWithDebounceSpy).not.toHaveBeenCalled();
 
@@ -925,7 +925,7 @@ describe('FlowModel', () => {
           expect(_dispatchEventSpy).toHaveBeenCalledWith(
             'defaultEvent',
             { data: 'test' },
-            expect.objectContaining({ sequential: undefined }),
+            expect.objectContaining({ sequential: true }),
           );
           expect(_dispatchEventWithDebounceSpy).not.toHaveBeenCalled();
 
@@ -946,7 +946,7 @@ describe('FlowModel', () => {
           expect(_dispatchEventSpy).toHaveBeenCalledWith(
             'undefinedOptionsEvent',
             { data: 'test' },
-            expect.objectContaining({ sequential: undefined }),
+            expect.objectContaining({ sequential: true }),
           );
           expect(_dispatchEventWithDebounceSpy).not.toHaveBeenCalled();
 
@@ -1529,8 +1529,6 @@ describe('FlowModel', () => {
         const fork1 = model.createFork();
         const fork2 = model.createFork();
 
-        expect(fork1.forkId).toBe(0);
-        expect(fork2.forkId).toBe(1);
         expect(model.forks.size).toBe(2);
         expect(model.forks.has(fork1)).toBe(true);
         expect(model.forks.has(fork2)).toBe(true);
@@ -1549,8 +1547,6 @@ describe('FlowModel', () => {
         const fork2 = model.createFork({}, 'key2');
 
         expect(fork1).not.toBe(fork2);
-        expect(fork1.forkId).toBe(0);
-        expect(fork2.forkId).toBe(1);
       });
 
       test('should create fork with local props', () => {
@@ -1836,12 +1832,14 @@ describe('FlowModel', () => {
 
         const serialized = model.serialize();
 
-        expect(serialized).toEqual({
-          uid: model.uid,
-          stepParams: expect.objectContaining({ flow1: { step1: { param1: 'value1' } } }),
-          sortIndex: 5,
-          subModels: expect.any(Object),
-        });
+        expect(serialized).toEqual(
+          expect.objectContaining({
+            uid: model.uid,
+            stepParams: expect.objectContaining({ flow1: { step1: { param1: 'value1' } } }),
+            sortIndex: 5,
+            subModels: expect.any(Object),
+          }),
+        );
         // props should be excluded from serialization
         expect(serialized.props).toBeUndefined();
         expect(serialized.flowEngine).toBeUndefined();
@@ -1859,12 +1857,14 @@ describe('FlowModel', () => {
 
         const serialized = emptyModel.serialize();
 
-        expect(serialized).toEqual({
-          uid: 'empty-model',
-          stepParams: expect.any(Object),
-          sortIndex: expect.any(Number),
-          subModels: expect.any(Object),
-        });
+        expect(serialized).toEqual(
+          expect.objectContaining({
+            uid: 'empty-model',
+            stepParams: expect.any(Object),
+            sortIndex: expect.any(Number),
+            subModels: expect.any(Object),
+          }),
+        );
         expect(serialized.flowEngine).toBeUndefined();
       });
     });

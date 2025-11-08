@@ -28,7 +28,7 @@ export const ChatBoxLayout: React.FC<{
   useChatBoxEffect();
 
   return (
-    <div>
+    <>
       {props.children}
       <ChatButton />
       {open && !expanded && !isMobileLayout ? (
@@ -61,6 +61,6 @@ html body {
       ) : null}
       {open ? <ChatBoxWrapper /> : null}
       {activeTool && <ToolModal />}
-    </div>
+    </>
   );
 };

@@ -55,6 +55,10 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
     const index = this.context.index;
     const record = this.context.record;
     const grid = this.subModels.grid.createFork({}, `grid-${index}`);
+
+    // 重置 gridContainerRef，避免多个实例共享同一个 ref 引起的无法拖拽的问题
+    (grid as any).gridContainerRef = React.createRef<HTMLDivElement>();
+
     const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
       () => (grid.context as any).collection,
       grid.context.t('Current record'),
@@ -77,6 +81,9 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
       cache: false,
       resolveOnServer: true,
       meta: recordMeta,
+    });
+    grid.context.defineProperty('fieldKey', {
+      get: () => index,
     });
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     return (

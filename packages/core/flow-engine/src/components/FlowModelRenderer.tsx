@@ -74,7 +74,7 @@ export interface FlowModelRendererProps {
         /**
          * @default 'inside'
          */
-        toolbarPosition?: 'inside' | 'above';
+        toolbarPosition?: 'inside' | 'above' | 'below';
       }; // 默认 false
 
   /** 流程设置的交互风格 */
@@ -114,7 +114,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
         /**
          * @default 'inside'
          */
-        toolbarPosition?: 'inside' | 'above';
+        toolbarPosition?: 'inside' | 'above' | 'below';
       };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
@@ -181,7 +181,7 @@ const FlowModelRendererCore: React.FC<{
         /**
          * @default 'inside'
          */
-        toolbarPosition?: 'inside' | 'above';
+        toolbarPosition?: 'inside' | 'above' | 'below';
       };
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;

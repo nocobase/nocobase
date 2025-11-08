@@ -19,6 +19,7 @@ import {
   FlowDefinition,
   FlowStep,
   FlowStepContext,
+  isBeforeRenderFlow,
 } from '@nocobase/flow-engine';
 import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { uid } from '@formily/shared';
@@ -145,7 +146,6 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
   const ctx = useFlowContext();
   const flowEngine = model.flowEngine;
   const [submitLoading, setSubmitLoading] = React.useState(false);
-  const refresh = useUpdate();
   const t = model.translate.bind(model);
 
   // 创建新流的默认值
@@ -161,7 +161,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
 
   // 删除流
   const handleDeleteFlow = (flow: FlowDefinition) => {
-    flow.destroy();
+    flow.remove();
   };
 
   // 上移流
@@ -205,9 +205,13 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
 
   // 获取可用的动作类型
   const getActionList = () => {
-    return [...model.getActions().values()].filter((action) =>
-      _.castArray(action.scene).includes(ActionScene.DYNAMIC_EVENT_FLOW),
-    );
+    return [...model.getActions().values()]
+      .filter((action) => _.castArray(action.scene).includes(ActionScene.DYNAMIC_EVENT_FLOW))
+      .sort((a, b) => {
+        const sortA = a.sort ?? 0;
+        const sortB = b.sort ?? 0;
+        return sortA - sortB;
+      });
   };
 
   // 添加步骤
@@ -347,7 +351,7 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
                           marginBottom: '8px',
                         }}
                       >
-                        <span style={{ fontWeight: 500, color: '#262626' }}>
+                        <span style={{ fontWeight: 600, color: '#262626' }}>
                           {t(actionDef.title)}
                           <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
                         </span>
@@ -465,6 +469,17 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
           onClick={async () => {
             setSubmitLoading(true);
             await model.flowRegistry.save();
+            // 保存事件流定义后，失效 beforeRender 缓存并触发一次重跑，确保改动立刻生效
+            const beforeRenderFlows = model.flowRegistry
+              .mapFlows((flow) => {
+                if (isBeforeRenderFlow(flow)) {
+                  return flow;
+                }
+              })
+              .filter(Boolean);
+            if (beforeRenderFlows.length > 0) {
+              model.rerender(); // 不阻塞，后续保存
+            }
             setSubmitLoading(false);
             model.context?.message?.success?.(t('Configuration saved'));
             ctx.view.destroy();

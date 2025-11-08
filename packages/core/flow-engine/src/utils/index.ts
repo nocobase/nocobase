@@ -41,6 +41,7 @@ export { setupRuntimeContextSteps } from './setupRuntimeContextSteps';
 
 // Record Proxy 工具
 export { createCollectionContextMeta } from './createCollectionContextMeta';
+export { createAssociationAwareObjectMetaFactory, createAssociationSubpathResolver } from './associationObjectVariable';
 export {
   buildRecordMeta,
   collectContextParamsForTemplate,
@@ -61,3 +62,7 @@ export { buildSettingsViewInputArgs } from './buildSettingsViewInputArgs';
 
 // 安全全局对象（window/document）
 export { createSafeDocument, createSafeWindow, createSafeNavigator } from './safeGlobals';
+
+// Filter helpers
+export { pruneFilter } from './pruneFilter';
+export { isBeforeRenderFlow } from './flows';

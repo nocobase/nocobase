@@ -1,12 +1,12 @@
 {
   "name": "@nocobase/plugin-mobile",
-  "version": "2.0.0-alpha.20",
+  "version": "2.0.0-alpha.36",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/mobile",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/mobile",
   "license": "AGPL-3.0",
-  "displayName": "Mobile",
-  "displayName.zh-CN": "移动端",
+  "displayName": "Mobile (deprecated)",
+  "displayName.zh-CN": "移动端（已废弃）",
   "description": "Provides the ability to configure mobile pages.",
   "description.zh-CN": "提供移动端页面配置的能力。",
   "peerDependencies": {

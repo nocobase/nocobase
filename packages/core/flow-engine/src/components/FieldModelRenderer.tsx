@@ -42,7 +42,7 @@ export function FieldModelRenderer(props: any) {
     ) {
       val = e;
     } else {
-      val = '';
+      val = null;
     }
 
     model.setProps({ value: val });

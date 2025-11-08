@@ -11,7 +11,7 @@ import profile from './profile';
 
 export default {
   username: 'viz',
-  description: 'Insights Analyst',
+  description: 'Insights analyst',
   profile,
   skillSettings: {
     skills: [
@@ -21,6 +21,14 @@ export default {
       },
       {
         name: 'dataModeling-getCollectionMetadata',
+        autoCall: true,
+      },
+      {
+        name: 'dataSource-dataSourceCounting',
+        autoCall: true,
+      },
+      {
+        name: 'dataSource-dataSourceQuery',
         autoCall: true,
       },
     ],

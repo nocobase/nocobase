@@ -19,6 +19,7 @@ import _ from 'lodash';
 import qs from 'qs';
 import React, { createRef } from 'react';
 import * as ReactDOMClient from 'react-dom/client';
+import { ElementProxy } from './ElementProxy';
 import type { Location } from 'react-router-dom';
 import { ACL } from './acl/Acl';
 import { ContextPathProxy } from './ContextPathProxy';
@@ -46,6 +47,7 @@ import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
 import { startTimer, levelByDuration, logAt, LoggerLike, serializeError } from './utils/logging';
 import { LogDuration } from './utils/logDecorators';
+import { createEphemeralContext } from './utils/createEphemeralContext';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -135,6 +137,10 @@ export interface PropertyOptions {
   // - boolean: true 表示整个顶层变量交给服务端；false 表示仅前端解析
   // - function: 根据子路径决定是否交给服务端（子路径示例：'record.roles[0].name'、'id'、''）
   resolveOnServer?: boolean | ((subPath: string) => boolean);
+  // 优化：当需要服务端解析但本属性在 buildVariablesParams 返回空时，是否跳过调用服务端。
+  // - 典型场景：formValues / currentObject 仅在“已选关联值”存在时才需要服务端；否则没有必要请求。
+  // - 默认 false：保持兼容，其他变量即使没有 contextParams 也可选择调用服务端。
+  serverOnlyWhenContextParams?: boolean;
 }
 
 type RouteOptions = {
@@ -1065,6 +1071,17 @@ export class FlowEngineContext extends BaseFlowEngineContext {
           ? _buildServerContextParams(this, autoInput)
           : undefined;
 
+        // 优化：若所有需要服务端解析的变量都声明了 “仅当有 contextParams 时才请求服务端”，
+        // 且本次未能构建出任何 contextParams，则跳过服务端请求，回退到前端解析。
+        if (!autoContextParams) {
+          const keys = Object.keys(serverVarPaths);
+          const allOptional =
+            keys.length > 0 && keys.every((k) => this.getPropertyOptions(k)?.serverOnlyWhenContextParams);
+          if (allOptional) {
+            return resolveExpressions(template, this);
+          }
+        }
+
         if (this.api) {
           try {
             // 使用装饰器包裹的方法记录 server 解析耗时
@@ -1322,7 +1339,8 @@ export class FlowEngineContext extends BaseFlowEngineContext {
       'runAction',
       async function (this: BaseFlowEngineContext, actionName: string, params?: Record<string, any>) {
         const def = this.engine.getAction<FlowModel, FlowEngineContext>(actionName);
-        const ctx = this.createProxy() as unknown as FlowEngineContext;
+        // 使用“临时作用域”上下文，避免将临时定义污染到引擎级上下文，并在创建时应用定义
+        const ctx = await createEphemeralContext(this as unknown as FlowEngineContext, def);
         if (!def) {
           throw new Error(`Action '${actionName}' not found.`);
         }
@@ -1336,7 +1354,7 @@ export class FlowEngineContext extends BaseFlowEngineContext {
         }
         if (!useRawParams) {
           // 先服务端解析，再前端补齐
-          combinedParams = await (ctx as any).resolveJsonTemplate(combinedParams);
+          combinedParams = await ctx.resolveJsonTemplate(combinedParams);
         }
 
         if (!def.handler) {
@@ -1428,21 +1446,24 @@ export class FlowModelContext extends BaseFlowModelContext {
           stepParams: {
             popupSettings: {
               openView: {
-                ..._.pick(opts, ['dataSourceKey', 'collectionName', 'associationName']),
+                // 持久化首次传入的关键展示/数据参数，供后续路由与再次打开复用
+                ..._.pick(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
               },
             },
           },
         });
         await model.save();
       }
-      if (model.getStepParams('popupSettings')?.openView?.dataSourceKey) {
-        model.setStepParams('popupSettings', {
-          openView: {
-            ...model.getStepParams('popupSettings')?.openView,
-            ..._.pick(opts, ['dataSourceKey', 'collectionName', 'associationName']),
-          },
-        });
-        await model.save();
+      // 若已存在 openView 配置，则按需合并更新（仅覆盖本次显式传入的字段）
+      if (model.getStepParams('popupSettings')?.openView) {
+        const prevOpenView = model.getStepParams('popupSettings')?.openView || {};
+        const incoming = _.pick(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']);
+        const nextOpenView = { ...prevOpenView, ...incoming };
+        // 仅当有变更时才保存，避免不必要的写入
+        if (!_.isEqual(prevOpenView, nextOpenView)) {
+          model.setStepParams('popupSettings', { openView: nextOpenView });
+          await model.save();
+        }
       }
 
       // 路由层级的 viewUid：优先使用 routeViewUid（仅用于路由展示）；
@@ -1488,7 +1509,8 @@ export class FlowModelContext extends BaseFlowModelContext {
       'runAction',
       async function (this: BaseFlowModelContext, actionName: string, params?: Record<string, any>) {
         const def = this.model.getAction<FlowModel, FlowModelContext>(actionName);
-        const ctx = this.createProxy() as unknown as FlowModelContext;
+        // 使用“临时作用域”上下文，避免将临时定义污染到模型级上下文，并在创建时应用定义
+        const ctx = await createEphemeralContext(this as unknown as FlowModelContext, def);
         if (!def) {
           throw new Error(`Action '${actionName}' not found.`);
         }
@@ -1501,7 +1523,7 @@ export class FlowModelContext extends BaseFlowModelContext {
           useRawParams = await useRawParams(ctx);
         }
         if (!useRawParams) {
-          combinedParams = await (ctx as any).resolveJsonTemplate(combinedParams);
+          combinedParams = await ctx.resolveJsonTemplate(combinedParams);
         }
 
         if (!def.handler) {
@@ -1739,6 +1761,68 @@ export class FlowRunJSContext extends FlowContext {
       },
     };
     this.defineProperty('ReactDOM', { value: ReactDOMShim });
+
+    // Convenience: ctx.render(<App />[, container])
+    // - container defaults to ctx.element if available
+    // - internally uses engine.reactView.createRoot to inherit app context
+    // - caches root per container via global WeakMap
+    this.defineMethod(
+      'render',
+      function (
+        this: any,
+        vnode: React.ReactElement | Node | DocumentFragment | string,
+        container?: Element | DocumentFragment,
+      ) {
+        const el = (container as any) || (this.element as any);
+        if (!el) throw new Error('ctx.render: container not provided and ctx.element is not available');
+        const containerEl: any = (el as any)?.__el || el; // unwrap ElementProxy
+        const globalRef: any = globalThis as any;
+        globalRef.__nbRunjsRoots = globalRef.__nbRunjsRoots || new WeakMap<any, any>();
+        const rootMap: WeakMap<any, any> = globalRef.__nbRunjsRoots;
+
+        // If vnode is string (HTML), unmount react root and set sanitized HTML
+        if (typeof vnode === 'string') {
+          const existingRoot = rootMap.get(containerEl);
+          if (existingRoot && typeof existingRoot.unmount === 'function') {
+            try {
+              existingRoot.unmount();
+            } finally {
+              rootMap.delete(containerEl);
+            }
+          }
+          const proxy: any = new ElementProxy(containerEl);
+          proxy.innerHTML = String(vnode ?? '');
+          return null;
+        }
+
+        // If vnode is a DOM Node or DocumentFragment, unmount and replace content
+        if (
+          vnode &&
+          (vnode as any).nodeType &&
+          ((vnode as any).nodeType === 1 || (vnode as any).nodeType === 3 || (vnode as any).nodeType === 11)
+        ) {
+          const existingRoot = rootMap.get(containerEl);
+          if (existingRoot && typeof existingRoot.unmount === 'function') {
+            try {
+              existingRoot.unmount();
+            } finally {
+              rootMap.delete(containerEl);
+            }
+          }
+          while (containerEl.firstChild) containerEl.removeChild(containerEl.firstChild);
+          containerEl.appendChild(vnode as any);
+          return null;
+        }
+
+        let root = rootMap.get(containerEl);
+        if (!root) {
+          root = this.ReactDOM.createRoot(containerEl);
+          rootMap.set(containerEl, root);
+        }
+        root.render(vnode as any);
+        return root;
+      },
+    );
   }
   static define(meta: RunJSDocMeta, options?: { locale?: string }) {
     const locale = options?.locale;

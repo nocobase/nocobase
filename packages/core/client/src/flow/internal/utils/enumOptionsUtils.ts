@@ -11,10 +11,10 @@ import { CollectionField, FlowModel } from '@nocobase/flow-engine';
 
 export type UiSchemaEnumItem = string | number | boolean | { label?: any; value?: any; color?: string; icon?: any };
 
-/**
- * 将 uiSchema.enum 归一化为 antd 可识别的 options 数组
- */
-export function normalizeUiSchemaEnumToOptions(uiEnum: UiSchemaEnumItem[] = []) {
+type Option = { label: any; value: any } & Record<string, any>;
+
+// Internal utility: normalize uiSchema.enum into antd-friendly options
+function normalizeUiSchemaEnumToOptions(uiEnum: UiSchemaEnumItem[] = []): Option[] {
   if (!Array.isArray(uiEnum)) return [];
   return uiEnum.map((item: UiSchemaEnumItem) => {
     if (item && typeof item === 'object' && !Array.isArray(item)) {
@@ -28,14 +28,25 @@ export function normalizeUiSchemaEnumToOptions(uiEnum: UiSchemaEnumItem[] = []) 
       if (anyItem.icon) opt.icon = anyItem.icon;
       return opt;
     }
-    // 基本类型：保持原始 value 类型，label 使用字符串呈现
+    // Primitive values: keep original value; stringify label
     return { label: String(item), value: item };
   });
 }
 
-/**
- * 若符合条件，则为模型补全 options，返回是否发生了注入
- */
+// Map option labels through t() (supports {{t('key')}} template and plain strings)
+export function translateOptions(options: Option[] = [], t: (s: string) => string): Option[] {
+  if (!Array.isArray(options)) return [] as Option[];
+  return options.map((opt) => (typeof opt?.label === 'string' ? { ...opt, label: t(opt.label) } : opt));
+}
+
+// Build options from uiSchema.enum with translated labels
+export function enumToOptions(uiEnum: UiSchemaEnumItem[] | undefined, t: (s: string) => string): Option[] | undefined {
+  if (!uiEnum || !Array.isArray(uiEnum) || uiEnum.length === 0) return undefined;
+  const normalized = normalizeUiSchemaEnumToOptions(uiEnum);
+  return translateOptions(normalized, t);
+}
+
+// Populate model.props.options from uiSchema.enum if missing; returns whether options were injected
 export function ensureOptionsFromUiSchemaEnumIfAbsent(model: FlowModel, collectionField: CollectionField): boolean {
   const iface = collectionField?.interface;
   const isLocalEnumInterface = ['radioGroup', 'checkboxGroup', 'select', 'multipleSelect'].includes(iface);

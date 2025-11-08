@@ -16,6 +16,7 @@ import type { ActionDefinition, ApplyFlowCacheEntry, StepDefinition } from '../t
 import { FlowExitException, resolveDefaultParams } from '../utils';
 import { FlowExitAllException } from '../utils/exceptions';
 import { setupRuntimeContextSteps } from '../utils/setupRuntimeContextSteps';
+import { createEphemeralContext } from '../utils/createEphemeralContext';
 import { levelByDuration, serializeError, startTimer, logAt } from '../utils/logging';
 import {
   logStepStart,
@@ -136,9 +137,10 @@ export class FlowExecutor {
 
     for (const [stepKey, step] of Object.entries(stepDefs) as [string, StepDefinition][]) {
       // Resolve handler and params
-      let handler: ActionDefinition['handler'] | undefined;
+      let handler: ActionDefinition<FlowModel, FlowRuntimeContext>['handler'] | undefined;
       let combinedParams: Record<string, any> = {};
       let useRawParams: StepDefinition['useRawParams'] = step.useRawParams;
+      let runtimeCtx: FlowRuntimeContext;
       if (step.use) {
         const actionDefinition = model.getAction(step.use);
         if (!actionDefinition) {
@@ -147,14 +149,20 @@ export class FlowExecutor {
           );
           continue;
         }
+
+        // 为当前 step 创建“临时上下文”，并直接注入 action 与 step 提供的定义（step 覆盖 action）
+        runtimeCtx = await createEphemeralContext<FlowRuntimeContext>(flowContext, {
+          ...actionDefinition,
+          ...step,
+        });
+
         handler = step.handler || actionDefinition.handler;
         useRawParams = useRawParams ?? actionDefinition.useRawParams;
         const actionParamsTimer = startTimer();
-        const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, flowContext);
+        const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, runtimeCtx);
         const actionParamsMs = actionParamsTimer();
         if (actionParamsMs > this.engine.logManager.options.slowParamsMs) {
           const stepType = step.use || 'inline';
-          // 避免在循环内创建 child logger：直接附加上下文字段
           flowLogger.debug({
             type: 'step.params.resolve',
             scope: 'action',
@@ -164,11 +172,10 @@ export class FlowExecutor {
           });
         }
         const stepParamsTimer = startTimer();
-        const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
+        const stepDefaultParams = await resolveDefaultParams(step.defaultParams, runtimeCtx);
         const stepParamsMs = stepParamsTimer();
         if (stepParamsMs > this.engine.logManager.options.slowParamsMs) {
           const stepType = step.use || 'inline';
-          // 避免在循环内创建 child logger：直接附加上下文字段
           flowLogger.debug({
             type: 'step.params.resolve',
             scope: 'step',
@@ -179,13 +186,14 @@ export class FlowExecutor {
         }
         combinedParams = { ...actionDefaultParams, ...stepDefaultParams };
       } else if (step.handler) {
+        // 对于内联 handler，为该步创建临时上下文并注入 step 定义
+        runtimeCtx = await createEphemeralContext<FlowRuntimeContext>(flowContext, step);
         handler = step.handler;
         const stepParamsTimer = startTimer();
-        const stepDefaultParams = await resolveDefaultParams(step.defaultParams, flowContext);
+        const stepDefaultParams = await resolveDefaultParams(step.defaultParams, runtimeCtx);
         const stepParamsMs = stepParamsTimer();
         if (stepParamsMs > this.engine.logManager.options.slowParamsMs) {
           const stepType = step.use || 'inline';
-          // 避免在循环内创建 child logger：直接附加上下文字段
           flowLogger.debug({ type: 'step.params.resolve', scope: 'step', duration: stepParamsMs, stepKey, stepType });
         }
         combinedParams = { ...stepDefaultParams };
@@ -202,10 +210,10 @@ export class FlowExecutor {
       }
       if (typeof useRawParams === 'function') {
         // eslint-disable-next-line react-hooks/rules-of-hooks
-        useRawParams = await useRawParams(flowContext);
+        useRawParams = await useRawParams(runtimeCtx);
       }
       if (!useRawParams) {
-        combinedParams = await flowContext.resolveJsonTemplate(combinedParams);
+        combinedParams = await runtimeCtx.resolveJsonTemplate(combinedParams);
       }
       try {
         if (!handler) {
@@ -234,7 +242,7 @@ export class FlowExecutor {
           stepKey,
           stepType,
         });
-        const currentStepResult = handler(flowContext, combinedParams);
+        const currentStepResult = handler(runtimeCtx, combinedParams);
         const isAwait = step.isAwait !== false;
         lastResult = isAwait ? await currentStepResult : currentStepResult;
 
@@ -333,6 +341,12 @@ export class FlowExecutor {
     // flows will be computed below; delay event.start until we know count
 
     try {
+      await this.engine.emitter.emitAsync(`model:event:${eventName}:start`, {
+        uid: model.uid,
+        model,
+        runId,
+        inputArgs,
+      });
       await model.onDispatchEventStart?.(eventName, options, inputArgs);
     } catch (err) {
       if (isBeforeRender && err instanceof FlowExitException) {
@@ -375,7 +389,24 @@ export class FlowExecutor {
     });
     const execute = async () => {
       if (sequential) {
-        const ordered = flows.slice().sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+        // 顺序执行：动态流（实例级）优先，其次静态流；各自组内再按 sort 升序，最后保持原始顺序稳定
+        const flowsWithIndex = flows.map((f, i) => ({ f, i }));
+        const ordered = flowsWithIndex
+          .slice()
+          .sort((a, b) => {
+            const regA = a.f['flowRegistry'] as any;
+            const regB = b.f['flowRegistry'] as any;
+            const typeA = regA?.constructor?._type as 'instance' | 'global' | undefined;
+            const typeB = regB?.constructor?._type as 'instance' | 'global' | undefined;
+            const groupA = typeA === 'instance' ? 0 : 1; // 实例=0，静态=1
+            const groupB = typeB === 'instance' ? 0 : 1;
+            if (groupA !== groupB) return groupA - groupB;
+            const sa = a.f.sort ?? 0;
+            const sb = b.f.sort ?? 0;
+            if (sa !== sb) return sa - sb;
+            return a.i - b.i; // 稳定排序：保持原有相对顺序
+          })
+          .map((x) => x.f);
         const results: any[] = [];
         for (const flow of ordered) {
           try {
@@ -459,7 +490,7 @@ export class FlowExecutor {
           `BaseModel.dispatchEvent: End hook error for event '${eventName}'`,
         );
       }
-      // event end log
+      // event end log + emitter
       const d = eventTimer();
       const resultsCount = Array.isArray(result) ? result.length : result ? 1 : 0;
       logEventEnd(
@@ -467,6 +498,13 @@ export class FlowExecutor {
         { modelId: model.uid, modelType: model.constructor.name, eventName, runId, duration: d, resultsCount },
         this.engine.logManager.options.slowEventMs,
       );
+      await this.engine.emitter.emitAsync(`model:event:${eventName}:end`, {
+        uid: model.uid,
+        model,
+        runId,
+        inputArgs,
+        result,
+      });
       return result;
     } catch (error) {
       // 进入错误钩子并记录
@@ -492,6 +530,13 @@ export class FlowExecutor {
         error: serializeError(error),
       };
       logger.error(evErr, `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`);
+      await this.engine.emitter.emitAsync(`model:event:${eventName}:error`, {
+        uid: model.uid,
+        model,
+        runId,
+        inputArgs,
+        error,
+      });
       if (throwOnError) throw error;
     }
   }

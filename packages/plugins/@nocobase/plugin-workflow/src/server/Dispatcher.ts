@@ -19,7 +19,7 @@ import { EXECUTION_STATUS } from './constants';
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import type PluginWorkflowServer from './Plugin';
 
-type Pending = { execution: ExecutionModel; job?: JobModel; force?: boolean };
+type Pending = { execution: ExecutionModel; job?: JobModel; loaded?: boolean };
 
 type CachedEvent = [WorkflowModel, any, EventOptions];
 
@@ -44,7 +44,7 @@ export default class Dispatcher {
   private eventsCount = 0;
 
   get idle() {
-    return !this.executing && !this.pending.length && !this.events.length;
+    return this.ready && !this.executing && !this.pending.length && !this.events.length;
   }
 
   constructor(private readonly plugin: PluginWorkflowServer) {
@@ -72,8 +72,8 @@ export default class Dispatcher {
     this.ready = ready;
   }
 
-  public isReady() {
-    return this.ready;
+  private serving() {
+    return this.plugin.app.serving(WORKER_JOB_WORKFLOW_PROCESS);
   }
 
   public getEventsCount() {
@@ -137,7 +137,7 @@ export default class Dispatcher {
       .getLogger(execution.workflowId)
       .info(`execution (${execution.id}) resuming from job (${job.id}) added to pending list`);
 
-    this.run({ execution, job, force: true });
+    this.run({ execution, job, loaded: true });
   }
 
   public async start(execution: ExecutionModel) {
@@ -146,7 +146,7 @@ export default class Dispatcher {
     }
     this.plugin.getLogger(execution.workflowId).info(`starting deferred execution (${execution.id})`);
 
-    this.run({ execution, force: true });
+    this.run({ execution, loaded: true });
   }
 
   public async beforeStop() {
@@ -165,13 +165,6 @@ export default class Dispatcher {
       return;
     }
 
-    if (!this.plugin.app.serving(WORKER_JOB_WORKFLOW_PROCESS)) {
-      this.plugin
-        .getLogger('dispatcher')
-        .warn(`${WORKER_JOB_WORKFLOW_PROCESS} is not serving, new dispatching will be ignored`);
-      return;
-    }
-
     if (this.executing) {
       this.plugin.getLogger('dispatcher').warn(`workflow executing is not finished, new dispatching will be ignored`);
       return;
@@ -186,26 +179,34 @@ export default class Dispatcher {
       let execution: ExecutionModel | null = null;
       if (this.pending.length) {
         const pending = this.pending.shift() as Pending;
-        execution = pending.force ? pending.execution : await this.acquirePendingExecution(pending.execution);
+        execution = pending.loaded ? pending.execution : await this.acquirePendingExecution(pending.execution);
         if (execution) {
           next = [execution, pending.job];
           this.plugin.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
         }
       } else {
-        execution = await this.acquireQueueingExecution();
-        if (execution) {
-          next = [execution];
+        if (this.serving()) {
+          execution = await this.acquireQueueingExecution();
+          if (execution) {
+            next = [execution];
+          }
+        } else {
+          this.plugin
+            .getLogger('dispatcher')
+            .warn(`${WORKER_JOB_WORKFLOW_PROCESS} is not serving on this instance, new dispatching will be ignored`);
         }
       }
       if (next) {
         await this.process(...next);
       }
-      this.executing = null;
+      setImmediate(() => {
+        this.executing = null;
 
-      if (next || this.pending.length) {
-        this.plugin.getLogger('dispatcher').debug(`last process finished, will do another dispatch`);
-        this.dispatch();
-      }
+        if (next || this.pending.length) {
+          this.plugin.getLogger('dispatcher').debug(`last process finished, will do another dispatch`);
+          this.dispatch();
+        }
+      });
     })();
   }
 
@@ -293,6 +294,8 @@ export default class Dispatcher {
           eventKey: options.eventKey ?? randomUUID(),
           stack: options.stack,
           dispatched: deferred ?? false,
+          status: deferred ? EXECUTION_STATUS.STARTED : EXECUTION_STATUS.QUEUEING,
+          manually: options.manually,
         },
         { transaction },
       );
@@ -349,11 +352,13 @@ export default class Dispatcher {
       const execution = await this.createExecution(...event);
       // NOTE: cache first execution for most cases
       if (!execution?.dispatched) {
-        if (!this.executing && !this.pending.length) {
+        if (this.serving() && !this.executing && !this.pending.length) {
           logger.info(`local pending list is empty, adding execution (${execution.id}) to pending list`);
           this.pending.push({ execution });
         } else {
-          logger.info(`local pending list is not empty, sending execution (${execution.id}) to queue`);
+          logger.info(
+            `instance is not serving as worker or local pending list is not empty, sending execution (${execution.id}) to queue`,
+          );
           if (this.ready) {
             this.plugin.app.backgroundJobManager.publish(`${this.plugin.name}.pendingExecution`, {
               executionId: execution.id,

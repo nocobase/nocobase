@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Button, Radio } from 'antd';
+import { Alert, Button, Radio } from 'antd';
 import { ObjectField, useForm, observer } from '@formily/react';
 import { ChartOptionsEditor } from './ChartOptionsEditor';
 import { useT } from '../../locale';
@@ -64,8 +64,30 @@ export const ChartOptionsPanel: React.FC = observer(() => {
     // 代码模式下，修改不自动触发预览，等待用户点击预览按钮
   };
 
+  const userId = ctx.auth?.user.id ?? 'anonymous';
+  const TIP_KEY = `plugin-data-visualization:ChartConfig:tipRunQuery:${userId}`;
+
+  const [showFirstVisitTip, setShowFirstVisitTip] = React.useState(false);
+  React.useEffect(() => {
+    setShowFirstVisitTip(!localStorage.getItem(TIP_KEY));
+  }, [TIP_KEY]);
+
   return (
     <ObjectField name="chart.option">
+      {showFirstVisitTip && (
+        <Alert
+          message={t("Please click 'Run Query' to fetch data before configuring chart options")}
+          type="warning"
+          showIcon
+          closable
+          style={{ marginBottom: 8, paddingLeft: 8 }}
+          onClose={() => {
+            localStorage.setItem(TIP_KEY, '1');
+            setShowFirstVisitTip(false);
+          }}
+        />
+      )}
+      {/* 配置模式切换与预览 */}
       <div
         style={{
           display: 'flex',

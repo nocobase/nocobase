@@ -10,6 +10,7 @@
 import { escapeT, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Alert, ButtonProps } from 'antd';
 import React, { useEffect, useRef } from 'react';
+import { AxiosRequestConfig } from 'axios';
 import { ActionModel, ActionSceneEnum } from '../base/ActionModel';
 import { CollectionActionModel } from '../base/CollectionActionModel';
 import { RecordActionModel } from '../base/RecordActionModel';
@@ -101,6 +102,16 @@ export class UpdateRecordActionModel extends ActionModel<{
   getAclActionName() {
     return 'update';
   }
+
+  /**
+   * 简化设置保存请求配置的方式
+   * @param requestConfig
+   */
+  setSaveRequestConfig(requestConfig?: AxiosRequestConfig) {
+    this.setStepParams('apply', 'apply', {
+      requestConfig,
+    });
+  }
 }
 
 UpdateRecordActionModel.define({
@@ -191,7 +202,21 @@ UpdateRecordActionModel.registerFlow({
           ctx.message.error(ctx.t('Record is required to perform this action'));
           return;
         }
-        await ctx.api.resource(collection).update({ filterByTk, values: assignedValues });
+        let result = assignedValues;
+        const tkData = ctx.collection?.getFilterByTK(ctx.record);
+        if (Array.isArray(filterByTk)) {
+          result = {
+            ...assignedValues,
+            ...(tkData || {}),
+          };
+        } else {
+          result = {
+            ...assignedValues,
+            [filterByTk]: tkData,
+          };
+        }
+
+        await ctx.api.resource(collection).update({ filterByTk, values: result, ...params.requestConfig?.params });
         // 刷新与提示
         ctx.blockModel?.resource?.refresh?.();
         ctx.message.success(ctx.t('Saved successfully'));

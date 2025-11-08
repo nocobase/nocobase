@@ -1,0 +1,339 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+import React from 'react';
+import { render } from '@testing-library/react';
+import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
+import { FlowEngine, FlowModel, SingleRecordResource } from '@nocobase/flow-engine';
+// 直接从 models 聚合导入，避免局部文件相互引用顺序导致的循环依赖
+import { FormBlockModel } from '../../../..';
+// -----------------------------
+// Helpers
+// -----------------------------
+
+async function createTestFormModelSubclass() {
+  return class TestFormModel extends FormBlockModel {
+    constructor(options: any) {
+      super(options);
+    }
+    createResource(ctx) {
+      return ctx.createResource(SingleRecordResource);
+    }
+    renderComponent(): React.ReactNode {
+      return null;
+    }
+  };
+}
+
+async function setupFormModel() {
+  const engine = new FlowEngine();
+  const dsm = engine.context.dataSourceManager;
+  const ds = dsm.getDataSource('main');
+
+  // 仿照 flow-engine 的数据源单测创建真实的 collections
+  ds.addCollection({
+    name: 'users',
+    filterTargetKey: 'id',
+    fields: [
+      { name: 'id', type: 'integer', interface: 'number' },
+      { name: 'name', type: 'string', interface: 'text' },
+      { name: 'org', type: 'belongsTo', target: 'orgs', interface: 'm2o' },
+    ],
+  });
+  ds.addCollection({
+    name: 'customers',
+    filterTargetKey: 'id',
+    fields: [
+      { name: 'id', type: 'integer', interface: 'number' },
+      { name: 'name', type: 'string', interface: 'text' },
+      { name: 'level', type: 'belongsTo', target: 'levels', interface: 'm2o' },
+    ],
+  });
+  ds.addCollection({
+    name: 'orgs',
+    filterTargetKey: 'id',
+    fields: [
+      { name: 'id', type: 'integer', interface: 'number' },
+      { name: 'name', type: 'string', interface: 'text' },
+    ],
+  });
+  ds.addCollection({
+    name: 'levels',
+    filterTargetKey: 'id',
+    fields: [
+      { name: 'id', type: 'integer', interface: 'number' },
+      { name: 'name', type: 'string', interface: 'text' },
+    ],
+  });
+  ds.addCollection({
+    name: 'orders',
+    filterTargetKey: 'id',
+    fields: [
+      { name: 'customer', type: 'belongsTo', target: 'customers', interface: 'm2o' },
+      { name: 'assignees', type: 'belongsToMany', target: 'users', interface: 'm2m' },
+      { name: 'note', type: 'string', interface: 'text' },
+    ],
+  });
+
+  const TestFormModel = await createTestFormModelSubclass();
+  // 使用引擎注册并创建模型，确保 onInit 等生命周期按真实场景执行
+  engine.registerModels({ TestFormModel });
+  const model = engine.createModel<any>({
+    use: 'TestFormModel',
+    uid: 'form-1',
+    stepParams: {
+      resourceSettings: {
+        init: { dataSourceKey: 'main', collectionName: 'orders' },
+      },
+    },
+  });
+  return model;
+}
+
+// -----------------------------
+// FlowModel 核心行为（集中到本文件）
+// -----------------------------
+
+describe('FlowModel core behaviors (collected)', () => {
+  let engine: FlowEngine;
+
+  beforeEach(() => {
+    engine = new FlowEngine();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('getEventFlows(beforeRender) includes explicit and implicit flows, excludes manual or other events', () => {
+    class TestModel extends FlowModel {}
+    engine.registerModels({ TestModel });
+    const model = engine.createModel<TestModel>({ use: 'TestModel', uid: 'm-flow-1' });
+
+    model.flowRegistry.addFlow('A', {
+      title: 'ExplicitBefore',
+      on: 'beforeRender',
+      steps: { s: { title: 'S', handler: () => {} } },
+    } as any);
+    model.flowRegistry.addFlow('B', {
+      title: 'ImplicitBefore',
+      steps: { s: { title: 'S', handler: () => {} } },
+    } as any);
+    model.flowRegistry.addFlow('C', {
+      title: 'ManualSkip',
+      manual: true,
+      steps: { s: { title: 'S', handler: () => {} } },
+    } as any);
+    model.flowRegistry.addFlow('D', {
+      title: 'OtherEvent',
+      on: 'formValuesChange',
+      steps: { s: { title: 'S', handler: () => {} } },
+    } as any);
+
+    const flows = model.getEventFlows('beforeRender');
+    const titles = flows.map((f) => f.title);
+    expect(titles).toContain('ExplicitBefore');
+    expect(titles).toContain('ImplicitBefore');
+    expect(titles).not.toContain('ManualSkip');
+    expect(titles).not.toContain('OtherEvent');
+  });
+
+  it('dispatchEvent defaults for beforeRender; and records last params', async () => {
+    const spy = vi.fn().mockResolvedValue([]);
+    (engine as any).executor.dispatchEvent = spy;
+    const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'm-flow-2' });
+
+    await model.dispatchEvent('beforeRender', { foo: 1 });
+    expect(spy).toHaveBeenCalledTimes(1);
+    const [, e1, i1, o1] = spy.mock.calls[0];
+    expect(e1).toBe('beforeRender');
+    expect(i1).toEqual({ foo: 1 });
+    expect(o1).toMatchObject({ sequential: true, useCache: true });
+
+    await model.dispatchEvent('somethingElse', { bar: 2 });
+    const [, e2, i2, o2] = spy.mock.calls[1];
+    expect(e2).toBe('somethingElse');
+    expect(i2).toEqual({ bar: 2 });
+    // 非 beforeRender 事件：默认顺序执行，不强制使用缓存
+    expect(o2).toMatchObject({ sequential: true, useCache: undefined });
+  });
+
+  it('stepParams change triggers debounced rerun of last beforeRender', async () => {
+    vi.useFakeTimers();
+    const spy = vi.fn().mockResolvedValue([]);
+    (engine as any).executor.dispatchEvent = spy;
+    const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'm-flow-3' });
+
+    await model.dispatchEvent('beforeRender', { ping: 1 });
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    model.setStepParams('anyFlow', 'anyStep', { x: 1 });
+    await vi.advanceTimersByTimeAsync(150);
+    expect(spy).toHaveBeenCalledTimes(2);
+    const [, e2, i2] = spy.mock.calls[1];
+    expect(e2).toBe('beforeRender');
+    expect(i2).toEqual({ ping: 1 });
+  });
+
+  it('applyFlow delegates to executor.runFlow', async () => {
+    const spyRun = vi.fn().mockResolvedValue('ok');
+    (engine as any).executor.runFlow = spyRun;
+    const model = engine.createModel<FlowModel>({ use: 'FlowModel', uid: 'm-flow-4' });
+    const res = await model.applyFlow('demoFlow', { a: 1 });
+    expect(spyRun).toHaveBeenCalledTimes(1);
+    const [target, key, args] = spyRun.mock.calls[0];
+    expect(target).toBe(model);
+    expect(key).toBe('demoFlow');
+    expect(args).toEqual({ a: 1 });
+    expect(res).toBe('ok');
+  });
+});
+
+// -----------------------------
+// FormBlockModel 行为
+// -----------------------------
+
+describe('FormBlockModel (form/formValues injection & server resolve anchors)', () => {
+  it('injects form & formValues; resolveOnServer guard; buildVariablesParams anchors by selected associations', async () => {
+    const model = await setupFormModel();
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    // 使用一个简易的 FakeForm，避免未挂载 Form 的限制
+    const store: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (values: Record<string, any>) => Object.assign(store, values),
+      getFieldsValue: () => ({ ...store }),
+      setFieldValue: (k: string, v: any) => (store[k] = v),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    fakeForm.setFieldsValue({ customer: 9, assignees: [{ id: 3 }, { id: 5 }], note: 'hello' });
+
+    // cache=false check
+    const v1 = (model.context as any).formValues;
+    expect(v1.customer).toBe(9);
+    fakeForm.setFieldsValue({ customer: 11 });
+    const v2 = (model.context as any).formValues;
+    expect(v2.customer).toBe(11);
+
+    const opt = (model.context as any).getPropertyOptions('formValues');
+    expect(typeof opt.resolveOnServer).toBe('function');
+    expect(opt.resolveOnServer('')).toBe(false);
+    expect(opt.resolveOnServer('customer')).toBe(false);
+    // 二级关联字段
+    expect(opt.resolveOnServer('customer.level.name')).toBe(true);
+    expect(opt.resolveOnServer('assignees.org.name')).toBe(true);
+
+    const metaFactory = opt.meta as () => Promise<any>;
+    const meta = await metaFactory();
+    expect(typeof meta.buildVariablesParams).toBe('function');
+    fakeForm.setFieldsValue({ customer: 9, assignees: [{ id: 3 }, { id: 5 }], note: 'hello' });
+    const params = await meta.buildVariablesParams(model.context);
+
+    expect(params.customer).toMatchObject({ collection: 'customers', dataSourceKey: 'main', filterByTk: 9 });
+    expect(params.assignees).toMatchObject({ collection: 'users', dataSourceKey: 'main' });
+    expect(Array.isArray(params.assignees.filterByTk)).toBe(true);
+    expect(params.assignees.filterByTk).toEqual([3, 5]);
+    expect(params.note).toBeUndefined();
+  });
+
+  it('registers formValuesChange event and eventSettings flow', async () => {
+    const engine = new FlowEngine();
+    const TestFormModel = await createTestFormModelSubclass();
+    const model = new TestFormModel({ uid: 'form-2', flowEngine: engine } as any);
+
+    // event registered
+    const ev = model.getEvent('formValuesChange');
+    expect(ev?.name).toBe('formValuesChange');
+
+    // flow registered (eventSettings)
+    const flows = model.getFlows();
+    expect(flows.has('eventSettings')).toBe(true);
+  });
+
+  it('builds non-empty contextParams for ctx.formValues.* deep association path', async () => {
+    const model = await setupFormModel();
+    // 注入 api mock 到引擎上下文，拦截 variables:resolve 的请求
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const payload = config?.data?.values || {};
+        const batch = payload.batch || [];
+        const cp = batch[0]?.contextParams || {};
+        const keys = Object.keys(cp).sort();
+        // 聚合为单键，不再使用索引键
+        expect(keys).toEqual(['formValues.assignees']);
+        expect(cp['formValues.assignees']).toMatchObject({ collection: 'users' });
+        expect(Array.isArray(cp['formValues.assignees'].filterByTk)).toBe(true);
+        expect(cp['formValues.assignees'].filterByTk).toEqual([3, 5]);
+        return { data: { ok: true } } as any;
+      }),
+    } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller));
+
+    // 设置 form 值，包含对多关联 assignees（数组）
+    const mem: Record<string, any> = {};
+    const fakeForm = {
+      setFieldsValue: (v: any) => Object.assign(mem, v),
+      getFieldsValue: () => ({ ...mem }),
+      setFieldValue: (k: string, v: any) => (mem[k] = v),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm });
+    fakeForm.setFieldsValue({ assignees: [{ id: 3 }, { id: 5 }] });
+
+    // 解析一个会触发服务端解析的变量模板
+    const tpl = { who: '{{ ctx.formValues.assignees.org.name }}' } as any;
+    await (model.context as any).resolveJsonTemplate(tpl);
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
+
+  it('builds contextParams for single association (no index at top level)', async () => {
+    const model = await setupFormModel();
+    const api = {
+      request: vi.fn(async (config: any) => {
+        const payload = config?.data?.values || {};
+        const batch = payload.batch || [];
+        const cp = batch[0]?.contextParams || {};
+        const keys = Object.keys(cp).sort();
+        expect(keys).toEqual(['formValues.customer']);
+        expect(cp['formValues.customer']).toMatchObject({ collection: 'customers', filterByTk: 9 });
+        return { data: { ok: true } } as any;
+      }),
+    } as any;
+    (model.flowEngine.context as any).defineProperty('api', { value: api });
+
+    function HookCaller2() {
+      model.useHooksBeforeRender();
+      return null;
+    }
+    render(React.createElement(HookCaller2));
+
+    const mem2: Record<string, any> = {};
+    const fakeForm2 = {
+      setFieldsValue: (v: any) => Object.assign(mem2, v),
+      getFieldsValue: () => ({ ...mem2 }),
+      setFieldValue: (k: string, v: any) => (mem2[k] = v),
+    };
+    (model.context as any).defineProperty('form', { value: fakeForm2 });
+    fakeForm2.setFieldsValue({ customer: { id: 9 } });
+
+    const tpl2 = { who: '{{ ctx.formValues.customer.level.name }}' } as any;
+    await (model.context as any).resolveJsonTemplate(tpl2);
+    expect(api.request).toHaveBeenCalledTimes(1);
+  });
+});

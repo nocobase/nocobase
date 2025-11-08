@@ -12,6 +12,7 @@ import _ from 'lodash';
 import { FlowContext, FlowEngineContext } from '../flowContext';
 import { LogDuration } from '../utils/logDecorators';
 import { BaseRecordResource } from './baseRecordResource';
+import { parseLiquidContext, transformSQL } from '@nocobase/utils/client';
 
 type SQLRunOptions = {
   bind?: Record<string, any>;
@@ -25,20 +26,6 @@ type SQLSaveOptions = {
   sql: string;
   dataSourceKey?: string;
 };
-
-function transformSQL(template: string) {
-  let index = 1;
-  const bind = {};
-
-  const sql = template.replace(/{{\s*([^}]+)\s*}}/g, (_, expr) => {
-    const key = `__var${index}`;
-    bind[key] = `{{${expr.trim()}}}`;
-    index++;
-    return `$${key}`;
-  });
-
-  return { sql, bind };
-}
 
 export class FlowSQLRepository {
   protected ctx: FlowEngineContext;
@@ -58,16 +45,17 @@ export class FlowSQLRepository {
 
   @LogDuration({ type: 'resource.sql', slowMs: 16 })
   async run(sql: string, options: SQLRunOptions = {}) {
-    const result = transformSQL(sql);
-    const bind = await this.ctx.resolveJsonTemplate(result.bind);
+    const { sql: transformedSQL, bind, liquidContext } = await transformSQL(sql);
+    const resolved = await this.ctx.resolveJsonTemplate({ bind, liquidContext });
+    const parsedSQL = await parseLiquidContext(transformedSQL, resolved.liquidContext);
     const { data } = await this.ctx.api.request({
       method: 'POST',
       url: 'flowSql:run',
       data: {
-        sql: result.sql,
+        sql: parsedSQL,
         ...options,
         bind: {
-          ...bind,
+          ...resolved.bind,
           ...options.bind,
         },
       },
@@ -94,7 +82,7 @@ export class FlowSQLRepository {
         uid,
       },
     });
-    const bind = await this.ctx.resolveJsonTemplate(response.data.data || {});
+    const { bind, liquidContext } = await this.ctx.resolveJsonTemplate(response.data.data || {});
     const { data } = await this.ctx.api.request({
       method: 'POST',
       url: 'flowSql:runById',
@@ -103,8 +91,9 @@ export class FlowSQLRepository {
         ...options,
         bind: {
           ...bind,
-          ...options.bind,
+          ...options?.bind,
         },
+        liquidContext,
       },
     });
     return data?.data;
@@ -236,6 +225,11 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
     return this;
   }
 
+  setLiquidContext(liquidContext: Record<string, any>) {
+    this.request.data.liquidContext = liquidContext;
+    return this;
+  }
+
   async run() {
     return this._debugEnabled ? await this.runBySQL() : await this.runById();
   }
@@ -243,14 +237,14 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
   @LogDuration({ type: 'resource.sql', slowMs: 16 })
   async runBySQL() {
     const sql = this._sql;
-    const result = transformSQL(sql);
-    const bind = await this.context.resolveJsonTemplate(result.bind);
+    const { sql: transformedSQL, bind, liquidContext } = await transformSQL(sql);
+    const resolved = await this.context.resolveJsonTemplate({ bind, liquidContext });
     const options = _.cloneDeep({
       method: 'post',
       ...this.getRefreshRequestOptions(),
     });
-    options.data.bind = bind;
-    options.data.sql = result.sql;
+    options.data.sql = await parseLiquidContext(transformedSQL, resolved.liquidContext);
+    options.data.bind = resolved.bind;
     return await this.runAction<TData, any>('run', options);
   }
 
@@ -262,8 +256,9 @@ export class SQLResource<TData = any> extends BaseRecordResource<TData> {
         uid: this.request.data.uid,
       },
     });
-    const bind = await this.context.resolveJsonTemplate(data);
+    const { bind, liquidContext } = await this.context.resolveJsonTemplate(data);
     this.setBind(bind);
+    this.setLiquidContext(liquidContext);
     return await this.runAction<TData, any>('runById', {
       method: 'post',
       ...this.getRefreshRequestOptions(),

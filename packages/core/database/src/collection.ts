@@ -790,6 +790,13 @@ export class Collection<
     this.setField(options.name || name, options);
   }
 
+  private normalizeFieldName(val: string | string[]) {
+    if (!this.options.underscored) {
+      return val;
+    }
+    return Array.isArray(val) ? val.map((v) => snakeCase(v)) : snakeCase(val);
+  }
+
   addIndex(
     index:
       | string
@@ -836,7 +843,7 @@ export class Collection<
     }
 
     for (const item of indexes) {
-      if (lodash.isEqual(item.fields, indexName)) {
+      if (lodash.isEqual(this.normalizeFieldName(item.fields), this.normalizeFieldName(indexName))) {
         return;
       }
 
@@ -888,14 +895,26 @@ export class Collection<
     // @ts-ignore
     const indexes: any[] = this.model._indexes;
 
+    const attributes = {};
+    for (const [name, field] of Object.entries(this.model.getAttributes())) {
+      attributes[this.normalizeFieldName(name)] = field;
+    }
+
     // @ts-ignore
     this.model._indexes = lodash.uniqBy(
       indexes
         .filter((item) => {
-          return item.fields.every((field) => this.model.rawAttributes[field]);
+          return item.fields.every((field) => {
+            const name = this.normalizeFieldName(field);
+            return attributes[name];
+          });
         })
         .map((item) => {
-          item.fields = item.fields.map((field) => this.model.rawAttributes[field].field);
+          item.fields = item.fields.map((field) => {
+            const name = this.normalizeFieldName(field);
+            return attributes[name].field;
+          });
+
           return item;
         }),
       'name',

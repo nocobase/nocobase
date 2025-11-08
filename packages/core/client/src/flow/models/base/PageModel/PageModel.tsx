@@ -79,7 +79,12 @@ export class PageModel extends FlowModel<PageModelStructure> {
           <Droppable model={model}>
             <FlowModelRenderer
               model={model}
-              showFlowSettings={{ showBackground: true, showBorder: false }}
+              showFlowSettings={{
+                showBackground: true,
+                showBorder: false,
+                toolbarPosition: 'above',
+                style: { transform: 'translateY(8px)' },
+              }}
               extraToolbarItems={[
                 {
                   key: 'drag-handler',
@@ -119,6 +124,9 @@ export class PageModel extends FlowModel<PageModelStructure> {
             this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
             this.invokeTabModelLifecycleMethod(this.tabActiveKey, 'onInactive');
             this.tabActiveKey = activeKey;
+            if (this.context.view.inputArgs?.tabUid) {
+              this.context.view.inputArgs.tabUid = activeKey;
+            }
           }}
           // destroyInactiveTabPane
           tabBarExtraContent={{

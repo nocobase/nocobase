@@ -139,7 +139,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
   // 当 value 存在但 currentMetaTreeNode 还未恢复，尝试按路径逐级加载（支持 children 为函数的场景）
   useEffect(() => {
     const restoreFromValue = async () => {
-      if (!Array.isArray(resolvedMetaTree) || !value) return;
+      if (!Array.isArray(resolvedMetaTree) || value == null) return;
 
       // 若已存在且路径匹配，跳过
       if (currentMetaTreeNode) {
@@ -203,7 +203,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
 
   useEffect(() => {
     if (!resolvedMetaTreeNode) return;
-    if (!Array.isArray(resolvedMetaTree) || !innerValue) return;
+    if (!Array.isArray(resolvedMetaTree) || innerValue == null) return;
     const finalValue = resolveValueFromPath?.(resolvedMetaTreeNode) || innerValue;
     emitChange(finalValue, resolvedMetaTreeNode);
     setCurrentMetaTreeNode(resolvedMetaTreeNode);
@@ -286,7 +286,7 @@ const VariableInputComponent: React.FC<VariableInputProps> = ({
 
   const inputProps = useMemo(() => {
     const baseProps = {
-      value: innerValue || '',
+      value: innerValue ?? '',
       onChange: handleInputChange,
       disabled,
     };

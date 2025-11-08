@@ -14,6 +14,15 @@ export default {
   description: 'NocoBase Assistant',
   profile,
   skillSettings: {
-    skills: [],
+    skills: [
+      {
+        name: 'dataSource-dataSourceCounting',
+        autoCall: true,
+      },
+      {
+        name: 'dataSource-dataSourceQuery',
+        autoCall: true,
+      },
+    ],
   },
 };

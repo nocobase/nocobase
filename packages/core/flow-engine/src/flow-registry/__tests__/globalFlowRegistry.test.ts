@@ -138,4 +138,58 @@ describe('GlobalFlowRegistry', () => {
     expect(staticHandler).toHaveBeenCalled();
     expect(instanceHandler).toHaveBeenCalled();
   });
+
+  test('getFlows returns instance (dynamic) flows before static flows with own internal ordering', () => {
+    const engine = new FlowEngine();
+    class OrderModel extends FlowModel {}
+    engine.registerModels({ OrderModel });
+
+    // Register static flows with various sort values
+    OrderModel.registerFlow({ key: 'staticLow', title: 'S-low', sort: -10, steps: {} });
+    OrderModel.registerFlow({ key: 'staticHigh', title: 'S-high', sort: 10, steps: {} });
+
+    const model = engine.createModel({ use: 'OrderModel' });
+
+    // Add instance flows with sort values that would normally interleave if sorted purely by sort
+    model.flowRegistry.addFlow('instMid', { title: 'I-mid', sort: 0, steps: {} });
+    model.flowRegistry.addFlow('instHigh', { title: 'I-high', sort: 5, steps: {} });
+
+    const keys = Array.from(model.getFlows().keys());
+    // Expect dynamic flows first (by sort inside group), then static flows (by their own ordering)
+    expect(keys).toEqual(['instMid', 'instHigh', 'staticLow', 'staticHigh']);
+  });
+
+  test('sequential dispatch runs instance flows before static flows regardless of static sort', async () => {
+    const engine = new FlowEngine();
+    class SeqModel extends FlowModel {}
+    engine.registerModels({ SeqModel });
+
+    const calls: string[] = [];
+
+    // Static flow with very low sort to try to run first if not grouped
+    SeqModel.registerFlow({
+      key: 'S',
+      on: { eventName: 'click' },
+      sort: -100,
+      steps: { s: { handler: async () => void calls.push('static') } as any },
+    });
+
+    const model = engine.createModel({ use: 'SeqModel' });
+
+    // Instance flows with sort greater than static
+    model.flowRegistry.addFlow('I1', {
+      on: { eventName: 'click' },
+      sort: 0,
+      steps: { i1: { handler: async () => void calls.push('inst1') } as any },
+    });
+    model.flowRegistry.addFlow('I2', {
+      on: { eventName: 'click' },
+      sort: 5,
+      steps: { i2: { handler: async () => void calls.push('inst2') } as any },
+    });
+
+    await model.dispatchEvent('click', undefined, { sequential: true });
+
+    expect(calls).toEqual(['inst1', 'inst2', 'static']);
+  });
 });

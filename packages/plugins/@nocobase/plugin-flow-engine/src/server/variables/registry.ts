@@ -7,19 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * Dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- */
 import _ from 'lodash';
 import { HttpRequestContext, ServerBaseContext } from '../template/contexts';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { TargetKey } from '@nocobase/database';
 import { ResourcerContext } from '@nocobase/resourcer';
 import { extractUsedVariablePaths } from '@nocobase/utils';
+import { adjustSelectsForCollection } from './selects';
 
 export type JSONValue = string | { [key: string]: JSONValue } | JSONValue[];
 
@@ -189,6 +183,7 @@ async function fetchRecordWithRequestCache(
   filterByTk: unknown,
   fields?: string[],
   appends?: string[],
+  preferFullRecord?: boolean,
 ): Promise<unknown> {
   try {
     const log = koaCtx.app?.logger?.child({
@@ -208,26 +203,47 @@ async function fetchRecordWithRequestCache(
     if (!cm?.db) return undefined;
     const repo = cm.db.getRepository(collection);
 
-    const keyObj: { ds: string; c: string; tk: unknown; f?: string[]; a?: string[] } = {
+    // 确保查询字段包含主键（仅当模型存在明确主键且该属性存在于 rawAttributes 中时）
+    const modelInfo = (
+      repo as unknown as {
+        collection?: { model?: { primaryKeyAttribute?: string; rawAttributes?: Record<string, unknown> } };
+      }
+    ).collection?.model;
+    const pkAttr = modelInfo?.primaryKeyAttribute;
+    const pkIsValid =
+      pkAttr && modelInfo?.rawAttributes && Object.prototype.hasOwnProperty.call(modelInfo.rawAttributes, pkAttr);
+    const fieldsWithPk =
+      Array.isArray(fields) && fields.length > 0 && pkIsValid
+        ? Array.from(new Set<string>([...fields, pkAttr as string]))
+        : fields;
+
+    const keyObj: { ds: string; c: string; tk: unknown; f?: string[]; a?: string[]; full?: boolean } = {
       ds: dataSourceKey || 'main',
       c: collection,
       tk: filterByTk,
-      f: Array.isArray(fields) ? [...fields].sort() : undefined,
+      f: Array.isArray(fieldsWithPk) ? [...fieldsWithPk].sort() : undefined,
       a: Array.isArray(appends) ? [...appends].sort() : undefined,
+      full: preferFullRecord ? true : undefined,
     };
     const key = JSON.stringify(keyObj);
     if (cache) {
-      // 精确命中
       if (cache.has(key)) {
         return cache.get(key);
       }
       // 仅当缓存项是本次请求所需 selects 的“超集”时才复用（避免缺字段/关联）。
       // 注意：若 needFields 中某路径已被 cachedAppends 的前缀覆盖（例如 needFields: ['roles.name'] 且 cachedAppends: ['roles']），
       // 则认为该字段已被关联载入，可视为满足。
-      const needFields = Array.isArray(fields) ? [...new Set(fields)] : undefined;
+      const needFields = Array.isArray(fieldsWithPk) ? [...new Set(fieldsWithPk)] : undefined;
       const needAppends = Array.isArray(appends) ? new Set(appends) : undefined;
       for (const [cacheKey, cacheVal] of cache.entries()) {
-        const parsed = JSON.parse(cacheKey) as { ds: string; c: string; tk: unknown; f?: string[]; a?: string[] };
+        const parsed = JSON.parse(cacheKey) as {
+          ds: string;
+          c: string;
+          tk: unknown;
+          f?: string[];
+          a?: string[];
+          full?: boolean;
+        };
         if (!parsed || parsed.ds !== keyObj.ds || parsed.c !== keyObj.c || parsed.tk !== keyObj.tk) continue;
         const cachedFields = new Set(parsed.f || []);
         const cachedAppends = new Set(parsed.a || []);
@@ -244,19 +260,32 @@ async function fetchRecordWithRequestCache(
           return false;
         };
 
-        const fieldsOk = !needFields || needFields.every((f) => cachedFields.has(f) || fieldCoveredByAppends(f));
+        const fieldsOk = needFields
+          ? needFields.every((f) => cachedFields.has(f) || fieldCoveredByAppends(f))
+          : parsed.f === undefined;
         const appendsOk = !needAppends || [...needAppends].every((a) => cachedAppends.has(a));
-        if (fieldsOk && appendsOk) {
+        const fullOk = preferFullRecord ? parsed.full === true : true;
+        if (fieldsOk && appendsOk && fullOk) {
           return cacheVal;
         }
       }
     }
     const rec = await repo.findOne({
       filterByTk: filterByTk as TargetKey,
-      fields,
+      fields: fieldsWithPk,
       appends,
     });
-    const json = rec ? rec.toJSON() : undefined;
+    let json = rec ? rec.toJSON() : undefined;
+    if (preferFullRecord && json && typeof json === 'object' && pkIsValid) {
+      const keys = Object.keys(json as Record<string, unknown>);
+      const pkOnly = keys.length === 1 && keys[0] === pkAttr;
+      const rawAttrs = modelInfo?.rawAttributes as Record<string, unknown> | undefined;
+      const hasMoreAttrs = rawAttrs && Object.keys(rawAttrs).some((k) => k !== pkAttr);
+      if (pkOnly && hasMoreAttrs) {
+        const rec2 = await repo.findOne({ filterByTk: filterByTk as TargetKey });
+        json = rec2 ? rec2.toJSON() : json;
+      }
+    }
     if (cache) cache.set(key, json);
     return json;
   } catch (e: unknown) {
@@ -305,16 +334,25 @@ function attachGenericRecordVariables(
     // Top-level record-like
     if (isRecordParams(topParams)) {
       const { generatedAppends, generatedFields } = inferSelectsFromUsage(usedPaths, topParams);
+      const hasDirectRefTop = (usedPaths || []).some((p) => p === '');
       flowCtx.defineProperty(varName, {
         get: async () => {
           const dataSourceKey = topParams?.dataSourceKey || 'main';
+          const fixed = adjustSelectsForCollection(
+            koaCtx,
+            dataSourceKey,
+            topParams.collection,
+            generatedFields,
+            generatedAppends,
+          );
           return await fetchRecordWithRequestCache(
             koaCtx,
             dataSourceKey,
             topParams.collection,
             topParams.filterByTk,
-            generatedFields,
-            generatedAppends,
+            fixed.fields,
+            fixed.appends,
+            hasDirectRefTop,
           );
         },
         cache: true,
@@ -394,18 +432,27 @@ function attachGenericRecordVariables(
           key: string,
           recordParams: { collection: string; filterByTk: unknown; dataSourceKey?: string },
           subPaths: string[] = [],
+          preferFull?: boolean,
         ) => {
           const { generatedAppends, generatedFields } = inferSelectsFromUsage(subPaths, recordParams);
           container.defineProperty(key, {
             get: async () => {
               const dataSourceKey = recordParams?.dataSourceKey || 'main';
+              const fixed = adjustSelectsForCollection(
+                koaCtx,
+                dataSourceKey,
+                recordParams.collection,
+                generatedFields,
+                generatedAppends,
+              );
               return await fetchRecordWithRequestCache(
                 koaCtx,
                 dataSourceKey,
                 recordParams.collection,
                 recordParams.filterByTk,
-                generatedFields,
-                generatedAppends,
+                fixed.fields,
+                fixed.appends,
+                preferFull || (subPaths?.length ?? 0) === 0,
               );
             },
             cache: true,
@@ -449,7 +496,8 @@ function attachGenericRecordVariables(
             if (all.length) effRemainders = all;
           }
 
-          defineRecordGetter(root, idx ?? seg, recordParams, effRemainders);
+          const hasDirectRefOne = (usedPaths || []).some((p) => p === seg || (!!idx && p === `[${idx}]`));
+          defineRecordGetter(root, idx ?? seg, recordParams, effRemainders, hasDirectRefOne);
           definedFirstLevel.add(idx ?? seg);
         }
 
@@ -475,7 +523,8 @@ function attachGenericRecordVariables(
           const subPaths = (usedPaths || [])
             .map((p) => (p === relative ? '' : p.startsWith(relative + '.') ? p.slice(relative.length + 1) : ''))
             .filter((x) => x !== '');
-          defineRecordGetter(container, leaf, recordParams, subPaths);
+          const hasDirectRef = (usedPaths || []).some((p) => p === relative);
+          defineRecordGetter(container, leaf, recordParams, subPaths, hasDirectRef);
         }
 
         return root.createProxy();

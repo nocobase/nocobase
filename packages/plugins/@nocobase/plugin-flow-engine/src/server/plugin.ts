@@ -10,6 +10,7 @@
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import type { ResourcerContext } from '@nocobase/resourcer';
 import { Plugin } from '@nocobase/server';
+import { parseLiquidContext, transformSQL } from '@nocobase/utils';
 import PluginUISchemaStorageServer from './server';
 import { GlobalContext, HttpRequestContext } from './template/contexts';
 import { JSONValue, resolveJsonTemplate } from './template/resolver';
@@ -33,25 +34,12 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     return cm.db;
   }
 
-  transformSQL(template: string) {
-    let index = 1;
-    const bind = {};
-
-    const sql = template.replace(/{{\s*([^}]+)\s*}}/g, (_, expr) => {
-      const key = `__var${index}`;
-      bind[key] = `{{${expr.trim()}}}`;
-      index++;
-      return `$${key}`;
-    });
-
-    return { sql, bind };
-  }
-
   async load() {
     await super.load();
     // Initialize a shared GlobalContext once, using server environment variables
     this.globalContext = new GlobalContext(this.app.environment?.getVariables?.());
     this.app.acl.allow('flowSql', 'runById', 'loggedIn');
+    this.app.acl.allow('flowSql', 'getBind', 'loggedIn');
     this.app.acl.allow('variables', 'resolve', 'loggedIn');
     // 赋值动作权限
     this.app.acl.allow('fieldAssignments', 'apply', 'loggedIn');
@@ -126,14 +114,15 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
     // 兼容：保留部分动作通过 name:action 注册（如 flowSql）
     this.app.resourceManager.registerActionHandlers({
       'flowSql:runById': async (ctx, next) => {
-        const { uid, type, filter, bind, dataSourceKey = 'main' } = ctx.action.params.values;
+        const { uid, type, filter, bind, liquidContext, dataSourceKey = 'main' } = ctx.action.params.values;
         const r = this.db.getRepository('flowSql');
         const record = await r.findOne({
           filter: { uid },
         });
         const db = this.getDatabaseByDataSourceKey(record.dataSourceKey || dataSourceKey);
-        const result = this.transformSQL(record.sql);
-        ctx.body = await db.runSQL(result.sql, {
+        const result = await transformSQL(record.sql);
+        const sql = await parseLiquidContext(result.sql, liquidContext);
+        ctx.body = await db.runSQL(sql, {
           type,
           filter,
           bind,
@@ -146,8 +135,11 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
         const record = await r.findOne({
           filter: { uid },
         });
-        const { bind } = this.transformSQL(record.sql);
-        ctx.body = bind;
+        const { bind, liquidContext } = await transformSQL(record.sql);
+        ctx.body = {
+          bind,
+          liquidContext,
+        };
         await next();
       },
       'flowSql:save': async (ctx, next) => {

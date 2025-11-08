@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { UpdateRecordActionModel } from '../UpdateRecordActionModel';
+import { UpdateRecordActionModel } from '../../..'; // 这样可以解决循环依赖问题
 
 /**
  * 精简版 AssignFormModel（仅用于单测）：

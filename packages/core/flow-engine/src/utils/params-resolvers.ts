@@ -443,7 +443,7 @@ async function compileExpression<TModel extends FlowModel = FlowModel>(expressio
    * ✅ "{{ctx.user}}"            -> 捕获: "ctx.user"
    * ❌ "Hello {{ ctx.user }}"    -> 不匹配（不是纯表达式）
    */
-  const singleMatch = expression.match(/^\{\{\s*(.+)\s*\}\}$/);
+  const singleMatch = expression.match(/^\s*\{\{\s*([^{}]+?)\s*\}\}\s*$/);
   if (singleMatch) {
     const inner = singleMatch[1];
     const dotPath = matchDotOnly(inner);

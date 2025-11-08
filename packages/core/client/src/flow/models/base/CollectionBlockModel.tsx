@@ -351,6 +351,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       const associationField = this.context.dataSourceManager.getCollectionField(
         `${this.collection.dataSourceKey}.${this.collection.name}.${field1}`,
       ) as CollectionField;
+      if (!associationField) {
+        return;
+      }
       const targetCollectionName = associationField.target;
       const collectionField = this.context.dataSourceManager.getCollectionField(
         `${this.collection.dataSourceKey}.${targetCollectionName}.${field2}`,

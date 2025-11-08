@@ -30,7 +30,9 @@ import { FilterGroup } from '../components/filter/FilterGroup';
 import { LinkageFilterItem } from '../components/filter';
 import { CodeEditor } from '../components/code-editor';
 import { FieldAssignValueInput } from '../components/FieldAssignValueInput';
-import _, { values } from 'lodash';
+import _ from 'lodash';
+import { SubFormFieldModel } from '../models';
+import { coerceForToOneField } from '../internal/utils/associationValueCoercion';
 
 interface LinkageRule {
   /** 随机生成的字符串 */
@@ -377,16 +379,14 @@ export const subFormLinkageSetFieldProps = defineAction({
     // 根据 uid 找到对应的字段 model 并设置属性
     fields.forEach((fieldUid: string) => {
       try {
-        const fieldIndex = ctx.model?.context?.fieldIndex;
-        const fieldModels = ctx.model?.subModels?.items || [];
-        const fieldModel = fieldModels.find((model: any) => model.uid === fieldUid);
-        const forkModel = fieldModel.getFork(`${fieldIndex}:${fieldUid}`);
+        const formItemModel = ctx.engine.getModel(fieldUid);
+        const forkModel = formItemModel.getFork(`${ctx.model?.context?.fieldKey}:${fieldUid}`);
 
         let model = forkModel;
 
         // 适配对一子表单的场景
-        if (fieldModel.forks.size === 0) {
-          model = fieldModel;
+        if (!forkModel) {
+          model = formItemModel;
         }
 
         if (model) {
@@ -607,12 +607,14 @@ export const linkageAssignField = defineAction({
       const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
       const fieldModel = gridModels.find((model: any) => model.uid === field);
       if (!fieldModel) return;
+      const collectionField = (fieldModel as any)?.collectionField;
+      const finalValue = coerceForToOneField(collectionField, assignValue);
       // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-      if (typeof assignValue === 'undefined') {
+      if (typeof finalValue === 'undefined') {
         setProps(fieldModel as FlowModel, {});
         return;
       }
-      setProps(fieldModel as FlowModel, { value: assignValue });
+      setProps(fieldModel as FlowModel, { value: finalValue });
     } catch (error) {
       console.warn(`Failed to assign value to field ${field}:`, error);
     }
@@ -685,25 +687,27 @@ export const subFormLinkageAssignField = defineAction({
     const { assignValue, field } = value || {};
     if (!field) return;
     try {
-      const fieldModels = ctx.model?.subModels?.items || [];
-      const fieldModel = fieldModels.find((model: any) => model.uid === field);
-      const forkModel = fieldModel?.getFork(`${ctx.model?.context?.fieldIndex}:${field}`);
+      const formItemModel = ctx.engine.getModel(field);
+      const forkModel = formItemModel?.getFork(`${ctx.model?.context?.fieldKey}:${field}`);
 
       let model = forkModel;
 
       // 适配对一子表单的场景
-      if (fieldModel.forks.size === 0) {
-        model = fieldModel;
+      if (!forkModel) {
+        model = formItemModel;
       }
 
       if (!model) return;
 
+      const collectionField = (formItemModel as any)?.collectionField;
+      const finalValue = coerceForToOneField(collectionField, assignValue);
+
       // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-      if (typeof assignValue === 'undefined') {
+      if (typeof finalValue === 'undefined') {
         setProps(model, {});
         return;
       }
-      setProps(model, { value: assignValue });
+      setProps(model, { value: finalValue });
     } catch (error) {
       console.warn(`Failed to assign value to field ${field}:`, error);
     }
@@ -777,12 +781,14 @@ export const setFieldsDefaultValue = defineAction({
       const gridModels = ctx.model?.subModels?.grid?.subModels?.items || [];
       const fieldModel = gridModels.find((model: any) => model.uid === field);
       if (!fieldModel) return;
+      const collectionField = (fieldModel as any)?.collectionField;
+      const finalInitialValue = coerceForToOneField(collectionField, initialValue);
       // 若赋值为空（如切换字段后清空），调用一次 setProps 触发清空临时 props，避免旧值残留
-      if (typeof initialValue === 'undefined') {
+      if (typeof finalInitialValue === 'undefined') {
         setProps(fieldModel as FlowModel, {});
         return;
       }
-      setProps(fieldModel as FlowModel, { initialValue });
+      setProps(fieldModel as FlowModel, { initialValue: finalInitialValue });
     } catch (error) {
       console.warn(`Failed to assign value to field ${field}:`, error);
     }
@@ -963,10 +969,10 @@ const LinkageRulesUI = observer(
           />
         </div>
         <Space onClick={(e) => e.stopPropagation()}>
-          <Tooltip title="Delete">
+          <Tooltip title={t('Delete')}>
             <Button type="text" size="small" icon={<DeleteOutlined />} onClick={() => handleDeleteRule(index)} />
           </Tooltip>
-          <Tooltip title="Move up">
+          <Tooltip title={t('Move up')}>
             <Button
               type="text"
               size="small"
@@ -975,7 +981,7 @@ const LinkageRulesUI = observer(
               disabled={index === 0}
             />
           </Tooltip>
-          <Tooltip title="Move down">
+          <Tooltip title={t('Move down')}>
             <Button
               type="text"
               size="small"
@@ -984,7 +990,7 @@ const LinkageRulesUI = observer(
               disabled={index === rules.length - 1}
             />
           </Tooltip>
-          <Tooltip title="Copy">
+          <Tooltip title={t('Copy')}>
             <Button type="text" size="small" icon={<CopyOutlined />} onClick={() => handleCopyRule(index)} />
           </Tooltip>
           <Switch
@@ -1110,7 +1116,7 @@ const LinkageRulesUI = observer(
                             {t(actionDef.title)}
                             <span style={{ marginInlineStart: 2, marginInlineEnd: 8 }}>:</span>
                           </span>
-                          <Tooltip title="Delete action">
+                          <Tooltip title={t('Delete action')}>
                             <Button
                               type="text"
                               size="small"
@@ -1206,7 +1212,8 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     .forEach((rule) => {
       const { condition: conditions, actions } = rule;
 
-      if (evaluateConditions(conditions, evaluator)) {
+      const matched = evaluateConditions(conditions, evaluator);
+      if (matched) {
         actions.forEach((action) => {
           const setProps = (
             model: FlowModel & { __originalProps?: any; __props?: any; __shouldReset?: boolean },
@@ -1245,42 +1252,64 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
       }
     });
 
-  // 2. 最后才实际更改相关 model 的状态
-  allModels.forEach(
-    (
-      model: FlowModel & {
-        __originalProps?: any;
-        __props?: any;
-        __shouldReset?: boolean;
-        isFork?: boolean;
-        forkId?: number;
-      },
-    ) => {
-      const newProps = {
-        ...model.__originalProps,
-        ...model.__props,
-      };
+  // 2. 合并去重（按 uid）后再实际更改相关 model 的状态，避免重复项把“已设置的临时属性”覆盖掉
+  const mergedByUid = new Map<
+    string,
+    FlowModel & { __originalProps?: any; __props?: any; isFork?: boolean; forkId?: number }
+  >();
+  const mergedPropsByUid = new Map<string, any>();
 
-      model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
-      model.hidden = !!newProps.hiddenModel;
-
-      if (newProps.hiddenText) {
-        model.setProps('title', '');
+  allModels.forEach((m: any) => {
+    const uid = m?.uid || String(m);
+    const curProps = m.__props || {};
+    if (!mergedByUid.has(uid)) {
+      mergedByUid.set(uid, m);
+      mergedPropsByUid.set(uid, { ...curProps });
+    } else {
+      // 合并属性：后写覆盖先写；优先选择 fork 模型作为应用目标
+      mergedPropsByUid.set(uid, { ...mergedPropsByUid.get(uid), ...curProps });
+      const exist = mergedByUid.get(uid) as any;
+      if (m.isFork && !exist.isFork) {
+        mergedByUid.set(uid, m);
       }
+    }
+  });
 
-      // 目前只有表单的“字段赋值”有 value 属性
-      if ('value' in newProps && model.context.form) {
-        model.context.form.setFieldValue(
-          model.isFork && Array.isArray(model.props.name)
-            ? [...model.props.name.slice(0, -1), model.forkId, ...model.props.name.slice(-1)]
-            : model.props.name,
-          newProps.value,
-        );
+  mergedByUid.forEach((model: any, uid) => {
+    const patchProps = mergedPropsByUid.get(uid) || {};
+    const newProps = { ...model.__originalProps, ...patchProps };
+
+    model.setProps(_.omit(newProps, ['hiddenModel', 'value', 'hiddenText']));
+    model.hidden = !!newProps.hiddenModel;
+
+    if (newProps.required === true) {
+      const rules = (model.props.rules || []).filter((rule) => !rule.required);
+      rules.push({
+        required: true,
+        message: ctx.t('The field value is required'),
+      });
+      model.setProps('rules', rules);
+    } else if (newProps.required === false) {
+      const rules = (model.props.rules || []).filter((rule) => !rule.required);
+      model.setProps('rules', rules);
+    }
+
+    if (newProps.hiddenText) {
+      model.setProps('title', '');
+    }
+
+    // 目前只有表单的“字段赋值”有 value 属性
+    if ('value' in newProps && model.context.form) {
+      const path = model.isFork ? model.context.fieldPathArray : model.props.name;
+      if (!_.isEqual(model.context.form.getFieldValue(path), newProps.value)) {
+        model.context.form.setFieldValue(path, newProps.value);
+        model.context.blockModel?.dispatchEvent('formValuesChange', {});
+        model.context.blockModel?.emitter.emit('formValuesChange', {});
       }
+    }
 
-      model.__props = null;
-    },
-  );
+    model.__props = null;
+  });
 };
 
 export const blockLinkageRules = defineAction({
@@ -1381,7 +1410,7 @@ export const subFormFieldLinkageRules = defineAction({
     const grid = ctx.model?.subModels?.grid;
 
     // 适配对一子表单的场景
-    if (grid.forks.size === 0) {
+    if (ctx.model instanceof SubFormFieldModel) {
       if (grid.hidden) {
         return;
       }

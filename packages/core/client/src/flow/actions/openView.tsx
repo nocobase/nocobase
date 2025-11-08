@@ -7,7 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT, FlowModelContext, FlowModel, useFlowSettingsContext } from '@nocobase/flow-engine';
+import {
+  defineAction,
+  escapeT,
+  FlowModelContext,
+  FlowModel,
+  useFlowSettingsContext,
+  ActionScene,
+} from '@nocobase/flow-engine';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Input, Select, Cascader } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
@@ -536,6 +543,9 @@ export const openView = defineAction({
   },
   async handler(ctx: FlowModelContext, params) {
     // If uid differs from current model, delegate to ctx.openView to open that popup
+    const inputArgs = ctx.inputArgs || {};
+    const defineProperties = inputArgs.defineProperties ?? ctx.model.context?.inputArgs?.defineProperties ?? undefined;
+    const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? undefined;
     if (params?.uid && params.uid !== ctx.model.uid) {
       const actionDefaults = (ctx.model as any)?.getInputArgs?.() || {};
       // 外部弹窗时应该以弹窗发起者为高优先级
@@ -548,10 +558,12 @@ export const openView = defineAction({
         filterByTk: params.filterByTk ?? actionDefaults.filterByTk,
         sourceId: params.sourceId ?? actionDefaults.sourceId,
         tabUid: params.tabUid,
+        // 关键：把自定义上下文一并传递给 ctx.openView
+        ...(defineProperties ? { defineProperties } : {}),
+        ...(defineMethods ? { defineMethods } : {}),
       });
       return;
     }
-    const inputArgs = ctx.inputArgs || {};
 
     if (inputArgs.filterByTk === undefined && params.filterByTk !== undefined) {
       inputArgs.filterByTk = params.filterByTk;
@@ -565,7 +577,12 @@ export const openView = defineAction({
       inputArgs.tabUid = params.tabUid;
     }
 
-    const navigation = inputArgs.navigation ?? params.navigation;
+    let navigation = inputArgs.navigation ?? params.navigation;
+
+    // 传递了上下文就必须禁用路由，否则下次路由打开会缺少上下文
+    if (defineProperties || defineMethods) {
+      navigation = false;
+    }
 
     if (navigation !== false) {
       if (!ctx.inputArgs.navigation && ctx.view?.navigation) {

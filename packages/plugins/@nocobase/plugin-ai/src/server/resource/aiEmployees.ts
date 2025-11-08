@@ -11,6 +11,8 @@ import actions, { Context, Next } from '@nocobase/actions';
 import * as templates from '../ai-employees/templates';
 import PluginAIServer from '../plugin';
 import type { AIEmployee } from '../../collections/ai-employees';
+import { SkillSettings } from '../../client/ai-employees/admin/SkillSettings';
+import _ from 'lodash';
 
 export const list = async (ctx: Context, next: Next) => {
   const { paginate } = ctx.action.params || {};
@@ -31,6 +33,24 @@ export const list = async (ctx: Context, next: Next) => {
   });
 
   await next();
+};
+
+export const create = async (ctx: Context, next: Next) => {
+  const { skillSettings } = ctx.action.params.values ?? {};
+  const skills = skillSettings.skills ?? [];
+  skills.push(
+    {
+      name: 'dataSource-dataSourceCounting',
+      autoCall: true,
+    },
+    {
+      name: 'dataSource-dataSourceQuery',
+      autoCall: true,
+    },
+  );
+  skillSettings.skills = _.uniqBy(skills, 'name');
+
+  await actions.create(ctx as Context, next);
 };
 
 export const listByUser = async (ctx: Context, next: Next) => {
@@ -88,20 +108,40 @@ export const listByUser = async (ctx: Context, next: Next) => {
     }
   });
 
-  ctx.body = rows.map((row) => ({
-    username: row.username,
-    nickname: row.nickname,
-    position: row.position,
-    avatar: row.avatar,
-    bio: row.bio,
-    greeting: row.greeting,
-    userConfig: {
-      prompt: row.userConfigs?.[0]?.prompt,
-    },
-    skillSettings: row.skillSettings,
-    builtIn: row.builtIn,
-    webSearch: row.modelSettings?.builtIn?.webSearch ?? false,
-  }));
+  const llmServiceNameSet = new Set(
+    rows.filter((row) => row.modelSettings?.llmService).map((row) => row.modelSettings?.llmService),
+  );
+  const llmProviders = llmServiceNameSet.size
+    ? await ctx.db.getRepository('llmServices').find({
+        filter: {
+          name: {
+            $in: Array.from(llmServiceNameSet),
+          },
+        },
+      })
+    : [];
+  const llmProviderMap = new Map(llmProviders.map((provider) => [provider.name, provider]));
+
+  ctx.body = rows.map((row) => {
+    const llmServiceName: string = row.modelSettings.llmService;
+    const llmProvider = (llmProviderMap.get(llmServiceName) as any)?.provider ?? '';
+    return {
+      username: row.username,
+      nickname: row.nickname,
+      position: row.position,
+      avatar: row.avatar,
+      bio: row.bio,
+      greeting: row.greeting,
+      userConfig: {
+        prompt: row.userConfigs?.[0]?.prompt,
+      },
+      skillSettings: row.skillSettings,
+      builtIn: row.builtIn,
+      webSearch: row.modelSettings?.builtIn?.webSearch ?? false,
+      llmProvider,
+      toolsConflict: llmProvider === 'google-genai',
+    };
+  });
   await next();
 };
 

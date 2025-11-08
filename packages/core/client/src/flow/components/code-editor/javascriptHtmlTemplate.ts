@@ -9,7 +9,8 @@
 
 import { html, htmlLanguage } from '@codemirror/lang-html';
 import { LanguageSupport } from '@codemirror/language';
-import { javascript, javascriptLanguage } from '@codemirror/lang-javascript';
+import type { LRLanguage } from '@codemirror/language';
+import { javascript } from '@codemirror/lang-javascript';
 import { parseMixed } from '@lezer/common';
 import type { SyntaxNode } from '@lezer/common';
 
@@ -41,10 +42,11 @@ export function getTemplateHtmlRanges(node: SyntaxNode): TemplateHtmlRange[] {
 }
 
 export function javascriptWithHtmlTemplates(): LanguageSupport {
-  const baseJavascript = javascript();
+  // Enable JSX in JavaScript language so editor can parse/render JSX syntax
+  const baseJavascript = javascript({ jsx: true });
   const htmlSupport = html();
 
-  const mixedLanguage = javascriptLanguage.configure({
+  const mixedLanguage = (baseJavascript.language as unknown as LRLanguage).configure({
     wrap: parseMixed((node) => {
       if (node.type.name !== 'TemplateString') {
         return null;

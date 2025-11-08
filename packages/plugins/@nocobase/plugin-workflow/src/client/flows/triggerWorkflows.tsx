@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { AppendsTreeSelect, CollectionBlockModel, FormSubmitActionModel, joinCollectionName } from '@nocobase/client';
+import {
+  AppendsTreeSelect,
+  CollectionBlockModel,
+  FormSubmitActionModel,
+  UpdateRecordActionModel,
+  joinCollectionName,
+} from '@nocobase/client';
 import { NAMESPACE } from '../locale';
 import { TriggerWorkflowSelect } from '../components';
 
@@ -137,6 +143,27 @@ export function createTriggerWorkflowsSchema({
 
 FormSubmitActionModel.registerFlow({
   key: 'formTriggerWorkflowsActionSettings',
+  title: `{{t('Workflow', { ns: 'workflow' })}}`,
+  steps: {
+    setTriggerWorkflows: {
+      title: `{{t('Bind workflows', { ns: "${NAMESPACE}" })}}`,
+      uiSchema: createTriggerWorkflowsSchema(),
+      handler(ctx, params) {
+        const triggerWorkflows = params.group?.length
+          ? params.group.map((row) => [row.workflowKey, row.context].filter(Boolean).join('!')).join(',')
+          : undefined;
+        ctx.model.setSaveRequestConfig({
+          params: {
+            triggerWorkflows,
+          },
+        });
+      },
+    },
+  },
+});
+
+UpdateRecordActionModel.registerFlow({
+  key: 'recordTriggerWorkflowsActionSettings',
   title: `{{t('Workflow', { ns: 'workflow' })}}`,
   steps: {
     setTriggerWorkflows: {

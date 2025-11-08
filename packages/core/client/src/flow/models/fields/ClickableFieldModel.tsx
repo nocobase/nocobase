@@ -51,9 +51,9 @@ export class ClickableFieldModel extends FieldModel {
     return value;
   }
 
-  renderInDisplayStyle(value, record?) {
+  renderInDisplayStyle(value, record?, isToMany?) {
     const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
-    if (typeof value === 'object' && restProps.target) {
+    if (value && typeof value === 'object' && restProps.target) {
       return;
     }
     const result = this.renderComponent(value);
@@ -67,6 +67,7 @@ export class ClickableFieldModel extends FieldModel {
       cursor: clickToOpen ? 'pointer' : 'default',
       alignItems: 'center',
       gap: 4,
+      display: isToMany && 'inline-block',
     };
 
     if (isTag) {
@@ -107,10 +108,14 @@ export class ClickableFieldModel extends FieldModel {
         return <EllipsisWithTooltip ellipsis={ellipsis}>{result}</EllipsisWithTooltip>;
       } else {
         const result = castArray(value).flatMap((v, idx) => {
-          const node = this.renderInDisplayStyle(v?.[titleField], v);
+          const node = this.renderInDisplayStyle(v?.[titleField], v, Array.isArray(value));
           return idx === 0 ? [node] : [<span key={`sep-${idx}`}>, </span>, node];
         });
-        return <EllipsisWithTooltip ellipsis={ellipsis}>{result}</EllipsisWithTooltip>;
+        return (
+          <EllipsisWithTooltip ellipsis={ellipsis}>
+            <span style={{ flexWrap: 'nowrap' }}>{result}</span>
+          </EllipsisWithTooltip>
+        );
       }
     } else {
       const textContent = (
