@@ -427,10 +427,9 @@ export async function updateMultipleAssociation(
   const keys = getKeysByPrefix(updateAssociationValues, key);
 
   const setAccessor = association.accessors.set;
-  const addAccessor = association.accessors.add;
 
-  if (isUndefinedOrNull(value)) {
-    await model[setAccessor](null, { transaction, context, individualHooks: true, validate: false });
+  if (value == null || (Array.isArray(value) && value.length === 0)) {
+    await model[setAccessor](value, { transaction, context, individualHooks: true, validate: false });
     model.setDataValue(key, null);
     return;
   }
@@ -521,19 +520,22 @@ export async function updateMultipleAssociation(
       });
 
       if (association instanceof HasMany) {
+        // @ts-ignore
         item[association.foreignKey] = model.get(association.sourceKey);
       }
       const instance = await targetCollection.repository.create({ ...accessorOptions, values: item });
       if (association instanceof BelongsToMany) {
         const ThroughModel = (<any>association).through.model as typeof Model;
-        await ThroughModel.create(
-          {
+        await ThroughModel.collection.repository.updateOrCreate({
+          ...accessorOptions,
+          filterKeys: [association.foreignKey, association.otherKey],
+          values: {
+            // @ts-ignore
             [association.foreignKey]: model.get(association.sourceKey),
             [association.otherKey]: instance.get(association.targetKey),
             ...throughValue,
           },
-          accessorOptions,
-        );
+        });
       }
 
       newItems.push(instance);
@@ -555,8 +557,24 @@ export async function updateMultipleAssociation(
           operation: 'create',
         });
 
+        if (association instanceof HasMany) {
+          // @ts-ignore
+          item[association.foreignKey] = model.get(association.sourceKey);
+        }
         instance = await targetCollection.repository.create({ ...accessorOptions, values: item });
-        await model[addAccessor](instance, accessorOptions);
+        if (association instanceof BelongsToMany) {
+          const ThroughModel = (<any>association).through.model as typeof Model;
+          await ThroughModel.collection.repository.updateOrCreate({
+            ...accessorOptions,
+            filterKeys: [association.foreignKey, association.otherKey],
+            values: {
+              // @ts-ignore
+              [association.foreignKey]: model.get(association.sourceKey),
+              [association.otherKey]: instance.get(association.targetKey),
+              ...throughValue,
+            },
+          });
+        }
 
         await updateAssociations(instance, item, {
           ...options,
@@ -568,7 +586,32 @@ export async function updateMultipleAssociation(
         continue;
       }
 
-      await model[addAccessor](instance, accessorOptions);
+      if (association instanceof HasMany) {
+        // @ts-ignore
+        if (instance.get(association.foreignKey) !== model.get(association.sourceKey)) {
+          const TargetModel = association.target as typeof Model;
+          await TargetModel.collection.repository.update({
+            ...accessorOptions,
+            filterByTk: instance.get(TargetModel.collection.filterTargetKey || pk),
+            values: {
+              // @ts-ignore
+              [association.foreignKey]: model.get(association.sourceKey),
+            },
+          });
+        }
+      } else {
+        const ThroughModel = (<any>association).through.model as typeof Model;
+        await ThroughModel.collection.repository.updateOrCreate({
+          ...accessorOptions,
+          filterKeys: [association.foreignKey, association.otherKey],
+          values: {
+            // @ts-ignore
+            [association.foreignKey]: model.get(association.sourceKey),
+            [association.otherKey]: instance.get(association.targetKey),
+            ...throughValue,
+          },
+        });
+      }
 
       if (!recursive) {
         continue;
@@ -587,12 +630,6 @@ export async function updateMultipleAssociation(
           : instance.get(filterTargetKey);
         await repository.update({ ...options, filterByTk, values: item, transaction });
       }
-      await updateAssociations(instance, item, {
-        ...options,
-        transaction,
-        associationContext: association,
-        updateAssociationValues: keys,
-      });
 
       newItems.push(instance);
     }

@@ -630,8 +630,13 @@ export class Repository<TModelAttributes extends {} = any, TCreationAttributes e
     const instance = await this.findOne({ filter, transaction, context });
 
     if (instance) {
+      const filterTargetKey = this.collection.filterTargetKey ?? this.collection.model.primaryKeyAttributes;
+      const filterByTk =
+        Array.isArray(filterTargetKey) && filterTargetKey.length > 1
+          ? lodash.pick(instance, filterTargetKey)
+          : instance.get(filterTargetKey as string);
       return await this.update({
-        filterByTk: instance.get(this.collection.filterTargetKey || this.collection.model.primaryKeyAttribute),
+        filterByTk,
         values,
         transaction,
         context,
