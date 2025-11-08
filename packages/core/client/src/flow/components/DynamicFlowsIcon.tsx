@@ -478,7 +478,6 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
               })
               .filter(Boolean);
             if (beforeRenderFlows.length > 0) {
-              model.invalidateFlowCache('beforeRender');
               model.rerender(); // 不阻塞，后续保存
             }
             setSubmitLoading(false);
