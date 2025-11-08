@@ -521,7 +521,7 @@ export async function updateMultipleAssociation(
       });
 
       if (association instanceof HasMany) {
-        item[association.foreignKey] = model.get((model.constructor as ModelStatic<Model>).primaryKeyAttribute);
+        item[association.foreignKey] = model.get(association.sourceKey);
       }
       const instance = await targetCollection.repository.create({ ...accessorOptions, values: item });
       if (association instanceof BelongsToMany) {

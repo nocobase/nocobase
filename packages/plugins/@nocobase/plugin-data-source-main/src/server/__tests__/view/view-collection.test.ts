@@ -547,7 +547,8 @@ describe('view collection', function () {
     if (!db.options.underscored) {
       return;
     }
-    const tableName = db.inDialect('postgres') ? `${process.env.DB_SCHEMA}.users` : 'users';
+    const schemaName = db.utils.schema() || process.env.DB_SCHEMA || 'public';
+    const tableName = db.inDialect('postgres') ? `${schemaName}.users` : 'users';
     const dropViewSQL = `DROP VIEW IF EXISTS test_view`;
     await db.sequelize.query(dropViewSQL);
     const viewSQL = `CREATE VIEW test_view AS select * from ${tableName}`;

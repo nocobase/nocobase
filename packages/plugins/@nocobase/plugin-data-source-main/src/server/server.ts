@@ -185,7 +185,14 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.app.db.on('fields.beforeCreate', beforeCreateForValidateField(this.app.db));
 
-    this.app.db.on('fields.afterCreate', async (model, { transaction }) => {
+    const afterCreateForForeignKeyFieldHook = afterCreateForForeignKeyField(this.app.db);
+    this.app.db.on('fields.afterCreate', async (model, options) => {
+      const { context, transaction } = options;
+      if (context) {
+        await model.load({ transaction });
+        await afterCreateForForeignKeyFieldHook(model, options);
+      }
+
       const Field = this.app.db.getCollection('fields');
       const reverseKey = model.get('reverseKey');
 
@@ -287,16 +294,6 @@ export class PluginDataSourceMainServer extends Plugin {
       }
     });
 
-    const afterCreateForForeignKeyFieldHook = afterCreateForForeignKeyField(this.app.db);
-
-    this.app.db.on('fields.afterCreate', async (model: FieldModel, options) => {
-      const { context, transaction } = options;
-      if (context) {
-        await model.load({ transaction });
-        await afterCreateForForeignKeyFieldHook(model, options);
-      }
-    });
-
     this.app.db.on('fields.afterUpdate', async (model: FieldModel, options) => {
       const { context, transaction } = options;
       if (context) {
@@ -306,28 +303,36 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.app.db.on('fields.afterSaveWithAssociations', async (model: FieldModel, options) => {
       const { context, transaction } = options;
-      if (context) {
-        const collection = this.app.db.getCollection(model.get('collectionName'));
-        const syncOptions = {
-          transaction,
-          force: false,
-          alter: {
-            drop: false,
-          },
-        };
 
-        await collection.sync(syncOptions);
-
-        this.sendSyncMessage(
-          {
-            type: 'syncCollection',
-            collectionName: model.get('collectionName'),
-          },
-          {
-            transaction,
-          },
-        );
+      if (!context) {
+        return;
       }
+
+      const collection = this.app.db.getCollection(model.get('collectionName'));
+      if (!collection) {
+        // collection 尚未 load（通常发生在批量创建集合时），由集合钩子完成同步
+        return;
+      }
+
+      const syncOptions = {
+        transaction,
+        force: false,
+        alter: {
+          drop: false,
+        },
+      };
+
+      await collection.sync(syncOptions);
+
+      this.sendSyncMessage(
+        {
+          type: 'syncCollection',
+          collectionName: model.get('collectionName'),
+        },
+        {
+          transaction,
+        },
+      );
     });
 
     // before field remove
