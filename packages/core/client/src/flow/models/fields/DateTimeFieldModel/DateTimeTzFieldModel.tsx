@@ -10,7 +10,7 @@ import { dayjs } from '@nocobase/utils/client';
 import { EditableItemModel, useFlowModelContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
-import { MobileDatePicker } from './MobileComponent/MobileDatePicker';
+import { MobileDatePicker } from '../mobile-components/MobileDatePicker';
 import { DatePicker } from 'antd';
 
 function parseToDate(value: string | Date | dayjs.Dayjs | undefined, format?: string): Date | undefined {
