@@ -54,7 +54,7 @@ export type UploadFileOptions = {
 
 export class PluginFileManagerServer extends Plugin {
   storageTypes = new Registry<StorageClassType>();
-  storagesCache = new Map<number, StorageModel>();
+  storagesCache = new Map<number | string, StorageModel>();
 
   afterDestroy = async (record: Model, options) => {
     const { collection } = record.constructor as typeof Model;
@@ -243,6 +243,18 @@ export class PluginFileManagerServer extends Plugin {
       }
       await this.loadStorages({ transaction });
       this.sendSyncMessage({ type: 'reloadStorages' }, { transaction });
+    });
+
+    this.db.on('afterDefineCollection', (collection: Collection) => {
+      const { template } = collection.options;
+      if (template === 'file') {
+        collection.setField('storageId', {
+          type: 'bigInt',
+          createOnly: true,
+          visible: true,
+          index: true,
+        });
+      }
     });
 
     this.app.acl.registerSnippet({

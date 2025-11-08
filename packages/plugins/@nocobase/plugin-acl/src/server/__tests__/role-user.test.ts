@@ -238,4 +238,21 @@ describe('role', () => {
     const response3 = await agent.resource('roles').check();
     expect(response3.statusCode).toEqual(200);
   });
+
+  it('should not allow to set other role', async () => {
+    const user = await db.getRepository('users').create({
+      values: {},
+    });
+    const client = await api.agent().login(user);
+    await client.post('/users:setDefaultRole').send({
+      roleName: 'root',
+    });
+    const role = await db.getRepository('rolesUsers').findOne({
+      where: {
+        userId: user.get('id'),
+        roleName: 'root',
+      },
+    });
+    expect(role).toBeFalsy();
+  });
 });

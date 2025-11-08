@@ -33,6 +33,7 @@
     "ts": "nocobase test:server",
     "tc": "nocobase test:client",
     "benchmark": "nocobase benchmark",
+    "perf": "nocobase perf",
     "doc": "nocobase doc",
     "doc:cn": "nocobase doc --lang=zh-CN",
     "postinstall": "nocobase postinstall",

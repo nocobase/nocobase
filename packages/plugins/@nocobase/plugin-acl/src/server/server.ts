@@ -23,6 +23,7 @@ import { RoleModel } from './model/RoleModel';
 import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
 import { setSystemRoleMode } from './actions/union-role';
+import { checkAssociationOperate } from './middlewares/check-association-operate';
 
 export class PluginACLServer extends Plugin {
   get acl() {
@@ -375,6 +376,7 @@ export class PluginACLServer extends Plugin {
         return;
       }
       const User = this.db.getCollection('users');
+      const user = await User.repository.findOne();
       await User.repository.update({
         values: {
           roles: ['root', 'admin', 'member'],
@@ -385,7 +387,7 @@ export class PluginACLServer extends Plugin {
       const RolesUsers = this.db.getCollection('rolesUsers');
       await RolesUsers.repository.update({
         filter: {
-          userId: 1,
+          userId: user.id,
           roleName: 'root',
         },
         values: {
@@ -528,8 +530,9 @@ export class PluginACLServer extends Plugin {
           collection = ctx.db.getCollection(resourceName);
         }
 
-        if (collection && collection.hasField('createdById')) {
-          ctx.permission.can.params.fields.push('createdById');
+        const fields = ctx.permission.can.params.fields;
+        if (collection && collection.hasField('createdById') && !fields.includes('createdById')) {
+          fields.push('createdById');
         }
       }
       return next();
@@ -624,6 +627,10 @@ export class PluginACLServer extends Plugin {
       },
       { after: 'dataSource', group: 'with-acl-meta' },
     );
+
+    this.app.acl.use(checkAssociationOperate, {
+      before: 'core',
+    });
 
     this.db.on('afterUpdateCollection', async (collection) => {
       if (collection.options.loadedFromCollectionManager || collection.options.asStrategyResource) {

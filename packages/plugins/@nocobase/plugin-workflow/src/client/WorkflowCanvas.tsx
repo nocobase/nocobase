@@ -45,6 +45,8 @@ import { useTrigger } from './triggers';
 import { ExecutionStatusOptions, ExecutionStatusOptionsMap } from './constants';
 import { HideVariableContext } from './variable';
 import { useWorkflowAnyExecuted, useWorkflowExecuted } from './hooks';
+import { AddNodeContextProvider } from './AddNodeContext';
+import { RemoveNodeContextProvider } from './RemoveNodeContext';
 
 function ExecutionResourceProvider({ request, filter = {}, ...others }) {
   const { workflow } = useFlowContext();
@@ -375,13 +377,16 @@ export function WorkflowCanvas() {
   const { resource } = useResourceContext();
   const { setTitle } = useDocumentTitle();
   const { styles } = useStyles();
+  const [enabled, setEnabled] = useState(data?.data?.enabled ?? false);
+  const [switchLoading, setSwitchLoading] = useState(false);
 
   const { nodes = [], revisions = [], ...workflow } = data?.data ?? {};
   linkNodes(nodes);
 
   useEffect(() => {
-    const { title } = data?.data ?? {};
+    const { title, enabled } = data?.data ?? {};
     setTitle?.(`${lang('Workflow')}${title ? `: ${title}` : ''}`);
+    setEnabled(enabled);
   }, [data?.data, setTitle]);
 
   const onSwitchVersion = useCallback(
@@ -395,15 +400,21 @@ export function WorkflowCanvas() {
 
   const onToggle = useCallback(
     async (value) => {
+      // setEnabled(value);
+      setSwitchLoading(true);
       await resource.update({
         filterByTk: workflow.id,
         values: {
           enabled: value,
         },
       });
-      refresh();
+      setSwitchLoading(false);
+      setEnabled(value);
+      // setTimeout(() => {
+      //   refresh();
+      // });
     },
-    [resource, workflow.id, refresh],
+    [resource, workflow.id],
   );
 
   if (!data?.data) {
@@ -483,15 +494,20 @@ export function WorkflowCanvas() {
             </Button>
           </Dropdown>
           <Switch
-            checked={workflow.enabled}
+            checked={enabled}
             onChange={onToggle}
             checkedChildren={lang('On')}
             unCheckedChildren={lang('Off')}
+            loading={switchLoading}
           />
           <WorkflowMenu />
         </aside>
       </div>
-      <CanvasContent entry={entry} />
+      <AddNodeContextProvider>
+        <RemoveNodeContextProvider>
+          <CanvasContent entry={entry} />
+        </RemoveNodeContextProvider>
+      </AddNodeContextProvider>
     </FlowContext.Provider>
   );
 }

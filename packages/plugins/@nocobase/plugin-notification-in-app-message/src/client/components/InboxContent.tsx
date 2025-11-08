@@ -12,17 +12,16 @@ import { Schema } from '@formily/react';
 import { observer } from '@formily/reactive-react';
 import { useApp } from '@nocobase/client';
 import { dayjs } from '@nocobase/utils/client';
-import { Badge, Button, ConfigProvider, Flex, Layout, List, Tabs, theme } from 'antd';
-import React from 'react';
+import { Badge, Button, Flex, Layout, List, theme } from 'antd';
+import React, { useCallback, useEffect } from 'react';
 import { useLocalTranslation } from '../../locale';
 import {
   channelListObs,
-  ChannelStatus,
   channelStatusFilterObs,
   fetchChannels,
+  inboxVisible,
   isFetchingChannelsObs,
   selectedChannelNameObs,
-  selectedMessageListObs,
   showChannelLoadingMoreObs,
 } from '../observables';
 import FilterTab from './FilterTab';
@@ -35,7 +34,7 @@ const InnerInboxContent = () => {
   const channels = channelListObs.value;
   const selectedChannelName = selectedChannelNameObs.value;
 
-  const onLoadChannelsMore = () => {
+  const onLoadChannelsMore = useCallback(() => {
     const filter: Record<string, any> = {};
     const lastChannel = channels[channels.length - 1];
     if (lastChannel?.latestMsgReceiveTimestamp) {
@@ -44,7 +43,13 @@ const InnerInboxContent = () => {
       };
     }
     fetchChannels({ filter, limit: 30 });
-  };
+  }, [channels]);
+
+  useEffect(() => {
+    if (inboxVisible.value) {
+      fetchChannels({ limit: 30 });
+    }
+  }, [inboxVisible.value]);
 
   const loadChannelsMore = showChannelLoadingMoreObs.value ? (
     <div

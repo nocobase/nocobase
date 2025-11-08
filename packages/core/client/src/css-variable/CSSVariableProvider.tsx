@@ -41,6 +41,13 @@ export const CSSVariableProvider = ({ children }) => {
     document.body.style.setProperty('--colorPrimaryText', token.colorPrimaryText);
     document.body.style.setProperty('--colorPrimaryTextActive', token.colorPrimaryTextActive);
     document.body.style.setProperty('--colorPrimaryTextHover', token.colorPrimaryTextHover);
+    // 侧边菜单栏相关CSS变量
+    document.body.style.setProperty('--colorBgSider', token.colorBgSider);
+    document.body.style.setProperty('--colorBgSiderMenuHover', token.colorBgSiderMenuHover);
+    document.body.style.setProperty('--colorBgSiderMenuActive', token.colorBgSiderMenuActive);
+    document.body.style.setProperty('--colorTextSiderMenu', token.colorTextSiderMenu);
+    document.body.style.setProperty('--colorTextSiderMenuHover', token.colorTextSiderMenuHover);
+    document.body.style.setProperty('--colorTextSiderMenuActive', token.colorTextSiderMenuActive);
     document.body.style.setProperty('--colorBgScrollTrack', colorBgScrollTrack);
     document.body.style.setProperty('--colorBgScrollBar', colorBgScrollBar);
     document.body.style.setProperty('--colorBgScrollBarHover', colorBgScrollBarHover);
@@ -79,6 +86,13 @@ export const CSSVariableProvider = ({ children }) => {
     token.paddingContentVerticalSM,
     token.sizeXXL,
     token.colorTextHeaderMenu,
+    // 侧边菜单栏相关依赖
+    token.colorBgSider,
+    token.colorBgSiderMenuHover,
+    token.colorBgSiderMenuActive,
+    token.colorTextSiderMenu,
+    token.colorTextSiderMenuHover,
+    token.colorTextSiderMenuActive,
   ]);
 
   return children;

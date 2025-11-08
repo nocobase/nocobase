@@ -86,6 +86,8 @@ export class PercentFieldInterface extends CollectionFieldInterface {
   }
   availableTypes = ['float', 'double', 'decimal'];
   hasDefaultValue = true;
+  validationType = 'number';
+  excludeValidationOptions = ['integer'];
   properties = {
     ...defaultProps,
     unique,

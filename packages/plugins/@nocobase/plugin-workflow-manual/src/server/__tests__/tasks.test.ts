@@ -208,8 +208,8 @@ describe('workflow > instructions > manual > tasks', () => {
       const s2s = await UserTaskRepo.find();
       expect(s2s.length).toBe(1);
       expect(s2s[0].get('stats')).toMatchObject({
-        pending: 0,
-        all: 0,
+        pending: 1,
+        all: 1,
       });
     });
 

@@ -245,25 +245,7 @@ export default class extends Plugin {
   async load() {
     this.app.resourceManager.define({
       name: 'workflowManualTasks',
-      actions: {
-        list: {
-          filter: {
-            $or: [
-              {
-                'workflow.enabled': true,
-              },
-              {
-                'workflow.enabled': false,
-                status: {
-                  $ne: JOB_STATUS.PENDING,
-                },
-              },
-            ],
-          },
-          handler: actions.list as HandlerType,
-        },
-        ...jobActions,
-      },
+      actions: jobActions,
     });
 
     this.app.acl.allow('workflowManualTasks', ['list', 'listMine', 'get', 'submit'], 'loggedIn');
@@ -274,6 +256,7 @@ export default class extends Plugin {
     this.db.on('workflowManualTasks.afterSave', this.onTaskSave);
     this.db.on('workflowManualTasks.afterDestroy', this.onTaskSave);
     this.db.on('executions.afterUpdate', this.onExecutionStatusChange);
-    this.db.on('workflows.afterUpdate', this.onWorkflowStatusChange);
+    // NOTE: no need re-calculate tasks after workflow status changed
+    // this.db.on('workflows.afterUpdate', this.onWorkflowStatusChange);
   }
 }

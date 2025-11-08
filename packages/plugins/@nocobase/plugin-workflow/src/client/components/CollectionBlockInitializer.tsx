@@ -52,7 +52,7 @@ function InnerCollectionBlockInitializer({ collection, dataPath, ...props }) {
       'x-component-props': {
         title: props.title,
       },
-      'x-designer': 'SimpleDesigner',
+      'x-settings': 'blockSettings:singleDataDetails',
       properties: {
         grid: {
           type: 'void',

@@ -192,6 +192,10 @@ export class SyncRunner {
 
     for (const columnName in columns) {
       const column = columns[columnName];
+
+      if (isJSONColumn(column) && this.database.inDialect('mysql')) {
+        continue;
+      }
       const isPrimaryKey = () => {
         const attribute = this.findAttributeByColumnName(columnName);
         return (attribute && attribute.primaryKey) || column.primaryKey;

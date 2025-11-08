@@ -13,6 +13,7 @@ import path from 'path';
 import fs from 'fs/promises';
 
 import Application from './application';
+import { SystemLogger } from '@nocobase/logger';
 import { sleep } from '@nocobase/utils';
 
 export const QUEUE_DEFAULT_INTERVAL = 250;
@@ -86,9 +87,10 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     if (!this.connected) {
       return;
     }
+    const { logger } = this.options;
     const event = this.events.get(channel);
     if (!event) {
-      console.warn(`memory queue (${channel}) not found, skipping...`);
+      logger.warn(`memory queue (${channel}) not found, skipping...`);
       return;
     }
     if (!event.idle()) {
@@ -98,12 +100,12 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     const reading = this.reading.get(channel) || [];
     const count = (event.concurrency || QUEUE_DEFAULT_CONCURRENCY) - reading.length;
     if (count <= 0) {
-      console.debug(
-        `memory queue (${channel}) is already reading as max concurrency (${reading.length}), waiting last reading to end...`,
-      );
+      // logger.debug(
+      //   `memory queue (${channel}) is already reading as max concurrency (${reading.length}), waiting last reading to end...`,
+      // );
       return;
     }
-    console.debug(`reading more from queue (${channel}), count: ${count}`);
+    logger.debug(`reading more from queue (${channel}), count: ${count}`);
     this.read(channel, count).forEach((promise) => {
       reading.push(promise);
       // eslint-disable-next-line promise/catch-or-return
@@ -117,7 +119,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     this.reading.set(channel, reading);
   };
 
-  constructor(private options: { appName: string }) {
+  constructor(private options: { appName: string; logger: SystemLogger }) {
     this.emitter.setMaxListeners(0);
   }
 
@@ -132,20 +134,21 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   async loadFromStorage() {
     let queues = {};
     let exists = false;
+    const { logger } = this.options;
     try {
       await fs.stat(this.storagePath);
       exists = true;
     } catch (ex) {
-      console.info(`memory queue storage file not found, skip`);
+      logger.info(`memory queue storage file not found, skip`);
     }
     if (exists) {
       try {
         const queueJson = await fs.readFile(this.storagePath);
         queues = JSON.parse(queueJson.toString());
-        console.debug('memory queue loaded from storage', queues);
+        logger.debug('memory queue loaded from storage', queues);
         await fs.unlink(this.storagePath);
       } catch (ex) {
-        console.error('failed to load queue from storage', ex);
+        logger.error('failed to load queue from storage', ex);
       }
     }
     this.queues = new Map(Object.entries(queues));
@@ -159,12 +162,13 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
       return acc;
     }, {});
 
+    const { logger } = this.options;
     if (Object.keys(queues).length) {
       await fs.mkdir(path.dirname(this.storagePath), { recursive: true });
       await fs.writeFile(this.storagePath, JSON.stringify(queues));
-      console.debug('memory queue saved to storage', queues);
+      logger.debug('memory queue saved to storage', queues);
     } else {
-      console.debug('memory queue empty, no need to save to storage');
+      logger.debug('memory queue empty, no need to save to storage');
     }
   }
 
@@ -195,14 +199,15 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     if (!this.connected) {
       return;
     }
+    const { logger } = this.options;
     this.connected = false;
     if (this.processing) {
-      console.info('memory queue waiting for processing job...');
+      logger.info('memory queue waiting for processing job...');
       await this.processing;
-      console.info('memory queue job cleaned');
+      logger.info('memory queue job cleaned');
     }
 
-    console.log('memory queue gracefully shutting down...');
+    logger.info('memory queue gracefully shutting down...');
     await this.saveToStorage();
   }
 
@@ -233,6 +238,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   publish(channel: string, content: any, options: QueueMessageOptions = { timestamp: Date.now() }) {
     const event = this.events.get(channel);
     if (!event) {
+      console.debug(`memory queue (${channel}) not subscribed, skip`);
       return;
     }
     if (!this.queues.get(channel)) {
@@ -241,7 +247,8 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     const queue = this.queues.get(channel);
     const message = { id: randomUUID(), content, options };
     queue.push(message);
-    console.debug(`memory queue (${channel}) published message`, content);
+    const { logger } = this.options;
+    logger.debug(`memory queue (${channel}) published message`, content);
 
     setImmediate(() => {
       this.emitter.emit(channel, channel);
@@ -271,8 +278,9 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
     if (!queue?.length) {
       return [];
     }
+    const { logger } = this.options;
     const messages = queue.slice(0, n);
-    console.debug(`memory queue (${channel}) read ${messages.length} messages`, messages);
+    logger.debug(`memory queue (${channel}) read ${messages.length} messages`, messages);
     queue.splice(0, messages.length);
     const batch = messages.map(({ id, ...message }) => this.process(channel, { id, message }));
     return batch;
@@ -281,7 +289,8 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   async process(channel: string, { id, message }) {
     const event = this.events.get(channel);
     const { content, options: { timeout = QUEUE_DEFAULT_ACK_TIMEOUT, maxRetries = 0, retried = 0 } = {} } = message;
-    console.debug(`memory queue (${channel}) processing message (${id})...`, content);
+    const { logger } = this.options;
+    logger.debug(`memory queue (${channel}) processing message (${id})...`, content);
     return (async () =>
       event.process(content, {
         id,
@@ -289,12 +298,12 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
         signal: AbortSignal.timeout(timeout),
       }))()
       .then(() => {
-        console.debug(`memory queue (${channel}) consumed message (${id})`);
+        logger.debug(`memory queue (${channel}) consumed message (${id})`);
       })
       .catch((ex) => {
         if (maxRetries > 0 && retried < maxRetries) {
           const currentRetry = retried + 1;
-          console.warn(
+          logger.warn(
             `memory queue (${channel}) consum message (${id}) failed, retrying (${currentRetry} / ${maxRetries})...`,
             ex,
           );
@@ -302,7 +311,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
             this.publish(channel, content, { timeout, maxRetries, retried: currentRetry, timestamp: Date.now() });
           }, 500);
         } else {
-          console.error(ex);
+          logger.error(ex);
         }
       });
   }
@@ -320,15 +329,17 @@ export class EventQueue {
     protected app: Application,
     protected options: EventQueueOptions = {},
   ) {
-    this.setAdapter(new MemoryEventQueueAdapter({ appName: this.app.name }));
+    if (app.serving()) {
+      this.setAdapter(new MemoryEventQueueAdapter({ appName: this.app.name, logger: this.app.logger }));
 
-    app.on('afterStart', async () => {
-      await this.connect();
-    });
-    app.on('beforeStop', async () => {
-      app.logger.info('[queue] gracefully shutting down...');
-      await this.close();
-    });
+      app.on('afterStart', async () => {
+        await this.connect();
+      });
+      app.on('beforeStop', async () => {
+        app.logger.info('[queue] gracefully shutting down...');
+        await this.close();
+      });
+    }
   }
   getFullChannel(channel: string) {
     return [this.app.name, this.channelPrefix, channel].filter(Boolean).join('.');
@@ -346,7 +357,12 @@ export class EventQueue {
     if (!this.adapter) {
       throw new Error('no adapter set, cannot connect');
     }
+    if (!this.app.serving()) {
+      this.app.logger.warn('app is not serving, will not connect to event queue');
+      return;
+    }
     await this.adapter.connect();
+    this.app.logger.debug(`connected to adapter, using memory? ${this.adapter instanceof MemoryEventQueueAdapter}`);
 
     for (const [channel, event] of this.events.entries()) {
       this.adapter.subscribe(this.getFullChannel(channel), event);
@@ -390,7 +406,7 @@ export class EventQueue {
       throw new Error('event queue not connected, cannot publish');
     }
     const c = this.getFullChannel(channel);
-    this.app.logger.debug('event queue publishing:', { channel: c, message });
+    this.app.logger.debug(`event queue publishing to channel(${c})`, { message });
     await this.adapter.publish(c, message, {
       timeout: QUEUE_DEFAULT_ACK_TIMEOUT,
       ...options,

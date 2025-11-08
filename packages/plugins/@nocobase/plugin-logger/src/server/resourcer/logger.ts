@@ -10,7 +10,7 @@
 import { Context, Next } from '@nocobase/actions';
 import { getLoggerFilePath } from '@nocobase/logger';
 import { readdir, stat } from 'fs/promises';
-import { join } from 'path';
+import { join, resolve, relative, normalize, isAbsolute } from 'path';
 import stream from 'stream';
 import { pack } from 'tar-fs';
 import zlib from 'zlib';
@@ -114,20 +114,29 @@ export default {
     },
     download: async (ctx: Context, next: Next) => {
       const path = getLoggerFilePath(ctx.app.name || 'main');
-      let { files = [] } = ctx.action.params.values || {};
-      const invalid = files.some((file: string) => !file.endsWith('.log'));
-      if (invalid) {
-        ctx.throw(400, ctx.t('Invalid file type: ') + invalid);
+      const { files = [] } = ctx.action.params.values || {};
+      if (!files.length) {
+        ctx.throw(400, ctx.t('No files selected.'));
       }
-      files = files.map((file: string) => {
-        if (file.startsWith('/')) {
-          return file.slice(1);
+
+      const safeFiles = files.map((f: string) => {
+        const name = f.startsWith('/') ? f.slice(1) : f;
+        const safeName = normalize(decodeURIComponent(name));
+        if (!safeName.endsWith('.log')) {
+          ctx.throw(400, ctx.t('Invalid file type.'));
         }
-        return file;
+
+        const fullPath = resolve(path, safeName);
+        const relativePath = relative(path, fullPath);
+        if (relativePath.startsWith('..') || isAbsolute(relativePath) || relativePath.includes('\0')) {
+          ctx.throw(400, ctx.t('Invalid file path.'));
+        }
+
+        return safeName;
       });
       try {
         ctx.attachment('logs.tar.gz');
-        ctx.body = await tarFiles(path, files);
+        ctx.body = await tarFiles(path, safeFiles);
       } catch (err) {
         ctx.log.error(`download error: ${err.message}`, { files, err: err.stack });
         ctx.throw(500, ctx.t('Download logs failed.'));

@@ -162,7 +162,6 @@ export const AdminSettingsLayout = () => {
             height: 100%;
             left: 0;
             top: 0;
-            background: rgba(0, 0, 0, 0);
             z-index: 100;
             .ant-layout-sider-children {
               top: 46px;
@@ -171,7 +170,6 @@ export const AdminSettingsLayout = () => {
               height: calc(100vh - 46px);
             }
           `}
-          theme={'light'}
         >
           <Menu
             selectedKeys={[currentSetting?.pluginKey || currentSetting.topLevelName]}

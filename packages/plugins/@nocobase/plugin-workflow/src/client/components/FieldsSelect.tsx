@@ -8,13 +8,22 @@
  */
 
 import { observer, useForm } from '@formily/react';
-import { Select } from 'antd';
-import React from 'react';
+import { Select, Space, Tag } from 'antd';
+import React, { useCallback, useMemo } from 'react';
 
 import { parseCollectionName, useCollectionManager_deprecated, useCompile } from '@nocobase/client';
 
 function defaultFilter() {
   return true;
+}
+
+function FieldOption({ label, value }) {
+  return (
+    <Space>
+      <span>{label}</span>
+      <Tag bordered={false}>{value}</Tag>
+    </Space>
+  );
 }
 
 export const FieldsSelect = observer(
@@ -25,15 +34,31 @@ export const FieldsSelect = observer(
     const { values } = useForm();
     const [dataSourceName, collectionName] = parseCollectionName(values?.collection);
     const fields = getCollectionFields(collectionName, dataSourceName);
+    const options = useMemo(
+      () =>
+        fields.filter(filter).map((field) => ({
+          label: compile(field.uiSchema?.title),
+          value: field.name,
+        })),
+      [fields, filter],
+    );
+    const onSearch = useCallback((value: string, option) => {
+      if (!value) {
+        return true;
+      }
+      return (
+        option.label?.toLowerCase().includes(value.toLowerCase()) ||
+        option.value?.toLowerCase().includes(value.toLowerCase())
+      );
+    }, []);
 
     return (
       <Select
         popupMatchSelectWidth={false}
         {...others}
-        options={fields.filter(filter).map((field) => ({
-          label: compile(field.uiSchema?.title),
-          value: field.name,
-        }))}
+        options={options}
+        filterOption={onSearch}
+        optionRender={FieldOption}
       />
     );
   },

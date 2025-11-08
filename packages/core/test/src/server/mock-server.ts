@@ -129,7 +129,7 @@ export class MockServer extends Application {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
           return async (userOrId: any, roleName?: string) => {
-            const userId = typeof userOrId === 'number' ? userOrId : userOrId?.id;
+            const userId = userOrId?.id ? userOrId.id : userOrId;
             const tokenInfo = await authManager.tokenController.add({ userId });
             const expiresIn = (await authManager.tokenController.getConfig()).tokenExpirationTime;
 
@@ -289,6 +289,7 @@ export type MockClusterOptions = MockServerOptions & {
   number?: number;
   clusterName?: string;
   appName?: string;
+  mockInstanceId?: boolean;
 };
 
 export type MockCluster = {
@@ -300,6 +301,7 @@ export async function createMockCluster({
   number = 2,
   clusterName = `cluster_${uid()}`,
   appName = `app_${uid()}`,
+  mockInstanceId = true,
   ...options
 }: MockClusterOptions = {}): Promise<MockCluster> {
   const nodes: MockServer[] = [];
@@ -316,7 +318,7 @@ export async function createMockCluster({
       ...options,
       skipSupervisor: true,
       name: clusterName + '_' + appName,
-      instanceId: `${clusterName}_${appName}_${i}`,
+      instanceId: mockInstanceId ? i : undefined,
       pubSubManager: {
         channelPrefix: clusterName,
       },

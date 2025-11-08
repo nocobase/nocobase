@@ -39,9 +39,9 @@ export default class extends Migration {
           autoGenId: false,
           timestamps: false,
           fields: [
-            { type: 'integer', name: 'nodePk' },
+            { type: 'bigInt', name: 'nodePk' },
             { type: 'string', name: 'path', length: 1024 },
-            { type: 'integer', name: 'rootPk' },
+            { type: 'bigInt', name: 'rootPk' },
           ],
           indexes: [
             {

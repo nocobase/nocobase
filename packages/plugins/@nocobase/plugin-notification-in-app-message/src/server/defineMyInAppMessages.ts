@@ -24,7 +24,6 @@ export default function defineMyInAppMessages(app: Application) {
     };
 
     const count = await messagesRepo.count({
-      logging: console.log,
       // @ts-ignore
       where: {
         userId,

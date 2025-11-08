@@ -13,6 +13,7 @@ export * from './instructions';
 export * from './functions';
 export * from './logicCalculate';
 export { Trigger } from './triggers';
+export type { EventOptions } from './Dispatcher';
 export { default as Processor } from './Processor';
-export { default, EventOptions } from './Plugin';
+export { default } from './Plugin';
 export * from './types';

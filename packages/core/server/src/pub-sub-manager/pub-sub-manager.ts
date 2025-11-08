@@ -19,13 +19,15 @@ import {
 } from './types';
 
 export const createPubSubManager = (app: Application, options: PubSubManagerOptions) => {
-  const pubSubManager = new PubSubManager(options);
-  app.on('afterStart', async () => {
-    await pubSubManager.connect();
-  });
-  app.on('afterStop', async () => {
-    await pubSubManager.close();
-  });
+  const pubSubManager = new PubSubManager(app, options);
+  if (app.serving()) {
+    app.on('afterStart', async () => {
+      await pubSubManager.connect();
+    });
+    app.on('afterStop', async () => {
+      await pubSubManager.close();
+    });
+  }
   return pubSubManager;
 };
 
@@ -34,17 +36,20 @@ export class PubSubManager {
   protected adapter: IPubSubAdapter;
   protected handlerManager: HandlerManager;
 
-  constructor(protected options: PubSubManagerOptions = {}) {
+  constructor(
+    protected app: Application,
+    protected options: PubSubManagerOptions = {},
+  ) {
     this.publisherId = uid();
     this.handlerManager = new HandlerManager(this.publisherId);
   }
 
-  get channelPrefix() {
-    return this.options?.channelPrefix ? `${this.options.channelPrefix}.` : '';
-  }
-
   setAdapter(adapter: IPubSubAdapter) {
     this.adapter = adapter;
+  }
+
+  getFullChannel(channel: string) {
+    return [this.app.name, this.options?.channelPrefix, channel].filter(Boolean).join('.');
   }
 
   async isConnected() {
@@ -58,10 +63,15 @@ export class PubSubManager {
     if (!this.adapter) {
       return;
     }
+    if (!this.app.serving()) {
+      this.app.logger.warn('app is not serving, will not connect to event queue');
+      return;
+    }
     await this.adapter.connect();
     // 如果没连接前添加的订阅，连接后需要把订阅添加上
     await this.handlerManager.each(async (channel, headler) => {
-      await this.adapter.subscribe(`${this.channelPrefix}${channel}`, headler);
+      this.app.logger.debug(`[PubSubManager] subscribe ${channel} added before connected`);
+      await this.adapter.subscribe(this.getFullChannel(channel), headler);
     });
   }
 
@@ -79,7 +89,8 @@ export class PubSubManager {
     // 连接之后才能订阅
 
     if (await this.isConnected()) {
-      await this.adapter.subscribe(`${this.channelPrefix}${channel}`, handler);
+      this.app.logger.debug(`[PubSubManager] subscribe ${channel} added after connected`);
+      await this.adapter.subscribe(this.getFullChannel(channel), handler);
     }
   }
 
@@ -90,11 +101,14 @@ export class PubSubManager {
       return;
     }
 
-    return this.adapter.unsubscribe(`${this.channelPrefix}${channel}`, handler);
+    return this.adapter.unsubscribe(this.getFullChannel(channel), handler);
   }
 
   async publish(channel: string, message: any, options?: PubSubManagerPublishOptions) {
     if (!this.adapter?.isConnected()) {
+      this.app.logger.warn(
+        `[PubSubManager] adapter is not exist or not connected, cannot publish message to channel ${channel}`,
+      );
       return;
     }
 
@@ -104,6 +118,8 @@ export class PubSubManager {
       message: message,
     });
 
-    return this.adapter.publish(`${this.channelPrefix}${channel}`, wrappedMessage);
+    await this.adapter.publish(this.getFullChannel(channel), wrappedMessage);
+
+    this.app.logger.trace(`[PubSubManager] published message to channel ${channel}`);
   }
 }

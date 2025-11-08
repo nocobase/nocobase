@@ -387,6 +387,17 @@ const useStyles = createStyles(({ css, token }) => {
         &:disabled {
           visibility: hidden;
         }
+        &.anchoring {
+          box-shadow: ${token.boxShadow};
+          border-color: ${token.colorPrimaryBorder};
+          color: ${token.colorPrimaryText};
+        }
+      }
+
+      > .ant-btn-placeholder {
+        display: block;
+        width: 1.5em;
+        height: 1.5em;
       }
 
       &:after {

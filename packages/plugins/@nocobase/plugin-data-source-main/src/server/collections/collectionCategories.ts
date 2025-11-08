@@ -16,9 +16,14 @@ export default {
   migrationRules: ['overwrite', 'schema-only'],
   shared: true,
   name: 'collectionCategories',
-  autoGenId: true,
   sortable: true,
   fields: [
+    {
+      name: 'id',
+      type: 'snowflakeId',
+      primaryKey: true,
+      allowNull: false,
+    },
     {
       type: 'string',
       name: 'name',

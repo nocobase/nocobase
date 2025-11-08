@@ -19,7 +19,6 @@ describe('base-auth', () => {
 
     expect(auth.validateUsername('')).toBe(false);
     expect(auth.validateUsername('a@')).toBe(false);
-    expect(auth.validateUsername('a.')).toBe(false);
     expect(auth.validateUsername('a<')).toBe(false);
     expect(auth.validateUsername('a>')).toBe(false);
     expect(auth.validateUsername('a"')).toBe(false);

@@ -215,6 +215,7 @@ describe('useVariables', () => {
       expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
           "$date": {
+            "dayBeforeYesterday": [Function],
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],
@@ -242,6 +243,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nDate": {
+            "dayBeforeYesterday": [Function],
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],
@@ -534,6 +536,7 @@ describe('useVariables', () => {
       expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
           "$date": {
+            "dayBeforeYesterday": [Function],
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],
@@ -561,6 +564,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nDate": {
+            "dayBeforeYesterday": [Function],
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],
@@ -633,6 +637,7 @@ describe('useVariables', () => {
       expect(result.current.ctxRef.current).toMatchInlineSnapshot(`
         {
           "$date": {
+            "dayBeforeYesterday": [Function],
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],
@@ -660,6 +665,7 @@ describe('useVariables', () => {
             "yesterday": [Function],
           },
           "$nDate": {
+            "dayBeforeYesterday": [Function],
             "last30Days": [Function],
             "last7Days": [Function],
             "last90Days": [Function],

@@ -9,9 +9,11 @@
 
 import { connect, mapProps, mapReadPretty } from '@formily/react';
 import React from 'react';
+import { css } from '@emotion/css';
+import classNames from 'classnames';
 import { lazy } from '../../../lazy-helper';
 import { isVariable } from '../../../variables/utils/isVariable';
-import { Input, ReadPretty as InputReadPretty } from '../input';
+import { ReadPretty as InputReadPretty } from '../input';
 import { useStyles } from './style';
 
 const ReactQuill = lazy(() => import('react-quill'));
@@ -37,9 +39,23 @@ export const RichText = connect(
     ];
     const { value, defaultValue, onChange, disabled, modules: propsModules, formats: propsFormats } = props;
     const resultValue = isVariable(value || defaultValue) ? undefined : value || '';
+    const quillDisabled = css`
+      .ql-container.ql-disabled {
+        background-color: #f5f5f5; /* 灰色背景 */
+        color: #999;
+        opacity: 0.7;
+        cursor: not-allowed;
+        pointer-events: none;
+        border: 1px solid #d9d9d9; /* 模拟 input 的禁用边框 */
+        border-radius: 6px;
+      }
+    `;
+
     return wrapSSR(
       <ReactQuill
-        className={`${componentCls} ${hashId}`}
+        className={classNames(componentCls, hashId, quillDisabled, {
+          'is-disabled': disabled,
+        })}
         modules={propsModules || modules}
         formats={propsFormats || formats}
         value={resultValue}

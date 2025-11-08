@@ -41,4 +41,5 @@ export * from './wrap-middleware';
 export * from './object-to-cli-args';
 export * from './parsedValue';
 export * from './dateRangeUtils';
+export * from './parse-bigint';
 export { Schema } from '@formily/json-schema';

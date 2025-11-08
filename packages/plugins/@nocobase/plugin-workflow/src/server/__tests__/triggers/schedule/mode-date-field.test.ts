@@ -78,6 +78,7 @@ describe('workflow > triggers > schedule > date field mode', () => {
           startsOn: {
             field: 'createdAt',
             offset: 2,
+            unit: 1000,
           },
         },
       });
@@ -110,6 +111,7 @@ describe('workflow > triggers > schedule > date field mode', () => {
           startsOn: {
             field: 'createdAt',
             offset: -2,
+            unit: 1000,
           },
         },
       });
@@ -155,6 +157,45 @@ describe('workflow > triggers > schedule > date field mode', () => {
       expect(executions.length).toBe(1);
       const d0 = Date.parse(executions[0].context.date);
       expect(d0).toBe(startTime.getTime());
+    });
+
+    it('starts on post.createdAt with offset in hours', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'createdAt',
+            offset: 1,
+            unit: 3600_000,
+          },
+          repeat: 3000,
+          limit: 2,
+        },
+      });
+
+      const now = await sleepToEvenSecond();
+
+      const before = new Date();
+      before.setHours(before.getHours() - 2);
+      before.setSeconds(before.getSeconds() + 2);
+
+      const post = await PostRepo.create({ values: { title: 't1', createdAt: before } });
+
+      await sleep(3000);
+      const e1s = await workflow.getExecutions();
+      expect(e1s.length).toBe(1);
+
+      await sleep(3000);
+      const e2s = await workflow.getExecutions();
+      expect(e2s.length).toBe(2);
+      expect(e2s[0].context.data.id).toBe(post.id);
+
+      // const triggerTime = new Date(post.createdAt.getTime() + 2000);
+      // triggerTime.setMilliseconds(0);
+      // expect(e2s[0].context.date).toBe(triggerTime.toISOString());
     });
 
     it('starts on post.createdAt and repeat by cron', async () => {
@@ -270,6 +311,7 @@ describe('workflow > triggers > schedule > date field mode', () => {
           endsOn: {
             field: 'createdAt',
             offset: 3,
+            unit: 1000,
           },
         },
       });
@@ -364,6 +406,7 @@ describe('workflow > triggers > schedule > date field mode', () => {
           endsOn: {
             field: 'createdAt',
             offset: 3,
+            unit: 1000,
           },
         },
       });
@@ -395,6 +438,7 @@ describe('workflow > triggers > schedule > date field mode', () => {
           startsOn: {
             field: 'createdAt',
             offset: 2,
+            unit: 1000,
           },
           appends: ['category'],
         },
@@ -423,6 +467,7 @@ describe('workflow > triggers > schedule > date field mode', () => {
           endsOn: {
             field: 'createdAt',
             offset: 3,
+            unit: 1000,
           },
         },
       });
@@ -506,6 +551,43 @@ describe('workflow > triggers > schedule > date field mode', () => {
       await sleep(1500);
 
       const e2s = await workflow.getExecutions({ order: [['createdAt', 'ASC']] });
+      expect(e2s.length).toBe(1);
+    });
+  });
+
+  describe('record', () => {
+    it('record deleted after first triggered', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'schedule',
+        config: {
+          mode: 1,
+          collection: 'posts',
+          startsOn: {
+            field: 'createdAt',
+          },
+          repeat: 1000,
+        },
+      });
+
+      const now = await sleepToEvenSecond();
+
+      const p1 = await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(1300);
+
+      const e1s = await workflow.getExecutions({ order: [['id', 'ASC']] });
+      expect(e1s.length).toBe(1);
+      expect(e1s[0].context.data.id).toBe(p1.id);
+      const triggerTime = new Date(p1.createdAt);
+      triggerTime.setMilliseconds(0);
+      expect(e1s[0].context.date).toBe(triggerTime.toISOString());
+
+      await p1.destroy();
+
+      await sleep(1500);
+
+      const e2s = await workflow.getExecutions({ order: [['id', 'ASC']] });
       expect(e2s.length).toBe(1);
     });
   });

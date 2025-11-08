@@ -40,6 +40,7 @@
   "No data to import": "没有数据可导入",
   "Failed to import row {{row}}, {{message}}, row data: {{data}}": "导入第 {{row}} 行失败，{{message}}，行数据：{{data}}",
   "import-error": "导入第 {{rowIndex}} 行失败，行数据：{{rowData}}, 原因：{{causeMessage}}",
+  "Unique constraint error, fields:": "唯一性约束错误，字段：",
   "Import completed": "导入完成：{{success}} 条记录已导入，{{updated}} 条记录已更新，{{skipped}} 条记录已跳过，共 {{total}} 条记录",
   "Successfully imported": "成功导入",
   "Updated records": "已更新记录",

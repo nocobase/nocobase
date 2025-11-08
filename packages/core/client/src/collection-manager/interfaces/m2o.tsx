@@ -20,6 +20,7 @@ export class M2OFieldInterface extends CollectionFieldInterface {
   title = '{{t("Many to one")}}';
   description = '{{t("Many to one description")}}';
   isAssociation = true;
+  validationType = 'object';
   default = {
     type: 'belongsTo',
     // name,

@@ -13,21 +13,50 @@ import { Collection } from '../collection';
 import { Database } from '../database';
 import { ModelEventTypes } from '../types';
 import { snakeCase } from '../utils';
+import { BasicType, BooleanSchema, NumberSchema, ObjectSchema, StringSchema } from 'joi';
 
 export interface FieldContext {
   database: Database;
   collection: Collection;
 }
+type RuleSchemaMap = {
+  string: StringSchema;
+  boolean: BooleanSchema;
+  number: NumberSchema;
+  object: ObjectSchema;
+};
 
-export interface BaseFieldOptions {
+export type FieldValidationRuleName<T extends BasicType> = T extends keyof RuleSchemaMap
+  ? keyof RuleSchemaMap[T]
+  : never;
+
+export interface FieldValidationRule<T extends BasicType> {
+  key: string;
+  name: FieldValidationRuleName<T>;
+  args?: {
+    [key: string]: any;
+  };
+  paramsType?: 'object';
+}
+
+export interface ValidationOptions<T extends BasicType = BasicType> {
+  type: T;
+  rules: FieldValidationRule<T>[];
+  [key: string]: any;
+}
+
+export interface BaseFieldOptions<T extends BasicType = BasicType> {
   name?: string;
   hidden?: boolean;
   translation?: boolean;
+  validation?: ValidationOptions<T>;
 
   [key: string]: any;
 }
 
-export interface BaseColumnFieldOptions extends BaseFieldOptions, Omit<ModelAttributeColumnOptions, 'type'> {
+export interface BaseColumnFieldOptions<T extends BasicType = BasicType>
+  extends BaseFieldOptions<T>,
+    Omit<ModelAttributeColumnOptions, 'type'> {
   dataType?: DataType;
   index?: boolean | ModelIndexesOptions;
 }

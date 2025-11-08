@@ -36,6 +36,7 @@ describe('20250619213102-add-missed-stats', () => {
     test('current workflow stats missing', async () => {
       const workflow = await WorkflowRepo.create({
         values: {
+          id: 10000,
           type: 'syncTrigger',
           key: 'abc',
           current: true,

@@ -207,6 +207,19 @@ describe('repository.find', () => {
     expect(users.length).toBe(1);
   });
 
+  it('should find with limit', async () => {
+    const limitedUsers = await User.repository.find({
+      limit: 1,
+    });
+    expect(limitedUsers.length).toBe(1);
+
+    // limit is string
+    const twoUsers = await User.repository.find({
+      limit: '2' as any,
+    });
+    expect(twoUsers.length).toBe(2);
+  });
+
   it('should find with where', async () => {
     const users = await User.repository.find({
       where: {

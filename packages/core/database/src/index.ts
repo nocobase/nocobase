@@ -25,6 +25,7 @@ export {
   ValidationErrorItem,
   where,
 } from 'sequelize';
+export { ValidationError as JoiValidationError } from 'joi';
 export * from './belongs-to-array/belongs-to-array-repository';
 export * from './collection';
 export * from './collection-group-manager';
@@ -61,3 +62,4 @@ export { default as fieldTypeMap } from './view/field-type-map';
 export * from './view/view-inference';
 export * from './update-guard';
 export { default as operators } from './operators';
+export { filterIncludes, mergeIncludes } from './utils/filter-include';

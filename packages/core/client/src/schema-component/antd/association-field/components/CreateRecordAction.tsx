@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { observer, useField, useFieldSchema } from '@formily/react';
-import React, { useState } from 'react';
+import { observer, Schema, useField, useFieldSchema } from '@formily/react';
+import React, { useMemo, useState } from 'react';
 import { CollectionProvider_deprecated, useCollectionManager_deprecated } from '../../../../collection-manager';
 import { NocoBaseRecursionField } from '../../../../formily/NocoBaseRecursionField';
 import { CreateAction } from '../../../../schema-initializer/components';
 import { ActionContextProvider, useActionContext } from '../../action';
+import { TabsContextProvider } from '../../tabs/context';
 import { useAssociationFieldContext, useInsertSchema } from '../hooks';
 import schema from '../schema';
-import { TabsContextProvider } from '../../tabs/context';
 
 export const CreateRecordAction = observer(
   (props) => {
@@ -31,12 +31,27 @@ export const CreateRecordAction = observer(
     const [currentDataSource, setCurrentDataSource] = useState(targetCollection?.dataSource);
     const [formValueChanged, setFormValueChanged] = useState(false);
 
+    const addNewerSchema = useMemo(() => {
+      return fieldSchema.reduceProperties((buf, s) => {
+        if (s['x-component'] === 'AssociationField.AddNewer') {
+          Object.keys(s.parent.properties).forEach((key) => {
+            if (key !== s.name) {
+              s.parent.removeProperty(key);
+            }
+          });
+          return s.parent;
+        }
+        return buf;
+      }) as Schema;
+    }, [fieldSchema]);
+
     const addbuttonClick = (collectionData) => {
       insertAddNewer(schema.AddNewer);
       setVisibleAddNewer(true);
       setCurrentCollection(collectionData.name);
       setCurrentDataSource(collectionData.dataSource);
     };
+
     return (
       <CollectionProvider_deprecated name={collectionField?.target}>
         <CreateAction {...props} onClick={(arg) => addbuttonClick(arg)} />
@@ -51,14 +66,7 @@ export const CreateRecordAction = observer(
         >
           <CollectionProvider_deprecated name={currentCollection} dataSource={currentDataSource}>
             <TabsContextProvider>
-              <NocoBaseRecursionField
-                onlyRenderProperties
-                basePath={field.address}
-                schema={fieldSchema}
-                filterProperties={(s) => {
-                  return s['x-component'] === 'AssociationField.AddNewer';
-                }}
-              />
+              <NocoBaseRecursionField basePath={field.address} schema={addNewerSchema} />
             </TabsContextProvider>
           </CollectionProvider_deprecated>
         </ActionContextProvider>

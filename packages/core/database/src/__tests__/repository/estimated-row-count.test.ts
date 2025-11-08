@@ -39,7 +39,7 @@ describe('estimated row count test', () => {
     }
 
     const repository = User.repository;
-
+    await analyzeTable(db, User);
     const emptyCount = await repository.getEstimatedRowCount();
     expect(emptyCount).toEqual(0);
   });
@@ -54,7 +54,7 @@ describe('estimated row count test', () => {
     await repository.createMany({
       records: [{ name: 'u1' }, { name: 'u2' }, { name: 'u3' }, { name: 'u4' }, { name: 'u5' }],
     });
-
+    await analyzeTable(db, User);
     const estimatedCount = await repository.getEstimatedRowCount();
     expect(estimatedCount).toBeGreaterThanOrEqual(0);
 
@@ -93,7 +93,7 @@ describe('estimated row count test', () => {
     }
 
     const repository = User.repository;
-
+    await analyzeTable(db, User);
     const count = await repository.getEstimatedRowCount();
     expect(count).toBeGreaterThanOrEqual(0);
   });
@@ -103,10 +103,7 @@ describe('estimated row count test', () => {
       return;
     }
 
-    const testDb = await createMockDatabase({ underscored: false });
-    await testDb.clean({ drop: true });
-
-    const SnakeCaseCollection = testDb.collection({
+    const SnakeCaseCollection = db.collection({
       name: 'snake_case_users',
       tableName: 'snake_case_users_table',
       underscored: true,
@@ -116,7 +113,7 @@ describe('estimated row count test', () => {
       ],
     });
 
-    const CamelCaseCollection = testDb.collection({
+    const CamelCaseCollection = db.collection({
       name: 'camelCaseUsers',
       tableName: 'camelCaseUsersTable',
       underscored: false,
@@ -126,7 +123,7 @@ describe('estimated row count test', () => {
       ],
     });
 
-    await testDb.sync();
+    await db.sync();
 
     await SnakeCaseCollection.repository.createMany({
       records: [
@@ -142,19 +139,21 @@ describe('estimated row count test', () => {
         { userName: 'camel3', userAge: 35 },
       ],
     });
-
+    await analyzeTable(db, SnakeCaseCollection);
     const snakeCaseCount = await SnakeCaseCollection.repository.getEstimatedRowCount();
-    expect(snakeCaseCount).toBeGreaterThanOrEqual(0);
+    expect(snakeCaseCount).toBe(2);
 
+    await analyzeTable(db, CamelCaseCollection);
     const camelCaseCount = await CamelCaseCollection.repository.getEstimatedRowCount();
-    expect(camelCaseCount).toBeGreaterThanOrEqual(0);
-
-    expect(typeof snakeCaseCount).toBe('number');
-    expect(typeof camelCaseCount).toBe('number');
-
-    expect(SnakeCaseCollection.tableName()).toBe('snake_case_users_table');
-    expect(CamelCaseCollection.tableName()).toBe('camelCaseUsersTable');
-
-    await testDb.close();
+    expect(camelCaseCount).toBe(3);
   });
 });
+
+async function analyzeTable(db, collection) {
+  if (db.isMySQLCompatibleDialect()) {
+    await db.sequelize.query(`ANALYZE TABLE ${collection.getTableNameWithSchema()}`);
+  } else if (db.isPostgresCompatibleDialect()) {
+    await db.prepare();
+    await db.sequelize.query(`ANALYZE ${collection.getTableNameWithSchema()}`);
+  }
+}

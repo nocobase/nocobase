@@ -8,7 +8,7 @@
  */
 
 import React, { useState } from 'react';
-import { Button, Tooltip } from 'antd';
+import { Button, Tag, Tooltip } from 'antd';
 import { ApartmentOutlined, PlusOutlined } from '@ant-design/icons';
 
 import { css } from '@nocobase/client';
@@ -53,8 +53,23 @@ function NodeComponent({ data }) {
     <NodeDefaultView data={data}>
       <div className={styles.nodeSubtreeClass}>
         <div className={styles.branchBlockClass}>
-          {branches.map((branch) => (
-            <Branch key={branch.id} from={data} entry={branch} branchIndex={branch.branchIndex} />
+          {branches.map((branch, i) => (
+            <Branch
+              key={branch.id}
+              from={data}
+              entry={branch}
+              branchIndex={branch.branchIndex}
+              controller={
+                <Tag
+                  className={css`
+                    position: relative;
+                    margin: 1rem 0 0 0;
+                  `}
+                >
+                  {i + 1}
+                </Tag>
+              }
+            />
           ))}
           {tempBranches.map((_, i) => (
             <Branch
@@ -152,7 +167,7 @@ export default class extends Instruction {
           },
           {
             value: 'allSettled',
-            label: `{{t('Run all branch (ignore failures)', { ns: "${NAMESPACE}" })}}`,
+            label: `{{t('Run all branches (ignore failures)', { ns: "${NAMESPACE}" })}}`,
             tooltip: `{{t('Always continue after all branches end, regardless of success or failure.', { ns: "${NAMESPACE}" })}}`,
           },
         ],

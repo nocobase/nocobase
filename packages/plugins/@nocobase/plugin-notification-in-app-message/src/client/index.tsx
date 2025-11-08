@@ -34,7 +34,7 @@ export class PluginNotificationInAppClient extends Plugin {
       type: 'in-app-message',
       components: {
         ChannelConfigForm: () => null,
-        MessageConfigForm: MessageConfigForm,
+        MessageConfigForm,
         ContentConfigForm,
       },
       meta: {

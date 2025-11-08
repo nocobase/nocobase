@@ -16,6 +16,12 @@ export default defineCollection({
   model: 'DataSourcesRolesResourcesModel',
   fields: [
     {
+      name: 'id',
+      type: 'snowflakeId',
+      primaryKey: true,
+      allowNull: false,
+    },
+    {
       name: 'dataSourceKey',
       type: 'string',
       defaultValue: 'main',

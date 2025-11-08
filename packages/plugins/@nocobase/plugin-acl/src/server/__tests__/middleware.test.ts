@@ -76,7 +76,7 @@ describe('middleware', () => {
     await db.getRepository('collections.fields', 'posts').create({
       values: {
         name: 'createdById',
-        type: 'integer',
+        type: 'bigInt',
       },
       context: {},
     });
@@ -230,7 +230,7 @@ describe('middleware', () => {
       values: {
         title: 't1',
         description: 'd1',
-        createdById: 1,
+        createdById: admin.id,
       },
     });
 
@@ -238,7 +238,7 @@ describe('middleware', () => {
       values: {
         title: 't2',
         description: 'p2',
-        createdById: 2,
+        createdById: member.id,
       },
     });
 

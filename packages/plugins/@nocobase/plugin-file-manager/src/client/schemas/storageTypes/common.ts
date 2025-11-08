@@ -41,7 +41,7 @@ export default {
       size: {
         type: 'number',
         title: `{{t("File size limit", { ns: "${NAMESPACE}" })}}`,
-        description: `{{t("Minimum from 1 byte, maximum up to 1GB.", { ns: "${NAMESPACE}" })}}`,
+        description: `{{t("Minimum from 1 byte.", { ns: "${NAMESPACE}" })}}`,
         'x-decorator': 'FormItem',
         'x-component': 'FileSizeField',
         required: true,

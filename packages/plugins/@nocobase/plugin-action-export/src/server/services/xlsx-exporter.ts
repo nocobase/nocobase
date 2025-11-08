@@ -10,6 +10,7 @@
 import * as Excel from 'exceljs';
 import { BaseExporter, ExportOptions } from './base-exporter';
 import fs from 'fs';
+import path from 'path';
 
 type ExportColumn = {
   dataIndex: Array<string>;
@@ -20,8 +21,6 @@ type ExportColumn = {
 type XlsxExportOptions = Omit<ExportOptions, 'fields'> & {
   columns: Array<ExportColumn>;
 };
-
-const XLSX_LIMIT_CHAER = 32767;
 
 export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Array<Array<string>> }> {
   /**
@@ -48,6 +47,9 @@ export class XlsxExporter extends BaseExporter<XlsxExportOptions & { fields: Arr
   }
 
   async init(ctx?): Promise<void> {
+    const outputDir = path.dirname(this.outputPath);
+    await fs.promises.mkdir(outputDir, { recursive: true });
+
     this.workbook = new Excel.stream.xlsx.WorkbookWriter({
       filename: this.outputPath,
       useStyles: true,

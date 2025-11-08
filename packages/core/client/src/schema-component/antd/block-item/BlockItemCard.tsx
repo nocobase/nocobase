@@ -62,7 +62,7 @@ export const BlockItemCard = React.forwardRef<HTMLDivElement, CardProps | any>((
   );
   const content = (
     <BlockItemCardContext.Provider value={{ titleHeight: titleHeight }}>
-      <Card ref={ref} bordered={false} style={style} {...others} title={title}>
+      <Card ref={ref} variant="borderless" style={style} {...others} title={title}>
         {children}
       </Card>
     </BlockItemCardContext.Provider>

@@ -29,8 +29,15 @@ export default class extends Instruction {
       type: 'void',
       'x-component': 'LocalProvider',
     },
+    ignoreFail: {
+      type: 'boolean',
+      'x-content': `{{t("Ignore failure and continue workflow", { ns: "${NAMESPACE}" })}}`,
+      'x-decorator': 'FormItem',
+      'x-component': 'Checkbox',
+    },
   };
   components = {
     LocalProvider,
   };
+  testable = true;
 }

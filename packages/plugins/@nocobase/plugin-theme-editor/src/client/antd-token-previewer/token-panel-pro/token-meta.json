@@ -1672,6 +1672,54 @@
     "type": "string",
     "source": "seed"
   },
+  "colorBgSider": {
+    "name": "侧边菜单背景色",
+    "nameEn": "Background color of sider",
+    "desc": "侧边菜单的背景色",
+    "descEn": "Background color of sider",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorBgSiderMenuHover": {
+    "name": "侧边菜单背景悬浮态",
+    "nameEn": "Background color of sider menu when hover",
+    "desc": "侧边菜单背景悬浮态",
+    "descEn": "Background color of sider menu when hover",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorBgSiderMenuActive": {
+    "name": "侧边菜单背景激活态",
+    "nameEn": "Background color of sider menu when active",
+    "desc": "侧边菜单背景激活态",
+    "descEn": "Background color of sider menu when active",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTextSiderMenu": {
+    "name": "侧边菜单文本色",
+    "nameEn": "Text color of sider menu",
+    "desc": "侧边菜单文本色",
+    "descEn": "Text color of sider menu",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTextSiderMenuHover": {
+    "name": "侧边菜单文本色悬浮态",
+    "nameEn": "Text color of sider menu when hover",
+    "desc": "侧边菜单文本色悬浮态",
+    "descEn": "Text color of sider menu when hover",
+    "type": "string",
+    "source": "seed"
+  },
+  "colorTextSiderMenuActive": {
+    "name": "侧边菜单文本色激活态",
+    "nameEn": "Text color of sider menu when active",
+    "desc": "侧边菜单文本色激活态",
+    "descEn": "Text color of sider menu when active",
+    "type": "string",
+    "source": "seed"
+  },
   "colorSettings": {
     "name": "UI 配置色",
     "nameEn": "Primary color of settings",

@@ -49,19 +49,21 @@ describe('set main department', () => {
         title: 'Department',
       },
     });
-    await db.getRepository('users').create({
+    const testUser = await db.getRepository('users').create({
       values: {
         username: 'test',
       },
     });
+    const users = await db.getRepository('users').find();
+    const userIds = users.map((user) => user.id);
     await agent.resource('departments.members', dept.id).add({
-      values: [1, 2],
+      values: userIds,
     });
     const throughRepo = db.getRepository('departmentsUsers');
     const deptUsers = await throughRepo.find({
       filter: {
         userId: {
-          $in: [1, 2],
+          $in: userIds,
         },
         departmentId: dept.id,
       },
@@ -76,11 +78,11 @@ describe('set main department', () => {
       },
     });
     await agent.resource('departments.members', dept2.id).add({
-      values: [2],
+      values: [testUser.id],
     });
     const deptUsers2 = await throughRepo.find({
       filter: {
-        userId: 2,
+        userId: testUser.id,
       },
     });
     expect(deptUsers2.length).toBe(2);
@@ -89,6 +91,7 @@ describe('set main department', () => {
   });
 
   it('should set main department when remove department members', async () => {
+    const user = await db.getRepository('users').findOne();
     const depts = await repo.create({
       values: [
         {
@@ -100,15 +103,15 @@ describe('set main department', () => {
       ],
     });
     await agent.resource('departments.members', depts[0].id).add({
-      values: [1],
+      values: [user.id],
     });
     await agent.resource('departments.members', depts[1].id).add({
-      values: [1],
+      values: [user.id],
     });
     const throughRepo = db.getRepository('departmentsUsers');
     const deptUsers = await throughRepo.find({
       filter: {
-        userId: 1,
+        userId: user.id,
       },
     });
     expect(deptUsers.length).toBe(2);
@@ -116,11 +119,11 @@ describe('set main department', () => {
     expect(deptUsers.find((i: any) => i.departmentId === depts[1].id).isMain).toBe(false);
 
     await agent.resource('departments.members', depts[0].id).remove({
-      values: [1],
+      values: [user.id],
     });
     const deptUsers2 = await throughRepo.find({
       filter: {
-        userId: 1,
+        userId: user.id,
       },
     });
     expect(deptUsers2.length).toBe(1);
@@ -129,6 +132,7 @@ describe('set main department', () => {
   });
 
   it('should set main department when add user departments', async () => {
+    const user = await db.getRepository('users').findOne();
     const depts = await repo.create({
       values: [
         {
@@ -139,13 +143,13 @@ describe('set main department', () => {
         },
       ],
     });
-    await agent.resource('users.departments', 1).add({
+    await agent.resource('users.departments', user.id).add({
       values: depts.map((dept: any) => dept.id),
     });
     const throughRepo = db.getRepository('departmentsUsers');
     const deptUsers = await throughRepo.find({
       filter: {
-        userId: 1,
+        userId: user.id,
       },
     });
     expect(deptUsers.length).toBe(2);
@@ -154,6 +158,7 @@ describe('set main department', () => {
   });
 
   it('should set main department when remove user departments', async () => {
+    const user = await db.getRepository('users').findOne();
     const depts = await repo.create({
       values: [
         {
@@ -164,16 +169,16 @@ describe('set main department', () => {
         },
       ],
     });
-    await agent.resource('users.departments', 1).add({
+    await agent.resource('users.departments', user.id).add({
       values: depts.map((dept: any) => dept.id),
     });
-    await agent.resource('users.departments', 1).remove({
+    await agent.resource('users.departments', user.id).remove({
       values: [depts[0].id],
     });
     const throughRepo = db.getRepository('departmentsUsers');
     const deptUsers = await throughRepo.find({
       filter: {
-        userId: 1,
+        userId: user.id,
       },
     });
     expect(deptUsers.length).toBe(1);

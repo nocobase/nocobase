@@ -26,5 +26,7 @@
   "Mobile routes": "Mobile routes",
   "No accessible pages found": "No accessible pages found",
   "This might be due to permission configuration issues": "This might be due to permission configuration issues",
-  "Select time":"Select time"
+  "Select time":"Select time",
+  "Mobile (deprecated)": "Mobile (deprecated)",
+  "Deprecated Warning": "This plugin has been deprecated and may be removed in future versions. Please migrate to the new mobile solution."
 }

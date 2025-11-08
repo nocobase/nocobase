@@ -17,6 +17,12 @@ export default {
   repository: 'WorkflowRepository',
   fields: [
     {
+      name: 'id',
+      type: 'snowflakeId',
+      primaryKey: true,
+      allowNull: false,
+    },
+    {
       name: 'key',
       type: 'uid',
     },

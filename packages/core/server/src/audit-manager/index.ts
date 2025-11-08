@@ -276,6 +276,9 @@ export class AuditManager {
 
   async output(ctx: any, reqId: any, metadata?: Record<string, any>) {
     try {
+      if (!ctx.action) {
+        return;
+      }
       const { resourceName, actionName } = ctx.action;
       const action: Action = this.getAction(actionName, resourceName);
       if (!action) {

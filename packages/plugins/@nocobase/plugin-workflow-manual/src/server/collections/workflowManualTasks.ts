@@ -19,10 +19,10 @@ export default defineCollection({
   shared: true,
   fields: [
     {
-      type: 'bigInt',
+      type: 'snowflakeId',
       name: 'id',
       primaryKey: true,
-      autoIncrement: true,
+      allowNull: false,
     },
     {
       type: 'belongsTo',

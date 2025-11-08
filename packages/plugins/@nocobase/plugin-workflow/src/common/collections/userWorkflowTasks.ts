@@ -16,6 +16,12 @@ export default {
   shared: true,
   fields: [
     {
+      name: 'id',
+      type: 'snowflakeId',
+      primaryKey: true,
+      allowNull: false,
+    },
+    {
       name: 'userId',
       type: 'bigInt',
     },

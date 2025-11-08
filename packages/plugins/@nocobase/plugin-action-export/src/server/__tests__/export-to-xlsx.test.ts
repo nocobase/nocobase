@@ -339,6 +339,7 @@ describe('export to xlsx with preset', () => {
   });
 
   it('should export with attachment field', async () => {
+    const defaultStorage = await app.db.getRepository('storages').findOne();
     const Post = app.db.collection({
       name: 'posts',
       fields: [
@@ -375,14 +376,14 @@ describe('export to xlsx with preset', () => {
             extname: '.png',
             mimetype: 'image/png',
             url: 'https://nocobase.oss-cn-beijing.aliyuncs.com/test1.png',
-            storageId: 1,
+            storageId: defaultStorage.id,
           },
           {
             title: 'nocobase-logo2',
             filename: '682e5ad037dd02a0fe4800a3e91c283b.png',
             extname: '.png',
             mimetype: 'image/png',
-            storageId: 1,
+            storageId: defaultStorage.id,
           },
         ],
       },

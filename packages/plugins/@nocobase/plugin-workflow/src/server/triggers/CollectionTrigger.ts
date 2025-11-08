@@ -9,14 +9,13 @@
 
 import { pick } from 'lodash';
 import { isValidFilter } from '@nocobase/utils';
-import { Collection, Model, Transactionable } from '@nocobase/database';
+import { Collection, Model } from '@nocobase/database';
 import { ICollection, parseCollectionName, SequelizeCollectionManager } from '@nocobase/data-source-manager';
 
 import Trigger from '.';
 import { toJSON } from '../utils';
 import type { WorkflowModel } from '../types';
-import type { EventOptions } from '../Plugin';
-import { Context } from '@nocobase/actions';
+import type { EventOptions } from '../Dispatcher';
 
 export interface CollectionChangeTriggerConfig {
   collection: string;

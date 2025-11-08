@@ -26,7 +26,7 @@ describe('ColorPicker', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-1rquknz ant-app"
+          class="css-dev-only-do-not-override-nlgwwc ant-app"
           style="height: 100%;"
         >
           <div
@@ -36,7 +36,7 @@ describe('ColorPicker', () => {
           >
             <div
               aria-describedby="test-id"
-              class="ant-color-picker-trigger css-dev-only-do-not-override-1rquknz"
+              class="ant-color-picker-trigger css-dev-only-do-not-override-nlgwwc"
             >
               <div
                 class="ant-color-picker-color-block"
@@ -91,7 +91,7 @@ describe('ColorPicker', () => {
     expect(container).toMatchInlineSnapshot(`
       <div>
         <div
-          class="css-dev-only-do-not-override-1rquknz ant-app"
+          class="css-dev-only-do-not-override-nlgwwc ant-app"
           style="height: 100%;"
         >
           <div
@@ -101,7 +101,7 @@ describe('ColorPicker', () => {
           >
             <div
               aria-describedby="test-id"
-              class="ant-color-picker-trigger ant-color-picker-sm css-dev-only-do-not-override-1rquknz ant-color-picker-trigger-disabled"
+              class="ant-color-picker-trigger ant-color-picker-sm css-dev-only-do-not-override-nlgwwc ant-color-picker-trigger-disabled"
             >
               <div
                 class="ant-color-picker-color-block"

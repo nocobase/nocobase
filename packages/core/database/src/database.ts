@@ -8,7 +8,7 @@
  */
 
 import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocobase/logger';
-import { applyMixins, AsyncEmitter } from '@nocobase/utils';
+import { applyMixins, AsyncEmitter, parseBigIntValue } from '@nocobase/utils';
 import chalk from 'chalk';
 import merge from 'deepmerge';
 import { EventEmitter } from 'events';
@@ -31,6 +31,7 @@ import {
   Utils,
 } from 'sequelize';
 import { SequelizeStorage, Umzug } from 'umzug';
+import mysql from 'mysql2';
 import { Collection, CollectionOptions, RepositoryType } from './collection';
 import { CollectionFactory } from './collection-factory';
 import { ImporterReader, ImportFileExtension } from './collection-importer';
@@ -255,6 +256,10 @@ export class Database extends EventEmitter implements AsyncEmitter {
     const sequelizeOptions = this.sequelizeOptions(this.options);
     this.sequelize = new Sequelize(sequelizeOptions);
 
+    if (options.dialect === 'mysql') {
+      this.wrapSequelizeRunForMySQL();
+    }
+
     this.queryInterface = buildQueryInterface(this);
 
     this.collections = new Map();
@@ -373,7 +378,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
   /**
    * @internal
    */
-  sequelizeOptions(options) {
+  sequelizeOptions(options: DatabaseOptions) {
     return this.dialect.getSequelizeOptions(options);
   }
 
@@ -516,6 +521,33 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   isPostgresCompatibleDialect() {
     return this.inDialect('postgres');
+  }
+
+  /*
+   * https://github.com/sidorares/node-mysql2/issues/1239#issuecomment-766867699
+   * https://github.com/sidorares/node-mysql2/pull/1407#issuecomment-1325789581
+   * > I'm starting to think simple "always send (parameter.toString()) as VAR_STRING" unless the type is explicitly specified by user" might be actually the best behaviour
+   */
+  wrapSequelizeRunForMySQL() {
+    const that = this;
+    // @ts-ignore
+    const run = this.sequelize.dialect.Query.prototype.run;
+    // @ts-ignore
+    this.sequelize.dialect.Query.prototype.run = function (sql: string, parameters: any[]) {
+      if (!/^update\s+/i.test(sql.trim()) || !parameters?.length) {
+        return run.apply(this, [sql, parameters]);
+      }
+      try {
+        parameters.forEach((p, index) => {
+          if (typeof p === 'number') {
+            parameters[index] = p.toString();
+          }
+        });
+      } catch (err) {
+        that.logger.error(err);
+      }
+      return run.apply(this, [sql, parameters]);
+    };
   }
 
   /**
@@ -806,8 +838,8 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
   /* istanbul ignore next -- @preserve */
   async auth(options: Omit<QueryOptions, 'retry'> & { retry?: number | Pick<QueryOptions, 'retry'> } = {}) {
-    const { retry = 9, ...others } = options;
-    const startingDelay = 50;
+    const { retry = 10, ...others } = options;
+    const startingDelay = 1000;
     const timeMultiple = 2;
 
     let attemptNumber = 1; // To track the current attempt number
@@ -834,6 +866,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
         numOfAttempts: retry as number,
         startingDelay: startingDelay,
         timeMultiple: timeMultiple,
+        maxDelay: 30 * 1000,
       });
     } catch (error) {
       throw new Error(`Unable to connect to the database`, { cause: error });

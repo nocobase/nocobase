@@ -45,3 +45,50 @@
   .ant-menu-item.ant-menu-item-only-child.ant-pro-base-menu-horizontal-menu-item:active {
     background-color: var(--colorBgMenuItemSelected) !important;
   }
+
+  html {
+    overflow: hidden;
+  }
+
+  // 侧边菜单样式配置
+  // TODO: 临时做法，后面需要统一 Layout 组件
+  .ant-layout-sider {
+    .ant-menu {
+      background: var(--colorBgSider) !important;
+
+      .ant-menu-item {
+        color: var(--colorTextSiderMenu) !important;
+
+        &:hover {
+          background-color: var(--colorBgSiderMenuHover) !important;
+          color: var(--colorTextSiderMenuHover) !important;
+        }
+
+        &:active {
+          background-color: var(--colorBgSiderMenuActive) !important;
+        }
+
+        &.ant-menu-item-selected {
+          background-color: var(--colorBgSiderMenuActive) !important;
+          color: var(--colorTextSiderMenuActive) !important;
+        }
+      }
+
+      .ant-menu-submenu {
+        .ant-menu-submenu-title {
+          color: var(--colorTextSiderMenu) !important;
+
+          &:hover {
+            background-color: var(--colorBgSiderMenuHover) !important;
+            color: var(--colorTextSiderMenuHover) !important;
+          }
+        }
+
+        &.ant-menu-submenu-selected {
+          & > .ant-menu-submenu-title {
+            color: var(--colorTextSiderMenuActive) !important;
+          }
+        }
+      }
+    }
+  }

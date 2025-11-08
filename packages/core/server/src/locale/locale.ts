@@ -129,7 +129,7 @@ export class Locale {
         }
         // this.app.log.debug(`load [${packageName}] locale resource `);
         // this.app.setMaintainingMessage(`load [${packageName}] locale resource `);
-        const res = getResource(packageName, lang);
+        const res = await getResource(packageName, lang);
         if (res) {
           resources[packageName] = { ...res };
           if (packageName.includes(OFFICIAL_PLUGIN_PREFIX)) {

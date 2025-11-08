@@ -31,5 +31,7 @@
   "Clear": "清空",
   "Confirm": "确认",
   "Cancel": "取消",
-  "Display < back button": "显示 < 返回按钮"
+  "Display < back button": "显示 < 返回按钮",
+  "Mobile (deprecated)": "移动端（已废弃）",
+  "Deprecated Warning": "该插件已被弃用,未来版本可能会移除。请迁移到新的移动端方案。"
 }

@@ -32,7 +32,7 @@ const isValidateEmpty = (value: any) => {
 
 registerValidateRules({
   username(value) {
-    return /^[^@.<>"'/]{1,50}$/.test(value) || i18n.t('Must be 1-50 characters in length (excluding @.<>"\'/)');
+    return /^[^@<>"'/]{1,50}$/.test(value) || i18n.t('Must be 1-50 characters in length (excluding @<>"\'/)');
   },
   required(value, rule) {
     if (rule.required === false) return '';
@@ -60,6 +60,8 @@ export class InputFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['string', 'uid'];
   hasDefaultValue = true;
+  validationType = 'string';
+  availableValidationOptions = ['min', 'max', 'length', 'pattern'];
   properties = {
     ...defaultProps,
     trim: {

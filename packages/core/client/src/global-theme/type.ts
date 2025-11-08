@@ -26,6 +26,19 @@ export interface CustomToken extends AliasToken {
   /** 导航栏菜单文本色激活态 */
   colorTextHeaderMenuActive: string;
 
+  /** 侧边菜单背景色 */
+  colorBgSider: string;
+  /** 侧边菜单文本色 */
+  colorTextSiderMenu: string;
+  /** 侧边菜单文本色悬浮态 */
+  colorTextSiderMenuHover: string;
+  /** 侧边菜单文本色激活态 */
+  colorTextSiderMenuActive: string;
+  /** 侧边菜单背景色悬浮态 */
+  colorBgSiderMenuHover: string;
+  /** 侧边菜单背景色激活态 */
+  colorBgSiderMenuActive: string;
+
   /** UI 配置色 */
   colorSettings: string;
   /** 鼠标悬浮时显示的背景色 */

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Filter, InheritedCollection, UniqueConstraintError } from '@nocobase/database';
+import { Filter, InheritedCollection, JoiValidationError, UniqueConstraintError } from '@nocobase/database';
 import PluginErrorHandler from '@nocobase/plugin-error-handler';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
@@ -17,7 +17,6 @@ import { FieldIsDependedOnByOtherError } from './errors/field-is-depended-on-by-
 import { FieldNameExistsError } from './errors/field-name-exists-error';
 import {
   afterCreateForForeignKeyField,
-  afterCreateForReverseField,
   beforeCreateForReverseField,
   beforeDestroyForeignKey,
   beforeInitOptions,
@@ -29,9 +28,13 @@ import { beforeDestoryField } from './hooks/beforeDestoryField';
 import { CollectionModel, FieldModel } from './models';
 import collectionActions from './resourcers/collections';
 import viewResourcer from './resourcers/views';
+import { Schema } from '@formily/json-schema';
+import _ from 'lodash';
 
 export class PluginDataSourceMainServer extends Plugin {
   private loadFilter: Filter = {};
+
+  private db2cmCollections: string[] = [];
 
   setLoadFilter(filter: Filter) {
     this.loadFilter = filter;
@@ -119,6 +122,9 @@ export class PluginDataSourceMainServer extends Plugin {
     );
 
     this.app.db.on('collections.beforeDestroy', async (model: CollectionModel, options) => {
+      if (model.options.uiManageable) {
+        throw new Error('Cannot remove a UI manageable collection');
+      }
       const removeOptions = {};
       if (options.transaction) {
         removeOptions['transaction'] = options.transaction;
@@ -179,7 +185,28 @@ export class PluginDataSourceMainServer extends Plugin {
 
     this.app.db.on('fields.beforeCreate', beforeCreateForValidateField(this.app.db));
 
-    this.app.db.on('fields.afterCreate', afterCreateForReverseField(this.app.db));
+    this.app.db.on('fields.afterCreate', async (model, { transaction }) => {
+      const Field = this.app.db.getCollection('fields');
+      const reverseKey = model.get('reverseKey');
+
+      if (!reverseKey) {
+        return;
+      }
+
+      const reverse = await Field.model.findByPk(reverseKey, { transaction });
+      await reverse.update({ reverseKey: model.get('key') }, { hooks: false, transaction });
+
+      // NOTE: add sync logic due to hooks is false
+      this.sendSyncMessage(
+        {
+          type: 'syncCollection',
+          collectionName: model.get('collectionName'),
+        },
+        {
+          transaction,
+        },
+      );
+    });
 
     this.app.db.on('fields.beforeCreate', async (model: FieldModel, options) => {
       const { transaction } = options;
@@ -408,60 +435,32 @@ export class PluginDataSourceMainServer extends Plugin {
       name: `pm.data-source-manager.collection-view `,
       actions: ['dbViews:*'],
     });
+
+    this.app.db.on('afterDefineCollection', async (collection) => {
+      if (collection?.options?.uiManageable) {
+        this.db2cmCollections.push(collection.name);
+      }
+    });
+
+    this.app.on('afterEnablePlugin', this.db2cm.bind(this));
+
+    this.app.on('afterInstall', this.db2cm.bind(this));
+
+    this.app.on('afterUpgrade', this.db2cm.bind(this));
+  }
+
+  private async db2cm() {
+    if (this.db2cmCollections.length) {
+      await this.app.db.getRepository<CollectionRepository>('collections').db2cmCollections(this.db2cmCollections);
+      this.log.info(`collections synced to collection manager: ${this.db2cmCollections.join(', ')}`);
+      this.db2cmCollections = [];
+    }
   }
 
   async load() {
     this.db.getRepository<CollectionRepository>('collections').setApp(this.app);
 
-    const errorHandlerPlugin = this.app.getPlugin<PluginErrorHandler>('error-handler');
-    errorHandlerPlugin.errorHandler.register(
-      (err) => {
-        return err instanceof UniqueConstraintError;
-      },
-      (err, ctx) => {
-        return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
-      },
-    );
-
-    errorHandlerPlugin.errorHandler.register(
-      (err) => err instanceof FieldIsDependedOnByOtherError,
-      (err, ctx) => {
-        ctx.status = 400;
-        ctx.body = {
-          errors: [
-            {
-              message: ctx.i18n.t('field-is-depended-on-by-other', {
-                fieldName: err.options.fieldName,
-                fieldCollectionName: err.options.fieldCollectionName,
-                dependedFieldName: err.options.dependedFieldName,
-                dependedFieldCollectionName: err.options.dependedFieldCollectionName,
-                dependedFieldAs: err.options.dependedFieldAs,
-                ns: 'data-source-main',
-              }),
-            },
-          ],
-        };
-      },
-    );
-
-    errorHandlerPlugin.errorHandler.register(
-      (err) => err instanceof FieldNameExistsError,
-      (err, ctx) => {
-        ctx.status = 400;
-
-        ctx.body = {
-          errors: [
-            {
-              message: ctx.i18n.t('field-name-exists', {
-                name: err.value,
-                collectionName: err.collectionName,
-                ns: 'data-source-main',
-              }),
-            },
-          ],
-        };
-      },
-    );
+    this.registerErrorHandler();
 
     this.app.resourceManager.use(async function mergeReverseFieldWhenSaveCollectionField(ctx, next) {
       if (ctx.action.resourceName === 'collections.fields' && ['create', 'update'].includes(ctx.action.actionName)) {
@@ -536,6 +535,100 @@ export class PluginDataSourceMainServer extends Plugin {
       dumpRules: 'required',
       origin: this.options.packageName,
     });
+  }
+
+  registerErrorHandler() {
+    const errorHandlerPlugin = this.app.pm.get<PluginErrorHandler>('error-handler');
+    errorHandlerPlugin.errorHandler.register(
+      (err) => {
+        return err instanceof UniqueConstraintError;
+      },
+      (err, ctx) => {
+        return ctx.throw(400, ctx.t(`The value of ${Object.keys(err.fields)} field duplicated`));
+      },
+    );
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof FieldIsDependedOnByOtherError,
+      (err, ctx) => {
+        ctx.status = 400;
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.i18n.t('field-is-depended-on-by-other', {
+                fieldName: err.options.fieldName,
+                fieldCollectionName: err.options.fieldCollectionName,
+                dependedFieldName: err.options.dependedFieldName,
+                dependedFieldCollectionName: err.options.dependedFieldCollectionName,
+                dependedFieldAs: err.options.dependedFieldAs,
+                ns: 'data-source-main',
+              }),
+            },
+          ],
+        };
+      },
+    );
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof FieldNameExistsError,
+      (err, ctx) => {
+        ctx.status = 400;
+
+        ctx.body = {
+          errors: [
+            {
+              message: ctx.i18n.t('field-name-exists', {
+                name: err.value,
+                collectionName: err.collectionName,
+                ns: 'data-source-main',
+              }),
+            },
+          ],
+        };
+      },
+    );
+
+    errorHandlerPlugin.errorHandler.register(
+      (err) => err instanceof JoiValidationError,
+      (err: JoiValidationError, ctx) => {
+        const t = ctx.i18n.t;
+        ctx.status = 400;
+        ctx.body = {
+          errors: err.details.map((detail) => {
+            const context = detail.context;
+            const label = context.label;
+            if (label) {
+              const [collectionName, fieldName] = label.split('.');
+              const collection = this.db.getCollection(collectionName);
+              if (collection) {
+                const collectionTitle = Schema.compile(collection.options.title, { t });
+                const field = collection.getField(fieldName);
+                const fieldOptions = Schema.compile(field?.options, { t });
+                const fieldTitle = _.get(fieldOptions, 'uiSchema.title', fieldName);
+                context.label = `${t(collectionTitle, {
+                  ns: ['lm-collections', 'client'],
+                })}: ${t(fieldTitle, {
+                  ns: ['lm-collections', 'client'],
+                })}`;
+              }
+            }
+            if (context.regex) {
+              context.regex = context.regex.source;
+            }
+            let message = ctx.i18n.t(detail.type, {
+              ...context,
+              ns: 'data-source-main',
+            });
+            if (message === detail.type) {
+              message = err.message.replace(`"${label}"`, context.label);
+            }
+            return {
+              message,
+            };
+          }),
+        };
+      },
+    );
   }
 
   async install() {

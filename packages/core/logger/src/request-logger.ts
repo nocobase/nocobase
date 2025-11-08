@@ -67,6 +67,7 @@ export const requestLogger = (appName: string, requestLogger: Logger, options?: 
         res: pick(ctx.response.toJSON(), options?.responseWhitelist || defaultResponseWhitelist),
         action: omit(ctx.action?.toJSON?.(), defaultActionBlackList),
         userId: ctx.auth?.user?.id,
+        username: ctx.auth?.user?.username,
         status: ctx.status,
         cost,
         app: appName,

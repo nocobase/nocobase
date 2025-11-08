@@ -13,6 +13,7 @@ import Database from '../database';
 import { appendChildCollectionNameAfterRepositoryFind } from '../listeners/append-child-collection-name-after-repository-find';
 import { OptionsParser } from '../options-parser';
 import { Collection } from '../collection';
+import { processIncludes } from '../utils';
 
 interface EagerLoadingNode {
   model: ModelStatic<any>;
@@ -80,31 +81,6 @@ const queryParentSQL = (options: {
       INNER JOIN cte ON t.${q(targetKeyField)} = cte.${q(foreignKeyField)}
       )
       SELECT ${q(targetKeyField)} AS ${q(targetKey)}, ${q(foreignKeyField)} AS ${q(foreignKey)} FROM cte`;
-};
-
-const processIncludes = (includes: any[], model: any, parentAs = '') => {
-  includes.forEach((include: { association: string; include?: any[] }, index: number) => {
-    // Process current level
-    const association = model.associations[include.association];
-    if (association?.generateInclude) {
-      includes[index] = {
-        ...include,
-        ...association.generateInclude(parentAs),
-      };
-    }
-
-    // Recursively process nested includes if they exist
-    if (include.include && Array.isArray(include.include) && include.include.length > 0) {
-      // Get the associated model for the next level
-      const nextModel = association?.target;
-      if (!nextModel) {
-        return;
-      }
-      processIncludes(include.include, nextModel, parentAs ? `${parentAs}->${association.as}` : association.as);
-    }
-  });
-
-  return includes;
 };
 
 export class EagerLoadingTree {

@@ -302,6 +302,9 @@ export class ResourceManager {
   }
 
   use(middlewares: HandlerType | HandlerType[], options: ToposortOptions = {}) {
+    if (!options.tag && !options.group && !options.before && !options.after) {
+      options.tag = 'default';
+    }
     this.middlewares.add(middlewares, options);
   }
 

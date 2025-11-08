@@ -38,7 +38,7 @@ const availableActions: {
   update: {
     displayName: '{{t("Edit")}}',
     type: 'old-data',
-    aliases: ['update', 'move', 'add', 'set', 'remove', 'toggle'],
+    aliases: ['update', 'move'],
     allowConfigureFields: true,
   },
   destroy: {

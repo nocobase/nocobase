@@ -38,6 +38,8 @@ export class IntegerFieldInterface extends CollectionFieldInterface {
   };
   availableTypes = ['bigInt', 'integer', 'sort'];
   hasDefaultValue = true;
+  validationType = 'number';
+  excludeValidationOptions = ['precision'];
   properties = {
     ...defaultProps,
     layout: {

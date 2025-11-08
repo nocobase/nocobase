@@ -52,7 +52,9 @@ export default {
 
     list: async function (ctx, next) {
       const db = ctx.app.db as Database;
-      const dbViews = await db.queryInterface.listViews();
+      const dbViews = await db.queryInterface.listViews({
+        schema: db.options?.schema || process.env.DB_SCHEMA || process.env.COLLECTION_MANAGER_SCHEMA || 'public',
+      });
 
       const viewCollections = Array.from(db.collections.values()).filter((collection) => collection.isView());
 

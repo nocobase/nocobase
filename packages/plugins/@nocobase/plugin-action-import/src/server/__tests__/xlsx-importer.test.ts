@@ -2376,4 +2376,49 @@ describe('xlsx importer', () => {
     const user = await User.model.findOne({ where: { name: 'zhangsan' } });
     expect(await pwd.verify('123456', user.password)).toBeTruthy();
   });
+
+  it('should skip blank rows when importing data from Excel', async () => {
+    const User = app.db.collection({
+      name: 'users',
+      fields: [{ type: 'string', name: 'name' }],
+    });
+    await app.db.sync();
+    const templateCreator = new TemplateCreator({
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+      ],
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    // 在第2行和第10行插入数据，中间留空多行
+    XLSX.utils.sheet_add_aoa(worksheet, [['zhangsan']], {
+      origin: 'A2',
+    });
+    XLSX.utils.sheet_add_aoa(worksheet, [['lisi']], {
+      origin: 'A10',
+    });
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: User,
+      columns: [
+        {
+          dataIndex: ['name'],
+          defaultTitle: '姓名',
+        },
+      ],
+      workbook: template,
+    });
+
+    await importer.run();
+
+    const count = await User.repository.count();
+    expect(count).toBe(2);
+  });
 });

@@ -22,7 +22,7 @@ const CollectionsTable = observer((tableProps: any) => {
   const [selectAllForCurrentView, setSelectAllForCurrentView] = useState(false);
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const MAX_SELECTION_LIMIT = 100;
+  const MAX_SELECTION_LIMIT = 500;
 
   const { NAMESPACE, t } = tableProps;
   const defaultAddAllCollections =

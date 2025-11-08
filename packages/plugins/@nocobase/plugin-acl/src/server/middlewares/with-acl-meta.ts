@@ -7,13 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import lodash from 'lodash';
-import { snakeCase } from '@nocobase/database';
 import { NoPermissionError } from '@nocobase/acl';
+import { filterIncludes, mergeIncludes, snakeCase } from '@nocobase/database';
+import lodash from 'lodash';
 
 function createWithACLMetaMiddleware() {
   return async (ctx: any, next) => {
     await next();
+
+    if (process.env.DISABLE_ACL_META === 'true' || process.env.DISABLE_ACL_META === '1') {
+      return;
+    }
 
     const dataSourceKey = ctx.get('x-data-source');
     const dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
@@ -166,6 +170,10 @@ function createWithACLMetaMiddleware() {
         context: actionCtx,
       });
 
+      const include = filterIncludes(queryParams.where, queryParams.include || [], {
+        underscored: db.options.underscored,
+      });
+
       const actionSql = ctx.db.sequelize.queryInterface.queryGenerator.selectQuery(
         Model.getTableName(),
         {
@@ -242,7 +250,7 @@ function createWithACLMetaMiddleware() {
         conditions.push({
           whereCase: '1=1',
           action,
-          include: queryParams.include,
+          include: [],
         });
       } else {
         const whereCase = actionSql.match(/WHERE (.*?);/)[1];
@@ -250,10 +258,11 @@ function createWithACLMetaMiddleware() {
         conditions.push({
           whereCase,
           action,
-          include: queryParams.include,
+          include: include,
         });
       }
     }
+    const finalIncludes = mergeIncludes(conditions.map((condition) => condition.include || []).flat());
 
     const results = await collection.model.findAll({
       where: {
@@ -265,7 +274,7 @@ function createWithACLMetaMiddleware() {
           return [ctx.db.sequelize.literal(`CASE WHEN ${condition.whereCase} THEN 1 ELSE 0 END`), condition.action];
         }),
       ],
-      include: conditions.map((condition) => condition.include).flat(),
+      include: finalIncludes,
       raw: true,
     });
 

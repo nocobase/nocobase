@@ -104,7 +104,7 @@ describe('workflow > cluster', () => {
       sharedQueues = new Map();
       for (const node of cluster.nodes) {
         await node.eventQueue.close();
-        const adapter = new MockMemoryEventQueueAdapter({ appName: node.name });
+        const adapter = new MockMemoryEventQueueAdapter({ appName: node.name, logger: node.logger });
         adapter.setQueues(sharedQueues);
         node.eventQueue.setAdapter(adapter);
         await node.eventQueue.connect();
@@ -177,12 +177,7 @@ describe('workflow > cluster', () => {
         expect(e2s[6].status).toBe(EXECUTION_STATUS.RESOLVED);
         expect(e2s[7].status).toBe(EXECUTION_STATUS.RESOLVED);
 
-        const appIds = e2s.map((item) =>
-          item.jobs
-            .find((job) => job.nodeId === n2.id)
-            .result.split('_')
-            .pop(),
-        );
+        const appIds = e2s.map((item) => item.jobs.find((job) => job.nodeId === n2.id).result);
         const appIdsSet = new Set(appIds);
         expect(appIdsSet.size).toBe(3);
         // expect(appNameJobs[0].result).toBe(app1.instanceId);

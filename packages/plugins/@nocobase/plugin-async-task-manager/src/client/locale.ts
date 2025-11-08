@@ -1,10 +1,19 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 // @ts-ignore
 import pkg from '../../package.json';
 import { useApp } from '@nocobase/client';
 
 export function useT() {
   const app = useApp();
-  return (str: string) => app.i18n.t(str, { ns: [pkg.name, 'client'] });
+  return (str: string, data?: Record<string, any>) => app.i18n.t(str, { ns: [pkg.name, 'client'], ...data });
 }
 
 export function tStr(key: string) {

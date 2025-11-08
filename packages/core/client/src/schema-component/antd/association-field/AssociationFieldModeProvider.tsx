@@ -15,6 +15,7 @@ import { InternalNester } from './InternalNester';
 import { InternalPicker } from './InternalPicker';
 import { InternalPopoverNester } from './InternalPopoverNester';
 import { InternalSubTable } from './InternalSubTable';
+import { ReadPrettyInternalTag } from './InternalTag';
 
 export enum AssociationFieldMode {
   Picker = 'Picker',
@@ -39,6 +40,7 @@ const defaultModeToComponent = {
   SubTable: InternalSubTable,
   FileManager: InternalFileManager,
   CascadeSelect: InternalCascadeSelect,
+  Tag: ReadPrettyInternalTag,
 };
 
 const AssociationFieldModeContext = createContext<{

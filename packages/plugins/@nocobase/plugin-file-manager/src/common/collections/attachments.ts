@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { NAMESPACE } from '../constants';
+
 export default {
   dumpRules: {
     group: 'user',
@@ -59,7 +61,7 @@ export default {
       interface: 'm2o',
       uiSchema: {
         type: 'object',
-        title: 'Storage',
+        title: `{{t('Storage', { ns: '${NAMESPACE}' })}}`,
         'x-component': 'AssociationField',
         'x-component-props': {
           fieldNames: {

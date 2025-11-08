@@ -38,7 +38,8 @@ describe('middleware', () => {
     const hasFn = vi.fn();
     const addFn = vi.fn();
     beforeEach(async () => {
-      await agent.login(1);
+      const user = await db.getRepository('users').findOne();
+      await agent.login(user.id);
       app.authManager.setTokenBlacklistService({
         has: hasFn,
         add: addFn,

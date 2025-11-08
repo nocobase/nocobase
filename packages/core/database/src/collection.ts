@@ -12,6 +12,7 @@ import { EventEmitter } from 'events';
 import { default as _, default as lodash } from 'lodash';
 import safeJsonStringify from 'safe-json-stringify';
 import {
+  DataTypes,
   ModelOptions,
   ModelStatic,
   QueryInterfaceDropTableOptions,
@@ -22,10 +23,12 @@ import {
 } from 'sequelize';
 import { BuiltInGroup } from './collection-group-manager';
 import { Database } from './database';
-import { BelongsToField, Field, FieldOptions, HasManyField } from './fields';
+import { BelongsToField, Field, FieldOptions, HasManyField, RelationField } from './fields';
 import { Model } from './model';
 import { Repository } from './repository';
 import { checkIdentifier, md5, snakeCase } from './utils';
+import { buildJoiSchema } from './utils/field-validation';
+import Joi from 'joi';
 
 export type RepositoryType = typeof Repository;
 
@@ -226,6 +229,59 @@ export class Collection<
     for (const [_, field] of this.fields) {
       if (field.options.treeChildren) {
         return field;
+      }
+    }
+  }
+
+  validate(options: { values: Record<string, any> | Record<string, any>[]; operation: 'create' | 'update' }) {
+    const { values: updateValues, operation } = options;
+    if (!updateValues) {
+      return;
+    }
+    const values = Array.isArray(updateValues) ? updateValues : [updateValues];
+
+    const helper = (field: Field, value: Object) => {
+      const val = value[field.name];
+      if (!field.options.validation) {
+        return;
+      }
+
+      if (field instanceof RelationField) {
+        const rules = field.options?.validation?.rules || [];
+        const required = rules.some((rule) => rule.name === 'required');
+
+        if (required) {
+          const { error } = Joi.any().empty(null).required().label(`${this.name}.${field.name}`).validate(val);
+          if (error) {
+            throw error;
+          }
+        }
+
+        return;
+      }
+
+      const joiSchema = buildJoiSchema(field.options.validation, {
+        label: `${this.name}.${field.name}`,
+        value: val,
+      });
+      const { error } = joiSchema.validate(val);
+      if (error) {
+        throw error;
+      }
+    };
+    for (const value of values) {
+      if (operation === 'create') {
+        for (const [, field] of this.fields) {
+          helper(field, value);
+        }
+      }
+      if (operation === 'update') {
+        for (const key of Object.keys(value)) {
+          const field = this.getField(key);
+          if (field) {
+            helper(field, value);
+          }
+        }
       }
     }
   }
@@ -725,6 +781,13 @@ export class Collection<
     this.setField(options.name || name, options);
   }
 
+  private normalizeFieldName(val: string | string[]) {
+    if (!this.options.underscored) {
+      return val;
+    }
+    return Array.isArray(val) ? val.map((v) => snakeCase(v)) : snakeCase(val);
+  }
+
   addIndex(
     index:
       | string
@@ -771,7 +834,7 @@ export class Collection<
     }
 
     for (const item of indexes) {
-      if (lodash.isEqual(item.fields, indexName)) {
+      if (lodash.isEqual(this.normalizeFieldName(item.fields), this.normalizeFieldName(indexName))) {
         return;
       }
 
@@ -823,14 +886,26 @@ export class Collection<
     // @ts-ignore
     const indexes: any[] = this.model._indexes;
 
+    const attributes = {};
+    for (const [name, field] of Object.entries(this.model.getAttributes())) {
+      attributes[this.normalizeFieldName(name)] = field;
+    }
+
     // @ts-ignore
     this.model._indexes = lodash.uniqBy(
       indexes
         .filter((item) => {
-          return item.fields.every((field) => this.model.rawAttributes[field]);
+          return item.fields.every((field) => {
+            const name = this.normalizeFieldName(field);
+            return attributes[name];
+          });
         })
         .map((item) => {
-          item.fields = item.fields.map((field) => this.model.rawAttributes[field].field);
+          item.fields = item.fields.map((field) => {
+            const name = this.normalizeFieldName(field);
+            return attributes[name].field;
+          });
+
           return item;
         }),
       'name',
