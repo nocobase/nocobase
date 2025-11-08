@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Collection, Database, createMockDatabase } from '@nocobase/database';
+import { Collection, Database, createMockDatabase, updateAssociations } from '@nocobase/database';
 
 describe('update associations', () => {
   let db: Database;
@@ -236,5 +236,19 @@ describe('update associations', () => {
     const field = await Field.repository.findById('f1');
     expect(await Table.repository.count()).toBe(1);
     expect(field.table_name).toBe('tn1');
+  });
+
+  it('should throw when unique targetKey value is missing but primary key provided', async () => {
+    const table = await Table.model.create({ key: 'tk1', name: 'tn1' });
+
+    await expect(
+      updateAssociations(table, {
+        fields: [
+          {
+            key: 'fk1',
+          },
+        ],
+      }),
+    ).rejects.toThrow('name field value is empty');
   });
 });
