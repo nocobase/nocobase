@@ -9,74 +9,23 @@
 import {
   CollectionField,
   createCollectionContextMeta,
-  createCurrentRecordMetaFactory,
   EditableItemModel,
   escapeT,
   FilterableItemModel,
-  FlowModel,
   MultiRecordResource,
-  useFlowModel,
 } from '@nocobase/flow-engine';
 import { Select } from 'antd';
 import { css } from '@emotion/css';
 import { debounce } from 'lodash';
 import React from 'react';
 import { AssociationFieldModel } from './AssociationFieldModel';
+import { LabelByField, resolveOptions, toSelectValue, type LazySelectProps } from './recordSelectShared';
+import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
 
-function toValue(record: any | any[], fieldNames, multiple = false) {
-  if (!record) return multiple ? [] : undefined;
-
-  const { value: valueKey } = fieldNames;
-
-  const convert = (item: any) => {
-    if (typeof item !== 'object' || item === null || item == undefined) return undefined;
-    return {
-      label: <LabelByField option={item} fieldNames={fieldNames} />,
-      value: item[valueKey],
-    };
-  };
-
-  if (multiple) {
-    if (!Array.isArray(record)) return [];
-    return record.map(convert).filter(Boolean);
-  }
-
-  return convert(record);
-}
-
-export function LabelByField(props) {
-  const { option, fieldNames } = props;
-  const currentModel = useFlowModel();
-  const field: any = currentModel.subModels.field as FlowModel;
-  const key = option[fieldNames.value];
-  const fieldModel = field.createFork({}, key);
-  fieldModel.context.defineProperty('record', {
-    get: () => option,
-    meta: createCurrentRecordMetaFactory(fieldModel.context, () => (fieldModel.context as any).collection),
-  });
-  const labelValue = option?.[fieldNames.label] || option.label;
-  const titleCollectionField = currentModel.context.collectionField.targetCollection.getField(fieldNames.label);
-  fieldModel.setProps({ value: labelValue, clickToOpen: false, ...titleCollectionField.getComponentProps() });
-  return (
-    <span style={{ pointerEvents: 'none' }} key={key}>
-      {labelValue ? fieldModel.render() : 'N/A'}
-    </span>
-  );
-}
-
-export function LazySelect(props) {
-  const { fieldNames, value, multiple, allowMultiple, options = [], ...others } = props;
-  const isMultiple = multiple && allowMultiple;
-  const realOptions =
-    options && options.length
-      ? options
-      : isMultiple
-        ? Array.isArray(value)
-          ? value.filter(Boolean)
-          : []
-        : value && typeof value === 'object'
-          ? [value]
-          : [];
+export function LazySelect(props: Readonly<LazySelectProps>) {
+  const { fieldNames, value, multiple, allowMultiple, options, onChange, ...others } = props;
+  const isMultiple = Boolean(multiple && allowMultiple);
+  const realOptions = resolveOptions(options, value, isMultiple);
   return (
     <Select
       style={{ width: '100%' }}
@@ -88,10 +37,10 @@ export function LazySelect(props) {
       labelInValue
       fieldNames={fieldNames}
       options={realOptions}
-      value={toValue(value, fieldNames, isMultiple)}
+      value={toSelectValue(value, fieldNames, isMultiple)}
       mode={isMultiple ? 'multiple' : undefined}
       onChange={(value, option) => {
-        props.onChange(option);
+        onChange(option as any);
       }}
       optionRender={({ data }) => {
         return <LabelByField option={data} fieldNames={fieldNames} />;
@@ -159,7 +108,12 @@ export class RecordSelectFieldModel extends AssociationFieldModel {
   }
 
   render() {
-    return <LazySelect {...this.props} />;
+    // TODO: 移动端相关的代码需迁移到单独的插件中
+    if (this.context.isMobileLayout) {
+      return <MobileLazySelect {...(this.props as LazySelectProps)} loading={this.resource.loading} />;
+    }
+
+    return <LazySelect {...(this.props as LazySelectProps)} />;
   }
 }
 
@@ -341,7 +295,6 @@ RecordSelectFieldModel.registerFlow({
         const { target, dataSourceKey } = collectionField;
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(target);
-        // resource.setAPIClient(ctx.api);
         resource.setPageSize(paginationState.pageSize);
         const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
         if (isOToAny) {

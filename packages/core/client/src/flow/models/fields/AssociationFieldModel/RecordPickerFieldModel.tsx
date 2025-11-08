@@ -23,7 +23,7 @@ import { Button, Select } from 'antd';
 import React, { useEffect } from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { FieldModel } from '../../base';
-import { LabelByField } from './RecordSelectFieldModel';
+import { LabelByField } from './recordSelectShared';
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
