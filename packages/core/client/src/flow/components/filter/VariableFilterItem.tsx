@@ -21,6 +21,8 @@ import {
   FlowModel,
   useFlowViewContext,
   parseValueToPath,
+  createEphemeralContext,
+  createCollectionContextMeta,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { NumberPicker } from '@formily/antd-v5';
@@ -32,6 +34,34 @@ const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
   () => import('../../../schema-component'),
   'DateFilterDynamicComponent',
 );
+
+// 简化的本地辅助：按需获取 ctx.collection 的字段树（MetaTreeNode[]）
+async function buildCollectionLeftMetaTreeLocal(ctx: any): Promise<MetaTreeNode[]> {
+  const resolve = async (sub: any): Promise<MetaTreeNode[]> => {
+    if (Array.isArray(sub)) return sub as MetaTreeNode[];
+    if (typeof sub === 'function') return await (sub as () => Promise<MetaTreeNode[]>)();
+    return [];
+  };
+
+  // 1) 若已有 collection meta，直接复用
+  if (ctx.getPropertyOptions?.('collection')?.meta) {
+    const sub = ctx.getPropertyMetaTree?.('{{ ctx.collection }}');
+    return await resolve(sub);
+  }
+
+  // 2) 否则在本组件范围内临时构建
+  const getCollection = () => (ctx as any)?.collection ?? null;
+  const scoped = await createEphemeralContext(ctx, {
+    defineProperties: {
+      collection: {
+        get: getCollection,
+        meta: createCollectionContextMeta(getCollection, 'Current collection'),
+      },
+    },
+  });
+  const subTree = scoped.getPropertyMetaTree?.('{{ ctx.collection }}');
+  return await resolve(subTree);
+}
 
 export interface VariableFilterItemValue {
   path: string;
@@ -368,13 +398,15 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     // 右侧变量树：在原有变量上下文前，追加“常量/空值”两个根选项
     const mergedRightMetaTree = useMemo(() => {
       return async () => {
-        const base = (
-          typeof rightMetaTree === 'function' ? await rightMetaTree() : rightMetaTree || ctx.getPropertyMetaTree()
-        ) as MetaTreeNode[];
+        const raw =
+          typeof rightMetaTree === 'function' ? await rightMetaTree() : rightMetaTree ?? ctx.getPropertyMetaTree();
+        const nodes: MetaTreeNode[] = Array.isArray(raw)
+          ? (raw as MetaTreeNode[])
+          : await (raw as () => Promise<MetaTreeNode[]>)();
         return [
           { title: t('Constant'), name: 'constant', type: 'string', paths: ['constant'], render: staticInputRenderer },
           { title: t('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
-          ...(Array.isArray(base) ? base : []),
+          ...nodes,
         ];
       };
     }, [rightMetaTree, ctx, staticInputRenderer, NullComponent, t]);
@@ -415,8 +447,8 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         const dm = model.context.app?.dataSourceManager;
         const fiMgr = dm?.collectionFieldInterfaceManager;
 
-        const baseTree = model.context.getPropertyMetaTree('{{ ctx.collection }}');
-        const nodes: MetaTreeNode[] = Array.isArray(baseTree) ? baseTree : await (baseTree as MetaTreeProvider)();
+        // 优先复用已注入 meta；否则在本组件范围内临时构建
+        const nodes: MetaTreeNode[] = await buildCollectionLeftMetaTreeLocal(model.context);
 
         const enhanceNode = async (node: MetaTreeNode): Promise<MetaTreeNode> => {
           const fi = node.interface
