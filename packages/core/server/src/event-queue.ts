@@ -354,12 +354,12 @@ export class EventQueue {
     return this.adapter.isConnected();
   }
   async connect() {
-    if (!this.adapter) {
-      throw new Error('no adapter set, cannot connect');
-    }
     if (!this.app.serving()) {
       this.app.logger.warn('app is not serving, will not connect to event queue');
       return;
+    }
+    if (!this.adapter) {
+      throw new Error('no adapter set, cannot connect');
     }
     await this.adapter.connect();
     this.app.logger.debug(`connected to adapter, using memory? ${this.adapter instanceof MemoryEventQueueAdapter}`);
@@ -399,6 +399,10 @@ export class EventQueue {
     }
   }
   async publish(channel: string, message: any, options: QueueMessageOptions = {}) {
+    if (!this.app.serving()) {
+      this.app.logger.warn('app is not serving, will not publish message to event queue');
+      return;
+    }
     if (!this.adapter) {
       throw new Error('no adapter set, cannot publish');
     }
