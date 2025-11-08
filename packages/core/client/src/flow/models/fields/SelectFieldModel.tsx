@@ -11,6 +11,7 @@ import { Select } from 'antd';
 import React from 'react';
 import { EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
 import { FieldModel } from '../base';
+import { MobilePicker } from './mobile-components/MobilePicker';
 
 export class SelectFieldModel extends FieldModel {
   render() {
@@ -20,6 +21,12 @@ export class SelectFieldModel extends FieldModel {
         label: this.translate(v.label),
       };
     });
+
+    // TODO: 移动端相关的代码需迁移到单独的插件中
+    if (this.context.isMobileLayout) {
+      return <MobilePicker {...this.props} options={options} />;
+    }
+
     return <Select {...this.props} options={options} />;
   }
 }
