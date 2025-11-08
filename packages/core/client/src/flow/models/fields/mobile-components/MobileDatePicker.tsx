@@ -33,20 +33,9 @@ export const MobileDatePicker = (props) => {
   const handleConfirm = useCallback(
     (value) => {
       setVisible(false);
-      if (dateOnly) {
-        onChange(dayjs(value).format('YYYY-MM-DD'));
-      } else if (!utc) {
-        if (showTime) {
-          onChange(dayjs(value).format('YYYY-MM-DD HH:mm:ss'));
-        } else {
-          onChange(dayjs(value).startOf(picker).format('YYYY-MM-DD'));
-        }
-      } else {
-        const selectedDateTime = new Date(value);
-        onChange(selectedDateTime);
-      }
+      onChange(dayjs(value));
     },
-    [showTime, onChange],
+    [onChange],
   );
 
   // 清空选择的日期和时间
