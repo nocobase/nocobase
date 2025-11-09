@@ -29,7 +29,7 @@ export interface FlowLogRecord {
   duration?: number;
   status?: 'ok' | 'err' | 'skip';
   error?: SerializedError;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export type FlowLogSubscriber = (record: FlowLogRecord) => void;

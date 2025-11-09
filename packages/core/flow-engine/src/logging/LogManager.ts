@@ -9,7 +9,7 @@
 
 import type { FlowEngine } from '../flowEngine';
 import type { LogLevel, LogOptions } from '../utils/logging';
-import { DefaultLogOptions } from '../utils/logging';
+import { getDefaultLogOptions } from '../utils/logging';
 import type { FlowLogRecord, FlowLogLevel } from '../utils/logBus';
 import { FlowLogBus } from '../utils/logBus';
 import { FlowLogger } from '../utils/flowLogger';
@@ -20,7 +20,7 @@ import { FlowLogger } from '../utils/flowLogger';
  */
 export class LogManager {
   private engine: FlowEngine;
-  private _options: LogOptions = { ...DefaultLogOptions };
+  private _options: LogOptions = { ...getDefaultLogOptions() };
   private _bus = new FlowLogBus();
   private _sampleCounts: Map<string, number> = new Map();
   private _rateWindowSec = 0;
@@ -66,7 +66,7 @@ export class LogManager {
   }
 
   /** Create a FlowLogger (pino-compatible) using engine base logger */
-  createLogger(bindings?: Record<string, any>): FlowLogger {
+  createLogger(bindings?: Record<string, unknown>): FlowLogger {
     const base = bindings ? this.engine.logger.child(bindings) : this.engine.logger;
     return new FlowLogger(this.engine, base, bindings);
   }
@@ -79,7 +79,7 @@ export class LogManager {
     const mappedLevel = (level === 'trace' ? 'debug' : level === 'fatal' ? 'error' : level) as FlowLogLevel;
 
     const nowTs = Date.now();
-    const rec: FlowLogRecord = { ts: nowTs, level: mappedLevel, ...(data as any) };
+    const rec: FlowLogRecord = { ts: nowTs, level: mappedLevel, ...data };
 
     // rate guard: limit info/debug/trace based on options (never drop warn/error)
     if (!(rec.level === 'error' || rec.level === 'warn')) {
@@ -112,13 +112,13 @@ export class LogManager {
     }
 
     // slow-only filter for end events
-    const so = this._options.slowOnly;
-    if (so && rec && typeof rec === 'object') {
-      if (rec.type === 'event.end' && so.event) {
+    const slowOnly = this._options.slowOnly;
+    if (slowOnly && rec && typeof rec === 'object') {
+      if (rec.type === 'event.end' && slowOnly.event) {
         const thr = this._options.slowEventMs ?? 16;
         if (!(typeof rec.duration === 'number' && rec.duration >= thr)) return;
       }
-      if (rec.type === 'step.end' && so.step) {
+      if (rec.type === 'step.end' && slowOnly.step) {
         const thr = this._options.slowStepMs ?? 16;
         if (!(typeof rec.duration === 'number' && rec.duration >= thr)) return;
       }

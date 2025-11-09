@@ -934,7 +934,7 @@ class BaseFlowEngineContext extends FlowContext {
   @LogDuration({ type: 'variables.resolve.server', slowMsKey: 'slowParamsMs' })
   async resolveVariablesOnServer(template: any, autoContextParams?: any): Promise<any> {
     const self = this.createProxy() as BaseFlowEngineContext;
-    const resolved = await enqueueVariablesResolve(self as any, {
+    const resolved = await enqueueVariablesResolve(self, {
       template,
       contextParams: autoContextParams || {},
     });

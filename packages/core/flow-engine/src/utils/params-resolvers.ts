@@ -32,7 +32,10 @@ export async function resolveDefaultParams<TModel extends FlowModel = FlowModel>
       const result = await defaultParams(ctx);
       return result || {};
     } catch (error) {
-      console.error('Error resolving defaultParams function:', error);
+      ctx?.logger?.error?.(
+        { type: 'params.defaultParams.resolve.error', error },
+        'Error resolving defaultParams function',
+      );
       return {};
     }
   }
@@ -63,7 +66,10 @@ export async function resolveCreateModelOptions(
       const result = await createModelOptions(ctx, extra);
       return result || {};
     } catch (error) {
-      console.error('Error resolving createModelOptions function:', error);
+      ctx?.logger?.error?.(
+        { type: 'params.createModelOptions.resolve.error', error },
+        'Error resolving createModelOptions function',
+      );
       return {};
     }
   }

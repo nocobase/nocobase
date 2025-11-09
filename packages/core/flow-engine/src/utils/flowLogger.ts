@@ -22,6 +22,8 @@ import type { FlowEngine } from '../flowEngine';
 import { LogLevel, serializeError, isLevelEnabled } from './logging';
 import type { FlowLogRecord } from './logBus';
 
+type BusData = Omit<FlowLogRecord, 'level' | 'ts'>;
+
 function mapLevel(lvl: LogLevel): Exclude<LogLevel, 'silent' | 'fatal'> {
   if (lvl === 'trace') return 'debug';
   if (lvl === 'fatal') return 'error';
@@ -29,13 +31,13 @@ function mapLevel(lvl: LogLevel): Exclude<LogLevel, 'silent' | 'fatal'> {
   return lvl as Exclude<LogLevel, 'silent' | 'fatal'>;
 }
 
-function deriveType(obj: any, msg?: string): string {
-  if (obj && typeof obj.type === 'string' && obj.type) return obj.type;
+function deriveType(obj: Record<string, unknown> | undefined, msg?: string): string {
+  if (obj && typeof (obj as any).type === 'string' && (obj as any).type) return (obj as any).type as string;
   if (obj) {
-    if (obj.stepKey) return 'step.log';
-    if (obj.flowKey) return 'flow.log';
-    if (obj.eventName) return 'event.log';
-    if (obj.modelId) return 'model.log';
+    if ((obj as any).stepKey) return 'step.log';
+    if ((obj as any).flowKey) return 'flow.log';
+    if ((obj as any).eventName) return 'event.log';
+    if ((obj as any).modelId) return 'model.log';
   }
   if (typeof msg === 'string') {
     const m = msg.trim();
@@ -52,7 +54,7 @@ export class FlowLogger {
   private readonly engine: FlowEngine;
   private readonly bindings: Record<string, any>;
 
-  constructor(engine: FlowEngine, base: pino.Logger, bindings?: Record<string, any>) {
+  constructor(engine: FlowEngine, base: pino.Logger, bindings?: Record<string, unknown>) {
     this.engine = engine;
     this.base = base;
     this.bindings = { ...(bindings || {}) };
@@ -63,7 +65,7 @@ export class FlowLogger {
     return isLevelEnabled(this.base, lvl);
   }
 
-  child(bindings: Record<string, any>): FlowLogger {
+  child(bindings: Record<string, unknown>): FlowLogger {
     const baseChild = this.base.child(bindings);
     const merged = { ...this.bindings, ...bindings };
     return new FlowLogger(this.engine, baseChild, merged);
@@ -175,21 +177,24 @@ export class FlowLogger {
     }
 
     // Build structured record for LogBus
-    let rec: Record<string, unknown> = {};
+    let rec: BusData = {} as BusData;
     if (obj instanceof Error) {
-      rec = { error: serializeError(obj) };
+      rec = { error: serializeError(obj) } as BusData;
     } else if (obj && typeof obj === 'object') {
-      rec = { ...(obj as Record<string, unknown>) };
+      rec = { ...(obj as Record<string, unknown>) } as BusData;
     } else if (typeof obj === 'string' && !msg) {
-      rec = { message: obj };
+      rec = { message: obj } as BusData;
     } else if (typeof msg === 'string') {
-      rec = { message: msg };
+      rec = { message: msg } as BusData;
     }
-    rec = { ...this.bindings, ...rec };
-    if (!('type' in rec) || !rec.type) {
-      rec.type = deriveType(rec, typeof msg === 'string' ? msg : typeof obj === 'string' ? obj : undefined);
+    rec = { ...this.bindings, ...rec } as BusData;
+    if (!('type' in rec) || !(rec as any).type) {
+      (rec as any).type = deriveType(
+        rec as Record<string, unknown>,
+        typeof msg === 'string' ? msg : typeof obj === 'string' ? obj : undefined,
+      );
     }
-    this.engine.logManager.publish(method as LogLevel, rec as Omit<FlowLogRecord, 'level' | 'ts'>);
+    this.engine.logManager.publish(method as LogLevel, rec);
   }
 
   fatal(obj?: unknown, msg?: string) {

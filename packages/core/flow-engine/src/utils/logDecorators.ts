@@ -22,7 +22,7 @@ import { levelByDuration, serializeError, startTimer, logAt, LoggerLike } from '
 
 type SlowKey = 'slowParamsMs' | 'slowRenderMs' | 'slowStepMs' | 'slowEventMs';
 
-export interface LogDurationOptions<TThis = any, TArgs extends any[] = any[], TRet = any> {
+export interface LogDurationOptions<TThis = unknown, TArgs extends unknown[] = unknown[], TRet = unknown> {
   /** Optional explicit type; if omitted, falls back to method name */
   type?: string | ((self: TThis, args: TArgs, ret: TRet, err?: any) => string);
   /** When 'auto', choose info for slow, debug for fast. Default: 'auto' */
@@ -36,7 +36,7 @@ export interface LogDurationOptions<TThis = any, TArgs extends any[] = any[], TR
   /** Provide a logger; default tries self.context.logger -> self.logger */
   getLogger?: (self: TThis) => LoggerLike | undefined;
   /** Additional fields to merge into the log record. */
-  enrich?: (self: TThis, args: TArgs, ret?: TRet) => Record<string, any> | void;
+  enrich?: (self: TThis, args: TArgs, ret?: TRet) => Record<string, unknown> | void;
   /** Error level; default 'error' */
   onErrorLevel?: 'error' | 'warn';
 }
@@ -50,7 +50,7 @@ function getLogOptions(self: unknown): any {
   return s?.context?.engine?.logManager?.options || s?.engine?.logManager?.options;
 }
 
-function resolveSlowMs<TThis, TArgs extends any[]>(
+function resolveSlowMs<TThis, TArgs extends unknown[]>(
   self: TThis,
   args: TArgs,
   opts: LogDurationOptions<TThis, TArgs, any>,
@@ -78,12 +78,12 @@ function resolveSlowMs<TThis, TArgs extends any[]>(
 }
 
 function resolveType(
-  self: any,
-  args: any[],
-  ret: any,
-  provided: undefined | string | ((self: any, args: any[], ret: any, err?: any) => string),
+  self: unknown,
+  args: unknown[],
+  ret: unknown,
+  provided: undefined | string | ((self: unknown, args: unknown[], ret: unknown, err?: unknown) => string),
   fallbackName: string,
-  err?: any,
+  err?: unknown,
 ): string {
   if (typeof provided === 'string' && provided) return provided;
   if (typeof provided === 'function') {

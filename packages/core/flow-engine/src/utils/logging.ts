@@ -16,13 +16,19 @@ export type LogLevel = 'silent' | 'fatal' | 'error' | 'warn' | 'info' | 'debug' 
 
 // Minimal logger interface compatible with pino.Logger and FlowLogger
 export interface LoggerLike {
-  debug: (...args: any[]) => void;
-  info: (...args: any[]) => void;
-  warn: (...args: any[]) => void;
-  error: (...args: any[]) => void;
-  trace: (...args: any[]) => void;
-  fatal: (...args: any[]) => void;
-  child: (bindings: Record<string, any>) => LoggerLike;
+  debug: (...args: unknown[]) => void;
+  info: (...args: unknown[]) => void;
+  warn: (...args: unknown[]) => void;
+  error: (...args: unknown[]) => void;
+  trace: (...args: unknown[]) => void;
+  fatal: (...args: unknown[]) => void;
+  child: (bindings: Record<string, unknown>) => LoggerLike;
+  // 可选：用于 level 门控的探针能力（若底层为 pino，会自动具备）
+  isLevelEnabled?: (lvl: LogLevel) => boolean;
+  level?: string;
+  // pino 的内部字段，用于数值化比较
+  levelVal?: number;
+  levels?: { values: Record<string, number> };
 }
 
 export interface LogFilters {
@@ -73,10 +79,11 @@ type PinoIntrospect = {
   isLevelEnabled?: (lvl: LogLevel) => boolean;
   levelVal?: number;
   levels?: { values: Record<string, number> };
+  level?: string;
 };
 
-export function isLevelEnabled(logger: pino.Logger, level: LogLevel): boolean {
-  const l = logger as unknown as PinoIntrospect & { level?: string };
+export function isLevelEnabled(logger: pino.Logger | (LoggerLike & PinoIntrospect), level: LogLevel): boolean {
+  const l = logger as PinoIntrospect;
   if (typeof l.isLevelEnabled === 'function') {
     return !!l.isLevelEnabled(level);
   }
@@ -213,4 +220,27 @@ export function getDefaultLogLevel(): LogLevel {
   if (env === 'test') return 'warn';
   // 兜底：若无法识别环境，则按生产对待
   return 'warn';
+}
+
+/**
+ * 高频事件的默认采样（与错误/慢日志无关），用于降低噪音。
+ * 如需按环境差异化，可在此基础上扩展；当前保持统一策略。
+ */
+export function getDefaultSamples(): Record<string, number> {
+  return {
+    'model.update': 10,
+    'event.flow.dispatch': 5,
+    'model.dispatch': 5,
+    'model.mount': 20,
+    'model.unmount': 20,
+  };
+}
+
+/**
+ * 生成默认日志选项：在静态默认基础上合并高频采样策略。
+ * 若后续通过 UI/本地存储/远程配置覆盖，仍可用 logManager.updateOptions 动态修改。
+ */
+export function getDefaultLogOptions(): LogOptions {
+  const samples = { ...(DefaultLogOptions.samples || {}), ...getDefaultSamples() };
+  return { ...DefaultLogOptions, samples };
 }

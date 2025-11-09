@@ -44,13 +44,13 @@ export type EventFlowErrorCtx = CommonCtx & {
 
 export function logStepStart(logger: LoggerLike, ctx: StepCtx) {
   // 早期短路：低级别日志在未启用时直接返回，避免构造 payload
-  if (!_isLevelEnabled(logger as any, 'debug')) return;
+  if (!_isLevelEnabled(logger, 'debug')) return;
   logger.debug({ type: 'step.start', ...ctx });
 }
 
 export function logStepEnd(logger: LoggerLike, ctx: StepCtx & { duration: number }, slowMs: number) {
   const level = levelByDuration(ctx.duration, slowMs);
-  if (!_isLevelEnabled(logger as any, level)) return;
+  if (!_isLevelEnabled(logger, level)) return;
   const payload = { type: 'step.end', status: 'ok', ...ctx } as Record<string, unknown>;
   logAt(logger, level, payload);
 }
@@ -61,19 +61,19 @@ export function logStepError(logger: LoggerLike, ctx: StepCtx, err: unknown) {
 }
 
 export function logEventStart(logger: LoggerLike, ctx: EventStartCtx) {
-  if (!_isLevelEnabled(logger as any, 'debug')) return;
+  if (!_isLevelEnabled(logger, 'debug')) return;
   logger.debug({ type: 'event.start', ...ctx });
 }
 
 export function logEventEnd(logger: LoggerLike, ctx: EventEndCtx, slowMs: number) {
   const level = levelByDuration(ctx.duration, slowMs);
-  if (!_isLevelEnabled(logger as any, level)) return;
+  if (!_isLevelEnabled(logger, level)) return;
   const payload = { type: 'event.end', status: 'ok', ...ctx } as Record<string, unknown>;
   logAt(logger, level, payload);
 }
 
 export function logEventFlowDispatch(logger: LoggerLike, ctx: EventFlowDispatchCtx) {
-  if (!_isLevelEnabled(logger as any, 'debug')) return;
+  if (!_isLevelEnabled(logger, 'debug')) return;
   logger.debug({ type: 'event.flow.dispatch', ...ctx });
 }
 

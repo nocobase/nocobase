@@ -185,21 +185,6 @@ export class FlowEngine {
       },
     });
     this.executor = new FlowExecutor(this);
-    // default sampling for high-frequency logs (can be overridden via logManager.updateOptions)
-    this.logManager.updateOptions((prev) => ({
-      samples: Object.assign(
-        {
-          'step.start': 10,
-          'model.update': 10,
-          'event.flow.dispatch': 5,
-          // reduce noise for frequent model lifecycle logs
-          'model.dispatch': 5,
-          'model.mount': 20,
-          'model.unmount': 20,
-        },
-        prev.samples || {},
-      ),
-    }));
     // emit a minimal boot log so DevTools can show something on startup
     this.context.logger.info({ type: 'engine.ready' });
   }
@@ -778,7 +763,6 @@ export class FlowEngine {
 
     // 如果这个 model 正在保存中，返回现有的保存 Promise
     if (this._savingModels.has(modelUid)) {
-      this.logger.debug(`Model ${modelUid} is already being saved, waiting for existing save operation`);
       model.context.logger?.debug?.({ type: 'model.save.coalesce.wait' });
       return await this._savingModels.get(modelUid);
     }
@@ -809,17 +793,14 @@ export class FlowEngine {
     model: T,
     options?: { onlyStepParams?: boolean },
   ): Promise<any> {
-    this.logger.debug(`Starting save operation for model ${model.uid}`);
     const t0 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
     model.context.logger?.debug?.({ type: 'model.save.start', onlyStepParams: options?.onlyStepParams });
     try {
       const result = await this._modelRepository.save(model, options);
-      this.logger.debug(`Successfully saved model ${model.uid}`);
       const t1 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
       model.context.logger?.debug?.({ type: 'model.save.end', duration: Math.max(0, t1 - t0) });
       return result;
     } catch (error) {
-      this.logger.error(`Failed to save model ${model.uid}:`, error);
       const t1 = typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now();
       model.context.logger?.error?.({
         type: 'model.save.error',
