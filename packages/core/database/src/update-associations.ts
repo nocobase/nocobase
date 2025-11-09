@@ -521,8 +521,8 @@ export async function updateMultipleAssociation(
 
       if (association instanceof HasMany) {
         const reverseAssociation = Object.values(association.target.associations).find(
-          (association) =>
-            association.target === model.constructor && association.foreignKey === association.foreignKey,
+          (assoc) =>
+            assoc.target === model.constructor && assoc.foreignKey === association.foreignKey,
         );
         if (reverseAssociation && item[reverseAssociation.as] == null) {
           delete item[reverseAssociation.as];
