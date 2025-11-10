@@ -92,7 +92,7 @@
         "in": "query",
         "description": "filter by TK(default by ID)",
         "schema": {
-          "type": "string"
+          "type": "integer"
         }
       },
       "filterByTks": {
@@ -100,7 +100,10 @@
         "in": "query",
         "description": "filter by TKs(default by ID), example: `1,2,3`",
         "schema": {
-          "type": "string"
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
         }
       },
       "filter": {

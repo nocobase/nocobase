@@ -179,7 +179,7 @@ export class BelongsToManyRepository extends MultipleRelationRepository {
     const transaction = await this.getTransaction(options);
     const sourceModel = await this.getSourceModel(transaction);
 
-    const has = await sourceModel[this.accessors().hasSingle](options['tk'], {
+    const has = await sourceModel[this.accessors().hasSingle](this.convertTks(options), {
       transaction,
     });
 
