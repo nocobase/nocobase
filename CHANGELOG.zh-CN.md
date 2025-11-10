@@ -5,6 +5,31 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.4](https://github.com/nocobase/nocobase/compare/v1.9.3...v1.9.4) - 2025-11-10
+
+### 🚀 优化
+
+- **[权限控制]** 优化关系字段关联操作的权限控制逻辑 ([#7800](https://github.com/nocobase/nocobase/pull/7800)) by @2013xile
+
+- **[工作流：JavaScript 节点]** 修复传递到执行环境中的上层函数导致的安全漏洞，避免通过利用漏洞访问上层执行环境的问题 by @mytharcher
+
+- **[认证：OIDC]** 增加请求超时时间 by @2013xile
+
+### 🐛 修复
+
+- **[server]** 修复消息队列在启用服务拆分模式后，工作进程发消息导致报错的问题 ([#7797](https://github.com/nocobase/nocobase/pull/7797)) by @mytharcher
+
+- **[client]** 修复详情区块简单分页出现空数据下一页的问题 ([#7784](https://github.com/nocobase/nocobase/pull/7784)) by @katherinehhh
+
+- **[工作流]**
+  - 为工作流的日志增加 `workflowId` 的数据标识 ([#7789](https://github.com/nocobase/nocobase/pull/7789)) by @mytharcher
+
+  - 修复服务拆分模式下，工作流插件不处于服务模式时仍然消费队列的问题 ([#7820](https://github.com/nocobase/nocobase/pull/7820)) by @mytharcher
+
+- **[用户]** 字段名为 snake_case 风格时，索引字段重置不正确的问题 ([#7785](https://github.com/nocobase/nocobase/pull/7785)) by @2013xile
+
+- **[工作流：自定义变量节点]** 修复变量节点缺失 config 时报错的问题 by @mytharcher
+
 ## [v1.9.3](https://github.com/nocobase/nocobase/compare/v1.9.2...v1.9.3) - 2025-11-05
 
 ### 🚀 优化
