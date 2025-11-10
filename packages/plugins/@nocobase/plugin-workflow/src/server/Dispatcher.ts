@@ -72,10 +72,6 @@ export default class Dispatcher {
     this.ready = ready;
   }
 
-  private serving() {
-    return this.plugin.app.serving(WORKER_JOB_WORKFLOW_PROCESS);
-  }
-
   public getEventsCount() {
     return this.eventsCount;
   }
@@ -185,7 +181,7 @@ export default class Dispatcher {
           this.plugin.getLogger(next[0].workflowId).info(`pending execution (${next[0].id}) ready to process`);
         }
       } else {
-        if (this.serving()) {
+        if (this.plugin.serving()) {
           execution = await this.acquireQueueingExecution();
           if (execution) {
             next = [execution];
@@ -352,7 +348,7 @@ export default class Dispatcher {
       const execution = await this.createExecution(...event);
       // NOTE: cache first execution for most cases
       if (!execution?.dispatched) {
-        if (this.serving() && !this.executing && !this.pending.length) {
+        if (this.plugin.serving() && !this.executing && !this.pending.length) {
           logger.info(`local pending list is empty, adding execution (${execution.id}) to pending list`);
           this.pending.push({ execution });
         } else {

@@ -213,6 +213,10 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
+  public serving() {
+    return this.app.serving(WORKER_JOB_WORKFLOW_PROCESS);
+  }
+
   /**
    * @experimental
    */
@@ -305,11 +309,6 @@ export default class PluginWorkflowServer extends Plugin {
     this.snowflake = new Snowflake({
       custom_epoch: pluginRecord?.createdAt.getTime(),
     });
-
-    this.app.backgroundJobManager.subscribe(`${this.name}.pendingExecution`, {
-      idle: () => this.app.serving(WORKER_JOB_WORKFLOW_PROCESS) && this.dispatcher.idle,
-      process: this.dispatcher.onQueueExecution,
-    });
   }
 
   /**
@@ -377,6 +376,13 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.app.on('afterStart', this.onAfterStart);
     this.app.on('beforeStop', this.onBeforeStop);
+
+    if (this.serving()) {
+      this.app.backgroundJobManager.subscribe(`${this.name}.pendingExecution`, {
+        idle: () => this.dispatcher.idle,
+        process: this.dispatcher.onQueueExecution,
+      });
+    }
   }
 
   private toggle(
