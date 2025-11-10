@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.5](https://github.com/nocobase/nocobase/compare/v1.9.4...v1.9.5) - 2025-11-10
+
+### 🐛 Bug Fixes
+
+- **[Workflow: Approval]** Fix an issue where main collection fields were not excluded when reloading association data by @mytharcher
+
+- **[Email manager]** Fix the issue of reserved images and synchronization in outlook by @jiannx
+
 ## [v1.9.4](https://github.com/nocobase/nocobase/compare/v1.9.3...v1.9.4) - 2025-11-10
 
 ### 🚀 Improvements
