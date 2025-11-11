@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { useForm } from '@formily/react';
-import { ChildPageModel, DataBlockModel } from '@nocobase/client';
+import { ChildPageModel, DataBlockModel, DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 import { createCollectionContextMeta, SQLResource, useFlowContext } from '@nocobase/flow-engine';
 import React, { createRef } from 'react';
 import _ from 'lodash';
@@ -200,6 +199,10 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   applyQuery(query: any, options?: { debug?: boolean }) {
     this.checkResource(query);
     if (query?.mode === 'sql') {
+      // SQL 模式下设置数据源 key（默认 main）
+      const dsKey = query?.sqlDatasource || DEFAULT_DATA_SOURCE_KEY;
+      (this.resource as SQLResource).setDataSourceKey(dsKey);
+
       // 默认开启 debug（预览、交互）；初始化时传入 { debug: false } 使用 runById
       (this.resource as SQLResource).setDebug(options?.debug ?? true);
       (this.resource as SQLResource).setSQL(query.sql);
@@ -366,6 +369,7 @@ ChartBlockModel.registerFlow({
           return ctx.sql.save({
             uid: ctx.model.uid,
             sql: params.query.sql,
+            dataSourceKey: params.query.sqlDatasource,
           });
         }
       },
