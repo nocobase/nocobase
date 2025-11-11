@@ -19,4 +19,5 @@ export * from './RefreshActionModel';
 export * from './UpdateRecordActionModel';
 export * from './ViewActionModel';
 export * from './LinkActionModel';
+export * from './ExpandCollapseActionModel';
 //

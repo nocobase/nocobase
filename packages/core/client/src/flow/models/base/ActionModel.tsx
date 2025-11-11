@@ -88,13 +88,16 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
     });
   }
 
+  getTitle() {
+    return this.props.title;
+  }
   render() {
     const props = this.props;
     const icon = props.icon ? <Icon type={props.icon as any} /> : undefined;
 
     return (
       <Button {...props} onClick={this.onClick.bind(this)} icon={icon}>
-        {props.children || props.title}
+        {props.children || this.getTitle()}
       </Button>
     );
   }

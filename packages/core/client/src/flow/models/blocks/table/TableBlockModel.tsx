@@ -30,7 +30,7 @@ import {
 import { Skeleton, Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
@@ -505,6 +505,8 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
             columns={this.columns.value}
             pagination={this.pagination()}
             highlightedRowKey={highlightedRowKey}
+            defaultExpandAllRows={this.props.defaultExpandAllRows}
+            expandedRowKeys={this.props.expandedRowKeys}
           />
         </HighPerformanceSpin>
       </>
@@ -585,10 +587,49 @@ TableBlockModel.registerFlow({
       use: 'sortingRule',
       title: escapeT('Default sorting'),
     },
-    // dataLoadingMode: {
-    //   use: 'dataLoadingMode',
-    //   title: escapeT('Data loading mode'),
-    // },
+    treeTable: {
+      title: escapeT('Tree table'),
+      uiSchema: (ctx) => {
+        if (ctx.model.collection.template !== 'tree') {
+          return;
+        }
+        return {
+          treeTable: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+          },
+        };
+      },
+      defaultParams: {
+        treeTable: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('treeTable', params.treeTable);
+        ctx.model.resource.setRequestParameters({
+          tree: params.treeTable,
+        });
+      },
+    },
+    defaultExpandAllRows: {
+      title: escapeT('ExpandAll'),
+      uiSchema: (ctx) => {
+        if (ctx.model.collection.template !== 'tree' || !ctx.model.props.treeTable) {
+          return;
+        }
+        return {
+          defaultExpandAllRows: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+          },
+        };
+      },
+      defaultParams: {
+        defaultExpandAllRows: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('defaultExpandAllRows', params.defaultExpandAllRows);
+      },
+    },
     tableDensity: {
       title: escapeT('Table density'),
       uiSchema: {
@@ -671,8 +712,20 @@ const HighPerformanceTable = React.memo(
     columns: any;
     pagination: any;
     highlightedRowKey: string;
+    defaultExpandAllRows?: boolean;
+    expandedRowKeys?: any[];
   }) => {
-    const { model, size, virtual, dataSource, columns, pagination: _pagination, highlightedRowKey } = props;
+    const {
+      model,
+      size,
+      virtual,
+      dataSource,
+      columns,
+      pagination: _pagination,
+      highlightedRowKey,
+      defaultExpandAllRows,
+      expandedRowKeys,
+    } = props;
     const [selectedRowKeys, setSelectedRowKeys] = React.useState<string[]>(() =>
       model.resource.getSelectedRows().map((row) => row[model.collection.filterTargetKey]),
     );
@@ -722,7 +775,29 @@ const HighPerformanceTable = React.memo(
       },
       [highlightedRowKey, model],
     );
+    const [rowKeys, setExpandedRowKeys] = useState(expandedRowKeys || []);
 
+    useEffect(() => {
+      setExpandedRowKeys(expandedRowKeys);
+    }, [expandedRowKeys]);
+
+    const expandable = useMemo(() => {
+      return {
+        expandedRowKeys: rowKeys,
+        onExpand: (expanded, record) => {
+          setExpandedRowKeys((prev) => {
+            if (expanded) {
+              // 展开
+              return [...(prev || []), record.id];
+            } else {
+              // 收起
+              return prev?.filter((key) => key !== record.id);
+            }
+          });
+        },
+      };
+    }, [rowKeys]);
+    console.log(rowKeys);
     return (
       <MemoizedTable
         components={model.components}
@@ -738,6 +813,8 @@ const HighPerformanceTable = React.memo(
         onChange={handleChange}
         rowClassName={rowClassName}
         onRow={onRow}
+        defaultExpandAllRows={defaultExpandAllRows}
+        expandable={expandable}
       />
     );
   },

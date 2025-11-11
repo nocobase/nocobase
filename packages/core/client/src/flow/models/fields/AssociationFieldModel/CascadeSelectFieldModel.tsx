@@ -477,6 +477,7 @@ const EMPTY = 'N/A';
 //   }
 
 // 对一
+
 export class CascadeSelectFieldModel extends AssociationFieldModel {
   declare resource: MultiRecordResource;
 
@@ -486,12 +487,13 @@ export class CascadeSelectFieldModel extends AssociationFieldModel {
 
   onInit(options) {
     super.onInit(options);
-    // For association fields, expose target collection to variable selectors
+    // 暴露 target collection 给变量选择器
     this.context.defineProperty('collection', {
       get: () => this.context.collectionField?.targetCollection,
     });
   }
 
+  // antd Cascader 对应的事件绑定
   set onPopupScroll(fn) {
     this.setProps({ onPopupScroll: fn });
   }
@@ -500,6 +502,9 @@ export class CascadeSelectFieldModel extends AssociationFieldModel {
   }
   set onSearch(fn) {
     this.setProps({ onSearch: fn });
+  }
+  set onLoadData(fn) {
+    this.setProps({ loadData: fn });
   }
 
   setDataSource(dataSource) {
@@ -517,10 +522,292 @@ export class CascadeSelectFieldModel extends AssociationFieldModel {
   }
 
   render() {
-    return <Cascader {...this.props} />;
+    return (
+      <Cascader
+        disabled={this.props.disabled}
+        changeOnSelect
+        options={this.props.options}
+        onDropdownVisibleChange={this.props.onDropdownVisibleChange}
+        fieldNames={this.props.fieldNames}
+      />
+    );
   }
 }
 
-EditableItemModel.bindModelToInterface('CascadeSelectFieldModel', ['m2m', 'm2o', 'o2o', 'o2m', 'oho', 'obo', 'mbm'], {
-  isDefault: true,
+// 基础分页控制
+const paginationState = {
+  page: 1,
+  pageSize: 40,
+  loading: false,
+  hasMore: true,
+};
+
+/** --------------------------- 事件绑定 --------------------------- */
+CascadeSelectFieldModel.registerFlow({
+  key: 'eventSettings',
+  sort: 900,
+  steps: {
+    bindEvent: {
+      handler(ctx) {
+        const labelFieldName = ctx.model.props.fieldNames.label;
+
+        // 打开下拉加载根节点
+        ctx.model.onDropdownVisibleChange = (open) => {
+          if (open) {
+            ctx.model.dispatchEvent('dropdownOpen', {
+              apiClient: ctx.app.apiClient,
+              form: ctx.model.context.form,
+            });
+          } else {
+            ctx.model.resource.removeFilterGroup(labelFieldName);
+            paginationState.page = 1;
+          }
+        };
+
+        // 滚动分页加载
+        ctx.model.onPopupScroll = (e) => {
+          ctx.model.dispatchEvent('popupScroll', {
+            event: e,
+            apiClient: ctx.app.apiClient,
+          });
+        };
+
+        // 搜索
+        ctx.model.onSearch = (searchText) => {
+          ctx.model.dispatchEvent('search', {
+            searchText,
+            apiClient: ctx.app.apiClient,
+          });
+        };
+
+        // 懒加载（点击展开节点）
+        ctx.model.onLoadData = async (selectedOptions) => {
+          const targetOption = selectedOptions[selectedOptions.length - 1];
+          ctx.model.dispatchEvent('loadChildren', {
+            targetOption,
+            apiClient: ctx.app.apiClient,
+          });
+        };
+      },
+    },
+  },
+});
+
+/** --------------------------- 下拉展开加载根节点 --------------------------- */
+CascadeSelectFieldModel.registerFlow({
+  key: 'dropdownOpenSettings',
+  on: 'dropdownOpen',
+  steps: {
+    loadData: {
+      async handler(ctx) {
+        const resource = ctx.model.resource;
+        const options = ctx.model.getDataSource();
+        resource.setPage(1);
+        resource.setRequestParameters({ tree: true });
+        await ctx.model.applyFlow('selectSettings');
+        await resource.refresh();
+
+        const data = resource.getData().map((item) => ({
+          ...item,
+          isLeaf: !item.children?.length,
+          children: item.children,
+        }));
+        ctx.model.setDataSource(data);
+        paginationState.hasMore = data.length >= paginationState.pageSize;
+        paginationState.page = 2;
+      },
+    },
+  },
+});
+
+/** --------------------------- 滚动分页加载 --------------------------- */
+CascadeSelectFieldModel.registerFlow({
+  key: 'popupScrollSettings',
+  on: 'popupScroll',
+  steps: {
+    loadData: {
+      async handler(ctx) {
+        const event = ctx.inputArgs?.event;
+        const { scrollTop, scrollHeight, clientHeight } = event.target;
+        if (scrollTop + clientHeight < scrollHeight - 20) return;
+        if (paginationState.loading || !paginationState.hasMore) return;
+
+        paginationState.loading = true;
+        try {
+          const resource = ctx.model.resource;
+          resource.setPage(paginationState.page);
+          await resource.refresh();
+          const data = resource.getData().map((item) => ({
+            label: item[ctx.model.props.fieldNames.label],
+            value: item[ctx.model.props.fieldNames.value],
+            isLeaf: item.hasChildren === false,
+          }));
+
+          const current = ctx.model.getDataSource() || [];
+          ctx.model.setDataSource([...current, ...data]);
+          if (data.length < paginationState.pageSize) {
+            paginationState.hasMore = false;
+          } else {
+            paginationState.page++;
+          }
+        } finally {
+          paginationState.loading = false;
+        }
+      },
+    },
+  },
+});
+
+/** --------------------------- 子节点懒加载逻辑 --------------------------- */
+CascadeSelectFieldModel.registerFlow({
+  key: 'loadChildrenSettings',
+  on: 'loadChildren',
+  steps: {
+    loadChildren: {
+      async handler(ctx) {
+        const { targetOption } = ctx.inputArgs;
+        const resource = ctx.model.resource;
+        const labelFieldName = ctx.model.props.fieldNames.label;
+        const valueFieldName = ctx.model.props.fieldNames.value;
+
+        targetOption.loading = true;
+
+        // 根据父节点 value 添加过滤条件
+        resource.setPage(1);
+        resource.addFilterGroup(valueFieldName, {
+          [`parent_id.$eq`]: targetOption.value,
+        });
+
+        await resource.refresh();
+        const data = resource.getData().map((item) => ({
+          label: item[labelFieldName],
+          value: item[valueFieldName],
+          isLeaf: item.hasChildren === false,
+        }));
+
+        // 挂载子节点
+        targetOption.loading = false;
+        targetOption.children = data;
+
+        // 更新全局 options 引用以触发渲染
+        ctx.model.setDataSource([...ctx.model.getDataSource()]);
+      },
+    },
+  },
+});
+
+/** --------------------------- 搜索 --------------------------- */
+async function originalHandler(ctx) {
+  try {
+    const resource = ctx.model.resource;
+    const labelFieldName = ctx.model.props.fieldNames.label;
+    const targetCollection = ctx.model.collectionField.targetCollection;
+    const targetLabelField = targetCollection.getField(labelFieldName);
+    const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+      targetLabelField.options.interface,
+    );
+    const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
+    const searchText = ctx.inputArgs.searchText?.trim();
+    const key = `${labelFieldName}.${operator}`;
+
+    if (searchText === '') {
+      resource.removeFilterGroup(labelFieldName);
+    } else {
+      resource.setPage(1);
+      resource.addFilterGroup(labelFieldName, { [key]: searchText });
+    }
+
+    await resource.refresh();
+    const data = resource.getData().map((item) => ({
+      label: item[labelFieldName],
+      value: item[ctx.model.props.fieldNames.value],
+      isLeaf: item.hasChildren === false,
+    }));
+
+    ctx.model.setDataSource(data);
+    paginationState.hasMore = data.length >= paginationState.pageSize;
+    paginationState.page = 2;
+  } catch (error) {
+    console.error('CascadeSelectField search error:', error);
+    ctx.model.setDataSource([]);
+  }
+}
+
+const debouncedHandler = debounce(originalHandler, 500);
+
+CascadeSelectFieldModel.registerFlow({
+  key: 'searchSettings',
+  on: 'search',
+  steps: {
+    searchData: {
+      handler: debouncedHandler,
+    },
+  },
+});
+
+/** --------------------------- 初始化 Resource --------------------------- */
+CascadeSelectFieldModel.registerFlow({
+  key: 'recordSelectSettings',
+  sort: 200,
+  steps: {
+    init: {
+      handler(ctx) {
+        const resource = ctx.createResource(MultiRecordResource);
+        const collectionField = ctx.model.context.collectionField;
+        const { target, dataSourceKey } = collectionField;
+        resource.setDataSourceKey(dataSourceKey);
+        resource.setResourceName(target);
+        resource.setPageSize(paginationState.pageSize);
+        const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
+        if (isOToAny) {
+          const key = `${collectionField.foreignKey}.$is`;
+          resource.addFilterGroup(collectionField.name, { [key]: null });
+        }
+        ctx.model.resource = resource;
+      },
+    },
+  },
+});
+
+/** --------------------------- 可视化配置 --------------------------- */
+CascadeSelectFieldModel.registerFlow({
+  key: 'selectSettings',
+  title: escapeT('Cascade select settings'),
+  sort: 800,
+  steps: {
+    fieldNames: { use: 'titleField' },
+    dataScope: { use: 'dataScope' },
+    sortingRule: { use: 'sortingRule' },
+    allowMultiple: {
+      title: escapeT('Allow multiple'),
+      uiSchema(ctx) {
+        if (ctx.collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)) {
+          return {
+            allowMultiple: {
+              'x-component': 'Switch',
+              type: 'boolean',
+              'x-decorator': 'FormItem',
+            },
+          };
+        }
+        return null;
+      },
+      defaultParams(ctx) {
+        return {
+          allowMultiple:
+            ctx.collectionField &&
+            ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.model.context.collectionField.type),
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowMultiple: params?.allowMultiple,
+        });
+      },
+    },
+  },
+});
+
+CascadeSelectFieldModel.define({
+  label: escapeT('Cascade select'),
 });
