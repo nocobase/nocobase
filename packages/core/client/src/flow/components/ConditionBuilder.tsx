@@ -10,7 +10,7 @@
 import { observer, useFlowContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { FilterGroup, LinkageFilterItem } from './filter';
-import { evaluateConditions, FilterGroupType } from '@nocobase/utils/client';
+import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 
 export const ConditionBuilder = observer(
   (props: { value: FilterGroupType; onChange: (value: FilterGroupType) => void }) => {
@@ -32,7 +32,7 @@ export const commonConditionHandler = (ctx, params) => {
     return ctx.app.jsonLogic.apply({ [operator]: [path, value] });
   };
 
-  if (!evaluateConditions(condition, evaluator)) {
+  if (!evaluateConditions(removeInvalidFilterItems(condition), evaluator)) {
     ctx.exit();
   }
 };
