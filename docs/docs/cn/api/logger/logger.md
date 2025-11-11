@@ -162,4 +162,4 @@ const transport = Transports.console({
 ## 相关文档
 
 - [开发指南 - 日志](/plugin-development/server/logger)
-- [日志](/ops-management/log-and-monitor/logger/index.md)
+- [日志](/log-and-monitor/logger/)
