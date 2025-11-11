@@ -204,7 +204,7 @@ export function removeInvalidFilterItems(filter: FilterGroupType): FilterGroupTy
     return false;
   });
 
-  return filter;
+  return { ...filter };
 }
 
 /**
