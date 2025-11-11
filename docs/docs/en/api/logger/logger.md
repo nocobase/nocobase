@@ -24,16 +24,16 @@ interface LoggerOptions
 
 #### Details
 
-| Property | Description |
-| :--- | :--- |
-| `dirname` | Log output directory |
-| `filename` | Log file name |
-| `format` | Log format |
-| `transports` | Log output method |
+| Property     | Description          |
+| :----------- | :------------------- |
+| `dirname`    | Log output directory |
+| `filename`   | Log file name        |
+| `format`     | Log format           |
+| `transports` | Log output method    |
 
 ### `createSystemLogger()`
 
-Creates system runtime logs printed in a specified method. Refer to [Logger - System Log](/ops-management/log-and-monitor/logger/index.md#system-log)
+Creates system runtime logs printed in a specified method. Refer to [Logger - System Log](/log-and-monitor/logger/index.md#system-log)
 
 #### Signature
 
@@ -49,8 +49,8 @@ export interface SystemLoggerOptions extends LoggerOptions {
 
 #### Details
 
-| Property | Description |
-| :--- | :--- |
+| Property        | Description                                     |
+| :-------------- | :---------------------------------------------- |
 | `seperateError` | Whether to output `error` level logs separately |
 
 ### `requestLogger()`
@@ -77,11 +77,11 @@ export interface RequestLoggerOptions extends LoggerOptions {
 
 #### Details
 
-| Property | Type | Description | Default |
-| :--- | :--- | :--- | :--- |
-| `skip` | `(ctx?: any) => Promise<boolean>` | Skips logging for certain requests based on the request context. | - |
-| `requestWhitelist` | `string[]` | Whitelist of request information to be printed in the log. | `[ 'action', 'header.x-role', 'header.x-hostname', 'header.x-timezone', 'header.x-locale','header.x-authenticator', 'header.x-data-source', 'referer']` |
-| `responseWhitelist` | `string[]` | Whitelist of response information to be printed in the log. | `['status']` |
+| Property            | Type                              | Description                                                      | Default                                                                                                                                                 |
+| :------------------ | :-------------------------------- | :--------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `skip`              | `(ctx?: any) => Promise<boolean>` | Skips logging for certain requests based on the request context. | -                                                                                                                                                       |
+| `requestWhitelist`  | `string[]`                        | Whitelist of request information to be printed in the log.       | `[ 'action', 'header.x-role', 'header.x-hostname', 'header.x-timezone', 'header.x-locale','header.x-authenticator', 'header.x-data-source', 'referer']` |
+| `responseWhitelist` | `string[]`                        | Whitelist of response information to be printed in the log.      | `['status']`                                                                                                                                            |
 
 ### app.createLogger()
 
@@ -162,4 +162,4 @@ const transport = Transports.console({
 ## Related Documentation
 
 - [Development Guide - Logger](/plugin-development/server/logger)
-- [Logger](/ops-management/log-and-monitor/logger/index.md)
+- [Logger](/log-and-monitor/logger/index.md)
