@@ -24,6 +24,7 @@ import {
   avatars,
 } from '@nocobase/plugin-ai/client';
 import type { EditorRef } from '@nocobase/client';
+import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 
 export const ConfigPanel: React.FC = () => {
   const t = useT();
@@ -81,6 +82,8 @@ export const ConfigPanel: React.FC = () => {
             mode: query?.mode,
             sql: query?.sql,
             collectionPath: query?.collectionPath,
+            // 新增：将当前 SQL 模式下的数据源暴露给 AI
+            sqlDatasource: query?.sqlDatasource,
           },
           chart: {
             option: {
@@ -120,8 +123,9 @@ export const ConfigPanel: React.FC = () => {
       return () => setEditorRef(uid, null);
     }, [uid]);
 
+    // 更新系统提示，明确使用当前数据源 key 执行 SQL
     const systemPrompt =
-      'If you are not in SQL/Custom mode, first call the tool viz.switchModes; after editing SQL, if you need field samples, call the tool viz.runQuery. Do not render chart previews directly in the chat window.';
+      'If you are not in SQL/Custom mode, first call the tool viz.switchModes; after editing SQL, if you need field samples, call the tool viz.runQuery. Use query.sqlDatasource as the current data source key when executing SQL. Do not render chart previews directly in the chat window.';
 
     const TaskTemplate = (prototype: Partial<any>) => {
       const { message, ...rest } = prototype;
@@ -160,6 +164,10 @@ export const ConfigPanel: React.FC = () => {
         form?.setValuesIn?.('chart.option.mode', 'custom');
         if (!form?.values?.chart?.option?.raw) {
           form?.setValuesIn?.('chart.option.raw', chartOptionDefaultValue);
+        }
+        // 新增：未设置数据源时初始化为默认数据源
+        if (!form?.values?.query?.sqlDatasource) {
+          form?.setValuesIn?.('query.sqlDatasource', DEFAULT_DATA_SOURCE_KEY);
         }
         await ctx.model.onPreview(form.values); // 轻量预览，不刷新数据
       }
