@@ -181,6 +181,32 @@ export function transformFilter(filter: FilterGroupType): QueryObject {
   return transformGroup(filter);
 }
 
+export function removeInvalidFilterItems(filter: FilterGroupType): FilterGroupType {
+  if (!filter || typeof filter !== 'object') {
+    throw new Error('Invalid filter: filter must be an object');
+  }
+
+  if (!isFilterGroup(filter)) {
+    throw new Error('Invalid filter: filter must have logic and items properties');
+  }
+
+  if (!Array.isArray(filter.items)) {
+    throw new Error('Invalid filter: items must be an array');
+  }
+
+  // 过滤掉无效的条件项
+  filter.items = filter.items.filter((item) => {
+    if (isFilterCondition(item)) {
+      return item.path && item.operator;
+    } else if (isFilterGroup(item)) {
+      return removeInvalidFilterItems(item);
+    }
+    return false;
+  });
+
+  return filter;
+}
+
 /**
  * 条件评估器函数类型
  *
