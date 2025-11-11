@@ -81,8 +81,6 @@ export const ConfigPanel: React.FC = () => {
           query: {
             mode: query?.mode,
             sql: query?.sql,
-            collectionPath: query?.collectionPath,
-            // 新增：将当前 SQL 模式下的数据源暴露给 AI
             sqlDatasource: query?.sqlDatasource,
           },
           chart: {
@@ -128,10 +126,11 @@ export const ConfigPanel: React.FC = () => {
       'If you are not in SQL/Custom mode, first call the tool viz.switchModes; after editing SQL, if you need field samples, call the tool viz.runQuery. Use query.sqlDatasource as the current data source key when executing SQL. Do not render chart previews directly in the chat window.';
 
     const TaskTemplate = (prototype: Partial<any>) => {
-      const { message, ...rest } = prototype;
+      const { message, user, ...rest } = prototype;
       return {
         message: {
-          user: message?.user,
+          // 修复：兼容顶层 user 与 message.user，确保可预填消息
+          user: message?.user ?? user ?? '',
           system: systemPrompt,
           workContext: [
             {
@@ -148,36 +147,29 @@ export const ConfigPanel: React.FC = () => {
     };
 
     const tasks = [
-      TaskTemplate({ title: t('选择合适图表并说明理由'), user: t('请根据数据结构推荐图表类型并解释原因') }),
-      TaskTemplate({ title: t('根据数据列自动映射'), user: t('请根据字段列映射 X/Y/分类/值并生成 ECharts options') }),
-      TaskTemplate({ title: t('优化视觉编码'), user: t('请优化颜色、排序与聚合，并输出最终 JSON') }),
-      TaskTemplate({ title: t('修复预览错误/字段不匹配'), user: t('修复错误或字段不匹配问题，并输出最终 JSON') }),
+      TaskTemplate({
+        title: t('Choose the appropriate chart'),
+        user: t('Recommend chart type by data structure and explain reasons'),
+      }),
+      TaskTemplate({
+        title: t('Auto map by data columns'),
+        user: t('Map X/Y/category/value by columns and generate ECharts options'),
+      }),
+      TaskTemplate({
+        title: t('Optimize visual encoding'),
+        user: t('Optimize color, ordering and aggregation, output ECharts options'),
+      }),
+      TaskTemplate({
+        title: t('Fix preview errors or field mismatch'),
+        user: t('Fix errors or field mismatch, output SQL or ECharts options'),
+      }),
     ];
 
     const onClick = async () => {
-      const needSwitch =
-        form?.values?.query?.mode !== 'sql' ||
-        form?.values?.chart?.option?.mode !== 'custom' ||
-        !form?.values?.chart?.option?.raw;
-      if (needSwitch) {
-        form?.setValuesIn?.('query.mode', 'sql');
-        form?.setValuesIn?.('chart.option.mode', 'custom');
-        if (!form?.values?.chart?.option?.raw) {
-          form?.setValuesIn?.('chart.option.raw', chartOptionDefaultValue);
-        }
-        // 新增：未设置数据源时初始化为默认数据源
-        if (!form?.values?.query?.sqlDatasource) {
-          form?.setValuesIn?.('query.sqlDatasource', DEFAULT_DATA_SOURCE_KEY);
-        }
-        await ctx.model.onPreview(form.values); // 轻量预览，不刷新数据
-      }
-
-      // 首次打开/切换员工时，先触发 triggerTask（内部会 clear），避免清空已插入的上下文
+      // 移除手动切换 SQL/Custom 模式的逻辑，交由 AI 工具或 Apply to Editor 处理
       if (aiEmployee && (!open || currentEmployee?.username !== aiEmployee.username)) {
         await triggerTask({ aiEmployee, tasks });
       }
-
-      // 再插入上下文（去重逻辑会保障不会重复）
       setCurrentEditorRefUid(uid);
       addContextItems({
         type: 'chart-config',

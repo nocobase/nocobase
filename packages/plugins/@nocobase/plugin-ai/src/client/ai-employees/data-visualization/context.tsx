@@ -25,8 +25,7 @@ export const chartConfigWorkContext: WorkContextOptions = {
       query: {
         mode: values?.query?.mode,
         sql: values?.query?.sql,
-        // TODO sql 选择 datasource
-        collectionPath: values?.query?.collectionPath,
+        sqlDatasource: values?.query?.sqlDatasource,
       },
       chart: {
         option: {
