@@ -8,11 +8,11 @@
  */
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { FloatButton, Avatar, Dropdown, Button, Divider } from 'antd';
+import { Avatar, Dropdown, Button, Divider } from 'antd';
 import icon from '../icon.svg';
 import { css } from '@emotion/css';
 import { AIEmployeeListItem } from '../AIEmployeeListItem';
-import { RightOutlined, LeftOutlined, HolderOutlined } from '@ant-design/icons';
+import { RightOutlined, LeftOutlined } from '@ant-design/icons';
 import { useMobileLayout, useToken } from '@nocobase/client';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatBoxActions } from './hooks/useChatBoxActions';
@@ -28,6 +28,7 @@ import { useChatConversationOptions } from './hooks/useChatConversationOptions';
 export const ChatButton: React.FC = observer(() => {
   const ctx = useFlowContext<FlowRuntimeContext>();
   const { isMobileLayout } = useMobileLayout();
+  const isV2Page = ctx.pageInfo.version === 'v2';
   ctx.engine.flowSettings.on('beforeOpen', (event) => {
     if (event?.model instanceof AIEmployeeShortcutModel) {
       return;
@@ -94,7 +95,8 @@ export const ChatButton: React.FC = observer(() => {
   }
 
   return (
-    !isMobileLayout && (
+    !isMobileLayout &&
+    isV2Page && (
       <div
         className={css`
           z-index: 1050;
