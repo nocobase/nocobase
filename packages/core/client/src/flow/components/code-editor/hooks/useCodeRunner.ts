@@ -73,9 +73,6 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         const preferFlowKeys = ['jsSettings', 'clickSettings'] as const;
         const availableKey = preferFlowKeys.find((k) => (runtimeModel as any)?.getFlow?.(k));
         const flowKey = availableKey || 'jsSettings';
-
-        // 统一：先将用户代码做 JSX 预编译（即使后续 handler 内部也会编译一次，重复编译是幂等的）
-        // 这样可以保证预览路径在任意场景下都拿到“可执行”的 JS 字符串，避免 JSX/TS 语法导致的语法报错。
         const compiledForPreview = await compileRunJs(code);
 
         // 将预览中的（已编译）代码写入对应 flow 的 stepParams，确保 handler 能拿到最新代码
