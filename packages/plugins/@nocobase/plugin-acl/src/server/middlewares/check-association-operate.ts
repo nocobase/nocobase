@@ -25,7 +25,7 @@ export async function checkAssociationOperate(ctx: Context, next: Next) {
     ctx.throw(403, 'No permissions');
   }
   const params = result.params || ctx.acl.fixedParamsManager.getParams(resourceName, actionName);
-  if (params && !params.whitelist?.includes(association)) {
+  if (params?.whitelist && !params.whitelist?.includes(association)) {
     ctx.throw(403, 'No permissions');
   }
   ctx.permission = {
