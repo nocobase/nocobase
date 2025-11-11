@@ -74,8 +74,12 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         const availableKey = preferFlowKeys.find((k) => (runtimeModel as any)?.getFlow?.(k));
         const flowKey = availableKey || 'jsSettings';
 
-        // 将预览中的代码写入对应 flow 的 stepParams，确保 handler 能拿到最新代码
-        runtimeModel.setStepParams?.(flowKey, 'runJs', { code, version });
+        // 统一：先将用户代码做 JSX 预编译（即使后续 handler 内部也会编译一次，重复编译是幂等的）
+        // 这样可以保证预览路径在任意场景下都拿到“可执行”的 JS 字符串，避免 JSX/TS 语法导致的语法报错。
+        const compiledForPreview = await compileRunJs(code);
+
+        // 将预览中的（已编译）代码写入对应 flow 的 stepParams，确保 handler 能拿到最新代码
+        runtimeModel.setStepParams?.(flowKey, 'runJs', { code: compiledForPreview, version });
 
         // Monkey-patch JSRunner.run to inject captureConsole into globals for all runjs calls during preview
         type JSRunnerPrototype = { run: JSRunner['run'] };
@@ -116,20 +120,23 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
           if (!flow) {
             // 无可用流程（典型场景：联动规则里的 RunJS 预览），直接在当前上下文执行代码
             const navigator = createSafeNavigator();
-            const compiled = await compileRunJs(code);
             await hostCtx.runjs(
-              compiled,
+              compiledForPreview,
               { window: createSafeWindow({ navigator }), document: createSafeDocument(), navigator },
               { version },
             );
           } else if (typeof eventName === 'string') {
-            await m.dispatchEvent(eventName, { preview: { code, version } }, { sequential: true, useCache: false });
+            await m.dispatchEvent(
+              eventName,
+              { preview: { code: compiledForPreview, version } },
+              { sequential: true, useCache: false },
+            );
           } else if (isManual) {
-            await m.applyFlow(flowKey, { preview: { code, version } });
+            await m.applyFlow(flowKey, { preview: { code: compiledForPreview, version } });
           } else {
             await m.dispatchEvent(
               'beforeRender',
-              { preview: { code, version } },
+              { preview: { code: compiledForPreview, version } },
               { sequential: true, useCache: false },
             );
           }
