@@ -13,12 +13,20 @@ pkg: "@nocobase/plugin-field-encryption"
 ## 加密方式
 
 :::warning
-插件会自动生成一个`应用密钥`，该密钥保存在 `/storage/encryption-field-keys` 目录中。
+插件会自动生成一个`应用密钥`，该密钥保存在 `/storage/apps/main/encryption-field-keys` 目录中。
 
 `应用密钥`文件名为密钥 ID ，后缀名为 `.key` ，请勿随意修改文件名。
 
 请妥善保管`应用密钥`文件，如果丢失`应用密钥`文件，加密数据将无法解密。
+
+如果是子应用开启了插件，密钥默认保存目录为 `/storage/apps/${子应用name}/encryption-field-keys`
 :::
+
+### 工作原理
+
+采用信封加密的方式
+
+![20251111151740](https://static-docs.nocobase.com/20251111151740.png)
 
 ### 密钥创建流程
 1. 第一次创建加密字段时，系统会自动生成一个 32 位`应用密钥`，以 base64 编码的方式保存到默认存储目录中。
@@ -63,6 +71,10 @@ ENCRYPTION_FIELD_KEY_PATH=/path/to/my/app-keys/270263524860909922913.key
 
 ## 密钥轮转
 
+:::warning
+使用密钥轮转命令 `nocobase key-rotation` 前先确认应用已经启用本插件。
+:::
+
 应用迁移到新的环境后，不想继续使用和旧环境相同的密钥时，可以使用 `nocobase key-rotation` 命令替换`应用密钥`。
 
 运行密钥轮转命令需要指定旧环境的应用密钥，命令运行后将会生成新的应用密钥，并替换旧密钥。新的应用密钥以 base64 编码的方式保存到默认存储目录中。
@@ -70,4 +82,11 @@ ENCRYPTION_FIELD_KEY_PATH=/path/to/my/app-keys/270263524860909922913.key
 ```bash
 # --key-path 指定的是和数据库加密数据对应的旧环境的应用密钥文件
  yarn nocobase key-rotation --key-path /path/to/old-app-keys/270263524860909922913.key
+```
+
+如果是替换子应用 `应用密钥` 需要添加 `--app-name` 参数，指定子应用 `name`
+
+```bash
+# --key-path 指定的是和数据库加密数据对应的旧环境的应用密钥文件
+ yarn nocobase key-rotation --app-name a_w0r211vv0az --key-path /path/to/old-app-keys/270263524860909922913.key
 ```
