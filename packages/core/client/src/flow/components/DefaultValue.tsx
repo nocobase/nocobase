@@ -265,6 +265,10 @@ export const DefaultValue = connect((props: Props) => {
       const key = `${init.dataSourceKey}.${init.collectionName}.${init.fieldPath}`;
       collectionField = model?.context?.dataSourceManager?.getCollectionField?.(key);
     }
+    // 再次回退：直接使用宿主上下文上的 collectionField（在很多配置面板场景可用）
+    if (!collectionField) {
+      collectionField = (host as any)?.context?.collectionField;
+    }
     // 如果 origin 是一个具体的字段子模型（例如筛选表单中的日期动态组件），优先沿用该模型的类，
     // 这样“默认值”编辑器就能与真实字段保持一致（避免总是退化为普通可编辑模型）。
     const PreferredClassFromOrigin = (origin as any)?.constructor as any;
@@ -287,9 +291,13 @@ export const DefaultValue = connect((props: Props) => {
     const BoundClass = editableBinding
       ? (model?.context?.engine?.getModelClass?.(editableBinding.modelName) as any)
       : null;
-    // 选择优先级：origin 的类 > 可编辑绑定类 > 兜底类
-    const BaseClass =
-      (typeof PreferredClassFromOrigin === 'function' && PreferredClassFromOrigin) || BoundClass || FallbackClass;
+    // 当来源是筛选字段（类名以 FilterFieldModel 结尾）时优先采用来源类，否则采用可编辑绑定类
+    const originIsFilterField =
+      typeof (PreferredClassFromOrigin as any)?.name === 'string' &&
+      /FilterFieldModel$/.test((PreferredClassFromOrigin as any).name);
+    const BaseClass = originIsFilterField
+      ? PreferredClassFromOrigin
+      : BoundClass || (typeof PreferredClassFromOrigin === 'function' && PreferredClassFromOrigin) || FallbackClass;
     const TempFieldClass = createTempFieldClass(BaseClass);
     const fieldSub = {
       use: TempFieldClass,
@@ -336,17 +344,21 @@ export const DefaultValue = connect((props: Props) => {
         const { disabled, readOnly, readPretty, pattern, ...rest } = inputProps || {};
         // 关联字段的选择值需要传入记录对象而不是 antd Option
         const isAssociation = !!fieldModel?.context?.collectionField?.isAssociationField?.();
-        const toRecordValue = (v: any) => {
-          if (Array.isArray(v)) return v.map((i) => (i && typeof i === 'object' && 'data' in i ? i.data : i));
-          return v && typeof v === 'object' && 'data' in v ? (v as any).data : v;
+        // 利用类型守卫避免不必要的 any
+        const hasData = (val: unknown): val is { data: unknown } =>
+          !!val && typeof val === 'object' && 'data' in (val as Record<string, unknown>);
+        const toRecordValue = (v: unknown) => {
+          if (Array.isArray(v)) return v.map((i) => (hasData(i) ? i.data : i));
+          return hasData(v) ? v.data : v;
         };
-        // 是否为日期筛选类字段（需要受控 value 才能正确显示）
-        const originalUse = (fieldModel as any)?._originalModel?.use;
-        const isDateTimeLike =
-          typeof originalUse === 'string' &&
-          /(DateTimeFilterFieldModel|DateOnlyFilterFieldModel|DateTimeNoTzFilterFieldModel|DateTimeTzFilterFieldModel)$/.test(
-            originalUse,
-          );
+        // 基于字段接口判断是否需要受控：
+        // - 文本类（input/longText/richText）保持非受控，避免 IME 问题
+        // - 其他类型（包含日期/时间/枚举/布尔/关联等）统一受控
+        const fieldInterfaceRaw = fieldModel?.context?.collectionField?.interface;
+        const fieldInterface = typeof fieldInterfaceRaw === 'string' ? fieldInterfaceRaw : undefined;
+        const isTextLike = fieldInterface
+          ? ['input', 'longText', 'richText'].includes(fieldInterface)
+          : fieldModel instanceof InputFieldModel;
         // 将 VariableInput 提供的受控属性透传到临时字段模型上，确保受控生效
         // - value: 由 VariableInput 控制
         // - onChange: 回传给 VariableInput，从而驱动 Formily/外层表单值
@@ -368,17 +380,18 @@ export const DefaultValue = connect((props: Props) => {
         // 始终保持可编辑
         fieldModel.setPattern?.('editable');
 
-        // 首次挂载时，将当前值作为默认显示值，确保重新打开能回显上次保存的常量
+        // 首次挂载时，使用 DefaultValue 外层传入的 value 作为默认显示值
         if (!initializedRef.current) {
           initializedRef.current = true;
-          const initial = (rest?.value ?? inputProps?.value) as any;
+          const initial = value;
           if (typeof initial !== 'undefined') {
             fieldModel.setProps({ defaultValue: initial });
           }
         }
-        // 需要受控的场景下（关联字段、日期筛选等）同步 value 才能正确显示
-        if (isAssociation || isDateTimeLike) {
-          const current = (rest?.value ?? inputProps?.value) as any;
+        // 非文本类统一受控；文本类不受控（仅初始化 defaultValue）。
+        // 受控值也取自 DefaultValue 外层的 value。
+        if (!isTextLike) {
+          const current = value;
           if (typeof current !== 'undefined') {
             fieldModel.setProps({ value: toRecordValue(current) });
           }
