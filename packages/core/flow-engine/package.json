@@ -19,7 +19,8 @@
     "slate-history": "^0.109.0",
     "slate-react": "^0.110.3",
     "sucrase": "^3.35.0",
-    "uid": "^2.0.2"
+    "uid": "^2.0.2",
+    "dayjs": "^1.11.9"
   },
   "peerDependencies": {
     "react": ">=18"
