@@ -22,7 +22,10 @@ export class ExpandCollapseActionModel extends ActionModel {
   }
 
   getTitle() {
-    return this.expandFlag ? 'Collapse' : 'Expand';
+    return this.expandFlag ? this.context.t('Collapse all') : this.context.t('Expand all');
+  }
+  getIcon() {
+    return this.expandFlag ? 'NodeCollapseOutlined' : 'NodeExpandOutlined';
   }
 }
 
