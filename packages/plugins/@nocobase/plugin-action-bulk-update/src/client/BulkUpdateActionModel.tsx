@@ -73,7 +73,6 @@ export class BulkUpdateActionModel extends ActionModel<{
 }> {
   static scene = ActionSceneEnum.collection;
   assignFormUid?: string;
-
   defaultProps: ButtonProps = {
     title: escapeT('Bulk update'),
     icon: 'EditOutlined',
@@ -170,6 +169,7 @@ BulkUpdateActionModel.registerFlow({
         const savedConfirm = ctx.model.getStepParams(SETTINGS_FLOW_KEY, 'confirm');
         const confirmParams = savedConfirm && typeof savedConfirm === 'object' ? savedConfirm : { enable: false };
         await ctx.runAction('confirm', confirmParams);
+
         const assignedValues = params?.assignedValues || {};
         if (!assignedValues || typeof assignedValues !== 'object' || !Object.keys(assignedValues).length) {
           ctx.message.warning(ctx.t('No assigned fields configured'));
@@ -192,10 +192,22 @@ BulkUpdateActionModel.registerFlow({
           const filterKey = ctx.collection?.filterTargetKey || pk || 'id';
           const ids = rows.map((r) => ctx.collection.getFilterByTK(r)).filter((v) => v != null);
           const filter = { $and: [{ [filterKey]: { $in: ids } }] };
+          ctx.model.setProps({
+            loading: true,
+          });
           await ctx.api.resource(collection).update({ filter, values: assignedValues });
+          ctx.model.setProps({
+            loading: false,
+          });
         } else {
           // 整表（无筛选条件时需要 forceUpdate 通过校验）
+          ctx.model.setProps({
+            loading: true,
+          });
           await ctx.api.resource(collection).update({ values: assignedValues, forceUpdate: true });
+          ctx.model.setProps({
+            loading: false,
+          });
         }
 
         ctx.blockModel?.resource?.refresh?.();
