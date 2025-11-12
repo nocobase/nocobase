@@ -691,9 +691,12 @@ const HighPerformanceTable = React.memo(
     }, [model, selectedRowKeys]);
     const handleChange = useCallback(
       (pagination) => {
-        console.log('onChange pagination:', pagination);
+        if (model.resource.getPageSize() !== pagination.pageSize) {
+          model.resource.setPage(1);
+        } else {
+          model.resource.setPage(pagination.current);
+        }
         model.resource.loading = true;
-        model.resource.setPage(pagination.current);
         model.resource.setPageSize(pagination.pageSize);
         model.resource.refresh();
       },
@@ -738,6 +741,11 @@ const HighPerformanceTable = React.memo(
         onChange={handleChange}
         rowClassName={rowClassName}
         onRow={onRow}
+        className={css`
+          .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
+            display: inline;
+          }
+        `}
       />
     );
   },

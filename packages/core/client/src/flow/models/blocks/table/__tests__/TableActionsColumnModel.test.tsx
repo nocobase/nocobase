@@ -8,12 +8,50 @@
  */
 
 import React from 'react';
-import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@nocobase/test/client';
 import { App, ConfigProvider } from 'antd';
-import { FlowEngine, FlowEngineProvider, FlowModelRenderer } from '@nocobase/flow-engine';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
 import { ActionModel } from '../../../base/ActionModel';
 import { TableActionsColumnModel } from '../TableActionsColumnModel';
+
+const capturedDroppableUids: string[] = [];
+const capturedRendererProps: any[] = [];
+let latestOnDragEnd: ((event: any) => void) | undefined;
+const capturedDndProviders: Array<{ persist: boolean }> = [];
+
+vi.mock('@nocobase/flow-engine', async () => {
+  const actual = await vi.importActual<any>('@nocobase/flow-engine');
+  return {
+    ...actual,
+    DndProvider: ({ children, onDragEnd, persist = true, ...restProps }) => {
+      const engine = actual.useFlowEngine();
+      const handleDragEnd = (event: any) => {
+        if (onDragEnd) {
+          onDragEnd(event);
+        } else if (event?.over) {
+          engine.moveModel(event.active?.id, event.over?.id, { persist });
+        }
+      };
+      latestOnDragEnd = handleDragEnd;
+      capturedDndProviders.push({ persist });
+      return (
+        <div data-test-dnd-provider {...restProps}>
+          {children}
+        </div>
+      );
+    },
+    Droppable: ({ model, children }) => {
+      capturedDroppableUids.push(model.uid);
+      return <div data-test-droppable={model.uid}>{children}</div>;
+    },
+    FlowModelRenderer: (props) => {
+      capturedRendererProps.push(props);
+      const ActualFlowModelRenderer = actual.FlowModelRenderer;
+      return <ActualFlowModelRenderer {...props} />;
+    },
+  };
+});
 
 class TestViewActionModel extends ActionModel {
   defaultProps: any = { type: 'link', title: 'View' };
@@ -81,5 +119,127 @@ describe('TableActionsColumnModel: pass record via inputArgs to FlowModelRendere
       },
       { timeout: 5000 },
     );
+  });
+});
+
+describe('TableActionsColumnModel: drag integration', () => {
+  beforeEach(() => {
+    capturedDroppableUids.length = 0;
+    capturedRendererProps.length = 0;
+    capturedDndProviders.length = 0;
+    latestOnDragEnd = undefined;
+  });
+
+  it('wraps header and each action with Droppable inside DndProvider', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ TableActionsColumnModel, TestViewActionModel });
+
+    const actionsCol = engine.createModel<TableActionsColumnModel>({
+      use: 'TableActionsColumnModel',
+      props: { width: 200, title: 'Actions' },
+      subModels: { actions: [{ use: 'TestViewActionModel' }, { use: 'TestViewActionModel' }] },
+    });
+
+    const colProps = actionsCol.getColumnProps();
+    const record = { id: 1, phone: '000000' } as any;
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <>
+              {colProps.title as React.ReactNode}
+              {colProps.render?.(undefined, record, 0) as any}
+            </>
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('View').length).toBe(2);
+    });
+
+    const actionUids = actionsCol.mapSubModels('actions', (action) => action.uid);
+    expect(capturedDroppableUids).toEqual([actionsCol.uid, ...actionUids]);
+    expect(capturedDndProviders.length).toBe(1);
+    expect(capturedDndProviders[0].persist).toBe(true);
+  });
+
+  it('injects drag toolbar item and binds record context on action forks', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ TableActionsColumnModel, TestViewActionModel });
+
+    const actionsCol = engine.createModel<TableActionsColumnModel>({
+      use: 'TableActionsColumnModel',
+      props: { width: 200, title: 'Actions' },
+      subModels: { actions: [{ use: 'TestViewActionModel' }] },
+    });
+
+    const colProps = actionsCol.getColumnProps();
+    const record = { id: 1, phone: '000000', name: 'John' } as any;
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>{colProps.render?.(undefined, record, 0) as any}</App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('View')).toBeInTheDocument();
+    });
+
+    const rendererProps = capturedRendererProps.at(-1);
+    expect(rendererProps).toBeDefined();
+    if (!rendererProps) {
+      throw new Error('FlowModelRenderer props missing for drag integration test');
+    }
+    expect(rendererProps.extraToolbarItems).toEqual(
+      expect.arrayContaining([expect.objectContaining({ key: 'drag-handler', sort: 1 })]),
+    );
+
+    const forkModel = rendererProps.model as ActionModel;
+    expect((forkModel.context as any).record).toBe(record);
+    expect((forkModel.context as any).recordIndex).toBe(0);
+  });
+
+  it('uses default moveModel behaviour when drag ends and no custom handler supplied', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ TableActionsColumnModel, TestViewActionModel });
+
+    const actionsCol = engine.createModel<TableActionsColumnModel>({
+      use: 'TableActionsColumnModel',
+      props: { width: 200, title: 'Actions' },
+      subModels: { actions: [{ use: 'TestViewActionModel' }, { use: 'TestViewActionModel' }] },
+    });
+
+    const colProps = actionsCol.getColumnProps();
+    const record = { id: 1, phone: '000000' } as any;
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>{colProps.render?.(undefined, record, 0) as any}</App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getAllByText('View').length).toBeGreaterThan(0);
+    });
+
+    const moveModelSpy = vi.spyOn(engine, 'moveModel');
+    const [firstUid, secondUid] = actionsCol.mapSubModels('actions', (action) => action.uid);
+
+    expect(latestOnDragEnd).toBeTypeOf('function');
+    if (!latestOnDragEnd) {
+      throw new Error('DndProvider did not expose onDragEnd handler');
+    }
+
+    latestOnDragEnd({ active: { id: firstUid }, over: { id: secondUid } });
+
+    expect(moveModelSpy).toHaveBeenCalledWith(firstUid, secondUid, { persist: true });
   });
 });
