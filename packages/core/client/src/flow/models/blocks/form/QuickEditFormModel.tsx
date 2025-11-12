@@ -114,6 +114,9 @@ export class QuickEditFormModel extends FlowModel {
       resolveOnServer: true,
       meta: recordMeta,
     });
+    this.context.defineProperty('collection', {
+      get: () => this.collection,
+    });
   }
 
   addAppends(fieldPath: string, refresh = false) {
