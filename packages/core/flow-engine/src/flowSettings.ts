@@ -618,6 +618,9 @@ export class FlowSettings {
         const flowRuntimeContext = new FlowRuntimeContext(model as any, fk, 'settings');
         setupRuntimeContextSteps(flowRuntimeContext as any, flow.steps, model as any, fk);
         flowRuntimeContext.defineProperty('currentStep', { value: step });
+        flowRuntimeContext.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
+          return forms.get(keyOf({ flowKey, stepKey }))?.values;
+        });
 
         // 解析默认值 + 当前参数
         const modelStepParams = (model as any).getStepParams(fk, sk) || {};

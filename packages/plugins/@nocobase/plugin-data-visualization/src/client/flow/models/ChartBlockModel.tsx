@@ -16,6 +16,7 @@ import { useT, tStr } from '../../locale';
 import { convertDatasetFormats, sleep, debugLog } from '../utils';
 import { Chart, ChartOptions } from './Chart';
 import { ConfigPanel } from './ConfigPanel';
+import { DaraButton } from '../components/DaraButton';
 import { ChartResource } from '../resources/ChartResource';
 import { genRawByBuilder } from './ChartOptionsBuilder.service';
 import { configStore } from './config-store';
@@ -366,6 +367,7 @@ ChartBlockModel.registerFlow({
               useChatBoxStore.getState().setOpen(false);
             }
           },
+          header: { extra: <DaraButton ctx={ctx} /> },
           footer: (originNode, { OkBtn }) => (
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
               <CancelButton style={{ marginRight: 6 }} />
