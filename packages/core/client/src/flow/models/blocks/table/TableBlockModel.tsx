@@ -741,6 +741,11 @@ const HighPerformanceTable = React.memo(
         onChange={handleChange}
         rowClassName={rowClassName}
         onRow={onRow}
+        className={css`
+          .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
+            display: inline;
+          }
+        `}
       />
     );
   },
