@@ -797,7 +797,6 @@ const HighPerformanceTable = React.memo(
         },
       };
     }, [rowKeys]);
-    console.log(rowKeys);
     return (
       <MemoizedTable
         components={model.components}
@@ -815,6 +814,7 @@ const HighPerformanceTable = React.memo(
         onRow={onRow}
         defaultExpandAllRows={defaultExpandAllRows}
         expandable={expandable}
+        indentSize={10}
       />
     );
   },

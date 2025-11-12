@@ -74,9 +74,8 @@ ExpandCollapseActionModel.registerFlow({
           return;
         }
         const resource = ctx.blockModel.resource as MultiRecordResource;
-        const { expandedRowKeys, treeTable } = ctx.blockModel.props;
+        const { treeTable } = ctx.blockModel.props;
         if (treeTable) {
-          console.log(ctx.model.props);
           if (!ctx.model.expandFlag) {
             const ids = allIncludesChildren(resource.getData());
             ctx.blockModel.setProps({
