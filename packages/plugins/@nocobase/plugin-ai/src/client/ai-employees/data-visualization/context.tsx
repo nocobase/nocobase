@@ -32,6 +32,10 @@ export const chartConfigWorkContext: WorkContextOptions = {
           mode: values?.chart?.option?.mode,
           raw: values?.chart?.option?.raw,
         },
+        events: {
+          mode: values?.chart?.events?.mode,
+          raw: values?.chart?.events?.raw,
+        },
       },
     };
     return JSON.stringify(payload, null, 2);

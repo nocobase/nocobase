@@ -74,6 +74,13 @@ export const ConfigPanel: React.FC = () => {
       return ctx.model.onPreview(form.values);
     };
 
+    // 新增：写入事件脚本到 chart.events.raw
+    const writeChartEvents = (content: string) => {
+      form?.setValuesIn?.('chart.events.mode', 'custom');
+      form?.setValuesIn?.('chart.events.raw', content);
+      return ctx.model.onPreview(form.values);
+    };
+
     const panelRef: EditorRef = {
       read() {
         const payload = {
@@ -87,6 +94,11 @@ export const ConfigPanel: React.FC = () => {
             option: {
               mode: chart?.option?.mode,
               raw: chart?.option?.raw,
+            },
+            // 新增：将当前事件脚本提供给 AI 读取
+            events: {
+              mode: chart?.events?.mode,
+              raw: chart?.events?.raw,
             },
           },
         };
@@ -102,8 +114,14 @@ export const ConfigPanel: React.FC = () => {
               content,
             ) && !/return\s*\{/.test(content);
 
+          // 新增：判定为事件脚本（包含 chart.on/off 或 ctx.openView 等），且不含 return {...}（避免误判为 option）
+          const isEvents = /chart\.(on|off)\s*\(|ctx\.\w+\s*\(/.test(content) && !/\breturn\s*\{/.test(content);
+
           if (isSql) {
             return writeSql(content);
+          }
+          if (isEvents) {
+            return writeChartEvents(content);
           }
           return writeChartConfig(content);
         } catch (e) {

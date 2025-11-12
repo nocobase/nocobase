@@ -41,6 +41,11 @@ export const vizSwitchModesTool: [string, string, ToolOptions] = [
             mode: 'custom',
             raw: current?.chart?.option?.raw,
           },
+          events: {
+            ...(current?.chart?.events || {}),
+            mode: 'custom',
+            raw: current?.chart?.events?.raw,
+          },
         },
       };
       model.setStepParams?.('chartSettings', 'configure', next);

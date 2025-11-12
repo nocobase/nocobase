@@ -412,6 +412,7 @@ ChartBlockModel.registerFlow({
         if (!query || !chart) {
           return;
         }
+
         try {
           // 数据部分
           if (query.mode !== 'sql') {
