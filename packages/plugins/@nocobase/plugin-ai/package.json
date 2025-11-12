@@ -4,7 +4,7 @@
   "displayName.zh-CN": "AI 员工",
   "description": "Create AI employees with diverse skills to collaborate with humans, build systems, and handle business operations.",
   "description.zh-CN": "创建各种技能的 AI 员工，与人类协同，搭建系统，处理业务。",
-  "version": "2.0.0-alpha.37",
+  "version": "2.0.0-alpha.38",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
