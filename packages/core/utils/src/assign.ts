@@ -108,10 +108,10 @@ mergeStrategies.set('intersect', (x, y) =>
       y = y.split(',');
     }
     if (typeof x === 'object' && !Array.isArray(x)) {
-      x = Object.values(x);
+      x = Object.values(x || {});
     }
     if (typeof y === 'object' && !Array.isArray(y)) {
-      y = Object.values(y);
+      y = Object.values(y || {});
     }
     if (!Array.isArray(x) || x.length === 0) {
       return y || [];
