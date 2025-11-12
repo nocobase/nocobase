@@ -265,7 +265,10 @@ export const DefaultValue = connect((props: Props) => {
       const key = `${init.dataSourceKey}.${init.collectionName}.${init.fieldPath}`;
       collectionField = model?.context?.dataSourceManager?.getCollectionField?.(key);
     }
-    // 尝试从可编辑绑定中获取字段模型（避免在 readPretty 下拿到展示型模型）
+    // 如果 origin 是一个具体的字段子模型（例如筛选表单中的日期动态组件），优先沿用该模型的类，
+    // 这样“默认值”编辑器就能与真实字段保持一致（避免总是退化为普通可编辑模型）。
+    const PreferredClassFromOrigin = (origin as any)?.constructor as any;
+    // 兜底：从可编辑绑定获取类，用于常规表单字段
     const editableBinding = collectionField
       ? EditableItemModel.getDefaultBindingByField(model?.context as any, collectionField)
       : null;
@@ -284,7 +287,10 @@ export const DefaultValue = connect((props: Props) => {
     const BoundClass = editableBinding
       ? (model?.context?.engine?.getModelClass?.(editableBinding.modelName) as any)
       : null;
-    const TempFieldClass = createTempFieldClass(BoundClass || FallbackClass);
+    // 选择优先级：origin 的类 > 可编辑绑定类 > 兜底类
+    const BaseClass =
+      (typeof PreferredClassFromOrigin === 'function' && PreferredClassFromOrigin) || BoundClass || FallbackClass;
+    const TempFieldClass = createTempFieldClass(BaseClass);
     const fieldSub = {
       use: TempFieldClass,
       uid: uid(),
@@ -334,6 +340,13 @@ export const DefaultValue = connect((props: Props) => {
           if (Array.isArray(v)) return v.map((i) => (i && typeof i === 'object' && 'data' in i ? i.data : i));
           return v && typeof v === 'object' && 'data' in v ? (v as any).data : v;
         };
+        // 是否为日期筛选类字段（需要受控 value 才能正确显示）
+        const originalUse = (fieldModel as any)?._originalModel?.use;
+        const isDateTimeLike =
+          typeof originalUse === 'string' &&
+          /(DateTimeFilterFieldModel|DateOnlyFilterFieldModel|DateTimeNoTzFilterFieldModel|DateTimeTzFilterFieldModel)$/.test(
+            originalUse,
+          );
         // 将 VariableInput 提供的受控属性透传到临时字段模型上，确保受控生效
         // - value: 由 VariableInput 控制
         // - onChange: 回传给 VariableInput，从而驱动 Formily/外层表单值
@@ -341,8 +354,12 @@ export const DefaultValue = connect((props: Props) => {
         // - 其他样式/属性: 透传但不覆盖我们的可编辑设定
         fieldModel.setProps({
           disabled: false,
-          // 仅透传事件，避免把输入框变为完全受控，从而影响输入法
-          onChange: (val: any) => (rest?.onChange ?? inputProps?.onChange)?.(isAssociation ? toRecordValue(val) : val),
+          // 透传 change，兼容 antd DatePicker 的 (dates, dateStrings) 形态
+          onChange: (...args: any[]) => {
+            const next = args.length > 1 ? args[1] : args[0];
+            const out = isAssociation ? toRecordValue(next) : next;
+            (rest?.onChange ?? inputProps?.onChange)?.(out);
+          },
           onCompositionStart: rest?.onCompositionStart ?? inputProps?.onCompositionStart,
           onCompositionUpdate: rest?.onCompositionUpdate ?? inputProps?.onCompositionUpdate,
           onCompositionEnd: rest?.onCompositionEnd ?? inputProps?.onCompositionEnd,
@@ -359,8 +376,8 @@ export const DefaultValue = connect((props: Props) => {
             fieldModel.setProps({ defaultValue: initial });
           }
         }
-        // 关联字段在受控场景下需要同步 value 才能正常显示选中项
-        if (isAssociation) {
+        // 需要受控的场景下（关联字段、日期筛选等）同步 value 才能正确显示
+        if (isAssociation || isDateTimeLike) {
           const current = (rest?.value ?? inputProps?.value) as any;
           if (typeof current !== 'undefined') {
             fieldModel.setProps({ value: toRecordValue(current) });
