@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { removeNullCondition } from './common';
+
 /**
  * 过滤器条件项接口
  */
@@ -54,7 +56,7 @@ export type QueryObject =
  * @returns 是否为条件项
  */
 function isFilterCondition(item: FilterCondition | FilterGroupType): item is FilterCondition {
-  return 'path' in item && 'operator' in item && 'value' in item;
+  return 'path' in item && 'operator' in item;
 }
 
 /**
@@ -178,7 +180,7 @@ export function transformFilter(filter: FilterGroupType): QueryObject {
     throw new Error('Invalid filter: items must be an array');
   }
 
-  return transformGroup(filter);
+  return removeNullCondition(transformGroup(filter));
 }
 
 export function removeInvalidFilterItems(filter: FilterGroupType): FilterGroupType {

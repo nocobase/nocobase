@@ -311,11 +311,6 @@ describe('transformFilter', () => {
             $in: [1, 2, 3],
           },
         },
-        {
-          nullField: {
-            $null: null,
-          },
-        },
       ],
     };
 

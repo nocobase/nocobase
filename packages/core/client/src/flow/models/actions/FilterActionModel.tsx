@@ -8,7 +8,7 @@
  */
 
 import { escapeT, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { isEmptyFilter, removeNullCondition, transformFilter } from '@nocobase/utils/client';
+import { isEmptyFilter, transformFilter } from '@nocobase/utils/client';
 import { ButtonProps, Popover, Select } from 'antd';
 import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../../components/filter';
@@ -172,7 +172,7 @@ FilterActionModel.registerFlow({
           return;
         }
 
-        const filter = removeNullCondition(transformFilter(ctx.model.props.filterValue));
+        const filter = transformFilter(ctx.model.props.filterValue);
 
         if (!isEmptyFilter(filter)) {
           resource.addFilterGroup(ctx.model.uid, filter);
