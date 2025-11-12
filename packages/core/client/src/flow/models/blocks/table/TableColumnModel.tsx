@@ -164,7 +164,7 @@ export class TableColumnModel extends DisplayItemModel {
         recordIndex,
         width: this.props.width - 16,
         editable: this.props.editable,
-        dataIndex: this.props.dataIndex,
+        dataIndex: record.__index || this.props.dataIndex,
         title: this.props.title,
         overflowMode: this.props.overflowMode,
         model: this,
@@ -217,6 +217,7 @@ export class TableColumnModel extends DisplayItemModel {
             get: () => record,
             resolveOnServer: true,
             meta: recordMeta,
+            cache: false,
           });
           fork.context.defineProperty('recordIndex', {
             get: () => record.__index || index,

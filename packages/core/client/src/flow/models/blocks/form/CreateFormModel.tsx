@@ -76,16 +76,9 @@ CreateFormModel.registerFlow({
   steps: {
     init: {
       async handler(ctx) {
-        console.log(ctx.view.inputArgs, ctx.blockModel.form, ctx.form);
-
         if (!ctx.resource) {
           throw new Error('Resource is not initialized');
         }
-        // if (ctx.form) {
-        //   console.log(888);
-        //   return;
-        // }
-        console.log(ctx.view.inputArgs);
         // 树表添加子节点
         if (ctx.view.inputArgs.filterByTk) {
           ctx.form.setFieldValue('parentId', ctx.view.inputArgs.filterByTk);

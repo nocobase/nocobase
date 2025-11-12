@@ -35,7 +35,7 @@ const Columns = observer<any>(({ record, model, index }) => {
       `}
     >
       {model.mapSubModels('actions', (action: ActionModel) => {
-        const fork = action.createFork({}, `${index}`);
+        const fork = action.createFork({}, `${record.__index || index}`);
         // TODO: reset fork 的状态, fork 复用存在旧状态污染问题
         fork.invalidateFlowCache('beforeRender');
         const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
