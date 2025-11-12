@@ -811,3 +811,15 @@ CascadeSelectFieldModel.registerFlow({
 CascadeSelectFieldModel.define({
   label: escapeT('Cascade select'),
 });
+
+EditableItemModel.bindModelToInterface('CascadeSelectFieldModel', [
+  'm2m',
+  'm2o',
+  'o2o',
+  'o2m',
+  'oho',
+  'obo',
+  'updatedBy',
+  'createdBy',
+  'mbm',
+]);

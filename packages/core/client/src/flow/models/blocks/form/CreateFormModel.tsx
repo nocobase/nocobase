@@ -79,12 +79,14 @@ CreateFormModel.registerFlow({
         if (!ctx.resource) {
           throw new Error('Resource is not initialized');
         }
-        // 树表添加子节点
-        if (ctx.view.inputArgs.filterByTk) {
-          ctx.form.setFieldValue('parentId', ctx.view.inputArgs.filterByTk);
-          ctx.form.setFieldValue('parent', { id: ctx.view.inputArgs.filterByTk });
-        }
-        // 新增表单不需要监听refresh事件，因为没有现有数据
+        await ctx.blockModel.resource.setFilterByTk(ctx.view.inputArgs.filterByTk);
+        // const data = await ctx.blockModel.resource.refresh();
+        // const parentRecord = await ctx.blockModel.resource.getData();
+        // //树表添加子节点
+        // if (parentRecord) {
+        //   ctx.form.setFieldValue('parentId', ctx.view.inputArgs.filterByTk);
+        //   ctx.form.setFieldValue('parent', parentRecord);
+        // }
       },
     },
     refresh: {},
