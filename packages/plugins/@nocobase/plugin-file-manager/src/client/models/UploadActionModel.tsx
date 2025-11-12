@@ -10,6 +10,8 @@
 import { escapeT, useFlowContext } from '@nocobase/flow-engine';
 import { Button, Upload } from 'antd';
 import { filesize } from 'filesize';
+import { UploadFile } from 'antd/es/upload/interface';
+import match from 'mime-match';
 import { InboxOutlined, LoadingOutlined } from '@ant-design/icons';
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -155,6 +157,64 @@ export function useStorageUploadProps(props, model) {
     ...storageTypeUploadProps,
   };
 }
+type RuleFunction = (file: UploadFile, options: any) => string | null;
+
+const Rules: Record<string, RuleFunction> = {
+  size(file, options: number): null | string {
+    const size = options ?? FILE_SIZE_LIMIT_DEFAULT;
+    if (size === 0) {
+      return null;
+    }
+    return file.size <= size ? null : 'File size exceeds the limit';
+  },
+  mimetype(file, options: string | string[] = '*'): null | string {
+    const pattern = options.toString().trim();
+    if (!pattern || pattern === '*') {
+      return null;
+    }
+    return pattern.split(',').filter(Boolean).some(match(file.type)) ? null : 'File type is not allowed';
+  },
+};
+
+export function validate(file, rules: Record<string, any>) {
+  if (!rules) {
+    return null;
+  }
+  const ruleKeys = Object.keys(rules);
+  if (!ruleKeys.length) {
+    return null;
+  }
+  for (const key of ruleKeys) {
+    const error = Rules[key](file, rules[key]);
+    if (error) {
+      return error;
+    }
+  }
+  return null;
+}
+
+export function useBeforeUpload(rules) {
+  const { t } = useTranslation();
+
+  return useCallback(
+    (file, fileList) => {
+      const proxiedFile = file;
+      const error = validate(proxiedFile, rules);
+
+      if (error) {
+        file.status = 'error';
+        file.response = t(error);
+      } else {
+        if (file.status === 'error') {
+          delete proxiedFile.status;
+          delete proxiedFile.response;
+        }
+      }
+      return error ? false : Promise.resolve(proxiedFile);
+    },
+    [rules],
+  );
+}
 
 function UploadContent({ model }) {
   const ctx = useFlowContext();
@@ -173,11 +233,21 @@ function UploadContent({ model }) {
   }, []);
 
   const { Header } = ctx.view;
+  const beforeUpload = useBeforeUpload(rules);
+
   return (
     <div>
       <Header title={ctx.t('Upload file')} />
-      <div style={{ height: '50vh' }}>
-        <Upload.Dragger multiple={true} listType={'picture'} {...useUploadProps({ ...props, handleChange })}>
+      <div style={{ height: '50vh' }} onClick={(e) => e.stopPropagation()}>
+        <Upload.Dragger
+          multiple={true}
+          listType={'picture'}
+          {...useUploadProps({
+            ...props,
+            handleChange,
+            beforeUpload,
+          })}
+        >
           <p className={`ant-upload-drag-icon`}>
             {loading ? <LoadingOutlined style={{ fontSize: 36 }} spin /> : <InboxOutlined />}
           </p>
