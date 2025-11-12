@@ -14,6 +14,7 @@ import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
   createRecordMetaFactory,
+  DndProvider,
   DragHandler,
   Droppable,
   FlowModelRenderer,
@@ -21,55 +22,66 @@ import {
 } from '@nocobase/flow-engine';
 import { Skeleton, Space, Tooltip } from 'antd';
 import React from 'react';
-import { ActionModel, RecordActionModel } from '../../base';
+import { ActionModel } from '../../base';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
 
 const Columns = observer<any>(({ record, model, index }) => {
   return (
-    <Space
-      size={'middle'}
-      className={css`
-        button {
-          padding: 0;
-        }
-      `}
-    >
-      {model.mapSubModels('actions', (action: ActionModel) => {
-        const fork = action.createFork({}, `${index}`);
-        // TODO: reset fork 的状态, fork 复用存在旧状态污染问题
-        fork.invalidateFlowCache('beforeRender');
-        const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
-          () => (fork.context as any).collection,
-          fork.context.t('Current record'),
-          (ctx) => {
-            const coll = ctx.collection;
-            const rec = ctx.record;
-            const name = coll?.name;
-            const dataSourceKey = coll?.dataSourceKey;
-            const filterByTk = coll?.getFilterByTK?.(rec);
-            if (!name || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
-            return { collection: name, dataSourceKey, filterByTk };
-          },
-        );
-        fork.context.defineProperty('record', {
-          get: () => record,
-          resolveOnServer: true,
-          meta: recordMeta,
-        });
-        fork.context.defineProperty('recordIndex', {
-          get: () => index,
-        });
-        return (
-          <FlowModelRenderer
-            showFlowSettings={{ showBorder: false, toolbarPosition: 'above' }}
-            key={fork.uid}
-            model={fork}
-            inputArgs={record}
-            fallback={<Skeleton.Button size="small" />}
-          />
-        );
-      })}
-    </Space>
+    <DndProvider>
+      <Space
+        size={'middle'}
+        className={css`
+          button {
+            padding: 0;
+          }
+        `}
+      >
+        {model.mapSubModels('actions', (action: ActionModel) => {
+          const fork = action.createFork({}, `${index}`);
+          // TODO: reset fork 的状态, fork 复用存在旧状态污染问题
+          fork.invalidateFlowCache('beforeRender');
+          const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
+            () => (fork.context as any).collection,
+            fork.context.t('Current record'),
+            (ctx) => {
+              const coll = ctx.collection;
+              const rec = ctx.record;
+              const name = coll?.name;
+              const dataSourceKey = coll?.dataSourceKey;
+              const filterByTk = coll?.getFilterByTK?.(rec);
+              if (!name || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
+              return { collection: name, dataSourceKey, filterByTk };
+            },
+          );
+          fork.context.defineProperty('record', {
+            get: () => record,
+            resolveOnServer: true,
+            meta: recordMeta,
+          });
+          fork.context.defineProperty('recordIndex', {
+            get: () => index,
+          });
+          return (
+            <Droppable model={action} key={action.uid}>
+              <FlowModelRenderer
+                showFlowSettings={{ showBorder: false, toolbarPosition: 'above' }}
+                key={fork.uid}
+                model={fork}
+                inputArgs={record}
+                fallback={<Skeleton.Button size="small" />}
+                extraToolbarItems={[
+                  {
+                    key: 'drag-handler',
+                    component: DragHandler,
+                    sort: 1,
+                  },
+                ]}
+              />
+            </Droppable>
+          );
+        })}
+      </Space>
+    </DndProvider>
   );
 });
 
