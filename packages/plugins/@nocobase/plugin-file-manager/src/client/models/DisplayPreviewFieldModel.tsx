@@ -137,7 +137,7 @@ const Preview = (props) => {
   const { t } = useTranslation();
 
   const onDownload = () => {
-    const url = value[current].url;
+    const url = value[current].url || value[current];
     const suffix = url.slice(url.lastIndexOf('.'));
     const filename = Date.now() + suffix;
     // eslint-disable-next-line promise/catch-or-return

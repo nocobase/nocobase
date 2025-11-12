@@ -116,6 +116,9 @@ export class TableColumnModel extends DisplayItemModel {
   }
 
   getColumnProps(): TableColumnProps {
+    if (!this.props.width) {
+      return;
+    }
     const titleContent = (
       <Droppable model={this}>
         <FlowsFloatContextMenu
