@@ -18,7 +18,9 @@ export async function toggle(ctx: Context, next) {
     return await next();
   }
 
-  await (<BelongsToManyRepository>repository).toggle(ctx.action.params.values);
+  const filterByTk = ctx.action.params.filterByTk || ctx.action.params.filterByTks || ctx.action.params.values;
+
+  await (<BelongsToManyRepository>repository).toggle(filterByTk);
   ctx.body = 'ok';
   await next();
 }

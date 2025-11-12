@@ -37,7 +37,7 @@ export default (collection: Collection) => {
       },
 
       filterByTks: {
-        name: 'filterByTk',
+        name: 'filterByTks',
         in: 'query',
         description: 'filter by TKs(default by ID), example: `1,2,3`',
         schema: {
