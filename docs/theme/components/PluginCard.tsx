@@ -87,10 +87,10 @@ export const PluginCard: React.FC<PluginCardProps> = ({
   const navigate = useNavigate();
   const cardStyle: React.CSSProperties = {
     border: '1px solid transparent',
-    borderRadius: '6px',
+    borderRadius: '12px',
     padding: '2rem',
-    background: '#fff',
-    boxShadow: '0 0.25rem 0.5rem rgba(0,0,0,0.1)',
+    background: 'var(--rp-home-feature-bg)',
+    boxShadow: 'none',
     transition: 'all 0.3s',
     display: 'inline-block',
     verticalAlign: 'top',
@@ -106,9 +106,9 @@ export const PluginCard: React.FC<PluginCardProps> = ({
         if (detailLink) {
           navigate(detailLink);
         }
-      }} className="rp-plugin-card rp-home-feature__card--clickable" style={cardStyle} data-plugin-card={float ? 'float' : 'full'}>
+      }} className="rp-plugin-card rp-home-feature__card rp-home-feature__card--clickable" style={cardStyle} data-plugin-card={float ? 'float' : 'full'}>
         <div style={{ marginTop: '0.5rem', flexGrow: 1 }}>
-          <h6 style={{ margin: '0 0 0.25rem 0', fontSize: '16px', fontWeight: 600, color: '#262626' }}>
+          <h6 style={{ margin: '0 0 0.25rem 0', fontSize: '16px', fontWeight: 600, color: 'var(--rp-c-text-1)' }}>
             {name}
             {/* {' '}
             {supportedVersions.length === 1 && supportedVersions[0] === '2.x' && (
@@ -119,14 +119,15 @@ export const PluginCard: React.FC<PluginCardProps> = ({
           </h6>
           <div
             style={{
-              fontSize: '14px', color: '#8c8c8c',
+              fontSize: '14px',
+              color: 'var(--rp-c-text-2)',
               marginBottom: '0.75rem',
               paddingBottom: '0.75rem',
               // borderBottom: '1px solid #f0f0f0'
             }}>
             By <span>{developer}</span>
           </div>
-          <p style={{ minHeight: '4em', margin: '0 0 0.5rem 0', fontSize: '14px', color: '#8c8c8c', lineHeight: 1.4 }}>
+          <p style={{ minHeight: '4em', margin: '0 0 0.5rem 0', fontSize: '14px', color: 'var(--rp-c-text-2)', lineHeight: 1.4 }}>
             {description}
           </p>
         </div>
@@ -161,28 +162,28 @@ export const PluginCard: React.FC<PluginCardProps> = ({
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '1rem' }}>
             {pricing.plan1 && (
               <h6 style={{ margin: 0, color: '#2f55d4', fontSize: '14px' }}>
-                <span style={{ fontWeight: 'normal', fontStyle: 'italic', fontSize: '12px', color: '#8c8c8c' }}>
+                <span style={{ fontWeight: 'normal', fontStyle: 'italic', fontSize: '12px', color: 'var(--rp-c-text-2)' }}>
                   {pricing.plan1.label}
                 </span>
                 <br />
                 <a href="/cn/plugins-bundles" style={{ color: '#2f55d4', textDecoration: 'none' }}>
                   {pricing.plan1.points} <i className="uil uil-moon-eclipse" style={{ marginRight: '4px' }}></i>
                 </a>
-                <span style={{ color: '#8c8c8c' }}>/</span>
-                <span style={{ color: '#8c8c8c' }}>{lang === 'cn' ? '￥' : '$'}{pricing.plan1.price.toLocaleString('en-US')}</span>
+                <span style={{ color: 'var(--rp-c-text-2)' }}>/</span>
+                <span style={{ color: 'var(--rp-c-text-2)' }}>{lang === 'cn' ? '￥' : '$'}{pricing.plan1.price.toLocaleString('en-US')}</span>
               </h6>
             )}
             {pricing.plan2 && (
-              <h6 style={{ margin: '0 0 0 8px', fontWeight: 'normal', color: '#8c8c8c', fontSize: '14px' }}>
-                <span style={{ fontWeight: 'normal', fontStyle: 'italic', fontSize: '12px', color: '#8c8c8c' }}>
+              <h6 style={{ margin: '0 0 0 8px', fontWeight: 'normal', color: 'var(--rp-c-text-2)', fontSize: '14px' }}>
+                <span style={{ fontWeight: 'normal', fontStyle: 'italic', fontSize: '12px', color: 'var(--rp-c-text-2)' }}>
                   {pricing.plan2.label}
                 </span>
                 <br />
-                <a href="/cn/plugins-bundles" style={{ color: '#8c8c8c', textDecoration: 'none' }}>
+                <a href="/cn/plugins-bundles" style={{ color: 'var(--rp-c-text-2)', textDecoration: 'none' }}>
                   {pricing.plan2.points} <i className="uil uil-moon-eclipse" style={{ marginRight: '4px' }}></i>
                 </a>
-                <span style={{ color: '#8c8c8c' }}>/</span>
-                <span style={{ color: '#8c8c8c' }}>{lang === 'cn' ? '￥' : '$'}{pricing.plan2.price.toLocaleString('en-US')}</span>
+                <span style={{ color: 'var(--rp-c-text-2)' }}>/</span>
+                <span style={{ color: 'var(--rp-c-text-2)' }}>{lang === 'cn' ? '￥' : '$'}{pricing.plan2.price.toLocaleString('en-US')}</span>
               </h6>
             )}
           </div>
