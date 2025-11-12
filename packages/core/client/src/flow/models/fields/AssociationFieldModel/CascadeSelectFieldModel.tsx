@@ -13,7 +13,7 @@ import { uid } from '@formily/shared';
 import { Cascader, Input, Space, Spin, Tag } from 'antd';
 import dayjs from 'dayjs';
 import { css } from '@emotion/css';
-import { debounce } from 'lodash';
+import { debounce, last } from 'lodash';
 import {
   CollectionField,
   createCurrentRecordMetaFactory,
@@ -26,6 +26,8 @@ import {
 } from '@nocobase/flow-engine';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { CascaderProps, GetProp } from 'antd';
+
 //  import { useAPIClient, useCollectionManager_deprecated } from '../../../';
 //  import { mergeFilter } from '../../../filter-provider/utils';
 import { AssociationFieldModel } from './AssociationFieldModel';
@@ -478,7 +480,7 @@ const EMPTY = 'N/A';
 
 // 对一
 
-export class CascadeSelectFieldModel extends AssociationFieldModel {
+export class CascadeSelectInnerFieldModel extends AssociationFieldModel {
   declare resource: MultiRecordResource;
 
   get collectionField(): CollectionField {
@@ -521,6 +523,49 @@ export class CascadeSelectFieldModel extends AssociationFieldModel {
       : this.props.value?.[fieldNames.value];
   }
 
+  //   render() {
+  //     return (
+  //       <Cascader
+  //         disabled={this.props.disabled}
+  //         changeOnSelect
+  //         options={this.props.options}
+  //         onDropdownVisibleChange={this.props.onDropdownVisibleChange}
+  //         fieldNames={this.props.fieldNames}
+  //         onChange={(value)=>{
+  //             console.log(value)
+  //         }}
+  //         value={this.props.value}
+  //       />
+  //     );
+  //   }
+}
+
+// 对一
+export class CascadeSelectFieldModel extends CascadeSelectInnerFieldModel {
+  render() {
+    return (
+      <Cascader
+        disabled={this.props.disabled}
+        changeOnSelect
+        options={this.props.options}
+        onDropdownVisibleChange={this.props.onDropdownVisibleChange}
+        fieldNames={this.props.fieldNames}
+        showSearch={true}
+        onSearch={(value) => console.log(value)}
+        onChange={(value, item) => {
+          const val = last(item);
+          console.log(value, item, val);
+
+          this.props.onChange(val);
+        }}
+        // value={this.props.value}
+      />
+    );
+  }
+}
+
+// 对多
+export class CascadeSelectListFieldModel extends CascadeSelectInnerFieldModel {
   render() {
     return (
       <Cascader
@@ -543,7 +588,7 @@ const paginationState = {
 };
 
 /** --------------------------- 事件绑定 --------------------------- */
-CascadeSelectFieldModel.registerFlow({
+CascadeSelectInnerFieldModel.registerFlow({
   key: 'eventSettings',
   sort: 900,
   steps: {
@@ -594,7 +639,7 @@ CascadeSelectFieldModel.registerFlow({
 });
 
 /** --------------------------- 下拉展开加载根节点 --------------------------- */
-CascadeSelectFieldModel.registerFlow({
+CascadeSelectInnerFieldModel.registerFlow({
   key: 'dropdownOpenSettings',
   on: 'dropdownOpen',
   steps: {
@@ -621,7 +666,7 @@ CascadeSelectFieldModel.registerFlow({
 });
 
 /** --------------------------- 滚动分页加载 --------------------------- */
-CascadeSelectFieldModel.registerFlow({
+CascadeSelectInnerFieldModel.registerFlow({
   key: 'popupScrollSettings',
   on: 'popupScroll',
   steps: {
@@ -659,7 +704,7 @@ CascadeSelectFieldModel.registerFlow({
 });
 
 /** --------------------------- 子节点懒加载逻辑 --------------------------- */
-CascadeSelectFieldModel.registerFlow({
+CascadeSelectInnerFieldModel.registerFlow({
   key: 'loadChildrenSettings',
   on: 'loadChildren',
   steps: {
@@ -735,7 +780,7 @@ async function originalHandler(ctx) {
 
 const debouncedHandler = debounce(originalHandler, 500);
 
-CascadeSelectFieldModel.registerFlow({
+CascadeSelectInnerFieldModel.registerFlow({
   key: 'searchSettings',
   on: 'search',
   steps: {
@@ -746,7 +791,7 @@ CascadeSelectFieldModel.registerFlow({
 });
 
 /** --------------------------- 初始化 Resource --------------------------- */
-CascadeSelectFieldModel.registerFlow({
+CascadeSelectInnerFieldModel.registerFlow({
   key: 'recordSelectSettings',
   sort: 200,
   steps: {
@@ -770,7 +815,7 @@ CascadeSelectFieldModel.registerFlow({
 });
 
 /** --------------------------- 可视化配置 --------------------------- */
-CascadeSelectFieldModel.registerFlow({
+CascadeSelectInnerFieldModel.registerFlow({
   key: 'selectSettings',
   title: escapeT('Cascade select settings'),
   sort: 800,
@@ -812,14 +857,14 @@ CascadeSelectFieldModel.define({
   label: escapeT('Cascade select'),
 });
 
-EditableItemModel.bindModelToInterface('CascadeSelectFieldModel', [
-  'm2m',
-  'm2o',
-  'o2o',
-  'o2m',
-  'oho',
-  'obo',
-  'updatedBy',
-  'createdBy',
-  'mbm',
-]);
+CascadeSelectListFieldModel.define({
+  label: escapeT('Cascade select'),
+});
+
+EditableItemModel.bindModelToInterface('CascadeSelectFieldModel', ['m2o', 'o2o', 'oho', 'obo'], {
+  when: (ctx, field) => field.targetCollection.template === 'tree',
+});
+
+EditableItemModel.bindModelToInterface('CascadeSelectListFieldModel', ['m2m', 'o2m', 'mbm'], {
+  when: (ctx, field) => field.targetCollection.template === 'tree',
+});

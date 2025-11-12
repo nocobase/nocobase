@@ -1513,5 +1513,6 @@
   "Copy": "复制",
   "Trigger condition": "触发条件",
   "Default expand all": "默认展开所有行",
-  "Enable tree table": "启用树表格"
+  "Enable tree table": "启用树表格",
+  "Cascade select": "级联选择"
 }
