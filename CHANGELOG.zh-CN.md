@@ -5,6 +5,14 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.5](https://github.com/nocobase/nocobase/compare/v1.9.4...v1.9.5) - 2025-11-10
+
+### 🐛 修复
+
+- **[工作流：审批]** 修复重查关系数据时未屏蔽主表字段的问题 by @mytharcher
+
+- **[邮件管理]** 修复outlook内敛图片和同步问题 by @jiannx
+
 ## [v1.9.4](https://github.com/nocobase/nocobase/compare/v1.9.3...v1.9.4) - 2025-11-10
 
 ### 🚀 优化

@@ -124,7 +124,6 @@ const EventConfigSection = observer(
             />
           </div>
 
-          {/* 触发条件 */}
           {eventName &&
             flowEngine.flowSettings.renderStepForm({
               key: eventName,

@@ -896,6 +896,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare requireAsync: (url: string) => Promise<any>;
   declare importAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
+  declare pageInfo: { version?: 'v1' | 'v2' };
   /**
    * @deprecated use `resolveJsonTemplate` instead
    */

@@ -326,6 +326,8 @@ export class Application {
     });
     this.use(FlowEngineProvider, { engine: this.flowEngine });
     this.use(FlowEngineGlobalsContextProvider);
+    const pageInfo = observable({ version: undefined as 'v2' | 'v1' | undefined });
+    this.flowEngine.context.defineProperty('pageInfo', { value: pageInfo });
   }
 
   private addReactRouterComponents() {

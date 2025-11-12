@@ -40,9 +40,13 @@ export class PageModel extends FlowModel<PageModelStructure> {
   onMount(): void {
     super.onMount();
     this.tabActiveKey = this.context.view.inputArgs?.tabUid;
+    if (this.context?.pageInfo) this.context.pageInfo.version = 'v2';
   }
 
   invokeTabModelLifecycleMethod(tabActiveKey: string, method: 'onActive' | 'onInactive') {
+    if (method === 'onActive' && this.context?.pageInfo) {
+      this.context.pageInfo.version = 'v2';
+    }
     const tabModel: BasePageTabModel = this.flowEngine.getModel(tabActiveKey);
 
     if (tabModel) {

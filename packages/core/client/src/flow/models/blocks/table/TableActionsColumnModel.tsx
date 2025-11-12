@@ -64,6 +64,7 @@ const Columns = observer<any>(({ record, model, index }) => {
             showFlowSettings={{ showBorder: false, toolbarPosition: 'above' }}
             key={fork.uid}
             model={fork}
+            inputArgs={record}
             fallback={<Skeleton.Button size="small" />}
           />
         );
