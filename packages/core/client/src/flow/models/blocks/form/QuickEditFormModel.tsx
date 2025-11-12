@@ -115,9 +115,7 @@ export class QuickEditFormModel extends FlowModel {
       meta: recordMeta,
     });
     this.context.defineProperty('collection', {
-      get: () => {
-        return this.collection;
-      },
+      get: () => this.collection,
     });
   }
 
