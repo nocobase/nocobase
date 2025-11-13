@@ -8,20 +8,21 @@
  */
 import { observable } from '@formily/reactive';
 import { Observer } from '@formily/reactive-react';
-import { DefaultStructure, escapeT, FlowModel } from '@nocobase/flow-engine';
+import { DefaultStructure, tExpr, FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import React from 'react';
 import { BlockItemCard } from '../../components';
-import { BlockPlaceholder } from '../../components/placeholders/BlockPlaceholder';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
+import { BlockPlaceholder } from '../../components/placeholders/BlockPlaceholder';
 
-export type BlockSceneType = 'new' | 'one' | 'many' | 'select' | BlockSceneType[];
+export type BlockSceneType = 'new' | 'filter' | 'one' | 'many' | 'select' | BlockSceneType[];
 
 export const BlockSceneEnum = {
   new: 'new' as BlockSceneType,
   one: 'one' as BlockSceneType,
   many: 'many' as BlockSceneType,
   select: 'select' as BlockSceneType,
+  filter: 'filter' as BlockSceneType,
   oam: ['one', 'many'] as BlockSceneType,
 };
 
@@ -94,20 +95,20 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 
 BlockModel.registerFlow({
   key: 'cardSettings',
-  title: escapeT('Card settings'),
+  title: tExpr('Card settings'),
   steps: {
     titleDescription: {
-      title: escapeT('Title & description'),
+      title: tExpr('Title & description'),
       uiSchema: {
         title: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
-          title: escapeT('Title'),
+          title: tExpr('Title'),
         },
         description: {
           'x-component': 'Input.TextArea',
           'x-decorator': 'FormItem',
-          title: escapeT('Description'),
+          title: tExpr('Description'),
         },
       },
       handler(ctx, params) {
@@ -172,7 +173,7 @@ BlockModel.registerFlow({
 
 BlockModel.define({
   hide: true,
-  label: escapeT('Other blocks'),
+  label: tExpr('Other blocks'),
   // async children(ctx) {
   //   const children = await buildSubModelItems(BlockModel)(ctx);
   //   const { collectionName, filterByTk, scene } = ctx.view.inputArgs;
@@ -192,12 +193,12 @@ BlockModel.define({
 // TODO: 应该放到 @nocobase/flow-engine 里，不过因为 flow-engine 里不能依赖 flow，所以先放这里
 FlowModel.registerEvents({
   beforeRender: {
-    title: escapeT('Before render'),
+    title: tExpr('Before render'),
     name: 'beforeRender',
     uiSchema: {
       condition: {
         type: 'object',
-        title: escapeT('Trigger condition'),
+        title: tExpr('Trigger condition'),
         'x-decorator': 'FormItem',
         'x-component': ConditionBuilder,
       },

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
+import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import dayjs from 'dayjs';
 import React from 'react';
@@ -37,7 +37,7 @@ DisplayDateTimeFieldModel.registerFlow({
   },
 });
 DisplayDateTimeFieldModel.define({
-  label: escapeT('Datetime'),
+  label: tExpr('Datetime'),
 });
 
 DisplayItemModel.bindModelToInterface(

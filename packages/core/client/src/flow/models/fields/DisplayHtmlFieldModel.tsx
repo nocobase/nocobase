@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
+import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
 import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkdown';
@@ -21,7 +21,7 @@ export class DisplayHtmlFieldModel extends DisplayTitleFieldModel {
 }
 
 DisplayHtmlFieldModel.define({
-  label: escapeT('HTML'),
+  label: tExpr('HTML'),
 });
 
 DisplayHtmlFieldModel.registerFlow({

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, MultiRecordResource } from '@nocobase/flow-engine';
+import { tExpr, MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionModel, ActionSceneEnum } from '../base';
 
@@ -15,7 +15,7 @@ export class BulkDeleteActionModel extends ActionModel {
   static scene = ActionSceneEnum.collection;
 
   defaultProps: ButtonProps = {
-    title: escapeT('Delete'),
+    title: tExpr('Delete'),
     icon: 'DeleteOutlined',
   };
   getAclActionName() {
@@ -24,20 +24,20 @@ export class BulkDeleteActionModel extends ActionModel {
 }
 
 BulkDeleteActionModel.define({
-  label: escapeT('Delete'),
+  label: tExpr('Delete'),
 });
 
 BulkDeleteActionModel.registerFlow({
   key: 'deleteSettings',
-  title: escapeT('Delete settings'),
+  title: tExpr('Delete settings'),
   on: 'click',
   steps: {
     confirm: {
       use: 'confirm',
       defaultParams: {
         enable: true,
-        title: escapeT('Delete record'),
-        content: escapeT('Are you sure you want to delete it?'),
+        title: tExpr('Delete record'),
+        content: tExpr('Are you sure you want to delete it?'),
       },
     },
     delete: {

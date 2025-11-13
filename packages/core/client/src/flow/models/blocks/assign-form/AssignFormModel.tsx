@@ -11,7 +11,7 @@ import {
   FlowModelRenderer,
   SingleRecordResource,
   createCollectionContextMeta,
-  escapeT,
+  tExpr,
   createCurrentRecordMetaFactory,
   type PropertyMetaFactory,
 } from '@nocobase/flow-engine';
@@ -81,7 +81,7 @@ export class AssignFormModel extends FormBlockModel<{ subModels: { grid: any } }
 }
 
 AssignFormModel.define({
-  label: escapeT('Field assignments'),
+  label: tExpr('Field assignments'),
   hide: true,
   createModelOptions: {
     use: 'AssignFormModel',

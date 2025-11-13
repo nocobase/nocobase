@@ -10,7 +10,7 @@
 import { useForm } from '@formily/react';
 import { Select } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
+import { tExpr, DisplayItemModel } from '@nocobase/flow-engine';
 import { isValid } from '@formily/shared';
 import { toFixedByStep } from '@nocobase/utils/client';
 import BigNumber from 'bignumber.js';
@@ -199,7 +199,7 @@ export class DisplayNumberFieldModel extends ClickableFieldModel {
   }
 }
 DisplayNumberFieldModel.define({
-  label: escapeT('Number'),
+  label: tExpr('Number'),
 });
 
 const UnitConversion = () => {
@@ -223,10 +223,10 @@ const UnitConversion = () => {
 DisplayNumberFieldModel.registerFlow({
   key: 'numberSettings',
   sort: 100,
-  title: escapeT('Number settings'),
+  title: tExpr('Number settings'),
   steps: {
     format: {
-      title: escapeT('Format'),
+      title: tExpr('Format'),
       uiSchema: (ctx) => {
         return {
           formatStyle: {
@@ -234,11 +234,11 @@ DisplayNumberFieldModel.registerFlow({
             enum: [
               {
                 value: 'normal',
-                label: escapeT('Normal'),
+                label: tExpr('Normal'),
               },
               {
                 value: 'scientifix',
-                label: escapeT('Scientifix notation'),
+                label: tExpr('Scientifix notation'),
               },
             ],
             'x-decorator': 'FormItem',

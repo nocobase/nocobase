@@ -15,7 +15,7 @@ import { observer } from '@formily/react';
 import { observable } from '@formily/reactive';
 import { tval } from '@nocobase/utils/client';
 import { FilterFormActionModel } from './FilterFormActionModel';
-import { escapeT, useFlowModel } from '@nocobase/flow-engine';
+import { tExpr, useFlowModel } from '@nocobase/flow-engine';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 
 // 使用observable创建响应式状态
@@ -124,7 +124,7 @@ FilterFormCollapseActionModel.registerEvents({
     uiSchema: {
       condition: {
         type: 'object',
-        title: escapeT('Trigger condition'),
+        title: tExpr('Trigger condition'),
         'x-decorator': 'FormItem',
         'x-component': ConditionBuilder,
       },

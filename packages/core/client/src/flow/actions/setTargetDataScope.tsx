@@ -7,9 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionScene, defineAction, FlowModel, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
+import {
+  ActionScene,
+  defineAction,
+  FlowModel,
+  MultiRecordResource,
+  pruneFilter,
+  useFlowContext,
+} from '@nocobase/flow-engine';
 import { isEmptyFilter, transformFilter, tval } from '@nocobase/utils/client';
-import { pruneFilter } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../components/filter';

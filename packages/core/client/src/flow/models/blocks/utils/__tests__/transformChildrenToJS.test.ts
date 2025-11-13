@@ -13,7 +13,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import type { FlowModelContext, SubModelItem } from '@nocobase/flow-engine';
-import { escapeT } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 
 import {
   transformChildrenToJS,
@@ -112,9 +112,9 @@ describe('buildAssociationJSGroup', () => {
     });
 
     expect(group.type).toBe('group');
-    expect(group.label).toBe(escapeT('Display association fields'));
+    expect(group.label).toBe(tExpr('Display association fields'));
     expect(group.searchable).toBe(true);
-    expect(group.searchPlaceholder).toBe(escapeT('Search fields'));
+    expect(group.searchPlaceholder).toBe(tExpr('Search fields'));
 
     const children = await (group.children as any)(ctx);
     expect(children).toHaveLength(1);
@@ -194,7 +194,7 @@ describe('buildJSFieldMenuChildren', () => {
     expect(result.length).toBe(3);
     const group = result[2];
     expect(group.type).toBe('group');
-    expect(group.label).toBe(escapeT('Display association fields'));
+    expect(group.label).toBe(tExpr('Display association fields'));
     // 验证 children 调用可用
     const children = await (group.children as any)(makeCtx());
     expect(Array.isArray(children)).toBe(true);

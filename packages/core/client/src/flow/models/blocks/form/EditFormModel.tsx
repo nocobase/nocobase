@@ -11,7 +11,7 @@ import {
   DndProvider,
   DragHandler,
   Droppable,
-  escapeT,
+  tExpr,
   FlowModelContext,
   FlowModelRenderer,
   MemoFlowModelRenderer,
@@ -119,7 +119,7 @@ export class EditFormModel extends FormBlockModel {
 
 EditFormModel.registerFlow({
   key: 'formSettings',
-  title: escapeT('Edit form settings'),
+  title: tExpr('Edit form settings'),
   steps: {
     init: {
       async handler(ctx) {
@@ -164,9 +164,9 @@ EditFormModel.registerFlow({
 });
 
 EditFormModel.define({
-  label: escapeT('Form (Edit)'),
+  label: tExpr('Form (Edit)'),
   searchable: true,
-  searchPlaceholder: escapeT('Search'),
+  searchPlaceholder: tExpr('Search'),
   createModelOptions: {
     use: 'EditFormModel',
     subModels: {
