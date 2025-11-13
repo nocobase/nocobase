@@ -1514,5 +1514,6 @@
   "Trigger condition": "触发条件",
   "Default expand all": "默认展开所有行",
   "Enable tree table": "启用树表格",
-  "Cascade select": "级联选择"
+  "Cascade select": "级联选择",
+  "Cascade select settings": "级联选择设置"
 }

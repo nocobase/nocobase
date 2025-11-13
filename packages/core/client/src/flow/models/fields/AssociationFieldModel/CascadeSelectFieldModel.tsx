@@ -34,6 +34,7 @@ import { AssociationFieldModel } from './AssociationFieldModel';
 //  import { SchemaComponent, useCompile } from '../../../schema-component';
 //  import useServiceOptions, { useAssociationFieldContext } from './hooks';
 //  import { useDataBlockRequest } from '../../../data-source';
+import { transformNestedData } from '../ClickableFieldModel';
 
 const EMPTY = 'N/A';
 
@@ -554,11 +555,11 @@ export class CascadeSelectFieldModel extends CascadeSelectInnerFieldModel {
         onSearch={(value) => console.log(value)}
         onChange={(value, item) => {
           const val = last(item);
-          console.log(value, item, val);
-
           this.props.onChange(val);
         }}
-        // value={this.props.value}
+        value={transformNestedData(this.props.value).map((v) => {
+          return v[this.collectionField.collection.filterTargetKey];
+        })}
       />
     );
   }

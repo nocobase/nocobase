@@ -9,13 +9,13 @@
 
 import { CollectionField, escapeT } from '@nocobase/flow-engine';
 import { Tag } from 'antd';
-import { castArray, omit } from 'lodash';
+import { castArray } from 'lodash';
 import React from 'react';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base';
 import { EllipsisWithTooltip } from '../../components';
 
-function transformNestedData(inputData) {
+export function transformNestedData(inputData) {
   const resultArray = [];
 
   function recursiveTransform(data) {
