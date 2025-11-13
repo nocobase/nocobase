@@ -820,7 +820,7 @@ const HighPerformanceTable = React.memo(
             display: inline;
           }
           .ant-table-cell-with-append div {
-            display: inline-flex;
+            display: flex;
           }
         `}
         defaultExpandAllRows={defaultExpandAllRows}
