@@ -7,25 +7,24 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, FlowModel } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import { defineAction, FlowModel, tExpr } from '@nocobase/flow-engine';
 
 export const layout = defineAction({
-  title: tval('Set block layout'),
+  title: tExpr('Set block layout'),
   name: 'layout',
   uiSchema: {
     layout: {
       type: 'string',
       enum: [
-        { label: tval('Vertical'), value: 'vertical' },
-        { label: tval('Horizontal'), value: 'horizontal' },
+        { label: tExpr('Vertical'), value: 'vertical' },
+        { label: tExpr('Horizontal'), value: 'horizontal' },
       ],
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
     },
     labelAlign: {
-      title: tval('Label align'),
+      title: tExpr('Label align'),
       type: 'string',
       'x-decorator': 'FormItem',
       'x-component': 'Select',
@@ -41,7 +40,7 @@ export const layout = defineAction({
       ],
     },
     labelWidth: {
-      title: tval('Label width'),
+      title: tExpr('Label width'),
       type: 'string',
       required: true,
       'x-decorator': 'FormItem',
@@ -63,10 +62,10 @@ export const layout = defineAction({
     },
     labelWrap: {
       type: 'string',
-      title: tval('When the Label exceeds the width'),
+      title: tExpr('When the Label exceeds the width'),
       enum: [
-        { label: tval('Line break'), value: true },
-        { label: tval('Ellipsis'), value: false },
+        { label: tExpr('Line break'), value: true },
+        { label: tExpr('Ellipsis'), value: false },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -79,7 +78,7 @@ export const layout = defineAction({
     },
     colon: {
       type: 'boolean',
-      'x-content': tval('Colon'),
+      'x-content': tExpr('Colon'),
       required: true,
       'x-decorator': 'FormItem',
       'x-component': 'Checkbox',

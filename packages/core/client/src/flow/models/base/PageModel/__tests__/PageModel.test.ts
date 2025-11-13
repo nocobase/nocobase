@@ -16,7 +16,7 @@ vi.mock('@nocobase/flow-engine', () => ({
   FlowModel: class {
     static registerFlow() {}
   },
-  escapeT: (str: string) => str,
+  tExpr: (str: string) => str,
 }));
 
 describe('PageModel', () => {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, buildWrapperFieldChildren, type FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
+import { tExpr, buildWrapperFieldChildren, type FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
 import { AssociationFieldGroupModel } from '../../base/AssociationFieldGroupModel';
 
 export interface TransformOptions {
@@ -84,9 +84,9 @@ export function buildAssociationJSGroup(
 ): SubModelItem {
   const { fieldUseModel, refreshTargets } = options;
   const key = options.key ?? 'js-association-fields';
-  const label = options.label ?? escapeT('Display association fields');
+  const label = options.label ?? tExpr('Display association fields');
   const searchable = options.searchable ?? true;
-  const searchPlaceholder = options.searchPlaceholder ?? escapeT('Search fields');
+  const searchPlaceholder = options.searchPlaceholder ?? tExpr('Search fields');
 
   return {
     key,

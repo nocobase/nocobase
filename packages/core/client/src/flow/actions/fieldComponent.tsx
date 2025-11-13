@@ -7,14 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionFieldModel, defineAction, FlowEngineContext } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import { CollectionFieldModel, defineAction, FlowEngineContext, tExpr } from '@nocobase/flow-engine';
 import { FieldModel } from '../models/base/FieldModel';
 import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
 import { buildAssociationOptions } from './displayFieldComponent';
 
 export const fieldComponent = defineAction({
-  title: tval('Field component'),
+  title: tExpr('Field component'),
   name: 'fieldComponent',
   uiSchema: (ctx: FlowEngineContext) => {
     if (ctx.model.getProps().pattern === 'readPretty') {

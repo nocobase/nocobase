@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionScene, defineAction, escapeT, useFlowContext } from '@nocobase/flow-engine';
+import { ActionScene, defineAction, tExpr, useFlowContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { Table, Button, Dropdown, Modal, Form, Input, Space, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -16,7 +16,7 @@ import { uid } from '@formily/shared';
 
 export const customVariable = defineAction({
   name: 'customVariable',
-  title: escapeT('Custom variable'),
+  title: tExpr('Custom variable'),
   scene: [ActionScene.DYNAMIC_EVENT_FLOW],
   sort: 100,
   uiSchema: {
@@ -91,7 +91,7 @@ interface VariableFormValues {
 }
 
 const VARIABLE_TYPE_LABELS: Record<FlowVariableType, string> = {
-  formValue: escapeT('Form variable'),
+  formValue: tExpr('Form variable'),
 };
 
 const generateVariableKey = () => `var_${uid().slice(0, 4)}`;

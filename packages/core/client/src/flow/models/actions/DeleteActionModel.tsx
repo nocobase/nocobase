@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { ActionModel, ActionSceneEnum } from '../base';
 
@@ -16,7 +16,7 @@ export class DeleteActionModel extends ActionModel {
 
   defaultProps: ButtonProps = {
     type: 'link',
-    title: escapeT('Delete'),
+    title: tExpr('Delete'),
   };
 
   getAclActionName() {
@@ -25,20 +25,20 @@ export class DeleteActionModel extends ActionModel {
 }
 
 DeleteActionModel.define({
-  label: escapeT('Delete'),
+  label: tExpr('Delete'),
 });
 
 DeleteActionModel.registerFlow({
   key: 'deleteSettings',
-  title: escapeT('Delete settings'),
+  title: tExpr('Delete settings'),
   on: 'click',
   steps: {
     confirm: {
       use: 'confirm',
       defaultParams: {
         enable: true,
-        title: escapeT('Delete record'),
-        content: escapeT('Are you sure you want to delete it?'),
+        title: tExpr('Delete record'),
+        content: tExpr('Are you sure you want to delete it?'),
       },
     },
     delete: {

@@ -9,7 +9,7 @@
 
 import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import { FormItem } from '@formily/antd-v5';
-import { defineAction, escapeT, FlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { defineAction, tExpr, FlowContext, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Button, Dropdown, Segmented, Select, Switch, TreeSelect } from 'antd';
 import _ from 'lodash';
 import React, { useMemo, useState } from 'react';
@@ -20,7 +20,7 @@ import { getAllDataModels } from '../utils';
 
 export const connectFields = defineAction({
   name: 'connectFields',
-  title: escapeT('Connect fields'),
+  title: tExpr('Connect fields'),
   uiSchema(ctx: FlowContext) {
     return {
       value: {

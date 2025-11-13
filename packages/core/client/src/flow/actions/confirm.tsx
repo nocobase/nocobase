@@ -7,22 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT } from '@nocobase/flow-engine';
+import { defineAction, tExpr } from '@nocobase/flow-engine';
 import { TextAreaWithContextSelector } from '../components/TextAreaWithContextSelector';
 
 export const confirm = defineAction({
   name: 'confirm',
-  title: escapeT('Confirmation'),
+  title: tExpr('Confirmation'),
   uiSchema: {
     enable: {
       type: 'boolean',
-      title: escapeT('Enable secondary confirmation'),
+      title: tExpr('Enable secondary confirmation'),
       'x-decorator': 'FormItem',
       'x-component': 'Switch',
     },
     title: {
       type: 'string',
-      title: escapeT('Title'),
+      title: tExpr('Title'),
       'x-decorator': 'FormItem',
       // 自定义组件：textArea with Context Selector
       'x-component': TextAreaWithContextSelector,
@@ -32,7 +32,7 @@ export const confirm = defineAction({
     },
     content: {
       type: 'string',
-      title: escapeT('Content'),
+      title: tExpr('Content'),
       'x-decorator': 'FormItem',
       // 自定义组件：textArea with Context Selector
       'x-component': TextAreaWithContextSelector,
@@ -43,8 +43,8 @@ export const confirm = defineAction({
   },
   defaultParams: {
     enable: false,
-    title: escapeT('Please Confirm'),
-    content: escapeT('Are you sure you want to perform the action?'),
+    title: tExpr('Please Confirm'),
+    content: tExpr('Are you sure you want to perform the action?'),
   },
   async handler(ctx, params) {
     if (params.enable) {

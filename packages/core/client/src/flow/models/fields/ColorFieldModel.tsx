@@ -7,10 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { ColorPicker as AntdColorPicker } from 'antd';
-import { EditableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, tExpr } from '@nocobase/flow-engine';
 import { FieldModel } from '../base';
 
 export const NBColorPicker = (props) => {
@@ -24,7 +23,7 @@ export const NBColorPicker = (props) => {
     },
     presets: [
       {
-        label: tval('Recommended'),
+        label: tExpr('Recommended'),
         colors: [
           '#8BBB11',
           '#52C41A',

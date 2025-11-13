@@ -11,7 +11,7 @@ import { SettingOutlined } from '@ant-design/icons';
 import type { PropertyMeta, PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
-  escapeT,
+  tExpr,
   FlowSettingsButton,
   createAssociationAwareObjectMetaFactory,
   createAssociationSubpathResolver,
@@ -193,18 +193,18 @@ FormBlockModel.define({
 
 FormBlockModel.registerFlow({
   key: 'formModelSettings',
-  title: escapeT('Form settings'),
+  title: tExpr('Form settings'),
   steps: {
     layout: {
       use: 'layout',
-      title: escapeT('Layout'),
+      title: tExpr('Layout'),
     },
   },
 });
 
 FormBlockModel.registerFlow({
   key: 'eventSettings',
-  title: escapeT('Event settings'),
+  title: tExpr('Event settings'),
   on: 'formValuesChange',
   steps: {
     linkageRules: {
@@ -219,12 +219,12 @@ FormBlockModel.registerFlow({
 
 FormBlockModel.registerEvents({
   formValuesChange: {
-    title: escapeT('Form values change'),
+    title: tExpr('Form values change'),
     name: 'formValuesChange',
     uiSchema: {
       condition: {
         type: 'object',
-        title: escapeT('Trigger condition'),
+        title: tExpr('Trigger condition'),
         'x-decorator': 'FormItem',
         'x-component': ConditionBuilder,
       },

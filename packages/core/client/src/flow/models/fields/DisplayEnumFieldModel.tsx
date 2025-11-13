@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { Tag } from 'antd';
-import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
+import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
 import { ClickableFieldModel } from './ClickableFieldModel';
 
 interface FieldNames {
@@ -58,7 +58,7 @@ export class DisplayEnumFieldModel extends ClickableFieldModel {
   }
 }
 DisplayEnumFieldModel.define({
-  label: escapeT('Select'),
+  label: tExpr('Select'),
 });
 DisplayItemModel.bindModelToInterface(
   'DisplayEnumFieldModel',

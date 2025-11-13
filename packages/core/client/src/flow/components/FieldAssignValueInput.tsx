@@ -12,7 +12,7 @@ import { Input } from 'antd';
 import {
   FlowModelRenderer,
   VariableInput,
-  escapeT,
+  tExpr,
   isVariableExpression,
   parseValueToPath,
   useFlowContext,
@@ -193,13 +193,13 @@ export const FieldAssignValueInput: React.FC<Props> = ({ fieldUid, value, onChan
       const base = (await flowCtx.getPropertyMetaTree?.()) || [];
       return [
         {
-          title: escapeT('Constant'),
+          title: tExpr('Constant'),
           name: 'constant',
           type: 'string',
           paths: ['constant'],
           render: ConstantValueEditor,
         },
-        { title: escapeT('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
+        { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
         ...base,
       ];
     };
