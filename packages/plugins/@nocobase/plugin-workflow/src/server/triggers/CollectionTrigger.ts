@@ -10,7 +10,12 @@
 import { pick } from 'lodash';
 import { isValidFilter } from '@nocobase/utils';
 import { Collection, Model } from '@nocobase/database';
-import { ICollection, parseCollectionName, SequelizeCollectionManager } from '@nocobase/data-source-manager';
+import {
+  ICollection,
+  parseCollectionName,
+  SequelizeCollectionManager,
+  SequelizeDataSource,
+} from '@nocobase/data-source-manager';
 
 import Trigger from '.';
 import { toJSON } from '../utils';
@@ -159,9 +164,14 @@ export default class CollectionTrigger extends Trigger {
       return;
     }
     const [dataSourceName, collectionName] = parseCollectionName(collection);
-    // @ts-ignore
-    const { db } = this.workflow.app.dataSourceManager?.dataSources.get(dataSourceName)?.collectionManager ?? {};
+    const dataSource = this.workflow.app.dataSourceManager?.dataSources.get(dataSourceName) as SequelizeDataSource;
+    if (!dataSource) {
+      this.workflow.getLogger().warn(`[CollectionTrigger] data source not exists: ${dataSourceName}`);
+      return;
+    }
+    const { db } = dataSource.collectionManager as SequelizeCollectionManager;
     if (!db || !db.getCollection(collectionName)) {
+      this.workflow.getLogger().warn(`[CollectionTrigger] collection not exists: ${dataSourceName}`);
       return;
     }
 
@@ -190,9 +200,14 @@ export default class CollectionTrigger extends Trigger {
       return;
     }
     const [dataSourceName, collectionName] = parseCollectionName(collection);
-    // @ts-ignore
-    const { db } = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName)?.collectionManager ?? {};
+    const dataSource = this.workflow.app.dataSourceManager?.dataSources.get(dataSourceName) as SequelizeDataSource;
+    if (!dataSource) {
+      this.workflow.getLogger().warn(`[CollectionTrigger] data source not exists: ${dataSourceName}`);
+      return;
+    }
+    const { db } = dataSource.collectionManager as SequelizeCollectionManager;
     if (!db || !db.getCollection(collectionName)) {
+      this.workflow.getLogger().warn(`[CollectionTrigger] collection not exists: ${dataSourceName}`);
       return;
     }
 
