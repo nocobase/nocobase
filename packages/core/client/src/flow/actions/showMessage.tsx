@@ -108,7 +108,10 @@ export const showMessage = defineAction({
       return;
     }
 
-    // 使用 antd message API
-    message[type](content, duration);
+    ctx.message.open({
+      type,
+      content,
+      duration,
+    });
   },
 });

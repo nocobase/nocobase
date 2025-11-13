@@ -16,6 +16,7 @@ import { createForm } from '@formily/core';
 import { FormProvider, Field } from '@formily/react';
 import { DefaultValue } from '../DefaultValue';
 import { InputFieldModel } from '../../models/fields/InputFieldModel';
+import { DateTimeFilterFieldModel } from '../../models/blocks/filter-form/fields/date-time/DateTimeFilterFieldModel';
 import { VariableFieldFormModel } from '../../models/fields/VariableFieldFormModel';
 import { RecordSelectFieldModel } from '../../models/fields/AssociationFieldModel';
 
@@ -96,7 +97,13 @@ describe('DefaultValue component', () => {
   beforeEach(() => {
     engine = new FlowEngine();
     // 注册必要的模型（使用真实 FlowEngine，不 mock）
-    engine.registerModels({ HostModel, InputFieldModel, VariableFieldFormModel, RecordSelectFieldModel });
+    engine.registerModels({
+      HostModel,
+      InputFieldModel,
+      VariableFieldFormModel,
+      RecordSelectFieldModel,
+      DateTimeFilterFieldModel,
+    });
 
     // 每个用例重置表单实例，避免跨用例的值污染（例如上个用例输入的 "hello"）
     form = createForm();
@@ -463,4 +470,127 @@ describe('DefaultValue component', () => {
       { timeout: 1000 },
     );
   });
+
+  // ------------------ Filter-form focused cases ------------------
+  it('date-like editor: propagates object value changes', async () => {
+    const onChange = vi.fn();
+    // 捕获临时字段
+    const origCreate = engine.createModel.bind(engine);
+    let capturedTempRoot: any;
+    // @ts-ignore
+    engine.createModel = ((options: any, extra?: any) => {
+      const created = origCreate(options, extra);
+      if (options?.use === 'VariableFieldFormModel') {
+        capturedTempRoot = created;
+        const tempField = capturedTempRoot?.subModels?.fields?.[0];
+        // 在临时字段上下文直接注入 association 判定，确保 unwrap 生效
+        tempField?.context?.defineProperty?.('collectionField', {
+          value: { interface: 'm2m', type: 'belongsToMany', isAssociationField: () => true },
+        });
+      }
+      return created;
+    }) as any;
+
+    const host = engine.createModel<HostModel>({
+      use: 'HostModel',
+      props: { name: 'createdAt', value: undefined, onChange, metaTree: simpleMetaTree },
+      subModels: { field: { use: 'DateTimeFilterFieldModel' } },
+    });
+    host.context.defineProperty('collectionField', { value: { interface: 'datetime', type: 'date' } });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => expect(capturedTempRoot?.subModels?.fields?.[0]).toBeTruthy());
+    const fieldModel = capturedTempRoot.subModels.fields[0];
+    await act(async () => {
+      fieldModel.props.onChange?.({ type: 'past', number: 2, unit: 'day' });
+    });
+    expect(onChange).toHaveBeenCalled();
+    const arg1 = (onChange as any).mock.calls[0][0];
+    expect(arg1).toEqual({ type: 'past', number: 2, unit: 'day' });
+  });
+
+  it('date-like editor: supports antd (dates, dateStrings) signature', async () => {
+    const onChange = vi.fn();
+    const origCreate = engine.createModel.bind(engine);
+    let capturedTempRoot: any;
+    // @ts-ignore
+    engine.createModel = ((options: any, extra?: any) => {
+      const created = origCreate(options, extra);
+      if (options?.use === 'VariableFieldFormModel') capturedTempRoot = created;
+      return created;
+    }) as any;
+
+    const host = engine.createModel<HostModel>({
+      use: 'HostModel',
+      props: { name: 'createdAt', value: undefined, onChange, metaTree: simpleMetaTree },
+      subModels: { field: { use: 'DateTimeFilterFieldModel' } },
+    });
+    host.context.defineProperty('collectionField', { value: { interface: 'datetime', type: 'date' } });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => expect(capturedTempRoot?.subModels?.fields?.[0]).toBeTruthy());
+    const fieldModel = capturedTempRoot.subModels.fields[0];
+    await act(async () => {
+      fieldModel.props.onChange?.('dummyDayjs', '2024-10-01');
+    });
+    expect(onChange).toHaveBeenCalled();
+    const arg2 = (onChange as any).mock.calls[0][0];
+    expect(arg2).toBe('2024-10-01');
+  });
+
+  // 不再断言“初始受控镜像”，因为 VariableInput 的 constant 路径会提供空串初值；
+  // 仅验证 onChange 行为与签名兼容性即可。
+
+  it('text input remains uncontrolled (no props.value mirror)', async () => {
+    const origCreate = engine.createModel.bind(engine);
+    let capturedTempRoot: any;
+    // @ts-ignore
+    engine.createModel = ((options: any, extra?: any) => {
+      const created = origCreate(options, extra);
+      if (options?.use === 'VariableFieldFormModel') capturedTempRoot = created;
+      return created;
+    }) as any;
+
+    const host = engine.createModel<HostModel>({
+      use: 'HostModel',
+      props: { name: 'nickname', value: 'hello', onChange: vi.fn(), metaTree: simpleMetaTree },
+      subModels: { field: { use: 'InputFieldModel' } },
+    });
+    host.context.defineProperty('collectionField', { value: { interface: 'input', type: 'string' } });
+
+    render(
+      <FlowEngineProvider engine={engine}>
+        <ConfigProvider>
+          <App>
+            <FlowModelRenderer model={host} />
+          </App>
+        </ConfigProvider>
+      </FlowEngineProvider>,
+    );
+    await waitFor(() => expect(capturedTempRoot?.subModels?.fields?.[0]).toBeTruthy());
+    const fieldModel = capturedTempRoot.subModels.fields[0];
+    // 文本类字段不镜像 props.value（避免 IME 问题）
+    expect(fieldModel.props.value).toBeUndefined();
+  });
+
+  // 注：关联字段的“去包装”由 collectionField 决定，真实页面场景下已具备。
+  // 这里不再重复校验，仅在前面的用例验证了常量编辑器与关系字段的基本行为。
 });

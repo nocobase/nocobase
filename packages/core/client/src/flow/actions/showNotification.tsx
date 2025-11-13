@@ -151,8 +151,8 @@ export const showNotification = defineAction({
       return;
     }
 
-    // 使用 antd notification API
-    notification[type]({
+    ctx.notification.open({
+      type,
       message: title,
       description,
       duration,
