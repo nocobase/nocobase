@@ -7,12 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Cascader, Input, Space, Spin, Tag, Button } from 'antd';
+import { Cascader, Space, Button } from 'antd';
 import { debounce, last } from 'lodash';
 import { CollectionField, EditableItemModel, escapeT, MultiRecordResource } from '@nocobase/flow-engine';
 import { DeleteOutlined, DragOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
 import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -57,7 +58,8 @@ const SortableItem: React.FC<{
   fieldNames?: any;
   disabled?: boolean;
   others?: any;
-}> = ({ id, item, index, onChange, onRemove, options, fieldNames, disabled, others }) => {
+  [key: string]: any;
+}> = ({ id, item, index, onChange, onRemove, options, fieldNames, disabled, ...others }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
 
   const style = {
@@ -66,7 +68,23 @@ const SortableItem: React.FC<{
     marginBottom: 8,
   };
   const initOptions = buildTree(transformNestedData(item));
+  const popupClassName = `cascade-scroll-${item[fieldNames.value]}`;
 
+  const bindScroll = () => {
+    const popup = document.querySelector(`.${popupClassName}`);
+    if (!popup) return;
+
+    const firstUl = popup.querySelector('ul');
+    if (!firstUl) return;
+
+    if ((firstUl as any)._hasScrollBound) return;
+
+    firstUl.addEventListener('scroll', (event) => {
+      others.onPopupScroll?.(event);
+    });
+
+    (firstUl as any)._hasScrollBound = true;
+  };
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
       <Space
@@ -74,28 +92,25 @@ const SortableItem: React.FC<{
           width: 100%;
           display: flex;
 
+          // .ant-space-item:nth-child(1) {
+          //   flex: 0.1;
+          //   display: flex;
+          //   align-items: center;
+          //   cursor: grab;
+          // }
+
           .ant-space-item:nth-child(1) {
-            flex: 0.1;
-            display: flex;
-            align-items: center;
-            cursor: grab;
-          }
-
-          .ant-space-item:nth-child(2) {
             flex: 3;
-          }
-
-          .ant-space-item:nth-child(3) {
-            flex: 0.2;
           }
         `}
       >
-        <div {...listeners}>
+        {/* <div {...listeners}>
           <DragOutlined style={{ color: 'GrayText' }} />
-        </div>
+        </div> */}
         <Cascader
           key={id}
           options={options || initOptions}
+          popupClassName={popupClassName}
           fieldNames={fieldNames}
           onChange={(value, item) => {
             const val = last(item);
@@ -108,6 +123,12 @@ const SortableItem: React.FC<{
             return v['id'];
           })}
           {...others}
+          onDropdownVisibleChange={(visible) => {
+            others.onDropdownVisibleChange(visible);
+            if (visible) {
+              setTimeout(bindScroll, 100);
+            }
+          }}
         />
         <div>
           <DeleteOutlined onClick={() => onRemove(index)} style={{ color: 'GrayText' }} />
@@ -119,7 +140,7 @@ const SortableItem: React.FC<{
 
 const DynamicCascadeList: React.FC<Props> = ({ value = [], onChange, options, fieldNames, disabled, ...others }) => {
   const sensors = useSensors(useSensor(PointerSensor));
-
+  const { t } = useTranslation();
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
@@ -159,13 +180,13 @@ const DynamicCascadeList: React.FC<Props> = ({ value = [], onChange, options, fi
               options={options}
               fieldNames={fieldNames}
               disabled={disabled}
-              others={others}
+              {...others}
             />
           ))}
         </SortableContext>
       </DndContext>
       <Button type="dashed" style={{ width: '100%' }} onClick={handleAdd}>
-        添加新项
+        {t('Add new')}
       </Button>
     </div>
   );
@@ -213,34 +234,41 @@ export class CascadeSelectInnerFieldModel extends AssociationFieldModel {
       ? this.props.value.map((item) => item[fieldNames.value])
       : this.props.value?.[fieldNames.value];
   }
-
-  //   render() {
-  //     return (
-  //       <Cascader
-  //         disabled={this.props.disabled}
-  //         changeOnSelect
-  //         options={this.props.options}
-  //         onDropdownVisibleChange={this.props.onDropdownVisibleChange}
-  //         fieldNames={this.props.fieldNames}
-  //         onChange={(value)=>{
-  //             console.log(value)
-  //         }}
-  //         value={this.props.value}
-  //       />
-  //     );
-  //   }
 }
 
 // 对一
 export class CascadeSelectFieldModel extends CascadeSelectInnerFieldModel {
   render() {
     const initOptions = buildTree(transformNestedData(this.props.value));
+    const popupClassName = `cascade-scroll-${this.props.name || this.props.id}`;
+
+    const bindScroll = () => {
+      const popup = document.querySelector(`.${popupClassName}`);
+      if (!popup) return;
+
+      const firstUl = popup.querySelector('ul');
+      if (!firstUl) return;
+
+      if ((firstUl as any)._hasScrollBound) return;
+
+      firstUl.addEventListener('scroll', (event) => {
+        this.props.onPopupScroll?.(event);
+      });
+
+      (firstUl as any)._hasScrollBound = true;
+    };
     return (
       <Cascader
         disabled={this.props.disabled}
+        popupClassName={popupClassName}
         changeOnSelect
         options={this.props.options || initOptions}
-        onDropdownVisibleChange={this.props.onDropdownVisibleChange}
+        onDropdownVisibleChange={(visible) => {
+          this.props.onDropdownVisibleChange(visible);
+          if (visible) {
+            setTimeout(bindScroll, 100); // 弹出后延迟绑定
+          }
+        }}
         fieldNames={this.props.fieldNames}
         showSearch={true}
         onSearch={(value) => console.log(value)}
@@ -264,6 +292,7 @@ export class CascadeSelectListFieldModel extends CascadeSelectInnerFieldModel {
         disabled={this.props.disabled}
         options={this.props.options}
         onDropdownVisibleChange={this.props.onDropdownVisibleChange}
+        onPopupScroll={this.props.onPopupScroll}
         fieldNames={this.props.fieldNames}
         showSearch={true}
         onSearch={(value) => console.log(value)}
@@ -380,9 +409,9 @@ CascadeSelectInnerFieldModel.registerFlow({
           resource.setPage(paginationState.page);
           await resource.refresh();
           const data = resource.getData().map((item) => ({
-            label: item[ctx.model.props.fieldNames.label],
-            value: item[ctx.model.props.fieldNames.value],
-            isLeaf: item.hasChildren === false,
+            ...item,
+            isLeaf: !item.children?.length,
+            children: item.children,
           }));
 
           const current = ctx.model.getDataSource() || [];
@@ -400,96 +429,96 @@ CascadeSelectInnerFieldModel.registerFlow({
   },
 });
 
-/** --------------------------- 子节点懒加载逻辑 --------------------------- */
-CascadeSelectInnerFieldModel.registerFlow({
-  key: 'loadChildrenSettings',
-  on: 'loadChildren',
-  steps: {
-    loadChildren: {
-      async handler(ctx) {
-        const { targetOption } = ctx.inputArgs;
-        const resource = ctx.model.resource;
-        const labelFieldName = ctx.model.props.fieldNames.label;
-        const valueFieldName = ctx.model.props.fieldNames.value;
+// /** --------------------------- 子节点懒加载逻辑 --------------------------- */
+// CascadeSelectInnerFieldModel.registerFlow({
+//   key: 'loadChildrenSettings',
+//   on: 'loadChildren',
+//   steps: {
+//     loadChildren: {
+//       async handler(ctx) {
+//         const { targetOption } = ctx.inputArgs;
+//         const resource = ctx.model.resource;
+//         const labelFieldName = ctx.model.props.fieldNames.label;
+//         const valueFieldName = ctx.model.props.fieldNames.value;
 
-        targetOption.loading = true;
+//         targetOption.loading = true;
 
-        // 根据父节点 value 添加过滤条件
-        resource.setPage(1);
-        resource.addFilterGroup(valueFieldName, {
-          [`parent_id.$eq`]: targetOption.value,
-        });
+//         // 根据父节点 value 添加过滤条件
+//         resource.setPage(1);
+//         resource.addFilterGroup(valueFieldName, {
+//           [`parent_id.$eq`]: targetOption.value,
+//         });
 
-        await resource.refresh();
-        const data = resource.getData().map((item) => ({
-          label: item[labelFieldName],
-          value: item[valueFieldName],
-          isLeaf: item.hasChildren === false,
-        }));
+//         await resource.refresh();
+//         const data = resource.getData().map((item) => ({
+//           label: item[labelFieldName],
+//           value: item[valueFieldName],
+//           isLeaf: item.hasChildren === false,
+//         }));
 
-        // 挂载子节点
-        targetOption.loading = false;
-        targetOption.children = data;
+//         // 挂载子节点
+//         targetOption.loading = false;
+//         targetOption.children = data;
 
-        // 更新全局 options 引用以触发渲染
-        ctx.model.setDataSource([...ctx.model.getDataSource()]);
-      },
-    },
-  },
-});
+//         // 更新全局 options 引用以触发渲染
+//         ctx.model.setDataSource([...ctx.model.getDataSource()]);
+//       },
+//     },
+//   },
+// });
 
-/** --------------------------- 搜索 --------------------------- */
-async function originalHandler(ctx) {
-  try {
-    const resource = ctx.model.resource;
-    const labelFieldName = ctx.model.props.fieldNames.label;
-    const targetCollection = ctx.model.collectionField.targetCollection;
-    const targetLabelField = targetCollection.getField(labelFieldName);
-    const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
-      targetLabelField.options.interface,
-    );
-    const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
-    const searchText = ctx.inputArgs.searchText?.trim();
-    const key = `${labelFieldName}.${operator}`;
+// /** --------------------------- 搜索 --------------------------- */
+// async function originalHandler(ctx) {
+//   try {
+//     const resource = ctx.model.resource;
+//     const labelFieldName = ctx.model.props.fieldNames.label;
+//     const targetCollection = ctx.model.collectionField.targetCollection;
+//     const targetLabelField = targetCollection.getField(labelFieldName);
+//     const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+//       targetLabelField.options.interface,
+//     );
+//     const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
+//     const searchText = ctx.inputArgs.searchText?.trim();
+//     const key = `${labelFieldName}.${operator}`;
 
-    if (searchText === '') {
-      resource.removeFilterGroup(labelFieldName);
-    } else {
-      resource.setPage(1);
-      resource.addFilterGroup(labelFieldName, { [key]: searchText });
-    }
+//     if (searchText === '') {
+//       resource.removeFilterGroup(labelFieldName);
+//     } else {
+//       resource.setPage(1);
+//       resource.addFilterGroup(labelFieldName, { [key]: searchText });
+//     }
 
-    await resource.refresh();
-    const data = resource.getData().map((item) => ({
-      label: item[labelFieldName],
-      value: item[ctx.model.props.fieldNames.value],
-      isLeaf: item.hasChildren === false,
-    }));
+//     await resource.refresh();
+//     const data = resource.getData().map((item) => ({
+//       label: item[labelFieldName],
+//       value: item[ctx.model.props.fieldNames.value],
+//       isLeaf: item.hasChildren === false,
+//     }));
 
-    ctx.model.setDataSource(data);
-    paginationState.hasMore = data.length >= paginationState.pageSize;
-    paginationState.page = 2;
-  } catch (error) {
-    console.error('CascadeSelectField search error:', error);
-    ctx.model.setDataSource([]);
-  }
-}
+//     ctx.model.setDataSource(data);
+//     paginationState.hasMore = data.length >= paginationState.pageSize;
+//     paginationState.page = 2;
+//   } catch (error) {
+//     console.error('CascadeSelectField search error:', error);
+//     ctx.model.setDataSource([]);
+//   }
+// }
 
-const debouncedHandler = debounce(originalHandler, 500);
+// const debouncedHandler = debounce(originalHandler, 500);
 
-CascadeSelectInnerFieldModel.registerFlow({
-  key: 'searchSettings',
-  on: 'search',
-  steps: {
-    searchData: {
-      handler: debouncedHandler,
-    },
-  },
-});
+// CascadeSelectInnerFieldModel.registerFlow({
+//   key: 'searchSettings',
+//   on: 'search',
+//   steps: {
+//     searchData: {
+//       handler: debouncedHandler,
+//     },
+//   },
+// });
 
 /** --------------------------- 初始化 Resource --------------------------- */
 CascadeSelectInnerFieldModel.registerFlow({
-  key: 'recordSelectSettings',
+  key: 'cascadeSelectSettings',
   sort: 200,
   steps: {
     init: {
@@ -515,33 +544,6 @@ CascadeSelectInnerFieldModel.registerFlow({
     fieldNames: { use: 'titleField' },
     dataScope: { use: 'dataScope' },
     sortingRule: { use: 'sortingRule' },
-    allowMultiple: {
-      title: escapeT('Allow multiple'),
-      uiSchema(ctx) {
-        if (ctx.collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)) {
-          return {
-            allowMultiple: {
-              'x-component': 'Switch',
-              type: 'boolean',
-              'x-decorator': 'FormItem',
-            },
-          };
-        }
-        return null;
-      },
-      defaultParams(ctx) {
-        return {
-          allowMultiple:
-            ctx.collectionField &&
-            ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.model.context.collectionField.type),
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          allowMultiple: params?.allowMultiple,
-        });
-      },
-    },
   },
 });
 
