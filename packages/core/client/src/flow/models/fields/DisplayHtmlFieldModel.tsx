@@ -8,7 +8,6 @@
  */
 
 import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import React from 'react';
 import { DisplayMarkdown } from '../../internal/components/Markdown/DisplayMarkdown';
 import { DisplayTitleFieldModel } from './DisplayTitleFieldModel';
@@ -26,7 +25,7 @@ DisplayHtmlFieldModel.define({
 
 DisplayHtmlFieldModel.registerFlow({
   key: 'htmlFieldSettings',
-  title: tval('Content settings'),
+  title: tExpr('Content settings'),
   sort: 200,
   steps: {
     renderMode: {

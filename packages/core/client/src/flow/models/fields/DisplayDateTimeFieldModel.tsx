@@ -8,7 +8,6 @@
  */
 
 import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import dayjs from 'dayjs';
 import React from 'react';
 import { ClickableFieldModel } from './ClickableFieldModel';
@@ -28,11 +27,11 @@ export class DisplayDateTimeFieldModel extends ClickableFieldModel {
 DisplayDateTimeFieldModel.registerFlow({
   key: 'datetimeSettings',
   sort: 1000,
-  title: tval('Datetime settings'),
+  title: tExpr('Datetime settings'),
   steps: {
     dateFormat: {
       use: 'dateDisplayFormat',
-      title: tval('Date display format'),
+      title: tExpr('Date display format'),
     },
   },
 });

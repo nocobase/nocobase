@@ -18,7 +18,6 @@ import {
   FlowModelRenderer,
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import { Form } from 'antd';
 import React from 'react';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
@@ -132,7 +131,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
 }
 
 FilterFormBlockModel.define({
-  label: tval('Form'),
+  label: tExpr('Form'),
   createModelOptions: {
     use: 'FilterFormBlockModel',
     subModels: {
@@ -145,18 +144,18 @@ FilterFormBlockModel.define({
 
 FilterFormBlockModel.registerFlow({
   key: 'formFilterBlockModelSettings',
-  title: tval('Form settings'),
+  title: tExpr('Form settings'),
   steps: {
     layout: {
       use: 'layout',
-      title: tval('Layout'),
+      title: tExpr('Layout'),
     },
   },
 });
 
 FilterFormBlockModel.registerEvents({
   formValuesChange: {
-    title: tval('Form values change'),
+    title: tExpr('Form values change'),
     name: 'formValuesChange',
     uiSchema: {
       condition: {
