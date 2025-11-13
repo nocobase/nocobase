@@ -7,19 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ArrayItems, FormItem } from '@formily/antd-v5';
-import { createForm, onFormValuesChange } from '@formily/core';
-import { uid } from '@formily/shared';
-import { Cascader, Input, Space, Spin, Tag } from 'antd';
+import { Cascader, Input, Space, Spin, Tag, Button } from 'antd';
 import { debounce, last } from 'lodash';
-import {
-  CollectionField,
-  createCurrentRecordMetaFactory,
-  EditableItemModel,
-  escapeT,
-  MultiRecordResource,
-} from '@nocobase/flow-engine';
+import { CollectionField, EditableItemModel, escapeT, MultiRecordResource } from '@nocobase/flow-engine';
+import { DeleteOutlined, DragOutlined } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import React from 'react';
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
+import { arrayMove, SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { transformNestedData } from '../ClickableFieldModel';
 
@@ -42,6 +38,138 @@ function buildTree(data, idField = 'id', parentField = 'parentId') {
 
   return tree;
 }
+interface Props {
+  value: any[]; // 当前选中数组，每一项是 Cascader 的 value
+  onChange?: (val: any[]) => void;
+  options: any[]; // Cascader 数据源
+  fieldNames?: any; // Cascader fieldNames
+  disabled?: boolean;
+  [key: string]: any;
+}
+
+const SortableItem: React.FC<{
+  id: string;
+  item: any;
+  index: number;
+  onChange: (index: number, val: any) => void;
+  onRemove: (index: number) => void;
+  options: any[];
+  fieldNames?: any;
+  disabled?: boolean;
+  others?: any;
+}> = ({ id, item, index, onChange, onRemove, options, fieldNames, disabled, others }) => {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    marginBottom: 8,
+  };
+  const initOptions = buildTree(transformNestedData(item));
+
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      <Space
+        className={css`
+          width: 100%;
+          display: flex;
+
+          .ant-space-item:nth-child(1) {
+            flex: 0.1;
+            display: flex;
+            align-items: center;
+            cursor: grab;
+          }
+
+          .ant-space-item:nth-child(2) {
+            flex: 3;
+          }
+
+          .ant-space-item:nth-child(3) {
+            flex: 0.2;
+          }
+        `}
+      >
+        <div {...listeners}>
+          <DragOutlined style={{ color: 'GrayText' }} />
+        </div>
+        <Cascader
+          key={id}
+          options={options || initOptions}
+          fieldNames={fieldNames}
+          onChange={(value, item) => {
+            const val = last(item);
+            onChange(index, val);
+          }}
+          changeOnSelect
+          disabled={disabled}
+          showSearch
+          defaultValue={transformNestedData(item).map((v) => {
+            return v['id'];
+          })}
+          {...others}
+        />
+        <div>
+          <DeleteOutlined onClick={() => onRemove(index)} style={{ color: 'GrayText' }} />
+        </div>
+      </Space>
+    </div>
+  );
+};
+
+const DynamicCascadeList: React.FC<Props> = ({ value = [], onChange, options, fieldNames, disabled, ...others }) => {
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      const oldIndex = value.findIndex((_, i) => `item-${i}` === active.id);
+      const newIndex = value.findIndex((_, i) => `item-${i}` === over.id);
+      const newValue = arrayMove(value, oldIndex, newIndex);
+      onChange?.(newValue);
+    }
+  };
+
+  const handleChange = (index: number, val: any) => {
+    const newValue = [...value];
+    newValue[index] = val;
+    onChange?.(newValue);
+  };
+
+  const handleRemove = (index: number) => {
+    const newValue = value.filter((_, i) => i !== index);
+    onChange?.(newValue);
+  };
+
+  const handleAdd = () => {
+    onChange?.([...value, []]);
+  };
+  return (
+    <div>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={value.map((_, i) => `item-${i}`)} strategy={verticalListSortingStrategy}>
+          {value.map((item, index) => (
+            <SortableItem
+              key={index}
+              id={`item-${index}`}
+              item={item}
+              index={index}
+              onChange={handleChange}
+              onRemove={handleRemove}
+              options={options}
+              fieldNames={fieldNames}
+              disabled={disabled}
+              others={others}
+            />
+          ))}
+        </SortableContext>
+      </DndContext>
+      <Button type="dashed" style={{ width: '100%' }} onClick={handleAdd}>
+        添加新项
+      </Button>
+    </div>
+  );
+};
 
 export class CascadeSelectInnerFieldModel extends AssociationFieldModel {
   declare resource: MultiRecordResource;
@@ -120,7 +248,7 @@ export class CascadeSelectFieldModel extends CascadeSelectInnerFieldModel {
           const val = last(item);
           this.props.onChange(val);
         }}
-        value={transformNestedData(this.props.value).map((v) => {
+        defaultValue={transformNestedData(this.props.value).map((v) => {
           return v[this.collectionField.collection.filterTargetKey];
         })}
       />
@@ -132,12 +260,17 @@ export class CascadeSelectFieldModel extends CascadeSelectInnerFieldModel {
 export class CascadeSelectListFieldModel extends CascadeSelectInnerFieldModel {
   render() {
     return (
-      <Cascader
+      <DynamicCascadeList
         disabled={this.props.disabled}
-        changeOnSelect
         options={this.props.options}
         onDropdownVisibleChange={this.props.onDropdownVisibleChange}
         fieldNames={this.props.fieldNames}
+        showSearch={true}
+        onSearch={(value) => console.log(value)}
+        onChange={(value) => {
+          this.props.onChange(value);
+        }}
+        value={this.props.value}
       />
     );
   }
@@ -367,11 +500,6 @@ CascadeSelectInnerFieldModel.registerFlow({
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(target);
         resource.setPageSize(paginationState.pageSize);
-        const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
-        if (isOToAny) {
-          const key = `${collectionField.foreignKey}.$is`;
-          resource.addFilterGroup(collectionField.name, { [key]: null });
-        }
         ctx.model.resource = resource;
       },
     },

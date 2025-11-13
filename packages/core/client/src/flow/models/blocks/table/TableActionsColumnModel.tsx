@@ -167,7 +167,6 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
           white-space: nowrap;
           overflow: hidden;
           transition: overflow 0.3s ease 0.8s; /* 加入延迟 */
-          display: inline;
           &:hover {
             overflow: ${this.flowEngine.flowSettings?.enabled ? 'visible' : 'hidden'}; /* 鼠标悬停时，内容可见 */
           }

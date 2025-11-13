@@ -819,6 +819,9 @@ const HighPerformanceTable = React.memo(
           .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
             display: inline;
           }
+          .ant-table-cell-with-append div {
+            display: inline-flex;
+          }
         `}
         defaultExpandAllRows={defaultExpandAllRows}
         expandable={expandable}
