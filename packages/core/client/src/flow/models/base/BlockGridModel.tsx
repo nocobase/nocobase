@@ -8,7 +8,7 @@
  */
 
 import { PlusOutlined } from '@ant-design/icons';
-import { AddSubModelButton, FlowSettingsButton, DragOverlayConfig } from '@nocobase/flow-engine';
+import { AddSubModelButton, DragOverlayConfig, FlowSettingsButton } from '@nocobase/flow-engine';
 import React from 'react';
 import { FilterManager } from '../blocks/filter-manager/FilterManager';
 import { GridModel } from './GridModel';
@@ -44,7 +44,7 @@ export class BlockGridModel extends GridModel {
     const inputArgs = this.context.view?.inputArgs ?? {};
     if (inputArgs.collectionName && !inputArgs.filterByTk) {
       // 新增记录的场景，需要移除掉 筛选区块
-      return ['DataBlockModel', 'BlockModel'];
+      return ['DataBlockModel', 'FilterBlockModel', 'BlockModel'];
     }
     return ['DataBlockModel', 'FilterBlockModel', 'BlockModel'];
   }
