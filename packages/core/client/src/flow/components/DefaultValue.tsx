@@ -341,6 +341,7 @@ export const DefaultValue = connect((props: Props) => {
       const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
       const lastParentValueRef = React.useRef<any>(Symbol('init'));
       const lastAppliedValueRef = React.useRef<any>(Symbol('none'));
+      const composingRef = React.useRef(false);
       React.useEffect(() => {
         const fieldModel = tempRoot?.subModels?.fields?.[0];
         if (!fieldModel) return;
@@ -393,13 +394,26 @@ export const DefaultValue = connect((props: Props) => {
               lastAppliedValueRef.current = applied;
               fieldModel.setProps({ value: applied, defaultValue: undefined });
             }
+            // 文本类在合成输入期间不抛出 onChange，待 compositionEnd 再一次性抛出
+            if (isTextLike && composingRef.current) return;
             (rest?.onChange ?? inputProps?.onChange)?.(out);
             // 触发本地重渲，确保 FlowModelRenderer 重新执行 model.render()
             forceUpdate();
           },
-          onCompositionStart: rest?.onCompositionStart ?? inputProps?.onCompositionStart,
+          onCompositionStart: (...args: any[]) => {
+            composingRef.current = true;
+            rest?.onCompositionStart?.(...args);
+            inputProps?.onCompositionStart?.(...args);
+          },
           onCompositionUpdate: rest?.onCompositionUpdate ?? inputProps?.onCompositionUpdate,
-          onCompositionEnd: rest?.onCompositionEnd ?? inputProps?.onCompositionEnd,
+          onCompositionEnd: (e: any) => {
+            composingRef.current = false;
+            const v = pickPrimitive(e);
+            // 合成结束时再抛出一次变化，保证中文输入等场景
+            (rest?.onChange ?? inputProps?.onChange)?.(v);
+            rest?.onCompositionEnd?.(e);
+            inputProps?.onCompositionEnd?.(e);
+          },
           style: { width: '100%', minWidth: 0, ...(rest?.style || inputProps?.style) },
         });
         // 始终保持可编辑
