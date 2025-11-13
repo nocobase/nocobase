@@ -27,23 +27,25 @@ const DEFAULT_CODE = `
 function JsEditableField() {
   const React = ctx.React;
   const { Input } = ctx.antd;
-  // const [value, setValue] = React.useState(ctx.getValue?.() ?? '');
+  const [value, setValue] = React.useState(ctx.getValue?.() ?? '');
 
-  // React.useEffect(() => {
-  //   const handler = (ev) => setValue(ev?.detail ?? '');
-  //   ctx.element?.addEventListener('js-field:value-change', handler);
-  //   return () => ctx.element?.removeEventListener('js-field:value-change', handler);
-  // }, []);
+  React.useEffect(() => {
+    const handler = (ev) => setValue(ev?.detail ?? '');
+    ctx.element?.addEventListener('js-field:value-change', handler);
+    return () => ctx.element?.removeEventListener('js-field:value-change', handler);
+  }, []);
 
-  // const onChange = (e) => {
-  //   const v = e?.target?.value ?? '';
-  //   setValue(v);
-  //   ctx.setValue?.(v);
-  // };
+  const onChange = (e) => {
+    const v = e?.target?.value ?? '';
+    setValue(v);
+    ctx.setValue?.(v);
+  };
 
   return (
     <Input
       {...ctx.model.props}
+      value={value}
+      onChange={onChange}
     />
   );
 }
