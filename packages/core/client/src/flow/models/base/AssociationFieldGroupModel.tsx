@@ -17,6 +17,9 @@ export class AssociationFieldGroupModel extends FlowModel {
     const displayAssociationFields = (targetCollection: Collection, fieldPath = '') => {
       return targetCollection.getToOneAssociationFields().map((field) => {
         const fPath = fieldPath ? `${fieldPath}.${field.name}` : field.name;
+        if (!field.targetCollection) {
+          return;
+        }
         return {
           key: `${fPath}-assocationField`,
           label: field.title,

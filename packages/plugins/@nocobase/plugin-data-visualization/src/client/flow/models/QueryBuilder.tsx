@@ -8,7 +8,6 @@
  */
 
 import React from 'react';
-import { FilterGroup, VariableFilterItem } from '@nocobase/client';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Form, Space, Cascader, Select, Input, Checkbox, Button, InputNumber } from 'antd';
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, PlusOutlined } from '@ant-design/icons';
@@ -16,6 +15,7 @@ import { useT } from '../../locale';
 import { useDataSourceManager, useCompile } from '@nocobase/client';
 import { getFieldOptions, getCollectionOptions, getFormatterOptionsByField } from './QueryBuilder.service';
 import { appendColon, debugLog } from '../utils';
+import AntdFilterSelector from '../components/AntdFilterSelector';
 
 export type QueryBuilderRef = {
   validate: () => Promise<any>;
@@ -234,16 +234,7 @@ export const QueryBuilder = React.forwardRef<
         <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Filter'), lang)}</div>
         <div style={{ marginBottom: 16 }}>
           <Form.Item name="filter" style={{ overflow: 'auto' }}>
-            <FilterGroup
-              value={form.getFieldValue('filter')}
-              onChange={(v) => {
-                form.setFieldsValue({ filter: v });
-                onChange?.(form.getFieldsValue(true));
-              }}
-              FilterItem={(p) => {
-                return <VariableFilterItem {...p} model={ctx.model} rightAsVariable />;
-              }}
-            />
+            <AntdFilterSelector model={ctx.model} rightAsVariable />
           </Form.Item>
         </div>
 

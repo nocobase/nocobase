@@ -47,6 +47,7 @@ import { buildServerContextParams as _buildServerContextParams } from './utils/s
 import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
+import dayjs from 'dayjs';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -896,6 +897,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare requireAsync: (url: string) => Promise<any>;
   declare importAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
+  declare pageInfo: { version?: 'v1' | 'v2' };
   /**
    * @deprecated use `resolveJsonTemplate` instead
    */
@@ -1705,6 +1707,7 @@ export class FlowRunJSContext extends FlowContext {
     this.addDelegate(delegate);
     this.defineProperty('React', { value: React });
     this.defineProperty('antd', { value: antd });
+    this.defineProperty('dayjs', { value: dayjs });
     // 为 JS 运行时代码提供带有 antd/App/ConfigProvider 包裹的 React 根
     // 保持与 ReactDOMClient 接口一致，优先覆盖 createRoot，其余方法透传
     const ReactDOMShim: any = {

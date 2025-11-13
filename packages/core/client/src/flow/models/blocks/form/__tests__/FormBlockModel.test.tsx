@@ -160,7 +160,8 @@ describe('FlowModel core behaviors (collected)', () => {
     const [, e2, i2, o2] = spy.mock.calls[1];
     expect(e2).toBe('somethingElse');
     expect(i2).toEqual({ bar: 2 });
-    expect(o2).toEqual({ sequential: undefined, useCache: undefined });
+    // 非 beforeRender 事件：默认顺序执行，不强制使用缓存
+    expect(o2).toMatchObject({ sequential: true, useCache: undefined });
   });
 
   it('stepParams change triggers debounced rerun of last beforeRender', async () => {

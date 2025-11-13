@@ -7,16 +7,50 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, useFlowContext } from '@nocobase/flow-engine';
+import { escapeT, useFlowContext, FlowContextSelector } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
 import { Card, Spin, theme, Tooltip, Select, InputNumber } from 'antd';
 import { LinkOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import RIframe from 'react-iframe';
 import type { IIframe } from 'react-iframe/types';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { BlockModel, useCompile, useRequest, TextAreaWithContextSelector, joinUrlSearch } from '@nocobase/client';
+import {
+  CodeEditor,
+  BlockModel,
+  useCompile,
+  useRequest,
+  TextAreaWithContextSelector,
+  joinUrlSearch,
+} from '@nocobase/client';
+
+const HtmlEditorBase: React.FC<any> = (props) => {
+  const { value, onChange } = props;
+  const ctx = useFlowContext();
+  return (
+    <CodeEditor
+      {...props}
+      language="html"
+      value={value}
+      onChange={onChange}
+      RightExtra={({ viewRef }) => (
+        <FlowContextSelector
+          onChange={(text) => {
+            if (!text) return;
+            const view = viewRef.current;
+            if (!view) return;
+            const { from, to } = view.state.selection.main;
+            const newPos = from + text.length;
+            view.dispatch({ changes: { from, to, insert: text }, selection: { anchor: newPos }, scrollIntoView: true });
+            view.focus();
+          }}
+          metaTree={() => ctx.getPropertyMetaTree()}
+        />
+      )}
+    />
+  );
+};
 
 const Iframe: any = observer(
   (props: IIframe & { html?: string; htmlId?: number; mode: string; params?: any }) => {
@@ -346,9 +380,25 @@ IframeBlockModel.registerFlow({
             title: t('html'),
             type: 'string',
             'x-decorator': 'FormItem',
-            'x-component': TextAreaWithContextSelector,
+            'x-component': HtmlEditorBase,
             'x-component-props': {
-              rows: 10,
+              minHeight: '320px',
+              theme: 'light',
+              enableLinter: true,
+              // ref:{editorRef}
+              // rightExtra: (
+              //   <FlowContextSelector
+              //     onChange={(val) => {
+              //       if (!val) return;
+              //       editorRef.current?.insertAtCursor(val);
+              //     }}
+              //     metaTree={() => ctx.getPropertyMetaTree()}
+              //   />
+              // ),
+              // wrapperStyle: {
+              //   position: 'fixed',
+              //   inset: 8,
+              // },
             },
             'x-reactions': {
               dependencies: ['mode'],

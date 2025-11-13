@@ -51,7 +51,7 @@ DeleteActionModel.registerFlow({
           ctx.message.error(ctx.t('No resource or record selected for deletion'));
           return;
         }
-        await ctx.resource.destroy(ctx.record);
+        await ctx.resource.destroy(ctx.blockModel.collection.getFilterByTK(ctx.record));
         ctx.message.success(ctx.t('Record deleted successfully'));
       },
     },

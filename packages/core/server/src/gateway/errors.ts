@@ -34,7 +34,7 @@ export const errors: AppErrors = {
   APP_ERROR: {
     status: 503,
     message: ({ app }) => {
-      const error = AppSupervisor.getInstance().appErrors[app.name];
+      const error = AppSupervisor.getInstance().appErrors[app?.name];
       if (!error) {
         return '';
       }
@@ -49,7 +49,7 @@ export const errors: AppErrors = {
     },
 
     code: ({ app }): string => {
-      const error = AppSupervisor.getInstance().appErrors[app.name];
+      const error = AppSupervisor.getInstance().appErrors[app?.name];
       return error['code'] || 'APP_ERROR';
     },
     command: ({ app }) => app.getMaintaining().command,
@@ -110,7 +110,7 @@ export const errors: AppErrors = {
   APP_RUNNING: {
     status: 200,
     maintaining: false,
-    message: ({ message, app }) => message || `application ${app.name} is running`,
+    message: ({ message, app }) => message || `application ${app?.name} is running`,
   },
 
   UNKNOWN_ERROR: {

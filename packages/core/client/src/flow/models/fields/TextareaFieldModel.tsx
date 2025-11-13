@@ -20,7 +20,7 @@ export class TextareaFieldModel extends FieldModel {
   }
 }
 
-EditableItemModel.bindModelToInterface('TextareaFieldModel', ['textarea', 'markdown'], {
+EditableItemModel.bindModelToInterface('TextareaFieldModel', ['textarea'], {
   isDefault: true,
   defaultProps: {
     autoSize: {

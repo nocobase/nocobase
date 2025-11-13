@@ -16,7 +16,7 @@ Markdown 区块无需绑定数据源使用，使用 Markdown 语法定义文本�
 
 ## 模板引擎
 
-使用  **[Liquid 模板引擎](https://shopify.github.io/liquid/basics/introduction/)**，提供强大且灵活的模板渲染能力，使内容能够动态生成和定制化展示。通过模板引擎，你可以：
+使用  **[Liquid 模板引擎](https://liquidjs.com/tags/overview.html)**，提供强大且灵活的模板渲染能力，使内容能够动态生成和定制化展示。通过模板引擎，你可以：
 
 - **动态插值**：在模板中使用占位符引用变量，例如 `{{ ctx.user.userName }}` 自动替换为对应的用户名称。
 - **条件渲染**：支持条件语句（`{% if %}...{% else %}`），根据不同的数据状态显示不同内容。

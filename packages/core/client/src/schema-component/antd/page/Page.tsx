@@ -51,6 +51,7 @@ import { SortableItem } from '../../common/sortable-item';
 import { RemoteSchemaComponent, SchemaComponent, SchemaComponentOptions } from '../../core';
 import { useCompile, useDesignable } from '../../hooks';
 import { useToken } from '../__builtins__';
+import { useFlowEngineContext } from '@nocobase/flow-engine';
 import { ErrorFallback } from '../error-fallback';
 import { useMenuDragEnd, useNocoBaseRoutes } from '../menu/Menu';
 import { AllDataBlocksProvider } from './AllDataBlocksProvider';
@@ -119,6 +120,12 @@ export const Page = React.memo((props: PageProps) => {
   const { active: pageActive } = useKeepAlive();
   const currentTabUid = useCurrentTabUid();
   const tabUidRef = useRef(currentTabUid);
+  const engineCtx = useFlowEngineContext();
+  useEffect(() => {
+    if (pageActive && engineCtx?.pageInfo) {
+      engineCtx.pageInfo.version = 'v1';
+    }
+  }, [pageActive, engineCtx]);
 
   if (pageActive) {
     tabUidRef.current = currentTabUid;

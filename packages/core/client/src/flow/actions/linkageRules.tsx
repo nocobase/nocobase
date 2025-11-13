@@ -20,7 +20,7 @@ import {
   createSafeDocument,
   createSafeNavigator,
 } from '@nocobase/flow-engine';
-import { evaluateConditions, FilterGroupType } from '@nocobase/utils/client';
+import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 import React from 'react';
 import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
@@ -1212,7 +1212,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     .forEach((rule) => {
       const { condition: conditions, actions } = rule;
 
-      const matched = evaluateConditions(conditions, evaluator);
+      const matched = evaluateConditions(removeInvalidFilterItems(conditions), evaluator);
       if (matched) {
         actions.forEach((action) => {
           const setProps = (

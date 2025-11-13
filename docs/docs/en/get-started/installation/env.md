@@ -302,7 +302,7 @@ Log print format. Default is `console` in development and `json` in production. 
 LOGGER_FORMAT=json
 ```
 
-Reference: [Log Format](/ops-management/log-and-monitor/logger/index.md#log-format)
+Reference: [Log Format](/log-and-monitor/logger/index.md#log-format)
 
 ### CACHE_DEFAULT_STORE
 
@@ -362,9 +362,10 @@ TELEMETRY_TRACE_PROCESSOR=console
 Used to append preset local plugins. The value is the package name (the `name` parameter in `package.json`), with multiple plugins separated by commas.
 
 :::info
+
 1. Ensure the plugin is downloaded locally and can be found in the `node_modules` directory. For more details, see [Plugin Organization](/plugin-development/project-structure).
 2. After adding the environment variable, the plugin will appear on the plugin manager page only after an initial installation (`nocobase install`) or upgrade (`nocobase upgrade`).
-:::
+   :::
 
 ```bash
 APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
@@ -375,9 +376,10 @@ APPEND_PRESET_LOCAL_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar
 Used to append built-in plugins that are installed by default. The value is the package name (the `name` parameter in `package.json`), with multiple plugins separated by commas.
 
 :::info
+
 1. Ensure the plugin is downloaded locally and can be found in the `node_modules` directory. For more details, see [Plugin Organization](/plugin-development/project-structure).
 2. After adding the environment variable, the plugin will be automatically installed or upgraded during the initial installation (`nocobase install`) or upgrade (`nocobase upgrade`).
-:::
+   :::
 
 ```bash
 APPEND_PRESET_BUILT_IN_PLUGINS=@my-project/plugin-foo,@my-project/plugin-bar

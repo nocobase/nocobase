@@ -48,29 +48,44 @@ CollectionSelectorFieldModel.registerFlow({
   steps: {
     init: {
       handler(ctx) {
-        const collections = ctx.dataSourceManager.getDataSource('main').getCollections();
-        const defaultOptions = ctx.model.context.collectionField.uiSchema.enum || [];
-        const options = collections
-          .filter((item: any) => !item.options.hidden)
-          .filter((v) => {
-            if (defaultOptions.length) {
-              return defaultOptions.find((c) => c.value === v.name);
-            }
-            return true;
-          })
-          .map((item: any) => ({
-            label: ctx.t(item.title) || item.name,
-            value: item.name || item.value,
-            color: item.category?.color,
-          }));
-        ctx.model.setProps({
-          options: options,
-        });
+        if (ctx.model.props.isTableOid) {
+          const childCollections = ctx.dataSourceManager
+            .getDataSource('main')
+            .collectionManager.getChildrenCollections(ctx.collectionField.collectionName);
+          const options = ctx.collectionField.collection.concat(childCollections).map((item) => {
+            return {
+              label: ctx.t(item.title) || item.name,
+              value: item.name || item.value,
+            };
+          });
+          ctx.model.setProps({
+            options: options,
+          });
+        } else {
+          const collections = ctx.dataSourceManager.getDataSource('main').getCollections();
+          const defaultOptions = ctx.model.context.collectionField.uiSchema.enum || [];
+          const options = collections
+            .filter((item: any) => !item.options.hidden)
+            .filter((v) => {
+              if (defaultOptions.length) {
+                return defaultOptions.find((c) => c.value === v.name);
+              }
+              return true;
+            })
+            .map((item: any) => ({
+              label: ctx.t(item.title) || item.name,
+              value: item.name || item.value,
+              color: item.category?.color,
+            }));
+          ctx.model.setProps({
+            options: options,
+          });
+        }
       },
     },
   },
 });
 
-EditableItemModel.bindModelToInterface('CollectionSelectorFieldModel', ['collection'], {
+EditableItemModel.bindModelToInterface('CollectionSelectorFieldModel', ['collection', 'tableoid'], {
   isDefault: true,
 });

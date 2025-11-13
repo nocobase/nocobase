@@ -224,7 +224,7 @@ describe('association operate', async () => {
         actions: [
           {
             name: 'update',
-            fields: [],
+            fields: ['title'],
           },
         ],
       },

@@ -25,7 +25,7 @@ export const isEmpty = (value: unknown) => {
   if (Array.isArray(value)) {
     return value.length === 0;
   }
-  return !value;
+  return false;
 };
 
 export const isPlainObject = (value) => {
@@ -157,6 +157,12 @@ export const removeNullCondition = (filter, customFlat = flat) => {
   }
 
   const result = customFlat.unflatten(values);
+
+  for (const key in result) {
+    if (Array.isArray(result[key])) {
+      result[key] = result[key].filter((item) => item != null);
+    }
+  }
 
   return _.isEmpty(result) ? undefined : result;
 };

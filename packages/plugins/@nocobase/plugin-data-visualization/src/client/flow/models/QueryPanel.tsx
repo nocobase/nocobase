@@ -19,6 +19,9 @@ import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { configStore } from './config-store';
 import { validateQuery } from './QueryBuilder.service';
 
+const defaultSQL = `SELECT * FROM my_table
+LIMIT 200;`;
+
 const QueryMode: React.FC = connect(({ value = 'builder', onChange, onClick }) => {
   const t = useT();
   return (
@@ -53,6 +56,12 @@ export const QueryPanel: React.FC = observer(() => {
     // 在 SQL 模式下，隐藏并取消校验 builder 模式相关字段，避免全表单 submit 时的必填校验
     const builderAddrs = ['collectionPath', 'measures', 'dimensions', 'filter', 'orders', 'limit', 'offset'];
     if (mode === 'sql') {
+      // 新增：SQL 模式默认模板（仅在当前为空时设置）
+      const currentSql = form?.values?.query?.sql;
+      if (!currentSql || !String(currentSql).trim()) {
+        form?.setValuesIn?.('query.sql', defaultSQL);
+      }
+
       builderAddrs.forEach((addr) => {
         form.setFieldState(`query.${addr}`, (state: any) => {
           state.display = 'none';

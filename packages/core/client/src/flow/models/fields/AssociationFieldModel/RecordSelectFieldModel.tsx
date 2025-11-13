@@ -8,7 +8,6 @@
  */
 import {
   CollectionField,
-  createCollectionContextMeta,
   EditableItemModel,
   escapeT,
   FilterableItemModel,
@@ -76,10 +75,6 @@ export class RecordSelectFieldModel extends AssociationFieldModel {
     // For association fields, expose target collection to variable selectors
     this.context.defineProperty('collection', {
       get: () => this.context.collectionField?.targetCollection,
-      meta: createCollectionContextMeta(
-        () => this.context.collectionField?.targetCollection,
-        this.context.t('Current collection'),
-      ),
     });
   }
 

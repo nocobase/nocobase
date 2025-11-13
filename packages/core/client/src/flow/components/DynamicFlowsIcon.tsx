@@ -19,6 +19,7 @@ import {
   FlowDefinition,
   FlowStep,
   FlowStepContext,
+  isBeforeRenderFlow,
 } from '@nocobase/flow-engine';
 import { Collapse, Input, Button, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { uid } from '@formily/shared';
@@ -123,7 +124,6 @@ const EventConfigSection = observer(
             />
           </div>
 
-          {/* 触发条件 */}
           {eventName &&
             flowEngine.flowSettings.renderStepForm({
               key: eventName,
@@ -468,6 +468,17 @@ const DynamicFlowsEditor = observer((props: { model: FlowModel }) => {
           onClick={async () => {
             setSubmitLoading(true);
             await model.flowRegistry.save();
+            // 保存事件流定义后，失效 beforeRender 缓存并触发一次重跑，确保改动立刻生效
+            const beforeRenderFlows = model.flowRegistry
+              .mapFlows((flow) => {
+                if (isBeforeRenderFlow(flow)) {
+                  return flow;
+                }
+              })
+              .filter(Boolean);
+            if (beforeRenderFlows.length > 0) {
+              model.rerender(); // 不阻塞，后续保存
+            }
             setSubmitLoading(false);
             model.context?.message?.success?.(t('Configuration saved'));
             ctx.view.destroy();

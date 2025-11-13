@@ -191,6 +191,11 @@ export class PluginMultiAppManagerServer extends Plugin {
       subApp.runCommand('start', '--quickstart');
     }
 
+    if (type === 'subAppStopped') {
+      const { appName } = message;
+      await AppSupervisor.getInstance().stopApp(appName);
+    }
+
     if (type === 'removeApp') {
       const { appName } = message;
       await AppSupervisor.getInstance().removeApp(appName);
@@ -287,6 +292,13 @@ export class PluginMultiAppManagerServer extends Plugin {
           });
         });
 
+        subApp.on('afterStop', async () => {
+          this.sendSyncMessage({
+            type: 'subAppStopped',
+            appName: name,
+          });
+        });
+
         const quickstart = async () => {
           // create database
           try {
@@ -374,6 +386,13 @@ export class PluginMultiAppManagerServer extends Plugin {
       subApp.on('afterStart', async () => {
         this.sendSyncMessage({
           type: 'subAppStarted',
+          appName: name,
+        });
+      });
+
+      subApp.on('afterStop', async () => {
+        this.sendSyncMessage({
+          type: 'subAppStopped',
           appName: name,
         });
       });

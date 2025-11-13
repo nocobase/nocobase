@@ -21,7 +21,7 @@
 
 ## Audit Logs
 
-> See [Audit Logs](../security/audit-logger/index.md)
+> See [Audit Logs](/security/audit-logger/index.md)
 
 - Record user (or API) actions on system resources, focusing on resource type, target object, operation type, user information, and operation status.
 - To better track what users did and what results were produced, request parameters and responses are stored as metadata.
@@ -30,18 +30,15 @@
   They can reveal what kind of operations occurred but not the exact data before modification, thus cannot be used for version control or restoring data after misoperations.
 - Stored as both files and database tables.
 
-
 ![](https://static-docs.nocobase.com/202501031627922.png)
-
 
 ## Record History
 
-> See [Record History](./record-history/index.md)
+> See [Record History](/record-history/index.md)
 
 - Records the **change history** of data content.
 - Tracks resource type, resource object, operation type, changed fields, and before/after values.
 - Useful for **data comparison and auditing**.
 - Stored in database tables.
-
 
 ![](https://static-docs.nocobase.com/202511011338499.png)
