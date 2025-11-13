@@ -188,11 +188,6 @@ export const useMobileActionDrawerStyle = genStyleHook('nb-mobile-action-drawer'
           backgroundColor: token.colorBgContainer,
         },
 
-        // 带有 tab 页的半窗
-        '.ant-tabs-content-holder': {
-          padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
-        },
-
         // clear the margin-bottom of the last block
         '& > .nb-grid-container > .nb-grid > .nb-grid-warp > .nb-grid-row:nth-last-child(2) .noco-card-item': {
           marginBottom: 0,

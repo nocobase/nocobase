@@ -12,7 +12,7 @@ import { Popup } from 'antd-mobile';
 import React, { FC, ReactNode, useMemo } from 'react';
 import { CloseOutline } from 'antd-mobile-icons';
 import { useMobileActionDrawerStyle } from './MobilePopup.style';
-import { useFlowModelContext } from '../hooks';
+import { useTranslation } from 'react-i18next';
 
 interface MobilePopupProps {
   title?: string;
@@ -20,11 +20,13 @@ interface MobilePopupProps {
   minHeight?: number | string;
   onClose: () => void;
   children: ReactNode;
+  className?: string;
+  footer?: ReactNode;
 }
 
 export const MobilePopup: FC<MobilePopupProps> = (props) => {
-  const { title, visible, onClose: closePopup, children, minHeight } = props;
-  const t = useFlowModelContext().t;
+  const { title, visible, onClose: closePopup, children, minHeight, className, footer } = props;
+  const { t } = useTranslation();
   const { componentCls, hashId } = useMobileActionDrawerStyle();
 
   const style = useMemo(() => {
@@ -48,12 +50,14 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
   return (
     <ConfigProvider theme={theme}>
       <Popup
-        className={`${componentCls} ${hashId}`}
+        className={`${componentCls} ${hashId} ${className || ''}`}
         visible={visible}
         onClose={closePopup}
         onMaskClick={closePopup}
         bodyClassName="nb-mobile-action-drawer-body"
-        bodyStyle={style}
+        bodyStyle={{
+          padding: 0,
+        }}
         maskStyle={style}
         style={style}
         destroyOnClose
@@ -75,6 +79,7 @@ export const MobilePopup: FC<MobilePopupProps> = (props) => {
           </span>
         </div>
         {children}
+        {footer && <div className="nb-mobile-action-drawer-footer">{footer}</div>}
       </Popup>
     </ConfigProvider>
   );
