@@ -43,11 +43,9 @@ function JsEditableField() {
 
   return (
     <Input
+      {...ctx.model.props}
       value={value}
       onChange={onChange}
-      disabled={!!ctx.disabled}
-      readOnly={!!ctx.readOnly}
-      style={{ width: '100%' }}
     />
   );
 }
