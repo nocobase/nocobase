@@ -24,6 +24,7 @@ import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
 import { setSystemRoleMode } from './actions/union-role';
 import { checkAssociationOperate } from './middlewares/check-association-operate';
+import { checkChangesWithAssociation } from './middlewares/check-change-with-association';
 
 export class PluginACLServer extends Plugin {
   get acl() {
@@ -630,6 +631,10 @@ export class PluginACLServer extends Plugin {
 
     this.app.acl.use(checkAssociationOperate, {
       before: 'core',
+    });
+
+    this.app.acl.use(checkChangesWithAssociation, {
+      after: 'core',
     });
 
     this.db.on('afterUpdateCollection', async (collection) => {

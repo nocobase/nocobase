@@ -30,7 +30,7 @@ function normalizeAssociationValue(
 /**
  * Process nested association values recursively if creation is allowed.
  */
-function processAssociationChild(
+async function processAssociationChild(
   ctx: Context,
   value: Record<string, any>,
   recordKey: string,
@@ -39,22 +39,36 @@ function processAssociationChild(
   updateParams: any,
   target: string,
   fieldPath: string,
-): Record<string, any> | null {
+): Promise<Record<string, any> | null> {
   // Case 1: Existing record → potential update
   if (value[recordKey]) {
     if (!updateParams) {
       // No update permission, skip
       return _.pick(value, recordKey);
     } else {
-      // TODO: handle update logic later
-      // For now, only allow recursion on whitelisted update fields
-      return processValues(ctx, value, updateAssociationValues, updateParams, target, fieldPath);
+      const filteredParams = ctx.acl.filterParams(ctx, target, updateParams);
+      const parsedParams = await ctx.acl.parseJsonTemplate(filteredParams, ctx);
+      if (parsedParams.filter) {
+        // permission scope exists, verify the record exists under the scope
+        const repo = ctx.db.getRepository(target);
+        if (!repo) {
+          return _.pick(value, recordKey);
+        }
+        const record = await repo.findOne({
+          filterByTk: recordKey,
+          filter: parsedParams.filter,
+        });
+        if (!record) {
+          return _.pick(value, recordKey);
+        }
+      }
+      return await processValues(ctx, value, updateAssociationValues, updateParams, target, fieldPath);
     }
   }
 
   // Case 2: New record → potential create
   if (createParams) {
-    return processValues(ctx, value, updateAssociationValues, createParams, target, fieldPath);
+    return await processValues(ctx, value, updateAssociationValues, createParams, target, fieldPath);
   }
 
   // Case 3: Neither create nor update is allowed
@@ -64,7 +78,7 @@ function processAssociationChild(
 /**
  * Recursively process values based on ACL and association rules.
  */
-function processValues(
+async function processValues(
   ctx: Context,
   values: Record<string, any>,
   updateAssociationValues: string[],
@@ -123,7 +137,7 @@ function processValues(
     if (Array.isArray(fieldValue)) {
       const processedArray = [];
       for (const item of fieldValue) {
-        const result = processAssociationChild(
+        const result = await processAssociationChild(
           ctx,
           item,
           recordKey,
@@ -143,7 +157,7 @@ function processValues(
         values[fieldName] = processedArray;
       }
     } else {
-      const result = processAssociationChild(
+      const result = await processAssociationChild(
         ctx,
         fieldValue,
         recordKey,
@@ -178,6 +192,6 @@ export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
   if (resourceName.includes('.')) {
     collectionName = resourceName.split('.')[1];
   }
-  processValues(ctx, values, updateAssocationValues, params, collectionName);
+  await processValues(ctx, values, updateAssocationValues, params, collectionName);
   await next();
 };
