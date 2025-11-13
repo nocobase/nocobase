@@ -356,7 +356,7 @@ UploadActionModel.registerFlow({
           },
           embed: {},
         };
-        const openMode = ctx.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
+        const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
         ctx.viewer.open({
           type: openMode,
