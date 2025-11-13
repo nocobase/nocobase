@@ -338,6 +338,9 @@ export const DefaultValue = connect((props: Props) => {
   const InputComponent = useMemo(() => {
     const ConstantValueEditor = (inputProps) => {
       const initializedRef = React.useRef(false);
+      const [, forceUpdate] = React.useReducer((x) => x + 1, 0);
+      const lastParentValueRef = React.useRef<any>(Symbol('init'));
+      const lastAppliedValueRef = React.useRef<any>(Symbol('none'));
       React.useEffect(() => {
         const fieldModel = tempRoot?.subModels?.fields?.[0];
         if (!fieldModel) return;
@@ -351,14 +354,28 @@ export const DefaultValue = connect((props: Props) => {
           if (Array.isArray(v)) return v.map((i) => (hasData(i) ? i.data : i));
           return hasData(v) ? v.data : v;
         };
-        // 基于字段接口判断是否需要受控：
-        // - 文本类（input/longText/richText）保持非受控，避免 IME 问题
-        // - 其他类型（包含日期/时间/枚举/布尔/关联等）统一受控
-        const fieldInterfaceRaw = fieldModel?.context?.collectionField?.interface;
-        const fieldInterface = typeof fieldInterfaceRaw === 'string' ? fieldInterfaceRaw : undefined;
-        const isTextLike = fieldInterface
-          ? ['input', 'longText', 'richText'].includes(fieldInterface)
-          : fieldModel instanceof InputFieldModel;
+        // 文本类：
+        // - 以模型类型判断（_originalModel.use === 'InputFieldModel' 或当前 use 名称）
+        // - 以接口判断的回退（兼容 email/phone/url/uuid/nanoid/textarea/markdown/richText/password/color 等都走文本输入）
+        const originalUseName = (fieldModel as any)?._originalModel?.use || (fieldModel as any)?.use;
+        const iface = (fieldModel as any)?.context?.collectionField?.interface as string | undefined;
+        const textIfaceSet = new Set([
+          'input',
+          'email',
+          'phone',
+          'uuid',
+          'url',
+          'nanoid',
+          'textarea',
+          'markdown',
+          'richText',
+          'password',
+          'color',
+        ]);
+        const isTextLike =
+          originalUseName === 'InputFieldModel' ||
+          (iface ? textIfaceSet.has(iface) : fieldModel instanceof InputFieldModel);
+        const pickPrimitive = (n: any) => (n && typeof n === 'object' && 'target' in n ? n?.target?.value : n);
         // 将 VariableInput 提供的受控属性透传到临时字段模型上，确保受控生效
         // - value: 由 VariableInput 控制
         // - onChange: 回传给 VariableInput，从而驱动 Formily/外层表单值
@@ -369,8 +386,16 @@ export const DefaultValue = connect((props: Props) => {
           // 透传 change，兼容 antd DatePicker 的 (dates, dateStrings) 形态
           onChange: (...args: any[]) => {
             const next = args.length > 1 ? args[1] : args[0];
-            const out = isAssociation ? toRecordValue(next) : next;
+            const out = isAssociation ? toRecordValue(next) : pickPrimitive(next);
+            // 即时镜像到临时字段，保证受控组件（日期/选择等）在当前弹窗内也能立刻显示选择结果
+            if (!isTextLike) {
+              const applied = isAssociation ? toRecordValue(next) : pickPrimitive(next);
+              lastAppliedValueRef.current = applied;
+              fieldModel.setProps({ value: applied, defaultValue: undefined });
+            }
             (rest?.onChange ?? inputProps?.onChange)?.(out);
+            // 触发本地重渲，确保 FlowModelRenderer 重新执行 model.render()
+            forceUpdate();
           },
           onCompositionStart: rest?.onCompositionStart ?? inputProps?.onCompositionStart,
           onCompositionUpdate: rest?.onCompositionUpdate ?? inputProps?.onCompositionUpdate,
@@ -389,14 +414,22 @@ export const DefaultValue = connect((props: Props) => {
           }
         }
         // 非文本类统一受控；文本类不受控（仅初始化 defaultValue）。
-        // 受控值也取自 DefaultValue 外层的 value。
+        // 仅当外层 value 实际变化时才镜像到临时字段，避免覆盖用户在本弹窗中的即时选择。
         if (!isTextLike) {
-          const current = value;
-          if (typeof current !== 'undefined') {
-            fieldModel.setProps({ value: toRecordValue(current) });
+          const parentVal = value;
+          const changedFromParent = parentVal !== lastParentValueRef.current;
+          if (changedFromParent) {
+            lastParentValueRef.current = parentVal;
+            if (typeof parentVal !== 'undefined') {
+              const applied = isAssociation ? toRecordValue(parentVal) : pickPrimitive(parentVal);
+              lastAppliedValueRef.current = applied;
+              fieldModel.setProps({ value: applied });
+              // 由外层驱动时也重渲，确保 UI 同步
+              forceUpdate();
+            }
           }
         }
-      }, [inputProps]);
+      }, [inputProps, value]);
       return (
         <div style={{ flexGrow: 1 }}>
           <FlowModelRenderer model={tempRoot} showFlowSettings={false} />
