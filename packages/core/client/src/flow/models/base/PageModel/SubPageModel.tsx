@@ -8,7 +8,7 @@
  */
 
 import { PageHeader } from '@ant-design/pro-layout';
-import { FlowModel, FlowModelRenderer, FlowSettingsButton, escapeT } from '@nocobase/flow-engine';
+import { FlowModel, FlowModelRenderer, FlowSettingsButton, tExpr } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import React from 'react';
 import { OldPageModel } from './OldPageModel';

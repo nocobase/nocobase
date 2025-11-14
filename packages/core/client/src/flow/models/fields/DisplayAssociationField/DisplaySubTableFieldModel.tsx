@@ -8,7 +8,7 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, escapeT, FlowSettingsButton } from '@nocobase/flow-engine';
+import { AddSubModelButton, tExpr, FlowSettingsButton } from '@nocobase/flow-engine';
 import { Table } from 'antd';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -137,7 +137,7 @@ export class DisplaySubTableFieldModel extends FieldModel {
 
 DisplaySubTableFieldModel.registerFlow({
   key: 'TableAssociation',
-  title: escapeT('Association table settings'),
+  title: tExpr('Association table settings'),
   steps: {
     init: {
       async handler(ctx) {
@@ -145,7 +145,7 @@ DisplaySubTableFieldModel.registerFlow({
       },
     },
     pageSize: {
-      title: escapeT('Page size'),
+      title: tExpr('Page size'),
       uiSchema: {
         pageSize: {
           'x-component': 'Select',
@@ -173,7 +173,7 @@ DisplaySubTableFieldModel.registerFlow({
 });
 
 DisplaySubTableFieldModel.define({
-  label: escapeT('Sub-table'),
+  label: tExpr('Sub-table'),
 });
 
 DetailsItemModel.bindModelToInterface('DisplaySubTableFieldModel', ['m2m', 'o2m', 'mbm']);

@@ -13,7 +13,7 @@ import {
   createSafeDocument,
   createSafeWindow,
   createSafeNavigator,
-  escapeT,
+  tExpr,
   compileRunJs,
 } from '@nocobase/flow-engine';
 import React from 'react';
@@ -93,7 +93,7 @@ export class JSItemModel extends CommonItemModel {
 }
 
 JSItemModel.define({
-  label: escapeT('JS item'),
+  label: tExpr('JS item'),
   // 明确指定 createModelOptions，避免在构建压缩后通过类名推断失败
   createModelOptions: {
     use: 'JSItemModel',
@@ -103,10 +103,10 @@ JSItemModel.define({
 
 JSItemModel.registerFlow({
   key: 'jsSettings',
-  title: escapeT('JavaScript settings'),
+  title: tExpr('JavaScript settings'),
   steps: {
     runJs: {
-      title: escapeT('Write JavaScript'),
+      title: tExpr('Write JavaScript'),
       uiSchema: {
         code: {
           type: 'string',

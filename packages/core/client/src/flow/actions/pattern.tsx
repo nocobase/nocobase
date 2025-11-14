@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { BindingOptions, defineAction, escapeT, DisplayItemModel } from '@nocobase/flow-engine';
+import { BindingOptions, defineAction, tExpr, DisplayItemModel } from '@nocobase/flow-engine';
 import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
 
 export const pattern = defineAction({
   name: 'pattern',
-  title: escapeT('Display mode'),
+  title: tExpr('Display mode'),
   uiSchema: (ctx) => {
     if (!ctx.model.collectionField) {
       return;
@@ -24,16 +24,16 @@ export const pattern = defineAction({
         enum: [
           {
             value: 'editable',
-            label: escapeT('Editable'),
+            label: tExpr('Editable'),
           },
           {
             value: 'disabled',
-            label: escapeT('Disabled'),
+            label: tExpr('Disabled'),
           },
 
           {
             value: 'readPretty',
-            label: escapeT('Display only'),
+            label: tExpr('Display only'),
           },
         ],
         'x-disabled': ctx.model.collectionField.inputable === false,
@@ -66,17 +66,26 @@ export const pattern = defineAction({
       }
     }
   },
-
-  handler(ctx, params) {
+  beforeParamsSave(ctx, params, previousParams) {
     if (params.pattern === 'readPretty') {
       ctx.model.setProps({
         pattern: 'readPretty',
+        disabled: false,
       });
     } else {
       ctx.model.setProps({
         disabled: params.pattern === 'disabled',
+        pattern: 'editable',
       });
     }
+  },
+  handler(ctx, params) {
+    if (!params.pattern) {
+      return;
+    }
+    ctx.model.setProps({
+      pattern: params.pattern,
+    });
   },
 });
 

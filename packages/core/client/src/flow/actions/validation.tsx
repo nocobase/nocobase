@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT, jioToJoiSchema } from '@nocobase/flow-engine';
+import { defineAction, tExpr, jioToJoiSchema } from '@nocobase/flow-engine';
 import { FieldValidation } from '../../collection-manager';
 
 export const validation = defineAction({
-  title: escapeT('Validation'),
+  title: tExpr('Validation'),
   name: 'validation',
   uiSchema: (ctx) => {
     if (!ctx.model.collectionField) {

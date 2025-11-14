@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionField, escapeT } from '@nocobase/flow-engine';
+import { CollectionField, tExpr } from '@nocobase/flow-engine';
 import { Typography } from 'antd';
 import { castArray } from 'lodash';
 import { css } from '@emotion/css';
@@ -67,11 +67,11 @@ export class DisplayTitleFieldModel extends FieldModel {
 
 DisplayTitleFieldModel.registerFlow({
   key: 'displayFieldSettings',
-  title: escapeT('Display Field settings'),
+  title: tExpr('Display Field settings'),
   sort: 200,
   steps: {
     overflowMode: {
-      title: escapeT('Content overflow display mode'),
+      title: tExpr('Content overflow display mode'),
       use: 'overflowMode',
     },
   },

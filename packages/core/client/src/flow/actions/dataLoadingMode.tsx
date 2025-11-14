@@ -7,19 +7,18 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import { defineAction, tExpr } from '@nocobase/flow-engine';
 
 export const dataLoadingMode = defineAction({
   name: 'dataLoadingMode',
-  title: tval('Data loading mode'),
+  title: tExpr('Data loading mode'),
   uiSchema: {
     dataLoadingMode: {
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
       enum: [
-        { value: 'auto', label: tval('Load all data when filter is empty') },
-        { value: 'manual', label: tval('Do not load data when filter is empty') },
+        { value: 'auto', label: tExpr('Load all data when filter is empty') },
+        { value: 'manual', label: tExpr('Do not load data when filter is empty') },
       ],
     },
   },

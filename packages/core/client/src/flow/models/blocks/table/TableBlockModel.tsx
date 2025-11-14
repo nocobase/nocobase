@@ -18,7 +18,7 @@ import {
   DndProvider,
   DragHandler,
   Droppable,
-  escapeT,
+  tExpr,
   FlowModelRenderer,
   FlowSettingsButton,
   ForkFlowModel,
@@ -520,10 +520,10 @@ TableBlockModel.registerFlow({
 TableBlockModel.registerFlow({
   key: 'tableSettings',
   sort: 500,
-  title: escapeT('Table settings'),
+  title: tExpr('Table settings'),
   steps: {
     showRowNumbers: {
-      title: escapeT('Show row numbers'),
+      title: tExpr('Show row numbers'),
       uiSchema: {
         showIndex: {
           'x-component': 'Switch',
@@ -538,7 +538,7 @@ TableBlockModel.registerFlow({
       },
     },
     quickEdit: {
-      title: escapeT('Enable quick edit'),
+      title: tExpr('Enable quick edit'),
       uiSchema: {
         editable: {
           'x-component': 'Switch',
@@ -553,7 +553,7 @@ TableBlockModel.registerFlow({
       },
     },
     pageSize: {
-      title: escapeT('Page size'),
+      title: tExpr('Page size'),
       uiSchema: {
         pageSize: {
           'x-component': 'Select',
@@ -579,26 +579,26 @@ TableBlockModel.registerFlow({
     },
     dataScope: {
       use: 'dataScope',
-      title: escapeT('Data scope'),
+      title: tExpr('Data scope'),
     },
     defaultSorting: {
       use: 'sortingRule',
-      title: escapeT('Default sorting'),
+      title: tExpr('Default sorting'),
     },
     // dataLoadingMode: {
     //   use: 'dataLoadingMode',
-    //   title: escapeT('Data loading mode'),
+    //   title: tExpr('Data loading mode'),
     // },
     tableDensity: {
-      title: escapeT('Table density'),
+      title: tExpr('Table density'),
       uiSchema: {
         size: {
           'x-component': 'Select',
           'x-decorator': 'FormItem',
           enum: [
-            { label: escapeT('Large'), value: 'large' },
-            { label: escapeT('Middle'), value: 'middle' },
-            { label: escapeT('Small'), value: 'small' },
+            { label: tExpr('Large'), value: 'large' },
+            { label: tExpr('Middle'), value: 'middle' },
+            { label: tExpr('Small'), value: 'small' },
           ],
         },
       },
@@ -610,7 +610,7 @@ TableBlockModel.registerFlow({
       },
     },
     // virtualScrolling: {
-    //   title: escapeT('Enable virtual scrolling'),
+    //   title: tExpr('Enable virtual scrolling'),
     //   uiSchema: {
     //     virtual: {
     //       'x-component': 'Switch',
@@ -625,7 +625,7 @@ TableBlockModel.registerFlow({
     //   },
     // },
     refreshData: {
-      title: escapeT('Refresh data'),
+      title: tExpr('Refresh data'),
       async handler(ctx, params) {
         await Promise.all(
           ctx.model.mapSubModels('columns', async (column) => {
@@ -644,10 +644,10 @@ TableBlockModel.registerFlow({
 });
 
 TableBlockModel.define({
-  label: escapeT('Table'),
-  group: escapeT('Content'),
+  label: tExpr('Table'),
+  group: tExpr('Content'),
   searchable: true,
-  searchPlaceholder: escapeT('Search'),
+  searchPlaceholder: tExpr('Search'),
   createModelOptions: {
     use: 'TableBlockModel',
     subModels: {
@@ -755,12 +755,12 @@ HighPerformanceTable.displayName = 'HighPerformanceTable';
 
 TableBlockModel.registerEvents({
   rowClick: {
-    title: escapeT('Row click'),
+    title: tExpr('Row click'),
     name: 'rowClick',
     uiSchema: {
       condition: {
         type: 'object',
-        title: escapeT('Trigger condition'),
+        title: tExpr('Trigger condition'),
         'x-decorator': 'FormItem',
         'x-component': (props) => {
           // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -790,7 +790,7 @@ TableBlockModel.registerEvents({
 
 function defineClickedRowRecordVariable(model: TableBlockModel, value: any) {
   const recordMeta = createCurrentRecordMetaFactory(model.context, () => model.collection, {
-    title: escapeT('Clicked row record'),
+    title: tExpr('Clicked row record'),
   });
   model.context.defineProperty('clickedRowRecord', {
     get: () => value,

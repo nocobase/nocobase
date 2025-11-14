@@ -8,7 +8,7 @@
  */
 
 import { css } from '@emotion/css';
-import { escapeT, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
+import { tExpr, FlowModelRenderer, useFlowModel } from '@nocobase/flow-engine';
 import { Card, Divider } from 'antd';
 import React, { useRef } from 'react';
 import { castArray } from 'lodash';
@@ -104,7 +104,7 @@ export class DisplaySubListFieldModel extends FieldModel {
 }
 
 DisplaySubListFieldModel.define({
-  label: escapeT('Sub-detail'),
+  label: tExpr('Sub-detail'),
   createModelOptions: {
     use: 'DisplaySubListFieldModel',
     subModels: {

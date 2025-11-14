@@ -8,7 +8,7 @@
  */
 import { DatePicker } from 'antd';
 import React from 'react';
-import { escapeT } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 import { FieldModel } from '../../base';
 
 export class DateTimeFieldModel extends FieldModel {}
@@ -16,11 +16,11 @@ export class DateTimeFieldModel extends FieldModel {}
 DateTimeFieldModel.registerFlow({
   key: 'datetimeSettings',
   sort: 3000,
-  title: escapeT('Datetime settings'),
+  title: tExpr('Datetime settings'),
   steps: {
     dateFormat: {
       use: 'dateDisplayFormat',
-      title: escapeT('Date display format'),
+      title: tExpr('Date display format'),
     },
   },
 });

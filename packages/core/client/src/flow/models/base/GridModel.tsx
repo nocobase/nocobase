@@ -15,7 +15,7 @@ import {
   Droppable,
   DragOverlayConfig,
   EMPTY_COLUMN_UID,
-  escapeT,
+  tExpr,
   findModelUidPosition,
   FlowModel,
   MemoFlowModelRenderer,
@@ -617,22 +617,22 @@ GridModel.registerFlow({
     grid: {
       uiSchema: {
         rows: {
-          title: escapeT('Rows'),
+          title: tExpr('Rows'),
           'x-decorator': 'FormItem',
           'x-component': JsonEditor,
           'x-component-props': {
             autoSize: { minRows: 10, maxRows: 20 },
-            description: escapeT('Configure the rows and columns of the grid.'),
+            description: tExpr('Configure the rows and columns of the grid.'),
           },
         },
         sizes: {
-          title: escapeT('Sizes'),
+          title: tExpr('Sizes'),
           'x-decorator': 'FormItem',
           'x-component': JsonEditor,
           'x-component-props': {
             rows: 5,
           },
-          description: escapeT(
+          description: tExpr(
             'Configure the sizes of each row. The value is an array of numbers representing the width of each column in the row.',
           ),
         },
