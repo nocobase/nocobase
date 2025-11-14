@@ -86,7 +86,6 @@ export const titleField = defineAction({
     const targetCollection = ctx.model.collectionField.targetCollection;
     const filterKey = targetCollection.filterTargetKey;
     const label = params.label;
-    console.log(ctx.model.parent.props, label);
     const newFieldNames = {
       value: filterKey,
       label,

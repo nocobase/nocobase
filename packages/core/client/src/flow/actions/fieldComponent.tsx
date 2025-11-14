@@ -21,7 +21,11 @@ export const fieldComponent = defineAction({
       const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
       if (!classes || (classes.length === 1 && !titleField)) return null;
 
-      const options = buildAssociationOptions(ctx, DetailsItemModel, titleField);
+      const options = buildAssociationOptions(
+        ctx,
+        DetailsItemModel,
+        titleField || ctx.model.subModels.field.props?.fieldNames?.label,
+      );
       return {
         use: {
           type: 'string',

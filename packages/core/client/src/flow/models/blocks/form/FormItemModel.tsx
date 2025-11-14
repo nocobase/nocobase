@@ -307,7 +307,7 @@ FormItemModel.registerFlow({
       use: 'pattern',
     },
 
-    fieldNames: {
+    titleField: {
       use: 'titleField',
       uiSchema: async (ctx) => {
         if (!ctx.collectionField) {
@@ -319,10 +319,17 @@ FormItemModel.registerFlow({
           return null;
         }
         return {
-          label: {
+          titleField: {
             'x-component': SelectOptions,
             'x-decorator': 'FormItem',
           },
+        };
+      },
+      defaultParams: (ctx: any) => {
+        const titleField =
+          ctx.model.props.titleField || ctx.model.context.collectionField.targetCollectionTitleFieldName;
+        return {
+          titleField: titleField,
         };
       },
       beforeParamsSave: async (ctx, params, previousParams) => {
@@ -331,9 +338,9 @@ FormItemModel.registerFlow({
         if (!isAssociationReadPretty) {
           return null;
         }
-        if (params.label !== previousParams.label) {
+        if (params.titleField !== previousParams.titleField) {
           const targetCollection = ctx.collectionField.targetCollection;
-          const targetCollectionField = targetCollection.getField(params.label);
+          const targetCollectionField = targetCollection.getField(params.titleField);
           const binding = DetailsItemModel.getDefaultBindingByField(ctx, targetCollectionField);
           if (binding.modelName !== (ctx.model.subModels.field as any).use) {
             const fieldUid = ctx.model.subModels['field']['uid'];
@@ -345,20 +352,22 @@ FormItemModel.registerFlow({
                   init: {
                     dataSourceKey: ctx.model.collectionField.dataSourceKey,
                     collectionName: targetCollection.name,
-                    fieldPath: params.label,
+                    fieldPath: params.titleField,
                   },
                 },
               },
             });
             await model.save();
           }
-          ctx.model.setProps(ctx.collectionField.targetCollection.getField(params.label).getComponentProps());
+          ctx.model.setProps(ctx.collectionField.targetCollection.getField(params.titleField).getComponentProps());
         }
       },
       async handler(ctx, params) {
-        if (ctx.model.props.pattern === 'readPretty') {
-          ctx.model.setProps({ titleField: params?.label });
-        }
+        console.log(params.titleField);
+        ctx.model.setProps({ titleField: params?.titleField });
+        // if (ctx.model.props.pattern === 'readPretty') {
+        //   ctx.model.setProps({ titleField: params?.label });
+        // }
       },
     },
   },
