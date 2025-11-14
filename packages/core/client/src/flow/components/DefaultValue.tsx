@@ -79,6 +79,12 @@ function createTempFieldClass(Base: any) {
         this.setProps({ multiple });
       }
 
+      // multipleSelect 接口的字段需要显式开启 antd Select 的多选模式
+      // 仅当未显式传入 mode 时设置，避免覆盖外部自定义
+      if (collectionField?.interface === 'multipleSelect' && typeof (this.props as any)?.mode === 'undefined') {
+        this.setProps({ mode: 'multiple' });
+      }
+
       // 为本地枚举型字段补全可选项（仅在未显式传入 options 时处理）
       ensureOptionsFromUiSchemaEnumIfAbsent(this as unknown as FlowModel, collectionField);
 
@@ -369,7 +375,7 @@ export const DefaultValue = connect((props: Props) => {
           'nanoid',
           'textarea',
           'markdown',
-          'richText',
+          // richText 在本组件中按受控组件处理，避免编辑时被“非受控”策略干扰
           'password',
           'color',
         ]);
@@ -384,9 +390,14 @@ export const DefaultValue = connect((props: Props) => {
         // - 其他样式/属性: 透传但不覆盖我们的可编辑设定
         fieldModel.setProps({
           disabled: false,
-          // 透传 change，兼容 antd DatePicker 的 (dates, dateStrings) 形态
+          // 透传 change：
+          // - 优先取第一个参数（兼容 Input/Select 等）；
+          // - 对于 antd DatePicker/RangePicker 这类 (date, dateString) 的情况，若第二个参数为字符串或字符串数组，优先取第二个参数。
           onChange: (...args: any[]) => {
-            const next = args.length > 1 ? args[1] : args[0];
+            const preferSecond =
+              args.length > 1 &&
+              (typeof args[1] === 'string' || (Array.isArray(args[1]) && args[1].every((i) => typeof i === 'string')));
+            const next = preferSecond ? args[1] : args[0];
             const out = isAssociation ? toRecordValue(next) : pickPrimitive(next);
             // 即时镜像到临时字段，保证受控组件（日期/选择等）在当前弹窗内也能立刻显示选择结果
             if (!isTextLike) {
