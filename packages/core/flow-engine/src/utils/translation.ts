@@ -27,11 +27,16 @@ export function getT(model: FlowModel): (key: string, options?: any) => string {
   return (key: string) => key;
 }
 
-export function escapeT(text: TFuncKey | TFuncKey[], options?: TOptions) {
+export function tExpr(text: TFuncKey | TFuncKey[], options?: TOptions) {
   if (options) {
     return `{{t(${JSON.stringify(text)}, ${JSON.stringify(options)})}}`;
   }
   return `{{t(${JSON.stringify(text)})}}`;
 }
 
-export { escapeT as tExpr };
+/**
+ * @deprecated use tExpr from `@nocobase/flow-engine` instead
+ */
+export function escapeT(text: TFuncKey | TFuncKey[], options?: TOptions) {
+  return tExpr(text, options);
+}

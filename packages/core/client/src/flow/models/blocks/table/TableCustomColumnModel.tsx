@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModel, ModelRenderMode } from '@nocobase/flow-engine';
+import { tExpr, FlowModel, ModelRenderMode } from '@nocobase/flow-engine';
 
 export class TableCustomColumnModel extends FlowModel {
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
@@ -15,16 +15,16 @@ export class TableCustomColumnModel extends FlowModel {
 
 TableCustomColumnModel.registerFlow({
   key: 'tableColumnSettings',
-  title: escapeT('Table column settings'),
+  title: tExpr('Table column settings'),
   steps: {
     title: {
-      title: escapeT('Column title'),
+      title: tExpr('Column title'),
       uiSchema: {
         title: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            placeholder: escapeT('Column title'),
+            placeholder: tExpr('Column title'),
           },
         },
       },
@@ -44,7 +44,7 @@ TableCustomColumnModel.registerFlow({
       },
     },
     tooltip: {
-      title: escapeT('Tooltip'),
+      title: tExpr('Tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
@@ -56,7 +56,7 @@ TableCustomColumnModel.registerFlow({
       },
     },
     width: {
-      title: escapeT('Column width'),
+      title: tExpr('Column width'),
       uiSchema: {
         width: {
           'x-component': 'NumberPicker',
@@ -71,7 +71,7 @@ TableCustomColumnModel.registerFlow({
       },
     },
     fixed: {
-      title: escapeT('Fixed'),
+      title: tExpr('Fixed'),
       use: 'fixed',
     },
   },
@@ -79,5 +79,5 @@ TableCustomColumnModel.registerFlow({
 
 TableCustomColumnModel.define({
   hide: true,
-  label: escapeT('Other columns'),
+  label: tExpr('Other columns'),
 });

@@ -10,7 +10,7 @@
 import {
   CollectionField,
   EditableItemModel,
-  escapeT,
+  tExpr,
   FlowModel,
   FlowModelRenderer,
   observable,
@@ -184,31 +184,31 @@ export class RecordPickerFieldModel extends FieldModel {
 
 RecordPickerFieldModel.registerFlow({
   key: 'popupSettings',
-  title: escapeT('Selector setting'),
+  title: tExpr('Selector setting'),
   on: {
     eventName: 'openView',
   },
   steps: {
     openView: {
-      title: escapeT('Edit popup'),
+      title: tExpr('Edit popup'),
       uiSchema: {
         mode: {
           type: 'string',
-          title: escapeT('Open mode'),
+          title: tExpr('Open mode'),
           enum: [
-            { label: escapeT('Drawer'), value: 'drawer' },
-            { label: escapeT('Dialog'), value: 'dialog' },
+            { label: tExpr('Drawer'), value: 'drawer' },
+            { label: tExpr('Dialog'), value: 'dialog' },
           ],
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
         },
         size: {
           type: 'string',
-          title: escapeT('Popup size'),
+          title: tExpr('Popup size'),
           enum: [
-            { label: escapeT('Small'), value: 'small' },
-            { label: escapeT('Medium'), value: 'medium' },
-            { label: escapeT('Large'), value: 'large' },
+            { label: tExpr('Small'), value: 'small' },
+            { label: tExpr('Medium'), value: 'medium' },
+            { label: tExpr('Large'), value: 'large' },
           ],
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
@@ -296,7 +296,7 @@ RecordPickerFieldModel.registerFlow({
 //专有配置项
 RecordPickerFieldModel.registerFlow({
   key: 'recordPickerSettings',
-  title: escapeT('RecordPicker settings'),
+  title: tExpr('RecordPicker settings'),
   sort: 200,
   steps: {
     fieldNames: {
@@ -306,7 +306,7 @@ RecordPickerFieldModel.registerFlow({
 });
 
 RecordPickerFieldModel.define({
-  label: escapeT('Record picker'),
+  label: tExpr('Record picker'),
 });
 
 EditableItemModel.bindModelToInterface('RecordPickerFieldModel', [

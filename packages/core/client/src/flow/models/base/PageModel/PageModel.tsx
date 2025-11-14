@@ -20,7 +20,7 @@ import {
   FlowModel,
   FlowModelRenderer,
   FlowSettingsButton,
-  escapeT,
+  tExpr,
 } from '@nocobase/flow-engine';
 import { Tabs } from 'antd';
 import _ from 'lodash';
@@ -168,14 +168,14 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
 PageModel.registerFlow({
   key: 'pageSettings',
-  title: escapeT('Page settings'),
+  title: tExpr('Page settings'),
   steps: {
     general: {
-      title: escapeT('Edit page'),
+      title: tExpr('Edit page'),
       uiSchema: {
         title: {
           type: 'string',
-          title: escapeT('Page title'),
+          title: tExpr('Page title'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-reactions': {
@@ -189,13 +189,13 @@ PageModel.registerFlow({
         },
         displayTitle: {
           type: 'boolean',
-          title: escapeT('Display page title'),
+          title: tExpr('Display page title'),
           'x-decorator': 'FormItem',
           'x-component': 'Switch',
         },
         enableTabs: {
           type: 'boolean',
-          title: escapeT('Enable tabs'),
+          title: tExpr('Enable tabs'),
           'x-decorator': 'FormItem',
           'x-component': 'Switch',
         },

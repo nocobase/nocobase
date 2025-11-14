@@ -10,11 +10,11 @@
 import { ButtonProps } from 'antd';
 import { FilterFormActionModel } from './FilterFormActionModel';
 import { FilterFormItemModel } from './FilterFormItemModel';
-import { escapeT } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 
 export class FilterFormResetActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
-    children: escapeT('Reset'),
+    children: tExpr('Reset'),
   };
 }
 
@@ -44,7 +44,7 @@ FilterFormResetActionModel.registerFlow({
 });
 
 FilterFormResetActionModel.define({
-  label: escapeT('Reset'),
+  label: tExpr('Reset'),
   toggleable: true,
   sort: 200,
 });

@@ -7,8 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, DisplayItemModel, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import { defineAction, DisplayItemModel, tExpr, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Select } from 'antd';
 import React from 'react';
 import { isTitleField } from '../../data-source';
@@ -36,7 +35,7 @@ export const SelectOptions = (props) => {
 
 export const titleField = defineAction({
   name: 'titleField',
-  title: tval('Label field'),
+  title: tExpr('Label field'),
   uiSchema: (ctx) => {
     if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
       return null;

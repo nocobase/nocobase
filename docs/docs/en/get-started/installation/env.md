@@ -30,7 +30,7 @@ services:
 After modifying the environment variables, rebuild the app container:
 
 ```yml
-docker-compose up -d app
+docker compose up -d app
 ```
 
 ## Global Environment Variables

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
+import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
 import React from 'react';
 import { ClickableFieldModel } from './ClickableFieldModel';
 
@@ -24,7 +24,7 @@ export class DisplayTextFieldModel extends ClickableFieldModel {
   }
 }
 DisplayTextFieldModel.define({
-  label: escapeT('Text'),
+  label: tExpr('Text'),
 });
 DisplayItemModel.bindModelToInterface(
   'DisplayTextFieldModel',

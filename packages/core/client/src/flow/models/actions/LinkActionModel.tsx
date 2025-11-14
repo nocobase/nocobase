@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 import { isURL } from '@nocobase/utils/client';
 import { css } from '@emotion/css';
 import type { ButtonProps } from 'antd/es/button';
@@ -66,13 +66,13 @@ export class LinkActionModel extends ActionModel {
   static scene = ActionSceneEnum.record;
 
   defaultProps: ButtonProps = {
-    title: escapeT('Link'),
+    title: tExpr('Link'),
     icon: 'LinkOutlined',
   };
 }
 
 LinkActionModel.define({
-  label: escapeT('Link'),
+  label: tExpr('Link'),
 });
 
 LinkActionModel.registerFlow({
@@ -112,15 +112,15 @@ LinkActionModel.registerFlow({
 
 LinkActionModel.registerFlow({
   key: 'linkButtonSettings',
-  title: escapeT('Link action settings'),
+  title: tExpr('Link action settings'),
   steps: {
     editLink: {
-      title: escapeT('Edit link'),
+      title: tExpr('Edit link'),
       uiSchema(ctx) {
         const t = ctx.t;
         return {
           url: {
-            title: escapeT('URL'),
+            title: tExpr('URL'),
             type: 'string',
             'x-decorator': 'FormItem',
             'x-component': TextAreaWithContextSelector,

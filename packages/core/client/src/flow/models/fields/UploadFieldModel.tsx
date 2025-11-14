@@ -24,7 +24,7 @@ import { Upload } from '@formily/antd-v5';
 import { Image, Space, Alert } from 'antd';
 import { castArray } from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { largeField, escapeT, EditableItemModel, observable } from '@nocobase/flow-engine';
+import { largeField, tExpr, EditableItemModel, observable } from '@nocobase/flow-engine';
 import React, { useState, useEffect } from 'react';
 import { FieldContext } from '@formily/react';
 import { FieldModel } from '../base';
@@ -263,10 +263,10 @@ export class UploadFieldModel extends FieldModel {
 
 UploadFieldModel.registerFlow({
   key: 'uploadSettings',
-  title: escapeT('Upload file settings'),
+  title: tExpr('Upload file settings'),
   steps: {
     allowSelectExistingRecord: {
-      title: escapeT('Allow selection of existing file'),
+      title: tExpr('Allow selection of existing file'),
       uiSchema(ctx) {
         if (!ctx.collectionField.isAssociationField() || !ctx.collectionField.targetCollection) {
           return null;
@@ -276,8 +276,8 @@ UploadFieldModel.registerFlow({
             'x-component': 'Switch',
             'x-decorator': 'FormItem',
             'x-component-props': {
-              checkedChildren: escapeT('Yes'),
-              unCheckedChildren: escapeT('No'),
+              checkedChildren: tExpr('Yes'),
+              unCheckedChildren: tExpr('No'),
             },
           },
         };
@@ -368,13 +368,13 @@ UploadFieldModel.registerFlow({
 
 UploadFieldModel.registerFlow({
   key: 'selectExitRecordSettings',
-  title: escapeT('Selector setting'),
+  title: tExpr('Selector setting'),
   on: {
     eventName: 'openView',
   },
   steps: {
     openView: {
-      title: escapeT('Edit popup'),
+      title: tExpr('Edit popup'),
       uiSchema(ctx) {
         if (!ctx.model.props.allowSelectExistingRecord) {
           return;
@@ -382,21 +382,21 @@ UploadFieldModel.registerFlow({
         return {
           mode: {
             type: 'string',
-            title: escapeT('Open mode'),
+            title: tExpr('Open mode'),
             enum: [
-              { label: escapeT('Drawer'), value: 'drawer' },
-              { label: escapeT('Dialog'), value: 'dialog' },
+              { label: tExpr('Drawer'), value: 'drawer' },
+              { label: tExpr('Dialog'), value: 'dialog' },
             ],
             'x-decorator': 'FormItem',
             'x-component': 'Radio.Group',
           },
           size: {
             type: 'string',
-            title: escapeT('Popup size'),
+            title: tExpr('Popup size'),
             enum: [
-              { label: escapeT('Small'), value: 'small' },
-              { label: escapeT('Medium'), value: 'medium' },
-              { label: escapeT('Large'), value: 'large' },
+              { label: tExpr('Small'), value: 'small' },
+              { label: tExpr('Medium'), value: 'medium' },
+              { label: tExpr('Large'), value: 'large' },
             ],
             'x-decorator': 'FormItem',
             'x-component': 'Radio.Group',
@@ -483,7 +483,7 @@ UploadFieldModel.registerFlow({
 });
 
 UploadFieldModel.define({
-  label: escapeT('Upload'),
+  label: tExpr('Upload'),
 });
 EditableItemModel.bindModelToInterface(
   'UploadFieldModel',

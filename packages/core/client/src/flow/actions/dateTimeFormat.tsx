@@ -8,12 +8,12 @@
  */
 
 import { css } from '@emotion/css';
-import { defineAction } from '@nocobase/flow-engine';
-import { getPickerFormat, tval } from '@nocobase/utils/client';
-import { ExpiresRadio, DateFormatCom } from '../components';
+import { defineAction, tExpr } from '@nocobase/flow-engine';
+import { getPickerFormat } from '@nocobase/utils/client';
+import { DateFormatCom, ExpiresRadio } from '../components';
 
 export const dateTimeFormat = defineAction({
-  title: tval('Date display format'),
+  title: tExpr('Date display format'),
   name: 'dateDisplayFormat',
   uiSchema: (ctx) => {
     const { collectionField } = ctx.model.context as any;
@@ -37,7 +37,7 @@ export const dateTimeFormat = defineAction({
       enum: [
         { label: DateFormatCom({ format: 'hh:mm:ss a' }), value: 'hh:mm:ss a' },
         { label: DateFormatCom({ format: 'HH:mm:ss' }), value: 'HH:mm:ss' },
-        { label: tval('Custom'), value: 'custom' },
+        { label: tExpr('Custom'), value: 'custom' },
       ],
       'x-reactions': [
         (field) => {
@@ -119,7 +119,7 @@ export const dateTimeFormat = defineAction({
             value: 'DD/MM/YYYY',
           },
           {
-            label: tval('Custom'),
+            label: tExpr('Custom'),
             value: 'custom',
           },
         ],

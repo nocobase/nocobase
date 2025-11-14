@@ -7,13 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  createSafeDocument,
-  createSafeWindow,
-  createSafeNavigator,
-  escapeT,
-  compileRunJs,
-} from '@nocobase/flow-engine';
+import { createSafeDocument, createSafeWindow, createSafeNavigator, tExpr, compileRunJs } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { CodeEditor } from '../../components/code-editor';
 import { ActionModel, ActionSceneEnum } from '../base';
@@ -23,12 +17,12 @@ export class JSCollectionActionModel extends ActionModel {
   static scene = ActionSceneEnum.collection;
 
   defaultProps: ButtonProps = {
-    title: escapeT('JS action'),
+    title: tExpr('JS action'),
   };
 }
 
 JSCollectionActionModel.define({
-  label: escapeT('JS action'),
+  label: tExpr('JS action'),
   sort: 9999,
   createModelOptions: {
     use: 'JSCollectionActionModel',
@@ -38,10 +32,10 @@ JSCollectionActionModel.define({
 JSCollectionActionModel.registerFlow({
   key: 'clickSettings',
   on: 'click',
-  title: escapeT('Click settings'),
+  title: tExpr('Click settings'),
   steps: {
     runJs: {
-      title: escapeT('Write JavaScript'),
+      title: tExpr('Write JavaScript'),
       uiSchema: {
         code: {
           type: 'string',

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { tExpr, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { Alert, ButtonProps } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { AxiosRequestConfig } from 'axios';
@@ -95,7 +95,7 @@ export class UpdateRecordActionModel extends ActionModel<{
   assignFormUid?: string;
 
   defaultProps: ButtonProps = {
-    title: escapeT('Update record'),
+    title: tExpr('Update record'),
     type: 'link',
   };
 
@@ -115,7 +115,7 @@ export class UpdateRecordActionModel extends ActionModel<{
 }
 
 UpdateRecordActionModel.define({
-  label: escapeT('Update record'),
+  label: tExpr('Update record'),
   // 使用函数型 createModelOptions，从父级上下文提取资源信息，直接注入到子模型的 resourceSettings.init
   createModelOptions: (ctx) => {
     const dsKey = ctx.collection.dataSourceKey;
@@ -135,22 +135,22 @@ UpdateRecordActionModel.define({
 
 UpdateRecordActionModel.registerFlow({
   key: SETTINGS_FLOW_KEY,
-  title: escapeT('Action settings'),
+  title: tExpr('Action settings'),
   // 配置流仅用于收集参数，避免作为自动流程执行
   manual: true,
   steps: {
     // 二次确认：复用全局 confirm action，支持开关、标题、内容（含变量选择）
     confirm: {
-      title: escapeT('Secondary confirmation'),
+      title: tExpr('Secondary confirmation'),
       use: 'confirm',
       defaultParams: {
         enable: false,
-        title: escapeT('Perform the Update record'),
-        content: escapeT('Are you sure you want to perform the Update record action?'),
+        title: tExpr('Perform the Update record'),
+        content: tExpr('Are you sure you want to perform the Update record action?'),
       },
     },
     assignFieldValues: {
-      title: escapeT('Assign field values'),
+      title: tExpr('Assign field values'),
       uiSchema() {
         return {
           tip: {

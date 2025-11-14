@@ -7,18 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import { defineAction, tExpr } from '@nocobase/flow-engine';
 
 export const renderMode = defineAction({
-  title: tval('Render mode'),
+  title: tExpr('Render mode'),
   name: 'renderMode',
   uiSchema: {
     textOnly: {
       type: 'string',
       enum: [
-        { label: tval('Text only'), value: true },
-        { label: tval('Html'), value: false },
+        { label: tExpr('Text only'), value: true },
+        { label: tExpr('Html'), value: false },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',

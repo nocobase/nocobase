@@ -14,18 +14,17 @@ import {
   DndProvider,
   DragHandler,
   Droppable,
-  escapeT,
+  tExpr,
   FlowModelRenderer,
   FlowSettingsButton,
 } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
 import { Form } from 'antd';
 import React from 'react';
-import { FilterBlockModel } from '../../base';
+import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
+import { BlockSceneEnum, FilterBlockModel } from '../../base';
 import { FormComponent } from '../../blocks/form/FormBlockModel';
 import { FilterManager } from '../filter-manager/FilterManager';
 import { FilterFormItemModel } from './FilterFormItemModel';
-import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 
 export class FilterFormBlockModel extends FilterBlockModel<{
   subModels: {
@@ -33,6 +32,8 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     actions?: any[]; // Replace with actual type if available
   };
 }> {
+  static scene = BlockSceneEnum.filter;
+
   /**
    * 是否需要自动触发筛选，当字段值变更时自动执行筛选
    */
@@ -130,7 +131,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
 }
 
 FilterFormBlockModel.define({
-  label: tval('Form'),
+  label: tExpr('Form'),
   createModelOptions: {
     use: 'FilterFormBlockModel',
     subModels: {
@@ -143,23 +144,23 @@ FilterFormBlockModel.define({
 
 FilterFormBlockModel.registerFlow({
   key: 'formFilterBlockModelSettings',
-  title: tval('Form settings'),
+  title: tExpr('Form settings'),
   steps: {
     layout: {
       use: 'layout',
-      title: tval('Layout'),
+      title: tExpr('Layout'),
     },
   },
 });
 
 FilterFormBlockModel.registerEvents({
   formValuesChange: {
-    title: tval('Form values change'),
+    title: tExpr('Form values change'),
     name: 'formValuesChange',
     uiSchema: {
       condition: {
         type: 'object',
-        title: escapeT('Trigger condition'),
+        title: tExpr('Trigger condition'),
         'x-decorator': 'FormItem',
         'x-component': ConditionBuilder,
       },

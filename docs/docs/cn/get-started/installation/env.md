@@ -30,7 +30,7 @@ services:
 修改环境变量之后，需要重建 app 容器。
 
 ```yml
-docker-compose up -d app
+docker compose up -d app
 ```
 
 ## 全局环境变量

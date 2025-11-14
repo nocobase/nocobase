@@ -13,9 +13,8 @@ import type { ButtonProps } from 'antd/es/button';
 import { Button, InputNumber } from 'antd';
 import { observer } from '@formily/react';
 import { observable } from '@formily/reactive';
-import { tval } from '@nocobase/utils/client';
 import { FilterFormActionModel } from './FilterFormActionModel';
-import { escapeT, useFlowModel } from '@nocobase/flow-engine';
+import { tExpr, useFlowModel } from '@nocobase/flow-engine';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 
 // 使用observable创建响应式状态
@@ -67,11 +66,11 @@ export class FilterFormCollapseActionModel extends FilterFormActionModel {
 
 FilterFormCollapseActionModel.registerFlow({
   key: 'collapseSettings',
-  title: tval('Collapse settings'),
+  title: tExpr('Collapse settings'),
   on: 'collapseToggle',
   steps: {
     toggle: {
-      title: tval('Collapsed rows'),
+      title: tExpr('Collapsed rows'),
       uiSchema: {
         collapsedRows: {
           type: 'number',
@@ -80,7 +79,7 @@ FilterFormCollapseActionModel.registerFlow({
           'x-component-props': {
             min: 1,
             max: 10,
-            placeholder: tval('Enter number of rows to display'),
+            placeholder: tExpr('Enter number of rows to display'),
           },
           default: 1,
         },
@@ -92,7 +91,7 @@ FilterFormCollapseActionModel.registerFlow({
       },
     },
     defaultCollapsed: {
-      title: tval('Default collapsed'),
+      title: tExpr('Default collapsed'),
       uiSchema: {
         value: {
           type: 'boolean',
@@ -112,19 +111,19 @@ FilterFormCollapseActionModel.registerFlow({
 });
 
 FilterFormCollapseActionModel.define({
-  label: tval('Collapse button'),
+  label: tExpr('Collapse button'),
   toggleable: true,
   sort: 300,
 });
 
 FilterFormCollapseActionModel.registerEvents({
   collapseToggle: {
-    title: tval('Collapse / Expand toggle'),
+    title: tExpr('Collapse / Expand toggle'),
     name: 'collapseToggle',
     uiSchema: {
       condition: {
         type: 'object',
-        title: escapeT('Trigger condition'),
+        title: tExpr('Trigger condition'),
         'x-decorator': 'FormItem',
         'x-component': ConditionBuilder,
       },

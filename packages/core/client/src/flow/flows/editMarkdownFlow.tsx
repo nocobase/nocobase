@@ -7,16 +7,16 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineFlow, escapeT, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
+import { defineFlow, tExpr, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { Space } from 'antd';
 
 export const editMarkdownFlow = defineFlow<FlowModel>({
   key: 'markdownBlockSettings',
-  title: escapeT('Markdown block settings', { ns: 'block-markdown' }),
+  title: tExpr('Markdown block settings', { ns: 'block-markdown' }),
   steps: {
     editMarkdown: {
-      title: escapeT('Edit markdown'),
+      title: tExpr('Edit markdown'),
       uiSchema(ctx) {
         const t = ctx.t;
         const descriptionContent = (
