@@ -21,7 +21,7 @@ import { Context, Next } from '@nocobase/actions';
 export const setMainDepartment = async (ctx: Context, next: Next) => {
   await next();
 
-  const { associatedName, resourceName, associatedIndex, actionName, values } = ctx.action.params;
+  const { associatedName, resourceName, associatedIndex, actionName, values, filterByTk } = ctx.action.params;
 
   // When operating from department side: departments.members
   if (associatedName === 'departments' && resourceName === 'members' && values?.length) {
@@ -80,6 +80,17 @@ export const setMainDepartment = async (ctx: Context, next: Next) => {
       await userRepo.update({
         filterByTk: associatedIndex,
         values: { mainDepartmentId: firstDept ? firstDept.departmentId : null },
+      });
+    }
+
+    // 给成员设置部门的时候，如果只有一个部门的时候，应该自动设置为主属部门
+    const deptUsers = await throughRepo.find({
+      filter: { userId: associatedIndex },
+    });
+    if (deptUsers.length === 1) {
+      await userRepo.update({
+        filterByTk: associatedIndex,
+        values: { mainDepartmentId: deptUsers[0].departmentId },
       });
     }
   }
