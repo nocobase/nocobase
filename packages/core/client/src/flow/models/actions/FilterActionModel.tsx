@@ -59,7 +59,7 @@ export class FilterActionModel extends ActionModel {
       return (
         <>
           <MobilePopup
-            title={'Filter'}
+            title={this.context.t('Filter')}
             visible={this.props.open}
             onClose={() => {
               this.setProps('open', false);

@@ -144,6 +144,7 @@ function RecordPickerField(props) {
         ctx.model.selectedRows.value = option;
         ctx.model.change();
       }}
+      showSearch={false}
     />
   );
 }

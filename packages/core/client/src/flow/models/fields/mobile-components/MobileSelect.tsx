@@ -41,7 +41,7 @@ export function MobileSelect(props) {
   return (
     <>
       <div onClick={() => !disabled && setVisible(true)}>
-        <Select {...props} dropdownStyle={{ display: 'none' }} />
+        <Select {...props} dropdownStyle={{ display: 'none' }} showSearch={false} />
       </div>
       <Popup
         visible={visible}
