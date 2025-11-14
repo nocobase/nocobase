@@ -588,7 +588,7 @@ TableBlockModel.registerFlow({
       title: tExpr('Default sorting'),
     },
     treeTable: {
-      title: escapeT('Enable tree table'),
+      title: tExpr('Enable tree table'),
       uiSchema: (ctx) => {
         if (ctx.model.collection.template !== 'tree') {
           return;
@@ -611,7 +611,7 @@ TableBlockModel.registerFlow({
       },
     },
     defaultExpandAllRows: {
-      title: escapeT('Default expand all'),
+      title: tExpr('Default expand all'),
       uiSchema: (ctx) => {
         if (ctx.model.collection.template !== 'tree') {
           return;
