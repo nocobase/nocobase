@@ -213,6 +213,10 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
+  public serving() {
+    return this.app.serving(WORKER_JOB_WORKFLOW_PROCESS);
+  }
+
   /**
    * @experimental
    */
@@ -305,11 +309,6 @@ export default class PluginWorkflowServer extends Plugin {
     this.snowflake = new Snowflake({
       custom_epoch: pluginRecord?.createdAt.getTime(),
     });
-
-    this.app.backgroundJobManager.subscribe(`${this.name}.pendingExecution`, {
-      idle: () => this.app.serving(WORKER_JOB_WORKFLOW_PROCESS) && this.dispatcher.idle,
-      process: this.dispatcher.onQueueExecution,
-    });
   }
 
   /**
@@ -379,6 +378,13 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.app.on('afterStart', this.onAfterStart);
     this.app.on('beforeStop', this.onBeforeStop);
+
+    if (this.serving()) {
+      this.app.backgroundJobManager.subscribe(`${this.name}.pendingExecution`, {
+        idle: () => this.dispatcher.idle,
+        process: this.dispatcher.onQueueExecution,
+      });
+    }
   }
 
   private toggle(
@@ -389,7 +395,9 @@ export default class PluginWorkflowServer extends Plugin {
     const type = workflow.get('type');
     const trigger = this.triggers.get(type);
     if (!trigger) {
-      this.getLogger(workflow.id).error(`trigger type ${workflow.type} of workflow ${workflow.id} is not implemented`);
+      this.getLogger(workflow.id).error(`trigger type ${workflow.type} of workflow ${workflow.id} is not implemented`, {
+        workflowId: workflow.id,
+      });
       return;
     }
     const next = enable ?? workflow.get('enabled');
@@ -398,15 +406,21 @@ export default class PluginWorkflowServer extends Plugin {
       const prev = workflow.previous();
       if (prev.config) {
         trigger.off({ ...workflow.get(), ...prev });
-        this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id} based on configuration before updated`);
+        this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id} based on configuration before updated`, {
+          workflowId: workflow.id,
+        });
       }
       trigger.on(workflow);
-      this.getLogger(workflow.id).info(`toggle ON workflow ${workflow.id}`);
+      this.getLogger(workflow.id).info(`toggle ON workflow ${workflow.id}`, {
+        workflowId: workflow.id,
+      });
 
       this.enabledCache.set(workflow.id, workflow);
     } else {
       trigger.off(workflow);
-      this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id}`);
+      this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id}`, {
+        workflowId: workflow.id,
+      });
 
       this.enabledCache.delete(workflow.id);
     }

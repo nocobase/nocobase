@@ -611,17 +611,22 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const instanceKeys = new Set(instanceFlows.keys());
     const staticEntries = Array.from(staticFlows.entries()).filter(([key]) => !instanceKeys.has(key));
 
-    // 实例流保持原始注册顺序，统一一次排序（稳定排序）：
+    // 组内排序：
+    // - 静态流：GlobalFlowRegistry 已按 sort 和继承深度排序，直接使用
+    // - 实例流：按 sort 升序；相同 sort 保持注册顺序
     const instanceEntries = Array.from(instanceFlows.entries());
-    const allEntries = [...staticEntries, ...instanceEntries];
-    allEntries.sort(([, a], [, b]) => {
-      const sa = a.sort ?? 0;
-      const sb = b.sort ?? 0;
+    const instanceEntriesWithIndex = instanceEntries.map((e, i) => ({ e, i }));
+    instanceEntriesWithIndex.sort((a, b) => {
+      const sa = a.e[1].sort ?? 0;
+      const sb = b.e[1].sort ?? 0;
       if (sa !== sb) return sa - sb;
-      return 0; // 其它情况保持稳定顺序（静态内部：父类优先；实例内部：注册顺序）
+      return a.i - b.i; // 稳定顺序
     });
 
-    return new Map<string, FlowDefinition>(allEntries);
+    // 分组合并：动态流（实例）优先于静态流
+    const merged: [string, FlowDefinition][] = [...instanceEntriesWithIndex.map(({ e }) => e), ...staticEntries];
+
+    return new Map<string, FlowDefinition>(merged);
   }
 
   setProps(props: IModelComponentProps): void;
@@ -733,8 +738,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     } & DispatchEventOptions,
   ): Promise<any[]> {
     const isBeforeRender = eventName === 'beforeRender';
-    // 缺省值由模型层提供：beforeRender 默认顺序执行 + 使用缓存；可被 options 覆盖
-    const defaults = isBeforeRender ? { sequential: true, useCache: true } : {};
+    // 缺省值由模型层提供：beforeRender 默认顺序执行 + 使用缓存；其它事件默认顺序执行（不默认使用缓存）
+    const defaults = isBeforeRender ? { sequential: true, useCache: true } : { sequential: true };
     const execOptions = {
       sequential: options?.sequential ?? (defaults as any).sequential,
       useCache: options?.useCache ?? (defaults as any).useCache,

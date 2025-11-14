@@ -11,10 +11,9 @@ import {
   buildSubModelItems,
   Collection,
   CollectionField,
-  createCollectionContextMeta,
   DataSource,
   DefaultStructure,
-  escapeT,
+  tExpr,
   FlowModelContext,
   MultiRecordResource,
   SingleRecordResource,
@@ -77,7 +76,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
           key: genKey(`ds-${dataSource.key}`),
           label: dataSource.displayName,
           searchable: true,
-          searchPlaceholder: escapeT('Search'),
+          searchPlaceholder: tExpr('Search'),
           children: (ctx) => {
             return dataSource
               .getCollections()
@@ -288,10 +287,6 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         const params = this.getResourceSettingsInitParams();
         return this.context.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
       },
-      meta: createCollectionContextMeta(() => {
-        const params = this.getResourceSettingsInitParams();
-        return this.context.dataSourceManager.getCollection(params.dataSourceKey, params.collectionName);
-      }, this.context.t('Current collection')),
     });
     this.context.defineProperty('resource', {
       get: () => {

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
+import { tExpr, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
 import React from 'react';
 import { Icon } from '../../../../icon';
@@ -62,20 +62,20 @@ export class BasePageTabModel extends FlowModel<{
 
 BasePageTabModel.registerFlow({
   key: 'pageTabSettings',
-  title: escapeT('Tab settings'),
+  title: tExpr('Tab settings'),
   steps: {
     tab: {
-      title: escapeT('Edit tab'),
+      title: tExpr('Edit tab'),
       preset: true,
       uiSchema: {
         title: {
-          title: escapeT('Tab name'),
+          title: tExpr('Tab name'),
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           required: true,
         },
         icon: {
-          title: escapeT('Icon'),
+          title: tExpr('Icon'),
           'x-decorator': 'FormItem',
           'x-component': 'IconPicker',
         },

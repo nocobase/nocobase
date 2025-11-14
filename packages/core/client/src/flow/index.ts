@@ -70,5 +70,7 @@ export * from './FlowModelRepository';
 export * from './FlowPage';
 export * from './models';
 export { openViewFlow } from './flows/openViewFlow';
+export { editMarkdownFlow } from './flows/editMarkdownFlow';
+
 export { TextAreaWithContextSelector } from './components/TextAreaWithContextSelector';
 //

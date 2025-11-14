@@ -22,7 +22,8 @@ export interface MergeStrategies {
 
 function getEnumerableOwnPropertySymbols(target: any): any[] {
   return Object.getOwnPropertySymbols
-    ? Object.getOwnPropertySymbols(target).filter((symbol) => target.propertyIsEnumerable(symbol))
+    ? // eslint-disable-next-line no-prototype-builtins
+      Object.getOwnPropertySymbols(target).filter((symbol) => target.propertyIsEnumerable(symbol))
     : [];
 }
 
@@ -99,11 +100,21 @@ mergeStrategies.set('union', (x, y) => {
 
 mergeStrategies.set('intersect', (x, y) =>
   (() => {
+    console.log('intersect inputs:', x, y);
     if (typeof x === 'string') {
       x = x.split(',');
     }
     if (typeof y === 'string') {
       y = y.split(',');
+    }
+    if (typeof x === 'object' && !Array.isArray(x)) {
+      x = Object.values(x || {});
+    }
+    if (typeof y === 'object' && !Array.isArray(y)) {
+      y = Object.values(y || {});
+    }
+    if (!Array.isArray(x) || x.length === 0) {
+      return y || [];
     }
     if (!Array.isArray(x) || x.length === 0) {
       return y || [];

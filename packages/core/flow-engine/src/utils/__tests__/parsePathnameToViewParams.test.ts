@@ -101,4 +101,29 @@ describe('parsePathnameToViewParams', () => {
     const result = parsePathnameToViewParams('///admin//xxx//tab//yyy//');
     expect(result).toEqual([{ viewUid: 'xxx', tabUid: 'yyy' }]);
   });
+
+  test('should parse filterByTk from key-value encoded segment into object', () => {
+    const kv = encodeURIComponent('id=1&tenant=ac');
+    const path = `/admin/xxx/filterbytk/${kv}`;
+    const result = parsePathnameToViewParams(path);
+    expect(result).toEqual([{ viewUid: 'xxx', filterByTk: { id: '1', tenant: 'ac' } }]);
+  });
+
+  test('should parse filterByTk from JSON object segment', () => {
+    const json = encodeURIComponent('{"id":"1","tenant":"ac"}');
+    const path = `/admin/xxx/filterbytk/${json}`;
+    const result = parsePathnameToViewParams(path);
+    expect(result).toEqual([{ viewUid: 'xxx', filterByTk: { id: '1', tenant: 'ac' } }]);
+  });
+
+  test('should keep non-object JSON (array/number) as string for filterByTk', () => {
+    const arr = encodeURIComponent('["a"]');
+    const num = encodeURIComponent('123');
+    const t = encodeURIComponent('true');
+    expect(parsePathnameToViewParams(`/admin/xxx/filterbytk/${arr}`)).toEqual([
+      { viewUid: 'xxx', filterByTk: '["a"]' },
+    ]);
+    expect(parsePathnameToViewParams(`/admin/xxx/filterbytk/${num}`)).toEqual([{ viewUid: 'xxx', filterByTk: '123' }]);
+    expect(parsePathnameToViewParams(`/admin/xxx/filterbytk/${t}`)).toEqual([{ viewUid: 'xxx', filterByTk: 'true' }]);
+  });
 });

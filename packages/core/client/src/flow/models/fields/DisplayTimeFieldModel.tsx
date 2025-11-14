@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
+import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
 import React from 'react';
 import dayjs from 'dayjs';
 import { ClickableFieldModel } from './ClickableFieldModel';
@@ -30,17 +30,17 @@ export class DisplayTimeFieldModel extends ClickableFieldModel {
 DisplayTimeFieldModel.registerFlow({
   key: 'timeSettings',
   sort: 1000,
-  title: escapeT('Time settings'),
+  title: tExpr('Time settings'),
   steps: {
     dateFormat: {
-      title: escapeT('Time format'),
+      title: tExpr('Time format'),
       use: 'dateDisplayFormat',
     },
   },
 });
 
 DisplayTimeFieldModel.define({
-  label: escapeT('Time'),
+  label: tExpr('Time'),
 });
 DisplayItemModel.bindModelToInterface('DisplayTimeFieldModel', ['time'], {
   isDefault: true,

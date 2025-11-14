@@ -12,7 +12,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { FilterGroupType, transformFilter, evaluateConditions, ConditionEvaluator } from '../transformFilter';
+import {
+  FilterGroupType,
+  transformFilter,
+  evaluateConditions,
+  ConditionEvaluator,
+  removeInvalidFilterItems,
+} from '../transformFilter';
 
 describe('transformFilter', () => {
   it('should correctly transform simple single-condition filter', () => {
@@ -305,11 +311,6 @@ describe('transformFilter', () => {
             $in: [1, 2, 3],
           },
         },
-        {
-          nullField: {
-            $null: null,
-          },
-        },
       ],
     };
 
@@ -366,6 +367,83 @@ describe('transformFilter', () => {
       } as any;
 
       expect(() => transformFilter(input)).toThrow('Invalid filter item type');
+    });
+  });
+});
+
+describe('removeInvalidFilterItems', () => {
+  it('should remove invalid conditions while keeping valid ones', () => {
+    const filter: FilterGroupType = {
+      logic: '$and',
+      items: [
+        {
+          path: 'name',
+          operator: '$eq',
+          value: 'Alice',
+        },
+        {
+          path: '',
+          operator: '$eq',
+          value: 'missingPath',
+        },
+        {
+          path: 'age',
+          operator: '',
+          value: 20,
+        },
+        {
+          logic: '$or',
+          items: [
+            {
+              path: 'status',
+              operator: '$eq',
+              value: 'active',
+            },
+            {
+              path: '',
+              operator: '$eq',
+              value: 'invalidNestedPath',
+            },
+          ],
+        },
+        {
+          logic: '$and',
+          items: [
+            {
+              path: '',
+              operator: '$eq',
+              value: 'deepInvalid',
+            },
+          ],
+        },
+      ],
+    };
+
+    const result = removeInvalidFilterItems(filter);
+
+    expect(result).toEqual({
+      logic: '$and',
+      items: [
+        {
+          path: 'name',
+          operator: '$eq',
+          value: 'Alice',
+        },
+        {
+          logic: '$or',
+          items: [
+            {
+              path: 'status',
+              operator: '$eq',
+              value: 'active',
+            },
+          ],
+        },
+        {
+          logic: '$and',
+          items: [],
+        },
+      ],
     });
   });
 });

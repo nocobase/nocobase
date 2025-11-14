@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
+import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
 import React from 'react';
 import { DisplayTitleFieldModel } from './DisplayTitleFieldModel';
 
@@ -23,7 +23,7 @@ export class DisplayURLFieldModel extends DisplayTitleFieldModel {
 }
 
 DisplayURLFieldModel.define({
-  label: escapeT('URL'),
+  label: tExpr('URL'),
 });
 
 DisplayItemModel.bindModelToInterface('DisplayURLFieldModel', ['url'], {

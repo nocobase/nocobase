@@ -8,16 +8,21 @@
  */
 
 import { FlowEngineContext } from '../flowContext';
+import { ViewParam as SharedViewParam } from '../utils';
 
-interface ViewParam {
-  /** 视图唯一标识符，一般为某个 Model 实例的 uid */
-  viewUid?: string;
-  /** 标签页唯一标识符 */
-  tabUid?: string;
-  /** 弹窗记录的 id */
-  filterByTk?: string;
-  /** source Id */
-  sourceId?: string;
+type ViewParam = Omit<SharedViewParam, 'viewUid'> & { viewUid?: string };
+
+function encodeFilterByTk(val: SharedViewParam['filterByTk']): string {
+  if (val === undefined || val === null) return '';
+  // 1.x 兼容：对象按 key1=v1&key2=v2 拼接后整体 encodeURIComponent
+  if (val && typeof val === 'object' && !Array.isArray(val)) {
+    const pairs = Object.entries(val).map(([k, v]) => {
+      return `${encodeURIComponent(String(k))}=${encodeURIComponent(String(v))}`;
+    });
+    return encodeURIComponent(pairs.join('&'));
+  }
+  // 其它情况按原单值编码（字符串）
+  return encodeURIComponent(String(val));
 }
 
 /**
@@ -53,8 +58,11 @@ export function generatePathnameFromViewParams(viewParams: ViewParam[]): string 
     if (viewParam.tabUid) {
       segments.push('tab', viewParam.tabUid);
     }
-    if (viewParam.filterByTk) {
-      segments.push('filterbytk', viewParam.filterByTk);
+    if (viewParam.filterByTk != null) {
+      const encoded = encodeFilterByTk(viewParam.filterByTk);
+      if (encoded) {
+        segments.push('filterbytk', encoded);
+      }
     }
     if (viewParam.sourceId) {
       segments.push('sourceid', viewParam.sourceId);

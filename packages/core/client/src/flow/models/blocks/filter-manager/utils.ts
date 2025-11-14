@@ -11,7 +11,12 @@ import { FlowModel } from '@nocobase/flow-engine';
 import { BlockGridModel, CollectionBlockModel } from '../../base';
 
 export function getDefaultOperator(model: any) {
-  return model.operator || model.getStepParams('filterFormItemSettings', 'defaultOperator')?.value || '$includes';
+  return (
+    model.operator ||
+    model.getStepParams('filterFormItemSettings', 'defaultOperator')?.value ||
+    model.subModels.field?.operator ||
+    '$includes'
+  );
 }
 
 /**

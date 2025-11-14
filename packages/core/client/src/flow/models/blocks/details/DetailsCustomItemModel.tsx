@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModel, FlowModelContext, ModelRenderMode, SubModelItem } from '@nocobase/flow-engine';
+import { tExpr, FlowModel, FlowModelContext, ModelRenderMode, SubModelItem } from '@nocobase/flow-engine';
 import _ from 'lodash';
 
 export class DetailsCustomItemModel extends FlowModel {
@@ -46,5 +46,5 @@ export class DetailsCustomItemModel extends FlowModel {
 
 DetailsCustomItemModel.define({
   hide: true,
-  label: escapeT('Others'),
+  label: tExpr('Others'),
 });

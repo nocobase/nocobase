@@ -8,6 +8,7 @@
  */
 
 import type { Collection, CollectionField } from '../data-source';
+import _ from 'lodash';
 import type { FlowContext, PropertyMeta, PropertyMetaFactory } from '../flowContext';
 import { createCollectionContextMeta } from './createCollectionContextMeta';
 
@@ -74,19 +75,34 @@ function toFilterByTk(value: unknown, primaryKey: string | string[]) {
  * 仅当访问路径以“关联字段名”开头（且继续访问其子属性）时，返回 true 交由服务端解析；
  * 否则在前端解析即可。
  *
- * @param collectionAccessor 返回当前对象所在collection
+ * @param collectionAccessor 返回当前对象所在 collection
+ * @param valueAccessor 可选，本地值访问器。若本地已存在目标子路径的值，则认为无需走后端，优先使用本地值。
  * @returns `(subPath) => boolean` 判断是否需要服务端解析
  */
 export function createAssociationSubpathResolver(
   collectionAccessor: () => Collection | null,
+  valueAccessor?: () => unknown,
 ): (subPath: string) => boolean {
   return (p: string) => {
-    if (!p || !p.includes('.')) return false; // 只在访问子属性时才需要后端
+    // 仅在访问子属性时才考虑后端
+    if (!p || !p.includes('.')) return false;
     const base = baseFieldNameOf(p);
     if (!base) return false;
     const collection = collectionAccessor();
     const field = findFieldByName(collection, base);
-    return !!field?.isAssociationField();
+    const isAssoc = !!field?.isAssociationField();
+    if (!isAssoc) return false;
+
+    // 可选：本地优先。当提供 valueAccessor 时，若本地已有该子路径值，则不走后端
+    if (typeof valueAccessor === 'function') {
+      const local = valueAccessor();
+      if (local && typeof local === 'object') {
+        const v = _.get(local as Record<string, unknown>, p);
+        if (typeof v !== 'undefined') return false;
+      }
+    }
+
+    return true;
   };
 }
 

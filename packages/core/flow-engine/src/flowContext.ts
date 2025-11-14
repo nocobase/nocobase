@@ -47,6 +47,7 @@ import { buildServerContextParams as _buildServerContextParams } from './utils/s
 import { FlowView, FlowViewer } from './views/FlowView';
 import { RunJSContextRegistry, getModelClassName } from './runjs-context/registry';
 import { createEphemeralContext } from './utils/createEphemeralContext';
+import dayjs from 'dayjs';
 
 // Helper: detect a RecordRef-like object
 function isRecordRefLike(val: any): boolean {
@@ -896,6 +897,7 @@ class BaseFlowEngineContext extends FlowContext {
   declare requireAsync: (url: string) => Promise<any>;
   declare importAsync: (url: string) => Promise<any>;
   declare createJSRunner: (options?: JSRunnerOptions) => JSRunner;
+  declare pageInfo: { version?: 'v1' | 'v2' };
   /**
    * @deprecated use `resolveJsonTemplate` instead
    */
@@ -1422,21 +1424,24 @@ export class FlowModelContext extends BaseFlowModelContext {
           stepParams: {
             popupSettings: {
               openView: {
-                ..._.pick(opts, ['dataSourceKey', 'collectionName', 'associationName']),
+                // 持久化首次传入的关键展示/数据参数，供后续路由与再次打开复用
+                ..._.pick(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
               },
             },
           },
         });
         await model.save();
       }
-      if (model.getStepParams('popupSettings')?.openView?.dataSourceKey) {
-        model.setStepParams('popupSettings', {
-          openView: {
-            ...model.getStepParams('popupSettings')?.openView,
-            ..._.pick(opts, ['dataSourceKey', 'collectionName', 'associationName']),
-          },
-        });
-        await model.save();
+      // 若已存在 openView 配置，则按需合并更新（仅覆盖本次显式传入的字段）
+      if (model.getStepParams('popupSettings')?.openView) {
+        const prevOpenView = model.getStepParams('popupSettings')?.openView || {};
+        const incoming = _.pick(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']);
+        const nextOpenView = { ...prevOpenView, ...incoming };
+        // 仅当有变更时才保存，避免不必要的写入
+        if (!_.isEqual(prevOpenView, nextOpenView)) {
+          model.setStepParams('popupSettings', { openView: nextOpenView });
+          await model.save();
+        }
       }
 
       // 路由层级的 viewUid：优先使用 routeViewUid（仅用于路由展示）；
@@ -1702,6 +1707,7 @@ export class FlowRunJSContext extends FlowContext {
     this.addDelegate(delegate);
     this.defineProperty('React', { value: React });
     this.defineProperty('antd', { value: antd });
+    this.defineProperty('dayjs', { value: dayjs });
     // 为 JS 运行时代码提供带有 antd/App/ConfigProvider 包裹的 React 根
     // 保持与 ReactDOMClient 接口一致，优先覆盖 createRoot，其余方法透传
     const ReactDOMShim: any = {

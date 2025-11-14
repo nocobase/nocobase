@@ -9,7 +9,7 @@
 
 import {
   ElementProxy,
-  escapeT,
+  tExpr,
   createSafeDocument,
   createSafeWindow,
   createSafeNavigator,
@@ -45,7 +45,7 @@ export class JSBlockModel extends BlockModel {
 }
 
 JSBlockModel.define({
-  label: escapeT('JS block'),
+  label: tExpr('JS block'),
   createModelOptions: {
     use: 'JSBlockModel',
   },
@@ -56,7 +56,7 @@ JSBlockModel.registerFlow({
   title: 'JavaScript settings',
   steps: {
     runJs: {
-      title: escapeT('Write JavaScript'),
+      title: tExpr('Write JavaScript'),
       uiSchema: {
         code: {
           type: 'string',

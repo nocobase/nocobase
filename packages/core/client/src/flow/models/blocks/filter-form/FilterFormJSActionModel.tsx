@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSafeDocument, createSafeWindow, createSafeNavigator, escapeT } from '@nocobase/flow-engine';
+import { createSafeDocument, createSafeWindow, createSafeNavigator, tExpr } from '@nocobase/flow-engine';
 import { CodeEditor } from '../../../components/code-editor';
 import { FilterFormActionModel } from './FilterFormActionModel';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
@@ -15,17 +15,17 @@ import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 export class FilterFormJSActionModel extends FilterFormActionModel {}
 
 FilterFormJSActionModel.define({
-  label: escapeT('JS action'),
+  label: tExpr('JS action'),
   sort: 9999,
 });
 
 FilterFormJSActionModel.registerFlow({
   key: 'clickSettings',
   on: 'click',
-  title: escapeT('Click settings'),
+  title: tExpr('Click settings'),
   steps: {
     runJs: {
-      title: escapeT('Write JavaScript'),
+      title: tExpr('Write JavaScript'),
       uiSchema: {
         code: {
           type: 'string',

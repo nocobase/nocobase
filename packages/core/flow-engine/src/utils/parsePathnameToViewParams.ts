@@ -13,7 +13,7 @@ export interface ViewParam {
   /** 标签页唯一标识符 */
   tabUid?: string;
   /** 弹窗记录的 id */
-  filterByTk?: string;
+  filterByTk?: string | Record<string, string | number>;
   /** source Id */
   sourceId?: string;
 }
@@ -70,17 +70,61 @@ export const parsePathnameToViewParams = (pathname: string): ViewParam[] => {
     }
     // 处理参数
     else if (currentView && i + 1 < segments.length) {
-      const value = segments[i + 1];
+      const rawValue = segments[i + 1];
+      // 尝试对路径段进行解码
+      let decoded: string = rawValue;
+      try {
+        decoded = decodeURIComponent(rawValue);
+      } catch (_) {
+        // ignore
+      }
 
       switch (segment) {
         case 'tab':
-          currentView.tabUid = value;
+          // tab/sourceId 仅作为字符串处理
+          currentView.tabUid = decoded;
           break;
-        case 'filterbytk':
-          currentView.filterByTk = value;
+        case 'filterbytk': {
+          // 仅在 filterByTk 分支支持对象/JSON/键值对解析
+          const parseKeyValuePairs = (s: string): Record<string, string | number> => {
+            const obj: Record<string, string | number> = {};
+            s.split('&').forEach((pair) => {
+              const [k, v = ''] = pair.split('=');
+              if (!k) return;
+              try {
+                const key = decodeURIComponent(k);
+                const val = decodeURIComponent(v);
+                obj[key] = val;
+              } catch (_) {
+                obj[k] = v;
+              }
+            });
+            return obj;
+          };
+
+          let parsed: string | Record<string, string | number> = decoded;
+          if (decoded && (decoded.startsWith('{') || decoded.startsWith('['))) {
+            try {
+              const maybe = JSON.parse(decoded);
+              if (maybe && typeof maybe === 'object' && !Array.isArray(maybe)) {
+                parsed = maybe as Record<string, string | number>;
+              } else {
+                // 非对象 JSON（如数组/数字）按字符串保留
+                parsed = decoded;
+              }
+            } catch (_) {
+              // 解析失败，按字符串保留
+              parsed = decoded;
+            }
+          } else if (decoded && decoded.includes('=') && decoded.includes('&')) {
+            // 形如 a=b&c=d 的整体段
+            parsed = parseKeyValuePairs(decoded);
+          }
+          currentView.filterByTk = parsed;
           break;
+        }
         case 'sourceid':
-          currentView.sourceId = value;
+          currentView.sourceId = decoded;
           break;
         default:
           // 未知参数，跳过

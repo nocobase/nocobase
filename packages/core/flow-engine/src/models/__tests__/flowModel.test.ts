@@ -898,7 +898,7 @@ describe('FlowModel', () => {
           expect(_dispatchEventSpy).toHaveBeenCalledWith(
             'normalEvent',
             { data: 'test' },
-            expect.objectContaining({ sequential: undefined }),
+            expect.objectContaining({ sequential: true }),
           );
           expect(_dispatchEventWithDebounceSpy).not.toHaveBeenCalled();
 
@@ -919,7 +919,7 @@ describe('FlowModel', () => {
           expect(_dispatchEventSpy).toHaveBeenCalledWith(
             'defaultEvent',
             { data: 'test' },
-            expect.objectContaining({ sequential: undefined }),
+            expect.objectContaining({ sequential: true }),
           );
           expect(_dispatchEventWithDebounceSpy).not.toHaveBeenCalled();
 
@@ -940,7 +940,7 @@ describe('FlowModel', () => {
           expect(_dispatchEventSpy).toHaveBeenCalledWith(
             'undefinedOptionsEvent',
             { data: 'test' },
-            expect.objectContaining({ sequential: undefined }),
+            expect.objectContaining({ sequential: true }),
           );
           expect(_dispatchEventWithDebounceSpy).not.toHaveBeenCalled();
 

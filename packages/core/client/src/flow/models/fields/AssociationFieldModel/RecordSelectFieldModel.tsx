@@ -8,10 +8,9 @@
  */
 import {
   CollectionField,
-  createCollectionContextMeta,
   createCurrentRecordMetaFactory,
   EditableItemModel,
-  escapeT,
+  tExpr,
   FilterableItemModel,
   FlowModel,
   MultiRecordResource,
@@ -127,10 +126,6 @@ export class RecordSelectFieldModel extends AssociationFieldModel {
     // For association fields, expose target collection to variable selectors
     this.context.defineProperty('collection', {
       get: () => this.context.collectionField?.targetCollection,
-      meta: createCollectionContextMeta(
-        () => this.context.collectionField?.targetCollection,
-        this.context.t('Current collection'),
-      ),
     });
   }
 
@@ -359,7 +354,7 @@ RecordSelectFieldModel.registerFlow({
 //专有配置项
 RecordSelectFieldModel.registerFlow({
   key: 'selectSettings',
-  title: escapeT('Association select settings'),
+  title: tExpr('Association select settings'),
   sort: 800,
   steps: {
     fieldNames: {
@@ -372,7 +367,7 @@ RecordSelectFieldModel.registerFlow({
       use: 'sortingRule',
     },
     allowMultiple: {
-      title: escapeT('Allow multiple'),
+      title: tExpr('Allow multiple'),
       uiSchema(ctx) {
         if (ctx.collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)) {
           return {
@@ -403,7 +398,7 @@ RecordSelectFieldModel.registerFlow({
 });
 
 RecordSelectFieldModel.define({
-  label: escapeT('Select'),
+  label: tExpr('Select'),
 });
 
 EditableItemModel.bindModelToInterface(

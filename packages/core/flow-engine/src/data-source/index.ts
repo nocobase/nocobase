@@ -321,6 +321,23 @@ export class CollectionManager {
     }
     return collection.getField(fieldName);
   }
+
+  getChildrenCollections(name) {
+    const childrens = [];
+    const collections = Array.from(this.collections.values());
+    const getChildrens = (name) => {
+      const inheritCollections = collections.filter((v: any) => {
+        return v.options.inherits?.includes(name);
+      });
+      inheritCollections.forEach((v) => {
+        const collectionKey = v.name;
+        childrens.push(v);
+        return getChildrens(collectionKey);
+      });
+      return childrens;
+    };
+    return getChildrens(name);
+  }
 }
 
 // Collection 负责管理自己的 Field
@@ -351,6 +368,10 @@ export class Collection {
       return record[this.filterTargetKey];
     }
     return _.pick(record, this.filterTargetKey);
+  }
+
+  get titleableFields() {
+    return this.getFields().filter((field) => field.titleable);
   }
 
   get hidden() {
@@ -621,6 +642,10 @@ export class CollectionField {
 
   get readonly() {
     return this.options.readonly || this.options.uiSchema?.['x-read-pretty'] || false;
+  }
+
+  get titleable() {
+    return !!(this.options.titleable ?? this.options.titleUsable);
   }
 
   get fullpath() {

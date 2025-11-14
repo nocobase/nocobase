@@ -14,6 +14,7 @@ import { BaseFlowRegistry } from './BaseFlowRegistry';
 type FlowKey = string;
 
 export class InstanceFlowRegistry extends BaseFlowRegistry {
+  static readonly _type = 'instance' as const;
   constructor(protected model: FlowModel) {
     super();
   }

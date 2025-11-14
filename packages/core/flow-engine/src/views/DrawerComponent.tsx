@@ -15,7 +15,7 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
   const { children, footer: initialFooter, title, extra, hidden, ...drawerProps } = props;
   const [open, setOpen] = React.useState(true);
   const [footer, setFooter] = React.useState(() => initialFooter);
-  const [header, setHeader] = React.useState({ title, extra });
+  const [header, setHeader] = React.useState({ title, extra, ...drawerProps.header });
 
   React.useImperativeHandle(
     ref,

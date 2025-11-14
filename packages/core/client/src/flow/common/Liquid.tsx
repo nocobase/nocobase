@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 import { Liquid } from 'liquidjs';
-
+import { merge } from 'lodash';
 export class LiquidEngine extends Liquid {
   constructor(options: any) {
     super({
@@ -69,6 +69,38 @@ export class LiquidEngine extends Liquid {
     }
   }
 
+  isFieldUsed(field, paths) {
+    return paths.some((path) => {
+      const cleanPath = path.replace(/^ctx\./, '');
+      return cleanPath.endsWith(field);
+    });
+  }
+
+  enrichArrayFieldsSelective(obj, vars) {
+    if (!obj || typeof obj !== 'object') return;
+
+    for (const key in obj) {
+      const value = obj[key];
+
+      if (Array.isArray(value) && value.length && typeof value[0] === 'object') {
+        const arr = value;
+        const props = Object.keys(arr[0]).filter((prop) => {
+          const v = arr[0][prop];
+          return ['string', 'number', 'boolean'].includes(typeof v) && this.isFieldUsed(`${key}.${prop}`, vars);
+        });
+
+        props.forEach((prop) => {
+          arr[prop] = arr.map((item) => (item[prop] != null ? item[prop] : '')).join(',');
+        });
+
+        // 递归数组元素，继续处理嵌套对象
+        arr.forEach((item) => this.enrichArrayFieldsSelective(item, vars));
+      } else if (value && typeof value === 'object') {
+        this.enrichArrayFieldsSelective(value, vars);
+      }
+    }
+  }
+
   /**
    * 合并步骤：获取变量 -> 构建 context -> 解析 -> 渲染
    * @param {string} template Liquid 模板字符串
@@ -82,14 +114,20 @@ export class LiquidEngine extends Liquid {
       if (typeof template === 'number') {
         template = String(template);
       }
-      // 1️⃣ 分析模板中的变量
+      // 1️⃣ 提取模板变量
       const vars = await this.fullVariables(template);
-      // 2️⃣ 构造 Liquid context
-      const liquidContext = this.transformLiquidContext(vars);
 
-      // 3️⃣ 只解析变量
-      const resolvedCtx = await ctx.resolveJsonTemplate(liquidContext);
-      // 4️⃣ 渲染模板
+      // 2️⃣ 构造 Liquid 上下文（每个变量独立，不合并）
+      const contexts = vars.map((v) => this.transformLiquidContext([v]));
+
+      // 3️⃣ 分别解析变量上下文
+      const resolvedList = await Promise.all(contexts.map((c) => ctx.resolveJsonTemplate(c)));
+
+      // 4️⃣ 处理解析结果
+      const resolvedCtx = resolvedList.reduce((acc, cur) => merge(acc, cur), {});
+
+      this.enrichArrayFieldsSelective(resolvedCtx, vars);
+      // 5️⃣ 渲染模板
       return await this.render(template, { ctx: resolvedCtx });
     } catch (err) {
       console.error('[Liquid] renderWithFullContext 错误:', err);

@@ -10,7 +10,7 @@
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
-  escapeT,
+  tExpr,
   FlowModelRenderer,
   useFlowModel,
   createAssociationAwareObjectMetaFactory,
@@ -89,7 +89,10 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
         this.context.t('Current object'),
         () => this.context.form.getFieldValue(this.props.name),
       ),
-      resolveOnServer: createAssociationSubpathResolver(() => this.context.collection),
+      resolveOnServer: createAssociationSubpathResolver(
+        () => this.context.collection,
+        () => this.context.form.getFieldValue(this.props.name),
+      ),
       serverOnlyWhenContextParams: true,
     });
   }
@@ -106,7 +109,7 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
 }
 
 SubFormFieldModel.define({
-  label: escapeT('Sub-form'),
+  label: tExpr('Sub-form'),
   createModelOptions: {
     use: 'SubFormFieldModel',
     subModels: {
@@ -119,7 +122,7 @@ SubFormFieldModel.define({
 
 SubFormFieldModel.registerFlow({
   key: 'eventSettings',
-  title: escapeT('Event settings'),
+  title: tExpr('Event settings'),
   on: 'formValuesChange',
   steps: {
     linkageRules: {
@@ -189,7 +192,10 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                   currentFork.context.t('Current object'),
                   () => currentFork.context.form.getFieldValue([name, fieldName]),
                 ),
-                resolveOnServer: createAssociationSubpathResolver(() => currentFork.context.collection),
+                resolveOnServer: createAssociationSubpathResolver(
+                  () => currentFork.context.collection,
+                  () => currentFork.context.form.getFieldValue([name, fieldName]),
+                ),
                 serverOnlyWhenContextParams: true,
               });
 
@@ -250,7 +256,10 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
         this.context.t('Current object'),
         (ctx) => ctx['currentObject'],
       ),
-      resolveOnServer: createAssociationSubpathResolver(() => this.context.collection),
+      resolveOnServer: createAssociationSubpathResolver(
+        () => this.context.collection,
+        () => this.context['currentObject'],
+      ),
       serverOnlyWhenContextParams: true,
     });
   }
@@ -267,7 +276,7 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
 }
 
 SubFormListFieldModel.define({
-  label: escapeT('Sub-form'),
+  label: tExpr('Sub-form'),
   createModelOptions: {
     use: 'SubFormListFieldModel',
     subModels: {
@@ -280,7 +289,7 @@ SubFormListFieldModel.define({
 
 SubFormListFieldModel.registerFlow({
   key: 'eventSettings',
-  title: escapeT('Event settings'),
+  title: tExpr('Event settings'),
   on: 'formValuesChange',
   steps: {
     linkageRules: {

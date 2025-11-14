@@ -70,7 +70,7 @@ describe('gateway', () => {
       expect(data).toMatchObject({
         error: {
           code: 'APP_PREPARING',
-          message: `application main is preparing`,
+          message: `application main is preparing, please wait patiently`,
           status: 503,
           maintaining: true,
         },
