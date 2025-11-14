@@ -17,4 +17,5 @@ export * from './FormItem';
 export * from './settings';
 export * from './subModel';
 export * from './variables';
+export * from './MobilePopup';
 //

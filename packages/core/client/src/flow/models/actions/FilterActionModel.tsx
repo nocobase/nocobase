@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tExpr, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { tExpr, MobilePopup, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { isEmptyFilter, transformFilter } from '@nocobase/utils/client';
 import { ButtonProps, Popover, Select } from 'antd';
 import React from 'react';
@@ -55,6 +55,37 @@ export class FilterActionModel extends ActionModel {
   }
 
   render() {
+    if (this.context.isMobileLayout) {
+      return (
+        <>
+          <MobilePopup
+            title={this.context.t('Filter')}
+            visible={this.props.open}
+            onClose={() => {
+              this.setProps('open', false);
+            }}
+          >
+            <div
+              style={{
+                padding: this.context.themeToken.paddingMD,
+                backgroundColor: this.context.themeToken.colorBgContainer,
+              }}
+            >
+              <FilterContainer
+                value={this.props.filterValue}
+                ctx={this.context}
+                FilterItem={(props) => (
+                  <VariableFilterItem {...props} model={this} ignoreFieldNames={this.getIgnoreFieldNames()} />
+                )}
+              />
+              <div style={{ height: 150 }}></div>
+            </div>
+          </MobilePopup>
+          {super.render()}
+        </>
+      );
+    }
+
     return (
       <Popover
         open={this.props.open}

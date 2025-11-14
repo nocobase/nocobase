@@ -187,6 +187,7 @@ export function useDrawer() {
               // 关闭时修正 previous/next 指针
               scopedEngine.unlinkFromStack();
             }}
+            isMobile={ctx.isMobileLayout}
           >
             {content}
             {props.children}

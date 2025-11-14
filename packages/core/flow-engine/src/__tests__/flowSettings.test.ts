@@ -95,6 +95,8 @@ vi.mock('antd', () => {
       Paragraph: vi.fn(({ children }: any) => children ?? 'Paragraph'),
       Text: vi.fn(({ children }: any) => children ?? 'Text'),
     },
+    ConfigProvider: ({ children }: any) => children ?? 'ConfigProvider',
+    theme: { useToken: () => ({}) },
   } as any;
 });
 
