@@ -47,7 +47,19 @@ export function RecordPickerContent({ model, toOne = false }) {
   model._closeView = ctx.view.close;
   return (
     <div>
-      <Header title={ctx.t('Select record')} />
+      <Header
+        title={
+          <div
+            style={{
+              padding: `${ctx.themeToken.paddingLG}px ${ctx.themeToken.paddingLG}px 0`,
+              marginBottom: -ctx.themeToken.marginSM,
+              backgroundColor: 'var(--colorBgLayout)',
+            }}
+          >
+            {ctx.t('Select record')}
+          </div>
+        }
+      />
       <RemoteModelRenderer
         options={{
           parentId: ctx.view.inputArgs.parentId,
@@ -60,15 +72,17 @@ export function RecordPickerContent({ model, toOne = false }) {
       />
       {!toOne && (
         <Footer>
-          <Button
-            type="primary"
-            onClick={() => {
-              model.change();
-              ctx.view.close();
-            }}
-          >
-            {ctx.t('Submit')}
-          </Button>
+          <div style={{ padding: `0 ${ctx.themeToken.paddingLG}px ${ctx.themeToken.paddingLG}px` }}>
+            <Button
+              type="primary"
+              onClick={() => {
+                model.change();
+                ctx.view.close();
+              }}
+            >
+              {ctx.t('Submit')}
+            </Button>
+          </div>
         </Footer>
       )}
     </div>
