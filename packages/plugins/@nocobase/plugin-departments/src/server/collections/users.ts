@@ -75,7 +75,7 @@ export const mainDepartmentIdField = {
   name: 'mainDepartmentId',
   uiSchema: {
     type: 'number',
-    title: '{{t("Main department ID")}}',
+    title: 'mainDepartmentId',
     'x-component': 'InputNumber',
     'x-read-pretty': true,
   },
