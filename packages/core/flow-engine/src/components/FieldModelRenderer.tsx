@@ -54,9 +54,11 @@ export function FieldModelRenderer(props: any) {
     composingRef.current = true;
   };
 
-  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>) => {
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLInputElement>, flag = true) => {
     composingRef.current = false;
-    props.onChange(e);
+    if (flag) {
+      props.onChange(e);
+    }
   };
 
   const modelProps = {

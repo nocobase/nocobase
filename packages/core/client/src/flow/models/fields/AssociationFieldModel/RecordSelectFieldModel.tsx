@@ -81,6 +81,7 @@ export function LazySelect(props) {
       style={{ width: '100%' }}
       {...others}
       allowClear
+      onCompositionEnd={(e) => others.onCompositionEnd(e, false)}
       showSearch
       maxTagCount="responsive"
       filterOption={false}
