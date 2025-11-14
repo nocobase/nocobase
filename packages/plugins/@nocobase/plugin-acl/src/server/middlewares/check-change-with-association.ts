@@ -55,7 +55,7 @@ async function processAssociationChild(
           return _.pick(value, recordKey);
         }
         const record = await repo.findOne({
-          filterByTk: recordKey,
+          filterByTk: value[recordKey],
           filter: parsedParams.filter,
         });
         if (!record) {
@@ -88,6 +88,10 @@ async function processValues(
 ) {
   const db: Database = ctx.database;
   const collection = db.getCollection(collectionName);
+
+  if (!collection) {
+    return values;
+  }
 
   // Apply ACL whitelist filtering
   if (aclParams?.whitelist) {
@@ -174,6 +178,7 @@ async function processValues(
       }
     }
   }
+
   return values;
 }
 
@@ -186,12 +191,12 @@ export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
   if (_.isEmpty(values)) {
     return next();
   }
-  const { updateAssocationValues = [] } = ctx.action.params || {};
+  const { updateAssociationValues = [] } = ctx.action.params || {};
   const params = ctx.permission.can?.params || ctx.acl.fixedParamsManager.getParams(resourceName, actionName);
   let collectionName = resourceName;
   if (resourceName.includes('.')) {
     collectionName = resourceName.split('.')[1];
   }
-  await processValues(ctx, values, updateAssocationValues, params, collectionName);
+  ctx.action.params.values = await processValues(ctx, values, updateAssociationValues, params, collectionName);
   await next();
 };
