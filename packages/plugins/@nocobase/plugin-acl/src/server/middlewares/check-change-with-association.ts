@@ -183,6 +183,9 @@ async function processValues(
 }
 
 export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
+  if (ctx.permission.skip) {
+    return next();
+  }
   const { resourceName, actionName } = ctx.action;
   if (!['create', 'firstOrCreate', 'updateOrCreate', 'update'].includes(actionName)) {
     return next();

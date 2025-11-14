@@ -435,20 +435,31 @@ describe('list association action with acl', () => {
     });
 
     await db.getRepository('roles.resources', 'newRole').create({
-      values: {
-        name: 'posts',
-        usingActionConfig: true,
-        actions: [
-          {
-            name: 'view',
-            fields: ['title', 'comments'],
-          },
-          {
-            name: 'create',
-            fields: ['title', 'comments'],
-          },
-        ],
-      },
+      values: [
+        {
+          name: 'posts',
+          usingActionConfig: true,
+          actions: [
+            {
+              name: 'view',
+              fields: ['title', 'comments'],
+            },
+            {
+              name: 'create',
+              fields: ['title', 'comments'],
+            },
+          ],
+        },
+        {
+          name: 'comments',
+          usingActionConfig: true,
+          actions: [
+            {
+              name: 'create',
+            },
+          ],
+        },
+      ],
     });
 
     const userAgent = await (await app.agent().login(user, 'newRole')).set('X-With-ACL-Meta', true);
@@ -458,6 +469,7 @@ describe('list association action with acl', () => {
         title: 'post1',
         comments: [{ content: 'comment1' }, { content: 'comment2' }],
       },
+      updateAssociationValues: ['comments'],
     });
 
     expect(createResp.statusCode).toBe(200);
