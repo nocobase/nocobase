@@ -50,29 +50,10 @@ export default function ({ token }) {
   });
 }
 
-// export function teardown({ token }) {
-//   const url = `${__ENV.TARGET_ORIGIN}/api/posts:destroy`;
-//   const params = {
-//     headers: {
-//       'Content-Type': 'application/json',
-//       Authorization: `Bearer ${token}`,
-//     },
-//     queries: {
-//       filter: JSON.stringify({ id: { $gt: 1000000 } }),
-//     },
-//   };
-
-//   let res = http.delete(url, params);
-
-//   check(res, {
-//     'status is 200': (r) => r.status === 200,
-//   });
-// }
-
 export function handleSummary(data) {
-  const passes = getExecutionsCount(data.setup_data.token, 1);
-  const fails = getExecutionsCount(data.setup_data.token, 0);
-  const totalCount = passes + fails;
+  const total = getExecutionsCount(data.setup_data.token);
+  const passes = getExecutionsCount(data.setup_data.token, { status: 1 });
+  const fails = total - passes;
 
   data.metrics.executions = {
     contains: 'default',
@@ -80,7 +61,7 @@ export function handleSummary(data) {
     values: {
       fails,
       passes,
-      rate: totalCount !== 0 ? passes / totalCount : 0,
+      rate: total !== 0 ? passes / total : 0,
     },
   };
   return {
@@ -88,9 +69,9 @@ export function handleSummary(data) {
   };
 }
 
-function getExecutionsCount(token: string, status?: number) {
-  const filter = { key: 'o96nn6fws73', status };
-  const encodedFilter = encodeURIComponent(JSON.stringify(filter));
+function getExecutionsCount(token: string, filter?: any) {
+  const _filter = { key: __ENV.WORKFLOW_KEY, ...(filter ?? {}) };
+  const encodedFilter = encodeURIComponent(JSON.stringify(_filter));
   const url = http.url`${__ENV.TARGET_ORIGIN}/api/executions:list?filter=${encodedFilter}`;
   const params = {
     headers: {
