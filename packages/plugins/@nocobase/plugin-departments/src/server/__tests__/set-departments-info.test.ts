@@ -29,7 +29,7 @@ describe('set departments info', () => {
 
   beforeAll(async () => {
     app = await createMockServer({
-      plugins: ['field-sort', 'users', 'departments', 'acl', 'data-source-manager'],
+      plugins: ['error-handler', 'field-sort', 'users', 'departments', 'acl', 'data-source-manager'],
     });
     db = app.db;
     repo = db.getRepository('departments');
@@ -66,7 +66,7 @@ describe('set departments info', () => {
         members: [1],
       },
     });
-    await setDepartmentsInfo(ctx, () => {});
+    await setDepartmentsInfo(ctx, async () => {});
     expect(ctx.state.attachRoles.length).toBe(1);
     expect(ctx.state.attachRoles[0].name).toBe('test-role');
   });

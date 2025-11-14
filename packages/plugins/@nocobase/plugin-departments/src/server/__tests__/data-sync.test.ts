@@ -17,7 +17,7 @@ describe('department data sync', async () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['field-sort', 'user-data-sync', 'users', 'departments'],
+      plugins: ['error-handler', 'field-sort', 'user-data-sync', 'users', 'departments'],
     });
     db = app.db;
     const plugin = app.pm.get('user-data-sync') as PluginUserDataSyncServer;
