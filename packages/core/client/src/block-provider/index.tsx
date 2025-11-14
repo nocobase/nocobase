@@ -9,12 +9,13 @@
 
 export * from './BlockProvider';
 export * from './BlockSchemaComponentProvider';
+export * from './DetailsBlockProvider';
 export * from './FilterFormBlockProvider';
 export * from './FormBlockProvider';
 export * from './FormFieldProvider';
+export * from './hooks';
+export { useLinkActionProps } from './hooks/index';
 export * from './TableBlockProvider';
 export * from './TableFieldProvider';
 export * from './TableSelectorProvider';
-export * from './DetailsBlockProvider';
-export * from './hooks';
-export { useLinkActionProps } from './hooks/index';
+export * from './TemplateBlockProvider';

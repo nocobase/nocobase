@@ -11,7 +11,7 @@ import { Context, Next } from '@nocobase/actions';
 
 export async function checkAssociationOperate(ctx: Context, next: Next) {
   const { actionName, resourceName } = ctx.action;
-  if (!['add', 'set', 'remove', 'toggle'].includes(actionName)) {
+  if (!(resourceName.includes('.') && ['add', 'set', 'remove', 'toggle'].includes(actionName))) {
     return next();
   }
   const [resource, association] = resourceName.split('.');
@@ -19,14 +19,14 @@ export async function checkAssociationOperate(ctx: Context, next: Next) {
     roles: ctx.state.currentRoles,
     resource,
     action: 'update',
+    rawResourceName: resourceName,
   });
   if (!result) {
     ctx.throw(403, 'No permissions');
   }
-  if (result.params) {
-    if (!result.params.whitelist?.includes(association)) {
-      ctx.throw(403, 'No permissions');
-    }
+  const params = result.params || ctx.acl.fixedParamsManager.getParams(resourceName, actionName);
+  if (params.whitelist && !params.whitelist?.includes(association)) {
+    ctx.throw(403, 'No permissions');
   }
   ctx.permission = {
     ...ctx.permission,

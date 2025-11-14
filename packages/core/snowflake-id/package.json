@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/snowflake-id",
-  "version": "1.9.5",
+  "version": "1.9.6",
   "main": "lib/index.js",
   "types": "./lib/index.d.ts",
   "license": "AGPL-3.0",
