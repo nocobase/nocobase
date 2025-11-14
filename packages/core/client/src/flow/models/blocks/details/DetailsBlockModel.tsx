@@ -19,7 +19,7 @@ import {
   MultiRecordResource,
   SingleRecordResource,
   createCurrentRecordMetaFactory,
-  escapeT,
+  tExpr,
 } from '@nocobase/flow-engine';
 import { Pagination, Space } from 'antd';
 import _ from 'lodash';
@@ -166,7 +166,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
 
 DetailsBlockModel.registerFlow({
   key: 'detailsSettings',
-  title: escapeT('Details settings'),
+  title: tExpr('Details settings'),
   sort: 150,
   steps: {
     refresh: {
@@ -180,7 +180,7 @@ DetailsBlockModel.registerFlow({
     },
     layout: {
       use: 'layout',
-      title: escapeT('Layout'),
+      title: tExpr('Layout'),
     },
     dataScope: {
       use: 'dataScope',
@@ -192,9 +192,9 @@ DetailsBlockModel.registerFlow({
 });
 
 DetailsBlockModel.define({
-  label: escapeT('Details'),
+  label: tExpr('Details'),
   searchable: true,
-  searchPlaceholder: escapeT('Search'),
+  searchPlaceholder: tExpr('Search'),
   createModelOptions: {
     use: 'DetailsBlockModel',
     subModels: {

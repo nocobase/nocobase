@@ -7,19 +7,19 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT } from '@nocobase/flow-engine';
+import { defineAction, tExpr } from '@nocobase/flow-engine';
 
 export const overflowMode = defineAction({
   name: 'overflowMode',
-  title: escapeT('Content overflow display mode'),
+  title: tExpr('Content overflow display mode'),
   uiSchema(ctx) {
     return {
       overflowMode: {
         'x-component': 'Select',
         'x-decorator': 'FormItem',
         enum: [
-          { label: escapeT('Ellipsis'), value: 'ellipsis' },
-          { label: escapeT('Wrap'), value: 'wrap' },
+          { label: tExpr('Ellipsis'), value: 'ellipsis' },
+          { label: tExpr('Wrap'), value: 'wrap' },
         ],
       },
     };

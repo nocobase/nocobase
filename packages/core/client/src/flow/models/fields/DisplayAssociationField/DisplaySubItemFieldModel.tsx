@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 import React from 'react';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { ObjectNester } from '../AssociationFieldModel/SubFormFieldModel';
@@ -48,7 +48,7 @@ export class DisplaySubItemFieldModel extends FieldModel {
 }
 
 DisplaySubItemFieldModel.define({
-  label: escapeT('Sub-detail'),
+  label: tExpr('Sub-detail'),
   createModelOptions: {
     use: 'DisplaySubItemFieldModel',
     subModels: {

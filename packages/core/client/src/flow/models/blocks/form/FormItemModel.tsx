@@ -11,7 +11,7 @@ import {
   Collection,
   DefaultStructure,
   EditableItemModel,
-  escapeT,
+  tExpr,
   FieldModelRenderer,
   FlowModelContext,
   FormItem,
@@ -150,17 +150,17 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
 }
 
 FormItemModel.define({
-  label: escapeT('Display collection fields'),
+  label: tExpr('Display collection fields'),
   sort: 100,
 });
 
 FormItemModel.registerFlow({
   key: 'editItemSettings',
   sort: 300,
-  title: escapeT('Form item settings'),
+  title: tExpr('Form item settings'),
   steps: {
     label: {
-      title: escapeT('Label'),
+      title: tExpr('Label'),
       uiSchema: (ctx) => {
         return {
           label: {
@@ -200,14 +200,14 @@ FormItemModel.registerFlow({
     },
 
     showLabel: {
-      title: escapeT('Show label'),
+      title: tExpr('Show label'),
       uiSchema: {
         showLabel: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
+            checkedChildren: tExpr('Yes'),
+            unCheckedChildren: tExpr('No'),
           },
         },
       },
@@ -219,7 +219,7 @@ FormItemModel.registerFlow({
       },
     },
     tooltip: {
-      title: escapeT('Tooltip'),
+      title: tExpr('Tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
@@ -231,7 +231,7 @@ FormItemModel.registerFlow({
       },
     },
     description: {
-      title: escapeT('Description'),
+      title: tExpr('Description'),
       uiSchema: {
         description: {
           'x-component': 'Input.TextArea',
@@ -246,7 +246,7 @@ FormItemModel.registerFlow({
       },
     },
     initialValue: {
-      title: escapeT('Default value'),
+      title: tExpr('Default value'),
       uiSchema: (ctx) => {
         if (ctx.model.parent.parent instanceof EditFormModel) {
           return;
@@ -290,20 +290,20 @@ FormItemModel.registerFlow({
       },
     },
     validation: {
-      title: escapeT('Validation'),
+      title: tExpr('Validation'),
       use: 'validation',
     },
     required: {
-      title: escapeT('Required'),
+      title: tExpr('Required'),
       use: 'required',
     },
 
     model: {
       use: 'fieldComponent',
-      title: escapeT('Field component'),
+      title: tExpr('Field component'),
     },
     pattern: {
-      title: escapeT('Display mode'),
+      title: tExpr('Display mode'),
       use: 'pattern',
     },
 

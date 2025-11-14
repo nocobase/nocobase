@@ -13,7 +13,7 @@ import {
   CollectionField,
   DataSource,
   DefaultStructure,
-  escapeT,
+  tExpr,
   FlowModelContext,
   MultiRecordResource,
   SingleRecordResource,
@@ -76,7 +76,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
           key: genKey(`ds-${dataSource.key}`),
           label: dataSource.displayName,
           searchable: true,
-          searchPlaceholder: escapeT('Search'),
+          searchPlaceholder: tExpr('Search'),
           children: (ctx) => {
             return dataSource
               .getCollections()

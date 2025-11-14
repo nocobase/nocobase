@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CollectionField, escapeT } from '@nocobase/flow-engine';
+import { CollectionField, tExpr } from '@nocobase/flow-engine';
 import { Tag } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
@@ -154,11 +154,11 @@ export class ClickableFieldModel extends FieldModel {
 
 ClickableFieldModel.registerFlow({
   key: 'displayFieldSettings',
-  title: escapeT('Display Field settings'),
+  title: tExpr('Display Field settings'),
   sort: 200,
   steps: {
     displayStyle: {
-      title: escapeT('Display style'),
+      title: tExpr('Display style'),
       uiSchema: (ctx) => {
         if (['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'].includes(ctx.collectionField?.interface)) {
           return null;
@@ -169,8 +169,8 @@ ClickableFieldModel.registerFlow({
             'x-component': 'Radio.Group',
             'x-decorator': 'FormItem',
             enum: [
-              { label: escapeT('Tag'), value: 'tag' },
-              { label: escapeT('Text'), value: 'text' },
+              { label: tExpr('Tag'), value: 'tag' },
+              { label: tExpr('Text'), value: 'text' },
             ],
           },
         };
@@ -183,7 +183,7 @@ ClickableFieldModel.registerFlow({
       },
     },
     clickToOpen: {
-      title: escapeT('Enable click to open'),
+      title: tExpr('Enable click to open'),
       uiSchema: {
         clickToOpen: {
           'x-component': 'Switch',
@@ -200,7 +200,7 @@ ClickableFieldModel.registerFlow({
       },
     },
     overflowMode: {
-      title: escapeT('Content overflow display mode'),
+      title: tExpr('Content overflow display mode'),
       use: 'overflowMode',
     },
   },

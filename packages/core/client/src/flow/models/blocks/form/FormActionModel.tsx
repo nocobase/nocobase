@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
+import { tExpr, MultiRecordResource, SingleRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { AxiosRequestConfig } from 'axios';
 import { ActionModel } from '../../base';
@@ -18,7 +18,7 @@ export class FormActionModel extends ActionModel {}
 
 export class FormSubmitActionModel extends FormActionModel {
   defaultProps: ButtonProps = {
-    title: escapeT('Submit'),
+    title: tExpr('Submit'),
     type: 'primary',
     htmlType: 'submit',
   };
@@ -35,20 +35,20 @@ export class FormSubmitActionModel extends FormActionModel {
 }
 
 FormSubmitActionModel.define({
-  label: escapeT('Submit'),
+  label: tExpr('Submit'),
 });
 
 FormSubmitActionModel.registerFlow({
   key: 'submitSettings',
   on: 'click',
-  title: escapeT('Submit action settings'),
+  title: tExpr('Submit action settings'),
   steps: {
     confirm: {
       use: 'confirm',
       defaultParams: {
         enable: false,
-        title: escapeT('Submit record'),
-        content: escapeT('Are you sure you want to save it?'),
+        title: tExpr('Submit record'),
+        content: tExpr('Are you sure you want to save it?'),
       },
       async handler(ctx, params) {
         if (params.enable) {

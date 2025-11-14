@@ -8,7 +8,7 @@
  */
 
 import { LockOutlined } from '@ant-design/icons';
-import { DefaultStructure, FlowModel, escapeT } from '@nocobase/flow-engine';
+import { DefaultStructure, FlowModel, tExpr } from '@nocobase/flow-engine';
 import { Button, Tooltip } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
 import _ from 'lodash';
@@ -32,7 +32,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
 
   defaultProps: ButtonProps = {
     type: 'default',
-    title: escapeT('Action'),
+    title: tExpr('Action'),
   };
 
   enableEditTitle = true;
@@ -121,32 +121,32 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
 
 ActionModel.registerFlow({
   key: 'buttonSettings',
-  title: escapeT('Button settings'),
+  title: tExpr('Button settings'),
   sort: -999,
   steps: {
     general: {
-      title: escapeT('Edit button'),
+      title: tExpr('Edit button'),
       uiSchema(ctx) {
         return {
           title: ctx.model.enableEditTitle
             ? {
                 'x-decorator': 'FormItem',
                 'x-component': 'Input',
-                title: escapeT('Button title'),
+                title: tExpr('Button title'),
               }
             : undefined,
           icon: ctx.model.enableEditIcon
             ? {
                 'x-decorator': 'FormItem',
                 'x-component': 'IconPicker',
-                title: escapeT('Button icon'),
+                title: tExpr('Button icon'),
               }
             : undefined,
           type: ctx.model.enableEditType
             ? {
                 'x-decorator': 'FormItem',
                 'x-component': 'Radio.Group',
-                title: escapeT('Button type'),
+                title: tExpr('Button type'),
                 enum: [
                   { value: 'default', label: '{{t("Default")}}' },
                   { value: 'primary', label: '{{t("Primary")}}' },
@@ -160,14 +160,14 @@ ActionModel.registerFlow({
             ? {
                 'x-decorator': 'FormItem',
                 'x-component': 'Switch',
-                title: escapeT('Danger action'),
+                title: tExpr('Danger action'),
               }
             : undefined,
           color: ctx.model.enableEditColor
             ? {
                 'x-decorator': 'FormItem',
                 'x-component': ColorPicker,
-                title: escapeT('Color'),
+                title: tExpr('Color'),
               }
             : undefined,
         };
@@ -194,12 +194,12 @@ ActionModel.registerFlow({
 
 ActionModel.registerEvents({
   click: {
-    title: escapeT('Click'),
+    title: tExpr('Click'),
     name: 'click',
     uiSchema: {
       condition: {
         type: 'object',
-        title: escapeT('Trigger condition'),
+        title: tExpr('Trigger condition'),
         'x-decorator': 'FormItem',
         'x-component': ConditionBuilder,
       },

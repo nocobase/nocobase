@@ -16,7 +16,7 @@ import {
   DisplayItemModel,
   DragHandler,
   Droppable,
-  escapeT,
+  tExpr,
   FieldModelRenderer,
   FlowErrorFallback,
   FlowModelContext,
@@ -239,13 +239,13 @@ export class TableColumnModel extends DisplayItemModel {
 }
 
 TableColumnModel.define({
-  label: escapeT('Display collection fields'),
+  label: tExpr('Display collection fields'),
 });
 
 TableColumnModel.registerFlow({
   key: 'tableColumnSettings',
   sort: 500,
-  title: escapeT('Table column settings'),
+  title: tExpr('Table column settings'),
   steps: {
     init: {
       async handler(ctx, params) {
@@ -266,7 +266,7 @@ TableColumnModel.registerFlow({
       use: 'aclCheck',
     },
     title: {
-      title: escapeT('Column title'),
+      title: tExpr('Column title'),
       uiSchema: (ctx) => {
         return {
           title: {
@@ -292,7 +292,7 @@ TableColumnModel.registerFlow({
       },
     },
     tooltip: {
-      title: escapeT('Tooltip'),
+      title: tExpr('Tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
@@ -304,7 +304,7 @@ TableColumnModel.registerFlow({
       },
     },
     width: {
-      title: escapeT('Column width'),
+      title: tExpr('Column width'),
       uiSchema: {
         width: {
           'x-component': 'NumberPicker',
@@ -319,7 +319,7 @@ TableColumnModel.registerFlow({
       },
     },
     quickEdit: {
-      title: escapeT('Enable quick edit'),
+      title: tExpr('Enable quick edit'),
       uiSchema: (ctx) => {
         if (!ctx.model.collectionField) {
           return;
@@ -352,12 +352,12 @@ TableColumnModel.registerFlow({
       },
     },
     model: {
-      title: escapeT('Field component'),
+      title: tExpr('Field component'),
       use: 'displayFieldComponent',
     },
     fieldNames: {
       use: 'titleField',
-      title: escapeT('Label field'),
+      title: tExpr('Label field'),
 
       beforeParamsSave: async (ctx, params, previousParams) => {
         if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
@@ -401,7 +401,7 @@ TableColumnModel.registerFlow({
       },
     },
     fixed: {
-      title: escapeT('Fixed'),
+      title: tExpr('Fixed'),
       use: 'fixed',
     },
   },

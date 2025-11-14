@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
+import { tExpr, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
 import { buildFormAssociationChildren, buildJSFieldMenuChildren } from '../utils/transformChildrenToJS';
 
 /**
@@ -29,9 +29,9 @@ export class FormJSFieldItemModel extends FlowModel {
 }
 
 FormJSFieldItemModel.define({
-  label: escapeT('JS field'),
+  label: tExpr('JS field'),
   searchable: true,
-  searchPlaceholder: escapeT('Search fields'),
+  searchPlaceholder: tExpr('Search fields'),
   menuType: 'submenu',
   sort: 110,
 });

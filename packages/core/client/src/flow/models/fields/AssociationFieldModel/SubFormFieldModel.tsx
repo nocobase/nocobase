@@ -10,7 +10,7 @@
 import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
-  escapeT,
+  tExpr,
   FlowModelRenderer,
   useFlowModel,
   createAssociationAwareObjectMetaFactory,
@@ -109,7 +109,7 @@ export class SubFormFieldModel extends FormAssociationFieldModel {
 }
 
 SubFormFieldModel.define({
-  label: escapeT('Sub-form'),
+  label: tExpr('Sub-form'),
   createModelOptions: {
     use: 'SubFormFieldModel',
     subModels: {
@@ -122,7 +122,7 @@ SubFormFieldModel.define({
 
 SubFormFieldModel.registerFlow({
   key: 'eventSettings',
-  title: escapeT('Event settings'),
+  title: tExpr('Event settings'),
   on: 'formValuesChange',
   steps: {
     linkageRules: {
@@ -276,7 +276,7 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
 }
 
 SubFormListFieldModel.define({
-  label: escapeT('Sub-form'),
+  label: tExpr('Sub-form'),
   createModelOptions: {
     use: 'SubFormListFieldModel',
     subModels: {
@@ -289,7 +289,7 @@ SubFormListFieldModel.define({
 
 SubFormListFieldModel.registerFlow({
   key: 'eventSettings',
-  title: escapeT('Event settings'),
+  title: tExpr('Event settings'),
   on: 'formValuesChange',
   steps: {
     linkageRules: {

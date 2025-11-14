@@ -12,7 +12,7 @@ import {
   AddSubModelButton,
   DndProvider,
   FlowSettingsButton,
-  escapeT,
+  tExpr,
   observable,
   useFlowEngine,
 } from '@nocobase/flow-engine';
@@ -138,7 +138,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
 
 SubTableFieldModel.registerFlow({
   key: 'loadTableColumns',
-  title: escapeT('Association table settings'),
+  title: tExpr('Association table settings'),
   sort: 300,
   steps: {
     aclCheck: {
@@ -150,14 +150,14 @@ SubTableFieldModel.registerFlow({
       },
     },
     allowAddNew: {
-      title: escapeT('Allow add new data'),
+      title: tExpr('Allow add new data'),
       uiSchema: {
         allowAddNew: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
+            checkedChildren: tExpr('Yes'),
+            unCheckedChildren: tExpr('No'),
           },
         },
       },
@@ -171,14 +171,14 @@ SubTableFieldModel.registerFlow({
       },
     },
     enableIndexColumn: {
-      title: escapeT('Enable index column'),
+      title: tExpr('Enable index column'),
       uiSchema: {
         enableIndexColumn: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
+            checkedChildren: tExpr('Yes'),
+            unCheckedChildren: tExpr('No'),
           },
         },
       },
@@ -192,14 +192,14 @@ SubTableFieldModel.registerFlow({
       },
     },
     allowSelectExistingRecord: {
-      title: escapeT('Allow selection of existing records'),
+      title: tExpr('Allow selection of existing records'),
       uiSchema: {
         allowSelectExistingRecord: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
+            checkedChildren: tExpr('Yes'),
+            unCheckedChildren: tExpr('No'),
           },
         },
       },
@@ -213,14 +213,14 @@ SubTableFieldModel.registerFlow({
       },
     },
     allowDisassociation: {
-      title: escapeT('Allow disassociation'),
+      title: tExpr('Allow disassociation'),
       uiSchema: {
         allowDisassociation: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
+            checkedChildren: tExpr('Yes'),
+            unCheckedChildren: tExpr('No'),
           },
         },
       },
@@ -234,7 +234,7 @@ SubTableFieldModel.registerFlow({
       },
     },
     pageSize: {
-      title: escapeT('Page size'),
+      title: tExpr('Page size'),
       uiSchema: {
         pageSize: {
           'x-component': 'Select',
@@ -263,13 +263,13 @@ SubTableFieldModel.registerFlow({
 
 SubTableFieldModel.registerFlow({
   key: 'selectExitRecordSettings',
-  title: escapeT('Selector setting'),
+  title: tExpr('Selector setting'),
   on: {
     eventName: 'openView',
   },
   steps: {
     openView: {
-      title: escapeT('Edit popup'),
+      title: tExpr('Edit popup'),
       uiSchema(ctx) {
         if (!ctx.model.props.allowSelectExistingRecord) {
           return;
@@ -277,21 +277,21 @@ SubTableFieldModel.registerFlow({
         return {
           mode: {
             type: 'string',
-            title: escapeT('Open mode'),
+            title: tExpr('Open mode'),
             enum: [
-              { label: escapeT('Drawer'), value: 'drawer' },
-              { label: escapeT('Dialog'), value: 'dialog' },
+              { label: tExpr('Drawer'), value: 'drawer' },
+              { label: tExpr('Dialog'), value: 'dialog' },
             ],
             'x-decorator': 'FormItem',
             'x-component': 'Radio.Group',
           },
           size: {
             type: 'string',
-            title: escapeT('Popup size'),
+            title: tExpr('Popup size'),
             enum: [
-              { label: escapeT('Small'), value: 'small' },
-              { label: escapeT('Medium'), value: 'medium' },
-              { label: escapeT('Large'), value: 'large' },
+              { label: tExpr('Small'), value: 'small' },
+              { label: tExpr('Medium'), value: 'medium' },
+              { label: tExpr('Large'), value: 'large' },
             ],
             'x-decorator': 'FormItem',
             'x-component': 'Radio.Group',
@@ -376,7 +376,7 @@ SubTableFieldModel.registerFlow({
 });
 
 SubTableFieldModel.define({
-  label: escapeT('Sub-table'),
+  label: tExpr('Sub-table'),
 });
 export { SubTableColumnModel };
 

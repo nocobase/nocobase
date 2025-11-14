@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, escapeT, MultiRecordResource } from '@nocobase/flow-engine';
+import { defineAction, tExpr, MultiRecordResource } from '@nocobase/flow-engine';
 
 const getSortFields = (fields) => {
   return fields
@@ -31,7 +31,7 @@ const getSortFields = (fields) => {
 
 export const sortingRule = defineAction({
   name: 'sortingRule',
-  title: escapeT('Default sorting'),
+  title: tExpr('Default sorting'),
   uiSchema: (ctx) => {
     const fields = ctx.collectionField?.targetCollection
       ? ctx.collectionField.targetCollection.getFields()
@@ -75,11 +75,11 @@ export const sortingRule = defineAction({
                   },
                   enum: [
                     {
-                      label: escapeT('ASC'),
+                      label: tExpr('ASC'),
                       value: 'asc',
                     },
                     {
-                      label: escapeT('DESC'),
+                      label: tExpr('DESC'),
                       value: 'desc',
                     },
                   ],
@@ -96,7 +96,7 @@ export const sortingRule = defineAction({
         properties: {
           add: {
             type: 'void',
-            title: escapeT('Add sort field'),
+            title: tExpr('Add sort field'),
             'x-component': 'ArrayItems.Addition',
           },
         },

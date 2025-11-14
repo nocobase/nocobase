@@ -9,7 +9,7 @@
 import { dayjsable, formatDayjsValue } from '@formily/antd-v5/esm/__builtins__';
 import { TimePicker } from 'antd';
 import React from 'react';
-import { EditableItemModel, FilterableItemModel, escapeT } from '@nocobase/flow-engine';
+import { EditableItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
 import dayjs from 'dayjs';
 import { FieldModel } from '../base';
 
@@ -40,11 +40,11 @@ export class TimeFieldModel extends FieldModel {
 TimeFieldModel.registerFlow({
   key: 'timeSettings',
   sort: 3000,
-  title: escapeT('Time settings'),
+  title: tExpr('Time settings'),
   steps: {
     dateFormat: {
       use: 'dateDisplayFormat',
-      title: escapeT('Time format'),
+      title: tExpr('Time format'),
     },
   },
 });

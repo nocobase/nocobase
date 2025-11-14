@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { tExpr, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { isEmptyFilter, transformFilter } from '@nocobase/utils/client';
 import { ButtonProps, Popover, Select } from 'antd';
 import React from 'react';
@@ -30,7 +30,7 @@ export class FilterActionModel extends ActionModel {
 
   defaultProps: any = {
     type: 'default',
-    title: escapeT('Filter'),
+    title: tExpr('Filter'),
     icon: 'FilterOutlined',
     filterValue: { logic: '$and', items: [] },
   };
@@ -83,13 +83,13 @@ export class FilterActionModel extends ActionModel {
 }
 
 FilterActionModel.define({
-  label: escapeT('Filter'),
+  label: tExpr('Filter'),
   toggleable: true,
 });
 
 FilterActionModel.registerFlow({
   key: 'filterSettings',
-  title: escapeT('Filter settings'),
+  title: tExpr('Filter settings'),
   steps: {
     position: {
       handler(ctx, params) {
@@ -97,7 +97,7 @@ FilterActionModel.registerFlow({
       },
     },
     filterableFieldNames: {
-      title: escapeT('Filterable fields'),
+      title: tExpr('Filterable fields'),
       uiSchema: {
         filterableFieldNames: {
           type: 'array',
@@ -113,7 +113,7 @@ FilterActionModel.registerFlow({
           },
           'x-component-props': {
             mode: 'multiple',
-            placeholder: escapeT('Please select filterable fields'),
+            placeholder: tExpr('Please select filterable fields'),
           },
         },
       },
@@ -131,7 +131,7 @@ FilterActionModel.registerFlow({
       },
     },
     defaultFilter: {
-      title: escapeT('Default filter conditions'),
+      title: tExpr('Default filter conditions'),
       uiSchema: {
         defaultFilter: {
           type: 'object',
@@ -190,7 +190,7 @@ FilterActionModel.registerFlow({
 
 FilterActionModel.registerFlow({
   key: 'resetSettings',
-  title: escapeT('Reset'),
+  title: tExpr('Reset'),
   on: 'reset',
   steps: {
     submit: {

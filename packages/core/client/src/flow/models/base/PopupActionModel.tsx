@@ -7,20 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { ActionModel } from './ActionModel';
 
 export class PopupActionModel extends ActionModel {
   defaultProps: ButtonProps = {
-    title: escapeT('Popup'),
+    title: tExpr('Popup'),
     icon: 'SettingOutlined',
   };
 }
 
 PopupActionModel.define({
-  label: escapeT('Popup'),
+  label: tExpr('Popup'),
 });
 
 PopupActionModel.registerFlow(openViewFlow);

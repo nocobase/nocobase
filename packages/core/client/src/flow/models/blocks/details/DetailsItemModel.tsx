@@ -10,7 +10,7 @@
 import {
   Collection,
   DisplayItemModel,
-  escapeT,
+  tExpr,
   FieldModelRenderer,
   FlowModelContext,
   FormItem,
@@ -137,17 +137,17 @@ export class DetailsItemModel extends DisplayItemModel<{
 }
 
 DetailsItemModel.define({
-  label: escapeT('Display collection fields'),
+  label: tExpr('Display collection fields'),
   sort: 100,
 });
 
 DetailsItemModel.registerFlow({
   key: 'detailItemSettings',
   sort: 300,
-  title: escapeT('Detail item settings'),
+  title: tExpr('Detail item settings'),
   steps: {
     label: {
-      title: escapeT('Label'),
+      title: tExpr('Label'),
       uiSchema: (ctx) => {
         return {
           title: {
@@ -185,14 +185,14 @@ DetailsItemModel.registerFlow({
       },
     },
     showLabel: {
-      title: escapeT('Show label'),
+      title: tExpr('Show label'),
       uiSchema: {
         showLabel: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
+            checkedChildren: tExpr('Yes'),
+            unCheckedChildren: tExpr('No'),
           },
         },
       },
@@ -204,7 +204,7 @@ DetailsItemModel.registerFlow({
       },
     },
     tooltip: {
-      title: escapeT('Tooltip'),
+      title: tExpr('Tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
@@ -216,7 +216,7 @@ DetailsItemModel.registerFlow({
       },
     },
     description: {
-      title: escapeT('Description'),
+      title: tExpr('Description'),
       uiSchema: {
         description: {
           'x-component': 'Input.TextArea',
@@ -228,12 +228,12 @@ DetailsItemModel.registerFlow({
       },
     },
     model: {
-      title: escapeT('Field component'),
+      title: tExpr('Field component'),
       use: 'displayFieldComponent',
     },
     fieldNames: {
       use: 'titleField',
-      title: escapeT('Label field'),
+      title: tExpr('Label field'),
 
       beforeParamsSave: async (ctx, params, previousParams) => {
         if (!ctx.collectionField.isAssociationField()) {
