@@ -43,21 +43,25 @@ function RemoteModelRenderer({ options }) {
 
 export function RecordPickerContent({ model, toOne = false }) {
   const ctx = useFlowContext();
-  const { Header, Footer } = ctx.view;
+  const { Header, Footer, type } = ctx.view;
   model._closeView = ctx.view.close;
   return (
     <div>
       <Header
         title={
-          <div
-            style={{
-              padding: `${ctx.themeToken.paddingLG}px ${ctx.themeToken.paddingLG}px 0`,
-              marginBottom: -ctx.themeToken.marginSM,
-              backgroundColor: 'var(--colorBgLayout)',
-            }}
-          >
-            {ctx.t('Select record')}
-          </div>
+          type === 'dialog' ? (
+            <div
+              style={{
+                padding: `${ctx.themeToken.paddingLG}px ${ctx.themeToken.paddingLG}px 0`,
+                marginBottom: -ctx.themeToken.marginSM,
+                backgroundColor: 'var(--colorBgLayout)',
+              }}
+            >
+              {ctx.t('Select record')}
+            </div>
+          ) : (
+            ctx.t('Select record')
+          )
         }
       />
       <RemoteModelRenderer
@@ -72,7 +76,19 @@ export function RecordPickerContent({ model, toOne = false }) {
       />
       {!toOne && (
         <Footer>
-          <div style={{ padding: `0 ${ctx.themeToken.paddingLG}px ${ctx.themeToken.paddingLG}px` }}>
+          {type === 'dialog' ? (
+            <div style={{ padding: `0 ${ctx.themeToken.paddingLG}px ${ctx.themeToken.paddingLG}px` }}>
+              <Button
+                type="primary"
+                onClick={() => {
+                  model.change();
+                  ctx.view.close();
+                }}
+              >
+                {ctx.t('Submit')}
+              </Button>
+            </div>
+          ) : (
             <Button
               type="primary"
               onClick={() => {
@@ -82,7 +98,7 @@ export function RecordPickerContent({ model, toOne = false }) {
             >
               {ctx.t('Submit')}
             </Button>
-          </div>
+          )}
         </Footer>
       )}
     </div>
