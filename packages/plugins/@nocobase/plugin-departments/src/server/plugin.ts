@@ -33,6 +33,7 @@ import { DepartmentModel } from './models/department';
 import { DepartmentDataSyncResource } from './department-data-sync-resource';
 import PluginUserDataSyncServer from '@nocobase/plugin-user-data-sync';
 import { DataSource } from '@nocobase/data-source-manager';
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
 
 export class PluginDepartmentsServer extends Plugin {
   afterAdd() {}
@@ -50,6 +51,8 @@ export class PluginDepartmentsServer extends Plugin {
   }
 
   async load() {
+    this.registerErrorHandler();
+
     this.app.resourceManager.registerActionHandlers({
       'users:listExcludeDept': listExcludeDept,
       'users:setMainDepartment': setMainDepartment,
@@ -117,7 +120,7 @@ export class PluginDepartmentsServer extends Plugin {
           });
 
           if (!userDepartment) {
-            throw new Error(`Invalid mainDepartment, it must be one of the user's departments`);
+            throw new Error(`Invalid main department, it must be one of the user's departments`);
           }
         }
       }
@@ -173,6 +176,21 @@ export class PluginDepartmentsServer extends Plugin {
   async afterDisable() {}
 
   async remove() {}
+
+  registerErrorHandler() {
+    const errorHandlerPlugin = this.app.pm.get<PluginErrorHandler>('error-handler');
+    errorHandlerPlugin.errorHandler.register(
+      (err) => {
+        return err.message === "Invalid main department, it must be one of the user's departments";
+      },
+      (err, ctx) => {
+        return ctx.throw(
+          400,
+          ctx.i18n.t("Invalid main department, it must be one of the user's departments", { ns: 'departments' }),
+        );
+      },
+    );
+  }
 }
 
 export default PluginDepartmentsServer;
