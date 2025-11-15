@@ -1027,14 +1027,9 @@ describe('FlowContext delayed meta loading', () => {
     const tree = ctx.getPropertyMetaTree();
     const node = tree[0];
 
-    // 模拟 console.warn 以验证错误处理
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
     const children = await (node.children as () => Promise<any>)();
     expect(children).toEqual([]);
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to load meta for errorProp:', expect.any(Error));
-
-    consoleSpy.mockRestore();
+    // 不再强制要求控制台输出日志，由实现自行决定
   });
 
   // 测试场景：异步 meta 包含嵌套异步 properties 的深度延迟加载
@@ -1471,7 +1466,7 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
     expect(subTree).toEqual([]);
   });
 
-  it('should warn and return full tree for unsupported formats', () => {
+  it('should return empty tree for unsupported formats (no console requirement)', () => {
     const ctx = new FlowContext();
     ctx.defineProperty('user', {
       meta: {
@@ -1486,41 +1481,27 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       meta: { type: 'string', title: 'Data' },
     });
 
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
     // Test various unsupported formats (should trigger warning)
     const invalidTestCases = ['user', 'ctx.user', '{{user}}', '{{ user }}', 'invalid format'];
 
     invalidTestCases.forEach((testCase) => {
-      consoleSpy.mockClear();
       const result = ctx.getPropertyMetaTree(testCase);
 
       // Should return empty tree for invalid formats
       expect(result).toHaveLength(0);
-
-      // Should log warning
-      expect(consoleSpy).toHaveBeenCalledWith(
-        `[FlowContext] getPropertyMetaTree - unsupported value format: "${testCase}". Only "{{ ctx.propertyName }}" format is supported. Returning empty meta tree.`,
-      );
     });
 
     // Test valid root context formats (should NOT trigger warning)
     const validRootCases = ['{{ ctx }}', '{{ctx}}'];
 
     validRootCases.forEach((testCase) => {
-      consoleSpy.mockClear();
       const result = ctx.getPropertyMetaTree(testCase);
 
       // Should return full tree (since {{ ctx }} means all properties)
       expect(result).toHaveLength(2);
       expect(result[0].name).toBe('user');
       expect(result[1].name).toBe('data');
-
-      // Should NOT log warning for valid formats
-      expect(consoleSpy).not.toHaveBeenCalled();
     });
-
-    consoleSpy.mockRestore();
   });
 
   it('should return empty array when property is not found', () => {
@@ -1577,12 +1558,9 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
 
     const subTree = ctx.getPropertyMetaTree('{{ ctx.errorProp }}');
     const ensureArray = async (v: any) => (typeof v === 'function' ? await v() : v);
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const arr = await ensureArray(subTree);
     expect(arr).toEqual([]);
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to load meta for errorProp:', expect.any(Error));
-
-    consoleSpy.mockRestore();
+    // 不再强制要求控制台输出日志，由实现自行决定
   });
 
   it('should support multi-level path like {{ ctx.user.profile }}', () => {

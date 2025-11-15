@@ -17,16 +17,28 @@ import { FlowExitException, resolveDefaultParams } from '../utils';
 import { FlowExitAllException } from '../utils/exceptions';
 import { setupRuntimeContextSteps } from '../utils/setupRuntimeContextSteps';
 import { createEphemeralContext } from '../utils/createEphemeralContext';
+import { levelByDuration, serializeError, startTimer, logAt } from '../utils/logging';
+import {
+  logStepStart,
+  logStepEnd,
+  logStepError,
+  logEventStart,
+  logEventEnd,
+  logEventFlowDispatch,
+  logEventFlowError,
+} from '../utils/logHelpers';
 
 export class FlowExecutor {
   constructor(private readonly engine: FlowEngine) {}
 
   /** Cache wrapper for applyFlow cache lifecycle */
   private async withApplyFlowCache<T>(cacheKey: string | null, executor: () => Promise<T>): Promise<T> {
-    if (!cacheKey || !this.engine) return await executor();
+    if (!cacheKey) return await executor();
 
+    const logger = this.engine.context.logger;
     const cachedEntry = this.engine.applyFlowCache.get(cacheKey);
     if (cachedEntry) {
+      logger.debug({ type: 'cache.hit', key: cacheKey, status: cachedEntry.status });
       if (cachedEntry.status === 'resolved') return cachedEntry.data as T;
       if (cachedEntry.status === 'rejected') throw cachedEntry.error;
       if (cachedEntry.status === 'pending') return await cachedEntry.promise;
@@ -39,6 +51,7 @@ export class FlowExecutor {
           data: result,
           promise: Promise.resolve(result),
         } as ApplyFlowCacheEntry);
+        logger.debug({ type: 'cache.set.resolved', key: cacheKey });
         return result;
       })
       .catch((err) => {
@@ -47,10 +60,12 @@ export class FlowExecutor {
           error: err,
           promise: Promise.reject(err),
         } as ApplyFlowCacheEntry);
+        logger.debug({ type: 'cache.set.rejected', key: cacheKey });
         throw err;
       });
 
     this.engine.applyFlowCache.set(cacheKey, { status: 'pending', promise } as ApplyFlowCacheEntry);
+    logger.debug({ type: 'cache.set.pending', key: cacheKey });
     return await promise;
   }
 
@@ -61,7 +76,10 @@ export class FlowExecutor {
     const flow = model.getFlow(flowKey);
 
     if (!flow) {
-      model.context.logger.error(`BaseModel.applyFlow: Flow with key '${flowKey}' not found.`);
+      model.context.logger.error(
+        { type: 'flow.error', flowKey, modelId: model.uid, modelType: model.constructor.name },
+        `BaseModel.applyFlow: Flow with key '${flowKey}' not found.`,
+      );
       return Promise.reject(new Error(`Flow '${flowKey}' not found.`));
     }
 
@@ -99,6 +117,24 @@ export class FlowExecutor {
     setupRuntimeContextSteps(flowContext, stepDefs, model, flowKey);
     const stepsRuntime = flowContext.steps as Record<string, { params: any; uiSchema?: any; result?: any }>;
 
+    // flow start log
+    const flowLogger = model.context.logger.child({
+      modelId: model.uid,
+      modelType: model.constructor.name,
+      flowKey,
+      runId,
+    });
+    const flowTimer = startTimer();
+    const flowStartData = {
+      type: 'flow.start',
+      modelId: model.uid,
+      modelType: model.constructor.name,
+      flowKey,
+      runId,
+      steps: Object.keys(stepDefs || {}).length,
+    };
+    flowLogger.debug(flowStartData);
+
     for (const [stepKey, step] of Object.entries(stepDefs) as [string, StepDefinition][]) {
       // Resolve handler and params
       let handler: ActionDefinition<FlowModel, FlowRuntimeContext>['handler'] | undefined;
@@ -122,14 +158,44 @@ export class FlowExecutor {
 
         handler = step.handler || actionDefinition.handler;
         useRawParams = useRawParams ?? actionDefinition.useRawParams;
+        const actionParamsTimer = startTimer();
         const actionDefaultParams = await resolveDefaultParams(actionDefinition.defaultParams, runtimeCtx);
+        const actionParamsMs = actionParamsTimer();
+        if (actionParamsMs > this.engine.logManager.options.slowParamsMs) {
+          const stepType = step.use || 'inline';
+          flowLogger.debug({
+            type: 'step.params.resolve',
+            scope: 'action',
+            duration: actionParamsMs,
+            stepKey,
+            stepType,
+          });
+        }
+        const stepParamsTimer = startTimer();
         const stepDefaultParams = await resolveDefaultParams(step.defaultParams, runtimeCtx);
+        const stepParamsMs = stepParamsTimer();
+        if (stepParamsMs > this.engine.logManager.options.slowParamsMs) {
+          const stepType = step.use || 'inline';
+          flowLogger.debug({
+            type: 'step.params.resolve',
+            scope: 'step',
+            duration: stepParamsMs,
+            stepKey,
+            stepType,
+          });
+        }
         combinedParams = { ...actionDefaultParams, ...stepDefaultParams };
       } else if (step.handler) {
         // 对于内联 handler，为该步创建临时上下文并注入 step 定义
         runtimeCtx = await createEphemeralContext<FlowRuntimeContext>(flowContext, step);
         handler = step.handler;
+        const stepParamsTimer = startTimer();
         const stepDefaultParams = await resolveDefaultParams(step.defaultParams, runtimeCtx);
+        const stepParamsMs = stepParamsTimer();
+        if (stepParamsMs > this.engine.logManager.options.slowParamsMs) {
+          const stepType = step.use || 'inline';
+          flowLogger.debug({ type: 'step.params.resolve', scope: 'step', duration: stepParamsMs, stepKey, stepType });
+        }
         combinedParams = { ...stepDefaultParams };
       } else {
         flowContext.logger.error(
@@ -151,11 +217,31 @@ export class FlowExecutor {
       }
       try {
         if (!handler) {
-          flowContext.logger.error(
-            `BaseModel.applyFlow: No handler available for step '${stepKey}' in flow '${flowKey}'. Skipping.`,
+          const stepType = step.use || 'inline';
+          const msg = `BaseModel.applyFlow: No handler available for step '${stepKey}' in flow '${flowKey}'.`;
+          flowContext.logger.info(
+            {
+              type: 'step.missingHandler',
+              stepKey,
+              flowKey,
+              modelId: model.uid,
+              modelType: model.constructor.name,
+              stepType,
+            },
+            msg,
           );
-          continue;
+          continue; // skip step handler
         }
+        const stepType = step.use || 'inline';
+        const stepTimer = startTimer();
+        logStepStart(flowLogger, {
+          modelId: model.uid,
+          modelType: model.constructor.name,
+          flowKey,
+          runId,
+          stepKey,
+          stepType,
+        });
         const currentStepResult = handler(runtimeCtx, combinedParams);
         const isAwait = step.isAwait !== false;
         lastResult = isAwait ? await currentStepResult : currentStepResult;
@@ -163,22 +249,66 @@ export class FlowExecutor {
         // Store step result and update context
         stepResults[stepKey] = lastResult;
         stepsRuntime[stepKey].result = stepResults[stepKey];
+        // step end log with duration
+        const stepDuration = stepTimer();
+        logStepEnd(
+          flowLogger,
+          {
+            modelId: model.uid,
+            modelType: model.constructor.name,
+            flowKey,
+            runId,
+            stepKey,
+            stepType,
+            duration: stepDuration,
+          },
+          this.engine.logManager.options.slowStepMs,
+        );
       } catch (error) {
         if (error instanceof FlowExitException) {
-          flowContext.logger.info(`[FlowEngine] ${error.message}`);
+          flowContext.logger.info(
+            { type: 'flow.exit', flowKey, modelId: model.uid, modelType: model.constructor.name },
+            `[FlowEngine] ${error.message}`,
+          );
           return Promise.resolve(stepResults);
         }
         if (error instanceof FlowExitAllException) {
-          flowContext.logger.info(`[FlowEngine] ${error.message}`);
+          flowContext.logger.info(
+            { type: 'flow.exitAll', flowKey, modelId: model.uid, modelType: model.constructor.name },
+            `[FlowEngine] ${error.message}`,
+          );
           return Promise.resolve(error);
         }
-        flowContext.logger.error(
-          { err: error },
-          `BaseModel.applyFlow: Error executing step '${stepKey}' in flow '${flowKey}':`,
+        const stepType = step.use || 'inline';
+        // 避免每步创建 child logger：直接携带上下文字段
+        logStepError(
+          flowLogger,
+          {
+            modelId: model.uid,
+            modelType: model.constructor.name,
+            flowKey,
+            runId,
+            stepKey,
+            stepType,
+          },
+          error,
         );
         return Promise.reject(error);
       }
     }
+    // flow end log
+    const flowDuration = flowTimer();
+    const flowLevel = levelByDuration(flowDuration, this.engine.logManager.options.slowEventMs);
+    const flowEnd = {
+      type: 'flow.end',
+      modelId: model.uid,
+      modelType: model.constructor.name,
+      flowKey,
+      runId,
+      duration: flowDuration,
+      status: 'ok',
+    };
+    logAt(flowLogger, flowLevel, flowEnd);
     return Promise.resolve(stepResults);
   }
 
@@ -201,7 +331,14 @@ export class FlowExecutor {
     const throwOnError = isBeforeRender;
 
     const runId = `${model.uid}-${eventName}-${Date.now()}`;
-    const logger = model.context.logger;
+    const logger = model.context.logger.child({
+      modelId: model.uid,
+      modelType: model.constructor.name,
+      eventName,
+      runId,
+    });
+    const eventTimer = startTimer();
+    // flows will be computed below; delay event.start until we know count
 
     try {
       await this.engine.emitter.emitAsync(`model:event:${eventName}:start`, {
@@ -213,14 +350,17 @@ export class FlowExecutor {
       await model.onDispatchEventStart?.(eventName, options, inputArgs);
     } catch (err) {
       if (isBeforeRender && err instanceof FlowExitException) {
-        logger.debug(`[FlowModel.dispatchEvent] ${err.message}`);
+        logger.debug({ type: 'event.exit', message: err.message });
         return [];
       }
       // 进入错误钩子并记录
       try {
         await model.onDispatchEventError?.(eventName, options, inputArgs, err as Error);
       } finally {
-        logger.error({ err }, `BaseModel.dispatchEvent: Start hook error for event '${eventName}'`);
+        logger.error(
+          { type: 'event.hook.start.error', error: serializeError(err) },
+          `BaseModel.dispatchEvent: Start hook error for event '${eventName}'`,
+        );
       }
       if (throwOnError) throw err;
       return;
@@ -238,6 +378,15 @@ export class FlowExecutor {
         });
 
     // 组装执行函数（返回值用于缓存；beforeRender 返回 results:any[]，其它返回 true）
+    // Emit event.start with flows count
+    logEventStart(logger, {
+      modelId: model.uid,
+      modelType: model.constructor.name,
+      eventName,
+      runId,
+      flowsCount: flows.length,
+      options: { sequential, useCache },
+    });
     const execute = async () => {
       if (sequential) {
         // 顺序执行：动态流（实例级）优先，其次静态流；各自组内再按 sort 升序，最后保持原始顺序稳定
@@ -261,20 +410,29 @@ export class FlowExecutor {
         const results: any[] = [];
         for (const flow of ordered) {
           try {
-            logger.debug(
-              `BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}' (sequential).`,
-            );
+            logEventFlowDispatch(logger, {
+              modelId: model.uid,
+              modelType: model.constructor.name,
+              eventName,
+              runId,
+              flowKey: flow.key,
+              mode: 'sequential',
+            });
             const result = await this.runFlow(model, flow.key, inputArgs, runId);
             if (result instanceof FlowExitAllException) {
-              logger.debug(`[FlowEngine.dispatchEvent] ${result.message}`);
+              logger.debug({ type: 'event.exitAll', message: result.message });
               break; // 终止后续
             }
             results.push(result);
           } catch (error) {
-            logger.error(
-              { err: error },
-              `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}' (sequential):`,
-            );
+            logEventFlowError(logger, {
+              modelId: model.uid,
+              modelType: model.constructor.name,
+              eventName,
+              runId,
+              flowKey: flow.key,
+              error,
+            });
             throw error;
           }
         }
@@ -284,14 +442,25 @@ export class FlowExecutor {
       // 并行
       const results = await Promise.all(
         flows.map(async (flow) => {
-          logger.debug(`BaseModel '${model.uid}' dispatching event '${eventName}' to flow '${flow.key}'.`);
+          logEventFlowDispatch(logger, {
+            modelId: model.uid,
+            modelType: model.constructor.name,
+            eventName,
+            runId,
+            flowKey: flow.key,
+            mode: 'parallel',
+          });
           try {
             return await this.runFlow(model, flow.key, inputArgs, runId);
           } catch (error) {
-            logger.error(
-              { err: error },
-              `BaseModel.dispatchEvent: Error executing event-triggered flow '${flow.key}' for event '${eventName}':`,
-            );
+            logEventFlowError(logger, {
+              modelId: model.uid,
+              modelType: model.constructor.name,
+              eventName,
+              runId,
+              flowKey: flow.key,
+              error,
+            });
             if (throwOnError) throw error;
             return undefined;
           }
@@ -316,8 +485,19 @@ export class FlowExecutor {
       try {
         await model.onDispatchEventEnd?.(eventName, options, inputArgs, result);
       } catch (hookErr) {
-        logger.error({ err: hookErr }, `BaseModel.dispatchEvent: End hook error for event '${eventName}'`);
+        logger.error(
+          { type: 'event.hook.end.error', error: serializeError(hookErr) },
+          `BaseModel.dispatchEvent: End hook error for event '${eventName}'`,
+        );
       }
+      // event end log + emitter
+      const d = eventTimer();
+      const resultsCount = Array.isArray(result) ? result.length : result ? 1 : 0;
+      logEventEnd(
+        logger,
+        { modelId: model.uid, modelType: model.constructor.name, eventName, runId, duration: d, resultsCount },
+        this.engine.logManager.options.slowEventMs,
+      );
       await this.engine.emitter.emitAsync(`model:event:${eventName}:end`, {
         uid: model.uid,
         model,
@@ -330,13 +510,26 @@ export class FlowExecutor {
       // 进入错误钩子并记录
       try {
         await model.onDispatchEventError?.(eventName, options, inputArgs, error as Error);
-      } catch (_) {
-        // swallow secondary hook error
+      } catch (hookError) {
+        const hookErrLog = {
+          type: 'event.hook.error.error',
+          modelId: model.uid,
+          modelType: model.constructor.name,
+          eventName,
+          runId,
+          error: serializeError(hookError),
+        };
+        logger.error(hookErrLog, `BaseModel.dispatchEvent: Error hook threw for event '${eventName}'`);
       }
-      model.context.logger.error(
-        { err: error },
-        `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`,
-      );
+      const evErr = {
+        type: 'event.dispatch.error',
+        modelId: model.uid,
+        modelType: model.constructor.name,
+        eventName,
+        runId,
+        error: serializeError(error),
+      };
+      logger.error(evErr, `BaseModel.dispatchEvent: Error executing event '${eventName}' for model '${model.uid}':`);
       await this.engine.emitter.emitAsync(`model:event:${eventName}:error`, {
         uid: model.uid,
         model,
