@@ -63,6 +63,34 @@ describe('update associations', () => {
       expect(profile1['userId']).toBe(user.id);
     });
 
+    it('should reject array payload for single association updates', async () => {
+      const User = db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'hasOne', name: 'profile', foreignKey: 'userId', target: 'profiles' },
+        ],
+      });
+
+      db.collection({
+        name: 'profiles',
+        fields: [
+          { type: 'string', name: 'nickname' },
+          { type: 'belongsTo', name: 'user', foreignKey: 'userId', target: 'users' },
+        ],
+      });
+
+      await db.sync();
+
+      const user = await User.repository.create({ values: { name: 'user1' } });
+
+      await expect(
+        updateAssociations(user, {
+          profile: [],
+        }),
+      ).rejects.toThrow("The value of 'profile' cannot be in array format");
+    });
+
     it('should update has many association with foreign key', async () => {
       const User = db.collection({
         name: 'users',
@@ -103,6 +131,34 @@ describe('update associations', () => {
 
       const profile1 = await Profile.repository.findOne({ filterByTk: profile.id });
       expect(profile1['userId']).toBe(user.id);
+    });
+
+    it('should throw when hasOne source key is missing', async () => {
+      const User = db.collection({
+        name: 'users',
+        fields: [
+          { type: 'string', name: 'name' },
+          { type: 'hasOne', name: 'profile', foreignKey: 'userId', target: 'profiles' },
+        ],
+      });
+
+      db.collection({
+        name: 'profiles',
+        fields: [
+          { type: 'string', name: 'nickname' },
+          { type: 'belongsTo', name: 'user', foreignKey: 'userId', target: 'users' },
+        ],
+      });
+
+      await db.sync();
+
+      const user = User.model.build({ name: 'user-without-id' });
+
+      await expect(
+        updateAssociations(user, {
+          profile: { nickname: 'p1' },
+        }),
+      ).rejects.toThrow(/source key .* is not set/);
     });
 
     test('update belongs to with foreign key and object', async () => {
@@ -320,6 +376,52 @@ describe('update associations', () => {
       await db.close();
     });
 
+    it('should clear hasMany associations when payload is empty or null', async () => {
+      const user = await User.repository.create({
+        values: {
+          name: 'user1',
+          posts: [{ name: 'p1' }, { name: 'p2' }],
+        },
+      });
+
+      await User.repository.update({
+        filterByTk: user.id,
+        values: {
+          posts: [],
+        },
+      });
+
+      let posts = await Post.repository.find();
+      expect(posts.every((post) => post.get('userId') == null)).toBe(true);
+
+      await User.repository.update({
+        filterByTk: user.id,
+        values: {
+          posts: [{ name: 'p3' }],
+        },
+      });
+
+      await User.repository.update({
+        filterByTk: user.id,
+        values: {
+          posts: null,
+        },
+      });
+
+      posts = await Post.repository.find();
+      expect(posts.every((post) => post.get('userId') == null)).toBe(true);
+    });
+
+    it('should throw when hasMany source key is missing', async () => {
+      const user = User.model.build({ name: 'ghost' });
+
+      await expect(
+        updateAssociations(user, {
+          posts: [{ name: 'orphan' }],
+        }),
+      ).rejects.toThrow(/source key .* is not set/);
+    });
+
     it('should update association values', async () => {
       const user1 = await User.repository.create({
         values: {
@@ -346,9 +448,11 @@ describe('update associations', () => {
       await User.model.create<any>({ name: 'user02' });
       const user1 = await User.model.create<any>({ name: 'user1' });
       await updateAssociations(user1, {
-        posts: {
-          name: 'post1',
-        },
+        posts: [
+          {
+            name: 'post1',
+          },
+        ],
       });
       expect(user1.toJSON()).toMatchObject({
         name: 'user1',
@@ -571,6 +675,11 @@ describe('update associations', () => {
       const comment1 = await Comment.model.findOne({
         where: { name: 'comment1' },
       });
+      const posts = await Post.model.findAll();
+      const comments = await Comment.model.findAll();
+
+      expect(posts.length).toBe(2);
+      expect(comments.length).toBe(4);
 
       expect(post1).toMatchObject({
         userId: user.get('id'),
