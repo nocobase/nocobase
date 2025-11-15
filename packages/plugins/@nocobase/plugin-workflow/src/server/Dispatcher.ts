@@ -18,6 +18,7 @@ import Processor from './Processor';
 import { EXECUTION_STATUS } from './constants';
 import type { ExecutionModel, JobModel, WorkflowModel } from './types';
 import type PluginWorkflowServer from './Plugin';
+import { WORKER_JOB_WORKFLOW_PROCESS } from './Plugin';
 
 type Pending = { execution: ExecutionModel; job?: JobModel; loaded?: boolean };
 
@@ -33,8 +34,6 @@ export type EventOptions = {
   onTriggerFail?: Function;
   [key: string]: any;
 } & Transactionable;
-
-export const WORKER_JOB_WORKFLOW_PROCESS = 'workflow:process';
 
 export default class Dispatcher {
   private ready = false;
