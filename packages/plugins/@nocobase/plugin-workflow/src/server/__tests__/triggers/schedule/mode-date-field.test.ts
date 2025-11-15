@@ -11,6 +11,9 @@ import { MockServer } from '@nocobase/test';
 import Database from '@nocobase/database';
 import { getApp, sleep } from '@nocobase/plugin-workflow-test';
 import dayjs from 'dayjs';
+import { vi } from 'vitest';
+import PluginWorkflowServer from '../../../Plugin';
+import { SCHEDULE_MODE } from '../../../triggers/ScheduleTrigger/utils';
 
 async function sleepToEvenSecond() {
   const now = new Date();
@@ -589,6 +592,40 @@ describe('workflow > triggers > schedule > date field mode', () => {
 
       const e2s = await workflow.getExecutions({ order: [['id', 'ASC']] });
       expect(e2s.length).toBe(1);
+    });
+  });
+
+  describe('data source readiness', () => {
+    it('toggling workflow when target data source is missing should not throw', async () => {
+      const workflowPlugin = app.pm.get(PluginWorkflowServer) as PluginWorkflowServer;
+      const scheduleTrigger = workflowPlugin.triggers.get('schedule') as any;
+      const dateFieldTrigger = scheduleTrigger['modes'].get(SCHEDULE_MODE.DATE_FIELD);
+      const inspectSpy = vi.spyOn(dateFieldTrigger, 'inspect').mockResolvedValue(undefined);
+
+      const anotherDataSource = app.dataSourceManager.dataSources.get('another');
+      expect(anotherDataSource).toBeDefined();
+      app.dataSourceManager.dataSources.delete('another');
+
+      try {
+        const workflow = await WorkflowModel.create({
+          enabled: true,
+          type: 'schedule',
+          config: {
+            mode: SCHEDULE_MODE.DATE_FIELD,
+            collection: 'another:posts',
+            startsOn: {
+              field: 'createdAt',
+            },
+          },
+        });
+
+        await expect(workflow.update({ enabled: false })).resolves.toMatchObject({ enabled: false });
+      } finally {
+        inspectSpy.mockRestore();
+        if (anotherDataSource) {
+          app.dataSourceManager.dataSources.set('another', anotherDataSource);
+        }
+      }
     });
   });
 });

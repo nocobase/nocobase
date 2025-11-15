@@ -87,9 +87,12 @@ export default class extends Trigger {
       params: { triggerWorkflows = '', values },
     } = context.action;
     const dataSourceHeader = context.get('x-data-source') || 'main';
-    const collection = context.app.dataSourceManager.dataSources
-      .get(dataSourceHeader)
-      .collectionManager.getCollection(resourceName);
+    const dataSource = context.app.dataSourceManager.dataSources.get(dataSourceHeader);
+    if (!dataSource) {
+      return;
+    }
+
+    const collection = dataSource.collectionManager.getCollection(resourceName);
 
     if (!collection) {
       return;

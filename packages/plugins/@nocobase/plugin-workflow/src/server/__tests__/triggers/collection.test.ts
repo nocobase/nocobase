@@ -1264,4 +1264,26 @@ describe('workflow > triggers > collection', () => {
       expect(p2s.length).toBe(1);
     });
   });
+
+  describe('data source readiness', () => {
+    it('toggling workflow when target data source is missing should not throw', async () => {
+      const anotherDataSource = app.dataSourceManager.dataSources.get('another');
+      expect(anotherDataSource).toBeDefined();
+      app.dataSourceManager.dataSources.delete('another');
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          collection: 'another:posts',
+        },
+      });
+
+      expect(workflow.enabled).toBe(true);
+
+      if (anotherDataSource) {
+        app.dataSourceManager.dataSources.set('another', anotherDataSource);
+      }
+    });
+  });
 });
