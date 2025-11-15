@@ -30,7 +30,7 @@ export function LazySelect(props: Readonly<LazySelectProps>) {
       style={{ width: '100%' }}
       {...others}
       allowClear
-      onCompositionEnd={(e) => others.onCompositionEnd(e, false)}
+      // onCompositionEnd={(e) => others.onCompositionEnd(e, false)}
       showSearch
       maxTagCount="responsive"
       filterOption={false}

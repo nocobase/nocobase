@@ -30,6 +30,8 @@ export interface LazySelectProps extends Omit<SelectProps<any>, 'mode' | 'option
   onPopupScroll?: SelectProps<any>['onPopupScroll'];
   onSearch?: SelectProps<any>['onSearch'];
   loading?: boolean;
+  onCompositionStart?: (e: any) => void;
+  onCompositionEnd?: (e: any, flag?: boolean) => void;
 }
 
 export interface LabelByFieldProps {
