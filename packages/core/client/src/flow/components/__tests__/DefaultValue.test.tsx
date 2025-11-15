@@ -673,10 +673,14 @@ describe('DefaultValue component', () => {
       </FlowEngineProvider>,
     );
 
-    // 等待 ReactQuill 异步加载
-    await sleep(300);
+    // 等待 ReactQuill 通过 lazy 动态加载并渲染完成，避免固定 sleep 带来的偶发失败
+    await waitFor(
+      () => {
+        expect(container.querySelector('.ql-editor')).toBeTruthy();
+      },
+      { timeout: 3000 },
+    );
     const editor = container.querySelector('.ql-editor') as HTMLElement;
-    expect(editor).toBeTruthy();
     editor.focus();
     await userEvent.type(editor, 'Hello');
     await waitFor(() => expect(onChange).toHaveBeenCalled());
