@@ -19,7 +19,7 @@ import { Registry, uid } from '@nocobase/utils';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Logger, LoggerOptions } from '@nocobase/logger';
 
-import Dispatcher, { EventOptions, WORKER_JOB_WORKFLOW_PROCESS } from './Dispatcher';
+import Dispatcher, { EventOptions } from './Dispatcher';
 import Processor from './Processor';
 import initActions from './actions';
 import initFunctions, { CustomFunction } from './functions';
@@ -39,6 +39,8 @@ import type { ExecutionModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
 
 type ID = number | string;
+
+export const WORKER_JOB_WORKFLOW_PROCESS = 'workflow:process';
 
 export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
@@ -178,11 +180,9 @@ export default class PluginWorkflowServer extends Plugin {
   };
 
   private onBeforeStop = async () => {
-    if (this.serving()) {
-      this.app.eventQueue.unsubscribe(this.channelPendingExecution);
-    }
-
     this.dispatcher.setReady(false);
+
+    this.app.eventQueue.unsubscribe(this.channelPendingExecution);
 
     this.app.logger.info(`stopping workflow plugin before app (${this.app.name}) shutdown...`);
     for (const workflow of this.enabledCache.values()) {
@@ -385,12 +385,10 @@ export default class PluginWorkflowServer extends Plugin {
     this.app.on('afterStart', this.onAfterStart);
     this.app.on('beforeStop', this.onBeforeStop);
 
-    if (this.serving()) {
-      this.app.eventQueue.subscribe(this.channelPendingExecution, {
-        idle: () => this.dispatcher.idle,
-        process: this.dispatcher.onQueueExecution,
-      });
-    }
+    this.app.eventQueue.subscribe(this.channelPendingExecution, {
+      idle: () => this.serving() && this.dispatcher.idle,
+      process: this.dispatcher.onQueueExecution,
+    });
   }
 
   private toggle(
