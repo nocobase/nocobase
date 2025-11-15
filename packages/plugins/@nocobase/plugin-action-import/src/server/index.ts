@@ -65,7 +65,7 @@ export class PluginActionImportServer extends Plugin {
         ctx.body = {
           errors: [
             {
-              message: ctx.i18n.t(err.code, {
+              message: ctx.i18n.t(err.message, {
                 ...err.params,
                 ns: 'action-import',
               }),
