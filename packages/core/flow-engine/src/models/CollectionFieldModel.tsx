@@ -159,13 +159,23 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
   static getDefaultBindingByField(
     ctx: FlowEngineContext,
     collectionField: CollectionField,
-    options: { useStrict?: boolean; fallbackToTargetTitleField?: boolean } = {},
+    options: {
+      useStrict?: boolean;
+      fallbackToTargetTitleField?: boolean;
+      targetCollectionTitleField?: CollectionField;
+    } = {},
   ): BindingOptions | null {
     if (options.fallbackToTargetTitleField) {
       const binding = this.getDefaultBindingByField(ctx, collectionField, { useStrict: true });
       if (!binding) {
-        if (collectionField.isAssociationField() && collectionField.targetCollectionTitleField) {
-          return this.getDefaultBindingByField(ctx, collectionField.targetCollectionTitleField);
+        if (
+          (collectionField.isAssociationField() && options?.targetCollectionTitleField) ||
+          collectionField.targetCollectionTitleField
+        ) {
+          return this.getDefaultBindingByField(
+            ctx,
+            options?.targetCollectionTitleField || collectionField.targetCollectionTitleField,
+          );
         }
       }
       return binding;
