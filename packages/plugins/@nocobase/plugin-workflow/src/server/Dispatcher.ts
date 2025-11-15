@@ -356,7 +356,7 @@ export default class Dispatcher {
             `instance is not serving as worker or local pending list is not empty, sending execution (${execution.id}) to queue`,
           );
           if (this.ready) {
-            this.plugin.app.backgroundJobManager.publish(`${this.plugin.name}.pendingExecution`, {
+            this.plugin.app.eventQueue.publish(this.plugin.channelPendingExecution, {
               executionId: execution.id,
             });
           }
