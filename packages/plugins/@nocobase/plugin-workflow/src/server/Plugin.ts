@@ -178,11 +178,9 @@ export default class PluginWorkflowServer extends Plugin {
   };
 
   private onBeforeStop = async () => {
-    if (this.serving()) {
-      this.app.eventQueue.unsubscribe(this.channelPendingExecution);
-    }
-
     this.dispatcher.setReady(false);
+
+    this.app.eventQueue.unsubscribe(this.channelPendingExecution);
 
     this.app.logger.info(`stopping workflow plugin before app (${this.app.name}) shutdown...`);
     for (const workflow of this.enabledCache.values()) {
@@ -385,12 +383,10 @@ export default class PluginWorkflowServer extends Plugin {
     this.app.on('afterStart', this.onAfterStart);
     this.app.on('beforeStop', this.onBeforeStop);
 
-    if (this.serving()) {
-      this.app.eventQueue.subscribe(this.channelPendingExecution, {
-        idle: () => this.dispatcher.idle,
-        process: this.dispatcher.onQueueExecution,
-      });
-    }
+    this.app.eventQueue.subscribe(this.channelPendingExecution, {
+      idle: () => this.dispatcher.idle,
+      process: this.dispatcher.onQueueExecution,
+    });
   }
 
   private toggle(
