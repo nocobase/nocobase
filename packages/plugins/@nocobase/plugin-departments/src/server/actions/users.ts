@@ -16,10 +16,14 @@
  * For more information, see <https://www.nocobase.com/agreement>
  */
 
-import { Context, DEFAULT_PAGE, DEFAULT_PER_PAGE, Next } from '@nocobase/actions';
+import { Context, DEFAULT_PAGE, DEFAULT_PER_PAGE, Next, normalizePageArgs } from '@nocobase/actions';
 
 export const listExcludeDept = async (ctx: Context, next: Next) => {
   const { departmentId, page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE } = ctx.action.params;
+  const { page: safePage, pageSize: safePageSize } = normalizePageArgs(
+    parseInt(String(page)),
+    parseInt(String(pageSize)),
+  );
   const repo = ctx.db.getRepository('users');
   const members = await repo.find({
     fields: ['id'],
@@ -40,16 +44,16 @@ export const listExcludeDept = async (ctx: Context, next: Next) => {
   const { filter } = ctx.action.params;
   const [rows, count] = await repo.findAndCount({
     context: ctx,
-    offset: (page - 1) * pageSize,
-    limit: +pageSize,
+    offset: (safePage - 1) * safePageSize,
+    limit: safePageSize,
     filter,
   });
   ctx.body = {
     count,
     rows,
-    page: Number(page),
-    pageSize: Number(pageSize),
-    totalPage: Math.ceil(count / pageSize),
+    page: safePage,
+    pageSize: safePageSize,
+    totalPage: Math.ceil(count / safePageSize),
   };
   await next();
 };

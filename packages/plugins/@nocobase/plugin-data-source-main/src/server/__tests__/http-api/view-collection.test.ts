@@ -167,6 +167,40 @@ SELECT * FROM numbers;
     expect(response.body.data.length).toBe(20);
   });
 
+  it('should clamp pagination when querying views with underflow page', async () => {
+    const response = await agent.resource('dbViews').query({
+      filterByTk: testViewName,
+      schema: app.db.options.schema,
+      pageSize: 5,
+      page: 0,
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body.data.length).toBeGreaterThan(0);
+  });
+
+  it('should allow querying empty views with underflow page', async () => {
+    const emptyViewName = `empty_${uid(6)}`;
+    const qualifiedEmptyViewName = app.db.options.schema ? `${app.db.options.schema}.${emptyViewName}` : emptyViewName;
+    const qualifiedSourceViewName = app.db.options.schema ? `${app.db.options.schema}.${testViewName}` : testViewName;
+
+    await app.db.sequelize.query(`DROP VIEW IF EXISTS ${qualifiedEmptyViewName}`);
+    await app.db.sequelize.query(
+      `CREATE VIEW ${qualifiedEmptyViewName} AS SELECT * FROM ${qualifiedSourceViewName} WHERE 1 = 0`,
+    );
+
+    const response = await agent.resource('dbViews').query({
+      filterByTk: emptyViewName,
+      schema: app.db.options.schema,
+      pageSize: 10,
+      page: 0,
+    });
+
+    expect(response.status).toBe(200);
+    expect(Array.isArray(response.body.data)).toBe(true);
+    expect(response.body.data.length).toBe(0);
+  });
+
   it('should list views fields', async () => {
     const response = await agent.resource('dbViews').get({
       filterByTk: testViewName,

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Context, Next, DEFAULT_PAGE, DEFAULT_PER_PAGE } from '@nocobase/actions';
+import { Context, Next, DEFAULT_PAGE, DEFAULT_PER_PAGE, normalizePageArgs } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
 import { Database, Model, Op } from '@nocobase/database';
 import { PluginManager } from '@nocobase/server';
@@ -75,15 +75,18 @@ const listText = async (db: Database, params: any): Promise<[any[], number]> => 
 
 const list = async (ctx: Context, next: Next) => {
   const locale = ctx.get('X-Locale') || 'en-US';
-  let { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE, hasTranslation } = ctx.action.params;
-  page = parseInt(String(page));
-  pageSize = parseInt(String(pageSize));
+  const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE } = ctx.action.params;
+  let { hasTranslation } = ctx.action.params;
+  const { page: safePage, pageSize: safePageSize } = normalizePageArgs(
+    parseInt(String(page)),
+    parseInt(String(pageSize)),
+  );
   hasTranslation = hasTranslation === 'true' || hasTranslation === undefined;
   const { keyword, module } = ctx.action.params;
   const options = {
     context: ctx,
-    offset: (page - 1) * pageSize,
-    limit: pageSize,
+    offset: (safePage - 1) * safePageSize,
+    limit: safePageSize,
   };
   const [rows, count] = await listText(ctx.db, { module, keyword, hasTranslation, locale, options });
 
@@ -116,9 +119,9 @@ const list = async (ctx: Context, next: Next) => {
   ctx.body = {
     count,
     rows,
-    page,
-    pageSize,
-    totalPage: Math.ceil(count / pageSize),
+    page: safePage,
+    pageSize: safePageSize,
+    totalPage: Math.ceil(count / safePageSize),
     modules: [
       ...extendModules,
       ...plugins.map((plugin) => ({

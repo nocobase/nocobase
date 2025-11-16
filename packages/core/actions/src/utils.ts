@@ -10,6 +10,28 @@
 import { MultipleRelationRepository, Repository } from '@nocobase/database';
 import { Context } from '.';
 
+export function normalizePageArgs(
+  page: number,
+  pageSize: number,
+): {
+  page: number;
+  pageSize: number;
+} {
+  const coercedPage = Number(page);
+  const coercedPageSize = Number(pageSize);
+
+  const parsedPage = Number.isFinite(coercedPage) ? Math.floor(coercedPage) : NaN;
+  const parsedPageSize = Number.isFinite(coercedPageSize) ? Math.floor(coercedPageSize) : NaN;
+
+  const safePageSize = parsedPageSize > 0 ? parsedPageSize : 1;
+  const safePage = parsedPage > 0 ? parsedPage : 1;
+
+  return {
+    page: safePage,
+    pageSize: safePageSize,
+  };
+}
+
 export function pageArgsToLimitArgs(
   page: number,
   pageSize: number,
@@ -17,9 +39,11 @@ export function pageArgsToLimitArgs(
   offset: number;
   limit: number;
 } {
+  const { page: safePage, pageSize: safePageSize } = normalizePageArgs(page, pageSize);
+
   return {
-    offset: (page - 1) * pageSize,
-    limit: pageSize,
+    offset: (safePage - 1) * safePageSize,
+    limit: safePageSize,
   };
 }
 

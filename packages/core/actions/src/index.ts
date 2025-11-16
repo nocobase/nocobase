@@ -15,6 +15,7 @@ import lodash from 'lodash';
 import * as actions from './actions';
 
 export * as utils from './utils';
+export { normalizePageArgs, pageArgsToLimitArgs } from './utils';
 
 export * from './constants';
 

@@ -82,8 +82,13 @@ export default {
     async query(ctx, next) {
       const { filterByTk, fieldTypes, schema = 'public', page = 1, pageSize = 10 } = ctx.action.params;
 
-      const offset = (page - 1) * pageSize;
-      const limit = 1 * pageSize;
+      const parsedPage = parseInt(String(page));
+      const parsedPageSize = parseInt(String(pageSize));
+      const safePage = Number.isFinite(parsedPage) && parsedPage > 0 ? parsedPage : 1;
+      const safePageSize = Number.isFinite(parsedPageSize) && parsedPageSize > 0 ? parsedPageSize : 1;
+
+      const offset = (safePage - 1) * safePageSize;
+      const limit = safePageSize;
 
       const sql = `SELECT *
                    FROM ${ctx.app.db.utils.quoteTable(ctx.app.db.utils.addSchema(filterByTk, schema))} LIMIT ${limit}

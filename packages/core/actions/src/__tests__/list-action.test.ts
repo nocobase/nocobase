@@ -116,6 +116,45 @@ describe('list action', () => {
     expect(body.length).toEqual(3);
   });
 
+  test('list clamps page underflow to first page', async () => {
+    const response = await app
+      .agent()
+      .resource('posts')
+      .list({
+        fields: ['id'],
+        pageSize: 1,
+        page: 0,
+        sort: ['id'],
+      });
+
+    const body = response.body;
+    expect(body.rows.length).toEqual(1);
+    expect(body.rows[0]['id']).toEqual(1);
+    expect(body.page).toEqual(1);
+    expect(body.pageSize).toEqual(1);
+  });
+
+  test('list handles empty dataset with underflow page', async () => {
+    const Empty = app.collection({
+      name: 'empty_posts',
+      fields: [{ type: 'string', name: 'title' }],
+    });
+
+    await app.db.sync();
+
+    const response = await app.agent().resource('empty_posts').list({
+      pageSize: 5,
+      page: 0,
+    });
+
+    const body = response.body;
+    expect(body.count).toEqual(0);
+    expect(body.rows).toEqual([]);
+    expect(body.page).toEqual(1);
+    expect(body.pageSize).toEqual(5);
+    expect(body.totalPage).toEqual(0);
+  });
+
   test.skip('list by association', async () => {
     const p1 = await app.db.getRepository('posts').create({
       values: {

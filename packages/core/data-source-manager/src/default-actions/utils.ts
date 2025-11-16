@@ -7,6 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { normalizePageArgs } from '@nocobase/actions';
+
 export function pageArgsToLimitArgs(
   page: number,
   pageSize: number,
@@ -14,8 +16,10 @@ export function pageArgsToLimitArgs(
   offset: number;
   limit: number;
 } {
+  const { page: safePage, pageSize: safePageSize } = normalizePageArgs(page, pageSize);
+
   return {
-    offset: (page - 1) * pageSize,
-    limit: pageSize,
+    offset: (safePage - 1) * safePageSize,
+    limit: safePageSize,
   };
 }

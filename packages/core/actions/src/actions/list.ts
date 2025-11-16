@@ -8,7 +8,7 @@
  */
 
 import { Context } from '..';
-import { getRepositoryFromParams, pageArgsToLimitArgs } from '../utils';
+import { getRepositoryFromParams, normalizePageArgs, pageArgsToLimitArgs } from '../utils';
 import { DEFAULT_PAGE, DEFAULT_PER_PAGE, SIMPLE_PAGINATION_LIMIT } from '../constants';
 import _ from 'lodash';
 
@@ -32,6 +32,10 @@ function findArgs(ctx: Context) {
 async function listWithPagination(ctx: Context) {
   const { page = DEFAULT_PAGE, pageSize = DEFAULT_PER_PAGE } = ctx.action.params;
 
+  const parsedPage = parseInt(String(page));
+  const parsedPageSize = parseInt(String(pageSize));
+  const { page: safePage, pageSize: safePageSize } = normalizePageArgs(parsedPage, parsedPageSize);
+
   const repository = getRepositoryFromParams(ctx);
 
   let { simplePaginate } = repository.collection?.options || {};
@@ -39,7 +43,7 @@ async function listWithPagination(ctx: Context) {
   const options = {
     context: ctx,
     ...findArgs(ctx),
-    ...pageArgsToLimitArgs(parseInt(String(page)), parseInt(String(pageSize))),
+    ...pageArgsToLimitArgs(safePage, safePageSize),
   };
 
   Object.keys(options).forEach((key) => {
@@ -70,10 +74,10 @@ async function listWithPagination(ctx: Context) {
     const rows = await repository.find(options);
 
     ctx.body = {
-      rows: rows.slice(0, pageSize),
-      hasNext: rows.length > pageSize,
-      page: Number(page),
-      pageSize: Number(pageSize),
+      rows: rows.slice(0, safePageSize),
+      hasNext: rows.length > safePageSize,
+      page: safePage,
+      pageSize: safePageSize,
     };
   } else {
     const [rows, count] = await repository.findAndCount(options);
@@ -81,9 +85,9 @@ async function listWithPagination(ctx: Context) {
     ctx.body = {
       count,
       rows,
-      page: Number(page),
-      pageSize: Number(pageSize),
-      totalPage: totalPage(count, pageSize),
+      page: safePage,
+      pageSize: safePageSize,
+      totalPage: totalPage(count, safePageSize),
     };
   }
 }
