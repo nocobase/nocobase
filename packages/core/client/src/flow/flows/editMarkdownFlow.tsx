@@ -63,7 +63,6 @@ export const editMarkdownFlow = defineFlow<FlowModel>({
         content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
       },
       async handler(ctx, params) {
-        console.log(8888);
         const content = params.content;
         try {
           const result = await ctx.liquid.renderWithFullContext(ctx.t(content), ctx);
