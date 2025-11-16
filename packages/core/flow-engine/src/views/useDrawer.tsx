@@ -17,6 +17,7 @@ import DrawerComponent from './DrawerComponent';
 import usePatchElement from './usePatchElement';
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
+import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
 
 export function useDrawer() {
   const holderRef = React.useRef(null);
@@ -101,6 +102,18 @@ export function useDrawer() {
       return null; // Header 组件本身不渲染内容
     };
 
+    const ctx = new FlowContext();
+    // 为当前视图创建作用域引擎（隔离实例与缓存）
+    const scopedEngine = createViewScopedEngine(flowContext.engine);
+    // 先将引擎暴露给视图上下文，再按需继承父上下文
+    ctx.defineProperty('engine', { value: scopedEngine });
+    ctx.addDelegate(scopedEngine.context);
+    if (config.inheritContext !== false) {
+      ctx.addDelegate(flowContext);
+    } else {
+      ctx.addDelegate(flowContext.engine.context);
+    }
+
     // 构造 currentDrawer 实例
     const currentDrawer = {
       type: 'drawer' as const,
@@ -127,24 +140,15 @@ export function useDrawer() {
         drawerRef.current?.setHeader(header);
       },
       navigation: config.inputArgs?.navigation,
+      get record() {
+        return getViewRecordFromParent(flowContext);
+      },
     };
-
-    const ctx = new FlowContext();
-    // 为当前视图创建作用域引擎（隔离实例与缓存）
-    const scopedEngine = createViewScopedEngine(flowContext.engine);
-    // 先将引擎暴露给视图上下文，再按需继承父上下文
-    ctx.defineProperty('engine', { value: scopedEngine });
-    ctx.addDelegate(scopedEngine.context);
-    if (config.inheritContext !== false) {
-      ctx.addDelegate(flowContext);
-    } else {
-      ctx.addDelegate(flowContext.engine.context);
-    }
 
     ctx.defineProperty('view', {
       get: () => currentDrawer,
       // meta: createViewMeta(ctx),
-      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+      resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(ctx)),
     });
     // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
     registerPopupVariable(ctx, currentDrawer);

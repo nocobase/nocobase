@@ -15,7 +15,9 @@ import type { Collection } from '../data-source';
 import type { FlowContext, PropertyMeta, PropertyMetaFactory } from '../flowContext';
 import { buildServerContextParams, type RecordRef, type ServerContextParams } from '../utils/serverContextParams';
 import { createCollectionContextMeta } from './createCollectionContextMeta';
+import { createAssociationSubpathResolver } from './associationObjectVariable';
 import type { JSONValue } from './params-resolvers';
+import _ from 'lodash';
 
 // Narrowest resource shape we rely on for inference
 type ResourceLike = {
@@ -71,6 +73,62 @@ export function inferViewRecordRef(ctx: FlowContext): RecordRef | undefined {
   const sourceId = inputArgs?.sourceId;
   if (!collection || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
   return { collection, dataSourceKey, filterByTk, sourceId };
+}
+
+// 统一视图场景中“视图记录”的本地复用逻辑：
+// - 当视图 inputArgs.filterByTk 与父 FlowContext.record.filterByTk 一致时，
+//   认为视图正在查看同一条记录，此时返回父记录的深拷贝作为 view.record；
+// - 否则视为不同记录，不复用父记录（返回 undefined，让后续逻辑走服务端解析）。
+
+export function getViewRecordFromParent(flowContext: FlowContext): unknown {
+  const parentRecord = flowContext.inputArgs?.record;
+  if (!parentRecord) return undefined;
+
+  const view = flowContext.view;
+  const viewFilterByTk = view?.inputArgs?.filterByTk;
+  const recordFilterByTk = parentRecord.filterByTk;
+
+  // 仅当视图的 filterByTk 与父记录的 filterByTk 一致时，才复用父记录，
+  // 否则视为不同记录，不返回本地记录（统一走服务端解析）。
+  if (viewFilterByTk == null || recordFilterByTk == null) return undefined;
+  if (viewFilterByTk !== recordFilterByTk) return undefined;
+
+  return _.cloneDeep(parentRecord);
+}
+
+// 针对视图场景（Page/Dialog/Drawer），创建用于 view.resolveOnServer 的判定函数
+export function createViewRecordResolveOnServer(
+  ctx: FlowContext,
+  getLocalRecord: () => unknown,
+): (subPath: string) => boolean {
+  return (p: string) => {
+    if (!(p === 'record' || p.startsWith('record.'))) return false;
+    const local = getLocalRecord();
+    // 前端没有可用记录数据：统一走服务端
+    if (!local) return true;
+
+    // 直接访问整个 record 对象，使用前端值
+    if (p === 'record') return false;
+
+    // 仅在访问关联字段子路径时走服务端；非关联字段使用前端值
+    const ref = inferViewRecordRef(ctx);
+    const colName = ref?.collection;
+    const dsKey = ref?.dataSourceKey || 'main';
+    if (!colName) return true; // 未能推断集合，保守起见走服务端
+    const ds = (
+      ctx as FlowContext & { dataSourceManager?: { getDataSource?: (key: string) => any } }
+    ).dataSourceManager?.getDataSource?.(dsKey);
+    const collection = ds?.collectionManager?.getCollection?.(colName);
+    if (!collection) return true; // 未找到集合定义，保守走服务端
+
+    const resolver = createAssociationSubpathResolver(
+      () => collection as Collection,
+      () => local,
+    );
+    const subPath = p.startsWith('record.') ? p.slice('record.'.length) : '';
+    if (!subPath) return false;
+    return resolver(subPath);
+  };
 }
 
 export function inferParentRecordRef(ctx: FlowContext): RecordRef | undefined {
