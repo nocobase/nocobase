@@ -14,6 +14,7 @@ import { editMarkdownFlow } from '../../flows/editMarkdownFlow';
 
 export class MarkdownItemModel extends CommonItemModel {
   render() {
+    console.log(1111, this.props.content);
     return (
       <FormItem shouldUpdate showLabel={false}>
         {this.props.content}
