@@ -6,8 +6,10 @@
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/block-kanban",
   "license": "AGPL-3.0",
   "displayName": "Block: Kanban",
+  "displayName.ru-RU": "Блок: Канбан",
   "displayName.zh-CN": "区块：看板",
   "description": "Provides kanban block.",
+  "description.ru-RU": "Предоставляет блок канбан.",
   "description.zh-CN": "提供看板区块。",
   "peerDependencies": {
     "@nocobase/client": "1.x",

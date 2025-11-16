@@ -1,0 +1,15 @@
+{
+  "CC": "Копия",
+  "Provide a CC (carbon copy) feature in workflows to send approvals, or any other type of information to specified users.": "Предоставить функцию \"Копия\" в рабочих процессах для отправки подтверждений или любой другой информации указанным пользователям.",
+  "Recipients": "Получатели",
+  "User interface": "Пользовательский интерфейс",
+  "View user interface": "Просмотр пользовательского интерфейса",
+  "Configure user interface": "Настроить пользовательский интерфейс",
+  "Title of each CC item in tasks center. Could use variables in string template. Default to node title.": "Заголовок каждого элемента копии в Центре задач. Можно использовать переменные в шаблоне строки. По умолчанию - заголовок узла.",
+  "Read": "Прочитано",
+  "Unread": "Не прочитано",
+  "Mark as read": "Отметить как прочитанное",
+  "Mark as unread": "Отметить как непрочитанное",
+  "Mark all as read": "Отметить все как прочитанные",
+  "CC to me": "Копия мне"
+}
