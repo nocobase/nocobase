@@ -72,7 +72,7 @@ ENCRYPTION_FIELD_KEY_PATH=/path/to/my/app-keys/270263524860909922913.key
 ## 密钥轮转
 
 :::warning
-使用密钥轮转命令 `nocobase key-rotation` 前先确认应用已经启用本插件。
+使用密钥轮转命令 `nocobase key-rotation` 前先确认应用已经加载本插件。
 :::
 
 应用迁移到新的环境后，不想继续使用和旧环境相同的密钥时，可以使用 `nocobase key-rotation` 命令替换`应用密钥`。
@@ -87,6 +87,5 @@ ENCRYPTION_FIELD_KEY_PATH=/path/to/my/app-keys/270263524860909922913.key
 如果是替换子应用 `应用密钥` 需要添加 `--app-name` 参数，指定子应用 `name`
 
 ```bash
-# --key-path 指定的是和数据库加密数据对应的旧环境的应用密钥文件
  yarn nocobase key-rotation --app-name a_w0r211vv0az --key-path /path/to/old-app-keys/270263524860909922913.key
 ```
