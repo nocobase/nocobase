@@ -9,13 +9,15 @@
 import { dayjsable, formatDayjsValue } from '@formily/antd-v5/esm/__builtins__';
 import { TimePicker } from 'antd';
 import React from 'react';
-import { EditableItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
+import { EditableItemModel, FilterableItemModel, tExpr, useFlowModelContext } from '@nocobase/flow-engine';
 import dayjs from 'dayjs';
 import { FieldModel } from '../base';
+import { MobileTimePicker } from './mobile-components/MobileTimePicker';
 
 const TimePickerCom = (props) => {
   const format = props['format'] || 'HH:mm:ss';
   const onChange = props.onChange;
+  const ctx = useFlowModelContext();
   const componentProps = {
     ...props,
     picker: 'time',
@@ -28,6 +30,12 @@ const TimePickerCom = (props) => {
       }
     },
   };
+
+  // TODO: 移动端相关的代码需迁移到单独的插件中
+  if (ctx.isMobileLayout) {
+    return <MobileTimePicker {...componentProps} />;
+  }
+
   return <TimePicker {...componentProps} />;
 };
 
