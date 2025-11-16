@@ -8,13 +8,29 @@
  */
 
 import { CollectionField, tExpr } from '@nocobase/flow-engine';
-import { Tag, Typography } from 'antd';
+import { Tag } from 'antd';
 import { castArray } from 'lodash';
-import { css } from '@emotion/css';
 import React from 'react';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base';
 import { EllipsisWithTooltip } from '../../components';
+
+export function transformNestedData(inputData) {
+  const resultArray = [];
+
+  function recursiveTransform(data) {
+    if (data?.parent) {
+      const { parent } = data;
+      recursiveTransform(parent);
+    }
+    const { parent, ...other } = data;
+    resultArray.push(other);
+  }
+  if (inputData) {
+    recursiveTransform(inputData);
+  }
+  return resultArray;
+}
 
 export class ClickableFieldModel extends FieldModel {
   get collectionField(): CollectionField {
@@ -108,8 +124,18 @@ export class ClickableFieldModel extends FieldModel {
         return <EllipsisWithTooltip ellipsis={ellipsis}>{result}</EllipsisWithTooltip>;
       } else {
         const result = castArray(value).flatMap((v, idx) => {
-          const node = this.renderInDisplayStyle(v?.[titleField], v, Array.isArray(value));
-          return idx === 0 ? [node] : [<span key={`sep-${idx}`}>, </span>, node];
+          if (this.collectionField.targetCollection.template === 'tree') {
+            const label = transformNestedData(v).length
+              ? transformNestedData(v)
+                  .map((o) => o?.[titleField])
+                  .join(' / ')
+              : null;
+            const node = this.renderInDisplayStyle(label, v, Array.isArray(value));
+            return idx === 0 ? [node] : [<span key={`sep-${idx}`}>, </span>, node];
+          } else {
+            const node = this.renderInDisplayStyle(v?.[titleField], v, Array.isArray(value));
+            return idx === 0 ? [node] : [<span key={`sep-${idx}`}>, </span>, node];
+          }
         });
         return (
           <EllipsisWithTooltip ellipsis={ellipsis}>

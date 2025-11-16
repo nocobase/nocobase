@@ -154,6 +154,9 @@ function formatNumber(props) {
     //科学计数显示
     result = scientificNotation(Number(unitData), countDecimalPlaces(step), separators?.[separator]?.['decimal']);
   }
+  if (result === 'NaN') {
+    result = value;
+  }
   return result;
 }
 
@@ -179,7 +182,6 @@ export const DisplayNumber = (props: displayNumberProps) => {
   const result = useMemo(() => {
     return formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });
   }, [step, formatStyle, value, unitConversion, unitConversionType, separator]);
-
   if (!result) {
     return null;
   }
