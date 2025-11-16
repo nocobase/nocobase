@@ -762,21 +762,6 @@ export function NodeDefaultView(props) {
                       fieldset: {
                         type: 'void',
                         'x-component': 'fieldset',
-                        'x-component-props': {
-                          className: css`
-                            .ant-input,
-                            .ant-select,
-                            .ant-cascader-picker,
-                            .ant-picker,
-                            .ant-input-number,
-                            .ant-input-affix-wrapper {
-                              &.auto-width {
-                                width: auto;
-                                min-width: 6em;
-                              }
-                            }
-                          `,
-                        },
                         properties: instruction.fieldset,
                       },
                       footer: executed

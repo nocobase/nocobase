@@ -192,6 +192,21 @@
   "Inside of \"{{branchName}}\" branch": "“{{branchName}}”分支内",
   "\"{{branchName}}\" branch": "“{{branchName}}”分支",
   "Branch {{index}}": "分支 {{index}}",
+
+  "Multi conditions": "多条件分支",
+  "From left to right, attempt each branch sequentially based on the configured conditions. Only branches that meet the conditions will be executed. If not, the next branch will be attempted. If none of the branches meet the conditions, it can either exit the process or continue to the next node based on configuration.":
+    "从左到右，基于配置的条件，依次尝试每个分支。只有满足条件的分支才会被执行，否则尝试下一个分支。如果没有任何分支满足条件，可以根据配置选择退出流程或继续下一个节点。",
+  "When no condition matches": "未满足任何条件时",
+  "Continue the workflow": "继续执行工作流",
+  "Exit workflow": "退出工作流",
+  "First condition": "第一个条件",
+  "Otherwise": "否则",
+  "Add branch": "添加分支",
+  "Delete branch": "删除分支",
+  "Condition {{index}}": "条件 {{index}}",
+  "Configure condition": "配置条件",
+  "Condition label": "条件名称",
+
   "Create record": "新增数据",
   "Add new record to a collection. You can use variables from upstream nodes to assign values to fields.":
     "向一个数据表中添加新的数据。可以使用上游节点里的变量为字段赋值。",
