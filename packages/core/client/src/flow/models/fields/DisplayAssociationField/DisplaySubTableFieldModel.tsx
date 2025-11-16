@@ -123,7 +123,7 @@ export class DisplaySubTableFieldModel extends FieldModel {
 
   getBaseColumns() {
     const baseColumns = this.mapSubModels('columns', (column: any) => column.getColumnProps()).filter((v) => {
-      return !v.hidden;
+      return !v?.hidden;
     });
 
     return baseColumns;
