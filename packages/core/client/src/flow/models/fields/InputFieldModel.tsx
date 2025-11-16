@@ -8,13 +8,76 @@
  */
 
 import { EditableItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
-import { Input } from 'antd';
-import React from 'react';
 import { FieldModel } from '../base';
+import React, { useState, useRef } from 'react';
+import { Input, Button, Modal } from 'antd';
+import { Html5Qrcode } from 'html5-qrcode';
+import { ScanOutlined } from '@ant-design/icons';
+const ScanInput = (props) => {
+  const [value, setValue] = useState('');
+  const [visible, setVisible] = useState(false);
+  const scannerRef = useRef<any>(null);
+
+  const openScanner = () => {
+    setVisible(true);
+    setTimeout(() => startScan(), 100); // 等 Modal 打开后再初始化
+  };
+
+  const startScan = () => {
+    const html5QrCode = new Html5Qrcode('qr-scanner');
+    scannerRef.current = html5QrCode;
+
+    html5QrCode.start(
+      { facingMode: 'environment' }, // 后置摄像头
+      {
+        fps: 10,
+        qrbox: { width: 250, height: 250 },
+      },
+      (decodedText) => {
+        console.log('Scanned:', decodedText);
+        setValue(decodedText);
+        stopScan();
+        setVisible(false);
+      },
+      (err) => {
+        console.log(err);
+      },
+    );
+  };
+
+  const stopScan = async () => {
+    try {
+      await scannerRef.current?.stop();
+      await scannerRef.current?.clear();
+    } catch (e) {
+      console.warn(e);
+    }
+  };
+
+  const closeModal = () => {
+    stopScan();
+    setVisible(false);
+  };
+
+  return (
+    <div style={{ width: 300 }}>
+      <Input
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        addonAfter={<ScanOutlined onClick={openScanner} />}
+        {...props}
+      />
+
+      <Modal open={visible} onCancel={closeModal} footer={null} destroyOnClose>
+        <div id="qr-scanner" style={{ width: '100%', margin: '0 auto', minHeight: 300 }} />
+      </Modal>
+    </div>
+  );
+};
 
 export class InputFieldModel extends FieldModel {
   render() {
-    return <Input {...this.props} />;
+    return <ScanInput {...this.props} />;
   }
 }
 
