@@ -87,7 +87,7 @@ const toolbarPositionToCSS = {
   above: `
     top: 0px;
     transform: translateY(-100%);
-    padding-bottom: 2px;
+    padding-bottom: 0px;
     margin-bottom: -2px;
   `,
   below: `

@@ -87,7 +87,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
                 showBackground: true,
                 showBorder: false,
                 toolbarPosition: 'above',
-                style: { transform: 'translateY(9px)' },
+                style: { transform: 'translateY(8px)' },
               }}
               extraToolbarItems={[
                 {
