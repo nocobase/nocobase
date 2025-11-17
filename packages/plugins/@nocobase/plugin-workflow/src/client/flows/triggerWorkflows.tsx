@@ -54,40 +54,41 @@ export function createTriggerWorkflowsSchema({
                 },
               },
             },
-            ...(usingContext
-              ? {
-                  context: {
-                    type: 'void',
-                    'x-component': 'ArrayTable.Column',
-                    'x-component-props': {
-                      title: `{{t('Trigger data context', { ns: 'workflow' })}}`,
-                      width: 200,
-                    },
-                    properties: {
-                      context: {
-                        type: 'string',
-                        'x-decorator': 'FormItem',
-                        'x-component': AppendsTreeSelect,
-                        'x-component-props': {
-                          placeholder: `{{t('Select context', { ns: 'workflow' })}}`,
-                          popupMatchSelectWidth: false,
-                          collection: workflowCollection,
-                          filter(field) {
-                            return ['belongsTo', 'hasOne'].includes(field.type);
-                          },
-                          rootOption: {
-                            label: `{{t('Full form data', { ns: 'workflow' })}}`,
-                            value: '',
-                          },
-                          allowClear: false,
-                          // loadData: buttonAction === 'destroy' ? null : undefined,
-                        },
-                        default: '',
-                      },
-                    },
-                  },
-                }
-              : {}),
+            // @deprecated
+            // ...(usingContext
+            //   ? {
+            //       context: {
+            //         type: 'void',
+            //         'x-component': 'ArrayTable.Column',
+            //         'x-component-props': {
+            //           title: `{{t('Trigger data context', { ns: 'workflow' })}}`,
+            //           width: 200,
+            //         },
+            //         properties: {
+            //           context: {
+            //             type: 'string',
+            //             'x-decorator': 'FormItem',
+            //             'x-component': AppendsTreeSelect,
+            //             'x-component-props': {
+            //               placeholder: `{{t('Select context', { ns: 'workflow' })}}`,
+            //               popupMatchSelectWidth: false,
+            //               collection: workflowCollection,
+            //               filter(field) {
+            //                 return ['belongsTo', 'hasOne'].includes(field.type);
+            //               },
+            //               rootOption: {
+            //                 label: `{{t('Full form data', { ns: 'workflow' })}}`,
+            //                 value: '',
+            //               },
+            //               allowClear: false,
+            //               // loadData: buttonAction === 'destroy' ? null : undefined,
+            //             },
+            //             default: '',
+            //           },
+            //         },
+            //       },
+            //     }
+            //   : {}),
             workflowKey: {
               type: 'void',
               'x-component': 'ArrayTable.Column',
