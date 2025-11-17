@@ -448,7 +448,7 @@ export default class extends Instruction {
       'x-component': 'RadioWithTooltip',
       'x-component-props': {
         options: [
-          { label: `{{t('Exit workflow', { ns: "${NAMESPACE}" })}}`, value: false },
+          { label: `{{t('End as failed', { ns: "${NAMESPACE}" })}}`, value: false },
           { label: `{{t('Continue the workflow', { ns: "${NAMESPACE}" })}}`, value: true },
         ],
       },

@@ -198,7 +198,7 @@
     "从左到右，基于配置的条件，依次尝试每个分支。只有满足条件的分支才会被执行，否则尝试下一个分支。如果没有任何分支满足条件，可以根据配置选择退出流程或继续下一个节点。",
   "When no condition matches": "未满足任何条件时",
   "Continue the workflow": "继续执行工作流",
-  "Exit workflow": "退出工作流",
+  "End as failed": "以失败结束",
   "First condition": "第一个条件",
   "Otherwise": "否则",
   "Add branch": "添加分支",
