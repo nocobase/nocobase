@@ -429,93 +429,6 @@ CascadeSelectInnerFieldModel.registerFlow({
   },
 });
 
-// /** --------------------------- 子节点懒加载逻辑 --------------------------- */
-// CascadeSelectInnerFieldModel.registerFlow({
-//   key: 'loadChildrenSettings',
-//   on: 'loadChildren',
-//   steps: {
-//     loadChildren: {
-//       async handler(ctx) {
-//         const { targetOption } = ctx.inputArgs;
-//         const resource = ctx.model.resource;
-//         const labelFieldName = ctx.model.props.fieldNames.label;
-//         const valueFieldName = ctx.model.props.fieldNames.value;
-
-//         targetOption.loading = true;
-
-//         // 根据父节点 value 添加过滤条件
-//         resource.setPage(1);
-//         resource.addFilterGroup(valueFieldName, {
-//           [`parent_id.$eq`]: targetOption.value,
-//         });
-
-//         await resource.refresh();
-//         const data = resource.getData().map((item) => ({
-//           label: item[labelFieldName],
-//           value: item[valueFieldName],
-//           isLeaf: item.hasChildren === false,
-//         }));
-
-//         // 挂载子节点
-//         targetOption.loading = false;
-//         targetOption.children = data;
-
-//         // 更新全局 options 引用以触发渲染
-//         ctx.model.setDataSource([...ctx.model.getDataSource()]);
-//       },
-//     },
-//   },
-// });
-
-// /** --------------------------- 搜索 --------------------------- */
-// async function originalHandler(ctx) {
-//   try {
-//     const resource = ctx.model.resource;
-//     const labelFieldName = ctx.model.props.fieldNames.label;
-//     const targetCollection = ctx.model.collectionField.targetCollection;
-//     const targetLabelField = targetCollection.getField(labelFieldName);
-//     const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
-//       targetLabelField.options.interface,
-//     );
-//     const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
-//     const searchText = ctx.inputArgs.searchText?.trim();
-//     const key = `${labelFieldName}.${operator}`;
-
-//     if (searchText === '') {
-//       resource.removeFilterGroup(labelFieldName);
-//     } else {
-//       resource.setPage(1);
-//       resource.addFilterGroup(labelFieldName, { [key]: searchText });
-//     }
-
-//     await resource.refresh();
-//     const data = resource.getData().map((item) => ({
-//       label: item[labelFieldName],
-//       value: item[ctx.model.props.fieldNames.value],
-//       isLeaf: item.hasChildren === false,
-//     }));
-
-//     ctx.model.setDataSource(data);
-//     paginationState.hasMore = data.length >= paginationState.pageSize;
-//     paginationState.page = 2;
-//   } catch (error) {
-//     console.error('CascadeSelectField search error:', error);
-//     ctx.model.setDataSource([]);
-//   }
-// }
-
-// const debouncedHandler = debounce(originalHandler, 500);
-
-// CascadeSelectInnerFieldModel.registerFlow({
-//   key: 'searchSettings',
-//   on: 'search',
-//   steps: {
-//     searchData: {
-//       handler: debouncedHandler,
-//     },
-//   },
-// });
-
 /** --------------------------- 初始化 Resource --------------------------- */
 CascadeSelectInnerFieldModel.registerFlow({
   key: 'cascadeSelectSettings',
@@ -557,8 +470,10 @@ CascadeSelectListFieldModel.define({
 
 EditableItemModel.bindModelToInterface('CascadeSelectFieldModel', ['m2o', 'o2o', 'oho', 'obo'], {
   when: (ctx, field) => field.targetCollection.template === 'tree',
+  isDefault: true,
 });
 
 EditableItemModel.bindModelToInterface('CascadeSelectListFieldModel', ['m2m', 'o2m', 'mbm'], {
   when: (ctx, field) => field.targetCollection.template === 'tree',
+  isDefault: true,
 });
