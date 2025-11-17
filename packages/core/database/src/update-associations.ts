@@ -633,7 +633,7 @@ export async function updateMultipleAssociation(
         });
         const { repository, filterTargetKey } = instance.constructor['collection'];
         const filterByTk = Array.isArray(filterTargetKey)
-          ? filterTargetKey.reduce((keys, key) => (keys[key] = instance.get(key)), {})
+          ? filterTargetKey.reduce((keys, key) => { keys[key] = instance.get(key); return keys; }, {})
           : instance.get(filterTargetKey);
         await repository.update({ ...accessorOptions, filterByTk, values: item, transaction });
       }
