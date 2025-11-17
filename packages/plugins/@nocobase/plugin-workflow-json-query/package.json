@@ -22,5 +22,8 @@
     "@nocobase/test": "1.x",
     "@nocobase/utils": "1.x"
   },
-  "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4"
+  "gitHead": "080fc78c1a744d47e010b3bbe5840446775800e4",
+  "nocobase": {
+    "defaultEnabled": true
+  }
 }
