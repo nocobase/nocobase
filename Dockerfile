@@ -34,12 +34,14 @@ RUN  yarn install && yarn build --no-dts && \
   git config user.email "test@mail.com"  && \
   git config user.name "test" && git add .  && \
   git commit -m "chore(versions): test publish packages" && \
-  yarn release:force --registry $VERDACCIO_URL && \
   yarn config set registry $VERDACCIO_URL && \
   cd /tmp/docs && \
   yarn install && \
   yarn cross-env CHECK_DEAD_LINKS=false rspress build && \
   rm -rf /tmp/node_modules && \
+  cd /tmp && \
+  yarn add lerna@4.0.0 && \
+  yarn release:force --registry $VERDACCIO_URL && \
   mkdir /app && \
   cd /app && \
   yarn config set network-timeout 600000 -g && \
