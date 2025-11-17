@@ -82,14 +82,18 @@ export const setMainDepartment = async (ctx: Context, next: Next) => {
         values: { mainDepartmentId: firstDept ? firstDept.departmentId : null },
       });
     }
+  }
 
-    // 给成员设置部门的时候，如果只有一个部门的时候，应该自动设置为主属部门
-    const deptUsers = await throughRepo.find({
-      filter: { userId: associatedIndex },
-    });
+  // 用户更新：当通过 users.update 修改部门关联后，若仅剩一个部门则设为主属部门
+  if (resourceName === 'users' && actionName === 'update') {
+    const userRepo = ctx.db.getRepository('users');
+    const throughRepo = ctx.db.getRepository('departmentsUsers');
+    const userId = associatedIndex ?? filterByTk ?? ctx.body?.data?.id;
+    if (!userId) return;
+    const deptUsers = await throughRepo.find({ filter: { userId } });
     if (deptUsers.length === 1) {
       await userRepo.update({
-        filterByTk: associatedIndex,
+        filterByTk: userId,
         values: { mainDepartmentId: deptUsers[0].departmentId },
       });
     }

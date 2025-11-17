@@ -192,4 +192,28 @@ describe('set main department', () => {
     const userRecord = await userRepo.findOne({ filterByTk: 1 });
     expect(userRecord.mainDepartmentId).toBe(depts[1].id);
   });
+
+  it('should set main via users.update when user has exactly one department', async () => {
+    const dept = await repo.create({ values: { title: 'OnlyDept' } });
+    await agent.resource('users').update({
+      filterByTk: 1,
+      values: { departments: [{ id: dept.id }] },
+    });
+    const user = await db.getRepository('users').findOne({ filterByTk: 1, fields: ['id', 'mainDepartmentId'] });
+    expect(user.mainDepartmentId).toBe(dept.id);
+  });
+
+  it('should set main via users.update when reducing to one department', async () => {
+    const depts = await repo.create({ values: [{ title: 'DeptA' }, { title: 'DeptB' }] });
+    await agent.resource('users').update({
+      filterByTk: 1,
+      values: { departments: [{ id: depts[0].id }, { id: depts[1].id }] },
+    });
+    await agent.resource('users').update({
+      filterByTk: 1,
+      values: { departments: [{ id: depts[1].id }] },
+    });
+    const user = await db.getRepository('users').findOne({ filterByTk: 1, fields: ['id', 'mainDepartmentId'] });
+    expect(user.mainDepartmentId).toBe(depts[1].id);
+  });
 });
