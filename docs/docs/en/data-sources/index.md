@@ -8,7 +8,7 @@ NocoBase supports data sources from various origins, including common databases,
 
 ![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
 
-NocoBase provides a [data source manager](/data-sources/data-source-manager) for managing various data sources and their data tables. The data source manager plugin only provides a management interface for all data sources and does not provide the ability to directly access data sources. It needs to be used in conjunction with various data source plugins. The currently supported data sources include:
+NocoBase provides a [data source manager](/data-sources/data-source-manager) for managing various data sources and their collections. The data source manager plugin only provides a management interface for all data sources and does not provide the ability to directly access data sources. It needs to be used in conjunction with various data source plugins. The currently supported data sources include:
 
 - [Main Database](/data-sources/data-source-main): NocoBase's main database, supporting relational databases such as MySQL, PostgreSQL, and MariaDB.
 - [KingbaseES](/data-sources/data-source-kingbase): Use KingbaseES database as a data source, which can be used as both a main database and an external database.
@@ -22,7 +22,7 @@ NocoBase provides a [data source manager](/data-sources/data-source-manager) for
 
 ## Provides a Variety of Data Modeling Tools
 
-**Simple data table management interface**: Used to create various models (data tables) or connect to existing ones.
+**Simple collection management interface**: Used to create various models (collections) or connect to existing ones.
 
 ![20240512090751](https://static-docs.nocobase.com/20240512090751.png)
 
@@ -30,7 +30,7 @@ NocoBase provides a [data source manager](/data-sources/data-source-manager) for
 
 ![20240512091042](https://static-docs.nocobase.com/20240410075906.png)
 
-## Supports Various Types of Data Tables
+## Supports Various Types of Collections
 
 - [General collection](/data-sources/data-source-main/general-collection): Built-in common system fields;
 - [Calendar collection](/data-sources/calendar/calendar-collection): Used to create calendar-related event collections;
