@@ -17,16 +17,18 @@ import {
   useFlowContext,
   FlowModel,
 } from '@nocobase/flow-engine';
-import { Select, Space, Button } from 'antd';
+import { Select, Space, Button, Divider } from 'antd';
 import { css } from '@emotion/css';
 import { debounce } from 'lodash';
 import { useRequest } from 'ahooks';
+import { PlusOutlined } from '@ant-design/icons';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { LabelByField, resolveOptions, toSelectValue, type LazySelectProps } from './recordSelectShared';
 import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
+import ctx from 'packages/core/client/docs/zh-CN/examples/flow-definition/ui-schema-custom-component/ctx';
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
@@ -87,18 +89,29 @@ export function LazySelect(props: Readonly<LazySelectProps>) {
   const isMultiple = Boolean(multiple && allowMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
   const { t } = useTranslation();
-  console.log(2222222222, quickCreate);
+  const QuickAddContent = ({ searchText }) => {
+    return (
+      <div
+        onClick={() => others.onDropdownAddClick(searchText)}
+        style={{ cursor: 'pointer', padding: '5px 12px', color: '#0d0c0c' }}
+      >
+        <PlusOutlined />
+        <span style={{ paddingLeft: 5 }}>{t('Add') + ` “${searchText}” `}</span>
+      </div>
+    );
+  };
   return (
     <Space.Compact style={{ width: '100%' }}>
       <Select
         style={{ width: '100%' }}
         {...others}
         allowClear
-        // onCompositionEnd={(e) => others.onCompositionEnd(e, false)}
         showSearch
         maxTagCount="responsive"
         filterOption={false}
         labelInValue
+        //@ts-ignore
+        onCompositionEnd={(e) => others.onCompositionEnd(e, false)}
         fieldNames={fieldNames}
         options={realOptions}
         value={toSelectValue(value, fieldNames, isMultiple)}
@@ -122,6 +135,22 @@ export function LazySelect(props: Readonly<LazySelectProps>) {
             >
               {data.label}
             </div>
+          );
+        }}
+        dropdownRender={(menu) => {
+          const isFullMatch = realOptions.some((v) => v[fieldNames.label] === others.searchText);
+          return (
+            <>
+              {quickCreate === 'quickAdd' && others.searchText ? (
+                <>
+                  {!(realOptions.length === 0 && others.searchText) && menu}
+                  {realOptions.length > 0 && others.searchText && !isFullMatch && <Divider style={{ margin: 0 }} />}
+                  {!isFullMatch && <QuickAddContent searchText={others.searchText} />}
+                </>
+              ) : (
+                menu
+              )}
+            </>
           );
         }}
       />
@@ -176,9 +205,19 @@ export class RecordSelectFieldModel extends AssociationFieldModel {
         onChange: this.props.onChange,
       });
     };
+    this.onDropdownAddClick = (search) => {
+      this.dispatchEvent('dropdownAdd', {
+        search: search,
+        onChange: this.props.onChange,
+      });
+    };
   }
   set onModalAddClick(fn) {
     this.setProps({ onModalAddClick: fn });
+  }
+
+  set onDropdownAddClick(fn) {
+    this.setProps({ onDropdownAddClick: fn });
   }
 
   change(value) {
@@ -343,6 +382,9 @@ async function originalHandler(ctx, params) {
       paginationState.hasMore = true;
       paginationState.page++;
     }
+    ctx.model.setProps({
+      searchText: searchText,
+    });
   } catch (error) {
     console.error('AssociationSelectField search flow error:', error);
     ctx.model.setDataSource([]);
@@ -459,6 +501,49 @@ RecordSelectFieldModel.registerFlow({
 });
 
 RecordSelectFieldModel.registerFlow({
+  key: 'dropdownAdd',
+  title: tExpr('Create record setting'),
+  sort: 900,
+  on: {
+    eventName: 'dropdownAdd',
+  },
+  steps: {
+    dropdownAdd: {
+      async handler(ctx, params) {
+        if (ctx.model.props.quickCreate !== 'quickAdd') {
+          return null;
+        }
+        const { onChange, search: value } = ctx.inputArgs;
+        const data: any = await ctx.model.resource.create(
+          {
+            [ctx.model.props?.fieldNames?.label || 'id']: value,
+          },
+          { refresh: false },
+        );
+        if (data) {
+          if (['m2m', 'o2m'].includes(ctx.collectionField?.interface) && ctx.model.props.multiple !== false) {
+            const prev = ctx.model.props.value || [];
+            const merged = [...prev, data.data];
+
+            // 去重，防止同一个值重复
+            const unique = merged.filter(
+              (row, index, self) =>
+                index ===
+                self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
+            );
+            console.log(unique);
+            onChange(unique);
+          } else {
+            onChange(data.data);
+          }
+          ctx.message.success(ctx.t('Saved successfully'));
+        }
+      },
+    },
+  },
+});
+
+RecordSelectFieldModel.registerFlow({
   key: 'popupSettings',
   title: tExpr('Create record setting'),
   sort: 900,
@@ -468,28 +553,34 @@ RecordSelectFieldModel.registerFlow({
   steps: {
     openView: {
       title: tExpr('Edit popup'),
-      uiSchema: {
-        mode: {
-          type: 'string',
-          title: tExpr('Open mode'),
-          enum: [
-            { label: tExpr('Drawer'), value: 'drawer' },
-            { label: tExpr('Dialog'), value: 'dialog' },
-          ],
-          'x-decorator': 'FormItem',
-          'x-component': 'Radio.Group',
-        },
-        size: {
-          type: 'string',
-          title: tExpr('Popup size'),
-          enum: [
-            { label: tExpr('Small'), value: 'small' },
-            { label: tExpr('Medium'), value: 'medium' },
-            { label: tExpr('Large'), value: 'large' },
-          ],
-          'x-decorator': 'FormItem',
-          'x-component': 'Radio.Group',
-        },
+      uiSchema: (ctx) => {
+        console.log(ctx.model.props);
+        if (ctx.model.props.quickCreate !== 'modalAdd') {
+          return null;
+        }
+        return {
+          mode: {
+            type: 'string',
+            title: tExpr('Open mode'),
+            enum: [
+              { label: tExpr('Drawer'), value: 'drawer' },
+              { label: tExpr('Dialog'), value: 'dialog' },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+          },
+          size: {
+            type: 'string',
+            title: tExpr('Popup size'),
+            enum: [
+              { label: tExpr('Small'), value: 'small' },
+              { label: tExpr('Medium'), value: 'medium' },
+              { label: tExpr('Large'), value: 'large' },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+          },
+        };
       },
       defaultParams: {
         mode: 'drawer',
