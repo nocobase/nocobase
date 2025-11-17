@@ -167,7 +167,7 @@ export class TableColumnModel extends DisplayItemModel {
         recordIndex,
         width: this.props.width - 16,
         editable: this.props.editable,
-        dataIndex: record.__index || this.props.dataIndex,
+        dataIndex: this.props.dataIndex,
         title: this.props.title,
         overflowMode: this.props.overflowMode,
         model: this,
