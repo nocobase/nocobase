@@ -40,18 +40,20 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
       config.params.filterByTk = this.getFilterByTk();
       actionName = 'update';
       const collection = this.context.collection;
-      const filterTargetKey = collection.filterTargetKey;
+      const filterTargetKey = collection?.filterTargetKey;
       const tkData = collection?.getFilterByTK(this.context.record);
-      if (Array.isArray(filterTargetKey)) {
-        result = {
-          ...data,
-          ...(tkData || {}),
-        };
-      } else {
-        result = {
-          ...data,
-          [filterTargetKey]: tkData,
-        };
+      if (collection && filterTargetKey) {
+        if (Array.isArray(filterTargetKey)) {
+          result = {
+            ...data,
+            ...(tkData || {}),
+          };
+        } else {
+          result = {
+            ...data,
+            [filterTargetKey]: tkData,
+          };
+        }
       }
     }
     await this.runAction(actionName, {
