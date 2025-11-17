@@ -135,7 +135,7 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition
     border: ${showBorder ? '2px solid var(--colorBorderSettingsHover)' : ''};
     border-radius: ${ctx.themeToken.borderRadiusLG}px;
     pointer-events: none;
-    min-width: ${18 * toolbarCount}px;
+    min-width: ${19 * toolbarCount}px;
 
     &.nb-in-template {
       background: var(--colorTemplateBgSettingsHover);
