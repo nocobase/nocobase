@@ -185,10 +185,10 @@ export class PluginDepartmentsServer extends Plugin {
       },
       (err, ctx) => {
         // 翻译错误消息
-        err.message = ctx.i18n.t("Invalid main department, it must be one of the user's departments", {
-          ns: 'departments',
-        });
-        return err;
+        return ctx.throw(
+          400,
+          ctx.i18n.t("Invalid main department, it must be one of the user's departments", { ns: 'departments' }),
+        );
       },
     );
   }
