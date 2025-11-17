@@ -82,7 +82,7 @@ export class TableColumnModel extends DisplayItemModel {
       .getFields()
       .map((field: CollectionField) => {
         const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
-        if (!binding) return null;
+        if (!binding || field.options?.treeChildren) return null;
         const fieldModel = binding.modelName;
         const fieldPath = ctx.fieldPath ? `${ctx.fieldPath}.${field.name}` : field.name;
         return {
