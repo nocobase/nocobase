@@ -356,6 +356,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
 
       if (collectionField && collectionField.isAssociationField()) {
         (this.resource as BaseRecordResource).addAppends(fieldPath);
+        if (collectionField.targetCollection.template === 'tree') {
+          (this.resource as BaseRecordResource).addAppends(`${fieldPath}.parent` + '(recursively=true)');
+        }
         if (refresh) {
           this.resource.refresh();
         }
