@@ -61,6 +61,11 @@ export class InheritedSyncRunner {
       // find max sequence
       if (childAttributes.id && childAttributes.id.autoIncrement) {
         for (const parent of parents) {
+          const attributes = parent.model.getAttributes();
+          const parentIdField = attributes['id'];
+          if (!parentIdField?.autoIncrement) {
+            continue;
+          }
           const sequenceNameResult = await queryInterface.sequelize.query(
             `SELECT column_default
              FROM information_schema.columns

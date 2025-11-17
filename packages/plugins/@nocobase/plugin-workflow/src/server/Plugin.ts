@@ -19,7 +19,7 @@ import { Registry, uid } from '@nocobase/utils';
 import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { Logger, LoggerOptions } from '@nocobase/logger';
 
-import Dispatcher, { EventOptions, WORKER_JOB_WORKFLOW_PROCESS } from './Dispatcher';
+import Dispatcher, { EventOptions } from './Dispatcher';
 import Processor from './Processor';
 import initActions from './actions';
 import initFunctions, { CustomFunction } from './functions';
@@ -40,6 +40,8 @@ import WorkflowRepository from './repositories/WorkflowRepository';
 
 type ID = number | string;
 
+export const WORKER_JOB_WORKFLOW_PROCESS = 'workflow:process';
+
 export default class PluginWorkflowServer extends Plugin {
   instructions: Registry<InstructionInterface> = new Registry();
   triggers: Registry<Trigger> = new Registry();
@@ -48,6 +50,10 @@ export default class PluginWorkflowServer extends Plugin {
   snowflake: Snowflake;
 
   private dispatcher = new Dispatcher(this);
+
+  public get channelPendingExecution() {
+    return `${this.name}.pendingExecution`;
+  }
 
   private loggerCache: LRUCache<string, Logger>;
   private meter = null;
@@ -133,8 +139,6 @@ export default class PluginWorkflowServer extends Plugin {
   //   * add all hooks for enabled workflows
   //   * add hooks for create/update[enabled]/delete workflow to add/remove specific hooks
   private onAfterStart = async () => {
-    this.dispatcher.setReady(true);
-
     const collection = this.db.getCollection('workflows');
     const workflows = await collection.repository.find({
       appends: ['versionStats'],
@@ -168,14 +172,18 @@ export default class PluginWorkflowServer extends Plugin {
       this.dispatcher.dispatch();
     });
 
+    this.dispatcher.setReady(true);
+
     // check for queueing executions
     this.getLogger('dispatcher').info('(starting) check for queueing executions');
     this.dispatcher.dispatch();
-
-    this.dispatcher.setReady(true);
   };
 
   private onBeforeStop = async () => {
+    this.dispatcher.setReady(false);
+
+    this.app.eventQueue.unsubscribe(this.channelPendingExecution);
+
     this.app.logger.info(`stopping workflow plugin before app (${this.app.name}) shutdown...`);
     for (const workflow of this.enabledCache.values()) {
       this.toggle(workflow, false, { silent: true });
@@ -213,13 +221,17 @@ export default class PluginWorkflowServer extends Plugin {
     }
   }
 
+  public serving() {
+    return this.app.serving(WORKER_JOB_WORKFLOW_PROCESS);
+  }
+
   /**
    * @experimental
    */
   getLogger(workflowId: ID = 'dispatcher'): Logger {
     const now = new Date();
     const date = `${now.getFullYear()}-${`0${now.getMonth() + 1}`.slice(-2)}-${`0${now.getDate()}`.slice(-2)}`;
-    const key = `${date}-${workflowId}}`;
+    const key = `${date}-${workflowId}`;
     if (this.loggerCache.has(key)) {
       return this.loggerCache.get(key);
     }
@@ -305,11 +317,6 @@ export default class PluginWorkflowServer extends Plugin {
     this.snowflake = new Snowflake({
       custom_epoch: pluginRecord?.createdAt.getTime(),
     });
-
-    this.app.backgroundJobManager.subscribe(`${this.name}.pendingExecution`, {
-      idle: () => this.app.serving(WORKER_JOB_WORKFLOW_PROCESS) && this.dispatcher.idle,
-      process: this.dispatcher.onQueueExecution,
-    });
   }
 
   /**
@@ -327,7 +334,15 @@ export default class PluginWorkflowServer extends Plugin {
       max: 20,
       updateAgeOnGet: true,
       dispose(logger) {
-        (<Logger>logger).end();
+        const cachedLogger = logger as Logger | undefined;
+        if (!cachedLogger) {
+          return;
+        }
+
+        cachedLogger.silent = true;
+        if (typeof cachedLogger.close === 'function') {
+          cachedLogger.close();
+        }
       },
     });
 
@@ -369,6 +384,11 @@ export default class PluginWorkflowServer extends Plugin {
 
     this.app.on('afterStart', this.onAfterStart);
     this.app.on('beforeStop', this.onBeforeStop);
+
+    this.app.eventQueue.subscribe(this.channelPendingExecution, {
+      idle: () => this.serving() && this.dispatcher.idle,
+      process: this.dispatcher.onQueueExecution,
+    });
   }
 
   private toggle(
@@ -379,7 +399,9 @@ export default class PluginWorkflowServer extends Plugin {
     const type = workflow.get('type');
     const trigger = this.triggers.get(type);
     if (!trigger) {
-      this.getLogger(workflow.id).error(`trigger type ${workflow.type} of workflow ${workflow.id} is not implemented`);
+      this.getLogger(workflow.id).error(`trigger type ${workflow.type} of workflow ${workflow.id} is not implemented`, {
+        workflowId: workflow.id,
+      });
       return;
     }
     const next = enable ?? workflow.get('enabled');
@@ -388,15 +410,21 @@ export default class PluginWorkflowServer extends Plugin {
       const prev = workflow.previous();
       if (prev.config) {
         trigger.off({ ...workflow.get(), ...prev });
-        this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id} based on configuration before updated`);
+        this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id} based on configuration before updated`, {
+          workflowId: workflow.id,
+        });
       }
       trigger.on(workflow);
-      this.getLogger(workflow.id).info(`toggle ON workflow ${workflow.id}`);
+      this.getLogger(workflow.id).info(`toggle ON workflow ${workflow.id}`, {
+        workflowId: workflow.id,
+      });
 
       this.enabledCache.set(workflow.id, workflow);
     } else {
       trigger.off(workflow);
-      this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id}`);
+      this.getLogger(workflow.id).info(`toggle OFF workflow ${workflow.id}`, {
+        workflowId: workflow.id,
+      });
 
       this.enabledCache.delete(workflow.id);
     }
@@ -512,9 +540,8 @@ export default class PluginWorkflowServer extends Plugin {
     // 1. `ws` not works in backend test cases for now.
     // 2. `userId` here for compatibility of no user approvals (deprecated).
     if (userId) {
-      this.app.emit('ws:sendToTag', {
-        tagKey: 'userId',
-        tagValue: `${userId}`,
+      this.app.emit('ws:sendToUser', {
+        userId,
         message: { type: 'workflow:tasks:updated', payload: record.get() },
       });
     }

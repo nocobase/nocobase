@@ -18,7 +18,7 @@ export default {
   shared: true,
   fields: [
     {
-      type: 'bigInt',
+      type: 'snowflakeId',
       name: 'id',
       interface: 'id',
       uiSchema: {
@@ -29,7 +29,7 @@ export default {
         'x-read-pretty': true,
       },
       primaryKey: true,
-      autoIncrement: true,
+      allowNull: false,
     },
     {
       type: 'belongsTo',
@@ -81,6 +81,11 @@ export default {
       },
     },
     {
+      type: 'boolean',
+      name: 'dispatched',
+      defaultValue: false,
+    },
+    {
       type: 'json',
       name: 'stack',
     },
@@ -89,9 +94,9 @@ export default {
       name: 'output',
     },
     {
-      interface: 'createdAt',
       type: 'datetime',
       name: 'createdAt',
+      interface: 'createdAt',
       uiSchema: {
         type: 'datetime',
         title: `{{t("Triggered at", { ns: "${NAMESPACE}" })}}`,
@@ -100,5 +105,18 @@ export default {
         'x-read-pretty': true,
       },
     },
+    {
+      type: 'boolean',
+      name: 'manually',
+      interface: 'checkbox',
+      uiSchema: {
+        type: 'boolean',
+        title: `{{t("Triggered manually", { ns: "${NAMESPACE}" })}}`,
+        'x-component': 'Checkbox',
+        'x-component-props': {},
+        'x-read-pretty': true,
+      },
+    },
   ],
+  indexes: [{ fields: ['dispatched', 'id'] }],
 };

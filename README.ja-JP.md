@@ -1,6 +1,7 @@
 [English](./README.md) | [简体中文](./README.zh-CN.md) | 日本語
 
-[![Watch How NocoBase works](https://static-docs.nocobase.com/youtube-cover.png)](https://youtu.be/FrtCxWYhxFk?si=yzV0ObVGtulCFB-X)
+https://github.com/user-attachments/assets/4d11a87b-00e2-48f3-9bf7-389d21072d13
+
 
 <p align="center">
 <a href="https://trendshift.io/repositories/4112" target="_blank"><img src="https://trendshift.io/api/badge/repositories/4112" alt="nocobase%2Fnocobase | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
@@ -88,3 +89,6 @@ NocoBaseは3つのインストール方法をサポートしています：
 - <a target="_blank" href="https://docs-cn.nocobase.com/welcome/getting-started/installation/git-clone">Gitソースコードインストール</a >
 
    最新の未公開バージョンを体験したい場合や、貢献したい場合、ソースコードを変更、デバッグする必要がある場合にこの方法を選択することをお勧めします。この方法は高度な開発技術が必要です。コードが更新された場合、gitフローを使用して最新のコードを取得できます。
+
+## NocoBaseの仕組み
+https://github.com/user-attachments/assets/8d183b44-9bb5-4792-b08f-bc08fe8dfaaf

@@ -238,6 +238,7 @@ export class MemoryEventQueueAdapter implements IEventQueueAdapter {
   publish(channel: string, content: any, options: QueueMessageOptions = { timestamp: Date.now() }) {
     const event = this.events.get(channel);
     if (!event) {
+      console.debug(`memory queue (${channel}) not subscribed, skip`);
       return;
     }
     if (!this.queues.get(channel)) {
@@ -328,15 +329,17 @@ export class EventQueue {
     protected app: Application,
     protected options: EventQueueOptions = {},
   ) {
-    this.setAdapter(new MemoryEventQueueAdapter({ appName: this.app.name, logger: this.app.logger }));
+    if (app.serving()) {
+      this.setAdapter(new MemoryEventQueueAdapter({ appName: this.app.name, logger: this.app.logger }));
 
-    app.on('afterStart', async () => {
-      await this.connect();
-    });
-    app.on('beforeStop', async () => {
-      app.logger.info('[queue] gracefully shutting down...');
-      await this.close();
-    });
+      app.on('afterStart', async () => {
+        await this.connect();
+      });
+      app.on('beforeStop', async () => {
+        app.logger.info('[queue] gracefully shutting down...');
+        await this.close();
+      });
+    }
   }
   getFullChannel(channel: string) {
     return [this.app.name, this.channelPrefix, channel].filter(Boolean).join('.');
@@ -351,10 +354,15 @@ export class EventQueue {
     return this.adapter.isConnected();
   }
   async connect() {
+    if (!this.app.serving()) {
+      this.app.logger.warn('app is not serving, will not connect to event queue');
+      return;
+    }
     if (!this.adapter) {
       throw new Error('no adapter set, cannot connect');
     }
     await this.adapter.connect();
+    this.app.logger.debug(`connected to adapter, using memory? ${this.adapter instanceof MemoryEventQueueAdapter}`);
 
     for (const [channel, event] of this.events.entries()) {
       this.adapter.subscribe(this.getFullChannel(channel), event);
@@ -391,6 +399,10 @@ export class EventQueue {
     }
   }
   async publish(channel: string, message: any, options: QueueMessageOptions = {}) {
+    if (!this.app.serving()) {
+      this.app.logger.warn('app is not serving, will not publish message to event queue');
+      return;
+    }
     if (!this.adapter) {
       throw new Error('no adapter set, cannot publish');
     }
@@ -398,7 +410,7 @@ export class EventQueue {
       throw new Error('event queue not connected, cannot publish');
     }
     const c = this.getFullChannel(channel);
-    this.app.logger.debug('event queue publishing:', { channel: c, message });
+    this.app.logger.debug(`event queue publishing to channel(${c})`, { message });
     await this.adapter.publish(c, message, {
       timeout: QUEUE_DEFAULT_ACK_TIMEOUT,
       ...options,

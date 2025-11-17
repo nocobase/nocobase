@@ -12,7 +12,7 @@ import { getCluster } from '@nocobase/plugin-workflow-test';
 
 import Plugin, { Processor } from '..';
 import { EXECUTION_STATUS } from '../constants';
-import { BackgroundJobManager, MemoryEventQueueAdapter, QueueMessageOptions } from '@nocobase/server';
+import { MemoryEventQueueAdapter, QueueMessageOptions } from '@nocobase/server';
 
 class MockMemoryEventQueueAdapter extends MemoryEventQueueAdapter {
   setQueues(queues) {
@@ -150,7 +150,7 @@ describe('workflow > cluster', () => {
 
         await sleep(300);
 
-        const q1 = sharedQueues.get(`${app1.name}.${BackgroundJobManager.DEFAULT_CHANNEL}`);
+        const q1 = sharedQueues.get(`${app1.name}.${p1.channelPendingExecution}`);
         // NOTE: app3 read one
         expect(q1.length).toBe(5);
 
@@ -177,12 +177,7 @@ describe('workflow > cluster', () => {
         expect(e2s[6].status).toBe(EXECUTION_STATUS.RESOLVED);
         expect(e2s[7].status).toBe(EXECUTION_STATUS.RESOLVED);
 
-        const appIds = e2s.map((item) =>
-          item.jobs
-            .find((job) => job.nodeId === n2.id)
-            .result.split('_')
-            .pop(),
-        );
+        const appIds = e2s.map((item) => item.jobs.find((job) => job.nodeId === n2.id).result);
         const appIdsSet = new Set(appIds);
         expect(appIdsSet.size).toBe(3);
         // expect(appNameJobs[0].result).toBe(app1.instanceId);

@@ -420,6 +420,10 @@ export default class DateFieldScheduleTrigger {
 
     this.events.set(name, listener);
     const dataSource = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName) as SequelizeDataSource;
+    if (!dataSource) {
+      this.workflow.getLogger().warn(`[Schedule on date field] data source not exists: ${dataSourceName}`);
+      return;
+    }
     const { db } = dataSource.collectionManager as SequelizeCollectionManager;
     db.on(event, listener);
   }
@@ -439,6 +443,10 @@ export default class DateFieldScheduleTrigger {
     const listener = this.events.get(name);
     if (listener) {
       const dataSource = this.workflow.app.dataSourceManager.dataSources.get(dataSourceName) as SequelizeDataSource;
+      if (!dataSource) {
+        this.workflow.getLogger().warn(`[Schedule on date field] data source not exists: ${dataSourceName}`);
+        return;
+      }
       const { db } = dataSource.collectionManager as SequelizeCollectionManager;
       db.off(event, listener);
       this.events.delete(name);

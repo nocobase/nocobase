@@ -366,6 +366,11 @@ describe('workflow > triggers > collection', () => {
     });
 
     it('password changed in users', async () => {
+      const user = await app.db.getRepository('users').findOne({
+        filter: {
+          username: 'nocobase',
+        },
+      });
       const workflow = await WorkflowModel.create({
         enabled: true,
         sync: true,
@@ -377,7 +382,7 @@ describe('workflow > triggers > collection', () => {
         },
       });
 
-      const res = await (await app.agent().login(1)).resource('auth').changePassword({
+      const res = await (await app.agent().login(user.id)).resource('auth').changePassword({
         values: {
           oldPassword: 'admin123',
           newPassword: 'abc123',
@@ -1257,6 +1262,28 @@ describe('workflow > triggers > collection', () => {
 
       const p2s = await AnotherPostRepo.find();
       expect(p2s.length).toBe(1);
+    });
+  });
+
+  describe('data source readiness', () => {
+    it('toggling workflow when target data source is missing should not throw', async () => {
+      const anotherDataSource = app.dataSourceManager.dataSources.get('another');
+      expect(anotherDataSource).toBeDefined();
+      app.dataSourceManager.dataSources.delete('another');
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          collection: 'another:posts',
+        },
+      });
+
+      expect(workflow.enabled).toBe(true);
+
+      if (anotherDataSource) {
+        app.dataSourceManager.dataSources.set('another', anotherDataSource);
+      }
     });
   });
 });

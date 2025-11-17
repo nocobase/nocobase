@@ -43,10 +43,11 @@ describe('actions', () => {
   });
 
   it('should list users exclude department', async () => {
+    const user = await db.getRepository('users').findOne();
     const dept = await repo.create({
       values: {
         title: 'Test department',
-        members: [1],
+        members: [user.id],
       },
     });
     const res = await agent.resource('users').listExcludeDept({
@@ -57,6 +58,7 @@ describe('actions', () => {
   });
 
   it('should list users exclude department with filter', async () => {
+    const user = await db.getRepository('users').findOne();
     let res = await agent.resource('users').listExcludeDept({
       departmentId: 1,
     });
@@ -66,7 +68,7 @@ describe('actions', () => {
     res = await agent.resource('users').listExcludeDept({
       departmentId: 1,
       filter: {
-        id: 1,
+        id: user.id,
       },
     });
     expect(res.status).toBe(200);
@@ -83,15 +85,16 @@ describe('actions', () => {
   });
 
   it('should set main department', async () => {
+    const user = await db.getRepository('users').findOne();
     const depts = await repo.create({
       values: [
         {
           title: 'Dept1',
-          members: [1],
+          members: [user.id],
         },
         {
           title: 'Dept2',
-          members: [1],
+          members: [user.id],
         },
       ],
     });
@@ -106,16 +109,16 @@ describe('actions', () => {
 
     const res = await agent.resource('users').setMainDepartment({
       values: {
-        userId: 1,
+        userId: user.id,
         departmentId: depts[1].id,
       },
     });
     expect(res.status).toBe(200);
 
-    const user = await userRepo.findOne({
+    const user2 = await userRepo.findOne({
       filterByTk: 1,
       fields: ['id', 'mainDepartmentId'],
     });
-    expect(user.mainDepartmentId).toBe(depts[1].id);
+    expect(user2.mainDepartmentId).toBe(depts[1].id);
   });
 });

@@ -19,6 +19,7 @@ export class O2MFieldInterface extends CollectionFieldInterface {
   title = '{{t("One to many")}}';
   description = '{{t("One to many description")}}';
   isAssociation = true;
+  validationType = 'object';
   default = {
     type: 'hasMany',
     // name,

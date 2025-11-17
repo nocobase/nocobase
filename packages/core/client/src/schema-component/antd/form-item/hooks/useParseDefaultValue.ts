@@ -134,7 +134,11 @@ const useParseDefaultValue = () => {
             setDefaultValue(value);
           }
         } else {
-          field.setInitialValue(value);
+          if (isInSubTable) {
+            field.setValue(value);
+          } else {
+            field.setInitialValue(value);
+          }
         }
 
         field.loading = false;
