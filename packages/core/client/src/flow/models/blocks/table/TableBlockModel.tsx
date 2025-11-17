@@ -783,7 +783,6 @@ const HighPerformanceTable = React.memo(
     useEffect(() => {
       setExpandedRowKeys(expandedRowKeys);
     }, [expandedRowKeys]);
-
     const expandable = useMemo(() => {
       return {
         expandedRowKeys: rowKeys,
@@ -800,6 +799,19 @@ const HighPerformanceTable = React.memo(
         },
       };
     }, [rowKeys]);
+
+    function cleanEmptyChildren(data) {
+      return data.map((item) => {
+        const { children, ...rest } = item;
+
+        if (Array.isArray(children) && children.length > 0) {
+          return { ...rest, children: cleanEmptyChildren(children) };
+        }
+
+        return { ...rest };
+      });
+    }
+
     return (
       <MemoizedTable
         components={model.components}
@@ -809,7 +821,7 @@ const HighPerformanceTable = React.memo(
         rowSelection={rowSelection as any}
         virtual={virtual}
         scroll={tableScroll}
-        dataSource={dataSource}
+        dataSource={cleanEmptyChildren(dataSource)}
         columns={columns}
         pagination={pagination}
         onChange={handleChange}
