@@ -188,7 +188,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     const currentPage = this.getPage();
     const lastPage = Math.ceil((this.getCount() - _.castArray(filterByTk).length) / this.getPageSize());
     if (currentPage > lastPage) {
-      this.setPage(lastPage);
+      this.setPage(lastPage || 1);
     }
     await this.refresh();
   }
