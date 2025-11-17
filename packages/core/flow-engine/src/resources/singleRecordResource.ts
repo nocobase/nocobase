@@ -54,7 +54,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
         };
       }
     }
-    await this.runAction(actionName, {
+    const res = await this.runAction(actionName, {
       ...config,
       data: result,
     });
@@ -62,6 +62,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
     if (options?.refresh !== false) {
       await this.refresh();
     }
+    return res;
   }
 
   async destroy(options?: AxiosRequestConfig): Promise<void> {
