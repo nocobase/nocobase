@@ -22,7 +22,7 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-const { Button } = ctx.antd;
+const { Button } = ctx.libs.antd;
 
 ctx.render(
   <Button type="primary" onClick={() => ctx.message.success(ctx.t('Clicked!'))}>

@@ -22,7 +22,7 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-const { Card, Statistic, Row, Col } = ctx.antd;
+const { Card, Statistic, Row, Col } = ctx.libs.antd;
 
 const res = await ctx.api.request({
   url: 'users:list',
