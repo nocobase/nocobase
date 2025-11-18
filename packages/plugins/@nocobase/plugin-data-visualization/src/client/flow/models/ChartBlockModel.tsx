@@ -119,16 +119,12 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
       const initParams = this.getResourceSettingsInitParams();
       const initQuery = initParams?.query;
       if (initQuery) {
-        // 初始化场景：禁用 debug，使 SQLResource.refresh() 走 runById
-        this.applyQuery(initQuery, { debug: false });
-        // 依赖 refresh 事件驱动渲染
+        this.applyQuery(initQuery);
         await this.resource.refresh();
       }
     } catch (e) {
-      // 初始阶段不打断页面加载，错误信息写入预览 store 以便排查
-      const message =
-        (e as any)?.response?.data?.errors?.map?.((err: any) => err.message).join('\n') || (e as any)?.message;
-      configStore.setError(this.uid, message);
+      const message = (e as any)?.message || String(e);
+      console.error('ChartBlockModel init error:', message, e);
     }
   }
 
@@ -196,18 +192,14 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   }
 
   // 应用数据查询配置（仅设置，不负责渲染）
-  applyQuery(query: any, options?: { debug?: boolean }) {
+  applyQuery(query: any) {
     this.checkResource(query);
     if (query?.mode === 'sql') {
       // SQL 模式下设置数据源 key（默认 main）
       const dsKey = query?.sqlDatasource || DEFAULT_DATA_SOURCE_KEY;
       (this.resource as SQLResource).setDataSourceKey(dsKey);
-
-      // 默认开启 debug（预览、交互）；初始化时传入 { debug: false } 使用 runById
-      (this.resource as SQLResource).setDebug(options?.debug ?? true);
       (this.resource as SQLResource).setSQL(query.sql);
     } else {
-      debugLog('---applyQuery', query);
       (this.resource as ChartResource).setQueryParams(query);
     }
   }
@@ -275,11 +267,23 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     this.setStepParams('chartSettings', 'configure', values);
 
     if (needQueryData) {
-      // 等待确保 stepParams 已更新
-      await sleep(200);
-      // 刷新请求数据
-      await this.resource.refresh();
-      this.setDataResult(); // 写入结果，用于展示数据，并联动更新 column 配置
+      this.checkResource(values.query); // 检查资源是否匹配查询模式
+      const isSQL = values?.query?.mode === 'sql';
+      // 预览场景：SQL 模式开启 debug（调用 run）
+      if (isSQL) {
+        (this.resource as SQLResource).setDebug(true);
+      }
+      try {
+        // 等待确保 stepParams 已更新
+        await sleep(200);
+        await this.resource.refresh();
+        this.setDataResult();
+      } finally {
+        if (isSQL) {
+          // 预览完成后，确保 debug 关闭（后续调用 runById）
+          (this.resource as SQLResource).setDebug(false);
+        }
+      }
     }
   }
 
