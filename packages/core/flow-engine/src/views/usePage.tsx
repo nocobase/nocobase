@@ -113,7 +113,7 @@ export function usePage() {
       navigation: config.inputArgs?.navigation,
       get record() {
         // 当视图正在查看与父 record 同一条记录时，复用父记录深拷贝；否则走服务端解析
-        return getViewRecordFromParent(flowContext);
+        return getViewRecordFromParent(flowContext, ctx);
       },
     };
 
@@ -121,7 +121,7 @@ export function usePage() {
       get: () => currentPage,
       // meta: createViewMeta(ctx),
       // 仅当访问关联字段或前端无本地记录数据时，才交给服务端解析
-      resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(ctx)),
+      resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
     });
     // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
     registerPopupVariable(ctx, currentPage);

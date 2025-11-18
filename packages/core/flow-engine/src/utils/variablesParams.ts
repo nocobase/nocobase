@@ -80,13 +80,14 @@ export function inferViewRecordRef(ctx: FlowContext): RecordRef | undefined {
 //   认为视图正在查看同一条记录，此时返回父记录的深拷贝作为 view.record；
 // - 否则视为不同记录，不复用父记录（返回 undefined，让后续逻辑走服务端解析）。
 
-export function getViewRecordFromParent(flowContext: FlowContext): unknown {
+export function getViewRecordFromParent(flowContext: FlowContext, viewContext: FlowContext): unknown {
   const parentRecord = flowContext.inputArgs?.record;
-  if (!parentRecord) return undefined;
+  const parentTk = flowContext.collection?.filterTargetKey;
+  if (!parentRecord || !parentTk) return undefined;
 
-  const view = flowContext.view;
+  const view = viewContext.view;
   const viewFilterByTk = view?.inputArgs?.filterByTk;
-  const recordFilterByTk = parentRecord.filterByTk;
+  const recordFilterByTk = parentRecord[parentTk];
 
   // 仅当视图的 filterByTk 与父记录的 filterByTk 一致时，才复用父记录，
   // 否则视为不同记录，不返回本地记录（统一走服务端解析）。
