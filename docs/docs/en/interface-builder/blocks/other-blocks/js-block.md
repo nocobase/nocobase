@@ -15,8 +15,7 @@ The JS Block's runtime context has common capabilities injected and can be used 
 - `ctx.useResource(...)` + `ctx.resource`: Accesses data as a resource.
 - `ctx.i18n.t()` / `ctx.t()`: Built-in internationalization capability.
 - `ctx.onRefReady(ctx.ref, cb)`: Renders after the container is ready to avoid timing issues.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd`: Built-in React/ReactDOM/Ant Design libraries for JSX rendering. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` are kept for compatibility.)
-- `ctx.libs.antdIcons`: Ant Design icons library for use in JSX, for example `ctx.libs.antdIcons.PlusOutlined`.
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Built-in React, ReactDOM, Ant Design, Ant Design icons, and dayjs libraries for JSX rendering and date-time utilities. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` are kept for compatibility.)
 - `ctx.render(vnode)`: Renders a React element, HTML string, or DOM node to the default container `ctx.element`. Multiple calls will reuse the same React Root and overwrite the container's existing content.
 
 ## Adding a Block

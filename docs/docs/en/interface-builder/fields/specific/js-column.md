@@ -21,8 +21,7 @@ When rendering each cell, JS Column provides the following context APIs:
 - `ctx.openView(options)`: Opens a configured view (modal/drawer/page).
 - `ctx.i18n.t()` / `ctx.t()`: Internationalization.
 - `ctx.onRefReady(ctx.ref, cb)`: Renders after the container is ready.
-- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd`: Built-in React/ReactDOM/Ant Design libraries for JSX rendering. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` are kept for compatibility.)
-- `ctx.libs.antdIcons`: Ant Design icons library for use in JSX, for example `ctx.libs.antdIcons.PlusOutlined`.
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Built-in React, ReactDOM, Ant Design, Ant Design icons, and dayjs libraries for JSX rendering and date-time utilities. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` are kept for compatibility.)
 - `ctx.render(vnode)`: Renders a React element/HTML/DOM to the default container `ctx.element` (the current cell). Multiple renders will reuse the Root and overwrite the existing content of the container.
 
 ## Editor and Snippets
