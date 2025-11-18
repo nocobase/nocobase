@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-audit-logs",
-  "version": "2.0.0-alpha.38",
+  "version": "2.0.0-alpha.40",
   "private": true,
   "displayName": "Audit logs (deprecated)",
   "displayName.zh-CN": "审计日志（废弃）",

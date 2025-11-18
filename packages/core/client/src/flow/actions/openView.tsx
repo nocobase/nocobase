@@ -7,14 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  defineAction,
-  tExpr,
-  FlowModelContext,
-  FlowModel,
-  useFlowSettingsContext,
-  ActionScene,
-} from '@nocobase/flow-engine';
+import { defineAction, tExpr, FlowModelContext, FlowModel, useFlowSettingsContext } from '@nocobase/flow-engine';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Input, Select, Cascader } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
@@ -546,6 +539,8 @@ export const openView = defineAction({
     const inputArgs = ctx.inputArgs || {};
     const defineProperties = inputArgs.defineProperties ?? ctx.model.context?.inputArgs?.defineProperties ?? undefined;
     const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? undefined;
+    // 移动端中只需要显示子页面
+    const openMode = ctx.inputArgs?.isMobileLayout ? 'embed' : ctx.inputArgs?.mode || params.mode || 'drawer';
     if (params?.uid && params.uid !== ctx.model.uid) {
       const actionDefaults = (ctx.model as any)?.getInputArgs?.() || {};
       // 外部弹窗时应该以弹窗发起者为高优先级
@@ -587,9 +582,7 @@ export const openView = defineAction({
     if (navigation !== false) {
       if (!ctx.inputArgs.navigation && ctx.view?.navigation) {
         // 在路由跳转前注入 PendingView，统一首次 handler 阶段的 ctx.view 语义
-        const pendingType = (
-          ctx.inputArgs?.isMobileLayout ? 'embed' : ctx.inputArgs?.mode || params?.mode || 'drawer'
-        ) as any;
+        const pendingType = openMode;
         const pendingInputArgs = {
           ...ctx.inputArgs,
           dataSourceKey: params.dataSourceKey ?? ctx.inputArgs.dataSourceKey,
@@ -635,9 +628,6 @@ export const openView = defineAction({
     };
 
     const pageModelClass = ctx.inputArgs.pageModelClass || params.pageModelClass || 'ChildPageModel';
-
-    // 移动端中只需要显示子页面
-    const openMode = ctx.inputArgs.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
     const size = ctx.inputArgs.size || params.size || 'medium';
     let pageModelUid: string | null = null;
     let pageModelRef: FlowModel | null = null;

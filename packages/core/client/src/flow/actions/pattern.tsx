@@ -52,11 +52,15 @@ export const pattern = defineAction({
     };
   },
   afterParamsSave: async (ctx: any, params, previousParams) => {
+    const targetCollection = ctx.collectionField.targetCollection;
+    const targetCollectionTitleField = targetCollection?.getField(
+      ctx.model.subModels.field.props?.fieldNames?.label || ctx.model.props.titleField,
+    );
     const { model } = ctx;
-
     if (params.pattern === 'readPretty') {
       const binding = DetailsItemModel.getDefaultBindingByField(ctx, ctx.collectionField, {
         fallbackToTargetTitleField: true,
+        targetCollectionTitleField,
       });
       await rebuildFieldSubModel(ctx, model, binding);
     } else {
@@ -66,17 +70,31 @@ export const pattern = defineAction({
       }
     }
   },
-
-  handler(ctx, params) {
+  async beforeParamsSave(ctx, params, previousParams) {
     if (params.pattern === 'readPretty') {
       ctx.model.setProps({
         pattern: 'readPretty',
+        disabled: false,
+        titleField: (ctx.model.subModels?.field as any)?.props.fieldNames?.label || ctx.model.props.titleField,
       });
+      if (ctx.collectionField.isAssociationField())
+        await ctx.model.setStepParams('editItemSettings', 'titleField', {
+          titleField: (ctx.model.subModels.field as any).props?.fieldNames?.label || ctx.model.props.titleField,
+        });
     } else {
       ctx.model.setProps({
         disabled: params.pattern === 'disabled',
+        pattern: 'editable',
       });
     }
+  },
+  async handler(ctx, params) {
+    if (!params.pattern) {
+      return;
+    }
+    ctx.model.setProps({
+      pattern: params.pattern,
+    });
   },
 });
 

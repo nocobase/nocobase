@@ -2,11 +2,11 @@
 pkg: "@nocobase/plugin-data-source-kingbase"
 ---
 
-# Data Source - KingbaseES
+# Data Source - KingbaseES Database
 
 ## Introduction
 
-Use KingbaseES database as a data source, which can be either the primary database or an external database.
+KingbaseES can be used as a data source, either as the primary database or an external database.
 
 :::warning
 Currently, only KingbaseES databases running in pg mode are supported.
@@ -16,7 +16,7 @@ Currently, only KingbaseES databases running in pg mode are supported.
 
 ### Using as the Primary Database
 
-Refer to the Installation documentation for the setup procedures. The main difference lies in the environment variables.
+Refer to the Installation documentation for the setup procedures, the difference is mainly due to the environment variables.
 
 #### Environment Variables
 
@@ -42,12 +42,12 @@ networks:
     driver: bridge
 
   app:
-    image: nocobase/nocobase:latest
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/nocobase:latest
     restart: always
     networks:
       - nocobase
     depends_on:
-      - kingbase
+      - postgres
     environment:
       # Application key for generating user tokens, etc.
       # Changing APP_KEY invalidates old tokens
@@ -72,7 +72,7 @@ networks:
 
   # Kingbase service for testing purposes only
   kingbase:
-    image: nocobase/kingbase:v009r001c001b0030_single_x86
+    image: registry.cn-shanghai.aliyuncs.com/nocobase/kingbase:v009r001c001b0030_single_x86
     platform: linux/amd64
     restart: always
     privileged: true
@@ -113,11 +113,9 @@ yarn nocobase upgrade
 
 Activate the Plugin
 
-
 ![20241024121815](https://static-docs.nocobase.com/20241024121815.png)
-
 
 ## User Guide
 
-- Primary Database: Refer to [Main data source](/data-sources/data-source-main)
+- Primary Database: Refer to the [Main data source](/data-sources/data-source-main/)
 - External Database: See [Data Source / External Database](/data-sources/data-source-manager/external-database)

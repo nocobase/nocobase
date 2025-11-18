@@ -2,7 +2,7 @@
 pkg: "@nocobase/plugin-field-attachment-url"
 ---
 
-# Collection Field: Attachment (URL)
+# Data Field: Attachment (URL)
 
 ## Introduction
 
@@ -16,17 +16,12 @@ This plugin is a commercial plugin.
 
 ### Field Configuration
 
-
 ![20241017092323](https://static-docs.nocobase.com/20241017092323.png)
-
 
 ### External Data Source
 
-
 ![20241017092456](https://static-docs.nocobase.com/20241017092456.png)
 
-
 ### Interface
-
 
 ![20241017092759](https://static-docs.nocobase.com/20241017092759.png)

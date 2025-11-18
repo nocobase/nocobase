@@ -144,6 +144,9 @@ export function SubTableField(props) {
           .ant-table-footer {
             background-color: transparent;
           }
+          .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
+            display: inline;
+          }
         `}
         footer={() => (
           <div
