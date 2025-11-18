@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.7](https://github.com/nocobase/nocobase/compare/v1.9.6...v1.9.7) - 2025-11-17
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where the linkage rule for the approval form is not working ([#7858](https://github.com/nocobase/nocobase/pull/7858)) by @zhangzhonghe
+
+- **[server]** Fix an issue in service-splitting mode where unsubscribed queue messages could not be published ([#7875](https://github.com/nocobase/nocobase/pull/7875)) by @mytharcher
+
+- **[Workflow]**
+  - Fix the error caused by listening to non-existent external data source events ([#7855](https://github.com/nocobase/nocobase/pull/7855)) by @mytharcher
+
+  - Use eventQueue instead of the shared backgroundJob to prevent the shared queue from being incorrectly consumed in service-splitting mode ([#7871](https://github.com/nocobase/nocobase/pull/7871)) by @mytharcher
+
+- **[Workflow: Manual node]** Fix namespace of locale language should use, to show correct content of translation ([#7877](https://github.com/nocobase/nocobase/pull/7877)) by @mytharcher
+
+- **[Access control]** Issue of association operation snippets are not taking effects ([#7876](https://github.com/nocobase/nocobase/pull/7876)) by @2013xile
+
+- **[Workflow: Approval]**
+  - Fix the issue where the page size of loading notification channel is not big enough, and cause the list is not completed loaded by @mytharcher
+
+  - Fix the issue where the linkage rule for the approval form is not working by @zhangzhonghe
+
+  - Fix the date format on the approval list cards in the to-do center to display the complete date and time by @mytharcher
+
+  - Fix a performance issue that occurred when querying the list of approval records during approval submission by @mytharcher
+
+## [v1.9.6](https://github.com/nocobase/nocobase/compare/v1.9.5...v1.9.6) - 2025-11-12
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where duplicated templates do not appear, which is caused by dragging and then deleting a referenced template ([#7847](https://github.com/nocobase/nocobase/pull/7847)) by @zhangzhonghe
+
+- **[utils]** Enable object merging in intersect strategy ([#7840](https://github.com/nocobase/nocobase/pull/7840)) by @chenos
+
+- **[Data visualization: ECharts]** fix issue with ECharts config labelType by @heziqiang
+
+- **[Email manager]** sync microsoft mail read status without timestamp by @jiannx
+
 ## [v1.9.5](https://github.com/nocobase/nocobase/compare/v1.9.4...v1.9.5) - 2025-11-10
 
 ### 🐛 Bug Fixes

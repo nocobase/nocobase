@@ -2,12 +2,12 @@
   {
     "type": "custom-link",
     "label": "Security Guide",
-    "link": "/ops-management/security/guide"
+    "link": "/security/guide"
   },
   {
     "type": "custom-link",
     "label": "Token Policy",
-    "link": "/ops-management/security/token-policy/"
+    "link": "/security/token-policy/"
   },
   {
     "type": "custom-link",
@@ -16,28 +16,33 @@
       {
         "type": "custom-link",
         "label": "Password Policy",
-        "link": "/ops-management/security/password-policy/"
+        "link": "/security/password-policy/"
       },
       {
         "type": "custom-link",
         "label": "User Lockout",
-        "link": "/ops-management/security/password-policy/lockout"
+        "link": "/security/password-policy/lockout"
       }
     ]
   },
   {
     "type": "custom-link",
     "label": "IP Restriction",
-    "link": "/ops-management/security/ip-restriction/"
+    "link": "/security/ip-restriction/"
   },
   {
     "type": "custom-link",
     "label": "Audit Logger",
-    "link": "/ops-management/security/audit-logger/"
+    "link": "/security/audit-logger/"
   },
   {
     "type": "custom-link",
     "label": "Two-Factor Authentication (2FA)",
     "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Collection Field: Encryption",
+    "link": "/data-sources/field-encryption"
   }
 ]

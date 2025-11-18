@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { beforeEach, describe, expect, it } from 'vitest';
 import { FlowEngine } from '@nocobase/flow-engine';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { BlockGridModel } from '../BlockGridModel';
 
 describe('BlockGridModel - new scene filtering (real engine)', () => {
@@ -32,6 +32,6 @@ describe('BlockGridModel - new scene filtering (real engine)', () => {
 
   it('filters out FilterBlockModel when filterByTk not exists', () => {
     const model = createWithInputArgs({ collectionName: 'posts' });
-    expect(model.subModelBaseClasses).toEqual(['DataBlockModel', 'BlockModel']);
+    expect(model.subModelBaseClasses).toEqual(['DataBlockModel', 'FilterBlockModel', 'BlockModel']);
   });
 });

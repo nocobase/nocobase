@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionScene, defineAction, escapeT } from '@nocobase/flow-engine';
+import { ActionScene, defineAction, tExpr } from '@nocobase/flow-engine';
 import { css } from '@emotion/css';
 import { TextAreaWithContextSelector } from '../components/TextAreaWithContextSelector';
 
@@ -22,7 +22,7 @@ type NavigateValue = {
 
 export const navigateToURL = defineAction({
   name: 'navigateToURL',
-  title: escapeT('Navigate to URL'),
+  title: tExpr('Navigate to URL'),
   scene: ActionScene.DYNAMIC_EVENT_FLOW,
   sort: 400,
   uiSchema: {
@@ -30,7 +30,7 @@ export const navigateToURL = defineAction({
       type: 'object',
       properties: {
         url: {
-          title: escapeT('URL'),
+          title: tExpr('URL'),
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': TextAreaWithContextSelector,

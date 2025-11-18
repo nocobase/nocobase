@@ -7,17 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionSceneEnum, PopupActionModel } from '../base';
 
 export class PopupCollectionActionModel extends PopupActionModel {
   static scene = ActionSceneEnum.all;
   defaultProps: ButtonProps = {
-    title: escapeT('Popup'),
+    title: tExpr('Popup'),
   };
 }
 
 PopupCollectionActionModel.define({
-  label: escapeT('Popup'),
+  label: tExpr('Popup'),
 });

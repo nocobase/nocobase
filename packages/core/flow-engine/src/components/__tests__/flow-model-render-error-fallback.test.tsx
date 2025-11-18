@@ -13,7 +13,6 @@ import { render, cleanup, waitFor } from '@testing-library/react';
 import { App, ConfigProvider } from 'antd';
 import { FlowEngine } from '../../flowEngine';
 import { FlowModel, ModelRenderMode } from '../../models/flowModel';
-import { DefaultSettingsIcon } from '../settings/wrappers/contextual/DefaultSettingsIcon';
 import { FlowEngineProvider } from '../../provider';
 import { FlowModelRenderer } from '../FlowModelRenderer';
 
@@ -81,6 +80,7 @@ vi.mock('antd', () => {
     Alert,
     Skeleton,
     Spin,
+    theme: { useToken: () => ({}) },
   } as any;
 });
 

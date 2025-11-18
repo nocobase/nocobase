@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionScene, defineAction, escapeT, useFlowContext } from '@nocobase/flow-engine';
+import { ActionScene, defineAction, tExpr, useFlowContext } from '@nocobase/flow-engine';
 import { Radio, Input, InputNumber, Select, notification } from 'antd';
 import type { RadioChangeEvent } from 'antd/es/radio';
 import React from 'react';
@@ -25,7 +25,7 @@ type NotificationValue = {
 
 export const showNotification = defineAction({
   name: 'showNotification',
-  title: escapeT('Show notification'),
+  title: tExpr('Show notification'),
   scene: ActionScene.DYNAMIC_EVENT_FLOW,
   sort: 600,
   uiSchema: {
@@ -151,8 +151,8 @@ export const showNotification = defineAction({
       return;
     }
 
-    // 使用 antd notification API
-    notification[type]({
+    ctx.notification.open({
+      type,
       message: title,
       description,
       duration,

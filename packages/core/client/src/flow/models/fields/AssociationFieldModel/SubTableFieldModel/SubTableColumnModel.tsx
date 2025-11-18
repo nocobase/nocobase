@@ -15,7 +15,7 @@ import {
   DragHandler,
   Droppable,
   EditableItemModel,
-  escapeT,
+  tExpr,
   FieldModelRenderer,
   FlowModelContext,
   FlowModelRenderer,
@@ -289,7 +289,7 @@ export class SubTableColumnModel<
 }
 
 SubTableColumnModel.define({
-  label: escapeT('Table column'),
+  label: tExpr('Table column'),
   icon: 'TableColumn',
   createModelOptions: {
     use: 'SubTableColumnModel',
@@ -300,7 +300,7 @@ SubTableColumnModel.define({
 SubTableColumnModel.registerFlow({
   key: 'subTableColumnSettings',
   sort: 500,
-  title: escapeT('Table column settings'),
+  title: tExpr('Table column settings'),
   steps: {
     init: {
       async handler(ctx, params) {
@@ -321,7 +321,7 @@ SubTableColumnModel.registerFlow({
       use: 'aclCheck',
     },
     subModel: {
-      title: escapeT('Preview field component'),
+      title: tExpr('Preview field component'),
       uiSchema: (ctx) => {
         if (!(ctx.model.subModels.field.constructor as any).isLargeField) {
           return null;
@@ -374,14 +374,14 @@ SubTableColumnModel.registerFlow({
       },
     },
     title: {
-      title: escapeT('Column title'),
+      title: tExpr('Column title'),
       uiSchema: (ctx) => {
         return {
           title: {
             'x-component': 'Input',
             'x-decorator': 'FormItem',
             'x-component-props': {
-              placeholder: escapeT('Column title'),
+              placeholder: tExpr('Column title'),
             },
             'x-reactions': (field) => {
               const { model } = ctx;
@@ -405,7 +405,7 @@ SubTableColumnModel.registerFlow({
       },
     },
     tooltip: {
-      title: escapeT('Tooltip'),
+      title: tExpr('Tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
@@ -417,7 +417,7 @@ SubTableColumnModel.registerFlow({
       },
     },
     width: {
-      title: escapeT('Column width'),
+      title: tExpr('Column width'),
       uiSchema: {
         width: {
           'x-component': 'NumberPicker',
@@ -432,7 +432,7 @@ SubTableColumnModel.registerFlow({
       },
     },
     initialValue: {
-      title: escapeT('Default value'),
+      title: tExpr('Default value'),
       // 子表格子表单内不提供“默认值”配置：返回空对象，避免渲染任何字段
       uiSchema: {},
       // 不提供默认参数
@@ -441,19 +441,19 @@ SubTableColumnModel.registerFlow({
       handler() {},
     },
     required: {
-      title: escapeT('Required'),
+      title: tExpr('Required'),
       use: 'required',
     },
     model: {
       use: 'fieldComponent',
-      title: escapeT('Field component'),
+      title: tExpr('Field component'),
     },
     pattern: {
-      title: escapeT('Display mode'),
+      title: tExpr('Display mode'),
       use: 'pattern',
     },
     fixed: {
-      title: escapeT('Fixed'),
+      title: tExpr('Fixed'),
       use: 'fixed',
     },
   },
@@ -461,5 +461,5 @@ SubTableColumnModel.registerFlow({
 
 SubTableColumnModel.define({
   hide: true,
-  label: escapeT('Table column'),
+  label: tExpr('Table column'),
 });

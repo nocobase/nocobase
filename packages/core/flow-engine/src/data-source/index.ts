@@ -370,6 +370,10 @@ export class Collection {
     return _.pick(record, this.filterTargetKey);
   }
 
+  get titleableFields() {
+    return this.getFields().filter((field) => field.titleable);
+  }
+
   get hidden() {
     return this.options.hidden || false;
   }
@@ -638,6 +642,10 @@ export class CollectionField {
 
   get readonly() {
     return this.options.readonly || this.options.uiSchema?.['x-read-pretty'] || false;
+  }
+
+  get titleable() {
+    return !!(this.options.titleable ?? this.options.titleUsable);
   }
 
   get fullpath() {

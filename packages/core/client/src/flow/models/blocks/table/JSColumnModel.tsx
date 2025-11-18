@@ -12,7 +12,7 @@ import { css } from '@emotion/css';
 import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   Droppable,
-  escapeT,
+  tExpr,
   FlowsFloatContextMenu,
   DragHandler,
   MemoFlowModelRenderer,
@@ -173,12 +173,12 @@ export class JSColumnModel extends TableCustomColumnModel {
 }
 
 JSColumnModel.define({
-  label: escapeT('JS column'),
+  label: tExpr('JS column'),
   createModelOptions: {
     stepParams: {
       tableColumnSettings: {
         title: {
-          title: escapeT('JS column'),
+          title: tExpr('JS column'),
         },
       },
     },
@@ -187,10 +187,10 @@ JSColumnModel.define({
 
 JSColumnModel.registerFlow({
   key: 'jsSettings',
-  title: escapeT('JavaScript settings'),
+  title: tExpr('JavaScript settings'),
   steps: {
     runJs: {
-      title: escapeT('Write JavaScript'),
+      title: tExpr('Write JavaScript'),
       uiSchema: {
         code: {
           type: 'string',

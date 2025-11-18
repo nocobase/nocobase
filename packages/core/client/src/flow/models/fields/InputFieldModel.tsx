@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableItemModel, FilterableItemModel, escapeT } from '@nocobase/flow-engine';
+import { EditableItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
 import { Input } from 'antd';
 import React from 'react';
 import { FieldModel } from '../base';
@@ -19,7 +19,7 @@ export class InputFieldModel extends FieldModel {
 }
 
 InputFieldModel.define({
-  label: escapeT('Input'),
+  label: tExpr('Input'),
 });
 EditableItemModel.bindModelToInterface('InputFieldModel', ['input', 'email', 'phone', 'uuid', 'url', 'nanoid'], {
   isDefault: true,

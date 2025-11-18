@@ -6,10 +6,9 @@ supportedVersions:
   - 2.x
 description: |
   Used for mapping any JSON data to structured variables for usage in subsequent nodes.
-isFree: false
-builtIn: false
-defaultEnabled: false
-points: 2
+isFree: true
+builtIn: true
+defaultEnabled: true
 ---
 
 # Workflow: JSON variable mapping

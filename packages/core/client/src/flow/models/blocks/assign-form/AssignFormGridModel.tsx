@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { AddSubModelButton, FlowSettingsButton, escapeT, EditableItemModel } from '@nocobase/flow-engine';
+import { AddSubModelButton, FlowSettingsButton, tExpr, EditableItemModel } from '@nocobase/flow-engine';
 import { SettingOutlined } from '@ant-design/icons';
 import { FormGridModel } from '../form/FormGridModel';
 
@@ -157,5 +157,5 @@ export class AssignFormGridModel extends FormGridModel {
 }
 
 AssignFormGridModel.define({
-  label: escapeT('Assign grid'),
+  label: tExpr('Assign grid'),
 });

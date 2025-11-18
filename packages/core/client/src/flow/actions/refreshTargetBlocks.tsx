@@ -8,14 +8,14 @@
  */
 
 import React from 'react';
-import { ActionScene, defineAction, escapeT, useFlowContext } from '@nocobase/flow-engine';
+import { ActionScene, defineAction, tExpr, useFlowContext } from '@nocobase/flow-engine';
 import { Space, Input, Button } from 'antd';
 import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 
 export const refreshTargetBlocks = defineAction({
   name: 'refreshTargetBlocks',
-  title: escapeT('Refresh target blocks'),
+  title: tExpr('Refresh target blocks'),
   scene: [ActionScene.DYNAMIC_EVENT_FLOW],
   sort: 300,
   uiSchema: {

@@ -9,32 +9,39 @@
 import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
-import { EditableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, useFlowModelContext } from '@nocobase/flow-engine';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
+import { MobileDatePicker } from '../mobile-components/MobileDatePicker';
 
 export const DateTimeNoTzPicker = (props) => {
   const { value, format = 'YYYY-MM-DD HH:mm:ss', showTime, picker = 'date', onChange, ...rest } = props;
   const parsedValue = value ? dayjs(value) : null;
-  return (
-    <DatePicker
-      {...rest}
-      value={parsedValue}
-      format={format}
-      picker={picker}
-      showTime={showTime}
-      onChange={(val: any) => {
-        if (!val) {
-          return onChange(val);
-        }
-        const outputFormat = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
-        if (showTime) {
-          onChange(dayjs(val, format).format(outputFormat));
-        } else {
-          onChange(dayjs(val, format).startOf(picker).format(outputFormat));
-        }
-      }}
-    />
-  );
+  const ctx = useFlowModelContext();
+  const componentProps = {
+    ...rest,
+    value: parsedValue,
+    format,
+    picker,
+    showTime,
+    onChange: (val: any) => {
+      if (!val) {
+        return onChange(val);
+      }
+      const outputFormat = showTime ? 'YYYY-MM-DD HH:mm:ss' : 'YYYY-MM-DD';
+      if (showTime) {
+        onChange(dayjs(val, format).format(outputFormat));
+      } else {
+        onChange(dayjs(val, format).startOf(picker).format(outputFormat));
+      }
+    },
+  };
+
+  // TODO: 移动端相关的代码需迁移到单独的插件中
+  if (ctx.isMobileLayout) {
+    return <MobileDatePicker {...componentProps} />;
+  }
+
+  return <DatePicker {...componentProps} />;
 };
 
 export class DateTimeNoTzFieldModel extends DateTimeFieldModel {

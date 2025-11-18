@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel, escapeT } from '@nocobase/flow-engine';
+import { FlowModel, tExpr } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { PageTabModel } from './PageTabModel';
 
@@ -24,14 +24,14 @@ export class OldPageModel extends FlowModel<PageModelStructure> {}
 
 OldPageModel.registerFlow({
   key: 'pageSettings',
-  title: escapeT('Page settings'),
+  title: tExpr('Page settings'),
   steps: {
     general: {
-      title: escapeT('General'),
+      title: tExpr('General'),
       uiSchema: {
         title: {
           type: 'string',
-          title: escapeT('Page title'),
+          title: tExpr('Page title'),
           'x-decorator': 'FormItem',
           'x-component': 'Input',
           'x-reactions': {
@@ -45,13 +45,13 @@ OldPageModel.registerFlow({
         },
         displayTitle: {
           type: 'boolean',
-          title: escapeT('Display page title'),
+          title: tExpr('Display page title'),
           'x-decorator': 'FormItem',
           'x-component': 'Switch',
         },
         // enableTabs: {
         //   type: 'boolean',
-        //   title: escapeT('Enable tabs'),
+        //   title: tExpr('Enable tabs'),
         //   'x-decorator': 'FormItem',
         //   'x-component': 'Switch',
         // },

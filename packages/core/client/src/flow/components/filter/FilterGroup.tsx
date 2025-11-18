@@ -204,7 +204,7 @@ export const FilterGroup: FC<FilterGroupProps> = observer(
                   onRemove={() => handleRemoveItem(index)}
                   onChange={(v) => {
                     items[index] = v;
-                    onChange(value);
+                    onChange?.(value);
                   }}
                 />
               );

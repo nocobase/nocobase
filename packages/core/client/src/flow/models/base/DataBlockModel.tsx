@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { buildSubModelItems, DefaultStructure, escapeT } from '@nocobase/flow-engine';
+import { buildSubModelItems, DefaultStructure, tExpr } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { BlockModel } from './BlockModel';
 
@@ -14,7 +14,7 @@ export class DataBlockModel<T = DefaultStructure> extends BlockModel<T> {}
 
 DataBlockModel.define({
   hide: true,
-  label: escapeT('Data blocks'),
+  label: tExpr('Data blocks'),
   async children(ctx) {
     const children = await buildSubModelItems(DataBlockModel)(ctx);
     const { collectionName, filterByTk, scene } = ctx.view.inputArgs;

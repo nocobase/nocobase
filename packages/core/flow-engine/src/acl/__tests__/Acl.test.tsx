@@ -69,4 +69,47 @@ describe('ACL', () => {
     });
     expect(notOk).toBe(false);
   });
+
+  it('reloads permissions when auth token changes', async () => {
+    const payload1 = {
+      data: {
+        allowAll: false,
+        actionAlias: { remove: 'destroy' },
+        resources: ['posts'],
+        actions: {},
+        strategy: { actions: [] },
+      },
+    };
+    const payload2 = {
+      data: {
+        allowAll: false,
+        actionAlias: { remove: 'erase' },
+        resources: ['posts'],
+        actions: {},
+        strategy: { actions: [] },
+      },
+    };
+
+    const engine = new FlowEngine();
+    const api: any = {
+      auth: { token: 't1' },
+      request: vi.fn().mockImplementation(async () => {
+        // 返回依据当前 token 的不同 ACL 数据
+        return api.auth.token === 't1' ? { data: payload1 } : { data: payload2 };
+      }),
+    };
+    engine.context.defineProperty('api', { value: api });
+
+    const acl = new ACL(engine);
+    await acl.load();
+    expect(acl.getActionAlias('remove')).toBe('destroy');
+
+    // 切换 token，应触发下次校验时的 ACL 重载
+    api.auth.token = 't2';
+    await acl.aclCheck({ dataSourceKey: 'main', resourceName: 'posts', actionName: 'remove' });
+    expect(acl.getActionAlias('remove')).toBe('erase');
+
+    // 确认 roles:check 请求至少调用两次（初次 + 重载）
+    expect(api.request).toHaveBeenCalledTimes(2);
+  });
 });

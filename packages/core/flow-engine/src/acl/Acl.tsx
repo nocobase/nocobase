@@ -21,10 +21,23 @@ export class ACL {
   private dataSources: Record<string, any> = {};
   private loaded = false;
   private loadingPromise: Promise<void> | null = null;
+  // 用于识别当前鉴权状态（例如切换登录用户后应重新加载）
+  // 记录上一次用于鉴权的 token，用于识别登录态变更
+  private lastToken: string | null = null;
 
   constructor(private flowEngine: FlowEngine) {}
 
   async load() {
+    // 基于 token 识别登录态是否发生变化
+    const currentToken = this.flowEngine?.context?.api?.auth?.token || '';
+
+    // 已加载但登录态变更：强制重载
+    if (this.loaded && this.lastToken !== currentToken) {
+      this.loaded = false;
+      this.loadingPromise = null;
+      this.dataSources = {};
+    }
+
     if (this.loaded) return;
 
     if (!this.loadingPromise) {
@@ -34,6 +47,7 @@ export class ACL {
         });
         this.dataSources = data || {};
         this.loaded = true;
+        this.lastToken = currentToken;
       })();
     }
 

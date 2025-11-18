@@ -7,13 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { tval } from '@nocobase/utils/client';
 import type { ButtonProps } from 'antd/es/button';
+import { tExpr } from '@nocobase/flow-engine';
 import { FilterFormActionModel } from './FilterFormActionModel';
 
 export class FilterFormSubmitActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
-    title: tval('Filter'),
+    title: tExpr('Filter'),
     type: 'primary',
   };
 
@@ -43,7 +43,7 @@ FilterFormSubmitActionModel.registerFlow({
 });
 
 FilterFormSubmitActionModel.define({
-  label: tval('Filter'),
+  label: tExpr('Filter'),
   toggleable: true,
   sort: 100,
 });

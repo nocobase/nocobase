@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, observable } from '@nocobase/flow-engine';
+import { tExpr, observable } from '@nocobase/flow-engine';
 import { castArray } from 'lodash';
 import { BlockSceneEnum } from '../../base';
 import { TableBlockModel } from './TableBlockModel';
@@ -47,7 +47,7 @@ export class TableSelectModel extends TableBlockModel {
 }
 
 TableSelectModel.define({
-  label: escapeT('Table'),
+  label: tExpr('Table'),
   children: false,
   useModel: 'TableSelectModel',
   createModelOptions: async (ctx) => {

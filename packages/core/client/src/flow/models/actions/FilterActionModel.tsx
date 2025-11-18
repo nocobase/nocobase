@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { isEmptyFilter, removeNullCondition, transformFilter } from '@nocobase/utils/client';
+import { tExpr, MobilePopup, MultiRecordResource, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { isEmptyFilter, transformFilter } from '@nocobase/utils/client';
 import { ButtonProps, Popover, Select } from 'antd';
 import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../../components/filter';
@@ -30,7 +30,7 @@ export class FilterActionModel extends ActionModel {
 
   defaultProps: any = {
     type: 'default',
-    title: escapeT('Filter'),
+    title: tExpr('Filter'),
     icon: 'FilterOutlined',
     filterValue: { logic: '$and', items: [] },
   };
@@ -55,6 +55,37 @@ export class FilterActionModel extends ActionModel {
   }
 
   render() {
+    if (this.context.isMobileLayout) {
+      return (
+        <>
+          <MobilePopup
+            title={this.context.t('Filter')}
+            visible={this.props.open}
+            onClose={() => {
+              this.setProps('open', false);
+            }}
+          >
+            <div
+              style={{
+                padding: this.context.themeToken.paddingMD,
+                backgroundColor: this.context.themeToken.colorBgContainer,
+              }}
+            >
+              <FilterContainer
+                value={this.props.filterValue}
+                ctx={this.context}
+                FilterItem={(props) => (
+                  <VariableFilterItem {...props} model={this} ignoreFieldNames={this.getIgnoreFieldNames()} />
+                )}
+              />
+              <div style={{ height: 150 }}></div>
+            </div>
+          </MobilePopup>
+          {super.render()}
+        </>
+      );
+    }
+
     return (
       <Popover
         open={this.props.open}
@@ -83,13 +114,13 @@ export class FilterActionModel extends ActionModel {
 }
 
 FilterActionModel.define({
-  label: escapeT('Filter'),
+  label: tExpr('Filter'),
   toggleable: true,
 });
 
 FilterActionModel.registerFlow({
   key: 'filterSettings',
-  title: escapeT('Filter settings'),
+  title: tExpr('Filter settings'),
   steps: {
     position: {
       handler(ctx, params) {
@@ -97,7 +128,7 @@ FilterActionModel.registerFlow({
       },
     },
     filterableFieldNames: {
-      title: escapeT('Filterable fields'),
+      title: tExpr('Filterable fields'),
       uiSchema: {
         filterableFieldNames: {
           type: 'array',
@@ -113,7 +144,7 @@ FilterActionModel.registerFlow({
           },
           'x-component-props': {
             mode: 'multiple',
-            placeholder: escapeT('Please select filterable fields'),
+            placeholder: tExpr('Please select filterable fields'),
           },
         },
       },
@@ -131,7 +162,7 @@ FilterActionModel.registerFlow({
       },
     },
     defaultFilter: {
-      title: escapeT('Default filter conditions'),
+      title: tExpr('Default filter conditions'),
       uiSchema: {
         defaultFilter: {
           type: 'object',
@@ -172,7 +203,7 @@ FilterActionModel.registerFlow({
           return;
         }
 
-        const filter = removeNullCondition(transformFilter(ctx.model.props.filterValue));
+        const filter = transformFilter(ctx.model.props.filterValue);
 
         if (!isEmptyFilter(filter)) {
           resource.addFilterGroup(ctx.model.uid, filter);
@@ -190,7 +221,7 @@ FilterActionModel.registerFlow({
 
 FilterActionModel.registerFlow({
   key: 'resetSettings',
-  title: escapeT('Reset'),
+  title: tExpr('Reset'),
   on: 'reset',
   steps: {
     submit: {
