@@ -17,6 +17,7 @@ import { PageComponent } from './PageComponent';
 import usePatchElement from './usePatchElement';
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
+import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
 
 let uuid = 0;
 
@@ -75,6 +76,17 @@ export function usePage() {
 
     const { target, content, preventClose, inheritContext = true, ...restConfig } = config;
 
+    const ctx = new FlowContext();
+    // 为当前视图创建作用域引擎（隔离实例与缓存）
+    const scopedEngine = createViewScopedEngine(flowContext.engine);
+    ctx.defineProperty('engine', { value: scopedEngine });
+    ctx.addDelegate(scopedEngine.context);
+    if (inheritContext) {
+      ctx.addDelegate(flowContext);
+    } else {
+      ctx.addDelegate(flowContext.engine.context);
+    }
+
     // 构造 currentPage 实例
     const currentPage = {
       type: 'embed' as const,
@@ -99,23 +111,17 @@ export function usePage() {
         pageRef.current?.setHeader(header);
       },
       navigation: config.inputArgs?.navigation,
+      get record() {
+        // 当视图正在查看与父 record 同一条记录时，复用父记录深拷贝；否则走服务端解析
+        return getViewRecordFromParent(flowContext, ctx);
+      },
     };
-
-    const ctx = new FlowContext();
-    // 为当前视图创建作用域引擎（隔离实例与缓存）
-    const scopedEngine = createViewScopedEngine(flowContext.engine);
-    ctx.defineProperty('engine', { value: scopedEngine });
-    ctx.addDelegate(scopedEngine.context);
-    if (inheritContext) {
-      ctx.addDelegate(flowContext);
-    } else {
-      ctx.addDelegate(flowContext.engine.context);
-    }
 
     ctx.defineProperty('view', {
       get: () => currentPage,
       // meta: createViewMeta(ctx),
-      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+      // 仅当访问关联字段或前端无本地记录数据时，才交给服务端解析
+      resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
     });
     // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
     registerPopupVariable(ctx, currentPage);

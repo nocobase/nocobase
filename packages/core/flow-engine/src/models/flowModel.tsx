@@ -749,11 +749,15 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (isBeforeRender) {
       this._lastAutoRunParams = [inputArgs, execOptions.useCache];
     }
+    let finalInputArgs = inputArgs;
+    if (this.context.record) {
+      finalInputArgs = { record: this.context.record, ...inputArgs };
+    }
 
     if (options?.debounce) {
-      return this._dispatchEventWithDebounce(eventName, inputArgs, execOptions);
+      return this._dispatchEventWithDebounce(eventName, finalInputArgs, execOptions);
     }
-    return this._dispatchEvent(eventName, inputArgs, execOptions);
+    return this._dispatchEvent(eventName, finalInputArgs, execOptions);
   }
 
   /**
