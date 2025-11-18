@@ -14,6 +14,7 @@ import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../../components/filter';
 import { ActionModel } from '../base';
 import { FilterContainer } from '../../components/filter/FilterContainer';
+import _ from 'lodash';
 
 export class FilterActionModel extends ActionModel {
   static scene = 'collection';
@@ -22,6 +23,7 @@ export class FilterActionModel extends ActionModel {
 
   declare props: ButtonProps & {
     filterValue?: any;
+    defaultFilterValue?: any;
     ignoreFieldsNames?: string[];
     open?: boolean;
     position: 'left';
@@ -72,7 +74,7 @@ export class FilterActionModel extends ActionModel {
               }}
             >
               <FilterContainer
-                value={this.props.filterValue}
+                value={this.props.filterValue || this.props.defaultFilterValue}
                 ctx={this.context}
                 FilterItem={(props) => (
                   <VariableFilterItem {...props} model={this} ignoreFieldNames={this.getIgnoreFieldNames()} />
@@ -91,7 +93,7 @@ export class FilterActionModel extends ActionModel {
         open={this.props.open}
         content={
           <FilterContainer
-            value={this.props.filterValue}
+            value={this.props.filterValue || this.props.defaultFilterValue}
             ctx={this.context}
             FilterItem={(props) => (
               <VariableFilterItem {...props} model={this} ignoreFieldNames={this.getIgnoreFieldNames()} />
@@ -186,7 +188,8 @@ FilterActionModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('filterValue', params.defaultFilter);
+        ctx.model.setProps('defaultFilterValue', params.defaultFilter);
+        ctx.model.setProps('filterValue', _.cloneDeep(params.defaultFilter));
       },
     },
   },
@@ -224,7 +227,7 @@ FilterActionModel.registerFlow({
   title: tExpr('Reset'),
   on: 'reset',
   steps: {
-    submit: {
+    reset: {
       handler(ctx, params) {
         const resource = ctx.blockModel?.resource as MultiRecordResource;
         if (!resource) {
@@ -233,7 +236,7 @@ FilterActionModel.registerFlow({
         resource.removeFilterGroup(ctx.model.uid);
         resource.refresh();
         ctx.model.setProps('open', false);
-        ctx.model.setProps('filterValue', clearInputValue(ctx.model.props.filterValue));
+        ctx.model.setProps('filterValue', ctx.model.props.defaultFilterValue);
       },
     },
   },
@@ -261,21 +264,6 @@ function getFilterableFields(collection: any, fiMgr: any) {
     const fi = fiMgr.getFieldInterface(field.interface);
     return !!fi?.filterable;
   });
-}
-
-function clearInputValue(value: any) {
-  if (Array.isArray(value)) {
-    return value.map((item) => clearInputValue(item));
-  } else if (typeof value === 'object' && value !== null) {
-    const newValue: any = {};
-    for (const key in value) {
-      newValue[key] = clearInputValue(value[key]);
-    }
-    return newValue;
-  } else if (typeof value === 'string') {
-    return '';
-  }
-  return undefined;
 }
 
 function getIgnoreFieldNames(filterableFieldNames: string[], allFields: string[]) {
