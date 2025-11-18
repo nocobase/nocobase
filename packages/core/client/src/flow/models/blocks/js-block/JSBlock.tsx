@@ -27,8 +27,18 @@ export class JSBlockModel extends BlockModel {
   // Avoid double-run on first mount; only rerun after remounts
   private _mountedOnce = false;
   render() {
+    const decoratorProps = this.decoratorProps || {};
+    const { className, id: _ignoredId, title, description, ...rest } = decoratorProps;
+    const mergedClassName = ['code-block', className].filter(Boolean).join(' ');
+    const cardTitle =
+      title || description ? (
+        <div>
+          {title && <span>{title}</span>}
+          {description && <div>{description}</div>}
+        </div>
+      ) : undefined;
     return (
-      <Card id={`model-${this.uid}`} className="code-block">
+      <Card id={`model-${this.uid}`} className={mergedClassName} title={cardTitle} {...rest}>
         <div ref={this.context.ref} />
       </Card>
     );
