@@ -690,7 +690,12 @@ const HighPerformanceTable = React.memo(
       };
     }, [model, selectedRowKeys]);
     const handleChange = useCallback(
-      (pagination) => {
+      (pagination, filters, sorter) => {
+        const globalSort = model.props.globalSort;
+        const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : globalSort;
+        if (sorter) {
+          model.resource.setSort(sort);
+        }
         if (model.resource.getPageSize() !== pagination.pageSize) {
           model.resource.setPage(1);
         } else {
