@@ -39,5 +39,10 @@
     "type": "custom-link",
     "label": "双因素身份认证 (2FA)",
     "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "字段加密",
+    "link": "/data-sources/field-encryption"
   }
 ]
