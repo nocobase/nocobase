@@ -36,7 +36,7 @@ The JS Field runtime code can directly use the following context capabilities:
 - `ctx.openView(options)`: Open a configured view (popup/drawer/page).
 - `ctx.i18n.t()` / `ctx.t()`: Internationalization.
 - `ctx.onRefReady(ctx.ref, cb)`: Render after the container is ready.
-- `ctx.React` / `ctx.ReactDOM` / `ctx.antd`: Supports JSX, rendered directly by `ctx.ReactDOM`.
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`: Built-in React, ReactDOM, Ant Design, Ant Design icons, and dayjs libraries for JSX rendering and date-time utilities. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` are kept for compatibility.)
 - `ctx.render(vnode)`: Renders a React element, HTML string, or DOM node into the default container `ctx.element`. Repeated rendering will reuse the Root and overwrite the existing content of the container.
 
 Specific to Editable type (JSEditableField):
@@ -71,7 +71,7 @@ ctx.render(<span className="nb-js-field">{String(ctx.value ?? '')}</span>);
 ### 2) Using JSX to Render a React Component
 
 ```js
-const { Tag } = ctx.antd;
+const { Tag } = ctx.libs.antd;
 ctx.render(
   <div style={{ padding: 4 }}>
     <Tag color={ctx.value ? 'green' : 'default'}>{String(ctx.value ?? '')}</Tag>
@@ -136,4 +136,4 @@ ctx.render(<InputView />);
 
 - It is recommended to use a trusted CDN for loading external libraries and to have a fallback for failure scenarios (e.g., `if (!lib) return;`).
 - It is recommended to use `class` or `[name=...]` for selectors and avoid using fixed `id`s to prevent duplicate `id`s in multiple blocks or popups.
-- Event Cleanup: A field may be re-rendered multiple times due to data changes or view switches. Before binding an event, you should clean it up or deduplicate it to avoid repeated triggers. You can 'remove then add', use `{ once: true }`, or use a `dataset` attribute to prevent duplicates.
+- Event Cleanup: A field may be re-rendered multiple times due to data changes or view switches. Before binding an event, you should clean it up or deduplicate it to avoid repeated triggers.

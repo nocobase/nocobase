@@ -13,6 +13,7 @@ import type { CollectionField, PropertyMetaFactory } from '@nocobase/flow-engine
 import {
   Collection,
   createRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
   DisplayItemModel,
   DragHandler,
   Droppable,
@@ -65,7 +66,11 @@ export class TableColumnModel extends DisplayItemModel {
       return <FieldDeletePlaceholder />;
     }
     return (
-      <Tooltip title={this.context.t('该字段已被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。')}>
+      <Tooltip
+        title={this.context.t(
+          'This field has been hidden and you cannot view it (this content is only visible when the UI Editor is activated).',
+        )}
+      >
         <LockOutlined style={{ opacity: '0.45' }} />
       </Tooltip>
     );
@@ -218,7 +223,10 @@ export class TableColumnModel extends DisplayItemModel {
           );
           fork.context.defineProperty('record', {
             get: () => record,
-            resolveOnServer: true,
+            resolveOnServer: createRecordResolveOnServerWithLocal(
+              () => fork.context.collection,
+              () => record,
+            ),
             meta: recordMeta,
           });
           fork.context.defineProperty('recordIndex', {

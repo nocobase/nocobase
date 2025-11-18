@@ -13,6 +13,7 @@ import { APIClient } from '@nocobase/sdk';
 import type { Router } from '@remix-run/router';
 import { MessageInstance } from 'antd/es/message/interface';
 import * as antd from 'antd';
+import * as antdIcons from '@ant-design/icons';
 import type { HookAPI } from 'antd/es/modal/useModal';
 import { NotificationInstance } from 'antd/es/notification/interface';
 import _ from 'lodash';
@@ -1720,6 +1721,18 @@ export class FlowRunJSContext extends FlowContext {
       },
     };
     this.defineProperty('ReactDOM', { value: ReactDOMShim });
+
+    // 为第三方/通用库提供统一命名空间：ctx.libs
+    // - 新增库应优先挂载到 ctx.libs.xxx
+    // - 同时保留顶层别名（如 ctx.React / ctx.antd），以兼容历史代码
+    const libs = Object.freeze({
+      React,
+      ReactDOM: ReactDOMShim,
+      antd,
+      dayjs,
+      antdIcons,
+    });
+    this.defineProperty('libs', { value: libs });
 
     // Convenience: ctx.render(<App />[, container])
     // - container defaults to ctx.element if available

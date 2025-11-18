@@ -11,6 +11,7 @@ import { describe, expect, it } from 'vitest';
 import {
   collectContextParamsForTemplate,
   createRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
   inferParentRecordRef,
   inferRecordRef,
 } from '../variablesParams';
@@ -48,5 +49,67 @@ describe('variablesParams helpers', () => {
     const res = await collectContextParamsForTemplate(ctx, tpl);
     expect(res).toHaveProperty('record');
     expect(res).not.toHaveProperty('user');
+  });
+
+  it('createRecordResolveOnServerWithLocal: no local record => always use server', () => {
+    const resolver = createRecordResolveOnServerWithLocal(
+      () => ({ name: 'posts', dataSourceKey: 'main' }) as any,
+      () => undefined,
+    );
+    expect(resolver('')).toBe(true);
+    expect(resolver('title')).toBe(true);
+    expect(resolver('author.name')).toBe(true);
+  });
+
+  it('createRecordResolveOnServerWithLocal: local record + non-association subpaths => use local', () => {
+    const collection: any = {
+      getField: (name: string) => {
+        if (name === 'id') return { name: 'id', isAssociationField: () => false };
+        if (name === 'title') return { name: 'title', isAssociationField: () => false };
+        return undefined;
+      },
+    };
+    const record = { id: 1, title: 'Hello' };
+    const resolver = createRecordResolveOnServerWithLocal(
+      () => collection,
+      () => record,
+    );
+    expect(resolver('')).toBe(false);
+    expect(resolver('id')).toBe(false);
+    expect(resolver('title')).toBe(false);
+  });
+
+  it('createRecordResolveOnServerWithLocal: association with local value => still use local', () => {
+    const collection: any = {
+      getField: (name: string) => {
+        if (name === 'author') return { name: 'author', isAssociationField: () => true };
+        if (name === 'title') return { name: 'title', isAssociationField: () => false };
+        return undefined;
+      },
+    };
+    const record = { title: 'Hello', author: { id: 1, name: 'Alice' } };
+    const resolver = createRecordResolveOnServerWithLocal(
+      () => collection,
+      () => record,
+    );
+    expect(resolver('author')).toBe(false);
+    expect(resolver('author.name')).toBe(false);
+  });
+
+  it('createRecordResolveOnServerWithLocal: association without local value => use server', () => {
+    const collection: any = {
+      getField: (name: string) => {
+        if (name === 'author') return { name: 'author', isAssociationField: () => true };
+        if (name === 'title') return { name: 'title', isAssociationField: () => false };
+        return undefined;
+      },
+    };
+    const record = { title: 'Hello', author: null };
+    const resolver = createRecordResolveOnServerWithLocal(
+      () => collection,
+      () => record,
+    );
+    expect(resolver('author')).toBe(true);
+    expect(resolver('author.name')).toBe(true);
   });
 });
