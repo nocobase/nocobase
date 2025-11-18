@@ -244,4 +244,82 @@ describe('association operate', async () => {
 
     expect(res.status).toBe(403);
   });
+
+  it('should allow to change associations when has snippets', async () => {
+    await db.getCollection('collections').repository.create({
+      values: {
+        name: 'comments',
+        fields: [
+          {
+            name: 'content',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getCollection('collections').repository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+          },
+          {
+            name: 'comments',
+            type: 'hasMany',
+            target: 'comments',
+            interface: 'linkTo',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('posts').create({
+      values: {
+        title: 'test-post',
+      },
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test-role',
+        snippets: ['pm', 'pm.*'],
+      },
+    });
+
+    acl.registerSnippet({
+      name: `pm.test`,
+      actions: ['posts.comments:add'],
+    });
+
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: {
+        usingActionsConfig: true,
+        name: 'posts',
+        actions: [
+          {
+            name: 'update',
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+
+    const agent = await app.agent().login(user);
+    const res = await agent.resource('posts.comments', 1).add({
+      values: [],
+    });
+
+    expect(res.status).toBe(200);
+  });
 });

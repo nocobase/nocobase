@@ -267,6 +267,7 @@ export interface MarkdownWithContextSelectorProps {
   placeholder?: string;
   rows?: number;
   style?: React.CSSProperties;
+  quoteFlag?: boolean;
 }
 
 /**
@@ -277,13 +278,18 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
   onChange,
   placeholder,
   style,
+  quoteFlag,
   ...others
 }) => {
   const flowCtx = useFlowContext();
   const [innerValue, setInnerValue] = useState<string>(value || '');
   const ref = useRef<TextAreaRef>(null);
   const isConfigMode = !!flowCtx.model.flowEngine?.flowSettings?.enabled;
-
+  useEffect(() => {
+    if (quoteFlag) {
+      setInnerValue(value);
+    }
+  }, [value]);
   const handleTextChange = useCallback(
     (e) => {
       const val = e ?? '';
