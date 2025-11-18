@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionModel, ActionSceneEnum } from '../base';
 
@@ -15,18 +15,18 @@ export class RefreshActionModel extends ActionModel {
   static scene = ActionSceneEnum.collection;
 
   defaultProps: ButtonProps = {
-    title: escapeT('Refresh'),
+    title: tExpr('Refresh'),
     icon: 'ReloadOutlined',
   };
 }
 
 RefreshActionModel.define({
-  label: escapeT('Refresh'),
+  label: tExpr('Refresh'),
 });
 
 RefreshActionModel.registerFlow({
   key: 'refreshSettings',
-  title: escapeT('Refresh settings'),
+  title: tExpr('Refresh settings'),
   on: 'click',
   steps: {
     refresh: {

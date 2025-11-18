@@ -75,6 +75,7 @@ vi.mock('antd', async (importOriginal) => {
     Alert,
     Button,
     Result,
+    theme: { useToken: () => ({}) },
   };
 });
 

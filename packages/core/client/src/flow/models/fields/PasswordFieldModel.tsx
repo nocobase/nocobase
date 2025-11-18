@@ -9,8 +9,7 @@
 
 import { Input } from 'antd';
 import React from 'react';
-import { tval } from '@nocobase/utils/client';
-import { EditableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, tExpr } from '@nocobase/flow-engine';
 import { FieldModel } from '../base';
 
 export class PasswordFieldModel extends FieldModel {
@@ -22,16 +21,16 @@ export class PasswordFieldModel extends FieldModel {
 PasswordFieldModel.registerFlow({
   key: 'passwordSettings',
   sort: 1000,
-  title: tval('Password settings'),
+  title: tExpr('Password settings'),
   steps: {
     placeholder: {
-      title: tval('Placeholder'),
+      title: tExpr('Placeholder'),
       uiSchema: {
         placeholder: {
           'x-component': 'Input',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            placeholder: tval('Enter placeholder text'),
+            placeholder: tExpr('Enter placeholder text'),
           },
         },
       },
@@ -40,14 +39,14 @@ PasswordFieldModel.registerFlow({
       },
     },
     checkStrength: {
-      title: tval('Check strength'),
+      title: tExpr('Check strength'),
       uiSchema: {
         checkStrength: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: tval('Yes'),
-            unCheckedChildren: tval('No'),
+            checkedChildren: tExpr('Yes'),
+            unCheckedChildren: tExpr('No'),
           },
         },
       },

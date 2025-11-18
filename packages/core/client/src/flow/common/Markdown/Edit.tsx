@@ -277,6 +277,7 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
   onChange,
   placeholder,
   style,
+  ...others
 }) => {
   const flowCtx = useFlowContext();
   const [innerValue, setInnerValue] = useState<string>(value || '');
@@ -357,6 +358,7 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
         onChange={handleTextChange}
         placeholder={placeholder}
         style={{ width: '100%' }}
+        {...others}
       />
       {isConfigMode && (
         <div

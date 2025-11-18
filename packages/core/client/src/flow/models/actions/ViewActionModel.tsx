@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { ActionSceneEnum, PopupActionModel } from '../base';
 
@@ -16,7 +16,7 @@ export class ViewActionModel extends PopupActionModel {
 
   defaultProps: ButtonProps = {
     type: 'link',
-    title: escapeT('View'),
+    title: tExpr('View'),
   };
 
   getAclActionName() {
@@ -25,5 +25,5 @@ export class ViewActionModel extends PopupActionModel {
 }
 
 ViewActionModel.define({
-  label: escapeT('View'),
+  label: tExpr('View'),
 });

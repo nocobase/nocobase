@@ -80,6 +80,9 @@ const renderToolbarItems = (
     });
 };
 
+// Width in pixels per toolbar item (icon width + spacing)
+const TOOLBAR_ITEM_WIDTH = 19;
+
 const toolbarPositionToCSS = {
   inside: `
     top: 2px;
@@ -87,7 +90,7 @@ const toolbarPositionToCSS = {
   above: `
     top: 0px;
     transform: translateY(-100%);
-    padding-bottom: 2px;
+    padding-bottom: 0px;
     margin-bottom: -2px;
   `,
   below: `
@@ -99,7 +102,7 @@ const toolbarPositionToCSS = {
 };
 
 // 使用与 NocoBase 一致的悬浮工具栏样式
-const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition = 'inside' }) => css`
+const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition = 'inside', toolbarCount }) => css`
   position: relative;
   display: inline;
 
@@ -135,6 +138,7 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition
     border: ${showBorder ? '2px solid var(--colorBorderSettingsHover)' : ''};
     border-radius: ${ctx.themeToken.borderRadiusLG}px;
     pointer-events: none;
+    min-width: ${TOOLBAR_ITEM_WIDTH * toolbarCount}px;
 
     &.nb-in-template {
       background: var(--colorTemplateBgSettingsHover);
@@ -580,9 +584,13 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
     return (
       <div
         ref={containerRef}
-        className={`${floatContainerStyles({ showBackground, showBorder, ctx: model.context, toolbarPosition })} ${
-          hideMenu ? 'hide-parent-menu' : ''
-        } ${hasButton ? 'has-button-child' : ''} ${className || ''}`}
+        className={`${floatContainerStyles({
+          showBackground,
+          showBorder,
+          ctx: model.context,
+          toolbarPosition,
+          toolbarCount: getToolbarCount(flowEngine, extraToolbarItems),
+        })} ${hideMenu ? 'hide-parent-menu' : ''} ${hasButton ? 'has-button-child' : ''} ${className || ''}`}
         style={containerStyle}
         data-has-float-menu="true"
         onMouseMove={handleChildHover}
@@ -668,3 +676,9 @@ const FlowsFloatContextMenuWithModelById: React.FC<ModelByIdProps> = observer(
 );
 
 export { FlowsFloatContextMenu };
+
+function getToolbarCount(flowEngine, extraToolbarItems) {
+  const toolbarItems = flowEngine?.flowSettings?.getToolbarItems?.() || [];
+  const allToolbarItems = [...toolbarItems, ...(extraToolbarItems || [])];
+  return allToolbarItems.length;
+}

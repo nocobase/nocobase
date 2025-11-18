@@ -7,14 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  defineAction,
-  escapeT,
-  FlowModelContext,
-  FlowModel,
-  useFlowSettingsContext,
-  ActionScene,
-} from '@nocobase/flow-engine';
+import { defineAction, tExpr, FlowModelContext, FlowModel, useFlowSettingsContext } from '@nocobase/flow-engine';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Input, Select, Cascader } from 'antd';
 import { LoadingOutlined } from '@ant-design/icons';
@@ -43,26 +36,26 @@ import { RootPageModel } from '../models';
 
 export const openView = defineAction({
   name: 'openView',
-  title: escapeT('Edit popup'),
+  title: tExpr('Edit popup'),
   uiSchema: {
     mode: {
       type: 'string',
-      title: escapeT('Open mode'),
+      title: tExpr('Open mode'),
       enum: [
-        { label: escapeT('Drawer'), value: 'drawer' },
-        { label: escapeT('Dialog'), value: 'dialog' },
-        { label: escapeT('Page'), value: 'embed' },
+        { label: tExpr('Drawer'), value: 'drawer' },
+        { label: tExpr('Dialog'), value: 'dialog' },
+        { label: tExpr('Page'), value: 'embed' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
     },
     size: {
       type: 'string',
-      title: escapeT('Popup size'),
+      title: tExpr('Popup size'),
       enum: [
-        { label: escapeT('Small'), value: 'small' },
-        { label: escapeT('Medium'), value: 'medium' },
-        { label: escapeT('Large'), value: 'large' },
+        { label: tExpr('Small'), value: 'small' },
+        { label: tExpr('Medium'), value: 'medium' },
+        { label: tExpr('Large'), value: 'large' },
       ],
       'x-decorator': 'FormItem',
       'x-component': 'Radio.Group',
@@ -77,7 +70,7 @@ export const openView = defineAction({
     },
     uid: {
       type: 'string',
-      title: escapeT('Popup uid'),
+      title: tExpr('Popup uid'),
       required: true,
       'x-decorator': 'FormItem',
       'x-component': function UidInput(props) {
@@ -186,7 +179,7 @@ export const openView = defineAction({
     },
     dsAndCollection: {
       type: 'array',
-      title: escapeT('Data source / Collection'),
+      title: tExpr('Data source / Collection'),
       'x-decorator': 'FormItem',
       'x-component': function DSCollCascader(props) {
         const { disabled, placeholder } = props;
@@ -243,7 +236,7 @@ export const openView = defineAction({
     },
     dataSourceKey: {
       type: 'string',
-      title: escapeT('Data source key'),
+      title: tExpr('Data source key'),
       'x-decorator': 'FormItem',
       'x-component': function DSKeySelect(props) {
         const { value, onChange, disabled, placeholder } = props;
@@ -286,7 +279,7 @@ export const openView = defineAction({
     },
     collectionName: {
       type: 'string',
-      title: escapeT('Collection name'),
+      title: tExpr('Collection name'),
       'x-decorator': 'FormItem',
       'x-component': function CollNameSelect(props) {
         const { value, onChange, disabled, placeholder } = props;
@@ -334,7 +327,7 @@ export const openView = defineAction({
     },
     associationName: {
       type: 'string',
-      title: escapeT('Association name'),
+      title: tExpr('Association name'),
       'x-decorator': 'FormItem',
       'x-component': function AssociationSelect(props) {
         const { value, onChange, disabled, placeholder } = props;
@@ -400,7 +393,7 @@ export const openView = defineAction({
     },
     tabUid: {
       type: 'string',
-      title: escapeT('Tab uid'),
+      title: tExpr('Tab uid'),
       'x-decorator': 'FormItem',
       'x-component': 'Input',
       'x-reactions': {
@@ -413,7 +406,7 @@ export const openView = defineAction({
     },
     sourceId: {
       type: 'string',
-      title: escapeT('Source ID'),
+      title: tExpr('Source ID'),
       'x-decorator': 'FormItem',
       'x-component': function SourceIdVariable(props) {
         const ctx = useFlowSettingsContext();
@@ -472,7 +465,7 @@ export const openView = defineAction({
     },
     filterByTk: {
       type: 'string',
-      title: escapeT('Filter by TK'),
+      title: tExpr('Filter by TK'),
       'x-decorator': 'FormItem',
       'x-component': function FilterByTkVariable(props) {
         const ctx = useFlowSettingsContext();
@@ -546,6 +539,8 @@ export const openView = defineAction({
     const inputArgs = ctx.inputArgs || {};
     const defineProperties = inputArgs.defineProperties ?? ctx.model.context?.inputArgs?.defineProperties ?? undefined;
     const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? undefined;
+    // 移动端中只需要显示子页面
+    const openMode = ctx.inputArgs?.isMobileLayout ? 'embed' : ctx.inputArgs?.mode || params.mode || 'drawer';
     if (params?.uid && params.uid !== ctx.model.uid) {
       const actionDefaults = (ctx.model as any)?.getInputArgs?.() || {};
       // 外部弹窗时应该以弹窗发起者为高优先级
@@ -587,9 +582,7 @@ export const openView = defineAction({
     if (navigation !== false) {
       if (!ctx.inputArgs.navigation && ctx.view?.navigation) {
         // 在路由跳转前注入 PendingView，统一首次 handler 阶段的 ctx.view 语义
-        const pendingType = (
-          ctx.inputArgs?.isMobileLayout ? 'embed' : ctx.inputArgs?.mode || params?.mode || 'drawer'
-        ) as any;
+        const pendingType = openMode;
         const pendingInputArgs = {
           ...ctx.inputArgs,
           dataSourceKey: params.dataSourceKey ?? ctx.inputArgs.dataSourceKey,
@@ -635,9 +628,6 @@ export const openView = defineAction({
     };
 
     const pageModelClass = ctx.inputArgs.pageModelClass || params.pageModelClass || 'ChildPageModel';
-
-    // 移动端中只需要显示子页面
-    const openMode = ctx.inputArgs.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
     const size = ctx.inputArgs.size || params.size || 'medium';
     let pageModelUid: string | null = null;
     let pageModelRef: FlowModel | null = null;

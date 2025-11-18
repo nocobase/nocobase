@@ -36,6 +36,9 @@ export class PluginFlowEngineServer extends PluginUISchemaStorageServer {
 
   async load() {
     await super.load();
+    this.app.auditManager.registerAction('flowSql:save');
+    this.app.auditManager.registerAction('flowModels:save');
+    this.app.auditManager.registerAction('flowModels:duplicate');
     // Initialize a shared GlobalContext once, using server environment variables
     this.globalContext = new GlobalContext(this.app.environment?.getVariables?.());
     this.app.acl.allow('flowSql', 'runById', 'loggedIn');

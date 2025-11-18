@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionScene, defineAction, escapeT, useFlowContext } from '@nocobase/flow-engine';
+import { ActionScene, defineAction, tExpr, useFlowContext } from '@nocobase/flow-engine';
 import { Radio, Input, InputNumber, message } from 'antd';
 import type { RadioChangeEvent } from 'antd/es/radio';
 import React from 'react';
@@ -22,7 +22,7 @@ type MessageValue = {
 
 export const showMessage = defineAction({
   name: 'showMessage',
-  title: escapeT('Show message'),
+  title: tExpr('Show message'),
   scene: ActionScene.DYNAMIC_EVENT_FLOW,
   sort: 500,
   uiSchema: {
@@ -108,7 +108,10 @@ export const showMessage = defineAction({
       return;
     }
 
-    // 使用 antd message API
-    message[type](content, duration);
+    ctx.message.open({
+      type,
+      content,
+      duration,
+    });
   },
 });

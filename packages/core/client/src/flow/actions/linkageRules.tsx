@@ -10,7 +10,7 @@
 import {
   ActionScene,
   defineAction,
-  escapeT,
+  tExpr,
   FlowContext,
   FlowModel,
   FlowRuntimeContext,
@@ -20,7 +20,7 @@ import {
   createSafeDocument,
   createSafeNavigator,
 } from '@nocobase/flow-engine';
-import { evaluateConditions, FilterGroupType } from '@nocobase/utils/client';
+import { evaluateConditions, FilterGroupType, removeInvalidFilterItems } from '@nocobase/utils/client';
 import React from 'react';
 import { Collapse, Input, Button, Switch, Space, Tooltip, Empty, Dropdown, Select } from 'antd';
 import { DeleteOutlined, ArrowUpOutlined, ArrowDownOutlined, CopyOutlined, PlusOutlined } from '@ant-design/icons';
@@ -94,7 +94,7 @@ const getFormFieldsByForkModel = (ctx: any) => {
 
 export const linkageSetBlockProps = defineAction({
   name: 'linkageSetBlockProps',
-  title: escapeT('Set block state'),
+  title: tExpr('Set block state'),
   scene: ActionScene.BLOCK_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -129,7 +129,7 @@ export const linkageSetBlockProps = defineAction({
 
 export const linkageSetActionProps = defineAction({
   name: 'linkageSetActionProps',
-  title: escapeT('Set button state'),
+  title: tExpr('Set button state'),
   scene: ActionScene.ACTION_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -171,7 +171,7 @@ export const linkageSetActionProps = defineAction({
 
 export const linkageSetFieldProps = defineAction({
   name: 'linkageSetFieldProps',
-  title: escapeT('Set field state'),
+  title: tExpr('Set field state'),
   scene: ActionScene.FIELD_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -297,7 +297,7 @@ export const linkageSetFieldProps = defineAction({
 
 export const subFormLinkageSetFieldProps = defineAction({
   name: 'subFormLinkageSetFieldProps',
-  title: escapeT('Set field state'),
+  title: tExpr('Set field state'),
   scene: ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -430,7 +430,7 @@ export const subFormLinkageSetFieldProps = defineAction({
 
 export const linkageSetDetailsFieldProps = defineAction({
   name: 'linkageSetDetailsFieldProps',
-  title: escapeT('Set field state'),
+  title: tExpr('Set field state'),
   scene: ActionScene.DETAILS_FIELD_LINKAGE_RULES,
   sort: 100,
   uiSchema: {
@@ -540,7 +540,7 @@ export const linkageSetDetailsFieldProps = defineAction({
 
 export const linkageAssignField = defineAction({
   name: 'linkageAssignField',
-  title: escapeT('Field assignment'),
+  title: tExpr('Field assignment'),
   scene: ActionScene.FIELD_LINKAGE_RULES,
   sort: 200,
   uiSchema: {
@@ -623,7 +623,7 @@ export const linkageAssignField = defineAction({
 
 export const subFormLinkageAssignField = defineAction({
   name: 'subFormLinkageAssignField',
-  title: escapeT('Field assignment'),
+  title: tExpr('Field assignment'),
   scene: ActionScene.SUB_FORM_FIELD_LINKAGE_RULES,
   sort: 200,
   uiSchema: {
@@ -716,7 +716,7 @@ export const subFormLinkageAssignField = defineAction({
 
 export const setFieldsDefaultValue = defineAction({
   name: 'setFieldsDefaultValue',
-  title: escapeT('设置字段默认值'),
+  title: tExpr('设置字段默认值'),
   scene: ActionScene.FIELD_LINKAGE_RULES,
   sort: 200,
   uiSchema: {
@@ -797,7 +797,7 @@ export const setFieldsDefaultValue = defineAction({
 
 export const linkageRunjs = defineAction({
   name: 'linkageRunjs',
-  title: escapeT('Execute JavaScript'),
+  title: tExpr('Execute JavaScript'),
   scene: [
     ActionScene.BLOCK_LINKAGE_RULES,
     ActionScene.FIELD_LINKAGE_RULES,
@@ -1212,7 +1212,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
     .forEach((rule) => {
       const { condition: conditions, actions } = rule;
 
-      const matched = evaluateConditions(conditions, evaluator);
+      const matched = evaluateConditions(removeInvalidFilterItems(conditions), evaluator);
       if (matched) {
         actions.forEach((action) => {
           const setProps = (
@@ -1314,7 +1314,7 @@ const commonLinkageRulesHandler = async (ctx: FlowContext, params: any) => {
 
 export const blockLinkageRules = defineAction({
   name: 'blockLinkageRules',
-  title: escapeT('Block linkage rules'),
+  title: tExpr('Block linkage rules'),
   uiMode: 'embed',
   uiSchema(ctx) {
     return {
@@ -1323,7 +1323,7 @@ export const blockLinkageRules = defineAction({
         'x-component': LinkageRulesUI,
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.BLOCK_LINKAGE_RULES),
-          title: escapeT('Block linkage rules'),
+          title: tExpr('Block linkage rules'),
         },
       },
     };
@@ -1336,7 +1336,7 @@ export const blockLinkageRules = defineAction({
 
 export const actionLinkageRules = defineAction({
   name: 'actionLinkageRules',
-  title: escapeT('Linkage rules'),
+  title: tExpr('Linkage rules'),
   uiMode: 'embed',
   uiSchema(ctx) {
     return {
@@ -1345,7 +1345,7 @@ export const actionLinkageRules = defineAction({
         'x-component': LinkageRulesUI,
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.ACTION_LINKAGE_RULES),
-          title: escapeT('Linkage rules'),
+          title: tExpr('Linkage rules'),
         },
       },
     };
@@ -1358,7 +1358,7 @@ export const actionLinkageRules = defineAction({
 
 export const fieldLinkageRules = defineAction({
   name: 'fieldLinkageRules',
-  title: escapeT('Field linkage rules'),
+  title: tExpr('Field linkage rules'),
   uiMode: 'embed',
   uiSchema(ctx) {
     return {
@@ -1367,7 +1367,7 @@ export const fieldLinkageRules = defineAction({
         'x-component': LinkageRulesUI,
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.FIELD_LINKAGE_RULES),
-          title: escapeT('Field linkage rules'),
+          title: tExpr('Field linkage rules'),
         },
       },
     };
@@ -1385,7 +1385,7 @@ export const fieldLinkageRules = defineAction({
 
 export const subFormFieldLinkageRules = defineAction({
   name: 'subFormFieldLinkageRules',
-  title: escapeT('Field linkage rules'),
+  title: tExpr('Field linkage rules'),
   uiMode: 'embed',
   uiSchema(ctx) {
     return {
@@ -1394,7 +1394,7 @@ export const subFormFieldLinkageRules = defineAction({
         'x-component': LinkageRulesUI,
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.SUB_FORM_FIELD_LINKAGE_RULES),
-          title: escapeT('Field linkage rules'),
+          title: tExpr('Field linkage rules'),
         },
       },
     };
@@ -1430,7 +1430,7 @@ export const subFormFieldLinkageRules = defineAction({
 
 export const detailsFieldLinkageRules = defineAction({
   name: 'detailsFieldLinkageRules',
-  title: escapeT('Field linkage rules'),
+  title: tExpr('Field linkage rules'),
   uiMode: 'embed',
   uiSchema(ctx) {
     return {
@@ -1439,7 +1439,7 @@ export const detailsFieldLinkageRules = defineAction({
         'x-component': LinkageRulesUI,
         'x-component-props': {
           supportedActions: getSupportedActions(ctx, ActionScene.DETAILS_FIELD_LINKAGE_RULES),
-          title: escapeT('Field linkage rules'),
+          title: tExpr('Field linkage rules'),
         },
       },
     };

@@ -14,7 +14,7 @@ import {
   FlowModelRenderer,
   FormItem,
   VariableInput,
-  escapeT,
+  tExpr,
   isVariableExpression,
   parseValueToPath,
   EditableItemModel,
@@ -240,13 +240,13 @@ export class AssignFormItemModel extends FormItemModel {
         const base: any[] = typeof getTree === 'function' ? await getTree() : [];
         return [
           {
-            title: escapeT('Constant'),
+            title: tExpr('Constant'),
             name: 'constant',
             type: 'string',
             paths: ['constant'],
             render: ConstantValueEditor,
           },
-          { title: escapeT('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
+          { title: tExpr('Null'), name: 'null', type: 'object', paths: ['null'], render: NullComponent },
           ...base,
         ];
       };
@@ -282,17 +282,17 @@ export class AssignFormItemModel extends FormItemModel {
 }
 
 AssignFormItemModel.define({
-  label: escapeT('Assign field'),
+  label: tExpr('Assign field'),
 });
 
 // 类级静态流：直接注册一个通用的 editItemSettings 流（去掉“字段组件切换（fieldComponent）”步骤）
 AssignFormItemModel.registerFlow({
   key: 'editItemSettings',
   sort: 300,
-  title: escapeT('Form item settings'),
+  title: tExpr('Form item settings'),
   steps: {
     label: {
-      title: escapeT('Label'),
+      title: tExpr('Label'),
       uiSchema: (ctx) => {
         return {
           label: {
@@ -332,14 +332,14 @@ AssignFormItemModel.registerFlow({
       },
     },
     showLabel: {
-      title: escapeT('Show label'),
+      title: tExpr('Show label'),
       uiSchema: {
         showLabel: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
+            checkedChildren: tExpr('Yes'),
+            unCheckedChildren: tExpr('No'),
           },
         },
       },
@@ -351,7 +351,7 @@ AssignFormItemModel.registerFlow({
       },
     },
     tooltip: {
-      title: escapeT('Tooltip'),
+      title: tExpr('Tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
@@ -363,7 +363,7 @@ AssignFormItemModel.registerFlow({
       },
     },
     description: {
-      title: escapeT('Description'),
+      title: tExpr('Description'),
       uiSchema: {
         description: {
           'x-component': 'Input.TextArea',
@@ -375,11 +375,11 @@ AssignFormItemModel.registerFlow({
       },
     },
     validation: {
-      title: escapeT('Validation'),
+      title: tExpr('Validation'),
       use: 'validation',
     },
     required: {
-      title: escapeT('Required'),
+      title: tExpr('Required'),
       use: 'required',
     },
   },

@@ -30,7 +30,7 @@ services:
 修改环境变量之后，需要重建 app 容器。
 
 ```yml
-docker-compose up -d app
+docker compose up -d app
 ```
 
 ## 全局环境变量
@@ -302,7 +302,7 @@ LOGGER_MAX_SIZE=20971520
 LOGGER_FORMAT=json
 ```
 
-参考：[日志格式](/ops-management/log-and-monitor/logger/index.md#日志格式)
+参考：[日志格式](/log-and-monitor/logger/index.md#日志格式)
 
 ### CACHE_DEFAULT_STORE
 

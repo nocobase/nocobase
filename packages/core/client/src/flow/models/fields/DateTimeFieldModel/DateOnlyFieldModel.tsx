@@ -8,14 +8,15 @@
  */
 import { DatePicker } from 'antd';
 import dayjs from 'dayjs';
-import { EditableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, useFlowModelContext } from '@nocobase/flow-engine';
 import React from 'react';
 import { DateTimeFieldModel } from './DateTimeFieldModel';
+import { MobileDatePicker } from '../mobile-components/MobileDatePicker';
 
 export const DateOnlyPicker = (props) => {
   const { value, format = 'YYYY-MM-DD', picker = 'date', showTime, ...rest } = props;
   const parsedValue = value && dayjs(value).isValid() ? dayjs(value) : null;
-
+  const ctx = useFlowModelContext();
   const componentProps = {
     ...rest,
     value: parsedValue,
@@ -35,6 +36,12 @@ export const DateOnlyPicker = (props) => {
       }
     },
   };
+
+  // TODO: 移动端相关的代码需迁移到单独的插件中
+  if (ctx.isMobileLayout) {
+    return <MobileDatePicker {...componentProps} />;
+  }
+
   return <DatePicker {...componentProps} />;
 };
 

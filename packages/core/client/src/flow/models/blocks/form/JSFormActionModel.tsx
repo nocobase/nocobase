@@ -10,7 +10,7 @@
 /**
  * JS Form Action：表单工具栏按钮点击执行 JS。
  */
-import { escapeT, createSafeWindow, createSafeDocument, createSafeNavigator } from '@nocobase/flow-engine';
+import { tExpr, createSafeWindow, createSafeDocument, createSafeNavigator } from '@nocobase/flow-engine';
 import { CodeEditor } from '../../../components/code-editor';
 import { FormActionModel } from './FormActionModel';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
@@ -18,17 +18,17 @@ import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 export class JSFormActionModel extends FormActionModel {}
 
 JSFormActionModel.define({
-  label: escapeT('JS action'),
+  label: tExpr('JS action'),
   sort: 9999,
 });
 
 JSFormActionModel.registerFlow({
   key: 'clickSettings',
   on: 'click',
-  title: escapeT('Click settings'),
+  title: tExpr('Click settings'),
   steps: {
     runJs: {
-      title: escapeT('Write JavaScript'),
+      title: tExpr('Write JavaScript'),
       uiSchema: {
         code: {
           type: 'string',

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionSceneEnum, PopupActionModel } from '../base';
 
@@ -16,7 +16,7 @@ export class AddNewActionModel extends PopupActionModel {
 
   defaultProps: ButtonProps = {
     type: 'primary',
-    title: escapeT('Add new'),
+    title: tExpr('Add new'),
     icon: 'PlusOutlined',
   };
 
@@ -26,5 +26,5 @@ export class AddNewActionModel extends PopupActionModel {
 }
 
 AddNewActionModel.define({
-  label: escapeT('Add new'),
+  label: tExpr('Add new'),
 });

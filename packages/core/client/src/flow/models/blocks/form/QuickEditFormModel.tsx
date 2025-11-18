@@ -114,6 +114,9 @@ export class QuickEditFormModel extends FlowModel {
       resolveOnServer: true,
       meta: recordMeta,
     });
+    this.context.defineProperty('collection', {
+      get: () => this.collection,
+    });
   }
 
   addAppends(fieldPath: string, refresh = false) {
@@ -167,11 +170,14 @@ export class QuickEditFormModel extends FlowModel {
               const formValues = {
                 ...values,
               };
+              console.log(formValues);
               const originalValues = {
                 [this.fieldPath]: this.resource.getData()?.[this.fieldPath],
               };
               try {
-                this.resource.save(formValues, { refresh: false }).catch((error) => {});
+                this.resource.save(formValues, { refresh: false }).catch((error) => {
+                  console.log(error, 999);
+                });
                 this.__onSubmitSuccess?.(formValues);
                 this.viewContainer.close();
                 this.context.message.success(this.context.t('Saved successfully'));

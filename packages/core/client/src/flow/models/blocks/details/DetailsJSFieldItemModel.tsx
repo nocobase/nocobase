@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
+import { tExpr, FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
 import { DetailsAssociationFieldGroupModel } from './DetailsAssociationFieldGroupModel';
 import { DetailsCustomItemModel } from './DetailsCustomItemModel';
 import { buildJSFieldMenuChildren } from '../utils/transformChildrenToJS';
@@ -30,8 +30,8 @@ export class DetailsJSFieldItemModel extends DetailsCustomItemModel {
 }
 
 DetailsJSFieldItemModel.define({
-  label: escapeT('JS field'),
+  label: tExpr('JS field'),
   searchable: true,
-  searchPlaceholder: escapeT('Search fields'),
+  searchPlaceholder: tExpr('Search fields'),
   sort: 110,
 });

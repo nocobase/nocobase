@@ -9,7 +9,7 @@
 
 import {
   Collection,
-  escapeT,
+  tExpr,
   FieldModelRenderer,
   FilterableItemModel,
   FlowModelContext,
@@ -214,16 +214,16 @@ export class FilterFormItemModel extends FilterableItemModel<{
 }
 
 FilterFormItemModel.define({
-  label: escapeT('Block list'),
+  label: tExpr('Block list'),
 });
 
 FilterFormItemModel.registerFlow({
   key: 'filterFormItemSettings',
   sort: 300,
-  title: escapeT('Form item settings'),
+  title: tExpr('Form item settings'),
   steps: {
     label: {
-      title: escapeT('Label'),
+      title: tExpr('Label'),
       uiSchema: (ctx) => {
         return {
           label: {
@@ -268,14 +268,14 @@ FilterFormItemModel.registerFlow({
     },
 
     showLabel: {
-      title: escapeT('Show label'),
+      title: tExpr('Show label'),
       uiSchema: {
         showLabel: {
           'x-component': 'Switch',
           'x-decorator': 'FormItem',
           'x-component-props': {
-            checkedChildren: escapeT('Yes'),
-            unCheckedChildren: escapeT('No'),
+            checkedChildren: tExpr('Yes'),
+            unCheckedChildren: tExpr('No'),
           },
         },
       },
@@ -287,7 +287,7 @@ FilterFormItemModel.registerFlow({
       },
     },
     tooltip: {
-      title: escapeT('Tooltip'),
+      title: tExpr('Tooltip'),
       uiSchema: {
         tooltip: {
           'x-component': 'Input.TextArea',
@@ -299,7 +299,7 @@ FilterFormItemModel.registerFlow({
       },
     },
     description: {
-      title: escapeT('Description'),
+      title: tExpr('Description'),
       uiSchema: {
         description: {
           'x-component': 'Input.TextArea',
@@ -311,7 +311,7 @@ FilterFormItemModel.registerFlow({
       },
     },
     initialValue: {
-      title: escapeT('Default value'),
+      title: tExpr('Default value'),
       uiSchema: (ctx) => {
         return {
           defaultValue: {
@@ -326,7 +326,7 @@ FilterFormItemModel.registerFlow({
     },
     model: {
       use: 'fieldComponent',
-      title: escapeT('Field component'),
+      title: tExpr('Field component'),
       uiSchema: (ctx) => {
         const classes = FilterableItemModel.getBindingsByField(ctx, ctx.collectionField);
         if (classes.length === 1) {
@@ -356,7 +356,7 @@ FilterFormItemModel.registerFlow({
 
 FilterFormItemModel.registerFlow({
   key: 'fieldSettings',
-  title: escapeT('Field settings'),
+  title: tExpr('Field settings'),
   steps: {
     init: {
       // 去掉 CollectionFieldModel 的一些报错信息，

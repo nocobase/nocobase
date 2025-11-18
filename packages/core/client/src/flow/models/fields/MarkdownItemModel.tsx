@@ -12,11 +12,47 @@ import React from 'react';
 import { CommonItemModel } from '../base';
 import { editMarkdownFlow } from '../../flows/editMarkdownFlow';
 
+const MarkdownRenderer = ({ ctx, raw, record }) => {
+  const [html, setHtml] = React.useState(null);
+
+  React.useEffect(() => {
+    let canceled = false;
+
+    const run = async () => {
+      try {
+        // Liquid 渲染
+        const liquid = await ctx.liquid.renderWithFullContext(ctx.t(raw), ctx);
+
+        // Markdown 渲染
+        const md = await ctx.markdown.render(ctx.t(liquid), {
+          textOnly: false,
+        });
+
+        if (!canceled) setHtml(md);
+      } catch (err) {
+        if (!canceled) {
+          setHtml(`<pre>渲染失败: ${err}</pre>`);
+        }
+      }
+    };
+
+    run();
+
+    return () => {
+      canceled = true;
+    };
+  }, [raw, record]);
+  return html;
+};
+
 export class MarkdownItemModel extends CommonItemModel {
   render() {
+    const record = this.context.record;
+    const rawContent = this.props.value;
+
     return (
       <FormItem shouldUpdate showLabel={false}>
-        {this.props.content}
+        <MarkdownRenderer ctx={this.context} raw={rawContent} record={record} />
       </FormItem>
     );
   }

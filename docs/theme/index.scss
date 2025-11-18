@@ -17,6 +17,7 @@ html:not(.rp-dark) {
   --rp-code-block-bg: #f6f8fa;
   --rp-code-copy-code-hover-bg: #ffffff0d;
   --rp-code-wrap-code-hover-bg: #ffffff0d;
+  --rp-home-feature-bg: var(--rp-c-bg-soft);
   /* Completely disable gradient on hero title */
   --rp-home-hero-name-background: none;
   --rp-home-hero-name-color: #2e3440;
@@ -29,6 +30,7 @@ html.rp-dark {
   --rp-code-block-bg: #242424;
   --rp-code-copy-code-hover-bg: #ffffff0d;
   --rp-code-wrap-code-hover-bg: #ffffff0d;
+  --rp-home-feature-bg: var(--rp-c-bg-soft);
   /* Completely disable gradient on hero title */
   --rp-home-hero-name-background: none;
   --rp-home-hero-name-color: #e5e7eb;
@@ -430,7 +432,7 @@ h1[class*="rp-text"] {
   &__card {
     height: 100%;
     padding: 2rem;
-    border-radius: 0.375rem;
+    border-radius: 0.75rem; /* 12px */
     border: 1px solid transparent;
     background: var(--rp-home-feature-bg);
     transition: all 0.3s;

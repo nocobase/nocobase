@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT, FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
+import { tExpr, FlowModelContext, type SubModelItem } from '@nocobase/flow-engine';
 import { TableAssociationFieldGroupModel } from './TableAssociationFieldGroupModel';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
 import { buildJSFieldMenuChildren } from '../utils/transformChildrenToJS';
@@ -30,9 +30,9 @@ export class TableJSFieldItemModel extends TableCustomColumnModel {
 }
 
 TableJSFieldItemModel.define({
-  label: escapeT('JS field'),
+  label: tExpr('JS field'),
   searchable: true,
-  searchPlaceholder: escapeT('Search fields'),
+  searchPlaceholder: tExpr('Search fields'),
   // 提高排序到“字段类”列表的靠前位置，但不抢默认项
   sort: 110,
 });

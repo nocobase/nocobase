@@ -10,9 +10,10 @@
 // components/drawer/useDrawer/DrawerComponent.tsx
 import { Drawer } from 'antd';
 import * as React from 'react';
+import { MobilePopup } from '../components/MobilePopup';
 
 const DrawerComponent = React.forwardRef((props: any, ref) => {
-  const { children, footer: initialFooter, title, extra, hidden, ...drawerProps } = props;
+  const { children, footer: initialFooter, title, extra, hidden, isMobile, ...drawerProps } = props;
   const [open, setOpen] = React.useState(true);
   const [footer, setFooter] = React.useState(() => initialFooter);
   const [header, setHeader] = React.useState({ title, extra, ...drawerProps.header });
@@ -45,6 +46,24 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
   const container = React.useMemo(() => {
     return document.querySelector('#nocobase-app-container');
   }, []);
+
+  if (isMobile) {
+    return (
+      <MobilePopup
+        className={hidden ? 'nb-hidden' : ''}
+        visible={open}
+        {...drawerProps}
+        footer={footer}
+        {...header}
+        onClose={() => {
+          setOpen(false);
+          drawerProps.afterClose?.();
+        }}
+      >
+        {children}
+      </MobilePopup>
+    );
+  }
 
   return (
     <Drawer

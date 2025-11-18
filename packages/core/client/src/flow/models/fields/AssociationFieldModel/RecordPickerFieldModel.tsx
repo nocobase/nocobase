@@ -10,7 +10,7 @@
 import {
   CollectionField,
   EditableItemModel,
-  escapeT,
+  tExpr,
   FlowModel,
   FlowModelRenderer,
   observable,
@@ -22,7 +22,7 @@ import { Button, Select } from 'antd';
 import React, { useEffect } from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { FieldModel } from '../../base';
-import { LabelByField } from './RecordSelectFieldModel';
+import { LabelByField } from './recordSelectShared';
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
@@ -43,11 +43,27 @@ function RemoteModelRenderer({ options }) {
 
 export function RecordPickerContent({ model, toOne = false }) {
   const ctx = useFlowContext();
-  const { Header, Footer } = ctx.view;
+  const { Header, Footer, type } = ctx.view;
   model._closeView = ctx.view.close;
   return (
     <div>
-      <Header title={ctx.t('Select record')} />
+      <Header
+        title={
+          type === 'dialog' ? (
+            <div
+              style={{
+                padding: `${ctx.themeToken.paddingLG}px ${ctx.themeToken.paddingLG}px 0`,
+                marginBottom: -ctx.themeToken.marginSM,
+                backgroundColor: 'var(--colorBgLayout)',
+              }}
+            >
+              {ctx.t('Select record')}
+            </div>
+          ) : (
+            ctx.t('Select record')
+          )
+        }
+      />
       <RemoteModelRenderer
         options={{
           parentId: ctx.view.inputArgs.parentId,
@@ -60,15 +76,29 @@ export function RecordPickerContent({ model, toOne = false }) {
       />
       {!toOne && (
         <Footer>
-          <Button
-            type="primary"
-            onClick={() => {
-              model.change();
-              ctx.view.close();
-            }}
-          >
-            {ctx.t('Submit')}
-          </Button>
+          {type === 'dialog' ? (
+            <div style={{ padding: `0 ${ctx.themeToken.paddingLG}px ${ctx.themeToken.paddingLG}px` }}>
+              <Button
+                type="primary"
+                onClick={() => {
+                  model.change();
+                  ctx.view.close();
+                }}
+              >
+                {ctx.t('Submit')}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              type="primary"
+              onClick={() => {
+                model.change();
+                ctx.view.close();
+              }}
+            >
+              {ctx.t('Submit')}
+            </Button>
+          )}
         </Footer>
       )}
     </div>
@@ -114,6 +144,7 @@ function RecordPickerField(props) {
         ctx.model.selectedRows.value = option;
         ctx.model.change();
       }}
+      showSearch={false}
     />
   );
 }
@@ -154,31 +185,31 @@ export class RecordPickerFieldModel extends FieldModel {
 
 RecordPickerFieldModel.registerFlow({
   key: 'popupSettings',
-  title: escapeT('Selector setting'),
+  title: tExpr('Selector setting'),
   on: {
     eventName: 'openView',
   },
   steps: {
     openView: {
-      title: escapeT('Edit popup'),
+      title: tExpr('Edit popup'),
       uiSchema: {
         mode: {
           type: 'string',
-          title: escapeT('Open mode'),
+          title: tExpr('Open mode'),
           enum: [
-            { label: escapeT('Drawer'), value: 'drawer' },
-            { label: escapeT('Dialog'), value: 'dialog' },
+            { label: tExpr('Drawer'), value: 'drawer' },
+            { label: tExpr('Dialog'), value: 'dialog' },
           ],
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
         },
         size: {
           type: 'string',
-          title: escapeT('Popup size'),
+          title: tExpr('Popup size'),
           enum: [
-            { label: escapeT('Small'), value: 'small' },
-            { label: escapeT('Medium'), value: 'medium' },
-            { label: escapeT('Large'), value: 'large' },
+            { label: tExpr('Small'), value: 'small' },
+            { label: tExpr('Medium'), value: 'medium' },
+            { label: tExpr('Large'), value: 'large' },
           ],
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
@@ -204,7 +235,7 @@ RecordPickerFieldModel.registerFlow({
           },
           embed: {},
         };
-        const openMode = ctx.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
+        const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
         ctx.viewer.open({
           type: openMode,
@@ -266,7 +297,7 @@ RecordPickerFieldModel.registerFlow({
 //专有配置项
 RecordPickerFieldModel.registerFlow({
   key: 'recordPickerSettings',
-  title: escapeT('RecordPicker settings'),
+  title: tExpr('RecordPicker settings'),
   sort: 200,
   steps: {
     fieldNames: {
@@ -276,7 +307,7 @@ RecordPickerFieldModel.registerFlow({
 });
 
 RecordPickerFieldModel.define({
-  label: escapeT('Record picker'),
+  label: tExpr('Record picker'),
 });
 
 EditableItemModel.bindModelToInterface('RecordPickerFieldModel', [

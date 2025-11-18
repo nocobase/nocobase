@@ -9,7 +9,7 @@
 
 import {
   ElementProxy,
-  escapeT,
+  tExpr,
   createSafeWindow,
   createSafeDocument,
   createSafeNavigator,
@@ -104,7 +104,7 @@ export class JSFieldModel extends FieldModel {
 }
 
 JSFieldModel.define({
-  label: escapeT('JS field'),
+  label: tExpr('JS field'),
   createModelOptions: {
     use: 'JSFieldModel',
   },
@@ -112,11 +112,11 @@ JSFieldModel.define({
 
 JSFieldModel.registerFlow({
   key: 'jsSettings',
-  title: escapeT('JavaScript settings'),
+  title: tExpr('JavaScript settings'),
   manual: true,
   steps: {
     runJs: {
-      title: escapeT('Write JavaScript'),
+      title: tExpr('Write JavaScript'),
       uiSchema: {
         code: {
           type: 'string',

@@ -11,7 +11,7 @@ import {
   DndProvider,
   DragHandler,
   Droppable,
-  escapeT,
+  tExpr,
   FlowModelRenderer,
   MemoFlowModelRenderer,
   SingleRecordResource,
@@ -71,7 +71,7 @@ export class CreateFormModel extends FormBlockModel {
 
 CreateFormModel.registerFlow({
   key: 'formSettings',
-  title: escapeT('Form settings'),
+  title: tExpr('Form settings'),
   steps: {
     init: {
       async handler(ctx) {
@@ -89,9 +89,9 @@ CreateFormModel.registerFlow({
 });
 
 CreateFormModel.define({
-  label: escapeT('Form (Add new)'),
+  label: tExpr('Form (Add new)'),
   searchable: true,
-  searchPlaceholder: escapeT('Search'),
+  searchPlaceholder: tExpr('Search'),
   createModelOptions: {
     use: 'CreateFormModel',
     subModels: {

@@ -302,7 +302,7 @@ Log print format. Default is `console` in development and `json` in production. 
 LOGGER_FORMAT=json
 ```
 
-Reference: [Log Format](/ops-management/log-and-monitor/logger/index.md#log-format)
+Reference: [Log Format](/log-and-monitor/logger/index.md#log-format)
 
 ### CACHE_DEFAULT_STORE
 

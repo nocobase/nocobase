@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { escapeT } from '@nocobase/flow-engine';
+import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { ActionSceneEnum, PopupActionModel } from '../base';
 
@@ -15,7 +15,7 @@ export class EditActionModel extends PopupActionModel {
   static scene = ActionSceneEnum.record;
 
   defaultProps: ButtonProps = {
-    title: escapeT('Edit'),
+    title: tExpr('Edit'),
   };
 
   getAclActionName() {
@@ -24,5 +24,5 @@ export class EditActionModel extends PopupActionModel {
 }
 
 EditActionModel.define({
-  label: escapeT('Edit'),
+  label: tExpr('Edit'),
 });

@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineFlow, escapeT, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
+import { defineFlow, tExpr, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
 
 export const openViewFlow = defineFlow<FlowModel>({
   key: 'popupSettings',
-  title: escapeT('Popup settings'),
+  title: tExpr('Popup settings'),
   on: 'click',
   steps: {
     openView: {

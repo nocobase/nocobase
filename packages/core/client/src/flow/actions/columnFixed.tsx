@@ -7,11 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, FlowModel } from '@nocobase/flow-engine';
-import { tval } from '@nocobase/utils/client';
+import { defineAction, tExpr } from '@nocobase/flow-engine';
 
 export const fixed = defineAction({
-  title: tval('Fixed'),
+  title: tExpr('Fixed'),
   name: 'fixed',
   uiSchema: (ctx) => {
     const t = ctx.t;

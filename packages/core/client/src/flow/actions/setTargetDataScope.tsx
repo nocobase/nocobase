@@ -7,31 +7,38 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionScene, defineAction, FlowModel, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
-import { isEmptyFilter, transformFilter, tval } from '@nocobase/utils/client';
-import { pruneFilter } from '@nocobase/flow-engine';
+import {
+  ActionScene,
+  defineAction,
+  FlowModel,
+  MultiRecordResource,
+  pruneFilter,
+  useFlowContext,
+  tExpr,
+} from '@nocobase/flow-engine';
+import { isEmptyFilter, transformFilter } from '@nocobase/utils/client';
 import _ from 'lodash';
 import React from 'react';
 import { FilterGroup, VariableFilterItem } from '../components/filter';
 
 export const setTargetDataScope = defineAction({
   name: 'setTargetDataScope',
-  title: tval('Set data scope'),
+  title: tExpr('Set data scope'),
   scene: [ActionScene.DYNAMIC_EVENT_FLOW],
   sort: 200,
   uiSchema: {
     targetBlockUid: {
       type: 'string',
-      title: tval('Target block UID'),
+      title: tExpr('Target block UID'),
       'x-decorator': 'FormItem',
       'x-component': 'Input',
       'x-component-props': {
-        placeholder: tval('Please enter the target block UID'),
+        placeholder: tExpr('Please enter the target block UID'),
       },
     },
     filter: {
       type: 'object',
-      title: tval('Condition'),
+      title: tExpr('Condition'),
       'x-decorator': 'FormItem',
       'x-component': SetTargetDataScope,
       'x-reactions': [

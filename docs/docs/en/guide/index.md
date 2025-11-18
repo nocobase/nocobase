@@ -48,16 +48,16 @@ features:
       - title: Backup Manager
         details: Provides data backup and restore functionalities.
         link: /ops-management/backup-manager
-      - title: Migration Manager
+      - title: Release Manager
         details: Used to migrate application configurations from one application environment to another.
-        link: /ops-management/migration-manager
+        link: /ops-management/release-management
       - title: Security
         details: Implement protective strategies covering data, API, and access layers to ensure platform security and stability.
-        link: /ops-management/security/guide
+        link: /security/guide
         showOnHome: true
       - title: Logging and Monitoring
         details: Record system operations and user actions.
-        link: /ops-management/log-and-monitor/overview
+        link: /log-and-monitor/logger
       - title: Cluster Mode
         details: Supports multi-node deployment and load balancing to ensure system stability and scalability in high-concurrency scenarios.
         link: /cluster-mode
