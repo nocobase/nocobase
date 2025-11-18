@@ -82,7 +82,7 @@ FormSubmitActionModel.registerFlow({
         const blockModel = ctx.blockModel as FormBlockModel;
         try {
           await blockModel.form.validateFields();
-          const values = blockModel.form.getFieldsValue();
+          const values = blockModel.form.getFieldsValue(true);
           if (resource instanceof SingleRecordResource) {
             if (blockModel instanceof EditFormModel) {
               const currentFilterByTk = resource.getMeta('currentFilterByTk');
