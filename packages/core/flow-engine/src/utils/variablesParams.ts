@@ -137,18 +137,45 @@ export function createViewRecordResolveOnServer(
  * - 若本地 record 不存在：统一走服务端；
  * - 若本地 record 存在：
  *   - 访问空子路径（"{{ ctx.record }}"）时使用本地值，不走服务端；
- *   - 仅当访问关联字段子路径且本地不存在目标值时，才交给服务端解析。
+ *   - 访问非关联字段（如 id/title）：使用本地值；
+ *   - 访问关联字段：
+ *     - 若本地该字段无值（undefined/null），则交给服务端解析（无论是 "author" 还是 "author.name"）；
+ *     - 若本地已有值，则仅在访问子属性且本地缺少该子属性值时交给服务端。
  */
 export function createRecordResolveOnServerWithLocal(
   collectionAccessor: () => Collection | null,
   valueAccessor: () => unknown,
 ): (subPath: string) => boolean {
-  const resolver = createAssociationSubpathResolver(collectionAccessor, () => valueAccessor());
+  const assocSubpathResolver = createAssociationSubpathResolver(collectionAccessor, () => valueAccessor());
   return (p: string) => {
     const local = valueAccessor();
     if (!local) return true;
     if (!p) return false;
-    return resolver(p);
+
+    const collection = collectionAccessor() as any;
+
+    // 访问关联字段整体：当本地该字段无值时，统一交给服务端
+    if (!p.includes('.')) {
+      const name = p;
+      let field: any;
+      if (collection) {
+        if (typeof collection.getField === 'function') {
+          field = collection.getField(name);
+        }
+        if (!field && typeof collection.getFields === 'function') {
+          const fields = collection.getFields() || [];
+          field = fields.find((f: any) => f?.name === name);
+        }
+      }
+      const isAssoc = !!field?.isAssociationField?.();
+      if (!isAssoc) return false;
+      const value = (local as any)?.[name];
+      if (value === undefined || value === null) return true;
+      return false;
+    }
+
+    // 访问关联字段子属性：复用 associationSubpathResolver 的“本地优先 + 关联字段才走服务端”逻辑
+    return assocSubpathResolver(p);
   };
 }
 

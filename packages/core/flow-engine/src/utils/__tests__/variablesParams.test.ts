@@ -63,10 +63,11 @@ describe('variablesParams helpers', () => {
 
   it('createRecordResolveOnServerWithLocal: local record + non-association subpaths => use local', () => {
     const collection: any = {
-      getFields: () => [
-        { name: 'id', isAssociationField: () => false },
-        { name: 'title', isAssociationField: () => false },
-      ],
+      getField: (name: string) => {
+        if (name === 'id') return { name: 'id', isAssociationField: () => false };
+        if (name === 'title') return { name: 'title', isAssociationField: () => false };
+        return undefined;
+      },
     };
     const record = { id: 1, title: 'Hello' };
     const resolver = createRecordResolveOnServerWithLocal(
@@ -80,10 +81,11 @@ describe('variablesParams helpers', () => {
 
   it('createRecordResolveOnServerWithLocal: association with local value => still use local', () => {
     const collection: any = {
-      getFields: () => [
-        { name: 'author', isAssociationField: () => true },
-        { name: 'title', isAssociationField: () => false },
-      ],
+      getField: (name: string) => {
+        if (name === 'author') return { name: 'author', isAssociationField: () => true };
+        if (name === 'title') return { name: 'title', isAssociationField: () => false };
+        return undefined;
+      },
     };
     const record = { title: 'Hello', author: { id: 1, name: 'Alice' } };
     const resolver = createRecordResolveOnServerWithLocal(
@@ -96,10 +98,11 @@ describe('variablesParams helpers', () => {
 
   it('createRecordResolveOnServerWithLocal: association without local value => use server', () => {
     const collection: any = {
-      getFields: () => [
-        { name: 'author', isAssociationField: () => true },
-        { name: 'title', isAssociationField: () => false },
-      ],
+      getField: (name: string) => {
+        if (name === 'author') return { name: 'author', isAssociationField: () => true };
+        if (name === 'title') return { name: 'title', isAssociationField: () => false };
+        return undefined;
+      },
     };
     const record = { title: 'Hello', author: null };
     const resolver = createRecordResolveOnServerWithLocal(
