@@ -520,25 +520,75 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     throw new Error('renderAddSubModelButton method must be implemented in subclasses of GridModel');
   }
 
-  getRows() {
-    if (this.context.isMobileLayout) {
-      return transformRowsToSingleColumn(this.props.rows || {});
-    }
-    return this.props.rows || {};
-  }
+  /**
+   * 运行态按可见 block 过滤行/列，避免“整行都是 hidden block”但依然保留行间距占位。
+   * - 配置态（flowSettings.enabled）保持原始 rows/sizes 以便拖拽和布局编辑。
+   * - 运行态仅在判断为“整列/整行都不可见”时做过滤，不写回 props/stepParams，布局元数据保持不变。
+   */
+  private getVisibleLayout() {
+    const rawRows = (this.props.rows || {}) as Record<string, string[][]>;
+    const rawSizes = (this.props.sizes || {}) as Record<string, number[]>;
 
-  getSizes() {
-    if (this.context.isMobileLayout) {
-      return {};
+    const baseRows: Record<string, string[][]> = this.context.isMobileLayout
+      ? transformRowsToSingleColumn(rawRows)
+      : rawRows;
+    const baseSizes: Record<string, number[]> = this.context.isMobileLayout ? {} : rawSizes;
+
+    // 配置态：不做任何过滤，保持完整布局
+    if (this.flowEngine.flowSettings.enabled) {
+      return { rows: baseRows, sizes: baseSizes };
     }
 
-    return this.props.sizes || {};
+    const items = this.subModels?.items || [];
+    if (!items.length) {
+      return { rows: baseRows, sizes: baseSizes };
+    }
+
+    const modelByUid = new Map(items.map((m: FlowModel) => [m.uid, m]));
+
+    const rows: Record<string, string[][]> = {};
+    const sizes: Record<string, number[]> = {};
+
+    Object.entries(baseRows).forEach(([rowKey, cells]) => {
+      const rowCells = cells;
+      const rowSizes = baseSizes[rowKey] || [];
+      const keptCells: string[][] = [];
+      const keptSizes: number[] = [];
+
+      rowCells.forEach((cell, idx) => {
+        // 只要当前单元格中存在“未显式 hidden 的模型”，就认为该列可见
+        const hasVisibleItem = cell.some((uid) => {
+          if (uid === EMPTY_COLUMN_UID) return false;
+          const model = modelByUid.get(uid);
+          // model 不存在时视为可见，避免误删；只有明确 hidden === true 的才视为不可见
+          return !model || !model.hidden;
+        });
+
+        if (hasVisibleItem) {
+          keptCells.push(cell);
+          keptSizes.push(rowSizes[idx]);
+        }
+      });
+
+      // 如果该行至少有一列存在可见 block，则保留该行
+      if (keptCells.length > 0) {
+        rows[rowKey] = keptCells;
+        if (keptSizes.length > 0) {
+          sizes[rowKey] = keptSizes;
+        }
+      }
+    });
+
+    return { rows, sizes };
   }
 
   render() {
+    const { rows, sizes } = this.getVisibleLayout();
+    const hasAnyVisibleRow = Object.keys(rows || {}).length > 0;
+
     return (
       <>
-        {this.subModels.items?.length > 0 && (
+        {hasAnyVisibleRow && (
           <Space
             ref={this.gridContainerRef}
             direction={'vertical'}
@@ -554,8 +604,8 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
               <Grid
                 rowGap={this.props.rowGap}
                 colGap={this.props.colGap}
-                rows={this.getRows()}
-                sizes={this.getSizes()}
+                rows={rows}
+                sizes={sizes}
                 dragOverlayRect={this.props.dragOverlayRect}
                 renderItem={(uid) => {
                   const baseItem = this.flowEngine.getModel(uid);
