@@ -39,31 +39,6 @@ AddChildActionModel.registerFlow({
   },
 });
 
-AddChildActionModel.registerFlow({
-  key: 'addChildSettings',
-  on: 'click',
-  steps: {
-    addChild: {
-      async handler(ctx, params) {
-        if (!ctx.resource) {
-          return;
-        }
-        if (!ctx.record) {
-          return;
-        }
-
-        ctx.model.onClick = (e) => {
-          ctx.model.dispatchEvent('click', {
-            event: e,
-            parentRecord: ctx.inputArgs.record,
-            ...ctx.inputArgs,
-          });
-        };
-      },
-    },
-  },
-});
-
 AddChildActionModel.define({
   label: escapeT('Add child'),
 });
