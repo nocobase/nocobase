@@ -96,7 +96,7 @@ const InternalSortableItem = observer(
     const data = useMemo(() => {
       return {
         insertAdjacent: 'afterEnd',
-        schema,
+        schema: schema.parent?.parent?.['x-component'] === 'BlockTemplate' ? schema.parent?.parent : schema,
         removeParentsIfNoChildren: removeParentsIfNoChildren ?? true,
       };
     }, [schema, removeParentsIfNoChildren]);

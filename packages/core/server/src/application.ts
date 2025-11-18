@@ -80,7 +80,6 @@ import { AuditManager } from './audit-manager';
 import { Environment } from './environment';
 import { ServiceContainer } from './service-container';
 import { EventQueue, EventQueueOptions } from './event-queue';
-import { BackgroundJobManager, BackgroundJobManagerOptions } from './background-job-manager';
 import { RedisConfig, RedisConnectionManager } from './redis-connection-manager';
 import { WorkerIdAllocator } from './worker-id-allocator';
 import { setupSnowflakeIdField } from './snowflake-id-field';
@@ -140,7 +139,6 @@ export interface ApplicationOptions {
   auditManager?: AuditManager;
   lockManager?: LockManagerOptions;
   eventQueue?: EventQueueOptions;
-  backgroundJobManager?: BackgroundJobManagerOptions;
 
   /**
    * @internal
@@ -270,7 +268,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
   public container = new ServiceContainer();
   public lockManager: LockManager;
   public eventQueue: EventQueue;
-  public backgroundJobManager: BackgroundJobManager;
 
   constructor(public options: ApplicationOptions) {
     super();
@@ -1280,7 +1277,6 @@ export class Application<StateT = DefaultState, ContextT = DefaultContext> exten
     this.pubSubManager = createPubSubManager(this, options.pubSubManager);
     this.syncMessageManager = new SyncMessageManager(this, options.syncMessageManager);
     this.eventQueue = new EventQueue(this, options.eventQueue);
-    this.backgroundJobManager = new BackgroundJobManager(this, options.backgroundJobManager);
     this.lockManager = new LockManager({
       defaultAdapter: process.env.LOCK_ADAPTER_DEFAULT,
       ...options.lockManager,

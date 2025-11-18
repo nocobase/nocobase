@@ -1,0 +1,13 @@
+{
+  "JSON calculation": "JSON calculation",
+  "Transforming or calculating values from complex JSON data.": "Transforming or calculating values from complex JSON data.",
+  "Query engine": "Query engine",
+  "Data source": "Data source",
+  "Query expression": "Query expression",
+  "Properties mapping": "Properties mapping",
+  "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.": "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.",
+  "Property key": "Property key",
+  "Alias": "Alias",
+  "Display label": "Display label",
+  "Add property": "Add property"
+}

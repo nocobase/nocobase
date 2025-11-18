@@ -5,6 +5,52 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.7](https://github.com/nocobase/nocobase/compare/v1.9.6...v1.9.7) - 2025-11-17
+
+### 🐛 修复
+
+- **[client]** 修复审批表单的联动规则不生效的问题 ([#7858](https://github.com/nocobase/nocobase/pull/7858)) by @zhangzhonghe
+
+- **[server]** 修复服务拆分模式下未订阅无法发布队列消息的问题 ([#7875](https://github.com/nocobase/nocobase/pull/7875)) by @mytharcher
+
+- **[工作流]**
+  - 修复监听不存在的外部数据源事件产生的报错 ([#7855](https://github.com/nocobase/nocobase/pull/7855)) by @mytharcher
+
+  - 使用底层事件队列代替共享后台任务队列，以避免共享队列在服务拆分模式下会被错误消费的问题 ([#7871](https://github.com/nocobase/nocobase/pull/7871)) by @mytharcher
+
+- **[工作流：人工处理节点]** 修复翻译语言指向的命名空间，以正确的翻译内容 ([#7877](https://github.com/nocobase/nocobase/pull/7877)) by @mytharcher
+
+- **[权限控制]** 关系字段关联操作 snippets 不生效的问题 ([#7876](https://github.com/nocobase/nocobase/pull/7876)) by @2013xile
+
+- **[工作流：审批]**
+  - 修复通知渠道分页数量太小加载不全的问题 by @mytharcher
+
+  - 修复审批表单的联动规则不生效的问题 by @zhangzhonghe
+
+  - 修复待办中心审批列表卡片上的日期格式，展示完整的日期和时间 by @mytharcher
+
+  - 修复提交审批处理时查询审批记录列表的性能问题 by @mytharcher
+
+## [v1.9.6](https://github.com/nocobase/nocobase/compare/v1.9.5...v1.9.6) - 2025-11-12
+
+### 🐛 修复
+
+- **[client]** 修复拖拽引用模板后再删除引用模板而导致的复制模板不显示的问题 ([#7847](https://github.com/nocobase/nocobase/pull/7847)) by @zhangzhonghe
+
+- **[utils]** 为 intersect 策略增加对象类型支持 ([#7840](https://github.com/nocobase/nocobase/pull/7840)) by @chenos
+
+- **[数据可视化：EChrats]** 修复ECharts选项配置 labelType 不生效的问题 by @heziqiang
+
+- **[邮件管理]** 没有时间戳的情况下同步微软邮件已读状态 by @jiannx
+
+## [v1.9.5](https://github.com/nocobase/nocobase/compare/v1.9.4...v1.9.5) - 2025-11-10
+
+### 🐛 修复
+
+- **[工作流：审批]** 修复重查关系数据时未屏蔽主表字段的问题 by @mytharcher
+
+- **[邮件管理]** 修复outlook内敛图片和同步问题 by @jiannx
+
 ## [v1.9.4](https://github.com/nocobase/nocobase/compare/v1.9.3...v1.9.4) - 2025-11-10
 
 ### 🚀 优化

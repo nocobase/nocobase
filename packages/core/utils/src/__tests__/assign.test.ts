@@ -333,6 +333,54 @@ describe('merge strategy', () => {
         key1: ['b', 'c'],
       });
     });
+    it('case 6', () => {
+      const obj = assign(
+        {
+          key1: { 0: 'val1', 1: 'val2' },
+        },
+        {
+          key1: { 1: 'val2' },
+        },
+        {
+          key1: 'intersect',
+        },
+      );
+      expect(obj).toMatchObject({
+        key1: ['val2'],
+      });
+    });
+    it('case 7', () => {
+      const obj = assign(
+        {
+          key1: null,
+        },
+        {
+          key1: { 1: 'val2' },
+        },
+        {
+          key1: 'intersect',
+        },
+      );
+      expect(obj).toMatchObject({
+        key1: ['val2'],
+      });
+    });
+    it('case 8', () => {
+      const obj = assign(
+        {
+          key1: { 1: 'val2' },
+        },
+        {
+          key1: null,
+        },
+        {
+          key1: 'intersect',
+        },
+      );
+      expect(obj).toMatchObject({
+        key1: ['val2'],
+      });
+    });
   });
 
   describe('union', () => {

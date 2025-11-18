@@ -136,7 +136,7 @@ const popupConfigureUserInterfaceOptions = {
                 {
                   name: 'nodes',
                   type: 'subMenu',
-                  title: `{{t("Node result", { ns: "${NAMESPACE}" })}}`,
+                  title: `{{t("Node result", { ns: "workflow" })}}`,
                   children: nodeBlockInitializers,
                 },
               ]

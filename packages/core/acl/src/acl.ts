@@ -374,6 +374,7 @@ export class ACL extends EventEmitter {
     const acl = this;
 
     return async function ACLMiddleware(ctx, next) {
+      ctx.acl = acl;
       const roleName = ctx.state.currentRole || 'anonymous';
       const { resourceName: rawResourceName, actionName } = ctx.action;
 

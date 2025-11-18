@@ -7,26 +7,34 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ACL } from '@nocobase/acl';
 import { Context, Next } from '@nocobase/actions';
 
 export async function checkAssociationOperate(ctx: Context, next: Next) {
   const { actionName, resourceName } = ctx.action;
-  if (!['add', 'set', 'remove', 'toggle'].includes(actionName)) {
+  if (!(resourceName.includes('.') && ['add', 'set', 'remove', 'toggle'].includes(actionName))) {
     return next();
+  }
+  const acl: ACL = ctx.acl;
+  const roles = ctx.state.currentRoles;
+  for (const role of roles) {
+    const aclRole = acl.getRole(role);
+    if (aclRole.snippetAllowed(`${resourceName}:${actionName}`)) {
+      return next();
+    }
   }
   const [resource, association] = resourceName.split('.');
   const result = ctx.can({
-    roles: ctx.state.currentRoles,
+    roles,
     resource,
     action: 'update',
   });
   if (!result) {
     ctx.throw(403, 'No permissions');
   }
-  if (result.params) {
-    if (!result.params.whitelist?.includes(association)) {
-      ctx.throw(403, 'No permissions');
-    }
+  const params = result.params || ctx.acl.fixedParamsManager.getParams(resourceName, actionName);
+  if (params.whitelist && !params.whitelist?.includes(association)) {
+    ctx.throw(403, 'No permissions');
   }
   ctx.permission = {
     ...ctx.permission,
