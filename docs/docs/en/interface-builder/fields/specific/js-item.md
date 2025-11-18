@@ -20,7 +20,8 @@ JS Item is used for "custom items" (not bound to a field) in a form. You can use
 - `ctx.message` / `ctx.notification`: Global message and notification.
 - `ctx.t()` / `ctx.i18n.t()`: Internationalization.
 - `ctx.onRefReady(ctx.ref, cb)`: Render after the container is ready.
-- `ctx.React` / `ctx.ReactDOM` / `ctx.antd`: Supports JSX, rendered directly by `ctx.ReactDOM`.
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd`: Built-in React/ReactDOM/Ant Design libraries for JSX rendering. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` are kept for compatibility.)
+- `ctx.libs.antdIcons`: Ant Design icons library for use in JSX, for example `ctx.libs.antdIcons.PlusOutlined`.
 - `ctx.render(vnode)`: Renders a React element/HTML/DOM to the default container `ctx.element`. Multiple renders will reuse the Root and overwrite the existing content of the container.
 
 ## Editor and Snippets

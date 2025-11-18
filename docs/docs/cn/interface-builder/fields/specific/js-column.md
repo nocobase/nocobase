@@ -19,7 +19,8 @@ JS Column 的每个单元格渲染时可使用以下上下文能力：
 - `ctx.openView(options)`：打开已配置的视图（弹窗/抽屉/页面）；
 - `ctx.i18n.t()` / `ctx.t()`：国际化；
 - `ctx.onRefReady(ctx.ref, cb)`：容器就绪后再渲染；
-- `ctx.React` / `ctx.ReactDOM` / `ctx.antd`：支持 JSX，直接由 `ctx.ReactDOM` 渲染。
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd`：内置 React/ReactDOM/Ant Design 库，用于 JSX 渲染。（`ctx.React` / `ctx.ReactDOM` / `ctx.antd` 仍保留用于兼容。）
+- `ctx.libs.antdIcons`：Ant Design 图标库，可在 JSX 中使用，例如 `ctx.libs.antdIcons.PlusOutlined`。
 - `ctx.render(vnode)`：渲染 React 元素/HTML/DOM 到默认容器 `ctx.element`（当前单元格），多次渲染会复用 Root，并覆盖容器现有内容。
 
 ## 编辑器与片段
@@ -46,7 +47,7 @@ ctx.render(<span className="nb-js-col-name">{ctx.record?.name ?? '-'}</span>);
 ### 2) 使用 JSX 渲染 React 组件
 
 ```js
-const { Tag } = ctx.antd;
+const { Tag } = ctx.libs.antd;
 const status = ctx.record?.status ?? 'unknown';
 const color = status === 'active' ? 'green' : status === 'blocked' ? 'red' : 'default';
 ctx.render(

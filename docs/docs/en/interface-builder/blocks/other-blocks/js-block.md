@@ -15,7 +15,8 @@ The JS Block's runtime context has common capabilities injected and can be used 
 - `ctx.useResource(...)` + `ctx.resource`: Accesses data as a resource.
 - `ctx.i18n.t()` / `ctx.t()`: Built-in internationalization capability.
 - `ctx.onRefReady(ctx.ref, cb)`: Renders after the container is ready to avoid timing issues.
-- `ctx.React` / `ctx.ReactDOM` / `ctx.antd`: Supports JSX. You can write JSX directly in the editor, and it will be rendered by `ctx.ReactDOM`.
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd`: Built-in React/ReactDOM/Ant Design libraries for JSX rendering. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` are kept for compatibility.)
+- `ctx.libs.antdIcons`: Ant Design icons library for use in JSX, for example `ctx.libs.antdIcons.PlusOutlined`.
 - `ctx.render(vnode)`: Renders a React element, HTML string, or DOM node to the default container `ctx.element`. Multiple calls will reuse the same React Root and overwrite the container's existing content.
 
 ## Adding a Block
@@ -51,7 +52,7 @@ Additionally, you can directly summon the AI employee "Frontend Engineer · Nath
 ### 1) Render React (JSX)
 
 ```js
-const { Button } = ctx.antd;
+const { Button } = ctx.libs.antd;
 ctx.render(
   <div style={{ padding: 12 }}>
     <Button type="primary" onClick={() => ctx.message.success(ctx.t('Clicked!'))}>

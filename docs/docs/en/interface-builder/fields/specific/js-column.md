@@ -21,7 +21,8 @@ When rendering each cell, JS Column provides the following context APIs:
 - `ctx.openView(options)`: Opens a configured view (modal/drawer/page).
 - `ctx.i18n.t()` / `ctx.t()`: Internationalization.
 - `ctx.onRefReady(ctx.ref, cb)`: Renders after the container is ready.
-- `ctx.React` / `ctx.ReactDOM` / `ctx.antd`: Support for JSX, rendered directly by `ctx.ReactDOM`.
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd`: Built-in React/ReactDOM/Ant Design libraries for JSX rendering. (`ctx.React` / `ctx.ReactDOM` / `ctx.antd` are kept for compatibility.)
+- `ctx.libs.antdIcons`: Ant Design icons library for use in JSX, for example `ctx.libs.antdIcons.PlusOutlined`.
 - `ctx.render(vnode)`: Renders a React element/HTML/DOM to the default container `ctx.element` (the current cell). Multiple renders will reuse the Root and overwrite the existing content of the container.
 
 ## Editor and Snippets
@@ -50,7 +51,7 @@ ctx.render(<span className="nb-js-col-name">{ctx.record?.name ?? '-'}</span>);
 ### 2) Using JSX to Render React Components
 
 ```js
-const { Tag } = ctx.antd;
+const { Tag } = ctx.libs.antd;
 const status = ctx.record?.status ?? 'unknown';
 const color = status === 'active' ? 'green' : status === 'blocked' ? 'red' : 'default';
 ctx.render(

@@ -18,7 +18,8 @@ JS Item 用于表单中的“自定义项”（非字段绑定）。你可以用
 - `ctx.message` / `ctx.notification`：全局提示与通知；
 - `ctx.t()` / `ctx.i18n.t()`：国际化；
 - `ctx.onRefReady(ctx.ref, cb)`：容器就绪后再渲染；
-- `ctx.React` / `ctx.ReactDOM` / `ctx.antd`：支持 JSX，直接由 `ctx.ReactDOM` 渲染。
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd`：内置 React/ReactDOM/Ant Design 库，用于 JSX 渲染。（`ctx.React` / `ctx.ReactDOM` / `ctx.antd` 仍保留用于兼容。）
+- `ctx.libs.antdIcons`：Ant Design 图标库，可在 JSX 中使用，例如 `ctx.libs.antdIcons.PlusOutlined`。
 - `ctx.render(vnode)`：渲染 React 元素/HTML/DOM 到默认容器 `ctx.element`；多次渲染会复用 Root，并覆盖容器现有内容。
 
 ## 编辑器与片段

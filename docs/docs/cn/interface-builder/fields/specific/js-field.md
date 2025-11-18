@@ -34,7 +34,8 @@ JS Field 运行时代码可直接使用以下上下文能力：
 - `ctx.openView(options)`：打开已配置的视图（弹窗/抽屉/页面）；
 - `ctx.i18n.t()` / `ctx.t()`：国际化；
 - `ctx.onRefReady(ctx.ref, cb)`：容器就绪后再渲染；
-- `ctx.React` / `ctx.ReactDOM` / `ctx.antd`：支持 JSX，直接由 `ctx.ReactDOM` 渲染。
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd`：内置 React/ReactDOM/Ant Design 库，用于 JSX 渲染。（`ctx.React` / `ctx.ReactDOM` / `ctx.antd` 仍保留用于兼容。）
+- `ctx.libs.antdIcons`：Ant Design 图标库，可在 JSX 中使用，例如 `ctx.libs.antdIcons.PlusOutlined`。
 - `ctx.render(vnode)`：将 React 元素、HTML 字符串或 DOM 节点渲染到默认容器 `ctx.element`；重复渲染会复用 Root，并覆盖容器现有内容。
 
 可编辑型（JSEditableField）特有：
@@ -67,7 +68,7 @@ ctx.render(<span className="nb-js-field">{String(ctx.value ?? '')}</span>);
 ### 2) 使用 JSX 渲染 React 组件
 
 ```js
-const { Tag } = ctx.antd;
+const { Tag } = ctx.libs.antd;
 ctx.render(
   <div style={{ padding: 4 }}>
     <Tag color={ctx.value ? 'green' : 'default'}>{String(ctx.value ?? '')}</Tag>
@@ -132,4 +133,4 @@ ctx.render(<InputView />);
 
 - 外部库加载建议使用可信 CDN，且为失败场景做好兜底（如 `if (!lib) return;`）。
 - 选择器建议优先使用 `class` 或 `[name=...]`，避免使用固定 `id`，防止多个区块/弹窗中重复 `id`。
-- 事件清理：字段可能因数据变化或视图切换而多次重渲染，绑定事件前应清理或去重，避免重复触发。可“先 remove 再 add”，或 `{ once: true }`，或用 `dataset` 标记防重复。
+- 事件清理：字段可能因数据变化或视图切换而多次重渲染，绑定事件前应清理或去重，避免重复触发。可“先 remove 再 add”。
