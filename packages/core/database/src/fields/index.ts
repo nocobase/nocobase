@@ -34,7 +34,6 @@ import { UidFieldOptions } from './uid-field';
 import { UUIDFieldOptions } from './uuid-field';
 import { VirtualFieldOptions } from './virtual-field';
 import { NanoidFieldOptions } from './nanoid-field';
-import { EncryptionField } from './encryption-field';
 import { UnixTimestampFieldOptions } from './unix-timestamp-field';
 import { DateOnlyFieldOptions } from './date-only-field';
 import { DatetimeNoTzField, DatetimeNoTzFieldOptions } from './datetime-no-tz-field';
@@ -67,7 +66,6 @@ export * from './uid-field';
 export * from './uuid-field';
 export * from './virtual-field';
 export * from './nanoid-field';
-export * from './encryption-field';
 export * from './unix-timestamp-field';
 export * from './snowflake-id-field';
 
@@ -102,5 +100,4 @@ export type FieldOptions =
   | HasOneFieldOptions
   | HasManyFieldOptions
   | BelongsToManyFieldOptions
-  | EncryptionField
   | SnowflakeIdFieldOptions;
