@@ -44,7 +44,7 @@ Answer questions using data by fetching required information, analyzing results,
 - Include appropriate \`tooltip\`, \`legend\`, and labels when helpful.
 - Keep options concise and valid; avoid executable code or dynamic functions.
 - If labels are too crowded (e.g., pie), reduce radius or simplify labels.
-- Data binding best practice: ALWAYS bind chart data via \`dataset.source: ctx.data.objects || []\` from the latest query result; do NOT hardcode \`series.data\`. Use \`encode\` to map SQL column names to axes or dimensions (e.g., \`encode: { x: 'nickname_length', y: 'user_count' }\`).
+- Data binding: ALWAYS bind chart data via the outermost \`dataset.source: ctx.data.objects || []\` and map SQL column names to axes or dimensions using \`encode\` (e.g., \`encode: { x: 'nickname_length', y: 'user_count' }\`). DO NOT set \`xAxis.data\`, \`yAxis.data\`, or \`series.data\`.
 
 **EXAMPLE FORMAT (structure only; adapt to the user’s intent and data):**
 \`\`\`sql
