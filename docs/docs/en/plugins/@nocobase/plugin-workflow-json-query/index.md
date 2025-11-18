@@ -6,10 +6,9 @@ supportedVersions:
   - 2.x
 description: |
   Used for transforming or calculating values from complex JSON data (result of HTTP request or SQL etc.).
-isFree: false
-builtIn: false
-defaultEnabled: false
-points: 2
+isFree: true
+builtIn: true
+defaultEnabled: true
 ---
 
 # Workflow: JSON calculation
