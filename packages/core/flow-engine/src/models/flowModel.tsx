@@ -753,7 +753,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (options?.debounce) {
       return this._dispatchEventWithDebounce(eventName, { record: this.context.record, ...inputArgs }, execOptions);
     }
-    return this._dispatchEvent(eventName, { record: this.context.record, inputArgs }, execOptions);
+    return this._dispatchEvent(eventName, { record: this.context.record, ...inputArgs }, execOptions);
   }
 
   /**
