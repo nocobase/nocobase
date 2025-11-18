@@ -6,7 +6,6 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-editionLevel: 3
 ---
 
 # Redis worker ID 分配器

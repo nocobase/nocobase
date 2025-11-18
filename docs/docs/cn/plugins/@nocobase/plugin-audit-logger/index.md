@@ -1,15 +1,11 @@
 ---
 displayName: "审计日志"
 packageName: '@nocobase/plugin-audit-logger'
-supportedVersions:
-  - 1.x
-  - 2.x
 description: |
   跟踪并记录系统内的用户活动和资源操作
-isFree: false
-builtIn: false
+isFree: true
+builtIn: true
 defaultEnabled: false
-editionLevel: 3
 ---
 
 # 审计日志
