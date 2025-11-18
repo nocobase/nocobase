@@ -9,16 +9,20 @@
 
 import { MockDatabase, MockServer, createMockServer } from '@nocobase/test';
 import { prepareApp } from './prepare';
+import { checkChangesWithAssociation } from '../middlewares/check-change-with-association';
+import compose from 'koa-compose';
 
 describe('Change with association', async () => {
   let app: MockServer;
   let db: MockDatabase;
+  let agent;
   let admin;
   let adminAgent;
 
   beforeEach(async () => {
     app = await prepareApp();
     db = app.db;
+    agent = app.agent();
     const UserRepo = db.getCollection('users').repository;
     admin = await UserRepo.create({
       values: {
@@ -98,6 +102,14 @@ describe('Change with association', async () => {
             unique: true,
           },
           {
+            name: 'title',
+            type: 'string',
+          },
+          {
+            name: 'text',
+            type: 'string',
+          },
+          {
             name: 'assoc1',
             type: 'belongsToMany',
             target: 'assoc1',
@@ -130,6 +142,7 @@ describe('Change with association', async () => {
 
   test('disallow to associate', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
+      updateAssociationValues: ['actions'],
       values: {
         usingActionsConfig: true,
         name: 'test',
@@ -148,7 +161,7 @@ describe('Change with association', async () => {
       },
     });
 
-    const ctx = app.context;
+    const ctx: any = app.context;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -168,7 +181,7 @@ describe('Change with association', async () => {
         },
       },
     };
-    await app.acl.middleware()(ctx, async () => {});
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
     });
@@ -215,19 +228,16 @@ describe('Change with association', async () => {
         },
       },
     };
-    await app.acl.middleware()(ctx, async () => {});
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
-      assoc1: [
-        {
-          name: 'assoc1-1',
-        },
-      ],
+      assoc1: ['assoc1-1'],
     });
   });
 
   test('allow create association, nested disallow associate', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
+      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -284,7 +294,7 @@ describe('Change with association', async () => {
         },
       },
     };
-    await app.acl.middleware()(ctx, async () => {});
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
       assoc1: [
@@ -297,6 +307,7 @@ describe('Change with association', async () => {
 
   test('allow update association, nested disallow associate', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
+      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -354,7 +365,7 @@ describe('Change with association', async () => {
         },
       },
     };
-    await app.acl.middleware()(ctx, async () => {});
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
       assoc1: [
@@ -370,11 +381,12 @@ describe('Change with association', async () => {
     const res = await adminAgent.resource('dataSourcesRolesResourcesScopes').create({
       values: {
         name: 'assoc1',
-        resourceName: 'test',
-        scope: { $and: [{ assoc1: { name: { $eq: 'assoc1' } } }] },
+        resourceName: 'assoc1',
+        scope: { $and: [{ name: { $eq: 'assoc1' } }] },
       },
     });
     await adminAgent.resource('roles.resources', 'test-role').create({
+      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -406,7 +418,14 @@ describe('Change with association', async () => {
       },
     });
 
+    await db.getRepository('assoc1').create({
+      values: {
+        name: 'assoc1-1',
+      },
+    });
+
     const ctx = app.context;
+    ctx.get = () => '';
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -433,14 +452,10 @@ describe('Change with association', async () => {
         },
       },
     };
-    await app.acl.middleware()(ctx, async () => {});
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
-      assoc1: [
-        {
-          name: 'assoc1-1',
-        },
-      ],
+      assoc1: ['assoc1-1'],
     });
   });
 
@@ -448,11 +463,12 @@ describe('Change with association', async () => {
     const res = await adminAgent.resource('dataSourcesRolesResourcesScopes').create({
       values: {
         name: 'assoc1',
-        resourceName: 'test',
-        scope: { $and: [{ assoc1: { name: { $eq: 'assoc1-1' } } }] },
+        resourceName: 'assoc1',
+        scope: { $and: [{ name: { $eq: 'assoc1-1' } }] },
       },
     });
     await adminAgent.resource('roles.resources', 'test-role').create({
+      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -484,7 +500,14 @@ describe('Change with association', async () => {
       },
     });
 
+    await db.getRepository('assoc1').create({
+      values: {
+        name: 'assoc1-1',
+      },
+    });
+
     const ctx = app.context;
+    ctx.get = () => '';
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -511,7 +534,7 @@ describe('Change with association', async () => {
         },
       },
     };
-    await app.acl.middleware()(ctx, async () => {});
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
       assoc1: [
@@ -525,6 +548,7 @@ describe('Change with association', async () => {
 
   test('allow update association, nested associate only', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
+      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -583,18 +607,14 @@ describe('Change with association', async () => {
         },
       },
     };
-    await app.acl.middleware()(ctx, async () => {});
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
       assoc1: [
         {
           name: 'assoc1-1',
           title: 'assoc1 title',
-          assoc2: [
-            {
-              name: 'assoc2-1',
-            },
-          ],
+          assoc2: ['assoc2-1'],
         },
       ],
     });
@@ -602,6 +622,7 @@ describe('Change with association', async () => {
 
   test('allow update association, allow create nested association', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
+      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -669,7 +690,7 @@ describe('Change with association', async () => {
         },
       },
     };
-    await app.acl.middleware()(ctx, async () => {});
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
       assoc1: [
@@ -690,11 +711,12 @@ describe('Change with association', async () => {
     const res = await adminAgent.resource('dataSourcesRolesResourcesScopes').create({
       values: {
         name: 'assoc2',
-        resourceName: 'assoc1',
-        scope: { $and: [{ assoc2: { name: { $eq: 'assoc2' } } }] },
+        resourceName: 'assoc2',
+        scope: { $and: [{ name: { $eq: 'assoc2' } }] },
       },
     });
     await adminAgent.resource('roles.resources', 'test-role').create({
+      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -713,7 +735,6 @@ describe('Change with association', async () => {
             {
               name: 'update',
               fields: ['name', 'title', 'assoc2'],
-              scopeId: res.body.data.id,
             },
           ],
         },
@@ -724,6 +745,7 @@ describe('Change with association', async () => {
             {
               name: 'update',
               fields: ['name', 'title'],
+              scopeId: res.body.data.id,
             },
           ],
         },
@@ -736,7 +758,14 @@ describe('Change with association', async () => {
       },
     });
 
+    await db.getRepository('assoc2').create({
+      values: {
+        name: 'assoc2-1',
+      },
+    });
+
     const ctx = app.context;
+    ctx.get = () => '';
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -764,18 +793,14 @@ describe('Change with association', async () => {
         },
       },
     };
-    await app.acl.middleware()(ctx, async () => {});
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
       assoc1: [
         {
           name: 'assoc1-1',
           title: 'assoc1 title',
-          assoc2: [
-            {
-              name: 'assoc2-1',
-            },
-          ],
+          assoc2: ['assoc2-1'],
         },
       ],
     });
@@ -785,11 +810,12 @@ describe('Change with association', async () => {
     const res = await adminAgent.resource('dataSourcesRolesResourcesScopes').create({
       values: {
         name: 'assoc2',
-        resourceName: 'assoc1',
-        scope: { $and: [{ assoc2: { name: { $eq: 'assoc2-1' } } }] },
+        resourceName: 'assoc2',
+        scope: { $and: [{ name: { $eq: 'assoc2-1' } }] },
       },
     });
     await adminAgent.resource('roles.resources', 'test-role').create({
+      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -808,7 +834,6 @@ describe('Change with association', async () => {
             {
               name: 'update',
               fields: ['name', 'title', 'assoc2'],
-              scopeId: res.body.data.id,
             },
           ],
         },
@@ -819,6 +844,7 @@ describe('Change with association', async () => {
             {
               name: 'update',
               fields: ['name', 'title'],
+              scopeId: res.body.data.id,
             },
           ],
         },
@@ -831,7 +857,14 @@ describe('Change with association', async () => {
       },
     });
 
+    await db.getRepository('assoc2').create({
+      values: {
+        name: 'assoc2-1',
+      },
+    });
+
     const ctx = app.context;
+    ctx.get = () => '';
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -859,7 +892,7 @@ describe('Change with association', async () => {
         },
       },
     };
-    await app.acl.middleware()(ctx, async () => {});
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
       assoc1: [
@@ -879,6 +912,7 @@ describe('Change with association', async () => {
 
   test('associate hasOne', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
+      updateAssociationValues: ['actions'],
       values: {
         usingActionsConfig: true,
         name: 'test',
@@ -918,19 +952,16 @@ describe('Change with association', async () => {
         },
       },
     };
-    await app.acl.middleware()(ctx, async () => {});
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
-      assoc3: [
-        {
-          assoc3_name: 'assoc3-1',
-        },
-      ],
+      assoc3: ['assoc3-1'],
     });
   });
 
   test('allow update hasOne', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
+      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -982,7 +1013,7 @@ describe('Change with association', async () => {
         },
       },
     };
-    await app.acl.middleware()(ctx, async () => {});
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
       assoc3: [
@@ -993,4 +1024,91 @@ describe('Change with association', async () => {
       ],
     });
   });
+
+  it('should reserve filter keys', async () => {
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      updateAssociationValues: ['actions'],
+      values: [
+        {
+          usingActionsConfig: true,
+          name: 'test',
+          actions: [
+            {
+              name: 'create',
+              fields: ['name', 'text'],
+            },
+          ],
+        },
+      ],
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+
+    const ctx = app.context;
+    ctx.database = db;
+    ctx.state = {
+      currentUser: user,
+      currentRoles: ['test-role'],
+    };
+    ctx.action = {
+      resourceName: 'test',
+      actionName: 'firstOrCreate',
+      params: {
+        filterKeys: ['name', 'title'],
+        values: {
+          name: 'test-1',
+          title: 'test title',
+          text: 'test text',
+        },
+      },
+    };
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
+    expect(ctx.action.params.values).toMatchObject({
+      name: 'test-1',
+      title: 'test title',
+      text: 'test text',
+    });
+  });
+
+  // test('associate only, integral', async () => {
+  //   await adminAgent.resource('roles.resources', 'test-role').create({
+  //     values: {
+  //       usingActionsConfig: true,
+  //       name: 'test',
+  //       actions: [
+  //         {
+  //           name: 'create',
+  //           fields: ['name', 'assoc1'],
+  //         },
+  //       ],
+  //     },
+  //   });
+  //
+  //   const user = await db.getRepository('users').create({
+  //     values: {
+  //       roles: ['test-role'],
+  //     },
+  //   });
+  //   const userAgent = await agent.login(user);
+  //   await userAgent.resource('test').create({
+  //     values: {
+  //       name: 'test-1',
+  //       assoc1: [
+  //         {
+  //           name: 'assoc1-1',
+  //           title: 'assoc1 title',
+  //         },
+  //       ],
+  //     },
+  //   });
+  //   const testRecord = await db.getRepository('test').findOne();
+  //   expect(testRecord).toBeDefined();
+  //   expect(testRecord.name).toBe('test-1');
+  //   const assoc1 = await db.getRepository('assoc1').findOne();
+  //   expect(assoc1).toBeFalsy();
+  // });
 });

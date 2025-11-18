@@ -130,6 +130,7 @@ export class PluginACLServer extends Plugin {
         'roles.dataSourcesCollections:*',
         'roles.dataSourceResources:*',
         'dataSourcesRolesResourcesScopes:*',
+        'dataSourcesRolesResourcesActions:*',
         'rolesResourcesScopes:*',
       ],
     });
@@ -633,9 +634,10 @@ export class PluginACLServer extends Plugin {
       before: 'core',
     });
 
-    this.app.acl.use(checkChangesWithAssociation, {
-      after: 'core',
-    });
+    this.app.resourceManager.registerPreActionHandler('create', checkChangesWithAssociation);
+    this.app.resourceManager.registerPreActionHandler('firstOrCreate', checkChangesWithAssociation);
+    this.app.resourceManager.registerPreActionHandler('updateOrCreate', checkChangesWithAssociation);
+    this.app.resourceManager.registerPreActionHandler('update', checkChangesWithAssociation);
 
     this.db.on('afterUpdateCollection', async (collection) => {
       if (collection.options.loadedFromCollectionManager || collection.options.asStrategyResource) {

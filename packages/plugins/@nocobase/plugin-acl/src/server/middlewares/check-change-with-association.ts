@@ -19,11 +19,10 @@ function normalizeAssociationValue(
   recordKey: string,
 ): Record<string, any> | Record<string, any>[] | undefined {
   if (Array.isArray(value)) {
-    const result = value.map((v) => _.pick(v, recordKey)).filter((v) => !_.isEmpty(v));
+    const result = value.map((v) => v[recordKey]).filter((v) => !_.isEmpty(v));
     return result.length > 0 ? result : undefined;
   } else {
-    const result = _.pick(value, recordKey);
-    return _.isEmpty(result) ? undefined : result;
+    return value[recordKey];
   }
 }
 
@@ -39,36 +38,38 @@ async function processAssociationChild(
   updateParams: any,
   target: string,
   fieldPath: string,
-): Promise<Record<string, any> | null> {
+): Promise<Record<string, any> | string | number | null> {
   // Case 1: Existing record → potential update
   if (value[recordKey]) {
     if (!updateParams) {
       // No update permission, skip
-      return _.pick(value, recordKey);
+      return value[recordKey];
     } else {
-      const filteredParams = ctx.acl.filterParams(ctx, target, updateParams);
+      const filteredParams = ctx.acl.filterParams(ctx, target, updateParams.params);
       const parsedParams = await ctx.acl.parseJsonTemplate(filteredParams, ctx);
       if (parsedParams.filter) {
         // permission scope exists, verify the record exists under the scope
         const repo = ctx.db.getRepository(target);
         if (!repo) {
-          return _.pick(value, recordKey);
+          return value[recordKey];
         }
         const record = await repo.findOne({
-          filterByTk: value[recordKey],
-          filter: parsedParams.filter,
+          filter: {
+            ...parsedParams.filter,
+            [recordKey]: value[recordKey],
+          },
         });
         if (!record) {
-          return _.pick(value, recordKey);
+          return value[recordKey];
         }
       }
-      return await processValues(ctx, value, updateAssociationValues, updateParams, target, fieldPath);
+      return await processValues(ctx, value, updateAssociationValues, updateParams.params, target, fieldPath);
     }
   }
 
   // Case 2: New record → potential create
   if (createParams) {
-    return await processValues(ctx, value, updateAssociationValues, createParams, target, fieldPath);
+    return await processValues(ctx, value, updateAssociationValues, createParams.params, target, fieldPath);
   }
 
   // Case 3: Neither create nor update is allowed
@@ -80,12 +81,42 @@ async function processAssociationChild(
  */
 async function processValues(
   ctx: Context,
-  values: Record<string, any>,
+  values: Record<string, any> | Record<string, any>[],
   updateAssociationValues: string[],
   aclParams: any,
   collectionName: string,
   lastFieldPath = '',
+  protectedKeys: string[] = [],
 ) {
+  // Case: array of items → process each item
+  if (Array.isArray(values)) {
+    const result = [];
+
+    for (const item of values) {
+      if (!_.isPlainObject(item)) {
+        // Non-object items are returned as-is
+        result.push(item);
+        continue;
+      }
+
+      const processed = await processValues(
+        ctx,
+        item,
+        updateAssociationValues,
+        aclParams,
+        collectionName,
+        lastFieldPath,
+        protectedKeys,
+      );
+
+      if (!_.isEmpty(processed)) {
+        result.push(processed);
+      }
+    }
+
+    return result;
+  }
+
   const db: Database = ctx.database;
   const collection = db.getCollection(collectionName);
 
@@ -93,16 +124,23 @@ async function processValues(
     return values;
   }
 
-  // Apply ACL whitelist filtering
+  // Whitelist: protectedKeys must never be removed
   if (aclParams?.whitelist) {
-    values = _.pick(values, aclParams.whitelist);
+    const combined = _.uniq([...aclParams.whitelist, ...protectedKeys]);
+    values = _.pick(values, combined);
   }
 
   for (const [fieldName, fieldValue] of Object.entries(values)) {
-    const field = collection.getField(fieldName);
+    // Skip protected fields
+    if (protectedKeys.includes(fieldName)) {
+      continue;
+    }
 
-    // Skip non-association fields
-    if (!field?.target) {
+    const field = collection.getField(fieldName);
+    const isAssociation =
+      field && ['hasOne', 'hasMany', 'belongsTo', 'belongsToMany', 'belongsToArray'].includes(field.type);
+
+    if (!isAssociation) {
       continue;
     }
 
@@ -115,33 +153,41 @@ async function processValues(
     const fieldPath = lastFieldPath ? `${lastFieldPath}.${fieldName}` : fieldName;
     const recordKey = field.type === 'hasOne' ? targetCollection.model.primaryKeyAttribute : field.targetKey;
 
-    // Case 1: Association update is not allowed → keep only record keys
-    if (!updateAssociationValues.includes(fieldPath)) {
+    const canUpdateAssociation = updateAssociationValues.includes(fieldPath);
+    console.log(canUpdateAssociation);
+
+    // Association cannot update → only keep key(s)
+    if (!canUpdateAssociation) {
       const normalized = normalizeAssociationValue(fieldValue, recordKey);
-      if (!normalized) {
+
+      if (normalized === undefined && !protectedKeys.includes(fieldName)) {
         delete values[fieldName];
       } else {
         values[fieldName] = normalized;
       }
+
       continue;
     }
 
-    // Case 2: Association update is allowed → process recursively
+    // Allowed: process create/update rules
     const createParams = ctx.can({
       roles: ctx.state.currentRoles,
       resource: field.target,
       action: 'create',
     });
+
     const updateParams = ctx.can({
       roles: ctx.state.currentRoles,
       resource: field.target,
       action: 'update',
     });
 
+    // Multi
     if (Array.isArray(fieldValue)) {
-      const processedArray = [];
+      const processed = [];
+
       for (const item of fieldValue) {
-        const result = await processAssociationChild(
+        const r = await processAssociationChild(
           ctx,
           item,
           recordKey,
@@ -151,31 +197,36 @@ async function processValues(
           field.target,
           fieldPath,
         );
-        if (!_.isEmpty(result)) {
-          processedArray.push(result);
+        if (!_.isEmpty(r)) {
+          processed.push(r);
         }
       }
-      if (processedArray.length === 0) {
+
+      if (processed.length === 0 && !protectedKeys.includes(fieldName)) {
         delete values[fieldName];
       } else {
-        values[fieldName] = processedArray;
+        values[fieldName] = processed;
       }
+
+      continue;
+    }
+
+    // Single
+    const r = await processAssociationChild(
+      ctx,
+      fieldValue,
+      recordKey,
+      updateAssociationValues,
+      createParams,
+      updateParams,
+      field.target,
+      fieldPath,
+    );
+
+    if (_.isEmpty(r) && !protectedKeys.includes(fieldName)) {
+      delete values[fieldName];
     } else {
-      const result = await processAssociationChild(
-        ctx,
-        fieldValue,
-        recordKey,
-        updateAssociationValues,
-        createParams,
-        updateParams,
-        field.target,
-        fieldPath,
-      );
-      if (_.isEmpty(result)) {
-        delete values[fieldName];
-      } else {
-        values[fieldName] = result;
-      }
+      values[fieldName] = r;
     }
   }
 
@@ -183,23 +234,31 @@ async function processValues(
 }
 
 export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
-  if (ctx.permission.skip) {
-    return next();
-  }
+  if (ctx.permission.skip) return next();
+
   const { resourceName, actionName } = ctx.action;
   if (!['create', 'firstOrCreate', 'updateOrCreate', 'update'].includes(actionName)) {
     return next();
   }
-  const values = ctx.action.params?.values || {};
-  if (_.isEmpty(values)) {
+
+  const params = ctx.action.params || {};
+  const rawValues = params.values;
+  if (_.isEmpty(rawValues)) {
     return next();
   }
-  const { updateAssociationValues = [] } = ctx.action.params || {};
-  const params = ctx.permission.can?.params || ctx.acl.fixedParamsManager.getParams(resourceName, actionName);
-  let collectionName = resourceName;
-  if (resourceName.includes('.')) {
-    collectionName = resourceName.split('.')[1];
-  }
-  ctx.action.params.values = await processValues(ctx, values, updateAssociationValues, params, collectionName);
+
+  const protectedKeys = ['firstOrCreate', 'updateOrCreate'].includes(actionName) ? params.filterKeys || [] : [];
+  const aclParams = ctx.permission.can?.params || ctx.acl.fixedParamsManager.getParams(resourceName, actionName);
+  const processed = await processValues(
+    ctx,
+    rawValues,
+    params.updateAssociationValues || [],
+    aclParams,
+    resourceName,
+    '',
+    protectedKeys,
+  );
+  console.log(processed);
+  ctx.action.params.values = processed;
   await next();
 };
