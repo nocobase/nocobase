@@ -7,18 +7,20 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useT } from '../../locale';
 import { Collapse, Card } from 'antd';
 import { QueryPanel } from './QueryPanel';
 import { ChartOptionsPanel } from './ChartOptionsPanel';
 import { EventsPanel } from './EventsPanel';
 import { useForm } from '@formily/react';
+import { useFlowSettingsContext } from '@nocobase/flow-engine';
+import { DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 
 export const ConfigPanel: React.FC = () => {
   const t = useT();
   const form = useForm();
-  const { query, chart } = form?.values || {};
+  const ctx = useFlowSettingsContext<any>();
   // 默认展开前两个面板 - 必填
   const [activeKeys, setActiveKeys] = useState<string | string[]>(['query', 'chartOption']);
 
@@ -34,6 +36,28 @@ export const ConfigPanel: React.FC = () => {
       border: 'none',
     } as React.CSSProperties;
   };
+
+  useEffect(() => {
+    ctx?.defineMethod?.('writeSql', async (sql: string) => {
+      const dsKey = form?.values?.query?.sqlDatasource ?? DEFAULT_DATA_SOURCE_KEY;
+      form?.setValuesIn?.('query.mode', 'sql');
+      form?.setValuesIn?.('query.sql', sql);
+      form?.setValuesIn?.('query.sqlDatasource', dsKey);
+      return ctx.model.onPreview(form?.values, true);
+    });
+
+    ctx?.defineMethod?.('writeChartConfig', async (raw: string) => {
+      form?.setValuesIn?.('chart.option.mode', 'custom');
+      form?.setValuesIn?.('chart.option.raw', raw);
+      return ctx.model.onPreview(form?.values);
+    });
+
+    ctx?.defineMethod?.('writeChartEvents', async (raw: string) => {
+      form?.setValuesIn?.('chart.events.mode', 'custom');
+      form?.setValuesIn?.('chart.events.raw', raw);
+      return ctx.model.onPreview(form?.values);
+    });
+  }, [ctx, form]);
 
   return (
     <>

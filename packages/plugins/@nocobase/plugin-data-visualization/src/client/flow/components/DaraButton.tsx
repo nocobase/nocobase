@@ -35,55 +35,6 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = ({ ctx })
 
   const uid = ctx.model.uid;
 
-  const writeSql = async (content: string) => {
-    const values = ctx.getStepFormValues('chartSettings', 'configure') || {};
-    const next = {
-      ...values,
-      query: {
-        ...(values.query || {}),
-        mode: 'sql',
-        sql: content,
-        sqlDatasource: values?.query?.sqlDatasource ?? DEFAULT_DATA_SOURCE_KEY,
-      },
-      chart: values.chart || {},
-    };
-    return ctx.model.onPreview(next, true);
-  };
-
-  const writeChartConfig = async (content: string) => {
-    const values = ctx.getStepFormValues('chartSettings', 'configure') || {};
-    const next = {
-      ...values,
-      query: values.query || {},
-      chart: {
-        ...(values.chart || {}),
-        option: {
-          ...((values.chart || {}).option || {}),
-          mode: 'custom',
-          raw: content,
-        },
-      },
-    };
-    return ctx.model.onPreview(next);
-  };
-
-  const writeChartEvents = async (content: string) => {
-    const values = ctx.getStepFormValues('chartSettings', 'configure') || {};
-    const next = {
-      ...values,
-      query: values.query || {},
-      chart: {
-        ...(values.chart || {}),
-        events: {
-          ...((values.chart || {}).events || {}),
-          mode: 'custom',
-          raw: content,
-        },
-      },
-    };
-    return ctx.model.onPreview(next);
-  };
-
   const panelRef: EditorRef = {
     read() {
       const values = ctx.getStepFormValues('chartSettings', 'configure') || {};
@@ -117,9 +68,9 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = ({ ctx })
           ) && !/return\s*\{/.test(content);
         const isEvents = /chart\.(on|off)\s*\(|ctx\.\w+\s*\(/.test(content) && !/\breturn\s*\{/.test(content);
 
-        if (isSql) return writeSql(content);
-        if (isEvents) return writeChartEvents(content);
-        return writeChartConfig(content);
+        if (isSql) return ctx.writeSql(content);
+        if (isEvents) return ctx.writeChartEvents(content);
+        return ctx.writeChartConfig(content);
       } catch (e) {
         console.error('DaraButton panelRef.write error:', e);
       }
