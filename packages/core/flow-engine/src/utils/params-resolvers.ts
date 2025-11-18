@@ -16,7 +16,7 @@ import type { ServerContextParams } from './serverContextParams';
 /**
  * 解析 defaultParams，支持静态值和函数形式
  * @param {Record<string, any> | ((ctx: any) => Record<string, any> | Promise<Record<string, any>>)} defaultParams 默认参数
- * @param {FlowRuntimeContext<TModel>} ctx 上下文
+ * @param {FlowContext} ctx 上下文（可带 runId）
  * @returns {Promise<Record<string, any>>} 解析后的参数对象
  */
 export async function resolveDefaultParams<TModel extends FlowModel = FlowModel>(
@@ -32,7 +32,10 @@ export async function resolveDefaultParams<TModel extends FlowModel = FlowModel>
       const result = await defaultParams(ctx);
       return result || {};
     } catch (error) {
-      console.error('Error resolving defaultParams function:', error);
+      ctx?.logger?.error?.(
+        { type: 'params.defaultParams.resolve.error', error },
+        'Error resolving defaultParams function',
+      );
       return {};
     }
   }
@@ -63,7 +66,10 @@ export async function resolveCreateModelOptions(
       const result = await createModelOptions(ctx, extra);
       return result || {};
     } catch (error) {
-      console.error('Error resolving createModelOptions function:', error);
+      ctx?.logger?.error?.(
+        { type: 'params.createModelOptions.resolve.error', error },
+        'Error resolving createModelOptions function',
+      );
       return {};
     }
   }
@@ -84,7 +90,7 @@ type BatchPayload = {
 
 type QueueItem = {
   id: string;
-  ctx: FlowRuntimeContext;
+  ctx: FlowContext & { runId?: string };
   payload: BatchPayload;
   resolve: (v: unknown) => void;
   reject: (e: unknown) => void;
@@ -124,7 +130,10 @@ function stableStringifyOrdered(obj: unknown): string {
   }
 }
 
-export function enqueueVariablesResolve(ctx: FlowRuntimeContext, payload: BatchPayload): Promise<unknown> {
+export function enqueueVariablesResolve(
+  ctx: FlowContext & { runId?: string },
+  payload: BatchPayload,
+): Promise<unknown> {
   const agg = VAR_AGGREGATOR;
   const runId = ctx.runId || 'GLOBAL';
   const dedupKey = stableStringifyOrdered(payload);

@@ -129,19 +129,26 @@ describe('MetaTreeNode Cache Mechanism', () => {
         throw new Error('Meta loading failed');
       });
 
+      // 为测试注入一个最小 logger，以捕获结构化 warn 日志
+      const warn = vi.fn();
+      ctx.defineProperty('logger', { value: { warn } as any, once: true });
+
       ctx.defineProperty('errorProp', { meta: errorMeta });
 
       const tree = ctx.getPropertyMetaTree();
       const errorNode = tree[0];
 
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
       // 异步加载应该返回空数组
       const children = await (errorNode.children as () => Promise<any>)();
       expect(children).toEqual([]);
-      expect(consoleSpy).toHaveBeenCalledWith('Failed to load meta for errorProp:', expect.any(Error));
-
-      consoleSpy.mockRestore();
+      // 断言调用了结构化 warn 日志
+      expect(warn).toHaveBeenCalledWith(
+        expect.objectContaining({
+          type: 'ctx.meta.load.failed',
+          key: 'errorProp',
+          error: expect.objectContaining({ message: 'Meta loading failed' }),
+        }),
+      );
     });
   });
 
