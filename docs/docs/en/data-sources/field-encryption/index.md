@@ -26,7 +26,7 @@ If the plug-in is enabled by a sub-application, the key is saved by default in t
 
 Use Envelope Encryption
 
-![20251111151740](https://static-docs.nocobase.com/20251111151740.png)
+![20251118151143](https://static-docs.nocobase.com/20251118151143.png)
 
 ### Key creation process
 1. The first time an encrypted field is created, a 32-bit `application key` is automatically generated and stored in the default storage directory in Base64 encoding.

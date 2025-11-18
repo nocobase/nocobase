@@ -26,7 +26,7 @@ pkg: "@nocobase/plugin-field-encryption"
 
 采用信封加密的方式
 
-![20251111151740](https://static-docs.nocobase.com/20251111151740.png)
+![20251118151339](https://static-docs.nocobase.com/20251118151339.png)
 
 ### 密钥创建流程
 1. 第一次创建加密字段时，系统会自动生成一个 32 位`应用密钥`，以 base64 编码的方式保存到默认存储目录中。
