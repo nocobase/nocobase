@@ -48,5 +48,4 @@ export class PluginBlockMarkdownClient extends Plugin {
     }
   }
 }
-
 export default PluginBlockMarkdownClient;
