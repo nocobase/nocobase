@@ -22,7 +22,7 @@ const snippet: SnippetModule = {
     },
   },
   content: `
-const { Card, Descriptions, Tag } = ctx.antd;
+const { Card, Descriptions, Tag } = ctx.libs.antd;
 
 if (!ctx.record) {
   ctx.render('<div style="padding:16px;color:#999;">' + ctx.t('No record data') + '</div>');
