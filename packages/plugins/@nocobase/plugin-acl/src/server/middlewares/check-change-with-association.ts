@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { ACL } from '@nocobase/acl';
 import { Context, Next } from '@nocobase/actions';
 import { Database } from '@nocobase/database';
 import _ from 'lodash';
@@ -239,6 +240,15 @@ export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
   const { resourceName, actionName } = ctx.action;
   if (!['create', 'firstOrCreate', 'updateOrCreate', 'update'].includes(actionName)) {
     return next();
+  }
+
+  const acl: ACL = ctx.acl;
+  const roles = ctx.state.currentRoles;
+  for (const role of roles) {
+    const aclRole = acl.getRole(role);
+    if (aclRole.snippetAllowed(`${resourceName}:${actionName}`)) {
+      return next();
+    }
   }
 
   const params = ctx.action.params || {};

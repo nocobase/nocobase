@@ -142,7 +142,6 @@ describe('Change with association', async () => {
 
   test('disallow to associate', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
-      updateAssociationValues: ['actions'],
       values: {
         usingActionsConfig: true,
         name: 'test',
@@ -237,7 +236,6 @@ describe('Change with association', async () => {
 
   test('allow create association, nested disallow associate', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
-      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -307,7 +305,6 @@ describe('Change with association', async () => {
 
   test('allow update association, nested disallow associate', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
-      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -386,7 +383,6 @@ describe('Change with association', async () => {
       },
     });
     await adminAgent.resource('roles.resources', 'test-role').create({
-      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -468,7 +464,6 @@ describe('Change with association', async () => {
       },
     });
     await adminAgent.resource('roles.resources', 'test-role').create({
-      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -548,7 +543,6 @@ describe('Change with association', async () => {
 
   test('allow update association, nested associate only', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
-      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -622,7 +616,6 @@ describe('Change with association', async () => {
 
   test('allow update association, allow create nested association', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
-      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -716,7 +709,6 @@ describe('Change with association', async () => {
       },
     });
     await adminAgent.resource('roles.resources', 'test-role').create({
-      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -815,7 +807,6 @@ describe('Change with association', async () => {
       },
     });
     await adminAgent.resource('roles.resources', 'test-role').create({
-      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -912,7 +903,6 @@ describe('Change with association', async () => {
 
   test('associate hasOne', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
-      updateAssociationValues: ['actions'],
       values: {
         usingActionsConfig: true,
         name: 'test',
@@ -961,7 +951,6 @@ describe('Change with association', async () => {
 
   test('allow update hasOne', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
-      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
@@ -1027,7 +1016,6 @@ describe('Change with association', async () => {
 
   it('should reserve filter keys', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
-      updateAssociationValues: ['actions'],
       values: [
         {
           usingActionsConfig: true,
