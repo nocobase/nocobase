@@ -8,6 +8,7 @@
  */
 
 import Database from '@nocobase/database';
+import { FieldModel } from '../models';
 
 export function afterCreateForForeignKeyField(db: Database) {
   function generateFkOptions(collectionName: string, foreignKey: string) {
@@ -98,6 +99,9 @@ export function afterCreateForForeignKeyField(db: Database) {
       instance.set('sort', 1);
       instance.set('isForeignKey', true);
       await instance.save({ transaction });
+      if (instance instanceof FieldModel) {
+        await instance.load({ transaction });
+      }
     } else {
       const createOptions = {
         values: {
@@ -115,6 +119,9 @@ export function afterCreateForForeignKeyField(db: Database) {
       // SortField#setSortValue instance._previousDataValues[scopeKey] judgment cause create set sort:1 invalid, need update
       creatInstance.set('sort', 1);
       await creatInstance.save({ transaction });
+      if (creatInstance instanceof FieldModel) {
+        await creatInstance.load({ transaction });
+      }
     }
     // update ID sort:0
     await r.update({
