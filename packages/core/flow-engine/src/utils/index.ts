@@ -46,6 +46,7 @@ export {
   buildRecordMeta,
   collectContextParamsForTemplate,
   createCurrentRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
   createRecordMetaFactory,
   extractUsedVariableNames,
   extractUsedVariablePaths,

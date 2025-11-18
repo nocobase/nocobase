@@ -14,6 +14,7 @@ import type { PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
   createRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
   DndProvider,
   DragHandler,
   Droppable,
@@ -55,7 +56,10 @@ const Columns = observer<any>(({ record, model, index }) => {
           );
           fork.context.defineProperty('record', {
             get: () => record,
-            resolveOnServer: true,
+            resolveOnServer: createRecordResolveOnServerWithLocal(
+              () => (fork.context as any).collection,
+              () => record,
+            ),
             meta: recordMeta,
           });
           fork.context.defineProperty('recordIndex', {

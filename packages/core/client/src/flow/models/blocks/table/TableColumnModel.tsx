@@ -13,6 +13,7 @@ import type { CollectionField, PropertyMetaFactory } from '@nocobase/flow-engine
 import {
   Collection,
   createRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
   DisplayItemModel,
   DragHandler,
   Droppable,
@@ -218,7 +219,10 @@ export class TableColumnModel extends DisplayItemModel {
           );
           fork.context.defineProperty('record', {
             get: () => record,
-            resolveOnServer: true,
+            resolveOnServer: createRecordResolveOnServerWithLocal(
+              () => fork.context.collection,
+              () => record,
+            ),
             meta: recordMeta,
           });
           fork.context.defineProperty('recordIndex', {

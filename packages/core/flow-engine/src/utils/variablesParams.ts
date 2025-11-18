@@ -132,6 +132,26 @@ export function createViewRecordResolveOnServer(
   };
 }
 
+/**
+ * 创建一个用于 “ctx.record” 变量的 resolveOnServer 判定函数：
+ * - 若本地 record 不存在：统一走服务端；
+ * - 若本地 record 存在：
+ *   - 访问空子路径（"{{ ctx.record }}"）时使用本地值，不走服务端；
+ *   - 仅当访问关联字段子路径且本地不存在目标值时，才交给服务端解析。
+ */
+export function createRecordResolveOnServerWithLocal(
+  collectionAccessor: () => Collection | null,
+  valueAccessor: () => unknown,
+): (subPath: string) => boolean {
+  const resolver = createAssociationSubpathResolver(collectionAccessor, () => valueAccessor());
+  return (p: string) => {
+    const local = valueAccessor();
+    if (!local) return true;
+    if (!p) return false;
+    return resolver(p);
+  };
+}
+
 export function inferParentRecordRef(ctx: FlowContext): RecordRef | undefined {
   const resource = getResource(ctx);
   const dataSourceKey = getCollection(ctx)?.dataSourceKey || resource?.getDataSourceKey?.();
