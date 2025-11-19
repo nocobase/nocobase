@@ -221,7 +221,9 @@ export const checkPermission = async (ctx: Context, next: Next) => {
     const filter = ctx.action.params.values.filter || {};
     ctx.action.params.values = {
       ...ctx.action.params.values,
-      filter: assign(filter, parsedParams.filter),
+      filter: assign(filter, parsedParams.filter, {
+        filter: 'andMerge',
+      }),
     };
   }
   return next();
