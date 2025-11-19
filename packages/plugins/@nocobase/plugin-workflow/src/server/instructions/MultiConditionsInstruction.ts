@@ -27,44 +27,84 @@ type MultiConditionsConfig = {
   continueOnNoMatch?: boolean;
 };
 
-type ConditionState = {
-  matchedIndex: number;
-  lastAttemptedIndex: number | null;
-};
-
-const INITIAL_STATE: ConditionState = {
-  matchedIndex: 0,
-  lastAttemptedIndex: null,
+type BranchOutcome = boolean | number | string;
+type BranchOutcomeList = BranchOutcome[];
+type BranchOutcomeMeta = {
+  conditions: BranchOutcomeList;
 };
 
 export class MultiConditionsInstruction extends Instruction {
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
+    const { conditions = [], continueOnNoMatch = false } = (node.config || {}) as MultiConditionsConfig;
+    const meta: BranchOutcomeMeta = { conditions: [] };
+
     const job = processor.saveJob({
       status: JOB_STATUS.PENDING,
-      result: { ...INITIAL_STATE },
+      result: meta,
+      meta,
       nodeId: node.id,
       nodeKey: node.key,
       upstreamId: prevJob?.id ?? null,
     });
 
-    const outcome = await this.proceed(node, processor, job);
-    if (outcome) {
-      return outcome;
+    for (let cursor = 0; cursor < conditions.length; cursor++) {
+      const branchIndex = cursor + 1;
+      const condition = conditions[cursor];
+      let conditionResult: BranchOutcome;
+
+      try {
+        conditionResult = this.evaluateCondition(condition, node, processor);
+      } catch (error) {
+        conditionResult = error instanceof Error ? error.message : String(error);
+        processor.logger.error(`[multi-conditions] evaluate condition[${cursor}] error:`, { error });
+      } finally {
+        meta.conditions.push(conditionResult);
+        job.set('result', meta);
+      }
+
+      if (typeof conditionResult === 'string') {
+        job.set('status', JOB_STATUS.ERROR);
+        return job;
+      }
+
+      if (conditionResult === true) {
+        const branchNode = this.getBranchNode(node, processor, branchIndex);
+        job.set('status', JOB_STATUS.RESOLVED);
+        if (branchNode) {
+          await processor.run(branchNode, job);
+          return;
+        }
+        return job;
+      }
     }
+
+    job.set('status', continueOnNoMatch ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED);
+    const defaultBranch = this.getBranchNode(node, processor, 0);
+    if (defaultBranch) {
+      await processor.run(defaultBranch, job);
+      return;
+    }
+
+    return job;
   }
 
   async resume(node: FlowNodeModel, branchJob: JobModel, processor: Processor) {
     const job = processor.findBranchParentJob(branchJob, node) as JobModel;
     if (!job) {
-      return processor.exit(branchJob.status);
+      throw new Error('Parent job not found');
     }
 
-    const state = this.getState(job);
     const { continueOnNoMatch = false } = (node.config || {}) as MultiConditionsConfig;
 
+    const jobNode = processor.nodesMap.get(branchJob.nodeId) as FlowNodeModel;
+    const branchStartNode = processor.findBranchStartNode(jobNode, node) as FlowNodeModel;
+    const branchIndex = branchStartNode.branchIndex;
+
     if (branchJob.status === JOB_STATUS.RESOLVED) {
-      if (state.matchedIndex > 0) {
-        job.set({ status: JOB_STATUS.RESOLVED });
+      if (branchIndex > 0) {
+        job.set({
+          status: JOB_STATUS.RESOLVED,
+        });
         return job;
       }
 
@@ -72,104 +112,15 @@ export class MultiConditionsInstruction extends Instruction {
       return job;
     }
 
-    if (branchJob.status >= JOB_STATUS.PENDING) {
-      processor.saveJob(job);
-      return null;
-    }
-
-    if (state.lastAttemptedIndex === 0) {
-      return processor.exit(branchJob.status);
-    }
-
-    state.matchedIndex = 0;
-    job.set({ status: JOB_STATUS.PENDING, result: { ...state } });
-    const outcome = await this.proceed(node, processor, job);
-    if (outcome) {
-      return outcome;
-    }
-    return null;
-  }
-
-  private getState(job: JobModel): ConditionState {
-    const result = job.result || {};
-    return {
-      matchedIndex: Number(result.matchedIndex) || 0,
-      lastAttemptedIndex: Number(result.lastAttemptedIndex) || 0,
-    };
-  }
-
-  private async proceed(node: FlowNodeModel, processor: Processor, job: JobModel) {
-    const { conditions = [], continueOnNoMatch = false } = (node.config || {}) as MultiConditionsConfig;
-    const state = this.getState(job);
-
-    for (let cursor = state.lastAttemptedIndex ?? 0; cursor < conditions.length; cursor++) {
-      const branchIndex = cursor + 1;
-      const condition = conditions[cursor];
-      let passed = false;
-
-      try {
-        passed = this.evaluateCondition(condition, node, processor);
-      } catch (error) {
-        job.set({
-          status: JOB_STATUS.ERROR,
-          result: {
-            ...state,
-            error: error instanceof Error ? error.message : String(error),
-          },
-        });
-        return job;
-      }
-
-      state.lastAttemptedIndex = branchIndex;
-      job.set('result', { ...state });
-
-      if (passed) {
-        state.matchedIndex = branchIndex;
-        job.set('result', { ...state });
-        processor.saveJob(job);
-        const branchNode = this.getBranchNode(node, processor, branchIndex);
-        if (branchNode) {
-          await processor.run(branchNode, job);
-          return null;
-        }
-
-        job.set({ status: JOB_STATUS.RESOLVED });
-        return job;
-      }
-
-      processor.saveJob(job);
-    }
-
-    state.lastAttemptedIndex = 0;
-    state.matchedIndex = 0;
-    job.set('result', { ...state });
-    processor.saveJob(job);
-
-    const defaultBranch = this.getBranchNode(node, processor, 0);
-    if (defaultBranch) {
-      await processor.run(defaultBranch, job);
-      return null;
-    }
-
-    job.set({ status: continueOnNoMatch ? JOB_STATUS.RESOLVED : JOB_STATUS.FAILED });
-    return job;
+    return processor.exit(branchJob.status);
   }
 
   private evaluateCondition(condition: ConditionConfig, node: FlowNodeModel, processor: Processor) {
-    if (!condition) {
-      return false;
-    }
-
-    const { engine = 'basic', calculation, expression } = condition;
-    if (engine && engine !== 'basic') {
-      const evaluator = <Evaluator | undefined>evaluators.get(engine);
-      if (!evaluator || !expression) {
-        return false;
-      }
-      return Boolean(evaluator(expression, processor.getScope(node.id)));
-    }
-
-    return Boolean(logicCalculate(processor.getParsedValue(calculation, node.id)));
+    const { engine = 'basic', calculation, expression } = condition ?? {};
+    const evaluator = evaluators.get(engine);
+    return evaluator
+      ? evaluator(expression, processor.getScope(node.id))
+      : logicCalculate(processor.getParsedValue(calculation, node.id));
   }
 
   private getBranchNode(node: FlowNodeModel, processor: Processor, branchIndex: number) {

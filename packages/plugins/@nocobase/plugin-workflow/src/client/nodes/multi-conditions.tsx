@@ -8,7 +8,7 @@
  */
 
 import { evaluators } from '@nocobase/evaluators/client';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Instruction, NodeDefaultView, useNodeContext } from '.';
 import { Branch, useBranchIndex } from '../Branch';
@@ -19,7 +19,7 @@ import { lang, NAMESPACE } from '../locale';
 import useStyles from '../style';
 import { useWorkflowVariableOptions, WorkflowVariableTextArea } from '../variable';
 import { CalculationConfig } from '../components/Calculation';
-import { ApartmentOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { ClusterOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   css,
   cx,
@@ -30,7 +30,7 @@ import {
   useResourceActionContext,
   useToken,
 } from '@nocobase/client';
-import { Button, Tag, Tooltip, App, Space, Typography } from 'antd';
+import { Button, Tooltip, App, Space } from 'antd';
 import { useGetAriaLabelOfAddButton, useWorkflowExecuted } from '../hooks';
 import { createForm } from '@formily/core';
 import { useForm } from '@formily/react';
@@ -52,6 +52,7 @@ function useUpdateConditionAction() {
   return {
     async run() {
       console.log(node, branchIndex, form.values);
+      await form.submit();
       try {
         await apiClient.resource('flow_nodes').update({
           filterByTk: node.id,
@@ -103,9 +104,44 @@ function ConditionHeader(props) {
   );
 }
 
+function getTooltipByResult(result: any) {
+  return typeof result === 'string' ? result : null;
+}
+
 function ConditionHeaderCard(props) {
   const { token } = useToken();
-  return (
+  const node = useNodeContext();
+  const index = useBranchIndex() - 1;
+  const jobs = node.jobs ?? [];
+  const job = jobs[jobs.length - 1];
+  const style = {};
+  let color;
+  if (job) {
+    const { conditions = [] } = job.meta;
+    if (conditions[index] != null) {
+      const result = conditions[index];
+      switch (true) {
+        case result === false:
+          color = token.colorError;
+          break;
+        case result === true:
+          color = token.colorSuccess;
+          break;
+        case typeof result === 'string':
+          color = token.colorError;
+          break;
+        case typeof result === 'number':
+          color = token.colorSuccess;
+          break;
+      }
+      if (color) {
+        Object.assign(style, {
+          outline: `1px solid ${color}`,
+        });
+      }
+    }
+  }
+  const content = (
     <Space
       className={css`
         padding: 0.5em 1em;
@@ -115,12 +151,17 @@ function ConditionHeaderCard(props) {
 
         .ant-nb-action {
           font-size: 0.8rem;
+          color: ${color};
         }
       `}
     >
       {props.children}
     </Space>
   );
+
+  const tooltip = job ? getTooltipByResult(job.meta.conditions[index]) : null;
+
+  return tooltip ? <Tooltip title={tooltip}>{content}</Tooltip> : content;
 }
 
 function ConditionConfiguration({ condition, index }: { condition: ConditionConfig; index: number }) {
@@ -129,14 +170,20 @@ function ConditionConfiguration({ condition, index }: { condition: ConditionConf
   const { refresh } = useResourceActionContext();
   const { modal } = App.useApp();
   const { t } = useTranslation();
+  const executed = useWorkflowExecuted();
 
   const form = useMemo(
     () =>
       createForm({
         initialValues: condition,
+        pattern: executed ? 'readPretty' : 'editable',
       }),
     [condition],
   );
+
+  // useEffect(() => {
+  //   form.disabled = Boolean(executed);
+  // }, [form, executed]);
 
   const onRemoveConfirm = useCallback(async () => {
     const nextConditions = [...node.config.conditions];
@@ -176,7 +223,7 @@ function ConditionConfiguration({ condition, index }: { condition: ConditionConf
 
   return (
     <ConditionHeader>
-      {node.config.conditions.length > 1 ? (
+      {executed <= 0 && node.config.conditions.length > 1 ? (
         <Tooltip title={lang('Delete branch')}>
           <Button
             type="text"
@@ -350,7 +397,7 @@ function ConditionBranch({ condition, index }) {
       branchIndex={index}
       controller={<ConditionConfiguration condition={condition} index={index} />}
       className={css`
-        &:hover .workflow-branch-remove-button {
+        &:hover > .workflow-branch-controller .workflow-branch-remove-button {
           display: block;
         }
       `}
@@ -439,7 +486,7 @@ export default class extends Instruction {
   type = 'multi-conditions';
   group = 'control';
   description = `{{t('From left to right, attempt each branch sequentially based on the configured conditions. Only branches that meet the conditions will be executed. If not, the next branch will be attempted. If none of the branches meet the conditions, it can either exit the process or continue to the next node based on configuration.', { ns: "${NAMESPACE}" })}}`;
-  icon = (<ApartmentOutlined style={{}} />);
+  icon = (<ClusterOutlined />);
   fieldset = {
     continueOnNoMatch: {
       type: 'boolean',

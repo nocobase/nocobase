@@ -49,7 +49,7 @@ export function Branch({
     <BranchIndexContext.Provider value={branchIndex}>
       <div className={cx('workflow-branch', styles.branchClass, className)}>
         <div className="workflow-branch-lines" />
-        {controller}
+        {controller ? <div className="workflow-branch-controller">{controller}</div> : null}
         <div className="workflow-node-list">
           <AddButton aria-label={getAriaLabel()} upstream={from} branchIndex={branchIndex} />
           {list.map((item) => (
