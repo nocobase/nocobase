@@ -9,12 +9,12 @@
 
 import React, { useMemo } from 'react';
 import { useMapTranslation } from '../../locale';
-import { AMapCom } from '../../components/AMap';
-import { GoogleMapsCom } from '../../components/GoogleMaps';
+import { AMapCom } from './AMap';
+import { GoogleMapsComponent } from './GoogleMaps';
 
 const MapComponents = {
   amap: AMapCom,
-  google: GoogleMapsCom,
+  google: GoogleMapsComponent,
 };
 
 export const MapComponent = React.forwardRef<any, any>((props, ref) => {

@@ -9,7 +9,7 @@
 import { escapeT, largeField } from '@nocobase/flow-engine';
 import { css, FieldModel } from '@nocobase/client';
 import React from 'react';
-import { MapComponent } from './MapComponent';
+import { MapComponent } from '../MapComponent';
 
 const className = css`
   height: 100%;
