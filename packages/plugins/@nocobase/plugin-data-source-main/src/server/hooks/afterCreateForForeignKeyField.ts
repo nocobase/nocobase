@@ -113,11 +113,11 @@ export function afterCreateForForeignKeyField(db: Database) {
         createOptions['context'] = {};
       }
 
-      const creatInstance: FieldModel = await r.create(createOptions);
+      const createdInstance: FieldModel = await r.create(createOptions);
       // SortField#setSortValue instance._previousDataValues[scopeKey] judgment cause create set sort:1 invalid, need update
-      creatInstance.set('sort', 1);
-      await creatInstance.save({ transaction });
-      await creatInstance.load({ transaction });
+      createdInstance.set('sort', 1);
+      await createdInstance.save({ transaction });
+      await createdInstance.load({ transaction });
     }
     // update ID sort:0
     await r.update({
