@@ -16,6 +16,7 @@ import { onFieldValueChange } from '@formily/core';
 import { FlowPage } from '../FlowPage';
 import { VariableInput } from '@nocobase/flow-engine';
 import { RootPageModel } from '../models';
+import { FieldModel } from '../models/base/FieldModel';
 
 /**
  * 弹窗打开动作（openView）配置
@@ -489,6 +490,19 @@ export const openView = defineAction({
         );
       },
     },
+  },
+  /**
+   * 通用的设置菜单可见性控制：
+   * - 字段场景下，当未启用「点击打开」（clickToOpen=false）时，隐藏弹窗设置步骤；
+   * - 其他场景默认不隐藏，保持向后兼容。
+   */
+  hideInSettings: async (ctx: FlowModelContext) => {
+    // 仅对字段模型类（或其子类）应用 clickToOpen 关联逻辑
+    if (!ctx.model || !(ctx.model instanceof FieldModel)) {
+      return false;
+    }
+
+    return !ctx.model.getStepParams?.('displayFieldSettings', 'clickToOpen')?.clickToOpen;
   },
   defaultParams: async (ctx) => {
     // 当存在 ctx.record 上下文时提供默认 filterByTk；否则不提供

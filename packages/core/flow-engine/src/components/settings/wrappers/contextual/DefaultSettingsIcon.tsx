@@ -13,7 +13,7 @@ import { App, Dropdown, Modal } from 'antd';
 import React, { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
-import { getT, resolveStepUiSchema } from '../../../../utils';
+import { getT, resolveStepUiSchema, shouldHideStepInSettings } from '../../../../utils';
 import { openStepSettings } from './StepSettings';
 import { useNiceDropdownMaxHeight } from '../../../../hooks';
 
@@ -278,8 +278,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               Object.entries(flow.steps).map(async ([stepKey, stepDefinition]) => {
                 const actionStep = stepDefinition;
 
-                // 如果步骤设置了 hideInSettings: true，则跳过此步骤
-                if (actionStep.hideInSettings) {
+                // 支持静态与动态 hideInSettings
+                if (await shouldHideStepInSettings(targetModel, flow, actionStep)) {
                   return null;
                 }
 
