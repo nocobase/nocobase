@@ -31,6 +31,8 @@
     "@nocobase/utils": "1.9.0-beta.16",
     "ahooks": "^3.7.2",
     "antd": "5.24.2",
+    "antd-mobile": "^5.41.1",
+    "antd-mobile-icons": "^0.3.0",
     "antd-style": "3.7.1",
     "axios": "^1.7.0",
     "bignumber.js": "^9.1.2",
