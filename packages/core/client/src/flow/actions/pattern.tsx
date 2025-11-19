@@ -88,13 +88,17 @@ export const pattern = defineAction({
       });
     }
   },
-  async handler(ctx, params) {
-    if (!params.pattern) {
-      return;
+  handler(ctx, params) {
+    if (params.pattern === 'readPretty') {
+      ctx.model.setProps({
+        pattern: 'readPretty',
+      });
+    } else {
+      ctx.model.setProps({
+        disabled: params.pattern === 'disabled',
+        pattern: null,
+      });
     }
-    ctx.model.setProps({
-      pattern: params.pattern,
-    });
   },
 });
 
