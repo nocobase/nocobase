@@ -28,7 +28,6 @@ import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { LabelByField, resolveOptions, toSelectValue, type LazySelectProps } from './recordSelectShared';
 import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
-import ctx from 'packages/core/client/docs/zh-CN/examples/flow-definition/ui-schema-custom-component/ctx';
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
@@ -630,6 +629,8 @@ RecordSelectFieldModel.registerFlow({
                     self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
                 );
                 onChange(unique);
+                const data = ctx.model.getDataSource();
+                ctx.model.setDataSource(data.concat(unique));
               }
             },
           },
