@@ -303,6 +303,14 @@ export class Application {
     this.flowEngine.context.defineProperty('app', {
       value: this,
     });
+    this.flowEngine.context.defineProperty('appInfo', {
+      get: async () => {
+        const rest = await this.apiClient.request({
+          url: 'app:getInfo',
+        });
+        return rest.data?.data || {};
+      },
+    });
     this.flowEngine.context.defineProperty('api', {
       value: this.apiClient,
     });

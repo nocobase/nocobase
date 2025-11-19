@@ -17,6 +17,7 @@ import {
   DragHandler,
   MemoFlowModelRenderer,
   createRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
   ElementProxy,
   createSafeDocument,
   createSafeWindow,
@@ -127,7 +128,10 @@ export class JSColumnModel extends TableCustomColumnModel {
         );
         fork.context.defineProperty('record', {
           get: () => record,
-          resolveOnServer: true,
+          resolveOnServer: createRecordResolveOnServerWithLocal(
+            () => fork.context.collection,
+            () => record,
+          ),
           meta: recordMeta,
         });
         fork.context.defineProperty('recordIndex', {

@@ -23,7 +23,7 @@ const snippet: SnippetModule = {
   },
   content: `
 // Render a React element into ctx.element via ReactDOM
-const { Button } = ctx.antd;
+const { Button } = ctx.libs.antd;
 
 ctx.render(
   <div style={{ padding: 12 }}>

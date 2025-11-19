@@ -16,9 +16,11 @@ import { useT, tStr } from '../../locale';
 import { convertDatasetFormats, sleep, debugLog } from '../utils';
 import { Chart, ChartOptions } from './Chart';
 import { ConfigPanel } from './ConfigPanel';
+import { DaraButton } from '../components/DaraButton';
 import { ChartResource } from '../resources/ChartResource';
 import { genRawByBuilder } from './ChartOptionsBuilder.service';
 import { configStore } from './config-store';
+import { useChatBoxStore, useChatMessagesStore } from '@nocobase/plugin-ai/client';
 
 type ChartBlockModelStructure = {
   subModels: {
@@ -330,6 +332,13 @@ const CancelButton = ({ style }) => {
       onClick={() => {
         // 回滚 未保存的 stepParams 并刷新图表
         ctx.model.cancelPreview();
+
+        const aiOpen = useChatBoxStore.getState().open;
+        const associatedUid = useChatMessagesStore.getState().currentEditorRefUid;
+        if (aiOpen && associatedUid === ctx.model.uid) {
+          useChatBoxStore.getState().setOpen(false);
+        }
+
         ctx.view.close();
       }}
     >
@@ -348,10 +357,21 @@ ChartBlockModel.registerFlow({
   steps: {
     configure: {
       title: tStr('Configure chart'),
-      uiMode: {
+      uiMode: (ctx) => ({
         type: 'embed',
         props: {
           minWidth: '400px',
+          onClose: () => {
+            // 回滚未保存的配置并刷新图表
+            ctx.model.cancelPreview();
+
+            const aiOpen = useChatBoxStore.getState().open;
+            const associatedUid = useChatMessagesStore.getState().currentEditorRefUid;
+            if (aiOpen && associatedUid === ctx.model.uid) {
+              useChatBoxStore.getState().setOpen(false);
+            }
+          },
+          header: { extra: <DaraButton ctx={ctx} /> },
           footer: (originNode, { OkBtn }) => (
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
               <CancelButton style={{ marginRight: 6 }} />
@@ -360,7 +380,7 @@ ChartBlockModel.registerFlow({
             </div>
           ),
         },
-      },
+      }),
       uiSchema: {
         configuration: {
           type: 'void',
@@ -398,6 +418,7 @@ ChartBlockModel.registerFlow({
         if (!query || !chart) {
           return;
         }
+
         try {
           // 数据部分
           if (query.mode !== 'sql') {

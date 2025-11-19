@@ -17,6 +17,7 @@ import DialogComponent from './DialogComponent';
 import usePatchElement from './usePatchElement';
 import { FlowEngineProvider } from '../provider';
 import { createViewScopedEngine } from '../ViewScopedFlowEngine';
+import { createViewRecordResolveOnServer, getViewRecordFromParent } from '../utils/variablesParams';
 
 let uuid = 0;
 
@@ -73,6 +74,17 @@ export function useDialog() {
       return null; // Header 组件本身不渲染内容
     };
 
+    const ctx = new FlowContext();
+    // 为当前视图创建作用域引擎（隔离实例与缓存）
+    const scopedEngine = createViewScopedEngine(flowContext.engine);
+    ctx.defineProperty('engine', { value: scopedEngine });
+    ctx.addDelegate(scopedEngine.context);
+    if (config.inheritContext !== false) {
+      ctx.addDelegate(flowContext);
+    } else {
+      ctx.addDelegate(flowContext.engine.context);
+    }
+
     // 构造 currentDialog 实例
     const currentDialog = {
       type: 'dialog' as const,
@@ -99,23 +111,15 @@ export function useDialog() {
         dialogRef.current?.setHeader(header);
       },
       navigation: config.inputArgs?.navigation,
+      get record() {
+        return getViewRecordFromParent(flowContext, ctx);
+      },
     };
-
-    const ctx = new FlowContext();
-    // 为当前视图创建作用域引擎（隔离实例与缓存）
-    const scopedEngine = createViewScopedEngine(flowContext.engine);
-    ctx.defineProperty('engine', { value: scopedEngine });
-    ctx.addDelegate(scopedEngine.context);
-    if (config.inheritContext !== false) {
-      ctx.addDelegate(flowContext);
-    } else {
-      ctx.addDelegate(flowContext.engine.context);
-    }
 
     ctx.defineProperty('view', {
       get: () => currentDialog,
       // meta: createViewMeta(ctx),
-      resolveOnServer: (p: string) => p === 'record' || p.startsWith('record.'),
+      resolveOnServer: createViewRecordResolveOnServer(ctx, () => getViewRecordFromParent(flowContext, ctx)),
     });
     // 顶层 popup 变量：弹窗记录/数据源/上级弹窗链（去重封装）
     registerPopupVariable(ctx, currentDialog);

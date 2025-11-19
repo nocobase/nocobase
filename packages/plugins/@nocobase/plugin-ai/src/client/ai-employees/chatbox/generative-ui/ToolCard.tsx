@@ -24,11 +24,17 @@ export const ToolCard: React.FC<{
   for (const t of tools) {
     const tool = { ...t };
     if (typeof tool.args === 'string') {
-      try {
-        const args = jsonrepair(tool.args);
-        tool.args = JSON.parse(args);
-      } catch (err) {
-        console.error(err, tool.args);
+      const trimmed = tool.args.trim();
+      if (trimmed.length > 0) {
+        try {
+          const repaired = jsonrepair(trimmed);
+          tool.args = JSON.parse(repaired);
+        } catch (err) {
+          console.error(err, tool.args);
+          tool.args = {};
+        }
+      } else {
+        tool.args = {};
       }
     }
     const toolOption = plugin.aiManager.tools.get(tool.name);

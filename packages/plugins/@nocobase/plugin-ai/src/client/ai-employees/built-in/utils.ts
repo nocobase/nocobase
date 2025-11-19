@@ -25,5 +25,5 @@ export const isHide = (aiEmployee: AIEmployee) => {
 };
 
 export const isSupportLanguage = (language: string) => {
-  return ['js', 'javascript'].includes(language?.toLowerCase() ?? null);
+  return ['js', 'javascript', 'sql'].includes(language?.toLowerCase() ?? null);
 };

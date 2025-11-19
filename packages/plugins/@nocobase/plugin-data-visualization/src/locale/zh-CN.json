@@ -16,7 +16,7 @@
   "Transform": "数据转换",
   "Chart type": "图表类型",
   "JSON config": "JSON 配置",
-  "Query builder": "查询构建器",
+  "Builder": "构建器",
   "Data query": "数据查询",
   "Query": "查询",
   "Data": "数据",
@@ -133,5 +133,14 @@
   "Horizontal": "水平",
   "Vertical": "垂直",
   "Category field": "分类字段",
-  "Value field": "数值字段"
+  "Value field": "数值字段",
+  "Choose the appropriate chart": "选择合适的图表",
+  "Auto map by data columns": "根据数据列自动映射",
+  "Optimize visual encoding": "优化视觉编码",
+  "Fix preview errors or field mismatch": "修复预览错误/字段不匹配",
+
+  "Recommend chart type by data structure and explain reasons": "请根据数据结构推荐图表类型并解释原因",
+  "Map X/Y/category/value by columns and generate ECharts options": "请根据字段列映射 X/Y/分类/值并生成 ECharts options",
+  "Optimize color, ordering and aggregation, output ECharts options": "请优化颜色、排序与聚合，并输出 ECharts options",
+  "Fix errors or field mismatch, output SQL or ECharts options": "修复错误或字段不匹配问题，并输出查询SQL 或 ECharts options"
 }
