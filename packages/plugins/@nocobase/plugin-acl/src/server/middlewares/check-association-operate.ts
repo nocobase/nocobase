@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ACL } from '@nocobase/acl';
+import { ACL, NoPermissionError } from '@nocobase/acl';
 import { Context, Next } from '@nocobase/actions';
 
 export async function checkAssociationOperate(ctx: Context, next: Next) {
@@ -37,15 +37,22 @@ export async function checkAssociationOperate(ctx: Context, next: Next) {
     ctx.throw(403, 'No permissions');
   }
   if (params.filter) {
-    const filteredParams = ctx.acl.filterParams(ctx, resource, params);
-    const parsedParams = await ctx.acl.parseJsonTemplate(filteredParams, ctx);
-    const repo = ctx.db.getRepository(resource);
-    const record = await repo.findOne({
-      filterByTk: sourceId,
-      filter: parsedParams.filter,
-    });
-    if (!record) {
-      ctx.throw(403, 'No permissions');
+    try {
+      const filteredParams = ctx.acl.filterParams(ctx, resource, params);
+      const parsedParams = await ctx.acl.parseJsonTemplate(filteredParams, ctx);
+      const repo = ctx.db.getRepository(resource);
+      const record = await repo.findOne({
+        filterByTk: sourceId,
+        filter: parsedParams.filter,
+      });
+      if (!record) {
+        ctx.throw(403, 'No permissions');
+      }
+    } catch (e) {
+      if (e instanceof NoPermissionError) {
+        ctx.throw(403, 'No permissions');
+      }
+      throw e;
     }
   }
   ctx.permission = {
