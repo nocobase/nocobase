@@ -8,6 +8,7 @@
  */
 
 import { BaseColumnFieldOptions, BelongsToArrayAssociation, Model, RelationField } from '@nocobase/database';
+import _ from 'lodash';
 
 export const elementTypeMap = {
   nanoid: 'string',
@@ -20,15 +21,20 @@ export class BelongsToArrayField extends RelationField {
     return 'BelongsToArray';
   }
 
-  private setForeignKeyArray = async (model: Model, { values, transaction }) => {
+  private setForeignKeyArray = async (model: Model, { values, context, transaction, associationKey }) => {
     const { name, foreignKey, target, targetKey } = this.options;
-    if (!values || values[name] === undefined) {
+    let value: any[] = _.castArray(values?.[name] || []);
+    if (!value.length) {
+      let valuesInCtx = context?.action?.params?.values ?? {};
+      if (associationKey) {
+        valuesInCtx = valuesInCtx[associationKey];
+      }
+      value = _.castArray(valuesInCtx[name] ?? []);
+    }
+    if (!value.length) {
       return;
     }
-    let value: any[] = values[name] || [];
-    if (!Array.isArray(value)) {
-      value = [value];
-    }
+
     const tks = [];
     const items = [];
     for (const item of value) {
@@ -47,10 +53,23 @@ export class BelongsToArrayField extends RelationField {
       transaction,
     });
     tks.push(...instances.map((instance: Model) => instance[targetKey]));
-    const toCreate = items.filter((item) => !item[targetKey] || !tks.includes(item[targetKey]));
+
     const m = this.database.getModel(target);
+
+    const toCreate = items.filter((item) => !item[targetKey] || !tks.includes(item[targetKey]));
     const newInstances = await m.bulkCreate(toCreate, { transaction });
     tks.push(...newInstances.map((instance: Model) => instance[targetKey]));
+
+    const toUpdate = items.filter((item) => item[targetKey] && tks.includes(item[targetKey]));
+    for (const item of toUpdate) {
+      await m.update(item, {
+        where: {
+          [targetKey]: item[targetKey],
+        },
+        transaction,
+      });
+    }
+
     model.set(foreignKey, tks);
   };
 
