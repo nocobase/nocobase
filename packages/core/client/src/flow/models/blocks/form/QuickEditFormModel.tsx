@@ -183,7 +183,7 @@ export class QuickEditFormModel extends FlowModel {
                 [this.fieldPath]: this.resource.getData()?.[this.fieldPath],
               };
               try {
-                this.resource.save(formValues, { refresh: false });
+                await this.resource.save(formValues, { refresh: false });
                 this.__onSubmitSuccess?.(formValues);
                 this.viewContainer.close();
                 this.context.message.success(this.context.t('Saved successfully'));

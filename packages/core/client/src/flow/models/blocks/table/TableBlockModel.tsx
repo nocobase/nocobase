@@ -279,6 +279,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                   record: record,
                   fieldProps: { ...model.props, ...model.subModels.field.props },
                   onSuccess: (values) => {
+                    const collectionField = this.collection.getField(dataIndex);
                     record[dataIndex] = values[dataIndex];
                     setNestedValue(this.resource.getData(), recordIndex, record);
                     // 仅重渲染单元格
@@ -296,7 +297,11 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                     fork.context.defineProperty('recordIndex', {
                       get: () => recordIndex,
                     });
-                    model.rerender();
+                    if (collectionField?.targetCollection?.template === 'tree') {
+                      this.resource.refresh(); //树形数据获取父节点信息
+                    } else {
+                      model.rerender();
+                    }
                   },
                 });
                 // await this.resource.refresh();
