@@ -619,6 +619,80 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       expect(vUnknown).toBe('{{ ctx.popup.parent.record.non_exists_xyz }}');
     });
 
+    it('should return full record when attribute and whole record are used together in same batch item', async () => {
+      const payload = {
+        batch: [
+          {
+            id: 'attr-and-full',
+            template: {
+              value: [
+                {
+                  key: 'rule-attr-full',
+                  title: '联动规则',
+                  enable: true,
+                  condition: { logic: '$and', items: [] },
+                  actions: [
+                    {
+                      key: 'a-attr',
+                      name: 'linkageAssignField',
+                      params: {
+                        value: {
+                          field: 'f_attr',
+                          assignValue: '{{ ctx.popup.parent.record.hospital_customer }}',
+                        },
+                      },
+                    },
+                    {
+                      key: 'a-full',
+                      name: 'linkageAssignField',
+                      params: {
+                        value: {
+                          field: 'f_full',
+                          assignValue: '{{ ctx.popup.parent.record }}',
+                        },
+                      },
+                    },
+                  ],
+                },
+              ],
+            },
+            contextParams: {
+              'popup.parent.record': {
+                dataSourceKey: 'main',
+                collection: 'v2_hospital_customers',
+                filterByTk: '323538',
+              },
+            },
+          },
+        ],
+      };
+
+      // 从 DB 中获取期望的“完整记录”形态，用于对比 keys 集合
+      const repo = app.db.getRepository('v2_hospital_customers');
+      const expectedRec = await repo.findOne({ filterByTk: '323538' });
+      const expectedJson = expectedRec?.toJSON?.() || {};
+      const expectedKeys = Object.keys(expectedJson).sort();
+
+      const res = await execResolve(payload, 1);
+      const results = res.body?.results || [];
+      const item = results.find((r: any) => r.id === 'attr-and-full');
+      expect(item).toBeTruthy();
+      const data = item.data;
+      const actions = data?.value?.[0]?.actions || [];
+
+      const vAttr = actions[0]?.params?.value?.assignValue;
+      const vFull = actions[1]?.params?.value?.assignValue;
+
+      // 属性字段仍应按预期解析
+      expect(vAttr).toBe('HC-Name-323538');
+
+      // 整体 record 应包含与 DB toJSON 一致的字段集合（不应被 fields 裁剪）
+      const obj = typeof vFull === 'string' ? JSON.parse(vFull) : vFull;
+      expect(obj && typeof obj).toBe('object');
+      const objKeys = Object.keys(obj).sort();
+      expect(objKeys).toEqual(expectedKeys);
+    });
+
     it('should ignore id-only prefetch cache and still return full record in a later batch item', async () => {
       const payload = {
         batch: [
