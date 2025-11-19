@@ -216,12 +216,10 @@ export const checkPermission = async (ctx: Context, next: Next) => {
     ctx.throw(403, 'No permissions');
   }
   if (can.params?.filter) {
-    const filteredParams = acl.filterParams(ctx, collection, can.params);
-    const parsedParams = await acl.parseJsonTemplate(filteredParams, ctx);
     const filter = ctx.action.params.values.filter || {};
     ctx.action.params.values = {
       ...ctx.action.params.values,
-      filter: assign(filter, parsedParams.filter, {
+      filter: assign(filter, can.params.filter, {
         filter: 'andMerge',
       }),
     };
