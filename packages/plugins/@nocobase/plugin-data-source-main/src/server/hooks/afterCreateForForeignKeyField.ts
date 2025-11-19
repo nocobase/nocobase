@@ -84,7 +84,7 @@ export function afterCreateForForeignKeyField(db: Database) {
       throw new Error(`field options invalid`);
     }
     const r = db.getRepository('fields');
-    const instance = await r.findOne({
+    const instance: FieldModel = await r.findOne({
       filter: {
         collectionName,
         name,
@@ -99,9 +99,7 @@ export function afterCreateForForeignKeyField(db: Database) {
       instance.set('sort', 1);
       instance.set('isForeignKey', true);
       await instance.save({ transaction });
-      if (instance instanceof FieldModel) {
-        await instance.load({ transaction });
-      }
+      await instance.load({ transaction });
     } else {
       const createOptions = {
         values: {
@@ -115,13 +113,11 @@ export function afterCreateForForeignKeyField(db: Database) {
         createOptions['context'] = {};
       }
 
-      const creatInstance = await r.create(createOptions);
+      const creatInstance: FieldModel = await r.create(createOptions);
       // SortField#setSortValue instance._previousDataValues[scopeKey] judgment cause create set sort:1 invalid, need update
       creatInstance.set('sort', 1);
       await creatInstance.save({ transaction });
-      if (creatInstance instanceof FieldModel) {
-        await creatInstance.load({ transaction });
-      }
+      await creatInstance.load({ transaction });
     }
     // update ID sort:0
     await r.update({
