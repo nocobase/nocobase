@@ -34,7 +34,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
-import { extractIndex, adjustColumnOrder } from './utils';
+import { extractIndex, adjustColumnOrder, setNestedValue } from './utils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { HighPerformanceSpin } from '../../../../schema-component/common/high-performance-spin/HighPerformanceSpin';
 
@@ -280,7 +280,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                   fieldProps: { ...model.props, ...model.subModels.field.props },
                   onSuccess: (values) => {
                     record[dataIndex] = values[dataIndex];
-                    this.resource.getData()[recordIndex] = record;
+                    setNestedValue(this.resource.getData(), recordIndex, record);
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.createFork({}, `${recordIndex}`);
                     // Provide expandable meta for current row record based on the collection in context

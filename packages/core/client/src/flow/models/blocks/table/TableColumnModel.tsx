@@ -169,7 +169,7 @@ export class TableColumnModel extends DisplayItemModel {
       ),
       onCell: (record, recordIndex) => ({
         record,
-        recordIndex,
+        recordIndex: record.__index || recordIndex,
         width: this.props.width - 16,
         editable: this.props.editable,
         dataIndex: this.props.dataIndex,
