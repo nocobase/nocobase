@@ -115,6 +115,11 @@
           },
           {
             "type": "custom-link",
+            "label": "JSON Variable Mapping",
+            "link": "/workflow/nodes/json-variable-mapping"
+          },
+          {
+            "type": "custom-link",
             "label": "Delay",
             "link": "/workflow/nodes/delay"
           },
@@ -141,13 +146,8 @@
           },
           {
             "type": "custom-link",
-            "label": "JSON Query",
+            "label": "JSON Calculation",
             "link": "/workflow/nodes/json-query"
-          },
-          {
-            "type": "custom-link",
-            "label": "JSON Variable Mapping",
-            "link": "/workflow/nodes/json-variable-mapping"
           }
         ]
       },
