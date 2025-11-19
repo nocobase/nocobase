@@ -531,12 +531,14 @@ RecordSelectFieldModel.registerFlow({
                 index ===
                 self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
             );
-            console.log(unique);
             onChange(unique);
           } else {
             onChange(data.data);
           }
           ctx.message.success(ctx.t('Saved successfully'));
+          ctx.model.setProps({
+            searchText: null,
+          });
         }
       },
     },
@@ -554,7 +556,6 @@ RecordSelectFieldModel.registerFlow({
     openView: {
       title: tExpr('Edit popup'),
       uiSchema: (ctx) => {
-        console.log(ctx.model.props);
         if (ctx.model.props.quickCreate !== 'modalAdd') {
           return null;
         }
