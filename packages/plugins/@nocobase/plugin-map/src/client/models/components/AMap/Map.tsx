@@ -92,7 +92,6 @@ export interface AMapForwardedRefProps {
 //2.0
 export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProps>((props, ref) => {
   const { accessKey, securityJsCode } = useMapConfig(props.mapType) || {};
-  console.log(useMapConfig(props.mapType), props);
   const {
     value,
     onChange,
@@ -268,6 +267,10 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
   const setOverlay = (t = type, v = value, o?: AMap.PolylineOptions & AMap.PolygonOptions) => {
     if (!aMap.current) return;
     const nextOverlay = getOverlay(t, v, o);
+    console.log(nextOverlay, t, v, o);
+    if (!nextOverlay) {
+      return;
+    }
     nextOverlay.setMap(map.current);
     return nextOverlay;
   };

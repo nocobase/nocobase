@@ -17,11 +17,10 @@ import {
   FlowSettingsButton,
   Droppable,
 } from '@nocobase/flow-engine';
-import { Cascader, Space } from 'antd';
+import { Space } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, ActionModel, BlockModel } from '@nocobase/client';
 import React from 'react';
-import { css } from '@emotion/css';
 import { MapBlockComponent } from './MapBlockComponent';
 
 const findNestedOption = (value: string[] | string, options = []) => {
@@ -112,6 +111,7 @@ export class MapBlockModel extends CollectionBlockModel {
           name={this.collection.name}
           primaryKey={this.collection.filterTargetKey}
           setSelectedRecordKeys={this.setSelectedRecordKeys}
+          dataSource={this.resource.getData()}
         />
       </div>
     );

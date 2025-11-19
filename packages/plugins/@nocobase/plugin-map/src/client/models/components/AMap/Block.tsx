@@ -33,7 +33,7 @@ import { AMapCom, AMapForwardedRefProps } from './Map';
 export const AMapBlock = (props) => {
   const {
     collectionField,
-    fieldNames,
+    marker,
     dataSource,
     fixedBlock,
     zoom,
@@ -42,7 +42,9 @@ export const AMapBlock = (props) => {
     fields,
     name,
     primaryKey,
+    mapField,
   } = props;
+  console.log(collectionField);
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<AMapForwardedRefProps>();
@@ -58,7 +60,7 @@ export const AMapBlock = (props) => {
   const parentRecordData = useCollectionParentRecordData();
   const { openPopup } = usePopupUtils();
 
-  const labelUiSchema = fields.find((v) => v.name === fieldNames?.marker)?.uiSchema;
+  const labelUiSchema = fields.find((v) => v.name === marker)?.uiSchema;
   const setOverlayOptions = (overlay: AMap.Polygon | AMap.Marker, state?: boolean) => {
     const extData = overlay.getExtData();
     const selected = typeof state === 'undefined' ? extData.selected : !state;
@@ -135,15 +137,12 @@ export const AMapBlock = (props) => {
 
   useEffect(() => {
     if (!collectionField || !mapRef.current || !dataSource) return;
-    const fieldPaths =
-      Array.isArray(fieldNames?.field) && fieldNames?.field.length > 1
-        ? fieldNames?.field.slice(0, -1)
-        : fieldNames?.field;
+    const fieldPaths = Array.isArray(mapField) && mapField.length > 1 ? mapField.slice(0, -1) : mapField;
     const cf = getCollectionJoinField([name, ...fieldPaths].flat().join('.'));
     const overlays = dataSource
       .map((item) => {
-        const data = getSource(item, fieldNames?.field, cf?.interface)?.filter(Boolean);
-        const title = getLabelFormatValue(labelUiSchema, item[fieldNames.marker]);
+        const data = getSource(item, [mapField], cf?.interface)?.filter(Boolean);
+        const title = getLabelFormatValue(labelUiSchema, item[marker]);
         if (!data?.length) return [];
         return data.map((mapItem) => {
           const overlay = mapRef.current?.setOverlay(collectionField.type, mapItem, {
@@ -153,7 +152,7 @@ export const AMapBlock = (props) => {
             label: {
               direction: 'bottom',
               offset: [0, 5],
-              content: fieldNames?.marker ? compile(title) : undefined,
+              content: marker ? compile(title) : undefined,
             },
             extData: {
               id: item[primaryKey],
@@ -258,7 +257,8 @@ export const AMapBlock = (props) => {
   }, [
     dataSource,
     isMapInitialization,
-    fieldNames,
+    mapField,
+    marker,
     name,
     primaryKey,
     collectionField.type,

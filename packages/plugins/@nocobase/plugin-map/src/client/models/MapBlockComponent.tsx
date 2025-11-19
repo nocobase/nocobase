@@ -23,8 +23,6 @@ export const MapBlockComponent: React.FC<any> = withSkeletonComponent(
     const { t } = useMapTranslation();
     const { markerFieldCollectionField, mapFieldCollectionField } = props;
     const { mapType } = mapFieldCollectionField?.getComponentProps?.() || {};
-    console.log(mapType);
-
     const Component = useMemo(() => {
       return MapBlocks[mapType];
     }, [mapType]);
@@ -37,7 +35,8 @@ export const MapBlockComponent: React.FC<any> = withSkeletonComponent(
       <Component
         {...props}
         {...mapFieldCollectionField?.getComponentProps?.()}
-        collectionField={markerFieldCollectionField}
+        collectionField={mapFieldCollectionField}
+        markerFieldCollectionField={markerFieldCollectionField}
       />
     );
   },
