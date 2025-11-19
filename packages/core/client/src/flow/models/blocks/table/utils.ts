@@ -54,3 +54,15 @@ export function setNestedValue(data, recordIndex, value) {
     current[keys[keys.length - 1]] = value;
   }
 }
+
+export function extractIds(data) {
+  let ids = [];
+  data.forEach((item) => {
+    ids.push(item.id); // 添加当前项的 id
+    if (item.children && Array.isArray(item.children)) {
+      // 如果有子项，递归提取子项的 id
+      ids = ids.concat(extractIds(item.children));
+    }
+  });
+  return ids;
+}

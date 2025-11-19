@@ -34,7 +34,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
-import { extractIndex, adjustColumnOrder, setNestedValue } from './utils';
+import { extractIndex, adjustColumnOrder, setNestedValue, extractIds } from './utils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { HighPerformanceSpin } from '../../../../schema-component/common/high-performance-spin/HighPerformanceSpin';
 
@@ -743,7 +743,7 @@ const HighPerformanceTable = React.memo(
       };
     }, [model, selectedRowKeys]);
     const handleChange = useCallback(
-      (pagination) => {
+      async (pagination) => {
         if (model.resource.getPageSize() !== pagination.pageSize) {
           model.resource.setPage(1);
         } else {
@@ -751,9 +751,13 @@ const HighPerformanceTable = React.memo(
         }
         model.resource.loading = true;
         model.resource.setPageSize(pagination.pageSize);
-        model.resource.refresh();
+        await model.resource.refresh();
+        if (defaultExpandAllRows) {
+          const newExpandedRowKeys = extractIds(model.resource.getData());
+          setExpandedRowKeys(newExpandedRowKeys);
+        }
       },
-      [model],
+      [model, defaultExpandAllRows],
     );
     const rowClassName = useCallback(
       (record) => {
