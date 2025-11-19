@@ -59,7 +59,7 @@ async function createStoragePluginSymLink(pluginName) {
       console.error(`Failed to remove existing symlink for storage plugin: ${pluginName}`);
     }
     await symlink(resolve(storagePluginsPath, pluginName), link, 'dir');
-    console.log(`Created symlink for storage plugin: ${pluginName}`);
+    // console.log(`Created symlink for storage plugin: ${pluginName}`);
   } catch (error) {
     console.error(`Failed to create symlink for storage plugin: ${pluginName}`);
   }
