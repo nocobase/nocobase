@@ -48,11 +48,20 @@ async function createStoragePluginSymLink(pluginName) {
     }
     const link = resolve(nodeModulesPath, pluginName);
     if (await fsExists(link)) {
+      const realPath = await realpath(link);
+      if (realPath !== resolve(storagePluginsPath, pluginName)) {
+        return;
+      }
+    }
+    try {
       await unlink(link);
+    } catch (error) {
+      console.error(`Failed to remove existing symlink for storage plugin: ${pluginName}`);
     }
     await symlink(resolve(storagePluginsPath, pluginName), link, 'dir');
+    // console.log(`Created symlink for storage plugin: ${pluginName}`);
   } catch (error) {
-    console.error(error);
+    console.error(`Failed to create symlink for storage plugin: ${pluginName}`);
   }
 }
 
@@ -80,16 +89,14 @@ async function createDevPluginSymLink(pluginName) {
       }
     }
     const link = resolve(nodeModulesPath, pluginName);
-    if (await fsExists(link)) {
-      const real = await realpath(link);
-      if (real === resolve(packagePluginsPath, pluginName)) {
-        return;
-      }
+    try {
       await unlink(link);
+    } catch (error) {
+      console.error(`Failed to remove existing symlink for dev plugin: ${pluginName}`);
     }
     await symlink(resolve(packagePluginsPath, pluginName), link, 'dir');
   } catch (error) {
-    console.error(error);
+    console.error(`Failed to create symlink for dev plugin: ${pluginName}`);
   }
 }
 
