@@ -53,6 +53,8 @@ import { setupAICoding } from './ai-employees/ai-coding/setup';
 import { chartGeneratorTool } from './ai-employees/chart-generator/tools';
 import { setupDataModeling } from './ai-employees/data-modeling/setup';
 import { getCodeSnippetTool, listCodeSnippetTool } from './ai-employees/ai-coding/tools';
+import { chartConfigWorkContext } from './ai-employees/data-visualization/context';
+import { vizSwitchModesTool, vizRunQueryTool } from './ai-employees/data-visualization/tools';
 
 export class PluginAIClient extends Plugin {
   features = new AIPluginFeatureManagerImpl();
@@ -150,6 +152,14 @@ export class PluginAIClient extends Plugin {
     this.aiManager.registerWorkContext('flow-model', FlowModelsContext);
     this.aiManager.registerWorkContext('datasource', DatasourceContext);
     this.aiManager.registerWorkContext('code-editor', CodeEditorContext);
+
+    // 使用可视化员工的工作上下文参数
+    this.aiManager.registerWorkContext('chart-config', chartConfigWorkContext);
+
+    // 使用可视化员工的工具参数
+    this.aiManager.registerTool(...vizSwitchModesTool);
+    this.aiManager.registerTool(...vizRunQueryTool);
+
     this.aiManager.registerTool(...defineCollectionsTool);
     this.aiManager.registerTool(...formFillerTool);
     this.aiManager.registerTool(...chartGeneratorTool);
@@ -172,3 +182,9 @@ export type { LLMProviderOptions, ToolOptions } from './manager/ai-manager';
 export type { ToolCall } from './ai-employees/types';
 export * from './features';
 export { AIEmployeeActionModel } from './ai-employees/flow/models/AIEmployeeActionModel';
+export { useAIEmployeesData } from './ai-employees/hooks/useAIEmployeesData';
+export { useChatMessagesStore } from './ai-employees/chatbox/stores/chat-messages';
+export { useChatBoxStore } from './ai-employees/chatbox/stores/chat-box';
+export { useChatBoxActions } from './ai-employees/chatbox/hooks/useChatBoxActions';
+export { ProfileCard } from './ai-employees/ProfileCard';
+export { avatars } from './ai-employees/avatars';

@@ -11,8 +11,9 @@ import {
   FlowModelRenderer,
   SingleRecordResource,
   createCollectionContextMeta,
-  tExpr,
   createCurrentRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
+  tExpr,
   type PropertyMetaFactory,
 } from '@nocobase/flow-engine';
 import React from 'react';
@@ -41,7 +42,10 @@ export class AssignFormModel extends FormBlockModel<{ subModels: { grid: any } }
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord?.(),
       cache: false,
-      resolveOnServer: true,
+      resolveOnServer: createRecordResolveOnServerWithLocal(
+        () => this.collection,
+        () => this.getCurrentRecord?.(),
+      ),
       meta: recordMeta,
     });
     // 该模型常在“配置面板”场景独立使用，不一定挂在 BlockGridModel 下，

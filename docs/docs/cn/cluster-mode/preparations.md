@@ -6,12 +6,13 @@
 
 NocoBase 应用以集群方式运行需要基于以下插件支持：
 
-| 功能 | 插件 |
-| --- | --- |
-| 缓存适配器 | 内置 |
-| 同步信号适配器 | `@nocobase/plugin-pubsub-adapter-redis` |
-| 消息队列适配器 | `@nocobase/plugin-queue-adapter-redis` 或 `@nocobase/plugin-queue-adapter-rabbitmq` |
-| 分布式锁适配器 | `@nocobase/plugin-lock-adapter-redis` |
+| 功能             | 插件                                                                                |
+| ---------------- | ----------------------------------------------------------------------------------- |
+| 缓存适配器       | 内置                                                                                |
+| 同步信号适配器   | `@nocobase/plugin-pubsub-adapter-redis`                                             |
+| 消息队列适配器   | `@nocobase/plugin-queue-adapter-redis` 或 `@nocobase/plugin-queue-adapter-rabbitmq` |
+| 分布式锁适配器   | `@nocobase/plugin-lock-adapter-redis`                                               |
+| Worker ID 分配器 | `@nocobase/plugin-workerid-allocator-redis`                                         |
 
 首先请确保你已经获得了以上插件的授权（可以通过商业插件服务平台购买相应的插件授权）。
 
@@ -125,6 +126,15 @@ QUEUE_ADAPTER=redis
 QUEUE_ADAPTER_REDIS_URL=
 ```
 
+### Worker ID 分配器
+
+由于 NocoBase 中的部分系统表使用全局唯一 ID 作为主键，因此需要通过 Worker ID 分配器来保证集群中每个应用实例分配到唯一的 Worker ID，从而避免主键冲突问题。目前设计的 Worker ID 范围为 0-31, 即相同应用最多支持 32 个节点同时运行。关于全局唯一 ID 的设计，参考 [@nocobase/snowflake-id](https://github.com/nocobase/nocobase/tree/main/packages/core/snowflake-id)
+
+```ini
+# Worker ID 分配器 Redis 连接地址，默认不填为随机分配
+REDIS_URL=
+```
+
 :::info{title=提示}
 通常情况，相关的适配器可以都使用同一个 Redis 实例，但最好区分使用不同的数据库，以避免可能存在的键冲突问题，例如：
 
@@ -133,7 +143,11 @@ CACHE_REDIS_URL=redis://localhost:6379/0
 PUBSUB_ADAPTER_REDIS_URL=redis://localhost:6379/1
 LOCK_ADAPTER_REDIS_URL=redis://localhost:6379/2
 QUEUE_ADAPTER_REDIS_URL=redis://localhost:6379/3
+REDIS_URL=redis://localhost:6379/4
 ```
+
+现阶段各插件采用各自的 Redis 环境变量配置，未来会考虑统一使用 `REDIS_URL` 作为兜底配置。
+
 :::
 
 如使用 Kubernetes 管理集群，可以将上述环境变量配置在 ConfigMap 或 Secret 中，更多相关内容可以参考 [Kubernetes 部署](./kubernetes)。

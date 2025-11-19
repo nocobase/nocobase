@@ -19,6 +19,7 @@ import {
   MultiRecordResource,
   SingleRecordResource,
   createCurrentRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
   tExpr,
 } from '@nocobase/flow-engine';
 import { Pagination, Space } from 'antd';
@@ -65,7 +66,10 @@ export class DetailsBlockModel extends CollectionBlockModel<{
     this.context.defineProperty('record', {
       get: () => this.getCurrentRecord(),
       cache: false,
-      resolveOnServer: true,
+      resolveOnServer: createRecordResolveOnServerWithLocal(
+        () => this.collection,
+        () => this.getCurrentRecord(),
+      ),
       meta: recordMeta,
     });
   }

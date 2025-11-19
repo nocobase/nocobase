@@ -749,11 +749,15 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (isBeforeRender) {
       this._lastAutoRunParams = [inputArgs, execOptions.useCache];
     }
+    let finalInputArgs = inputArgs;
+    if (this.context.record) {
+      finalInputArgs = { record: this.context.record, ...inputArgs };
+    }
 
     if (options?.debounce) {
-      return this._dispatchEventWithDebounce(eventName, inputArgs, execOptions);
+      return this._dispatchEventWithDebounce(eventName, finalInputArgs, execOptions);
     }
-    return this._dispatchEvent(eventName, inputArgs, execOptions);
+    return this._dispatchEvent(eventName, finalInputArgs, execOptions);
   }
 
   /**
@@ -1069,6 +1073,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     model.sortIndex = maxSortIndex + 1;
     subModels[subKey].push(model);
     actualParent.emitter.emit('onSubModelAdded', model);
+    // 同步发射到引擎级事件总线，便于外部统一监听模型树变更
+    actualParent.flowEngine?.emitter?.emit('model:subModel:added', {
+      parentUid: actualParent.uid,
+      parent: actualParent,
+      subKey,
+      model,
+    });
     return model;
   }
 
@@ -1095,6 +1106,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     model.setParent(actualParent);
     (actualParent.subModels as any)[subKey] = model;
     actualParent.emitter.emit('onSubModelAdded', model);
+    actualParent.flowEngine?.emitter?.emit('model:subModel:added', {
+      parentUid: actualParent.uid,
+      parent: actualParent,
+      subKey,
+      model,
+    });
     return model;
   }
 

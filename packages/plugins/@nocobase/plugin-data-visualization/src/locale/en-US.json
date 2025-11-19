@@ -16,7 +16,7 @@
   "Transform": "Transform",
   "Chart type": "Chart type",
   "JSON config": "JSON config",
-  "Query builder": "Query builder",
+  "Builder": "Builder",
   "Data query": "Data query",
   "Query": "Query",
   "Data": "Data",
@@ -132,5 +132,14 @@
   "Horizontal": "Horizontal",
   "Vertical": "Vertical",
   "Category field": "Category field",
-  "Value field": "Value field"
+  "Value field": "Value field",
+  "Choose the appropriate chart": "Choose the appropriate chart",
+  "Auto map by data columns": "Auto map by data columns",
+  "Optimize visual encoding": "Optimize visual encoding",
+  "Fix preview errors or field mismatch": "Fix preview errors or field mismatch",
+
+  "Recommend chart type by data structure and explain reasons": "Recommend chart type by data structure and explain reasons",
+  "Map X/Y/category/value by columns and generate ECharts options": "Map X/Y/category/value by columns and generate ECharts options",
+  "Optimize color, ordering and aggregation, output ECharts options": "Optimize color, ordering and aggregation, output ECharts options",
+  "Fix errors or field mismatch, output SQL or ECharts options": "Fix errors or field mismatch, output SQL or ECharts options"
 }

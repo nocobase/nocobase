@@ -44,9 +44,22 @@ export function defineBaseContextMeta() {
           language: 'Current active language code.',
         },
       },
-      React: 'React namespace providing React library functions and hooks (available in RunJS environment)',
-      ReactDOM: 'ReactDOM client API including createRoot for rendering React components',
-      antd: 'Ant Design component library',
+      React:
+        'React namespace providing React library functions and hooks (available in RunJS environment). Recommended access path: `ctx.libs.React`.',
+      ReactDOM:
+        'ReactDOM client API including createRoot for rendering React components. Also available via `ctx.libs.ReactDOM`.',
+      antd: 'Ant Design component library. Recommended access path: `ctx.libs.antd`.',
+      libs: {
+        description: 'Namespace for third-party and shared libraries. Includes React, ReactDOM, Ant Design, and dayjs.',
+        detail: 'Libraries namespace',
+        properties: {
+          React: 'React namespace (same as ctx.React).',
+          ReactDOM: 'ReactDOM client API (same as ctx.ReactDOM).',
+          antd: 'Ant Design component library (same as ctx.antd).',
+          dayjs: 'dayjs date-time utility library.',
+          antdIcons: 'Ant Design icons library. Example: `ctx.libs.antdIcons.PlusOutlined`.',
+        },
+      },
     },
     methods: {
       t: 'Internationalization function for translating text. Parameters: (key: string, variables?: object) => string. Example: `ctx.t("Hello {name}", { name: "World" })`',
@@ -129,9 +142,21 @@ export function defineBaseContextMeta() {
             language: '当前激活的语言代码',
           },
         },
-        React: 'React 命名空间，提供 React 函数与 hooks（RunJS 环境中可用）',
-        ReactDOM: 'ReactDOM 客户端 API，含 createRoot 等渲染方法',
-        antd: 'Ant Design 组件库（RunJS 环境中可用）',
+        React: 'React 命名空间，提供 React 函数与 hooks（RunJS 环境中可用）。推荐使用 `ctx.libs.React` 访问。',
+        ReactDOM: 'ReactDOM 客户端 API，含 createRoot 等渲染方法。推荐通过 `ctx.libs.ReactDOM` 访问。',
+        antd: 'Ant Design 组件库（RunJS 环境中可用）。推荐使用 `ctx.libs.antd` 访问。',
+        libs: {
+          description:
+            '第三方/通用库的统一命名空间，包含 React、ReactDOM、Ant Design、dayjs 等。后续新增库会优先挂在此处。',
+          detail: '通用库命名空间',
+          properties: {
+            React: 'React 命名空间（等价于 ctx.React）。',
+            ReactDOM: 'ReactDOM 客户端 API（等价于 ctx.ReactDOM）。',
+            antd: 'Ant Design 组件库（等价于 ctx.antd）。',
+            dayjs: 'dayjs 日期时间工具库。',
+            antdIcons: 'Ant Design 图标库。 例如：`ctx.libs.antdIcons.PlusOutlined`。',
+          },
+        },
       },
       methods: {
         t: '国际化函数，用于翻译文案。参数：(key: string, variables?: object) => string。示例：`ctx.t("你好 {name}", { name: "世界" })`',
