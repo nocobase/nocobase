@@ -1,0 +1,5 @@
+{
+  "unique violation": "{{field}} уже существует",
+  "notNull violation": "{{field}} не может быть пустым",
+  "Validation error": "{{field}} ошибка валидации"
+}
