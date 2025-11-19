@@ -99,7 +99,7 @@ FormSubmitActionModel.registerFlow({
             } else {
               blockModel.form.resetFields();
               blockModel.emitter.emit('onFieldReset');
-              if (ctx.view.inputArgs.onChange) {
+              if (ctx.view.inputArgs.collectionName === blockModel.collection.name && ctx.view.inputArgs.onChange) {
                 ctx.view.inputArgs.onChange(data?.data);
               }
             }
