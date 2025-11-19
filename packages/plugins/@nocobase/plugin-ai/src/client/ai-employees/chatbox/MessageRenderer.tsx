@@ -331,7 +331,9 @@ export const TaskMessage: React.FC<{
   };
 }> = memo(({ msg }) => {
   const t = useT();
-  const tasks = msg.content;
+  // 保证 msg.content 始终被归一化为数组
+  const rawTasks = (msg as any)?.content;
+  const tasks: Task[] = Array.isArray(rawTasks) ? rawTasks : rawTasks ? [rawTasks] : [];
 
   const taskVariables = useChatBoxStore.use.taskVariables();
   const currentEmployee = useChatBoxStore.use.currentEmployee();

@@ -488,7 +488,7 @@ export class FlowEngine {
 
     modelInstance.onInit(options);
 
-    // 发射 created 生命周期事件（严格模式：不吞错）
+    // 发射 created 生命周期事件
     void this.emitter.emitAsync('model:created', {
       uid: modelInstance.uid,
       model: modelInstance,
@@ -602,11 +602,21 @@ export class FlowEngine {
           if (index !== -1) {
             subModelValue.splice(index, 1);
             modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
+            this.emitter?.emit('model:subModel:removed', {
+              parentUid: modelInstance.parent.uid,
+              parent: modelInstance.parent,
+              model: modelInstance,
+            });
             break;
           }
         } else if (subModelValue && subModelValue === modelInstance) {
           delete modelInstance.parent.subModels[subKey];
           modelInstance.parent.emitter.emit('onSubModelRemoved', modelInstance);
+          this.emitter?.emit('model:subModel:removed', {
+            parentUid: modelInstance.parent.uid,
+            parent: modelInstance.parent,
+            model: modelInstance,
+          });
           break;
         }
       }
@@ -870,6 +880,12 @@ export class FlowEngine {
       currentParent.parent.invalidateFlowCache('beforeRender', true);
       currentParent.parent?.rerender();
       currentParent.emitter.emit('onSubModelReplaced', { oldModel, newModel });
+      this.emitter?.emit('model:subModel:replaced', {
+        parentUid: currentParent.uid,
+        parent: currentParent,
+        oldModel,
+        newModel,
+      });
     }
     await newModel.save();
     return newModel;
@@ -938,6 +954,12 @@ export class FlowEngine {
     }
     // 触发事件以通知其他部分模型已移动
     sourceModel.parent.emitter.emit('onSubModelMoved', { source: sourceModel, target: targetModel });
+    this.emitter?.emit('model:subModel:moved', {
+      parentUid: sourceModel.parent?.uid,
+      parent: sourceModel.parent,
+      source: sourceModel,
+      target: targetModel,
+    });
   }
 
   /**

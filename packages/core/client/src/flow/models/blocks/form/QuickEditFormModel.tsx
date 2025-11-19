@@ -19,6 +19,7 @@ import {
   FormItem,
   SingleRecordResource,
   createCurrentRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
 } from '@nocobase/flow-engine';
 import { Button, Form, Skeleton, Space } from 'antd';
 import _ from 'lodash';
@@ -111,7 +112,10 @@ export class QuickEditFormModel extends FlowModel {
     const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(this.context, () => this.collection);
     this.context.defineProperty('record', {
       get: () => this.resource.getData(),
-      resolveOnServer: true,
+      resolveOnServer: createRecordResolveOnServerWithLocal(
+        () => this.collection,
+        () => this.resource.getData(),
+      ),
       meta: recordMeta,
     });
     this.context.defineProperty('collection', {

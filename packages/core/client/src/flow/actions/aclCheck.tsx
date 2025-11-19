@@ -13,10 +13,10 @@ export const aclCheck = defineAction({
   name: 'aclCheck',
   async handler(ctx, params) {
     const result = await ctx.aclCheck({
-      dataSourceKey: ctx.model.context.dataSource?.key,
-      resourceName: ctx.model.context.resourceName,
-      actionName: ctx.model.context.actionName,
-      fields: ctx.model.context?.collectionField && [ctx.model.context.collectionField.name],
+      dataSourceKey: ctx.dataSource?.key,
+      resourceName: ctx.collectionField?.collectionName || ctx.resourceName,
+      actionName: ctx.actionName,
+      fields: ctx?.collectionField && [ctx.collectionField.name],
     });
     if (ctx.fieldPath && !ctx.collectionField) {
       ctx.model.fieldDeleted = true;

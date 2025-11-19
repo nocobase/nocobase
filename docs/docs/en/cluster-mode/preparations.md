@@ -6,12 +6,13 @@ Before deploying a cluster application, you need to complete the following prepa
 
 Running a NocoBase application in cluster mode requires support from the following plugins:
 
-| Function | Plugin |
-| --- | --- |
-| Cache adapter | Built-in |
-| Sync signal adapter | `@nocobase/plugin-pubsub-adapter-redis` |
-| Message queue adapter | `@nocobase/plugin-queue-adapter-redis` or `@nocobase/plugin-queue-adapter-rabbitmq` |
-| Distributed lock adapter | `@nocobase/plugin-lock-adapter-redis` |
+| Function                 | Plugin                                                                              |
+| ------------------------ | ----------------------------------------------------------------------------------- |
+| Cache adapter            | Built-in                                                                            |
+| Sync signal adapter      | `@nocobase/plugin-pubsub-adapter-redis`                                             |
+| Message queue adapter    | `@nocobase/plugin-queue-adapter-redis` or `@nocobase/plugin-queue-adapter-rabbitmq` |
+| Distributed lock adapter | `@nocobase/plugin-lock-adapter-redis`                                               |
+| Worker ID allocator      | `@nocobase/plugin-workerid-allocator-redis`                                         |
 
 First, please ensure you have obtained licenses for the above plugins (you can purchase the corresponding plugin licenses through the commercial plugin service platform).
 
@@ -125,6 +126,17 @@ QUEUE_ADAPTER=redis
 QUEUE_ADAPTER_REDIS_URL=
 ```
 
+### Worker ID Allocator
+
+Some system collections in NocoBase use globally unique IDs as primary keys. To prevent primary-key conflicts across a cluster, each application instance must obtain a unique Worker ID through the Worker ID Allocator. The current Worker ID range is 0–31, meaning each application can run up to 32 nodes simultaneously.
+For details on the global unique ID design, [@nocobase/snowflake-id](https://github.com/nocobase/nocobase/tree/main/packages/core/snowflake-id)
+
+```ini
+# Redis connection URL for the Worker ID Allocator.
+# If omitted, a random Worker ID will be assigned.
+REDIS_URL=
+```
+
 :::info{title=Tip}
 Usually, the related adapters can all use the same Redis instance, but it is best to use different databases to avoid potential key conflict issues, for example:
 
@@ -133,7 +145,11 @@ CACHE_REDIS_URL=redis://localhost:6379/0
 PUBSUB_ADAPTER_REDIS_URL=redis://localhost:6379/1
 LOCK_ADAPTER_REDIS_URL=redis://localhost:6379/2
 QUEUE_ADAPTER_REDIS_URL=redis://localhost:6379/3
+REDIS_URL=redis://localhost:6379/4
 ```
+
+Currently, each plugin uses its own Redis-related environment variables. In the future, we may use `REDIS_URL` as the fallback configuration.
+
 :::
 
 If you use Kubernetes to manage the cluster, you can configure the above environment variables in a ConfigMap or Secret. For more related content, you can refer to [Kubernetes Deployment](./kubernetes).

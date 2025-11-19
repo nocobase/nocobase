@@ -23,7 +23,7 @@ const snippet: SnippetModule = {
   },
   content: `
 // Render a React component with JSX
-const { React } = ctx;
+const { React } = ctx.libs;
 
 const App = () => (
   <div style={{ padding: 12 }}>
