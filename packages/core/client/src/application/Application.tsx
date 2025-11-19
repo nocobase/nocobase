@@ -308,7 +308,7 @@ export class Application {
         const rest = await this.apiClient.request({
           url: 'app:getInfo',
         });
-        return rest.data;
+        return rest.data?.data || {};
       },
     });
     this.flowEngine.context.defineProperty('api', {
