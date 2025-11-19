@@ -297,6 +297,9 @@ RecordSelectFieldModel.registerFlow({
           return;
         }
         ctx.model.setDataSource(data);
+        ctx.model.setProps({
+          searchText: null,
+        });
         if (data.length < paginationState.pageSize) {
           paginationState.hasMore = false;
         } else {
@@ -618,6 +621,9 @@ RecordSelectFieldModel.registerFlow({
             onChange: (e) => {
               if (toOne) {
                 onChange(e);
+                const data = ctx.model.getDataSource();
+                data.push(e);
+                ctx.model.setDataSource(data);
               } else {
                 const prev = ctx.model.props.value || [];
                 const merged = [...prev, e];
