@@ -748,7 +748,7 @@ const HighPerformanceTable = React.memo(
       };
     }, [model, selectedRowKeys]);
     const handleChange = useCallback(
-      (pagination, filters, sorter) => {
+      async (pagination, filters, sorter) => {
         const globalSort = model.props.globalSort;
         const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : globalSort;
         if (sorter) {
