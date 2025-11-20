@@ -32,6 +32,7 @@ export const AMapBlock = (props) => {
     primaryKey,
     mapField,
     associationCollectionField,
+    onOpenView,
   } = props;
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<AMapForwardedRefProps>();
@@ -167,28 +168,29 @@ export const AMapBlock = (props) => {
           return extData.id === item[primaryKey];
         });
 
-        // 筛选区块模式
-        if (isConnected) {
-          setPrevSelected((prev) => {
-            prev && clearSelected(prev);
-            if (prev === o) {
-              clearSelected(o);
+        // // 筛选区块模式
+        // if (isConnected) {
+        //   setPrevSelected((prev) => {
+        //     prev && clearSelected(prev);
+        //     if (prev === o) {
+        //       clearSelected(o);
 
-              // 删除过滤参数
-              doFilter(null);
-              return null;
-            } else {
-              selectMarker(o);
-              doFilter(data[primaryKey], (target) => target.field || primaryKey, '$eq');
-            }
-            return o;
-          });
+        //       // 删除过滤参数
+        //       doFilter(null);
+        //       return null;
+        //     } else {
+        //       selectMarker(o);
+        //       doFilter(data[primaryKey], (target) => target.field || primaryKey, '$eq');
+        //     }
+        //     return o;
+        //   });
 
-          return;
-        }
+        //   return;
+        // }
 
         if (data) {
           setRecord(data);
+          onOpenView(data);
           // openPopup({
           //   recordData: data,
           // });

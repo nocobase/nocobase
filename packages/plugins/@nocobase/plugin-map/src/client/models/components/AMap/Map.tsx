@@ -344,7 +344,18 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
 
     if (window.AMap) {
       try {
-        requestIdleCallback(() => {
+        // requestIdleCallback(() => {
+        //   map.current = new AMap.Map(id.current, {
+        //     resizeEnable: true,
+        //     zoom,
+        //   } as AMap.MapOptions);
+        //   aMap.current = AMap;
+        //   setErrMessage('');
+        //   forceUpdate([]);
+        // });
+        const safeIdle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1));
+
+        safeIdle(() => {
           map.current = new AMap.Map(id.current, {
             resizeEnable: true,
             zoom,
@@ -369,7 +380,18 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
           return;
         }
         (window as any).define = _define;
-        return requestIdleCallback(() => {
+        // return requestIdleCallback(() => {
+        //   map.current = new amap.Map(id.current, {
+        //     resizeEnable: true,
+        //     zoom,
+        //   } as AMap.MapOptions);
+        //   aMap.current = amap;
+        //   setErrMessage('');
+        //   forceUpdate([]);
+        // });
+        const safeIdle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1));
+
+        return safeIdle(() => {
           map.current = new amap.Map(id.current, {
             resizeEnable: true,
             zoom,
