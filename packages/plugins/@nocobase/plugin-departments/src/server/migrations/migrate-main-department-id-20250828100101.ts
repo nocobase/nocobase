@@ -11,7 +11,7 @@ import { Migration } from '@nocobase/server';
 
 export default class extends Migration {
   on = 'afterLoad';
-  appVersion = '<=1.8.22';
+  appVersion = '<2.0.0';
 
   async up() {
     await this.db.sequelize.transaction(async (transaction) => {
