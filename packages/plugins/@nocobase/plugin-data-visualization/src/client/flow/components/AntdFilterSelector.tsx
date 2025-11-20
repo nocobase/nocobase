@@ -11,7 +11,13 @@ import React from 'react';
 import type { CSSProperties } from 'react';
 import { FilterGroup, VariableFilterItem } from '@nocobase/client';
 import type { VariableFilterItemValue } from '@nocobase/client';
-import type { FlowModel } from '@nocobase/flow-engine';
+import {
+  FlowContext,
+  FlowViewContextProvider,
+  useFlowViewContext,
+  createCollectionContextMeta,
+  type FlowModel,
+} from '@nocobase/flow-engine';
 import { observable, reaction, toJS } from '@formily/reactive';
 import isEqual from 'lodash/isEqual';
 import { DeleteOutlined } from '@ant-design/icons';
@@ -36,6 +42,9 @@ export interface AntdFilterSelectorProps {
   // 是否变量作为右值
   rightAsVariable?: boolean;
 
+  // 当前选择的集合路径：[dataSourceKey, collectionName]
+  collectionPath?: string[];
+
   className?: string;
   style?: CSSProperties;
 }
@@ -57,6 +66,7 @@ export const AntdFilterSelector: React.FC<AntdFilterSelectorProps> = ({
   onChange,
   model,
   rightAsVariable = true,
+  collectionPath,
   className,
   style,
 }) => {
@@ -95,6 +105,91 @@ export const AntdFilterSelector: React.FC<AntdFilterSelectorProps> = ({
     return () => dispose();
   }, [onChange]);
 
+  const viewCtx = useFlowViewContext();
+  const enhancedCtx = React.useMemo(() => {
+    if (!Array.isArray(collectionPath) || collectionPath.length < 2) return null;
+    const [dataSourceKey, collectionName] = collectionPath || [];
+    const ctx = new FlowContext();
+    ctx.addDelegate(viewCtx);
+    ctx.defineProperty('collection', {
+      get: () => model.context.dataSourceManager.getCollection(dataSourceKey, collectionName),
+      cache: false,
+      meta: (() => {
+        const baseFactory = createCollectionContextMeta(
+          () => model.context.dataSourceManager.getCollection(dataSourceKey, collectionName),
+          model.translate('Current collection'),
+        );
+        return async () => {
+          const base = await baseFactory();
+          if (!base) return null;
+          const raw = typeof base.properties === 'function' ? await base.properties() : base.properties;
+          const allow = (await model.getFilterFields?.())?.map((f: any) => f.name) || [];
+          const dm = model.context.app?.dataSourceManager;
+          const ds = dm?.getDataSource(dataSourceKey);
+          const cm = ds?.collectionManager;
+          const fim = dm?.collectionFieldInterfaceManager;
+          const out: Record<string, any> = {};
+          for (const name of allow) {
+            const metaProp = raw?.[name];
+            if (!metaProp) continue;
+            const fieldDef = (cm?.getCollectionFields(collectionName) || []).find((ff: any) => ff.name === name);
+            const iface = fieldDef?.interface ? fim?.getFieldInterface(fieldDef.interface) : undefined;
+            if (iface?.filterable?.nested && fieldDef?.target) {
+              out[name] = metaProp;
+            } else {
+              const clone: any = { ...metaProp };
+              delete clone.properties;
+              out[name] = clone;
+            }
+          }
+          return { ...base, properties: out };
+        };
+      })(),
+    });
+    return ctx;
+  }, [viewCtx, model, collectionPath]);
+
+  React.useEffect(() => {
+    if (!Array.isArray(collectionPath) || collectionPath.length < 2) return;
+    const [dataSourceKey, collectionName] = collectionPath || [];
+    model.context.defineProperty('collection', {
+      get: () => model.context.dataSourceManager.getCollection(dataSourceKey, collectionName),
+      cache: false,
+      meta: (() => {
+        const baseFactory = createCollectionContextMeta(
+          () => model.context.dataSourceManager.getCollection(dataSourceKey, collectionName),
+          model.translate('Current collection'),
+        );
+        return async () => {
+          const base = await baseFactory();
+          if (!base) return null;
+          const raw = typeof base.properties === 'function' ? await base.properties() : base.properties;
+          const allow = (await model.getFilterFields?.())?.map((f: any) => f.name) || [];
+          const dm = model.context.app?.dataSourceManager;
+          const ds = dm?.getDataSource(dataSourceKey);
+          const cm = ds?.collectionManager;
+          const fim = dm?.collectionFieldInterfaceManager;
+          const out: Record<string, any> = {};
+          for (const name of allow) {
+            const metaProp = raw?.[name];
+            if (!metaProp) continue;
+            const fieldDef = (cm?.getCollectionFields(collectionName) || []).find((ff: any) => ff.name === name);
+            const iface = fieldDef?.interface ? fim?.getFieldInterface(fieldDef.interface) : undefined;
+            if (iface?.filterable?.nested && fieldDef?.target) {
+              out[name] = metaProp;
+            } else {
+              const clone: any = { ...metaProp };
+              delete clone.properties;
+              out[name] = clone;
+            }
+          }
+          return { ...base, properties: out };
+        };
+      })(),
+    });
+    model.context.removeCache?.('collection');
+  }, [model, collectionPath]);
+
   // 缓存 FilterItem 渲染函数，避免每次渲染产生新函数导致子树重绘
   const renderFilterItem = React.useCallback(
     (p: { value: VariableFilterItemValue }) => (
@@ -104,9 +199,11 @@ export const AntdFilterSelector: React.FC<AntdFilterSelectorProps> = ({
   );
 
   return (
-    <div className={className} style={style}>
-      <FilterGroup value={internalRef.current} FilterItem={renderFilterItem} closeIcon={<DeleteOutlined />} />
-    </div>
+    <FlowViewContextProvider context={enhancedCtx || viewCtx}>
+      <div className={className} style={style}>
+        <FilterGroup value={internalRef.current} FilterItem={renderFilterItem} closeIcon={<DeleteOutlined />} />
+      </div>
+    </FlowViewContextProvider>
   );
 };
 
