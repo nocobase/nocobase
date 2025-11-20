@@ -8,19 +8,7 @@
  */
 
 import { CheckOutlined, EnvironmentOutlined, ExpandOutlined } from '@ant-design/icons';
-import {
-  RecordProvider,
-  css,
-  getLabelFormatValue,
-  useCollection,
-  useCollectionManager_deprecated,
-  useCollectionParentRecordData,
-  useCollection_deprecated,
-  useCompile,
-  useFilterAPI,
-  usePopupUtils,
-  useProps,
-} from '@nocobase/client';
+import { css, getLabelFormatValue, useCompile, useFilterAPI } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Button, Space } from 'antd';
 import React, { useEffect, useRef, useState } from 'react';
@@ -43,8 +31,8 @@ export const AMapBlock = (props) => {
     name,
     primaryKey,
     mapField,
+    associationCollectionField,
   } = props;
-  const { getCollectionJoinField } = useCollectionManager_deprecated();
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<AMapForwardedRefProps>();
   const geometryUtils: AMap.IGeometryUtil = mapRef.current?.aMap?.GeometryUtil;
@@ -56,8 +44,6 @@ export const AMapBlock = (props) => {
   const [, setPrevSelected] = useState<any>(null);
   const selectingModeRef = useRef(selectingMode);
   selectingModeRef.current = selectingMode;
-  const parentRecordData = useCollectionParentRecordData();
-  const { openPopup } = usePopupUtils();
 
   const labelUiSchema = fields.find((v) => v.name === marker)?.uiSchema;
   const setOverlayOptions = (overlay: AMap.Polygon | AMap.Marker, state?: boolean) => {
@@ -136,11 +122,9 @@ export const AMapBlock = (props) => {
 
   useEffect(() => {
     if (!collectionField || !mapRef.current || !dataSource) return;
-    const fieldPaths = Array.isArray(mapField) && mapField.length > 1 ? mapField.slice(0, -1) : mapField;
-    const cf = getCollectionJoinField([name, ...fieldPaths].flat().join('.'));
     const overlays = dataSource
       .map((item) => {
-        const data = getSource(item, [mapField], cf?.interface)?.filter(Boolean);
+        const data = getSource(item, mapField, associationCollectionField?.interface)?.filter(Boolean);
         const title = getLabelFormatValue(labelUiSchema, item[marker]);
         if (!data?.length) return [];
         return data.map((mapItem) => {
@@ -205,9 +189,9 @@ export const AMapBlock = (props) => {
 
         if (data) {
           setRecord(data);
-          openPopup({
-            recordData: data,
-          });
+          // openPopup({
+          //   recordData: data,
+          // });
         }
       };
       o.on('click', onClick);
@@ -263,7 +247,6 @@ export const AMapBlock = (props) => {
     collectionField.type,
     isConnected,
     lineSort,
-    openPopup,
   ]);
 
   useEffect(() => {

@@ -17,11 +17,12 @@ import {
   FlowSettingsButton,
   Droppable,
 } from '@nocobase/flow-engine';
-import { Space } from 'antd';
+import { Space, InputNumber } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum } from '@nocobase/client';
 import React from 'react';
 import { MapBlockComponent } from './MapBlockComponent';
+import { NAMESPACE } from '../locale';
 
 const findNestedOption = (value: string[] | string, options = []) => {
   if (typeof value === 'string') {
@@ -138,9 +139,10 @@ export class MapBlockModel extends CollectionBlockModel {
 }
 MapBlockModel.registerFlow({
   key: 'createMapBlock',
+  title: tExpr('Map block settings', { ns: NAMESPACE }),
   steps: {
     init: {
-      title: tExpr('Create map block'),
+      title: tExpr('Map Field & Marker field', { ns: NAMESPACE }),
       preset: true,
       uiSchema: (ctx) => {
         const t = ctx.t;
@@ -157,10 +159,9 @@ MapBlockModel.registerFlow({
         const markerFieldOptions = collectionManager.getCollectionFieldsOptions(ctx.collection.name, 'string', null, {
           dataSource: dataSourceKey,
         });
-
         return {
           mapField: {
-            title: t('Map field'),
+            title: t('Map field', { ns: NAMESPACE }),
             required: true,
             enum: mapFieldOptions,
             'x-component': 'Cascader',
@@ -173,7 +174,7 @@ MapBlockModel.registerFlow({
               : [],
           },
           marker: {
-            title: t('Marker field'),
+            title: t('Marker field', { ns: NAMESPACE }),
             enum: markerFieldOptions.map((v) => {
               return {
                 label: v.label,
@@ -183,7 +184,7 @@ MapBlockModel.registerFlow({
             'x-component': 'Select',
             'x-decorator': 'FormItem',
             'x-reactions': (field) => {
-              const value = field.form.values.field;
+              const value = field.form.values.mapField;
               if (!value?.length) {
                 return;
               }
@@ -197,38 +198,80 @@ MapBlockModel.registerFlow({
       },
       async handler(ctx, params) {
         if (params.mapField) {
-          ctx.model.setProps('mapField', params.mapField[0]);
+          let collectionField;
+          let associationCollectionField;
+          if (params.mapField.length > 1) {
+            collectionField = ctx.collection.getFieldByPath(params.mapField.join('.'));
+            associationCollectionField = ctx.collection.getFieldByPath(params.mapField[0]);
+          } else {
+            collectionField = ctx.collection.getField(params.mapField[0]);
+          }
+          ctx.model.setProps('mapField', params.mapField);
           ctx.model.setProps('marker', params.marker);
-          ctx.model.setProps('mapFieldCollectionField', ctx.collection.getField(params.mapField[0]));
+          ctx.model.setProps('mapFieldCollectionField', collectionField);
           ctx.model.setProps('markerFieldCollectionField', ctx.collection.getField(params.marker));
+          ctx.model.setProps('associationCollectionField', associationCollectionField);
         }
+      },
+    },
+    addAppends: {
+      handler(ctx, params) {
+        const { associationCollectionField } = ctx.model.props;
+        if (associationCollectionField) {
+          ctx.resource.addAppends(associationCollectionField.name);
+        }
+      },
+    },
+    dataScope: {
+      use: 'dataScope',
+      title: tExpr('Data scope'),
+    },
+    lineSort: {
+      use: 'sortingRule',
+      title: tExpr('Concatenation order field', { ns: NAMESPACE }),
+      async handler(ctx, params) {
+        const sortArr = params.sort.map((item) => {
+          return item.direction === 'desc' ? `-${item.field}` : item.field;
+        });
+        // @ts-ignore
+        const resource = ctx.model?.resource as MultiRecordResource;
+        if (!resource) {
+          return;
+        }
+        ctx.model.setProps({
+          lineSort: sortArr,
+        });
+      },
+    },
+    mapZoom: {
+      title: tExpr('The default zoom level of the map', { ns: NAMESPACE }),
+      uiSchema(ctx) {
+        const t = ctx.t;
+        return {
+          zoom: {
+            title: t('Zoom'),
+            'x-component': InputNumber,
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              precision: 0,
+            },
+          },
+        };
+      },
+      defaultParams: {
+        zoom: 13,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          zoom: params.zoom,
+        });
       },
     },
   },
 });
 
-MapBlockModel.registerFlow({
-  key: 'mapSettings',
-  sort: 500,
-  title: tExpr('Map settings', { ns: 'map' }),
-  steps: {
-    dataScope: {
-      use: 'dataScope',
-      title: tExpr('Data scope'),
-    },
-    defaultSorting: {
-      use: 'sortingRule',
-      title: tExpr('Default sorting'),
-    },
-    refreshData: {
-      title: tExpr('Refresh data'),
-      async handler(ctx, params) {},
-    },
-  },
-});
-
 MapBlockModel.define({
-  label: tExpr('Map'),
+  label: tExpr('Map', { ns: NAMESPACE }),
   group: tExpr('Content'),
   searchable: true,
   searchPlaceholder: tExpr('Search'),
