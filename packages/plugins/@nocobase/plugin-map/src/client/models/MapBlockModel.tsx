@@ -19,7 +19,7 @@ import {
 } from '@nocobase/flow-engine';
 import { Space } from 'antd';
 import { SettingOutlined } from '@ant-design/icons';
-import { CollectionBlockModel, BlockSceneEnum, ActionModel, BlockModel } from '@nocobase/client';
+import { CollectionBlockModel, BlockSceneEnum } from '@nocobase/client';
 import React from 'react';
 import { MapBlockComponent } from './MapBlockComponent';
 
@@ -38,7 +38,13 @@ export class MapBlockModel extends CollectionBlockModel {
   get resource() {
     return super.resource as MultiRecordResource;
   }
-
+  onInit(options: any): void {
+    super.onInit(options);
+    this.resource.on('refresh', async () => {
+      this.resource.setSelectedRows([]);
+      this.selectedRecordKeys = [];
+    });
+  }
   createResource(ctx, params) {
     return this.context.createResource(MultiRecordResource);
   }
@@ -71,51 +77,53 @@ export class MapBlockModel extends CollectionBlockModel {
   renderComponent() {
     return (
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-          <Space>
-            {this.mapSubModels('actions', (action) => {
-              // @ts-ignore
-              if (action.props.position === 'left') {
-                return (
-                  <FlowModelRenderer
-                    key={action.uid}
-                    model={action}
-                    showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                  />
-                );
-              }
-
-              return null;
-            })}
-            {/* 占位 */}
-            <span></span>
-          </Space>
-          <Space wrap>
-            {this.mapSubModels('actions', (action) => {
-              // @ts-ignore
-              if (action.props.position !== 'left') {
-                return (
-                  <Droppable model={action} key={action.uid}>
+        <DndProvider>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <Space>
+              {this.mapSubModels('actions', (action) => {
+                // @ts-ignore
+                if (action.props.position === 'left') {
+                  return (
                     <FlowModelRenderer
+                      key={action.uid}
                       model={action}
                       showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                      extraToolbarItems={[
-                        {
-                          key: 'drag-handler',
-                          component: DragHandler,
-                          sort: 1,
-                        },
-                      ]}
                     />
-                  </Droppable>
-                );
-              }
+                  );
+                }
 
-              return null;
-            })}
-            {this.renderConfiguireActions()}
-          </Space>
-        </div>
+                return null;
+              })}
+              {/* 占位 */}
+              <span></span>
+            </Space>
+            <Space wrap>
+              {this.mapSubModels('actions', (action) => {
+                // @ts-ignore
+                if (action.props.position !== 'left') {
+                  return (
+                    <Droppable model={action} key={action.uid}>
+                      <FlowModelRenderer
+                        model={action}
+                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                        extraToolbarItems={[
+                          {
+                            key: 'drag-handler',
+                            component: DragHandler,
+                            sort: 1,
+                          },
+                        ]}
+                      />
+                    </Droppable>
+                  );
+                }
+
+                return null;
+              })}
+              {this.renderConfiguireActions()}
+            </Space>
+          </div>
+        </DndProvider>
         <MapBlockComponent
           {...this.props}
           fields={this.collection.getFields()}
@@ -214,11 +222,7 @@ MapBlockModel.registerFlow({
     },
     refreshData: {
       title: tExpr('Refresh data'),
-      async handler(ctx, params) {
-        ctx.resource.on('refresh', async () => {
-          ctx.model.resource.setSelectedRows([]);
-        });
-      },
+      async handler(ctx, params) {},
     },
   },
 });
