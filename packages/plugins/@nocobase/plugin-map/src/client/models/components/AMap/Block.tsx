@@ -44,7 +44,6 @@ export const AMapBlock = (props) => {
     primaryKey,
     mapField,
   } = props;
-  console.log(collectionField);
   const { getCollectionJoinField } = useCollectionManager_deprecated();
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<AMapForwardedRefProps>();
@@ -130,7 +129,7 @@ export const AMapBlock = (props) => {
       setOverlayOptions(o, true);
       return o.getExtData().id;
     });
-    setSelectedRecordKeys((lastIds) => ids?.concat(lastIds));
+    setSelectedRecordKeys(ids);
     selectingOverlay?.remove();
     mapRef.current?.editor().close();
   });

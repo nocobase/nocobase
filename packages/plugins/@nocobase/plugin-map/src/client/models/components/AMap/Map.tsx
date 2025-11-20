@@ -267,7 +267,6 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
   const setOverlay = (t = type, v = value, o?: AMap.PolylineOptions & AMap.PolygonOptions) => {
     if (!aMap.current) return;
     const nextOverlay = getOverlay(t, v, o);
-    console.log(nextOverlay, t, v, o);
     if (!nextOverlay) {
       return;
     }

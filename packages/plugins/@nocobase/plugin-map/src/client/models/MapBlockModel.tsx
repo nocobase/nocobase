@@ -34,7 +34,7 @@ const findNestedOption = (value: string[] | string, options = []) => {
 };
 export class MapBlockModel extends CollectionBlockModel {
   static scene = BlockSceneEnum.many;
-
+  selectedRecordKeys = [];
   get resource() {
     return super.resource as MultiRecordResource;
   }
@@ -55,7 +55,18 @@ export class MapBlockModel extends CollectionBlockModel {
     );
   }
 
-  setSelectedRecordKeys(keys) {}
+  getSelectedRecordKeys() {
+    return this.selectedRecordKeys;
+  }
+
+  setSelectedRecordKeys(keys) {
+    const data = this.getSelectedRecordKeys();
+    this.selectedRecordKeys = data.concat(keys);
+    const selectRecords = this.selectedRecordKeys.map((v) => {
+      return this.resource.getData().find((item) => item[this.collection.filterTargetKey] === v);
+    });
+    this.resource.setSelectedRows(selectRecords);
+  }
 
   renderComponent() {
     return (
@@ -110,7 +121,7 @@ export class MapBlockModel extends CollectionBlockModel {
           fields={this.collection.getFields()}
           name={this.collection.name}
           primaryKey={this.collection.filterTargetKey}
-          setSelectedRecordKeys={this.setSelectedRecordKeys}
+          setSelectedRecordKeys={this.setSelectedRecordKeys.bind(this)}
           dataSource={this.resource.getData()}
         />
       </div>
@@ -204,16 +215,9 @@ MapBlockModel.registerFlow({
     refreshData: {
       title: tExpr('Refresh data'),
       async handler(ctx, params) {
-        // await Promise.all(
-        //   // ctx.model.mapSubModels('item', async (item: ListItemModel) => {
-        //   //   try {
-        //   //     await item?.applyAutoFlows?.();
-        //   //   } catch (err) {
-        //   //     item['__autoFlowError'] = err;
-        //   //     // 列级错误不再向上抛，避免拖垮整表；在单元格层用 ErrorBoundary 展示
-        //   //   }
-        //   // }),
-        // );
+        ctx.resource.on('refresh', async () => {
+          ctx.model.resource.setSelectedRows([]);
+        });
       },
     },
   },
