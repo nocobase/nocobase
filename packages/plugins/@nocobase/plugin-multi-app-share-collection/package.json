@@ -1,11 +1,13 @@
 {
   "name": "@nocobase/plugin-multi-app-share-collection",
   "displayName": "Multi-app share collection",
-  "private": true,
+  "displayName.ru-RU": "Совместное использование коллекций приложениями",
   "displayName.zh-CN": "多应用数据表共享",
+  "private": true,
   "description": "",
+  "description.ru-RU": "Обеспечивает совместное использование коллекций между несколькими приложениями.",
   "description.zh-CN": "",
-  "version": "2.0.0-alpha.42",
+  "version": "2.0.0-alpha.43",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",

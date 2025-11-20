@@ -12,56 +12,149 @@ import {
   tExpr,
   FilterableItemModel,
   MultiRecordResource,
+  useFlowViewContext,
+  FlowModelRenderer,
+  useFlowContext,
+  FlowModel,
 } from '@nocobase/flow-engine';
-import { Select } from 'antd';
+import { Select, Space, Button, Divider } from 'antd';
 import { css } from '@emotion/css';
 import { debounce } from 'lodash';
+import { useRequest } from 'ahooks';
+import { PlusOutlined } from '@ant-design/icons';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
+import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { LabelByField, resolveOptions, toSelectValue, type LazySelectProps } from './recordSelectShared';
 import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
 
+function RemoteModelRenderer({ options }) {
+  const ctx = useFlowViewContext();
+  const { data, loading } = useRequest(
+    async () => {
+      const model: FlowModel = await ctx.engine.loadOrCreateModel(options, { delegateToParent: false, delegate: ctx });
+      return model;
+    },
+    {
+      refreshDeps: [ctx, options],
+    },
+  );
+  if (loading || !data?.uid) {
+    return <SkeletonFallback style={{ margin: 16 }} />;
+  }
+  return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin: 16 }} />} />;
+}
+
+export function CreateContent({ model, toOne = false }) {
+  const ctx = useFlowContext();
+  const { Header, type } = ctx.view;
+  model._closeView = ctx.view.close;
+  return (
+    <div>
+      <Header
+        title={
+          type === 'dialog' ? (
+            <div
+              style={{
+                padding: `${ctx.themeToken.paddingLG}px ${ctx.themeToken.paddingLG}px 0`,
+                marginBottom: -ctx.themeToken.marginSM,
+                backgroundColor: 'var(--colorBgLayout)',
+              }}
+            >
+              {ctx.t('Create record')}
+            </div>
+          ) : (
+            ctx.t('Create record')
+          )
+        }
+      />
+      <RemoteModelRenderer
+        options={{
+          parentId: ctx.view.inputArgs.parentId,
+          subKey: 'grid',
+          async: true,
+          delegateToParent: false,
+          subType: 'object',
+          use: 'BlockGridModel',
+        }}
+      />
+    </div>
+  );
+}
+
 export function LazySelect(props: Readonly<LazySelectProps>) {
-  const { fieldNames, value, multiple, allowMultiple, options, onChange, ...others } = props;
+  const { fieldNames, value, multiple, allowMultiple, options, quickCreate, onChange, ...others } = props;
   const isMultiple = Boolean(multiple && allowMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
+  const { t } = useTranslation();
+  const QuickAddContent = ({ searchText }) => {
+    return (
+      <div
+        onClick={() => others.onDropdownAddClick(searchText)}
+        style={{ cursor: 'pointer', padding: '5px 12px', color: '#0d0c0c' }}
+      >
+        <PlusOutlined />
+        <span style={{ paddingLeft: 5 }}>{t('Add') + ` “${searchText}” `}</span>
+      </div>
+    );
+  };
   return (
-    <Select
-      style={{ width: '100%' }}
-      {...others}
-      allowClear
-      //@ts-ignore
-      onCompositionEnd={(e) => others.onCompositionEnd(e, false)}
-      showSearch
-      maxTagCount="responsive"
-      filterOption={false}
-      labelInValue
-      fieldNames={fieldNames}
-      options={realOptions}
-      value={toSelectValue(value, fieldNames, isMultiple)}
-      mode={isMultiple ? 'multiple' : undefined}
-      onChange={(value, option) => {
-        onChange(option as any);
-      }}
-      optionRender={({ data }) => {
-        return <LabelByField option={data} fieldNames={fieldNames} />;
-      }}
-      labelRender={(data) => {
-        return (
-          <div
-            className={css`
-              div {
-                white-space: nowrap !important;
-                overflow: hidden;
-                text-overflow: ellipsis;
-              }
-            `}
-          >
-            {data.label}
-          </div>
-        );
-      }}
-    />
+    <Space.Compact style={{ width: '100%' }}>
+      <Select
+        style={{ width: '100%' }}
+        {...others}
+        allowClear
+        showSearch
+        maxTagCount="responsive"
+        filterOption={false}
+        labelInValue
+        //@ts-ignore
+        onCompositionEnd={(e) => others.onCompositionEnd(e, false)}
+        fieldNames={fieldNames}
+        options={realOptions}
+        value={toSelectValue(value, fieldNames, isMultiple)}
+        mode={isMultiple ? 'multiple' : undefined}
+        onChange={(value, option) => {
+          onChange(option as any);
+        }}
+        optionRender={({ data }) => {
+          return <LabelByField option={data} fieldNames={fieldNames} />;
+        }}
+        labelRender={(data) => {
+          return (
+            <div
+              className={css`
+                div {
+                  white-space: nowrap !important;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                }
+              `}
+            >
+              {data.label}
+            </div>
+          );
+        }}
+        dropdownRender={(menu) => {
+          const isFullMatch = realOptions.some((v) => v[fieldNames.label] === others.searchText);
+          return (
+            <>
+              {quickCreate === 'quickAdd' && others.searchText ? (
+                <>
+                  {!(realOptions.length === 0 && others.searchText) && menu}
+                  {realOptions.length > 0 && others.searchText && !isFullMatch && <Divider style={{ margin: 0 }} />}
+                  {!isFullMatch && <QuickAddContent searchText={others.searchText} />}
+                </>
+              ) : (
+                menu
+              )}
+            </>
+          );
+        }}
+      />
+      {quickCreate === 'modalAdd' && <Button onClick={others.onModalAddClick}>{t('Add new')}</Button>}
+    </Space.Compact>
   );
 }
 
@@ -102,6 +195,32 @@ export class RecordSelectFieldModel extends AssociationFieldModel {
     return Array.isArray(this.props.value)
       ? this.props.value.map((item) => item[fieldNames.value])
       : this.props.value?.[fieldNames.value];
+  }
+
+  protected onMount(): void {
+    this.onModalAddClick = (e) => {
+      this.dispatchEvent('openView', {
+        event: e,
+        onChange: this.props.onChange,
+      });
+    };
+    this.onDropdownAddClick = (search) => {
+      this.dispatchEvent('dropdownAdd', {
+        search: search,
+        onChange: this.props.onChange,
+      });
+    };
+  }
+  set onModalAddClick(fn) {
+    this.setProps({ onModalAddClick: fn });
+  }
+
+  set onDropdownAddClick(fn) {
+    this.setProps({ onDropdownAddClick: fn });
+  }
+
+  change(value) {
+    this.props.onChange(value);
   }
 
   render() {
@@ -178,6 +297,9 @@ RecordSelectFieldModel.registerFlow({
           return;
         }
         ctx.model.setDataSource(data);
+        ctx.model.setProps({
+          searchText: null,
+        });
         if (data.length < paginationState.pageSize) {
           paginationState.hasMore = false;
         } else {
@@ -262,6 +384,9 @@ async function originalHandler(ctx, params) {
       paginationState.hasMore = true;
       paginationState.page++;
     }
+    ctx.model.setProps({
+      searchText: searchText,
+    });
   } catch (error) {
     console.error('AssociationSelectField search flow error:', error);
     ctx.model.setDataSource([]);
@@ -346,6 +471,186 @@ RecordSelectFieldModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps({
           allowMultiple: params?.allowMultiple,
+        });
+      },
+    },
+    quickCreate: {
+      title: tExpr('Quick create'),
+      uiSchema(ctx) {
+        const t = ctx.t;
+        return {
+          quickCreate: {
+            enum: [
+              { label: t('None'), value: 'none' },
+              { label: t('Dropdown'), value: 'quickAdd' },
+              { label: t('Pop-up'), value: 'modalAdd' },
+            ],
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+          },
+        };
+      },
+      defaultParams: {
+        quickCreate: 'none',
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          quickCreate: params.quickCreate,
+        });
+      },
+    },
+  },
+});
+
+RecordSelectFieldModel.registerFlow({
+  key: 'dropdownAdd',
+  title: tExpr('Create record setting'),
+  sort: 900,
+  on: {
+    eventName: 'dropdownAdd',
+  },
+  steps: {
+    dropdownAdd: {
+      async handler(ctx, params) {
+        if (ctx.model.props.quickCreate !== 'quickAdd') {
+          return null;
+        }
+        const { onChange, search: value } = ctx.inputArgs;
+        const data: any = await ctx.model.resource.create(
+          {
+            [ctx.model.props?.fieldNames?.label || 'id']: value,
+          },
+          { refresh: false },
+        );
+        if (data) {
+          if (['m2m', 'o2m'].includes(ctx.collectionField?.interface) && ctx.model.props.multiple !== false) {
+            const prev = ctx.model.props.value || [];
+            const merged = [...prev, data.data];
+
+            // 去重，防止同一个值重复
+            const unique = merged.filter(
+              (row, index, self) =>
+                index ===
+                self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
+            );
+            onChange(unique);
+          } else {
+            onChange(data.data);
+          }
+          ctx.message.success(ctx.t('Saved successfully'));
+          ctx.model.setProps({
+            searchText: null,
+          });
+        }
+      },
+    },
+  },
+});
+
+RecordSelectFieldModel.registerFlow({
+  key: 'popupSettings',
+  title: tExpr('Create record setting'),
+  sort: 900,
+  on: {
+    eventName: 'openView',
+  },
+  steps: {
+    openView: {
+      title: tExpr('Edit popup'),
+      uiSchema: (ctx) => {
+        if (ctx.model.props.quickCreate !== 'modalAdd') {
+          return null;
+        }
+        return {
+          mode: {
+            type: 'string',
+            title: tExpr('Open mode'),
+            enum: [
+              { label: tExpr('Drawer'), value: 'drawer' },
+              { label: tExpr('Dialog'), value: 'dialog' },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+          },
+          size: {
+            type: 'string',
+            title: tExpr('Popup size'),
+            enum: [
+              { label: tExpr('Small'), value: 'small' },
+              { label: tExpr('Medium'), value: 'medium' },
+              { label: tExpr('Large'), value: 'large' },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+          },
+        };
+      },
+      defaultParams: {
+        mode: 'drawer',
+        size: 'medium',
+      },
+      handler(ctx, params) {
+        const { onChange } = ctx.inputArgs;
+        const sizeToWidthMap: Record<string, any> = {
+          drawer: {
+            small: '30%',
+            medium: '50%',
+            large: '70%',
+          },
+          dialog: {
+            small: '40%',
+            medium: '50%',
+            large: '80%',
+          },
+          embed: {},
+        };
+        const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
+        const toOne = ['belongsTo', 'hasOne'].includes(ctx.collectionField.type);
+        const size = ctx.inputArgs.size || params.size || 'medium';
+        ctx.viewer.open({
+          type: openMode,
+          width: sizeToWidthMap[openMode][size],
+          inheritContext: false,
+          target: ctx.layoutContentElement,
+          inputArgs: {
+            parentId: ctx.model.uid,
+            scene: 'create',
+            dataSourceKey: ctx.collection.dataSourceKey,
+            collectionName: ctx.collectionField?.target,
+            collectionField: ctx.collectionField,
+            onChange: (e) => {
+              if (toOne) {
+                onChange(e);
+                const data = ctx.model.getDataSource();
+                data.push(e);
+                ctx.model.setDataSource(data);
+              } else {
+                const prev = ctx.model.props.value || [];
+                const merged = [...prev, e];
+
+                // 去重，防止同一个值重复
+                const unique = merged.filter(
+                  (row, index, self) =>
+                    index ===
+                    self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
+                );
+                onChange(unique);
+                const data = ctx.model.getDataSource();
+                ctx.model.setDataSource(data.concat(unique));
+              }
+            },
+          },
+          content: () => <CreateContent model={ctx.model} />,
+          styles: {
+            content: {
+              padding: 0,
+              backgroundColor: ctx.model.flowEngine.context.themeToken.colorBgLayout,
+              ...(openMode === 'embed' ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } : {}),
+            },
+            body: {
+              padding: 0,
+            },
+          },
         });
       },
     },

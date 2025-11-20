@@ -110,11 +110,14 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     }
   }
 
-  async create(data: TDataItem, options?: AxiosRequestConfig): Promise<void> {
+  async create(data: TDataItem, options?: AxiosRequestConfig & { refresh?: boolean }): Promise<void> {
     const config = this.mergeRequestConfig({ data }, this.createActionOptions, options);
-    await this.runAction('create', config);
+    const res = await this.runAction('create', config);
     this.emit('saved', data);
-    await this.refresh();
+    if (options?.refresh !== false) {
+      await this.refresh();
+    }
+    return res;
   }
 
   async get(filterByTk: any): Promise<TDataItem | undefined> {
@@ -191,7 +194,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     const currentPage = this.getPage();
     const lastPage = Math.ceil((this.getCount() - _.castArray(filterByTk).length) / this.getPageSize());
     if (currentPage > lastPage) {
-      this.setPage(lastPage);
+      this.setPage(lastPage || 1);
     }
     await this.refresh();
   }

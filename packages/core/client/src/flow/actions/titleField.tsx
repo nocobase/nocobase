@@ -50,7 +50,7 @@ export const titleField = defineAction({
   defaultParams: (ctx: any) => {
     const titleField = ctx.model.context.collectionField.targetCollectionTitleFieldName;
     return {
-      label: ctx.model.parent?.props?.titleField || titleField,
+      label: ctx.model.parent?.props?.titleField || ctx.model.props.titleField || titleField,
     };
   },
   beforeParamsSave: async (ctx: any, params, previousParams) => {

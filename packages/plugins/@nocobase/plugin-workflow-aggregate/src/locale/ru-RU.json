@@ -1,0 +1,13 @@
+{
+  "Aggregate": "Агрегация",
+  "Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.": "Подсчет, суммирование, поиск максимальных, минимальных и средних значений для множественных записей коллекции или связанных данных записи.",
+  "Aggregator function": "Функция агрегации",
+  "Target type": "Тип цели",
+  "Data of collection": "Данные коллекции",
+  "Data of associated collection": "Данные связанной коллекции",
+  "Field to aggregate": "Поле для агрегации",
+  "Distinct": "Уникальные",
+  "Query result": "Результат запроса",
+  "Result precision": "Точность результата",
+  "Number of decimal places for query result.": "Количество десятичных знаков для результата запроса."
+}

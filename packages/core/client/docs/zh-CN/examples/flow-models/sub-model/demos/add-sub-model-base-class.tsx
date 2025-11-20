@@ -11,6 +11,10 @@ import { Button, Space } from 'antd';
 import React from 'react';
 
 class HelloBlockModel extends FlowModel {
+  get title() {
+    return 'HelloBlockModel';
+  }
+
   render() {
     return (
       <Space direction="vertical" style={{ width: '100%' }}>
@@ -52,17 +56,35 @@ class Sub3BlockModel extends BlockModel {
     return (
       <div>
         <h2>Sub3 Block</h2>
-        <p>This is a sub block rendered by Sub2BlockModel.</p>
+        <p>This is a sub block rendered by Sub3BlockModel.</p>
       </div>
     );
   }
 }
 
+class Sub4BlockModel extends BlockModel {
+  renderComponent() {
+    return (
+      <div>
+        <h2>Sub4 Block</h2>
+        <p>This is a sub block rendered by Sub4BlockModel.</p>
+      </div>
+    );
+  }
+}
+
+
 Sub2BlockModel.define({
   label: 'Sub2 Block',
+  hide: (ctx) => ctx.model.title !== 'HelloBlockModel',
 });
 
 Sub3BlockModel.define({
+  hide: (ctx) => ctx.model.title === 'HelloBlockModel',
+});
+
+Sub4BlockModel.define({
+  label: 'Sub4 Block',
   hide: true,
 });
 

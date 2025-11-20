@@ -1,11 +1,16 @@
 {
   "name": "@nocobase/plugin-ai",
   "displayName": "AI employees",
+  "displayName.ru-RU": "AI: Интеграция",
   "displayName.zh-CN": "AI 员工",
   "description": "Create AI employees with diverse skills to collaborate with humans, build systems, and handle business operations.",
+  "description.ru-RU": "Поддержка интеграции с AI-сервисами: предоставляются AI-узлы для рабочих процессов, расширяя возможности бизнес-обработки.",
   "description.zh-CN": "创建各种技能的 AI 员工，与人类协同，搭建系统，处理业务。",
-  "version": "2.0.0-alpha.42",
+  "version": "2.0.0-alpha.43",
   "main": "dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/handbook/action-ai",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/action-ai",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/action-ai",
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/flow-engine": "2.x",

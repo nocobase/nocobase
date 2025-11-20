@@ -50,9 +50,9 @@ import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
 import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
 import { FlowDefinition } from '../FlowDefinition';
 import { FlowSettingsOpenOptions } from '../flowSettings';
-import type { EventDefinition, FlowEvent, DispatchEventOptions } from '../types';
-import { ForkFlowModel } from './forkFlowModel';
 import type { ScheduleOptions } from '../scheduler/ModelOperationScheduler';
+import type { DispatchEventOptions, EventDefinition, FlowEvent } from '../types';
+import { ForkFlowModel } from './forkFlowModel';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
@@ -352,8 +352,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this.eventRegistry.registerEvents(events);
   }
 
-  static buildChildrenFromModels(ctx, Models: Array<any>) {
-    return Models.map((M) => buildSubModelItem(M, ctx, true));
+  static async buildChildrenFromModels(ctx, Models: Array<any>) {
+    return Promise.all(Models.map((M) => buildSubModelItem(M, ctx, true)));
   }
 
   get title() {
@@ -749,15 +749,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (isBeforeRender) {
       this._lastAutoRunParams = [inputArgs, execOptions.useCache];
     }
-    let finalInputArgs = inputArgs;
-    if (this.context.record) {
-      finalInputArgs = { record: this.context.record, ...inputArgs };
-    }
 
     if (options?.debounce) {
-      return this._dispatchEventWithDebounce(eventName, finalInputArgs, execOptions);
+      return this._dispatchEventWithDebounce(eventName, inputArgs, execOptions);
     }
-    return this._dispatchEvent(eventName, finalInputArgs, execOptions);
+    return this._dispatchEvent(eventName, inputArgs, execOptions);
   }
 
   /**
