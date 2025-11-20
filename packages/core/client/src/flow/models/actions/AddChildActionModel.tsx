@@ -41,6 +41,9 @@ AddChildActionModel.registerFlow({
 
 AddChildActionModel.define({
   label: escapeT('Add child'),
+  hide(ctx) {
+    return ctx.collection?.template !== 'tree';
+  },
 });
 
 RecordActionGroupModel.registerActionModels({
