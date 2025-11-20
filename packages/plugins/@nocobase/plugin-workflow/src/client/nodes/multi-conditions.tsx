@@ -117,7 +117,7 @@ function ConditionHeaderCard(props) {
   const style = {};
   let color;
   if (job) {
-    const { conditions = [] } = job.meta;
+    const { conditions = [] } = job.meta ?? {};
     if (conditions[index] != null) {
       const result = conditions[index];
       switch (true) {
@@ -159,7 +159,7 @@ function ConditionHeaderCard(props) {
     </Space>
   );
 
-  const tooltip = job ? getTooltipByResult(job.meta.conditions[index]) : null;
+  const tooltip = job ? getTooltipByResult(job.meta?.conditions[index]) : null;
 
   return tooltip ? <Tooltip title={tooltip}>{content}</Tooltip> : content;
 }
@@ -259,7 +259,7 @@ function ConditionConfiguration({ condition, index }: { condition: ConditionConf
           }}
           schema={{
             type: 'void',
-            name: `node_${node.id}_condition_${index}`,
+            name: `node_${node.id}_condition_${condition.uid}`,
             'x-component': 'Action.Link',
             'x-use-component-props': 'useConditionLabel',
             'x-component-props': {
