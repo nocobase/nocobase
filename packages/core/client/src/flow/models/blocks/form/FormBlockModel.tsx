@@ -11,10 +11,10 @@ import { SettingOutlined } from '@ant-design/icons';
 import type { PropertyMeta, PropertyMetaFactory } from '@nocobase/flow-engine';
 import {
   AddSubModelButton,
-  tExpr,
-  FlowSettingsButton,
   createAssociationAwareObjectMetaFactory,
   createAssociationSubpathResolver,
+  FlowSettingsButton,
+  tExpr,
 } from '@nocobase/flow-engine';
 import { Form, FormInstance } from 'antd';
 import { omit } from 'lodash';
@@ -198,6 +198,9 @@ FormBlockModel.registerFlow({
     layout: {
       use: 'layout',
       title: tExpr('Layout'),
+    },
+    dataScope: {
+      use: 'dataScope',
     },
   },
 });
