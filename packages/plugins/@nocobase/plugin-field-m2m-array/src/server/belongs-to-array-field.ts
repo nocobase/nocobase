@@ -22,16 +22,30 @@ export class BelongsToArrayField extends RelationField {
   }
 
   private setForeignKeyArray = async (model: Model, { values, context, transaction, associationKey }) => {
-    const { name, foreignKey, target, targetKey } = this.options;
-    let value: any[] = _.castArray(values?.[name] || []);
-    if (!value.length) {
-      let valuesInCtx = context?.action?.params?.values ?? {};
-      if (associationKey) {
-        valuesInCtx = valuesInCtx[associationKey];
-      }
-      value = _.castArray(valuesInCtx[name] ?? []);
+    const { type, name, foreignKey, target, targetKey } = this.options;
+    if (type !== 'belongsToArray') {
+      return;
     }
-    if (!value.length) {
+    let value: any[] | undefined;
+    let valuesInParams = values;
+    let valuesInCtx = context?.action?.params?.values;
+    if (associationKey) {
+      valuesInParams = values?.[associationKey]?.[name];
+      valuesInCtx = valuesInCtx?.[associationKey]?.[name];
+    } else {
+      valuesInParams = values?.[name];
+      valuesInCtx = valuesInCtx?.[name];
+    }
+    if (valuesInParams !== undefined) {
+      value = _.castArray(valuesInParams || []);
+    } else if (valuesInCtx !== undefined) {
+      value = _.castArray(valuesInCtx || []);
+    } else {
+      return;
+    }
+
+    if (value.length === 0) {
+      model.set(foreignKey, []);
       return;
     }
 
