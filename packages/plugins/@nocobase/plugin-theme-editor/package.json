@@ -5,9 +5,11 @@
   "homepage": "https://docs.nocobase.com/handbook/theme-editor",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/theme-editor",
   "displayName": "Theme editor",
+  "displayName.ru-RU": "Редактор тем",
   "displayName.zh-CN": "主题编辑器",
   "description": "Customize UI colors, sizes, etc. and save the result as a theme to switch between multiple themes.",
   "description.zh-CN": "自定义 UI 的颜色、尺寸等，并将结果保存为主题，可在多个主题间切换。",
+  "description.ru-RU": "Позволяет настраивать цвета и размеры элементов UI, есть возможность сохранять результат как тему для переключения между несколькими темами.",
   "devDependencies": {
     "@ant-design/cssinjs": "^1.11.1",
     "@ant-design/icons": "5.x",
