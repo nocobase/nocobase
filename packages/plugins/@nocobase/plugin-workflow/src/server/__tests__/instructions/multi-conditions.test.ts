@@ -111,7 +111,7 @@ describe('workflow > instructions > multi-conditions', () => {
 
     const nodeJob = jobs.find((job) => job.nodeId === node.id);
     expect(nodeJob.status).toBe(JOB_STATUS.RESOLVED);
-    expect(nodeJob.result).toEqual({ conditions: [true] });
+    expect(nodeJob.result).toBe(true);
     expect(nodeJob.meta).toEqual({ conditions: [true] });
 
     expect(jobs.some((job) => job.nodeId === branch1.id)).toBe(true);
@@ -148,7 +148,7 @@ describe('workflow > instructions > multi-conditions', () => {
     expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
 
     const nodeJob = jobs.find((job) => job.nodeId === node.id);
-    expect(nodeJob.result).toEqual({ conditions: [false, true] });
+    expect(nodeJob.result).toBe(true);
 
     expect(jobs.some((job) => job.nodeId === branch1.id)).toBe(false);
     expect(jobs.some((job) => job.nodeId === branch2.id)).toBe(true);
@@ -177,7 +177,7 @@ describe('workflow > instructions > multi-conditions', () => {
 
     const nodeJob = jobs.find((job) => job.nodeId === node.id);
     expect(nodeJob.status).toBe(JOB_STATUS.RESOLVED);
-    expect(nodeJob.result).toEqual({ conditions: [false] });
+    expect(nodeJob.result).toBe(false);
 
     expect(jobs.some((job) => job.nodeId === branch1.id)).toBe(false);
     expect(jobs.some((job) => job.nodeId === defaultBranch.id)).toBe(true);
@@ -205,7 +205,7 @@ describe('workflow > instructions > multi-conditions', () => {
 
     const nodeJob = jobs.find((job) => job.nodeId === node.id);
     expect(nodeJob.status).toBe(JOB_STATUS.FAILED);
-    expect(nodeJob.result).toEqual({ conditions: [false] });
+    expect(nodeJob.result).toBe(false);
     expect(jobs.some((job) => job.nodeId === branch1.id)).toBe(false);
     expect(jobs.some((job) => job.nodeId === defaultBranch.id)).toBe(true);
   });
@@ -230,7 +230,7 @@ describe('workflow > instructions > multi-conditions', () => {
 
     const nodeJob = jobs.find((job) => job.nodeId === node.id);
     expect(nodeJob.status).toBe(JOB_STATUS.ERROR);
-    expect(nodeJob.result).toEqual({ conditions: [expect.any(String)] });
+    expect(typeof nodeJob.result).toBe('string');
 
     expect(jobs.some((job) => job.nodeId === branch1.id)).toBe(false);
   });
@@ -271,7 +271,7 @@ describe('workflow > instructions > multi-conditions', () => {
 
     const nodeJob = jobs.find((job) => job.nodeId === node.id);
     expect(nodeJob?.status).toBe(JOB_STATUS.RESOLVED);
-    expect(nodeJob?.result).toEqual({ conditions: [true] });
+    expect(nodeJob?.result).toBe(true);
 
     expect(jobs.find((job) => job.nodeId === failedBranch.id)?.status).toBe(JOB_STATUS.FAILED);
     expect(jobs.some((job) => job.nodeId === successBranch.id)).toBe(false);
@@ -308,8 +308,8 @@ describe('workflow > instructions > multi-conditions', () => {
 
     jobs = await execution.getJobs({ order: [['id', 'ASC']] });
     const nodeJob = jobs.find((job) => job.nodeId === node.id);
-    expect(nodeJob?.status).toBe(JOB_STATUS.RESOLVED);
-    expect(nodeJob?.result).toEqual({ conditions: [true] });
+    expect(nodeJob.status).toBe(JOB_STATUS.RESOLVED);
+    expect(nodeJob.result).toBe(true);
   });
 
   it('continues evaluating when a pending branch resumes with failure', async () => {
@@ -354,8 +354,8 @@ describe('workflow > instructions > multi-conditions', () => {
 
     jobs = await execution.getJobs({ order: [['id', 'ASC']] });
     const nodeJob = jobs.find((job) => job.nodeId === node.id);
-    expect(nodeJob?.status).toBe(JOB_STATUS.RESOLVED);
-    expect(nodeJob?.result).toEqual({ conditions: [true] });
+    expect(nodeJob.status).toBe(JOB_STATUS.RESOLVED);
+    expect(nodeJob.result).toBe(true);
     expect(jobs.find((job) => job.nodeId === successBranch.id)).toBeUndefined();
   });
 });

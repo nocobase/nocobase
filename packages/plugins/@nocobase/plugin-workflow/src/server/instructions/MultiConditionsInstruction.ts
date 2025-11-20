@@ -40,7 +40,7 @@ export class MultiConditionsInstruction extends Instruction {
 
     const job = processor.saveJob({
       status: JOB_STATUS.PENDING,
-      result: meta,
+      result: null,
       meta,
       nodeId: node.id,
       nodeKey: node.key,
@@ -59,7 +59,7 @@ export class MultiConditionsInstruction extends Instruction {
         processor.logger.error(`[multi-conditions] evaluate condition[${cursor}] error:`, { error });
       } finally {
         meta.conditions.push(conditionResult);
-        job.set('result', meta);
+        job.set('result', conditionResult);
       }
 
       if (typeof conditionResult === 'string') {
