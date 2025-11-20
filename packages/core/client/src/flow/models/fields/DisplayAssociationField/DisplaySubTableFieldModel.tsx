@@ -10,6 +10,7 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { AddSubModelButton, tExpr, FlowSettingsButton } from '@nocobase/flow-engine';
 import { Table } from 'antd';
+import { css } from '@emotion/css';
 import { isEmpty } from 'lodash';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -119,6 +120,17 @@ const DisplayTable = (props) => {
       columns={getColumns()}
       pagination={pagination}
       onChange={handleChange}
+      className={css`
+        .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
+          display: inline;
+        }
+        .ant-table-cell-with-append div {
+          display: flex;
+        }
+        .ant-table-column-sorters .ant-table-column-title {
+          overflow: visible;
+        }
+      `}
     />
   );
 };
