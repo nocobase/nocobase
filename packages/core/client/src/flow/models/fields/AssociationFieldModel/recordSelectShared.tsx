@@ -32,6 +32,10 @@ export interface LazySelectProps extends Omit<SelectProps<any>, 'mode' | 'option
   loading?: boolean;
   onCompositionStart?: (e: any) => void;
   onCompositionEnd?: (e: any, flag?: boolean) => void;
+  quickCreate?: 'none' | 'modalAdd' | 'quickAdd';
+  onModalAddClick?: (e: any) => void;
+  onDropdownAddClick?: (e: any) => void;
+  searchText?: string;
 }
 
 export interface LabelByFieldProps {

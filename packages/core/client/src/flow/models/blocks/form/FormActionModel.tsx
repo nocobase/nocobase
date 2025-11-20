@@ -92,13 +92,16 @@ FormSubmitActionModel.registerFlow({
                 resource.setFilterByTk(currentFilterByTk);
               }
             }
-            await resource.save(values, params.requestConfig);
+            const data: any = await resource.save(values, params.requestConfig);
             if (blockModel instanceof EditFormModel) {
               resource.isNewRecord = false;
               await resource.refresh();
             } else {
               blockModel.form.resetFields();
               blockModel.emitter.emit('onFieldReset');
+              if (ctx.view.inputArgs.collectionName === blockModel.collection.name && ctx.view.inputArgs.onChange) {
+                ctx.view.inputArgs.onChange(data?.data);
+              }
             }
           } else if (resource instanceof MultiRecordResource) {
             const currentFilterByTk = resource.getMeta('currentFilterByTk');

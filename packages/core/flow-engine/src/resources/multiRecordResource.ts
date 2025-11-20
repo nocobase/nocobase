@@ -110,11 +110,14 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     }
   }
 
-  async create(data: TDataItem, options?: AxiosRequestConfig): Promise<void> {
+  async create(data: TDataItem, options?: AxiosRequestConfig & { refresh?: boolean }): Promise<void> {
     const config = this.mergeRequestConfig({ data }, this.createActionOptions, options);
-    await this.runAction('create', config);
+    const res = await this.runAction('create', config);
     this.emit('saved', data);
-    await this.refresh();
+    if (options?.refresh !== false) {
+      await this.refresh();
+    }
+    return res;
   }
 
   async get(filterByTk: any): Promise<TDataItem | undefined> {
