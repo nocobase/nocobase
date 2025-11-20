@@ -217,12 +217,17 @@ async function fetchRecordWithRequestCache(
         ? Array.from(new Set<string>([...fields, pkAttr as string]))
         : fields;
 
+    // 对于需要完整记录的场景（preferFullRecord 为 true，例如模板中出现 xxx.record），
+    // 缓存键不再区分 fields/appends，只按“全量记录”维度缓存。
+    const cacheKeyFields =
+      preferFullRecord && pkIsValid ? undefined : Array.isArray(fieldsWithPk) ? [...fieldsWithPk].sort() : undefined;
+    const cacheKeyAppends = preferFullRecord ? undefined : Array.isArray(appends) ? [...appends].sort() : undefined;
     const keyObj: { ds: string; c: string; tk: unknown; f?: string[]; a?: string[]; full?: boolean } = {
       ds: dataSourceKey || 'main',
       c: collection,
       tk: filterByTk,
-      f: Array.isArray(fieldsWithPk) ? [...fieldsWithPk].sort() : undefined,
-      a: Array.isArray(appends) ? [...appends].sort() : undefined,
+      f: cacheKeyFields,
+      a: cacheKeyAppends,
       full: preferFullRecord ? true : undefined,
     };
     const key = JSON.stringify(keyObj);
@@ -231,10 +236,11 @@ async function fetchRecordWithRequestCache(
         return cache.get(key);
       }
       // 仅当缓存项是本次请求所需 selects 的“超集”时才复用（避免缺字段/关联）。
+      // 对于 preferFullRecord=true 的情况，只要缓存项标记为 full 即可复用（与 fields/appends 无关）。
       // 注意：若 needFields 中某路径已被 cachedAppends 的前缀覆盖（例如 needFields: ['roles.name'] 且 cachedAppends: ['roles']），
       // 则认为该字段已被关联载入，可视为满足。
-      const needFields = Array.isArray(fieldsWithPk) ? [...new Set(fieldsWithPk)] : undefined;
-      const needAppends = Array.isArray(appends) ? new Set(appends) : undefined;
+      const needFields = !preferFullRecord && Array.isArray(fieldsWithPk) ? [...new Set(fieldsWithPk)] : undefined;
+      const needAppends = !preferFullRecord && Array.isArray(appends) ? new Set(appends) : undefined;
       for (const [cacheKey, cacheVal] of cache.entries()) {
         const parsed = JSON.parse(cacheKey) as {
           ds: string;
@@ -270,22 +276,20 @@ async function fetchRecordWithRequestCache(
         }
       }
     }
-    const rec = await repo.findOne({
-      filterByTk: filterByTk as TargetKey,
-      fields: fieldsWithPk,
-      appends,
-    });
-    let json = rec ? rec.toJSON() : undefined;
-    if (preferFullRecord && json && typeof json === 'object' && pkIsValid) {
-      const keys = Object.keys(json as Record<string, unknown>);
-      const pkOnly = keys.length === 1 && keys[0] === pkAttr;
-      const rawAttrs = modelInfo?.rawAttributes as Record<string, unknown> | undefined;
-      const hasMoreAttrs = rawAttrs && Object.keys(rawAttrs).some((k) => k !== pkAttr);
-      if (pkOnly && hasMoreAttrs) {
-        const rec2 = await repo.findOne({ filterByTk: filterByTk as TargetKey });
-        json = rec2 ? rec2.toJSON() : json;
-      }
-    }
+    // 当 preferFullRecord 为 true 时，无论之前如何推导字段/关联，都以“完整记录”维度查询，
+    // 确保 ctx.xxx.record 返回的是完整 JSON 记录，而非仅包含部分字段的切片。
+    const rec = await repo.findOne(
+      preferFullRecord
+        ? {
+            filterByTk: filterByTk as TargetKey,
+          }
+        : {
+            filterByTk: filterByTk as TargetKey,
+            fields: fieldsWithPk,
+            appends,
+          },
+    );
+    const json = rec ? rec.toJSON() : undefined;
     if (cache) cache.set(key, json);
     return json;
   } catch (e: unknown) {
