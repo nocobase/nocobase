@@ -1512,5 +1512,9 @@
   "Move down": "下移",
   "Copy": "复制",
   "Trigger condition": "触发条件",
-  "This field has been hidden and you cannot view it (this content is only visible when the UI Editor is activated).": "该字段已被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。"
+  "This field has been hidden and you cannot view it (this content is only visible when the UI Editor is activated).": "该字段已被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。",
+  "Default expand all": "默认展开所有行",
+  "Enable tree table": "启用树表格",
+  "Cascade select": "级联选择",
+  "Cascade select settings": "级联选择设置"
 }

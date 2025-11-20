@@ -30,11 +30,11 @@ import {
 import { Skeleton, Space, Table } from 'antd';
 import classNames from 'classnames';
 import _ from 'lodash';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
-import { extractIndex, adjustColumnOrder } from './utils';
+import { extractIndex, adjustColumnOrder, setNestedValue, extractIds } from './utils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { HighPerformanceSpin } from '../../../../schema-component/common/high-performance-spin/HighPerformanceSpin';
 
@@ -279,8 +279,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                   record: record,
                   fieldProps: { ...model.props, ...model.subModels.field.props },
                   onSuccess: (values) => {
+                    const collectionField = this.collection.getField(dataIndex);
                     record[dataIndex] = values[dataIndex];
-                    this.resource.getData()[recordIndex] = record;
+                    setNestedValue(this.resource.getData(), recordIndex, record);
                     // 仅重渲染单元格
                     const fork: ForkFlowModel = model.subModels.field.createFork({}, `${recordIndex}`);
                     // Provide expandable meta for current row record based on the collection in context
@@ -292,11 +293,15 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
                       get: () => record,
                       meta: recordMeta,
                     });
-                    fork.setProps({ value: values[dataIndex] });
+                    fork.setProps({ ...model.props, value: values[dataIndex] });
                     fork.context.defineProperty('recordIndex', {
                       get: () => recordIndex,
                     });
-                    model.rerender();
+                    if (collectionField?.targetCollection?.template === 'tree') {
+                      this.resource.refresh(); //树形数据获取父节点信息
+                    } else {
+                      model.rerender();
+                    }
                   },
                 });
                 // await this.resource.refresh();
@@ -505,6 +510,8 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
             columns={this.columns.value}
             pagination={this.pagination()}
             highlightedRowKey={highlightedRowKey}
+            defaultExpandAllRows={this.props.defaultExpandAllRows}
+            expandedRowKeys={this.props.expandedRowKeys}
           />
         </HighPerformanceSpin>
       </>
@@ -585,10 +592,49 @@ TableBlockModel.registerFlow({
       use: 'sortingRule',
       title: tExpr('Default sorting'),
     },
-    // dataLoadingMode: {
-    //   use: 'dataLoadingMode',
-    //   title: tExpr('Data loading mode'),
-    // },
+    treeTable: {
+      title: tExpr('Enable tree table'),
+      uiSchema: (ctx) => {
+        if (ctx.model.collection.template !== 'tree') {
+          return;
+        }
+        return {
+          treeTable: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+          },
+        };
+      },
+      defaultParams: {
+        treeTable: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('treeTable', params.treeTable);
+        ctx.model.resource.setRequestParameters({
+          tree: params.treeTable,
+        });
+      },
+    },
+    defaultExpandAllRows: {
+      title: tExpr('Default expand all'),
+      uiSchema: (ctx) => {
+        if (ctx.model.collection.template !== 'tree') {
+          return;
+        }
+        return {
+          defaultExpandAllRows: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+          },
+        };
+      },
+      defaultParams: {
+        defaultExpandAllRows: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('defaultExpandAllRows', params.defaultExpandAllRows);
+      },
+    },
     tableDensity: {
       title: tExpr('Table density'),
       uiSchema: {
@@ -671,8 +717,20 @@ const HighPerformanceTable = React.memo(
     columns: any;
     pagination: any;
     highlightedRowKey: string;
+    defaultExpandAllRows?: boolean;
+    expandedRowKeys?: any[];
   }) => {
-    const { model, size, virtual, dataSource, columns, pagination: _pagination, highlightedRowKey } = props;
+    const {
+      model,
+      size,
+      virtual,
+      dataSource,
+      columns,
+      pagination: _pagination,
+      highlightedRowKey,
+      defaultExpandAllRows,
+      expandedRowKeys,
+    } = props;
     const [selectedRowKeys, setSelectedRowKeys] = React.useState<string[]>(() =>
       model.resource.getSelectedRows().map((row) => row[model.collection.filterTargetKey]),
     );
@@ -690,7 +748,7 @@ const HighPerformanceTable = React.memo(
       };
     }, [model, selectedRowKeys]);
     const handleChange = useCallback(
-      (pagination) => {
+      async (pagination) => {
         if (model.resource.getPageSize() !== pagination.pageSize) {
           model.resource.setPage(1);
         } else {
@@ -698,9 +756,13 @@ const HighPerformanceTable = React.memo(
         }
         model.resource.loading = true;
         model.resource.setPageSize(pagination.pageSize);
-        model.resource.refresh();
+        await model.resource.refresh();
+        if (defaultExpandAllRows) {
+          const newExpandedRowKeys = extractIds(model.resource.getData());
+          setExpandedRowKeys(newExpandedRowKeys);
+        }
       },
-      [model],
+      [model, defaultExpandAllRows],
     );
     const rowClassName = useCallback(
       (record) => {
@@ -725,6 +787,39 @@ const HighPerformanceTable = React.memo(
       },
       [highlightedRowKey, model],
     );
+    const [rowKeys, setExpandedRowKeys] = useState(expandedRowKeys || []);
+
+    useEffect(() => {
+      setExpandedRowKeys(expandedRowKeys);
+    }, [expandedRowKeys]);
+    const expandable = useMemo(() => {
+      return {
+        expandedRowKeys: rowKeys,
+        onExpand: (expanded, record) => {
+          setExpandedRowKeys((prev) => {
+            if (expanded) {
+              // 展开
+              return [...(prev || []), record.id];
+            } else {
+              // 收起
+              return prev?.filter((key) => key !== record.id);
+            }
+          });
+        },
+      };
+    }, [rowKeys]);
+
+    function cleanEmptyChildren(data) {
+      return data.map((item) => {
+        const { children, ...rest } = item;
+
+        if (Array.isArray(children) && children.length > 0) {
+          return { ...rest, children: cleanEmptyChildren(children) };
+        }
+
+        return { ...rest };
+      });
+    }
 
     return (
       <MemoizedTable
@@ -735,7 +830,7 @@ const HighPerformanceTable = React.memo(
         rowSelection={rowSelection as any}
         virtual={virtual}
         scroll={tableScroll}
-        dataSource={dataSource}
+        dataSource={cleanEmptyChildren(dataSource)}
         columns={columns}
         pagination={pagination}
         onChange={handleChange}
@@ -745,7 +840,13 @@ const HighPerformanceTable = React.memo(
           .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
             display: inline;
           }
+          .ant-table-cell-with-append div {
+            display: flex;
+          }
         `}
+        defaultExpandAllRows={defaultExpandAllRows}
+        expandable={expandable}
+        indentSize={10}
       />
     );
   },
