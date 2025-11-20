@@ -1,0 +1,4 @@
+{
+  "Notification": "Уведомление",
+  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "Отправить уведомление. Вы можете использовать переменные из вышестоящих узлов в качестве содержимого и других настроек."
+}

@@ -109,14 +109,6 @@ export class QuickEditFormModel extends FlowModel {
     this.context.defineProperty('blockModel', {
       value: this,
     });
-
-    this.context.defineProperty('collection', {
-      get: () => this.collection,
-    });
-  }
-
-  protected onMount(): void {
-    super.onMount();
     const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(this.context, () => this.collection);
     this.context.defineProperty('record', {
       get: () => this.resource.getData(),
@@ -125,6 +117,9 @@ export class QuickEditFormModel extends FlowModel {
         () => this.resource.getData(),
       ),
       meta: recordMeta,
+    });
+    this.context.defineProperty('collection', {
+      get: () => this.collection,
     });
   }
 
