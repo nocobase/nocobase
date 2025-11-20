@@ -74,6 +74,7 @@
     "@nocobase/plugin-workflow-aggregate": "1.9.10",
     "@nocobase/plugin-workflow-cc": "1.9.10",
     "@nocobase/plugin-workflow-delay": "1.9.10",
+    "@nocobase/plugin-workflow-dynamic-calculation": "1.9.10",
     "@nocobase/plugin-workflow-json-query": "1.9.10",
     "@nocobase/plugin-workflow-json-variable-mapping": "1.9.10",
     "@nocobase/plugin-workflow-loop": "1.9.10",
