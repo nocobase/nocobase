@@ -44,17 +44,22 @@ const setRequired = (field: Field, fieldSchema: Schema, uiSchema: Schema) => {
 };
 
 export const translateValidatorMessage = (validator: Field['validator'], t: TFunction) => {
-  if (!Array.isArray(validator)) {
-    return validator;
+  if (Array.isArray(validator)) {
+    return validator.map((valid) => {
+      if (valid['message']) {
+        valid['message'] = t(valid['message'], {
+          ns: NAMESPACE_UI_SCHEMA,
+        });
+      }
+      return valid;
+    });
   }
-  return validator.map((valid) => {
-    if (valid['message']) {
-      valid['message'] = t(valid['message'], {
-        ns: NAMESPACE_UI_SCHEMA,
-      });
-    }
-    return valid;
-  });
+  if (typeof validator === 'object' && validator['message']) {
+    validator['message'] = t(validator['message'], {
+      ns: NAMESPACE_UI_SCHEMA,
+    });
+  }
+  return validator;
 };
 
 /**
