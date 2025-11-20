@@ -363,7 +363,6 @@ FormItemModel.registerFlow({
         }
       },
       async handler(ctx, params) {
-        console.log(params.titleField);
         ctx.model.setProps({ titleField: params?.titleField });
         // if (ctx.model.props.pattern === 'readPretty') {
         //   ctx.model.setProps({ titleField: params?.label });

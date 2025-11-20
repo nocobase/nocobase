@@ -87,7 +87,7 @@ export class TableColumnModel extends DisplayItemModel {
       .getFields()
       .map((field: CollectionField) => {
         const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
-        if (!binding) return null;
+        if (!binding || field.options?.treeChildren) return null;
         const fieldModel = binding.modelName;
         const fieldPath = ctx.fieldPath ? `${ctx.fieldPath}.${field.name}` : field.name;
         return {
@@ -169,7 +169,7 @@ export class TableColumnModel extends DisplayItemModel {
       ),
       onCell: (record, recordIndex) => ({
         record,
-        recordIndex,
+        recordIndex: record.__index || recordIndex,
         width: this.props.width - 16,
         editable: this.props.editable,
         dataIndex: this.props.dataIndex,
@@ -185,7 +185,7 @@ export class TableColumnModel extends DisplayItemModel {
               {(() => {
                 const err = this['__autoFlowError'];
                 if (err) throw err;
-                return cellRenderer(value, record, index);
+                return cellRenderer(value, record, record.__index || index);
               })()}
             </ErrorBoundary>
           </FlowModelProvider>
@@ -202,7 +202,7 @@ export class TableColumnModel extends DisplayItemModel {
     return (value, record, index) => (
       <>
         {this.mapSubModels('field', (field) => {
-          const fork = field.createFork({}, `${index}`);
+          const fork = field.createFork({}, `${record.__index || index}`);
           const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
             () => fork.context.collection,
             fork.context.t('Current record'),
@@ -228,9 +228,10 @@ export class TableColumnModel extends DisplayItemModel {
               () => record,
             ),
             meta: recordMeta,
+            cache: false,
           });
           fork.context.defineProperty('recordIndex', {
-            get: () => index,
+            get: () => record.__index || index,
           });
           const namePath = this.context.prefixFieldPath ? this.fieldPath.split('.').pop() : this.fieldPath;
           const value = get(record, namePath);
