@@ -848,6 +848,9 @@ const HighPerformanceTable = React.memo(
           .ant-table-cell-with-append div {
             display: flex;
           }
+          .ant-table-column-sorters .ant-table-column-title {
+            overflow: visible;
+          }
         `}
         defaultExpandAllRows={defaultExpandAllRows}
         expandable={expandable}
