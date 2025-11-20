@@ -12,7 +12,6 @@
   "homepage": "https://docs.nocobase.com/handbook/workflow-smtp-mailer",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/workflow-smtp-mailer",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/workflow-smtp-mailer",
-
   "devDependencies": {
     "antd": "5.x",
     "nodemailer": "6.9.13",
