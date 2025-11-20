@@ -1,0 +1,13 @@
+{
+  "License key saved successfully, please re-run the plugin installation.": "Лицензионный ключ успешно сохранен, пожалуйста, перезапустите установку плагина.",
+  "License settings": "Настройки лицензии",
+  "Instance ID": "ID экземпляра",
+  "License key": "Лицензионный ключ",
+  "Enter license key": "Введите лицензионный ключ",
+  "Invalid license key": "Неверный лицензионный ключ",
+  "Change key": "Изменить ключ",
+  "License key has been set": "Лицензионный ключ был установлен",
+  "Copied": "Скопировано",
+  "Copy": "Копировать",
+  "Failed to copy, please open ./storage/.license/instance-id and copy it": "Не удалось скопировать, пожалуйста, откройте ./storage/.license/instance-id и скопируйте его"
+}

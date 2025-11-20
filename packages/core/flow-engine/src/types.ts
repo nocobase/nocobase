@@ -9,8 +9,8 @@
 
 import { ISchema } from '@formily/json-schema';
 import { SubModelItem } from './components';
-import { FlowContext, FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
 import type { PropertyOptions } from './flowContext';
+import { FlowContext, FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 import { FilterGroupOptions } from './resources';
@@ -453,7 +453,7 @@ export type FlowModelMeta =
      * 是否在菜单中隐藏该模型类
      * @default false
      */
-    hide?: boolean;
+    hide?: boolean | ((context: FlowModelContext) => boolean);
     eventList?: { label: string; value: string }[]; // 支持的事件列表
   };
 

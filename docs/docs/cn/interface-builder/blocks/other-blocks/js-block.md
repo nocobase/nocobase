@@ -15,7 +15,7 @@ JS Block 的运行时上下文已注入常用能力，可直接使用：
 - `ctx.useResource(...)` + `ctx.resource`：以资源方式访问数据；
 - `ctx.i18n.t()` / `ctx.t()`：内置国际化能力；
 - `ctx.onRefReady(ctx.ref, cb)`：容器就绪后再渲染，避免时序问题；
-- `ctx.React` / `ctx.ReactDOM` / `ctx.antd`：支持 JSX，直接在编辑器里书写 JSX 即可由 `ctx.ReactDOM` 渲染。
+- `ctx.libs.React` / `ctx.libs.ReactDOM` / `ctx.libs.antd` / `ctx.libs.antdIcons` / `ctx.libs.dayjs`：内置 React / ReactDOM / Ant Design / Ant Design 图标 / dayjs 等通用库，用于 JSX 渲染与时间处理。（`ctx.React` / `ctx.ReactDOM` / `ctx.antd` 仍保留用于兼容。）
 - `ctx.render(vnode)`：将 React 元素、HTML 字符串或 DOM 节点渲染到默认容器 `ctx.element`；多次调用会复用同一 React Root，并覆盖容器现有内容。
 
 ## 添加区块
@@ -47,7 +47,7 @@ JS Block 的脚本编辑器支持语法高亮、错误提示与内置代码片�
 ### 1) 渲染 React（JSX）
 
 ```js
-const { Button } = ctx.antd;
+const { Button } = ctx.libs.antd;
 ctx.render(
   <div style={{ padding: 12 }}>
     <Button type="primary" onClick={() => ctx.message.success(ctx.t('Clicked!'))}>

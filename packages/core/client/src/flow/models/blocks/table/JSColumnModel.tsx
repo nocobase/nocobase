@@ -17,6 +17,7 @@ import {
   DragHandler,
   MemoFlowModelRenderer,
   createRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
   ElementProxy,
   createSafeDocument,
   createSafeWindow,
@@ -35,7 +36,11 @@ export class JSColumnModel extends TableCustomColumnModel {
   private _RenderComponent?: React.ComponentType;
   renderHiddenInConfig() {
     return (
-      <Tooltip title={this.context.t('该字段已被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。')}>
+      <Tooltip
+        title={this.context.t(
+          'This field has been hidden and you cannot view it (this content is only visible when the UI Editor is activated).',
+        )}
+      >
         <LockOutlined style={{ opacity: '0.45' }} />
       </Tooltip>
     );
@@ -123,7 +128,10 @@ export class JSColumnModel extends TableCustomColumnModel {
         );
         fork.context.defineProperty('record', {
           get: () => record,
-          resolveOnServer: true,
+          resolveOnServer: createRecordResolveOnServerWithLocal(
+            () => fork.context.collection,
+            () => record,
+          ),
           meta: recordMeta,
         });
         fork.context.defineProperty('recordIndex', {

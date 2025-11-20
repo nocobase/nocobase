@@ -117,6 +117,11 @@
           },
           {
             "type": "custom-link",
+            "label": "JSON 变量映射",
+            "link": "/workflow/nodes/json-variable-mapping"
+          },
+          {
+            "type": "custom-link",
             "label": "延时",
             "link": "/workflow/nodes/delay"
           },
@@ -145,11 +150,6 @@
             "type": "custom-link",
             "label": "JSON 计算",
             "link": "/workflow/nodes/json-query"
-          },
-          {
-            "type": "custom-link",
-            "label": "JSON 变量映射",
-            "link": "/workflow/nodes/json-variable-mapping"
           }
         ]
       },

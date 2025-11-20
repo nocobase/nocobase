@@ -13,6 +13,7 @@ import type { CollectionField, PropertyMetaFactory } from '@nocobase/flow-engine
 import {
   Collection,
   createRecordMetaFactory,
+  createRecordResolveOnServerWithLocal,
   DisplayItemModel,
   DragHandler,
   Droppable,
@@ -65,7 +66,11 @@ export class TableColumnModel extends DisplayItemModel {
       return <FieldDeletePlaceholder />;
     }
     return (
-      <Tooltip title={this.context.t('该字段已被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。')}>
+      <Tooltip
+        title={this.context.t(
+          'This field has been hidden and you cannot view it (this content is only visible when the UI Editor is activated).',
+        )}
+      >
         <LockOutlined style={{ opacity: '0.45' }} />
       </Tooltip>
     );
@@ -82,7 +87,7 @@ export class TableColumnModel extends DisplayItemModel {
       .getFields()
       .map((field: CollectionField) => {
         const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
-        if (!binding) return null;
+        if (!binding || field.options?.treeChildren) return null;
         const fieldModel = binding.modelName;
         const fieldPath = ctx.fieldPath ? `${ctx.fieldPath}.${field.name}` : field.name;
         return {
@@ -164,7 +169,7 @@ export class TableColumnModel extends DisplayItemModel {
       ),
       onCell: (record, recordIndex) => ({
         record,
-        recordIndex,
+        recordIndex: record.__index || recordIndex,
         width: this.props.width - 16,
         editable: this.props.editable,
         dataIndex: this.props.dataIndex,
@@ -180,7 +185,7 @@ export class TableColumnModel extends DisplayItemModel {
               {(() => {
                 const err = this['__autoFlowError'];
                 if (err) throw err;
-                return cellRenderer(value, record, index);
+                return cellRenderer(value, record, record.__index || index);
               })()}
             </ErrorBoundary>
           </FlowModelProvider>
@@ -197,7 +202,7 @@ export class TableColumnModel extends DisplayItemModel {
     return (value, record, index) => (
       <>
         {this.mapSubModels('field', (field) => {
-          const fork = field.createFork({}, `${index}`);
+          const fork = field.createFork({}, `${record.__index || index}`);
           const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
             () => fork.context.collection,
             fork.context.t('Current record'),
@@ -218,11 +223,15 @@ export class TableColumnModel extends DisplayItemModel {
           );
           fork.context.defineProperty('record', {
             get: () => record,
-            resolveOnServer: true,
+            resolveOnServer: createRecordResolveOnServerWithLocal(
+              () => fork.context.collection,
+              () => record,
+            ),
             meta: recordMeta,
+            cache: false,
           });
           fork.context.defineProperty('recordIndex', {
-            get: () => index,
+            get: () => record.__index || index,
           });
           const namePath = this.context.prefixFieldPath ? this.fieldPath.split('.').pop() : this.fieldPath;
           const value = get(record, namePath);

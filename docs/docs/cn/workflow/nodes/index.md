@@ -17,13 +17,13 @@
   - [并行分支](./parallel.md)（插件 @nocobase/plugin-workflow-parallel 提供）
   - [调用工作流](./subflow.md)（插件 @nocobase/plugin-workflow-subflow 提供）
   - [流程输出](./output.md)（插件 @nocobase/plugin-workflow-subflow 提供）
+  - [JSON 变量映射](./json-variable-mapping.md)（插件 @nocobase/plugin-workflow-json-variable-mapping 提供）
   - [延时](./delay.md)（插件 @nocobase/plugin-workflow-delay 提供）
   - [结束流程](./end.md)
 - 计算
   - [计算](./calculation.md)
   - [日期计算](./date-calculation.md)（插件 @nocobase/plugin-workflow-date-calculation 提供）
   - [JSON 计算](./json-query.md)（插件 @nocobase/plugin-workflow-json-query 提供）
-  - [JSON 变量映射](./json-variable-mapping.md)（插件 @nocobase/plugin-workflow-json-variable-mapping 提供）
 - 数据表操作
   - [新增数据](./create.md)
   - [更新数据](./update.md)

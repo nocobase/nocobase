@@ -17,13 +17,13 @@ From a functional perspective, the currently implemented nodes can be divided in
   - [Parallel Branch](./parallel.md) (provided by @nocobase/plugin-workflow-parallel plugin)
   - [Invoke Workflow](./subflow.md) (provided by @nocobase/plugin-workflow-subflow plugin)
   - [Workflow Output](./output.md) (provided by @nocobase/plugin-workflow-subflow plugin)
+  - [JSON Variable Mapping](./json-variable-mapping.md) (provided by @nocobase/plugin-workflow-json-variable-mapping plugin)
   - [Delay](./delay.md) (provided by @nocobase/plugin-workflow-delay plugin)
   - [End Workflow](./end.md)
 - Calculation
   - [Calculation](./calculation.md)
   - [Date Calculation](./date-calculation.md) (provided by @nocobase/plugin-workflow-date-calculation plugin)
-  - [JSON Query](./json-query.md) (provided by @nocobase/plugin-workflow-json-query plugin)
-  - [JSON Variable Mapping](./json-variable-mapping.md) (provided by @nocobase/plugin-workflow-json-variable-mapping plugin)
+  - [JSON Calculation](./json-query.md) (provided by @nocobase/plugin-workflow-json-query plugin)
 - Collection Actions
   - [Create Data](./create.md)
   - [Update Data](./update.md)

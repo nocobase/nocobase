@@ -19,6 +19,7 @@ import { escapeT } from '../utils';
 import { FlowModel } from './flowModel';
 
 export function FieldPlaceholder() {
+  const { t } = useTranslation();
   return (
     <Form.Item>
       <Card
@@ -29,7 +30,9 @@ export function FieldPlaceholder() {
           },
         }}
       >
-        该字段已被隐藏，你无法查看（该内容仅在激活 UI Editor 时显示）。
+        {t(
+          'This field has been hidden and you cannot view it (this content is only visible when the UI Editor is activated).',
+        )}
       </Card>
     </Form.Item>
   );

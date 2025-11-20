@@ -254,6 +254,18 @@ describe('RunJS Runtime Features', () => {
       expect((runCtx as any).antd).toBeDefined();
       expect((runCtx as any).ReactDOM).toBeDefined();
     });
+
+    it('should expose libs namespace with common libraries', () => {
+      const parentCtx = new FlowContext();
+      const runCtx: any = new FlowRunJSContext(parentCtx);
+
+      expect(runCtx.libs).toBeDefined();
+      expect(runCtx.libs.React).toBeDefined();
+      expect(runCtx.libs.ReactDOM).toBeDefined();
+      expect(runCtx.libs.antd).toBeDefined();
+      expect(runCtx.libs.dayjs).toBeDefined();
+      expect(runCtx.libs.antdIcons).toBeDefined();
+    });
   });
 
   describe('Actual code execution', () => {

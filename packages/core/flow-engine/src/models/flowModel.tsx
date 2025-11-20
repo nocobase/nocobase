@@ -50,9 +50,9 @@ import { ModelEventRegistry } from '../event-registry/ModelEventRegistry';
 import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
 import { FlowDefinition } from '../FlowDefinition';
 import { FlowSettingsOpenOptions } from '../flowSettings';
-import type { EventDefinition, FlowEvent, DispatchEventOptions } from '../types';
-import { ForkFlowModel } from './forkFlowModel';
 import type { ScheduleOptions } from '../scheduler/ModelOperationScheduler';
+import type { DispatchEventOptions, EventDefinition, FlowEvent } from '../types';
+import { ForkFlowModel } from './forkFlowModel';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
@@ -352,8 +352,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this.eventRegistry.registerEvents(events);
   }
 
-  static buildChildrenFromModels(ctx, Models: Array<any>) {
-    return Models.map((M) => buildSubModelItem(M, ctx, true));
+  static async buildChildrenFromModels(ctx, Models: Array<any>) {
+    return Promise.all(Models.map((M) => buildSubModelItem(M, ctx, true)));
   }
 
   get title() {
@@ -1069,6 +1069,13 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     model.sortIndex = maxSortIndex + 1;
     subModels[subKey].push(model);
     actualParent.emitter.emit('onSubModelAdded', model);
+    // 同步发射到引擎级事件总线，便于外部统一监听模型树变更
+    actualParent.flowEngine?.emitter?.emit('model:subModel:added', {
+      parentUid: actualParent.uid,
+      parent: actualParent,
+      subKey,
+      model,
+    });
     return model;
   }
 
@@ -1095,6 +1102,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     model.setParent(actualParent);
     (actualParent.subModels as any)[subKey] = model;
     actualParent.emitter.emit('onSubModelAdded', model);
+    actualParent.flowEngine?.emitter?.emit('model:subModel:added', {
+      parentUid: actualParent.uid,
+      parent: actualParent,
+      subKey,
+      model,
+    });
     return model;
   }
 

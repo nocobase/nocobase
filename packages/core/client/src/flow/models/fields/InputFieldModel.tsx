@@ -14,6 +14,7 @@ import { FieldModel } from '../base';
 
 export class InputFieldModel extends FieldModel {
   render() {
+    console.log(this.props);
     return <Input {...this.props} />;
   }
 }
