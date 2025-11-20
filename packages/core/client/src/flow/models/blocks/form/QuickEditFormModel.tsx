@@ -109,18 +109,6 @@ export class QuickEditFormModel extends FlowModel {
     this.context.defineProperty('blockModel', {
       value: this,
     });
-    const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(this.context, () => this.collection);
-    this.context.defineProperty('record', {
-      get: () => this.resource.getData(),
-      resolveOnServer: createRecordResolveOnServerWithLocal(
-        () => this.collection,
-        () => this.resource.getData(),
-      ),
-      meta: recordMeta,
-    });
-    this.context.defineProperty('collection', {
-      get: () => this.collection,
-    });
   }
 
   addAppends(fieldPath: string, refresh = false) {
@@ -251,6 +239,22 @@ QuickEditFormModel.registerFlow({
           resource.setData(ctx.inputArgs.record);
           ctx.model.form?.setFieldsValue(resource.getData());
         }
+
+        const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(
+          ctx.model.context,
+          () => ctx.model.collection,
+        );
+        ctx.model.context.defineProperty('record', {
+          get: () => ctx.model.resource.getData(),
+          resolveOnServer: createRecordResolveOnServerWithLocal(
+            () => ctx.model.collection,
+            () => ctx.model.resource.getData(),
+          ),
+          meta: recordMeta,
+        });
+        ctx.model.context.defineProperty('collection', {
+          get: () => ctx.model.collection,
+        });
       },
     },
   },
