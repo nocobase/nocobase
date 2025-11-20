@@ -104,7 +104,6 @@ const toolbarPositionToCSS = {
 // 使用与 NocoBase 一致的悬浮工具栏样式
 const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition = 'inside', toolbarCount }) => css`
   position: relative;
-  display: inline;
 
   /* 当检测到button时使用inline-block */
   &.has-button-child {
