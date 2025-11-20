@@ -13,6 +13,45 @@ import { Worker } from 'worker_threads';
 import path from 'path';
 import { TaskType } from './task-type';
 
+export function parseArgv(list: string[]) {
+  const argv: any = {};
+
+  for (const item of list) {
+    const match = item.match(/^--([^=]+)=(.*)$/);
+
+    if (match) {
+      const key = match[1];
+      let value: any = match[2];
+
+      if (value.startsWith('{') || value.startsWith('[')) {
+        try {
+          value = JSON.parse(value);
+        } catch (err) {
+          // ignore parse error, keep raw text
+        }
+      } else {
+        if (value === 'true') {
+          value = true;
+        } else if (value === 'false') {
+          value = false;
+        }
+      }
+
+      argv[key] = value;
+      continue;
+    }
+
+    const parts = item.split(':');
+    if (parts.length === 2) {
+      const command = parts[0];
+      const commandValue = parts[1];
+      argv[command] = commandValue;
+    }
+  }
+
+  return argv;
+}
+
 export class CommandTaskType extends TaskType {
   static type = 'command';
 
@@ -25,6 +64,7 @@ export class CommandTaskType extends TaskType {
 
   async execute() {
     const { argv } = this.record.params;
+    const parsedArgv = parseArgv(argv);
     const isDev = (process.argv[1]?.endsWith('.ts') || process.argv[1].includes('tinypool')) ?? false;
     const appRoot = process.env.APP_PACKAGE_ROOT || 'packages/core/app';
     const workerPath = path.resolve(process.cwd(), appRoot, isDev ? 'src/index.ts' : 'lib/index.js');
@@ -45,6 +85,7 @@ export class CommandTaskType extends TaskType {
           env: {
             ...process.env,
             WORKER_MODE: '-',
+            ...(parsedArgv.app && parsedArgv.app !== 'main' ? { STARTUP_SUBAPP: parsedArgv.app } : {}),
           },
         });
 
