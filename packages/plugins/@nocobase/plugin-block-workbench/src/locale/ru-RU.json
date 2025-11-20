@@ -1,0 +1,18 @@
+{
+  "Action panel": "Панель действий",
+  "Add custom request": "Добавить пользовательский запрос",
+  "Add popup": "Добавить всплывающее окно",
+  "Album": "Альбом",
+  "At least 1, up to 6": "От 1 до 6",
+  "Grid": "Сетка",
+  "Items per row": "Элементов в строке",
+  "Layout": "Макет",
+  "List": "Список",
+  "No camera device detected": "Устройство камеры не обнаружено",
+  "QR code recognition failed, please scan again": "Распознавание QR-кода не удалось, пожалуйста, отсканируйте снова",
+  "Scan QR code": "Сканировать QR-код",
+  "The image size is too large. Please compress it to below 1MB before uploading": "Размер изображения слишком большой. Сожмите его до менее 1 МБ перед загрузкой",
+  "Unknown error": "Неизвестная ошибка",
+  "Workbench": "Рабочее пространство",
+  "You have not granted permission to use the camera": "Вы не предоставили разрешение на использование камеры"
+}
