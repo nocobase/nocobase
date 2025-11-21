@@ -27,16 +27,17 @@ export default class extends Migration {
         return;
       }
 
-      const isMainFieldDef = await fieldRepo.findOne({
+      const currentMainField = await fieldRepo.findOne({
         filter: {
-          collectionName: 'departmentsUsers',
-          name: 'isMain',
+          collectionName: 'users',
+          name: 'mainDepartment',
         },
         transaction,
       });
 
-      if (!isMainFieldDef) {
-        // 不存在 isMain 字段定义则不需要迁移
+      const needMigrate = !currentMainField || !currentMainField.get?.('interface');
+
+      if (!needMigrate) {
         return;
       }
 
