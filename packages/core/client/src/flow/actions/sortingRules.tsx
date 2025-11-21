@@ -117,6 +117,9 @@ export const sortingRule = defineAction({
     if (!resource) {
       return;
     }
+    ctx.model.setProps({
+      globalSort: sortArr,
+    });
     resource.setSort(sortArr);
   },
 });

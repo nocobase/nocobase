@@ -488,15 +488,17 @@ export function WorkflowTasks() {
 
   return (
     <Layout className={layoutClass}>
-      {isMobileLayout ? (
-        <Layout.Header style={{ background: token.colorBgContainer, padding: 0, height: '3em', lineHeight: '3em' }}>
-          <Menu mode="horizontal" selectedKeys={[typeKey]} items={items} />
-        </Layout.Header>
-      ) : (
-        <Layout.Sider breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
-          <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
-        </Layout.Sider>
-      )}
+      <TasksCountsProvider>
+        {isMobileLayout ? (
+          <Layout.Header style={{ background: token.colorBgContainer, padding: 0, height: '3em', lineHeight: '3em' }}>
+            <Menu mode="horizontal" selectedKeys={[typeKey]} items={items} />
+          </Layout.Header>
+        ) : (
+          <Layout.Sider breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
+            <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
+          </Layout.Sider>
+        )}
+      </TasksCountsProvider>
       <Layout
         className={css`
           > div {
@@ -525,15 +527,17 @@ function WorkflowTasksLink() {
   const { reload, total } = useContext(TasksCountsContext);
   const items = useAvailableTaskTypeItems();
   return items.length ? (
-    <Tooltip title={lang('Workflow todos')}>
-      <Button>
-        <Link to={`/admin/workflow/tasks`} onClick={reload}>
-          <Badge count={total} size="small">
-            <CheckCircleOutlined />
-          </Badge>
-        </Link>
-      </Button>
-    </Tooltip>
+    <TasksCountsProvider>
+      <Tooltip title={lang('Workflow todos')}>
+        <Button>
+          <Link to={`/admin/workflow/tasks`} onClick={reload}>
+            <Badge count={total} size="small">
+              <CheckCircleOutlined />
+            </Badge>
+          </Link>
+        </Button>
+      </Tooltip>
+    </TasksCountsProvider>
   ) : null;
 }
 
@@ -600,7 +604,7 @@ function TasksCountsProvider(props: any) {
 export function TasksProvider(props: any) {
   const isLoggedIn = useIsLoggedIn();
 
-  const content = (
+  return (
     <PinnedPluginListProvider
       items={{
         todo: { component: 'WorkflowTasksLink', pin: true, snippet: '*' },
@@ -615,8 +619,6 @@ export function TasksProvider(props: any) {
       </SchemaComponentOptions>
     </PinnedPluginListProvider>
   );
-
-  return isLoggedIn ? <TasksCountsProvider>{content}</TasksCountsProvider> : content;
 }
 
 export const tasksSchemaInitializerItem: SchemaInitializerItemType = {
