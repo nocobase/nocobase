@@ -484,11 +484,11 @@ CascadeSelectListFieldModel.define({
 });
 
 EditableItemModel.bindModelToInterface('CascadeSelectFieldModel', ['m2o', 'o2o', 'oho', 'obo'], {
-  when: (ctx, field) => field.targetCollection.template === 'tree',
+  when: (ctx, field) => field.targetCollection?.template === 'tree',
   isDefault: true,
 });
 
 EditableItemModel.bindModelToInterface('CascadeSelectListFieldModel', ['m2m', 'o2m', 'mbm'], {
-  when: (ctx, field) => field.targetCollection.template === 'tree',
+  when: (ctx, field) => field.targetCollection?.template === 'tree',
   isDefault: true,
 });

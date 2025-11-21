@@ -124,7 +124,7 @@ export class ClickableFieldModel extends FieldModel {
         return <EllipsisWithTooltip ellipsis={ellipsis}>{result}</EllipsisWithTooltip>;
       } else {
         const result = castArray(value).flatMap((v, idx) => {
-          if (this.collectionField.targetCollection.template === 'tree') {
+          if (this.collectionField.targetCollection?.template === 'tree') {
             const label = transformNestedData(v).length
               ? transformNestedData(v)
                   .map((o) => o?.[titleField])
