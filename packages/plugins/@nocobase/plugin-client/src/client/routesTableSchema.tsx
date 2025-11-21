@@ -13,6 +13,7 @@ import { useField, useForm } from '@formily/react';
 import {
   CollectionField,
   css,
+  getFlowPageMenuSchema,
   getPageMenuSchema,
   getTabSchema,
   getVariableComponentWithScope,
@@ -362,7 +363,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                           dependencies: ['type'],
                           fulfill: {
                             state: {
-                              hidden: '{{$deps[0] !== "page"}}',
+                              hidden: '{{$deps[0] !== "page" && $deps[0] !== "flowPage"}}',
                             },
                           },
                         },
@@ -676,10 +677,10 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                     </Radio>
                                   )}
                                   <Radio value={NocoBaseDesktopRouteType.page} disabled={!isGroup}>
-                                    {t('Page')}
+                                    {t('Classic page (v1)')}
                                   </Radio>
                                   <Radio value={NocoBaseDesktopRouteType.flowPage} disabled={!isGroup}>
-                                    {t('Flow Page')}
+                                    {t('Modern page (v2)')}
                                   </Radio>
                                   <Radio value={NocoBaseDesktopRouteType.link} disabled={!isGroup}>
                                     {t('Link')}
@@ -830,7 +831,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                               dependencies: ['type'],
                               fulfill: {
                                 state: {
-                                  hidden: '{{$deps[0] !== "page"}}',
+                                  hidden: '{{$deps[0] !== "page" && $deps[0] !== "flowPage"}}',
                                 },
                               },
                             },
@@ -1120,7 +1121,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                               dependencies: ['type'],
                               fulfill: {
                                 state: {
-                                  hidden: '{{$deps[0] !== "page"}}',
+                                  hidden: '{{$deps[0] !== "page" && $deps[0] !== "flowPage"}}',
                                 },
                               },
                             },
@@ -1263,7 +1264,9 @@ function useCreateRouteSchema(isMobile: boolean) {
     async ({ type }: { type: NocoBaseDesktopRouteType }) => {
       const pageSchemaUid = uid();
       const tabSchemaName = uid();
-      const tabSchemaUid = type === NocoBaseDesktopRouteType.page ? uid() : undefined;
+      const tabSchemaUid = [NocoBaseDesktopRouteType.page, NocoBaseDesktopRouteType.flowPage].includes(type)
+        ? uid()
+        : undefined;
 
       const typeToSchema = {
         [NocoBaseDesktopRouteType.page]: isMobile
@@ -1273,6 +1276,7 @@ function useCreateRouteSchema(isMobile: boolean) {
               tabSchemaUid,
               tabSchemaName,
             }),
+        [NocoBaseDesktopRouteType.flowPage]: getFlowPageMenuSchema({ pageSchemaUid }),
       };
 
       if (!typeToSchema[type]) {
