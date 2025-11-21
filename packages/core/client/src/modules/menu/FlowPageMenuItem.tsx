@@ -92,7 +92,7 @@ export const FlowPageMenuItem = () => {
 
     // 创建一个路由到 desktopRoutes 表中
     await createRoute({
-      type: NocoBaseDesktopRouteType.page,
+      type: NocoBaseDesktopRouteType.flowPage,
       title: values.title,
       icon: values.icon,
       parentId: parentRoute?.id,
@@ -110,7 +110,7 @@ export const FlowPageMenuItem = () => {
     });
 
     // 同时插入一个对应的 Schema
-    insertPageSchema(getFlowPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
+    insertPageSchema(getFlowPageMenuSchema({ pageSchemaUid }));
   }, [createRoute, insertPageSchema, options?.components, options?.scope, parentRoute?.id, t, theme]);
   return (
     <SchemaInitializerItem
@@ -121,7 +121,7 @@ export const FlowPageMenuItem = () => {
   );
 };
 
-export function getFlowPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }) {
+export function getFlowPageMenuSchema({ pageSchemaUid }) {
   return {
     type: 'void',
     'x-component': 'FlowRoute',
