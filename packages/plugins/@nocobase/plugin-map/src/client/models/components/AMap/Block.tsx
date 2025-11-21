@@ -15,7 +15,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { defaultImage, selectedImage } from '../../../constants';
 import { useMapTranslation } from '../../../locale';
 import { getSource } from '../../../utils';
-import { MapBlockDrawer } from '../MapBlockDrawer';
 import { AMapCom, AMapForwardedRefProps } from './Map';
 
 export const AMapBlock = (props) => {
@@ -37,12 +36,10 @@ export const AMapBlock = (props) => {
   const [isMapInitialization, setIsMapInitialization] = useState(false);
   const mapRef = useRef<AMapForwardedRefProps>();
   const geometryUtils: AMap.IGeometryUtil = mapRef.current?.aMap?.GeometryUtil;
-  const [record, setRecord] = useState();
   const [selectingMode, setSelecting] = useState('');
   const { t } = useMapTranslation();
   const compile = useCompile();
   const { isConnected, doFilter } = useFilterAPI();
-  const [, setPrevSelected] = useState<any>(null);
   const selectingModeRef = useRef(selectingMode);
   selectingModeRef.current = selectingMode;
 
@@ -189,7 +186,6 @@ export const AMapBlock = (props) => {
         // }
 
         if (data) {
-          setRecord(data);
           onOpenView(data);
           // openPopup({
           //   recordData: data,
