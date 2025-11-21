@@ -217,8 +217,12 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                           return (
                             <Radio.Group {...props}>
                               {!isMobile && <Radio value={NocoBaseDesktopRouteType.group}>{t('Group')}</Radio>}
-                              <Radio value={NocoBaseDesktopRouteType.page}>{t('Classic page (v1)')}</Radio>
-                              <Radio value={NocoBaseDesktopRouteType.flowPage}>{t('Modern page (v2)')}</Radio>
+                              <Radio value={NocoBaseDesktopRouteType.page}>
+                                {t(isMobile ? 'Page' : 'Classic page (v1)')}
+                              </Radio>
+                              {!isMobile && (
+                                <Radio value={NocoBaseDesktopRouteType.flowPage}>{t('Modern page (v2)')}</Radio>
+                              )}
                               <Radio value={NocoBaseDesktopRouteType.link}>{t('Link')}</Radio>
                             </Radio.Group>
                           );
@@ -677,11 +681,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                     </Radio>
                                   )}
                                   <Radio value={NocoBaseDesktopRouteType.page} disabled={!isGroup}>
-                                    {t('Classic page (v1)')}
+                                    {t(isMobile ? 'Page' : 'Classic page (v1)')}
                                   </Radio>
-                                  <Radio value={NocoBaseDesktopRouteType.flowPage} disabled={!isGroup}>
-                                    {t('Modern page (v2)')}
-                                  </Radio>
+                                  {!isMobile && (
+                                    <Radio value={NocoBaseDesktopRouteType.flowPage} disabled={!isGroup}>
+                                      {t('Modern page (v2)')}
+                                    </Radio>
+                                  )}
                                   <Radio value={NocoBaseDesktopRouteType.link} disabled={!isGroup}>
                                     {t('Link')}
                                   </Radio>
