@@ -1,10 +1,12 @@
 {
   "name": "@nocobase/plugin-text-copy",
-  "version": "2.0.0-alpha.42",
+  "version": "2.0.0-alpha.43",
   "main": "./dist/server/index.js",
   "displayName": "Text copy",
+  "displayName.ru-RU": "Копирование текста",
   "displayName.zh-CN": "文本复制",
   "description": "Add copy button to text fields",
+  "description.ru-RU": "Добавляет кнопку копирования к текстовым полям",
   "description.zh-CN": "为文本字段添加复制按钮",
   "license": "AGPL-3.0",
   "homepage": "https://www.nocobase.com",

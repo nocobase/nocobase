@@ -1,10 +1,12 @@
 {
   "name": "@nocobase/plugin-field-sort",
-  "version": "2.0.0-alpha.42",
+  "version": "2.0.0-alpha.43",
   "license": "AGPL-3.0",
   "displayName": "Collection field: Sort",
+  "displayName.ru-RU": "Поле коллекции: Сортировка",
   "displayName.zh-CN": "数据表字段：排序",
   "description": "Used to sort the data in a collection.",
+  "description.ru-RU": "Используется для сортировки данных в коллекции.",
   "description.zh-CN": "用于对数据表的数据进行排序。",
   "main": "dist/server/index.js",
   "peerDependencies": {

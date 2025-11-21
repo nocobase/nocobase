@@ -14,9 +14,23 @@ import { FlowModelMeta, ModelConstructor } from '../../types';
 import { isInheritedFrom, resolveCreateModelOptions } from '../../utils';
 import { SubModelItem } from './AddSubModelButton';
 
-export function buildSubModelItem(M: ModelConstructor, ctx: FlowModelContext, skipHide = false): SubModelItem {
+async function callHideFunction(
+  hide: boolean | ((context: FlowModelContext) => boolean | Promise<boolean>),
+  ctx: FlowModelContext,
+) {
+  if (typeof hide === 'function') {
+    return await hide(ctx);
+  }
+  return hide;
+}
+
+export async function buildSubModelItem(
+  M: ModelConstructor,
+  ctx: FlowModelContext,
+  skipHide = false,
+): Promise<SubModelItem | undefined> {
   const meta: FlowModelMeta = (M.meta ?? {}) as FlowModelMeta;
-  if (meta.hide && !skipHide) {
+  if ((await callHideFunction(meta.hide, ctx)) && !skipHide) {
     return;
   }
   // 判断是否为 CollectionBlockModel 的子类（用于集合选择层开启搜索）
@@ -102,8 +116,13 @@ export function buildSubModelItems(subModelBaseClass: string | ModelConstructor,
   return async (ctx: FlowModelContext) => {
     const SubModelClasses = ctx.engine.getSubclassesOf(subModelBaseClass);
     // Collect and sort subclasses by meta.sort (ascending), excluding hidden or inherited ones in `exclude`
-    let candidates = Array.from(SubModelClasses.values())
-      .filter((C) => !C.meta?.hide)
+    let candidates = [];
+    for (const C of Array.from(SubModelClasses.values())) {
+      if (!(await callHideFunction(C.meta?.hide, ctx))) {
+        candidates.push(C);
+      }
+    }
+    candidates = candidates
       .filter((C) => {
         for (const P of exclude as (string | ModelConstructor)[]) {
           if (typeof P === 'string') {
@@ -120,14 +139,14 @@ export function buildSubModelItems(subModelBaseClass: string | ModelConstructor,
     if (candidates.length === 0) {
       const BaseClass =
         typeof subModelBaseClass === 'string' ? ctx.engine.getModelClass(subModelBaseClass) : subModelBaseClass;
-      if (BaseClass && !BaseClass.meta?.hide) {
+      if (BaseClass && !(await callHideFunction(BaseClass.meta?.hide, ctx))) {
         candidates = [BaseClass];
       }
     }
 
     const items: SubModelItem[] = [];
     for (const M of candidates) {
-      const item = buildSubModelItem(M, ctx);
+      const item = await buildSubModelItem(M, ctx);
       if (item) items.push(item);
     }
     return items;

@@ -34,3 +34,35 @@ export function adjustColumnOrder(columns) {
 
   return [...leftFixedColumns, ...normalColumns, ...rightFixedColumns];
 }
+
+export function setNestedValue(data, recordIndex, value) {
+  // 检查 recordIndex 是否为数字（表示平铺的数据）
+  if (typeof recordIndex === 'number') {
+    // 平铺数据：直接使用索引来更新
+    data[recordIndex] = value;
+  } else if (typeof recordIndex === 'string') {
+    // 树形数据：路径是字符串，拆分并更新嵌套结构
+    const keys = recordIndex.split('.'); // 将路径拆分成数组
+    let current = data;
+
+    // 遍历路径，找到目标位置
+    for (let i = 0; i < keys.length - 1; i++) {
+      current = current[keys[i]]; // 深入到树形结构的下一层
+    }
+
+    // 更新最后一级的数据
+    current[keys[keys.length - 1]] = value;
+  }
+}
+
+export function extractIds(data) {
+  let ids = [];
+  data.forEach((item) => {
+    ids.push(item.id); // 添加当前项的 id
+    if (item.children && Array.isArray(item.children)) {
+      // 如果有子项，递归提取子项的 id
+      ids = ids.concat(extractIds(item.children));
+    }
+  });
+  return ids;
+}

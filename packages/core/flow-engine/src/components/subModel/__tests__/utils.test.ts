@@ -7,14 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { describe, it, expect } from 'vitest';
-import { buildItems, buildSubModelGroups, buildSubModelItem, buildSubModelItems } from '../utils';
-import { mergeSubModelItems } from '../AddSubModelButton';
+import { describe, expect, it } from 'vitest';
+import type { FlowModelContext } from '../../../flowContext';
 import { FlowEngine } from '../../../flowEngine';
 import { FlowModel } from '../../../models';
-import type { FlowModelContext } from '../../../flowContext';
-import type { SubModelItem } from '../AddSubModelButton';
 import type { ModelConstructor } from '../../../types';
+import type { SubModelItem } from '../AddSubModelButton';
+import { mergeSubModelItems } from '../AddSubModelButton';
+import { buildItems, buildSubModelGroups, buildSubModelItem, buildSubModelItems } from '../utils';
 
 type DefineChildren = (ctx: FlowModelContext) => SubModelItem[] | Promise<SubModelItem[]>;
 type WithDefineChildren<T extends ModelConstructor = ModelConstructor> = T & { defineChildren: DefineChildren };
@@ -153,7 +153,7 @@ describe('subModel/utils', () => {
   });
 
   describe('buildSubModelItem', () => {
-    it('returns undefined for hidden meta entries', () => {
+    it('returns undefined for hidden meta entries', async () => {
       const engine = new FlowEngine();
 
       class Parent extends FlowModel {}
@@ -163,7 +163,7 @@ describe('subModel/utils', () => {
       engine.registerModels({ Parent, HiddenChild });
       const parent = engine.createModel({ use: 'Parent', uid: 'parent-hidden' });
 
-      const item = buildSubModelItem(HiddenChild, parent.context);
+      const item = await buildSubModelItem(HiddenChild, parent.context);
       expect(item).toBeUndefined();
     });
 
@@ -194,7 +194,7 @@ describe('subModel/utils', () => {
       const parent = engine.createModel<Parent>({ use: 'Parent', uid: 'parent-child-group' });
       const ctx = parent.context;
 
-      const item = buildSubModelItem(ChildGroup, ctx, false);
+      const item = await buildSubModelItem(ChildGroup, ctx, false);
       expect(item).toBeTruthy();
       expect(item?.label).toBe('Child Group');
       expect(item?.searchable).toBe(true);
@@ -214,7 +214,7 @@ describe('subModel/utils', () => {
       expect(merged?.extra).toMatchObject({ fromTest: true });
     });
 
-    it('falls back to use=current class name when meta createModelOptions omitted', () => {
+    it('falls back to use=current class name when meta createModelOptions omitted', async () => {
       const engine = new FlowEngine();
 
       class Parent extends FlowModel {}
@@ -223,11 +223,11 @@ describe('subModel/utils', () => {
       engine.registerModels({ Parent, PlainChild });
       const parent = engine.createModel<Parent>({ use: 'Parent', uid: 'parent-default-create-options' });
 
-      const item = buildSubModelItem(PlainChild, parent.context);
+      const item = await buildSubModelItem(PlainChild, parent.context);
       expect(item?.createModelOptions).toEqual({ use: 'PlainChild' });
     });
 
-    it('still returns item when skipHide=true', () => {
+    it('still returns item when skipHide=true', async () => {
       const engine = new FlowEngine();
 
       class Parent extends FlowModel {}
@@ -237,7 +237,7 @@ describe('subModel/utils', () => {
       engine.registerModels({ Parent, HiddenChild });
       const parent = engine.createModel({ use: 'Parent', uid: 'parent-skip-hide' });
 
-      const item = buildSubModelItem(HiddenChild, parent.context, true);
+      const item = await buildSubModelItem(HiddenChild, parent.context, true);
       expect(item).toBeTruthy();
       expect(item?.label).toBe('Hidden but allowed');
     });
