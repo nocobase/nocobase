@@ -362,9 +362,6 @@ ChartBlockModel.registerFlow({
         props: {
           minWidth: '400px',
           onClose: () => {
-            // 回滚未保存的配置并刷新图表
-            ctx.model.cancelPreview();
-
             const aiOpen = useChatBoxStore.getState().open;
             const associatedUid = useChatMessagesStore.getState().currentEditorRefUid;
             if (aiOpen && associatedUid === ctx.model.uid) {
@@ -396,6 +393,9 @@ ChartBlockModel.registerFlow({
             dataSourceKey: params.query.sqlDatasource,
           });
         }
+      },
+      async afterParamsSave(ctx, params) {
+        ctx.model._previousStepParams = null;
       },
       defaultParams(ctx) {
         // 数据查询默认 builder 模式；图表配置默认 basic 模式
