@@ -748,7 +748,12 @@ const HighPerformanceTable = React.memo(
       };
     }, [model, selectedRowKeys]);
     const handleChange = useCallback(
-      async (pagination) => {
+      async (pagination, filters, sorter) => {
+        const globalSort = model.props.globalSort;
+        const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : globalSort;
+        if (sorter) {
+          model.resource.setSort(sort);
+        }
         if (model.resource.getPageSize() !== pagination.pageSize) {
           model.resource.setPage(1);
         } else {
@@ -842,6 +847,9 @@ const HighPerformanceTable = React.memo(
           }
           .ant-table-cell-with-append div {
             display: flex;
+          }
+          .ant-table-column-sorters .ant-table-column-title {
+            overflow: visible;
           }
         `}
         defaultExpandAllRows={defaultExpandAllRows}

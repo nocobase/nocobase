@@ -655,6 +655,231 @@ describe('workflow > actions > nodes', () => {
     });
   });
 
+  describe('destroyBranch', () => {
+    it('branch in executed workflow could not be destroyed', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      await workflow.stats.update({ executed: 1 });
+      await workflow.versionStats.update({ executed: 1 });
+
+      const { status } = await agent.resource('flow_nodes').destroyBranch({
+        filterByTk: n1.id,
+        branchIndex: 0,
+      });
+
+      expect(status).toBe(400);
+    });
+
+    it('destroyBranch removes branch nodes recursively', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const branchHead = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const branchNode = await workflow.createNode({
+        type: 'echo',
+        upstreamId: branchHead.id,
+      });
+      await branchHead.setDownstream(branchNode);
+
+      const nestedBranchHead = await workflow.createNode({
+        type: 'echo',
+        upstreamId: branchNode.id,
+        branchIndex: 0,
+      });
+
+      const nestedBranchNode = await workflow.createNode({
+        type: 'echo',
+        upstreamId: nestedBranchHead.id,
+      });
+      await nestedBranchHead.setDownstream(nestedBranchNode);
+
+      await agent.resource('flow_nodes').destroyBranch({
+        filterByTk: n1.id,
+        branchIndex: 0,
+      });
+
+      const nodes = await workflow.getNodes({ order: [['id', 'ASC']] });
+      expect(nodes.length).toBe(1);
+      expect(nodes[0].id).toBe(n1.id);
+    });
+
+    it('destroyBranch reorders indices after removing a branch', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const keepBranch = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const removedBranch = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 1,
+      });
+
+      const removedBranchChild = await workflow.createNode({
+        type: 'echo',
+        upstreamId: removedBranch.id,
+      });
+      await removedBranch.setDownstream(removedBranchChild);
+
+      const shiftedBranch = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 2,
+      });
+
+      await agent.resource('flow_nodes').destroyBranch({
+        filterByTk: n1.id,
+        branchIndex: 1,
+        shift: 1,
+      });
+
+      const nodes = await workflow.getNodes({ order: [['id', 'ASC']] });
+      const branchHeads = nodes
+        .filter((item) => item.upstreamId === n1.id && item.branchIndex != null)
+        .sort((a, b) => a.branchIndex - b.branchIndex);
+
+      expect(nodes.find((item) => item.id === removedBranch.id)).toBeUndefined();
+      expect(nodes.find((item) => item.id === removedBranchChild.id)).toBeUndefined();
+      expect(branchHeads.length).toBe(2);
+      expect(branchHeads[0].id).toBe(keepBranch.id);
+      expect(branchHeads[0].branchIndex).toBe(0);
+      expect(branchHeads[1].id).toBe(shiftedBranch.id);
+      expect(branchHeads[1].branchIndex).toBe(1);
+    });
+
+    it('destroyBranch reorders indices even if the target branch has no nodes when shift enabled', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const branch0 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const branch2 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 2,
+      });
+
+      await agent.resource('flow_nodes').destroyBranch({
+        filterByTk: n1.id,
+        branchIndex: 1,
+        shift: 1,
+      });
+
+      const nodes = await workflow.getNodes({ order: [['id', 'ASC']] });
+      const branchHeads = nodes
+        .filter((item) => item.upstreamId === n1.id && item.branchIndex != null)
+        .sort((a, b) => a.branchIndex - b.branchIndex);
+
+      expect(branchHeads.length).toBe(2);
+      expect(branchHeads[0].id).toBe(branch0.id);
+      expect(branchHeads[0].branchIndex).toBe(0);
+      expect(branchHeads[1].id).toBe(branch2.id);
+      expect(branchHeads[1].branchIndex).toBe(1);
+    });
+
+    it('destroyBranch keeps indices when shift flag is not set', async () => {
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'collection',
+        config: {
+          mode: 1,
+          collection: 'posts',
+        },
+      });
+
+      const n1 = await workflow.createNode({
+        type: 'echo',
+      });
+
+      const branch0 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 0,
+      });
+
+      const branch1 = await workflow.createNode({
+        type: 'echo',
+        upstreamId: n1.id,
+        branchIndex: 1,
+      });
+
+      await agent.resource('flow_nodes').destroyBranch({
+        filterByTk: n1.id,
+        branchIndex: 0,
+      });
+
+      const nodes = await workflow.getNodes({ order: [['id', 'ASC']] });
+      const branchHeads = nodes
+        .filter((item) => item.upstreamId === n1.id && item.branchIndex != null)
+        .sort((a, b) => a.branchIndex - b.branchIndex);
+
+      expect(nodes.find((item) => item.id === branch0.id)).toBeUndefined();
+      expect(branchHeads.length).toBe(1);
+      expect(branchHeads[0].id).toBe(branch1.id);
+      expect(branchHeads[0].branchIndex).toBe(1);
+    });
+  });
+
   describe('test', () => {
     it('test method not implemented', async () => {
       const { status } = await agent.resource('flow_nodes').test({ values: { type: 'error' } });
