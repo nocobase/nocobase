@@ -82,41 +82,52 @@ export class PluginFileManagerClient extends Plugin {
     file: File;
     fileCollectionName?: string;
     storageType?: string;
-    /** 后面可能会废弃这个参数 */
     storageId?: number;
     storageRules?: {
       size: number;
     };
+    query?: Record<string, any>; // ⭐️ 新增可选 query 参数
   }): Promise<{ errorMessage?: string; data?: any }> {
-    const storageTypeObj = this.getStorageType(options?.storageType);
+    if (!options?.file) {
+      return { errorMessage: 'Missing file' };
+    }
+
+    const { file, fileCollectionName = 'attachments', storageType, storageId, storageRules, query = {} } = options;
+
+    const storageTypeObj = this.getStorageType(storageType);
+
+    // 1. storageType 自定义上传
     if (storageTypeObj?.upload) {
-      // 1. If storageType is provided, call the upload method directly
       return await storageTypeObj.upload({
-        file: options.file,
+        file,
         apiClient: this.app.apiClient,
-        storageType: options.storageType,
-        storageId: options.storageId,
-        storageRules: options.storageRules,
-        fileCollectionName: options.fileCollectionName,
+        storageType,
+        storageId,
+        storageRules,
+        fileCollectionName,
+        query,
       });
     }
 
-    // 2. If storageType is not provided, use the default upload method
+    // 2. 默认上传 —— 拼接 URL 参数
     try {
       const formData = new FormData();
-      formData.append('file', options.file);
+      formData.append('file', file);
+
+      /** ⭐️ 拼接 URL 查询参数 */
+      const queryString = new URLSearchParams(query).toString();
+      const url = queryString ? `${fileCollectionName}:create?${queryString}` : `${fileCollectionName}:create`;
+
       const res = await this.app.apiClient.request({
-        url: `${options.fileCollectionName || 'attachments'}:create`,
+        url,
         method: 'post',
         data: formData,
       });
 
+      return { data: res.data?.data };
+    } catch (error: any) {
       return {
-        data: res.data?.data,
-      };
-    } catch (error) {
-      return {
-        errorMessage: error.message,
+        errorMessage: error?.message ?? 'Upload failed',
       };
     }
   }

@@ -321,6 +321,7 @@ UploadFieldModel.registerFlow({
         const { file, onSuccess, onError, onProgress } = ctx.inputArgs.fileData;
         const fileManagerPlugin: any = ctx.app.pm.get('@nocobase/plugin-file-manager');
         const fileCollection = ctx.model.props.target;
+        const collectionField = ctx.collectionField;
         if (!fileManagerPlugin) {
           return onSuccess(file);
         }
@@ -344,6 +345,9 @@ UploadFieldModel.registerFlow({
             storageRules: checkData?.data?.storage?.rules,
             onProgress: (percent: number) => {
               onProgress?.({ percent });
+            },
+            query: {
+              attachmentField: `${collectionField.collectionName}.${collectionField.name}`,
             },
           });
 
