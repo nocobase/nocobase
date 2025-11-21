@@ -8,10 +8,10 @@
  */
 
 import { DragEndEvent } from '@dnd-kit/core';
+import { autorun } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { PageModel } from './PageModel';
-import { autorun } from '@nocobase/flow-engine';
 
 export class RootPageModel extends PageModel {
   mounted = false;
@@ -101,7 +101,7 @@ RootPageModel.registerFlow({
         });
         ctx.model.setProps('routeId', data?.data?.id);
         const routes: NocoBaseDesktopRoute[] = _.castArray(data?.data?.children);
-        for (const route of routes) {
+        for (const route of routes.sort((a, b) => a.sort - b.sort)) {
           // 过滤掉隐藏的路由
           if (route.hideInMenu) {
             continue;
@@ -113,6 +113,7 @@ RootPageModel.registerFlow({
             subKey: 'tabs',
             subType: 'array',
             use: 'RootPageTabModel',
+            sortIndex: route.sort,
             props: {
               route,
             },
