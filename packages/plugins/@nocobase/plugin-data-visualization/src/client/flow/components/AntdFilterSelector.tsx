@@ -111,47 +111,7 @@ export const AntdFilterSelector: React.FC<AntdFilterSelectorProps> = ({
     const [dataSourceKey, collectionName] = collectionPath || [];
     const ctx = new FlowContext();
     ctx.addDelegate(viewCtx);
-    ctx.defineProperty('collection', {
-      get: () => model.context.dataSourceManager.getCollection(dataSourceKey, collectionName),
-      cache: false,
-      meta: (() => {
-        const baseFactory = createCollectionContextMeta(
-          () => model.context.dataSourceManager.getCollection(dataSourceKey, collectionName),
-          model.translate('Current collection'),
-        );
-        return async () => {
-          const base = await baseFactory();
-          if (!base) return null;
-          const raw = typeof base.properties === 'function' ? await base.properties() : base.properties;
-          const allow = (await model.getFilterFields?.())?.map((f: any) => f.name) || [];
-          const dm = model.context.app?.dataSourceManager;
-          const ds = dm?.getDataSource(dataSourceKey);
-          const cm = ds?.collectionManager;
-          const fim = dm?.collectionFieldInterfaceManager;
-          const out: Record<string, any> = {};
-          for (const name of allow) {
-            const metaProp = raw?.[name];
-            if (!metaProp) continue;
-            const fieldDef = (cm?.getCollectionFields(collectionName) || []).find((ff: any) => ff.name === name);
-            const iface = fieldDef?.interface ? fim?.getFieldInterface(fieldDef.interface) : undefined;
-            if (iface?.filterable?.nested && fieldDef?.target) {
-              out[name] = metaProp;
-            } else {
-              const clone: any = { ...metaProp };
-              delete clone.properties;
-              out[name] = clone;
-            }
-          }
-          return { ...base, properties: out };
-        };
-      })(),
-    });
-    return ctx;
-  }, [viewCtx, model, collectionPath]);
 
-  React.useEffect(() => {
-    if (!Array.isArray(collectionPath) || collectionPath.length < 2) return;
-    const [dataSourceKey, collectionName] = collectionPath || [];
     model.context.defineProperty('collection', {
       get: () => model.context.dataSourceManager.getCollection(dataSourceKey, collectionName),
       cache: false,
@@ -161,34 +121,39 @@ export const AntdFilterSelector: React.FC<AntdFilterSelectorProps> = ({
           model.translate('Current collection'),
         );
         return async () => {
-          const base = await baseFactory();
-          if (!base) return null;
-          const raw = typeof base.properties === 'function' ? await base.properties() : base.properties;
-          const allow = (await model.getFilterFields?.())?.map((f: any) => f.name) || [];
-          const dm = model.context.app?.dataSourceManager;
-          const ds = dm?.getDataSource(dataSourceKey);
-          const cm = ds?.collectionManager;
-          const fim = dm?.collectionFieldInterfaceManager;
-          const out: Record<string, any> = {};
-          for (const name of allow) {
-            const metaProp = raw?.[name];
-            if (!metaProp) continue;
-            const fieldDef = (cm?.getCollectionFields(collectionName) || []).find((ff: any) => ff.name === name);
-            const iface = fieldDef?.interface ? fim?.getFieldInterface(fieldDef.interface) : undefined;
-            if (iface?.filterable?.nested && fieldDef?.target) {
-              out[name] = metaProp;
-            } else {
-              const clone: any = { ...metaProp };
-              delete clone.properties;
-              out[name] = clone;
+          try {
+            const base = await baseFactory();
+            if (!base) return null;
+            const raw = typeof base.properties === 'function' ? await base.properties() : base.properties;
+            const dm = model.context.app?.dataSourceManager;
+            const ds = dm?.getDataSource(dataSourceKey);
+            const cm = ds?.collectionManager;
+            const fim = dm?.collectionFieldInterfaceManager;
+            const list = await (model as unknown as { getFilterFields: () => Promise<any[]> }).getFilterFields();
+            const allow = list?.map((f: any) => f.name) || [];
+            const out: Record<string, any> = {};
+            for (const name of allow) {
+              const metaProp = raw?.[name];
+              if (!metaProp) continue;
+              const fieldDef = (cm?.getCollectionFields(collectionName) || []).find((ff: any) => ff.name === name);
+              const iface = fieldDef?.interface ? fim?.getFieldInterface(fieldDef.interface) : undefined;
+              if (iface?.filterable?.nested && fieldDef?.target) out[name] = metaProp;
+              else {
+                const clone: any = { ...metaProp };
+                delete clone.properties;
+                out[name] = clone;
+              }
             }
+            return { ...base, properties: out };
+          } catch {
+            return null;
           }
-          return { ...base, properties: out };
         };
       })(),
     });
     model.context.removeCache?.('collection');
-  }, [model, collectionPath]);
+    return ctx;
+  }, [viewCtx, model, collectionPath]);
 
   // 缓存 FilterItem 渲染函数，避免每次渲染产生新函数导致子树重绘
   const renderFilterItem = React.useCallback(
