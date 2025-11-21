@@ -8,7 +8,7 @@
  */
 
 import { Cascader, Space, Button } from 'antd';
-import { debounce, last } from 'lodash';
+import { last } from 'lodash';
 import { CollectionField, EditableItemModel, escapeT, MultiRecordResource } from '@nocobase/flow-engine';
 import { DeleteOutlined, DragOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
@@ -153,7 +153,10 @@ const DynamicCascadeList: React.FC<Props> = ({ value = [], onChange, options, fi
 
   const handleChange = (index: number, val: any) => {
     const newValue = [...value];
-    newValue[index] = val;
+    if (val) {
+      newValue[index] = val;
+      onChange?.(newValue);
+    }
     onChange?.(newValue);
   };
 
