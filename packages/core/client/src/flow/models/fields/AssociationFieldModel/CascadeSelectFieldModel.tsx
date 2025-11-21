@@ -66,6 +66,7 @@ const SortableItem: React.FC<{
     transform: CSS.Transform.toString(transform),
     transition,
     marginBottom: 8,
+    maxWidth: '100%',
   };
   const initOptions = buildTree(transformNestedData(item));
   const popupClassName = `cascade-scroll-${item[fieldNames.value]}`;
@@ -91,26 +92,37 @@ const SortableItem: React.FC<{
         className={css`
           width: 100%;
           display: flex;
-
-          // .ant-space-item:nth-child(1) {
-          //   flex: 0.1;
-          //   display: flex;
-          //   align-items: center;
-          //   cursor: grab;
-          // }
-
           .ant-space-item:nth-child(1) {
             flex: 3;
+            max-width: 96%;
           }
         `}
       >
         {/* <div {...listeners}>
           <DragOutlined style={{ color: 'GrayText' }} />
         </div> */}
+
         <Cascader
           key={id}
           options={options || initOptions}
-          popupClassName={popupClassName}
+          style={{ width: '100%' }}
+          popupClassName={css`
+            .ant-cascader-menu {
+              max-width: 500px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            .ant-cascader-menu-item {
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 100%;
+            }
+            .ant-cascader-menu-item-content {
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 100%;
+            }
+          `}
           fieldNames={fieldNames}
           onChange={(value, item) => {
             const val = last(item);
