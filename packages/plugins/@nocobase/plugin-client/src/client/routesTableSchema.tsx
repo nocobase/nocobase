@@ -1343,7 +1343,7 @@ function TypeTag(props) {
   const valueMap = {
     [NocoBaseDesktopRouteType.group]: t('Group'),
     [NocoBaseDesktopRouteType.page]: t('Page'),
-    [NocoBaseDesktopRouteType.flowPage]: t('Flow Page'),
+    [NocoBaseDesktopRouteType.flowPage]: t('Page (v2)'),
     [NocoBaseDesktopRouteType.link]: t('Link'),
     [NocoBaseDesktopRouteType.tabs]: t('Tab'),
   };
