@@ -238,4 +238,52 @@ describe('workflow > instructions > update', () => {
       expect(p2s[0].title).toBe('t2');
     });
   });
+
+  describe('update to trigger other collection event', () => {
+    it('should trigger afterUpdate/afterSave/afterUpdateWithAssociations/afterSaveWithAssociations', async () => {
+      const afterUpdate = vi.fn();
+      const afterSave = vi.fn();
+      const afterUpdateWithAssociations = vi.fn();
+      const afterSaveWithAssociations = vi.fn();
+
+      db.on('posts.afterUpdate', afterUpdate);
+      db.on('posts.afterSave', afterSave);
+      db.on('posts.afterSaveWithAssociations', afterSaveWithAssociations);
+      db.on('posts.afterUpdateWithAssociations', afterUpdateWithAssociations);
+      const n1 = await workflow.createNode({
+        type: 'update',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              id: '{{$context.data.id}}',
+            },
+            values: {
+              published: true,
+            },
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+      expect(post.published).toBe(false);
+      expect(afterUpdate).toHaveBeenCalledTimes(0);
+      expect(afterSave).toHaveBeenCalledTimes(1);
+      expect(afterUpdateWithAssociations).toHaveBeenCalledTimes(0);
+      expect(afterSaveWithAssociations).toHaveBeenCalledTimes(1);
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(1);
+
+      const updatedPost = await PostRepo.findById(post.id);
+      expect(updatedPost.published).toBe(true);
+      expect(afterUpdate).toHaveBeenCalledTimes(1);
+      expect(afterSave).toHaveBeenCalledTimes(2);
+      expect(afterUpdateWithAssociations).toHaveBeenCalledTimes(1);
+      expect(afterSaveWithAssociations).toHaveBeenCalledTimes(2);
+    });
+  });
 });
