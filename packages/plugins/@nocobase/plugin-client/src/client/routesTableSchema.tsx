@@ -635,8 +635,11 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   return {
                     disabled:
                       (recordData.type !== NocoBaseDesktopRouteType.group &&
-                        recordData.type !== NocoBaseDesktopRouteType.page) ||
-                      (!recordData.enableTabs && recordData.type === NocoBaseDesktopRouteType.page),
+                        recordData.type !== NocoBaseDesktopRouteType.page &&
+                        recordData.type !== NocoBaseDesktopRouteType.flowPage) ||
+                      (!recordData.enableTabs &&
+                        (recordData.type === NocoBaseDesktopRouteType.page ||
+                          recordData.type === NocoBaseDesktopRouteType.flowPage)),
                     openMode: 'drawer',
                   };
                 },
@@ -663,7 +666,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             'x-component': (props) => {
                               const { t } = useTranslation();
                               const recordData = useCollectionRecordData();
-                              const isPage = recordData.type === NocoBaseDesktopRouteType.page;
+                              const isPage =
+                                recordData.type === NocoBaseDesktopRouteType.page ||
+                                recordData.type === NocoBaseDesktopRouteType.flowPage;
                               const isGroup = recordData.type === NocoBaseDesktopRouteType.group;
                               const defaultValue = useMemo(() => {
                                 if (isPage) {
