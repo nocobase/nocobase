@@ -17,10 +17,23 @@ import {
   useCollectionManager,
   useCompile,
 } from '@nocobase/client';
-import { Alert, Badge, Button, Empty, Modal, Popconfirm, Popover, Progress, Space, Table, Tag, Tooltip } from 'antd';
+import {
+  Alert,
+  Button,
+  Empty,
+  Modal,
+  Popconfirm,
+  Popover,
+  Progress,
+  Space,
+  Table,
+  Tag,
+  Tooltip,
+  Typography,
+} from 'antd';
 import React, { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
-import { useCurrentAppInfo } from '@nocobase/client';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 import relativeTime from 'dayjs/plugin/relativeTime';
@@ -41,29 +54,13 @@ const useStyles = createStyles(({ token }) => {
 // Configure dayjs
 dayjs.extend(relativeTime);
 
-const TaskResult = ({ record }) => {
-  const t = useT();
-
-  if (record.status !== TASK_STATUS.SUCCEEDED || !record.result?.message?.messageId) {
-    return null;
-  }
-
-  const { messageId, messageValues } = record.result.message;
-
-  return (
-    <div style={{ marginLeft: 8 }}>
-      <Tag color="success">{t(messageId, messageValues)}</Tag>
-    </div>
-  );
-};
-
 const AsyncTasksButton = (props) => {
   const { popoverVisible, setPopoverVisible, tasks, refresh, loading, hasProcessingTasks } = props;
   const api = useAPIClient();
-  const t = useT();
+  const localT = useT();
+  const { t } = useTranslation();
   const { styles } = useStyles();
   const plugin = usePlugin<PluginAsyncTaskManagerClient>('async-task-manager');
-  const cm = useCollectionManager();
   const compile = useCompile();
   const showTaskResult = (task) => {
     setPopoverVisible(false);
@@ -71,7 +68,7 @@ const AsyncTasksButton = (props) => {
 
   const columns = [
     {
-      title: t('Created at'),
+      title: localT('Created at'),
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 180,
@@ -80,12 +77,12 @@ const AsyncTasksButton = (props) => {
       ),
     },
     {
-      title: t('Task'),
+      title: localT('Task'),
       dataIndex: 'title',
       key: 'title',
     },
     {
-      title: t('Status'),
+      title: localT('Status'),
       dataIndex: 'status',
       key: 'status',
       width: 160,
@@ -151,16 +148,16 @@ const AsyncTasksButton = (props) => {
               icon={option?.icon ? <Icon type={option.icon} /> : null}
               style={{ margin: 0, padding: '0 4px', height: 22, width: 22 }}
             />
-            <TaskResult record={record} />
           </div>
         );
       },
     },
     {
-      title: t('Actions'),
+      title: localT('Actions'),
+      dataIndex: 'result',
       key: 'actions',
       width: 180,
-      render: (_, record: any) => {
+      render: (result, record: any) => {
         const actions = [];
         const stopping = false;
         const { Result, ResultButton } = plugin.taskOrigins.get(record.origin) ?? {};
@@ -170,16 +167,16 @@ const AsyncTasksButton = (props) => {
           actions.push(
             <Popconfirm
               key="cancel"
-              title={t('Confirm cancel')}
-              description={t('Confirm cancel description')}
+              title={localT('Confirm cancel')}
+              description={localT('Confirm cancel description')}
               onConfirm={async () => {
                 await api.resource('asyncTasks').stop({
                   filterByTk: record.id,
                 });
                 refresh();
               }}
-              okText={t('Confirm')}
-              cancelText={t('Cancel')}
+              okText={localT('Confirm')}
+              cancelText={localT('Cancel')}
               disabled={stopping}
             >
               <Button
@@ -188,13 +185,13 @@ const AsyncTasksButton = (props) => {
                 icon={<Icon type={stopping ? 'LoadingOutlined' : 'StopOutlined'} />}
                 disabled={stopping}
               >
-                {stopping ? t('Stopping...') : t('Stop')}
+                {stopping ? localT('Stopping...') : localT('Stop')}
               </Button>
             </Popconfirm>,
           );
         }
 
-        if (record.status === TASK_STATUS.SUCCEEDED && record.result) {
+        if (record.status === TASK_STATUS.SUCCEEDED && result) {
           if (ResultButton) {
             actions.push(<ResultButton key="result-button" task={record} />);
           } else {
@@ -207,22 +204,22 @@ const AsyncTasksButton = (props) => {
                 onClick={() => {
                   showTaskResult(record);
                   Modal.info({
-                    title: t('Task result'),
+                    title: localT('Task result'),
                     content: Result ? (
-                      <ResultComponent payload={record.result} task={record} />
+                      <ResultComponent payload={result} task={record} />
                     ) : (
-                      <div>{t(`No renderer available for this task type, payload: ${record.result}`)}</div>
+                      <div>{localT(`No renderer available for this task type, payload: ${record.result}`)}</div>
                     ),
                   });
                 }}
               >
-                {t('View result')}
+                {localT('View result')}
               </Button>,
             );
           }
         }
 
-        if (record.status === TASK_STATUS.FAILED && record.result?.length > 0) {
+        if (record.status === TASK_STATUS.FAILED && result) {
           actions.push(
             <Button
               key="error"
@@ -231,24 +228,16 @@ const AsyncTasksButton = (props) => {
               icon={<Icon type="ExclamationCircleOutlined" />}
               onClick={() => {
                 setPopoverVisible(false);
+                const { namespace: ns = 'client' } = plugin.taskOrigins.get(record.origin);
                 Modal.info({
-                  title: t('Error Details'),
-                  content: record.result?.map((error, index) => (
-                    <div key={index} style={{ marginBottom: 16 }}>
-                      <div style={{ color: '#ff4d4f', marginBottom: 8 }}>{error.message}</div>
-                      {error.code && (
-                        <div style={{ color: '#999', fontSize: 12 }}>
-                          {t('Error code')}: {error.code}
-                        </div>
-                      )}
-                    </div>
-                  )),
+                  title: localT('Error Details'),
+                  content: <Typography.Text>{t(result.message, { ...result.params, ns })}</Typography.Text>,
                   closable: true,
                   width: 400,
                 });
               }}
             >
-              {t('Error details')}
+              {localT('Error details')}
             </Button>,
           );
         }
@@ -266,7 +255,7 @@ const AsyncTasksButton = (props) => {
         <Table loading={loading} columns={columns} dataSource={tasks} size="small" pagination={false} rowKey="taskId" />
       ) : (
         <div style={{ padding: '24px 0', display: 'flex', justifyContent: 'center' }}>
-          <Empty description={t('No tasks')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          <Empty description={localT('No tasks')} image={Empty.PRESENTED_IMAGE_SIMPLE} />
         </div>
       )}
     </div>
