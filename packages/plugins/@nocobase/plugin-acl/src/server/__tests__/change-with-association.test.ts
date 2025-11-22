@@ -933,19 +933,17 @@ describe('Change with association', async () => {
       params: {
         values: {
           name: 'test-1',
-          assoc3: [
-            {
-              assoc3_name: 'assoc3-1',
-              title: 'assoc3 title',
-            },
-          ],
+          assoc3: {
+            assoc3_name: 'assoc3-1',
+            title: 'assoc3 title',
+          },
         },
       },
     };
     await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
-      assoc3: ['assoc3-1'],
+      assoc3: 'assoc3-1',
     });
   });
 
@@ -993,24 +991,20 @@ describe('Change with association', async () => {
         updateAssociationValues: ['assoc3'],
         values: {
           name: 'test-1',
-          assoc3: [
-            {
-              assoc3_name: 'assoc3-1',
-              title: 'assoc3 title',
-            },
-          ],
+          assoc3: {
+            assoc3_name: 'assoc3-1',
+            title: 'assoc3 title',
+          },
         },
       },
     };
     await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
     expect(ctx.action.params.values).toMatchObject({
       name: 'test-1',
-      assoc3: [
-        {
-          assoc3_name: 'assoc3-1',
-          title: 'assoc3 title',
-        },
-      ],
+      assoc3: {
+        assoc3_name: 'assoc3-1',
+        title: 'assoc3 title',
+      },
     });
   });
 
