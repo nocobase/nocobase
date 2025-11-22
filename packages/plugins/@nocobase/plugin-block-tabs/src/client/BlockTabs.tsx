@@ -4,6 +4,15 @@
  * Authors: NocoBase Team.
  *
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to https://www.nocobase.com/agreement.
  */
 
@@ -38,7 +47,7 @@ MemoizeRecursionField.displayName = 'MemoizeRecursionField';
 const MemoizeTabs = React.memo(AntdTabs);
 MemoizeTabs.displayName = 'MemoizeTabs';
 
-export const BlockTabs: any = React.memo((props: any) => {
+export const BlockTabs = React.memo((props: any) => {
   const fieldSchema = useFieldSchema();
   const field = useField();
   const { render } = useSchemaInitializerRender(fieldSchema['x-initializer'], fieldSchema['x-initializer-props']);
@@ -51,14 +60,7 @@ export const BlockTabs: any = React.memo((props: any) => {
       return {
         key,
         label: <MemoizeRecursionField name={key} schema={schema} onlyRenderSelf />,
-        children: (
-          <SchemaComponent
-            name={key}
-            schema={schema}
-            onlyRenderProperties
-            distributed
-          />
-        ),
+        children: <SchemaComponent name={key} schema={schema} onlyRenderProperties distributed />,
       };
     });
 

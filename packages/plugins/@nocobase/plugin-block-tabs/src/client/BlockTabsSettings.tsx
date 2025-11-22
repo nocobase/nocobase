@@ -13,7 +13,6 @@ import React from 'react';
 import {
   SchemaSettings,
   SchemaSettingsBlockTitleItem,
-  SchemaSettingsDivider,
   SchemaSettingsModalItem,
   SchemaSettingsRemove,
   SchemaSettingsTemplate,
@@ -124,7 +123,6 @@ export const blockTabsSettings = new SchemaSettings({
     {
       name: 'divider',
       type: 'divider',
-      Component: SchemaSettingsDivider,
     },
     {
       name: 'remove',

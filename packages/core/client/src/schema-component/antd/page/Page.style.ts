@@ -118,7 +118,7 @@ export const useStyles = genStyleHook('nb-page', (token) => {
       },
 
       '.nb-page-wrapper': {
-        padding: `${token.paddingPageVertical}px`,
+        padding: `${token.paddingPageVertical}px ${token.paddingPageHorizontal}px`,
         paddingBottom: 0,
         flex: 1,
       },
