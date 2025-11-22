@@ -354,7 +354,7 @@ const InsertMenuItems = (props) => {
           }
 
           // 3. 插入一个对应的 Schema
-          insertPageSchema(getFlowPageMenuSchema({ pageSchemaUid, tabSchemaUid, tabSchemaName }));
+          insertPageSchema(getFlowPageMenuSchema({ pageSchemaUid }));
         }}
       />
       <SchemaSettingsModalItem

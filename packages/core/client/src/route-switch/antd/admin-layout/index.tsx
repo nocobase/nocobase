@@ -1103,7 +1103,7 @@ export function findFirstPageRoute(routes: NocoBaseDesktopRoute[]) {
   if (!routes) return;
 
   for (const route of routes.filter((item) => !item.hideInMenu)) {
-    if (route.type === NocoBaseDesktopRouteType.page) {
+    if (route.type === NocoBaseDesktopRouteType.page || route.type === NocoBaseDesktopRouteType.flowPage) {
       return route;
     }
 
