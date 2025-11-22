@@ -41,6 +41,7 @@ export async function parseVariables(ctx, next) {
   if (!filter) {
     return next();
   }
+  const state = JSON.parse(JSON.stringify(ctx.state));
   ctx.action.params.filter = await parseFilter(filter, {
     timezone: ctx.get('x-timezone'),
     now: new Date().toISOString(),
@@ -53,6 +54,9 @@ export async function parseVariables(ctx, next) {
       return ctx.db.getFieldByPath(`${resourceName}.${fieldPath}`);
     },
     vars: {
+      ctx: {
+        state,
+      },
       // @deprecated
       $system: {
         now: new Date().toISOString(),
