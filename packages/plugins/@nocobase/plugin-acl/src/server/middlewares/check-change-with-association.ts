@@ -162,7 +162,6 @@ async function processValues(
     const recordKey = field.type === 'hasOne' ? targetCollection.model.primaryKeyAttribute : field.targetKey;
 
     const canUpdateAssociation = updateAssociationValues.includes(fieldPath);
-    console.log(canUpdateAssociation);
 
     // Association cannot update → only keep key(s)
     if (!canUpdateAssociation) {
@@ -242,15 +241,19 @@ async function processValues(
 }
 
 export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
-  if (ctx.permission.skip) return next();
-
   const { resourceName, actionName } = ctx.action;
   if (!['create', 'firstOrCreate', 'updateOrCreate', 'update'].includes(actionName)) {
     return next();
   }
+  const roles = ctx.state.currentRoles;
+  if (roles.includes('root')) {
+    return next();
+  }
+  if (ctx.permission.skip) {
+    return next();
+  }
 
   const acl: ACL = ctx.acl;
-  const roles = ctx.state.currentRoles;
   for (const role of roles) {
     const aclRole = acl.getRole(role);
     if (aclRole.snippetAllowed(`${resourceName}:${actionName}`)) {
@@ -275,7 +278,6 @@ export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
     '',
     protectedKeys,
   );
-  console.log(processed);
   ctx.action.params.values = processed;
   await next();
 };

@@ -500,10 +500,9 @@ export async function updateMultipleAssociation(
       : [];
 
     setItems = [...instanceItems, ...validInstances];
-
-    // associate targets in lists1
-    await model[setAccessor](setItems, { transaction, context, individualHooks: true, validate: false });
   }
+  // associate targets in lists1
+  await model[setAccessor](setItems, { transaction, context, individualHooks: true, validate: false });
 
   const newItems = [];
 
