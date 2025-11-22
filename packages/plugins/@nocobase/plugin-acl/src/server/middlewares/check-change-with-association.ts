@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ACL } from '@nocobase/acl';
+import { ACL, NoPermissionError } from '@nocobase/acl';
 import { Context, Next } from '@nocobase/actions';
 import { Database } from '@nocobase/database';
 import _ from 'lodash';
@@ -46,25 +46,32 @@ async function processAssociationChild(
       // No update permission, skip
       return value[recordKey];
     } else {
-      const filteredParams = ctx.acl.filterParams(ctx, target, updateParams.params);
-      const parsedParams = await ctx.acl.parseJsonTemplate(filteredParams, ctx);
-      if (parsedParams.filter) {
-        // permission scope exists, verify the record exists under the scope
-        const repo = ctx.db.getRepository(target);
-        if (!repo) {
+      try {
+        const filteredParams = ctx.acl.filterParams(ctx, target, updateParams.params);
+        const parsedParams = await ctx.acl.parseJsonTemplate(filteredParams, ctx);
+        if (parsedParams.filter) {
+          // permission scope exists, verify the record exists under the scope
+          const repo = ctx.db.getRepository(target);
+          if (!repo) {
+            return value[recordKey];
+          }
+          const record = await repo.findOne({
+            filter: {
+              ...parsedParams.filter,
+              [recordKey]: value[recordKey],
+            },
+          });
+          if (!record) {
+            return value[recordKey];
+          }
+        }
+        return await processValues(ctx, value, updateAssociationValues, updateParams.params, target, fieldPath);
+      } catch (e) {
+        if (e instanceof NoPermissionError) {
           return value[recordKey];
         }
-        const record = await repo.findOne({
-          filter: {
-            ...parsedParams.filter,
-            [recordKey]: value[recordKey],
-          },
-        });
-        if (!record) {
-          return value[recordKey];
-        }
+        throw e;
       }
-      return await processValues(ctx, value, updateAssociationValues, updateParams.params, target, fieldPath);
     }
   }
 

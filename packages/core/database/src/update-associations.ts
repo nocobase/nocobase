@@ -313,18 +313,6 @@ export async function updateSingleAssociation(
     }
   };
 
-  if (isStringOrNumber(value)) {
-    await model[setAccessor](value, { context, transaction });
-    return true;
-  }
-
-  if (value instanceof Model) {
-    await model[setAccessor](value, { context, transaction });
-    model.setDataValue(key, value);
-    return true;
-  }
-
-  const createAccessor = association.accessors.create;
   let dataKey: string;
   let M: ModelStatic<Model>;
   if (association.associationType === 'BelongsTo') {
@@ -336,6 +324,26 @@ export async function updateSingleAssociation(
     dataKey = M.primaryKeyAttribute;
   }
 
+  if (isStringOrNumber(value)) {
+    const instance = await M.findOne({
+      where: {
+        [dataKey]: value,
+      },
+      transaction,
+    });
+    if (instance) {
+      await model[setAccessor](value, { context, transaction });
+    }
+    return true;
+  }
+
+  if (value instanceof Model) {
+    await model[setAccessor](value, { context, transaction });
+    model.setDataValue(key, value);
+    return true;
+  }
+
+  const createAccessor = association.accessors.create;
   if (isStringOrNumber(value[dataKey])) {
     const instance: any = await M.findOne({
       where: {
@@ -444,7 +452,7 @@ export async function updateMultipleAssociation(
 
   value = lodash.castArray(value);
 
-  const setItems = []; // to be setted
+  let setItems = []; // to be setted
   const objectItems = []; // to be added
 
   // iterate item in value
@@ -476,8 +484,35 @@ export async function updateMultipleAssociation(
     }
   }
 
-  // associate targets in lists1
-  await model[setAccessor](setItems, { transaction, context, individualHooks: true, validate: false });
+  if (setItems.length > 0) {
+    const TargetModel = association.target;
+    const pk = TargetModel.primaryKeyAttribute;
+    // @ts-ignore
+    const targetKey = (association as any).targetKey || association.options.targetKey || pk;
+
+    const rawKeys = [];
+    const instanceItems = [];
+
+    for (const item of setItems) {
+      if (item instanceof Model) {
+        instanceItems.push(item);
+      } else if (isStringOrNumber(item)) {
+        rawKeys.push(item);
+      }
+    }
+
+    const validInstances = rawKeys.length
+      ? await TargetModel.findAll({
+          where: { [targetKey]: rawKeys },
+          transaction,
+        })
+      : [];
+
+    setItems = [...instanceItems, ...validInstances];
+
+    // associate targets in lists1
+    await model[setAccessor](setItems, { transaction, context, individualHooks: true, validate: false });
+  }
 
   const newItems = [];
 

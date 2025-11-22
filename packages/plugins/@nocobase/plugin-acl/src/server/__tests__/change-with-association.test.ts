@@ -1062,41 +1062,41 @@ describe('Change with association', async () => {
     });
   });
 
-  // test('associate only, integral', async () => {
-  //   await adminAgent.resource('roles.resources', 'test-role').create({
-  //     values: {
-  //       usingActionsConfig: true,
-  //       name: 'test',
-  //       actions: [
-  //         {
-  //           name: 'create',
-  //           fields: ['name', 'assoc1'],
-  //         },
-  //       ],
-  //     },
-  //   });
-  //
-  //   const user = await db.getRepository('users').create({
-  //     values: {
-  //       roles: ['test-role'],
-  //     },
-  //   });
-  //   const userAgent = await agent.login(user);
-  //   await userAgent.resource('test').create({
-  //     values: {
-  //       name: 'test-1',
-  //       assoc1: [
-  //         {
-  //           name: 'assoc1-1',
-  //           title: 'assoc1 title',
-  //         },
-  //       ],
-  //     },
-  //   });
-  //   const testRecord = await db.getRepository('test').findOne();
-  //   expect(testRecord).toBeDefined();
-  //   expect(testRecord.name).toBe('test-1');
-  //   const assoc1 = await db.getRepository('assoc1').findOne();
-  //   expect(assoc1).toBeFalsy();
-  // });
+  test('associate only, integral', async () => {
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: {
+        usingActionsConfig: true,
+        name: 'test',
+        actions: [
+          {
+            name: 'create',
+            fields: ['name', 'assoc1'],
+          },
+        ],
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+    const userAgent = await agent.login(user);
+    await userAgent.resource('test').create({
+      values: {
+        name: 'test-1',
+        assoc1: [
+          {
+            name: 'assoc1-1',
+            title: 'assoc1 title',
+          },
+        ],
+      },
+    });
+    const testRecord = await db.getRepository('test').findOne();
+    expect(testRecord).toBeDefined();
+    expect(testRecord.name).toBe('test-1');
+    const assoc1 = await db.getRepository('assoc1').findOne();
+    expect(assoc1).toBeFalsy();
+  });
 });
