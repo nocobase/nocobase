@@ -50,5 +50,7 @@
   "Concatenation order field": "连接顺序字段",
   "securityJsCode or serviceHost is required": "securityJsCode 或 serviceHost 是必填",
   "Access key is required": "访问密钥是必填",
-  "Api key is required": "Api key 是必填"
+  "Api key is required": "Api key 是必填",
+  "Map Field & Marker field": "地图字段和标记字段",
+  "Map block settings":"地图区块设置"
 }

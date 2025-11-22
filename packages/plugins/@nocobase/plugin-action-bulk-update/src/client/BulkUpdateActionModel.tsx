@@ -8,9 +8,10 @@
  */
 
 import { ActionModel, ActionSceneEnum, AssignFormModel } from '@nocobase/client';
-import { escapeT, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
+import { tExpr, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import React, { useEffect, useRef } from 'react';
+import { NAMESPACE } from './locale';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
 
@@ -74,7 +75,7 @@ export class BulkUpdateActionModel extends ActionModel<{
   static scene = ActionSceneEnum.collection;
   assignFormUid?: string;
   defaultProps: ButtonProps = {
-    title: escapeT('Bulk update'),
+    title: tExpr('Bulk update'),
     icon: 'EditOutlined',
   };
   getAclActionName() {
@@ -83,7 +84,7 @@ export class BulkUpdateActionModel extends ActionModel<{
 }
 
 BulkUpdateActionModel.define({
-  label: escapeT('Bulk update'),
+  label: tExpr('Bulk update'),
   // 使用函数型 createModelOptions，从父级上下文提取资源信息，直接注入到子模型的 resourceSettings.init
   createModelOptions: (ctx) => {
     const dsKey = ctx.collection.dataSourceKey;
@@ -103,37 +104,37 @@ BulkUpdateActionModel.define({
 
 BulkUpdateActionModel.registerFlow({
   key: SETTINGS_FLOW_KEY,
-  title: escapeT('Action settings'),
+  title: tExpr('Bulk update action settings', { ns: NAMESPACE }),
   // 配置流仅用于收集参数，避免自动执行
   manual: true,
   steps: {
     // 二次确认：复用全局 confirm action，支持开关、标题、内容（含变量选择）
     confirm: {
-      title: escapeT('Secondary confirmation'),
+      title: tExpr('Secondary confirmation'),
       use: 'confirm',
       defaultParams: {
         enable: false,
-        title: escapeT('Bulk update'),
-        content: escapeT('Are you sure you want to perform the Update record action?'),
+        title: tExpr('Bulk update'),
+        content: tExpr('Are you sure you want to perform the Update record action?'),
       },
     },
     updateMode: {
-      title: escapeT('Data will be updated'),
+      title: tExpr('Data will be updated'),
       uiSchema: {
         value: {
           type: 'string',
           'x-decorator': 'FormItem',
           'x-component': 'Radio.Group',
           enum: [
-            { label: escapeT('Selected'), value: 'selected' },
-            { label: escapeT('All'), value: 'all' },
+            { label: tExpr('Selected'), value: 'selected' },
+            { label: tExpr('All'), value: 'all' },
           ],
           default: 'selected',
         },
       },
     },
     assignFieldValues: {
-      title: escapeT('Assign field values'),
+      title: tExpr('Assign field values'),
       uiSchema() {
         return {
           editor: {
@@ -184,6 +185,7 @@ BulkUpdateActionModel.registerFlow({
         const mode = updateModeParams?.value || 'selected';
         if (mode === 'selected') {
           const rows = ctx.blockModel?.resource?.getSelectedRows?.() || [];
+          console.log(ctx.blockModel?.resource?.getSelectedRows?.());
           if (!rows.length) {
             ctx.message.error(ctx.t('Please select the records to be updated'));
             return;

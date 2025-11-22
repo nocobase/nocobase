@@ -10,7 +10,7 @@
 import React from 'react';
 import { FieldModel, TableColumnModel } from '@nocobase/client';
 import { escapeT } from '@nocobase/flow-engine';
-import { MapComponent } from '../../components/MapComponent';
+import { MapComponent } from '../MapComponent';
 
 export const PointReadPretty = (props) => {
   const { displayStyle = 'text', value, collectionField, type } = props;
