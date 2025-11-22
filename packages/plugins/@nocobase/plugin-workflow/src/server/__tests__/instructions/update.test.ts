@@ -13,6 +13,7 @@ import { MockServer } from '@nocobase/test';
 
 import type { WorkflowModel as WorkflowModelType } from '../../types';
 import { EXECUTION_STATUS } from '../../constants';
+import { SequelizeCollectionManager, SequelizeDataSource } from '@nocobase/data-source-manager';
 
 describe('workflow > instructions > update', () => {
   let app: MockServer;
@@ -236,6 +237,106 @@ describe('workflow > instructions > update', () => {
       const p2s = await AnotherPostRepo.find();
       expect(p2s.length).toBe(1);
       expect(p2s[0].title).toBe('t2');
+    });
+  });
+
+  describe('update to trigger other collection event', () => {
+    it('should trigger afterUpdate/afterSave/afterUpdateWithAssociations/afterSaveWithAssociations', async () => {
+      const afterUpdate = vi.fn();
+      const afterSave = vi.fn();
+      const afterUpdateWithAssociations = vi.fn();
+      const afterSaveWithAssociations = vi.fn();
+
+      db.on('posts.afterUpdate', afterUpdate);
+      db.on('posts.afterSave', afterSave);
+      db.on('posts.afterSaveWithAssociations', afterSaveWithAssociations);
+      db.on('posts.afterUpdateWithAssociations', afterUpdateWithAssociations);
+      const n1 = await workflow.createNode({
+        type: 'update',
+        config: {
+          collection: 'posts',
+          params: {
+            filter: {
+              id: '{{$context.data.id}}',
+            },
+            values: {
+              published: true,
+            },
+          },
+        },
+      });
+
+      const post = await PostRepo.create({ values: { title: 't1' } });
+      expect(post.published).toBe(false);
+      expect(afterUpdate).toHaveBeenCalledTimes(0);
+      expect(afterSave).toHaveBeenCalledTimes(1);
+      expect(afterUpdateWithAssociations).toHaveBeenCalledTimes(0);
+      expect(afterSaveWithAssociations).toHaveBeenCalledTimes(1);
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      const [job] = await execution.getJobs();
+      expect(job.result).toBe(1);
+
+      const updatedPost = await PostRepo.findById(post.id);
+      expect(updatedPost.published).toBe(true);
+      expect(afterUpdate).toHaveBeenCalledTimes(1);
+      expect(afterSave).toHaveBeenCalledTimes(2);
+      expect(afterUpdateWithAssociations).toHaveBeenCalledTimes(1);
+      expect(afterSaveWithAssociations).toHaveBeenCalledTimes(2);
+    });
+
+    it('should trigger events on another', async () => {
+      const AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
+      const post = await AnotherPostRepo.create({ values: { title: 't1' } });
+      const p1s = await AnotherPostRepo.find();
+      expect(p1s.length).toBe(1);
+
+      const n1 = await workflow.createNode({
+        type: 'update',
+        config: {
+          collection: 'another:posts',
+          params: {
+            filter: {
+              // @ts-ignore
+              id: post.id,
+            },
+            values: {
+              title: 't2',
+            },
+            individualHooks: true,
+          },
+        },
+      });
+
+      const afterUpdate = vi.fn();
+      const afterSave = vi.fn();
+      const afterUpdateWithAssociations = vi.fn();
+      const afterSaveWithAssociations = vi.fn();
+
+      const anotherDS = app.dataSourceManager.dataSources.get('another') as SequelizeDataSource;
+      const { db: anotherDB } = anotherDS.collectionManager as SequelizeCollectionManager;
+      anotherDB.on('posts.afterUpdate', afterUpdate);
+      anotherDB.on('posts.afterSave', afterSave);
+      anotherDB.on('posts.afterSaveWithAssociations', afterSaveWithAssociations);
+      anotherDB.on('posts.afterUpdateWithAssociations', afterUpdateWithAssociations);
+
+      await PostRepo.create({ values: { title: 't1' } });
+
+      await sleep(500);
+
+      const [execution] = await workflow.getExecutions();
+      expect(execution.status).toBe(EXECUTION_STATUS.RESOLVED);
+
+      const p2s = await AnotherPostRepo.find();
+      expect(p2s.length).toBe(1);
+      expect(p2s[0].title).toBe('t2');
+
+      expect(afterUpdate).toHaveBeenCalledTimes(1);
+      expect(afterSave).toHaveBeenCalledTimes(1);
+      expect(afterUpdateWithAssociations).toHaveBeenCalledTimes(1);
+      expect(afterSaveWithAssociations).toHaveBeenCalledTimes(1);
     });
   });
 });

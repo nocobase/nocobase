@@ -302,6 +302,10 @@ export default class Processor {
             changes.push([`status`, job.status]);
             job.changed('status', false);
           }
+          if (job.changed('meta')) {
+            changes.push([`meta`, JSON.stringify(job.meta ?? null)]);
+            job.changed('meta', false);
+          }
           if (job.changed('result')) {
             changes.push([`result`, JSON.stringify(job.result ?? null)]);
             job.changed('result', false);

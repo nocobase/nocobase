@@ -34,6 +34,7 @@ import CreateInstruction from './instructions/CreateInstruction';
 import DestroyInstruction from './instructions/DestroyInstruction';
 import QueryInstruction from './instructions/QueryInstruction';
 import UpdateInstruction from './instructions/UpdateInstruction';
+import MultiConditionsInstruction from './instructions/MultiConditionsInstruction';
 
 import type { ExecutionModel, WorkflowModel } from './types';
 import WorkflowRepository from './repositories/WorkflowRepository';
@@ -294,6 +295,7 @@ export default class PluginWorkflowServer extends Plugin {
   private initInstructions<T extends Instruction>(more: { [key: string]: T | { new (p: Plugin): T } } = {}) {
     this.registerInstruction('calculation', CalculationInstruction);
     this.registerInstruction('condition', ConditionInstruction);
+    this.registerInstruction('multi-conditions', MultiConditionsInstruction);
     this.registerInstruction('end', EndInstruction);
     this.registerInstruction('create', CreateInstruction);
     this.registerInstruction('destroy', DestroyInstruction);
@@ -365,6 +367,7 @@ export default class PluginWorkflowServer extends Plugin {
         'executions:destroy',
         'flow_nodes:update',
         'flow_nodes:destroy',
+        'flow_nodes:destroyBranch',
         'flow_nodes:test',
         'jobs:get',
         'workflowCategories:*',

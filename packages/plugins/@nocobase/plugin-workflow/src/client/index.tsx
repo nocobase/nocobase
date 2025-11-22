@@ -23,6 +23,7 @@ import { NAMESPACE } from './locale';
 import { Instruction } from './nodes';
 import CalculationInstruction from './nodes/calculation';
 import ConditionInstruction from './nodes/condition';
+import MultiConditionsInstruction from './nodes/multi-conditions';
 import CreateInstruction from './nodes/create';
 import DestroyInstruction from './nodes/destroy';
 import EndInstruction from './nodes/end';
@@ -188,6 +189,8 @@ export default class PluginWorkflowClient extends Plugin {
 
     this.registerInstruction('calculation', CalculationInstruction);
     this.registerInstruction('condition', ConditionInstruction);
+    this.registerInstruction('multi-conditions', MultiConditionsInstruction);
+
     this.registerInstruction('end', EndInstruction);
 
     this.registerInstruction('query', QueryInstruction);

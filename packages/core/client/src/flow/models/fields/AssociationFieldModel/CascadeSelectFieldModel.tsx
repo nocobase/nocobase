@@ -8,7 +8,7 @@
  */
 
 import { Cascader, Space, Button } from 'antd';
-import { debounce, last } from 'lodash';
+import { last } from 'lodash';
 import { CollectionField, EditableItemModel, escapeT, MultiRecordResource } from '@nocobase/flow-engine';
 import { DeleteOutlined, DragOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
@@ -66,6 +66,7 @@ const SortableItem: React.FC<{
     transform: CSS.Transform.toString(transform),
     transition,
     marginBottom: 8,
+    maxWidth: '100%',
   };
   const initOptions = buildTree(transformNestedData(item));
   const popupClassName = `cascade-scroll-${item[fieldNames.value]}`;
@@ -91,26 +92,37 @@ const SortableItem: React.FC<{
         className={css`
           width: 100%;
           display: flex;
-
-          // .ant-space-item:nth-child(1) {
-          //   flex: 0.1;
-          //   display: flex;
-          //   align-items: center;
-          //   cursor: grab;
-          // }
-
           .ant-space-item:nth-child(1) {
             flex: 3;
+            max-width: 96%;
           }
         `}
       >
         {/* <div {...listeners}>
           <DragOutlined style={{ color: 'GrayText' }} />
         </div> */}
+
         <Cascader
           key={id}
           options={options || initOptions}
-          popupClassName={popupClassName}
+          style={{ width: '100%' }}
+          popupClassName={css`
+            .ant-cascader-menu {
+              max-width: 500px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+            }
+            .ant-cascader-menu-item {
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 100%;
+            }
+            .ant-cascader-menu-item-content {
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 100%;
+            }
+          `}
           fieldNames={fieldNames}
           onChange={(value, item) => {
             const val = last(item);
@@ -153,7 +165,10 @@ const DynamicCascadeList: React.FC<Props> = ({ value = [], onChange, options, fi
 
   const handleChange = (index: number, val: any) => {
     const newValue = [...value];
-    newValue[index] = val;
+    if (val) {
+      newValue[index] = val;
+      onChange?.(newValue);
+    }
     onChange?.(newValue);
   };
 
@@ -469,11 +484,11 @@ CascadeSelectListFieldModel.define({
 });
 
 EditableItemModel.bindModelToInterface('CascadeSelectFieldModel', ['m2o', 'o2o', 'oho', 'obo'], {
-  when: (ctx, field) => field.targetCollection.template === 'tree',
+  when: (ctx, field) => field.targetCollection?.template === 'tree',
   isDefault: true,
 });
 
 EditableItemModel.bindModelToInterface('CascadeSelectListFieldModel', ['m2m', 'o2m', 'mbm'], {
-  when: (ctx, field) => field.targetCollection.template === 'tree',
+  when: (ctx, field) => field.targetCollection?.template === 'tree',
   isDefault: true,
 });

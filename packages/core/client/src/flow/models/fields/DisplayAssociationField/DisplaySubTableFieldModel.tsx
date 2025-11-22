@@ -10,7 +10,9 @@
 import { SettingOutlined } from '@ant-design/icons';
 import { AddSubModelButton, tExpr, FlowSettingsButton } from '@nocobase/flow-engine';
 import { Table } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import { css } from '@emotion/css';
+import { isEmpty } from 'lodash';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
@@ -86,6 +88,28 @@ const DisplayTable = (props) => {
     }
     return cols;
   };
+  const handleChange = useCallback(
+    async (pagination, filters, sorter) => {
+      //支持列点击排序
+      if (!isEmpty(sorter)) {
+        const resource = model.context.blockModel.resource;
+        const globalSort = model.props.globalSort;
+        const fieldPath = model.context.collectionField.name;
+        const sort = sorter.order ? (sorter.order === `ascend` ? [sorter.field] : [`-${sorter.field}`]) : globalSort;
+        const sortPath = sort ? `${fieldPath}(sort=${sort})` : fieldPath;
+        const appends = resource.getAppends();
+        const newAppends = appends.map((item) =>
+          new RegExp(`^${fieldPath}\\(sort=[^)]+\\)$`).test(item) || item === fieldPath ? sortPath : item,
+        );
+        if (sorter) {
+          resource.setAppends(newAppends);
+        }
+        await resource.refresh();
+      }
+    },
+    [model],
+  );
+
   return (
     <Table
       tableLayout="fixed"
@@ -95,6 +119,18 @@ const DisplayTable = (props) => {
       dataSource={value}
       columns={getColumns()}
       pagination={pagination}
+      onChange={handleChange}
+      className={css`
+        .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
+          display: inline;
+        }
+        .ant-table-cell-with-append div {
+          display: flex;
+        }
+        .ant-table-column-sorters .ant-table-column-title {
+          overflow: visible;
+        }
+      `}
     />
   );
 };
