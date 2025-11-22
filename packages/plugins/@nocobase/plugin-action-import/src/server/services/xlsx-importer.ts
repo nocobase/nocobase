@@ -328,7 +328,7 @@ export class XlsxImporter extends EventEmitter {
 
       throw new ImportError(`Import failed at row ${handingRowIndex}`, {
         rowIndex: handingRowIndex,
-        rowData: rows[handingRowIndex],
+        rowData: rows[handingRowIndex - (this.options.explain ? 2 : 1)],
         cause: error,
       });
     }
