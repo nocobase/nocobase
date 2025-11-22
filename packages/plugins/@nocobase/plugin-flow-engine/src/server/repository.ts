@@ -227,6 +227,10 @@ export class FlowModelRepository extends Repository {
     return this.doGetJsonSchema(uid, options);
   }
 
+  static optionsToJson(options: any) {
+    return lodash.isPlainObject(options) ? options : JSON.parse(options);
+  }
+
   nodesToSchema(nodes, rootUid) {
     const nodeAttributeSanitize = (node) => {
       const schema = {
@@ -1368,12 +1372,12 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     const subModels: Record<string, any> = {};
 
     for (const child of children) {
-      const { subKey, subType } = child.options;
+      const { subKey, subType } = this.optionsToJson(child.options);
       if (!subKey) continue;
       // 递归处理子节点
       const model = FlowModelRepository.nodesToModel(nodes, child['uid']) || {
         uid: child['uid'],
-        ...child.options,
+        ...this.optionsToJson(child.options),
         sortIndex: child.sort,
       };
       // 保证 sortIndex
@@ -1406,7 +1410,7 @@ WHERE TreeTable.depth = 1 AND  TreeTable.ancestor = :ancestor and TreeTable.sort
     // 7. 返回最终 model
     return {
       uid: rootNode['uid'],
-      ...rootNode.options,
+      ...this.optionsToJson(rootNode.options),
       ...(Object.keys(filteredSubModels).length > 0 ? { subModels: filteredSubModels } : {}),
     };
   }

@@ -9,7 +9,9 @@
 
 import { MockDatabase, MockServer, createMockServer } from '@nocobase/test';
 
-describe('flow sql', async () => {
+describe.skipIf(() => {
+  return process.env.DB_DIALECT !== 'sqlite';
+})('flow sql', async () => {
   let app: MockServer;
   let db: MockDatabase;
   let agent: any;
