@@ -245,14 +245,13 @@ export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
   if (!['create', 'firstOrCreate', 'updateOrCreate', 'update'].includes(actionName)) {
     return next();
   }
+  if (ctx.permission?.skip) {
+    return next();
+  }
   const roles = ctx.state.currentRoles;
   if (roles.includes('root')) {
     return next();
   }
-  if (ctx.permission.skip) {
-    return next();
-  }
-
   const acl: ACL = ctx.acl;
   for (const role of roles) {
     const aclRole = acl.getRole(role);
