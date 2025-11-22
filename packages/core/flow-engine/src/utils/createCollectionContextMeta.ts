@@ -110,7 +110,9 @@ export function createCollectionContextMeta(
 
         // 添加所有字段
         collection.fields.forEach((field) => {
-          properties[field.name] = createFieldMetadata(field);
+          if (field.filterable) {
+            properties[field.name] = createFieldMetadata(field);
+          }
         });
 
         return properties;
