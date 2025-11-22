@@ -228,7 +228,11 @@ describe('m2m array api, bigInt targetKey', () => {
           tags: [{ id: 1 }, { id: 3 }],
         },
       });
-      expect(user.tag_ids).toMatchObject([1, 3]);
+      if (db.sequelize.getDialect() === 'postgres') {
+        expect(user.tag_ids).toMatchObject(['1', '3']);
+      } else {
+        expect(user.tag_ids).toMatchObject([1, 3]);
+      }
       const user2 = await db.getRepository('users').create({
         values: {
           id: 4,
@@ -236,7 +240,12 @@ describe('m2m array api, bigInt targetKey', () => {
           tags: [1, 3],
         },
       });
-      expect(user2.tag_ids).toMatchObject([1, 3]);
+      if (db.sequelize.getDialect() === 'postgres') {
+        expect(user2.tag_ids).toMatchObject(['1', '3']);
+      } else {
+        expect(user2.tag_ids).toMatchObject([1, 3]);
+      }
+
       const user3 = await db.getRepository('users').create({
         values: {
           id: 5,
@@ -244,7 +253,11 @@ describe('m2m array api, bigInt targetKey', () => {
           tags: { id: 1 },
         },
       });
-      expect(user3.tag_ids).toMatchObject([1]);
+      if (db.sequelize.getDialect() === 'postgres') {
+        expect(user3.tag_ids).toMatchObject(['1']);
+      } else {
+        expect(user3.tag_ids).toMatchObject([1]);
+      }
     });
 
     it('should create target when creating belongsToArray', async () => {

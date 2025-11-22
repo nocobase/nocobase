@@ -5,6 +5,70 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.11](https://github.com/nocobase/nocobase/compare/v1.9.10...v1.9.11) - 2025-11-21
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix field interface showing many-to-one instead of one-to-one for belongsTo in external data source configuration ([#7936](https://github.com/nocobase/nocobase/pull/7936)) by @cgyrock
+
+- **[Workflow]** Fixed the issue where updating the task count would unintentionally reset the state of forms being filled out ([#7937](https://github.com/nocobase/nocobase/pull/7937)) by @mytharcher
+
+- **[Collection field: Many to many (array)]** Fix M2M (array) field issues when creating/updating related data ([#7926](https://github.com/nocobase/nocobase/pull/7926)) by @cgyrock
+
+## [v1.9.10](https://github.com/nocobase/nocobase/compare/v1.9.9...v1.9.10) - 2025-11-20
+
+### 🚀 Improvements
+
+- **[Access control]** Reduce the default permissions for the member role ([#7921](https://github.com/nocobase/nocobase/pull/7921)) by @2013xile
+
+- **[Data visualization]** Added Russian language support for plugin interfaces. ([#7676](https://github.com/nocobase/nocobase/pull/7676)) by @sembaev-a-a
+
+- **[Workflow: Webhook]** Add icon for response node type by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix error: Can't resolve 'antd-mobile' and Can't resolve 'antd-mobile-icons' ([#7914](https://github.com/nocobase/nocobase/pull/7914)) by @zhangzhonghe
+
+- **[Access control]** Support data-scope restrictions for association operations. ([#7919](https://github.com/nocobase/nocobase/pull/7919)) by @2013xile
+
+- **[Data source: Main]** Fix the issue where a newly added one-to-many field cannot be selected as a foreign key before restarting the application. ([#7907](https://github.com/nocobase/nocobase/pull/7907)) by @cgyrock
+
+## [v1.9.8](https://github.com/nocobase/nocobase/compare/v1.9.7...v1.9.8) - 2025-11-18
+
+### 🐛 Bug Fixes
+
+- **[Workflow: Custom action event]** Fix the error caused by listening to non-existent external data source events by @mytharcher
+
+- **[Template print]** parse the variables in the filter by @jiannx
+
+- **[Workflow: Approval]** Fix an issue where race conditions occurring during concurrent approval processing by multiple approvers could cause a workflow node to execute more than once by @mytharcher
+
+## [v1.9.7](https://github.com/nocobase/nocobase/compare/v1.9.6...v1.9.7) - 2025-11-17
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where the linkage rule for the approval form is not working ([#7858](https://github.com/nocobase/nocobase/pull/7858)) by @zhangzhonghe
+
+- **[server]** Fix an issue in service-splitting mode where unsubscribed queue messages could not be published ([#7875](https://github.com/nocobase/nocobase/pull/7875)) by @mytharcher
+
+- **[Workflow]**
+  - Fix the error caused by listening to non-existent external data source events ([#7855](https://github.com/nocobase/nocobase/pull/7855)) by @mytharcher
+
+  - Use eventQueue instead of the shared backgroundJob to prevent the shared queue from being incorrectly consumed in service-splitting mode ([#7871](https://github.com/nocobase/nocobase/pull/7871)) by @mytharcher
+
+- **[Workflow: Manual node]** Fix namespace of locale language should use, to show correct content of translation ([#7877](https://github.com/nocobase/nocobase/pull/7877)) by @mytharcher
+
+- **[Access control]** Issue of association operation snippets are not taking effects ([#7876](https://github.com/nocobase/nocobase/pull/7876)) by @2013xile
+
+- **[Workflow: Approval]**
+  - Fix the issue where the page size of loading notification channel is not big enough, and cause the list is not completed loaded by @mytharcher
+
+  - Fix the issue where the linkage rule for the approval form is not working by @zhangzhonghe
+
+  - Fix the date format on the approval list cards in the to-do center to display the complete date and time by @mytharcher
+
+  - Fix a performance issue that occurred when querying the list of approval records during approval submission by @mytharcher
+
 ## [v1.9.6](https://github.com/nocobase/nocobase/compare/v1.9.5...v1.9.6) - 2025-11-12
 
 ### 🐛 Bug Fixes

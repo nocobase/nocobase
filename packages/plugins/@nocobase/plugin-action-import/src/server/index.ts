@@ -17,7 +17,7 @@ export class PluginActionImportServer extends Plugin {
       if (!this.app.db.getRepository('roles')) {
         return;
       }
-      const roleNames = ['admin', 'member'];
+      const roleNames = ['admin'];
       const roles = await this.app.db.getRepository('roles').find({
         filter: {
           name: roleNames,

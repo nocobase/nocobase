@@ -1,0 +1,22 @@
+{
+  "Email": "Электронная почта",
+  "From": "От",
+  "To": "Кому",
+  "CC": "Копия",
+  "BCC": "Скрытая копия",
+  "Add email address": "Добавить адрес электронной почты",
+  "Subject": "Тема",
+  "Content": "Содержание",
+  "Host": "Хост",
+  "Port": "Порт",
+  "Secure": "Безопасный",
+  "Account": "Аккаунт",
+  "Password": "Пароль",
+  "Configure": "Настроить",
+  "The email address that will be used as the sender": "Адрес электронной почты, который будет использоваться как отправитель",
+  "SMTP mail": "SMTP почта",
+  "SMTP server host": "Хост SMTP сервера",
+  "Content type": "Тип содержимого",
+  "Plain text": "Обычный текст",
+  "Transport": "Транспорт"
+}

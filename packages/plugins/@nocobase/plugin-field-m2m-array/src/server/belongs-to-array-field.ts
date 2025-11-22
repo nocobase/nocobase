@@ -8,6 +8,7 @@
  */
 
 import { BaseColumnFieldOptions, BelongsToArrayAssociation, Model, RelationField } from '@nocobase/database';
+import _ from 'lodash';
 
 export const elementTypeMap = {
   nanoid: 'string',
@@ -20,15 +21,34 @@ export class BelongsToArrayField extends RelationField {
     return 'BelongsToArray';
   }
 
-  private setForeignKeyArray = async (model: Model, { values, transaction }) => {
-    const { name, foreignKey, target, targetKey } = this.options;
-    if (!values || values[name] === undefined) {
+  private setForeignKeyArray = async (model: Model, { values, context, transaction, associationKey }) => {
+    const { type, name, foreignKey, target, targetKey } = this.options;
+    if (type !== 'belongsToArray') {
       return;
     }
-    let value: any[] = values[name] || [];
-    if (!Array.isArray(value)) {
-      value = [value];
+    let value: any[] | undefined;
+    let valuesInParams = values;
+    let valuesInCtx = context?.action?.params?.values;
+    if (associationKey) {
+      valuesInParams = values?.[associationKey]?.[name];
+      valuesInCtx = valuesInCtx?.[associationKey]?.[name];
+    } else {
+      valuesInParams = values?.[name];
+      valuesInCtx = valuesInCtx?.[name];
     }
+    if (valuesInParams !== undefined) {
+      value = _.castArray(valuesInParams || []);
+    } else if (valuesInCtx !== undefined) {
+      value = _.castArray(valuesInCtx || []);
+    } else {
+      return;
+    }
+
+    if (value.length === 0) {
+      model.set(foreignKey, []);
+      return;
+    }
+
     const tks = [];
     const items = [];
     for (const item of value) {
@@ -47,10 +67,23 @@ export class BelongsToArrayField extends RelationField {
       transaction,
     });
     tks.push(...instances.map((instance: Model) => instance[targetKey]));
-    const toCreate = items.filter((item) => !item[targetKey] || !tks.includes(item[targetKey]));
+
     const m = this.database.getModel(target);
+
+    const toCreate = items.filter((item) => !item[targetKey] || !tks.includes(item[targetKey]));
     const newInstances = await m.bulkCreate(toCreate, { transaction });
     tks.push(...newInstances.map((instance: Model) => instance[targetKey]));
+
+    const toUpdate = items.filter((item) => item[targetKey] && tks.includes(item[targetKey]));
+    for (const item of toUpdate) {
+      await m.update(item, {
+        where: {
+          [targetKey]: item[targetKey],
+        },
+        transaction,
+      });
+    }
+
     model.set(foreignKey, tks);
   };
 

@@ -1,0 +1,21 @@
+{
+  "1 Day": "1 день",
+  "30 Days": "30 дней",
+  "7 Days": "7 дней",
+  "90 Days": "90 дней",
+  "Add API key": "Добавить ключ API",
+  " Allow only your own roles to be selected": "Разрешить выбор только собственных ролей",
+  "API key created successfully": "Ключ API успешно создан",
+  "API keys": "Ключи API",
+  "Created at": "Создано",
+  "Custom": "Пользовательский",
+  "Delete API key": "Удалить ключ API",
+  "Expiration": "Срок действия",
+  "Key name": "Название ключа",
+  "Keys manager": "Менеджер ключей",
+  "Make sure to copy your personal access key now as you will not be able to see this again.": "Убедитесь, что вы скопировали свой личный ключ доступа сейчас, так как вы не сможете увидеть его снова.",
+  "Never": "Никогда",
+  "Never expires": "Без срока действия",
+  "Role": "Роль",
+  "Role not found": "Роль не найдена"
+  }

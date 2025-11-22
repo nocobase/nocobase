@@ -40,12 +40,7 @@ export function belongsToManyAssociations(instance: Model): Array<BelongsToMany>
     });
 }
 
-export function modelAssociationByKey(
-  instance: Model,
-  key: string,
-): Association & {
-  update?: (instance: Model, value: any, options: UpdateAssociationOptions) => Promise<any>;
-} {
+export function modelAssociationByKey(instance: Model, key: string): Association {
   return modelAssociations(instance)[key] as Association;
 }
 
@@ -240,10 +235,6 @@ export async function updateAssociation(
     return false;
   }
 
-  if (association.update) {
-    return association.update(instance, value, options);
-  }
-
   switch (association.associationType) {
     case 'HasOne':
     case 'BelongsTo':
@@ -314,12 +305,12 @@ export async function updateSingleAssociation(
   };
 
   if (isStringOrNumber(value)) {
-    await model[setAccessor](value, { context, transaction });
+    await model[setAccessor](value, { context, transaction, associationKey: key });
     return true;
   }
 
   if (value instanceof Model) {
-    await model[setAccessor](value, { context, transaction });
+    await model[setAccessor](value, { context, transaction, associationKey: key });
     model.setDataValue(key, value);
     return true;
   }
@@ -358,7 +349,7 @@ export async function updateSingleAssociation(
           delete updateValues[association.foreignKey];
         }
 
-        await instance.update(updateValues, { ...options, transaction });
+        await instance.update(updateValues, { ...options, transaction, associationKey: key });
       }
 
       await updateAssociations(instance, value, {
@@ -376,7 +367,7 @@ export async function updateSingleAssociation(
     values: value,
     operation: 'create',
   });
-  const instance = await model[createAccessor](value, { context, transaction });
+  const instance = await model[createAccessor](value, { context, transaction, associationKey: key });
 
   await updateAssociations(instance, value, {
     ...options,

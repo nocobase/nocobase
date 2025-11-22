@@ -322,4 +322,166 @@ describe('association operate', async () => {
 
     expect(res.status).toBe(200);
   });
+
+  it('should not allow to change associations when outside scope', async () => {
+    await db.getCollection('collections').repository.create({
+      values: {
+        name: 'comments',
+        fields: [
+          {
+            name: 'content',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getCollection('collections').repository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+          },
+          {
+            name: 'comments',
+            type: 'hasMany',
+            target: 'comments',
+            interface: 'linkTo',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getRepository('posts').create({
+      values: {
+        title: 'test-post',
+      },
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test-role',
+      },
+    });
+
+    const scope = await adminAgent.resource('dataSourcesRolesResourcesScopes').create({
+      values: {
+        name: 'posts',
+        resourceName: 'posts',
+        scope: { $and: [{ id: { $eq: 2 } }] },
+      },
+    });
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: {
+        usingActionsConfig: true,
+        name: 'posts',
+        actions: [
+          {
+            name: 'update',
+            fields: ['comments'],
+            scopeId: scope.body.data.id,
+          },
+        ],
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+
+    const agent = await app.agent().login(user);
+
+    const res = await agent.resource('posts.comments', 1).add({
+      values: [],
+    });
+
+    expect(res.status).toBe(403);
+  });
+
+  it('should allow to change associations when under scope', async () => {
+    await db.getCollection('collections').repository.create({
+      values: {
+        name: 'comments',
+        fields: [
+          {
+            name: 'content',
+            type: 'string',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    await db.getCollection('collections').repository.create({
+      values: {
+        name: 'posts',
+        fields: [
+          {
+            name: 'title',
+            type: 'string',
+          },
+          {
+            name: 'comments',
+            type: 'hasMany',
+            target: 'comments',
+            interface: 'linkTo',
+          },
+        ],
+      },
+      context: {},
+    });
+
+    const post = await db.getRepository('posts').create({
+      values: {
+        title: 'test-post',
+      },
+    });
+
+    await db.getRepository('roles').create({
+      values: {
+        name: 'test-role',
+      },
+    });
+
+    const scope = await adminAgent.resource('dataSourcesRolesResourcesScopes').create({
+      values: {
+        name: 'posts',
+        resourceName: 'posts',
+        scope: { $and: [{ id: { $eq: post.id } }] },
+      },
+    });
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: {
+        usingActionsConfig: true,
+        name: 'posts',
+        actions: [
+          {
+            name: 'update',
+            fields: ['comments'],
+            scopeId: scope.body.data.id,
+          },
+        ],
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+
+    const agent = await app.agent().login(user);
+
+    const res = await agent.resource('posts.comments', 1).add({
+      values: [],
+    });
+
+    expect(res.status).toBe(200);
+  });
 });
