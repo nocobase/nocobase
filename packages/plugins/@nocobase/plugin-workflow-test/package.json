@@ -1,8 +1,9 @@
 {
   "name": "@nocobase/plugin-workflow-test",
   "displayName": "Workflow: test kit",
+  "displayName.ru-RU": "Рабочий процесс: Набор тестов",
   "displayName.zh-CN": "工作流：测试工具包",
-  "version": "1.9.7",
+  "version": "1.9.11",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
   "types": "./dist/server/index.d.ts",

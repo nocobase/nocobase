@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.11](https://github.com/nocobase/nocobase/compare/v1.9.10...v1.9.11) - 2025-11-21
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix field interface showing many-to-one instead of one-to-one for belongsTo in external data source configuration ([#7936](https://github.com/nocobase/nocobase/pull/7936)) by @cgyrock
+
+- **[Workflow]** Fixed the issue where updating the task count would unintentionally reset the state of forms being filled out ([#7937](https://github.com/nocobase/nocobase/pull/7937)) by @mytharcher
+
+- **[Collection field: Many to many (array)]** Fix M2M (array) field issues when creating/updating related data ([#7926](https://github.com/nocobase/nocobase/pull/7926)) by @cgyrock
+
+## [v1.9.10](https://github.com/nocobase/nocobase/compare/v1.9.9...v1.9.10) - 2025-11-20
+
+### 🚀 Improvements
+
+- **[Access control]** Reduce the default permissions for the member role ([#7921](https://github.com/nocobase/nocobase/pull/7921)) by @2013xile
+
+- **[Data visualization]** Added Russian language support for plugin interfaces. ([#7676](https://github.com/nocobase/nocobase/pull/7676)) by @sembaev-a-a
+
+- **[Workflow: Webhook]** Add icon for response node type by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix error: Can't resolve 'antd-mobile' and Can't resolve 'antd-mobile-icons' ([#7914](https://github.com/nocobase/nocobase/pull/7914)) by @zhangzhonghe
+
+- **[Access control]** Support data-scope restrictions for association operations. ([#7919](https://github.com/nocobase/nocobase/pull/7919)) by @2013xile
+
+- **[Data source: Main]** Fix the issue where a newly added one-to-many field cannot be selected as a foreign key before restarting the application. ([#7907](https://github.com/nocobase/nocobase/pull/7907)) by @cgyrock
+
+## [v1.9.8](https://github.com/nocobase/nocobase/compare/v1.9.7...v1.9.8) - 2025-11-18
+
+### 🐛 Bug Fixes
+
+- **[Workflow: Custom action event]** Fix the error caused by listening to non-existent external data source events by @mytharcher
+
+- **[Template print]** parse the variables in the filter by @jiannx
+
+- **[Workflow: Approval]** Fix an issue where race conditions occurring during concurrent approval processing by multiple approvers could cause a workflow node to execute more than once by @mytharcher
+
 ## [v1.9.7](https://github.com/nocobase/nocobase/compare/v1.9.6...v1.9.7) - 2025-11-17
 
 ### 🐛 Bug Fixes

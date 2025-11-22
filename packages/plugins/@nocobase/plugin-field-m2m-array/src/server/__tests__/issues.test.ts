@@ -325,6 +325,177 @@ describe('issues', () => {
     expect(res.status).toBe(200);
   });
 
+  test('update m2m array field`s associate data', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'title',
+            type: 'string',
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'username',
+            type: 'string',
+          },
+          {
+            name: 'tags',
+            type: 'belongsToArray',
+            foreignKey: 'tag_ids',
+            target: 'tags',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+    // @ts-ignore
+    await db.getRepository('collections').load();
+    await db.sync();
+    await db.getRepository('tags').create({
+      values: [{ title: 'a' }, { title: 'b' }, { title: 'c' }],
+    });
+    await db.getRepository('users').create({
+      values: { id: 1, username: 'a' },
+    });
+    let user = await db.getRepository('users').findOne({
+      filterByTk: 1,
+    });
+    expect(user.tag_ids).toEqual(null);
+    const res = await agent.resource('users').update({
+      filterByTk: 1,
+      values: {
+        tags: [
+          { id: 1, title: 'a' },
+          { id: 2, title: 'b' },
+        ],
+      },
+    });
+    user = await db.getRepository('users').findOne({
+      filterByTk: 1,
+    });
+    if (db.sequelize.getDialect() === 'postgres') {
+      expect(user.tag_ids).toMatchObject(['1', '2']);
+    } else {
+      expect(user.tag_ids).toMatchObject([1, 2]);
+    }
+    expect(res.status).toBe(200);
+
+    const res2 = await agent.resource('users').update({
+      filterByTk: 1,
+      values: {
+        tags: [
+          { id: 1, title: 'a1' },
+          { id: 2, title: 'b2' },
+        ],
+      },
+    });
+    expect(res2.status).toBe(200);
+    const tags1 = await db.getRepository('tags').findOne({
+      filterByTk: 1,
+    });
+    expect(tags1.title).toEqual('a1');
+    const tags2 = await db.getRepository('tags').findOne({
+      filterByTk: 2,
+    });
+    expect(tags2.title).toEqual('b2');
+  });
+
+  test('should not produce duplicate record when add associate data by m2m array field', async () => {
+    await db.getRepository('collections').create({
+      values: {
+        name: 'tags',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'title',
+            type: 'string',
+          },
+        ],
+      },
+    });
+    await db.getRepository('collections').create({
+      values: {
+        name: 'users',
+        fields: [
+          {
+            name: 'id',
+            type: 'bigInt',
+            autoIncrement: true,
+            primaryKey: true,
+            allowNull: false,
+          },
+          {
+            name: 'username',
+            type: 'string',
+          },
+          {
+            name: 'tags',
+            type: 'belongsToArray',
+            foreignKey: 'tag_ids',
+            target: 'tags',
+            targetKey: 'id',
+          },
+        ],
+      },
+    });
+    // @ts-ignore
+    await db.getRepository('collections').load();
+    await db.sync();
+    await db.getRepository('users').create({
+      values: { id: 1, username: 'a' },
+    });
+    let user = await db.getRepository('users').findOne({
+      filterByTk: 1,
+    });
+    expect(user.tag_ids).toEqual(null);
+    const res = await agent.resource('users').update({
+      filterByTk: 1,
+      values: {
+        tags: [{ __isNewRecord__: true }],
+      },
+    });
+    user = await db.getRepository('users').findOne({
+      filterByTk: 1,
+    });
+    expect(res.status).toBe(200);
+
+    if (db.sequelize.getDialect() === 'postgres') {
+      expect(user.tag_ids).toMatchObject(['1']);
+    } else {
+      expect(user.tag_ids).toMatchObject([1]);
+    }
+
+    const tagsCount = await db.getRepository('tags').count();
+    expect(tagsCount).toEqual(1);
+  });
+
   test('filtering by fields of a relation collection with m2m array field', async () => {
     await db.getRepository('collections').create({
       values: {

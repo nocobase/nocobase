@@ -5,6 +5,44 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.11](https://github.com/nocobase/nocobase/compare/v1.9.10...v1.9.11) - 2025-11-21
+
+### 🐛 修复
+
+- **[client]** 修复外部数据源配置 belongsTo 字段时，field interface 显示为 many to one 而非 one to one 的问题 ([#7936](https://github.com/nocobase/nocobase/pull/7936)) by @cgyrock
+
+- **[工作流]** 修复了更新待办数量时意外导致填写中的表单状态被重置的问题 ([#7937](https://github.com/nocobase/nocobase/pull/7937)) by @mytharcher
+
+- **[数据表字段：多对多 (数组)]** 修复多对多（数组）字段在新增/修改关联数据时的异常行为 ([#7926](https://github.com/nocobase/nocobase/pull/7926)) by @cgyrock
+
+## [v1.9.10](https://github.com/nocobase/nocobase/compare/v1.9.9...v1.9.10) - 2025-11-20
+
+### 🚀 优化
+
+- **[权限控制]** 缩小 member 角色的默认权限 ([#7921](https://github.com/nocobase/nocobase/pull/7921)) by @2013xile
+
+- **[数据可视化]** 为插件界面添加了俄语支持。 ([#7676](https://github.com/nocobase/nocobase/pull/7676)) by @sembaev-a-a
+
+- **[工作流：Webhook 触发器]** 为响应节点增加图标 by @mytharcher
+
+### 🐛 修复
+
+- **[client]** 修复错误： Can't resolve 'antd-mobile' 和 Can't resolve 'antd-mobile-icons' ([#7914](https://github.com/nocobase/nocobase/pull/7914)) by @zhangzhonghe
+
+- **[权限控制]** 关系字段关联操作支持数据范围限制 ([#7919](https://github.com/nocobase/nocobase/pull/7919)) by @2013xile
+
+- **[数据源：主数据库]** 修复增加一对多字段后在重启应用前无法选择外键字段的问题 ([#7907](https://github.com/nocobase/nocobase/pull/7907)) by @cgyrock
+
+## [v1.9.8](https://github.com/nocobase/nocobase/compare/v1.9.7...v1.9.8) - 2025-11-18
+
+### 🐛 修复
+
+- **[工作流：自定义操作事件]** 修复监听不存在的外部数据源事件产生的报错 by @mytharcher
+
+- **[模板打印]** 解析filter中变量 by @jiannx
+
+- **[工作流：审批]** 修复由于多个审批人并发处理审批时的竞态导致的节点重复执行的问题 by @mytharcher
+
 ## [v1.9.7](https://github.com/nocobase/nocobase/compare/v1.9.6...v1.9.7) - 2025-11-17
 
 ### 🐛 修复
