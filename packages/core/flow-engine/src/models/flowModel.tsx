@@ -31,6 +31,7 @@ import type {
   ParamObject,
   ParentFlowModel,
   PersistOptions,
+  RegisteredModelClassName,
   StepDefinition,
   StepParams,
 } from '../types';
@@ -317,6 +318,15 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
     return registry;
   }
+
+  /**
+   * 动态解析实际要实例化的模型类；可在子类中覆盖。
+   * 返回注册名或构造器，支持在 FlowEngine 中继续沿链解析。
+   */
+  static resolveUse?(
+    options: CreateModelOptions,
+    engine: FlowEngine,
+  ): RegisteredModelClassName | ModelConstructor | void;
 
   /**
    * 注册仅当前 FlowModel 类及其子类可用的 Action。
