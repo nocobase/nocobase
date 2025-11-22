@@ -27,7 +27,7 @@ describe('set department owners', () => {
 
   beforeAll(async () => {
     app = await createMockServer({
-      plugins: ['field-sort', 'users', 'departments'],
+      plugins: ['error-handler', 'field-sort', 'users', 'departments'],
     });
     db = app.db;
     repo = db.getRepository('departments');

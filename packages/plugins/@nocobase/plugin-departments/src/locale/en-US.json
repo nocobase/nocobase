@@ -27,9 +27,11 @@
   "Are you sure you want to remove these departments?": "Are you sure you want to remove these departments?",
   "Please select members": "Please select members",
   "Please select departments": "Please select departments",
+  "Please create department first": "Please create department first, then set the owners",
   "The department has sub-departments, please delete them first": "The department has sub-departments, please delete them first",
   "The department has members, please remove them first": "The department has members, please remove them first",
   "Main": "Main",
   "Set as main department": "Set as main department",
+  "Invalid main department, it must be one of the user's departments": "Invalid main department, it must be one of the user's departments",
   "This field is currently not supported for use in form blocks.": "This field is currently not supported for use in form blocks."
 }

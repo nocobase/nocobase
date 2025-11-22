@@ -27,12 +27,13 @@ import {
   setDepartmentOwners,
   setMainDepartment as setMainDepartmentMiddleware,
   updateDepartmentIsLeaf,
+  setDepartmentsInfo,
 } from './middlewares';
-import { setDepartmentsInfo } from './middlewares/set-departments-roles';
 import { DepartmentModel } from './models/department';
 import { DepartmentDataSyncResource } from './department-data-sync-resource';
 import PluginUserDataSyncServer from '@nocobase/plugin-user-data-sync';
 import { DataSource } from '@nocobase/data-source-manager';
+import PluginErrorHandler from '@nocobase/plugin-error-handler';
 
 export class PluginDepartmentsServer extends Plugin {
   afterAdd() {}
@@ -50,6 +51,8 @@ export class PluginDepartmentsServer extends Plugin {
   }
 
   async load() {
+    this.registerErrorHandler();
+
     this.app.resourceManager.registerActionHandlers({
       'users:listExcludeDept': listExcludeDept,
       'users:setMainDepartment': setMainDepartment,
@@ -101,6 +104,28 @@ export class PluginDepartmentsServer extends Plugin {
       const cache = this.app.cache as Cache;
       await cache.del(`departments:${model.get('userId')}`);
     });
+
+    // Validate mainDepartmentId before saving user
+    this.app.db.on('users.beforeSave', async (model, { transaction }) => {
+      const mainDepartmentId = model.get('mainDepartmentId');
+      if (mainDepartmentId) {
+        const userId = model.get('id');
+        if (userId) {
+          const userDepartment = await this.app.db.getRepository('departmentsUsers').findOne({
+            filter: {
+              userId: userId,
+              departmentId: mainDepartmentId,
+            },
+            transaction,
+          });
+
+          if (!userDepartment) {
+            throw new Error(`Invalid main department, it must be one of the user's departments`);
+          }
+        }
+      }
+    });
+
     this.app.on('beforeSignOut', ({ userId }) => {
       this.app.cache.del(`departments:${userId}`);
     });
@@ -151,6 +176,22 @@ export class PluginDepartmentsServer extends Plugin {
   async afterDisable() {}
 
   async remove() {}
+
+  registerErrorHandler() {
+    const errorHandlerPlugin = this.app.pm.get<PluginErrorHandler>('error-handler');
+    errorHandlerPlugin.errorHandler.register(
+      (err) => {
+        return err.message === "Invalid main department, it must be one of the user's departments";
+      },
+      (err, ctx) => {
+        // 翻译错误消息
+        return ctx.throw(
+          400,
+          ctx.i18n.t("Invalid main department, it must be one of the user's departments", { ns: 'departments' }),
+        );
+      },
+    );
+  }
 }
 
 export default PluginDepartmentsServer;
