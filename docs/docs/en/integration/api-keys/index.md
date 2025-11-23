@@ -30,7 +30,7 @@ API Keys provide multiple security benefits: identity verification, usage monito
 
 ### 2.1 Activate the Auth: API Keys Plugin
 
-Ensure that the built-in [Auth: API Keys](https://docs.nocobase.com/handbook/api-keys) plugin is activated. Once enabled, a new API Keys configuration page will appear in the system settings.
+Ensure that the built-in [Auth: API Keys](/plugins/@nocobase/plugin-api-keys/) plugin is activated. Once enabled, a new API Keys configuration page will appear in the system settings.
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
@@ -93,7 +93,7 @@ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJ
 
 ### 3.1 Using the API Documentation Plugin
 
-Open the [API Documentation](https://docs.nocobase.com/handbook/api-doc) plugin to view the request methods, URLs, parameters, and headers for each API endpoint.
+Open the [API Documentation](/plugins/@nocobase/plugin-api-doc/) plugin to view the request methods, URLs, parameters, and headers for each API endpoint.
 
 ![20250303181522](https://static-docs.nocobase.com/20250303181522.png)
 ![20250303181704](https://static-docs.nocobase.com/20250303181704.png)
@@ -217,49 +217,62 @@ curl --location 'http://localhost:13000/api/todos:list' \
 ![20250303184912](https://static-docs.nocobase.com/20250303184912.png)
 ![20250303184953](https://static-docs.nocobase.com/20250303184953.png)
 
-## 4 Displaying Data in an Iframe Block
+## 4 Using API Keys in JS Block
 
-This example demonstrates how to display data retrieved via API Keys in an [Iframe Block](https://docs.nocobase.com/handbook/block-iframe). The following HTML page fetches and displays the to-do list:
+NocoBase 2.0 supports writing native JavaScript code directly in pages using JS blocks. This example demonstrates how to fetch external API data using API Keys.
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo List</title>
-</head>
-<body>
-    <h1>Todo List</h1>
-    <pre id="result"></pre>
+### Creating a JS Block
 
-    <script>
-        fetch('http://localhost:13000/api/todos:list', {
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJpYXQiOjE3NDA5OTY1ODAsImV4cCI6MzMyOTg1OTY1ODB9.tXF2FCAzFNgZFPXqSBbWAfEvWkQwz0-mtKnmOTZT-5M'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('result').textContent = JSON.stringify(data, null, 2);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    </script>
-</body>
-</html>
+In your NocoBase page, add a JS block and use the following code to fetch to-do list data:
+
+```javascript
+// Fetch to-do list data using API Key
+async function fetchTodos() {
+  try {
+    // Show loading message
+    ctx.message.loading('Fetching data...');
+
+    // Load axios library for HTTP requests
+    const axios = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js');
+
+    if (!axios) {
+      ctx.message.error('Failed to load HTTP library');
+      return;
+    }
+
+    // API Key (replace with your actual API key)
+    const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJpYXQiOjE3NDA5OTY1ODAsImV4cCI6MzMyOTg1OTY1ODB9.tXF2FCAzFNgZFPXqSBbWAfEvWkQwz0-mtKnmOTZT-5M';
+
+    // Make API request
+    const response = await axios.get('http://localhost:13000/api/todos:list', {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+
+    // Display results
+    console.log('To-Do List:', response.data);
+    ctx.message.success(`Successfully fetched ${response.data.data.length} items`);
+
+    // You can process the data here
+    // For example: display in a table, update form fields, etc.
+
+  } catch (error) {
+    console.error('Error fetching data:', error);
+    ctx.message.error('Failed to fetch data: ' + error.message);
+  }
+}
+
+// Execute the function
+fetchTodos();
 ```
 
-This code creates a simple HTML page that:
-1. Calls the NocoBase API using the `fetch` API with API Key authentication
-2. Retrieves the to-do list data
-3. Displays the JSON response in a formatted view
+### Key Points
 
-The following animation shows the complete workflow:
-
-![202503031918-fetch](https://static-docs.nocobase.com/202503031918-fetch.gif)
+- **ctx.requireAsync()**: Dynamically loads external libraries (like axios) for HTTP requests
+- **ctx.message**: Displays user notifications (loading, success, error messages)
+- **API Key Authentication**: Pass the API Key in the `Authorization` header with `Bearer` prefix
+- **Response Handling**: Process the returned data as needed (display, transform, etc.)
 
 ## 5 Summary
 
@@ -268,13 +281,11 @@ This guide covered the complete workflow for using API Keys in NocoBase:
 1. **Setup**: Activating the API Keys plugin and creating a test collection
 2. **Configuration**: Creating roles with appropriate permissions and generating API Keys
 3. **Testing**: Validating API Key authentication using Postman and the API Documentation plugin
-4. **Integration**: Displaying retrieved data in an Iframe Block
+4. **Integration**: Using API Keys in JS blocks
 
 ![202503031942-todo](https://static-docs.nocobase.com/202503031942-todo.gif)
 
-For the complete code example and community discussion, visit the [NocoBase forum post](https://forum.nocobase.com/t/todo-list-1-0-how-to-using-api-keys/3315).
 
 **Additional Resources:**
-- [API Keys Plugin Documentation](https://docs.nocobase.com/handbook/api-keys)
-- [API Documentation Plugin](https://docs.nocobase.com/handbook/api-doc)
-- [Iframe Block Documentation](https://docs.nocobase.com/handbook/block-iframe)
+- [API Keys Plugin Documentation](/plugins/@nocobase/plugin-api-keys/)
+- [API Documentation Plugin](/plugins/@nocobase/plugin-api-doc/)

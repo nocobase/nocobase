@@ -189,9 +189,9 @@ Record all Webhook requests for tracking and troubleshooting.
 
 ### How to Debug Webhooks?
 
-1. Use workflow execution logs for detailed information
+1. Check workflow execution records for detailed information about requests and results
 2. Use Webhook testing tools (like Webhook.site) to verify requests
-3. Add logging nodes to record key data
+3. Review key data and error messages in execution records
 
 ### How to Handle Retries?
 
@@ -243,6 +243,6 @@ if (branch === 'main') {
 ## Related Resources
 
 - [Workflow Plugin Documentation](/plugins/@nocobase/plugin-workflow/)
-- [Workflow: Webhook Trigger](/plugins/@nocobase/plugin-workflow-webhook/)
+- [Workflow: Webhook Trigger](/workflow/triggers/webhook)
 - [Workflow: HTTP Request Node](/integration/workflow-http-request/)
 - [API Keys Authentication](/integration/api-keys/)

@@ -12,25 +12,25 @@ NocoBase supports the following authentication protocols and methods through plu
 
 ### Enterprise SSO Protocols
 
-- **[SAML 2.0](/plugins/@nocobase/plugin-auth-saml/)**: XML-based open standard widely used for enterprise identity authentication. Suitable for integration with enterprise Identity Providers (IdP).
+- **[SAML 2.0](/auth-verification/auth-saml/)**: XML-based open standard widely used for enterprise identity authentication. Suitable for integration with enterprise Identity Providers (IdP).
 
-- **[OIDC (OpenID Connect)](/plugins/@nocobase/plugin-auth-oidc/)**: Modern authentication layer built on OAuth 2.0, providing authentication and authorization mechanisms. Supports integration with major identity providers (Google, Azure AD, etc.).
+- **[OIDC (OpenID Connect)](/auth-verification/auth-oidc/)**: Modern authentication layer built on OAuth 2.0, providing authentication and authorization mechanisms. Supports integration with major identity providers (Google, Azure AD, etc.).
 
-- **[CAS (Central Authentication Service)](/plugins/@nocobase/plugin-auth-cas/)**: SSO protocol developed by Yale University, widely adopted in higher education institutions.
+- **[CAS (Central Authentication Service)](/auth-verification/auth-cas/)**: SSO protocol developed by Yale University, widely adopted in higher education institutions.
 
-- **[LDAP](/plugins/@nocobase/plugin-auth-ldap/)**: Lightweight Directory Access Protocol for accessing and maintaining distributed directory information services. Suitable for integration with Active Directory or other LDAP servers.
+- **[LDAP](/auth-verification/auth-ldap/)**: Lightweight Directory Access Protocol for accessing and maintaining distributed directory information services. Suitable for integration with Active Directory or other LDAP servers.
 
 ### Third-Party Platform Authentication
 
-- **[WeCom (WeChat Work)](/plugins/@nocobase/plugin-auth-wecom/)**: Supports WeCom QR code login and in-app seamless authentication.
+- **[WeCom (WeChat Work)](/auth-verification/auth-wecom/)**: Supports WeCom QR code login and in-app seamless authentication.
 
-- **[DingTalk](/plugins/@nocobase/plugin-auth-dingtalk/)**: Supports DingTalk QR code login and in-app seamless authentication.
+- **[DingTalk](/auth-verification/auth-dingtalk/)**: Supports DingTalk QR code login and in-app seamless authentication.
 
 ### Other Authentication Methods
 
-- **[SMS Verification](/plugins/@nocobase/plugin-auth-sms/)**: Mobile phone SMS-based verification code authentication.
+- **[SMS Verification](/auth-verification/auth-sms/)**: Mobile phone SMS-based verification code authentication.
 
-- **[Username/Password](/plugins/@nocobase/plugin-auth/)**: NocoBase's built-in basic authentication method.
+- **[Username/Password](/auth-verification/auth/)**: NocoBase's built-in basic authentication method.
 
 ## Integration Steps
 
@@ -40,11 +40,29 @@ Based on your requirements, locate and install the appropriate authentication pl
 
 ![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
 
+For example, install the SAML 2.0 authentication plugin:
+
+![](https://static-docs.nocobase.com/6a12f3d8073c47532a4f8aac900e4296.png)
+
+Or install the OIDC authentication plugin:
+
+![](https://static-docs.nocobase.com/202411122358790.png)
+
 ### 2. Configure Authentication Method
 
 1. Navigate to **System Settings > User Authentication**
+
+![](https://static-docs.nocobase.com/202411130004459.png)
+
 2. Click **Add Authentication Method**
-3. Select the installed authentication type
+3. Select the installed authentication type (e.g., SAML)
+
+![](https://static-docs.nocobase.com/5076fe56086b7799be308bbaf7c4425d.png)
+
+Or select OIDC:
+
+![](https://static-docs.nocobase.com/1efbde1c0e2f4967efc1c4336be45ca2.png)
+
 4. Configure the required parameters as prompted
 
 ### 3. Configure Identity Provider
@@ -52,7 +70,13 @@ Based on your requirements, locate and install the appropriate authentication pl
 Each authentication protocol requires specific Identity Provider configuration:
 
 - **SAML**: Configure IdP metadata, certificates, etc.
+
+![](https://static-docs.nocobase.com/976b66e589973c322d81dcddd22c6146.png)
+
 - **OIDC**: Configure Client ID, Client Secret, discovery endpoint, etc.
+
+![](https://static-docs.nocobase.com/202411130006341.png)
+
 - **CAS**: Configure CAS server address
 - **LDAP**: Configure LDAP server address, Bind DN, etc.
 - **WeCom/DingTalk**: Configure application credentials, Corp ID, etc.
@@ -63,6 +87,9 @@ After configuration, perform a test login:
 
 1. Log out of the current session
 2. Select the configured SSO method on the login page
+
+![](https://static-docs.nocobase.com/74963865c9d36a294948e6adeb5b24bc.png)
+
 3. Complete the Identity Provider authentication flow
 4. Verify successful login to NocoBase
 
@@ -103,6 +130,6 @@ NocoBase supports configuring multiple authentication methods simultaneously. Us
 
 ## Related Resources
 
-- [Authentication Plugin Documentation](/plugins/@nocobase/plugin-auth/)
+- [Authentication Documentation](/auth-verification/auth/)
 - [API Keys Authentication](/integration/api-keys/)
 - [User and Permission Management](/plugins/@nocobase/plugin-users/)

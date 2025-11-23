@@ -324,7 +324,7 @@ if (!$node.data.data || !$node.data.data.id) {
 ## 相关资源
 
 - [工作流插件文档](/plugins/@nocobase/plugin-workflow/)
-- [工作流：HTTP 请求节点](/plugins/@nocobase/plugin-workflow-request/)
+- [工作流：HTTP 请求节点](/workflow/nodes/request)
 - [工作流：Webhook 触发器](/integration/workflow-webhook/)
 - [API 密钥认证](/integration/api-keys/)
 - [API 文档插件](/plugins/@nocobase/plugin-api-doc/)

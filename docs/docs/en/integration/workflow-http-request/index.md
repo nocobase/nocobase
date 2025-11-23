@@ -324,7 +324,7 @@ These two features complement each other to build a complete system integration 
 ## Related Resources
 
 - [Workflow Plugin Documentation](/plugins/@nocobase/plugin-workflow/)
-- [Workflow: HTTP Request Node](/plugins/@nocobase/plugin-workflow-request/)
+- [Workflow: HTTP Request Node](/workflow/nodes/request)
 - [Workflow: Webhook Trigger](/integration/workflow-webhook/)
 - [API Keys Authentication](/integration/api-keys/)
 - [API Documentation Plugin](/plugins/@nocobase/plugin-api-doc/)

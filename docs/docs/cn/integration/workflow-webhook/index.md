@@ -189,9 +189,9 @@ if (signature !== expectedSignature) {
 
 ### 如何调试 Webhook?
 
-1. 使用工作流执行日志查看详细信息
+1. 查看工作流执行记录了解请求和调用结果的详细信息
 2. 使用 Webhook 测试工具(如 Webhook.site)验证请求
-3. 添加日志节点记录关键数据
+3. 在执行记录中检查关键数据和错误信息
 
 ### 如何处理重试?
 
@@ -243,6 +243,6 @@ if (branch === 'main') {
 ## 相关资源
 
 - [工作流插件文档](/plugins/@nocobase/plugin-workflow/)
-- [工作流：Webhook 触发器](/plugins/@nocobase/plugin-workflow-webhook/)
+- [工作流：Webhook 触发器](/workflow/triggers/webhook)
 - [工作流：HTTP 请求节点](/integration/workflow-http-request/)
 - [API 密钥认证](/integration/api-keys/)

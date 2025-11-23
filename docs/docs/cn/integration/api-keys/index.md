@@ -217,49 +217,62 @@ curl --location 'http://localhost:13000/api/todos:list' \
 ![20250303184912](https://static-docs.nocobase.com/20250303184912.png)
 ![20250303184953](https://static-docs.nocobase.com/20250303184953.png)
 
-## 4 在 Iframe 区块中显示数据
+## 4 在 JS 区块中使用 API 密钥
 
-此示例演示如何在 [Iframe 区块](/plugins/@nocobase/plugin-block-iframe/)中显示通过 API 密钥检索的数据。以下 HTML 页面获取并显示待办事项列表：
+NocoBase 2.0 支持在页面中使用 JS 区块直接编写原生 JavaScript 代码。此示例演示如何使用 API 密钥获取外部 API 数据。
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Todo List</title>
-</head>
-<body>
-    <h1>Todo List</h1>
-    <pre id="result"></pre>
+### 创建 JS 区块
 
-    <script>
-        fetch('http://localhost:13000/api/todos:list', {
-            method: 'GET',
-            headers: {
-                'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJpYXQiOjE3NDA5OTY1ODAsImV4cCI6MzMyOTg1OTY1ODB9.tXF2FCAzFNgZFPXqSBbWAfEvWkQwz0-mtKnmOTZT-5M'
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('result').textContent = JSON.stringify(data, null, 2);
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-    </script>
-</body>
-</html>
+在 NocoBase 页面中添加 JS 区块，使用以下代码获取待办事项数据：
+
+```javascript
+// 使用 API 密钥获取待办事项数据
+async function fetchTodos() {
+  try {
+    // 显示加载提示
+    ctx.message.loading('正在获取数据...');
+
+    // 加载 axios 库用于 HTTP 请求
+    const axios = await ctx.requireAsync('https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js');
+
+    if (!axios) {
+      ctx.message.error('加载 HTTP 库失败');
+      return;
+    }
+
+    // API 密钥（替换为您实际的 API 密钥）
+    const apiKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjEsInJvbGVOYW1lIjoidG9kb3MiLCJpYXQiOjE3NDA5OTY1ODAsImV4cCI6MzMyOTg1OTY1ODB9.tXF2FCAzFNgZFPXqSBbWAfEvWkQwz0-mtKnmOTZT-5M';
+
+    // 发起 API 请求
+    const response = await axios.get('http://localhost:13000/api/todos:list', {
+      headers: {
+        'Authorization': `Bearer ${apiKey}`
+      }
+    });
+
+    // 显示结果
+    console.log('待办事项列表:', response.data);
+    ctx.message.success(`成功获取 ${response.data.data.length} 条数据`);
+
+    // 您可以在此处理数据
+    // 例如：显示到表格、更新表单字段等
+
+  } catch (error) {
+    console.error('获取数据出错:', error);
+    ctx.message.error('获取数据失败: ' + error.message);
+  }
+}
+
+// 执行函数
+fetchTodos();
 ```
 
-此代码创建了一个简单的 HTML 页面：
-1. 使用带 API 密钥认证的 `fetch` API 调用 NocoBase API
-2. 检索待办事项列表数据
-3. 在格式化视图中显示 JSON 响应
+### 关键要点
 
-以下动画展示了完整的工作流程：
-
-![202503031918-fetch](https://static-docs.nocobase.com/202503031918-fetch.gif)
+- **ctx.requireAsync()**: 动态加载外部库（如 axios）用于 HTTP 请求
+- **ctx.message**: 显示用户通知（加载中、成功、错误消息）
+- **API 密钥认证**: 在 `Authorization` 请求头中传递 API 密钥，使用 `Bearer` 前缀
+- **响应处理**: 根据需要处理返回的数据（显示、转换等）
 
 ## 5 总结
 
@@ -268,13 +281,11 @@ curl --location 'http://localhost:13000/api/todos:list' \
 1. **设置**：启用 API 密钥插件并创建测试数据表
 2. **配置**：创建具有适当权限的角色并生成 API 密钥
 3. **测试**：使用 Postman 和 API 文档插件验证 API 密钥认证
-4. **集成**：在 Iframe 区块中显示检索的数据
+4. **集成**：在 JS 区块中使用 API 密钥
 
 ![202503031942-todo](https://static-docs.nocobase.com/202503031942-todo.gif)
 
-有关完整代码示例和社区讨论，请访问 [NocoBase 论坛帖子](https://forum.nocobase.com/t/api-api-key/3314)。
 
 **其他资源：**
 - [API 密钥插件文档](/plugins/@nocobase/plugin-api-keys/)
 - [API 文档插件](/plugins/@nocobase/plugin-api-doc/)
-- [Iframe 区块文档](/plugins/@nocobase/plugin-block-iframe/)
