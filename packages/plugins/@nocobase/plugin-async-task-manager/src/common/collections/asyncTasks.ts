@@ -10,6 +10,8 @@
 export default {
   name: 'asyncTasks',
   autoGenId: false,
+  dumpRules: 'required',
+  migrationRules: ['schema-only'],
   createdAt: true,
   updatedAt: true,
   createdBy: true,
