@@ -873,6 +873,14 @@ export class FlowSettings {
               }
             }
 
+            // 配置变更后立即刷新 beforeRender，避免命中旧缓存导致界面不更新
+            try {
+              model.invalidateFlowCache('beforeRender', true);
+              await model.rerender();
+            } catch (err) {
+              console.warn('FlowSettings: rerender after save failed', err);
+            }
+
             currentView.close();
 
             // 触发保存成功回调

@@ -642,6 +642,8 @@ export class FlowEngine {
       return false;
     }
     const modelInstance = this._modelInstances.get(uid) as FlowModel;
+    // Ensure any cached beforeRender results tied to this uid are cleared before removal.
+    modelInstance.invalidateFlowCache(undefined, true);
     modelInstance.clearForks();
     // 从父模型中移除当前模型的引用
     if (modelInstance.parent?.subModels) {
