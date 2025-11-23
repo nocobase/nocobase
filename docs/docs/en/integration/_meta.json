@@ -27,16 +27,16 @@
   {
     "type": "custom-link",
     "label": "SSO",
-    "link": "/integration/"
+    "link": "/integration/sso/"
   },
   {
     "type": "custom-link",
     "label": "Workflow Webhook",
-    "link": "/integration/"
+    "link": "/integration/workflow-webhook/"
   },
   {
     "type": "custom-link",
     "label": "Workflow HTTP request",
-    "link": "/integration/"
+    "link": "/integration/workflow-http-request/"
   }
 ]
