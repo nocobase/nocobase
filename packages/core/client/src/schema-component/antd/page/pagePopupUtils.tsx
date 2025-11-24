@@ -173,6 +173,26 @@ export const usePopupUtils = (
 
   const setVisibleFromAction = options.setVisible || _setVisibleFromAction;
 
+  const back = useCallback(
+    (num: number) => {
+      // prevent infinite loop
+      if (num > 100) {
+        console.warn('Maximum back navigation attempts reached');
+        return;
+      }
+
+      const prevPath = window.location.pathname;
+      navigate(-1);
+
+      setTimeout(() => {
+        if (window.location.pathname === prevPath) {
+          back(num + 1);
+        }
+      });
+    },
+    [navigate],
+  );
+
   const getNewPathname = useCallback(
     ({
       tabKey,
@@ -312,7 +332,7 @@ export const usePopupUtils = (
     // 1. If there is a previous route in the route stack, navigate back to the previous route.
     // 2. If the popup was opened directly via a URL and there is no previous route in the stack, navigate to the route of the previous popup.
     if (getPopupLayerState(currentLevel)) {
-      navigate(-1);
+      back(0);
     } else {
       navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
     }
@@ -325,6 +345,7 @@ export const usePopupUtils = (
     location?.pathname,
     currentLevel,
     popupParams?.popupuid,
+    back,
   ]);
 
   const changeTab = useCallback(
