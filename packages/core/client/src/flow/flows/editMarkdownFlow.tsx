@@ -42,6 +42,9 @@ export const editMarkdownFlow = defineFlow<FlowModel>({
               return ctx.markdown.edit({
                 ...props,
                 value: props.value || ctx.model.props.value,
+                style: {
+                  padding: 10,
+                },
               });
             },
             description: descriptionContent,
