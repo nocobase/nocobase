@@ -875,6 +875,10 @@ export class FlowSettings {
 
             currentView.close();
 
+            // 配置变更后立即刷新 beforeRender，避免命中旧缓存导致界面不更新
+            model.invalidateFlowCache('beforeRender', true);
+            await model.rerender();
+
             // 触发保存成功回调
             try {
               await onSaved?.();

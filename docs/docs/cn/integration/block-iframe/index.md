@@ -198,3 +198,76 @@ IFrame 区块允许将外部网页或内容嵌入到当前页面中。用户可�
 ![20240603142219](https://static-docs.nocobase.com/20240603142219.png)
 
 更多关于变量内容参考变量文档
+
+## 使用 JS 区块创建 Iframe (NocoBase 2.0)
+
+在 NocoBase 2.0 中,您可以使用 JS 区块动态创建 iframe,从而获得更多控制。这种方法为自定义 iframe 行为和样式提供了更好的灵活性。
+
+### 基础示例
+
+创建一个 JS 区块并使用以下代码创建 iframe:
+
+```javascript
+// 创建一个填充当前区块容器的 iframe
+const iframe = document.createElement('iframe');
+iframe.src = 'https://example.com';
+iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+iframe.style.width = '100%';
+iframe.style.height = '100%';
+iframe.style.border = 'none';
+
+// 替换现有子元素,使 iframe 成为唯一内容
+ctx.element.replaceChildren(iframe);
+```
+
+### 关键要点
+
+- **ctx.element**: 当前 JS 区块容器的 DOM 元素
+- **sandbox 属性**: 控制 iframe 内容的安全限制
+  - `allow-scripts`: 允许 iframe 执行脚本
+  - `allow-same-origin`: 允许 iframe 访问其自身源
+- **replaceChildren()**: 用 iframe 替换容器的所有子元素
+
+### 带加载状态的高级示例
+
+您可以通过加载状态和错误处理来增强 iframe 创建:
+
+```javascript
+// 显示加载提示
+ctx.message.loading('正在加载外部内容...');
+
+try {
+  // 创建 iframe
+  const iframe = document.createElement('iframe');
+  iframe.src = 'https://example.com';
+  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+  iframe.style.width = '100%';
+  iframe.style.height = '100%';
+  iframe.style.border = 'none';
+
+  // 添加加载事件监听器
+  iframe.addEventListener('load', () => {
+    ctx.message.success('内容加载成功');
+  });
+
+  // 添加错误事件监听器
+  iframe.addEventListener('error', () => {
+    ctx.message.error('加载内容失败');
+  });
+
+  // 将 iframe 插入容器
+  ctx.element.replaceChildren(iframe);
+} catch (error) {
+  ctx.message.error('创建 iframe 出错: ' + error.message);
+}
+```
+
+### 安全注意事项
+
+使用 iframe 时,请考虑以下安全最佳实践:
+
+1. **使用 HTTPS**: 尽可能始终通过 HTTPS 加载 iframe 内容
+2. **限制 Sandbox 权限**: 仅启用必要的 sandbox 权限
+3. **内容安全策略**: 配置适当的 CSP 头
+4. **同源策略**: 注意跨域限制
+5. **可信来源**: 仅从可信域加载内容

@@ -194,7 +194,7 @@
   "Branch {{index}}": "分支 {{index}}",
 
   "Multi conditions": "多条件分支",
-  "From left to right, attempt each branch sequentially based on the configured conditions. Only branches that meet the conditions will be executed. If not, the next branch will be attempted. If none of the branches meet the conditions, it can either exit the process or continue to the next node based on configuration.":
+  "From left to right, attempt each branch sequentially based on the configured conditions. Only branches that meet the conditions will be executed. Otherwise, the next branch will be attempted. If none of the branches meet the conditions, it can either exit the process or continue to the next node based on configuration.":
     "从左到右，基于配置的条件，依次尝试每个分支。只有满足条件的分支才会被执行，否则尝试下一个分支。如果没有任何分支满足条件，可以根据配置选择退出流程或继续下一个节点。",
   "When no condition matches": "未满足任何条件时",
   "Continue the workflow": "继续执行工作流",

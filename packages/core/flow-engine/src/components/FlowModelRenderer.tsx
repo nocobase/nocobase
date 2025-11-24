@@ -222,8 +222,10 @@ const FlowModelRendererCore: React.FC<{
     };
 
     // 如果不显示流程设置，直接返回模型内容（可能包装 ErrorBoundary）
-    // 当模型类发生变化（如 replaceModel），强制重挂载内容，规避部分子组件 hooks deps 形态不一致导致的报错
-    const contentKey = (model as any)?.use || (model as any)?.constructor?.name || model.uid;
+    // 当模型类或 use 变化时重挂载内容，规避组件内部状态残留
+    const rawUse = (model as any)?.use;
+    const resolvedName = (model as any)?.constructor?.name || model.uid;
+    const contentKey = typeof rawUse === 'string' ? `${rawUse}:${model.uid}` : `${resolvedName}:${model.uid}`;
 
     if (!showFlowSettings) {
       return wrapWithErrorBoundary(

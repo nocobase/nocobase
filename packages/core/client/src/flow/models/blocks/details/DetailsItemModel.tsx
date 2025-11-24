@@ -124,12 +124,20 @@ export class DetailsItemModel extends DisplayItemModel<{
               get: () => record,
               cache: false,
             });
+            if (this.context.pattern) {
+              fork.context.defineProperty('pattern', {
+                get: () => this.context.pattern,
+              });
+            }
             return fork;
           })()
         : fieldModel;
+    const mergedProps = this.context.pattern
+      ? { ...this.props, pattern: this.context.pattern, disabled: this.context.pattern === 'readPretty' }
+      : this.props;
     const value = getValueWithIndex(record, this.fieldPath, idx);
     return (
-      <FormItem {...this.props} value={value}>
+      <FormItem {...mergedProps} value={value}>
         <FieldModelRenderer model={modelForRender} />
       </FormItem>
     );
@@ -246,7 +254,8 @@ DetailsItemModel.registerFlow({
             ctx,
             targetCollectionField,
           );
-          if (binding.modelName !== ctx.model.subModels.field.use) {
+          const currentUse = ctx.model.subModels.field?.stepParams?.fieldBinding?.use || ctx.model.subModels.field?.use;
+          if (binding.modelName !== currentUse) {
             const fieldUid = ctx.model.subModels['field']['uid'];
             await ctx.engine.destroyModel(fieldUid);
             const model = ctx.model.setSubModel('field', {

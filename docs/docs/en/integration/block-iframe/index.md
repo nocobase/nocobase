@@ -216,3 +216,76 @@ Example: A simple calendar component created with React and Ant Design (antd), u
 
 
 For more information on variables, refer to the Variables documentation.
+
+## Creating Iframes with JS Blocks (NocoBase 2.0)
+
+In NocoBase 2.0, you can use JS blocks to dynamically create iframes with more control. This approach provides better flexibility for customizing iframe behavior and styling.
+
+### Basic Example
+
+Create a JS block and use the following code to create an iframe:
+
+```javascript
+// Create an iframe that fills the current block container
+const iframe = document.createElement('iframe');
+iframe.src = 'https://example.com';
+iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+iframe.style.width = '100%';
+iframe.style.height = '100%';
+iframe.style.border = 'none';
+
+// Replace existing children so the iframe is the only content
+ctx.element.replaceChildren(iframe);
+```
+
+### Key Points
+
+- **ctx.element**: The DOM element of the current JS block container
+- **sandbox attribute**: Controls security restrictions for the iframe content
+  - `allow-scripts`: Allows the iframe to execute scripts
+  - `allow-same-origin`: Allows the iframe to access its own origin
+- **replaceChildren()**: Replaces all children of the container with the iframe
+
+### Advanced Example with Loading State
+
+You can enhance the iframe creation with loading states and error handling:
+
+```javascript
+// Show loading message
+ctx.message.loading('Loading external content...');
+
+try {
+  // Create iframe
+  const iframe = document.createElement('iframe');
+  iframe.src = 'https://example.com';
+  iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin');
+  iframe.style.width = '100%';
+  iframe.style.height = '100%';
+  iframe.style.border = 'none';
+
+  // Add load event listener
+  iframe.addEventListener('load', () => {
+    ctx.message.success('Content loaded successfully');
+  });
+
+  // Add error event listener
+  iframe.addEventListener('error', () => {
+    ctx.message.error('Failed to load content');
+  });
+
+  // Insert iframe into container
+  ctx.element.replaceChildren(iframe);
+} catch (error) {
+  ctx.message.error('Error creating iframe: ' + error.message);
+}
+```
+
+### Security Considerations
+
+When using iframes, consider the following security best practices:
+
+1. **Use HTTPS**: Always load iframe content over HTTPS when possible
+2. **Restrict Sandbox Permissions**: Only enable necessary sandbox permissions
+3. **Content Security Policy**: Configure appropriate CSP headers
+4. **Same-Origin Policy**: Be aware of cross-origin restrictions
+5. **Trusted Sources**: Only load content from trusted domains

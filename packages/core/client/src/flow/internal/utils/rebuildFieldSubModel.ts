@@ -1,0 +1,76 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
+/**
+ * 通用的字段子模型重建工具：
+ * - 保留原有 uid
+ * - 通过 FieldModel 入口 + fieldBinding.use 动态选择目标字段类
+ * - 支持同步父项模式（pattern）
+ * - 重建后触发 beforeRender（useCache: false）
+ */
+import { FieldModel } from '../../models/base/FieldModel';
+import { FlowEngine, FlowModel, StepParams } from '@nocobase/flow-engine';
+
+type FieldBindingParams = {
+  fieldBinding?: { use?: string };
+  fieldSettings?: { init?: unknown };
+};
+
+type FieldStepParams = Record<string, unknown> & FieldBindingParams;
+
+type FieldParentModel = FlowModel & {
+  subModels: FlowModel['subModels'] & {
+    field?: FieldModel;
+  };
+  getFieldSettingsInitParams?: () => unknown;
+};
+
+type RebuildOptions = {
+  parentModel: FieldParentModel;
+  targetUse: string;
+  defaultProps?: Record<string, unknown>;
+  pattern?: string;
+};
+
+export function getFieldBindingUse(fieldModel?: FieldModel): string | undefined {
+  const bindingUse = (fieldModel?.stepParams as FieldStepParams | undefined)?.fieldBinding?.use;
+  return typeof bindingUse === 'string' ? bindingUse : undefined;
+}
+
+export async function rebuildFieldSubModel({ parentModel, targetUse, defaultProps, pattern }: RebuildOptions) {
+  const fieldModel = parentModel.subModels['field'];
+  const fieldUid = fieldModel?.uid;
+  const prevStepParams: FieldStepParams = (fieldModel?.stepParams as FieldStepParams) || {};
+  const prevBindingUse = prevStepParams.fieldBinding?.use;
+
+  const nextStepParams: FieldStepParams = {
+    ...prevStepParams,
+    fieldBinding: { ...prevStepParams.fieldBinding, use: targetUse },
+    fieldSettings: {
+      init: parentModel.getFieldSettingsInitParams?.(),
+    },
+  };
+
+  const engine: FlowEngine = parentModel.flowEngine;
+
+  if (fieldUid) {
+    fieldModel?.invalidateFlowCache('beforeRender', true);
+    engine.removeModel(fieldUid);
+  }
+
+  const subModel = parentModel.setSubModel('field', {
+    uid: fieldUid,
+    use: FieldModel,
+    props: { ...(fieldModel?.props || {}), ...(defaultProps || {}), ...(pattern ? { pattern } : {}) },
+    stepParams: nextStepParams as StepParams,
+  });
+
+  await subModel.dispatchEvent('beforeRender', undefined, { useCache: false });
+  await parentModel.save();
+}

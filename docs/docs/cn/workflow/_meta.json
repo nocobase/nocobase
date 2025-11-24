@@ -92,6 +92,11 @@
           },
           {
             "type": "custom-link",
+            "label": "多条件分支",
+            "link": "/workflow/nodes/multi-conditions"
+          },
+          {
+            "type": "custom-link",
             "label": "循环",
             "link": "/workflow/nodes/loop"
           },
