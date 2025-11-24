@@ -13,9 +13,9 @@ import { ClickableFieldModel } from './ClickableFieldModel';
 
 export class DisplayTextFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
-    const { prefix, suffix } = this.props;
+    const { prefix, suffix, overflowMode } = this.props;
     return (
-      <span>
+      <span style={{ whiteSpace: overflowMode === 'wrap' ? 'pre-line' : 'nowrap' }}>
         {prefix}
         {this.translate(value)}
         {suffix}
