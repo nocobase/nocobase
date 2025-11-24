@@ -38,7 +38,7 @@ NocoBase 通过插件方式支持以下认证协议和方式:
 
 根据您的需求,在插件管理器中找到并安装相应的认证插件。大部分 SSO 认证插件需要单独购买或订阅。
 
-![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
+![auth_sso-2025-11-24-08-26-46](https://static-docs.nocobase.com/auth_sso-2025-11-24-08-26-46.png)
 
 例如,安装 SAML 2.0 认证插件:
 

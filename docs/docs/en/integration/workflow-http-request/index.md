@@ -149,30 +149,25 @@ Body:
 }
 ```
 
-### Example 3: Call Payment Interface
+### Example 3: Query Payment Status
 
 ```javascript
 // Configuration
-URL: https://api.payment.com/v1/charge
-Method: POST
+URL: https://api.payment.com/v1/orders/{{$context.orderId}}/status
+Method: GET
 Headers:
   Authorization: Bearer {{$context.apiKey}}
   Content-Type: application/json
-Body:
-{
-  "amount": {{$context.amount}},
-  "currency": "USD",
-  "order_id": "{{$context.orderId}}",
-  "description": "{{$context.description}}"
-}
 
 // Conditional Logic
-If {{$node.data.data.status}} equals "success"
+If {{$node.data.data.status}} equals "paid"
   - Update order status to "Paid"
   - Send payment success notification
+Else If {{$node.data.data.status}} equals "pending"
+  - Keep order status as "Awaiting Payment"
 Else
   - Log payment failure
-  - Notify administrator
+  - Notify administrator to handle exception
 ```
 
 ### Example 4: Sync Data to CRM

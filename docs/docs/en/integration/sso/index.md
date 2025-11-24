@@ -38,7 +38,7 @@ NocoBase supports the following authentication protocols and methods through plu
 
 Based on your requirements, locate and install the appropriate authentication plugin from the plugin manager. Most SSO authentication plugins require separate purchase or subscription.
 
-![20250301003106](https://static-docs.nocobase.com/20250301003106.png)
+![auth_sso-2025-11-24-08-26-46](https://static-docs.nocobase.com/auth_sso-2025-11-24-08-26-46.png)
 
 For example, install the SAML 2.0 authentication plugin:
 
