@@ -12,7 +12,7 @@
   - [大语言模型](../../ai-employees/workflow/nodes/llm/chat.md)（插件 @nocobase/plugin-workflow-llm 提供）
 - 流程控制
   - [条件判断](./condition.md)
-  - [多条件判断](./multi-conditions.md)
+  - [多条件分支](./multi-conditions.md)
   - [循环](./loop.md)（插件 @nocobase/plugin-workflow-loop 提供）
   - [变量](./variable.md)（插件 @nocobase/plugin-workflow-variable 提供）
   - [并行分支](./parallel.md)（插件 @nocobase/plugin-workflow-parallel 提供）
