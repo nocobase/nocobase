@@ -47,7 +47,6 @@ function DisplayInner(props: { value: string; style?: CSSProperties; loadImages?
   const containerRef = useRef<HTMLDivElement>(null);
   const { wrapSSR, componentCls, hashId } = useStyle();
   const cdn = useCDN();
-  console.log(props.loadImages);
   useEffect(() => {
     if (props.loadImages) {
       Vditor.preview(containerRef.current, props.value ?? '', {
@@ -152,7 +151,6 @@ export const Display = (props) => {
       setImagesLoaded(true); // 只在 Popover 显示时加载图片
     }
   };
-  console.log(imagesLoaded);
   if (props.ellipsis) {
     return (
       <Popover
