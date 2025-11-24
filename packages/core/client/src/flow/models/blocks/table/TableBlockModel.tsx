@@ -845,16 +845,13 @@ const HighPerformanceTable = React.memo(
           .ant-table-cell-ellipsis.ant-table-cell-fix-right-first .ant-table-cell-content {
             display: inline;
           }
-          .ant-table-cell-with-append div {
-            display: flex;
-          }
           .ant-table-column-sorters .ant-table-column-title {
             overflow: visible;
           }
         `}
         defaultExpandAllRows={defaultExpandAllRows}
         expandable={expandable}
-        indentSize={10}
+        indentSize={15}
       />
     );
   },
