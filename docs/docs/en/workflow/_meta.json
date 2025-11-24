@@ -90,6 +90,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Multi-conditions",
+            "link": "/workflow/nodes/multi-conditions"
+          },
+          {
+            "type": "custom-link",
             "label": "Loop",
             "link": "/workflow/nodes/loop"
           },

@@ -12,6 +12,7 @@ From a functional perspective, the currently implemented nodes can be divided in
   - [Large Language Model](../../ai-employees/workflow/nodes/llm/chat.md) (provided by @nocobase/plugin-workflow-llm plugin)
 - Control Flow
   - [Condition](./condition.md)
+  - [Multi-conditions](./multi-conditions.md)
   - [Loop](./loop.md) (provided by @nocobase/plugin-workflow-loop plugin)
   - [Variable](./variable.md) (provided by @nocobase/plugin-workflow-variable plugin)
   - [Parallel Branch](./parallel.md) (provided by @nocobase/plugin-workflow-parallel plugin)
