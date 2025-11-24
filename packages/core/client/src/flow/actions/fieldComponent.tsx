@@ -8,9 +8,10 @@
  */
 
 import { CollectionFieldModel, defineAction, FlowEngineContext, tExpr } from '@nocobase/flow-engine';
-import { FieldModel } from '../models/base/FieldModel';
 import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
 import { buildAssociationOptions } from './displayFieldComponent';
+import type { FieldModel } from '../models/base/FieldModel';
+import { getFieldBindingUse, rebuildFieldSubModel } from '../internal/utils/rebuildFieldSubModel';
 
 export const fieldComponent = defineAction({
   title: tExpr('Field component'),
@@ -73,23 +74,16 @@ export const fieldComponent = defineAction({
     // 找到选中的那条
     const selected = classes.concat(titleFieldClasses).find((model) => model.modelName === params.use);
     if (params.use !== previousParams.use) {
-      const fieldUid = ctx.model.subModels['field']['uid'];
-      await ctx.engine.destroyModel(fieldUid);
-      ctx.model.setSubModel('field', {
-        use: params.use,
-        props:
-          typeof selected.defaultProps === 'function'
-            ? selected.defaultProps(ctx, ctx.collectionField)
-            : selected.defaultProps,
-
-        stepParams: {
-          fieldSettings: {
-            init: (ctx.model as CollectionFieldModel).getFieldSettingsInitParams(),
-          },
-        },
+      const defaultProps =
+        typeof selected?.defaultProps === 'function'
+          ? selected.defaultProps(ctx, ctx.collectionField)
+          : selected?.defaultProps;
+      await rebuildFieldSubModel({
+        parentModel: ctx.model,
+        targetUse: params.use,
+        defaultProps,
+        pattern: ctx.model.getProps().pattern,
       });
-      // 持久化
-      await ctx.model.save();
     }
   },
   defaultParams: (ctx: any) => {
@@ -97,8 +91,10 @@ export const fieldComponent = defineAction({
       ctx.model.getProps().pattern === 'readPretty'
         ? DetailsItemModel.getDefaultBindingByField(ctx, ctx.collectionField)
         : ctx.model.constructor.getDefaultBindingByField(ctx, ctx.collectionField);
+    const fieldModel = ctx.model.subModels.field as FieldModel | undefined;
+    const bindingUse = getFieldBindingUse(fieldModel);
     return {
-      use: (ctx.model.subModels.field as FieldModel).use || defaultModel.modelName,
+      use: bindingUse ?? fieldModel?.use ?? defaultModel.modelName,
     };
   },
   async handler(ctx, params) {

@@ -30,6 +30,7 @@ import type {
   ModelConstructor,
   PersistOptions,
   ResourceType,
+  RegisteredModelClassName,
 } from './types';
 import { isInheritedFrom } from './utils';
 
@@ -458,7 +459,10 @@ export class FlowEngine {
     extra?: { delegateToParent?: boolean; delegate?: FlowContext },
   ): T {
     const { parentId, uid, use: modelClassName, subModels } = options;
-    const ModelClass = typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName;
+    const ModelClass = this._resolveModelClass(
+      typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName,
+      options,
+    );
 
     if (uid && this._modelInstances.has(uid)) {
       return this._modelInstances.get(uid) as T;
@@ -503,6 +507,53 @@ export class FlowEngine {
     modelInstance._createSubModels(options.subModels);
 
     return modelInstance as T;
+  }
+
+  /**
+   * 按类上的 resolveUse 链路解析最终用于实例化的模型类。
+   * 允许模型类根据上下文动态指定实际使用的类，支持多级 resolveUse。
+   */
+  private _resolveModelClass(
+    initial: ModelConstructor | undefined,
+    options: CreateModelOptions,
+  ): ModelConstructor | undefined {
+    let current = initial;
+    const visited = new Set<ModelConstructor>();
+
+    while (current) {
+      if (visited.has(current)) {
+        console.warn(`FlowEngine: resolveUse circular reference detected on '${current.name}'.`);
+        break;
+      }
+      visited.add(current);
+
+      const resolver = (current as any)?.resolveUse as
+        | ((opts: CreateModelOptions, engine: FlowEngine) => RegisteredModelClassName | ModelConstructor | void)
+        | undefined;
+      if (typeof resolver !== 'function') {
+        break;
+      }
+
+      const resolved = resolver(options, this);
+      if (!resolved || resolved === current) {
+        break;
+      }
+
+      let next: ModelConstructor | undefined;
+      if (typeof resolved === 'string') {
+        next = this.getModelClass(resolved);
+        if (!next) {
+          console.warn(`FlowEngine: resolveUse returned '${resolved}' but no model is registered under that name.`);
+          return undefined;
+        }
+      } else {
+        next = resolved;
+      }
+
+      current = next;
+    }
+
+    return current;
   }
 
   /**
@@ -591,6 +642,8 @@ export class FlowEngine {
       return false;
     }
     const modelInstance = this._modelInstances.get(uid) as FlowModel;
+    // Ensure any cached beforeRender results tied to this uid are cleared before removal.
+    modelInstance.invalidateFlowCache(undefined, true);
     modelInstance.clearForks();
     // 从父模型中移除当前模型的引用
     if (modelInstance.parent?.subModels) {
