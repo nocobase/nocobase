@@ -281,6 +281,10 @@ export class PluginAIServer extends Plugin {
     await this.setupBuiltIn();
   }
 
+  async upgrade() {
+    await this.setupBuiltIn();
+  }
+
   async afterEnable() {}
 
   async afterDisable() {}

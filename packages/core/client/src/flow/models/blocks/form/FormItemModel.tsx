@@ -134,15 +134,21 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
             fork.context.defineProperty('fieldKey', {
               get: () => fieldKey,
             });
+            if (this.context.pattern) {
+              fork.context.defineProperty('pattern', {
+                get: () => this.context.pattern,
+              });
+            }
             return fork;
           })()
         : fieldModel;
+    const mergedProps = this.context.pattern ? { ...this.props, pattern: this.context.pattern } : this.props;
     const fieldPath = buildDynamicName(this.props.name, idx);
     this.context.defineProperty('fieldPathArray', {
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
     return (
-      <FormItem {...this.props} name={fieldPath} validateFirst={true}>
+      <FormItem {...mergedProps} name={fieldPath} validateFirst={true}>
         <FieldModelRenderer model={modelForRender} name={fieldPath} />
       </FormItem>
     );
