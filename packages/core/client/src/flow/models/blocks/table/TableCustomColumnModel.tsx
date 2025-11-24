@@ -64,7 +64,7 @@ TableCustomColumnModel.registerFlow({
         },
       },
       defaultParams: {
-        width: 200,
+        width: 150,
       },
       handler(ctx, params) {
         ctx.model.setProps('width', params.width);
