@@ -41,8 +41,8 @@ Connect to external databases and data systems:
 
 ![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
 
-- **[External Databases](/data-sources/)**: Access data from MySQL, PostgreSQL, MariaDB, MSSQL, Oracle, and KingbaseES
-- Real-time data synchronization
+- **[External Databases](/data-sources/)**: Directly connect to MySQL, PostgreSQL, MariaDB, MSSQL, Oracle, and KingbaseES databases
+- Recognize external database table structures and perform CRUD operations on external data directly within NocoBase
 - Unified data management interface
 
 ### Embedded Content

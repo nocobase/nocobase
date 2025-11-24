@@ -41,8 +41,8 @@ NocoBase 提供强大的 API 能力,用于与外部应用程序和服务集成:
 
 ![20240512085558](https://static-docs.nocobase.com/20240512085558.png)
 
-- **[外部数据库](/data-sources/)**: 访问 MySQL、PostgreSQL、MariaDB、MSSQL、Oracle 和 KingbaseES 的数据
-- 实时数据同步
+- **[外部数据库](/data-sources/)**: 直接连接 MySQL、PostgreSQL、MariaDB、MSSQL、Oracle 和 KingbaseES 数据库
+- 识别外部数据库表结构,在 NocoBase 中直接对外部数据进行增删改查操作
 - 统一的数据管理界面
 
 ### 嵌入式内容
