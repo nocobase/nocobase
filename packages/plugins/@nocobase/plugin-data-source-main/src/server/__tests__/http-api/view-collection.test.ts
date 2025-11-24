@@ -35,7 +35,8 @@ describe('view collection', () => {
 
     agent = app.agent();
     testViewName = `view_${uid(6)}`;
-    const createViewName = app.db.options.schema ? `${app.db.options.schema}.${testViewName}` : testViewName;
+    const schema = process.env.COLLECTION_MANAGER_SCHEMA || app.db.options.schema;
+    const createViewName = schema ? `${schema}.${testViewName}` : testViewName;
     const dropSQL = `DROP VIEW IF EXISTS ${createViewName}`;
     await app.db.sequelize.query(dropSQL);
     const viewSQL = (() => {
