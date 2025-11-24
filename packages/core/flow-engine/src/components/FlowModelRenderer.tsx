@@ -149,7 +149,14 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   }) => {
     // hidden 占位由模型自身处理；无需在此注入
 
-    const { loading: pending, error: autoFlowsError } = useApplyAutoFlows(model, inputArgs, { throwOnError: false });
+    // 页面 KeepAlive 时仅在激活状态下执行自动流程，避免隐藏页无意义刷新
+    const pageActive = model.context?.pageActive?.value;
+    const autoFlowReady = pageActive !== false;
+
+    const { loading: pending, error: autoFlowsError } = useApplyAutoFlows(model, inputArgs, {
+      throwOnError: false,
+      ready: autoFlowReady,
+    });
     // 将错误下沉到 model 实例上，供内容层读取（类型安全的 WeakMap 存储）
     setAutoFlowError(model, autoFlowsError || null);
 
