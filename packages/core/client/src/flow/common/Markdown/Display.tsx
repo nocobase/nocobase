@@ -16,12 +16,22 @@ import { useCDN } from './useCDN';
 import useStyle from './style';
 
 function convertToText(markdownText: string) {
-  const content = markdownText;
-  let temp = document.createElement('div');
-  temp.innerHTML = content;
-  const text = temp.innerText;
-  temp = null;
-  return text?.replace(/[\n\r]/g, '') || '';
+  // 使用 DOMParser 来解析 HTML 字符串
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(markdownText, 'text/html'); // 解析为 HTML 文档
+
+  // 提取所有图片标签，并替换为其 src 属性
+  const imgTags = doc.querySelectorAll('img');
+  imgTags.forEach((img) => {
+    const src = img.getAttribute('src');
+    if (src) {
+      img.replaceWith(document.createTextNode(` [Image: ${src}] `)); // 替换图片标签为其 src 属性
+    }
+  });
+
+  // 获取纯文本内容，并去除换行符
+  const text = doc.body.textContent || doc.body.innerText;
+  return text?.replace(/\n|\r/g, ' ') || ''; // 替换换行符为空格
 }
 
 const getContentWidth = (element) => {
@@ -33,35 +43,34 @@ const getContentWidth = (element) => {
   }
 };
 
-function DisplayInner(props: { value: string; style?: CSSProperties }) {
+function DisplayInner(props: { value: string; style?: CSSProperties; loadImages?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { wrapSSR, componentCls, hashId } = useStyle();
   const cdn = useCDN();
-
+  console.log(props.loadImages);
   useEffect(() => {
-    Vditor.preview(containerRef.current, props.value ?? '', {
-      mode: 'light',
-      cdn,
-    });
-    setTimeout(() => {
-      containerRef.current?.querySelectorAll('img').forEach((img: HTMLImageElement) => {
-        img.style.cursor = 'zoom-in';
-        img.addEventListener('click', () => {
-          openCustomPreview(img.src);
+    if (props.loadImages) {
+      Vditor.preview(containerRef.current, props.value ?? '', {
+        mode: 'light',
+        cdn,
+      });
+      setTimeout(() => {
+        containerRef.current?.querySelectorAll('img').forEach((img: HTMLImageElement) => {
+          img.style.cursor = 'zoom-in';
+          img.addEventListener('click', () => {
+            openCustomPreview(img.src);
+          });
         });
-      });
-      // 渲染 <qr-code> 为 AntD QRCode
-      containerRef.current?.querySelectorAll('qr-code').forEach((el) => {
-        const value = el.getAttribute('value') || '';
-        const container = document.createElement('div');
-        el.replaceWith(container);
-
-        // 使用 ReactDOM 渲染 AntD QRCode
-        const root = createRoot(container);
-        root.render(<QRCode value={value} />);
-      });
-    }, 300);
-  }, [props.value]);
+        containerRef.current?.querySelectorAll('qr-code').forEach((el) => {
+          const value = el.getAttribute('value') || '';
+          const container = document.createElement('div');
+          el.replaceWith(container);
+          const root = createRoot(container);
+          root.render(<QRCode value={value} />);
+        });
+      }, 300);
+    }
+  }, [props.value, props.loadImages, cdn]);
 
   return wrapSSR(
     <span className={`${hashId} ${componentCls}`}>
@@ -111,6 +120,7 @@ export const Display = (props) => {
   const cdn = useCDN();
   const [popoverVisible, setPopoverVisible] = useState(false);
   const [ellipsis, setEllipsis] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState(false); // 记录图片是否加载
 
   const [text, setText] = useState('');
 
@@ -136,16 +146,23 @@ export const Display = (props) => {
     return contentWidth > offsetWidth;
   }, [elRef]);
 
+  const handlePopoverOpenChange = (visible) => {
+    setPopoverVisible(visible);
+    if (visible && !imagesLoaded) {
+      setImagesLoaded(true); // 只在 Popover 显示时加载图片
+    }
+  };
+  console.log(imagesLoaded);
   if (props.ellipsis) {
     return (
       <Popover
         open={popoverVisible}
         getPopupContainer={() => document.getElementsByClassName('ant-drawer-content')?.[0] as HTMLElement}
         onOpenChange={(visible) => {
-          setPopoverVisible(ellipsis && visible);
+          handlePopoverOpenChange(ellipsis && visible);
         }}
         overlayStyle={{ maxWidth: 400, maxHeight: 450, overflow: 'auto' }}
-        content={<DisplayInner value={value} />}
+        content={<DisplayInner value={value} loadImages={imagesLoaded} />}
       >
         <div
           ref={elRef}
@@ -189,6 +206,7 @@ export const Display = (props) => {
   }
   if (textOnly) {
     return text as any;
+  } else {
+    return <DisplayInner value={value} loadImages={true} />;
   }
-  return <DisplayInner value={value} />;
 };
