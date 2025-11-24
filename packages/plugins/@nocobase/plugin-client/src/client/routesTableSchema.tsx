@@ -13,6 +13,7 @@ import { useField, useForm } from '@formily/react';
 import {
   CollectionField,
   css,
+  getFlowPageMenuSchema,
   getPageMenuSchema,
   getTabSchema,
   getVariableComponentWithScope,
@@ -216,8 +217,12 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                           return (
                             <Radio.Group {...props}>
                               {!isMobile && <Radio value={NocoBaseDesktopRouteType.group}>{t('Group')}</Radio>}
-                              <Radio value={NocoBaseDesktopRouteType.page}>{t('Classic page (v1)')}</Radio>
-                              <Radio value={NocoBaseDesktopRouteType.flowPage}>{t('Modern page (v2)')}</Radio>
+                              <Radio value={NocoBaseDesktopRouteType.page}>
+                                {t(isMobile ? 'Page' : 'Classic page (v1)')}
+                              </Radio>
+                              {!isMobile && (
+                                <Radio value={NocoBaseDesktopRouteType.flowPage}>{t('Modern page (v2)')}</Radio>
+                              )}
                               <Radio value={NocoBaseDesktopRouteType.link}>{t('Link')}</Radio>
                             </Radio.Group>
                           );
@@ -362,7 +367,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                           dependencies: ['type'],
                           fulfill: {
                             state: {
-                              hidden: '{{$deps[0] !== "page"}}',
+                              hidden: '{{$deps[0] !== "page" && $deps[0] !== "flowPage"}}',
                             },
                           },
                         },
@@ -630,8 +635,11 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                   return {
                     disabled:
                       (recordData.type !== NocoBaseDesktopRouteType.group &&
-                        recordData.type !== NocoBaseDesktopRouteType.page) ||
-                      (!recordData.enableTabs && recordData.type === NocoBaseDesktopRouteType.page),
+                        recordData.type !== NocoBaseDesktopRouteType.page &&
+                        recordData.type !== NocoBaseDesktopRouteType.flowPage) ||
+                      (!recordData.enableTabs &&
+                        (recordData.type === NocoBaseDesktopRouteType.page ||
+                          recordData.type === NocoBaseDesktopRouteType.flowPage)),
                     openMode: 'drawer',
                   };
                 },
@@ -658,7 +666,9 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                             'x-component': (props) => {
                               const { t } = useTranslation();
                               const recordData = useCollectionRecordData();
-                              const isPage = recordData.type === NocoBaseDesktopRouteType.page;
+                              const isPage =
+                                recordData.type === NocoBaseDesktopRouteType.page ||
+                                recordData.type === NocoBaseDesktopRouteType.flowPage;
                               const isGroup = recordData.type === NocoBaseDesktopRouteType.group;
                               const defaultValue = useMemo(() => {
                                 if (isPage) {
@@ -676,11 +686,13 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                                     </Radio>
                                   )}
                                   <Radio value={NocoBaseDesktopRouteType.page} disabled={!isGroup}>
-                                    {t('Page')}
+                                    {t(isMobile ? 'Page' : 'Classic page (v1)')}
                                   </Radio>
-                                  <Radio value={NocoBaseDesktopRouteType.flowPage} disabled={!isGroup}>
-                                    {t('Flow Page')}
-                                  </Radio>
+                                  {!isMobile && (
+                                    <Radio value={NocoBaseDesktopRouteType.flowPage} disabled={!isGroup}>
+                                      {t('Modern page (v2)')}
+                                    </Radio>
+                                  )}
                                   <Radio value={NocoBaseDesktopRouteType.link} disabled={!isGroup}>
                                     {t('Link')}
                                   </Radio>
@@ -830,7 +842,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                               dependencies: ['type'],
                               fulfill: {
                                 state: {
-                                  hidden: '{{$deps[0] !== "page"}}',
+                                  hidden: '{{$deps[0] !== "page" && $deps[0] !== "flowPage"}}',
                                 },
                               },
                             },
@@ -1120,7 +1132,7 @@ export const createRoutesTableSchema = (collectionName: string, basename: string
                               dependencies: ['type'],
                               fulfill: {
                                 state: {
-                                  hidden: '{{$deps[0] !== "page"}}',
+                                  hidden: '{{$deps[0] !== "page" && $deps[0] !== "flowPage"}}',
                                 },
                               },
                             },
@@ -1263,7 +1275,9 @@ function useCreateRouteSchema(isMobile: boolean) {
     async ({ type }: { type: NocoBaseDesktopRouteType }) => {
       const pageSchemaUid = uid();
       const tabSchemaName = uid();
-      const tabSchemaUid = type === NocoBaseDesktopRouteType.page ? uid() : undefined;
+      const tabSchemaUid = [NocoBaseDesktopRouteType.page, NocoBaseDesktopRouteType.flowPage].includes(type)
+        ? uid()
+        : undefined;
 
       const typeToSchema = {
         [NocoBaseDesktopRouteType.page]: isMobile
@@ -1273,6 +1287,7 @@ function useCreateRouteSchema(isMobile: boolean) {
               tabSchemaUid,
               tabSchemaName,
             }),
+        [NocoBaseDesktopRouteType.flowPage]: getFlowPageMenuSchema({ pageSchemaUid }),
       };
 
       if (!typeToSchema[type]) {
@@ -1333,7 +1348,7 @@ function TypeTag(props) {
   const valueMap = {
     [NocoBaseDesktopRouteType.group]: t('Group'),
     [NocoBaseDesktopRouteType.page]: t('Page'),
-    [NocoBaseDesktopRouteType.flowPage]: t('Flow Page'),
+    [NocoBaseDesktopRouteType.flowPage]: t('Page (v2)'),
     [NocoBaseDesktopRouteType.link]: t('Link'),
     [NocoBaseDesktopRouteType.tabs]: t('Tab'),
   };
