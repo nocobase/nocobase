@@ -54,6 +54,16 @@ import { FlowErrorFallback } from './FlowErrorFallback';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
 
+// 微任务调度，避免短时间内的重复响应式更新导致组件重复挂载
+const scheduleReactiveUpdate = (updater: () => void) => {
+  const scheduler = (globalThis as any)?.queueMicrotask;
+  if (typeof scheduler === 'function') {
+    scheduler(updater);
+    return;
+  }
+  return Promise.resolve().then(updater);
+};
+
 export interface FlowModelRendererProps {
   model?: FlowModel;
   uid?: string;
@@ -162,6 +172,9 @@ const FlowModelRendererWithAutoFlows: React.FC<{
       </FlowModelProvider>
     );
   },
+  {
+    scheduler: scheduleReactiveUpdate,
+  },
 );
 
 // 移除不带 beforeRender 执行的渲染器，统一触发 beforeRender 事件
@@ -221,52 +234,44 @@ const FlowModelRendererCore: React.FC<{
       return <>{rendered}</>;
     };
 
-    // 如果不显示流程设置，直接返回模型内容（可能包装 ErrorBoundary）
     // 当模型类或 use 变化时重挂载内容，规避组件内部状态残留
     const rawUse = (model as any)?.use;
     const resolvedName = (model as any)?.constructor?.name || model.uid;
     const contentKey = typeof rawUse === 'string' ? `${rawUse}:${model.uid}` : `${resolvedName}:${model.uid}`;
 
-    if (!showFlowSettings) {
-      return wrapWithErrorBoundary(
-        <div key={contentKey}>
-          <ContentOrError />
-        </div>,
-      );
-    }
+    const settingsEnabled = !!showFlowSettings;
+    const settingsConfig = _.isObject(showFlowSettings) ? showFlowSettings : undefined;
+    const content = wrapWithErrorBoundary(
+      <div key={contentKey}>
+        <ContentOrError />
+      </div>,
+    );
 
     // 根据 flowSettingsVariant 包装相应的设置组件
     switch (flowSettingsVariant) {
       case 'dropdown':
         return (
           <FlowsFloatContextMenu
+            enabled={settingsEnabled}
             showTitle={showTitle}
             model={model}
             showDeleteButton={!hideRemoveInSettings}
-            showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
-            showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
-            showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
+            showBackground={settingsConfig?.showBackground}
+            showBorder={settingsConfig?.showBorder}
+            showDragHandle={settingsConfig?.showDragHandle}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
-            toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
-            toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
+            toolbarStyle={settingsConfig?.style}
+            toolbarPosition={settingsConfig?.toolbarPosition}
           >
-            {wrapWithErrorBoundary(
-              <div key={contentKey}>
-                <ContentOrError />
-              </div>,
-            )}
+            {content}
           </FlowsFloatContextMenu>
         );
 
       case 'contextMenu':
         return (
-          <FlowsContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>
-            {wrapWithErrorBoundary(
-              <div key={contentKey}>
-                <ContentOrError />
-              </div>,
-            )}
+          <FlowsContextMenu model={model} enabled={settingsEnabled} showDeleteButton={!hideRemoveInSettings}>
+            {content}
           </FlowsContextMenu>
         );
 
@@ -286,28 +291,26 @@ const FlowModelRendererCore: React.FC<{
         );
         return (
           <FlowsFloatContextMenu
+            enabled={settingsEnabled}
             showTitle={showTitle}
             model={model}
             showDeleteButton={!hideRemoveInSettings}
-            showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
-            showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
-            showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
+            showBackground={settingsConfig?.showBackground}
+            showBorder={settingsConfig?.showBorder}
+            showDragHandle={settingsConfig?.showDragHandle}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
-            toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
-            toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
+            toolbarStyle={settingsConfig?.style}
+            toolbarPosition={settingsConfig?.toolbarPosition}
           >
-            {wrapWithErrorBoundary(
-              <div key={contentKey}>
-                <ContentOrError />
-              </div>,
-            )}
+            {content}
           </FlowsFloatContextMenu>
         );
     }
   },
   {
     displayName: 'FlowModelRendererCore',
+    scheduler: scheduleReactiveUpdate,
   },
 );
 
