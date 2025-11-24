@@ -8,7 +8,8 @@
  */
 
 import { defineAction, tExpr } from '@nocobase/flow-engine';
-import { FieldModel } from '../models/base/FieldModel';
+import type { FieldModel } from '../models/base/FieldModel';
+import { getFieldBindingUse, rebuildFieldSubModel } from '../internal/utils/rebuildFieldSubModel';
 
 export function buildAssociationOptions(ctx: any, itemModel, titleField?: string) {
   const { collectionField } = ctx;
@@ -71,30 +72,28 @@ export const displayFieldComponent = defineAction({
     // 找到选中的那条
     const selected = classes.concat(titleFieldClasses).find((model) => model.modelName === params.use);
     if (params.use !== previousParams.use) {
-      const fieldUid = ctx.model.subModels['field']['uid'];
-      await ctx.engine.destroyModel(fieldUid);
-      console.log(params.use);
-      ctx.model.setSubModel('field', {
-        use: params.use,
-        props: selected?.defaultProps,
-        stepParams: {
-          fieldSettings: {
-            init: (ctx.model as any).getFieldSettingsInitParams(),
-          },
-        },
+      await rebuildFieldSubModel({
+        parentModel: ctx.model,
+        targetUse: params.use,
+        defaultProps:
+          typeof selected?.defaultProps === 'function'
+            ? selected.defaultProps(ctx, ctx.collectionField)
+            : selected?.defaultProps,
+        pattern: ctx.model.getProps().pattern,
       });
-      // 持久化
-      await ctx.model.save();
     }
   },
   defaultParams: (ctx: any) => {
     const defaultModel = ctx.model.constructor.getDefaultBindingByField(ctx, ctx.collectionField);
+    const fieldModel = ctx.model.subModels.field as FieldModel | undefined;
+    const bindingUse = getFieldBindingUse(fieldModel);
     return {
-      use: (ctx.model.subModels.field as FieldModel)?.use || defaultModel.modelName,
+      use: bindingUse ?? fieldModel?.use ?? defaultModel.modelName,
     };
   },
   async handler(ctx, params) {
-    if (params.use !== ctx.model.subModels.field.use) {
+    const bindingUse = getFieldBindingUse(ctx.model.subModels.field as FieldModel | undefined);
+    if (params.use !== bindingUse) {
       ctx.model.setStepParams(ctx.flowKey, 'model', { use: params.use });
     }
     // if (!params.use) {
