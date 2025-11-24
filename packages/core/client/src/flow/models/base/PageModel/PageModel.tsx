@@ -208,29 +208,29 @@ PageModel.registerFlow({
       },
       async handler(ctx, params) {
         ctx.model.setProps('displayTitle', params.displayTitle);
-        if (!ctx.model.context.closable) {
+        if (ctx.model.context.closable) {
+          ctx.model.setProps('title', params.title ? ctx.t(params.title) : null);
+        } else {
           const routeTitle = (ctx.model.context as any)?.currentRoute?.title;
           ctx.model.setProps('title', ctx.t(params.title || routeTitle));
-        } else {
-          ctx.model.setProps('title', params.title ? ctx.t(params.title) : null);
         }
         ctx.model.setProps('enableTabs', params.enableTabs);
 
-        if (ctx.view.type !== 'embed') {
+        if (ctx.view.type === 'embed') {
           ctx.model.setProps('headerStyle', {
-            backgroundColor: 'var(--colorBgLayout)',
+            backgroundColor: 'var(--colorBgContainer)',
           });
           ctx.model.setProps('tabBarStyle', {
-            backgroundColor: 'var(--colorBgLayout)',
+            backgroundColor: 'var(--colorBgContainer)',
             paddingInline: 16,
             marginBottom: 0,
           });
         } else {
           ctx.model.setProps('headerStyle', {
-            backgroundColor: 'var(--colorBgContainer)',
+            backgroundColor: 'var(--colorBgLayout)',
           });
           ctx.model.setProps('tabBarStyle', {
-            backgroundColor: 'var(--colorBgContainer)',
+            backgroundColor: 'var(--colorBgLayout)',
             paddingInline: 16,
             marginBottom: 0,
           });

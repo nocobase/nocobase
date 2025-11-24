@@ -36,8 +36,9 @@ When multiple condition branches exist, click the trash icon on the right of a b
 ![20251123223127](https://static-docs.nocobase.com/20251123223127.png)
 
 :::info{title=Note}
-- Deleting a branch will also delete all nodes within it; please proceed with caution.
-- The "Else" branch is a built-in branch and cannot be deleted.
+Deleting a branch will also delete all nodes within it; please proceed with caution.
+
+The "Else" branch is a built-in branch and cannot be deleted.
 :::
 
 ## Node Configuration

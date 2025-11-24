@@ -166,7 +166,7 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
     return (value, record, index) => (
       <div
         className={css`
-          width: ${this.props.width - 8}px;
+          max-width: ${this.props.width - 8}px;
           text-overflow: ellipsis;
           white-space: nowrap;
           overflow: hidden;

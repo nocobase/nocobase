@@ -80,7 +80,7 @@ const Edit = (props) => {
       lang,
       cache: { enable: false },
       undoDelay: 0,
-      mode: 'sv', // 禁用预览
+      mode: 'wysiwyg', // 禁用预览
       toolbar: toolbarConfig,
       fullscreen: { index: 1200 },
       cdn,

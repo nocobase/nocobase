@@ -47,6 +47,9 @@ export function LabelByField(props: Readonly<LabelByFieldProps>) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
   const field: any = currentModel.subModels.field as FlowModel;
+  if (!field) {
+    return;
+  }
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
