@@ -9,7 +9,7 @@
 
 import { ISchema, useFieldSchema } from '@formily/react';
 import _ from 'lodash';
-import { useCallback, useContext, useRef } from 'react';
+import { useCallback, useContext } from 'react';
 import { useLocationNoUpdate, useNavigateNoUpdate } from '../../../application';
 import { useTableBlockContextBasicValue } from '../../../block-provider/TableBlockProvider';
 import {
@@ -170,7 +170,6 @@ export const usePopupUtils = (
   );
   const blockData = useDataBlockRequestData();
   const tableBlockContextBasicValue = useTableBlockContextBasicValue() || ({} as any);
-  const historyLength = useRef<number>(window.history.length);
 
   const setVisibleFromAction = options.setVisible || _setVisibleFromAction;
 
@@ -278,7 +277,6 @@ export const usePopupUtils = (
         }
         navigate(withSearchParams(`${url}${pathname}`));
         setPopupLayerState(nextLevel, true);
-        historyLength.current = window.history.length;
       } else {
         console.error(
           `[NocoBase] The popup schema is invalid, please check the schema: \n${JSON.stringify(schema, null, 2)}`,
@@ -311,14 +309,7 @@ export const usePopupUtils = (
       return setVisibleFromAction?.(false);
     }
 
-    // 1. If there is a previous route in the route stack, navigate back to the previous route.
-    // 2. If the popup was opened directly via a URL and there is no previous route in the stack, navigate to the route of the previous popup.
-    if (getPopupLayerState(currentLevel)) {
-      const num = historyLength.current - window.history.length - 1;
-      navigate(num >= 0 ? -1 : num);
-    } else {
-      navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
-    }
+    navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
     removePopupLayerState(currentLevel);
     popupParams?.popupuid && deletePopupContext(popupParams.popupuid);
   }, [
