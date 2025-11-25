@@ -40,22 +40,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   private hasBeforeRenderRun = false;
 
   onActive() {
-    // 首次进入由 beforeRender 触发刷新；后续激活时再主动 refresh
-    if (this.hasBeforeRenderRun) {
-      this.resource?.refresh();
-    }
-  }
-
-  async onDispatchEventEnd(
-    eventName: string,
-    options?: DispatchEventOptions,
-    inputArgs?: Record<string, any>,
-    results?: any[],
-  ) {
-    if (eventName === 'beforeRender') {
-      this.hasBeforeRenderRun = true;
-    }
-    return super.onDispatchEventEnd?.(eventName, options, inputArgs, results);
+    this.resource?.refresh();
   }
 
   /**

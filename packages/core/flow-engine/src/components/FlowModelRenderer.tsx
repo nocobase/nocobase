@@ -228,44 +228,52 @@ const FlowModelRendererCore: React.FC<{
       return <>{rendered}</>;
     };
 
+    // 如果不显示流程设置，直接返回模型内容（可能包装 ErrorBoundary）
     // 当模型类或 use 变化时重挂载内容，规避组件内部状态残留
     const rawUse = (model as any)?.use;
     const resolvedName = (model as any)?.constructor?.name || model.uid;
     const contentKey = typeof rawUse === 'string' ? `${rawUse}:${model.uid}` : `${resolvedName}:${model.uid}`;
 
-    const settingsEnabled = !!showFlowSettings;
-    const settingsConfig = _.isObject(showFlowSettings) ? showFlowSettings : undefined;
-    const content = wrapWithErrorBoundary(
-      <div key={contentKey}>
-        <ContentOrError />
-      </div>,
-    );
+    if (!showFlowSettings) {
+      return wrapWithErrorBoundary(
+        <div key={contentKey}>
+          <ContentOrError />
+        </div>,
+      );
+    }
 
     // 根据 flowSettingsVariant 包装相应的设置组件
     switch (flowSettingsVariant) {
       case 'dropdown':
         return (
           <FlowsFloatContextMenu
-            enabled={settingsEnabled}
             showTitle={showTitle}
             model={model}
             showDeleteButton={!hideRemoveInSettings}
-            showBackground={settingsConfig?.showBackground}
-            showBorder={settingsConfig?.showBorder}
-            showDragHandle={settingsConfig?.showDragHandle}
+            showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
+            showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
+            showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
-            toolbarStyle={settingsConfig?.style}
-            toolbarPosition={settingsConfig?.toolbarPosition}
+            toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
+            toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
           >
-            {content}
+            {wrapWithErrorBoundary(
+              <div key={contentKey}>
+                <ContentOrError />
+              </div>,
+            )}
           </FlowsFloatContextMenu>
         );
 
       case 'contextMenu':
         return (
-          <FlowsContextMenu model={model} enabled={settingsEnabled} showDeleteButton={!hideRemoveInSettings}>
-            {content}
+          <FlowsContextMenu model={model} showDeleteButton={!hideRemoveInSettings}>
+            {wrapWithErrorBoundary(
+              <div key={contentKey}>
+                <ContentOrError />
+              </div>,
+            )}
           </FlowsContextMenu>
         );
 
@@ -285,19 +293,22 @@ const FlowModelRendererCore: React.FC<{
         );
         return (
           <FlowsFloatContextMenu
-            enabled={settingsEnabled}
             showTitle={showTitle}
             model={model}
             showDeleteButton={!hideRemoveInSettings}
-            showBackground={settingsConfig?.showBackground}
-            showBorder={settingsConfig?.showBorder}
-            showDragHandle={settingsConfig?.showDragHandle}
+            showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
+            showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
+            showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
-            toolbarStyle={settingsConfig?.style}
-            toolbarPosition={settingsConfig?.toolbarPosition}
+            toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
+            toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
           >
-            {content}
+            {wrapWithErrorBoundary(
+              <div key={contentKey}>
+                <ContentOrError />
+              </div>,
+            )}
           </FlowsFloatContextMenu>
         );
     }

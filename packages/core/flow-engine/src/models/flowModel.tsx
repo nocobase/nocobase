@@ -481,6 +481,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     }
   }
 
+  /**
+   * 设置FlowEngine实例
+   * @param {FlowEngine} flowEngine FlowEngine实例
+   */
+  setFlowEngine(flowEngine: FlowEngine): void {
+    // this.flowEngine = flowEngine;
+  }
+
   static define(meta: FlowModelMeta) {
     modelMetas.set(this, meta);
   }
@@ -871,8 +879,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       // 如果需要跳过响应式包装（例如返回渲染函数），也需要包一层以处理 hidden/config 逻辑
       if (this.shouldSkipReactiveWrapping()) {
         const wrappedNonReactive = function (this: any) {
+          const isConfigMode = !!this?.flowEngine?.flowSettings?.enabled;
           if (this.hidden) {
-            const isConfigMode = !!this?.flowEngine?.flowSettings?.enabled;
             if (!isConfigMode) return null;
             const rendered = this.renderHiddenInConfig?.();
             const Cls = this.constructor as typeof FlowModel;
@@ -925,8 +933,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           }, [renderTarget]);
 
           // 处理 hidden 渲染逻辑：
+          const isConfigMode = !!modelInstance?.flowEngine?.flowSettings?.enabled;
           if (modelInstance.hidden) {
-            const isConfigMode = !!modelInstance?.flowEngine?.flowSettings?.enabled;
             if (!isConfigMode) {
               return null;
             }
