@@ -17,6 +17,7 @@ import {
   FlowModelContext,
   MultiRecordResource,
   SingleRecordResource,
+  DispatchEventOptions,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { createDefaultCollectionBlockTitle } from '../../internal/utils/blockUtils';
@@ -33,9 +34,28 @@ export interface ResourceSettingsInitParams {
 
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   isManualRefresh = false;
+  /**
+   * 标记 beforeRender 是否已经至少执行过一次，避免首次激活时 onActive 与 beforeRender 重复刷新
+   */
+  private hasBeforeRenderRun = false;
 
   onActive() {
-    this.resource?.refresh();
+    // 首次进入由 beforeRender 触发刷新；后续激活时再主动 refresh
+    if (this.hasBeforeRenderRun) {
+      this.resource?.refresh();
+    }
+  }
+
+  async onDispatchEventEnd(
+    eventName: string,
+    options?: DispatchEventOptions,
+    inputArgs?: Record<string, any>,
+    results?: any[],
+  ) {
+    if (eventName === 'beforeRender') {
+      this.hasBeforeRenderRun = true;
+    }
+    return super.onDispatchEventEnd?.(eventName, options, inputArgs, results);
   }
 
   /**
@@ -295,9 +315,6 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         // resource.setAPIClient(this.context.api);
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.associationName || params.collectionName);
-        resource.on('refresh', () => {
-          this.invalidateFlowCache('beforeRender');
-        });
         return resource;
       },
     });

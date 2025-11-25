@@ -16,6 +16,8 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   protected _data = observable.ref<TDataItem[]>([]);
   protected _meta = observable.ref<Record<string, any>>({});
   private refreshTimer: NodeJS.Timeout | null = null;
+  private refreshInFlight: Promise<void> | null = null;
+  private lastRefreshHash: string | null = null;
   protected createActionOptions = {};
   protected updateActionOptions = {};
   protected _refreshActionName = 'list';
@@ -211,6 +213,12 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
    * @returns
    */
   async refresh(): Promise<void> {
+    // 如果已有同样参数的刷新在执行中，直接复用，避免 StrictMode/重复挂载导致的双请求
+    const paramsHash = JSON.stringify(this.getRefreshRequestOptions());
+    if (this.refreshInFlight && this.lastRefreshHash === paramsHash) {
+      return this.refreshInFlight;
+    }
+
     // 清除之前的定时器，确保只有最后一次调用生效
     if (this.refreshTimer) {
       clearTimeout(this.refreshTimer);
@@ -220,12 +228,18 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     return new Promise<void>((resolve, reject) => {
       this.refreshTimer = setTimeout(async () => {
         try {
+          this.lastRefreshHash = paramsHash;
           this.clearError();
           this.loading = true;
-          const { data, meta } = await this.runAction<TDataItem[], any>(this._refreshActionName, {
+          const pending = this.runAction<TDataItem[], any>(this._refreshActionName, {
             method: 'get',
             ...this.getRefreshRequestOptions(),
           });
+          this.refreshInFlight = pending.then(
+            () => undefined,
+            () => undefined,
+          ) as Promise<void>;
+          const { data, meta } = await pending;
           this.setData(data).setMeta(meta);
           if (meta?.page) {
             this.setPage(meta.page);
@@ -242,6 +256,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
         } finally {
           this.refreshTimer = null;
           this.loading = false;
+          this.refreshInFlight = null;
         }
       });
     });

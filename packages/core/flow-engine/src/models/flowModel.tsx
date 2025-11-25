@@ -119,6 +119,11 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * 上一次 beforeRender 的执行参数
    */
   private _lastAutoRunParams: [Record<string, any> | undefined, boolean?] | null = null;
+  /**
+   * 记录正在运行的事件（主要用于防止 beforeRender 并发重复触发）
+   * key: `${eventName}:${JSON.stringify(inputArgs || {})}`
+   */
+  private _eventInFlight: Map<string, Promise<any[]>> = new Map();
   protected observerDispose: () => void;
   #flowContext: FlowModelContext;
 
@@ -760,6 +765,18 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     // 记录最近一次 beforeRender 的入参与选项，便于 stepParams 变化时触发重跑
     if (isBeforeRender) {
       this._lastAutoRunParams = [inputArgs, execOptions.useCache];
+    }
+
+    // 并发去重：对 beforeRender 在 useCache 场景下，同一入参只保留一个执行实例，避免中途缓存失效引起的重复请求
+    const inflightKey = isBeforeRender ? `${eventName}:${JSON.stringify(inputArgs ?? {})}` : null;
+    if (isBeforeRender && execOptions.useCache !== false && inflightKey) {
+      const existing = this._eventInFlight.get(inflightKey);
+      if (existing) return existing;
+      const promise = this._dispatchEvent(eventName, inputArgs, execOptions).finally(() => {
+        this._eventInFlight.delete(inflightKey);
+      });
+      this._eventInFlight.set(inflightKey, promise);
+      return promise;
     }
 
     if (options?.debounce) {
