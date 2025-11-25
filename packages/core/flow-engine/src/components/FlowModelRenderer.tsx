@@ -54,19 +54,6 @@ import { FlowErrorFallback } from './FlowErrorFallback';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
 
-const createPageAwareScheduler = (model?: FlowModel) => (updater: () => void) => {
-  if (model?.context?.pageActive?.value !== false) {
-    return (updater: () => void) => {
-      const scheduler = (globalThis as any)?.queueMicrotask;
-      if (typeof scheduler === 'function') {
-        scheduler(updater);
-        return;
-      }
-      return Promise.resolve().then(updater);
-    };
-  }
-};
-
 export interface FlowModelRendererProps {
   model?: FlowModel;
   uid?: string;
@@ -359,25 +346,13 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
       return null;
     }
 
-    const scheduler = React.useMemo(() => createPageAwareScheduler(model), [model]);
-
-    const PageAwareFlowModelRendererWithAutoFlows = React.useMemo(
-      () =>
-        observer(
-          (props: React.ComponentProps<typeof FlowModelRendererWithAutoFlows>) => (
-            <FlowModelRendererWithAutoFlows {...props} />
-          ),
-          {
-            displayName: 'PageAwareFlowModelRendererWithAutoFlows',
-            scheduler,
-          },
-        ),
-      [scheduler],
-    );
+    if (model?.context?.pageActive?.value === false) {
+      return null;
+    }
 
     // 构建渲染内容：统一在渲染前触发 beforeRender 事件（带缓存）
     const content = (
-      <PageAwareFlowModelRendererWithAutoFlows
+      <FlowModelRendererWithAutoFlows
         model={model}
         showFlowSettings={showFlowSettings}
         flowSettingsVariant={flowSettingsVariant}
@@ -390,7 +365,6 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
         fallback={fallback}
       />
     );
-
     // 当需要错误回退时，将整体包裹在 ErrorBoundary 和 FlowModelProvider 中
     // 这样既能捕获 useApplyAutoFlows 中抛出的错误，也能在回退组件中获取 model 上下文
     if (showErrorFallback) {
@@ -400,7 +374,6 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
         </FlowModelProvider>
       );
     }
-
     return content;
   },
 );
