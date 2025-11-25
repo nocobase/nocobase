@@ -64,6 +64,26 @@ WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 在环境变量 `WORKFLOW_SCRIPT_MODULES` 中未声明的模块，即使是 Node.js 原生的或 `node_modules` 中已安装的，也**不能**在脚本中使用。该策略可以用于在运维层管控用户可使用的模块列表，在一些场景下避免脚本权限过高。
 :::
 
+在非源码部署的环境下，如果某个模块未在 node_modules 中安装，可以将需要的包手动安装到 storage 目录中。例如需要使用 `exceljs` 包时，可以执行如下操作：
+
+```shell
+cd storage
+npm i --no-save --no-package-lock --prefix . exceljs
+```
+
+然后将该包基于应用 CWD（当前工作目录）的相对（或绝对路径）添加到环境变量 `WORKFLOW_SCRIPT_MODULES` 中：
+
+```ini
+WORKFLOW_SCRIPT_MODULES=./storage/node_modules/exceljs
+```
+
+即可在脚本中使用 `exceljs` 包：
+
+```js
+const ExcelJS = require('exceljs');
+// ...
+```
+
 ### 全局变量
 
 **不支持** `global`、`process`、`__dirname` 和 `__filename` 等全局变量。
