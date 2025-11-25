@@ -17,7 +17,6 @@ import {
   FlowModelContext,
   MultiRecordResource,
   SingleRecordResource,
-  DispatchEventOptions,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { createDefaultCollectionBlockTitle } from '../../internal/utils/blockUtils';

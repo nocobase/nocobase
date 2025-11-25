@@ -54,18 +54,16 @@ import { FlowErrorFallback } from './FlowErrorFallback';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
 
-const scheduleReactiveUpdate = (updater: () => void) => {
-  const scheduler = (globalThis as any)?.queueMicrotask;
-  if (typeof scheduler === 'function') {
-    scheduler(updater);
-    return;
-  }
-  return Promise.resolve().then(updater);
-};
-
 const createPageAwareScheduler = (model?: FlowModel) => (updater: () => void) => {
   if (model?.context?.pageActive?.value !== false) {
-    return scheduleReactiveUpdate(updater);
+    return (updater: () => void) => {
+      const scheduler = (globalThis as any)?.queueMicrotask;
+      if (typeof scheduler === 'function') {
+        scheduler(updater);
+        return;
+      }
+      return Promise.resolve().then(updater);
+    };
   }
 };
 
@@ -154,9 +152,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   }) => {
     // hidden 占位由模型自身处理；无需在此注入
 
-    const { loading: pending, error: autoFlowsError } = useApplyAutoFlows(model, inputArgs, {
-      throwOnError: false,
-    });
+    const { loading: pending, error: autoFlowsError } = useApplyAutoFlows(model, inputArgs, { throwOnError: false });
     // 将错误下沉到 model 实例上，供内容层读取（类型安全的 WeakMap 存储）
     setAutoFlowError(model, autoFlowsError || null);
 
@@ -372,7 +368,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
             <FlowModelRendererWithAutoFlows {...props} />
           ),
           {
-            displayName: 'FlowModelRendererWithAutoFlows',
+            displayName: 'PageAwareFlowModelRendererWithAutoFlows',
             scheduler,
           },
         ),
