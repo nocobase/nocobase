@@ -215,11 +215,11 @@ export const checkPermission = async (ctx: Context, next: Next) => {
   if (!can && !roleNames.includes('root')) {
     ctx.throw(403, 'No permissions');
   }
-  if (can.params?.filter) {
+  if (can?.params?.filter) {
     const filter = ctx.action.params.values.filter || {};
     ctx.action.params.values = {
       ...ctx.action.params.values,
-      filter: assign(filter, can.params.filter, {
+      filter: assign(filter, can?.params.filter, {
         filter: 'andMerge',
       }),
     };
