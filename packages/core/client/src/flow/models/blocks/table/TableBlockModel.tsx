@@ -616,7 +616,7 @@ TableBlockModel.registerFlow({
       },
     },
     defaultExpandAllRows: {
-      title: tExpr('Default expand all'),
+      title: tExpr('Expand all rows by default'),
       uiSchema: (ctx) => {
         if (ctx.model.collection.template !== 'tree') {
           return;
