@@ -42,7 +42,7 @@ AddChildActionModel.registerFlow({
 AddChildActionModel.define({
   label: escapeT('Add child'),
   hide(ctx) {
-    return ctx.collection?.template !== 'tree';
+    return ctx.collection?.template !== 'tree' || ctx.blockModel.props.treeTable === false;
   },
 });
 
