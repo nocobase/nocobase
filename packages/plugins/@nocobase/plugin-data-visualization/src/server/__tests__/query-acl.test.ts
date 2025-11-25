@@ -22,7 +22,6 @@ describe('query acl scope', () => {
       plugins: ['field-sort', 'data-source-manager', 'users', 'acl'],
     });
     db = app.db;
-    db.options.underscored = true;
 
     db.collection({
       name: 'orders',

@@ -15,6 +15,7 @@ import { middlewares } from '@nocobase/server';
 import { QueryParams } from '../types';
 import { createQueryParser } from '../query-parser';
 import { assign } from '@nocobase/utils';
+import { NoPermissionError } from '@nocobase/acl';
 
 const getDB = (ctx: Context, dataSource: string) => {
   const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
@@ -216,6 +217,13 @@ export const checkPermission = async (ctx: Context, next: Next) => {
     ctx.throw(403, 'No permissions');
   }
   if (can?.params?.filter) {
+    try {
+      acl.filterParams(ctx, collection, can.params);
+    } catch (e) {
+      if (e instanceof NoPermissionError) {
+        ctx.throw(403, 'No permissions');
+      }
+    }
     const filter = ctx.action.params.values.filter || {};
     ctx.action.params.values = {
       ...ctx.action.params.values,
