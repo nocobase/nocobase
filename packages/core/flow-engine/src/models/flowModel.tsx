@@ -72,16 +72,6 @@ export enum ModelRenderMode {
   RenderFunction = 'renderFunction',
 }
 
-// 使用微任务调度响应式更新，尽量合并同一轮的多次变更
-const scheduleReactiveUpdate = (updater: () => void) => {
-  const scheduler = (globalThis as any)?.queueMicrotask;
-  if (typeof scheduler === 'function') {
-    scheduler(updater);
-    return;
-  }
-  return Promise.resolve().then(updater);
-};
-
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   /**
    * 当 flowSettings.enabled 且 model.hidden 为 true 时用于渲染设置态组件（实例方法，子类可覆盖）。
@@ -119,11 +109,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * 上一次 beforeRender 的执行参数
    */
   private _lastAutoRunParams: [Record<string, any> | undefined, boolean?] | null = null;
-  /**
-   * 记录正在运行的事件（主要用于防止 beforeRender 并发重复触发）
-   * key: `${eventName}:${JSON.stringify(inputArgs || {})}`
-   */
-  private _eventInFlight: Map<string, Promise<any[]>> = new Map();
   protected observerDispose: () => void;
   #flowContext: FlowModelContext;
 
@@ -760,23 +745,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const execOptions = {
       sequential: options?.sequential ?? (defaults as any).sequential,
       useCache: options?.useCache ?? (defaults as any).useCache,
+      debugReason: options?.debugReason,
     } as DispatchEventOptions;
 
     // 记录最近一次 beforeRender 的入参与选项，便于 stepParams 变化时触发重跑
     if (isBeforeRender) {
       this._lastAutoRunParams = [inputArgs, execOptions.useCache];
-    }
-
-    // 并发去重：对 beforeRender 在 useCache 场景下，同一入参只保留一个执行实例，避免中途缓存失效引起的重复请求
-    const inflightKey = isBeforeRender ? `${eventName}:${JSON.stringify(inputArgs ?? {})}` : null;
-    if (isBeforeRender && execOptions.useCache !== false && inflightKey) {
-      const existing = this._eventInFlight.get(inflightKey);
-      if (existing) return existing;
-      const promise = this._dispatchEvent(eventName, inputArgs, execOptions).finally(() => {
-        this._eventInFlight.delete(inflightKey);
-      });
-      this._eventInFlight.set(inflightKey, promise);
-      return promise;
     }
 
     if (options?.debounce) {
@@ -814,12 +788,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (this._lastAutoRunParams) {
       try {
         const [inputArgs] = this._lastAutoRunParams as any[];
-        await this.dispatchEvent('beforeRender', inputArgs);
+        await this.dispatchEvent('beforeRender', inputArgs, { debugReason: 'stepParams-change' });
       } catch (error) {
         console.error('FlowModel._rerunLastAutoRun: Error during rerun:', error);
       }
     }
-  }, 100);
+  }, 2000);
 
   /**
    * 通用事件分发钩子：开始
@@ -915,62 +889,59 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
 
       // 创建缓存的响应式包装器组件工厂（只创建一次）
       const createReactiveWrapper = (modelInstance: any) => {
-        const ReactiveWrapper = observer(
-          () => {
-            // 触发响应式更新的关键属性访问（读取 run/渲染目标的 props）
-            const renderTarget = modelInstance;
-            if (renderTarget !== modelInstance && (renderTarget as any)?.localProps !== undefined) {
-              // 订阅 fork 的本地 props 变更
-              (renderTarget as any).localProps;
-              // 同时订阅原实例（master/UI fork）的 props 变更，
-              // 以捕获诸如 FormItem→FieldModelRenderer 通过 model.setProps 写到 master.props 的更新
-              modelInstance.props;
-            } else {
-              // 订阅当前实例的 props 变更
-              modelInstance.props;
-            }
+        const ReactiveWrapper = observer(() => {
+          // 触发响应式更新的关键属性访问（读取 run/渲染目标的 props）
+          const renderTarget = modelInstance;
+          if (renderTarget !== modelInstance && (renderTarget as any)?.localProps !== undefined) {
+            // 订阅 fork 的本地 props 变更
+            (renderTarget as any).localProps;
+            // 同时订阅原实例（master/UI fork）的 props 变更，
+            // 以捕获诸如 FormItem→FieldModelRenderer 通过 model.setProps 写到 master.props 的更新
+            modelInstance.props;
+          } else {
+            // 订阅当前实例的 props 变更
+            modelInstance.props;
+          }
 
-            // 添加生命周期钩子：当渲染目标变化时，解绑旧目标并绑定新目标
-            React.useEffect(() => {
-              if (typeof renderTarget.onMount === 'function') {
-                renderTarget.onMount();
+          // 添加生命周期钩子：当渲染目标变化时，解绑旧目标并绑定新目标
+          React.useEffect(() => {
+            if (typeof renderTarget.onMount === 'function') {
+              renderTarget.onMount();
+            }
+            // 发射 mounted 生命周期事件（严格模式：不吞错，若有错误将以未处理拒绝暴露）
+            void renderTarget.flowEngine?.emitter?.emitAsync('model:mounted', {
+              uid: renderTarget.uid,
+              model: renderTarget,
+            });
+            return () => {
+              if (typeof renderTarget.onUnmount === 'function') {
+                renderTarget.onUnmount();
               }
-              // 发射 mounted 生命周期事件（严格模式：不吞错，若有错误将以未处理拒绝暴露）
-              void renderTarget.flowEngine?.emitter?.emitAsync('model:mounted', {
+              // 发射 unmounted 生命周期事件（严格模式：不吞错）
+              void renderTarget.flowEngine?.emitter?.emitAsync('model:unmounted', {
                 uid: renderTarget.uid,
                 model: renderTarget,
               });
-              return () => {
-                if (typeof renderTarget.onUnmount === 'function') {
-                  renderTarget.onUnmount();
-                }
-                // 发射 unmounted 生命周期事件（严格模式：不吞错）
-                void renderTarget.flowEngine?.emitter?.emitAsync('model:unmounted', {
-                  uid: renderTarget.uid,
-                  model: renderTarget,
-                });
-              };
-            }, [renderTarget]);
+            };
+          }, [renderTarget]);
 
-            // 处理 hidden 渲染逻辑：
-            if (modelInstance.hidden) {
-              const isConfigMode = !!modelInstance?.flowEngine?.flowSettings?.enabled;
-              if (!isConfigMode) {
-                return null;
-              }
-              // 设置态隐藏时的渲染：由实例方法 renderHiddenInConfig 决定；若为渲染函数模式，则包装为函数
-              return modelInstance.renderHiddenInConfig?.();
+          // 处理 hidden 渲染逻辑：
+          if (modelInstance.hidden) {
+            const isConfigMode = !!modelInstance?.flowEngine?.flowSettings?.enabled;
+            if (!isConfigMode) {
+              return null;
             }
+            // 设置态隐藏时的渲染：由实例方法 renderHiddenInConfig 决定；若为渲染函数模式，则包装为函数
+            return modelInstance.renderHiddenInConfig?.();
+          }
 
-            // 订阅 stepParams 变化，以便当步骤参数（如 JS 代码等）更新时触发一次 React 渲染，
-            // 从而让 useHooksBeforeRender 中的副作用得以感知并执行（如 applyFlow('jsSettings')）。
-            modelInstance.stepParams;
+          // 订阅 stepParams 变化，以便当步骤参数（如 JS 代码等）更新时触发一次 React 渲染，
+          // 从而让 useHooksBeforeRender 中的副作用得以感知并执行（如 applyFlow('jsSettings')）。
+          modelInstance.stepParams;
 
-            // 调用原始渲染方法
-            return originalRender.call(renderTarget);
-          },
-          { scheduler: scheduleReactiveUpdate },
-        );
+          // 调用原始渲染方法
+          return originalRender.call(renderTarget);
+        });
 
         // 设置显示名称便于调试
         ReactiveWrapper.displayName = `ReactiveWrapper(${modelInstance.constructor.name})`;

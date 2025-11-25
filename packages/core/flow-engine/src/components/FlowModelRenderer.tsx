@@ -54,16 +54,6 @@ import { FlowErrorFallback } from './FlowErrorFallback';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
 
-// 微任务调度，避免短时间内的重复响应式更新导致组件重复挂载
-const scheduleReactiveUpdate = (updater: () => void) => {
-  const scheduler = (globalThis as any)?.queueMicrotask;
-  if (typeof scheduler === 'function') {
-    scheduler(updater);
-    return;
-  }
-  return Promise.resolve().then(updater);
-};
-
 export interface FlowModelRendererProps {
   model?: FlowModel;
   uid?: string;
@@ -178,9 +168,6 @@ const FlowModelRendererWithAutoFlows: React.FC<{
         />
       </FlowModelProvider>
     );
-  },
-  {
-    scheduler: scheduleReactiveUpdate,
   },
 );
 
@@ -317,7 +304,6 @@ const FlowModelRendererCore: React.FC<{
   },
   {
     displayName: 'FlowModelRendererCore',
-    scheduler: scheduleReactiveUpdate,
   },
 );
 
