@@ -47,7 +47,7 @@ interface IEllipsisWithTooltipProps {
 }
 
 const popoverStyle = {
-  width: 300,
+  maxWidth: 600,
   overflow: 'auto',
   maxHeight: 400,
 };
