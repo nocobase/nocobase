@@ -12,6 +12,7 @@ import type { CSSProperties } from 'react';
 import { FilterGroup, VariableFilterItem } from '@nocobase/client';
 import type { VariableFilterItemValue } from '@nocobase/client';
 import type { FlowModel } from '@nocobase/flow-engine';
+import { useFlowSettingsContext, createCollectionContextMeta } from '@nocobase/flow-engine';
 import { observable, reaction, toJS } from '@formily/reactive';
 import isEqual from 'lodash/isEqual';
 import { DeleteOutlined } from '@ant-design/icons';
@@ -36,6 +37,8 @@ export interface AntdFilterSelectorProps {
   // 是否变量作为右值
   rightAsVariable?: boolean;
 
+  collectionPath?: string[];
+
   className?: string;
   style?: CSSProperties;
 }
@@ -59,7 +62,23 @@ export const AntdFilterSelector: React.FC<AntdFilterSelectorProps> = ({
   rightAsVariable = true,
   className,
   style,
+  collectionPath,
 }) => {
+  const ctx = useFlowSettingsContext<any>();
+
+  React.useEffect(() => {
+    const [dataSourceKey, collectionName] = collectionPath || [];
+    if (dataSourceKey && collectionName) {
+      const collection = model?.context?.dataSourceManager?.getCollection(dataSourceKey, collectionName);
+      if (collection) {
+        model.context.defineProperty('collection', {
+          get: () => collection,
+          meta: createCollectionContextMeta(() => collection, ctx.t('Current collection')),
+        });
+      }
+    }
+  }, [ctx, model, collectionPath]);
+
   // 初始化内部响应式值（ref 持有，避免 setState 导致重渲染）
   const initial = React.useMemo(() => ensureFilterShape(value), [value]);
   const internalRef = React.useRef(observable(initial));
