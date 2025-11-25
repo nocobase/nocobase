@@ -70,6 +70,18 @@ Activate "Enable Quick Edit" in the block settings and table column settings to 
 
 ![20251023190519](https://static-docs.nocobase.com/20251023190519.gif)
 
+### Enable Tree Table
+
+When the data table is a hierarchical (tree) table, the table block can enable the **"Enable Tree Table"** feature. By default, this option is turned off. Once enabled, the block will display data in a tree structure and support the corresponding configuration options and operations.
+
+![20251125205918](https://static-docs.nocobase.com/20251125205918.png)
+
+![20251125210719](https://static-docs.nocobase.com/20251125210719.gif)
+
+### Expand All Rows by Default
+
+When the tree table is enabled, the block supports expanding all child rows by default when it is loaded.
+
 
 ## Configure Fields
 
