@@ -164,7 +164,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
                 dataSourceKey,
                 collectionName: field.target,
                 associationName: field.resourceName,
-                sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+                sourceId: `{{ctx.popup.record.${field.sourceKey}}}`,
               };
               return {
                 key: genKey(`associated-${field.name}`),
