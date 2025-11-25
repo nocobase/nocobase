@@ -34,10 +34,6 @@ export interface ResourceSettingsInitParams {
 
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   isManualRefresh = false;
-  /**
-   * 标记 beforeRender 是否已经至少执行过一次，避免首次激活时 onActive 与 beforeRender 重复刷新
-   */
-  private hasBeforeRenderRun = false;
 
   onActive() {
     this.resource?.refresh();
@@ -300,6 +296,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         // resource.setAPIClient(this.context.api);
         resource.setDataSourceKey(params.dataSourceKey);
         resource.setResourceName(params.associationName || params.collectionName);
+        resource.on('refresh', () => {
+          this.invalidateFlowCache('beforeRender');
+        });
         return resource;
       },
     });

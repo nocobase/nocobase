@@ -54,6 +54,21 @@ import { FlowErrorFallback } from './FlowErrorFallback';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
 
+const scheduleReactiveUpdate = (updater: () => void) => {
+  const scheduler = (globalThis as any)?.queueMicrotask;
+  if (typeof scheduler === 'function') {
+    scheduler(updater);
+    return;
+  }
+  return Promise.resolve().then(updater);
+};
+
+const createPageAwareScheduler = (model?: FlowModel) => (updater: () => void) => {
+  if (model?.context?.pageActive?.value !== false) {
+    return scheduleReactiveUpdate(updater);
+  }
+};
+
 export interface FlowModelRendererProps {
   model?: FlowModel;
   uid?: string;
@@ -139,13 +154,8 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   }) => {
     // hidden 占位由模型自身处理；无需在此注入
 
-    // 页面 KeepAlive 时仅在激活状态下执行自动流程，避免隐藏页无意义刷新
-    const pageActive = model.context?.pageActive?.value;
-    const autoFlowReady = pageActive !== false;
-
     const { loading: pending, error: autoFlowsError } = useApplyAutoFlows(model, inputArgs, {
       throwOnError: false,
-      ready: autoFlowReady,
     });
     // 将错误下沉到 model 实例上，供内容层读取（类型安全的 WeakMap 存储）
     setAutoFlowError(model, autoFlowsError || null);
@@ -353,9 +363,25 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
       return null;
     }
 
+    const scheduler = React.useMemo(() => createPageAwareScheduler(model), [model]);
+
+    const PageAwareFlowModelRendererWithAutoFlows = React.useMemo(
+      () =>
+        observer(
+          (props: React.ComponentProps<typeof FlowModelRendererWithAutoFlows>) => (
+            <FlowModelRendererWithAutoFlows {...props} />
+          ),
+          {
+            displayName: 'FlowModelRendererWithAutoFlows',
+            scheduler,
+          },
+        ),
+      [scheduler],
+    );
+
     // 构建渲染内容：统一在渲染前触发 beforeRender 事件（带缓存）
     const content = (
-      <FlowModelRendererWithAutoFlows
+      <PageAwareFlowModelRendererWithAutoFlows
         model={model}
         showFlowSettings={showFlowSettings}
         flowSettingsVariant={flowSettingsVariant}

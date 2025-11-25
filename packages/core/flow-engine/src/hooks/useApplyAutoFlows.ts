@@ -8,12 +8,9 @@
  */
 
 import { useRequest } from 'ahooks';
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { FlowModel } from '../models';
 import { useFlowEngine } from '../provider';
-
-// 全局去重：同一个模型+入参在 ready=true 的情况下只允许触发一次 beforeRender，避免 StrictMode 双挂载
-const lastRunKeyByModel = new Map<string, string>();
 
 /**
  * Hook for applying auto-apply flows on a FlowModel
@@ -24,7 +21,7 @@ const lastRunKeyByModel = new Map<string, string>();
 export function useApplyAutoFlows(
   modelOrUid: FlowModel | string,
   inputArgs?: Record<string, any>,
-  options?: { throwOnError?: boolean; ready?: boolean },
+  options?: { throwOnError?: boolean },
 ) {
   const flowEngine = useFlowEngine();
   const model = useMemo(() => {
@@ -33,44 +30,19 @@ export function useApplyAutoFlows(
     }
     return modelOrUid;
   }, [modelOrUid, flowEngine]);
-  const ready = options?.ready ?? true;
-  const lastRunKeyRef = useRef<string | null>(null);
 
-  if (ready) {
-    model?.useHooksBeforeRender();
-  }
+  model?.useHooksBeforeRender();
 
-  const { loading, error, run } = useRequest(
+  const { loading, error } = useRequest(
     async () => {
       if (!model) return;
       // beforeRender 在模型层默认顺序执行并默认使用缓存（可覆盖）
       await model.dispatchEvent('beforeRender', inputArgs);
     },
     {
-      manual: true,
-      ready,
+      refreshDeps: [model, inputArgs],
     },
   );
-
-  useEffect(() => {
-    if (!ready || !model) return;
-    const key = `${model.uid}:${JSON.stringify(inputArgs ?? {})}`;
-    // 已全局执行过同样的 beforeRender，就不再重复触发（应对 StrictMode 双调用）
-    if (lastRunKeyByModel.get(model.uid) === key) return;
-    lastRunKeyRef.current = key;
-    lastRunKeyByModel.set(model.uid, key);
-    run();
-  }, [ready, model, inputArgs, run]);
-
-  useEffect(() => {
-    if (!ready) {
-      // 页面隐藏后清空 key，重新激活时可再次运行
-      lastRunKeyRef.current = null;
-      if (model?.uid) {
-        lastRunKeyByModel.delete(model.uid);
-      }
-    }
-  }, [ready, model?.uid]);
 
   // 默认行为：保持抛错以便 ErrorBoundary 捕获
   if (options?.throwOnError !== false && error) {
