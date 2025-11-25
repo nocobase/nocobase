@@ -207,6 +207,11 @@
           },
           {
             "type": "custom-link",
+            "label": "级联选择器",
+            "link": "/interface-builder/fields/specific/cascade-select"
+          },
+          {
+            "type": "custom-link",
             "label": "子表格",
             "link": "/interface-builder/fields/specific/sub-table"
           },
@@ -441,6 +446,11 @@
             "type": "custom-link",
             "label": "批量更新",
             "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "添加子记录",
+            "link": "/interface-builder/actions/types/add-child"
           },
           {
             "type": "custom-link",
