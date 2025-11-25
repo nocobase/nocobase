@@ -22,6 +22,7 @@ export default genStyleHook('nb-markdown-vditor', (token) => {
       '.vditor-ir pre.vditor-reset': {
         backgroundColor: `${token.colorBgContainer}!important`,
       },
+      '.vditor-preview': { display: 'none !important' },
       '.vditor-preview__action': {
         display: 'none',
       },

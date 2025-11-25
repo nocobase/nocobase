@@ -121,6 +121,7 @@ export function LazySelect(props: Readonly<LazySelectProps>) {
         optionRender={({ data }) => {
           return <LabelByField option={data} fieldNames={fieldNames} />;
         }}
+        popupMatchSelectWidth
         labelRender={(data) => {
           return (
             <div

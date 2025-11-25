@@ -149,30 +149,25 @@ Body:
 }
 ```
 
-### 示例 3: 调用支付接口
+### 示例 3: 查询支付状态
 
 ```javascript
 // 配置
-URL: https://api.payment.com/v1/charge
-Method: POST
+URL: https://api.payment.com/v1/orders/{{$context.orderId}}/status
+Method: GET
 Headers:
   Authorization: Bearer {{$context.apiKey}}
   Content-Type: application/json
-Body:
-{
-  "amount": {{$context.amount}},
-  "currency": "CNY",
-  "order_id": "{{$context.orderId}}",
-  "description": "{{$context.description}}"
-}
 
 // 条件判断
-如果 {{$node.data.data.status}} 等于 "success"
+如果 {{$node.data.data.status}} 等于 "paid"
   - 更新订单状态为"已支付"
   - 发送支付成功通知
+否则如果 {{$node.data.data.status}} 等于 "pending"
+  - 保持订单状态为"待支付"
 否则
   - 记录支付失败日志
-  - 通知管理员
+  - 通知管理员处理异常
 ```
 
 ### 示例 4: 数据同步到 CRM

@@ -10,8 +10,8 @@
 import { Cascader, Space, Button } from 'antd';
 import { last } from 'lodash';
 import { CollectionField, EditableItemModel, escapeT, MultiRecordResource } from '@nocobase/flow-engine';
-import { DeleteOutlined, DragOutlined } from '@ant-design/icons';
-import { css } from '@emotion/css';
+import { DeleteOutlined } from '@ant-design/icons';
+import { css, cx } from '@emotion/css';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -61,7 +61,6 @@ const SortableItem: React.FC<{
   [key: string]: any;
 }> = ({ id, item, index, onChange, onRemove, options, fieldNames, disabled, ...others }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
-
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -69,7 +68,7 @@ const SortableItem: React.FC<{
     maxWidth: '100%',
   };
   const initOptions = buildTree(transformNestedData(item));
-  const popupClassName = `cascade-scroll-${item[fieldNames.value]}`;
+  const popupClassName = `mul-cascade-scroll-${others.name || id}`;
 
   const bindScroll = () => {
     const popup = document.querySelector(`.${popupClassName}`);
@@ -106,23 +105,26 @@ const SortableItem: React.FC<{
           key={id}
           options={options || initOptions}
           style={{ width: '100%' }}
-          popupClassName={css`
-            .ant-cascader-menu {
-              max-width: 500px;
-              overflow: hidden;
-              text-overflow: ellipsis;
-            }
-            .ant-cascader-menu-item {
-              overflow: hidden;
-              text-overflow: ellipsis;
-              max-width: 100%;
-            }
-            .ant-cascader-menu-item-content {
-              overflow: hidden;
-              text-overflow: ellipsis;
-              max-width: 100%;
-            }
-          `}
+          popupClassName={cx(
+            popupClassName,
+            css`
+              .ant-cascader-menu {
+                max-width: 500px;
+                overflow-x: hidden;
+                text-overflow: ellipsis;
+              }
+              .ant-cascader-menu-item {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%;
+              }
+              .ant-cascader-menu-item-content {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                max-width: 100%;
+              }
+            `,
+          )}
           fieldNames={fieldNames}
           onChange={(value, item) => {
             const val = last(item);
@@ -275,7 +277,26 @@ export class CascadeSelectFieldModel extends CascadeSelectInnerFieldModel {
     return (
       <Cascader
         disabled={this.props.disabled}
-        popupClassName={popupClassName}
+        popupClassName={cx(
+          popupClassName,
+          css`
+            .ant-cascader-menu {
+              max-width: 500px;
+              overflow-x: hidden;
+              text-overflow: ellipsis;
+            }
+            .ant-cascader-menu-item {
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 100%;
+            }
+            .ant-cascader-menu-item-content {
+              overflow: hidden;
+              text-overflow: ellipsis;
+              max-width: 100%;
+            }
+          `,
+        )}
         changeOnSelect
         options={this.props.options || initOptions}
         onDropdownVisibleChange={(visible) => {
@@ -304,6 +325,7 @@ export class CascadeSelectListFieldModel extends CascadeSelectInnerFieldModel {
   render() {
     return (
       <DynamicCascadeList
+        name={this.props.name}
         disabled={this.props.disabled}
         options={this.props.options}
         onDropdownVisibleChange={this.props.onDropdownVisibleChange}
