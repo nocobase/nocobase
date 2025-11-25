@@ -523,20 +523,26 @@ export function WorkflowTasks() {
   );
 }
 
-function WorkflowTasksLink() {
+function WorkflowTasksBadge() {
   const { reload, total } = useContext(TasksCountsContext);
+  return (
+    <Tooltip title={lang('Workflow todos')}>
+      <Button>
+        <Link to={`/admin/workflow/tasks`} onClick={reload}>
+          <Badge count={total} size="small">
+            <CheckCircleOutlined />
+          </Badge>
+        </Link>
+      </Button>
+    </Tooltip>
+  );
+}
+
+function WorkflowTasksLink() {
   const items = useAvailableTaskTypeItems();
   return items.length ? (
     <TasksCountsProvider>
-      <Tooltip title={lang('Workflow todos')}>
-        <Button>
-          <Link to={`/admin/workflow/tasks`} onClick={reload}>
-            <Badge count={total} size="small">
-              <CheckCircleOutlined />
-            </Badge>
-          </Link>
-        </Button>
-      </Tooltip>
+      <WorkflowTasksBadge />
     </TasksCountsProvider>
   ) : null;
 }
@@ -597,6 +603,7 @@ function TasksCountsProvider(props: any) {
   }, [app.eventBus, onTaskUpdate]);
 
   const total = Object.values(counts).reduce((result, item) => result + (item.pending || 0), 0) || 0;
+  console.log('===========', total, counts);
 
   return <TasksCountsContext.Provider value={{ reload, total, counts }}>{props.children}</TasksCountsContext.Provider>;
 }
