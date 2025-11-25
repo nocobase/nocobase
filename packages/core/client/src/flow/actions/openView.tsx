@@ -665,6 +665,9 @@ export const openView = defineAction({
       tabUid: inputArgs.tabUid ?? params.tabUid,
       openerUids,
     };
+    if (!finalInputArgs.viewUid) {
+      finalInputArgs.viewUid = (ctx.model.context?.inputArgs?.viewUid as string) || ctx.model.uid;
+    }
     // Ensure runtime keys propagate to view.inputArgs
     finalInputArgs.filterByTk = inputArgs.filterByTk ?? params.filterByTk;
     finalInputArgs.sourceId = inputArgs.sourceId ?? params.sourceId;
