@@ -100,6 +100,6 @@ ExpandCollapseActionModel.registerFlow({
 ExpandCollapseActionModel.define({
   label: escapeT('Expand/Collapse'),
   hide(ctx) {
-    return ctx.collection?.template !== 'tree';
+    return ctx.collection?.template !== 'tree' || ctx.model.props.treeTable === false;
   },
 });
