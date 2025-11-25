@@ -358,11 +358,6 @@ export class XlsxImporter extends EventEmitter {
       const instance = instances[i];
       const value = values[i];
 
-      await this.loggerService.measureExecutedTime(
-        async () => updateAssociations(instance, value, { transaction }),
-        `Row ${i + 1}: updateAssociations completed in {time}ms`,
-        'debug',
-      );
       if (insertOptions.hooks !== false) {
         await this.loggerService.measureExecutedTime(
           async () => {
@@ -378,6 +373,13 @@ export class XlsxImporter extends EventEmitter {
           'debug',
         );
       }
+
+      await this.loggerService.measureExecutedTime(
+        async () => updateAssociations(instance, value, { transaction }),
+        `Row ${i + 1}: updateAssociations completed in {time}ms`,
+        'debug',
+      );
+
       if (context?.skipWorkflow !== true) {
         await this.loggerService.measureExecutedTime(
           async () => {
