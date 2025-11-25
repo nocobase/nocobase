@@ -30,13 +30,16 @@ export const openViewFlow = defineFlow<FlowModel>({
 
     if (field?.isAssociationField?.()) {
       const targetCollection = field.targetCollection;
-      const sourceCollection = blockModel?.collection;
+      let sourceCollection = blockModel?.collection;
+      if (ctx.associationPathName) {
+        sourceCollection = field.collection;
+      }
       collectionName = targetCollection?.name;
       dataSourceKey = targetCollection?.dataSourceKey;
       associationName = sourceCollection?.name && field?.name ? `${sourceCollection.name}.${field.name}` : undefined;
     } else if (field) {
       // 非关联字段：用当前集合 + 字段 target
-      collectionName = ctx.collection?.name;
+      collectionName = ctx.associationPathName ? field.collectionName : ctx.collection?.name;
       dataSourceKey = ctx.collection?.dataSourceKey;
       associationName = field?.target;
     } else {
@@ -45,7 +48,6 @@ export const openViewFlow = defineFlow<FlowModel>({
       dataSourceKey = ctx.collection?.dataSourceKey;
       associationName = ctx.association?.resourceName;
     }
-
     return {
       openView: {
         collectionName,

@@ -43,10 +43,12 @@ export class ClickableFieldModel extends FieldModel {
   onClick(event, currentRecord) {
     if (this.collectionField.isAssociationField()) {
       const targetCollection = this.collectionField.targetCollection;
-      const sourceCollection = this.context.blockModel.collection;
+      let sourceCollection = this.context.blockModel.collection;
+      if (this.context.associationPathName) {
+        sourceCollection = this.collectionField.collection;
+      }
       const sourceKey = this.collectionField.sourceKey || sourceCollection.filterTargetKey;
       const targetKey = this.collectionField?.targetKey;
-
       this.dispatchEvent('click', {
         event,
         filterByTk: currentRecord[targetKey],
@@ -107,6 +109,18 @@ export class ClickableFieldModel extends FieldModel {
         {display}
       </span>
     );
+  }
+
+  protected onMount(): void {
+    super.onMount();
+    if (this.context.associationPathName) {
+      const record = this.context.record;
+      this.context.defineProperty('record', {
+        get: () => {
+          return record[this.context.associationPathName];
+        },
+      });
+    }
   }
 
   /**
