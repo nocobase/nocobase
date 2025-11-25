@@ -188,7 +188,7 @@ FilterActionModel.registerFlow({
         };
       },
       handler(ctx, params) {
-        ctx.model.setProps('defaultFilterValue', params.defaultFilter);
+        ctx.model.setProps('defaultFilterValue', _.cloneDeep(params.defaultFilter));
         ctx.model.setProps('filterValue', _.cloneDeep(params.defaultFilter));
       },
     },
@@ -236,7 +236,7 @@ FilterActionModel.registerFlow({
         resource.removeFilterGroup(ctx.model.uid);
         resource.refresh();
         ctx.model.setProps('open', false);
-        ctx.model.setProps('filterValue', ctx.model.props.defaultFilterValue);
+        ctx.model.setProps('filterValue', _.cloneDeep(ctx.model.props.defaultFilterValue));
       },
     },
   },
