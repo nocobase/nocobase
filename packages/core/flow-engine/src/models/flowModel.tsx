@@ -745,7 +745,6 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     const execOptions = {
       sequential: options?.sequential ?? (defaults as any).sequential,
       useCache: options?.useCache ?? (defaults as any).useCache,
-      debugReason: options?.debugReason,
     } as DispatchEventOptions;
 
     // 记录最近一次 beforeRender 的入参与选项，便于 stepParams 变化时触发重跑
@@ -788,12 +787,12 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     if (this._lastAutoRunParams) {
       try {
         const [inputArgs] = this._lastAutoRunParams as any[];
-        await this.dispatchEvent('beforeRender', inputArgs, { debugReason: 'stepParams-change' });
+        await this.dispatchEvent('beforeRender', inputArgs);
       } catch (error) {
         console.error('FlowModel._rerunLastAutoRun: Error during rerun:', error);
       }
     }
-  }, 2000);
+  }, 100);
 
   /**
    * 通用事件分发钩子：开始
