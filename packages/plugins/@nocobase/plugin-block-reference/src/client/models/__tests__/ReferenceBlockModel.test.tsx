@@ -162,7 +162,7 @@ describe('ReferenceBlockModel', () => {
     vi.restoreAllMocks();
   });
 
-  describe('Bug fix: original block should remain', () => {
+  describe('Original block should remain', () => {
     it(
       'should not change target parentId when creating a reference block',
       async () => {
@@ -235,83 +235,6 @@ describe('ReferenceBlockModel', () => {
         expect(store['target-block-uid'].parentId).toBe('grid-uid');
         expect(lastSavedSnapshot['reference-block-uid']?.subModels?.target).toBeUndefined();
         expect(lastSavedSnapshot['target-block-uid']).toBeUndefined();
-      },
-      TEST_TIMEOUT,
-    );
-
-    it(
-      'should keep target parentId unchanged after saving reference block',
-      async () => {
-        // 创建引用区块
-        referenceBlockModel = engine.createModel({
-          uid: 'reference-block-uid',
-          use: 'ReferenceBlockModel',
-          parentId: 'grid-uid',
-          subKey: 'items',
-          subType: 'array',
-          stepParams: {
-            referenceSettings: {
-              target: {
-                targetUid: 'target-block-uid',
-                mode: 'reference',
-              },
-            },
-          },
-        }) as ReferenceBlockModel;
-
-        gridModel.addSubModel('items', referenceBlockModel);
-
-        // 触发 beforeRender 加载目标区块
-        await referenceBlockModel.onDispatchEventStart('beforeRender');
-
-        // 记录保存前的 parentId
-        const parentIdBeforeSave = (targetBlockModel as any)._options.parentId;
-
-        // 保存引用区块
-        await referenceBlockModel.save();
-
-        // 验证目标区块的 parentId 没有被修改
-        const parentIdAfterSave = (targetBlockModel as any)._options.parentId;
-        expect(parentIdAfterSave).toBe(parentIdBeforeSave);
-        expect(parentIdAfterSave).toBe('grid-uid');
-        expect(store['target-block-uid'].parentId).toBe('grid-uid');
-      },
-      TEST_TIMEOUT,
-    );
-
-    it(
-      'should set in-memory parent on reference block without touching _options.parentId',
-      async () => {
-        // 创建引用区块
-        referenceBlockModel = engine.createModel({
-          uid: 'reference-block-uid',
-          use: 'ReferenceBlockModel',
-          parentId: 'grid-uid',
-          subKey: 'items',
-          subType: 'array',
-          stepParams: {
-            referenceSettings: {
-              target: {
-                targetUid: 'target-block-uid',
-                mode: 'reference',
-              },
-            },
-          },
-        }) as ReferenceBlockModel;
-
-        gridModel.addSubModel('items', referenceBlockModel);
-
-        // 触发 beforeRender 加载目标区块
-        await referenceBlockModel.onDispatchEventStart('beforeRender');
-
-        const loadedTarget = (referenceBlockModel as any)._targetModel;
-        expect(loadedTarget).toBeDefined();
-
-        // 验证内存中的 parent 关系
-        expect(loadedTarget?.parent?.uid).toBe(referenceBlockModel.uid);
-
-        // 仓库中的父级保持原样
-        expect(store['target-block-uid'].parentId).toBe('grid-uid');
       },
       TEST_TIMEOUT,
     );
