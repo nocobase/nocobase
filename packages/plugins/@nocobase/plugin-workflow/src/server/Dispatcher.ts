@@ -11,7 +11,6 @@ import { randomUUID } from 'crypto';
 
 import { Transaction, Transactionable } from 'sequelize';
 
-import { Op } from '@nocobase/database';
 import type { QueueEventOptions } from '@nocobase/server';
 
 import Processor from './Processor';
@@ -354,10 +353,12 @@ export default class Dispatcher {
           logger.info(
             `instance is not serving as worker or local pending list is not empty, sending execution (${execution.id}) to queue`,
           );
-          if (this.ready) {
+          try {
             this.plugin.app.eventQueue.publish(this.plugin.channelPendingExecution, {
               executionId: execution.id,
             });
+          } catch (qErr) {
+            logger.error(`publishing execution (${execution.id}) to queue failed:`, { error: qErr });
           }
         }
       }
