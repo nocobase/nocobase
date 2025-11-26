@@ -249,6 +249,9 @@ MapBlockModel.registerFlow({
     },
     addAppends: {
       handler(ctx, params) {
+        ctx.resource.setRequestParameters({
+          paginate: false,
+        });
         const { associationCollectionField } = ctx.model.props;
         if (associationCollectionField) {
           ctx.resource.addAppends(associationCollectionField.name);
