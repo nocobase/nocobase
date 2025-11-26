@@ -66,7 +66,9 @@ export const Edit = withDynamicSchemaProps((props) => {
       undoDelay: 0,
       preview: { math: { engine: 'KaTeX' } },
       toolbar: toolbarConfig,
-      fullscreen: { index: 1200 },
+      fullscreen: {
+        index: 1200,
+      },
       cdn,
       minHeight: 200,
       after: () => {
@@ -143,10 +145,34 @@ export const Edit = withDynamicSchemaProps((props) => {
         },
       },
     });
+    const editorEl = containerRef.current;
+    if (!editorEl) return;
+
+    const observer = new MutationObserver(() => {
+      const isFullscreen = editorEl.classList.contains('vditor--fullscreen');
+
+      // 只选当前编辑器内部的元素，避免影响其它编辑器
+      const resetEls = editorEl.querySelectorAll('.vditor-reset');
+      const toolbarEls = editorEl.querySelectorAll('.vditor-toolbar');
+
+      resetEls.forEach((el) => {
+        (el as HTMLElement).style.padding = isFullscreen ? '10px 200px' : '';
+      });
+
+      toolbarEls.forEach((el) => {
+        (el as HTMLElement).style.paddingLeft = isFullscreen ? '200px' : '';
+      });
+    });
+
+    observer.observe(editorEl, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
 
     return () => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
+      observer.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolbar?.join(',')]);
