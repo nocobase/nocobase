@@ -166,6 +166,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         },
         [targetField?.uiSchema, fieldNames],
       );
+      // 列表请求
       const { data, run, loading } = useRequest(
         {
           action: 'list',
@@ -182,6 +183,22 @@ const InternalRemoteSelect = withDynamicSchemaProps(
           debounceWait: wait,
           onSuccess,
           ...(service.defaultParams ? { defaultParams: [service.defaultParams] } : {}),
+        },
+      );
+      // value 记录请求
+      const {
+        data: record,
+        run: runRecord,
+        loading: recordLoading,
+      } = useRequest(
+        {
+          action: 'get',
+          ...service,
+          headers,
+        },
+        {
+          manual: true,
+          debounceWait: wait,
         },
       );
       const runDep = useMemo(
@@ -213,6 +230,16 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         }
       }, [runDep]);
 
+      useEffect(() => {
+        if (!objectValue && data?.data) {
+          if (!data?.data.some((v) => v[fieldNames.value] === value)) {
+            runRecord({
+              filterByTk: value,
+            });
+          }
+        }
+      }, [value, data?.data]);
+
       const onSearch = async (search) => {
         run({
           filter: mergeFilter([
@@ -230,7 +257,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
       };
 
       const options = useMemo(() => {
-        const v = value || defaultValue;
+        const v = objectValue ? value || defaultValue : record?.data;
         if (!data?.data?.length) {
           return v != null ? (Array.isArray(v) ? v : [v]) : [];
         }
@@ -242,7 +269,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
           [];
         const filtered = typeof optionFilter === 'function' ? data.data.filter(optionFilter) : data.data;
         return uniqBy(filtered.concat(valueOptions ?? []), fieldNames.value);
-      }, [value, defaultValue, data?.data, fieldNames.value, optionFilter]);
+      }, [value, defaultValue, data?.data, fieldNames.value, optionFilter, record?.data]);
 
       const onDropdownVisibleChange = (visible) => {
         searchData.current = null;
