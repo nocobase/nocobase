@@ -19,6 +19,7 @@ import { renderEngineReference } from '../components/renderEngineReference';
 import { NAMESPACE, lang } from '../locale';
 import { BaseTypeSets, WorkflowVariableTextArea, defaultFieldNames } from '../variable';
 import { Instruction } from '.';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 export default class extends Instruction {
   title = `{{t("Calculation", { ns: "${NAMESPACE}" })}}`;
@@ -98,6 +99,27 @@ export default class extends Instruction {
       Component: ValueBlock.Initializer,
       node,
       resultTitle: lang('Calculation result'),
+    };
+  }
+
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem({ node }): SubModelItem {
+    return {
+      key: node.title ?? `#${node.id}`,
+      label: node.title ?? `#${node.id}`,
+      useModel: 'DetailsBlockModel',
+      createModelOptions: {
+        use: 'DetailsBlockModel',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              collectionName: node.config.collection,
+            },
+          },
+        },
+      },
     };
   }
   testable = true;
