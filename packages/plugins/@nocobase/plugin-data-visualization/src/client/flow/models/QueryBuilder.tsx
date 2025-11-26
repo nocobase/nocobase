@@ -234,7 +234,7 @@ export const QueryBuilder = React.forwardRef<
         <div style={{ fontWeight: 500, marginBottom: 8 }}>{appendColon(t('Filter'), lang)}</div>
         <div style={{ marginBottom: 16 }}>
           <Form.Item name="filter" style={{ overflow: 'auto' }}>
-            <AntdFilterSelector model={ctx.model} rightAsVariable />
+            <AntdFilterSelector model={ctx.model} collectionPath={collectionPath} />
           </Form.Item>
         </div>
 

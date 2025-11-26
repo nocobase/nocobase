@@ -14,15 +14,11 @@ The script runs in a worker thread on the NocoBase application's server and supp
 
 In the workflow configuration interface, click the plus ("+") button in the flow to add a "JavaScript" node:
 
-
 ![20241202203457](https://static-docs.nocobase.com/20241202203457.png)
-
 
 ## Node Configuration
 
-
 ![20241202203655](https://static-docs.nocobase.com/20241202203655.png)
-
 
 ### Parameters
 
@@ -34,9 +30,7 @@ The script content can be considered a function. You can write any JavaScript co
 
 After writing the code, you can click the test button below the editor to open a test execution dialog, where you can fill in parameters with static values for a simulated run. After execution, you can see the return value and output (log) content in the dialog.
 
-
 ![20241202203833](https://static-docs.nocobase.com/20241202203833.png)
-
 
 ### Timeout Setting
 
@@ -69,6 +63,26 @@ WORKFLOW_SCRIPT_MODULES=crypto,timers,lodash,dayjs
 :::info{title="Note"}
 Modules not declared in the `WORKFLOW_SCRIPT_MODULES` environment variable **cannot** be used in the script, even if they are native to Node.js or already installed in `node_modules`. This policy can be used at the operational level to control the list of modules available to users, preventing scripts from having excessive permissions in some scenarios.
 :::
+
+When in a non-source-deployed environment, if a module is not installed in `node_modules`, you can manually install the required package into the `storage` directory. For example, to use the `exceljs` package, you can perform the following steps:
+
+```shell
+cd storage
+npm i --no-save --no-package-lock --prefix . exceljs
+```
+
+Then add the package's relative (or absolute) path based on the application's CWD (current working directory) to the environment variable `WORKFLOW_SCRIPT_MODULES`:
+
+```ini
+WORKFLOW_SCRIPT_MODULES=./storage/node_modules/exceljs
+```
+
+You can then use the `exceljs` package in your script:
+
+```js
+const ExcelJS = require('exceljs');
+// ...
+```
 
 ### Global Variables
 
