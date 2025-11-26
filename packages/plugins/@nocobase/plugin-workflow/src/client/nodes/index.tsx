@@ -43,6 +43,7 @@ import { lang } from '../locale';
 import useStyles from '../style';
 import { UseVariableOptions, VariableOption, WorkflowVariableInput } from '../variable';
 import { useRemoveNodeContext } from '../RemoveNodeContext';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 export type NodeAvailableContext = {
   engine: WorkflowPlugin;
@@ -97,6 +98,10 @@ export abstract class Instruction {
   isAvailable?(ctx: NodeAvailableContext): boolean;
   end?: boolean | ((node) => boolean);
   testable?: boolean;
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem?({ node, workflow }): SubModelItem | null;
 }
 
 function useUpdateAction() {
