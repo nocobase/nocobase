@@ -13,6 +13,14 @@ import { beforeEach, afterEach, describe, it, expect, vi } from 'vitest';
 import { FlowEngine, FlowModel, SingleRecordResource } from '@nocobase/flow-engine';
 // 直接从 models 聚合导入，避免局部文件相互引用顺序导致的循环依赖
 import { FormBlockModel } from '../../../..';
+import { Application } from '../../../../../application/Application';
+import {
+  InputFieldInterface,
+  IntegerFieldInterface,
+  M2MFieldInterface,
+  M2OFieldInterface,
+  NumberFieldInterface,
+} from '../../../../../collection-manager/interfaces';
 // -----------------------------
 // Helpers
 // -----------------------------
@@ -33,7 +41,19 @@ async function createTestFormModelSubclass() {
 
 async function setupFormModel() {
   const engine = new FlowEngine();
+  const app = new Application({
+    dataSourceManager: {
+      fieldInterfaces: [
+        InputFieldInterface,
+        IntegerFieldInterface,
+        NumberFieldInterface,
+        M2OFieldInterface,
+        M2MFieldInterface,
+      ],
+    },
+  });
   const dsm = engine.context.dataSourceManager;
+  engine.context.defineProperty('app', { value: app });
   const ds = dsm.getDataSource('main');
 
   // 仿照 flow-engine 的数据源单测创建真实的 collections

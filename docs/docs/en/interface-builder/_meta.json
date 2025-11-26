@@ -207,6 +207,11 @@
           },
           {
             "type": "custom-link",
+            "label": "Cascade Select",
+            "link": "/interface-builder/fields/specific/cascade-select"
+          },
+          {
+            "type": "custom-link",
             "label": "Sub-table",
             "link": "/interface-builder/fields/specific/sub-table"
           },
@@ -441,6 +446,11 @@
             "type": "custom-link",
             "label": "Bulk Update",
             "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "add-child",
+            "label": "Add Child",
+            "link": "/interface-builder/actions/types/add-child"
           },
           {
             "type": "custom-link",

@@ -1518,5 +1518,6 @@
   "Default expand all": "默认展开所有行",
   "Enable tree table": "启用树表格",
   "Cascade select": "级联选择",
-  "Cascade select settings": "级联选择设置"
+  "Cascade select settings": "级联选择设置",
+  "Expand all rows by default": "默认展开所有行"
 }

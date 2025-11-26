@@ -268,6 +268,7 @@ export interface MarkdownWithContextSelectorProps {
   rows?: number;
   style?: React.CSSProperties;
   quoteFlag?: boolean;
+  enableContextSelect?: boolean;
 }
 
 /**
@@ -279,6 +280,7 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
   placeholder,
   style,
   quoteFlag,
+  enableContextSelect = true,
   ...others
 }) => {
   const flowCtx = useFlowContext();
@@ -366,7 +368,7 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
         style={{ width: '100%' }}
         {...others}
       />
-      {isConfigMode && (
+      {isConfigMode && enableContextSelect && (
         <div
           style={{
             position: 'absolute',

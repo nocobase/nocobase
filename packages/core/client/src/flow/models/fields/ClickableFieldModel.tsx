@@ -49,7 +49,7 @@ export class ClickableFieldModel extends FieldModel {
 
       this.dispatchEvent('click', {
         event,
-        filterByTk: currentRecord[targetKey],
+        filterByTk: currentRecord[targetCollection.filterTargetKey],
         collectionName: targetCollection.name,
         associationName: `${sourceCollection.name}.${this.collectionField.name}`,
         sourceId: this.context.record[sourceKey],
