@@ -74,17 +74,18 @@ const Edit = (props) => {
     if (!containerRef.current) return;
 
     const toolbarConfig = toolbar ?? defaultToolbar;
-
     const vditor = new Vditor(containerRef.current, {
       value: value ?? '',
       lang,
       cache: { enable: false },
       undoDelay: 0,
-      mode: 'wysiwyg', // 禁用预览
+      mode: props.mode || 'ir',
+      preview: { math: { engine: 'KaTeX' } },
       toolbar: toolbarConfig,
       fullscreen: { index: 1200 },
       cdn,
       minHeight: 200,
+      height: props.height,
       after: () => {
         vdRef.current = vditor;
         setEditorReady(true); // Notify that the editor is ready
@@ -372,8 +373,8 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
         <div
           style={{
             position: 'absolute',
-            top: 0,
-            right: 0,
+            top: 10,
+            right: 10,
             zIndex: 1,
             lineHeight: 0,
           }}

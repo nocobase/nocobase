@@ -9,6 +9,7 @@
 
 import { FormItem } from '@nocobase/flow-engine';
 import React from 'react';
+import _ from 'lodash';
 import { CommonItemModel } from '../base';
 import { editMarkdownFlow } from '../../flows/editMarkdownFlow';
 
@@ -46,6 +47,8 @@ const MarkdownRenderer = ({ ctx, raw, record }) => {
 };
 
 export class MarkdownItemModel extends CommonItemModel {
+  _previousStepParams: any; // 上一次持久化的 stepParams，用于 preview 时回滚
+
   render() {
     const record = this.context.record;
     const rawContent = this.props.value;
