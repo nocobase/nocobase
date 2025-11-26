@@ -183,7 +183,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     const config = this.mergeRequestConfig(
       {
         params: {
-          filterByTk: filterByTk,
+          filterByTk: this.jsonStringify(filterByTk),
         },
       },
       options,
