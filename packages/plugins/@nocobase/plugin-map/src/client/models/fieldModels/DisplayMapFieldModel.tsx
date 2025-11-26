@@ -19,7 +19,7 @@ export const PointReadPretty = (props) => {
   if (displayStyle === 'text') {
     return value?.map?.((item) => (Array.isArray(item) ? `(${item.join(',')})` : item)).join(',');
   }
-  return <MapComponent readonly mapType={mapType} {...props} type={type}></MapComponent>;
+  return <MapComponent readonly disabled mapType={mapType} {...props} type={type}></MapComponent>;
 };
 export class DisplayMapFieldModel extends FieldModel {
   getMapFieldType() {
