@@ -40,4 +40,25 @@
 
 更多内容参考 [标题字段](/interface-builder/fields/field-settings/title-field)
 
+
+### 快速创建：先添加数据后选中该数据
+
+![20251125220046](https://static-docs.nocobase.com/20251125220046.png)
+
+#### 下拉菜单添加
+
+为目标表新建数据后自动选中该数据并在表单提交后关联。
+
+订单表有多对一关系字段「Account」。
+
+![20251125220447](https://static-docs.nocobase.com/20251125220447.gif)
+
+#### 弹窗添加
+
+弹窗添加适用于较复杂的录入场景，可以配置新增表单。
+
+
+![20251125220607](https://static-docs.nocobase.com/20251125220607.gif)
+
+
 [字段组件](/interface-builder/fields/association-field)；

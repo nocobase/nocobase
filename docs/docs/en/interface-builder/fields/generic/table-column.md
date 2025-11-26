@@ -76,3 +76,17 @@ Some fields support multiple display formats. Users can switch field components 
 
 
 ![20251025172723](https://static-docs.nocobase.com/20251025172723.png)
+
+### Sortable
+
+Most field types currently support server-side sorting. When sorting is enabled, data can be sorted in ascending or descending order based on the target field.
+
+![20251125221247](https://static-docs.nocobase.com/20251125221247.png)
+
+#### Field Sorting in Table Blocks
+
+![20251125221425](https://static-docs.nocobase.com/20251125221425.gif)
+
+#### Field Sorting in SubTable within Detail Blocks
+
+![20251125221949](https://static-docs.nocobase.com/20251125221949.gif)
