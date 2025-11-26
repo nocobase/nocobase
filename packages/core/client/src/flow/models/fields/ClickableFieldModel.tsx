@@ -47,9 +47,15 @@ export class ClickableFieldModel extends FieldModel {
       const sourceKey = this.collectionField.sourceKey || sourceCollection.filterTargetKey;
       const targetKey = this.collectionField?.targetKey;
 
+      let filterByTk = currentRecord[targetKey];
+      if (this.collectionField.interface === 'm2m') {
+        // if use currentRecord[targetKey], details block in the popup will throw error
+        filterByTk = currentRecord[targetCollection.filterTargetKey];
+      }
+
       this.dispatchEvent('click', {
         event,
-        filterByTk: currentRecord[targetCollection.filterTargetKey],
+        filterByTk,
         collectionName: targetCollection.name,
         associationName: `${sourceCollection.name}.${this.collectionField.name}`,
         sourceId: this.context.record[sourceKey],
