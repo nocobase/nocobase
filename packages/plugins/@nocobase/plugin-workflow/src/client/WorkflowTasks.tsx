@@ -458,7 +458,7 @@ function TaskPageContent() {
       </SchemaComponentContext.Provider>
     </PopupRecordContext.Provider>
   ) : (
-    <Result status="error" title={lang('Task type {{type}} is invalid')} />
+    <Result status="error" title={lang('Task type {{type}} is invalid', { type: taskType })} />
   );
 }
 
