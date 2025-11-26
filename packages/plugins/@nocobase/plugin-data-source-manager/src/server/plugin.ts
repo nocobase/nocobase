@@ -364,26 +364,18 @@ export class PluginDataSourceManagerServer extends Plugin {
       }
 
       const { actionName, resourceName, params } = ctx.action;
-      if (resourceName === 'dataSources' && (actionName === 'add' || actionName === 'update')) {
-        const { values, filterByTk: dataSourceKey } = params;
+      if (resourceName === 'dataSources' && (actionName === 'create' || actionName === 'update')) {
+        const { values } = params;
         if (values.options?.addAllCollections) {
           let introspector: { getCollections: () => Promise<string[]> } = null;
           const dataSourceManager = ctx.app['dataSourceManager'] as DataSourceManager;
 
-          if (actionName === 'add') {
-            const klass = dataSourceManager.factory.getClass(values.options.type);
-            // @ts-ignore
-            const dataSource = new klass(dbOptions);
-            introspector = dataSource.collectionManager.dataSource.createDatabaseIntrospector(
-              dataSource.collectionManager.db,
-            );
-          } else {
-            const dataSource = dataSourceManager.dataSources.get(dataSourceKey);
-            if (!dataSource) {
-              throw new Error(`dataSource ${dataSourceKey} not found`);
-            }
-            introspector = dataSource['introspector'];
-          }
+          const klass = dataSourceManager.factory.getClass(values.type);
+          // @ts-ignore
+          const dataSource = new klass(values.options);
+          introspector = dataSource.collectionManager.dataSource.createDatabaseIntrospector(
+            dataSource.collectionManager.db,
+          );
           const allCollections = await introspector.getCollections();
           if (allCollections.length > ALLOW_MAX_COLLECTIONS_COUNT) {
             throw new Error(
