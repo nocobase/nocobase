@@ -466,9 +466,19 @@ function TaskMenu() {
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
   const { token } = useToken();
   const items = useAvailableTaskTypeItems();
-  const typeKey = taskType ?? items[0].key;
+  const typeKey = taskType ?? items[0]?.key;
 
   const { isMobileLayout } = useMobileLayout();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!items.length) {
+      return;
+    }
+    if (!taskType) {
+      navigate(`/admin/workflow/tasks/${typeKey}/${status}`, { replace: true });
+    }
+  }, [items, navigate, status, taskType, typeKey]);
 
   return isMobileLayout ? (
     <Layout.Header style={{ background: token.colorBgContainer, padding: 0, height: '3em', lineHeight: '3em' }}>
@@ -484,7 +494,6 @@ function TaskMenu() {
 export function WorkflowTasks() {
   const compile = useCompile();
   const { setTitle } = useDocumentTitle();
-  const navigate = useNavigate();
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
 
   const { title } = useCurrentTaskType();
@@ -492,12 +501,6 @@ export function WorkflowTasks() {
   useEffect(() => {
     setTitle?.(`${lang('Workflow todos')}${title ? `: ${compile(title)}` : ''}`);
   }, [taskType, status, setTitle, title, compile]);
-
-  // useEffect(() => {
-  //   if (!taskType) {
-  //     navigate(`/admin/workflow/tasks/${items[0].key}/${status}`, { replace: true });
-  //   }
-  // }, [items, navigate, status, taskType]);
 
   return (
     <Layout className={layoutClass}>
@@ -530,7 +533,8 @@ export function WorkflowTasks() {
 
 function WorkflowTasksBadge() {
   const { reload, total } = useContext(TasksCountsContext);
-  return (
+  const items = useAvailableTaskTypeItems();
+  return items.length ? (
     <Tooltip title={lang('Workflow todos')}>
       <Button>
         <Link to={`/admin/workflow/tasks`} onClick={reload}>
@@ -540,16 +544,15 @@ function WorkflowTasksBadge() {
         </Link>
       </Button>
     </Tooltip>
-  );
+  ) : null;
 }
 
 function WorkflowTasksLink() {
-  const items = useAvailableTaskTypeItems();
-  return items.length ? (
+  return (
     <TasksCountsProvider>
       <WorkflowTasksBadge />
     </TasksCountsProvider>
-  ) : null;
+  );
 }
 
 function transform(records) {
