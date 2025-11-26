@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-audit-logs",
-  "version": "1.9.13",
+  "version": "1.9.14",
   "displayName": "Audit logs (deprecated)",
   "displayName.ru-RU": "Журнал аудита (устарел)",
   "displayName.zh-CN": "审计日志（废弃）",
