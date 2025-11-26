@@ -89,7 +89,6 @@ export interface AMapForwardedRefProps {
   errMessage?: string;
 }
 
-//2.0
 export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProps>((props, ref) => {
   const { accessKey, securityJsCode } = useMapConfig(props.mapType) || {};
   const {
@@ -98,11 +97,12 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
     block = false,
     readonly,
     disabled = block,
-    zoom = 13,
+    zoom,
     overlayCommonOptions,
     height,
     type,
   } = props;
+  console.log(5555, props.zoom);
   const { t } = useMapTranslation();
   const aMap = useRef<any>();
   const map = useRef<AMap.Map>();
@@ -125,9 +125,11 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
 
   useEffect(() => {
     if (map.current) {
-      map.current.setZoom(zoom);
+      setTimeout(() => {
+        map.current.setZoom(zoom);
+      }, 500);
     }
-  }, [zoom]);
+  }, [zoom, map.current]);
 
   const toRemoveOverlay = useMemoizedFn(() => {
     if (overlay.current) {
