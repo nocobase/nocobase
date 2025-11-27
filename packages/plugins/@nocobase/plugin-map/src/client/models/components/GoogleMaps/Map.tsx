@@ -393,8 +393,8 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
           <Button
             type="primary"
             onClick={() => {
-              ctx.view.close();
               navigate('/admin/settings/map' + '?tab=google');
+              ctx.view.close();
             }}
           >
             {t('Go to the configuration page')}
