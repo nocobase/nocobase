@@ -44,7 +44,7 @@ import {
   WorkflowTasksMobile,
 } from './WorkflowTasks';
 import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
-import { NodeDetailsModel } from './models';
+import { NodeDetailsModel, NodeValueModel } from './models';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -207,6 +207,7 @@ export default class PluginWorkflowClient extends Plugin {
 
     this.flowEngine.registerModels({
       NodeDetailsModel,
+      NodeValueModel,
     });
   }
 }

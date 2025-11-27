@@ -8,3 +8,4 @@
  */
 
 export { NodeDetailsModel } from './NodeDetailsModel';
+export { NodeValueModel } from './NodeValueModel';

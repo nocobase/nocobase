@@ -109,13 +109,19 @@ export default class extends Instruction {
     return {
       key: node.title ?? `#${node.id}`,
       label: node.title ?? `#${node.id}`,
-      useModel: 'DetailsBlockModel',
+      useModel: 'NodeValueModel',
       createModelOptions: {
-        use: 'DetailsBlockModel',
+        use: 'NodeValueModel',
         stepParams: {
-          resourceSettings: {
+          valueSettings: {
             init: {
-              collectionName: node.config.collection,
+              dataSource: `{{$jobsMapByNodeKey.${node.key}}}`,
+              defaultValue: lang('Calculation result'),
+            },
+          },
+          cardSettings: {
+            titleDescription: {
+              title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
             },
           },
         },
