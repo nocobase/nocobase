@@ -35,9 +35,11 @@ export default class extends Migration {
         transaction,
       });
 
-      const needMigrate = !currentMainField || !currentMainField.get?.('interface');
+      const iface = currentMainField?.get?.('interface');
+      const type = currentMainField?.get?.('type');
+      const shouldMigrate = !currentMainField || type === 'belongsToMany' || iface === 'm2m';
 
-      if (!needMigrate) {
+      if (!shouldMigrate) {
         return;
       }
 
