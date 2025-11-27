@@ -9,7 +9,7 @@
 import { CheckCircleOutlined } from '@ant-design/icons';
 import { PageHeader } from '@ant-design/pro-layout';
 import { observer } from '@formily/react';
-import { App, Badge, Button, Flex, Layout, Menu, Segmented, Tabs, theme, Tooltip } from 'antd';
+import { App, Badge, Button, Flex, Layout, Menu, Result, Segmented, Tabs, theme, Tooltip } from 'antd';
 import { NavBar, Toast } from 'antd-mobile';
 import classnames from 'classnames';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
@@ -129,9 +129,12 @@ function StatusTabs() {
   const mobilePage = useMobilePage();
   const onSwitchTab = useCallback(
     (key: string) => {
-      navigate(mobilePage ? `/page/workflow-tasks/${taskType}/${key}` : `/admin/workflow/tasks/${taskType}/${key}`);
+      if (!type?.key) {
+        return;
+      }
+      navigate(mobilePage ? `/page/workflow-tasks/${type.key}/${key}` : `/admin/workflow/tasks/${type.key}/${key}`);
     },
-    [navigate, taskType, mobilePage],
+    [navigate, mobilePage, type],
   );
   const isMobile = Boolean(mobilePage || isMobileLayout);
   const { Actions } = type;
@@ -220,9 +223,9 @@ function useAvailableTaskTypeItems() {
 function useCurrentTaskType() {
   const workflowPlugin = usePlugin(PluginWorkflowClient);
   const { taskType } = useParams();
-  const items = useAvailableTaskTypeItems();
+  const items = useTaskTypeItems();
   return useMemo<any>(
-    () => workflowPlugin.taskTypes.get(taskType ?? items[0]?.key) ?? {},
+    () => workflowPlugin.taskTypes.get(taskType ?? items[0]) ?? {},
     [items, taskType, workflowPlugin.taskTypes],
   );
 }
@@ -263,28 +266,23 @@ export function usePopupRecordContext() {
 }
 
 function TaskPageContent() {
-  const navigate = useNavigate();
   const apiClient = useAPIClient();
   const { taskType, status = TASK_STATUS.PENDING, popupId } = useParams();
   const mobilePage = useMobilePage();
   const [currentRecord, setCurrentRecord] = useState<any>(null);
 
   const { token } = theme.useToken();
-  const items = useAvailableTaskTypeItems();
-  const { title, collection, action = 'list', useActionParams, Item, Detail, getPopupRecord } = useCurrentTaskType();
-  const params = useActionParams(status);
+  const type = useCurrentTaskType();
+  const { title, collection, action = 'list', useActionParams, Item, Detail, getPopupRecord } = type;
+  const params = useActionParams?.(status);
 
   // useEffect(() => {
-  //   setTitle?.(`${lang('Workflow todos')}${title ? `: ${compile(title)}` : ''}`);
-  // }, [taskType, status, setTitle, title, compile]);
-
-  useEffect(() => {
-    if (!taskType) {
-      navigate(`${items[0].key}/${status}`, {
-        replace: true,
-      });
-    }
-  }, [items, mobilePage, navigate, status, taskType]);
+  //   if (!taskType) {
+  //     navigate(`${items[0].key}/${status}`, {
+  //       replace: true,
+  //     });
+  //   }
+  // }, [items, mobilePage, navigate, status, taskType]);
 
   useEffect(() => {
     if (popupId && !currentRecord) {
@@ -309,7 +307,7 @@ function TaskPageContent() {
     }
   }, [popupId, collection, currentRecord, apiClient, getPopupRecord, params]);
 
-  const typeKey = taskType ?? items[0].key;
+  // const typeKey = taskType ?? items[0].key;
 
   const { isMobileLayout } = useMobileLayout();
 
@@ -366,7 +364,7 @@ function TaskPageContent() {
     }
   `;
 
-  return (
+  return type?.key ? (
     <PopupRecordContext.Provider
       value={{
         record: currentRecord,
@@ -459,6 +457,27 @@ function TaskPageContent() {
         />
       </SchemaComponentContext.Provider>
     </PopupRecordContext.Provider>
+  ) : (
+    <Result status="error" title={lang('Task type {{type}} is invalid')} />
+  );
+}
+
+function TaskMenu() {
+  const { taskType, status = TASK_STATUS.PENDING } = useParams();
+  const { token } = useToken();
+  const items = useAvailableTaskTypeItems();
+  const typeKey = taskType ?? items[0].key;
+
+  const { isMobileLayout } = useMobileLayout();
+
+  return isMobileLayout ? (
+    <Layout.Header style={{ background: token.colorBgContainer, padding: 0, height: '3em', lineHeight: '3em' }}>
+      <Menu mode="horizontal" selectedKeys={[typeKey]} items={items} />
+    </Layout.Header>
+  ) : (
+    <Layout.Sider breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
+      <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
+    </Layout.Sider>
   );
 }
 
@@ -467,8 +486,6 @@ export function WorkflowTasks() {
   const { setTitle } = useDocumentTitle();
   const navigate = useNavigate();
   const { taskType, status = TASK_STATUS.PENDING } = useParams();
-  const { token } = useToken();
-  const items = useAvailableTaskTypeItems();
 
   const { title } = useCurrentTaskType();
 
@@ -476,28 +493,16 @@ export function WorkflowTasks() {
     setTitle?.(`${lang('Workflow todos')}${title ? `: ${compile(title)}` : ''}`);
   }, [taskType, status, setTitle, title, compile]);
 
-  useEffect(() => {
-    if (!taskType) {
-      navigate(`/admin/workflow/tasks/${items[0].key}/${status}`, { replace: true });
-    }
-  }, [items, navigate, status, taskType]);
-
-  const typeKey = taskType ?? items[0].key;
-
-  const { isMobileLayout } = useMobileLayout();
+  // useEffect(() => {
+  //   if (!taskType) {
+  //     navigate(`/admin/workflow/tasks/${items[0].key}/${status}`, { replace: true });
+  //   }
+  // }, [items, navigate, status, taskType]);
 
   return (
     <Layout className={layoutClass}>
       <TasksCountsProvider>
-        {isMobileLayout ? (
-          <Layout.Header style={{ background: token.colorBgContainer, padding: 0, height: '3em', lineHeight: '3em' }}>
-            <Menu mode="horizontal" selectedKeys={[typeKey]} items={items} />
-          </Layout.Header>
-        ) : (
-          <Layout.Sider breakpoint="md" collapsedWidth="0" zeroWidthTriggerStyle={{ top: 24 }}>
-            <Menu mode="inline" selectedKeys={[typeKey]} items={items} style={{ height: '100%' }} />
-          </Layout.Sider>
-        )}
+        <TaskMenu />
       </TasksCountsProvider>
       <Layout
         className={css`
@@ -554,7 +559,7 @@ function transform(records) {
   }, {});
 }
 
-function TasksCountsProvider(props: any) {
+export function TasksCountsProvider(props: any) {
   const app = useApp();
   const [counts, setCounts] = useState<Stats>({});
   const types = useTaskTypeItems();
@@ -603,7 +608,6 @@ function TasksCountsProvider(props: any) {
   }, [app.eventBus, onTaskUpdate]);
 
   const total = Object.values(counts).reduce((result, item) => result + (item.pending || 0), 0) || 0;
-  console.log('===========', total, counts);
 
   return <TasksCountsContext.Provider value={{ reload, total, counts }}>{props.children}</TasksCountsContext.Provider>;
 }
@@ -660,6 +664,7 @@ export const tasksSchemaInitializerItem: SchemaInitializerItemType = {
                 options: {
                   url: `/page/workflow-tasks`,
                   schema: {
+                    'x-decorator': 'TasksCountsProvider',
                     'x-component': 'MobileTabBarWorkflowTasksItem',
                   },
                 },
@@ -727,9 +732,37 @@ export const MobileTabBarWorkflowTasksItem = observer(
   },
 );
 
-export function WorkflowTasksMobile() {
-  const items = useAvailableTaskTypeItems();
+function WorkflowTasksMobileTabs() {
   const { token } = useToken();
+  const items = useAvailableTaskTypeItems();
+  return (
+    <Tabs
+      className={css({
+        padding: `0 ${token.paddingPageHorizontal}px`,
+        '.adm-tabs-header': {
+          borderBottomWidth: 0,
+        },
+        '.adm-tabs-tab': {
+          height: 49,
+          padding: '10px 0 10px',
+        },
+        '> .ant-tabs-nav': {
+          marginBottom: 0,
+          '&::before': {
+            borderBottom: 'none',
+          },
+        },
+
+        '.ant-tabs-tab+.ant-tabs-tab': {
+          marginLeft: '2em',
+        },
+      })}
+      items={items}
+    />
+  );
+}
+
+export function WorkflowTasksMobile() {
   const navigate = useNavigate();
 
   return (
@@ -738,29 +771,9 @@ export function WorkflowTasksMobile() {
         <NavBar className="nb-workflow-tasks-back-action" onBack={() => navigate(-1)}>
           {lang('Workflow tasks')}
         </NavBar>
-        <Tabs
-          className={css({
-            padding: `0 ${token.paddingPageHorizontal}px`,
-            '.adm-tabs-header': {
-              borderBottomWidth: 0,
-            },
-            '.adm-tabs-tab': {
-              height: 49,
-              padding: '10px 0 10px',
-            },
-            '> .ant-tabs-nav': {
-              marginBottom: 0,
-              '&::before': {
-                borderBottom: 'none',
-              },
-            },
-
-            '.ant-tabs-tab+.ant-tabs-tab': {
-              marginLeft: '2em',
-            },
-          })}
-          items={items}
-        />
+        <TasksCountsProvider>
+          <WorkflowTasksMobileTabs />
+        </TasksCountsProvider>
       </MobilePageHeader>
       <MobilePageContentContainer
         className={css`

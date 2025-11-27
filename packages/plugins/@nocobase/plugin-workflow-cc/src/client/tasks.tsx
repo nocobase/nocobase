@@ -102,7 +102,7 @@ function useReadAllActionProps(props) {
   const { counts } = useTasksCountsContext();
   return {
     ...props,
-    disabled: !counts[TASK_TYPE_CC].pending,
+    disabled: !counts[TASK_TYPE_CC]?.pending,
   };
 }
 
