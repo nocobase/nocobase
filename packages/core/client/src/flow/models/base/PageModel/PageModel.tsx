@@ -35,11 +35,10 @@ type PageModelStructure = {
 
 export class PageModel extends FlowModel<PageModelStructure> {
   tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
-  tabActiveKey: string;
 
   onMount(): void {
     super.onMount();
-    this.tabActiveKey = this.context.view.inputArgs?.tabUid;
+    this.setProps('tabActiveKey', this.context.view.inputArgs?.tabUid);
     if (this.context?.pageInfo) this.context.pageInfo.version = 'v2';
   }
 
@@ -117,7 +116,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
-          defaultActiveKey={this.context.view.inputArgs?.tabUid}
+          activeKey={this.props.tabActiveKey}
           tabBarStyle={this.props.tabBarStyle}
           items={this.mapTabs()}
           onChange={(activeKey) => {
@@ -126,11 +125,8 @@ export class PageModel extends FlowModel<PageModelStructure> {
             });
 
             this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
-            this.invokeTabModelLifecycleMethod(this.tabActiveKey, 'onInactive');
-            this.tabActiveKey = activeKey;
-            if (this.context.view.inputArgs?.tabUid) {
-              this.context.view.inputArgs.tabUid = activeKey;
-            }
+            this.invokeTabModelLifecycleMethod(this.props.tabActiveKey, 'onInactive');
+            this.setProps('tabActiveKey', activeKey);
           }}
           // destroyInactiveTabPane
           tabBarExtraContent={{

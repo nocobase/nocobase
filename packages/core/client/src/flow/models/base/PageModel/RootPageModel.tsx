@@ -8,7 +8,7 @@
  */
 
 import { DragEndEvent } from '@dnd-kit/core';
-import { autorun } from '@nocobase/flow-engine';
+import { autorun, reaction } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { PageModel } from './PageModel';
@@ -19,29 +19,29 @@ export class RootPageModel extends PageModel {
   onMount() {
     super.onMount();
 
-    autorun(() => {
-      if (this.context.pageActive.value && this.mounted) {
-        if (this.tabActiveKey) {
-          this.invokeTabModelLifecycleMethod(this.tabActiveKey, 'onActive');
-        } else {
+    reaction(
+      () => this.context.pageActive.value,
+      () => {
+        if (this.context.pageActive.value && this.mounted) {
           const firstTab = this.subModels.tabs?.[0];
           if (firstTab) {
+            this.setProps('tabActiveKey', firstTab.uid);
             this.invokeTabModelLifecycleMethod(firstTab.uid, 'onActive');
           }
         }
-      }
-      if (this.context.pageActive.value === false) {
-        if (this.tabActiveKey) {
-          this.invokeTabModelLifecycleMethod(this.tabActiveKey, 'onInactive');
-        } else {
-          const firstTab = this.subModels.tabs?.[0];
-          if (firstTab) {
-            this.invokeTabModelLifecycleMethod(firstTab.uid, 'onInactive');
+        if (this.context.pageActive.value === false) {
+          if (this.props.tabActiveKey) {
+            this.invokeTabModelLifecycleMethod(this.props.tabActiveKey, 'onInactive');
+          } else {
+            const firstTab = this.subModels.tabs?.[0];
+            if (firstTab) {
+              this.invokeTabModelLifecycleMethod(firstTab.uid, 'onInactive');
+            }
           }
         }
-      }
-      this.mounted = true;
-    });
+        this.mounted = true;
+      },
+    );
   }
 
   async saveStepParams() {
