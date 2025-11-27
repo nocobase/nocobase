@@ -8,7 +8,7 @@
  */
 
 import { BlockModel } from '@nocobase/client';
-import { parse } from '@nocobase/utils';
+import { parse } from '@nocobase/utils/client';
 import React from 'react';
 
 export class NodeValueModel extends BlockModel {
@@ -30,6 +30,10 @@ export class NodeValueModel extends BlockModel {
 }
 
 function Result({ dataSource, execution, defaultValue }) {
+  if (!execution) {
+    return defaultValue;
+  }
+
   const result =
     parse(dataSource)({
       $jobsMapByNodeKey: (execution.jobs ?? []).reduce(
