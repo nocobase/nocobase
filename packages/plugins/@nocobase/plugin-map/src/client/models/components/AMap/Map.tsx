@@ -10,15 +10,14 @@
 import AMapLoader from '@amap/amap-jsapi-loader';
 import '@amap/amap-jsapi-types';
 import { SyncOutlined } from '@ant-design/icons';
-import { useFieldSchema } from '@formily/react';
-import { css, useApp, useCollection_deprecated, useNavigateNoUpdate } from '@nocobase/client';
-import { useFlowEngine } from '@nocobase/flow-engine';
+import { css, useApp } from '@nocobase/client';
+import { useFlowEngine, useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { useMapConfiguration, useMapConfig } from '../../hooks';
-import { useMapTranslation } from '../../locale';
-import { MapEditorType } from '../../types';
+import { useMapConfig } from '../../../hooks';
+import { useMapTranslation } from '../../../locale';
+import { MapEditorType } from '../../../types';
 import { Search } from './Search';
 export interface AMapComponentProps {
   value?: any;
@@ -90,27 +89,30 @@ export interface AMapForwardedRefProps {
   errMessage?: string;
 }
 
-//1.0
-export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapComponentProps>((props, ref) => {
-  const { accessKey, securityJsCode } = useMapConfiguration(props.mapType) || {};
-  const { value, onChange, block = false, readonly, disabled = block, zoom = 13, overlayCommonOptions, height } = props;
+export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProps>((props, ref) => {
+  const { accessKey, securityJsCode } = useMapConfig(props.mapType) || {};
+  const {
+    value,
+    onChange,
+    block = false,
+    readonly,
+    disabled = block,
+    zoom,
+    overlayCommonOptions,
+    height,
+    type,
+  } = props;
   const { t } = useMapTranslation();
-  const fieldSchema = useFieldSchema();
   const aMap = useRef<any>();
   const map = useRef<AMap.Map>();
   const mouseTool = useRef<any>();
   const [needUpdateFlag, forceUpdate] = useState([]);
   const [errMessage, setErrMessage] = useState('');
-  const { getField } = useCollection_deprecated();
-  const type = useMemo<MapEditorType>(() => {
-    if (props.type) return props.type;
-    const collectionField = getField(fieldSchema?.name);
-    return collectionField?.interface;
-  }, [props?.type, fieldSchema?.name]);
+  const ctx = useFlowContext();
 
   const overlay = useRef<AMap.Polygon>();
   const editor = useRef(null);
-  const navigate = useNavigateNoUpdate();
+  const { navigate } = useFlowEngine().context.router;
   const id = useRef(`nocobase-map-${type || ''}-${Date.now().toString(32)}`);
   const { modal } = App.useApp();
   const [commonOptions] = useState<AMap.PolylineOptions & AMap.PolygonOptions>({
@@ -123,9 +125,11 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
 
   useEffect(() => {
     if (map.current) {
-      map.current.setZoom(zoom);
+      setTimeout(() => {
+        map.current.setZoom(zoom);
+      }, 500);
     }
-  }, [zoom]);
+  }, [zoom, map.current]);
 
   const toRemoveOverlay = useMemoizedFn(() => {
     if (overlay.current) {
@@ -265,6 +269,9 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
   const setOverlay = (t = type, v = value, o?: AMap.PolylineOptions & AMap.PolygonOptions) => {
     if (!aMap.current) return;
     const nextOverlay = getOverlay(t, v, o);
+    if (!nextOverlay) {
+      return;
+    }
     nextOverlay.setMap(map.current);
     return nextOverlay;
   };
@@ -339,8 +346,19 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
 
     if (window.AMap) {
       try {
-        requestIdleCallback(() => {
-          map.current = new AMap.Map(id.current, {
+        // requestIdleCallback(() => {
+        //   map.current = new AMap.Map(id.current, {
+        //     resizeEnable: true,
+        //     zoom,
+        //   } as AMap.MapOptions);
+        //   aMap.current = AMap;
+        //   setErrMessage('');
+        //   forceUpdate([]);
+        // });
+        const safeIdle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1));
+
+        safeIdle(() => {
+          map.current = new window.AMap.Map(id.current, {
             resizeEnable: true,
             zoom,
           } as AMap.MapOptions);
@@ -360,8 +378,22 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
       plugins: ['AMap.MouseTool', 'AMap.PolygonEditor', 'AMap.PolylineEditor', 'AMap.CircleEditor'],
     })
       .then((amap) => {
+        if (!amap) {
+          return;
+        }
         (window as any).define = _define;
-        return requestIdleCallback(() => {
+        // return requestIdleCallback(() => {
+        //   map.current = new amap.Map(id.current, {
+        //     resizeEnable: true,
+        //     zoom,
+        //   } as AMap.MapOptions);
+        //   aMap.current = amap;
+        //   setErrMessage('');
+        //   forceUpdate([]);
+        // });
+        const safeIdle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1));
+
+        return safeIdle(() => {
           map.current = new amap.Map(id.current, {
             resizeEnable: true,
             zoom,
@@ -416,7 +448,10 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
         action={
           <Button
             type="primary"
-            onClick={() => navigate(app.pluginSettingsManager?.getRoutePath('map') || '/admin/settings/map')}
+            onClick={() => {
+              navigate(app.pluginSettingsManager?.getRoutePath('map') || '/admin/settings/map');
+              ctx.view.close();
+            }}
           >
             {t('Go to the configuration page')}
           </Button>
@@ -511,4 +546,4 @@ export const AMapComponent = React.forwardRef<AMapForwardedRefProps, AMapCompone
     </div>
   );
 });
-AMapComponent.displayName = 'AMapComponent';
+AMapCom.displayName = 'AMapCom';
