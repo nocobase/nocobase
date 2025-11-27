@@ -9,13 +9,13 @@
 
 import { SyncOutlined } from '@ant-design/icons';
 import { Loader } from '@googlemaps/js-api-loader';
-import { useFlowEngine } from '@nocobase/flow-engine';
+import { useFlowEngine, useFlowContext } from '@nocobase/flow-engine';
 import { css, useAPIClient } from '@nocobase/client';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { defaultImage } from '../../../constants';
-import { useMapConfiguration, useMapConfig } from '../../../hooks';
+import { useMapConfig } from '../../../hooks';
 import { useMapTranslation } from '../../../locale';
 import { MapEditorType } from '../../../types';
 import { Search } from './Search';
@@ -99,6 +99,7 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
   } = props;
   const { accessKey } = useMapConfig(props.mapType) || {};
   const { t } = useMapTranslation();
+  const ctx = useFlowContext();
   const drawingManagerRef = useRef<google.maps.drawing.DrawingManager>();
   const map = useRef<google.maps.Map>();
   const overlayRef = useRef<google.maps.Marker | google.maps.Polygon | google.maps.Polyline | google.maps.Circle>();
@@ -389,7 +390,13 @@ export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, Google
     return (
       <Alert
         action={
-          <Button type="primary" onClick={() => navigate('/admin/settings/map' + '?tab=google')}>
+          <Button
+            type="primary"
+            onClick={() => {
+              ctx.view.close();
+              navigate('/admin/settings/map' + '?tab=google');
+            }}
+          >
             {t('Go to the configuration page')}
           </Button>
         }

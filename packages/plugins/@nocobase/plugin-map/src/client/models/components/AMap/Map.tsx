@@ -11,11 +11,11 @@ import AMapLoader from '@amap/amap-jsapi-loader';
 import '@amap/amap-jsapi-types';
 import { SyncOutlined } from '@ant-design/icons';
 import { css, useApp } from '@nocobase/client';
-import { useFlowEngine } from '@nocobase/flow-engine';
+import { useFlowEngine, useFlowContext } from '@nocobase/flow-engine';
 import { useMemoizedFn } from 'ahooks';
 import { Alert, App, Button, Spin } from 'antd';
 import React, { useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import { useMapConfiguration, useMapConfig } from '../../../hooks';
+import { useMapConfig } from '../../../hooks';
 import { useMapTranslation } from '../../../locale';
 import { MapEditorType } from '../../../types';
 import { Search } from './Search';
@@ -102,13 +102,13 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
     height,
     type,
   } = props;
-  console.log(5555, props.zoom);
   const { t } = useMapTranslation();
   const aMap = useRef<any>();
   const map = useRef<AMap.Map>();
   const mouseTool = useRef<any>();
   const [needUpdateFlag, forceUpdate] = useState([]);
   const [errMessage, setErrMessage] = useState('');
+  const ctx = useFlowContext();
 
   const overlay = useRef<AMap.Polygon>();
   const editor = useRef(null);
@@ -448,7 +448,10 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
         action={
           <Button
             type="primary"
-            onClick={() => navigate(app.pluginSettingsManager?.getRoutePath('map') || '/admin/settings/map')}
+            onClick={() => {
+              navigate(app.pluginSettingsManager?.getRoutePath('map') || '/admin/settings/map');
+              ctx.view.close();
+            }}
           >
             {t('Go to the configuration page')}
           </Button>
