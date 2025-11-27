@@ -358,7 +358,7 @@ export const AMapCom = React.forwardRef<AMapForwardedRefProps, AMapComponentProp
         const safeIdle = window.requestIdleCallback || ((fn) => setTimeout(fn, 1));
 
         safeIdle(() => {
-          map.current = new AMap.Map(id.current, {
+          map.current = new window.AMap.Map(id.current, {
             resizeEnable: true,
             zoom,
           } as AMap.MapOptions);

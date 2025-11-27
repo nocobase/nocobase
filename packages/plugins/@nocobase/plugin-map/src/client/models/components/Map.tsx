@@ -7,14 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapReadPretty } from '@formily/react';
 import { css } from '@nocobase/client';
 import React from 'react';
 import { AMapComponentProps } from './AMap';
-import Designer from './Designer';
 import { MapComponent } from './MapComponent';
-import ReadPretty from './ReadPretty';
-import { useMapHeight } from './hook';
 
 type MapProps = AMapComponentProps;
 
@@ -26,19 +22,14 @@ const className = css`
   }
 `;
 
-const InternalMap = connect((props: MapProps) => {
-  const height = useMapHeight();
+const InternalMap = (props: MapProps) => {
   return (
     <div className={className}>
-      <MapComponent {...props} height={height} />
+      <MapComponent {...props} />
     </div>
   );
-}, mapReadPretty(ReadPretty));
-
-const Map = InternalMap as typeof InternalMap & {
-  Designer: typeof Designer;
 };
 
-Map.Designer = Designer;
+const Map = InternalMap as typeof InternalMap;
 
 export { Map };
