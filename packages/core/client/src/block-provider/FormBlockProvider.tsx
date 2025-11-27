@@ -127,7 +127,8 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
   const { __collection } = record || {};
   const { designable } = useDesignable();
   const collection = props.collection || cm.getCollection(association).name;
-
+  const { fieldSchema } = useActionContext();
+  const addChildForm = fieldSchema?.['x-component-props']?.addChild;
   const refresh = useUpdate();
 
   if (!designable && __collection && action) {
@@ -141,7 +142,7 @@ export const FormBlockProvider = withDynamicSchemaProps((props) => {
         name={props.name || 'form'}
         {...props}
         block={'form'}
-        parentRecord={parentRecord || parentRecordData}
+        parentRecord={addChildForm ? parentRecordData : parentRecord || parentRecordData}
       >
         <FormActiveFieldsProvider name="form">
           <InternalFormBlockProvider {...props} />
