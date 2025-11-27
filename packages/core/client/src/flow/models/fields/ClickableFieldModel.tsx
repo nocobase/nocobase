@@ -58,13 +58,16 @@ export class ClickableFieldModel extends FieldModel {
         // also incorrect for v1
         filterByTk = currentRecord[targetCollection.filterTargetKey];
       }
-
+      const parentObj = this.parent['associationPathName']
+        ? get(this.context.record, this.parent['associationPathName'].split('.')[0])
+        : this.context.record;
       this.dispatchEvent('click', {
         event,
         filterByTk,
-        collectionName: targetCollection.name,
-        associationName: `${sourceCollection.name}.${this.collectionField.name}`,
-        sourceId: this.context.record[sourceKey],
+        collectionName: this.collectionField.collection.name,
+        associationName: `${this.collectionField.collection.name}.${this.collectionField.name}`, // `${sourceCollection.name}.${this.collectionField.name}`,
+        sourceId: parentObj[sourceKey],
+        // sourceId: currentRecord[this.collectionField.sourceKey || this.collectionField.collection.filterTargetKey]
       });
       return;
     }
@@ -87,16 +90,16 @@ export class ClickableFieldModel extends FieldModel {
           // also incorrect for v1
           filterByTk = associationRecord?.[targetCollection.filterTargetKey];
         }
-        if (filterByTk === undefined) {
-          filterByTk = currentRecord;
-        }
+        const parentObj = this.parent['associationPathName']
+          ? get(this.context.record, this.parent['associationPathName'].split('.')[0])
+          : this.context.record;
 
         this.dispatchEvent('click', {
           event,
           filterByTk,
-          collectionName: targetCollection?.name,
-          associationName: associationField.resourceName,
-          sourceId: this.context.record?.[sourceKey] ?? this.context.resource?.getSourceId?.(),
+          collectionName: this.collectionField.collection.name,
+          associationName: `${this.collectionField.collection.name}.${this.collectionField.name}`,
+          sourceId: parentObj[sourceKey] ?? this.context.resource?.getSourceId?.(),
         });
         return;
       }

@@ -42,10 +42,7 @@ export const openViewFlow = defineFlow<FlowModel>({
       const sourceCollection = blockModel?.collection;
       collectionName = targetCollection?.name;
       dataSourceKey = targetCollection?.dataSourceKey;
-      associationName =
-        sourceCollection?.name && assocField?.name
-          ? `${sourceCollection.name}.${assocField.name}`
-          : assocField?.resourceName;
+      associationName = assocField?.resourceName;
     } else if (field) {
       // 非关联字段：用当前集合 + 字段 target
       collectionName = ctx.collection?.name;

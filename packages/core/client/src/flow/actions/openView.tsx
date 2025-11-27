@@ -585,9 +585,9 @@ export const openView = defineAction({
         const pendingType = openMode;
         const pendingInputArgs = {
           ...ctx.inputArgs,
-          dataSourceKey: params.dataSourceKey ?? ctx.inputArgs.dataSourceKey,
-          collectionName: params.collectionName ?? ctx.inputArgs.collectionName,
-          associationName: params.associationName ?? ctx.inputArgs.associationName,
+          dataSourceKey: inputArgs.dataSourceKey ?? params.dataSourceKey ?? ctx.inputArgs.dataSourceKey,
+          collectionName: inputArgs.collectionName ?? params.collectionName ?? ctx.inputArgs.collectionName,
+          associationName: inputArgs.associationName ?? params.associationName ?? ctx.inputArgs.associationName,
           filterByTk: inputArgs.filterByTk ?? params.filterByTk,
           sourceId: inputArgs.sourceId ?? params.sourceId,
           tabUid: inputArgs.tabUid ?? params.tabUid,
