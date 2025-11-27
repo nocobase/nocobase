@@ -6,10 +6,11 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { escapeT, largeField } from '@nocobase/flow-engine';
+import { tExpr, largeField } from '@nocobase/flow-engine';
 import { css, FieldModel } from '@nocobase/client';
 import React from 'react';
-import { MapComponent } from './MapComponent';
+import { MapComponent } from '../MapComponent';
+import { NAMESPACE } from '../../locale';
 
 const className = css`
   height: 100%;
@@ -39,7 +40,7 @@ export class MapFieldModel extends FieldModel {
 
 MapFieldModel.registerFlow({
   key: 'mapFieldSetting',
-  title: escapeT('Map field setting'),
+  title: tExpr('Map field settings', { ns: NAMESPACE }),
   sort: 500,
   steps: {
     zoom: {

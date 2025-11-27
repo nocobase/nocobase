@@ -74,17 +74,18 @@ const Edit = (props) => {
     if (!containerRef.current) return;
 
     const toolbarConfig = toolbar ?? defaultToolbar;
-
     const vditor = new Vditor(containerRef.current, {
       value: value ?? '',
       lang,
       cache: { enable: false },
       undoDelay: 0,
-      mode: 'wysiwyg', // 禁用预览
+      mode: props.mode || 'ir',
+      preview: { math: { engine: 'KaTeX' } },
       toolbar: toolbarConfig,
       fullscreen: { index: 1200 },
       cdn,
       minHeight: 200,
+      height: props.height,
       after: () => {
         vdRef.current = vditor;
         setEditorReady(true); // Notify that the editor is ready
@@ -167,10 +168,32 @@ const Edit = (props) => {
       },
     });
     vditorRef.current = vditor;
+    const editorEl = containerRef.current;
+    if (!editorEl) return;
+    const observer = new MutationObserver(() => {
+      const isFullscreen = editorEl.classList.contains('vditor--fullscreen');
 
+      // 只选当前编辑器内部的元素，避免影响其它编辑器
+      const resetEls = editorEl.querySelectorAll('.vditor-reset');
+      const toolbarEls = editorEl.querySelectorAll('.vditor-toolbar');
+
+      resetEls.forEach((el) => {
+        (el as HTMLElement).style.padding = isFullscreen ? '10px 200px' : '';
+      });
+
+      toolbarEls.forEach((el) => {
+        (el as HTMLElement).style.paddingLeft = isFullscreen ? '200px' : '';
+      });
+    });
+
+    observer.observe(editorEl, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
     return () => {
       vdRef.current?.destroy();
       vdRef.current = undefined;
+      observer.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [toolbar?.join(',')]);
@@ -372,8 +395,8 @@ export const MarkdownWithContextSelector: React.FC<MarkdownWithContextSelectorPr
         <div
           style={{
             position: 'absolute',
-            top: 0,
-            right: 0,
+            top: 10,
+            right: 10,
             zIndex: 1,
             lineHeight: 0,
           }}
