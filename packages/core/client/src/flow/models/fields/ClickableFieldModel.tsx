@@ -9,7 +9,7 @@
 
 import { CollectionField, tExpr } from '@nocobase/flow-engine';
 import { Tag } from 'antd';
-import { castArray } from 'lodash';
+import { castArray, get } from 'lodash';
 import React from 'react';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base';
@@ -32,6 +32,9 @@ export function transformNestedData(inputData) {
   return resultArray;
 }
 
+const hasAssociationPathName = (parent: unknown): parent is { associationPathName?: string } =>
+  !!parent && typeof parent === 'object' && 'associationPathName' in parent;
+
 export class ClickableFieldModel extends FieldModel {
   get collectionField(): CollectionField {
     return this.context.collectionField;
@@ -41,6 +44,8 @@ export class ClickableFieldModel extends FieldModel {
    * 点击打开行为
    */
   onClick(event, currentRecord) {
+    const associationPathName = hasAssociationPathName(this.parent) ? this.parent.associationPathName : undefined;
+
     if (this.collectionField.isAssociationField()) {
       const targetCollection = this.collectionField.targetCollection;
       const sourceCollection = this.context.blockModel.collection;
@@ -50,6 +55,7 @@ export class ClickableFieldModel extends FieldModel {
       let filterByTk = currentRecord[targetKey];
       if (this.collectionField.interface === 'm2m') {
         // if use currentRecord[targetKey], details block in the popup will throw error
+        // also incorrect for v1
         filterByTk = currentRecord[targetCollection.filterTargetKey];
       }
 
@@ -60,13 +66,47 @@ export class ClickableFieldModel extends FieldModel {
         associationName: `${sourceCollection.name}.${this.collectionField.name}`,
         sourceId: this.context.record[sourceKey],
       });
-    } else {
-      this.dispatchEvent('click', {
-        event,
-        sourceId: this.context.resource?.getSourceId(),
-        filterByTk: this.context.collection.getFilterByTK(this.context.record),
-      });
+      return;
     }
+
+    if (associationPathName) {
+      // 关联字段的属性
+      const collection = this.context.collection;
+      const associationField = collection?.getFieldByPath?.(associationPathName);
+      if (associationField?.isAssociationField?.()) {
+        const targetCollection = associationField.targetCollection;
+        const sourceCollection = this.context.blockModel?.collection || associationField.collection;
+        const sourceKey = associationField.sourceKey || sourceCollection?.filterTargetKey;
+        const targetKey = associationField?.targetKey || targetCollection?.filterTargetKey;
+        const associationRecord =
+          currentRecord && typeof currentRecord === 'object'
+            ? currentRecord
+            : get(this.context.record, associationPathName);
+        let filterByTk = associationRecord?.[targetKey];
+        if (associationField.interface === 'm2m') {
+          // also incorrect for v1
+          filterByTk = associationRecord?.[targetCollection.filterTargetKey];
+        }
+        if (filterByTk === undefined) {
+          filterByTk = currentRecord;
+        }
+
+        this.dispatchEvent('click', {
+          event,
+          filterByTk,
+          collectionName: targetCollection?.name,
+          associationName: associationField.resourceName,
+          sourceId: this.context.record?.[sourceKey] ?? this.context.resource?.getSourceId?.(),
+        });
+        return;
+      }
+    }
+
+    this.dispatchEvent('click', {
+      event,
+      sourceId: this.context.resource?.getSourceId(),
+      filterByTk: this.context.collection.getFilterByTK(this.context.record),
+    });
   }
 
   renderComponent(value) {
