@@ -110,14 +110,14 @@ const SortableItem: React.FC<{
             popupClassName,
             css`
               .ant-cascader-menu {
-                max-width: 600px;
+                max-width: 100%;
                 overflow-x: hidden;
                 text-overflow: ellipsis;
               }
               .ant-cascader-menu-item {
-                overflow: hidden;
+                overflow-x: hidden;
                 text-overflow: ellipsis;
-                max-width: 100%;
+                max-width: 1000px;
               }
               .ant-cascader-menu-item-content {
                 overflow: hidden;
