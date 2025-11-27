@@ -121,4 +121,37 @@ describe('actions', () => {
     });
     expect(user2.mainDepartmentId).toBe(depts[1].id);
   });
+
+  it('should allow setting mainDepartmentId when submitting departments together (user had none before)', async () => {
+    const userRepo = db.getRepository('users');
+    const user = await userRepo.findOne();
+
+    const dept = await repo.create({
+      values: { title: 'Dept3' },
+    });
+
+    const resBefore = await db.getRepository('departmentsUsers').count({
+      filter: { userId: user.id },
+    });
+    expect(resBefore).toBe(0);
+
+    await userRepo.update({
+      filterByTk: user.id,
+      values: {
+        departments: [dept.id],
+        mainDepartmentId: dept.id,
+      },
+    });
+
+    const userReload = await userRepo.findOne({
+      filterByTk: user.id,
+      fields: ['id', 'mainDepartmentId'],
+    });
+    expect(userReload.mainDepartmentId).toBe(dept.id);
+
+    const membershipCount = await db.getRepository('departmentsUsers').count({
+      filter: { userId: user.id, departmentId: dept.id },
+    });
+    expect(membershipCount).toBe(1);
+  });
 });

@@ -105,25 +105,36 @@ export class PluginDepartmentsServer extends Plugin {
       await cache.del(`departments:${model.get('userId')}`);
     });
 
-    // Validate mainDepartmentId before saving user
-    this.app.db.on('users.beforeSave', async (model, { transaction }) => {
+    this.app.db.on('users.beforeSave', async (model, options) => {
       const mainDepartmentId = model.get('mainDepartmentId');
-      if (mainDepartmentId) {
-        const userId = model.get('id');
-        if (userId) {
-          const userDepartment = await this.app.db.getRepository('departmentsUsers').findOne({
-            filter: {
-              userId: userId,
-              departmentId: mainDepartmentId,
-            },
-            transaction,
-          });
-
-          if (!userDepartment) {
-            throw new Error(`Invalid main department, it must be one of the user's departments`);
-          }
+      if (!mainDepartmentId) {
+        return;
+      }
+      const userId = model.get('id');
+      const transaction = options?.transaction;
+      if (userId) {
+        const userDepartment = await this.app.db.getRepository('departmentsUsers').findOne({
+          filter: {
+            userId: userId,
+            departmentId: mainDepartmentId,
+          },
+          transaction,
+        });
+        if (userDepartment) {
+          return;
         }
       }
+      const submittedDepartments = options?.values?.departments;
+      if (Array.isArray(submittedDepartments)) {
+        const included = submittedDepartments.some((d) => {
+          const id = typeof d === 'object' ? d && (d.id ?? d) : d;
+          return `${id}` === `${mainDepartmentId}`;
+        });
+        if (included) {
+          return;
+        }
+      }
+      throw new Error(`Invalid main department, it must be one of the user's departments`);
     });
 
     this.app.on('beforeSignOut', ({ userId }) => {
