@@ -110,7 +110,7 @@ const SortableItem: React.FC<{
             popupClassName,
             css`
               .ant-cascader-menu {
-                max-width: 500px;
+                max-width: 600px;
                 overflow-x: hidden;
                 text-overflow: ellipsis;
               }
@@ -254,69 +254,75 @@ export class CascadeSelectInnerFieldModel extends AssociationFieldModel {
   }
 }
 
+const ToOneCascadeSelect: React.FC<any> = (props: any) => {
+  const initOptions = buildTree(transformNestedData(props.value));
+  const popupClassName = `cascade-scroll-${props.name || props.id}`;
+  const bindScroll = () => {
+    const popup = document.querySelector(`.${popupClassName}`);
+    if (!popup) return;
+
+    const firstUl = popup.querySelector('ul');
+    if (!firstUl) return;
+
+    if ((firstUl as any)._hasScrollBound) return;
+
+    firstUl.addEventListener('scroll', (event) => {
+      props.onPopupScroll?.(event);
+    });
+
+    (firstUl as any)._hasScrollBound = true;
+  };
+  return (
+    <Cascader
+      disabled={props.disabled}
+      popupClassName={cx(
+        popupClassName,
+        css`
+          .ant-cascader-menu {
+            max-width: 100%;
+            overflow-x: hidden;
+            text-overflow: ellipsis;
+          }
+          .ant-cascader-menu-item {
+            overflow-x: hidden;
+            text-overflow: ellipsis;
+            max-width: 1000px;
+          }
+          .ant-cascader-menu-item-content {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+          }
+        `,
+      )}
+      changeOnSelect
+      options={props.options || initOptions}
+      onDropdownVisibleChange={(visible) => {
+        props.onDropdownVisibleChange(visible);
+        if (visible) {
+          setTimeout(() => {
+            bindScroll();
+          }, 100);
+        }
+      }}
+      fieldNames={props.fieldNames}
+      showSearch={true}
+      onSearch={(value) => props.onSearch(value)}
+      onChange={(value, item) => {
+        const val = last(item);
+        props.onChange(val);
+      }}
+      defaultValue={transformNestedData(props.value).map((v) => {
+        return v[props.collectionField.collection.filterTargetKey];
+      })}
+    />
+  );
+};
+
 // 对一
 export class CascadeSelectFieldModel extends CascadeSelectInnerFieldModel {
   render() {
-    const initOptions = buildTree(transformNestedData(this.props.value));
-    const popupClassName = `cascade-scroll-${this.props.name || this.props.id}`;
-    const bindScroll = () => {
-      const popup = document.querySelector(`.${popupClassName}`);
-      if (!popup) return;
-
-      const firstUl = popup.querySelector('ul');
-      if (!firstUl) return;
-
-      if ((firstUl as any)._hasScrollBound) return;
-
-      firstUl.addEventListener('scroll', (event) => {
-        this.props.onPopupScroll?.(event);
-      });
-
-      (firstUl as any)._hasScrollBound = true;
-    };
-    return (
-      <Cascader
-        disabled={this.props.disabled}
-        popupClassName={cx(
-          popupClassName,
-          css`
-            .ant-cascader-menu {
-              max-width: 600px;
-              overflow-x: hidden;
-              text-overflow: ellipsis;
-            }
-            .ant-cascader-menu-item {
-              overflow-x: hidden;
-              text-overflow: ellipsis;
-              max-width: 100%;
-            }
-            .ant-cascader-menu-item-content {
-              overflow: hidden;
-              text-overflow: ellipsis;
-              max-width: 100%;
-            }
-          `,
-        )}
-        changeOnSelect
-        options={this.props.options || initOptions}
-        onDropdownVisibleChange={(visible) => {
-          this.props.onDropdownVisibleChange(visible);
-          if (visible) {
-            setTimeout(bindScroll, 100); // 弹出后延迟绑定
-          }
-        }}
-        fieldNames={this.props.fieldNames}
-        showSearch={true}
-        onSearch={(value) => this.props.onSearch(value)}
-        onChange={(value, item) => {
-          const val = last(item);
-          this.props.onChange(val);
-        }}
-        defaultValue={transformNestedData(this.props.value).map((v) => {
-          return v[this.collectionField.collection.filterTargetKey];
-        })}
-      />
-    );
+    return <ToOneCascadeSelect {...this.props} collectionField={this.collectionField} />;
   }
 }
 
