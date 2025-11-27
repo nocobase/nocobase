@@ -56,7 +56,7 @@ const methodMapping = {
   },
 };
 
-export interface GoogleMapsComponentProps {
+export interface GoogleMapsCompProps {
   value?: any;
   onChange?: (value: number[]) => void;
   disabled?: boolean;
@@ -84,8 +84,7 @@ export interface GoogleMapForwardedRefProps {
   errMessage?: string;
 }
 
-//2.0
-export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, GoogleMapsComponentProps>((props, ref) => {
+export const GoogleMapsCom = React.forwardRef<GoogleMapForwardedRefProps, GoogleMapsCompProps>((props, ref) => {
   const {
     value,
     onChange,

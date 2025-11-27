@@ -15,7 +15,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { defaultImage, selectedImage } from '../../../constants';
 import { useMapTranslation } from '../../../locale';
 import { getSource } from '../../../utils';
-import { MapBlockDrawer } from '../MapBlockDrawer';
 import { GoogleMapForwardedRefProps, GoogleMapsCom, OverlayOptions } from './Map';
 import { getIcon } from './utils';
 

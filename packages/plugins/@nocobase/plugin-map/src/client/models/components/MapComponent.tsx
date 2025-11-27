@@ -10,11 +10,11 @@
 import React, { useMemo } from 'react';
 import { useMapTranslation } from '../../locale';
 import { AMapCom } from './AMap';
-import { GoogleMapsComponent } from './GoogleMaps';
+import { GoogleMapsCom } from './GoogleMaps';
 
 const MapComponents = {
   amap: AMapCom,
-  google: GoogleMapsComponent,
+  google: GoogleMapsCom,
 };
 
 export const MapComponent = React.forwardRef<any, any>((props, ref) => {
