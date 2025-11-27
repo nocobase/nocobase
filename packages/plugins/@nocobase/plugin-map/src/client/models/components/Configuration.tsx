@@ -10,9 +10,9 @@
 import { TextAreaWithGlobalScope, useAPIClient, useCompile, useLocationSearch } from '@nocobase/client';
 import { Button, Card, Form, Tabs, message } from 'antd';
 import React, { useEffect, useMemo } from 'react';
-import { MapTypes } from '../constants';
-import { MapConfigurationResourceKey, getSSKey, useMapConfiguration } from '../hooks';
-import { useMapTranslation } from '../locale';
+import { MapTypes } from '../../constants';
+import { MapConfigurationResourceKey, getSSKey, useMapConfiguration } from '../../hooks';
+import { useMapTranslation } from '../../locale';
 
 interface BaseConfigurationProps {
   type: 'amap' | 'google';
