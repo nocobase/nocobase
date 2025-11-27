@@ -26,6 +26,7 @@ import { useFormBlockContext } from '../block-provider/FormBlockProvider';
 import { useTableBlockContext } from '../block-provider/TableBlockProvider';
 import { useCollectionFilterOptionsV2 } from '../collection-manager/action-hooks';
 import { FlagProvider, useFlag } from '../flag-provider';
+import { SchemaComponentContext } from '../schema-component';
 import { useLocalVariables, useVariables } from '../variables';
 import { isVariable } from '../variables/utils/isVariable';
 import {
@@ -37,7 +38,6 @@ import {
 import { VariableInput, getShouldChange } from './VariableInput/VariableInput';
 import { Option } from './VariableInput/type';
 import { formatVariableScop } from './VariableInput/utils/formatVariableScop';
-import { SchemaComponentContext } from '../schema-component';
 const getActionContext = (context: { fieldSchema?: Schema }) => {
   const actionCtx = (context.fieldSchema?.['x-action-context'] || {}) as { collection?: string; dataSource?: string };
   return actionCtx;
@@ -147,7 +147,7 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
               getAllCollectionsInheritChain,
             }),
             renderSchemaComponent: function Com(props) {
-              const clonedSchema = useMemo(() => _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema), []);
+              const clonedSchema = useMemo(() => fieldSchemaWithoutRequired.toJSON() || ({} as Schema), []);
               clonedSchema['x-read-pretty'] = false;
               clonedSchema['x-disabled'] = false;
               _.set(clonedSchema, 'x-decorator-props.showTitle', false);
