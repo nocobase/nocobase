@@ -153,14 +153,22 @@ export default class extends Instruction {
     return {
       key: node.title ?? `#${node.id}`,
       label: node.title ?? `#${node.id}`,
-      useModel: 'DetailsBlockModel',
+      useModel: 'NodeDetailsModel',
       createModelOptions: {
-        use: 'DetailsBlockModel',
+        use: 'NodeDetailsModel',
         stepParams: {
           resourceSettings: {
             init: {
+              dataSourceKey: 'main',
               collectionName: node.config.collection,
+              dataPath: `$jobsMapByNodeKey.${node.key}`,
             },
+          },
+        },
+        subModels: {
+          grid: {
+            use: 'DetailsGridModel',
+            subType: 'object',
           },
         },
       },

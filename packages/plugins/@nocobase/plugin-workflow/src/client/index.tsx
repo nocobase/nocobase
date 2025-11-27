@@ -44,6 +44,7 @@ import {
   WorkflowTasksMobile,
 } from './WorkflowTasks';
 import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
+import { NodeDetailsModel } from './models';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -202,6 +203,10 @@ export default class PluginWorkflowClient extends Plugin {
       key: 'now',
       label: `{{t("System time", { ns: "${NAMESPACE}" })}}`,
       value: 'now',
+    });
+
+    this.flowEngine.registerModels({
+      NodeDetailsModel,
     });
   }
 }
