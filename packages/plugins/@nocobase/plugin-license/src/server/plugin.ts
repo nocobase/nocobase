@@ -10,6 +10,8 @@
 import { Plugin } from '@nocobase/server';
 import { getInstanceId, saveLicenseKey, isLicenseKeyExists } from './utils';
 import { keyDecrypt } from '@nocobase/license-kit';
+import { getLicenseValidate } from '@nocobase/utils';
+import { LICENSE_TIPS } from '../const';
 
 export class PluginLicenseServer extends Plugin {
   async afterAdd() {}
@@ -29,13 +31,48 @@ export class PluginLicenseServer extends Plugin {
           try {
             keyDecrypt(licenseKey);
           } catch (e) {
-            return ctx.throw(500, ctx.t('Invalid license key', { ns: '@nocobase/plugin-license' }));
+            return ctx.throw(500, ctx.t(LICENSE_TIPS.INVALID_LICENSE_KEY, { ns: '@nocobase/plugin-license' }));
           }
+
+          const licenseValidate = await getLicenseValidate({ key: licenseKey, ctx });
+          if (!licenseValidate.envMatch) {
+            return ctx.throw(500, ctx.t(LICENSE_TIPS.ENV_NOT_MATCH, { ns: '@nocobase/plugin-license' }));
+          }
+          if (!licenseValidate.domainMatch) {
+            return ctx.throw(
+              500,
+              ctx.t(LICENSE_TIPS.DOMAIN_NOT_MATCH, {
+                ns: '@nocobase/plugin-license',
+                domain: licenseValidate.current.domain,
+                interpolation: { escapeValue: false },
+              }),
+            );
+          }
+          ctx.body = {
+            ...licenseValidate,
+          };
           await saveLicenseKey(licenseKey);
           await next();
         },
         'is-exists': async (ctx, next) => {
           ctx.body = await isLicenseKeyExists();
+          await next();
+        },
+        'license-validate': async (ctx, next) => {
+          const isExists = await isLicenseKeyExists();
+          if (!isExists) {
+            ctx.body = {
+              keyNotExists: true,
+            };
+            await next();
+            return;
+          }
+          const { licenseKey } = ctx.request.body;
+          const licenseValidate = await getLicenseValidate({ key: licenseKey, ctx });
+          ctx.body = {
+            keyNotExists: false,
+            ...licenseValidate,
+          };
           await next();
         },
       },
