@@ -17,7 +17,8 @@
     "declaration": true,
     "experimentalDecorators": true,
     "downlevelIteration": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "outDir": "dist"
   },
   "ts-node": {
     "compilerOptions": {

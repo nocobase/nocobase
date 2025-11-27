@@ -1,0 +1,39 @@
+{
+  "name": "@nocobase/plugin-auth-wx",
+  "displayName": "Auth: WeChat",
+  "displayName.ru-RU": "Аутентификация: WeChat",
+  "displayName.zh-CN": "认证：微信",
+  "description": "WeChat authentication.",
+  "description.ru-RU": "Аутентификация WeChat.",
+  "description.zh-CN": "通过微信授权认证身份。",
+  "version": "1.9.13",
+  "main": "./dist/server/index.js",
+  "homepage": "https://docs.nocobase.com/handbook/auth-wechat",
+  "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/auth-wechat",
+  "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/auth-wechat",
+  "license": "AGPL-3.0",
+  "devDependencies": {
+    "@formily/react": "2.x",
+    "antd": "5.x",
+    "react": "18.x",
+    "react-i18next": "^11.15.1"
+  },
+  "dependencies": {
+    "wechat": "^2.1.0",
+    "wxapp_open": "^1.0.0",
+    "qrcode": "^1.5.3"
+  },
+  "peerDependencies": {
+    "@nocobase/actions": "1.x",
+    "@nocobase/auth": "1.x",
+    "@nocobase/client": "1.x",
+    "@nocobase/database": "1.x",
+    "@nocobase/plugin-auth": ">=0.17.0-alpha.7",
+    "@nocobase/server": "1.x",
+    "@nocobase/test": "1.x"
+  },
+  "gitHead": "d0b4efe4be55f8c79a98a331d99d9f8cf99021a1",
+  "keywords": [
+    "Authentication"
+  ]
+}
