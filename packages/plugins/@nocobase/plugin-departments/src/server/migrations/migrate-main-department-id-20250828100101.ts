@@ -44,13 +44,27 @@ export default class extends Migration {
       }
 
       // 迁移关联表中 isMain=true 的数据到 users.mainDepartmentId
-      const rows = await this.db.getRepository('departmentsUsers').find({
-        filter: {
-          isMain: true,
-        },
-        fields: ['userId', 'departmentId'],
-        transaction,
-      });
+      const collection = this.db.getCollection('departmentsUsers');
+      const tableName = collection.model.tableName;
+      const qi = this.db.sequelize.getQueryInterface();
+      const tableInfo = await qi.describeTable(tableName, { transaction });
+      const isMainField = Object.keys(tableInfo).find(
+        (key) => key.toLowerCase() === 'ismain' || key.toLowerCase() === 'is_main',
+      );
+
+      let rows: any[] = [];
+      if (isMainField) {
+        const [results] = await this.db.sequelize.query(
+          `SELECT * FROM ${qi.quoteIdentifier(tableName)} WHERE ${qi.quoteIdentifier(isMainField)} = ${
+            this.db.sequelize.getDialect() === 'postgres' ? 'true' : '1'
+          }`,
+          { transaction },
+        );
+        rows = results.map((row: any) => ({
+          userId: row['userId'] || row['user_id'],
+          departmentId: row['departmentId'] || row['department_id'],
+        }));
+      }
 
       for (const row of rows) {
         await this.db.getRepository('users').update({
