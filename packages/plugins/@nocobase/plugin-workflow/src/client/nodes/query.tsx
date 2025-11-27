@@ -208,6 +208,11 @@ export default class extends Instruction {
               dataPath: `$jobsMapByNodeKey.${node.key}`,
             },
           },
+          cardSettings: {
+            titleDescription: {
+              title: `{{t("Query record", { ns: "${NAMESPACE}" })}}`,
+            },
+          },
         },
         subModels: {
           grid: {
