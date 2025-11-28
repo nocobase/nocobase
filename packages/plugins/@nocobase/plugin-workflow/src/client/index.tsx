@@ -46,6 +46,11 @@ import {
 } from './WorkflowTasks';
 import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
 import { NodeDetailsModel, NodeValueModel } from './models';
+import { Collection } from '@nocobase/flow-engine';
+import workflows from '../common/collections/workflows';
+import flow_nodes from '../common/collections/flow_nodes';
+import executions from '../common/collections/executions';
+import workflowCategories from '../common/collections/workflowCategories';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -118,6 +123,14 @@ export default class PluginWorkflowClient extends Plugin {
 
   registerTaskType(key: string, option: TaskTypeOptions) {
     this.taskTypes.register(key, { ...option, key });
+  }
+
+  registerCollectionsToDataSource(collectionOptions: any[]) {
+    collectionOptions.forEach((option) => {
+      this.flowEngine.dataSourceManager
+        .getDataSource('main')
+        .addCollection(new Collection({ ...option, hidden: true }));
+    });
   }
 
   async load() {
@@ -210,6 +223,8 @@ export default class PluginWorkflowClient extends Plugin {
       NodeDetailsModel,
       NodeValueModel,
     });
+
+    this.registerCollectionsToDataSource([workflows, flow_nodes, executions, workflowCategories]);
   }
 }
 
