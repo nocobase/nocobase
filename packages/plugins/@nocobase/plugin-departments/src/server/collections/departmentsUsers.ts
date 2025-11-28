@@ -29,5 +29,15 @@ export default defineCollection({
       allowNull: false,
       defaultValue: false,
     },
+    /**
+     * @deprecated
+     * use `user.mainDepartmentId` instead
+     */
+    {
+      type: 'boolean',
+      name: 'isMain',
+      allowNull: false,
+      defaultValue: false,
+    },
   ],
 });

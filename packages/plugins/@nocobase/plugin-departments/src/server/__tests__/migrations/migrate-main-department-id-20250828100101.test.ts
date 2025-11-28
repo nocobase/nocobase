@@ -118,28 +118,9 @@ describe('migrate mainDepartmentId from departmentsUsers.isMain', () => {
     }
   });
 
-  // Scenario 1: The code still has the field defined, and DB has data.
-  it('Scenario 1: Old Collection Structure + Old DB Data', async () => {
+  it('should migrate mainDepartmentId from departmentsUsers.isMain', async () => {
     // Verify ORM has the field
     expect(db.getCollection('departmentsUsers').hasField('isMain')).toBe(true);
-
-    // Run Migration
-    const migration = new Migration({
-      db: db as any,
-      queryInterface: db.sequelize.getQueryInterface(),
-      sequelize: db.sequelize,
-    } as any);
-    await migration.up();
-
-    // Verify Results
-    await verifyMigrationSuccess(db, userId, deptId);
-  });
-
-  // Scenario 2: The code has removed the field, but DB still has data (the issue we fixed).
-  it('Scenario 2: New Collection Structure + Old DB Data', async () => {
-    // Simulate code update: remove field from ORM definition
-    db.getCollection('departmentsUsers').removeField('isMain');
-    expect(db.getCollection('departmentsUsers').hasField('isMain')).toBe(false);
 
     // Run Migration
     const migration = new Migration({

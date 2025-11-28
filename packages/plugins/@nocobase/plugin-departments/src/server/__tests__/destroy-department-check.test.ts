@@ -65,7 +65,6 @@ describe('destroy department check', () => {
     const res = await agent.resource('departments').destroy({
       filterByTk: dept.id,
     });
-    console.log('-----res----', Object.keys(res));
     expect(res.status).toBe(400);
   });
 });
