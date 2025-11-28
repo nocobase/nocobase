@@ -90,16 +90,13 @@ export class ClickableFieldModel extends FieldModel {
           // also incorrect for v1
           filterByTk = associationRecord?.[targetCollection.filterTargetKey];
         }
-        const parentObj = this.parent['associationPathName']
-          ? get(this.context.record, this.parent['associationPathName'].split('.')[0])
-          : this.context.record;
 
         this.dispatchEvent('click', {
           event,
           filterByTk,
           collectionName: this.collectionField.collection.name,
           associationName: `${this.collectionField.collection.name}.${this.collectionField.name}`,
-          sourceId: parentObj[sourceKey] ?? this.context.resource?.getSourceId?.(),
+          sourceId: this.context.record[sourceKey] ?? this.context.resource?.getSourceId?.(),
         });
         return;
       }
