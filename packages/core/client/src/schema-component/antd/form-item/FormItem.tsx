@@ -12,7 +12,6 @@ import { IFormItemProps, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo } from 'react';
-import { Tooltip } from 'antd';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useApp } from '../../../application';
 import { useFormActiveFields } from '../../../block-provider/hooks/useFormActiveFields';
@@ -32,7 +31,7 @@ import { useTranslation } from 'react-i18next';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { VariableScope } from '../../../variables/VariableScope';
 import { useFlag } from '../../../flag-provider';
-
+import { EllipsisWithTooltip } from '../../../schema-component';
 Item.displayName = 'FormilyFormItem';
 
 const formItemWrapCss = css`
@@ -134,19 +133,18 @@ export const FormItem: any = withDynamicSchemaProps(
                 }}
                 feedbackText={
                   isInSubTable && field.errors?.length ? (
-                    <Tooltip
-                      title={field.errors.map((e) => e.messages).join(', ')}
-                      placement="top"
-                      color="#fff" // Tooltip 背景白色
-                      overlayInnerStyle={{
-                        color: 'red', // 字体红色
-                        maxWidth: 300, // 可选，控制宽度
+                    <EllipsisWithTooltip
+                      ellipsis
+                      style={{
+                        color: 'red',
+                        maxWidth: 300,
                         whiteSpace: 'normal',
                         wordBreak: 'break-word',
+                        width: '100%',
                       }}
                     >
                       <div style={{ cursor: 'pointer' }}>{field.errors.map((e) => e.messages).join(', ')}</div>
-                    </Tooltip>
+                    </EllipsisWithTooltip>
                   ) : null
                 }
               />
