@@ -86,8 +86,13 @@
       },
       {
         "type": "custom-link",
-        "label": "Logger日志",
+        "label": "Logger 日志",
         "link": "/plugin-development/server/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Telemetry 遥测",
+        "link": "/plugin-development/server/telemetry"
       },
       {
         "type": "custom-link",

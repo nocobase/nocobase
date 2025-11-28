@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "日志",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "服务端日志",
+        "link": "/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "服务端日志、审计日志、历史记录",
+        "link": "/log-and-monitor/logger/overview"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "遥测",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "使用说明",
+        "link": "/log-and-monitor/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "导出器",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP",
+            "link": "/log-and-monitor/telemetry/exporter-http"
+          },
+          {
+            "type": "custom-link",
+            "label": "Prometheus",
+            "link": "/log-and-monitor/telemetry/exporter-prometheus"
+          }
+        ]
+      }
+    ]
+  }
+]
