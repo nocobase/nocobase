@@ -10,25 +10,19 @@
 import { Context, Next } from '@nocobase/actions';
 import { DatabaseDataSource } from '@nocobase/data-source-manager';
 import { ALLOW_MAX_COLLECTIONS_COUNT } from '../constants';
+import { DataSourceModel } from '../models/data-source';
+import _ from 'lodash';
 
 export async function loadDataSourceTablesIntoCollections(ctx: Context, next: Next) {
+  const dataSourcesRepo = ctx.app.db.getRepository('dataSources');
   const { actionName, resourceName, params } = ctx.action;
   if (resourceName === 'dataSources' && (actionName === 'create' || actionName === 'update')) {
     const { options, type, collections, key } = params.values || {};
-    let dataSource: DatabaseDataSource;
-    if (actionName === 'create') {
-      dataSource = ctx.app.dataSourceManager.factory.create(type, {
-        name: key,
-        ...options,
-      });
-      dataSource.setLogger(ctx.logger);
-    } else {
-      const { filterByTk: dataSourceKey } = params;
-      dataSource = ctx.app.dataSourceManager.dataSources.get(dataSourceKey);
-      if (!dataSource) {
-        throw new Error(`dataSource ${dataSourceKey} not found`);
-      }
-    }
+    const dataSource: DatabaseDataSource = ctx.app.dataSourceManager.factory.create(type, {
+      name: key,
+      ...options,
+    });
+    dataSource.setLogger(ctx.logger);
     if (!(dataSource instanceof DatabaseDataSource)) {
       return next();
     }
@@ -40,7 +34,16 @@ export async function loadDataSourceTablesIntoCollections(ctx: Context, next: Ne
         );
       }
     } else {
-      await dataSource.loadTables(ctx, collections);
+      if (actionName === 'update') {
+        const model: DataSourceModel = await dataSourcesRepo.findByTargetKey(key);
+        if (_.isEqual(model.get('options'), options)) {
+          await ctx.app.dataSourceManager.get(key).loadTables(ctx, collections);
+        } else {
+          await dataSource.loadTables(ctx, collections);
+        }
+      } else {
+        await dataSource.loadTables(ctx, collections);
+      }
     }
     if (collections) {
       delete ctx.action.params.values.collections;
