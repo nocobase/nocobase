@@ -6,7 +6,7 @@
   "description": "Useful plugin for doing dynamic calculation based on expression collection records in workflow.",
   "description.zh-CN": "用于在工作流中进行基于数据行的动态表达式计算。",
   "description.ru-RU": "Плагин для выполнения динамических вычислений на основе записей коллекции выражений в рабочем процессе.",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-dynamic-calculation",

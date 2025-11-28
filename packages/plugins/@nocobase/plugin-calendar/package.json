@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-calendar",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "displayName": "Calendar",
   "displayName.ru-RU": "Календарь",
   "displayName.zh-CN": "日历",

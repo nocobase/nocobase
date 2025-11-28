@@ -6,7 +6,7 @@
   "description": "Could be used for workflows which some of decisions are made by users.",
   "description.ru-RU": "Может использоваться в рабочих процессах, где какие-то решения принимаются пользователями.",
   "description.zh-CN": "用于人工控制部分决策的流程。",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-manual",

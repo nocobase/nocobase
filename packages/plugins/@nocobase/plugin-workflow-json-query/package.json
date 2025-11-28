@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-json-query",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "displayName": "Workflow: JSON calculation",
   "displayName.zh-CN": "工作流：JSON 计算",
   "description": "Used for transforming or calculating values from complex JSON data (result of HTTP request or SQL etc.).",
@@ -12,7 +12,7 @@
     "Workflow"
   ],
   "devDependencies": {
-    "@nocobase/plugin-workflow-test": "1.9.14",
+    "@nocobase/plugin-workflow-test": "1.9.15",
     "jmespath": "^0.16.0",
     "jsonata": "^2.0.3",
     "jsonpath-plus": "^10.3.0"

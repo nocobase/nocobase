@@ -6,7 +6,7 @@
   "description": "Create and manage block templates for reuse on pages.",
   "description.ru-RU": "Создавайте и управляйте шаблонами блоков для повторного использования на страницах.",
   "description.zh-CN": "创建和管理区块模板，用于在页面中重复使用。",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/block-template",

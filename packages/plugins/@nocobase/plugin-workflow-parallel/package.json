@@ -6,7 +6,7 @@
   "description": "Could be used for parallel execution of branch processes in the workflow.",
   "description.ru-RU": "Может использоваться для параллельного выполнения ветвящихся процессов в рабочем процессе.",
   "description.zh-CN": "用于在工作流中需要并行执行的分支流程。",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-parallel",

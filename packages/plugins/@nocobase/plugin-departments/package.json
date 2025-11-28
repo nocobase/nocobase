@@ -6,7 +6,7 @@
   "description": "Organize users by departments, set hierarchical relationships, link roles to control permissions, and use departments as variables in workflows and expressions.",
   "description.ru-RU": "Организация пользователей по подразделениям, установление иерархических связей, привязка ролей для управления правами и использование подразделений в качестве переменных в рабочих процессах и выражениях.",
   "description.zh-CN": "以部门来组织用户，设定上下级关系，绑定角色控制权限，并支持作为变量用于工作流和表达式。",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/actions": "1.x",

@@ -6,7 +6,7 @@
   "description.ru-RU": "Обработка ошибок и исключений приложения.",
   "description": "Handling application errors and exceptions.",
   "description.zh-CN": "处理应用程序中的错误和异常。",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/error-handler",

@@ -3,7 +3,7 @@
   "displayName": "Block: Map",
   "displayName.ru-RU": "Блок: Карта",
   "displayName.zh-CN": "区块：地图",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "description": "Map block, support Gaode map and Google map, you can also extend more map types.",
   "description.ru-RU": "Блок карты, поддерживает карты Gaode и Google, можно расширить поддержку других типов карт.",
   "description.zh-CN": "地图区块，支持高德地图和 Google 地图，你也可以扩展更多地图类型。",

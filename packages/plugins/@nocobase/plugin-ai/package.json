@@ -6,7 +6,7 @@
   "description": "Support integration with AI services, providing AI-related workflow nodes to enhance business processing capabilities.",
   "description.ru-RU": "Поддержка интеграции с AI-сервисами: предоставляются AI-узлы для рабочих процессов, расширяя возможности бизнес-обработки.",
   "description.zh-CN": "支持接入 AI 服务，提供 AI 相关的工作流节点，增强业务处理能力。",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "main": "dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/action-ai",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/action-ai",

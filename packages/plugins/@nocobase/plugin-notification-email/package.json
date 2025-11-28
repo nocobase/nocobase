@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notification-email",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "displayName": "Notification: Email",
   "displayName.ru-RU": "Уведомления: Электронная почта (Email)",
   "displayName.zh-CN": "通知：电子邮件",

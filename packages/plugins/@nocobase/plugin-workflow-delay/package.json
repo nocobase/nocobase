@@ -6,7 +6,7 @@
   "description": "Could be used in workflow parallel branch for waiting other branches.",
   "description.ru-RU": "Может использоваться в параллельных ветках рабочего процесса для ожидания завершения других веток.",
   "description.zh-CN": "可用于工作流并行分支中等待其他分支执行完成。",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-delay",

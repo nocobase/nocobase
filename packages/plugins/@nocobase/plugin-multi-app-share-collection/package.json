@@ -6,7 +6,7 @@
   "description": "",
   "description.ru-RU": "Обеспечивает совместное использование коллекций между несколькими приложениями.",
   "description.zh-CN": "",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "main": "./dist/server/index.js",
   "devDependencies": {
     "@formily/react": "2.x",

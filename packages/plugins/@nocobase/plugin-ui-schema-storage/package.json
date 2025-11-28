@@ -6,7 +6,7 @@
   "description": "Provides centralized UI schema storage service.",
   "description.zh-CN": "提供中心化的 UI schema 存储服务。",
   "description.ru-RU": "Предоставляет централизованный сервис хранения UI схем.",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/ui-schema-storage",

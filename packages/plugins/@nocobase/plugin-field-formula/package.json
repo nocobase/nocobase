@@ -6,7 +6,7 @@
   "description": "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.",
   "description.zh-CN": "可以配置并存储同一条记录的多字段值之间的计算结果，支持 Math.js 和 Excel formula functions 两种引擎",
   "description.ru-RU": "Настройка и сохранение результатов вычислений между значениями нескольких полей в одной записи с поддержкой движков Math.js и Excel formula functions.",
-  "version": "1.9.14",
+  "version": "1.9.15",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/field-formula",
