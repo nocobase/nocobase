@@ -24,6 +24,7 @@ import { RoleResourceActionModel } from './model/RoleResourceActionModel';
 import { RoleResourceModel } from './model/RoleResourceModel';
 import { setSystemRoleMode } from './actions/union-role';
 import { checkAssociationOperate } from './middlewares/check-association-operate';
+import { checkChangesWithAssociation } from './middlewares/check-change-with-association';
 
 export class PluginACLServer extends Plugin {
   get acl() {
@@ -129,6 +130,7 @@ export class PluginACLServer extends Plugin {
         'roles.dataSourcesCollections:*',
         'roles.dataSourceResources:*',
         'dataSourcesRolesResourcesScopes:*',
+        'dataSourcesRolesResourcesActions:*',
         'rolesResourcesScopes:*',
       ],
     });
@@ -631,6 +633,11 @@ export class PluginACLServer extends Plugin {
     this.app.acl.use(checkAssociationOperate, {
       before: 'core',
     });
+
+    this.app.resourceManager.registerPreActionHandler('create', checkChangesWithAssociation);
+    this.app.resourceManager.registerPreActionHandler('firstOrCreate', checkChangesWithAssociation);
+    this.app.resourceManager.registerPreActionHandler('updateOrCreate', checkChangesWithAssociation);
+    this.app.resourceManager.registerPreActionHandler('update', checkChangesWithAssociation);
 
     this.db.on('afterUpdateCollection', async (collection) => {
       if (collection.options.loadedFromCollectionManager || collection.options.asStrategyResource) {
