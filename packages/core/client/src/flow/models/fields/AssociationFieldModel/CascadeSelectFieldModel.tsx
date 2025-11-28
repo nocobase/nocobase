@@ -12,6 +12,7 @@ import { last } from 'lodash';
 import { CollectionField, EditableItemModel, escapeT, MultiRecordResource } from '@nocobase/flow-engine';
 import { DeleteOutlined } from '@ant-design/icons';
 import { css, cx } from '@emotion/css';
+import { debounce } from 'lodash';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { DndContext, closestCenter, PointerSensor, useSensor, useSensors, DragEndEvent } from '@dnd-kit/core';
@@ -109,14 +110,14 @@ const SortableItem: React.FC<{
             popupClassName,
             css`
               .ant-cascader-menu {
-                max-width: 500px;
+                max-width: 100%;
                 overflow-x: hidden;
                 text-overflow: ellipsis;
               }
               .ant-cascader-menu-item {
-                overflow: hidden;
+                overflow-x: hidden;
                 text-overflow: ellipsis;
-                max-width: 100%;
+                max-width: 1000px;
               }
               .ant-cascader-menu-item-content {
                 overflow: hidden;
@@ -253,70 +254,75 @@ export class CascadeSelectInnerFieldModel extends AssociationFieldModel {
   }
 }
 
+const ToOneCascadeSelect: React.FC<any> = (props: any) => {
+  const initOptions = buildTree(transformNestedData(props.value));
+  const popupClassName = `cascade-scroll-${props.name || props.id}`;
+  const bindScroll = () => {
+    const popup = document.querySelector(`.${popupClassName}`);
+    if (!popup) return;
+
+    const firstUl = popup.querySelector('ul');
+    if (!firstUl) return;
+
+    if ((firstUl as any)._hasScrollBound) return;
+
+    firstUl.addEventListener('scroll', (event) => {
+      props.onPopupScroll?.(event);
+    });
+
+    (firstUl as any)._hasScrollBound = true;
+  };
+  return (
+    <Cascader
+      disabled={props.disabled}
+      popupClassName={cx(
+        popupClassName,
+        css`
+          .ant-cascader-menu {
+            max-width: 100%;
+            overflow-x: hidden;
+            text-overflow: ellipsis;
+          }
+          .ant-cascader-menu-item {
+            overflow-x: hidden;
+            text-overflow: ellipsis;
+            max-width: 1000px;
+          }
+          .ant-cascader-menu-item-content {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 100%;
+          }
+        `,
+      )}
+      changeOnSelect
+      options={props.options || initOptions}
+      onDropdownVisibleChange={(visible) => {
+        props.onDropdownVisibleChange(visible);
+        if (visible) {
+          setTimeout(() => {
+            bindScroll();
+          }, 100);
+        }
+      }}
+      fieldNames={props.fieldNames}
+      showSearch={true}
+      onSearch={(value) => props.onSearch(value)}
+      onChange={(value, item) => {
+        const val = last(item);
+        props.onChange(val);
+      }}
+      defaultValue={transformNestedData(props.value).map((v) => {
+        return v[props.collectionField.collection.filterTargetKey];
+      })}
+    />
+  );
+};
+
 // 对一
 export class CascadeSelectFieldModel extends CascadeSelectInnerFieldModel {
   render() {
-    const initOptions = buildTree(transformNestedData(this.props.value));
-    const popupClassName = `cascade-scroll-${this.props.name || this.props.id}`;
-
-    const bindScroll = () => {
-      const popup = document.querySelector(`.${popupClassName}`);
-      if (!popup) return;
-
-      const firstUl = popup.querySelector('ul');
-      if (!firstUl) return;
-
-      if ((firstUl as any)._hasScrollBound) return;
-
-      firstUl.addEventListener('scroll', (event) => {
-        this.props.onPopupScroll?.(event);
-      });
-
-      (firstUl as any)._hasScrollBound = true;
-    };
-    return (
-      <Cascader
-        disabled={this.props.disabled}
-        popupClassName={cx(
-          popupClassName,
-          css`
-            .ant-cascader-menu {
-              max-width: 500px;
-              overflow-x: hidden;
-              text-overflow: ellipsis;
-            }
-            .ant-cascader-menu-item {
-              overflow: hidden;
-              text-overflow: ellipsis;
-              max-width: 100%;
-            }
-            .ant-cascader-menu-item-content {
-              overflow: hidden;
-              text-overflow: ellipsis;
-              max-width: 100%;
-            }
-          `,
-        )}
-        changeOnSelect
-        options={this.props.options || initOptions}
-        onDropdownVisibleChange={(visible) => {
-          this.props.onDropdownVisibleChange(visible);
-          if (visible) {
-            setTimeout(bindScroll, 100); // 弹出后延迟绑定
-          }
-        }}
-        fieldNames={this.props.fieldNames}
-        showSearch={true}
-        onSearch={(value) => console.log(value)}
-        onChange={(value, item) => {
-          const val = last(item);
-          this.props.onChange(val);
-        }}
-        defaultValue={transformNestedData(this.props.value).map((v) => {
-          return v[this.collectionField.collection.filterTargetKey];
-        })}
-      />
-    );
+    return <ToOneCascadeSelect {...this.props} collectionField={this.collectionField} />;
   }
 }
 
@@ -332,7 +338,7 @@ export class CascadeSelectListFieldModel extends CascadeSelectInnerFieldModel {
         onPopupScroll={this.props.onPopupScroll}
         fieldNames={this.props.fieldNames}
         showSearch={true}
-        onSearch={(value) => console.log(value)}
+        onSearch={(value) => this.props.onSearch(value)}
         onChange={(value) => {
           this.props.onChange(value);
         }}
@@ -462,6 +468,63 @@ CascadeSelectInnerFieldModel.registerFlow({
           paginationState.loading = false;
         }
       },
+    },
+  },
+});
+
+async function originalHandler(ctx, params) {
+  try {
+    const targetCollection = ctx.model.collectionField.targetCollection;
+    const labelFieldName = ctx.model.props.fieldNames.label;
+    const targetLabelField = targetCollection.getField(labelFieldName);
+
+    const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
+      targetLabelField.options.interface,
+    );
+    const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
+
+    const searchText = ctx.inputArgs.searchText?.trim();
+    const resource = ctx.model.resource;
+    const key = `${labelFieldName}.${operator}`;
+    if (searchText === '') {
+      resource.removeFilterGroup(labelFieldName);
+    } else {
+      resource.setPage(1);
+      resource.addFilterGroup(labelFieldName, {
+        [key]: searchText,
+      });
+    }
+    await resource.refresh();
+    const data = resource.getData().map((item) => ({
+      ...item,
+      isLeaf: !item.children?.length,
+      children: item.children,
+    }));
+    ctx.model.setDataSource(data);
+    if (data.length < paginationState.pageSize) {
+      paginationState.hasMore = false;
+    } else {
+      paginationState.hasMore = true;
+      paginationState.page++;
+    }
+    ctx.model.setProps({
+      searchText: searchText,
+    });
+  } catch (error) {
+    console.error('CascadeSelectFieldModel search flow error:', error);
+    ctx.model.setDataSource([]);
+  }
+}
+
+const debouncedHandler = debounce(originalHandler, 500);
+
+// 模糊搜索
+CascadeSelectInnerFieldModel.registerFlow({
+  key: 'searchSettings',
+  on: 'search',
+  steps: {
+    step1: {
+      handler: debouncedHandler,
     },
   },
 });

@@ -9,8 +9,9 @@
 
 import React from 'react';
 import { FieldModel, TableColumnModel } from '@nocobase/client';
-import { escapeT } from '@nocobase/flow-engine';
-import { MapComponent } from '../../components/MapComponent';
+import { tExpr } from '@nocobase/flow-engine';
+import { MapComponent } from '../MapComponent';
+import { NAMESPACE } from '../../locale';
 
 export const PointReadPretty = (props) => {
   const { displayStyle = 'text', value, collectionField, type } = props;
@@ -18,7 +19,7 @@ export const PointReadPretty = (props) => {
   if (displayStyle === 'text') {
     return value?.map?.((item) => (Array.isArray(item) ? `(${item.join(',')})` : item)).join(',');
   }
-  return <MapComponent readonly mapType={mapType} {...props} type={type}></MapComponent>;
+  return <MapComponent readonly disabled mapType={mapType} {...props} type={type}></MapComponent>;
 };
 export class DisplayMapFieldModel extends FieldModel {
   getMapFieldType() {
@@ -40,10 +41,10 @@ export class DisplayMapFieldModel extends FieldModel {
 
 DisplayMapFieldModel.registerFlow({
   key: 'mapFieldSetting',
-  title: escapeT('Map field setting'),
+  title: tExpr('Map field settings', { ns: NAMESPACE }),
   steps: {
     displayStyle: {
-      title: escapeT('Display style'),
+      title: tExpr('Display style'),
       uiSchema: (ctx) => {
         if (ctx.model.parent instanceof TableColumnModel) {
           return null;
@@ -53,8 +54,8 @@ DisplayMapFieldModel.registerFlow({
             'x-component': 'Radio.Group',
             'x-decorator': 'FormItem',
             enum: [
-              { label: escapeT('Text'), value: 'text' },
-              { label: escapeT('Map'), value: 'map' },
+              { label: tExpr('Text'), value: 'text' },
+              { label: tExpr('Map'), value: 'map' },
             ],
           },
         };

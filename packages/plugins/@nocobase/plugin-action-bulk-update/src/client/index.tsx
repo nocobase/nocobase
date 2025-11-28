@@ -36,5 +36,5 @@ export class PluginActionBulkUpdateClient extends Plugin {
     this.app.schemaInitializerManager.addItem('map:configureActions', 'customize.bulkUpdate', initializerData);
   }
 }
-
+export { BulkUpdateActionModel } from './BulkUpdateActionModel';
 export default PluginActionBulkUpdateClient;
