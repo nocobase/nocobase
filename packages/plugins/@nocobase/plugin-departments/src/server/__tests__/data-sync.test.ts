@@ -17,7 +17,7 @@ describe('department data sync', async () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['field-sort', 'user-data-sync', 'users', 'departments'],
+      plugins: ['error-handler', 'field-sort', 'user-data-sync', 'users', 'departments'],
     });
     db = app.db;
     const plugin = app.pm.get('user-data-sync') as PluginUserDataSyncServer;
@@ -166,7 +166,8 @@ describe('department data sync', async () => {
     });
     expect(departmentUser).toBeTruthy();
     expect(departmentUser.isOwner).toBe(false);
-    expect(departmentUser.isMain).toBe(false);
+    expect(user.mainDepartmentId).toBeNull();
+
     await resourceManager.updateOrCreate({
       sourceName: 'test',
       dataType: 'user',
@@ -193,7 +194,13 @@ describe('department data sync', async () => {
     });
     expect(departmentUser2).toBeTruthy();
     expect(departmentUser2.isOwner).toBe(true);
-    expect(departmentUser2.isMain).toBe(true);
+
+    const updatedUser = await db.getRepository('users').findOne({
+      filterByTk: user.id,
+      fields: ['id', 'mainDepartmentId'],
+    });
+    expect(updatedUser.mainDepartmentId).toBe(department.id);
+
     await resourceManager.updateOrCreate({
       sourceName: 'test',
       dataType: 'user',
@@ -229,7 +236,7 @@ describe('department data sync', async () => {
     });
     expect(departmentUser3).toBeTruthy();
     expect(departmentUser3.isOwner).toBe(true);
-    expect(departmentUser3.isMain).toBe(false);
+    expect(user2.mainDepartmentId).toBeNull();
   });
 
   it('should update department custom field', async () => {
