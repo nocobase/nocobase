@@ -89,12 +89,14 @@ export default class extends Trigger {
     const dataSourceHeader = context.get('x-data-source') || 'main';
     const dataSource = context.app.dataSourceManager.dataSources.get(dataSourceHeader);
     if (!dataSource) {
+      context.logger.warn(`[Workflow post-action]: data source "${dataSourceHeader}" not found`);
       return;
     }
 
     const collection = dataSource.collectionManager.getCollection(resourceName);
 
     if (!collection) {
+      context.logger.warn(`[Workflow post-action]: collection "${resourceName}" not found`);
       return;
     }
 

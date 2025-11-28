@@ -147,7 +147,10 @@ export const SchemaSettingsDefaultValue = function DefaultValueConfigure(props: 
               getAllCollectionsInheritChain,
             }),
             renderSchemaComponent: function Com(props) {
-              const clonedSchema = useMemo(() => _.cloneDeep(fieldSchemaWithoutRequired) || ({} as Schema), []);
+              const clonedSchema = useMemo(
+                () => _.cloneDeep(fieldSchemaWithoutRequired.toJSON()) || ({} as Schema),
+                [],
+              );
               clonedSchema['x-read-pretty'] = false;
               clonedSchema['x-disabled'] = false;
               _.set(clonedSchema, 'x-decorator-props.showTitle', false);

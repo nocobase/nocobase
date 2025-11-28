@@ -22,14 +22,14 @@ import { enableLink, fieldComponent, titleField } from './fieldSettings';
 export const DepartmentOwnersFieldSettings = new SchemaSettings({
   name: 'fieldSettings:component:DepartmentOwnersField',
   items: [
-    {
-      ...fieldComponent,
-    },
-    {
-      ...titleField,
-    },
-    {
-      ...enableLink,
-    },
+    // {
+    //   ...fieldComponent,
+    // },
+    // {
+    //   ...titleField,
+    // },
+    // {
+    //   ...enableLink,
+    // },
   ],
 });
