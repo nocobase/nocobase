@@ -140,7 +140,7 @@ EditFormModel.registerFlow({
           }
           const targetKey = ctx.association?.targetKey;
 
-          if (targetKey) {
+          if (targetKey && ctx.association?.interface !== 'm2m') {
             ctx.resource.setMeta({
               currentFilterByTk: currentRecord?.[targetKey],
             });
