@@ -65,18 +65,25 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   }
 
   getInputArgs() {
-    const inputArgs = {};
+    const inputArgs: Record<string, any> = {};
+    const defaultKeys: string[] = [];
     if (this.context.resource) {
       const sourceId = this.context.resource.getSourceId();
       if (sourceId) {
         inputArgs['sourceId'] = sourceId;
+        defaultKeys.push('sourceId');
       }
     }
     if (this.context.collection && this.context.record) {
       const filterByTk = this.context.collection.getFilterByTK(this.context.record);
       if (filterByTk) {
         inputArgs['filterByTk'] = filterByTk;
+        defaultKeys.push('filterByTk');
       }
+    }
+    if (defaultKeys.length) {
+      // 标记哪些字段是自动推断出来的默认值，openView 会用它来区分“显式传入”与“默认值”
+      inputArgs['defaultInputKeys'] = defaultKeys;
     }
     return inputArgs;
   }
