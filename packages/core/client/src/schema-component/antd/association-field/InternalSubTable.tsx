@@ -82,9 +82,11 @@ export const InternalSubTable = observer(
               }
               .ant-formily-item-error-help {
                 box-shadow: none !important;
-                margin-top: -12px !important;
                 background: none !important;
                 overflow-x: hidden;
+              }
+              .ant-formily-item-control:has(.ant-formily-item-error-help) .ant-formily-item-control-content-component {
+                margin-bottom: 13px !important;
               }
             `}
             layout={'vertical'}
