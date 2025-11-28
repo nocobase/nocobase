@@ -5,6 +5,26 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.15](https://github.com/nocobase/nocobase/compare/v1.9.14...v1.9.15) - 2025-11-28
+
+### 🐛 修复
+
+- **[client]**
+  - 避免打开字段默认值配置时的报错 ([#7997](https://github.com/nocobase/nocobase/pull/7997)) by @mytharcher
+
+  - 修复关系树表表格区块添加子记录时报错的问题 ([#7989](https://github.com/nocobase/nocobase/pull/7989)) by @katherinehhh
+
+- **[部门]** 修复部门插件中的部门用户关联字段无法编辑的问题 ([#7462](https://github.com/nocobase/nocobase/pull/7462)) by @heziqiang
+
+- **[数据表：树]** 修复因树表父字段获取不正确导致路径表更新失败的问题 ([#8000](https://github.com/nocobase/nocobase/pull/8000)) by @2013xile
+
+- **[数据表字段：多对多 (数组)]** 修复子表格中多对多数组关系字段数据无法更新问题 ([#7998](https://github.com/nocobase/nocobase/pull/7998)) by @cgyrock
+
+- **[工作流：审批]**
+  - 修复用户在撤回重新提交后，工作流上下文中缺少申请人数据的问题 by @mytharcher
+
+  - 修复用户带评论提交审批后在节点结果中评论为空的问题 by @mytharcher
+
 ## [v1.9.14](https://github.com/nocobase/nocobase/compare/v1.9.13...v1.9.14) - 2025-11-26
 
 ### 🎉 新特性
