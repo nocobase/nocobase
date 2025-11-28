@@ -504,7 +504,9 @@ export const openView = defineAction({
       const assocField = ctx.collection.dataSource.collectionManager.getAssociation(
         ctx.blockModel?.resource?.resourceName,
       );
-      recordKeyPath = assocField?.targetKey || recordKeyPath;
+      if (assocField?.interface !== 'm2m') {
+        recordKeyPath = assocField?.targetKey || recordKeyPath;
+      }
     }
 
     const filterByTkExpr = hasRecord ? `{{ ctx.record.${recordKeyPath} }}` : undefined;
