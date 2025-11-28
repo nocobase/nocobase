@@ -51,6 +51,8 @@ import workflows from '../common/collections/workflows';
 import flow_nodes from '../common/collections/flow_nodes';
 import executions from '../common/collections/executions';
 import workflowCategories from '../common/collections/workflowCategories';
+import workflowStats from '../common/collections/workflowStats';
+import workflowVersionStats from '../common/collections/workflowVersionStats';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -224,7 +226,14 @@ export default class PluginWorkflowClient extends Plugin {
       NodeValueModel,
     });
 
-    this.registerCollectionsToDataSource([workflows, flow_nodes, executions, workflowCategories]);
+    this.registerCollectionsToDataSource([
+      workflows,
+      flow_nodes,
+      executions,
+      workflowCategories,
+      workflowStats,
+      workflowVersionStats,
+    ]);
   }
 }
 
