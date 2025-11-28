@@ -63,5 +63,11 @@
     "name": "sdk",
     "label": "@nocobase/sdk",
     "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "telemetry",
+    "label": "@nocobase/telemetry",
+    "collapsed": true
   }
 ]

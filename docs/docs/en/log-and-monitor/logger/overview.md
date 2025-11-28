@@ -4,7 +4,7 @@
 
 ### System Logs
 
-> See [System Logs](./logger/index.md#system-logs)
+> See [System Logs](./index.md#system-logs)
 
 - Record runtime information of the application system, track code execution chains, and trace exceptions or runtime errors.
 - Logs are categorized by severity levels and functional modules.
@@ -13,7 +13,7 @@
 
 ### Request Logs
 
-> See [Request Logs](./logger/index.md#request-logs)
+> See [Request Logs](./index.md#request-logs)
 
 - Record HTTP API request and response details, focusing on request ID, API path, headers, response status code, and duration.
 - Output via terminal or stored as files.
