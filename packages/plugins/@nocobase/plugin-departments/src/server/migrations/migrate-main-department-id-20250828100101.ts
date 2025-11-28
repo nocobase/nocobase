@@ -61,6 +61,7 @@ export default class extends Migration {
             mainDepartmentId: row.departmentId,
           },
           transaction,
+          hooks: false,
         });
       }
 
