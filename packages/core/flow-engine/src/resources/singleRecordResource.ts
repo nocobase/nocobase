@@ -71,7 +71,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
     const config = this.mergeRequestConfig(
       {
         params: {
-          filterByTk: this.request.params.filterByTk,
+          filterByTk: this.jsonStringify(this.request.params.filterByTk),
         },
       },
       options,
