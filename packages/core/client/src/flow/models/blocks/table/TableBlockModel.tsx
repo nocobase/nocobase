@@ -34,7 +34,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActionModel, BlockSceneEnum, CollectionBlockModel } from '../../base';
 import { QuickEditFormModel } from '../form/QuickEditFormModel';
 import { TableColumnModel } from './TableColumnModel';
-import { extractIndex, adjustColumnOrder, setNestedValue, extractIds } from './utils';
+import { extractIndex, adjustColumnOrder, setNestedValue, extractIds, getRowKey } from './utils';
 import { commonConditionHandler, ConditionBuilder } from '../../../components/ConditionBuilder';
 import { HighPerformanceSpin } from '../../../../schema-component/common/high-performance-spin/HighPerformanceSpin';
 
@@ -196,7 +196,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
    */
   highlightRow(record: any) {
     if (record) {
-      this.setProps('highlightedRowKey', record[this.collection.filterTargetKey]);
+      this.setProps('highlightedRowKey', getRowKey(record, this.collection.filterTargetKey));
     }
   }
 
@@ -732,7 +732,7 @@ const HighPerformanceTable = React.memo(
       expandedRowKeys,
     } = props;
     const [selectedRowKeys, setSelectedRowKeys] = React.useState<string[]>(() =>
-      model.resource.getSelectedRows().map((row) => row[model.collection.filterTargetKey]),
+      model.resource.getSelectedRows().map((row) => getRowKey(row, model.collection.filterTargetKey)),
     );
     const rowSelection = useMemo(() => {
       return {
@@ -740,7 +740,7 @@ const HighPerformanceTable = React.memo(
         type: 'checkbox',
         onChange: (_, selectedRows) => {
           model.resource.setSelectedRows(selectedRows);
-          setSelectedRowKeys(selectedRows.map((row) => row[model.collection.filterTargetKey]));
+          setSelectedRowKeys(selectedRows.map((row) => getRowKey(row, model.collection.filterTargetKey)));
         },
         selectedRowKeys,
         renderCell: model.renderCell,
@@ -771,16 +771,18 @@ const HighPerformanceTable = React.memo(
     );
     const rowClassName = useCallback(
       (record) => {
-        return record[model.collection?.filterTargetKey] === highlightedRowKey ? highlightedRowClass : '';
+        return getRowKey(record, model.collection?.filterTargetKey) === highlightedRowKey ? highlightedRowClass : '';
       },
       [highlightedRowKey, model.collection?.filterTargetKey],
     );
     const pagination = useMemo(() => _pagination, [dataSource]);
     const onRow = useCallback(
       (record, rowIndex) => {
+        const rowKey = getRowKey(record, model.collection.filterTargetKey);
+
         return {
           onClick: async (event) => {
-            if (highlightedRowKey !== record[model.collection.filterTargetKey]) {
+            if (highlightedRowKey !== rowKey) {
               defineClickedRowRecordVariable(model, record);
               await model.dispatchEvent('rowClick', { record, rowIndex, event });
               removeClickedRowRecordVariable(model);
@@ -792,6 +794,7 @@ const HighPerformanceTable = React.memo(
       },
       [highlightedRowKey, model],
     );
+
     const [rowKeys, setExpandedRowKeys] = useState(expandedRowKeys || []);
 
     useEffect(() => {
@@ -814,28 +817,16 @@ const HighPerformanceTable = React.memo(
       };
     }, [rowKeys]);
 
-    function cleanEmptyChildren(data) {
-      return data.map((item) => {
-        const { children, ...rest } = item;
-
-        if (Array.isArray(children) && children.length > 0) {
-          return { ...rest, children: cleanEmptyChildren(children) };
-        }
-
-        return { ...rest };
-      });
-    }
-
     return (
       <MemoizedTable
         components={model.components}
         tableLayout="fixed"
         size={size}
-        rowKey={model.collection.filterTargetKey}
+        rowKey={(record) => getRowKey(record, model.collection.filterTargetKey)}
         rowSelection={rowSelection as any}
         virtual={virtual}
         scroll={tableScroll}
-        dataSource={cleanEmptyChildren(dataSource)}
+        dataSource={dataSource}
         columns={columns}
         pagination={pagination}
         onChange={handleChange}
@@ -885,7 +876,8 @@ TableBlockModel.registerEvents({
       commonConditionHandler(ctx, params);
 
       const model = ctx.model as TableBlockModel;
-      if (model.props.highlightedRowKey !== ctx.inputArgs.record[model.collection.filterTargetKey]) {
+      const rowKey = getRowKey(ctx.inputArgs.record, model.collection.filterTargetKey);
+      if (model.props.highlightedRowKey !== rowKey) {
         model.highlightRow(ctx.inputArgs.record);
       } else {
         model.clearHighlight();
