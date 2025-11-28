@@ -32,7 +32,6 @@ class PluginCollectionTreeServer extends Plugin {
             return;
           }
           const name = `${dataSource.name}_${collection.name}_path`;
-          const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
 
           //always define tree path collection
           const options = {};
@@ -71,6 +70,7 @@ class PluginCollectionTreeServer extends Plugin {
           //afterUpdate
           this.db.on(`${collection.name}.afterUpdate`, async (model: Model, options) => {
             const tk = collection.filterTargetKey;
+            const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
             // only update parentId and filterTargetKey
             if (!(model._changed.has(tk) || model._changed.has(parentForeignKey))) {
               return;
@@ -109,6 +109,7 @@ class PluginCollectionTreeServer extends Plugin {
 
           this.db.on(`${collection.name}.beforeSave`, async (model: Model) => {
             const tk = collection.filterTargetKey as string;
+            const parentForeignKey = collection.treeParentField?.foreignKey || 'parentId';
             if (model.get(tk) && model.get(parentForeignKey) === model.get(tk)) {
               throw new Error('Cannot set itself as the parent node');
             }
