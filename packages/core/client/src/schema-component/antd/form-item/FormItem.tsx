@@ -12,6 +12,7 @@ import { IFormItemProps, FormItem as Item } from '@formily/antd-v5';
 import { Field } from '@formily/core';
 import { observer, useField, useFieldSchema } from '@formily/react';
 import React, { useEffect, useMemo } from 'react';
+import { Tooltip } from 'antd';
 import { ACLCollectionFieldProvider } from '../../../acl/ACLProvider';
 import { useApp } from '../../../application';
 import { useFormActiveFields } from '../../../block-provider/hooks/useFormActiveFields';
@@ -30,6 +31,7 @@ import useParseDefaultValue from './hooks/useParseDefaultValue';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { VariableScope } from '../../../variables/VariableScope';
+import { useFlag } from '../../../flag-provider';
 
 Item.displayName = 'FormilyFormItem';
 
@@ -74,6 +76,7 @@ export const FormItem: any = withDynamicSchemaProps(
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();
     useLinkageRulesForSubTableOrSubForm();
+    const { isInSubTable } = useFlag();
 
     useEffect(() => {
       addActiveFieldName?.(schema.name as string);
@@ -104,7 +107,7 @@ export const FormItem: any = withDynamicSchemaProps(
     if (field.data?.hidden) {
       return null;
     }
-
+    console.log(schema);
     return (
       <VariableScope scopeId={schema?.['x-uid']} type="formItem">
         <CollectionFieldProvider allowNull={true}>
@@ -129,6 +132,23 @@ export const FormItem: any = withDynamicSchemaProps(
                   ...(wrapperStyle.backgroundColor ? { paddingLeft: '5px', paddingRight: '5px' } : {}),
                   ...wrapperStyle,
                 }}
+                feedbackText={
+                  isInSubTable && field.errors?.length ? (
+                    <Tooltip
+                      title={field.errors.map((e) => e.messages).join(', ')}
+                      placement="top"
+                      color="#fff" // Tooltip 背景白色
+                      overlayInnerStyle={{
+                        color: 'red', // 字体红色
+                        maxWidth: 300, // 可选，控制宽度
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                      }}
+                    >
+                      <div style={{ cursor: 'pointer' }}>{field.errors.map((e) => e.messages).join(', ')}</div>
+                    </Tooltip>
+                  ) : null
+                }
               />
             </ACLCollectionFieldProvider>
           </BlockItem>
