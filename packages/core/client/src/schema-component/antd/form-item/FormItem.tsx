@@ -30,7 +30,8 @@ import useParseDefaultValue from './hooks/useParseDefaultValue';
 import { useTranslation } from 'react-i18next';
 import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { VariableScope } from '../../../variables/VariableScope';
-
+import { useFlag } from '../../../flag-provider';
+import { EllipsisWithTooltip } from '../../../schema-component';
 Item.displayName = 'FormilyFormItem';
 
 const formItemWrapCss = css`
@@ -74,6 +75,7 @@ export const FormItem: any = withDynamicSchemaProps(
     useParseDefaultValue();
     useLazyLoadDisplayAssociationFieldsOfForm();
     useLinkageRulesForSubTableOrSubForm();
+    const { isInSubTable } = useFlag();
 
     useEffect(() => {
       addActiveFieldName?.(schema.name as string);
@@ -104,7 +106,7 @@ export const FormItem: any = withDynamicSchemaProps(
     if (field.data?.hidden) {
       return null;
     }
-
+    console.log(schema);
     return (
       <VariableScope scopeId={schema?.['x-uid']} type="formItem">
         <CollectionFieldProvider allowNull={true}>
@@ -129,6 +131,22 @@ export const FormItem: any = withDynamicSchemaProps(
                   ...(wrapperStyle.backgroundColor ? { paddingLeft: '5px', paddingRight: '5px' } : {}),
                   ...wrapperStyle,
                 }}
+                feedbackText={
+                  isInSubTable && field.errors?.length ? (
+                    <EllipsisWithTooltip
+                      ellipsis
+                      style={{
+                        color: 'red',
+                        maxWidth: 300,
+                        whiteSpace: 'normal',
+                        wordBreak: 'break-word',
+                        width: '100%',
+                      }}
+                    >
+                      <div style={{ cursor: 'pointer' }}>{field.errors.map((e) => e.messages).join(', ')}</div>
+                    </EllipsisWithTooltip>
+                  ) : null
+                }
               />
             </ACLCollectionFieldProvider>
           </BlockItem>
