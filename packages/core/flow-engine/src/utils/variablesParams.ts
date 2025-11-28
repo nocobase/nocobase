@@ -19,42 +19,15 @@ import { createAssociationSubpathResolver } from './associationObjectVariable';
 import type { JSONValue } from './params-resolvers';
 import _ from 'lodash';
 
-// Narrowest resource shape we rely on for inference
-type ResourceLike = {
-  getResourceName?: () => string;
-  getDataSourceKey?: () => string | undefined;
-  getFilterByTk?: () => unknown;
-  getSourceId?: () => unknown;
-};
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function getResource(ctx: FlowContext): ResourceLike | undefined {
-  const r = (ctx as FlowContext)['resource'];
-  return isObject(r) ? (r as ResourceLike) : undefined;
-}
-
-type CollectionShape = { name?: string; dataSourceKey?: string };
-
-function getCollection(ctx: FlowContext): CollectionShape | undefined {
-  const c = (ctx as FlowContext)['collection'] as unknown;
-  if (isObject(c)) {
-    const mc = c as Partial<CollectionShape>;
-    return { name: mc.name, dataSourceKey: mc.dataSourceKey };
-  }
-  return undefined;
-}
-
 // 从 FlowContext 中推断当前记录的 context params 信息
 export function inferRecordRef(ctx: FlowContext): RecordRef | undefined {
-  const resource = getResource(ctx);
-  const collectionObj = getCollection(ctx);
+  const resource = ctx.resource;
+  const collectionObj = ctx.collection;
+  const recordValue = ctx.record;
 
   const resourceName = collectionObj?.name || resource?.getResourceName?.();
   const dataSourceKey = collectionObj?.dataSourceKey || resource?.getDataSourceKey?.();
-  const filterByTk = resource?.getFilterByTk?.();
+  const filterByTk = resource?.getFilterByTk?.() ?? collectionObj?.getFilterByTK?.(recordValue);
 
   if (!resourceName || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
   const parts = String(resourceName).split('.');
@@ -180,8 +153,8 @@ export function createRecordResolveOnServerWithLocal(
 }
 
 export function inferParentRecordRef(ctx: FlowContext): RecordRef | undefined {
-  const resource = getResource(ctx);
-  const dataSourceKey = getCollection(ctx)?.dataSourceKey || resource?.getDataSourceKey?.();
+  const resource = ctx.resource;
+  const dataSourceKey = ctx.collection?.dataSourceKey || resource?.getDataSourceKey?.();
   const resourceName = resource?.getResourceName?.();
   const sourceId = resource?.getSourceId?.();
   if (!resourceName || typeof sourceId === 'undefined' || sourceId === null) return undefined;
