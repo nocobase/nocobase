@@ -7,12 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SchemaComponent, useAPIClient, useFormBlockContext } from '@nocobase/client';
-import { Card, Typography, Spin, message, Input, Button } from 'antd';
+import { Card, Typography, Spin, message, Input, Button, Alert } from 'antd';
 import { useAsyncEffect } from 'ahooks';
 import { useT } from './locale';
 import { CopyOutlined } from '@ant-design/icons';
+import { LicenseValidate } from './LicenseValidate';
+import { LicenseValidateResult } from '@nocobase/utils';
+import { LICENSE_TIPS } from '../const';
 
 const copyTextToClipboard = ({
   text,
@@ -104,7 +107,7 @@ const useSubmitProps = () => {
   const saveLicenseKey = async (licenseKey: string) => {
     setLoading(true);
     try {
-      await api.request({
+      const res: any = await api.request({
         url: '/license:license-key',
         method: 'POST',
         data: {
@@ -112,7 +115,20 @@ const useSubmitProps = () => {
         },
       });
       setLoading(false);
-      message.success(t('License key saved successfully, please re-run the plugin installation.'));
+      const licenseValidateResult: LicenseValidateResult = res?.data?.data || {};
+      if (licenseValidateResult.isPkgConnection === false) {
+        message.warning(t('The license key was saved successfully') + '\n' + t(LICENSE_TIPS.PKG_CONNECTION_ERROR), 10);
+        return;
+      }
+      if (licenseValidateResult.isPkgLogin === false) {
+        message.warning(t('The license key was saved successfully') + '\n' + t(LICENSE_TIPS.PKG_LOGIN_ERROR), 10);
+        return;
+      }
+      message.success(
+        t(
+          'The license key was saved successfully. To install commercial plugins, please restart the NocoBase service.',
+        ),
+      );
     } catch (e) {
       setLoading(false);
     }
@@ -217,6 +233,7 @@ export default function LicenseSetting() {
       },
     },
   };
+
   return (
     <Card bordered={false}>
       <SchemaComponent
@@ -229,6 +246,8 @@ export default function LicenseSetting() {
           },
         }}
       />
+      <br />
+      <LicenseValidate />
     </Card>
   );
 }
