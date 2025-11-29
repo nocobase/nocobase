@@ -13,5 +13,6 @@ pkg: '@nocobase/plugin-file-manager'
 - [存储引擎](./storage/index)
 - [文件表](./file-collection)
 - [附件字段](./field-attachment)
+- [文件预览](./file-preview)
 - [HTTP API](./http-api)
 - [扩展开发](./development/index)
