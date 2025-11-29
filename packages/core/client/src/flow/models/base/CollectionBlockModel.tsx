@@ -160,7 +160,7 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
               if (!this.filterCollection(field.targetCollection)) {
                 return null;
               }
-              let sourceId = `{{ctx.popup.record.${field.sourceKey}}}`;
+              let sourceId = `{{ctx.popup.record.${field.sourceKey || field.collection.filterTargetKey}}}`;
               if (field.sourceKey === field.collection.filterTargetKey) {
                 sourceId = '{{ctx.view.inputArgs.filterByTk}}'; // 此时可以直接通过弹窗url读取，减少后端解析
               }

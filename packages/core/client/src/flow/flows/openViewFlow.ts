@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineFlow, tExpr, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
+import { defineFlow, tExpr, FlowModel, FlowModelContext, CollectionField } from '@nocobase/flow-engine';
 
 export const openViewFlow = defineFlow<FlowModel>({
   key: 'popupSettings',
@@ -27,13 +27,22 @@ export const openViewFlow = defineFlow<FlowModel>({
     // 字段上下文：兼容关联字段/普通字段
     const field = ctx.collectionField;
     const blockModel = ctx.blockModel;
+    const associationPathName = ctx.model?.parent?.['associationPathName'];
+    const fieldCollection = ctx.collection || blockModel?.collection;
+    const isAssociationField = (target?: CollectionField | null): target is CollectionField =>
+      !!target?.isAssociationField?.();
+    const associationField =
+      !isAssociationField(field) && associationPathName
+        ? fieldCollection?.getFieldByPath?.(associationPathName)
+        : undefined;
+    const assocField = isAssociationField(field) ? field : associationField;
 
-    if (field?.isAssociationField?.()) {
-      const targetCollection = field.targetCollection;
+    if (isAssociationField(assocField)) {
+      const targetCollection = assocField.targetCollection;
       const sourceCollection = blockModel?.collection;
       collectionName = targetCollection?.name;
       dataSourceKey = targetCollection?.dataSourceKey;
-      associationName = sourceCollection?.name && field?.name ? `${sourceCollection.name}.${field.name}` : undefined;
+      associationName = assocField?.resourceName;
     } else if (field) {
       // 非关联字段：用当前集合 + 字段 target
       collectionName = ctx.collection?.name;
