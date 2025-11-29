@@ -15,6 +15,7 @@ import {
   inferParentRecordRef,
   inferRecordRef,
 } from '../variablesParams';
+import { FlowEngine, SingleRecordResource } from '../..';
 
 describe('variablesParams helpers', () => {
   it('inferRecordRef and inferParentRecordRef from FlowContext-like object', () => {
@@ -29,6 +30,29 @@ describe('variablesParams helpers', () => {
     };
     expect(inferRecordRef(ctx)).toEqual({ collection: 'posts', dataSourceKey: 'main', filterByTk: 1 });
     expect(inferParentRecordRef(ctx)).toEqual({ collection: 'posts', dataSourceKey: 'main', filterByTk: 9 });
+  });
+
+  it('inferRecordRef fallback to collection.getFilterByTK when resource has no filterByTk', () => {
+    const engine = new FlowEngine();
+    const ds = engine.context.dataSourceManager.getDataSource('main')!;
+    ds.addCollection({
+      name: 'users',
+      filterTargetKey: 'id',
+      fields: [
+        { name: 'id', type: 'integer', interface: 'number' },
+        { name: 'roles', type: 'belongsToMany', target: 'roles', interface: 'm2m' },
+      ],
+    });
+    const collection = ds.getCollection('users');
+    const resource = engine.context.createResource(SingleRecordResource);
+    resource.setResourceName('main.users');
+    // 不设置 filterByTk，模拟资源无 filter 时的 fallback
+    const ctx: any = engine.context;
+    ctx.defineProperty('resource', { value: resource });
+    ctx.defineProperty('collection', { value: collection });
+    ctx.defineProperty('record', { value: { id: 5 } });
+
+    expect(inferRecordRef(ctx)).toEqual({ collection: 'users', dataSourceKey: 'main', filterByTk: 5 });
   });
 
   it('collectContextParamsForTemplate builds input for used variables only', async () => {

@@ -18,6 +18,9 @@ export class AssociationFieldGroupModel extends FlowModel {
       return targetCollection.getToOneAssociationFields().map((field) => {
         const fPath = fieldPath ? `${fieldPath}.${field.name}` : field.name;
         if (!field.targetCollection) {
+          console.error(
+            `AssociationFieldGroupModel: target collection ${field.target} not found for field ${field.name}`,
+          );
           return;
         }
         return {
@@ -74,7 +77,7 @@ export class AssociationFieldGroupModel extends FlowModel {
                 key: `${fPath}-children-associationField`,
                 label: 'Display association fields',
                 type: 'group',
-                children: displayAssociationFields(field.targetCollection, fPath),
+                children: (displayAssociationFields(field.targetCollection, fPath) || []).filter(Boolean),
               },
             ];
           },
