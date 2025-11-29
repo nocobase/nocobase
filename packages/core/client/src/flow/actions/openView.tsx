@@ -491,13 +491,10 @@ export const openView = defineAction({
     },
   },
   defaultParams: async (ctx) => {
-    // 当存在 ctx.record 上下文时提供默认 filterByTk；否则不提供
     const tree = ctx.getPropertyMetaTree() || [];
     const hasRecord = Array.isArray(tree) && tree.some((n: any) => String(n?.name) === 'record');
-    const col = (ctx as any)?.collection;
     // 决定主键字段：优先使用集合的 filterTargetKey；否则直接回退 'id'
-    let recordKeyPath =
-      hasRecord && col && typeof col.filterTargetKey === 'string' && col.filterTargetKey ? col.filterTargetKey : 'id';
+    let recordKeyPath = ctx.collection?.filterTargetKey || 'id';
 
     // 如果是关系字段，这个需要获取关系字段对应的key
     if (ctx.blockModel?.resource?.resourceName) {
@@ -511,24 +508,18 @@ export const openView = defineAction({
 
     const filterByTkExpr = hasRecord ? `{{ ctx.record.${recordKeyPath} }}` : undefined;
     // 仅在“当前 resource.sourceId 有实际值”时设置默认值，
-    // 否则不设置，避免出现无效的默认变量。
     let sourceIdExpr: string | undefined = undefined;
-    try {
-      const sid = (ctx as any)?.resource?.getSourceId?.();
-      if (sid !== undefined && sid !== null && String(sid) !== '') {
-        sourceIdExpr = `{{ ctx.resource.sourceId }}`;
-      }
-    } catch (_) {
-      // ignore
+    const sid = ctx.resource?.getSourceId?.();
+    if (sid !== undefined && sid !== null && String(sid) !== '') {
+      sourceIdExpr = `{{ ctx.resource.sourceId }}`;
     }
-    const defaultDSKey = col?.dataSourceKey;
-    const defaultCol = col?.name;
+    const defaultDSKey = ctx.collection?.dataSourceKey;
+    const defaultCol = ctx.collection?.name;
     return {
       mode: 'drawer',
       size: 'medium',
       pageModelClass: 'ChildPageModel',
       uid: ctx.model?.uid,
-      // 当存在 ctx.record 时提供默认 filterByTk
       ...(filterByTkExpr ? { filterByTk: filterByTkExpr } : {}),
       ...(sourceIdExpr ? { sourceId: sourceIdExpr } : {}),
       ...(defaultDSKey ? { dataSourceKey: defaultDSKey } : {}),
@@ -551,15 +542,15 @@ export const openView = defineAction({
     const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? undefined;
     const actionDefaults = (ctx.model as any)?.getInputArgs?.() || {};
     const defaultKeys: string[] = (inputArgs as any)?.defaultInputKeys || [];
-    const pickWithDefault = <T = any,>(key: 'filterByTk' | 'sourceId'): T | undefined => {
+    const pickWithDefault = (key: 'filterByTk' | 'sourceId') => {
       const hasInput = typeof inputArgs?.[key] !== 'undefined';
       const isDefault = defaultKeys.includes(key);
       // 优先级：显式传入的 inputArgs > 配置 params > 自动默认值
-      if (hasInput && !isDefault) return inputArgs[key] as T;
-      if (typeof params?.[key] !== 'undefined') return params[key] as T;
+      if (hasInput && !isDefault) return inputArgs[key];
+      if (typeof params?.[key] !== 'undefined') return params[key];
       // 如果 inputArgs 中的值被标记为默认，则它只在 params 未提供时兜底
-      if (hasInput) return inputArgs[key] as T;
-      return actionDefaults?.[key] as T;
+      if (hasInput) return inputArgs[key];
+      return actionDefaults?.[key];
     };
     const mergedFilterByTk = pickWithDefault('filterByTk');
     const mergedSourceId = pickWithDefault('sourceId');
