@@ -63,7 +63,7 @@ export class ClickableFieldModel extends FieldModel {
         event,
         filterByTk,
         collectionName: this.collectionField.collection.name,
-        associationName: `${this.collectionField.collection.name}.${this.collectionField.name}`, // `${sourceCollection.name}.${this.collectionField.name}`,
+        associationName: `${sourceCollection.name}.${this.collectionField.name}`, // `${sourceCollection.name}.${this.collectionField.name}`,
         sourceId: parentObj[sourceKey],
       });
       return;
@@ -75,13 +75,17 @@ export class ClickableFieldModel extends FieldModel {
       const associationField = collection?.getFieldByPath?.(associationPathName);
       if (associationField?.isAssociationField?.()) {
         const targetCollection = associationField.targetCollection;
-        const sourceCollection = this.context.blockModel?.collection || associationField.collection;
+        const sourceCollection = associationField.collection;
         const sourceKey = associationField.sourceKey || sourceCollection?.filterTargetKey;
         const targetKey = associationField?.targetKey || targetCollection?.filterTargetKey;
-        const associationRecord =
-          currentRecord && typeof currentRecord === 'object'
-            ? currentRecord
-            : get(this.context.record, associationPathName);
+        const associationRecord = currentRecord ?? get(this.context.record, associationPathName);
+        const associationParentField = associationPathName.includes('.')
+          ? collection.getFieldByPath(associationPathName.split('.')[0])
+          : null;
+        const foreignKey = associationParentField?.foreignKey;
+        const parentObj = associationPathName.includes('.')
+          ? get(this.context.record, associationPathName.split('.')[0])
+          : this.context.record;
         let filterByTk = associationRecord?.[targetKey];
         if (associationField.interface === 'm2m') {
           // also incorrect for v1
@@ -92,8 +96,9 @@ export class ClickableFieldModel extends FieldModel {
           event,
           filterByTk,
           collectionName: this.collectionField.collection.name,
-          associationName: `${this.collectionField.collection.name}.${this.collectionField.name}`,
-          sourceId: this.context.record[sourceKey] ?? this.context.resource?.getSourceId?.(),
+          associationName: `${associationField.collection.name}.${this.collectionField.name}`,
+          // list api， 如果append了关系字段的某个属性，它并不会将关系字段对应的 filterByTk (sourceKey) 属性值返回， 但是会返回foriegnKey对应的值
+          sourceId: parentObj[sourceKey] || this.context.record[foreignKey],
         });
         return;
       }
