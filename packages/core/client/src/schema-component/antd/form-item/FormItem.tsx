@@ -106,7 +106,7 @@ export const FormItem: any = withDynamicSchemaProps(
     if (field.data?.hidden) {
       return null;
     }
-    console.log(schema);
+
     return (
       <VariableScope scopeId={schema?.['x-uid']} type="formItem">
         <CollectionFieldProvider allowNull={true}>
