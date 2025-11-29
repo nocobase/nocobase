@@ -221,6 +221,7 @@ export function Input(props: VariableInputProps) {
   const [isFieldValue, setIsFieldValue] = React.useState(
     hideVariableButton || (children && value != null ? true : false),
   );
+  const [activePath, setActivePath] = React.useState<React.Key[] | null>(null);
 
   const parsed = useMemo(() => parseValue(value, parseOptions), [parseOptions, value]);
   const isConstant = typeof parsed === 'string';
@@ -305,6 +306,9 @@ export function Input(props: VariableInputProps) {
   const loadData = async (selectedOptions: DefaultOptionType[]) => {
     const option = selectedOptions[selectedOptions.length - 1];
     if (!option.children?.length && !option.isLeaf && option.loadChildren) {
+      if (selectedOptions.length) {
+        setActivePath(selectedOptions.map((item) => item?.[names.value] as React.Key));
+      }
       let activeKey;
       if (variable && variable.length >= 2) {
         for (const key of variable) {
@@ -321,6 +325,7 @@ export function Input(props: VariableInputProps) {
 
   const onSwitch = useCallback(
     (next, optionPath: any[]) => {
+      setActivePath(null);
       if (next[0] === '$') {
         setIsFieldValue(true);
         if (variable) {
@@ -359,7 +364,14 @@ export function Input(props: VariableInputProps) {
       return onChange(v);
     }
     onChange(null);
+    setActivePath(null);
   }, [constantOption]);
+
+  const onDropdownVisibleChange = useCallback((open: boolean) => {
+    if (!open) {
+      setActivePath(null);
+    }
+  }, []);
 
   useEffect(() => {
     const run = async () => {
@@ -401,6 +413,8 @@ export function Input(props: VariableInputProps) {
   }, [variable, options.length]);
 
   const disabled = props.disabled || form.disabled;
+
+  const cascaderValue = variable ?? activePath ?? cValue;
 
   return wrapSSR(
     <>
@@ -484,12 +498,13 @@ export function Input(props: VariableInputProps) {
           <FlagProvider isInXButton>
             <Cascader
               options={options}
-              value={variable ?? cValue}
+              value={cascaderValue}
               onChange={onSwitch}
               loadData={loadData as any}
               changeOnSelect={changeOnSelect ?? true}
               fieldNames={fieldNames}
               disabled={disabled}
+              onDropdownVisibleChange={onDropdownVisibleChange}
             >
               {button ?? (
                 <XButton

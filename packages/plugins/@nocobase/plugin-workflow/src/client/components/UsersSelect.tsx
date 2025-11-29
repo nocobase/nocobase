@@ -44,7 +44,7 @@ function InternalUsersSelect({ value, onChange }) {
   const scope = useWorkflowVariableOptions({ types: [isUserKeyField] });
 
   return (
-    <Variable.Input nullable={false} scope={scope} value={value} onChange={onChange}>
+    <Variable.Input nullable={false} scope={scope} value={value} onChange={onChange} changeOnSelect={false}>
       <RemoteSelect
         fieldNames={{
           label: 'nickname',
