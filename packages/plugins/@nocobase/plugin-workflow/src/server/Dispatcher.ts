@@ -354,7 +354,7 @@ export default class Dispatcher {
             `instance is not serving as worker or local pending list is not empty, sending execution (${execution.id}) to queue`,
           );
           try {
-            this.plugin.app.eventQueue.publish(this.plugin.channelPendingExecution, {
+            await this.plugin.app.eventQueue.publish(this.plugin.channelPendingExecution, {
               executionId: execution.id,
             });
           } catch (qErr) {
