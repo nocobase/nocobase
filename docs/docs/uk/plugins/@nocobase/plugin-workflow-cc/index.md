@@ -1,0 +1,10 @@
+displayName: "Робочий процес: Копія"
+packageName: '@nocobase/plugin-workflow-cc'
+description: |
+  Надає функцію копіювання (CC) у робочих процесах, щоб надсилати погодження або будь-яку іншу інформацію визначеним користувачам.
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# Робочий процес: Копія

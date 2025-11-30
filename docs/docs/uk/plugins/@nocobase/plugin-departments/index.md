@@ -1,0 +1,10 @@
+displayName: "Відділи"
+packageName: '@nocobase/plugin-departments'
+description: |
+  Організовуйте користувачів за відділами, встановлюйте ієрархічні зв'язки, прив'язуйте ролі для контролю дозволів та використовуйте відділи як змінні в робочих процесах і виразах.
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# Відділи

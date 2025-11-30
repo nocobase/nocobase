@@ -1,0 +1,70 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Tổng quan",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Khóa API",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tài liệu API",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Kịch bản sử dụng",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/sso/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Luồng công việc",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Yêu cầu HTTP",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Nguồn dữ liệu ngoài",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Nội dung nhúng",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Khối Iframe",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nhúng",
+        "link": "/integration/embed/"
+      }
+    ]
+  }
+]

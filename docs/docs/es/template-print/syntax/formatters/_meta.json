@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Visión general",
+    "link": "/template-print/syntax/formatters/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formato de texto",
+    "link": "/template-print/syntax/formatters/text-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formato de número",
+    "link": "/template-print/syntax/formatters/number-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formato de moneda",
+    "link": "/template-print/syntax/formatters/currency-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formato de fecha",
+    "link": "/template-print/syntax/formatters/date-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formato de intervalo de tiempo",
+    "link": "/template-print/syntax/formatters/time-interval-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Formato de array",
+    "link": "/template-print/syntax/formatters/array-formatting"
+  }
+]

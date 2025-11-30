@@ -1,0 +1,494 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Přehled",
+    "link": "/interface-builder"
+  },
+  {
+    "type": "custom-link",
+    "label": "Bloky",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Přehled",
+        "link": "/interface-builder/blocks"
+      },
+      {
+        "type": "custom-link",
+        "label": "Datové bloky",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tabulka",
+            "link": "/interface-builder/blocks/data-blocks/table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Formulář",
+            "link": "/interface-builder/blocks/data-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Detaily",
+            "link": "/interface-builder/blocks/data-blocks/details"
+          },
+          {
+            "type": "custom-link",
+            "label": "Seznam",
+            "link": "/interface-builder/blocks/data-blocks/list"
+          },
+          {
+            "type": "custom-link",
+            "label": "Mřížka karet",
+            "link": "/interface-builder/blocks/data-blocks/grid-card"
+          },
+          {
+            "type": "custom-link",
+            "label": "Graf",
+            "link": "/interface-builder/blocks/data-blocks/chart"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Blok filtru",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Formulář",
+            "link": "/interface-builder/blocks/filter-blocks/form"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Ostatní bloky",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Ovládací panel",
+            "link": "/interface-builder/blocks/other-blocks/action-panel"
+          },
+          {
+            "type": "custom-link",
+            "label": "Iframe",
+            "link": "/interface-builder/blocks/other-blocks/iframe"
+          },
+          {
+            "type": "custom-link",
+            "label": "Blok s citací",
+            "link": "/interface-builder/blocks/other-blocks/block-reference"
+          },
+          {
+            "type": "custom-link",
+            "label": "Markdown",
+            "link": "/interface-builder/blocks/other-blocks/markdown"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Block",
+            "link": "/interface-builder/blocks/other-blocks/js-block"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Nastavení bloku",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Rozsah dat",
+            "link": "/interface-builder/blocks/block-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "Rozložení",
+            "link": "/interface-builder/blocks/block-settings/block-layout"
+          },
+          {
+            "type": "custom-link",
+            "label": "Pravidla propojení bloků",
+            "link": "/interface-builder/blocks/block-settings/block-linkage-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Pravidla propojení polí",
+            "link": "/interface-builder/blocks/block-settings/field-linkage-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Pravidla řazení",
+            "link": "/interface-builder/blocks/block-settings/sorting-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Odstranění bloku",
+            "link": "/interface-builder/blocks/block-settings/block-delete"
+          },
+          {
+            "type": "custom-link",
+            "label": "Název bloku",
+            "link": "/interface-builder/blocks/block-settings/block-title"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Pole",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Přehled",
+        "link": "/interface-builder/fields"
+      },
+      {
+        "type": "custom-link",
+        "label": "Obecná nastavení",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Pole tabulky",
+            "link": "/interface-builder/fields/generic/table-column"
+          },
+          {
+            "type": "custom-link",
+            "label": "Pole detailu",
+            "link": "/interface-builder/fields/generic/detail-form-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "Pole filtru",
+            "link": "/interface-builder/fields/generic/filter-form-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "Pole formuláře",
+            "link": "/interface-builder/fields/generic/form-item"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Specifická nastavení",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Datum",
+            "link": "/interface-builder/fields/specific/date-picker"
+          },
+          {
+            "type": "custom-link",
+            "label": "Správce souborů",
+            "link": "/interface-builder/fields/specific/file-manager"
+          },
+          {
+            "type": "custom-link",
+            "label": "Podformulář",
+            "link": "/interface-builder/fields/specific/sub-form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Rozbalovací seznam",
+            "link": "/interface-builder/fields/specific/select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Výběr dat",
+            "link": "/interface-builder/fields/specific/picker"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kaskádový výběr",
+            "link": "/interface-builder/fields/specific/cascade-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Podřízená tabulka",
+            "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Podřízený detail",
+            "link": "/interface-builder/fields/specific/sub-detail"
+          },
+          {
+            "type": "custom-link",
+            "label": "Název",
+            "link": "/interface-builder/fields/specific/title"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Field",
+            "link": "/interface-builder/fields/specific/js-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Item",
+            "link": "/interface-builder/fields/specific/js-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Column",
+            "link": "/interface-builder/fields/specific/js-column"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Nastavení pole",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Výchozí hodnota",
+            "link": "/interface-builder/fields/field-settings/default-value"
+          },
+          {
+            "type": "custom-link",
+            "label": "Popisek pole",
+            "link": "/interface-builder/fields/field-settings/edit-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Zobrazit popisek",
+            "link": "/interface-builder/fields/field-settings/show-label"
+          },
+          {
+            "type": "custom-link",
+            "label": "Nápověda k poli",
+            "link": "/interface-builder/fields/field-settings/edit-tooltip"
+          },
+          {
+            "type": "custom-link",
+            "label": "Rozsah dat",
+            "link": "/interface-builder/fields/field-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "Komponenta pole",
+            "link": "/interface-builder/fields/field-settings/field-component"
+          },
+          {
+            "type": "custom-link",
+            "label": "Formátování čísel",
+            "link": "/interface-builder/fields/field-settings/number-format"
+          },
+          {
+            "type": "custom-link",
+            "label": "Režim",
+            "link": "/interface-builder/fields/field-settings/pattern"
+          },
+          {
+            "type": "custom-link",
+            "label": "Povinné",
+            "link": "/interface-builder/fields/field-settings/required"
+          },
+          {
+            "type": "custom-link",
+            "label": "Pole názvu",
+            "link": "/interface-builder/fields/field-settings/title-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Validační pravidla",
+            "link": "/interface-builder/fields/field-settings/validation-rules"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Komponenta relačního pole",
+        "link": "/interface-builder/fields/association-field"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Akce",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Přehled",
+        "link": "/interface-builder/actions"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nastavení akce",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tlačítko Upravit",
+            "link": "/interface-builder/actions/action-settings/edit-button"
+          },
+          {
+            "type": "custom-link",
+            "label": "Dvojité potvrzení",
+            "link": "/interface-builder/actions/action-settings/double-check"
+          },
+          {
+            "type": "custom-link",
+            "label": "Přiřazení hodnoty poli",
+            "link": "/interface-builder/actions/action-settings/assign-values"
+          },
+          {
+            "type": "custom-link",
+            "label": "Propojit s workflow",
+            "link": "/interface-builder/actions/action-settings/bind-workflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "Editační okno",
+            "link": "/interface-builder/actions/action-settings/edit-popup"
+          },
+          {
+            "type": "custom-link",
+            "label": "Pravidla propojení akcí",
+            "link": "/interface-builder/actions/action-settings/linkage-rule"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Typ akce",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Přidat",
+            "link": "/interface-builder/actions/types/add-new"
+          },
+          {
+            "type": "custom-link",
+            "label": "Zobrazit",
+            "link": "/interface-builder/actions/types/view"
+          },
+          {
+            "type": "custom-link",
+            "label": "Odstranit",
+            "link": "/interface-builder/actions/types/delete"
+          },
+          {
+            "type": "custom-link",
+            "label": "Upravit",
+            "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Importovat",
+            "link": "/interface-builder/actions/types/import"
+          },
+          {
+            "type": "custom-link",
+            "label": "Import Pro",
+            "link": "/interface-builder/actions/types/import-pro"
+          },
+          {
+            "type": "custom-link",
+            "label": "Exportovat",
+            "link": "/interface-builder/actions/types/export"
+          },
+          {
+            "type": "custom-link",
+            "label": "Export Pro",
+            "link": "/interface-builder/actions/types/export-pro"
+          },
+          {
+            "type": "custom-link",
+            "label": "Exportovat přílohy",
+            "link": "/interface-builder/actions/types/export-attachments"
+          },
+          {
+            "type": "custom-link",
+            "label": "Filtrovat",
+            "link": "/interface-builder/actions/types/filter"
+          },
+          {
+            "type": "custom-link",
+            "label": "Odkaz",
+            "link": "/interface-builder/actions/types/link"
+          },
+          {
+            "type": "custom-link",
+            "label": "Otevřít okno",
+            "link": "/interface-builder/actions/types/pop-up"
+          },
+          {
+            "type": "custom-link",
+            "label": "Aktualizovat",
+            "link": "/interface-builder/actions/types/refresh"
+          },
+          {
+            "type": "custom-link",
+            "label": "Odeslat data",
+            "link": "/interface-builder/actions/types/submit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Spustit workflow",
+            "link": "/interface-builder/actions/types/trigger-workflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "Aktualizovat záznam",
+            "link": "/interface-builder/actions/types/update-record"
+          },
+          {
+            "type": "custom-link",
+            "label": "Hromadná aktualizace",
+            "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "Přidat podřízený záznam",
+            "link": "/interface-builder/actions/types/add-child"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Action",
+            "link": "/interface-builder/actions/types/js-action"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Oprávnění k akcím",
+        "link": "/interface-builder/actions/permission"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Pokročilé",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Pravidla propojení",
+        "link": "/interface-builder/linkage-rule"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tok událostí",
+        "link": "/interface-builder/event-flow"
+      },
+      {
+        "type": "custom-link",
+        "label": "Proměnná",
+        "link": "/interface-builder/variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "RunJS",
+        "link": "/interface-builder/runjs"
+      }
+    ]
+  }
+]

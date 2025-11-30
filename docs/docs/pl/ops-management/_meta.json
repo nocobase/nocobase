@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Zarządzanie publikacją",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Przegląd",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Zmienne i klucze",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "Zarządzanie kopiami zapasowymi",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Zarządzanie migracją",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

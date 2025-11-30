@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Snabbstart",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Introduktion",
+        "link": "/ui-development-field"
+      },
+      {
+        "type": "custom-link",
+        "label": "Skriv ett fält-plugin",
+        "link": "/ui-development-field/write-a-field-plugin"
+      }
+    ]
+  }
+]

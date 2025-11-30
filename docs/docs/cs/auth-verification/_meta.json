@@ -1,0 +1,186 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Autentizace uživatele",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Přehled",
+        "link": "/auth-verification/auth/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Správa autentikátorů",
+        "link": "/auth-verification/auth/authenticators"
+      },
+      {
+        "type": "custom-link",
+        "label": "Typy autentizace",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Heslo",
+            "link": "/auth-verification/auth/password"
+          },
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/auth-sms/"
+          },
+          {
+            "type": "dir",
+            "label": "OIDC",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Konfigurace",
+                "link": "/auth-verification/auth-oidc/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Příklady",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "Přihlášení přes Google",
+                    "link": "/auth-verification/auth-oidc/examples/google"
+                  },
+                  {
+                    "type": "custom-link",
+                    "label": "Přihlášení přes Microsoft",
+                    "link": "/auth-verification/auth-oidc/examples/microsoft"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "label": "SAML",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Konfigurace",
+                "link": "/auth-verification/auth-saml/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Příklady",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "Přihlášení přes Google",
+                    "link": "/auth-verification/auth-saml/examples/google"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "LDAP",
+            "link": "/auth-verification/auth-ldap/"
+          },
+          {
+            "type": "custom-link",
+            "label": "CAS",
+            "link": "/auth-verification/auth-cas/"
+          },
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/auth-verification/auth-wecom/"
+          },
+          {
+            "type": "custom-link",
+            "label": "DingTalk",
+            "link": "/auth-verification/auth-dingtalk/"
+          },
+          {
+            "type": "custom-link",
+            "label": "API klíč",
+            "link": "/auth-verification/api-keys/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Průvodce pro vývojáře",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Rozšíření typů autentizace",
+            "link": "/auth-verification/auth/dev"
+          },
+          {
+            "type": "custom-link",
+            "label": "API reference",
+            "link": "/auth-verification/auth/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Ověření",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Přehled",
+        "link": "/auth-verification/verification/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Typy ověření",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/verification/sms"
+          },
+          {
+            "type": "custom-link",
+            "label": "TOTP autentikátor",
+            "link": "/auth-verification/verification-totp/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "collapsed": true,
+        "label": "Průvodce pro vývojáře",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Rozšíření typů ověření",
+            "link": "/auth-verification/verification/dev/type"
+          },
+          {
+            "type": "custom-link",
+            "label": "Rozšíření scénářů ověření",
+            "link": "/auth-verification/verification/dev/scene"
+          },
+          {
+            "type": "custom-link",
+            "label": "Rozšíření poskytovatelů SMS",
+            "link": "/auth-verification/verification/dev/sms-type"
+          },
+          {
+            "type": "custom-link",
+            "label": "API reference",
+            "link": "/auth-verification/verification/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Dvoufaktorová autentizace (2FA)",
+    "link": "/auth-verification/2fa/"
+  }
+]

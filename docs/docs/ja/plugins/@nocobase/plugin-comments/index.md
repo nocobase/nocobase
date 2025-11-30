@@ -1,0 +1,14 @@
+displayName: "コメント"
+packageName: '@nocobase/plugin-comments'
+supportedVersions:
+  - 1.x
+  - 2.x
+description: |
+  コメントコレクションのテンプレートとブロックを提供し、任意のコレクションのデータにコメント機能を追加できます。
+isFree: false
+builtIn: false
+defaultEnabled: false
+points: 2
+---
+
+# コメント

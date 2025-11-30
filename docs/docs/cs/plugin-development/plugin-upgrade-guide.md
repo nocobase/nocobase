@@ -1,0 +1,1 @@
+# Průvodce upgradem pluginů

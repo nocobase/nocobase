@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Základní použití",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "Cykly",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "Nástroje pro formátování"
+  }
+]

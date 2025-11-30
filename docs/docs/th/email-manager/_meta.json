@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "ภาพรวม",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "การกำหนดค่าผู้ดูแลระบบ",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "กระบวนการกำหนดค่า",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "การกำหนดค่า Gmail",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "การกำหนดค่าอีเมล Microsoft",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "คำถามที่พบบ่อย",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "แนะนำฟังก์ชัน",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ศูนย์อีเมล",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "บล็อกอีเมล",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "ลายเซ็นอีเมล",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "เทมเพลตอีเมล",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "ขั้นสูง",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "บันทึกอีเมล",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "สิ่งที่ต้องทำในอีเมล",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "แท็กอีเมล",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "การส่งจำนวนมาก",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "บันทึกฉบับร่างอัตโนมัติ",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

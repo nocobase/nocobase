@@ -1,0 +1,70 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Přehled",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "API klíč",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "API dokumentace",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Případy použití",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/sso/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Workflow",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "HTTP požadavek",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Externí zdroj dat",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Vložený obsah",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Iframe blok",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vložení",
+        "link": "/integration/embed/"
+      }
+    ]
+  }
+]

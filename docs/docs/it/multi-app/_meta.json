@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Panoramica",
+    "link": "/multi-app/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Multi-applicazione",
+    "link": "/multi-app/multi-app"
+  },
+  {
+    "type": "custom-link",
+    "label": "Multi-spazio",
+    "link": "/multi-app/multi-space"
+  }
+]

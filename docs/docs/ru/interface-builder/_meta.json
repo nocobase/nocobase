@@ -1,0 +1,494 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Обзор",
+    "link": "/interface-builder"
+  },
+  {
+    "type": "custom-link",
+    "label": "Блоки",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Обзор",
+        "link": "/interface-builder/blocks"
+      },
+      {
+        "type": "custom-link",
+        "label": "Блоки данных",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Таблица",
+            "link": "/interface-builder/blocks/data-blocks/table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Форма",
+            "link": "/interface-builder/blocks/data-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Детали",
+            "link": "/interface-builder/blocks/data-blocks/details"
+          },
+          {
+            "type": "custom-link",
+            "label": "Список",
+            "link": "/interface-builder/blocks/data-blocks/list"
+          },
+          {
+            "type": "custom-link",
+            "label": "Карточки-сетка",
+            "link": "/interface-builder/blocks/data-blocks/grid-card"
+          },
+          {
+            "type": "custom-link",
+            "label": "Диаграмма",
+            "link": "/interface-builder/blocks/data-blocks/chart"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Блок фильтров",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Форма",
+            "link": "/interface-builder/blocks/filter-blocks/form"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Другие блоки",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Панель управления",
+            "link": "/interface-builder/blocks/other-blocks/action-panel"
+          },
+          {
+            "type": "custom-link",
+            "label": "Iframe",
+            "link": "/interface-builder/blocks/other-blocks/iframe"
+          },
+          {
+            "type": "custom-link",
+            "label": "Встроенный блок",
+            "link": "/interface-builder/blocks/other-blocks/block-reference"
+          },
+          {
+            "type": "custom-link",
+            "label": "Markdown",
+            "link": "/interface-builder/blocks/other-blocks/markdown"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Block",
+            "link": "/interface-builder/blocks/other-blocks/js-block"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Настройки блока",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Область данных",
+            "link": "/interface-builder/blocks/block-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "Макет",
+            "link": "/interface-builder/blocks/block-settings/block-layout"
+          },
+          {
+            "type": "custom-link",
+            "label": "Правила взаимодействия блоков",
+            "link": "/interface-builder/blocks/block-settings/block-linkage-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Правила взаимодействия полей",
+            "link": "/interface-builder/blocks/block-settings/field-linkage-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Правила сортировки",
+            "link": "/interface-builder/blocks/block-settings/sorting-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Удаление блока",
+            "link": "/interface-builder/blocks/block-settings/block-delete"
+          },
+          {
+            "type": "custom-link",
+            "label": "Заголовок блока",
+            "link": "/interface-builder/blocks/block-settings/block-title"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Поле",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Обзор",
+        "link": "/interface-builder/fields"
+      },
+      {
+        "type": "custom-link",
+        "label": "Общие настройки",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Поля таблицы",
+            "link": "/interface-builder/fields/generic/table-column"
+          },
+          {
+            "type": "custom-link",
+            "label": "Поля сведений",
+            "link": "/interface-builder/fields/generic/detail-form-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "Поля формы фильтрации",
+            "link": "/interface-builder/fields/generic/filter-form-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "Поля формы",
+            "link": "/interface-builder/fields/generic/form-item"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Специальные настройки",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Дата",
+            "link": "/interface-builder/fields/specific/date-picker"
+          },
+          {
+            "type": "custom-link",
+            "label": "Файловый менеджер",
+            "link": "/interface-builder/fields/specific/file-manager"
+          },
+          {
+            "type": "custom-link",
+            "label": "Подформа",
+            "link": "/interface-builder/fields/specific/sub-form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Выпадающий список",
+            "link": "/interface-builder/fields/specific/select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Селектор данных",
+            "link": "/interface-builder/fields/specific/picker"
+          },
+          {
+            "type": "custom-link",
+            "label": "Каскадный селектор",
+            "link": "/interface-builder/fields/specific/cascade-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Вложенная таблица",
+            "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Вложенные сведения",
+            "link": "/interface-builder/fields/specific/sub-detail"
+          },
+          {
+            "type": "custom-link",
+            "label": "Заголовок",
+            "link": "/interface-builder/fields/specific/title"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Field",
+            "link": "/interface-builder/fields/specific/js-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Item",
+            "link": "/interface-builder/fields/specific/js-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Column",
+            "link": "/interface-builder/fields/specific/js-column"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Настройки поля",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Значение по умолчанию",
+            "link": "/interface-builder/fields/field-settings/default-value"
+          },
+          {
+            "type": "custom-link",
+            "label": "Метка поля",
+            "link": "/interface-builder/fields/field-settings/edit-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Отображение метки",
+            "link": "/interface-builder/fields/field-settings/show-label"
+          },
+          {
+            "type": "custom-link",
+            "label": "Подсказка для поля",
+            "link": "/interface-builder/fields/field-settings/edit-tooltip"
+          },
+          {
+            "type": "custom-link",
+            "label": "Область данных",
+            "link": "/interface-builder/fields/field-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "Компонент поля",
+            "link": "/interface-builder/fields/field-settings/field-component"
+          },
+          {
+            "type": "custom-link",
+            "label": "Форматирование чисел",
+            "link": "/interface-builder/fields/field-settings/number-format"
+          },
+          {
+            "type": "custom-link",
+            "label": "Режим",
+            "link": "/interface-builder/fields/field-settings/pattern"
+          },
+          {
+            "type": "custom-link",
+            "label": "Обязательное",
+            "link": "/interface-builder/fields/field-settings/required"
+          },
+          {
+            "type": "custom-link",
+            "label": "Поле заголовка",
+            "link": "/interface-builder/fields/field-settings/title-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Правила валидации",
+            "link": "/interface-builder/fields/field-settings/validation-rules"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Компонент поля связи",
+        "link": "/interface-builder/fields/association-field"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Действие",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Обзор",
+        "link": "/interface-builder/actions"
+      },
+      {
+        "type": "custom-link",
+        "label": "Настройки действия",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Кнопка редактирования",
+            "link": "/interface-builder/actions/action-settings/edit-button"
+          },
+          {
+            "type": "custom-link",
+            "label": "Запрос подтверждения",
+            "link": "/interface-builder/actions/action-settings/double-check"
+          },
+          {
+            "type": "custom-link",
+            "label": "Присвоение значения полю",
+            "link": "/interface-builder/actions/action-settings/assign-values"
+          },
+          {
+            "type": "custom-link",
+            "label": "Привязка рабочего процесса",
+            "link": "/interface-builder/actions/action-settings/bind-workflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "Модальное окно редактирования",
+            "link": "/interface-builder/actions/action-settings/edit-popup"
+          },
+          {
+            "type": "custom-link",
+            "label": "Правила взаимодействия действий",
+            "link": "/interface-builder/actions/action-settings/linkage-rule"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Тип действия",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Добавить",
+            "link": "/interface-builder/actions/types/add-new"
+          },
+          {
+            "type": "custom-link",
+            "label": "Просмотр",
+            "link": "/interface-builder/actions/types/view"
+          },
+          {
+            "type": "custom-link",
+            "label": "Удалить",
+            "link": "/interface-builder/actions/types/delete"
+          },
+          {
+            "type": "custom-link",
+            "label": "Редактировать",
+            "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Импорт",
+            "link": "/interface-builder/actions/types/import"
+          },
+          {
+            "type": "custom-link",
+            "label": "Импорт Pro",
+            "link": "/interface-builder/actions/types/import-pro"
+          },
+          {
+            "type": "custom-link",
+            "label": "Экспорт",
+            "link": "/interface-builder/actions/types/export"
+          },
+          {
+            "type": "custom-link",
+            "label": "Экспорт Pro",
+            "link": "/interface-builder/actions/types/export-pro"
+          },
+          {
+            "type": "custom-link",
+            "label": "Экспорт вложений",
+            "link": "/interface-builder/actions/types/export-attachments"
+          },
+          {
+            "type": "custom-link",
+            "label": "Фильтр",
+            "link": "/interface-builder/actions/types/filter"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ссылка",
+            "link": "/interface-builder/actions/types/link"
+          },
+          {
+            "type": "custom-link",
+            "label": "Открыть модальное окно",
+            "link": "/interface-builder/actions/types/pop-up"
+          },
+          {
+            "type": "custom-link",
+            "label": "Обновить",
+            "link": "/interface-builder/actions/types/refresh"
+          },
+          {
+            "type": "custom-link",
+            "label": "Отправить данные",
+            "link": "/interface-builder/actions/types/submit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Запустить рабочий процесс",
+            "link": "/interface-builder/actions/types/trigger-workflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "Обновить запись",
+            "link": "/interface-builder/actions/types/update-record"
+          },
+          {
+            "type": "custom-link",
+            "label": "Массовое обновление",
+            "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "Добавить дочернюю запись",
+            "link": "/interface-builder/actions/types/add-child"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS Action",
+            "link": "/interface-builder/actions/types/js-action"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Права на действия",
+        "link": "/interface-builder/actions/permission"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Продвинутый уровень",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Правила взаимодействия",
+        "link": "/interface-builder/linkage-rule"
+      },
+      {
+        "type": "custom-link",
+        "label": "Поток событий",
+        "link": "/interface-builder/event-flow"
+      },
+      {
+        "type": "custom-link",
+        "label": "Переменная",
+        "link": "/interface-builder/variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "RunJS",
+        "link": "/interface-builder/runjs"
+      }
+    ]
+  }
+]

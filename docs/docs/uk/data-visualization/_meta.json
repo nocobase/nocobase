@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Огляд",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Швидкий старт",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Опис функцій",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Запит даних",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Налаштування діаграми",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Попередній перегляд та збереження",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "Використання змінних середовища",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "Фільтри сторінки та зв'язки",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Поглиблено",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Запит даних у режимі SQL",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Власні налаштування діаграми",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Власні події взаємодії",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Часті запитання",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Найкращі практики",
+    "link": "/data-visualization/best-practices"
+  }
+]

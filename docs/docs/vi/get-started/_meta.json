@@ -1,0 +1,116 @@
+[
+  {
+    "type": "custom-link",
+    "label": "NocoBase hoạt động như thế nào",
+    "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "type": "file",
+    "name": "quickstart"
+  },
+  {
+    "type": "custom-link",
+    "label": "Cài đặt NocoBase",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Cài đặt bằng Docker",
+        "link": "/get-started/installation/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cài đặt bằng create-nocobase-app",
+        "link": "/get-started/installation/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cài đặt từ mã nguồn Git",
+        "link": "/get-started/installation/git"
+      },
+      {
+        "type": "custom-link",
+        "label": "Biến môi trường",
+        "link": "/get-started/installation/env"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Nâng cấp NocoBase",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Nâng cấp cài đặt Docker",
+        "link": "/get-started/upgrading/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nâng cấp cài đặt create-nocobase-app",
+        "link": "/get-started/upgrading/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nâng cấp cài đặt từ mã nguồn Git",
+        "link": "/get-started/upgrading/git"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Triển khai",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Triển khai môi trường production",
+        "link": "/get-started/deployment/production"
+      },
+      {
+        "type": "custom-link",
+        "label": "Proxy tài nguyên tĩnh",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nginx",
+            "link": "/get-started/deployment/static-resource-proxy/nginx"
+          },
+          {
+            "type": "custom-link",
+            "label": "caddy",
+            "link": "/get-started/deployment/static-resource-proxy/caddy"
+          },
+          {
+            "type": "custom-link",
+            "label": "CDN",
+            "link": "/get-started/deployment/static-resource-proxy/cdn"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Lệnh vận hành thường dùng",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "docker compose",
+            "link": "/get-started/deployment/common-commands/docker-compose"
+          },
+          {
+            "type": "custom-link",
+            "label": "pm2",
+            "link": "/get-started/deployment/common-commands/pm2"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Cách triển khai nhanh hơn",
+        "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Cài đặt và nâng cấp plugin",
+    "link": "/get-started/install-upgrade-plugins"
+  }
+]

@@ -1,0 +1,1 @@
+`transaction`: İşlem nesnesi. Eğer bir `transaction` parametresi geçilmezse, metot otomatik olarak dahili bir `transaction` oluşturur.

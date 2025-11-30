@@ -1,0 +1,186 @@
+[
+  {
+    "type": "custom-link",
+    "label": "사용자 인증",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "개요",
+        "link": "/auth-verification/auth/"
+      },
+      {
+        "type": "custom-link",
+        "label": "인증 관리자",
+        "link": "/auth-verification/auth/authenticators"
+      },
+      {
+        "type": "custom-link",
+        "label": "인증 유형",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "비밀번호",
+            "link": "/auth-verification/auth/password"
+          },
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/auth-sms/"
+          },
+          {
+            "type": "dir",
+            "label": "OIDC",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "구성",
+                "link": "/auth-verification/auth-oidc/"
+              },
+              {
+                "type": "custom-link",
+                "label": "예시",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "Google 로그인",
+                    "link": "/auth-verification/auth-oidc/examples/google"
+                  },
+                  {
+                    "type": "custom-link",
+                    "label": "Microsoft 로그인",
+                    "link": "/auth-verification/auth-oidc/examples/microsoft"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "label": "SAML",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "구성",
+                "link": "/auth-verification/auth-saml/"
+              },
+              {
+                "type": "custom-link",
+                "label": "예시",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "Google 로그인",
+                    "link": "/auth-verification/auth-saml/examples/google"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "LDAP",
+            "link": "/auth-verification/auth-ldap/"
+          },
+          {
+            "type": "custom-link",
+            "label": "CAS",
+            "link": "/auth-verification/auth-cas/"
+          },
+          {
+            "type": "custom-link",
+            "label": "WeCom",
+            "link": "/auth-verification/auth-wecom/"
+          },
+          {
+            "type": "custom-link",
+            "label": "DingTalk",
+            "link": "/auth-verification/auth-dingtalk/"
+          },
+          {
+            "type": "custom-link",
+            "label": "API 키",
+            "link": "/auth-verification/api-keys/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "개발 가이드",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "인증 유형 확장",
+            "link": "/auth-verification/auth/dev"
+          },
+          {
+            "type": "custom-link",
+            "label": "API 참조",
+            "link": "/auth-verification/auth/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "검증",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "개요",
+        "link": "/auth-verification/verification/"
+      },
+      {
+        "type": "custom-link",
+        "label": "검증 유형",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/verification/sms"
+          },
+          {
+            "type": "custom-link",
+            "label": "TOTP 인증기",
+            "link": "/auth-verification/verification-totp/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "collapsed": true,
+        "label": "개발 가이드",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "검증 유형 확장",
+            "link": "/auth-verification/verification/dev/type"
+          },
+          {
+            "type": "custom-link",
+            "label": "검증 시나리오 확장",
+            "link": "/auth-verification/verification/dev/scene"
+          },
+          {
+            "type": "custom-link",
+            "label": "SMS 제공업체 확장",
+            "link": "/auth-verification/verification/dev/sms-type"
+          },
+          {
+            "type": "custom-link",
+            "label": "API 참조",
+            "link": "/auth-verification/verification/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "2단계 인증 (2FA)",
+    "link": "/auth-verification/2fa/"
+  }
+]

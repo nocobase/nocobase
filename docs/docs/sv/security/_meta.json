@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Säkerhetsguide",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Token-policy",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Lösenordspolicy",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Lösenordspolicy",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Användarlåsning",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "IP-begränsning",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Granskningslogg",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tvåfaktorsautentisering (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Fältkryptering",
+    "link": "/data-sources/field-encryption"
+  }
+]

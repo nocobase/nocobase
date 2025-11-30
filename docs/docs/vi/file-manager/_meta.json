@@ -1,0 +1,62 @@
+[
+  {
+    "type": "section-header",
+    "label": "Trình quản lý tệp"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tổng quan",
+    "link": "/file-manager/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Engine lưu trữ",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Tổng quan",
+        "link": "/file-manager/storage/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lưu trữ cục bộ",
+        "link": "/file-manager/storage/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "AWS S3",
+        "link": "/file-manager/storage/amazon-s3"
+      },
+      {
+        "type": "custom-link",
+        "label": "Alibaba Cloud OSS",
+        "link": "/file-manager/storage/aliyun-oss"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tencent Cloud COS",
+        "link": "/file-manager/storage/tencent-cos"
+      },
+      {
+        "type": "custom-link",
+        "label": "S3 Pro",
+        "link": "/file-manager/storage/s3-pro"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Bảng tệp",
+    "link": "/file-manager/file-collection"
+  },
+  {
+    "type": "custom-link",
+    "label": "Trường tệp đính kèm",
+    "link": "/file-manager/field-attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "Phát triển mở rộng",
+    "link": "/file-manager/development/index"
+  }
+]

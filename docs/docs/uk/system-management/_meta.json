@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Керування системою",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Керування плагінами",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Налаштування системи",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Власний брендінг",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Редактор тем",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Налаштування мови",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Керування локалізацією",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

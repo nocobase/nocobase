@@ -1,0 +1,10 @@
+displayName: "เวิร์กโฟลว์: โหนด SQL"
+packageName: '@nocobase/plugin-workflow-sql'
+description: |
+  ใช้สำหรับรันคำสั่ง SQL ใดๆ กับฐานข้อมูลในเวิร์กโฟลว์
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# เวิร์กโฟลว์: โหนด SQL

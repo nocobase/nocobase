@@ -1,0 +1,116 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Cara Kerja NocoBase",
+    "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "type": "file",
+    "name": "quickstart"
+  },
+  {
+    "type": "custom-link",
+    "label": "Instalasi NocoBase",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Instalasi Docker",
+        "link": "/get-started/installation/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Instalasi create-nocobase-app",
+        "link": "/get-started/installation/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Instalasi dari Kode Sumber Git",
+        "link": "/get-started/installation/git"
+      },
+      {
+        "type": "custom-link",
+        "label": "Variabel Lingkungan",
+        "link": "/get-started/installation/env"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Upgrade NocoBase",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Upgrade Instalasi Docker",
+        "link": "/get-started/upgrading/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Upgrade Instalasi create-nocobase-app",
+        "link": "/get-started/upgrading/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Upgrade Instalasi dari Kode Sumber Git",
+        "link": "/get-started/upgrading/git"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Deployment",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Deployment Lingkungan Produksi",
+        "link": "/get-started/deployment/production"
+      },
+      {
+        "type": "custom-link",
+        "label": "Proksi Aset Statis",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nginx",
+            "link": "/get-started/deployment/static-resource-proxy/nginx"
+          },
+          {
+            "type": "custom-link",
+            "label": "caddy",
+            "link": "/get-started/deployment/static-resource-proxy/caddy"
+          },
+          {
+            "type": "custom-link",
+            "label": "cdn",
+            "link": "/get-started/deployment/static-resource-proxy/cdn"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Perintah Operasional Umum",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "docker compose",
+            "link": "/get-started/deployment/common-commands/docker-compose"
+          },
+          {
+            "type": "custom-link",
+            "label": "pm2",
+            "link": "/get-started/deployment/common-commands/pm2"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Cara Deployment Lebih Cepat",
+        "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Instalasi & Upgrade Plugin",
+    "link": "/get-started/install-upgrade-plugins"
+  }
+]

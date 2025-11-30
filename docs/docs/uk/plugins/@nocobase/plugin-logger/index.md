@@ -1,0 +1,10 @@
+displayName: "Журнали"
+packageName: '@nocobase/plugin-logger'
+description: |
+  Серверні журнали, що переважно включають журнали запитів API та журнали роботи системи, а також дозволяє пакувати та завантажувати файли журналів.
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# Журнали

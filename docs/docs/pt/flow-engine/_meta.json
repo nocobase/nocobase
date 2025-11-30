@@ -1,0 +1,110 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Introdução",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "O que é o FlowEngine?",
+        "link": "/flow-engine/what-is-flow-engine"
+      },
+      {
+        "type": "custom-link",
+        "label": "Relação entre FlowEngine e Plugins",
+        "link": "/flow-engine/flow-engine-and-plugins"
+      },
+      {
+        "type": "custom-link",
+        "label": "Início Rápido",
+        "link": "/flow-engine/quickstart"
+      },
+      {
+        "type": "custom-link",
+        "label": "Roteiro de Aprendizagem",
+        "link": "/flow-engine/learning-roadmap"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Guia",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Registrar FlowModel",
+        "link": "/flow-engine/register-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "Criar FlowModel",
+        "link": "/flow-engine/create-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "Renderizar FlowModel",
+        "link": "/flow-engine/flow-model-renderer"
+      },
+      {
+        "type": "custom-link",
+        "label": "Fluxo de Eventos e Configuração do FlowModel",
+        "link": "/flow-engine/flow-model-settings"
+      },
+      {
+        "type": "custom-link",
+        "label": "Persistência do FlowModel",
+        "link": "/flow-engine/flow-model-repository"
+      },
+      {
+        "type": "custom-link",
+        "label": "Ciclo de Vida do FlowModel",
+        "link": "/flow-engine/flow-model-lifecycle"
+      },
+      {
+        "type": "custom-link",
+        "label": "Sistema de Contexto do FlowModel",
+        "link": "/flow-engine/flow-context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mecanismo Reativo: Observable",
+        "link": "/flow-engine/observable"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowModel vs React.Component",
+        "link": "/flow-engine/flow-model-vs-react-component"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Definições",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ModelDefinition",
+        "link": "/flow-engine/definitions/model-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowDefinition",
+        "link": "/flow-engine/definitions/flow-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "EventDefinition",
+        "link": "/flow-engine/definitions/event-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "ActionDefinition",
+        "link": "/flow-engine/definitions/action-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "StepDefinition",
+        "link": "/flow-engine/definitions/step-definition"
+      }
+    ]
+  }
+]

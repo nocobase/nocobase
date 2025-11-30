@@ -1,0 +1,10 @@
+displayName: "Редактор тем"
+packageName: '@nocobase/plugin-theme-editor'
+description: |
+  Настраивайте цвета, размеры и другие параметры пользовательского интерфейса, и сохраняйте результат как тему, чтобы переключаться между несколькими темами.
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# Редактор тем

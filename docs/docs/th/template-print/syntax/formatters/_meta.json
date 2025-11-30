@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "ภาพรวม",
+    "link": "/template-print/syntax/formatters/"
+  },
+  {
+    "type": "custom-link",
+    "label": "การจัดรูปแบบข้อความ",
+    "link": "/template-print/syntax/formatters/text-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "การจัดรูปแบบตัวเลข",
+    "link": "/template-print/syntax/formatters/number-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "การจัดรูปแบบสกุลเงิน",
+    "link": "/template-print/syntax/formatters/currency-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "การจัดรูปแบบวันที่",
+    "link": "/template-print/syntax/formatters/date-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "การจัดรูปแบบช่วงเวลา",
+    "link": "/template-print/syntax/formatters/time-interval-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "การจัดรูปแบบอาร์เรย์",
+    "link": "/template-print/syntax/formatters/array-formatting"
+  }
+]

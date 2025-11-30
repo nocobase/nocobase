@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Koşullu Mantık",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "Gelişmiş Özellikler",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

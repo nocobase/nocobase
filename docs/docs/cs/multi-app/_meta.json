@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Přehled",
+    "link": "/multi-app/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Více aplikací",
+    "link": "/multi-app/multi-app"
+  },
+  {
+    "type": "custom-link",
+    "label": "Více prostorů",
+    "link": "/multi-app/multi-space"
+  }
+]

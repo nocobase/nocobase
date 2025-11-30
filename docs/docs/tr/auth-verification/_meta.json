@@ -1,0 +1,186 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Kullanıcı Kimlik Doğrulama",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Genel Bakış",
+        "link": "/auth-verification/auth/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Kimlik Doğrulayıcı Yönetimi",
+        "link": "/auth-verification/auth/authenticators"
+      },
+      {
+        "type": "custom-link",
+        "label": "Kimlik Doğrulama Türleri",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Parola",
+            "link": "/auth-verification/auth/password"
+          },
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/auth-sms/"
+          },
+          {
+            "type": "dir",
+            "label": "OIDC",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Yapılandırma",
+                "link": "/auth-verification/auth-oidc/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Örnekler",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "Google ile Giriş",
+                    "link": "/auth-verification/auth-oidc/examples/google"
+                  },
+                  {
+                    "type": "custom-link",
+                    "label": "Microsoft ile Giriş",
+                    "link": "/auth-verification/auth-oidc/examples/microsoft"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "label": "SAML",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Yapılandırma",
+                "link": "/auth-verification/auth-saml/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Örnekler",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "Google ile Giriş",
+                    "link": "/auth-verification/auth-saml/examples/google"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "LDAP",
+            "link": "/auth-verification/auth-ldap/"
+          },
+          {
+            "type": "custom-link",
+            "label": "CAS",
+            "link": "/auth-verification/auth-cas/"
+          },
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/auth-verification/auth-wecom/"
+          },
+          {
+            "type": "custom-link",
+            "label": "DingTalk",
+            "link": "/auth-verification/auth-dingtalk/"
+          },
+          {
+            "type": "custom-link",
+            "label": "API Anahtarları",
+            "link": "/auth-verification/api-keys/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Geliştirici Kılavuzu",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Kimlik Doğrulama Türü Genişletme",
+            "link": "/auth-verification/auth/dev"
+          },
+          {
+            "type": "custom-link",
+            "label": "API Referansı",
+            "link": "/auth-verification/auth/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Doğrulama",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Genel Bakış",
+        "link": "/auth-verification/verification/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Doğrulama Türleri",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/verification/sms"
+          },
+          {
+            "type": "custom-link",
+            "label": "TOTP Kimlik Doğrulayıcı",
+            "link": "/auth-verification/verification-totp/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "collapsed": true,
+        "label": "Geliştirici Kılavuzu",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Doğrulama Türü Genişletme",
+            "link": "/auth-verification/verification/dev/type"
+          },
+          {
+            "type": "custom-link",
+            "label": "Doğrulama Senaryosu Genişletme",
+            "link": "/auth-verification/verification/dev/scene"
+          },
+          {
+            "type": "custom-link",
+            "label": "SMS Sağlayıcı Genişletme",
+            "link": "/auth-verification/verification/dev/sms-type"
+          },
+          {
+            "type": "custom-link",
+            "label": "API Referansı",
+            "link": "/auth-verification/verification/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "İki Faktörlü Kimlik Doğrulama (2FA)",
+    "link": "/auth-verification/2fa/"
+  }
+]

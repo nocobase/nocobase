@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Kondisi",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "Fitur Lanjutan",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

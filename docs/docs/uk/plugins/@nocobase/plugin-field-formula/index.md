@@ -1,0 +1,10 @@
+displayName: "Поле колекції: Формула"
+packageName: '@nocobase/plugin-field-formula'
+description: |
+  Дозволяє налаштовувати та зберігати результати обчислень між значеннями кількох полів в одному записі, з підтримкою рушіїв Math.js та функцій формул Excel.
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# Поле колекції: Формула

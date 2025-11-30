@@ -1,0 +1,1 @@
+# Przewodnik po aktualizacji wtyczek

@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "การจัดการการเผยแพร่",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ภาพรวม",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "ตัวแปรและข้อมูลลับ",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "การจัดการการสำรองข้อมูล",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "การจัดการการย้ายข้อมูล",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

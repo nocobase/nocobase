@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "クラスターモード"
+  },
+  {
+    "type": "custom-link",
+    "label": "概要",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "事前準備",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kubernetes デプロイ",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "運用フロー",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "サービス分割",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "開発リファレンス",
+    "link": "/cluster-mode/development"
+  }
+]

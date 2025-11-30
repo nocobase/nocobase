@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Aperçu",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Configuration administrateur",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Processus de configuration",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configuration de Gmail",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configuration de Microsoft Mail",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "FAQ",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Présentation des fonctionnalités",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Centre de messagerie",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bloc e-mail",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Signature d'e-mail",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "Modèle d'e-mail",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Avancé",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Note d'e-mail",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tâche d'e-mail",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "Étiquette d'e-mail",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Envoi en masse",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Sauvegarde automatique des brouillons",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

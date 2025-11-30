@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Podmínky",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "Pokročilé vlastnosti",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

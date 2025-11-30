@@ -1,0 +1,110 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Pengantar",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Apa itu FlowEngine?",
+        "link": "/flow-engine/what-is-flow-engine"
+      },
+      {
+        "type": "custom-link",
+        "label": "Hubungan FlowEngine & Plugin",
+        "link": "/flow-engine/flow-engine-and-plugins"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mulai Cepat",
+        "link": "/flow-engine/quickstart"
+      },
+      {
+        "type": "custom-link",
+        "label": "Peta Jalan Belajar",
+        "link": "/flow-engine/learning-roadmap"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Panduan",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Registrasi FlowModel",
+        "link": "/flow-engine/register-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "Buat FlowModel",
+        "link": "/flow-engine/create-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "Render FlowModel",
+        "link": "/flow-engine/flow-model-renderer"
+      },
+      {
+        "type": "custom-link",
+        "label": "Alur Event & Konfigurasi FlowModel",
+        "link": "/flow-engine/flow-model-settings"
+      },
+      {
+        "type": "custom-link",
+        "label": "Persistensi FlowModel",
+        "link": "/flow-engine/flow-model-repository"
+      },
+      {
+        "type": "custom-link",
+        "label": "Siklus Hidup FlowModel",
+        "link": "/flow-engine/flow-model-lifecycle"
+      },
+      {
+        "type": "custom-link",
+        "label": "Sistem Konteks FlowModel",
+        "link": "/flow-engine/flow-context"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mekanisme Responsif: Observable",
+        "link": "/flow-engine/observable"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowModel vs React.Component",
+        "link": "/flow-engine/flow-model-vs-react-component"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Definitions",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ModelDefinition",
+        "link": "/flow-engine/definitions/model-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowDefinition",
+        "link": "/flow-engine/definitions/flow-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "EventDefinition",
+        "link": "/flow-engine/definitions/event-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "ActionDefinition",
+        "link": "/flow-engine/definitions/action-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "StepDefinition",
+        "link": "/flow-engine/definitions/step-definition"
+      }
+    ]
+  }
+]

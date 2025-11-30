@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Publicatiebeheer",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overzicht",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Variabelen en sleutels",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "Back-upbeheer",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Migratiebeheer",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

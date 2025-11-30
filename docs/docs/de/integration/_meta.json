@@ -1,0 +1,70 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Überblick",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "API-Schlüssel",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "API-Dokumentation",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Anwendungsfälle",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/sso/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Workflow",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "HTTP-Request",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Externe Datenquellen",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Eingebettete Inhalte",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Iframe-Block",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Einbetten",
+        "link": "/integration/embed/"
+      }
+    ]
+  }
+]

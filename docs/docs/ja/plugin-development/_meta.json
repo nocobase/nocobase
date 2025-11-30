@@ -1,0 +1,206 @@
+[
+  {
+    "type": "custom-link",
+    "label": "クイックスタート",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "プラグイン開発概要",
+        "link": "/plugin-development"
+      },
+      {
+        "type": "custom-link",
+        "label": "最初のプラグインを作成",
+        "link": "/plugin-development/write-your-first-plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "プロジェクトディレクトリ構造",
+        "link": "/plugin-development/project-structure"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "サーバーサイド開発",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概要",
+        "link": "/plugin-development/server"
+      },
+      {
+        "type": "custom-link",
+        "label": "プラグイン",
+        "link": "/plugin-development/server/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "コレクション",
+        "link": "/plugin-development/server/collections"
+      },
+      {
+        "type": "custom-link",
+        "label": "データベース操作",
+        "link": "/plugin-development/server/database"
+      },
+      {
+        "type": "custom-link",
+        "label": "データソース管理",
+        "link": "/plugin-development/server/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "リソース管理",
+        "link": "/plugin-development/server/resource-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL権限制御",
+        "link": "/plugin-development/server/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "ミドルウェア",
+        "link": "/plugin-development/server/middleware"
+      },
+      {
+        "type": "custom-link",
+        "label": "キャッシュ",
+        "link": "/plugin-development/server/cache"
+      },
+      {
+        "type": "custom-link",
+        "label": "イベント",
+        "link": "/plugin-development/server/event"
+      },
+      {
+        "type": "custom-link",
+        "label": "リクエストコンテキスト",
+        "link": "/plugin-development/server/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "マイグレーション",
+        "link": "/plugin-development/server/migration"
+      },
+      {
+        "type": "custom-link",
+        "label": "ロガー",
+        "link": "/plugin-development/server/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "I18n 国際化",
+        "link": "/plugin-development/server/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "コマンド",
+        "link": "/plugin-development/server/command"
+      },
+      {
+        "type": "custom-link",
+        "label": "定時タスク管理",
+        "link": "/plugin-development/server/cron-job-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "テスト",
+        "link": "/plugin-development/server/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "クライアントサイド開発",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概要",
+        "link": "/plugin-development/client"
+      },
+      {
+        "type": "custom-link",
+        "label": "プラグイン",
+        "link": "/plugin-development/client/plugin"
+      },
+      {
+        "type": "custom-link",
+        "label": "コンテキスト",
+        "link": "/plugin-development/client/context"
+      },
+      {
+        "type": "custom-link",
+        "label": "ルーター",
+        "link": "/plugin-development/client/router"
+      },
+      {
+        "type": "custom-link",
+        "label": "ACL権限制御",
+        "link": "/plugin-development/client/acl"
+      },
+      {
+        "type": "custom-link",
+        "label": "データソース管理",
+        "link": "/plugin-development/client/data-source-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "リソース",
+        "link": "/plugin-development/client/resource"
+      },
+      {
+        "type": "custom-link",
+        "label": "リクエスト",
+        "link": "/plugin-development/client/request"
+      },
+      {
+        "type": "custom-link",
+        "label": "スタイルとテーマ",
+        "link": "/plugin-development/client/styles-themes"
+      },
+      {
+        "type": "custom-link",
+        "label": "ロガー",
+        "link": "/plugin-development/client/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "I18n 国際化",
+        "link": "/plugin-development/client/i18n"
+      },
+      {
+        "type": "custom-link",
+        "label": "テスト",
+        "link": "/plugin-development/client/test"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "その他",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "プラグインアップグレードガイド",
+        "link": "/plugin-development/plugin-upgrade-guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "言語一覧",
+        "link": "/plugin-development/languages"
+      },
+      {
+        "type": "custom-link",
+        "label": "依存関係の管理",
+        "link": "/plugin-development/dependency-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "ビルド",
+        "link": "/plugin-development/build"
+      }
+    ]
+  }
+]

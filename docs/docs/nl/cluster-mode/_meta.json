@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "Clustermodus"
+  },
+  {
+    "type": "custom-link",
+    "label": "Overzicht",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Voorbereiding",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kubernetes-implementatie",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "Operationele processen",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Services opsplitsen",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Ontwikkelaarsreferentie",
+    "link": "/cluster-mode/development"
+  }
+]

@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Bezpečnostní příručka",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Zásady pro tokeny",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Zásady pro hesla",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Zásady pro hesla",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Zamykání uživatelů",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Omezení IP adres",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Auditní protokoly",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Dvoufaktorová autentizace (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Šifrování polí",
+    "link": "/data-sources/field-encryption"
+  }
+]

@@ -1,0 +1,110 @@
+[
+  {
+    "type": "custom-link",
+    "label": "บทนำ",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "FlowEngine คืออะไร",
+        "link": "/flow-engine/what-is-flow-engine"
+      },
+      {
+        "type": "custom-link",
+        "label": "ความสัมพันธ์ระหว่าง FlowEngine และปลั๊กอิน",
+        "link": "/flow-engine/flow-engine-and-plugins"
+      },
+      {
+        "type": "custom-link",
+        "label": "เริ่มต้นใช้งาน",
+        "link": "/flow-engine/quickstart"
+      },
+      {
+        "type": "custom-link",
+        "label": "แผนการเรียนรู้",
+        "link": "/flow-engine/learning-roadmap"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "คู่มือ",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "การลงทะเบียน FlowModel",
+        "link": "/flow-engine/register-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "การสร้าง FlowModel",
+        "link": "/flow-engine/create-flow-model"
+      },
+      {
+        "type": "custom-link",
+        "label": "การเรนเดอร์ FlowModel",
+        "link": "/flow-engine/flow-model-renderer"
+      },
+      {
+        "type": "custom-link",
+        "label": "โฟลว์เหตุการณ์และการกำหนดค่าของ FlowModel",
+        "link": "/flow-engine/flow-model-settings"
+      },
+      {
+        "type": "custom-link",
+        "label": "การคงอยู่ของ FlowModel",
+        "link": "/flow-engine/flow-model-repository"
+      },
+      {
+        "type": "custom-link",
+        "label": "วงจรชีวิตของ FlowModel",
+        "link": "/flow-engine/flow-model-lifecycle"
+      },
+      {
+        "type": "custom-link",
+        "label": "ระบบบริบทของ FlowModel",
+        "link": "/flow-engine/flow-context"
+      },
+      {
+        "type": "custom-link",
+        "label": "กลไกการตอบสนอง: Observable",
+        "link": "/flow-engine/observable"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowModel vs React.Component",
+        "link": "/flow-engine/flow-model-vs-react-component"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Definitions",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ModelDefinition",
+        "link": "/flow-engine/definitions/model-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "FlowDefinition",
+        "link": "/flow-engine/definitions/flow-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "EventDefinition",
+        "link": "/flow-engine/definitions/event-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "ActionDefinition",
+        "link": "/flow-engine/definitions/action-definition"
+      },
+      {
+        "type": "custom-link",
+        "label": "StepDefinition",
+        "link": "/flow-engine/definitions/step-definition"
+      }
+    ]
+  }
+]

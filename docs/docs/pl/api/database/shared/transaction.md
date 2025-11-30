@@ -1,0 +1,1 @@
+`transaction`: Obiekt transakcji. Jeśli nie zostanie przekazany parametr transakcji, metoda automatycznie utworzy wewnętrzną transakcję.

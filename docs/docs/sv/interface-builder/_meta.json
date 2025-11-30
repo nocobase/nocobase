@@ -1,0 +1,494 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Översikt",
+    "link": "/interface-builder"
+  },
+  {
+    "type": "custom-link",
+    "label": "Block",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Översikt",
+        "link": "/interface-builder/blocks"
+      },
+      {
+        "type": "custom-link",
+        "label": "Datablock",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tabell",
+            "link": "/interface-builder/blocks/data-blocks/table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Formulär",
+            "link": "/interface-builder/blocks/data-blocks/form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Detaljer",
+            "link": "/interface-builder/blocks/data-blocks/details"
+          },
+          {
+            "type": "custom-link",
+            "label": "Lista",
+            "link": "/interface-builder/blocks/data-blocks/list"
+          },
+          {
+            "type": "custom-link",
+            "label": "Rutnätskort",
+            "link": "/interface-builder/blocks/data-blocks/grid-card"
+          },
+          {
+            "type": "custom-link",
+            "label": "Diagram",
+            "link": "/interface-builder/blocks/data-blocks/chart"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Filterblock",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Formulär",
+            "link": "/interface-builder/blocks/filter-blocks/form"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Andra block",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Åtgärdspanel",
+            "link": "/interface-builder/blocks/other-blocks/action-panel"
+          },
+          {
+            "type": "custom-link",
+            "label": "Iframe",
+            "link": "/interface-builder/blocks/other-blocks/iframe"
+          },
+          {
+            "type": "custom-link",
+            "label": "Referensblock",
+            "link": "/interface-builder/blocks/other-blocks/block-reference"
+          },
+          {
+            "type": "custom-link",
+            "label": "Markdown",
+            "link": "/interface-builder/blocks/other-blocks/markdown"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS-block",
+            "link": "/interface-builder/blocks/other-blocks/js-block"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Blockinställningar",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Dataomfång",
+            "link": "/interface-builder/blocks/block-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "Layout",
+            "link": "/interface-builder/blocks/block-settings/block-layout"
+          },
+          {
+            "type": "custom-link",
+            "label": "Blockinteraktionsregler",
+            "link": "/interface-builder/blocks/block-settings/block-linkage-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Fältinteraktionsregler",
+            "link": "/interface-builder/blocks/block-settings/field-linkage-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Sorteringsregler",
+            "link": "/interface-builder/blocks/block-settings/sorting-rule"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ta bort block",
+            "link": "/interface-builder/blocks/block-settings/block-delete"
+          },
+          {
+            "type": "custom-link",
+            "label": "Blocktitel",
+            "link": "/interface-builder/blocks/block-settings/block-title"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Fält",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Översikt",
+        "link": "/interface-builder/fields"
+      },
+      {
+        "type": "custom-link",
+        "label": "Allmänna inställningar",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tabellfält",
+            "link": "/interface-builder/fields/generic/table-column"
+          },
+          {
+            "type": "custom-link",
+            "label": "Detaljfält",
+            "link": "/interface-builder/fields/generic/detail-form-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "Filterformulärfält",
+            "link": "/interface-builder/fields/generic/filter-form-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "Formulärfält",
+            "link": "/interface-builder/fields/generic/form-item"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Specifika inställningar",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Datum",
+            "link": "/interface-builder/fields/specific/date-picker"
+          },
+          {
+            "type": "custom-link",
+            "label": "Filhanterare",
+            "link": "/interface-builder/fields/specific/file-manager"
+          },
+          {
+            "type": "custom-link",
+            "label": "Underformulär",
+            "link": "/interface-builder/fields/specific/sub-form"
+          },
+          {
+            "type": "custom-link",
+            "label": "Rullgardinsväljare",
+            "link": "/interface-builder/fields/specific/select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Dataväljare",
+            "link": "/interface-builder/fields/specific/picker"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kaskadväljare",
+            "link": "/interface-builder/fields/specific/cascade-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Undertabell",
+            "link": "/interface-builder/fields/specific/sub-table"
+          },
+          {
+            "type": "custom-link",
+            "label": "Underdetaljer",
+            "link": "/interface-builder/fields/specific/sub-detail"
+          },
+          {
+            "type": "custom-link",
+            "label": "Titel",
+            "link": "/interface-builder/fields/specific/title"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS-fält",
+            "link": "/interface-builder/fields/specific/js-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS-objekt",
+            "link": "/interface-builder/fields/specific/js-item"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS-kolumn",
+            "link": "/interface-builder/fields/specific/js-column"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Fältinställningar",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Standardvärde",
+            "link": "/interface-builder/fields/field-settings/default-value"
+          },
+          {
+            "type": "custom-link",
+            "label": "Fältetikett",
+            "link": "/interface-builder/fields/field-settings/edit-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Visa etikett",
+            "link": "/interface-builder/fields/field-settings/show-label"
+          },
+          {
+            "type": "custom-link",
+            "label": "Fälttips",
+            "link": "/interface-builder/fields/field-settings/edit-tooltip"
+          },
+          {
+            "type": "custom-link",
+            "label": "Dataomfång",
+            "link": "/interface-builder/fields/field-settings/data-scope"
+          },
+          {
+            "type": "custom-link",
+            "label": "Fältkomponent",
+            "link": "/interface-builder/fields/field-settings/field-component"
+          },
+          {
+            "type": "custom-link",
+            "label": "Talformatering",
+            "link": "/interface-builder/fields/field-settings/number-format"
+          },
+          {
+            "type": "custom-link",
+            "label": "Läge",
+            "link": "/interface-builder/fields/field-settings/pattern"
+          },
+          {
+            "type": "custom-link",
+            "label": "Obligatorisk",
+            "link": "/interface-builder/fields/field-settings/required"
+          },
+          {
+            "type": "custom-link",
+            "label": "Titelfält",
+            "link": "/interface-builder/fields/field-settings/title-field"
+          },
+          {
+            "type": "custom-link",
+            "label": "Valideringsregler",
+            "link": "/interface-builder/fields/field-settings/validation-rules"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Relationsfältkomponent",
+        "link": "/interface-builder/fields/association-field"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Åtgärder",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Översikt",
+        "link": "/interface-builder/actions"
+      },
+      {
+        "type": "custom-link",
+        "label": "Åtgärdsinställningar",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Redigera-knapp",
+            "link": "/interface-builder/actions/action-settings/edit-button"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bekräftelse",
+            "link": "/interface-builder/actions/action-settings/double-check"
+          },
+          {
+            "type": "custom-link",
+            "label": "Fälttilldelning",
+            "link": "/interface-builder/actions/action-settings/assign-values"
+          },
+          {
+            "type": "custom-link",
+            "label": "Koppla arbetsflöde",
+            "link": "/interface-builder/actions/action-settings/bind-workflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "Redigeringsfönster",
+            "link": "/interface-builder/actions/action-settings/edit-popup"
+          },
+          {
+            "type": "custom-link",
+            "label": "Åtgärdsinteraktionsregler",
+            "link": "/interface-builder/actions/action-settings/linkage-rule"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Åtgärdstyper",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Ny",
+            "link": "/interface-builder/actions/types/add-new"
+          },
+          {
+            "type": "custom-link",
+            "label": "Visa",
+            "link": "/interface-builder/actions/types/view"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ta bort",
+            "link": "/interface-builder/actions/types/delete"
+          },
+          {
+            "type": "custom-link",
+            "label": "Redigera",
+            "link": "/interface-builder/actions/types/edit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Importera",
+            "link": "/interface-builder/actions/types/import"
+          },
+          {
+            "type": "custom-link",
+            "label": "Importera Pro",
+            "link": "/interface-builder/actions/types/import-pro"
+          },
+          {
+            "type": "custom-link",
+            "label": "Exportera",
+            "link": "/interface-builder/actions/types/export"
+          },
+          {
+            "type": "custom-link",
+            "label": "Exportera Pro",
+            "link": "/interface-builder/actions/types/export-pro"
+          },
+          {
+            "type": "custom-link",
+            "label": "Exportera bilagor",
+            "link": "/interface-builder/actions/types/export-attachments"
+          },
+          {
+            "type": "custom-link",
+            "label": "Filtrera",
+            "link": "/interface-builder/actions/types/filter"
+          },
+          {
+            "type": "custom-link",
+            "label": "Länk",
+            "link": "/interface-builder/actions/types/link"
+          },
+          {
+            "type": "custom-link",
+            "label": "Öppna popup",
+            "link": "/interface-builder/actions/types/pop-up"
+          },
+          {
+            "type": "custom-link",
+            "label": "Uppdatera",
+            "link": "/interface-builder/actions/types/refresh"
+          },
+          {
+            "type": "custom-link",
+            "label": "Skicka data",
+            "link": "/interface-builder/actions/types/submit"
+          },
+          {
+            "type": "custom-link",
+            "label": "Starta arbetsflöde",
+            "link": "/interface-builder/actions/types/trigger-workflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "Uppdatera post",
+            "link": "/interface-builder/actions/types/update-record"
+          },
+          {
+            "type": "custom-link",
+            "label": "Massuppdatera",
+            "link": "/interface-builder/actions/types/bulk-update"
+          },
+          {
+            "type": "custom-link",
+            "label": "Lägg till underpost",
+            "link": "/interface-builder/actions/types/add-child"
+          },
+          {
+            "type": "custom-link",
+            "label": "JS-åtgärd",
+            "link": "/interface-builder/actions/types/js-action"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Åtgärdsbehörigheter",
+        "link": "/interface-builder/actions/permission"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Avancerat",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Interaktionsregler",
+        "link": "/interface-builder/linkage-rule"
+      },
+      {
+        "type": "custom-link",
+        "label": "Händelseflöde",
+        "link": "/interface-builder/event-flow"
+      },
+      {
+        "type": "custom-link",
+        "label": "Variabler",
+        "link": "/interface-builder/variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "Kör JS",
+        "link": "/interface-builder/runjs"
+      }
+    ]
+  }
+]

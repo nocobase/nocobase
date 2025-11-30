@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Panduan Keamanan",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kebijakan Token",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kebijakan Kata Sandi",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Kebijakan Kata Sandi",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Penguncian Pengguna",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Pembatasan IP",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Log Audit",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Autentikasi Dua Faktor (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Enkripsi Kolom",
+    "link": "/data-sources/field-encryption"
+  }
+]

@@ -1,0 +1,10 @@
+displayName: "Action : Dupliquer un enregistrement"
+packageName: '@nocobase/plugin-action-duplicate'
+description: |
+  Duplique un enregistrement. Vous pouvez le copier dans un formulaire pour le modifier avant de le soumettre, ou le dupliquer directement pour créer un nouvel enregistrement.
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# Action : Dupliquer un enregistrement

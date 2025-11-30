@@ -1,0 +1,1 @@
+Chybí mi vstupní text v čínštině a angličtině, abych mohl provést překlad. Prosím, poskytněte mi text, který chcete přeložit.

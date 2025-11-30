@@ -1,0 +1,1 @@
+# Správce zdrojů dat

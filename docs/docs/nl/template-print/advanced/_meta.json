@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Voorwaardelijke logica",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "Geavanceerde eigenschappen",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

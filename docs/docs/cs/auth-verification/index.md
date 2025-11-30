@@ -1,0 +1,1 @@
+# Autentizace a ověřování

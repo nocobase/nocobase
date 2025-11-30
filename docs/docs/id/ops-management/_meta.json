@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Manajemen Publikasi",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ikhtisar",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Variabel dan Kunci Rahasia",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "Manajemen Cadangan",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Manajemen Migrasi",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

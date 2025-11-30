@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Hızlı Başlangıç",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Giriş",
+        "link": "/ui-development-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bir Blok Eklentisi Yazma",
+        "link": "/ui-development-block/write-a-block-plugin"
+      }
+    ]
+  }
+]

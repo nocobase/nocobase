@@ -1,0 +1,14 @@
+displayName: "Действие: Импорт записей Pro"
+packageName: '@nocobase/plugin-action-import-pro'
+supportedVersions:
+  - 1.x
+  - 2.x
+description: |
+  Улучшает функциональность импорта данных. Позволяет выполнять асинхронный импорт больших объемов данных. Поддерживает распознавание и обработку данных, их обновление и запуск рабочих процессов.
+isFree: false
+builtIn: false
+defaultEnabled: false
+points: 2
+---
+
+# Действие: Импорт записей Pro

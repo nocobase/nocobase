@@ -1,0 +1,10 @@
+displayName: "Поле колекції: Markdown(Vditor)"
+packageName: '@nocobase/plugin-field-markdown-vditor'
+description: |
+  Використовується для зберігання Markdown та його відображення за допомогою редактора Vditor. Підтримує поширений синтаксис Markdown, такий як списки, код, цитати тощо, а також завантаження зображень, аудіозаписів тощо. Крім того, він забезпечує миттєве відображення за принципом «що бачите, те й отримуєте» (WYSIWYG).
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# Поле колекції: Markdown(Vditor)

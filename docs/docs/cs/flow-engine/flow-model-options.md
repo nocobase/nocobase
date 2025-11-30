@@ -1,0 +1,1 @@
+# Konfigurace FlowModelu

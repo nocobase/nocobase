@@ -1,0 +1,13 @@
+displayName: "Backup e ripristino dell'applicazione (deprecato)"
+packageName: '@nocobase/plugin-backup-restore'
+description: |
+  Esegue il backup e il ripristino delle applicazioni, utile per scenari come la replicazione, la migrazione e l'aggiornamento delle applicazioni.
+isFree: true
+builtIn: true
+defaultEnabled: false
+deprecated: true
+---
+
+# Backup e ripristino dell'applicazione (deprecato)
+
+> Nota: Questo plugin è stato deprecato.

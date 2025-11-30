@@ -1,0 +1,297 @@
+[
+  {
+    "type": "section-header",
+    "label": "เวิร์กโฟลว์"
+  },
+  {
+    "type": "custom-link",
+    "label": "ภาพรวม",
+    "link": "/workflow/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "เริ่มต้นใช้งาน",
+    "link": "/workflow/getting-started"
+  },
+  {
+    "type": "custom-link",
+    "label": "ทริกเกอร์",
+    "collapsed": true,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ภาพรวม",
+        "link": "/workflow/triggers/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "เหตุการณ์ตารางข้อมูล",
+        "link": "/workflow/triggers/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "งานที่กำหนดเวลา",
+        "link": "/workflow/triggers/schedule"
+      },
+      {
+        "type": "custom-link",
+        "label": "เหตุการณ์ก่อนการดำเนินการ",
+        "link": "/workflow/triggers/pre-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "เหตุการณ์หลังการดำเนินการ",
+        "link": "/workflow/triggers/post-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "เหตุการณ์การดำเนินการที่กำหนดเอง",
+        "link": "/workflow/triggers/custom-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "การอนุมัติ",
+        "link": "/workflow/triggers/approval"
+      },
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/workflow/triggers/webhook"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "โหนด",
+    "collapsed": true,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ภาพรวม",
+        "link": "/workflow/nodes/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "AI",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "LLM",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "การควบคุมโฟลว์",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "เงื่อนไข",
+            "link": "/workflow/nodes/condition"
+          },
+          {
+            "type": "custom-link",
+            "label": "แยกสาขาหลายเงื่อนไข",
+            "link": "/workflow/nodes/multi-conditions"
+          },
+          {
+            "type": "custom-link",
+            "label": "วนซ้ำ",
+            "link": "/workflow/nodes/loop"
+          },
+          {
+            "type": "custom-link",
+            "label": "ตัวแปร",
+            "link": "/workflow/nodes/variable"
+          },
+          {
+            "type": "custom-link",
+            "label": "แยกสาขาแบบขนาน",
+            "link": "/workflow/nodes/parallel"
+          },
+          {
+            "type": "custom-link",
+            "label": "เรียกใช้เวิร์กโฟลว์",
+            "link": "/workflow/nodes/subflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "ผลลัพธ์ของโฟลว์",
+            "link": "/workflow/nodes/output"
+          },
+          {
+            "type": "custom-link",
+            "label": "การแมปตัวแปร JSON",
+            "link": "/workflow/nodes/json-variable-mapping"
+          },
+          {
+            "type": "custom-link",
+            "label": "การหน่วงเวลา",
+            "link": "/workflow/nodes/delay"
+          },
+          {
+            "type": "custom-link",
+            "label": "สิ้นสุด",
+            "link": "/workflow/nodes/end"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "การคำนวณ",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "การคำนวณ",
+            "link": "/workflow/nodes/calculation"
+          },
+          {
+            "type": "custom-link",
+            "label": "การคำนวณวันที่",
+            "link": "/workflow/nodes/date-calculation"
+          },
+          {
+            "type": "custom-link",
+            "label": "การคำนวณ JSON",
+            "link": "/workflow/nodes/json-query"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "การดำเนินการข้อมูล",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "เพิ่มข้อมูล",
+            "link": "/workflow/nodes/create"
+          },
+          {
+            "type": "custom-link",
+            "label": "อัปเดตข้อมูล",
+            "link": "/workflow/nodes/update"
+          },
+          {
+            "type": "custom-link",
+            "label": "ค้นหาข้อมูล",
+            "link": "/workflow/nodes/query"
+          },
+          {
+            "type": "custom-link",
+            "label": "ลบข้อมูล",
+            "link": "/workflow/nodes/destroy"
+          },
+          {
+            "type": "custom-link",
+            "label": "การดำเนินการ SQL",
+            "link": "/workflow/nodes/sql"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "การดำเนินการด้วยตนเอง",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "การดำเนินการด้วยตนเอง",
+            "link": "/workflow/nodes/manual"
+          },
+          {
+            "type": "custom-link",
+            "label": "การอนุมัติ",
+            "link": "/workflow/nodes/approval"
+          },
+          {
+            "type": "custom-link",
+            "label": "ส่งสำเนา (CC)",
+            "link": "/workflow/nodes/cc"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "ขยายประเภท",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "คำขอ HTTP",
+            "link": "/workflow/nodes/request"
+          },
+          {
+            "type": "custom-link",
+            "label": "สคริปต์ JavaScript",
+            "link": "/workflow/nodes/javascript"
+          },
+          {
+            "type": "custom-link",
+            "label": "การแจ้งเตือน",
+            "link": "/notification-manager/#工作流通知节点"
+          },
+          {
+            "type": "custom-link",
+            "label": "ส่งอีเมล",
+            "link": "/workflow/nodes/mailer"
+          },
+          {
+            "type": "custom-link",
+            "label": "การตอบกลับ",
+            "link": "/workflow/nodes/response"
+          },
+          {
+            "type": "custom-link",
+            "label": "ข้อความตอบกลับ",
+            "link": "/workflow/nodes/response-message"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "ตัวแปร",
+    "link": "/workflow/advanced/variables"
+  },
+  {
+    "type": "custom-link",
+    "label": "บันทึกการดำเนินการ",
+    "link": "/workflow/advanced/execution"
+  },
+  {
+    "type": "custom-link",
+    "label": "การจัดการเวอร์ชัน",
+    "link": "/workflow/advanced/revision"
+  },
+  {
+    "type": "custom-link",
+    "label": "ตัวเลือกขั้นสูง",
+    "link": "/workflow/advanced/options"
+  },
+  {
+    "type": "custom-link",
+    "label": "การพัฒนาส่วนขยาย",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ภาพรวม",
+        "link": "/workflow/development/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "ขยายประเภททริกเกอร์",
+        "link": "/workflow/development/trigger"
+      },
+      {
+        "type": "custom-link",
+        "label": "ขยายประเภทโหนด",
+        "link": "/workflow/development/node"
+      },
+      {
+        "type": "custom-link",
+        "label": "การอ้างอิง API",
+        "link": "/workflow/development/api"
+      }
+    ]
+  }
+]

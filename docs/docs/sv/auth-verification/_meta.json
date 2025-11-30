@@ -1,0 +1,186 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Användarautentisering",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Översikt",
+        "link": "/auth-verification/auth/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Hantera autentiserare",
+        "link": "/auth-verification/auth/authenticators"
+      },
+      {
+        "type": "custom-link",
+        "label": "Autentiseringstyper",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Lösenord",
+            "link": "/auth-verification/auth/password"
+          },
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/auth-sms/"
+          },
+          {
+            "type": "dir",
+            "label": "OIDC",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Konfiguration",
+                "link": "/auth-verification/auth-oidc/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Exempel",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "Google-inloggning",
+                    "link": "/auth-verification/auth-oidc/examples/google"
+                  },
+                  {
+                    "type": "custom-link",
+                    "label": "Microsoft-inloggning",
+                    "link": "/auth-verification/auth-oidc/examples/microsoft"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "label": "SAML",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Konfiguration",
+                "link": "/auth-verification/auth-saml/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Exempel",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "Google-inloggning",
+                    "link": "/auth-verification/auth-saml/examples/google"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "LDAP",
+            "link": "/auth-verification/auth-ldap/"
+          },
+          {
+            "type": "custom-link",
+            "label": "CAS",
+            "link": "/auth-verification/auth-cas/"
+          },
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/auth-verification/auth-wecom/"
+          },
+          {
+            "type": "custom-link",
+            "label": "DingTalk",
+            "link": "/auth-verification/auth-dingtalk/"
+          },
+          {
+            "type": "custom-link",
+            "label": "API-nycklar",
+            "link": "/auth-verification/api-keys/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Utvecklarguide",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Utöka autentiseringstyper",
+            "link": "/auth-verification/auth/dev"
+          },
+          {
+            "type": "custom-link",
+            "label": "API-referens",
+            "link": "/auth-verification/auth/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Verifiering",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Översikt",
+        "link": "/auth-verification/verification/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Verifieringstyper",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/verification/sms"
+          },
+          {
+            "type": "custom-link",
+            "label": "TOTP-autentiserare",
+            "link": "/auth-verification/verification-totp/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "collapsed": true,
+        "label": "Utvecklarguide",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Utöka verifieringstyper",
+            "link": "/auth-verification/verification/dev/type"
+          },
+          {
+            "type": "custom-link",
+            "label": "Utöka verifieringsscenarier",
+            "link": "/auth-verification/verification/dev/scene"
+          },
+          {
+            "type": "custom-link",
+            "label": "Utöka SMS-leverantörer",
+            "link": "/auth-verification/verification/dev/sms-type"
+          },
+          {
+            "type": "custom-link",
+            "label": "API-referens",
+            "link": "/auth-verification/verification/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Tvåfaktorsautentisering (2FA)",
+    "link": "/auth-verification/2fa/"
+  }
+]

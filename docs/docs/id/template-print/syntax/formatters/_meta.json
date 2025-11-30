@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Ikhtisar",
+    "link": "/template-print/syntax/formatters/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Format Teks",
+    "link": "/template-print/syntax/formatters/text-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Format Angka",
+    "link": "/template-print/syntax/formatters/number-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Format Mata Uang",
+    "link": "/template-print/syntax/formatters/currency-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Format Tanggal",
+    "link": "/template-print/syntax/formatters/date-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Format Interval Waktu",
+    "link": "/template-print/syntax/formatters/time-interval-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Format Array",
+    "link": "/template-print/syntax/formatters/array-formatting"
+  }
+]

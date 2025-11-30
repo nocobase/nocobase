@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Veiligheidsgids",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tokenbeleid",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Wachtwoordbeleid",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Wachtwoordbeleid",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Gebruikersblokkering",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "IP-restricties",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Auditlog",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Twee-factor-authenticatie (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Veldencryptie",
+    "link": "/data-sources/field-encryption"
+  }
+]

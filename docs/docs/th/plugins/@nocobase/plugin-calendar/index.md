@@ -1,0 +1,10 @@
+displayName: "ปฏิทิน"
+packageName: '@nocobase/plugin-calendar'
+description: |
+  มีเทมเพลตคอลเลกชันปฏิทินและบล็อก สำหรับจัดการข้อมูลที่เกี่ยวข้องกับวันที่ โดยทั่วไปใช้สำหรับข้อมูลที่เกี่ยวข้องกับวัน/เวลา เช่น กิจกรรม, การนัดหมาย, งานต่างๆ
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# ปฏิทิน

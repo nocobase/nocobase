@@ -1,0 +1,191 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Přehled",
+    "link": "/ai-employees/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Rychlý start",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Konfigurace služby LLM",
+        "link": "/ai-employees/quick-start/llm-service"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vytvořit AI zaměstnance",
+        "link": "/ai-employees/quick-start/ai-employees"
+      },
+      {
+        "type": "custom-link",
+        "label": "Spolupráce s AI zaměstnancem",
+        "link": "/ai-employees/quick-start/collaborate"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Vestavění AI zaměstnanci",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Přehled",
+        "link": "/ai-employees/built-in/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Viz: Analytik přehledů",
+        "link": "/ai-employees/built-in/viz"
+      },
+      {
+        "type": "custom-link",
+        "label": "Orin: Expert na datové modelování",
+        "link": "/ai-employees/built-in/data-modeling"
+      },
+      {
+        "type": "custom-link",
+        "label": "Dex: Expert na přípravu dat",
+        "link": "/ai-employees/built-in/data-organizer"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nathan: Frontendový inženýr",
+        "link": "/ai-employees/built-in/ai-coding"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Pokročilé",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Výběr bloku",
+        "link": "/ai-employees/advanced/pick-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "Zdroj dat",
+        "link": "/ai-employees/advanced/datasource"
+      },
+      {
+        "type": "custom-link",
+        "label": "Dovednosti",
+        "link": "/ai-employees/advanced/skill"
+      },
+      {
+        "type": "custom-link",
+        "label": "Úkoly",
+        "link": "/ai-employees/advanced/task"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vyhledávání na webu",
+        "link": "/ai-employees/advanced/web-search"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Řízení oprávnění",
+    "link": "/ai-employees/permission"
+  },
+  {
+    "type": "custom-link",
+    "label": "Správa souborů",
+    "link": "/ai-employees/file-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "Workflow",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "LLM uzel",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Textový chat",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "Multimodální chat",
+            "link": "/ai-employees/workflow/nodes/llm/multimodal-chat"
+          },
+          {
+            "type": "custom-link",
+            "label": "Strukturovaný výstup",
+            "link": "/ai-employees/workflow/nodes/llm/structured-output"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Znalostní báze AI",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Přehled",
+        "link": "/ai-employees/knowledge-base/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vektorová databáze",
+        "link": "/ai-employees/knowledge-base/vector-database"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vektorové úložiště",
+        "link": "/ai-employees/knowledge-base/vector-store"
+      },
+      {
+        "type": "custom-link",
+        "label": "Znalostní báze",
+        "link": "/ai-employees/knowledge-base/knowledge-base"
+      },
+      {
+        "type": "custom-link",
+        "label": "RAG",
+        "link": "/ai-employees/knowledge-base/rag"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Dokumenty aplikace",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Scénáře",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Viz: Konfigurace CRM scénáře",
+            "link": "/ai-employees/scenarios/viz-crm"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfigurace",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Konfigurace administrátora",
+            "link": "/ai-employees/configuration/admin-configuration"
+          },
+          {
+            "type": "custom-link",
+            "label": "Průvodce prompty",
+            "link": "/ai-employees/configuration/prompt-engineering-guide"
+          }
+        ]
+      }
+    ]
+  }
+]

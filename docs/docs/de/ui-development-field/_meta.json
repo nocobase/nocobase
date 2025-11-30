@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Schnellstart",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Einführung",
+        "link": "/ui-development-field"
+      },
+      {
+        "type": "custom-link",
+        "label": "Feld-Plugin schreiben",
+        "link": "/ui-development-field/write-a-field-plugin"
+      }
+    ]
+  }
+]

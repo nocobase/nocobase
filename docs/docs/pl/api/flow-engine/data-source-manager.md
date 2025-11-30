@@ -1,0 +1,1 @@
+# Menedżer źródeł danych

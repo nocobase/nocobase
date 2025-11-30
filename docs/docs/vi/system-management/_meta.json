@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Quản lý hệ thống",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Quản lý plugin",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cài đặt hệ thống",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tùy chỉnh thương hiệu",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Trình chỉnh sửa chủ đề",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cài đặt ngôn ngữ",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Quản lý bản địa hóa",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

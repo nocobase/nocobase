@@ -1,0 +1,1 @@
+# Colonna tabella JS

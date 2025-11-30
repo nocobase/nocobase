@@ -1,0 +1,67 @@
+[
+  {
+    "type": "file",
+    "name": "index",
+    "label": "API'ye Genel Bakış"
+  },
+  {
+    "type": "dir",
+    "name": "auth",
+    "label": "@nocobase/auth",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "cache",
+    "label": "@nocobase/cache",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "cli",
+    "label": "@nocobase/cli",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "client",
+    "label": "@nocobase/client",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "database",
+    "label": "@nocobase/database",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "data-source-manager",
+    "label": "@nocobase/data-source-manager",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "flow-engine",
+    "label": "@nocobase/flow-engine",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "logger",
+    "label": "@nocobase/logger",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "server",
+    "label": "@nocobase/server",
+    "collapsed": true
+  },
+  {
+    "type": "dir",
+    "name": "sdk",
+    "label": "@nocobase/sdk",
+    "collapsed": true
+  }
+]

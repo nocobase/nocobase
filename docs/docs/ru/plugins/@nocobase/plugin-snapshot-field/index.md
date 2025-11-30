@@ -1,0 +1,13 @@
+displayName: "Поле коллекции: Снимок"
+packageName: '@nocobase/plugin-snapshot-field'
+description: |
+  При добавлении новой записи создается снимок связанных данных, который сохраняется в текущей записи. Снимок не будет обновляться при изменении связанных данных.
+isFree: true
+builtIn: true
+defaultEnabled: false
+deprecated: true
+---
+
+# Поле коллекции: Снимок
+
+> Внимание: Этот плагин устарел.

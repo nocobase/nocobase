@@ -1,0 +1,70 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Ikhtisar",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Kunci API",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Dokumentasi API",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Skenario Penggunaan",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/sso/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Alur Kerja",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Permintaan HTTP",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Sumber Data Eksternal",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Konten Tersemat",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Blok Iframe",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Sematkan",
+        "link": "/integration/embed/"
+      }
+    ]
+  }
+]

@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "Mode Klaster"
+  },
+  {
+    "type": "custom-link",
+    "label": "Ikhtisar",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Persiapan",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Deployment Kubernetes",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "Prosedur Operasional",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Pemisahan Layanan",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Referensi Pengembang",
+    "link": "/cluster-mode/development"
+  }
+]

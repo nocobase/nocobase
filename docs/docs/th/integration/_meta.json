@@ -1,0 +1,70 @@
+[
+  {
+    "type": "custom-link",
+    "label": "ภาพรวม",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "คีย์ API",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "เอกสาร API",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "กรณีการใช้งาน",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/sso/"
+  },
+  {
+    "type": "custom-link",
+    "label": "เวิร์กโฟลว์",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "คำขอ HTTP",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "แหล่งข้อมูลภายนอก",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "เนื้อหาแบบฝัง",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "บล็อก Iframe",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "การฝัง",
+        "link": "/integration/embed/"
+      }
+    ]
+  }
+]

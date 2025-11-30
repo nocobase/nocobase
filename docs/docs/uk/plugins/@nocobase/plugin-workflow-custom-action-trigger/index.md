@@ -1,0 +1,14 @@
+displayName: "Робочий процес: Подія користувацької дії"
+packageName: '@nocobase/plugin-workflow-custom-action-trigger'
+supportedVersions:
+  - 1.x
+  - 2.x
+description: |
+  Запускається після натискання кнопки, до якої прив'язана користувацька дія. Використовується для організації користувацьких операцій з рядками даних.
+isFree: ні
+builtIn: ні
+defaultEnabled: ні
+points: 4
+---
+
+# Робочий процес: Подія користувацької дії

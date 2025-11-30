@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Inicio rápido",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Introducción",
+        "link": "/ui-development-field"
+      },
+      {
+        "type": "custom-link",
+        "label": "Escribir un plugin de campo",
+        "link": "/ui-development-field/write-a-field-plugin"
+      }
+    ]
+  }
+]

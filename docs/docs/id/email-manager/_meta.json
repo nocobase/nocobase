@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Ikhtisar",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Konfigurasi Admin",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Alur Konfigurasi",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfigurasi Gmail",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfigurasi Email Microsoft",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "Pertanyaan Umum (FAQ)",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Pengenalan Fitur",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Pusat Email",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Blok Email",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tanda Tangan Email",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "Templat Email",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Lanjutan",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Catatan Email",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tugas Email",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "Label Email",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Kirim Massal",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Simpan Draf Otomatis",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

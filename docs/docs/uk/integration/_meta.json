@@ -1,0 +1,70 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Огляд",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ключ API",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Документація API",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Сценарії використання",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/sso/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Робочий процес",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "HTTP-запит",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Зовнішнє джерело даних",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Вбудований контент",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Блок Iframe",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Вбудовування",
+        "link": "/integration/embed/"
+      }
+    ]
+  }
+]

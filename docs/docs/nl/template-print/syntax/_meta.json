@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Basisgebruik",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "Lussen",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "Formatteringstools"
+  }
+]

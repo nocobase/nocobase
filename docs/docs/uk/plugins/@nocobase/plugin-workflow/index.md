@@ -1,0 +1,11 @@
+---
+displayName: "Робочий процес"
+packageName: '@nocobase/plugin-workflow'
+description: |
+  Потужний інструмент BPM, що забезпечує базову підтримку для автоматизації бізнесу, з можливістю необмеженого розширення тригерів та вузлів.
+isFree: true
+builtIn: true
+defaultEnabled: true
+---
+
+# Робочий процес

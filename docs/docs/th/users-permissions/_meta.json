@@ -1,0 +1,105 @@
+[
+  {
+    "type": "custom-link",
+    "label": "ผู้ใช้",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "บทบาทและสิทธิ์",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "การกำหนดค่าบทบาท",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "การกำหนดค่าสิทธิ์",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "การนำไปใช้ใน UI",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "การรวมบทบาท",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "คู่มือการพัฒนา",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "ขยายแถบการกำหนดค่าสิทธิ์",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "แผนก",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "การจัดการแผนก",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "การจัดการบทบาทแผนก",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "การซิงค์ข้อมูลผู้ใช้",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "การจัดการการซิงค์",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "แหล่งข้อมูล",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "คู่มือการพัฒนา",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "ขยายแหล่งข้อมูลการซิงค์",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "ขยายทรัพยากรเป้าหมายการซิงค์",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

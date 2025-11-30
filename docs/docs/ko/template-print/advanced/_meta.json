@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "조건문",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "고급 기능",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

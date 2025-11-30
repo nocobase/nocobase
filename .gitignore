@@ -1,7 +1,7 @@
 node_modules/
 lib/
 esm/
-es/
+/es/
 .env
 .env.e2e
 .DS_Store

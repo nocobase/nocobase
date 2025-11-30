@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Panoramica",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Configurazione Amministratore",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Flusso di Configurazione",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configurazione Gmail",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configurazione Email Microsoft",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "Domande Frequenti (FAQ)",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Panoramica Funzionalità",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Centro Email",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Blocco Email",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Firma Email",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "Modello Email",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Avanzato",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Note Email",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "Email da Fare",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "Etichette Email",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Invio Massivo",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Salvataggio Automatico Bozze",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Огляд",
+    "link": "/template-print/syntax/formatters/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Форматування тексту",
+    "link": "/template-print/syntax/formatters/text-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Форматування чисел",
+    "link": "/template-print/syntax/formatters/number-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Форматування валют",
+    "link": "/template-print/syntax/formatters/currency-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Форматування дати",
+    "link": "/template-print/syntax/formatters/date-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Форматування інтервалів часу",
+    "link": "/template-print/syntax/formatters/time-interval-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Форматування масивів",
+    "link": "/template-print/syntax/formatters/array-formatting"
+  }
+]

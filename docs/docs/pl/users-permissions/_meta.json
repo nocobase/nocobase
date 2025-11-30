@@ -1,0 +1,105 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Użytkownicy",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "Role i uprawnienia",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Konfiguracja ról",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfiguracja uprawnień",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "Zastosowanie w interfejsie",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "Suma ról",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "Przewodnik dewelopera",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Rozszerzanie paska konfiguracji uprawnień",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Działy",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Zarządzanie działami",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "Zarządzanie rolami działów",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Synchronizacja danych użytkowników",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Zarządzanie synchronizacją",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Źródła danych",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Przewodnik dewelopera",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Rozszerzanie źródeł synchronizacji",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "Rozszerzanie celów synchronizacji",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

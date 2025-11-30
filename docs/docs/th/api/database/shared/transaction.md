@@ -1,0 +1,1 @@
+`transaction`: อ็อบเจกต์ transaction หากไม่ได้ส่งพารามิเตอร์ transaction เข้าไป เมธอดจะสร้าง transaction ภายในขึ้นมาโดยอัตโนมัติ

@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Grundläggande användning",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "Loop-hantering",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "Formateringsverktyg"
+  }
+]

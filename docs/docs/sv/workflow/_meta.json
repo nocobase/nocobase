@@ -1,0 +1,297 @@
+[
+  {
+    "type": "section-header",
+    "label": "Arbetsflöden"
+  },
+  {
+    "type": "custom-link",
+    "label": "Översikt",
+    "link": "/workflow/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Snabbstart",
+    "link": "/workflow/getting-started"
+  },
+  {
+    "type": "custom-link",
+    "label": "Triggers",
+    "collapsed": true,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Översikt",
+        "link": "/workflow/triggers/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Datatabellhändelser",
+        "link": "/workflow/triggers/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Schemalagda jobb",
+        "link": "/workflow/triggers/schedule"
+      },
+      {
+        "type": "custom-link",
+        "label": "Före-åtgärd-händelser",
+        "link": "/workflow/triggers/pre-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Efter-åtgärd-händelser",
+        "link": "/workflow/triggers/post-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Anpassade åtgärdshändelser",
+        "link": "/workflow/triggers/custom-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Godkännande",
+        "link": "/workflow/triggers/approval"
+      },
+      {
+        "type": "custom-link",
+        "label": "Webhooks",
+        "link": "/workflow/triggers/webhook"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Noder",
+    "collapsed": true,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Översikt",
+        "link": "/workflow/nodes/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "AI",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "LLM",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "Flödeskontroll",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Villkor",
+            "link": "/workflow/nodes/condition"
+          },
+          {
+            "type": "custom-link",
+            "label": "Fler-villkors-gren",
+            "link": "/workflow/nodes/multi-conditions"
+          },
+          {
+            "type": "custom-link",
+            "label": "Loop",
+            "link": "/workflow/nodes/loop"
+          },
+          {
+            "type": "custom-link",
+            "label": "Variabler",
+            "link": "/workflow/nodes/variable"
+          },
+          {
+            "type": "custom-link",
+            "label": "Parallell gren",
+            "link": "/workflow/nodes/parallel"
+          },
+          {
+            "type": "custom-link",
+            "label": "Anropa arbetsflöde",
+            "link": "/workflow/nodes/subflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "Flödes-output",
+            "link": "/workflow/nodes/output"
+          },
+          {
+            "type": "custom-link",
+            "label": "JSON-variabelmappning",
+            "link": "/workflow/nodes/json-variable-mapping"
+          },
+          {
+            "type": "custom-link",
+            "label": "Fördröjning",
+            "link": "/workflow/nodes/delay"
+          },
+          {
+            "type": "custom-link",
+            "label": "Avsluta",
+            "link": "/workflow/nodes/end"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "Beräkning",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Beräkning",
+            "link": "/workflow/nodes/calculation"
+          },
+          {
+            "type": "custom-link",
+            "label": "Datumberäkning",
+            "link": "/workflow/nodes/date-calculation"
+          },
+          {
+            "type": "custom-link",
+            "label": "JSON-beräkning",
+            "link": "/workflow/nodes/json-query"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "Dataåtgärder",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Lägg till data",
+            "link": "/workflow/nodes/create"
+          },
+          {
+            "type": "custom-link",
+            "label": "Uppdatera data",
+            "link": "/workflow/nodes/update"
+          },
+          {
+            "type": "custom-link",
+            "label": "Fråga data",
+            "link": "/workflow/nodes/query"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ta bort data",
+            "link": "/workflow/nodes/destroy"
+          },
+          {
+            "type": "custom-link",
+            "label": "SQL-åtgärder",
+            "link": "/workflow/nodes/sql"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Manuell hantering",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Manuell hantering",
+            "link": "/workflow/nodes/manual"
+          },
+          {
+            "type": "custom-link",
+            "label": "Godkännande",
+            "link": "/workflow/nodes/approval"
+          },
+          {
+            "type": "custom-link",
+            "label": "CC",
+            "link": "/workflow/nodes/cc"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Utökade typer",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP-förfrågningar",
+            "link": "/workflow/nodes/request"
+          },
+          {
+            "type": "custom-link",
+            "label": "JavaScript-skript",
+            "link": "/workflow/nodes/javascript"
+          },
+          {
+            "type": "custom-link",
+            "label": "Notiser",
+            "link": "/notification-manager/#工作流通知节点"
+          },
+          {
+            "type": "custom-link",
+            "label": "Skicka e-post",
+            "link": "/workflow/nodes/mailer"
+          },
+          {
+            "type": "custom-link",
+            "label": "Svar",
+            "link": "/workflow/nodes/response"
+          },
+          {
+            "type": "custom-link",
+            "label": "Svarsmeddelande",
+            "link": "/workflow/nodes/response-message"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Variabler",
+    "link": "/workflow/advanced/variables"
+  },
+  {
+    "type": "custom-link",
+    "label": "Exekveringshistorik",
+    "link": "/workflow/advanced/execution"
+  },
+  {
+    "type": "custom-link",
+    "label": "Versionshantering",
+    "link": "/workflow/advanced/revision"
+  },
+  {
+    "type": "custom-link",
+    "label": "Avancerade alternativ",
+    "link": "/workflow/advanced/options"
+  },
+  {
+    "type": "custom-link",
+    "label": "Utökningsutveckling",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Översikt",
+        "link": "/workflow/development/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Utöka trigger-typer",
+        "link": "/workflow/development/trigger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Utöka nodtyper",
+        "link": "/workflow/development/node"
+      },
+      {
+        "type": "custom-link",
+        "label": "API-referens",
+        "link": "/workflow/development/api"
+      }
+    ]
+  }
+]

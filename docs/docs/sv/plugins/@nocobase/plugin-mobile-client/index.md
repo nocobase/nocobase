@@ -1,0 +1,13 @@
+displayName: "Mobilklient (Föråldrad)"
+packageName: '@nocobase/plugin-mobile-client'
+description: |
+  Möjliggör konfiguration av mobila sidor.
+isFree: true
+builtIn: true
+defaultEnabled: false
+deprecated: true
+---
+
+# Mobilklient (Föråldrad)
+
+> Obs: Detta plugin är föråldrat.

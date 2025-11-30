@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Hızlı Başlangıç",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Giriş",
+        "link": "/ui-development-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bir Eylem Eklentisi Yazma",
+        "link": "/ui-development-action/write-an-action-plugin"
+      }
+    ]
+  }
+]

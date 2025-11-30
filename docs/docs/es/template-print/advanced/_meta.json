@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Condicionales",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "Características avanzadas",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

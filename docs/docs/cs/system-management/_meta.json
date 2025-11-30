@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Správa systému",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Správa pluginů",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nastavení systému",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vlastní branding",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Editor motivů",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nastavení jazyka",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Správa lokalizace",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

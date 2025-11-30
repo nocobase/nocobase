@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Overzicht",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Snelstart",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Functie-introductie",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Gegevensquery",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Grafiekopties",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Voorbeeld & Opslaan",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "Contextuele omgevingsvariabelen gebruiken",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "Paginafilters en interacties",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Geavanceerd",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Gegevens opvragen in SQL-modus",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Aangepaste grafiekconfiguratie",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Aangepaste interactie-events",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Veelgestelde vragen",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Best practices",
+    "link": "/data-visualization/best-practices"
+  }
+]

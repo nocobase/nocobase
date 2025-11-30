@@ -1,0 +1,1 @@
+Jag behöver den kinesiska (primära) och engelska (referens) texten för att kunna översätta den till svenska. Vänligen tillhandahåll innehållet.

@@ -1,0 +1,186 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Uwierzytelnianie użytkownika",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Przegląd",
+        "link": "/auth-verification/auth/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Zarządzanie uwierzytelnianiem",
+        "link": "/auth-verification/auth/authenticators"
+      },
+      {
+        "type": "custom-link",
+        "label": "Typy uwierzytelniania",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Hasło",
+            "link": "/auth-verification/auth/password"
+          },
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/auth-sms/"
+          },
+          {
+            "type": "dir",
+            "label": "OIDC",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Konfiguracja",
+                "link": "/auth-verification/auth-oidc/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Przykłady",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "Logowanie Google",
+                    "link": "/auth-verification/auth-oidc/examples/google"
+                  },
+                  {
+                    "type": "custom-link",
+                    "label": "Logowanie Microsoft",
+                    "link": "/auth-verification/auth-oidc/examples/microsoft"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "dir",
+            "label": "SAML",
+            "collapsed": true,
+            "items": [
+              {
+                "type": "custom-link",
+                "label": "Konfiguracja",
+                "link": "/auth-verification/auth-saml/"
+              },
+              {
+                "type": "custom-link",
+                "label": "Przykłady",
+                "items": [
+                  {
+                    "type": "custom-link",
+                    "label": "Logowanie Google",
+                    "link": "/auth-verification/auth-saml/examples/google"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "custom-link",
+            "label": "LDAP",
+            "link": "/auth-verification/auth-ldap/"
+          },
+          {
+            "type": "custom-link",
+            "label": "CAS",
+            "link": "/auth-verification/auth-cas/"
+          },
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/auth-verification/auth-wecom/"
+          },
+          {
+            "type": "custom-link",
+            "label": "DingTalk",
+            "link": "/auth-verification/auth-dingtalk/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Klucze API",
+            "link": "/auth-verification/api-keys/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Przewodnik dewelopera",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Rozszerzanie typów uwierzytelniania",
+            "link": "/auth-verification/auth/dev"
+          },
+          {
+            "type": "custom-link",
+            "label": "Dokumentacja API",
+            "link": "/auth-verification/auth/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Weryfikacja",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Przegląd",
+        "link": "/auth-verification/verification/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Typy weryfikacji",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "SMS",
+            "link": "/auth-verification/verification/sms"
+          },
+          {
+            "type": "custom-link",
+            "label": "Uwierzytelnianie TOTP",
+            "link": "/auth-verification/verification-totp/"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "collapsed": true,
+        "label": "Przewodnik dewelopera",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Rozszerzanie typów weryfikacji",
+            "link": "/auth-verification/verification/dev/type"
+          },
+          {
+            "type": "custom-link",
+            "label": "Rozszerzanie scenariuszy weryfikacji",
+            "link": "/auth-verification/verification/dev/scene"
+          },
+          {
+            "type": "custom-link",
+            "label": "Rozszerzanie dostawców SMS",
+            "link": "/auth-verification/verification/dev/sms-type"
+          },
+          {
+            "type": "custom-link",
+            "label": "Dokumentacja API",
+            "link": "/auth-verification/verification/dev/api"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Uwierzytelnianie dwuskładnikowe (2FA)",
+    "link": "/auth-verification/2fa/"
+  }
+]

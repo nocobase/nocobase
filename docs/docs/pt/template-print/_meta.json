@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Visão Geral",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Descrição da configuração",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "Sintaxe de template"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "Recursos avançados"
+  },
+  {
+    "type": "custom-link",
+    "label": "Perguntas Frequentes",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Casos de uso",
+    "link": "/template-print/scenes"
+  }
+]

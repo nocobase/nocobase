@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Швидкий старт",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Вступ",
+        "link": "/ui-development-field"
+      },
+      {
+        "type": "custom-link",
+        "label": "Написання плагіна поля",
+        "link": "/ui-development-field/write-a-field-plugin"
+      }
+    ]
+  }
+]

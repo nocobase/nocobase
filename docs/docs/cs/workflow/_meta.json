@@ -1,0 +1,297 @@
+[
+  {
+    "type": "section-header",
+    "label": "Workflow"
+  },
+  {
+    "type": "custom-link",
+    "label": "Přehled",
+    "link": "/workflow/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Rychlý start",
+    "link": "/workflow/getting-started"
+  },
+  {
+    "type": "custom-link",
+    "label": "Spouštěče",
+    "collapsed": true,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Přehled",
+        "link": "/workflow/triggers/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Události databázové tabulky",
+        "link": "/workflow/triggers/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Plánované úlohy",
+        "link": "/workflow/triggers/schedule"
+      },
+      {
+        "type": "custom-link",
+        "label": "Události před akcí",
+        "link": "/workflow/triggers/pre-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Události po akci",
+        "link": "/workflow/triggers/post-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vlastní události akcí",
+        "link": "/workflow/triggers/custom-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Schvalování",
+        "link": "/workflow/triggers/approval"
+      },
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/workflow/triggers/webhook"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Uzel",
+    "collapsed": true,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Přehled",
+        "link": "/workflow/nodes/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Umělá inteligence (AI)",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Velké jazykové modely (LLM)",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "Řízení toku",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Podmínka",
+            "link": "/workflow/nodes/condition"
+          },
+          {
+            "type": "custom-link",
+            "label": "Větvení podle podmínek",
+            "link": "/workflow/nodes/multi-conditions"
+          },
+          {
+            "type": "custom-link",
+            "label": "Smyčka",
+            "link": "/workflow/nodes/loop"
+          },
+          {
+            "type": "custom-link",
+            "label": "Proměnná",
+            "link": "/workflow/nodes/variable"
+          },
+          {
+            "type": "custom-link",
+            "label": "Paralelní větvení",
+            "link": "/workflow/nodes/parallel"
+          },
+          {
+            "type": "custom-link",
+            "label": "Volání workflow",
+            "link": "/workflow/nodes/subflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "Výstup procesu",
+            "link": "/workflow/nodes/output"
+          },
+          {
+            "type": "custom-link",
+            "label": "Mapování JSON proměnných",
+            "link": "/workflow/nodes/json-variable-mapping"
+          },
+          {
+            "type": "custom-link",
+            "label": "Zpoždění",
+            "link": "/workflow/nodes/delay"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ukončení",
+            "link": "/workflow/nodes/end"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "Výpočet",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Výpočet",
+            "link": "/workflow/nodes/calculation"
+          },
+          {
+            "type": "custom-link",
+            "label": "Výpočty s datem",
+            "link": "/workflow/nodes/date-calculation"
+          },
+          {
+            "type": "custom-link",
+            "label": "Výpočty s JSON",
+            "link": "/workflow/nodes/json-query"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "Operace s daty",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Přidat data",
+            "link": "/workflow/nodes/create"
+          },
+          {
+            "type": "custom-link",
+            "label": "Aktualizovat data",
+            "link": "/workflow/nodes/update"
+          },
+          {
+            "type": "custom-link",
+            "label": "Načíst data",
+            "link": "/workflow/nodes/query"
+          },
+          {
+            "type": "custom-link",
+            "label": "Odstranit data",
+            "link": "/workflow/nodes/destroy"
+          },
+          {
+            "type": "custom-link",
+            "label": "SQL operace",
+            "link": "/workflow/nodes/sql"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Ruční zpracování",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Ruční zpracování",
+            "link": "/workflow/nodes/manual"
+          },
+          {
+            "type": "custom-link",
+            "label": "Schvalování",
+            "link": "/workflow/nodes/approval"
+          },
+          {
+            "type": "custom-link",
+            "label": "Odeslat kopii (CC)",
+            "link": "/workflow/nodes/cc"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Rozšířené typy",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP požadavek",
+            "link": "/workflow/nodes/request"
+          },
+          {
+            "type": "custom-link",
+            "label": "JavaScript skript",
+            "link": "/workflow/nodes/javascript"
+          },
+          {
+            "type": "custom-link",
+            "label": "Oznámení",
+            "link": "/notification-manager/#工作流通知节点"
+          },
+          {
+            "type": "custom-link",
+            "label": "Odeslání e-mailu",
+            "link": "/workflow/nodes/mailer"
+          },
+          {
+            "type": "custom-link",
+            "label": "Odpověď",
+            "link": "/workflow/nodes/response"
+          },
+          {
+            "type": "custom-link",
+            "label": "Zpráva v odpovědi",
+            "link": "/workflow/nodes/response-message"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Proměnná",
+    "link": "/workflow/advanced/variables"
+  },
+  {
+    "type": "custom-link",
+    "label": "Záznamy o spuštění",
+    "link": "/workflow/advanced/execution"
+  },
+  {
+    "type": "custom-link",
+    "label": "Správa verzí",
+    "link": "/workflow/advanced/revision"
+  },
+  {
+    "type": "custom-link",
+    "label": "Pokročilé možnosti",
+    "link": "/workflow/advanced/options"
+  },
+  {
+    "type": "custom-link",
+    "label": "Vývoj rozšíření",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Přehled",
+        "link": "/workflow/development/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Rozšířené typy spouštěčů",
+        "link": "/workflow/development/trigger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Rozšířené typy uzlů",
+        "link": "/workflow/development/node"
+      },
+      {
+        "type": "custom-link",
+        "label": "API reference",
+        "link": "/workflow/development/api"
+      }
+    ]
+  }
+]

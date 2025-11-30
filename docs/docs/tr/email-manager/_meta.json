@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Genel Bakış",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Yönetici Yapılandırması",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Yapılandırma Süreci",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Google Mail Yapılandırması",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Microsoft Mail Yapılandırması",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "Sıkça Sorulan Sorular",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Özellik Tanıtımı",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "E-posta Merkezi",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-posta Bloku",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-posta İmzası",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-posta Şablonları",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Gelişmiş",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "E-posta Notları",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-posta Yapılacaklar",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-posta Etiketleri",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Toplu Gönderim",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Otomatik Taslak Kaydı",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

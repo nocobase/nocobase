@@ -1,0 +1,105 @@
+[
+  {
+    "type": "custom-link",
+    "label": "사용자",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "역할 및 권한",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "역할 구성",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "권한 구성",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "UI에 적용",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "역할 합집합",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "개발 가이드",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "권한 구성 바 확장",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "부서",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "부서 관리",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "부서 역할 관리",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "사용자 데이터 동기화",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "동기화 관리",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "데이터 소스",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "WeCom",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "개발 가이드",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "동기화 데이터 소스 확장",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "동기화 대상 리소스 확장",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]
