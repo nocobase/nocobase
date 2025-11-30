@@ -68,6 +68,7 @@ export { getVariableComponentWithScope, useURLAndHTMLSchema } from './modules/ac
 export * from './modules/blocks/BlockSchemaToolbar';
 export * from './modules/blocks/data-blocks/form';
 export * from './modules/blocks/data-blocks/table';
+export * from './modules/blocks/data-blocks/list';
 export * from './modules/blocks/data-blocks/table-selector';
 export * from './modules/blocks/index';
 export * from './modules/blocks/useParentRecordCommon';
