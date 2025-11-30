@@ -1,0 +1,14 @@
+{
+  "Alias": "Псевдоним",
+  "Clear below items": "Очистить элементы ниже",
+  "If the JSON object contains array items, parse them. eg: { \"arrayKey\": [ \"item1\", \"item2\" ] will be parsed as \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\", if set to false, only \"arrayKey\" will be parsed.": "If the JSON object contains array items, parse them. eg: { \"arrayKey\": [ \"item1\", \"item2\" ] will be parsed as \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\", if set to false, only \"arrayKey\" will be parsed.",
+  "Include array index in path": "Включить индекс массива в путь",
+  "Input example": "Пример ввода",
+  "JSON data source": "Источник данных JSON",
+  "JSON variable mapping": "Сопоставление переменных JSON",
+  "Key path": "Путь к ключу",
+  "Parse": "Разобрать",
+  "Please input JSON example like { \"key1\": \"item1\", \"key2\": \"item2\" }": "Введите пример JSON, например { \"key1\": \"item1\", \"key2\": \"item2\" }",
+  "Please update other node references to the key after clicking the parse button.": "Please update other node references to the key after clicking the parse button.",
+  "Used for mapping any JSON data to structured variables for usage in subsequent nodes.": "Used for mapping any JSON data to structured variables for usage in subsequent nodes."
+}

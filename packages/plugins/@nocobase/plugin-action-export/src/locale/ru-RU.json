@@ -1,7 +1,8 @@
 {
+  "Another export action is running, please try again later.": "Действие экспорта уже выполняется, попробуйте позже.",
   "Export warning": "Вы можете экспортировать до {{limit}} строк данных за раз, излишки будут проигнорированы.",
+  "False": "False",
   "Start export": "Начать экспорт",
   "True": "True",
-  "False": "False",
-  "Another export action is running, please try again later.": "Действие экспорта уже выполняется, попробуйте позже."
+  "another export action is running, please try again later.": "another export action is running, please try again later."
 }

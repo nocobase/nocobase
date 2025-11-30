@@ -1,0 +1,18 @@
+{
+  "Action panel": "작업 패널",
+  "Add custom request": "사용자 지정 요청 추가",
+  "Add popup": "팝업 추가",
+  "Album": "Album",
+  "At least 1, up to 6": "At least 1, up to 6",
+  "Ellipsis action title": "Ellipsis action title",
+  "Grid": "Grid",
+  "Items per row": "행당 항목",
+  "Layout": "레이아웃",
+  "List": "목록",
+  "No camera device detected": "카메라 장치가 감지되지 않았습니다",
+  "QR code recognition failed, please scan again": "QR 코드 인식에 실패했습니다. 다시 스캔해 주세요.",
+  "Scan QR code": "QR 코드 스캔",
+  "The image size is too large. Please compress it to below 1MB before uploading": "The image size is too large. Please compress it to below 1MB before uploading",
+  "Unknown error": "알 수 없는 오류",
+  "You have not granted permission to use the camera": "카메라 사용 권한이 허용되지 않았습니다"
+}

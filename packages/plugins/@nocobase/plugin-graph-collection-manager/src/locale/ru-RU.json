@@ -1,15 +1,16 @@
 {
-  "Graph Collection": "Граф коллекций",
+  "All Fields": "Все поля",
+  "All relationships": "Все связи",
+  "Association Fields": "Поля ассоциаций",
+  "Auto layout": "Автоматическое расположение",
+  "Choices fields": "Поля выбора",
   "Collection List": "Список коллекций",
-  "Full Screen": "Полный экран",
   "Collection Search": "Поиск коллекций",
   "Create Collection": "Создать коллекцию",
-  "All Fields": "Все поля",
-  "Association Fields": "Поля ассоциации",
-  "Choices fields": "Поля выбора",
-  "All relationships": "Все связи",
   "Entity relationship only": "Только связи сущностей",
-  "Inheritance relationship only": "Только связи наследования",
+  "Full Screen": "Полноэкранный режим",
+  "Graph Collection": "Граф коллекций",
   "Graphical interface": "Графический интерфейс",
+  "Inheritance relationship only": "Только наследуемые связи",
   "Selection": "Выбор"
 }

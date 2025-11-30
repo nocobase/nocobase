@@ -1,5 +1,6 @@
 {
-  "Bulk update": "Actualización en masa",
   "After successful bulk update": "Tras una actualización en masa correcta",
+  "Bulk update": "Actualización en masa",
+  "Entire collection": "Entire collection",
   "Please select the records to be updated": "Seleccione los registros que desea actualizar"
 }

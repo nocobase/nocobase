@@ -1,7 +1,6 @@
 {
   "1. Select notification channel": "1. Выберите канал уведомлений",
   "2. Configure reset email": "2. Настройте email для сброса",
-  "add one first": "сначала добавьте",
   "Allow to sign in with": "Разрешить вход с помощью",
   "Allow to sign up": "Разрешить регистрацию",
   "At least one of the username or email fields is required": "Требуется хотя бы одно из полей: имя пользователя или email",
@@ -12,9 +11,6 @@
   "Back to login": "Вернуться к входу",
   "Content type": "Тип контента",
   "Days": "Дни",
-  "defaultResetPasswordEmailContentHTML": "<p>Привет {{$user.username}},</p>\n\n<p>Мы получили запрос на сброс пароля для вашей учетной записи {{$systemSettings.title}}.</p>\n\n<p>Пожалуйста, нажмите на ссылку ниже, чтобы установить новый пароль:</p>\n\n<p>\n  <a href=\"{{$resetLink}}\">Сбросить пароль</a>\n</p>\n\n<p>\n  Если вы не запрашивали сброс пароля, пожалуйста, проигнорируйте это письмо. Ваш пароль останется неизменным.\n</p>\n\n<p>\n  Обратите внимание: Для вашей безопасности эта ссылка для сброса пароля истечет через <strong>{{$resetLinkExpiration}} минут</strong>.\n</p>\n\n<p>Если у вас возникли проблемы со сбросом пароля, пожалуйста, обратитесь в нашу службу поддержки.</p>\n\n<p>\n  Спасибо,<br>\n  Команда {{$systemSettings.title}}\n</p>",
-  "defaultResetPasswordEmailContentText": "Привет {{$user.username}},\n\nМы получили запрос на сброс пароля для вашей учетной записи {{$systemSettings.title}}.\n\nПожалуйста, нажмите на ссылку ниже, чтобы установить новый пароль:\n\n{{$resetLink}}\n\nЕсли вы не запрашивали сброс пароля, пожалуйста, проигнорируйте это письмо. Ваш пароль останется неизменным.\n\nОбратите внимание: Для вашей безопасности эта ссылка для сброса пароля истечет через {{$resetLinkExpiration}} минут.\n\nЕсли у вас возникли проблемы со сбросом пароля, пожалуйста, обратитесь в нашу службу поддержки.\n\nСпасибо, Команда {{$systemSettings.title}}",
-  "defaultResetPasswordEmailSubject": "Сброс пароля для {{$systemSettings.title}}",
   "Email channel not found": "Email канал не найден",
   "Enable forget password": "Включить забытый пароль",
   "Expired token refresh limit": "Лимит обновления истекшего токена",
@@ -29,8 +25,11 @@
   "Not a valid cellphone number, please re-enter": "Недопустимый номер телефона, пожалуйста, введите снова",
   "Not allowed to reset password": "Сброс пароля не разрешен",
   "Not allowed to sign up": "Регистрация не разрешена",
+  "Notification channel (Email)": "Notification channel (Email)",
+  "Notification manager plugin not found": "Notification manager plugin not found",
   "Password": "Пароль",
   "Password is not allowed to be changed": "Изменение пароля не разрешено",
+  "Password reset successful": "Password reset successful",
   "Plain text": "Обычный текст",
   "Please enter a password": "Пожалуйста, введите пароль",
   "Please enter a valid email": "Пожалуйста, введите действительный email",
@@ -77,5 +76,9 @@
   "User not found": "Пользователь не найден",
   "User not found. Please sign in again to continue.": "Пользователь не найден. Пожалуйста, войдите снова, чтобы продолжить.",
   "Username/Email": "Имя пользователя/Email",
-  "Your session has expired. Please sign in again.": "Ваша сессия истекла. Пожалуйста, войдите снова."
-  }
+  "Your session has expired. Please sign in again.": "Ваша сессия истекла. Пожалуйста, войдите снова.",
+  "add one first": "сначала добавьте",
+  "defaultResetPasswordEmailContentHTML": "<p>Привет {{$user.username}}</p>\n\n<p>Мы получили запрос на сброс пароля для вашей учетной записи {{$systemSettings.title}}.</p>\n\n<p>Пожалуйста, нажмите на ссылку ниже, чтобы установить новый пароль:</p>\n\n<p>\n  <a href=\"{{$resetLink}}\">Сбросить пароль</a>\n</p>\n\n<p>\n  Если вы не запрашивали сброс пароля, пожалуйста, проигнорируйте это письмо. Ваш пароль останется неизменным.\n</p>\n\n<p>\n  Обратите внимание: для вашей безопасности эта ссылка для сброса пароля истечет через <strong>{{$resetLinkExpiration}} минут</strong>.\n</p>\n\n<p>Если у вас возникли проблемы со сбросом пароля, пожалуйста, обратитесь в нашу службу поддержки.</p>\n\n<p>\n  Спасибо,<br>\n  Команда {{$systemSettings.title}}\n</p>",
+  "defaultResetPasswordEmailContentText": "Привет {{$user.username}}\n\nМы получили запрос на сброс пароля для вашей учетной записи {{$systemSettings.title}}.\n\nПожалуйста, нажмите на ссылку ниже, чтобы установить новый пароль:\n\n{{$resetLink}}\n\nЕсли вы не запрашивали сброс пароля, пожалуйста, проигнорируйте это письмо. Ваш пароль останется неизменным.\n\nОбратите внимание: для вашей безопасности эта ссылка для сброса пароля истечет через {{$resetLinkExpiration}} минут.\n\nЕсли у вас возникли проблемы со сбросом пароля, пожалуйста, обратитесь в нашу службу поддержки.\n\nСпасибо, Команда {{$systemSettings.title}}",
+  "defaultResetPasswordEmailSubject": "Сброс пароля для {{$systemSettings.title}}"
+}

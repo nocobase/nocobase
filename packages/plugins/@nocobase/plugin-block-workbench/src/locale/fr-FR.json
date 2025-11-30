@@ -1,0 +1,18 @@
+{
+  "Action panel": "Action panel",
+  "Add custom request": "Add custom request",
+  "Add popup": "Add popup",
+  "Album": "Album",
+  "At least 1, up to 6": "At least 1, up to 6",
+  "Ellipsis action title": "Ellipsis action title",
+  "Grid": "Grid",
+  "Items per row": "Items per row",
+  "Layout": "Layout",
+  "List": "List",
+  "No camera device detected": "No camera device detected",
+  "QR code recognition failed, please scan again": "QR code recognition failed, please scan again",
+  "Scan QR code": "Scan QR code",
+  "The image size is too large. Please compress it to below 1MB before uploading": "The image size is too large. Please compress it to below 1MB before uploading",
+  "Unknown error": "Unknown error",
+  "You have not granted permission to use the camera": "You have not granted permission to use the camera"
+}

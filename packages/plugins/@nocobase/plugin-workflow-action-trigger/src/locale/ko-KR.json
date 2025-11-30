@@ -1,9 +1,22 @@
 {
-  "Form event": "폼 이벤트",
+  "Associations to use": "사용할 연관 데이터",
+  "Collection": "컬렉션",
+  "Create record action": "레코드 생성 작업",
   "Event triggers when submitted a workflow bound form action.": "작업 흐름에 바인딩된 폼 작업이 제출될 때 이벤트가 트리거됩니다.",
   "Form data model": "폼 데이터 모델",
+  "Form event": "폼 이벤트",
+  "Global mode, triggered after the completion of the following actions": "글로벌 모드, 아래 작업 완료 후 트리거됨",
+  "Local mode, triggered after the completion of actions bound to this workflow": "로컬 모드, 이 워크플로우에 바인딩된 작업 완료 후 트리거됨",
+  "Post-action event": "후행 작업 이벤트",
+  "Role of user acted": "작업한 사용자의 역할",
+  "Role of user submitted form": "폼을 제출한 사용자의 역할",
+  "Select actions": "작업 선택",
+  "The collection to which the triggered data belongs.": "The collection to which the triggered data belongs.",
+  "Trigger data": "트리거 데이터",
+  "Trigger mode": "트리거 모드",
+  "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.": "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.",
+  "Update record action": "레코드 업데이트 작업",
   "Use a collection to match form data.": "폼 데이터를 일치시키기 위해 데이터 테이블을 사용합니다.",
-  "Associations to use": "사용할 관련 데이터",
-  "User submitted form": "사용자가 제출한 폼",
-  "Role of user submitted form": "사용자 제출 폼의 역할"  
+  "User acted": "작업한 사용자",
+  "User submitted form": "폼을 제출한 사용자"
 }
