@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Visão Geral",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Início Rápido",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Introdução aos Recursos",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Consulta de Dados",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Opções de Gráfico",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Visualizar e Salvar",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "Usar Variáveis de Ambiente de Contexto",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "Filtros de Página e Vinculação",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Avançado",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Consultar Dados em Modo SQL",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configuração de Gráfico Personalizado",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Eventos de Interação Personalizados",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Perguntas Frequentes",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Melhores Práticas",
+    "link": "/data-visualization/best-practices"
+  }
+]

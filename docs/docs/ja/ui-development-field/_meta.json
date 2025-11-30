@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "クイックスタート",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概要",
+        "link": "/ui-development-field"
+      },
+      {
+        "type": "custom-link",
+        "label": "フィールドプラグインの作成",
+        "link": "/ui-development-field/write-a-field-plugin"
+      }
+    ]
+  }
+]

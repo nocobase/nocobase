@@ -1,0 +1,13 @@
+displayName: "Bloque: Plantilla (obsoleto)"
+packageName: '@nocobase/plugin-block-template'
+description: |
+  Cree y gestione plantillas de bloques para reutilizarlas en las páginas.
+isFree: true
+builtIn: true
+defaultEnabled: false
+deprecated: true
+---
+
+# Bloque: Plantilla (obsoleto)
+
+> Nota: Este plugin está obsoleto.

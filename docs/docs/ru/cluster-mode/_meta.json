@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "Кластерный режим"
+  },
+  {
+    "type": "custom-link",
+    "label": "Обзор",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Подготовка",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Развертывание в Kubernetes",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "Процессы эксплуатации",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Разделение сервисов",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Справочник для разработчиков",
+    "link": "/cluster-mode/development"
+  }
+]

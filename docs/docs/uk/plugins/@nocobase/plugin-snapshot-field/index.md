@@ -1,0 +1,14 @@
+```yaml
+displayName: "Поле колекції: Знімок"
+packageName: '@nocobase/plugin-snapshot-field'
+description: |
+  При додаванні нового запису створює знімок для пов'язаного запису та зберігає його у новому записі. Знімок не оновлюється при оновленні пов'язаного запису.
+isFree: true
+builtIn: true
+defaultEnabled: false
+deprecated: true
+```
+
+# Поле колекції: Знімок
+
+> Зверніть увагу: Цей плагін застарів.

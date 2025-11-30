@@ -1,0 +1,1 @@
+# Konfigurationsalternativ för FlowModel

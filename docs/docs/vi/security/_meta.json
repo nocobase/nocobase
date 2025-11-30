@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Hướng dẫn bảo mật",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Chính sách token",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Chính sách mật khẩu",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Chính sách mật khẩu",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Khóa người dùng",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Giới hạn IP",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Nhật ký kiểm toán",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Xác thực hai yếu tố (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Mã hóa trường",
+    "link": "/data-sources/field-encryption"
+  }
+]

@@ -1,0 +1,14 @@
+displayName: "Менеджер резервного копіювання"
+packageName: '@nocobase/plugin-backups'
+supportedVersions:
+  - 1.x
+  - 2.x
+description: |
+  Надає функції резервного копіювання та відновлення. Підтримує заплановане резервне копіювання, що забезпечує безпеку даних і швидке відновлення.
+isFree: false
+builtIn: false
+defaultEnabled: false
+editionLevel: 2
+---
+
+# Менеджер резервного копіювання

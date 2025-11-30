@@ -1,0 +1,10 @@
+displayName: "Veri kaynağı: Ana"
+packageName: '@nocobase/plugin-data-source-main'
+description: |
+  NocoBase ana veritabanı; PostgreSQL, MySQL, MariaDB gibi ilişkisel veritabanlarını destekler.
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# Veri kaynağı: Ana

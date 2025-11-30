@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Rychlý start",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Úvod",
+        "link": "/ui-development-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vytvoření pluginu pro akce",
+        "link": "/ui-development-action/write-an-action-plugin"
+      }
+    ]
+  }
+]

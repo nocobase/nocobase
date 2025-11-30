@@ -1,0 +1,62 @@
+[
+  {
+    "type": "section-header",
+    "label": "Gerenciador de Arquivos"
+  },
+  {
+    "type": "custom-link",
+    "label": "Visão Geral",
+    "link": "/file-manager/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Mecanismo de Armazenamento",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Visão Geral",
+        "link": "/file-manager/storage/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Armazenamento Local",
+        "link": "/file-manager/storage/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "AWS S3",
+        "link": "/file-manager/storage/amazon-s3"
+      },
+      {
+        "type": "custom-link",
+        "label": "Alibaba Cloud OSS",
+        "link": "/file-manager/storage/aliyun-oss"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tencent Cloud COS",
+        "link": "/file-manager/storage/tencent-cos"
+      },
+      {
+        "type": "custom-link",
+        "label": "S3 Pro",
+        "link": "/file-manager/storage/s3-pro"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Tabela de Arquivos",
+    "link": "/file-manager/file-collection"
+  },
+  {
+    "type": "custom-link",
+    "label": "Campo de Anexo",
+    "link": "/file-manager/field-attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "Desenvolvimento de Extensões",
+    "link": "/file-manager/development/index"
+  }
+]

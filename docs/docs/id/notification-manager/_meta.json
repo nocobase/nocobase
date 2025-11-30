@@ -1,0 +1,44 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Ikhtisar",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "Saluran Notifikasi",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Pesan Internal",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "Email",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "WeChat Work",
+        "link": "/notification-manager/wecom"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Panduan Pengembang",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Perluas Tipe Saluran Notifikasi",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "Perluas API Notifikasi",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

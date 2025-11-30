@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "Modalità Cluster"
+  },
+  {
+    "type": "custom-link",
+    "label": "Panoramica",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Preparazione",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Deploy su Kubernetes",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "Procedure di Manutenzione",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Suddivisione Servizi",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Riferimento Sviluppo",
+    "link": "/cluster-mode/development"
+  }
+]

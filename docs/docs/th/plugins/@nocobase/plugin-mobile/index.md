@@ -1,0 +1,10 @@
+displayName: "มือถือ (เลิกใช้งานแล้ว)"
+packageName: '@nocobase/plugin-mobile'
+description: |
+  ช่วยให้สามารถกำหนดค่าหน้าเว็บสำหรับอุปกรณ์มือถือได้
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# มือถือ (เลิกใช้งานแล้ว)

@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "클러스터 모드"
+  },
+  {
+    "type": "custom-link",
+    "label": "개요",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "준비",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kubernetes 배포",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "운영 프로세스",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "서비스 분리",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "개발 참조",
+    "link": "/cluster-mode/development"
+  }
+]

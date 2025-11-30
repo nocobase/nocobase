@@ -1,0 +1,44 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Panoramica",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "Canali di Notifica",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Messaggi Interni",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "Email",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "WeChat Work",
+        "link": "/notification-manager/wecom"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Guida per Sviluppatori",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Estendi Tipi Canale di Notifica",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "Estendi API di Notifica",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

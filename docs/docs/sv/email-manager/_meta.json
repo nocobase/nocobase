@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Översikt",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Administratörskonfiguration",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Konfigurationsflöde",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Google Mail-konfiguration",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Microsoft Mail-konfiguration",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vanliga frågor",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Funktionsintroduktion",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "E-postcenter",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-postblock",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-postsignatur",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-postmallar",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Avancerat",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "E-postanteckningar",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-post-att-göra",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-postetiketter",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Massutskick",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Spara utkast automatiskt",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

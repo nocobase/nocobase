@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "เริ่มต้นใช้งานฉบับย่อ",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "บทนำ",
+        "link": "/ui-development-block"
+      },
+      {
+        "type": "custom-link",
+        "label": "การเขียนปลั๊กอินบล็อก",
+        "link": "/ui-development-block/write-a-block-plugin"
+      }
+    ]
+  }
+]

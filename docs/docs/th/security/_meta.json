@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "คู่มือความปลอดภัย",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "นโยบาย Token",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "นโยบายรหัสผ่าน",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "นโยบายรหัสผ่าน",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "การล็อกผู้ใช้",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "การจำกัด IP",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "บันทึกการตรวจสอบ",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "การยืนยันตัวตนแบบสองปัจจัย (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "การเข้ารหัสฟิลด์",
+    "link": "/data-sources/field-encryption"
+  }
+]

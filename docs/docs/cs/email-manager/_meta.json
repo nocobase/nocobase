@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Přehled",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Konfigurace administrátora",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Proces konfigurace",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfigurace Google Mail",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfigurace Microsoft Mail",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "Časté dotazy",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Představení funkcí",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Poštovní centrum",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Blok pošty",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-mailový podpis",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "Šablona e-mailu",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Pokročilé",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Poznámka k e-mailu",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "Úkol z e-mailu",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "Štítek e-mailu",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Hromadné odeslání",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Automatické ukládání konceptů",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

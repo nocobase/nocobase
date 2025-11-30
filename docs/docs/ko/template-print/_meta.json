@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "개요",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "구성 설명",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "템플릿 구문"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "고급 기능"
+  },
+  {
+    "type": "custom-link",
+    "label": "자주 묻는 질문",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "적용 시나리오",
+    "link": "/template-print/scenes"
+  }
+]

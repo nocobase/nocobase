@@ -1,0 +1,70 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Översikt",
+    "link": "/integration/"
+  },
+  {
+    "type": "custom-link",
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "API-nycklar",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "API-dokumentation",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Användningsfall",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "SSO",
+    "link": "/integration/sso/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Arbetsflöden",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhooks",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "HTTP-förfrågningar",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Externa datakällor",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Inbäddat innehåll",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Iframe-block",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Bädda in",
+        "link": "/integration/embed/"
+      }
+    ]
+  }
+]

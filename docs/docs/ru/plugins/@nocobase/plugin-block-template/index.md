@@ -1,0 +1,13 @@
+displayName: "Блок: шаблон (устарел)"
+packageName: '@nocobase/plugin-block-template'
+description: |
+  Создавайте и управляйте шаблонами блоков для повторного использования на страницах.
+isFree: true
+builtIn: true
+defaultEnabled: false
+deprecated: true
+---
+
+# Блок: шаблон (устарел)
+
+> Примечание: Этот плагин устарел.

@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Przegląd",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Konfiguracja administratora",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Proces konfiguracji",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfiguracja Gmail",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfiguracja poczty Microsoft",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "FAQ",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Wprowadzenie do funkcji",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Centrum poczty",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Blok poczty",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Podpis e-mail",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "Szablony e-mail",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Zaawansowane",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Notatki e-mail",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "Zadania e-mail",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "Etykiety e-mail",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Wysyłanie masowe",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Autozapis wersji roboczych",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

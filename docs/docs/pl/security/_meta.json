@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Przewodnik po bezpieczeństwie",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Polityka tokenów",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Polityka haseł",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Polityka haseł",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Blokada użytkownika",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Ograniczenia IP",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Dziennik audytu",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Uwierzytelnianie dwuskładnikowe (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Szyfrowanie pól",
+    "link": "/data-sources/field-encryption"
+  }
+]

@@ -1,0 +1,22 @@
+[
+  {
+    "text": "Úvod",
+    "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "text": "Manuál",
+    "link": "/guide/"
+  },
+  {
+    "text": "Vývoj",
+    "link": "/development/"
+  },
+  {
+    "text": "Pluginy",
+    "link": "/plugins"
+  },
+  {
+    "text": "API",
+    "link": "/api"
+  }
+]

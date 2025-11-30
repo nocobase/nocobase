@@ -1,0 +1,460 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Przegląd",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Źródła danych",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Zarządzanie źródłami danych",
+        "link": "/data-sources/data-source-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Główne źródło danych",
+        "link": "/data-sources/data-source-main/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Zewnętrzne źródła danych (bazy danych)",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Wprowadzenie",
+            "link": "/data-sources/data-source-manager/external-database"
+          },
+          {
+            "type": "custom-link",
+            "label": "Zewnętrzny MySQL",
+            "link": "/data-sources/data-source-external-mysql/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Zewnętrzny MariaDB",
+            "link": "/data-sources/data-source-external-mariadb/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Zewnętrzny PostgreSQL",
+            "link": "/data-sources/data-source-external-postgres/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Zewnętrzny MSSQL",
+            "link": "/data-sources/data-source-external-mssql/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Zewnętrzny Oracle",
+            "link": "/data-sources/data-source-external-oracle/"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Porównanie baz danych",
+        "link": "/data-sources/data-modeling/main-vs-external-data-sources"
+      },
+      {
+        "type": "custom-link",
+        "label": "Źródło danych REST API",
+        "link": "/data-sources/data-source-rest-api/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Źródło danych KingbaseES",
+        "link": "/data-sources/data-source-kingbase/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Tabele danych",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Przegląd",
+        "link": "/data-sources/data-modeling/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tabela standardowa",
+        "link": "/data-sources/data-source-main/general-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tabela dziedziczona",
+        "link": "/data-sources/data-source-main/inheritance-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tabela plików",
+        "link": "/data-sources/file-manager/file-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tabela drzewiasta",
+        "link": "/data-sources/collection-tree/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tabela kalendarza",
+        "link": "/data-sources/calendar/calendar-collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tabela komentarzy",
+        "link": "/data-sources/collection-comment/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tabela wyrażeń",
+        "link": "/data-sources/collection-expression/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tabela SQL",
+        "link": "/data-sources/collection-sql/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Widoki bazy danych",
+        "link": "/data-sources/collection-view/"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Pola tabeli",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Przegląd",
+        "link": "/data-sources/data-modeling/collection-fields"
+      },
+      {
+        "type": "custom-link",
+        "label": "Walidacja pól",
+        "link": "/data-sources/data-modeling/collection-fields/validation"
+      },
+      {
+        "type": "custom-link",
+        "label": "Typy podstawowe",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Tekst jednowierszowy",
+            "link": "/data-sources/data-modeling/collection-fields/basic/input"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tekst wielowierszowy",
+            "link": "/data-sources/data-modeling/collection-fields/basic/textarea"
+          },
+          {
+            "type": "custom-link",
+            "label": "Numer telefonu",
+            "link": "/data-sources/data-modeling/collection-fields/basic/phone"
+          },
+          {
+            "type": "custom-link",
+            "label": "Adres e-mail",
+            "link": "/data-sources/data-modeling/collection-fields/basic/email"
+          },
+          {
+            "type": "custom-link",
+            "label": "URL",
+            "link": "/data-sources/data-modeling/collection-fields/basic/url"
+          },
+          {
+            "type": "custom-link",
+            "label": "Liczba całkowita",
+            "link": "/data-sources/data-modeling/collection-fields/basic/integer"
+          },
+          {
+            "type": "custom-link",
+            "label": "Liczba",
+            "link": "/data-sources/data-modeling/collection-fields/basic/number"
+          },
+          {
+            "type": "custom-link",
+            "label": "Procent",
+            "link": "/data-sources/data-modeling/collection-fields/basic/percent"
+          },
+          {
+            "type": "custom-link",
+            "label": "Hasło",
+            "link": "/data-sources/data-modeling/collection-fields/basic/password"
+          },
+          {
+            "type": "custom-link",
+            "label": "Kolor",
+            "link": "/data-sources/data-modeling/collection-fields/basic/color"
+          },
+          {
+            "type": "custom-link",
+            "label": "Ikona",
+            "link": "/data-sources/data-modeling/collection-fields/basic/icon"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Typy wyboru",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Pole wyboru",
+            "link": "/data-sources/data-modeling/collection-fields/choices/checkbox"
+          },
+          {
+            "type": "custom-link",
+            "label": "Lista rozwijana (jeden wybór)",
+            "link": "/data-sources/data-modeling/collection-fields/choices/select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Lista rozwijana (wiele wyborów)",
+            "link": "/data-sources/data-modeling/collection-fields/choices/multiple-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Przycisk opcji",
+            "link": "/data-sources/data-modeling/collection-fields/choices/radio-group"
+          },
+          {
+            "type": "custom-link",
+            "label": "Pola wyboru",
+            "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Multimedia",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Markdown",
+            "link": "/data-sources/data-modeling/collection-fields/media/markdown"
+          },
+          {
+            "type": "custom-link",
+            "label": "Markdown (Vditor)",
+            "link": "/data-sources/field-markdown-vditor/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Tekst sformatowany",
+            "link": "/data-sources/data-modeling/collection-fields/media/rich-text"
+          },
+          {
+            "type": "custom-link",
+            "label": "Załącznik (relacja)",
+            "link": "/data-sources/file-manager/field-attachment"
+          },
+          {
+            "type": "custom-link",
+            "label": "Załącznik (URL)",
+            "link": "/data-sources/field-attachment-url/"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Data i czas",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Przegląd",
+            "link": "/data-sources/data-modeling/collection-fields/datetime"
+          },
+          {
+            "type": "custom-link",
+            "label": "Data i czas (ze strefą czasową)",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/datetime"
+          },
+          {
+            "type": "custom-link",
+            "label": "Data i czas (bez strefy czasowej)",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/datetime-without-tz"
+          },
+          {
+            "type": "custom-link",
+            "label": "Znacznik czasu Unix",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/unix-timestamp"
+          },
+          {
+            "type": "custom-link",
+            "label": "Data (bez czasu)",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/date"
+          },
+          {
+            "type": "custom-link",
+            "label": "Czas",
+            "link": "/data-sources/data-modeling/collection-fields/datetime/time"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Kształty geometryczne",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Punkt",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/point"
+          },
+          {
+            "type": "custom-link",
+            "label": "Linia",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/line"
+          },
+          {
+            "type": "custom-link",
+            "label": "Okrąg",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/circle"
+          },
+          {
+            "type": "custom-link",
+            "label": "Wielokąt",
+            "link": "/data-sources/data-modeling/collection-fields/geometric/polygon"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Typy zaawansowane",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "UUID",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/uuid"
+          },
+          {
+            "type": "custom-link",
+            "label": "Nano ID",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/nano-id"
+          },
+          {
+            "type": "custom-link",
+            "label": "Sortowanie",
+            "link": "/data-sources/field-sort/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Formuła",
+            "link": "/data-sources/field-formula/"
+          },
+          {
+            "type": "custom-link",
+            "label": "Autonumeracja",
+            "link": "/data-sources/field-sequence/"
+          },
+          {
+            "type": "custom-link",
+            "label": "JSON",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/json"
+          },
+          {
+            "type": "custom-link",
+            "label": "Selektor tabeli danych",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/collection-select"
+          },
+          {
+            "type": "custom-link",
+            "label": "Szyfrowanie",
+            "link": "/data-sources/field-encryption/"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Informacje systemowe",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Data utworzenia",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/created-at"
+          },
+          {
+            "type": "custom-link",
+            "label": "Data ostatniej modyfikacji",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-at"
+          },
+          {
+            "type": "custom-link",
+            "label": "Utworzony przez",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/created-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "Zmodyfikowany przez",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
+          },
+          {
+            "type": "custom-link",
+            "label": "Przestrzeń",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/space"
+          },
+          {
+            "type": "custom-link",
+            "label": "OID tabeli",
+            "link": "/data-sources/data-modeling/collection-fields/system-info/table-oid"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Typy relacji",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Przegląd",
+            "link": "/data-sources/data-modeling/collection-fields/associations"
+          },
+          {
+            "type": "custom-link",
+            "label": "Jeden do jednego",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2o"
+          },
+          {
+            "type": "custom-link",
+            "label": "Jeden do wielu",
+            "link": "/data-sources/data-modeling/collection-fields/associations/o2m"
+          },
+          {
+            "type": "custom-link",
+            "label": "Wiele do jednego",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2o"
+          },
+          {
+            "type": "custom-link",
+            "label": "Wiele do wielu",
+            "link": "/data-sources/data-modeling/collection-fields/associations/m2m"
+          },
+          {
+            "type": "custom-link",
+            "label": "Wiele do wielu (tablica)",
+            "link": "/data-sources/field-m2m-array/"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Rozwój",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Przegląd",
+        "link": "/data-sources/development"
+      }
+    ]
+  }
+]

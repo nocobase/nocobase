@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Tổng quan",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Giải thích cấu hình",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "Cú pháp mẫu"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "Tính năng nâng cao"
+  },
+  {
+    "type": "custom-link",
+    "label": "Câu hỏi thường gặp",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Kịch bản ứng dụng",
+    "link": "/template-print/scenes"
+  }
+]

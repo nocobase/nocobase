@@ -1,0 +1,13 @@
+displayName: "Діаграми (застарілий)"
+packageName: '@nocobase/plugin-charts'
+description: |
+  Цей плагін застарів. Будь ласка, використовуйте плагін для візуалізації даних замість нього.
+isFree: true
+builtIn: true
+defaultEnabled: false
+deprecated: true
+---
+
+# Діаграми (застарілий)
+
+> Примітка: Цей плагін застарів.

@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Snelstart",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Introductie",
+        "link": "/ui-development-field"
+      },
+      {
+        "type": "custom-link",
+        "label": "Een veld-plug-in schrijven",
+        "link": "/ui-development-field/write-a-field-plugin"
+      }
+    ]
+  }
+]

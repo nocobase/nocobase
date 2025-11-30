@@ -1,0 +1,116 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Wie NocoBase funktioniert",
+    "link": "/get-started/how-nocobase-works"
+  },
+  {
+    "type": "file",
+    "name": "quickstart"
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase installieren",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Docker-Installation",
+        "link": "/get-started/installation/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Installation mit create-nocobase-app",
+        "link": "/get-started/installation/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Installation aus Git-Quelle",
+        "link": "/get-started/installation/git"
+      },
+      {
+        "type": "custom-link",
+        "label": "Umgebungsvariablen",
+        "link": "/get-started/installation/env"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "NocoBase aktualisieren",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Update (Docker-Installation)",
+        "link": "/get-started/upgrading/docker"
+      },
+      {
+        "type": "custom-link",
+        "label": "Update (create-nocobase-app)",
+        "link": "/get-started/upgrading/create-nocobase-app"
+      },
+      {
+        "type": "custom-link",
+        "label": "Update (Git-Quelle)",
+        "link": "/get-started/upgrading/git"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Deployment",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Produktiv-Deployment",
+        "link": "/get-started/deployment/production"
+      },
+      {
+        "type": "custom-link",
+        "label": "Proxy für statische Assets",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "nginx",
+            "link": "/get-started/deployment/static-resource-proxy/nginx"
+          },
+          {
+            "type": "custom-link",
+            "label": "caddy",
+            "link": "/get-started/deployment/static-resource-proxy/caddy"
+          },
+          {
+            "type": "custom-link",
+            "label": "CDN",
+            "link": "/get-started/deployment/static-resource-proxy/cdn"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Gängige Betriebsbefehle",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "docker-compose",
+            "link": "/get-started/deployment/common-commands/docker-compose"
+          },
+          {
+            "type": "custom-link",
+            "label": "pm2",
+            "link": "/get-started/deployment/common-commands/pm2"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Wie man schneller deployt",
+        "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Plugins installieren & aktualisieren",
+    "link": "/get-started/install-upgrade-plugins"
+  }
+]

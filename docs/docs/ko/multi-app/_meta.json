@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "개요",
+    "link": "/multi-app/"
+  },
+  {
+    "type": "custom-link",
+    "label": "다중 앱",
+    "link": "/multi-app/multi-app"
+  },
+  {
+    "type": "custom-link",
+    "label": "다중 스페이스",
+    "link": "/multi-app/multi-space"
+  }
+]

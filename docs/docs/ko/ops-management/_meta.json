@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "배포 관리",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "개요",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "변수 및 시크릿",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "백업 관리",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "마이그레이션 관리",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

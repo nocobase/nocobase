@@ -1,0 +1,62 @@
+[
+  {
+    "type": "section-header",
+    "label": "Gestore File"
+  },
+  {
+    "type": "custom-link",
+    "label": "Panoramica",
+    "link": "/file-manager/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Motore di Archiviazione",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Panoramica",
+        "link": "/file-manager/storage/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Archiviazione Locale",
+        "link": "/file-manager/storage/local"
+      },
+      {
+        "type": "custom-link",
+        "label": "AWS S3",
+        "link": "/file-manager/storage/amazon-s3"
+      },
+      {
+        "type": "custom-link",
+        "label": "Alibaba Cloud OSS",
+        "link": "/file-manager/storage/aliyun-oss"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tencent Cloud COS",
+        "link": "/file-manager/storage/tencent-cos"
+      },
+      {
+        "type": "custom-link",
+        "label": "S3 Pro",
+        "link": "/file-manager/storage/s3-pro"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Tabella File",
+    "link": "/file-manager/file-collection"
+  },
+  {
+    "type": "custom-link",
+    "label": "Campo Allegato",
+    "link": "/file-manager/field-attachment"
+  },
+  {
+    "type": "custom-link",
+    "label": "Sviluppo Estensioni",
+    "link": "/file-manager/development/index"
+  }
+]

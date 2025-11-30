@@ -1,0 +1,10 @@
+displayName: "Действие: Дублировать запись"
+packageName: '@nocobase/plugin-action-duplicate'
+description: |
+  Дублирует запись. Вы можете скопировать ее в форму для редактирования перед сохранением, либо сразу создать новую запись без изменений.
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# Действие: Дублировать запись

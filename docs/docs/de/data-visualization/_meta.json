@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Überblick",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Schnellstart",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Feature-Übersicht",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Datenabfrage",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Diagrammoptionen",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Vorschau & Speichern",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "Kontextvariablen verwenden",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "Seitenfilter & Verknüpfungen",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Erweitert",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Datenabfrage im SQL-Modus",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Benutzerdefinierte Diagrammkonfiguration",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Benutzerdefinierte Interaktionsereignisse",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "FAQ",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Best Practices",
+    "link": "/data-visualization/best-practices"
+  }
+]

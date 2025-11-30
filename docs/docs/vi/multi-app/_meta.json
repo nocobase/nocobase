@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Tổng quan",
+    "link": "/multi-app/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Đa ứng dụng",
+    "link": "/multi-app/multi-app"
+  },
+  {
+    "type": "custom-link",
+    "label": "Đa không gian",
+    "link": "/multi-app/multi-space"
+  }
+]

@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "โหมดคลัสเตอร์"
+  },
+  {
+    "type": "custom-link",
+    "label": "ภาพรวม",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "การเตรียมการ",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "การปรับใช้บน Kubernetes",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "กระบวนการดำเนินงาน",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "การแบ่งบริการ",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "ข้อมูลอ้างอิงสำหรับการพัฒนา",
+    "link": "/cluster-mode/development"
+  }
+]

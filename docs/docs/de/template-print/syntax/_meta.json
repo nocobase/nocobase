@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Grundlagen",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "Schleifen",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "Formatierungswerkzeuge"
+  }
+]

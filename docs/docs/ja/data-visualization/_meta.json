@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "概要",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "クイックスタート",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "機能紹介",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "データクエリ",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "チャートオプション",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "プレビューと保存",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "コンテキスト環境変数の使用",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "ページフィルターと連携",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "応用",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "SQLでのデータクエリ",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "カスタムチャート設定",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "カスタムインタラクションイベント",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "よくある質問",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "ベストプラクティス",
+    "link": "/data-visualization/best-practices"
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "기본 사용법",
+    "link": "/template-print/syntax/basic-usage"
+  },
+  {
+    "type": "custom-link",
+    "label": "반복 처리",
+    "link": "/template-print/syntax/loops"
+  },
+  {
+    "type": "dir",
+    "name": "formatters",
+    "label": "포맷터"
+  }
+]

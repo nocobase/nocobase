@@ -1,0 +1,14 @@
+displayName: "Источник данных: Внешний Oracle"
+packageName: '@nocobase/plugin-data-source-external-oracle'
+supportedVersions:
+  - 1.x
+  - 2.x
+description: |
+  Позволяет использовать внешние базы данных Oracle в качестве источников данных.
+isFree: false
+builtIn: false
+defaultEnabled: false
+points: 4
+---
+
+# Источник данных: Внешний Oracle

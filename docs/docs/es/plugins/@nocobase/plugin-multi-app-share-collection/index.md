@@ -1,0 +1,13 @@
+displayName: "Compartir colecciones entre varias aplicaciones"
+packageName: '@nocobase/plugin-multi-app-share-collection'
+description: |
+  
+isFree: true
+builtIn: true
+defaultEnabled: false
+deprecated: true
+---
+
+# Compartir colecciones entre varias aplicaciones
+
+> Nota: Este plugin ha sido descontinuado (deprecated).

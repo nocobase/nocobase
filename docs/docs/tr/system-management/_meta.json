@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Sistem Yönetimi",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Eklenti Yönetimi",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Sistem Ayarları",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Özel Markalama",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tema Düzenleyici",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Dil Ayarları",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Yerelleştirme Yönetimi",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

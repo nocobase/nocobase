@@ -1,0 +1,1 @@
+Proszę podać treść w języku chińskim (oryginalnym) i angielskim (referencyjnym), abym mógł wykonać tłumaczenie na język polski zgodnie z podanymi instrukcjami.

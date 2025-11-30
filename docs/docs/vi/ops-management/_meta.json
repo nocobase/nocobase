@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Quản lý phát hành",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Tổng quan",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Biến và khóa bí mật",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "Quản lý sao lưu",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Quản lý di chuyển",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

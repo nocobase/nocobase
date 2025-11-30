@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Управление релизами",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Обзор",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Переменные и ключи",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "Управление резервными копиями",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Управление миграциями",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

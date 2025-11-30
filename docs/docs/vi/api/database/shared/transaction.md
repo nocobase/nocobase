@@ -1,0 +1,1 @@
+`transaction`: Đối tượng giao dịch. Nếu không truyền vào tham số giao dịch, phương thức này sẽ tự động tạo một giao dịch nội bộ.

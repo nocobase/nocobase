@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "Tryb klastra"
+  },
+  {
+    "type": "custom-link",
+    "label": "Przegląd",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Przygotowanie",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Wdrożenie Kubernetes",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "Procesy operacyjne",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Podział usług",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Dokumentacja deweloperska",
+    "link": "/cluster-mode/development"
+  }
+]

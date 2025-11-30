@@ -1,0 +1,105 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Uživatelé",
+    "link": "/users-permissions/user"
+  },
+  {
+    "type": "custom-link",
+    "label": "Role a oprávnění",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Konfigurace rolí",
+        "link": "/users-permissions/acl/role"
+      },
+      {
+        "type": "custom-link",
+        "label": "Konfigurace oprávnění",
+        "link": "/users-permissions/acl/permissions"
+      },
+      {
+        "type": "custom-link",
+        "label": "Použití v UI",
+        "link": "/users-permissions/acl/ui"
+      },
+      {
+        "type": "custom-link",
+        "label": "Sjednocení rolí",
+        "link": "/users-permissions/acl/union"
+      },
+      {
+        "type": "dir",
+        "label": "Průvodce pro vývojáře",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Rozšíření panelu oprávnění",
+            "link": "/users-permissions/acl/dev/permission-tab"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Oddělení",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Správa oddělení",
+        "link": "/users-permissions/departments"
+      },
+      {
+        "type": "custom-link",
+        "label": "Správa rolí v oddělení",
+        "link": "/users-permissions/departments/role"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Synchronizace uživatelských dat",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Správa synchronizace",
+        "link": "/users-permissions/sync/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Zdroj dat",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "WeChat Work",
+            "link": "/users-permissions/sync/sources/wecom"
+          },
+          {
+            "type": "custom-link",
+            "label": "HTTP API",
+            "link": "/users-permissions/sync/sources/api"
+          }
+        ]
+      },
+      {
+        "type": "dir",
+        "label": "Průvodce pro vývojáře",
+        "collapsed": true,
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Rozšířené zdroje dat pro synchronizaci",
+            "link": "/users-permissions/sync/dev/source"
+          },
+          {
+            "type": "custom-link",
+            "label": "Rozšířené cílové zdroje pro synchronizaci",
+            "link": "/users-permissions/sync/dev/resource"
+          }
+        ]
+      }
+    ]
+  }
+]

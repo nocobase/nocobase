@@ -1,0 +1,90 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Tổng quan",
+    "link": "/email-manager/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Cấu hình quản trị",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Quy trình cấu hình",
+        "link": "/email-manager/configuration/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cấu hình Gmail",
+        "link": "/email-manager/configuration/gmail"
+      },
+      {
+        "type": "custom-link",
+        "label": "Cấu hình email Microsoft",
+        "link": "/email-manager/configuration/outlook"
+      },
+      {
+        "type": "custom-link",
+        "label": "Câu hỏi thường gặp",
+        "link": "/email-manager/configuration/faq"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Giới thiệu tính năng",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Trung tâm email",
+        "link": "/email-manager/usage/guide"
+      },
+      {
+        "type": "custom-link",
+        "label": "Khối email",
+        "link": "/email-manager/usage/configuration"
+      },
+      {
+        "type": "custom-link",
+        "label": "Chữ ký email",
+        "link": "/email-manager/usage/signature"
+      },
+      {
+        "type": "custom-link",
+        "label": "Mẫu email",
+        "link": "/email-manager/usage/template"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Nâng cao",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Ghi chú email",
+        "link": "/email-manager/advanced/note"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tác vụ email",
+        "link": "/email-manager/advanced/todo"
+      },
+      {
+        "type": "custom-link",
+        "label": "Nhãn email",
+        "link": "/email-manager/advanced/label"
+      },
+      {
+        "type": "custom-link",
+        "label": "Gửi hàng loạt",
+        "link": "/email-manager/advanced/batch-send"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tự động lưu nháp",
+        "link": "/email-manager/advanced/auto-save-draft"
+      }
+    ]
+  }
+]

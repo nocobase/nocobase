@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Огляд",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Опис конфігурації",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "Синтаксис шаблонів"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "Розширені функції"
+  },
+  {
+    "type": "custom-link",
+    "label": "Часті запитання",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Сценарії використання",
+    "link": "/template-print/scenes"
+  }
+]

@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "条件判断",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "高度な機能",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

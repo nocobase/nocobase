@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "시스템 관리",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "플러그인 관리",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "시스템 설정",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "브랜딩 사용자 정의",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "테마 편집기",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "언어 설정",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "현지화 관리",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

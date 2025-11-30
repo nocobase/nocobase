@@ -1,0 +1,1 @@
+`transaction`: Objekt transakce. Pokud nepředáte parametr transakce, metoda automaticky vytvoří interní transakci.

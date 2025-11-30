@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "ภาพรวม",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "คำอธิบายการกำหนดค่า",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "ไวยากรณ์เทมเพลต"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "ฟังก์ชันขั้นสูง"
+  },
+  {
+    "type": "custom-link",
+    "label": "คำถามที่พบบ่อย",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "กรณีการใช้งาน",
+    "link": "/template-print/scenes"
+  }
+]

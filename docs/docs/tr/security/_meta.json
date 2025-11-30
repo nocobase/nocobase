@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Güvenlik Kılavuzu",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Token Politikası",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Şifre Politikası",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Şifre Politikası",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Kullanıcı Kilitleme",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "IP Kısıtlaması",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Denetim Günlüğü",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "İki Faktörlü Kimlik Doğrulama (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Alan Şifreleme",
+    "link": "/data-sources/field-encryption"
+  }
+]

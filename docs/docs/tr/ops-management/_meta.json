@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Yayın Yönetimi",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Genel Bakış",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Değişkenler ve Gizli Anahtarlar",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "Yedekleme Yönetimi",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Taşıma Yönetimi",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

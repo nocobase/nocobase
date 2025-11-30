@@ -1,0 +1,44 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Přehled",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "Notifikační kanály",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Interní zprávy",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "E-mail",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "WeChat Work",
+        "link": "/notification-manager/wecom"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Průvodce pro vývojáře",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Rozšířené typy notifikačních kanálů",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "Rozšířené notifikační API",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

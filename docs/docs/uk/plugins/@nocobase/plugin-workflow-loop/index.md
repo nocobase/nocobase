@@ -1,0 +1,10 @@
+displayName: "Робочий процес: Вузол циклу"
+packageName: '@nocobase/plugin-workflow-loop'
+description: |
+  Використовується для повторної обробки підпроцесу для кожного значення в масиві, а також для виконання підпроцесу фіксовану кількість разів.
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# Робочий процес: Вузол циклу

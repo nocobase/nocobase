@@ -1,0 +1,10 @@
+displayName: "블록: 마크다운"
+packageName: '@nocobase/plugin-block-markdown'
+description: |
+  마크다운 블록을 제공합니다.
+isFree: true
+builtIn: true
+defaultEnabled: false
+---
+
+# 블록: 마크다운

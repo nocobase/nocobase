@@ -1,0 +1,36 @@
+[
+  {
+    "type": "section-header",
+    "label": "Chế độ cụm"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tổng quan",
+    "link": "/cluster-mode/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Chuẩn bị",
+    "link": "/cluster-mode/preparations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Triển khai Kubernetes",
+    "link": "/cluster-mode/kubernetes"
+  },
+  {
+    "type": "custom-link",
+    "label": "Quy trình vận hành",
+    "link": "/cluster-mode/operations"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tách dịch vụ",
+    "link": "/cluster-mode/services-splitting"
+  },
+  {
+    "type": "custom-link",
+    "label": "Tham chiếu phát triển",
+    "link": "/cluster-mode/development"
+  }
+]

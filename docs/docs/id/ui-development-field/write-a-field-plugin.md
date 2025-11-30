@@ -1,0 +1,1 @@
+Mohon berikan konten dalam bahasa Mandarin (asli) dan Inggris (referensi) agar saya dapat menerjemahkannya ke Bahasa Indonesia sesuai dengan instruksi Anda.

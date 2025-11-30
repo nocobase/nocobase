@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Översikt",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Konfigurationsbeskrivning",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "Mallsyntax"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "Avancerade funktioner"
+  },
+  {
+    "type": "custom-link",
+    "label": "Vanliga frågor",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Användningsfall",
+    "link": "/template-print/scenes"
+  }
+]

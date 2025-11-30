@@ -1,0 +1,14 @@
+displayName: "บันทึกการตรวจสอบ"
+packageName: '@nocobase/plugin-audit-logger'
+supportedVersions:
+  - 1.x
+  - 2.x
+description: |
+  ติดตามและบันทึกกิจกรรมของผู้ใช้และการดำเนินการกับทรัพยากรทั่วทั้งระบบ
+isFree: false
+builtIn: false
+defaultEnabled: false
+editionLevel: 3
+---
+
+# บันทึกการตรวจสอบ

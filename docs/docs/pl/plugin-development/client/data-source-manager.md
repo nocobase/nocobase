@@ -1,0 +1,7 @@
+# Zarządzanie źródłami danych
+
+:::tip
+
+W kolejnych wersjach uzupełnimy szczegółowe przykłady i najlepsze praktyki.
+
+:::

@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Systemverwaltung",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Plugin-Verwaltung",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Systemeinstellungen",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Eigenes Branding",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Theme-Editor",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Spracheinstellungen",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lokalisierungsverwaltung",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Посібник з безпеки",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "Політика токенів (Token)",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Політика паролів",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Політика паролів",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Блокування користувачів",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Обмеження за IP",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Журнал аудиту",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Двофакторна автентифікація (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Шифрування полів",
+    "link": "/data-sources/field-encryption"
+  }
+]

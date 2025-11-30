@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Systemadministration",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Plugin-hantering",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Systeminställningar",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Eget varumärke",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Temaredigerare",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Språkinställningar",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lokaliseringshantering",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

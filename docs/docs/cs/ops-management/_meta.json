@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Správa vydání",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Přehled",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Proměnné a klíče",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "Správa záloh",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Správa migrací",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

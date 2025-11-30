@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Systeembeheer",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Plug-inbeheer",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Systeeminstellingen",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Eigen merkstijl",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Thema-editor",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Taalinstellingen",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Lokalisatiebeheer",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

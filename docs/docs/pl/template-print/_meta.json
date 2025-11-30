@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Przegląd",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Opis konfiguracji",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "Składnia szablonów"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "Funkcje zaawansowane"
+  },
+  {
+    "type": "custom-link",
+    "label": "FAQ",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Scenariusze zastosowań",
+    "link": "/template-print/scenes"
+  }
+]

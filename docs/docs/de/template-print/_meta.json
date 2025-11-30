@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Überblick",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Konfigurationshinweise",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "Vorlagensyntax"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "Erweiterte Funktionen"
+  },
+  {
+    "type": "custom-link",
+    "label": "FAQ",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Anwendungsfälle",
+    "link": "/template-print/scenes"
+  }
+]

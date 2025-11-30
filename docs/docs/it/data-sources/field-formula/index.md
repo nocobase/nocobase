@@ -1,0 +1,14 @@
+pkg: "@nocobase/plugin-field-formula"
+---
+
+# Formula
+
+## Introduzione
+
+## Configurazione del Campo
+
+![20240512173541](https://static-docs.nocobase.com/20240512173541.png)
+
+## Esempio
+
+Da aggiungere.

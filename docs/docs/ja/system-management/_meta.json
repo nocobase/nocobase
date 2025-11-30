@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "システム管理",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "プラグイン管理",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "システム設定",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "ブランディング",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "テーマエディター",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "言語設定",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "ローカリゼーション",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

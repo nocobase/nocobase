@@ -1,0 +1,74 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Aperçu",
+    "link": "/data-visualization/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Démarrage rapide",
+    "link": "/data-visualization/quick-start"
+  },
+  {
+    "type": "custom-link",
+    "label": "Présentation des fonctionnalités",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Requête de données",
+        "link": "/data-visualization/guide/data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Options du graphique",
+        "link": "/data-visualization/guide/chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Aperçu et sauvegarde",
+        "link": "/data-visualization/guide/preview-and-save"
+      },
+      {
+        "type": "custom-link",
+        "label": "Utiliser les variables d'environnement de contexte",
+        "link": "/data-visualization/guide/context-variables"
+      },
+      {
+        "type": "custom-link",
+        "label": "Filtres de page et interactions",
+        "link": "/data-visualization/guide/filters-and-linkage"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Avancé",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Interroger des données en mode SQL",
+        "link": "/data-visualization/guide/sql-data-query"
+      },
+      {
+        "type": "custom-link",
+        "label": "Configuration de graphique personnalisée",
+        "link": "/data-visualization/guide/custom-chart-options"
+      },
+      {
+        "type": "custom-link",
+        "label": "Événements d'interaction personnalisés",
+        "link": "/data-visualization/guide/chart-events"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "FAQ",
+    "link": "/data-visualization/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Meilleures pratiques",
+    "link": "/data-visualization/best-practices"
+  }
+]

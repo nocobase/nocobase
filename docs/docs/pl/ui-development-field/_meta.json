@@ -1,0 +1,18 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Szybki start",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Wprowadzenie",
+        "link": "/ui-development-field"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tworzenie wtyczki pola",
+        "link": "/ui-development-field/write-a-field-plugin"
+      }
+    ]
+  }
+]

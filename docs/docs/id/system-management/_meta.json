@@ -1,0 +1,39 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Manajemen Sistem",
+    "collapsible": false,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Manajemen Plugin",
+        "link": "/system-management/plugin-manager/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Pengaturan Sistem",
+        "link": "/system-management/system-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Branding Kustom",
+        "link": "/system-management/custom-brand/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Editor Tema",
+        "link": "/system-management/theme-editor/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Pengaturan Bahasa",
+        "link": "/system-management/language-settings/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Manajemen Lokalisasi",
+        "link": "/system-management/localization/"
+      }
+    ]
+  }
+]

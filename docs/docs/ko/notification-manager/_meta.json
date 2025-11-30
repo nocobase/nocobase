@@ -1,0 +1,44 @@
+[
+  {
+    "type": "custom-link",
+    "label": "개요",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "알림 채널",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "앱 내 메시지",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "이메일",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "WeCom",
+        "link": "/notification-manager/wecom"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "개발 가이드",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "알림 채널 유형 확장",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "알림 API 확장",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

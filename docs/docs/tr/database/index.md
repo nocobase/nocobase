@@ -1,0 +1,5 @@
+# Veritabanı
+
+:::ipucu
+İçerik eklenecektir.
+:::

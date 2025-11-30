@@ -1,0 +1,297 @@
+[
+  {
+    "type": "section-header",
+    "label": "Flujo de trabajo"
+  },
+  {
+    "type": "custom-link",
+    "label": "Visión general",
+    "link": "/workflow/index"
+  },
+  {
+    "type": "custom-link",
+    "label": "Inicio rápido",
+    "link": "/workflow/getting-started"
+  },
+  {
+    "type": "custom-link",
+    "label": "Disparadores",
+    "collapsed": true,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Visión general",
+        "link": "/workflow/triggers/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Eventos de tabla de datos",
+        "link": "/workflow/triggers/collection"
+      },
+      {
+        "type": "custom-link",
+        "label": "Tareas programadas",
+        "link": "/workflow/triggers/schedule"
+      },
+      {
+        "type": "custom-link",
+        "label": "Evento pre-acción",
+        "link": "/workflow/triggers/pre-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Evento post-acción",
+        "link": "/workflow/triggers/post-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Evento de acción personalizado",
+        "link": "/workflow/triggers/custom-action"
+      },
+      {
+        "type": "custom-link",
+        "label": "Aprobaciones",
+        "link": "/workflow/triggers/approval"
+      },
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/workflow/triggers/webhook"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Nodos",
+    "collapsed": true,
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Visión general",
+        "link": "/workflow/nodes/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Inteligencia Artificial (AI)",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Modelo Lingüístico Grande (LLM)",
+            "link": "/ai-employees/workflow/nodes/llm/chat"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "Control de flujo",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Condición",
+            "link": "/workflow/nodes/condition"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bifurcación multicondicional",
+            "link": "/workflow/nodes/multi-conditions"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bucle",
+            "link": "/workflow/nodes/loop"
+          },
+          {
+            "type": "custom-link",
+            "label": "Variables",
+            "link": "/workflow/nodes/variable"
+          },
+          {
+            "type": "custom-link",
+            "label": "Bifurcación en paralelo",
+            "link": "/workflow/nodes/parallel"
+          },
+          {
+            "type": "custom-link",
+            "label": "Llamar a flujo de trabajo",
+            "link": "/workflow/nodes/subflow"
+          },
+          {
+            "type": "custom-link",
+            "label": "Salida de flujo",
+            "link": "/workflow/nodes/output"
+          },
+          {
+            "type": "custom-link",
+            "label": "Mapeo de variables JSON",
+            "link": "/workflow/nodes/json-variable-mapping"
+          },
+          {
+            "type": "custom-link",
+            "label": "Retraso",
+            "link": "/workflow/nodes/delay"
+          },
+          {
+            "type": "custom-link",
+            "label": "Finalizar",
+            "link": "/workflow/nodes/end"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "Cálculo",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Cálculo",
+            "link": "/workflow/nodes/calculation"
+          },
+          {
+            "type": "custom-link",
+            "label": "Cálculo de fecha",
+            "link": "/workflow/nodes/date-calculation"
+          },
+          {
+            "type": "custom-link",
+            "label": "Cálculo JSON",
+            "link": "/workflow/nodes/json-query"
+          }
+        ]
+      },
+      {
+        "type": "section-header",
+        "label": "Operaciones de datos",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Añadir datos",
+            "link": "/workflow/nodes/create"
+          },
+          {
+            "type": "custom-link",
+            "label": "Actualizar datos",
+            "link": "/workflow/nodes/update"
+          },
+          {
+            "type": "custom-link",
+            "label": "Consultar datos",
+            "link": "/workflow/nodes/query"
+          },
+          {
+            "type": "custom-link",
+            "label": "Eliminar datos",
+            "link": "/workflow/nodes/destroy"
+          },
+          {
+            "type": "custom-link",
+            "label": "Operación SQL",
+            "link": "/workflow/nodes/sql"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Procesamiento manual",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Procesamiento manual",
+            "link": "/workflow/nodes/manual"
+          },
+          {
+            "type": "custom-link",
+            "label": "Aprobaciones",
+            "link": "/workflow/nodes/approval"
+          },
+          {
+            "type": "custom-link",
+            "label": "Enviar copia (CC)",
+            "link": "/workflow/nodes/cc"
+          }
+        ]
+      },
+      {
+        "type": "custom-link",
+        "label": "Tipos extendidos",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "Solicitud HTTP",
+            "link": "/workflow/nodes/request"
+          },
+          {
+            "type": "custom-link",
+            "label": "Script de JavaScript",
+            "link": "/workflow/nodes/javascript"
+          },
+          {
+            "type": "custom-link",
+            "label": "Notificaciones",
+            "link": "/notification-manager/#工作流通知节点"
+          },
+          {
+            "type": "custom-link",
+            "label": "Enviar correo",
+            "link": "/workflow/nodes/mailer"
+          },
+          {
+            "type": "custom-link",
+            "label": "Respuesta",
+            "link": "/workflow/nodes/response"
+          },
+          {
+            "type": "custom-link",
+            "label": "Mensaje de respuesta",
+            "link": "/workflow/nodes/response-message"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Variables",
+    "link": "/workflow/advanced/variables"
+  },
+  {
+    "type": "custom-link",
+    "label": "Registro de ejecución",
+    "link": "/workflow/advanced/execution"
+  },
+  {
+    "type": "custom-link",
+    "label": "Gestión de versiones",
+    "link": "/workflow/advanced/revision"
+  },
+  {
+    "type": "custom-link",
+    "label": "Opciones avanzadas",
+    "link": "/workflow/advanced/options"
+  },
+  {
+    "type": "custom-link",
+    "label": "Desarrollo de extensiones",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Visión general",
+        "link": "/workflow/development/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Extender tipo de disparador",
+        "link": "/workflow/development/trigger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Extender tipo de nodo",
+        "link": "/workflow/development/node"
+      },
+      {
+        "type": "custom-link",
+        "label": "Referencia de API",
+        "link": "/workflow/development/api"
+      }
+    ]
+  }
+]

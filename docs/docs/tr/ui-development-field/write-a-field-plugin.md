@@ -1,0 +1,1 @@
+Lütfen çevrilecek Çince ve İngilizce metinleri sağlayın. Metinler olmadan çeviri yapamam.

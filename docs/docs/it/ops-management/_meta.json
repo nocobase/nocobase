@@ -1,0 +1,28 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Gestione Pubblicazione",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Panoramica",
+        "link": "/ops-management/release-management"
+      },
+      {
+        "type": "custom-link",
+        "label": "Variabili e Segreti",
+        "link": "/ops-management/variables-and-secrets"
+      },
+      {
+        "type": "custom-link",
+        "label": "Gestione Backup",
+        "link": "/ops-management/backup-manager"
+      },
+      {
+        "type": "custom-link",
+        "label": "Gestione Migrazione",
+        "link": "/ops-management/migration-manager"
+      }
+    ]
+  }
+]

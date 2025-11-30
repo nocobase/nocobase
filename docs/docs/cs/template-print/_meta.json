@@ -1,0 +1,32 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Přehled",
+    "link": "/template-print/"
+  },
+  {
+    "type": "custom-link",
+    "label": "Popis konfigurace",
+    "link": "/template-print/configuration"
+  },
+  {
+    "type": "dir",
+    "name": "syntax",
+    "label": "Syntaxe šablon"
+  },
+  {
+    "type": "dir",
+    "name": "advanced",
+    "label": "Pokročilé funkce"
+  },
+  {
+    "type": "custom-link",
+    "label": "Časté dotazy",
+    "link": "/template-print/faq"
+  },
+  {
+    "type": "custom-link",
+    "label": "Případy užití",
+    "link": "/template-print/scenes"
+  }
+]

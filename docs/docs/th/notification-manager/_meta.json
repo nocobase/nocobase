@@ -1,0 +1,44 @@
+[
+  {
+    "type": "custom-link",
+    "label": "ภาพรวม",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "ช่องทางการแจ้งเตือน",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ข้อความภายใน",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "อีเมล",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "WeChat Work",
+        "link": "/notification-manager/wecom"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "คู่มือการพัฒนา",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "ขยายประเภทช่องทางการแจ้งเตือน",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "ขยาย API การแจ้งเตือน",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

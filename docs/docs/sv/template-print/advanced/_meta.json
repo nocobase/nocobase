@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Villkorssatser",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "Avancerade egenskaper",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]
