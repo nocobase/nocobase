@@ -5839,7 +5839,15 @@
     "commaStartingX0": ", starting %s",
     "commaX0ThroughX1": ", %s through %s",
     "commaYearX0ThroughYearX1": null,
-    "daysOfTheWeek": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "daysOfTheWeek": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
     "everyHour": "every hour",
     "everyMinute": "every minute",
     "everyMinuteBetweenX0AndX1": "Every minute between %s and %s",
@@ -5876,8 +5884,29 @@
     "weekdayNearestDayX0": "weekday nearest day %s"
   },
   "react-js-cron": {
-    "altMonths": ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"],
-    "altWeekDays": ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"],
+    "altMonths": [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC"
+    ],
+    "altWeekDays": [
+      "SUN",
+      "MON",
+      "TUE",
+      "WED",
+      "THU",
+      "FRI",
+      "SAT"
+    ],
     "clearButtonText": "Clear",
     "dayOption": "day",
     "emptyHours": "every hour",
@@ -5917,7 +5946,15 @@
     "prefixWeekDaysForMonthAndYearPeriod": "and",
     "rebootOption": "reboot",
     "suffixMinutesForHourPeriod": "minute(s)",
-    "weekDays": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "weekDays": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
     "weekOption": "week",
     "yearOption": "year"
   }

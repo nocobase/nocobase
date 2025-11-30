@@ -1,5 +1,4 @@
 {
-  "@nocobase-dev/plugin-attachment-db": {},
   "@nocobase/client": {
     "\"Content-Type\" only support \"application/json\", and no need to specify": "\"Content-Type\" only support \"application/json\", and no need to specify",
     "(Fields only)": "(Csak mezők)",
@@ -6941,7 +6940,15 @@
     "commaStartingX0": ", %s-tól/től kezdve",
     "commaX0ThroughX1": ", %s-tól/től %s-ig",
     "commaYearX0ThroughYearX1": null,
-    "daysOfTheWeek": ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"],
+    "daysOfTheWeek": [
+      "Vasárnap",
+      "Hétfő",
+      "Kedd",
+      "Szerda",
+      "Csütörtök",
+      "Péntek",
+      "Szombat"
+    ],
     "everyHour": "minden órában",
     "everyMinute": "minden percben",
     "everyMinuteBetweenX0AndX1": "Minden perc %s és %s között",
@@ -6978,8 +6985,29 @@
     "weekdayNearestDayX0": "a %s. naphoz legközelebbi munkanap"
   },
   "react-js-cron": {
-    "altMonths": ["JAN", "FEB", "MÁR", "ÁPR", "MÁJ", "JÚN", "JÚL", "AUG", "SZEPT", "OKT", "NOV", "DEC"],
-    "altWeekDays": ["VAS", "HÉT", "KED", "SZE", "CSÜ", "PÉN", "SZO"],
+    "altMonths": [
+      "JAN",
+      "FEB",
+      "MÁR",
+      "ÁPR",
+      "MÁJ",
+      "JÚN",
+      "JÚL",
+      "AUG",
+      "SZEPT",
+      "OKT",
+      "NOV",
+      "DEC"
+    ],
+    "altWeekDays": [
+      "VAS",
+      "HÉT",
+      "KED",
+      "SZE",
+      "CSÜ",
+      "PÉN",
+      "SZO"
+    ],
     "clearButtonText": "Törlés",
     "dayOption": "nap",
     "emptyHours": "minden órában",
@@ -7019,7 +7047,15 @@
     "prefixWeekDaysForMonthAndYearPeriod": "és",
     "rebootOption": "újraindítás",
     "suffixMinutesForHourPeriod": "perc",
-    "weekDays": ["Vasárnap", "Hétfő", "Kedd", "Szerda", "Csütörtök", "Péntek", "Szombat"],
+    "weekDays": [
+      "Vasárnap",
+      "Hétfő",
+      "Kedd",
+      "Szerda",
+      "Csütörtök",
+      "Péntek",
+      "Szombat"
+    ],
     "weekOption": "hét",
     "yearOption": "év"
   }

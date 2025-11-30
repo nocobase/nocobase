@@ -5833,7 +5833,15 @@
     "commaStartingX0": ", bắt đầu %s",
     "commaX0ThroughX1": ", %s đến %s",
     "commaYearX0ThroughYearX1": null,
-    "daysOfTheWeek": ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy"],
+    "daysOfTheWeek": [
+      "Chủ nhật",
+      "Thứ hai",
+      "Thứ ba",
+      "Thứ tư",
+      "Thứ năm",
+      "Thứ sáu",
+      "Thứ bảy"
+    ],
     "everyHour": "mỗi giờ",
     "everyMinute": "mỗi phút",
     "everyMinuteBetweenX0AndX1": "Mỗi phút giữa %s và %s",
@@ -5870,8 +5878,29 @@
     "weekdayNearestDayX0": "ngày làm việc gần nhất với ngày %s"
   },
   "react-js-cron": {
-    "altMonths": ["TH1", "TH2", "TH3", "TH4", "TH5", "TH6", "TH7", "TH8", "TH9", "TH10", "TH11", "TH12"],
-    "altWeekDays": ["CN", "T2", "T3", "T4", "T5", "T6", "T7"],
+    "altMonths": [
+      "TH1",
+      "TH2",
+      "TH3",
+      "TH4",
+      "TH5",
+      "TH6",
+      "TH7",
+      "TH8",
+      "TH9",
+      "TH10",
+      "TH11",
+      "TH12"
+    ],
+    "altWeekDays": [
+      "CN",
+      "T2",
+      "T3",
+      "T4",
+      "T5",
+      "T6",
+      "T7"
+    ],
     "clearButtonText": "Xóa",
     "dayOption": "ngày",
     "emptyHours": "mỗi giờ",
@@ -5911,7 +5940,15 @@
     "prefixWeekDaysForMonthAndYearPeriod": "và",
     "rebootOption": "khởi động lại",
     "suffixMinutesForHourPeriod": "phút",
-    "weekDays": ["Chủ nhật", "Thứ hai", "Thứ ba", "Thứ tư", "Thứ năm", "Thứ sáu", "Thứ bảy"],
+    "weekDays": [
+      "Chủ nhật",
+      "Thứ hai",
+      "Thứ ba",
+      "Thứ tư",
+      "Thứ năm",
+      "Thứ sáu",
+      "Thứ bảy"
+    ],
     "weekOption": "tuần",
     "yearOption": "năm"
   }

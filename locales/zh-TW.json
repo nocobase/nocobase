@@ -5836,7 +5836,15 @@
     "commaStartingX0": ", %s 開始",
     "commaX0ThroughX1": ", %s 到 %s",
     "commaYearX0ThroughYearX1": ", 從 %s 年至 %s 年",
-    "daysOfTheWeek": ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"],
+    "daysOfTheWeek": [
+      "星期日",
+      "星期一",
+      "星期二",
+      "星期三",
+      "星期四",
+      "星期五",
+      "星期六"
+    ],
     "everyHour": "每小時",
     "everyMinute": "每分鐘",
     "everyMinuteBetweenX0AndX1": "在 %s 和 %s 之間的每分鐘",
@@ -5873,8 +5881,29 @@
     "weekdayNearestDayX0": "最接近 %s 號的工作日"
   },
   "react-js-cron": {
-    "altMonths": ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"],
-    "altWeekDays": ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"],
+    "altMonths": [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC"
+    ],
+    "altWeekDays": [
+      "SUN",
+      "MON",
+      "TUE",
+      "WED",
+      "THU",
+      "FRI",
+      "SAT"
+    ],
     "clearButtonText": "Clear",
     "dayOption": "day",
     "emptyHours": "every hour",
@@ -5914,7 +5943,15 @@
     "prefixWeekDaysForMonthAndYearPeriod": "and",
     "rebootOption": "reboot",
     "suffixMinutesForHourPeriod": "minute(s)",
-    "weekDays": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "weekDays": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
     "weekOption": "week",
     "yearOption": "year"
   }

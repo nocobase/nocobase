@@ -5840,7 +5840,15 @@
     "commaStartingX0": ", başlangıç %s",
     "commaX0ThroughX1": ", %s ile %s arasında",
     "commaYearX0ThroughYearX1": null,
-    "daysOfTheWeek": ["Pazar", "Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi"],
+    "daysOfTheWeek": [
+      "Pazar",
+      "Pazartesi",
+      "Salı",
+      "Çarşamba",
+      "Perşembe",
+      "Cuma",
+      "Cumartesi"
+    ],
     "everyHour": "her saat",
     "everyMinute": "her dakika",
     "everyMinuteBetweenX0AndX1": "Saat %s ve %s arasındaki her dakika",
@@ -5877,8 +5885,29 @@
     "weekdayNearestDayX0": "%s. günü sonrasındaki ilk iş günü"
   },
   "react-js-cron": {
-    "altMonths": ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"],
-    "altWeekDays": ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"],
+    "altMonths": [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MAY",
+      "JUN",
+      "JUL",
+      "AUG",
+      "SEP",
+      "OCT",
+      "NOV",
+      "DEC"
+    ],
+    "altWeekDays": [
+      "SUN",
+      "MON",
+      "TUE",
+      "WED",
+      "THU",
+      "FRI",
+      "SAT"
+    ],
     "clearButtonText": "Clear",
     "dayOption": "day",
     "emptyHours": "every hour",
@@ -5918,7 +5947,15 @@
     "prefixWeekDaysForMonthAndYearPeriod": "and",
     "rebootOption": "reboot",
     "suffixMinutesForHourPeriod": "minute(s)",
-    "weekDays": ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+    "weekDays": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
     "weekOption": "week",
     "yearOption": "year"
   }

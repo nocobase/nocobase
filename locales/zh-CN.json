@@ -5832,7 +5832,15 @@
     "commaStartingX0": ", %s开始",
     "commaX0ThroughX1": ", %s至%s",
     "commaYearX0ThroughYearX1": ", 从%s年至%s年",
-    "daysOfTheWeek": ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"],
+    "daysOfTheWeek": [
+      "星期日",
+      "星期一",
+      "星期二",
+      "星期三",
+      "星期四",
+      "星期五",
+      "星期六"
+    ],
     "everyHour": "每小时",
     "everyMinute": "每分钟",
     "everyMinuteBetweenX0AndX1": "在 %s 至 %s 之间的每分钟",
@@ -5869,8 +5877,29 @@
     "weekdayNearestDayX0": "最接近 %s 号的工作日"
   },
   "react-js-cron": {
-    "altMonths": ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"],
-    "altWeekDays": ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+    "altMonths": [
+      "一月",
+      "二月",
+      "三月",
+      "四月",
+      "五月",
+      "六月",
+      "七月",
+      "八月",
+      "九月",
+      "十月",
+      "十一月",
+      "十二月"
+    ],
+    "altWeekDays": [
+      "周日",
+      "周一",
+      "周二",
+      "周三",
+      "周四",
+      "周五",
+      "周六"
+    ],
     "clearButtonText": "清空",
     "dayOption": "天",
     "emptyHours": "每小时",
@@ -5886,7 +5915,20 @@
     "hourOption": "小时",
     "minuteOption": "分钟",
     "monthOption": "月",
-    "months": ["一月", "二月", "三月", "四月", "五月", "六月", "七月", "八月", "九月", "十月", "十一月", "十二月"],
+    "months": [
+      "一月",
+      "二月",
+      "三月",
+      "四月",
+      "五月",
+      "六月",
+      "七月",
+      "八月",
+      "九月",
+      "十月",
+      "十一月",
+      "十二月"
+    ],
     "prefixHours": "的",
     "prefixMinutes": ":",
     "prefixMinutesForHourPeriod": "的",
@@ -5897,7 +5939,15 @@
     "prefixWeekDaysForMonthAndYearPeriod": "或者",
     "rebootOption": "重启",
     "suffixMinutesForHourPeriod": "分钟",
-    "weekDays": ["周日", "周一", "周二", "周三", "周四", "周五", "周六"],
+    "weekDays": [
+      "周日",
+      "周一",
+      "周二",
+      "周三",
+      "周四",
+      "周五",
+      "周六"
+    ],
     "weekOption": "周",
     "yearOption": "年"
   }

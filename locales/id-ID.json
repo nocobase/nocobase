@@ -5834,7 +5834,15 @@
     "commaStartingX0": ", mulai %s",
     "commaX0ThroughX1": ", %s hingga %s",
     "commaYearX0ThroughYearX1": null,
-    "daysOfTheWeek": ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"],
+    "daysOfTheWeek": [
+      "Minggu",
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu"
+    ],
     "everyHour": "setiap jam",
     "everyMinute": "setiap menit",
     "everyMinuteBetweenX0AndX1": "Setiap menit antara %s dan %s",
@@ -5871,8 +5879,29 @@
     "weekdayNearestDayX0": "hari kerja terdekat hari %s"
   },
   "react-js-cron": {
-    "altMonths": ["JAN", "FEB", "MAR", "APR", "MEI", "JUN", "JUL", "AGU", "SEP", "OKT", "NOV", "DES"],
-    "altWeekDays": ["MIN", "SEN", "SEL", "RAB", "KAM", "JUM", "SAB"],
+    "altMonths": [
+      "JAN",
+      "FEB",
+      "MAR",
+      "APR",
+      "MEI",
+      "JUN",
+      "JUL",
+      "AGU",
+      "SEP",
+      "OKT",
+      "NOV",
+      "DES"
+    ],
+    "altWeekDays": [
+      "MIN",
+      "SEN",
+      "SEL",
+      "RAB",
+      "KAM",
+      "JUM",
+      "SAB"
+    ],
     "clearButtonText": "Bersihkan",
     "dayOption": "hari",
     "emptyHours": "setiap jam",
@@ -5912,7 +5941,15 @@
     "prefixWeekDaysForMonthAndYearPeriod": "dan",
     "rebootOption": "mulai ulang",
     "suffixMinutesForHourPeriod": "menit",
-    "weekDays": ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"],
+    "weekDays": [
+      "Minggu",
+      "Senin",
+      "Selasa",
+      "Rabu",
+      "Kamis",
+      "Jumat",
+      "Sabtu"
+    ],
     "weekOption": "minggu",
     "yearOption": "tahun"
   }
