@@ -60,16 +60,32 @@ export type EnvironmentInfo = {
  */
 export interface AppDiscoveryAdapter {
   readonly name: string;
+
+  /**
+   * Resolve an application's configuration/state from the discovery backend.
+   */
   getApp(appName: string, options?: GetAppOptions): Promise<Application>;
-  hasApp(appName: string): boolean;
+
+  /**
+   * Enumerate all known application names tracked by the discovery backend.
+   */
   getAppsNames(): Promise<string[]>;
-  subApps(): Application[];
-  touchApp(appName: string): void;
-  getAppStatus(appName: string, defaultStatus?: AppStatus): AppStatus | null;
-  setAppStatus(appName: string, status: AppStatus, options?: Record<string, any>): void;
-  setAppError(appName: string, error: Error): void;
-  hasAppError(appName: string): boolean;
-  clearAppError(appName: string): void;
+
+  /**
+   * Update the "last seen" timestamp for an application.
+   */
+  touchApp(appName: string): void | Promise<void>;
+
+  /**
+   * Read the cached lifecycle status for a given application.
+   */
+  getAppStatus(appName: string, defaultStatus?: AppStatus): Promise<AppStatus | null> | AppStatus | null;
+
+  /**
+   * Persist an application's lifecycle status back to the discovery backend.
+   */
+  setAppStatus(appName: string, status: AppStatus, options?: Record<string, any>): void | Promise<void>;
+
   registerEnvironment?(environment: EnvironmentInfo): Promise<void>;
   unregisterEnvironment?(environmentName: string): Promise<void>;
   listEnvironments?(): Promise<EnvironmentInfo[]>;
@@ -82,11 +98,51 @@ export interface AppDiscoveryAdapter {
  */
 export interface AppProcessAdapter {
   readonly name: string;
+
+  readonly apps?: Record<string, Application>;
+  readonly appStatus?: Record<string, AppStatus>;
+  readonly appErrors?: Record<string, Error>;
+  readonly lastSeenAt?: Map<string, number>;
+  readonly lastMaintainingMessage?: Record<string, string>;
+  readonly statusBeforeCommanding?: Record<string, AppStatus>;
+
+  /**
+   * Return all currently managed sub-application instances.
+   */
+  subApps(): Application[];
   setAppBootstrapper(appBootstrapper: AppBootstrapper): void;
   bootStrapApp(appName: string, options?: Record<string, any>): Promise<void>;
   addApp(app: Application): Application;
+  hasApp(appName: string): boolean;
   startApp(appName: string): Promise<void>;
   stopApp(appName: string): Promise<void>;
   removeApp(appName: string): Promise<void>;
   reset(): Promise<void>;
+
+  setAppError(appName: string, error: Error): void;
+  hasAppError(appName: string): boolean;
+  clearAppError(appName: string): void;
+
+  /**
+   * Allow the adapter to expose a remote control surface (e.g. HTTP routes, message queues).
+   */
+  registerCommandHandler?(app: Application): Promise<void>;
+
+  /**
+   * Send a lifecycle command to a remote worker/environment. Returns true if the command was handled remotely.
+   */
+  dispatchCommand?(command: ProcessCommand): Promise<boolean>;
+
+  /**
+   * Whether this adapter expects lifecycle changes to be dispatched remotely instead of executed locally.
+   */
+  supportsRemoteCommands?: boolean;
 }
+
+export type ProcessCommand = {
+  appName: string;
+  action: 'add' | 'start' | 'stop' | 'remove' | string;
+  environment?: string;
+  payload?: Record<string, any>;
+  requestId?: string;
+};

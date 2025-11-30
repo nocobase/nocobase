@@ -70,7 +70,7 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
     delete this.appErrors[appName];
   }
 
-  setAppStatus(appName: string, status: AppStatus, options = {}) {
+  async setAppStatus(appName: string, status: AppStatus, options = {}) {
     if (this.appStatus[appName] === status) {
       return;
     }
@@ -93,7 +93,7 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
   }
 
   private async _bootStrapApp(appName: string, options = {}) {
-    this.setAppStatus(appName, 'initializing');
+    await this.setAppStatus(appName, 'initializing');
 
     if (this.appBootstrapper) {
       await this.appBootstrapper({
@@ -104,9 +104,12 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
     }
 
     if (!this.hasApp(appName)) {
-      this.setAppStatus(appName, 'not_found');
-    } else if (!this.getAppStatus(appName) || this.getAppStatus(appName) === 'initializing') {
-      this.setAppStatus(appName, 'initialized');
+      await this.setAppStatus(appName, 'not_found');
+    } else {
+      const appStatus = await this.getAppStatus(appName);
+      if (!appStatus || appStatus === 'initializing') {
+        await this.setAppStatus(appName, 'initialized');
+      }
     }
   }
 
@@ -114,7 +117,8 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
     const mutex = this.getMutexOfApp(appName);
     try {
       await tryAcquire(mutex).runExclusive(async () => {
-        if (this.hasApp(appName) && this.getAppStatus(appName) !== 'preparing') {
+        const appStatus = await this.getAppStatus(appName);
+        if (this.hasApp(appName) && appStatus !== 'preparing') {
           return;
         }
         if (appName === 'main') {
@@ -158,7 +162,7 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
       throw new Error(`app ${app.name} already exists`);
     }
 
-    app.logger.info(`add app ${app.name} into supervisor`, { submodule: 'supervisor', method: 'addApp' });
+    app.logger.info(`add app ${app.name} into supervisor`, { submodule: 'legacy-memory-adapter', method: 'addApp' });
 
     this.bindAppEvents(app);
 
@@ -166,9 +170,19 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
 
     this.supervisor.emit('afterAppAdded', app);
 
-    if (!this.getAppStatus(app.name) || this.getAppStatus(app.name) == 'not_found') {
-      this.setAppStatus(app.name, 'preparing');
-    }
+    this.getAppStatus(app.name)
+      .catch((err) => {
+        app.log.error(err, { submodule: 'legacy-memory-adapter', method: 'addApp' });
+        return undefined;
+      })
+      .then((status) => {
+        if (!status || status === 'not_found') {
+          return this.setAppStatus(app.name, 'preparing');
+        }
+      })
+      .catch((err) => {
+        app.log.error(err, { submodule: 'legacy-memory-adapter', method: 'addApp' });
+      });
 
     return app;
   }
@@ -206,7 +220,7 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
     return Object.values(this.apps).filter((app) => app && app.name !== 'main');
   }
 
-  getAppStatus(appName: string, defaultStatus?: AppStatus) {
+  async getAppStatus(appName: string, defaultStatus?: AppStatus) {
     const status = this.appStatus[appName];
 
     if (status === undefined && defaultStatus !== undefined) {
@@ -226,14 +240,14 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
       this.lastSeenAt.delete(app.name);
     });
 
-    app.on('maintainingMessageChanged', ({ message, maintainingStatus }) => {
+    app.on('maintainingMessageChanged', async ({ message, maintainingStatus }) => {
       if (this.lastMaintainingMessage[app.name] === message) {
         return;
       }
 
       this.lastMaintainingMessage[app.name] = message;
 
-      const appStatus = this.getAppStatus(app.name);
+      const appStatus = await this.getAppStatus(app.name);
 
       if (!maintainingStatus && appStatus !== 'running') {
         return;
@@ -277,19 +291,19 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
       this.setAppStatus(app.name, 'stopped');
     });
 
-    app.on('maintaining', (maintainingStatus: MaintainingCommandStatus) => {
+    app.on('maintaining', async (maintainingStatus: MaintainingCommandStatus) => {
       const { status, command } = maintainingStatus;
 
       switch (status) {
         case 'command_begin':
-          this.statusBeforeCommanding[app.name] = this.getAppStatus(app.name);
+          this.statusBeforeCommanding[app.name] = await this.getAppStatus(app.name);
           this.setAppStatus(app.name, 'commanding');
           break;
         case 'command_running':
           break;
         case 'command_end':
           {
-            const appStatus = this.getAppStatus(app.name);
+            const appStatus = await this.getAppStatus(app.name);
             this.supervisor.emit('appMaintainingStatusChanged', maintainingStatus);
 
             if (appStatus == 'commanding') {

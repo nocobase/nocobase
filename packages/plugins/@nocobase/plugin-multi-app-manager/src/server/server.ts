@@ -47,7 +47,7 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
       continue;
     }
 
-    const beforeSubAppStatus = AppSupervisor.getInstance().getAppStatus(instance.name);
+    const beforeSubAppStatus = await AppSupervisor.getInstance().getAppStatus(instance.name);
 
     const subApp = await appSupervisor.getApp(instance.name, {
       upgrading: true,
@@ -56,7 +56,7 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
     try {
       mainApp.setMaintainingMessage(`upgrading sub app ${instance.name}...`);
       await subApp.runAsCLI(['upgrade'], { from: 'user' });
-      if (!beforeSubAppStatus && AppSupervisor.getInstance().getAppStatus(instance.name) === 'initialized') {
+      if (!beforeSubAppStatus && (await AppSupervisor.getInstance().getAppStatus(instance.name)) === 'initialized') {
         await AppSupervisor.getInstance().removeApp(instance.name);
       }
     } catch (error) {
@@ -309,7 +309,7 @@ export class PluginMultiAppManagerServer extends Plugin {
             });
           } catch (error) {
             this.log.error(error, { method: 'appDbCreator' });
-            AppSupervisor.getInstance().setAppStatus(subApp.name, 'error');
+            await AppSupervisor.getInstance().setAppStatus(subApp.name, 'error');
             return;
           }
 
@@ -516,7 +516,7 @@ export class PluginMultiAppManagerServer extends Plugin {
       if (actionName === 'list' && resourceName === 'applications') {
         const applications = ctx.body.rows;
         for (const application of applications) {
-          const appStatus = AppSupervisor.getInstance().getAppStatus(application.name, 'stopped');
+          const appStatus = await AppSupervisor.getInstance().getAppStatus(application.name, 'stopped');
           application.status = appStatus;
         }
       }

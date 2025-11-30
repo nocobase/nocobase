@@ -18,10 +18,12 @@ import type {
   AppStatus,
   EnvironmentInfo,
   GetAppOptions,
+  ProcessCommand,
 } from './types';
 
 export type AppDiscoveryAdapterFactory = (context: { supervisor: AppSupervisor }) => AppDiscoveryAdapter;
 export type AppProcessAdapterFactory = (context: { supervisor: AppSupervisor }) => AppProcessAdapter;
+type CommandOptions = Partial<Omit<ProcessCommand, 'appName' | 'action'>>;
 
 export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private static instance: AppSupervisor;
@@ -109,6 +111,20 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return factory({ supervisor: this });
   }
 
+  private async dispatchCommand(action: string, appName: string, options: CommandOptions = {}) {
+    if (!this.processAdapter.supportsRemoteCommands || typeof this.processAdapter.dispatchCommand !== 'function') {
+      return false;
+    }
+
+    await this.processAdapter.dispatchCommand({
+      action,
+      appName,
+      ...options,
+    });
+
+    return true;
+  }
+
   public static registerDiscoveryAdapter(name: string, factory: AppDiscoveryAdapterFactory) {
     AppSupervisor.discoveryAdapterFactories.set(name, factory);
   }
@@ -133,34 +149,28 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return AppSupervisor.instance;
   }
 
-  get apps() {
-    const adapter = this.discoveryAdapter as any;
-    return adapter?.apps ?? Object.create(null);
+  get apps(): Record<string, Application> {
+    return this.processAdapter.apps ?? Object.create(null);
   }
 
-  get appStatus() {
-    const adapter = this.discoveryAdapter as any;
-    return adapter?.appStatus ?? Object.create(null);
+  get appStatus(): Record<string, AppStatus> {
+    return this.processAdapter.appStatus ?? Object.create(null);
   }
 
-  get appErrors() {
-    const adapter = this.discoveryAdapter as any;
-    return adapter?.appErrors ?? Object.create(null);
+  get appErrors(): Record<string, Error> {
+    return this.processAdapter.appErrors ?? Object.create(null);
   }
 
-  get lastSeenAt() {
-    const adapter = this.discoveryAdapter as any;
-    return adapter?.lastSeenAt ?? new Map<string, number>();
+  get lastSeenAt(): Map<string, number> {
+    return this.processAdapter.lastSeenAt ?? new Map<string, number>();
   }
 
-  get lastMaintainingMessage() {
-    const adapter = this.discoveryAdapter as any;
-    return adapter?.lastMaintainingMessage ?? Object.create(null);
+  get lastMaintainingMessage(): Record<string, string> {
+    return this.processAdapter.lastMaintainingMessage ?? Object.create(null);
   }
 
-  get statusBeforeCommanding() {
-    const adapter = this.discoveryAdapter as any;
-    return adapter?.statusBeforeCommanding ?? Object.create(null);
+  get statusBeforeCommanding(): Record<string, AppStatus> {
+    return this.processAdapter.statusBeforeCommanding ?? Object.create(null);
   }
 
   setAppBootstrapper(appBootstrapper: AppBootstrapper) {
@@ -168,15 +178,15 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   setAppError(appName: string, error: Error) {
-    this.discoveryAdapter.setAppError(appName, error);
+    this.processAdapter.setAppError(appName, error);
   }
 
   hasAppError(appName: string) {
-    return this.discoveryAdapter.hasAppError(appName);
+    return this.processAdapter.hasAppError(appName);
   }
 
   clearAppError(appName: string) {
-    this.discoveryAdapter.clearAppError(appName);
+    this.processAdapter.clearAppError(appName);
   }
 
   async reset() {
@@ -189,52 +199,73 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     AppSupervisor.instance = null;
   }
 
-  setAppStatus(appName: string, status: AppStatus, options = {}) {
-    this.discoveryAdapter.setAppStatus(appName, status, options);
-  }
-
   async getApp(appName: string, options: GetAppOptions = {}) {
     return this.discoveryAdapter.getApp(appName, options);
   }
 
-  getAppStatus(appName: string, defaultStatus?: AppStatus) {
+  async getAppStatus(appName: string, defaultStatus?: AppStatus) {
     return this.discoveryAdapter.getAppStatus(appName, defaultStatus);
   }
 
+  async setAppStatus(appName: string, status: AppStatus, options = {}) {
+    return this.discoveryAdapter.setAppStatus(appName, status, options);
+  }
+
   bootMainApp(options: ApplicationOptions) {
-    return new Application(options);
+    const app = new Application(options);
+    void this.registerCommandHandler(app);
+    return app;
+  }
+
+  async touchApp(appName: string) {
+    return this.discoveryAdapter.touchApp(appName);
+  }
+
+  addApp(app: Application, commandOptions: CommandOptions = {}) {
+    const instance = this.processAdapter.addApp(app);
+    if (this.processAdapter.supportsRemoteCommands) {
+      void this.dispatchCommand('add', app.name, commandOptions);
+    }
+    return instance;
   }
 
   hasApp(appName: string) {
-    return this.discoveryAdapter.hasApp(appName);
-  }
-
-  touchApp(appName: string) {
-    this.discoveryAdapter.touchApp(appName);
-  }
-
-  addApp(app: Application) {
-    return this.processAdapter.addApp(app);
+    return this.processAdapter.hasApp(appName);
   }
 
   async getAppsNames() {
     return this.discoveryAdapter.getAppsNames();
   }
 
-  async startApp(appName: string) {
+  async startApp(appName: string, commandOptions: CommandOptions = {}) {
+    if (this.processAdapter.supportsRemoteCommands) {
+      await this.dispatchCommand('start', appName, commandOptions);
+      return;
+    }
+
     await this.processAdapter.startApp(appName);
   }
 
-  async stopApp(appName: string) {
+  async stopApp(appName: string, commandOptions: CommandOptions = {}) {
+    if (this.processAdapter.supportsRemoteCommands) {
+      await this.dispatchCommand('stop', appName, commandOptions);
+      return;
+    }
+
     await this.processAdapter.stopApp(appName);
   }
 
-  async removeApp(appName: string) {
+  async removeApp(appName: string, commandOptions: CommandOptions = {}) {
+    if (this.processAdapter.supportsRemoteCommands) {
+      await this.dispatchCommand('remove', appName, commandOptions);
+      return;
+    }
+
     await this.processAdapter.removeApp(appName);
   }
 
   subApps() {
-    return this.discoveryAdapter.subApps();
+    return this.processAdapter.subApps();
   }
 
   async bootStrapApp(appName: string, options = {}) {
@@ -275,6 +306,12 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  async registerCommandHandler(app: Application) {
+    if (typeof this.processAdapter.registerCommandHandler === 'function') {
+      await this.processAdapter.registerCommandHandler(app);
+    }
+  }
+
   override on(eventName: string | symbol, listener: (...args: any[]) => void): this {
     const listeners = this.listeners(eventName);
     const listenerName = listener.name;
@@ -301,6 +338,7 @@ export type {
   AppDiscoveryAdapter,
   AppProcessAdapter,
   AppStatus,
+  ProcessCommand,
   EnvironmentInfo,
   GetAppOptions,
 } from './types';
