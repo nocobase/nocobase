@@ -1,4 +1,4 @@
-```yaml
+---
 versions:
   - label: Nieuwste (Stabiel)
     features: Stabiele functionaliteit, grondig getest, alleen bugfixes.
@@ -32,7 +32,7 @@ install_methods:
     scenarios: Technische ontwikkelaars, gebruikers die niet-uitgebrachte versies willen proberen.
     technical_requirement: ★★★★★
     upgrade_method: Synchroniseer updates via het Git-proces.
-```
+---
 
 # Installatiemethoden en versieoverzicht
 

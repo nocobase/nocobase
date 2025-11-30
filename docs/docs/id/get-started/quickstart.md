@@ -1,3 +1,4 @@
+---
 versions:
   - label: Terbaru (Stabil)
     features: Fitur stabil, telah diuji dengan baik, hanya perbaikan bug.

@@ -1,3 +1,4 @@
+---
 versions:
   - label: Najnowsza (Stabilna)
     features: Stabilne funkcje, gruntownie przetestowana, tylko poprawki błędów.

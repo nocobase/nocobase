@@ -1,3 +1,4 @@
+---
 versions:
   - label: Senaste (Stabil)
     features: Stabila funktioner, vältestad, endast buggfixar.

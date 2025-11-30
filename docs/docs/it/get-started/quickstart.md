@@ -1,4 +1,4 @@
-```yaml
+---
 versions:
   - label: Latest (Stabile)
     features: Funzionalità stabili e ben testate, con sole correzioni di bug.
@@ -32,7 +32,7 @@ install_methods:
     scenarios: Sviluppatori tecnici e utenti che desiderano provare versioni non ancora rilasciate.
     technical_requirement: ★★★★★
     upgrade_method: Sincronizzare gli aggiornamenti tramite il flusso Git.
-```
+---
 
 # Confronto tra Metodi di Installazione e Versioni
 

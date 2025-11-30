@@ -1,3 +1,4 @@
+---
 versions:
   - label: Latest (Stable)
     features: Fonctionnalités stables, bien testées, avec uniquement des corrections de bugs.

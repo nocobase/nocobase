@@ -1,4 +1,4 @@
-```yaml
+---
 versions:
   - label: Nejnovější (stabilní)
     features: Stabilní funkce, důkladně otestováno, pouze opravy chyb.

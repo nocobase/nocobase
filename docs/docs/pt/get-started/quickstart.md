@@ -1,3 +1,4 @@
+---
 versions:
   - label: Mais Recente (Estável)
     features: Recursos estáveis, bem testados, apenas correções de bugs.

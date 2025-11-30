@@ -1,4 +1,4 @@
-```yaml
+---
 versions:
   - label: Latest (Stabil Sürüm)
     features: Özellikleri stabil, iyi test edilmiş ve yalnızca hata düzeltmeleri içerir.
@@ -32,7 +32,7 @@ install_methods:
     scenarios: Teknik geliştiriciler ve yayınlanmamış sürümleri denemek isteyen kullanıcılar için.
     technical_requirement: ★★★★★
     upgrade_method: Git süreçleri aracılığıyla güncellemeleri senkronize edin.
-```
+---
 
 # Kurulum Yöntemleri ve Sürüm Karşılaştırması
 

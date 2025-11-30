@@ -1,4 +1,4 @@
-```yaml
+---
 versions:
   - label: 최신 (안정 버전)
     features: 기능이 안정적이며 테스트가 완료되었고, 버그 수정만 진행됩니다.
@@ -32,7 +32,7 @@ install_methods:
     scenarios: 기술 개발자, 미출시 버전을 경험해 보려는 사용자에게 적합합니다.
     technical_requirement: ★★★★★
     upgrade_method: Git 워크플로우를 통해 업데이트를 동기화합니다.
-```
+---
 
 # 설치 방법 및 버전 비교
 

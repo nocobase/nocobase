@@ -1,3 +1,4 @@
+---
 versions:
   - label: Phiên bản mới nhất (Ổn định)
     features: Tính năng ổn định, đã được kiểm thử kỹ lưỡng, chỉ sửa lỗi.
