@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: guida
@@ -98,3 +99,4 @@ features:
       - title: Cronologia Record
         details: Tracci e memorizzi la cronologia delle modifiche dei record della collezione.
         link: /record-history/
+---

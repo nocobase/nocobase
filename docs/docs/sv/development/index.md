@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: utveckling
 
@@ -55,3 +56,4 @@ features:
       - title: Utökning av filförhandsvisning
         details: Utöka filförhandsvisningsfunktionerna för att stödja onlineförhandsvisning och rendering av fler filformat.
         link: /file-manager/development
+---

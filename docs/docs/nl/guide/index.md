@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: guide
@@ -98,3 +99,4 @@ features:
       - title: Recordgeschiedenis
         details: Volg en bewaar de wijzigingsgeschiedenis van collectie-records.
         link: /record-history/
+---

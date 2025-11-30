@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: development
 
@@ -55,3 +56,4 @@ features:
       - title: ファイルプレビュー拡張
         details: ファイルプレビュー機能を拡張し、より多くのファイル形式のオンラインプレビューとレンダリングをサポートします。
         link: /file-manager/development
+---

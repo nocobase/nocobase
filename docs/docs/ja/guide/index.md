@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: guide
@@ -98,3 +99,4 @@ features:
       - title: 履歴
         details: コレクションのレコード変更履歴を追跡・保存します。
         link: /record-history/
+---

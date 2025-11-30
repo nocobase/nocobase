@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: guide
@@ -98,3 +99,4 @@ features:
       - title: Histórico de Registros
         details: Rastreia e armazena o histórico de alterações dos registros da coleção.
         link: /record-history/
+---

@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: guide
@@ -98,3 +99,4 @@ features:
       - title: Kayıt Geçmişi
         details: Koleksiyon kayıtlarının değişiklik geçmişini izler ve saklar.
         link: /record-history/
+---

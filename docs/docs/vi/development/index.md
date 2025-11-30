@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: development
 
@@ -55,3 +56,4 @@ features:
       - title: Mở rộng xem trước tệp
         details: Mở rộng khả năng xem trước tệp để hỗ trợ xem trước và hiển thị trực tuyến nhiều định dạng tệp hơn.
         link: /file-manager/development
+---

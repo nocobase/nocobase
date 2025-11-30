@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: desarrollo
 
@@ -55,3 +56,4 @@ features:
       - title: Extensión de Vista Previa de Archivos
         details: Extienda las capacidades de vista previa de archivos para admitir la vista previa y el renderizado en línea de más formatos de archivo.
         link: /file-manager/development
+---

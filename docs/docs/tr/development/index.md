@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: development
 
@@ -55,3 +56,4 @@ features:
       - title: Dosya Önizleme Uzantısı
         details: Daha fazla dosya formatının çevrimiçi önizlemesini ve oluşturulmasını desteklemek için dosya önizleme yeteneklerini genişletin.
         link: /file-manager/development
+---

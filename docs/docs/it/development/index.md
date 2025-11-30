@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: sviluppo
 
@@ -55,3 +56,4 @@ features:
       - title: Estensione dell'anteprima file
         details: Estenda le capacità di anteprima file per supportare l'anteprima e il rendering online di più formati di file.
         link: /file-manager/development
+---

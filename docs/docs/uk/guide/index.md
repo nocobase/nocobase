@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: guide
@@ -98,3 +99,4 @@ features:
       - title: Історія записів
         details: Відстежуйте та зберігайте історію змін записів колекції.
         link: /record-history/
+---

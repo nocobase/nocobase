@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: guide
@@ -98,3 +99,4 @@ features:
       - title: Historique des enregistrements
         details: Suivez et stockez l'historique des modifications des enregistrements de collection.
         link: /record-history/
+---

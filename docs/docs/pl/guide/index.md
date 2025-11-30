@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: przewodnik
@@ -98,3 +99,4 @@ features:
       - title: Historia rekordów
         details: Śledzi i przechowuje historię zmian rekordów kolekcji.
         link: /record-history/
+---

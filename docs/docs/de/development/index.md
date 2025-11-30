@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: development
 
@@ -55,3 +56,4 @@ features:
       - title: Dateivorschau-Erweiterung
         details: Erweitern Sie die Dateivorschau-Funktionen, um die Online-Vorschau und das Rendering weiterer Dateiformate zu unterstützen.
         link: /file-manager/development
+---

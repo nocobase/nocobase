@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: development
 
@@ -55,3 +56,4 @@ features:
       - title: Uitbreiding van bestandsvoorbeeld
         details: Breid de mogelijkheden voor bestandsvoorbeelden uit om online voorbeelden en weergave van meer bestandsformaten te ondersteunen.
         link: /file-manager/development
+---

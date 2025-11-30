@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: development
 
@@ -55,3 +56,4 @@ features:
       - title: Rozszerzenie podglądu plików
         details: Rozszerzaj możliwości podglądu plików, aby wspierać podgląd online i renderowanie większej liczby formatów plików.
         link: /file-manager/development
+---

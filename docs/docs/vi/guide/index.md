@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: guide
@@ -98,3 +99,4 @@ features:
       - title: Lịch sử bản ghi
         details: Theo dõi và lưu trữ lịch sử thay đổi của các bản ghi bộ sưu tập.
         link: /record-history/
+---

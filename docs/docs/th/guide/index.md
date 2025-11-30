@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: guide
@@ -98,3 +99,4 @@ features:
       - title: ประวัติการบันทึก
         details: ติดตามและบันทึกประวัติการเปลี่ยนแปลงของ คอลเลกชัน ครับ/ค่ะ
         link: /record-history/
+---

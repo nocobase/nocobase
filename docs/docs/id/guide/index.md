@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: guide
@@ -98,3 +99,4 @@ features:
       - title: Riwayat Catatan
         details: Melacak dan menyimpan riwayat perubahan catatan koleksi.
         link: /record-history/
+---

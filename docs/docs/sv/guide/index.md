@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: guide
@@ -98,3 +99,4 @@ features:
       - title: Posthistorik
         details: Spårar och lagrar ändringshistoriken för samlingsposter.
         link: /record-history/
+---

@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: development
 
@@ -55,3 +56,4 @@ features:
       - title: Rozšíření náhledu souborů
         details: Rozšiřte možnosti náhledu souborů pro podporu online náhledu a vykreslování více formátů souborů.
         link: /file-manager/development
+---

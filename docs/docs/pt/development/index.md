@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: desenvolvimento
 
@@ -55,3 +56,4 @@ features:
       - title: Extensão de Visualização de Arquivos
         details: Estenda as capacidades de visualização de arquivos para suportar a pré-visualização e renderização online de mais formatos de arquivo.
         link: /file-manager/development
+---

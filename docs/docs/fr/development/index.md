@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: développement
 
@@ -55,3 +56,4 @@ features:
       - title: Extension de prévisualisation de fichiers
         details: Étendez les capacités de prévisualisation de fichiers pour prendre en charge la prévisualisation et le rendu en ligne de davantage de formats de fichiers.
         link: /file-manager/development
+---

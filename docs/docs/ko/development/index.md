@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: development
 
@@ -55,3 +56,4 @@ features:
       - title: 파일 미리보기 확장
         details: 파일 미리보기 기능을 확장하여 더 많은 파일 형식의 온라인 미리보기 및 렌더링을 지원합니다.
         link: /file-manager/development
+---

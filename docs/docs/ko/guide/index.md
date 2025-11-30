@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: guide
@@ -98,3 +99,4 @@ features:
       - title: 기록 이력
         details: 컬렉션 기록의 변경 이력을 추적하고 저장합니다.
         link: /record-history/
+---
