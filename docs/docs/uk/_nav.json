@@ -1,18 +1,18 @@
 [
   {
-    "text": "开始",
+    "text": "Початок",
     "link": "/get-started/how-nocobase-works"
   },
   {
-    "text": "手册",
+    "text": "Посібник",
     "link": "/guide/"
   },
   {
-    "text": "开发",
+    "text": "Розробка",
     "link": "/development/"
   },
   {
-    "text": "插件",
+    "text": "Плагіни",
     "link": "/plugins"
   },
   {

@@ -1,18 +1,18 @@
 [
   {
-    "text": "Start",
+    "text": "スタート",
     "link": "/get-started/how-nocobase-works"
   },
   {
-    "text": "Dokumentacja",
+    "text": "マニュアル",
     "link": "/guide/"
   },
   {
-    "text": "Deweloperzy",
+    "text": "開発",
     "link": "/development/"
   },
   {
-    "text": "Wtyczki",
+    "text": "プラグイン",
     "link": "/plugins"
   },
   {
