@@ -177,7 +177,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
       const parent = stack[idx];
       if (!parent?.viewUid) return undefined;
 
-      let model = useCtx.engine?.getModel?.(parent.viewUid) as PopupModelLike;
+      let model = useCtx.engine?.getModel(parent.viewUid, true) as PopupModelLike;
       if (!model) {
         try {
           model = (await useCtx.engine.loadModel({ uid: parent.viewUid })) as PopupModelLike;
@@ -367,7 +367,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
             const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
             const last = stack?.[stack.length - 1];
             if (last?.viewUid) {
-              let model = ctx?.engine?.getModel?.(last.viewUid) as PopupModelLike;
+              let model = ctx?.engine?.getModel(last.viewUid, true) as PopupModelLike;
               if (!model) {
                 model = (await ctx.engine.loadModel({ uid: last.viewUid })) as PopupModelLike;
               }
@@ -452,7 +452,7 @@ export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promi
   const buildNode = async (idx: number): Promise<PopupNode | undefined> => {
     if (idx < 0 || !stack[idx]?.viewUid) return undefined;
     const viewUid = stack[idx].viewUid;
-    let model = ctx.engine?.getModel?.(viewUid) as PopupModelLike;
+    let model = ctx.engine?.getModel(viewUid, true) as PopupModelLike;
     if (!model) {
       model = (await ctx.engine?.loadModel({ uid: viewUid })) as PopupModelLike;
     }
