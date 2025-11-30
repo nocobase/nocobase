@@ -16,14 +16,14 @@ import { Select, Space } from 'antd';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCompile } from '../..';
+import { FlagProvider, useFlag } from '../../flag-provider';
+import { DateScopeComponent } from './DateScopeComponent';
 import { DynamicComponent } from './DynamicComponent';
-import { ValueDynamicComponent } from './ValueDynamicComponent';
 import { OptionsComponent } from './OptionsComponent';
+import { ValueDynamicComponent } from './ValueDynamicComponent';
 import { LinkageLogicContext, RemoveActionContext } from './context';
 import { ActionType } from './type';
 import { useValues } from './useValues';
-import { DateScopeComponent } from './DateScopeComponent';
-import { FlagProvider, useFlag } from '../../flag-provider';
 
 export const FormFieldLinkageRuleAction = observer(
   (props: any) => {
@@ -87,11 +87,7 @@ export const FormFieldLinkageRuleAction = observer(
               }}
               placeholder={t('Select field')}
               treeNodeFilterProp="title"
-              popupClassName={css`
-                .ant-select-tree-list-holder > div {
-                  overflow-y: auto !important;
-                }
-              `}
+              virtual={false}
             />
             <Select
               // @ts-ignore
