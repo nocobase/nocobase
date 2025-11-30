@@ -177,63 +177,6 @@ export const openView = defineAction({
         );
       },
     },
-    dsAndCollection: {
-      type: 'array',
-      title: tExpr('Data source / Collection'),
-      'x-decorator': 'FormItem',
-      'x-component': function DSCollCascader(props) {
-        const { disabled, placeholder } = props;
-        const ctx = useFlowSettingsContext();
-        const form = useForm();
-        const [dsKey, setDsKey] = useState(() => form?.values?.dataSourceKey);
-        const [collName, setCollName] = useState(() => form?.values?.collectionName);
-        useFormEffects(() => {
-          onFieldValueChange('dataSourceKey', (f) => setDsKey(f.value));
-          onFieldValueChange('collectionName', (f) => setCollName(f.value));
-        });
-        useEffect(() => {
-          setDsKey(form?.values?.dataSourceKey);
-          setCollName(form?.values?.collectionName);
-        }, [form]);
-        const cascaderValue = useMemo(() => (dsKey && collName ? [dsKey, collName] : undefined), [dsKey, collName]);
-        const options = useMemo(() => {
-          const dsList = ctx?.dataSourceManager?.getDataSources?.() || [];
-          return dsList.map((ds) => ({
-            label: ds.displayName,
-            value: ds.key,
-            children: (ds.getCollections?.() || []).map((c) => ({ label: c.title, value: c.name })),
-          }));
-        }, [ctx]);
-        const mergedDisabled = true; // dataSourceKey & collectionName are read-only
-        const handleChange = useCallback(
-          (arr: any[]) => {
-            if (!arr || arr.length < 2) {
-              form.setValuesIn('dataSourceKey', undefined);
-              form.setValuesIn('collectionName', undefined);
-              return;
-            }
-            const [newDs, newCol] = arr;
-            form.setValuesIn('dataSourceKey', newDs);
-            form.setValuesIn('collectionName', newCol);
-            // 切换集合时，清空关联名，避免冲突
-            form.setValuesIn('associationName', undefined);
-          },
-          [form],
-        );
-        return (
-          <Cascader
-            options={options}
-            value={cascaderValue}
-            onChange={handleChange}
-            disabled={mergedDisabled}
-            placeholder={placeholder}
-            allowClear
-            showSearch
-            style={{ width: '100%' }}
-          />
-        );
-      },
-    },
     dataSourceKey: {
       type: 'string',
       title: tExpr('Data source key'),
@@ -509,9 +452,13 @@ export const openView = defineAction({
     const filterByTkExpr = hasRecord ? `{{ ctx.record.${recordKeyPath} }}` : undefined;
     // 仅在“当前 resource.sourceId 有实际值”时设置默认值，
     let sourceIdExpr: string | undefined = undefined;
-    const sid = ctx.resource?.getSourceId?.();
-    if (sid !== undefined && sid !== null && String(sid) !== '') {
-      sourceIdExpr = `{{ ctx.resource.sourceId }}`;
+    try {
+      const sid = ctx.resource?.getSourceId?.();
+      if (sid !== undefined && sid !== null && String(sid) !== '') {
+        sourceIdExpr = `{{ ctx.resource.sourceId }}`;
+      }
+    } catch (e) {
+      // ignore
     }
     const defaultDSKey = ctx.collection?.dataSourceKey;
     const defaultCol = ctx.collection?.name;
