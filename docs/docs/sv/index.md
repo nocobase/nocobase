@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: home
@@ -41,3 +42,5 @@ features:
       - title: Mer...
         details: Utforska fler handledningar om plugin-utveckling.
         link: /development
+
+---

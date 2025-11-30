@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: home
@@ -40,3 +41,5 @@ features:
       - title: Mais...
         details: Explore mais tutoriais sobre desenvolvimento de plugins.
         link: /development
+
+---

@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: home
@@ -40,3 +41,5 @@ features:
       - title: 더 보기...
         details: 더 많은 플러그인 개발 튜토리얼을 살펴보세요.
         link: /development
+
+---

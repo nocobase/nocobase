@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: home
@@ -40,3 +41,5 @@ features:
       - title: Lainnya...
         details: Jelajahi tutorial pengembangan plugin lainnya.
         link: /development
+
+---

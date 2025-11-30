@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: home
@@ -40,3 +41,5 @@ features:
       - title: Altro...
         details: Esplorate altri tutorial sullo sviluppo di plugin.
         link: /development
+
+---

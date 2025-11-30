@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: home
@@ -40,3 +41,4 @@ features:
       - title: その他...
         details: プラグイン開発に関するその他のチュートリアルをご覧ください。
         link: /development
+---

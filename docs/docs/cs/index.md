@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: home
@@ -40,3 +41,5 @@ features:
       - title: Více...
         details: Prozkoumejte další tutoriály pro vývoj pluginů.
         link: /development
+
+---

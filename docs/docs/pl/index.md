@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: home
 hero:
@@ -38,3 +39,5 @@ features:
       - title: Więcej...
         details: Zapoznaj się z innymi samouczkami dotyczącymi tworzenia wtyczek.
         link: /development
+
+---

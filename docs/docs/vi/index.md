@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: home
@@ -41,3 +42,5 @@ features:
       - title: Xem thêm...
         details: Khám phá thêm các hướng dẫn phát triển plugin.
         link: /development
+
+---

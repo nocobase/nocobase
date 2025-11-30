@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: home
@@ -40,3 +41,5 @@ features:
       - title: Подробнее...
         details: Изучите больше руководств по разработке плагинов.
         link: /development
+
+---

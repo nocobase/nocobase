@@ -1,3 +1,4 @@
+---
 pageType: home
 
 pageName: home
@@ -40,3 +41,5 @@ features:
       - title: เพิ่มเติม...
         details: สำรวจบทเรียนการพัฒนาปลั๊กอินเพิ่มเติมครับ/ค่ะ
         link: /development
+
+---
