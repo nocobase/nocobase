@@ -1,12 +1,13 @@
 {
+  " Allow only your own roles to be selected": "Разрешить выбор только собственных ролей",
   "1 Day": "1 день",
   "30 Days": "30 дней",
   "7 Days": "7 дней",
   "90 Days": "90 дней",
-  "Add API key": "Добавить ключ API",
-  " Allow only your own roles to be selected": "Разрешить выбор только собственных ролей",
   "API key created successfully": "Ключ API успешно создан",
   "API keys": "Ключи API",
+  "Add API key": "Добавить ключ API",
+  "Allow only your own roles to be selected": "Разрешить выбор только собственных ролей",
   "Created at": "Создано",
   "Custom": "Пользовательский",
   "Delete API key": "Удалить ключ API",
@@ -18,4 +19,4 @@
   "Never expires": "Без срока действия",
   "Role": "Роль",
   "Role not found": "Роль не найдена"
-  }
+}

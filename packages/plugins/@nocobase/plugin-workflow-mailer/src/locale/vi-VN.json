@@ -1,0 +1,20 @@
+{
+  "Add email address": "Add email address",
+  "BCC": "BCC",
+  "CC": "CC",
+  "Content": "Nội dung",
+  "Content type": "Loại nội dung",
+  "From": "Từ",
+  "Ignore failed sending and continue workflow": "Bỏ qua gửi thất bại và tiếp tục quy trình",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "In most cases, if using port 465, set it to true; otherwise, set it to false.",
+  "Mailer": "Người gửi mail",
+  "Password": "Mật khẩu",
+  "Plain text": "Văn bản thuần",
+  "Port": "Cổng",
+  "SMTP host": "Máy chủ dịch vụ",
+  "Secure": "Bảo mật",
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Gửi email bằng cách gọi dịch vụ SMTP. Bạn có thể sử dụng các biến trong các nút phía trước làm người nhận, chủ đề và nội dung của email.",
+  "Subject": "Chủ đề",
+  "To": "Đến",
+  "User": "Người dùng"
+}

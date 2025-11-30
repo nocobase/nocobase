@@ -1,6 +1,7 @@
 {
-  "Title field": "Поле заголовка",
-  "Time scale": "Временная шкала",
+  "End date field": "Поле даты окончания",
+  "Progress field": "Поле прогресса",
   "Start date field": "Поле даты начала",
-  "Progress field": "Поле прогресса"
+  "Time scale": "Временной масштаб",
+  "Title field": "Поле заголовка"
 }

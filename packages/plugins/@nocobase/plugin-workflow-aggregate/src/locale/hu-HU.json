@@ -1,0 +1,13 @@
+{
+  "Aggregate": "Összesítés",
+  "Aggregator function": "Összesítő függvény",
+  "Counting, summing, finding maximum, minimum, and average values for multiple records of a collection or associated data of a record.": "Számolás, összegzés, maximum, minimum és átlagértékek keresése egy gyűjtemény több rekordjához vagy egy rekord kapcsolódó adataihoz.",
+  "Data of associated collection": "Kapcsolódó gyűjtemény adatai",
+  "Data of collection": "Gyűjtemény adatai",
+  "Distinct": "Egyedi",
+  "Field to aggregate": "Összesítendő mező",
+  "Number of decimal places for query result.": "Tizedeshelyek száma a lekérdezés eredményében.",
+  "Query result": "Lekérdezés eredménye",
+  "Result precision": "Eredmény pontossága",
+  "Target type": "Cél típus"
+}
