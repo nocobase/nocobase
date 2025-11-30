@@ -91,6 +91,11 @@
       },
       {
         "type": "custom-link",
+        "label": "Telemetry",
+        "link": "/plugin-development/server/telemetry"
+      },
+      {
+        "type": "custom-link",
         "label": "I18n",
         "link": "/plugin-development/server/i18n"
       },

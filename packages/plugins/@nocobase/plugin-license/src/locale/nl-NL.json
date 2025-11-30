@@ -1,1 +1,13 @@
-{}
+{
+  "Change key": "Change key",
+  "Copied": "Copied",
+  "Copy": "Copy",
+  "Enter license key": "Enter license key",
+  "Failed to copy, please open ./storage/.license/instance-id and copy it": "Failed to copy, please open ./storage/.license/instance-id and copy it",
+  "Instance ID": "Instance ID",
+  "Invalid license key": "Invalid license key",
+  "License key": "License key",
+  "License key has been set": "License key has been set",
+  "License key saved successfully, please re-run the plugin installation.": "License key saved successfully, please re-run the plugin installation.",
+  "License settings": "License settings"
+}

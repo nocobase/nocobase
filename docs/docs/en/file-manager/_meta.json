@@ -56,6 +56,27 @@
   },
   {
     "type": "custom-link",
+    "label": "File Preview",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/file-manager/file-preview/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Office File Preview",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
+  },
+  {
+    "type": "custom-link",
     "label": "Development",
     "link": "/file-manager/development/index"
   }

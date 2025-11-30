@@ -13,5 +13,6 @@ The File Manager plugin provides file collections, attachment fields, and file s
 - [Storage Engines](./storage/index)
 - [File Collection](./file-collection)
 - [Attachment Field](./field-attachment)
+- [File Preview](./file-preview)
 - [HTTP API](./http-api)
 - [Development](./development/index)

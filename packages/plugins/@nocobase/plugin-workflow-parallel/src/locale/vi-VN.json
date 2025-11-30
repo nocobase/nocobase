@@ -1,0 +1,14 @@
+{
+  "Add branch": "Thêm nhánh",
+  "All succeeded": "Tất cả thành công",
+  "Always continue after all branches end, regardless of success or failure.": "Always continue after all branches end, regardless of success or failure.",
+  "Any succeeded": "Bất kỳ thành công",
+  "Any succeeded or failed": "Bất kỳ thành công hoặc thất bại",
+  "Continue after all branches succeeded": "Tiếp tục sau khi tất cả các nhánh thành công",
+  "Continue after any branch succeeded": "Tiếp tục sau khi bất kỳ nhánh nào thành công",
+  "Continue after any branch succeeded, or exit after any branch failed.": "Tiếp tục sau khi bất kỳ nhánh nào thành công, hoặc thoát sau khi bất kỳ nhánh nào thất bại.",
+  "Mode": "Chế độ",
+  "Parallel branch": "Nhánh song song",
+  "Run all branches (ignore failures)": "Run all branches (ignore failures)",
+  "Run multiple branch processes in parallel.": "Chạy nhiều quy trình nhánh song song."
+}

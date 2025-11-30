@@ -76,5 +76,5 @@ export function getRowKey(record: any, key: string | string[]) {
   if (Array.isArray(key)) {
     return key.map((k) => String(record?.[k] ?? '')).join('-');
   }
-  return String(record?.[key] ?? '');
+  return record?.[key] ?? '';
 }

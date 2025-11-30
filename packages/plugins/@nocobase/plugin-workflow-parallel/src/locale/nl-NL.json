@@ -1,11 +1,14 @@
 {
-    "Parallel branch": "Parallel branch",
-    "Run multiple branch processes in parallel.": "Run multiple branch processes in parallel.",
-    "Add branch": "Add branch",
-    "All succeeded": "All succeeded",
-    "Any succeeded": "Any succeeded",
-    "Any succeeded or failed": "Any succeeded or failed",
-    "Continue after all branches succeeded": "Continue after all branches succeeded",
-    "Continue after any branch succeeded": "Continue after any branch succeeded",
-    "Continue after any branch succeeded, or exit after any branch failed.": "Continue after any branch succeeded, or exit after any branch failed."
+  "Add branch": "Add branch",
+  "All succeeded": "All succeeded",
+  "Always continue after all branches end, regardless of success or failure.": "Always continue after all branches end, regardless of success or failure.",
+  "Any succeeded": "Any succeeded",
+  "Any succeeded or failed": "Any succeeded or failed",
+  "Continue after all branches succeeded": "Continue after all branches succeeded",
+  "Continue after any branch succeeded": "Continue after any branch succeeded",
+  "Continue after any branch succeeded, or exit after any branch failed.": "Continue after any branch succeeded, or exit after any branch failed.",
+  "Mode": "Mode",
+  "Parallel branch": "Parallel branch",
+  "Run all branches (ignore failures)": "Run all branches (ignore failures)",
+  "Run multiple branch processes in parallel.": "Run multiple branch processes in parallel."
 }

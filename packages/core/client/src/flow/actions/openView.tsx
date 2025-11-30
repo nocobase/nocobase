@@ -491,34 +491,35 @@ export const openView = defineAction({
     },
   },
   defaultParams: async (ctx) => {
-    // 当存在 ctx.record 上下文时提供默认 filterByTk；否则不提供
     const tree = ctx.getPropertyMetaTree() || [];
     const hasRecord = Array.isArray(tree) && tree.some((n: any) => String(n?.name) === 'record');
-    const col = (ctx as any)?.collection;
-
     // 决定主键字段：优先使用集合的 filterTargetKey；否则直接回退 'id'
-    const recordKeyPath =
-      hasRecord && col && typeof col.filterTargetKey === 'string' && col.filterTargetKey ? col.filterTargetKey : 'id';
+    let recordKeyPath = ctx.collection?.filterTargetKey || 'id';
+
+    // 如果是关系字段，这个需要获取关系字段对应的key
+    if (ctx.blockModel?.resource?.resourceName) {
+      const assocField = ctx.collection.dataSource.collectionManager.getAssociation(
+        ctx.blockModel?.resource?.resourceName,
+      );
+      if (assocField?.interface !== 'm2m') {
+        recordKeyPath = assocField?.targetKey || recordKeyPath;
+      }
+    }
+
     const filterByTkExpr = hasRecord ? `{{ ctx.record.${recordKeyPath} }}` : undefined;
     // 仅在“当前 resource.sourceId 有实际值”时设置默认值，
-    // 否则不设置，避免出现无效的默认变量。
     let sourceIdExpr: string | undefined = undefined;
-    try {
-      const sid = (ctx as any)?.resource?.getSourceId?.();
-      if (sid !== undefined && sid !== null && String(sid) !== '') {
-        sourceIdExpr = `{{ ctx.resource.sourceId }}`;
-      }
-    } catch (_) {
-      // ignore
+    const sid = ctx.resource?.getSourceId?.();
+    if (sid !== undefined && sid !== null && String(sid) !== '') {
+      sourceIdExpr = `{{ ctx.resource.sourceId }}`;
     }
-    const defaultDSKey = col?.dataSourceKey;
-    const defaultCol = col?.name;
+    const defaultDSKey = ctx.collection?.dataSourceKey;
+    const defaultCol = ctx.collection?.name;
     return {
       mode: 'drawer',
       size: 'medium',
       pageModelClass: 'ChildPageModel',
       uid: ctx.model?.uid,
-      // 当存在 ctx.record 时提供默认 filterByTk
       ...(filterByTkExpr ? { filterByTk: filterByTkExpr } : {}),
       ...(sourceIdExpr ? { sourceId: sourceIdExpr } : {}),
       ...(defaultDSKey ? { dataSourceKey: defaultDSKey } : {}),
@@ -539,20 +540,43 @@ export const openView = defineAction({
     const inputArgs = ctx.inputArgs || {};
     const defineProperties = inputArgs.defineProperties ?? ctx.model.context?.inputArgs?.defineProperties ?? undefined;
     const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? undefined;
+    const actionDefaults = (ctx.model as any)?.getInputArgs?.() || {};
+    const defaultKeys: string[] = (inputArgs as any)?.defaultInputKeys || [];
+    const pickWithDefault = (key: 'filterByTk' | 'sourceId') => {
+      const hasInput = typeof inputArgs?.[key] !== 'undefined';
+      const isDefault = defaultKeys.includes(key);
+      // 优先级：显式传入的 inputArgs > 配置 params > 自动默认值
+      if (hasInput && !isDefault) return inputArgs[key];
+      if (typeof params?.[key] !== 'undefined') return params[key];
+      // 如果 inputArgs 中的值被标记为默认，则它只在 params 未提供时兜底
+      if (hasInput) return inputArgs[key];
+      return actionDefaults?.[key];
+    };
+    const mergedFilterByTk = pickWithDefault('filterByTk');
+    const mergedSourceId = pickWithDefault('sourceId');
+    const mergedTabUid = typeof inputArgs.tabUid !== 'undefined' ? inputArgs.tabUid : params.tabUid;
     // 移动端中只需要显示子页面
     const openMode = ctx.inputArgs?.isMobileLayout ? 'embed' : ctx.inputArgs?.mode || params.mode || 'drawer';
     if (params?.uid && params.uid !== ctx.model.uid) {
-      const actionDefaults = (ctx.model as any)?.getInputArgs?.() || {};
       // 外部弹窗时应该以弹窗发起者为高优先级
       await ctx.openView(params.uid, {
         ...params,
         target: ctx.inputArgs.target || ctx.layoutContentElement,
-        dataSourceKey: params.dataSourceKey ?? actionDefaults.dataSourceKey,
-        collectionName: params.collectionName ?? actionDefaults.collectionName,
-        associationName: params.associationName ?? actionDefaults.associationName,
-        filterByTk: params.filterByTk ?? actionDefaults.filterByTk,
-        sourceId: params.sourceId ?? actionDefaults.sourceId,
-        tabUid: params.tabUid,
+        dataSourceKey:
+          typeof inputArgs.dataSourceKey !== 'undefined'
+            ? inputArgs.dataSourceKey
+            : params.dataSourceKey ?? actionDefaults.dataSourceKey,
+        collectionName:
+          typeof inputArgs.collectionName !== 'undefined'
+            ? inputArgs.collectionName
+            : params.collectionName ?? actionDefaults.collectionName,
+        associationName:
+          typeof inputArgs.associationName !== 'undefined'
+            ? inputArgs.associationName
+            : params.associationName ?? actionDefaults.associationName,
+        filterByTk: mergedFilterByTk,
+        sourceId: mergedSourceId,
+        tabUid: mergedTabUid,
         // 关键：把自定义上下文一并传递给 ctx.openView
         ...(defineProperties ? { defineProperties } : {}),
         ...(defineMethods ? { defineMethods } : {}),
@@ -560,19 +584,7 @@ export const openView = defineAction({
       return;
     }
 
-    if (inputArgs.filterByTk === undefined && params.filterByTk !== undefined) {
-      inputArgs.filterByTk = params.filterByTk;
-    }
-
-    if (inputArgs.sourceId === undefined && params.sourceId !== undefined) {
-      inputArgs.sourceId = params.sourceId;
-    }
-
-    if (inputArgs.tabUid === undefined && params.tabUid !== undefined) {
-      inputArgs.tabUid = params.tabUid;
-    }
-
-    let navigation = inputArgs.navigation ?? params.navigation;
+    let navigation = typeof inputArgs.navigation !== 'undefined' ? inputArgs.navigation : params.navigation;
 
     // 传递了上下文就必须禁用路由，否则下次路由打开会缺少上下文
     if (defineProperties || defineMethods) {
@@ -585,12 +597,12 @@ export const openView = defineAction({
         const pendingType = openMode;
         const pendingInputArgs = {
           ...ctx.inputArgs,
-          dataSourceKey: params.dataSourceKey ?? ctx.inputArgs.dataSourceKey,
-          collectionName: params.collectionName ?? ctx.inputArgs.collectionName,
-          associationName: params.associationName ?? ctx.inputArgs.associationName,
-          filterByTk: inputArgs.filterByTk ?? params.filterByTk,
-          sourceId: inputArgs.sourceId ?? params.sourceId,
-          tabUid: inputArgs.tabUid ?? params.tabUid,
+          dataSourceKey: inputArgs.dataSourceKey ?? params.dataSourceKey ?? ctx.inputArgs.dataSourceKey,
+          collectionName: inputArgs.collectionName ?? params.collectionName ?? ctx.inputArgs.collectionName,
+          associationName: inputArgs.associationName ?? params.associationName ?? ctx.inputArgs.associationName,
+          filterByTk: mergedFilterByTk,
+          sourceId: mergedSourceId,
+          tabUid: mergedTabUid,
           viewUid: ctx.model.context?.inputArgs?.viewUid || ctx.model.uid,
         } as Record<string, unknown>;
         const pendingView = {
@@ -604,9 +616,9 @@ export const openView = defineAction({
 
         const nextView = {
           viewUid: ctx.model.context?.inputArgs?.viewUid || ctx.model.uid,
-          filterByTk: inputArgs.filterByTk ?? params.filterByTk,
-          sourceId: inputArgs.sourceId ?? params.sourceId,
-          tabUid: inputArgs.tabUid ?? params.tabUid,
+          filterByTk: mergedFilterByTk,
+          sourceId: mergedSourceId,
+          tabUid: mergedTabUid,
         };
         ctx.view.navigation.navigateTo(nextView);
         return;
@@ -662,12 +674,12 @@ export const openView = defineAction({
       dataSourceKey: params.dataSourceKey,
       collectionName: params.collectionName,
       associationName: params.associationName,
-      tabUid: inputArgs.tabUid ?? params.tabUid,
+      tabUid: mergedTabUid,
       openerUids,
     };
     // Ensure runtime keys propagate to view.inputArgs
-    finalInputArgs.filterByTk = inputArgs.filterByTk ?? params.filterByTk;
-    finalInputArgs.sourceId = inputArgs.sourceId ?? params.sourceId;
+    finalInputArgs.filterByTk = mergedFilterByTk;
+    finalInputArgs.sourceId = mergedSourceId;
     await ctx.viewer.open({
       type: openMode,
       inputArgs: finalInputArgs,

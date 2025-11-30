@@ -158,8 +158,12 @@ export const Display = (props) => {
         onOpenChange={(visible) => {
           handlePopoverOpenChange(ellipsis && visible);
         }}
-        overlayStyle={{ maxWidth: 400, maxHeight: 450, overflow: 'auto' }}
-        content={<DisplayInner value={value} loadImages={imagesLoaded} />}
+        overlayStyle={{ maxWidth: 600 }}
+        content={
+          <div style={{ maxHeight: 500, overflow: 'auto' }}>
+            <DisplayInner value={value} loadImages={imagesLoaded} />
+          </div>
+        }
       >
         <div
           ref={elRef}
