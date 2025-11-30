@@ -67,7 +67,7 @@ async function main() {
 
   // 处理中文和英文的合并逻辑
   const zhCN = locales['zh-CN'];
-  const enUS = locales['en-US'];
+  const enUS = locales['en-US'] || {};
 
   if (zhCN && enUS) {
     for (const key1 in zhCN) {
