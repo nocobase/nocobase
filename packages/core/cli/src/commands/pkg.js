@@ -99,7 +99,7 @@ class Package {
   async isDepPackage() {
     const pkg1 = path.resolve(process.cwd(), 'node_modules', this.packageName, 'package.json');
     const pkg2 = path.resolve(process.cwd(), process.env.PLUGIN_STORAGE_PATH, this.packageName, 'package.json');
-    if (await fs.exists(pkg1) && await fs.exists(pkg2)) {
+    if ((await fs.exists(pkg1)) && (await fs.exists(pkg2))) {
       const readPath1 = fs.realpathSync(pkg1);
       const readPath2 = fs.realpathSync(pkg2);
       if (readPath1 !== readPath2) {
@@ -207,7 +207,7 @@ class PackageManager {
         showLicenseInfo(LicenseKeyError.notValid);
       }
       console.error(chalk.redBright(`Login failed: ${this.baseURL}`));
-      console.error(error);
+      console.error(error?.message || error);
     }
   }
 
@@ -286,7 +286,15 @@ module.exports = (cli) => {
       try {
         ({ accessKeyId, accessKeySecret } = await getAccessKeyPair());
       } catch (e) {
+        console.error(e);
         return;
+      }
+      if (NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD && !accessKeyId && !accessKeySecret) {
+        console.log(
+          chalk.yellowBright(
+            'INFO: NOCOBASE_PKG_USERNAME and NOCOBASE_PKG_PASSWORD will be deprecated in future versions. Please log in to NocoBase Service and refer to the documentation to learn how to install and upgrade commercial plugins.\n',
+          ),
+        );
       }
       if (!(NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD) && !(accessKeyId && accessKeySecret)) {
         return;

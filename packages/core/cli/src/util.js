@@ -20,6 +20,7 @@ const os = require('os');
 const moment = require('moment-timezone');
 const { keyDecrypt, getEnvAsync } = require('@nocobase/license-kit');
 const omit = require('lodash/omit');
+const { isEnvMatch } = require('@nocobase/plugin-license/utils/env');
 
 exports.isPackageValid = (pkg) => {
   try {
@@ -491,19 +492,19 @@ exports.generatePlugins = function () {
   }
 };
 
-async function isEnvMatch(keyData) {
-  const env = await getEnvAsync();
-  if (env?.container?.id && keyData?.instanceData?.container?.id) {
-    return (
-      JSON.stringify(omit(env, ['timestamp', 'container', 'hostname', 'mac'])) ===
-      JSON.stringify(omit(keyData?.instanceData, ['timestamp', 'container', 'hostname', 'mac']))
-    );
-  }
-  return (
-    JSON.stringify(omit(env, ['timestamp', 'mac'])) ===
-    JSON.stringify(omit(keyData?.instanceData, ['timestamp', 'mac']))
-  );
-}
+// async function isEnvMatch2(keyData) {
+//   const env = await getEnvAsync();
+//   if (env?.container?.id && keyData?.instanceData?.container?.id) {
+//     return (
+//       JSON.stringify(omit(env, ['timestamp', 'container', 'hostname', 'mac'])) ===
+//       JSON.stringify(omit(keyData?.instanceData, ['timestamp', 'container', 'hostname', 'mac']))
+//     );
+//   }
+//   return (
+//     JSON.stringify(omit(env, ['timestamp', 'mac'])) ===
+//     JSON.stringify(omit(keyData?.instanceData, ['timestamp', 'mac']))
+//   );
+// }
 
 exports.getAccessKeyPair = async function () {
   const keyFile = resolve(process.cwd(), 'storage/.license/license-key');
@@ -520,13 +521,15 @@ exports.getAccessKeyPair = async function () {
     showLicenseInfo(LicenseKeyError.parseFailed);
     throw new Error(LicenseKeyError.parseFailed.title);
   }
-
-  const isEnvMatched = await isEnvMatch(keyData);
+  const env = await getEnvAsync();
+  const isEnvMatched = await isEnvMatch(env, keyData);
   if (!isEnvMatched) {
-    showLicenseInfo(LicenseKeyError.notMatch);
+    showLicenseInfo({
+      ...LicenseKeyError.notMatch,
+      env,
+    });
     throw new Error(LicenseKeyError.notMatch.title);
   }
-
   const { accessKeyId, accessKeySecret } = keyData;
   return { accessKeyId, accessKeySecret };
 };
@@ -555,7 +558,7 @@ const LicenseKeyError = {
 
 exports.LicenseKeyError = LicenseKeyError;
 
-function showLicenseInfo({ title, content }) {
+function showLicenseInfo({ title, content, env }) {
   const rows = [];
   const length = 80;
   let row = '';
@@ -572,6 +575,12 @@ function showLicenseInfo({ title, content }) {
   console.log(Array(length).fill('-').join(''));
   console.log(chalk.yellow(title));
   console.log(chalk.yellow(rows.join('\n')));
+
+  if (env) {
+    console.log(chalk.yellow('Current environment: '));
+    console.log(chalk.yellow(`  System: ${env.sys}-${env.osVer}`));
+    console.log(chalk.yellow(`  Database: ${JSON.stringify(env.db)}`));
+  }
   console.log(Array(length).fill('-').join(''));
 }
 

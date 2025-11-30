@@ -6,7 +6,9 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-import { testPkgConnection, testPkgLogin, isEnvMatch } from '../license';
+import { testPkgConnection, testPkgLogin } from '../license/pkg';
+import { isEnvMatch } from '../license/env';
+import { getLicenseValidate } from '../license';
 
 describe('conect to pkg.nocobase.com', () => {
   it('should connect to pkg.nocobase.com', async () => {
@@ -14,7 +16,7 @@ describe('conect to pkg.nocobase.com', () => {
     expect(result).toEqual(true);
   });
   it('should login to pkg.nocobase.com', async () => {
-    const result = await testPkgLogin('');
+    const result = await testPkgLogin({});
     expect(result).toEqual(false);
   });
 });

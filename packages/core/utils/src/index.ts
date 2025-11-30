@@ -43,4 +43,3 @@ export * from './parsedValue';
 export * from './dateRangeUtils';
 export * from './parse-bigint';
 export { Schema } from '@formily/json-schema';
-export * from './license';

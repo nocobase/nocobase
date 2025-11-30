@@ -7,5 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default } from './plugin';
-export * from './utils';
+export * from './key';
+export * from './env';
+export * from './interface';
+export * from './license';
+export * from './instance';

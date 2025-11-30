@@ -8,9 +8,8 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { getInstanceId, saveLicenseKey, isLicenseKeyExists } from './utils';
+import { getInstanceId, saveLicenseKey, isLicenseKeyExists, getLicenseValidate } from './utils';
 import { keyDecrypt } from '@nocobase/license-kit';
-import { getLicenseValidate } from '@nocobase/utils';
 import { LICENSE_TIPS } from '../const';
 
 export class PluginLicenseServer extends Plugin {
