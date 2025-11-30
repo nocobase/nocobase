@@ -89,8 +89,6 @@ export async function getApp({
   });
   await anotherDB.sync();
 
-  another.acl.allow('*', '*', 'loggedIn');
-
   return app;
 }
 
