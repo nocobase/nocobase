@@ -1,0 +1,8 @@
+{
+  "Export settings": "Export settings",
+  "Export warning": "Exportálás figyelmeztetés: egyszerre legfeljebb {{limit}} sor adat exportálható, a többi figyelmen kívül lesz hagyva.",
+  "False": "Hamís",
+  "Start export": "Exportálás indítása",
+  "True": "Igaz",
+  "another export action is running, please try again later.": "egy másik exportálási művelet folyamatban van, kérjük, próbálja újra később."
+}

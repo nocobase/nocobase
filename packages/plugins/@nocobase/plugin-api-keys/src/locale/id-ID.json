@@ -1,0 +1,21 @@
+{
+  "1 Day": "1 Hari",
+  "30 Days": "30 Hari",
+  "7 Days": "7 Hari",
+  "90 Days": "90 Hari",
+  "API key created successfully": "Kunci API berhasil dibuat",
+  "API keys": "Kunci API",
+  "Add API key": "Tambah kunci API",
+  "Allow only your own roles to be selected": "Izinkan hanya peran Anda sendiri yang dipilih",
+  "Created at": "Dibuat pada",
+  "Custom": "Kustom",
+  "Delete API key": "Hapus kunci API",
+  "Expiration": "Kedaluwarsa",
+  "Key name": "Nama kunci",
+  "Keys manager": "Manajer kunci",
+  "Make sure to copy your personal access key now as you will not be able to see this again.": "Pastikan untuk menyalin kunci akses pribadi Anda sekarang karena Anda tidak akan dapat melihatnya lagi.",
+  "Never": "Tidak pernah",
+  "Never expires": "Tidak pernah kedaluwarsa",
+  "Role": "Peran",
+  "Role not found": "Peran tidak ditemukan"
+}

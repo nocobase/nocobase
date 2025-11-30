@@ -1,0 +1,20 @@
+{
+  "Add email address": "E-mail cím hozzáadása",
+  "BCC": "Titkos másolat",
+  "CC": "Másolat",
+  "Content": "Tartalom",
+  "Content type": "Tartalom típus",
+  "From": "Feladó",
+  "Ignore failed sending and continue workflow": "Sikertelen küldés figyelmen kívül hagyása és a munkafolyamat folytatása",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "In most cases, if using port 465, set it to true; otherwise, set it to false.",
+  "Mailer": "Levelező",
+  "Password": "Jelszó",
+  "Plain text": "Egyszerű szöveg",
+  "Port": "Port",
+  "SMTP host": "SMTP kiszolgáló",
+  "Secure": "Biztonságos",
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "E-mail küldése SMTP szolgáltatás hívásával. A felsőbb csomópontokban lévő változókat használhatja a címzettek, tárgy és e-mail tartalom értékeiként.",
+  "Subject": "Tárgy",
+  "To": "Címzett",
+  "User": "Felhasználó"
+}

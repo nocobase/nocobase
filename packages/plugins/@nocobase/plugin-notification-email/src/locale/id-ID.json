@@ -1,0 +1,23 @@
+{
+  "Account": "Akun",
+  "Add email address": "Tambah alamat email",
+  "BCC": "BCC",
+  "CC": "CC",
+  "Configure": "Konfigurasi",
+  "Content": "Konten",
+  "Content type": "Tipe konten",
+  "Email": "Email",
+  "From": "Dari",
+  "Host": "Host",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "In most cases, if using port 465, set it to true; otherwise, set it to false.",
+  "Password": "Kata sandi",
+  "Plain text": "Teks biasa",
+  "Port": "Port",
+  "SMTP mail": "Email SMTP",
+  "SMTP server host": "Host server SMTP",
+  "Secure": "Aman",
+  "Subject": "Subjek",
+  "The email address that will be used as the sender": "Alamat email yang akan digunakan sebagai pengirim",
+  "To": "Kepada",
+  "Transport": "Transportasi"
+}
