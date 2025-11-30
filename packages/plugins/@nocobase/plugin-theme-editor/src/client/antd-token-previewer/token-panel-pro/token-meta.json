@@ -1600,6 +1600,14 @@
     "type": "number",
     "source": "map"
   },
+  "globalStyle": {
+    "name": "全局样式",
+    "nameEn": "Global style",
+    "desc": "用于自定义全局样式",
+    "descEn": "Used to custom global style",
+    "type": "string",
+    "source": "map"
+  },
   "zIndexBase": {
     "name": "基础 zIndex",
     "nameEn": "Base zIndex",

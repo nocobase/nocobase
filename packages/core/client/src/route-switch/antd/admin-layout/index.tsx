@@ -12,7 +12,7 @@ import ProLayout, { RouteContext, RouteContextType } from '@ant-design/pro-layou
 import { HeaderViewProps } from '@ant-design/pro-layout/es/components/Header';
 import { css } from '@emotion/css';
 import { theme as antdTheme, Badge, ConfigProvider, Popover, Result, Tooltip } from 'antd';
-import { createStyles } from 'antd-style';
+import { createStyles, createGlobalStyle } from 'antd-style';
 import React, { createContext, FC, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import ReactDOM from 'react-dom';
 import { useTranslation } from 'react-i18next';
@@ -761,6 +761,14 @@ export const InternalAdminLayout = () => {
     });
   }, []);
 
+  const GlobalStyle = () => {
+    let El: FC<any> = () => null;
+    if (token.globalStyle) {
+      El = createGlobalStyle`${token.globalStyle}`;
+    }
+    return <El />;
+  };
+
   const menuProps = useMemo(() => {
     return {
       overflowedIndicatorPopupClassName: styles.headerPopup,
@@ -808,6 +816,7 @@ export const InternalAdminLayout = () => {
                 return (
                   <SetIsMobileLayout isMobile={isMobile}>
                     <ConfigProvider theme={isMobile ? mobileTheme : theme}>
+                      <GlobalStyle />
                       <LayoutContent />
                     </ConfigProvider>
                   </SetIsMobileLayout>

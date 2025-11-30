@@ -297,7 +297,7 @@ const category: TokenTree<keyof AliasToken | string> = [
         nameEn: 'Others',
         desc: '',
         descEn: '',
-        seedToken: ['wireframe', 'siderWidth'],
+        seedToken: ['wireframe', 'siderWidth', 'globalStyle'],
       },
     ],
   },
