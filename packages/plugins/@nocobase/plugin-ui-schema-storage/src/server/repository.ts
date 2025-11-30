@@ -309,6 +309,7 @@ export class UiSchemaRepository extends Repository {
       'x-component-props.content',
       'x-component-props.tooltip',
       'x-component-props.children',
+      'x-validator',
     ];
     let r = false;
     for (const key of keys) {
