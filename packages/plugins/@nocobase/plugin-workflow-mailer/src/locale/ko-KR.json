@@ -1,0 +1,20 @@
+{
+  "Add email address": "이메일 주소 추가",
+  "BCC": "숨은 참조",
+  "CC": "참조",
+  "Content": "내용",
+  "Content type": "내용 유형",
+  "From": "보낸 사람",
+  "Ignore failed sending and continue workflow": "전송 실패 시 무시하고 워크플로 계속",
+  "In most cases, if using port 465, set it to true; otherwise, set it to false.": "In most cases, if using port 465, set it to true; otherwise, set it to false.",
+  "Mailer": "메일러",
+  "Password": "비밀번호",
+  "Plain text": "일반 텍스트",
+  "Port": "포트",
+  "SMTP host": "서비스 호스트",
+  "Secure": "보안",
+  "Send email. You can use the variables in the upstream nodes as receivers, subject and content of the email.": "Send email by calling SMTP service. You can use the variables in the upstream nodes as receivers, subject and content of the email.",
+  "Subject": "제목",
+  "To": "받는 사람",
+  "User": "사용자"
+}

@@ -1,11 +1,18 @@
 {
-    "Multi-app manager": "Multi-app beheerder",
-    "Applications": "Applicaties",
-    "App display name": "App weergavenaam",
-    "App ID": "App ID",
-    "Pin to menu": "Vastmaken aan menu",
-    "Custom domain": "Aangepast domein",
-    "Manage applications": "Beheer applicaties",
-    "Standalone deployment": "Zelfstandige implementatie",
-    "Auto start": "Automatisch starten"
+  "An independent JWT secret ensures data and session isolation from other applications.": "An independent JWT secret ensures data and session isolation from other applications.",
+  "App ID": "App ID",
+  "App display name": "App weergavenaam",
+  "Applications": "Applicaties",
+  "Authentication options": "Authentication options",
+  "Auto start": "Automatisch starten",
+  "Automatically generate a JWT secret": "Automatically generate a JWT secret",
+  "Custom domain": "Aangepast domein",
+  "JWT secret": "JWT secret",
+  "Manage applications": "Beheer applicaties",
+  "Multi-app manager": "Multi-app beheerder",
+  "Pin to menu": "Vastmaken aan menu",
+  "Standalone deployment": "Zelfstandige implementatie",
+  "Start mode": "Start mode",
+  "Start on first visit": "Start on first visit",
+  "Start with main application": "Start with main application"
 }

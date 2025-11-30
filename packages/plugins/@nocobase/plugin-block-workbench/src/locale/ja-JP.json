@@ -1,10 +1,19 @@
 {
-  "Workbench": "作業台",
-  "Scan QR code": "QRコードをスキャン",
+  "Action panel": "アクションパネル",
+  "Add custom request": "カスタムリクエストを追加",
+  "Add popup": "ポップアップを追加",
   "Album": "アルバム",
+  "At least 1, up to 6": "最小1、最大6",
+  "Ellipsis action title": "Ellipsis action title",
+  "Grid": "グリッド",
+  "Items per row": "1行あたりの表示数",
+  "Layout": "レイアウト",
+  "List": "リスト",
   "No camera device detected": "カメラデバイスが検出されませんでした",
-  "You have not granted permission to use the camera": "カメラの使用許可がありません",
-  "Unknown error": "不明なエラー",
+  "QR code recognition failed, please scan again": "QRコードの認識に失敗しました。再度スキャンしてください。",
+  "Scan QR code": "QRコードをスキャン",
   "The image size is too large. Please compress it to below 1MB before uploading": "画像サイズが大きすぎます。アップロード前に1MB以下に圧縮してください。",
-  "QR code recognition failed, please scan again": "QRコードの認識に失敗しました。再度スキャンしてください。"
+  "Unknown error": "不明なエラー",
+  "Workbench": "作業台",
+  "You have not granted permission to use the camera": "カメラの使用許可がありません"
 }

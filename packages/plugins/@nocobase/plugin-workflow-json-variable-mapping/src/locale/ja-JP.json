@@ -1,0 +1,14 @@
+{
+  "Alias": "エイリアス",
+  "Clear below items": "以下の項目をクリア",
+  "If the JSON object contains array items, parse them. eg: { \"arrayKey\": [ \"item1\", \"item2\" ] will be parsed as \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\", if set to false, only \"arrayKey\" will be parsed.": "If the JSON object contains array items, parse them. eg: { \"arrayKey\": [ \"item1\", \"item2\" ] will be parsed as \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\", if set to false, only \"arrayKey\" will be parsed.",
+  "Include array index in path": "パスに配列インデックスを含める",
+  "Input example": "入力例",
+  "JSON data source": "JSONデータソース",
+  "JSON variable mapping": "JSON変数マッピング",
+  "Key path": "キーパス",
+  "Parse": "解析",
+  "Please input JSON example like { \"key1\": \"item1\", \"key2\": \"item2\" }": "{ \"key1\": \"item1\", \"key2\": \"item2\" } のようなJSONサンプルを入力してください",
+  "Please update other node references to the key after clicking the parse button.": "Please update other node references to the key after clicking the parse button.",
+  "Used for mapping any JSON data to structured variables for usage in subsequent nodes.": "Used for mapping any JSON data to structured variables for usage in subsequent nodes."
+}

@@ -1,0 +1,13 @@
+{
+  "Add property": "Добавить свойство",
+  "Alias": "Псевдоним",
+  "Data source": "Источник данных",
+  "Display label": "Отображаемая метка",
+  "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.": "If the type of query result is object or array of object, could map the properties which to be accessed in subsequent nodes.",
+  "JSON calculation": "Вычисление JSON",
+  "Properties mapping": "Сопоставление свойств",
+  "Property key": "Ключ свойства",
+  "Query engine": "Движок запросов",
+  "Query expression": "Выражение запроса",
+  "Transforming or calculating values from complex JSON data.": "Transforming or calculating values from complex JSON data."
+}

@@ -1,7 +1,7 @@
 {
   "Export warning": "每次最多导出记录 {{limit}} 行数据，超出的将被忽略。",
+  "False": "否",
   "Start export": "开始导出记录",
-  "another export action is running, please try again later.": "另一导出记录任务正在运行，请稍后重试。",
   "True": "是",
-  "False": "否"
+  "another export action is running, please try again later.": "另一导出记录任务正在运行，请稍后重试。"
 }

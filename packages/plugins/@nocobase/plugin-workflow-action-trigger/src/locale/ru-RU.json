@@ -1,16 +1,16 @@
 {
-  "Post-action event": "Событие \"После события\"",
-  "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.": "Запускается после завершения запроса, инициированного через кнопку действия или API, например, после добавления или обновления данных. Подходит для обработки данных, отправки уведомлений и т.д. после завершения действий.",
+  "Associations to use": "Используемые связи",
   "Collection": "Коллекция",
-  "The collection to which the triggered data belongs.": "Коллекция, к которой принадлежат запущенные данные.",
-  "Trigger mode": "Режим запуска",
-  "Local mode, triggered after the completion of actions bound to this workflow": "Локальный режим, запускается после завершения действий, привязанных к этому рабочему процессу",
-  "Global mode, triggered after the completion of the following actions": "Глобальный режим, запускается после завершения следующих действий",
-  "Select actions": "Выбрать действия",
   "Create record action": "Действие создания записи",
+  "Global mode, triggered after the completion of the following actions": "Глобальный режим, срабатывает после завершения следующих действий",
+  "Local mode, triggered after the completion of actions bound to this workflow": "Локальный режим, срабатывает после завершения действий, связанных с этим рабочим процессом",
+  "Post-action event": "После события",
+  "Role of user acted": "Роль пользователя, совершившего действие",
+  "Select actions": "Выбрать действия",
+  "The collection to which the triggered data belongs.": "Коллекция, к которой принадлежат запущенные данные.",
+  "Trigger data": "Данные триггера",
+  "Trigger mode": "Режим триггера",
+  "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.": "Запускается после завершения запроса, инициированного через кнопку действия или API, например, после добавления или обновления данных. Подходит для обработки данных, отправки уведомлений и т.д. после завершения действий.",
   "Update record action": "Действие обновления записи",
-  "Associations to use": "Связи для использования",
-  "Trigger data": "Данные запуска",
-  "User acted": "Пользователь действовал",
-  "Role of user acted": "Роль пользователя, который действовал"
+  "User acted": "Пользователь, совершивший действие"
 }

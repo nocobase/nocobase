@@ -1,5 +1,9 @@
 {
+  "Execute a SQL statement in database": "데이터베이스에서 SQL 문 실행",
+  "Execute a SQL statement in database.": "Execute a SQL statement in database.",
+  "Include meta information of this query in result": "결과에 쿼리 메타 정보 포함",
   "SQL action": "SQL 작업",
-  "Execute a SQL statement in database": "데이터베이스에서 SQL 문을 실행합니다",
+  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).",
+  "Select a data source to execute SQL.": "Select a data source to execute SQL.",
   "Usage of SQL query result is not supported yet.": "아직 SQL 쿼리 결과의 사용은 지원되지 않습니다."
 }

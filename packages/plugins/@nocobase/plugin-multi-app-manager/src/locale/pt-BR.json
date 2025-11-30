@@ -1,9 +1,18 @@
 {
-  "Multi-app manager": "Gerenciador de aplicativos múltiplos",
-  "Applications": "Aplicativos",
-  "App display name": "Nome de exibição do aplicativo",
+  "An independent JWT secret ensures data and session isolation from other applications.": "An independent JWT secret ensures data and session isolation from other applications.",
   "App ID": "ID do aplicativo",
-  "Pin to menu": "Fixar no menu",
+  "App display name": "Nome de exibição do aplicativo",
+  "Applications": "Aplicativos",
+  "Authentication options": "Authentication options",
+  "Auto start": "Auto start",
+  "Automatically generate a JWT secret": "Automatically generate a JWT secret",
   "Custom domain": "Domínio personalizado",
-  "Manage applications": "Gerenciar aplicativos"
+  "JWT secret": "JWT secret",
+  "Manage applications": "Gerenciar aplicativos",
+  "Multi-app manager": "Gerenciador de aplicativos múltiplos",
+  "Pin to menu": "Fixar no menu",
+  "Standalone deployment": "Standalone deployment",
+  "Start mode": "Start mode",
+  "Start on first visit": "Start on first visit",
+  "Start with main application": "Start with main application"
 }

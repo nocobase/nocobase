@@ -1,0 +1,5 @@
+{
+  "Ignore failure and continue workflow": "Ignore failure and continue workflow",
+  "Notification": "알림",
+  "Send notification. You can use the variables in the upstream nodes as content and ohter config.": "Send notification. You can use the variables in the upstream nodes as content and ohter config."
+}
