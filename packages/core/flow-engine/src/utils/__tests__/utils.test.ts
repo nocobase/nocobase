@@ -13,6 +13,7 @@ import {
   isInheritedFrom,
   resolveDefaultParams,
   resolveStepUiSchema,
+  shouldHideStepInSettings,
   FlowExitException,
   defineAction,
   compileUiSchema,
@@ -1016,6 +1017,139 @@ describe('Utils', () => {
         // Restore the original method
         mockModel.flowEngine.getAction = originalGetAction;
       });
+    });
+  });
+
+  // ==================== shouldHideStepInSettings() FUNCTION ====================
+  describe('shouldHideStepInSettings()', () => {
+    let mockFlow: any;
+    let mockStep: StepDefinition;
+
+    beforeEach(() => {
+      mockFlow = {
+        key: 'testFlow',
+        title: 'Test Flow',
+        steps: {},
+      };
+
+      mockStep = {
+        key: 'testStep',
+        handler: vi.fn(),
+      };
+    });
+
+    test('returns true when step is falsy', async () => {
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, null);
+      expect(result).toBe(true);
+    });
+
+    test('respects static step.hideInSettings=true', async () => {
+      mockStep.hideInSettings = true;
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+      expect(result).toBe(true);
+    });
+
+    test('respects static step.hideInSettings=false', async () => {
+      mockStep.hideInSettings = false;
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+      expect(result).toBe(false);
+    });
+
+    test('falls back to action.hideInSettings when step.hideInSettings is undefined', async () => {
+      const action: ActionDefinition = {
+        name: 'testAction',
+        handler: vi.fn(),
+        hideInSettings: true,
+      } as any;
+
+      mockStep.use = 'testAction';
+      mockModel.flowEngine.getAction = vi.fn().mockReturnValue(action);
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+      expect(mockModel.flowEngine.getAction).toHaveBeenCalledWith('testAction');
+      expect(result).toBe(true);
+    });
+
+    test('prefers step.hideInSettings over action.hideInSettings', async () => {
+      const action: ActionDefinition = {
+        name: 'testAction',
+        handler: vi.fn(),
+        hideInSettings: true,
+      } as any;
+
+      mockStep.use = 'testAction';
+      mockStep.hideInSettings = false;
+      mockModel.flowEngine.getAction = vi.fn().mockReturnValue(action);
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+      expect(result).toBe(false);
+    });
+
+    test('evaluates function step.hideInSettings with FlowRuntimeContext', async () => {
+      const hideFn = vi.fn().mockResolvedValue(true);
+      mockStep.hideInSettings = hideFn as any;
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+
+      expect(hideFn).toHaveBeenCalledTimes(1);
+      const ctx = hideFn.mock.calls[0][0] as FlowRuntimeContext;
+      expect(ctx).toBeInstanceOf(FlowRuntimeContext);
+      expect((ctx as any).model).toBe(mockModel);
+      expect((ctx as any).flowKey).toBe('testFlow');
+      expect((ctx as any).mode).toBe('settings');
+      expect((ctx as any).currentStep).toBe(mockStep);
+      expect(result).toBe(true);
+    });
+
+    test('evaluates function action.hideInSettings when step.hideInSettings is undefined', async () => {
+      const hideFn = vi.fn().mockResolvedValue(false);
+      const action: ActionDefinition = {
+        name: 'testAction',
+        handler: vi.fn(),
+        hideInSettings: hideFn as any,
+      } as any;
+
+      mockStep.use = 'testAction';
+      mockModel.flowEngine.getAction = vi.fn().mockReturnValue(action);
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+
+      expect(hideFn).toHaveBeenCalledTimes(1);
+      const ctx = hideFn.mock.calls[0][0] as FlowRuntimeContext;
+      expect((ctx as any).currentStep).toBe(mockStep);
+      expect(result).toBe(false);
+    });
+
+    test('returns false and logs warning when function hideInSettings throws', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const hideFn = vi.fn().mockRejectedValue(new Error('boom'));
+      mockStep.hideInSettings = hideFn as any;
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(result).toBe(false);
+      consoleSpy.mockRestore();
+    });
+
+    test('handles getAction throwing gracefully and falls back to visible', async () => {
+      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      mockStep.use = 'errorAction';
+      mockModel.flowEngine.getAction = vi.fn(() => {
+        throw new Error('Action load failed');
+      });
+
+      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
+
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "Error resolving action 'errorAction' for hideInSettings:",
+        expect.any(Error),
+      );
+      expect(result).toBe(false);
+      consoleSpy.mockRestore();
     });
   });
 });
