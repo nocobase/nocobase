@@ -39,17 +39,12 @@ function RemoteModelRenderer({ options, fieldModel }) {
     if (!data) {
       return;
     }
-    const subModel = data.findSubModel('items', (m) => {
-      return m;
-    });
-    fieldModel.context.defineProperty('selectBlockModel', {
-      value: subModel,
-    });
+
+    fieldModel.selectBlockModel = data;
   }, [data]);
   if (loading || !data?.uid) {
     return <SkeletonFallback style={{ margin: 16 }} />;
   }
-
   return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin: 16 }} />} />;
 }
 
@@ -165,6 +160,7 @@ function RecordPickerField(props) {
 export class RecordPickerFieldModel extends FieldModel {
   selectedRows = observable.ref([]);
   _closeView;
+  selectBlockModel;
   get collectionField(): CollectionField {
     return this.context.collectionField;
   }
@@ -269,14 +265,17 @@ RecordPickerFieldModel.registerFlow({
               renderCell: undefined,
               selectedRowKeys: undefined,
               onChange: (_, selectedRows) => {
-                const selectBlockModel = ctx.model.context.selectBlockModel;
+                const selectBlockModel = ctx.model.selectBlockModel;
+                const selectTable = selectBlockModel.findSubModel('items', (m) => {
+                  return m;
+                });
                 if (toOne) {
                   // 单选
                   ctx.model.selectedRows.value = selectedRows?.[0];
                   onChange(ctx.model.selectedRows.value);
                   ctx.model._closeView?.();
                 } else {
-                  selectBlockModel.resource.setSelectedRows(selectedRows);
+                  selectTable.resource.setSelectedRows(selectedRows);
                   // 多选：追加
                   const prev = ctx.model.props.value || [];
                   const merged = [...prev, ...selectedRows];
