@@ -14,14 +14,38 @@ import { DataSourceModel } from '../models/data-source';
 import _ from 'lodash';
 
 export async function loadDataSourceTablesIntoCollections(ctx: Context, next: Next) {
-  const dataSourcesRepo = ctx.app.db.getRepository('dataSources');
   const { actionName, resourceName, params } = ctx.action;
   if (resourceName === 'dataSources' && (actionName === 'create' || actionName === 'update')) {
+    const dataSourcesRepo = ctx.app.db.getRepository('dataSources');
     const { options, type, collections, key } = params.values || {};
-    const dataSource: DatabaseDataSource = ctx.app.dataSourceManager.factory.create(type, {
-      name: key,
-      ...options,
-    });
+
+    const dataSourceProvider: {
+      get: () => Promise<DatabaseDataSource>;
+    } =
+      actionName === 'update'
+        ? {
+            get: async () => {
+              const { filterByTk } = params;
+              const model: DataSourceModel = await dataSourcesRepo.findByTargetKey(filterByTk);
+              if (_.isEqual(model.get('options'), options)) {
+                return ctx.app.dataSourceManager.get(filterByTk);
+              } else {
+                return ctx.app.dataSourceManager.factory.create(model.type, {
+                  name: filterByTk,
+                  ...options,
+                });
+              }
+            },
+          }
+        : {
+            get: () =>
+              ctx.app.dataSourceManager.factory.create(type, {
+                name: key,
+                ...options,
+              }),
+          };
+
+    const dataSource = await dataSourceProvider.get();
     dataSource.setLogger(ctx.logger);
     if (!(dataSource instanceof DatabaseDataSource)) {
       return next();
@@ -34,16 +58,7 @@ export async function loadDataSourceTablesIntoCollections(ctx: Context, next: Ne
         );
       }
     } else {
-      if (actionName === 'update') {
-        const model: DataSourceModel = await dataSourcesRepo.findByTargetKey(key);
-        if (_.isEqual(model.get('options'), options)) {
-          await ctx.app.dataSourceManager.get(key).loadTables(ctx, collections);
-        } else {
-          await dataSource.loadTables(ctx, collections);
-        }
-      } else {
-        await dataSource.loadTables(ctx, collections);
-      }
+      await dataSource.loadTables(ctx, collections);
     }
     if (collections) {
       delete ctx.action.params.values.collections;
