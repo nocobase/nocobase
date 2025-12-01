@@ -8,9 +8,12 @@
  */
 
 import { SettingOutlined } from '@ant-design/icons';
-import { AddSubModelButton, tExpr, FlowSettingsButton } from '@nocobase/flow-engine';
+import { AddSubModelButton, tExpr, FlowSettingsButton, DndProvider, useFlowEngine } from '@nocobase/flow-engine';
 import { Table } from 'antd';
+import classNames from 'classnames';
+import { DragEndEvent } from '@dnd-kit/core';
 import { css } from '@emotion/css';
+import { observer } from '@formily/reactive-react';
 import { isEmpty } from 'lodash';
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +21,30 @@ import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
 import { adjustColumnOrder } from '../../blocks/table/utils';
 
+const HeaderWrapperComponent = React.memo((props) => {
+  const engine = useFlowEngine();
+
+  const onDragEnd = ({ active, over }: DragEndEvent) => {
+    if (active.id && over?.id && active.id !== over.id) {
+      engine.moveModel(active.id as string, over.id as string);
+    }
+  };
+
+  return (
+    <DndProvider onDragEnd={onDragEnd}>
+      <thead {...props} />
+    </DndProvider>
+  );
+});
+
+const RenderCell = observer<any>((props) => {
+  const { className, title, editable, width, record, recordIndex, dataIndex, children, model, ...restProps } = props;
+  return (
+    <td className={classNames(className)} {...restProps}>
+      <div style={{ width }}> {children}</div>
+    </td>
+  );
+});
 const AddFieldColumn = ({ model }) => {
   return (
     <AddSubModelButton
@@ -131,10 +158,19 @@ const DisplayTable = (props) => {
           overflow: visible;
         }
       `}
+      components={{
+        header: {
+          wrapper: HeaderWrapperComponent,
+        },
+        body: {
+          cell: RenderCell,
+        },
+      }}
     />
   );
 };
 export class DisplaySubTableFieldModel extends FieldModel {
+  defaultOverflowMode = 'ellipsis';
   get collection() {
     return this.context.collection;
   }
