@@ -488,15 +488,3 @@ exports.generatePlugins = function () {
     return;
   }
 };
-
-exports.logger = {
-  info: () => {
-    console.log(...arguments);
-  },
-  warn: () => {
-    console.warn(...arguments);
-  },
-  error: () => {
-    console.error(...arguments);
-  },
-};

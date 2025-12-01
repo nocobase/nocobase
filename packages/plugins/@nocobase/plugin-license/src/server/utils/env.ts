@@ -78,7 +78,7 @@ export function isDomainMatch(currentDomain: string, keyData: KeyData) {
 }
 
 export function isEnvMatch(env: Env, keyData: KeyData) {
-  const idMatchId = env?.db?.id && keyData?.instanceData?.db?.id;
+  const matchId = env?.db?.id && keyData?.instanceData?.db?.id;
   const getMatchStr = (envData: {
     sys: string;
     osVer: string;
@@ -93,7 +93,7 @@ export function isEnvMatch(env: Env, keyData: KeyData) {
     const data: any = {
       sys: envData?.sys,
       osVer: envData?.osVer,
-      db: idMatchId ? { id: envData?.db?.id } : omit(envData?.db, ['id']),
+      db: matchId ? { id: envData?.db?.id } : omit(envData?.db, ['id']),
     };
     return JSON.stringify(data);
   };

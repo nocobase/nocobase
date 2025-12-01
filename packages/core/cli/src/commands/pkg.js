@@ -15,8 +15,7 @@ const tar = require('tar');
 const path = require('path');
 const { createStoragePluginsSymlink } = require('@nocobase/utils/plugin-symlink');
 const { getAccessKeyPair, showLicenseInfo, LicenseKeyError } = require('../license');
-// const { logger } = require('@nocobase/logger');
-const { logger } = require('../util');
+const { logger } = require('../logger');
 
 class Package {
   data;
