@@ -202,6 +202,9 @@ FormItemModel.registerFlow({
         ctx.model.setProps({
           name: fullName,
         });
+        ctx.model.setProps({
+          ...ctx.collectionField.getComponentProps(),
+        });
       },
     },
 
