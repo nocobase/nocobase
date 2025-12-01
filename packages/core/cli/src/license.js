@@ -12,7 +12,8 @@ const { resolve } = require('path');
 const fs = require('fs-extra');
 const { keyDecrypt, getEnvAsync } = require('@nocobase/license-kit');
 const { isEnvMatch } = require('@nocobase/plugin-license/utils/env');
-const { logger } = require('@nocobase/logger');
+// const { logger } = require('@nocobase/logger');
+const { logger } = require('./util');
 const { pick } = require('lodash');
 
 exports.getAccessKeyPair = async function () {
