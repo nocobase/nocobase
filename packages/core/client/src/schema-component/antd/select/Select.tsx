@@ -119,7 +119,47 @@ const ObjectSelect = (props: SelectProps) => {
       }}
       maxTagCount="responsive"
       maxTagPlaceholder={(omittedValues) => (
-        <Tooltip title={omittedValues.map((v) => v.label).join(', ')}>+{omittedValues.length}...</Tooltip>
+        <Tooltip
+          title={
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 6,
+                maxWidth: '100%',
+              }}
+            >
+              {omittedValues.map((item) => (
+                <Tag
+                  key={item.value}
+                  style={{
+                    margin: 0,
+                    background: '#fafafa',
+                    border: '1px solid #d9d9d9',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                    maxWidth: '100%',
+                  }}
+                >
+                  {item.label}
+                </Tag>
+              ))}
+            </div>
+          }
+          overlayInnerStyle={{
+            background: '#fff',
+            color: '#000',
+            padding: 8,
+            maxWidth: '100%',
+          }}
+          color="#fff"
+          overlayStyle={{
+            pointerEvents: 'auto',
+            maxWidth: 300,
+          }}
+        >
+          +{omittedValues.length}...
+        </Tooltip>
       )}
       {...others}
     />
@@ -209,7 +249,47 @@ const InternalSelect = connect(
         mode={mode}
         maxTagCount="responsive"
         maxTagPlaceholder={(omittedValues) => (
-          <Tooltip title={omittedValues.map((v) => v.label).join(', ')}>+{omittedValues.length}...</Tooltip>
+          <Tooltip
+            title={
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 6,
+                  maxWidth: '100%',
+                }}
+              >
+                {omittedValues.map((item) => (
+                  <Tag
+                    key={item.value}
+                    style={{
+                      margin: 0,
+                      background: '#fafafa',
+                      border: '1px solid #d9d9d9',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      maxWidth: '100%',
+                    }}
+                  >
+                    {item.label}
+                  </Tag>
+                ))}
+              </div>
+            }
+            overlayInnerStyle={{
+              background: '#fff',
+              color: '#000',
+              padding: 8,
+              maxWidth: '100%',
+            }}
+            color="#fff"
+            overlayStyle={{
+              pointerEvents: 'auto',
+              maxWidth: 300,
+            }}
+          >
+            +{omittedValues.length}...
+          </Tooltip>
         )}
       />
     );
