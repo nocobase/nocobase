@@ -267,7 +267,15 @@ export class XlsxImporter extends EventEmitter {
         ctx.filterKey = column.dataIndex[1];
       }
 
-      rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
+      try {
+        rowValues[dataKey] = str == null ? null : await interfaceInstance.toValue(this.trimString(str), ctx);
+      } catch (error) {
+        throw new ImportValidationError('Failed to parse field {{field}} in row {{rowIndex}}: {{message}}', {
+          rowIndex: options?.context?.handingRowIndex || 1,
+          field: dataKey,
+          message: error.message,
+        });
+      }
     }
     const model = this.getModel();
     const guard = UpdateGuard.fromOptions(model, {
