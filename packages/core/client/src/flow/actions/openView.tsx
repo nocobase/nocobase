@@ -683,6 +683,7 @@ export const openView = defineAction({
               pageModel.invalidateFlowCache('beforeRender', true);
               pageModel['_rerunLastAutoRun'](); // TODO: 临时做法，等上下文重构完成后去掉
             }}
+            defaultTabTitle={ctx.model['defaultPopupTitle']}
           />
         );
       },

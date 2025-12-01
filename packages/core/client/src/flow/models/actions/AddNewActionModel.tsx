@@ -14,6 +14,7 @@ import { ActionSceneEnum, PopupActionModel } from '../base';
 export class AddNewActionModel extends PopupActionModel {
   static scene = ActionSceneEnum.collection;
 
+  defaultPopupTitle = tExpr('Add new');
   defaultProps: ButtonProps = {
     type: 'primary',
     title: tExpr('Add new'),
