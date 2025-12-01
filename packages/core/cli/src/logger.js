@@ -21,7 +21,6 @@ function ensureDir(dir) {
 function createSystemLogger({ dirname, filename, defaultMeta = {} }) {
   ensureDir(dirname);
 
-  // 日志文件按天滚动
   const fileTransport = new winston.transports.DailyRotateFile({
     dirname,
     filename: `${filename}_%DATE%.log`,
@@ -29,7 +28,6 @@ function createSystemLogger({ dirname, filename, defaultMeta = {} }) {
     zippedArchive: false,
   });
 
-  // 控制台输出
   const consoleTransport = new winston.transports.Console({
     format: winston.format.combine(
       winston.format.colorize(),
@@ -50,7 +48,7 @@ function createSystemLogger({ dirname, filename, defaultMeta = {} }) {
         return `${info.timestamp} [${info.level}] ${info.message} ${meta}`;
       }),
     ),
-    transports: [consoleTransport, fileTransport], // ★ 同时输出控制台 + 文件
+    transports: [consoleTransport, fileTransport],
     defaultMeta,
   });
 
@@ -70,7 +68,6 @@ const getLoggerFilePath = (...paths) => {
   return path.resolve(process.env.LOGGER_BASE_PATH || path.resolve(process.cwd(), 'storage', 'logs'), ...paths);
 };
 
-// 默认实例
 const logger = createSystemLogger({
   dirname: getLoggerFilePath('main'),
   filename: 'system',
