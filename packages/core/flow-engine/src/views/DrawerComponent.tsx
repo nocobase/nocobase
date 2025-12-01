@@ -43,6 +43,10 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
     [],
   );
 
+  const container = React.useMemo(() => {
+    return document.querySelector('#nocobase-app-container');
+  }, []);
+
   if (isMobile) {
     return (
       <MobilePopup
@@ -65,7 +69,7 @@ const DrawerComponent = React.forwardRef((props: any, ref) => {
     <Drawer
       rootClassName={hidden ? 'nb-hidden' : ''}
       closable={false}
-      getContainer={document.body}
+      getContainer={container}
       {...drawerProps}
       open={open}
       footer={footer}
