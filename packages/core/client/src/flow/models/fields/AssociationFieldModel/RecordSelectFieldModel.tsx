@@ -458,16 +458,27 @@ RecordSelectFieldModel.registerFlow({
       handler(ctx) {
         const resource = ctx.createResource(MultiRecordResource);
         const collectionField = ctx.model.context.collectionField;
-        const { target, dataSourceKey } = collectionField;
+        const { target, dataSourceKey, foreignKey } = collectionField;
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(target);
         resource.setPageSize(paginationState.pageSize);
         const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
+        const sourceValue = ctx.record?.[collectionField?.sourceKey];
+        // 构建 $or 条件数组
+        const orFilters: Record<string, any>[] = [];
+
+        if (sourceValue != null) {
+          const eqKey = `${foreignKey}.$eq`;
+          orFilters.push({ [eqKey]: sourceValue });
+        }
+
         if (isOToAny) {
-          const key = `${collectionField.foreignKey}.$is`;
-          resource.addFilterGroup(collectionField.name, {
-            [key]: null,
-          });
+          const isKey = `${foreignKey}.$is`;
+          orFilters.push({ [isKey]: null });
+        }
+
+        if (orFilters.length > 0) {
+          resource.addFilterGroup(foreignKey, { $or: orFilters });
         }
         ctx.model.resource = resource;
       },
