@@ -1,3 +1,12 @@
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
+
 import { E_ALREADY_LOCKED, Mutex, tryAcquire } from 'async-mutex';
 import PQueue from 'p-queue';
 import Application, { AppSupervisor, MaintainingCommandStatus, getErrorLevel } from '@nocobase/server';
@@ -128,9 +137,7 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
     if (this.apps[app.name]) {
       throw new Error(`app ${app.name} already exists`);
     }
-    this.bindAppEvents(app);
     this.apps[app.name] = app;
-    this.supervisor.emit('afterAppAdded', app);
     if (!this.appStatus[app.name] || this.appStatus[app.name] === 'not_found') {
       void this.setAppStatus(app.name, 'preparing');
     }
@@ -174,98 +181,5 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
       return defaultStatus;
     }
     return status ?? null;
-  }
-
-  private bindAppEvents(app: Application) {
-    app.on('afterDestroy', () => {
-      delete this.apps[app.name];
-      delete this.appStatus[app.name];
-      delete this.appErrors[app.name];
-      delete this.lastMaintainingMessage[app.name];
-      delete this.statusBeforeCommanding[app.name];
-      this.lastSeenAt.delete(app.name);
-    });
-
-    app.on('maintainingMessageChanged', async ({ message, maintainingStatus }) => {
-      if (this.lastMaintainingMessage[app.name] === message) {
-        return;
-      }
-      this.lastMaintainingMessage[app.name] = message;
-      const appStatus = await this.getAppStatus(app.name);
-      if (!maintainingStatus && appStatus !== 'running') {
-        return;
-      }
-      this.supervisor.emit('appMaintainingMessageChanged', {
-        appName: app.name,
-        message,
-        status: appStatus,
-        command: appStatus == 'running' ? null : maintainingStatus.command,
-      });
-    });
-
-    app.on('__started', async (_app, options) => {
-      const { maintainingStatus, options: startOptions } = options;
-      if (
-        maintainingStatus &&
-        [
-          'install',
-          'upgrade',
-          'refresh',
-          'restore',
-          'pm.add',
-          'pm.update',
-          'pm.enable',
-          'pm.disable',
-          'pm.remove',
-        ].includes(maintainingStatus.command.name) &&
-        !startOptions.recover
-      ) {
-        void this.setAppStatus(app.name, 'running', { refresh: true });
-      } else {
-        void this.setAppStatus(app.name, 'running');
-      }
-    });
-
-    app.on('__stopped', async () => {
-      await this.setAppStatus(app.name, 'stopped');
-    });
-
-    app.on('maintaining', async (maintainingStatus: MaintainingCommandStatus) => {
-      const { status } = maintainingStatus;
-      switch (status) {
-        case 'command_begin':
-          this.statusBeforeCommanding[app.name] = await this.getAppStatus(app.name);
-          await this.setAppStatus(app.name, 'commanding');
-          break;
-        case 'command_running':
-          break;
-        case 'command_end':
-          {
-            const appStatus = await this.getAppStatus(app.name);
-            this.supervisor.emit('appMaintainingStatusChanged', maintainingStatus);
-            if (appStatus == 'commanding') {
-              await this.setAppStatus(app.name, this.statusBeforeCommanding[app.name]);
-            }
-          }
-          break;
-        case 'command_error':
-          {
-            const errorLevel = getErrorLevel(maintainingStatus.error);
-            if (errorLevel === 'fatal') {
-              this.setAppError(app.name, maintainingStatus.error);
-              await this.setAppStatus(app.name, 'error');
-              break;
-            }
-            if (errorLevel === 'warn') {
-              this.supervisor.emit('appError', {
-                appName: app.name,
-                error: maintainingStatus.error,
-              });
-            }
-            await this.setAppStatus(app.name, this.statusBeforeCommanding[app.name]);
-          }
-          break;
-      }
-    });
   }
 }

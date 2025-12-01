@@ -150,15 +150,6 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
 export class PluginMultiAppManagerServer extends Plugin {
   meter: Meter;
 
-  constructor(app: Application, options?: any) {
-    super(app, options);
-    this.registerLegacyAdapter();
-    const supervisor = AppSupervisor.getInstance();
-    supervisor.setAppDbCreator(defaultDbCreator);
-    supervisor.setAppOptionsFactory((appName, mainApp) => defaultAppOptionsFactory(appName, mainApp));
-    supervisor.setSubAppUpgradeHandler(defaultSubAppUpgradeHandle);
-  }
-
   static getDatabaseConfig(app: Application): IDatabaseOptions {
     let oldConfig =
       app.options.database instanceof Database
@@ -222,14 +213,12 @@ export class PluginMultiAppManagerServer extends Plugin {
     AppSupervisor.getInstance().setAppDbCreator(appDbCreator);
   }
 
-  protected registerLegacyAdapter() {
-    if (!AppSupervisor.getInstance().getProcessAdapter()) {
-      const factory = ({ supervisor }) => new LegacyMemoryAdapter(supervisor);
-      AppSupervisor.registerDiscoveryAdapter('legacy-memory', factory);
-      AppSupervisor.registerProcessAdapter('legacy-memory', factory);
-      AppSupervisor.setDefaultDiscoveryAdapter('legacy-memory');
-      AppSupervisor.setDefaultProcessAdapter('legacy-memory');
-    }
+  protected static registerLegacyAdapter() {
+    const factory = ({ supervisor }) => new LegacyMemoryAdapter(supervisor);
+    AppSupervisor.registerDiscoveryAdapter('legacy-memory', factory);
+    AppSupervisor.registerProcessAdapter('legacy-memory', factory);
+    AppSupervisor.setDefaultDiscoveryAdapter('legacy-memory');
+    AppSupervisor.setDefaultProcessAdapter('legacy-memory');
   }
 
   beforeLoad() {
@@ -285,6 +274,10 @@ export class PluginMultiAppManagerServer extends Plugin {
   }
 
   async load() {
+    const supervisor = AppSupervisor.getInstance();
+    supervisor.setAppDbCreator(defaultDbCreator);
+    supervisor.setAppOptionsFactory((appName, mainApp) => defaultAppOptionsFactory(appName, mainApp));
+    supervisor.setSubAppUpgradeHandler(defaultSubAppUpgradeHandle);
     this.setMetrics();
 
     // after application created

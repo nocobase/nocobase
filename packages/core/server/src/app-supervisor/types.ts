@@ -69,7 +69,7 @@ export interface AppDiscoveryAdapter {
   /**
    * Enumerate all known application names tracked by the discovery backend.
    */
-  getAppsNames(): Promise<string[]>;
+  getAppsNames?(): Promise<string[]>;
 
   /**
    * Update the "last seen" timestamp for an application.

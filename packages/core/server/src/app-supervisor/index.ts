@@ -9,7 +9,8 @@
 
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
-import Application, { ApplicationOptions } from '../application';
+import Application, { ApplicationOptions, MaintainingCommandStatus } from '../application';
+import { MainOnlyAdapter } from './main-only-adapter';
 import type {
   AppBootstrapper,
   AppDiscoveryAdapter,
@@ -22,6 +23,7 @@ import type {
   AppOptionsFactory,
   SubAppUpgradeHandler,
 } from './types';
+import { getErrorLevel } from '../errors/handler';
 
 export type AppDiscoveryAdapterFactory = (context: { supervisor: AppSupervisor }) => AppDiscoveryAdapter;
 export type AppProcessAdapterFactory = (context: { supervisor: AppSupervisor }) => AppProcessAdapter;
@@ -31,8 +33,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private static instance: AppSupervisor;
   private static discoveryAdapterFactories: Map<string, AppDiscoveryAdapterFactory> = new Map();
   private static processAdapterFactories: Map<string, AppProcessAdapterFactory> = new Map();
-  private static defaultDiscoveryAdapterName: string | null = null;
-  private static defaultProcessAdapterName: string | null = null;
+  private static defaultDiscoveryAdapterName: string | null = 'main-only';
+  private static defaultProcessAdapterName: string | null = 'main-only';
 
   public runningMode: 'single' | 'multiple' = 'multiple';
   public singleAppName: string | null = null;
@@ -47,6 +49,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private appDbCreator: AppDbCreator = async () => {};
   private appOptionsFactory: AppOptionsFactory = () => ({}) as any;
   private subAppUpgradeHandler: SubAppUpgradeHandler = async () => {};
+  private suppressEvents = false;
 
   private constructor() {
     super();
@@ -272,11 +275,14 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   addApp(app: Application, commandOptions: CommandOptions = {}) {
-    const instance = this.processAdapter.addApp(app);
     if (this.processAdapter.supportsRemoteCommands) {
-      void this.dispatchCommand('add', app.name, commandOptions);
+      this.dispatchCommand('add', app.name, commandOptions);
+      return;
     }
-    return instance;
+    this.processAdapter.addApp(app);
+    this.bindAppEvents(app);
+    this.emit('afterAppAdded', app);
+    return app;
   }
 
   hasApp(appName: string) {
@@ -376,9 +382,105 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     return super.on(eventName, listener);
   }
+
+  private bindAppEvents(app: Application) {
+    app.on('afterDestroy', () => {
+      delete this.apps[app.name];
+      delete this.appStatus[app.name];
+      delete this.appErrors[app.name];
+      delete this.lastMaintainingMessage[app.name];
+      delete this.statusBeforeCommanding[app.name];
+      this.lastSeenAt.delete(app.name);
+    });
+
+    app.on('maintainingMessageChanged', async ({ message, maintainingStatus }) => {
+      if (this.lastMaintainingMessage[app.name] === message) {
+        return;
+      }
+      this.lastMaintainingMessage[app.name] = message;
+      const appStatus = await this.getAppStatus(app.name);
+      if (!maintainingStatus && appStatus !== 'running') {
+        return;
+      }
+      this.emit('appMaintainingMessageChanged', {
+        appName: app.name,
+        message,
+        status: appStatus,
+        command: appStatus == 'running' ? null : maintainingStatus.command,
+      });
+    });
+
+    app.on('__started', async (_app, options) => {
+      const { maintainingStatus, options: startOptions } = options;
+      if (
+        maintainingStatus &&
+        [
+          'install',
+          'upgrade',
+          'refresh',
+          'restore',
+          'pm.add',
+          'pm.update',
+          'pm.enable',
+          'pm.disable',
+          'pm.remove',
+        ].includes(maintainingStatus.command.name) &&
+        !startOptions.recover
+      ) {
+        void this.setAppStatus(app.name, 'running', { refresh: true });
+      } else {
+        void this.setAppStatus(app.name, 'running');
+      }
+    });
+
+    app.on('__stopped', async () => {
+      await this.setAppStatus(app.name, 'stopped');
+    });
+
+    app.on('maintaining', async (maintainingStatus: MaintainingCommandStatus) => {
+      const { status } = maintainingStatus;
+      switch (status) {
+        case 'command_begin':
+          this.statusBeforeCommanding[app.name] = await this.getAppStatus(app.name);
+          await this.setAppStatus(app.name, 'commanding');
+          break;
+        case 'command_running':
+          break;
+        case 'command_end':
+          {
+            const appStatus = await this.getAppStatus(app.name);
+            this.emit('appMaintainingStatusChanged', maintainingStatus);
+            if (appStatus == 'commanding') {
+              await this.setAppStatus(app.name, this.statusBeforeCommanding[app.name]);
+            }
+          }
+          break;
+        case 'command_error':
+          {
+            const errorLevel = getErrorLevel(maintainingStatus.error);
+            if (errorLevel === 'fatal') {
+              this.setAppError(app.name, maintainingStatus.error);
+              await this.setAppStatus(app.name, 'error');
+              break;
+            }
+            if (errorLevel === 'warn') {
+              this.emit('appError', {
+                appName: app.name,
+                error: maintainingStatus.error,
+              });
+            }
+            await this.setAppStatus(app.name, this.statusBeforeCommanding[app.name]);
+          }
+          break;
+      }
+    });
+  }
 }
 
 applyMixins(AppSupervisor, [AsyncEmitter]);
+
+AppSupervisor.registerDiscoveryAdapter('main-only', ({ supervisor }) => new MainOnlyAdapter(supervisor));
+AppSupervisor.registerProcessAdapter('main-only', ({ supervisor }) => new MainOnlyAdapter(supervisor));
 
 export type {
   AppBootstrapper,
