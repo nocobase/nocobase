@@ -13,6 +13,7 @@ import lodash from 'lodash';
 import path from 'path';
 import { ApplicationModel } from '../server';
 import { Meter } from '@nocobase/telemetry';
+import { LegacyMemoryAdapter } from './adapters/legacy-memory-adapter';
 
 export type AppDbCreator = (
   app: Application,
@@ -147,10 +148,16 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
 };
 
 export class PluginMultiAppManagerServer extends Plugin {
-  appDbCreator: AppDbCreator = defaultDbCreator;
-  appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
-  subAppUpgradeHandler: SubAppUpgradeHandler = defaultSubAppUpgradeHandle;
   meter: Meter;
+
+  constructor(app: Application, options?: any) {
+    super(app, options);
+    this.registerLegacyAdapter();
+    const supervisor = AppSupervisor.getInstance();
+    supervisor.setAppDbCreator(defaultDbCreator);
+    supervisor.setAppOptionsFactory((appName, mainApp) => defaultAppOptionsFactory(appName, mainApp));
+    supervisor.setSubAppUpgradeHandler(defaultSubAppUpgradeHandle);
+  }
 
   static getDatabaseConfig(app: Application): IDatabaseOptions {
     let oldConfig =
@@ -185,7 +192,8 @@ export class PluginMultiAppManagerServer extends Plugin {
       }
 
       const subApp = model.registerToSupervisor(this.app, {
-        appOptionsFactory: this.appOptionsFactory,
+        appOptionsFactory: (name: string, mainApp: Application) =>
+          AppSupervisor.getInstance().getAppOptionsFactory()(name, mainApp),
       });
 
       subApp.runCommand('start', '--quickstart');
@@ -203,15 +211,25 @@ export class PluginMultiAppManagerServer extends Plugin {
   }
 
   setSubAppUpgradeHandler(handler: SubAppUpgradeHandler) {
-    this.subAppUpgradeHandler = handler;
+    AppSupervisor.getInstance().setSubAppUpgradeHandler(handler);
   }
 
   setAppOptionsFactory(factory: AppOptionsFactory) {
-    this.appOptionsFactory = factory;
+    AppSupervisor.getInstance().setAppOptionsFactory(factory as any);
   }
 
   setAppDbCreator(appDbCreator: AppDbCreator) {
-    this.appDbCreator = appDbCreator;
+    AppSupervisor.getInstance().setAppDbCreator(appDbCreator);
+  }
+
+  protected registerLegacyAdapter() {
+    if (!AppSupervisor.getInstance().getProcessAdapter()) {
+      const factory = ({ supervisor }) => new LegacyMemoryAdapter(supervisor);
+      AppSupervisor.registerDiscoveryAdapter('legacy-memory', factory);
+      AppSupervisor.registerProcessAdapter('legacy-memory', factory);
+      AppSupervisor.setDefaultDiscoveryAdapter('legacy-memory');
+      AppSupervisor.setDefaultProcessAdapter('legacy-memory');
+    }
   }
 
   beforeLoad() {
@@ -282,7 +300,8 @@ export class PluginMultiAppManagerServer extends Plugin {
         }
 
         const subApp = model.registerToSupervisor(this.app, {
-          appOptionsFactory: this.appOptionsFactory,
+          appOptionsFactory: (name: string, mainAppInstance: Application) =>
+            AppSupervisor.getInstance().getAppOptionsFactory()(name, mainAppInstance),
         });
 
         subApp.on('afterStart', async () => {
@@ -302,7 +321,7 @@ export class PluginMultiAppManagerServer extends Plugin {
         const quickstart = async () => {
           // create database
           try {
-            await this.appDbCreator(subApp, {
+            await AppSupervisor.getInstance().getAppDbCreator()(subApp, {
               transaction,
               applicationModel: model,
               context: options.context,
@@ -380,7 +399,8 @@ export class PluginMultiAppManagerServer extends Plugin {
       }
 
       const subApp = applicationRecord.registerToSupervisor(mainApp, {
-        appOptionsFactory: self.appOptionsFactory,
+        appOptionsFactory: (name: string, appInstance: Application) =>
+          AppSupervisor.getInstance().getAppOptionsFactory()(name, appInstance),
       });
 
       subApp.on('afterStart', async () => {
@@ -463,7 +483,7 @@ export class PluginMultiAppManagerServer extends Plugin {
     });
 
     this.app.on('afterUpgrade', async (app, options) => {
-      await this.subAppUpgradeHandler(app);
+      await AppSupervisor.getInstance().getSubAppUpgradeHandler()(app);
     });
 
     this.app.resourcer.registerActionHandlers({

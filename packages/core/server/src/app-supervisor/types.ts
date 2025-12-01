@@ -93,9 +93,6 @@ export interface AppDiscoveryAdapter {
   heartbeatEnvironment?(environmentName: string, payload?: Record<string, any>): Promise<void>;
 }
 
-/**
- * Adapter responsible for managing the lifecycle of applications within an environment.
- */
 export interface AppProcessAdapter {
   readonly name: string;
 
@@ -110,7 +107,6 @@ export interface AppProcessAdapter {
    * Return all currently managed sub-application instances.
    */
   subApps(): Application[];
-  setAppBootstrapper(appBootstrapper: AppBootstrapper): void;
   bootStrapApp(appName: string, options?: Record<string, any>): Promise<void>;
   addApp(app: Application): Application;
   hasApp(appName: string): boolean;
@@ -146,3 +142,7 @@ export type ProcessCommand = {
   payload?: Record<string, any>;
   requestId?: string;
 };
+
+export type AppDbCreator = (app: Application, options?: Record<string, any>) => Promise<void>;
+export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
+export type SubAppUpgradeHandler = (mainApp: Application) => Promise<void>;

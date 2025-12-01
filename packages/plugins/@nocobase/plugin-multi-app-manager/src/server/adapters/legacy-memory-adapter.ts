@@ -1,18 +1,7 @@
-/**
- * This file is part of the NocoBase (R) project.
- * Copyright (c) 2020-2024 NocoBase Co., Ltd.
- * Authors: NocoBase Team.
- *
- * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
- * For more information, please refer to: https://www.nocobase.com/agreement.
- */
-
 import { E_ALREADY_LOCKED, Mutex, tryAcquire } from 'async-mutex';
 import PQueue from 'p-queue';
-import Application, { MaintainingCommandStatus } from '../application';
-import { getErrorLevel } from '../errors/handler';
-import type { AppSupervisor } from './index';
-import type { AppBootstrapper, AppDiscoveryAdapter, AppProcessAdapter, AppStatus, GetAppOptions } from './types';
+import Application, { AppSupervisor, MaintainingCommandStatus, getErrorLevel } from '@nocobase/server';
+import type { AppDiscoveryAdapter, AppProcessAdapter, AppStatus, GetAppOptions } from '@nocobase/server';
 
 export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   public readonly name = 'legacy-memory';
@@ -24,7 +13,6 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
   public statusBeforeCommanding: Record<string, AppStatus> = {};
 
   private appMutexes: Record<string, Mutex> = {};
-  private appBootstrapper: AppBootstrapper = null;
   private bootstrapQueue: PQueue;
 
   constructor(private readonly supervisor: AppSupervisor) {
@@ -45,21 +33,11 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
     for (const appName of appNames) {
       await this.removeApp(appName);
     }
-
-    this.appBootstrapper = null;
-  }
-
-  setAppBootstrapper(appBootstrapper: AppBootstrapper) {
-    this.appBootstrapper = appBootstrapper;
   }
 
   setAppError(appName: string, error: Error) {
     this.appErrors[appName] = error;
-
-    this.supervisor.emit('appError', {
-      appName,
-      error,
-    });
+    this.supervisor.emit('appError', { appName, error });
   }
 
   hasAppError(appName: string) {
@@ -74,42 +52,33 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
     if (this.appStatus[appName] === status) {
       return;
     }
-
     this.appStatus[appName] = status;
-
-    this.supervisor.emit('appStatusChanged', {
-      appName,
-      status,
-      options,
-    });
+    this.supervisor.emit('appStatusChanged', { appName, status, options });
   }
 
   getMutexOfApp(appName: string) {
     if (!this.appMutexes[appName]) {
       this.appMutexes[appName] = new Mutex();
     }
-
     return this.appMutexes[appName];
   }
 
   private async _bootStrapApp(appName: string, options = {}) {
     await this.setAppStatus(appName, 'initializing');
 
-    if (this.appBootstrapper) {
-      await this.appBootstrapper({
-        appSupervisor: this.supervisor,
-        appName,
-        options,
-      });
+    const bootstrapper = this.supervisor.getAppBootstrapper?.();
+    if (bootstrapper) {
+      await bootstrapper({ appSupervisor: this.supervisor, appName, options });
     }
 
     if (!this.hasApp(appName)) {
       await this.setAppStatus(appName, 'not_found');
-    } else {
-      const appStatus = await this.getAppStatus(appName);
-      if (!appStatus || appStatus === 'initializing') {
-        await this.setAppStatus(appName, 'initialized');
-      }
+      return;
+    }
+
+    const appStatus = await this.getAppStatus(appName);
+    if (!appStatus || appStatus === 'initializing') {
+      await this.setAppStatus(appName, 'initialized');
     }
   }
 
@@ -117,22 +86,21 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
     const mutex = this.getMutexOfApp(appName);
     try {
       await tryAcquire(mutex).runExclusive(async () => {
-        const appStatus = await this.getAppStatus(appName);
-        if (this.hasApp(appName) && appStatus !== 'preparing') {
+        const status = await this.getAppStatus(appName);
+        if (this.hasApp(appName) && status !== 'preparing') {
           return;
         }
         if (appName === 'main') {
           return this._bootStrapApp(appName, options);
         }
-        this.setAppStatus(appName, 'preparing');
+        void this.setAppStatus(appName, 'preparing');
         await this.bootstrapQueue.add(async () => {
           await this._bootStrapApp(appName, options);
         });
       });
     } catch (e) {
-      console.log(e);
-      if (e === E_ALREADY_LOCKED) {
-        return;
+      if (e !== E_ALREADY_LOCKED) {
+        console.error(e);
       }
     }
   }
@@ -153,7 +121,6 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
     if (!this.hasApp(appName)) {
       return;
     }
-
     this.lastSeenAt.set(appName, Math.floor(Date.now() / 1000));
   }
 
@@ -161,29 +128,12 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
     if (this.apps[app.name]) {
       throw new Error(`app ${app.name} already exists`);
     }
-
-    app.logger.info(`add app ${app.name} into supervisor`, { submodule: 'legacy-memory-adapter', method: 'addApp' });
-
     this.bindAppEvents(app);
-
     this.apps[app.name] = app;
-
     this.supervisor.emit('afterAppAdded', app);
-
-    this.getAppStatus(app.name)
-      .catch((err) => {
-        app.log.error(err, { submodule: 'legacy-memory-adapter', method: 'addApp' });
-        return undefined;
-      })
-      .then((status) => {
-        if (!status || status === 'not_found') {
-          return this.setAppStatus(app.name, 'preparing');
-        }
-      })
-      .catch((err) => {
-        app.log.error(err, { submodule: 'legacy-memory-adapter', method: 'addApp' });
-      });
-
+    if (!this.appStatus[app.name] || this.appStatus[app.name] === 'not_found') {
+      void this.setAppStatus(app.name, 'preparing');
+    }
     return app;
   }
 
@@ -191,42 +141,38 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
     return Object.values(this.apps).map((app) => app.name);
   }
 
-  async startApp(appName: string) {
-    const appInstance = await this.getApp(appName);
-    await appInstance?.runCommand('start', '--quickstart');
-  }
-
-  async stopApp(appName: string) {
-    if (!this.apps[appName]) {
-      console.log(`app ${appName} not exists`);
-      return;
-    }
-
-    await this.apps[appName].runCommand('stop');
-    this.apps[appName] = null;
-  }
-
-  async removeApp(appName: string) {
-    if (!this.apps[appName]) {
-      console.log(`app ${appName} not exists`);
-      return;
-    }
-
-    await this.apps[appName].runCommand('destroy');
-    this.apps[appName] = null;
-  }
-
   subApps() {
     return Object.values(this.apps).filter((app) => app && app.name !== 'main');
   }
 
+  async startApp(appName: string) {
+    const appInstance = await this.getApp(appName, { withOutBootStrap: true });
+    await appInstance?.runCommand('start', '--quickstart');
+  }
+
+  async stopApp(appName: string) {
+    const app = this.apps[appName];
+    if (!app) {
+      return;
+    }
+    await app.runCommand('stop');
+    this.apps[appName] = null;
+  }
+
+  async removeApp(appName: string) {
+    const app = this.apps[appName];
+    if (!app) {
+      return;
+    }
+    await app.runCommand('destroy');
+    this.apps[appName] = null;
+  }
+
   async getAppStatus(appName: string, defaultStatus?: AppStatus) {
     const status = this.appStatus[appName];
-
     if (status === undefined && defaultStatus !== undefined) {
       return defaultStatus;
     }
-
     return status ?? null;
   }
 
@@ -244,15 +190,11 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
       if (this.lastMaintainingMessage[app.name] === message) {
         return;
       }
-
       this.lastMaintainingMessage[app.name] = message;
-
       const appStatus = await this.getAppStatus(app.name);
-
       if (!maintainingStatus && appStatus !== 'running') {
         return;
       }
-
       this.supervisor.emit('appMaintainingMessageChanged', {
         appName: app.name,
         message,
@@ -263,7 +205,6 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
 
     app.on('__started', async (_app, options) => {
       const { maintainingStatus, options: startOptions } = options;
-
       if (
         maintainingStatus &&
         [
@@ -279,25 +220,22 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
         ].includes(maintainingStatus.command.name) &&
         !startOptions.recover
       ) {
-        this.setAppStatus(app.name, 'running', {
-          refresh: true,
-        });
+        void this.setAppStatus(app.name, 'running', { refresh: true });
       } else {
-        this.setAppStatus(app.name, 'running');
+        void this.setAppStatus(app.name, 'running');
       }
     });
 
     app.on('__stopped', async () => {
-      this.setAppStatus(app.name, 'stopped');
+      await this.setAppStatus(app.name, 'stopped');
     });
 
     app.on('maintaining', async (maintainingStatus: MaintainingCommandStatus) => {
-      const { status, command } = maintainingStatus;
-
+      const { status } = maintainingStatus;
       switch (status) {
         case 'command_begin':
           this.statusBeforeCommanding[app.name] = await this.getAppStatus(app.name);
-          this.setAppStatus(app.name, 'commanding');
+          await this.setAppStatus(app.name, 'commanding');
           break;
         case 'command_running':
           break;
@@ -305,30 +243,26 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
           {
             const appStatus = await this.getAppStatus(app.name);
             this.supervisor.emit('appMaintainingStatusChanged', maintainingStatus);
-
             if (appStatus == 'commanding') {
-              this.setAppStatus(app.name, this.statusBeforeCommanding[app.name]);
+              await this.setAppStatus(app.name, this.statusBeforeCommanding[app.name]);
             }
           }
           break;
         case 'command_error':
           {
             const errorLevel = getErrorLevel(maintainingStatus.error);
-
             if (errorLevel === 'fatal') {
               this.setAppError(app.name, maintainingStatus.error);
-              this.setAppStatus(app.name, 'error');
+              await this.setAppStatus(app.name, 'error');
               break;
             }
-
             if (errorLevel === 'warn') {
               this.supervisor.emit('appError', {
                 appName: app.name,
                 error: maintainingStatus.error,
               });
             }
-
-            this.setAppStatus(app.name, this.statusBeforeCommanding[app.name]);
+            await this.setAppStatus(app.name, this.statusBeforeCommanding[app.name]);
           }
           break;
       }

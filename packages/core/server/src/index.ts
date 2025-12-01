@@ -34,3 +34,5 @@ export {
 } from './plugin-manager/findPackageNames';
 
 export { runPluginStaticImports } from './run-plugin-static-imports';
+
+export { getErrorLevel } from './errors/handler';

@@ -10,7 +10,6 @@
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
 import Application, { ApplicationOptions } from '../application';
-import { LegacyMemoryAdapter } from './legacy-memory-adapter';
 import type {
   AppBootstrapper,
   AppDiscoveryAdapter,
@@ -19,6 +18,9 @@ import type {
   EnvironmentInfo,
   GetAppOptions,
   ProcessCommand,
+  AppDbCreator,
+  AppOptionsFactory,
+  SubAppUpgradeHandler,
 } from './types';
 
 export type AppDiscoveryAdapterFactory = (context: { supervisor: AppSupervisor }) => AppDiscoveryAdapter;
@@ -29,8 +31,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private static instance: AppSupervisor;
   private static discoveryAdapterFactories: Map<string, AppDiscoveryAdapterFactory> = new Map();
   private static processAdapterFactories: Map<string, AppProcessAdapterFactory> = new Map();
-  private static defaultDiscoveryAdapterName = 'legacy-memory';
-  private static defaultProcessAdapterName = 'legacy-memory';
+  private static defaultDiscoveryAdapterName: string | null = null;
+  private static defaultProcessAdapterName: string | null = null;
 
   public runningMode: 'single' | 'multiple' = 'multiple';
   public singleAppName: string | null = null;
@@ -41,6 +43,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private processAdapter: AppProcessAdapter;
   private discoveryAdapterName: string;
   private processAdapterName: string;
+  private appBootstrapper: AppBootstrapper = async () => {};
+  private appDbCreator: AppDbCreator = async () => {};
+  private appOptionsFactory: AppOptionsFactory = () => ({}) as any;
+  private subAppUpgradeHandler: SubAppUpgradeHandler = async () => {};
 
   private constructor() {
     super();
@@ -57,27 +63,27 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   private resolveDiscoveryAdapterName() {
-    return (
-      process.env.APP_DISCOVER_ADAPTER || process.env.APP_DISCOVERY_ADAPTER || AppSupervisor.defaultDiscoveryAdapterName
-    );
+    return process.env.APP_DISCOVERY_ADAPTER || AppSupervisor.defaultDiscoveryAdapterName;
   }
 
   private resolveProcessAdapterName() {
-    return (
-      process.env.APP_PROCESS_ADAPTER || process.env.APP_PROCESS_ADPATER || AppSupervisor.defaultProcessAdapterName
-    );
+    return process.env.APP_PROCESS_ADPATER || AppSupervisor.defaultProcessAdapterName;
   }
 
   private createDiscoveryAdapter(): AppDiscoveryAdapter {
     const adapterName = this.discoveryAdapterName;
-    let factory = AppSupervisor.discoveryAdapterFactories.get(adapterName);
+    let factory = adapterName ? AppSupervisor.discoveryAdapterFactories.get(adapterName) : null;
 
-    if (!factory && adapterName !== AppSupervisor.defaultDiscoveryAdapterName) {
+    if (
+      !factory &&
+      AppSupervisor.defaultDiscoveryAdapterName &&
+      adapterName !== AppSupervisor.defaultDiscoveryAdapterName
+    ) {
       factory = AppSupervisor.discoveryAdapterFactories.get(AppSupervisor.defaultDiscoveryAdapterName);
     }
 
     if (!factory) {
-      throw new Error(`No AppDiscovery adapter available for ${adapterName}`);
+      throw new Error('No AppDiscovery adapter available');
     }
 
     return factory({ supervisor: this });
@@ -94,18 +100,26 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   private createProcessAdapter(): AppProcessAdapter {
     const adapterName = this.processAdapterName;
-    if (adapterName === this.discoveryAdapterName && this.isProcessCapableAdapter(this.discoveryAdapter)) {
+    if (
+      adapterName &&
+      adapterName === this.discoveryAdapterName &&
+      this.isProcessCapableAdapter(this.discoveryAdapter)
+    ) {
       return this.discoveryAdapter;
     }
 
-    let factory = AppSupervisor.processAdapterFactories.get(adapterName);
+    let factory = adapterName ? AppSupervisor.processAdapterFactories.get(adapterName) : null;
 
-    if (!factory && adapterName !== AppSupervisor.defaultProcessAdapterName) {
+    if (
+      !factory &&
+      AppSupervisor.defaultProcessAdapterName &&
+      adapterName !== AppSupervisor.defaultProcessAdapterName
+    ) {
       factory = AppSupervisor.processAdapterFactories.get(AppSupervisor.defaultProcessAdapterName);
     }
 
     if (!factory) {
-      throw new Error(`No AppProcess adapter available for ${adapterName}`);
+      throw new Error('No AppProcess adapter available');
     }
 
     return factory({ supervisor: this });
@@ -173,8 +187,44 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.processAdapter.statusBeforeCommanding ?? Object.create(null);
   }
 
+  getProcessAdapter() {
+    return this.processAdapter;
+  }
+
+  getDiscoveryAdapter() {
+    return this.discoveryAdapter;
+  }
+
+  setAppDbCreator(creator: AppDbCreator) {
+    this.appDbCreator = creator ?? (async () => {});
+  }
+
+  getAppDbCreator() {
+    return this.appDbCreator;
+  }
+
+  setAppOptionsFactory(factory: AppOptionsFactory) {
+    this.appOptionsFactory = factory ?? (() => ({}));
+  }
+
+  getAppOptionsFactory() {
+    return this.appOptionsFactory;
+  }
+
+  setSubAppUpgradeHandler(handler: SubAppUpgradeHandler) {
+    this.subAppUpgradeHandler = handler ?? (async () => {});
+  }
+
+  getSubAppUpgradeHandler() {
+    return this.subAppUpgradeHandler;
+  }
+
   setAppBootstrapper(appBootstrapper: AppBootstrapper) {
-    this.processAdapter.setAppBootstrapper(appBootstrapper);
+    this.appBootstrapper = appBootstrapper ?? (async () => {});
+  }
+
+  getAppBootstrapper() {
+    return this.appBootstrapper;
   }
 
   setAppError(appName: string, error: Error) {
@@ -330,9 +380,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
 applyMixins(AppSupervisor, [AsyncEmitter]);
 
-AppSupervisor.registerDiscoveryAdapter('legacy-memory', ({ supervisor }) => new LegacyMemoryAdapter(supervisor));
-AppSupervisor.registerProcessAdapter('legacy-memory', ({ supervisor }) => new LegacyMemoryAdapter(supervisor));
-
 export type {
   AppBootstrapper,
   AppDiscoveryAdapter,
@@ -341,4 +388,7 @@ export type {
   ProcessCommand,
   EnvironmentInfo,
   GetAppOptions,
+  AppDbCreator,
+  AppOptionsFactory,
+  SubAppUpgradeHandler,
 } from './types';
