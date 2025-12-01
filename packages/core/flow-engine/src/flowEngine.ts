@@ -31,6 +31,7 @@ import type {
   PersistOptions,
   ResourceType,
   RegisteredModelClassName,
+  ResolveUseResult,
 } from './types';
 import { isInheritedFrom } from './utils';
 
@@ -459,9 +460,11 @@ export class FlowEngine {
     extra?: { delegateToParent?: boolean; delegate?: FlowContext },
   ): T {
     const { parentId, uid, use: modelClassName, subModels } = options;
+    const parentModel = parentId ? (this._modelInstances.get(parentId) as FlowModel | undefined) : undefined;
     const ModelClass = this._resolveModelClass(
       typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName,
       options,
+      parentModel,
     );
 
     if (uid && this._modelInstances.has(uid)) {
@@ -516,7 +519,18 @@ export class FlowEngine {
   private _resolveModelClass(
     initial: ModelConstructor | undefined,
     options: CreateModelOptions,
+    parent?: FlowModel,
   ): ModelConstructor | undefined {
+    const normalize = (
+      resolved: ResolveUseResult | void,
+    ): { target?: RegisteredModelClassName | ModelConstructor; stop?: boolean } => {
+      if (!resolved) return {};
+      if (typeof resolved === 'object' && 'use' in resolved) {
+        return { target: resolved.use, stop: !!resolved.stop };
+      }
+      return { target: resolved as any, stop: false };
+    };
+
     let current = initial;
     const visited = new Set<ModelConstructor>();
 
@@ -528,29 +542,32 @@ export class FlowEngine {
       visited.add(current);
 
       const resolver = (current as any)?.resolveUse as
-        | ((opts: CreateModelOptions, engine: FlowEngine) => RegisteredModelClassName | ModelConstructor | void)
+        | ((opts: CreateModelOptions, engine: FlowEngine, parent?: FlowModel) => ResolveUseResult | void)
         | undefined;
       if (typeof resolver !== 'function') {
         break;
       }
 
-      const resolved = resolver(options, this);
-      if (!resolved || resolved === current) {
+      const { target, stop } = normalize(resolver(options, this, parent));
+      if (!target || target === current) {
         break;
       }
 
       let next: ModelConstructor | undefined;
-      if (typeof resolved === 'string') {
-        next = this.getModelClass(resolved);
+      if (typeof target === 'string') {
+        next = this.getModelClass(target);
         if (!next) {
-          console.warn(`FlowEngine: resolveUse returned '${resolved}' but no model is registered under that name.`);
+          console.warn(`FlowEngine: resolveUse returned '${target}' but no model is registered under that name.`);
           return undefined;
         }
       } else {
-        next = resolved;
+        next = target;
       }
 
       current = next;
+      if (stop) {
+        break;
+      }
     }
 
     return current;
