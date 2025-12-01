@@ -63,8 +63,10 @@ export default class MyStoragePluginServer extends Plugin {
 
 注册完成后，存储配置会和内置类型一样出现在 `storages` 资源中，`StorageType.defaults()` 提供的配置可用于自动填充表单或初始化默认记录。
 
+<!--
 ### 客户端配置与管理界面
 客户端侧需要告知文件管理器如何渲染配置表单以及是否拥有定制上传逻辑。每个存储类型对象包含以下属性：
+-->
 
 ## 扩展前端文件类型
 

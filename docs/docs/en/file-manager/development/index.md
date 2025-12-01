@@ -63,8 +63,10 @@ export default class MyStoragePluginServer extends Plugin {
 
 After registration, the storage configuration will appear in the `storages` resource, just like the built-in types. The configuration provided by `StorageType.defaults()` can be used to auto-fill forms or initialize default records.
 
+<!--
 ### Client-side Configuration and Management Interface
 On the client-side, you need to inform the file manager how to render the configuration form and whether there is custom upload logic. Each storage type object contains the following properties:
+-->
 
 ## Extending Frontend File Types
 

@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { vi } from 'vitest';
 import { createMockServer, MockServer } from '@nocobase/test';
 import { variables, inferSelectsFromUsage } from '../variables/registry';
 import { resetVariablesRegistryForTest } from './test-utils';
@@ -905,5 +906,46 @@ describe('plugin-flow-engine variables:resolve (no HTTP)', () => {
       expect(r2.generatedFields).toBeUndefined();
       expect(r2.generatedAppends).toBeUndefined();
     });
+  });
+
+  it('prefers association repository when associationName + sourceId are provided', async () => {
+    const roleRepo = app.db.getRepository('roles');
+    const roleName = 'assoc_fallback_role';
+    const role = await roleRepo.create({
+      values: {
+        name: roleName,
+        title: 'Assoc Role',
+        allowConfigure: true,
+      },
+    });
+
+    const userRolesRepo: any = app.db.getRepository('users.roles', 1);
+    try {
+      await userRolesRepo.add(roleName);
+    } catch (_) {
+      // ignore duplicate
+    }
+
+    const repoSpy = vi.spyOn(app.db as any, 'getRepository');
+
+    const payload = {
+      template: {
+        rid: '{{ ctx.popup.record.name }}',
+      },
+      contextParams: {
+        'popup.record': {
+          collection: 'roles',
+          dataSourceKey: 'main',
+          associationName: 'users.roles',
+          sourceId: 1,
+          filterByTk: role.get('name'),
+        },
+      },
+    };
+
+    const res = await execResolve(payload, 1);
+    const data = res.body?.data ?? res.body;
+    expect(data?.rid).toBe(roleName);
+    expect(repoSpy).toHaveBeenCalledWith('users.roles', 1);
   });
 });

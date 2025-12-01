@@ -68,6 +68,7 @@ describe('createViewMeta - popup variables', () => {
           ? {
               collectionName: 'posts',
               dataSourceKey: 'main',
+              associationName: 'users.posts',
             }
           : undefined,
       ),
@@ -92,7 +93,13 @@ describe('createViewMeta - popup variables', () => {
     // record 应来自锚定视图的 openView 配置
     const vars = (await meta.buildVariablesParams!(ctx)) as any;
     expect(vars).toBeTruthy();
-    expect(vars.record).toEqual({ collection: 'posts', dataSourceKey: 'main', filterByTk: 111 });
+    expect(vars.record).toEqual({
+      collection: 'posts',
+      dataSourceKey: 'main',
+      filterByTk: 111,
+      associationName: 'users.posts',
+      sourceId: 42,
+    });
 
     // 确认没有误用 ctx.view（settings-uid）的集合
     expect(vars.record.collection).not.toBe('comments');

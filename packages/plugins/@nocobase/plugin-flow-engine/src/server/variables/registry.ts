@@ -184,6 +184,8 @@ async function fetchRecordWithRequestCache(
   fields?: string[],
   appends?: string[],
   preferFullRecord?: boolean,
+  associationName?: string,
+  sourceId?: unknown,
 ): Promise<unknown> {
   try {
     const log = koaCtx.app?.logger?.child({
@@ -201,7 +203,10 @@ async function fetchRecordWithRequestCache(
     const ds = koaCtx.app.dataSourceManager.get(dataSourceKey || 'main');
     const cm = ds.collectionManager as SequelizeCollectionManager;
     if (!cm?.db) return undefined;
-    const repo = cm.db.getRepository(collection);
+    const repo =
+      associationName && typeof sourceId !== 'undefined'
+        ? cm.db.getRepository(associationName, sourceId as TargetKey)
+        : cm.db.getRepository(collection);
 
     // 确保查询字段包含主键（仅当模型存在明确主键且该属性存在于 rawAttributes 中时）
     const modelInfo = (
@@ -222,13 +227,24 @@ async function fetchRecordWithRequestCache(
     const cacheKeyFields =
       preferFullRecord && pkIsValid ? undefined : Array.isArray(fieldsWithPk) ? [...fieldsWithPk].sort() : undefined;
     const cacheKeyAppends = preferFullRecord ? undefined : Array.isArray(appends) ? [...appends].sort() : undefined;
-    const keyObj: { ds: string; c: string; tk: unknown; f?: string[]; a?: string[]; full?: boolean } = {
+    const keyObj: {
+      ds: string;
+      c: string;
+      tk: unknown;
+      f?: string[];
+      a?: string[];
+      full?: boolean;
+      assoc?: string;
+      sid?: unknown;
+    } = {
       ds: dataSourceKey || 'main',
       c: collection,
       tk: filterByTk,
       f: cacheKeyFields,
       a: cacheKeyAppends,
       full: preferFullRecord ? true : undefined,
+      assoc: associationName,
+      sid: typeof sourceId === 'undefined' ? undefined : sourceId,
     };
     const key = JSON.stringify(keyObj);
     if (cache) {
@@ -249,8 +265,18 @@ async function fetchRecordWithRequestCache(
           f?: string[];
           a?: string[];
           full?: boolean;
+          assoc?: string;
+          sid?: unknown;
         };
-        if (!parsed || parsed.ds !== keyObj.ds || parsed.c !== keyObj.c || parsed.tk !== keyObj.tk) continue;
+        if (
+          !parsed ||
+          parsed.ds !== keyObj.ds ||
+          parsed.c !== keyObj.c ||
+          parsed.tk !== keyObj.tk ||
+          parsed.assoc !== keyObj.assoc ||
+          parsed.sid !== keyObj.sid
+        )
+          continue;
         const cachedFields = new Set(parsed.f || []);
         const cachedAppends = new Set(parsed.a || []);
 
@@ -311,7 +337,13 @@ async function fetchRecordWithRequestCache(
   }
 }
 
-function isRecordParams(val: unknown): val is { collection: string; filterByTk: unknown; dataSourceKey?: string } {
+function isRecordParams(val: unknown): val is {
+  collection: string;
+  filterByTk: unknown;
+  dataSourceKey?: string;
+  associationName?: string;
+  sourceId?: unknown;
+} {
   return val && typeof val === 'object' && 'collection' in val && 'filterByTk' in val;
 }
 
@@ -357,6 +389,8 @@ function attachGenericRecordVariables(
             fixed.fields,
             fixed.appends,
             hasDirectRefTop,
+            topParams.associationName,
+            topParams.sourceId,
           );
         },
         cache: true,
@@ -434,7 +468,13 @@ function attachGenericRecordVariables(
         const defineRecordGetter = (
           container: ServerBaseContext,
           key: string,
-          recordParams: { collection: string; filterByTk: unknown; dataSourceKey?: string },
+          recordParams: {
+            collection: string;
+            filterByTk: unknown;
+            dataSourceKey?: string;
+            associationName?: string;
+            sourceId?: unknown;
+          },
           subPaths: string[] = [],
           preferFull?: boolean,
         ) => {
@@ -457,6 +497,8 @@ function attachGenericRecordVariables(
                 fixed.fields,
                 fixed.appends,
                 preferFull || (subPaths?.length ?? 0) === 0,
+                recordParams.associationName,
+                recordParams.sourceId,
               );
             },
             cache: true,
@@ -558,7 +600,17 @@ function registerBuiltInVariables(reg: VariableRegistry) {
           const authObj = (koaCtx as ResourcerContext & { auth?: { user?: { id?: unknown } } }).auth;
           const uid = authObj?.user?.id;
           if (typeof uid === 'undefined' || uid === null) return undefined;
-          return await fetchRecordWithRequestCache(koaCtx, 'main', 'users', uid, generatedFields, generatedAppends);
+          return await fetchRecordWithRequestCache(
+            koaCtx,
+            'main',
+            'users',
+            uid,
+            generatedFields,
+            generatedAppends,
+            undefined,
+            undefined,
+            undefined,
+          );
         },
         cache: true,
       });
