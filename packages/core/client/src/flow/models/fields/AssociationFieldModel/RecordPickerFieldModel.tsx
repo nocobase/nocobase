@@ -24,7 +24,7 @@ import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { FieldModel } from '../../base';
 import { LabelByField } from './recordSelectShared';
 
-function RemoteModelRenderer({ options }) {
+function RemoteModelRenderer({ options, fieldModel }) {
   const ctx = useFlowViewContext();
   const { data, loading } = useRequest(
     async () => {
@@ -35,9 +35,21 @@ function RemoteModelRenderer({ options }) {
       refreshDeps: [ctx, options],
     },
   );
+  useEffect(() => {
+    if (!data) {
+      return;
+    }
+    const subModel = data.findSubModel('items', (m) => {
+      return m;
+    });
+    fieldModel.context.defineProperty('selectBlockModel', {
+      value: subModel,
+    });
+  }, [data]);
   if (loading || !data?.uid) {
     return <SkeletonFallback style={{ margin: 16 }} />;
   }
+
   return <FlowModelRenderer model={data} fallback={<SkeletonFallback style={{ margin: 16 }} />} />;
 }
 
@@ -73,6 +85,7 @@ export function RecordPickerContent({ model, toOne = false }) {
           subType: 'object',
           use: 'BlockGridModel',
         }}
+        fieldModel={model}
       />
       {!toOne && (
         <Footer>
@@ -256,14 +269,16 @@ RecordPickerFieldModel.registerFlow({
               renderCell: undefined,
               selectedRowKeys: undefined,
               onChange: (_, selectedRows) => {
+                const selectBlockModel = ctx.model.context.selectBlockModel;
                 if (toOne) {
                   // 单选
                   ctx.model.selectedRows.value = selectedRows?.[0];
                   onChange(ctx.model.selectedRows.value);
                   ctx.model._closeView?.();
                 } else {
+                  selectBlockModel.resource.setSelectedRows(selectedRows);
                   // 多选：追加
-                  const prev = ctx.model.selectedRows.value || [];
+                  const prev = ctx.model.props.value || [];
                   const merged = [...prev, ...selectedRows];
 
                   // 去重，防止同一个值重复
