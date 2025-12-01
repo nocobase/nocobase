@@ -12,7 +12,7 @@ import * as https from 'https';
 import axios from 'axios';
 import { KeyData } from './interface';
 
-function getNocoBasePkgUrl() {
+export function getNocoBasePkgUrl() {
   return process.env?.NOCOBASE_PKG_URL || 'https://pkg.nocobase.com/';
 }
 

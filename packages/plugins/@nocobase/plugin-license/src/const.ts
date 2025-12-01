@@ -12,5 +12,5 @@ export const enum LICENSE_TIPS {
   ENV_NOT_MATCH = 'The licensed environment does not match the current environment. Please go to NocoBase Service to obtain a new license key.',
   DOMAIN_NOT_MATCH = 'The licensed domain does not match the current domain {{domain}}. Please go to NocoBase Service to obtain a new license key.',
   PKG_CONNECTION_ERROR = 'The current environment cannot connect to NocoBase Service, only manual installation of commercial plugins is supported.',
-  PKG_LOGIN_ERROR = 'The current environment cannot log in to NocoBase Service, only manual installation of commercial plugins is supported.',
+  PKG_LOGIN_ERROR = 'The current key cannot log in to NocoBase Service, only manual installation of commercial plugins is supported.',
 }

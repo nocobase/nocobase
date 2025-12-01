@@ -13,6 +13,6 @@
   "The licensed environment does not match the current environment. Please go to NocoBase Service to obtain a new license key.": "The licensed environment does not match the current environment. Please go to NocoBase Service to obtain a new license key.",
   "The licensed domain does not match the current domain {{domain}}. Please go to NocoBase Service to obtain a new license key.": "The licensed domain does not match the current domain {{domain}}. Please go to NocoBase Service to obtain a new license key.",
   "The current environment cannot connect to NocoBase Service, only manual installation of commercial plugins is supported.": "The current environment cannot connect to NocoBase Service, only manual installation of commercial plugins is supported.",
-  "The current environment cannot log in to NocoBase Service, only manual installation of commercial plugins is supported.": "The current environment cannot log in to NocoBase Service, only manual installation of commercial plugins is supported.",
+  "The current key cannot log in to NocoBase Service, only manual installation of commercial plugins is supported.": "The current key cannot log in to NocoBase Service, only manual installation of commercial plugins is supported.",
   "The license key was saved successfully": "The license key was saved successfully"
 }

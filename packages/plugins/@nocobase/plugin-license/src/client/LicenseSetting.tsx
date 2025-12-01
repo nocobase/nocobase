@@ -117,11 +117,13 @@ const useSubmitProps = () => {
       setLoading(false);
       const licenseValidateResult: LicenseValidateResult = res?.data?.data || {};
       if (licenseValidateResult.isPkgConnection === false) {
-        message.warning(t('The license key was saved successfully') + '\n' + t(LICENSE_TIPS.PKG_CONNECTION_ERROR), 10);
+        message.success(t('The license key was saved successfully'), 5);
+        message.warning(t(LICENSE_TIPS.PKG_CONNECTION_ERROR), 5);
         return;
       }
       if (licenseValidateResult.isPkgLogin === false) {
-        message.warning(t('The license key was saved successfully') + '\n' + t(LICENSE_TIPS.PKG_LOGIN_ERROR), 10);
+        message.success(t('The license key was saved successfully'), 5);
+        message.warning(t(LICENSE_TIPS.PKG_LOGIN_ERROR), 5);
         return;
       }
       message.success(

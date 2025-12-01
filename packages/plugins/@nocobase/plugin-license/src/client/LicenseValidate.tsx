@@ -28,6 +28,7 @@ export const LicenseValidate = () => {
     };
     isPkgConnection: boolean;
     isPkgLogin: boolean;
+    pkgUrl: string;
   }>(null);
 
   const { i18n } = useTranslation();
@@ -52,7 +53,6 @@ export const LicenseValidate = () => {
     // message.success('授权key保存成功，如需安装商业插件，请重启NocoBase服务', 10);
   }, []);
 
-  console.log('state', state);
   if (state?.envMatch === false) {
     return (
       <Alert
@@ -145,8 +145,10 @@ export const LicenseValidate = () => {
         description={
           <>
             {t(
-              'The current environment cannot log in to NocoBase Service, only manual installation of commercial plugins is supported.',
+              'The current key cannot log in to NocoBase Service, only manual installation of commercial plugins is supported.',
             )}
+            <br />
+            NocoBase pkg url: {state?.pkgUrl}
             <br />
             {t('You can view operation guidelines: ')}
             <a href="https://docs-cn.nocobase.com/welcome/getting-started/plugin" target="_blank" rel="noreferrer">
