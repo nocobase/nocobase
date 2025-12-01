@@ -10,6 +10,7 @@
   "dependencies": {
     "@nocobase/app": "1.9.11",
     "@nocobase/license-kit": "^0.3.0",
+    "@nocobase/logger": "1.9.11",
     "@types/fs-extra": "^11.0.1",
     "@umijs/utils": "3.5.20",
     "chalk": "^4.1.1",
