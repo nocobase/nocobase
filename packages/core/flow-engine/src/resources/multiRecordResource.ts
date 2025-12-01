@@ -135,7 +135,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   async update(filterByTk: string | number, data: Partial<TDataItem>, options?: AxiosRequestConfig): Promise<void> {
     const collection = this.context.collection;
     const filterTargetKey = collection?.filterTargetKey;
-    const tkData = collection?.getFilterByTK(this.context.record);
+    const tkData = this.context.record && collection?.getFilterByTK(this.context.record);
     let result = data;
 
     // 安全处理 filterTargetKey & tkData
