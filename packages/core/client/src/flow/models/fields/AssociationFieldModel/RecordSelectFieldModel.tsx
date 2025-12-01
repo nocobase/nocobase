@@ -17,7 +17,7 @@ import {
   useFlowContext,
   FlowModel,
 } from '@nocobase/flow-engine';
-import { Select, Space, Button, Divider } from 'antd';
+import { Select, Space, Button, Divider, Tooltip, Tag } from 'antd';
 import { css } from '@emotion/css';
 import { debounce } from 'lodash';
 import { useRequest } from 'ahooks';
@@ -107,6 +107,49 @@ export function LazySelect(props: Readonly<LazySelectProps>) {
         allowClear
         showSearch
         maxTagCount="responsive"
+        maxTagPlaceholder={(omittedValues) => (
+          <Tooltip
+            title={
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 6,
+                  maxWidth: '100%',
+                }}
+              >
+                {omittedValues.map((item) => (
+                  <Tag
+                    key={item.value}
+                    style={{
+                      margin: 0,
+                      background: '#fafafa',
+                      border: '1px solid #d9d9d9',
+                      whiteSpace: 'normal',
+                      wordBreak: 'break-word',
+                      maxWidth: '100%',
+                    }}
+                  >
+                    {item.label}
+                  </Tag>
+                ))}
+              </div>
+            }
+            overlayInnerStyle={{
+              background: '#fff',
+              color: '#000',
+              padding: 8,
+              maxWidth: '100%',
+            }}
+            color="#fff"
+            overlayStyle={{
+              pointerEvents: 'auto',
+              maxWidth: 300,
+            }}
+          >
+            +{omittedValues.length}...
+          </Tooltip>
+        )}
         filterOption={false}
         labelInValue
         //@ts-ignore
