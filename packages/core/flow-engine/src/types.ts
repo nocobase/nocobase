@@ -312,6 +312,18 @@ export type ParamObject = {
 export type RegisteredModelClassName = string;
 
 /**
+ * resolveUse 返回类型：可返回目标 use，或 { use, stop } 包含中断标志。
+ */
+export type ResolveUseResult =
+  | RegisteredModelClassName
+  | ModelConstructor
+  | {
+      use: RegisteredModelClassName | ModelConstructor;
+      /** 标记是否终止后续 resolveUse 链；默认 false（继续解析） */
+      stop?: boolean;
+    };
+
+/**
  * Options for creating a model instance
  */
 export interface CreateModelOptions {

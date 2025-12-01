@@ -454,3 +454,13 @@ yarn cross-env \
   INIT_ROOT_NICKNAME="Super Admin" \
   nocobase install
 ```
+
+## Other Plugin-Provided Environment Variables
+
+### WORKFLOW_SCRIPT_MODULES
+
+Workflow JavaScript node available modules list. For details, see "[JavaScript Node: Using External Modules](/workflow/nodes/javascript#using-external-modules)".
+
+### WORKFLOW_LOOP_LIMIT
+
+Maximum loop count limit for workflow loop nodes. For details, see "[Loop Node](/workflow/nodes/loop#WORKFLOW_LOOP_LIMIT)".
