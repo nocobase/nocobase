@@ -2,7 +2,6 @@
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-```
 pkg: "@nocobase/plugin-data-source-external-postgres"
 ```
 

@@ -6,7 +6,6 @@ pkg: "@nocobase/plugin-file-manager"
 :::
 
 
-```
 
 # 첨부 파일 필드
 

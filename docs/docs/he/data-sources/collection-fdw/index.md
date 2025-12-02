@@ -5,7 +5,6 @@ pkg: "@nocobase/plugin-collection-fdw"
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-```
 
 # חיבור טבלאות נתונים חיצוניות (FDW)
 

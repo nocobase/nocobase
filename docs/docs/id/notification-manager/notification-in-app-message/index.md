@@ -5,7 +5,6 @@ pkg: '@nocobase/plugin-notification-in-app-message'
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-```
 
 # Notifikasi: Pesan Dalam Aplikasi
 

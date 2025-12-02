@@ -39,7 +39,6 @@ Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
 
-```
 
 # Porównanie metod instalacji i wersji
 

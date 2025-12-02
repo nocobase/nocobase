@@ -6,7 +6,6 @@ title: CacheManager
 :::
 
 
-```
 
 # CacheManager
 
