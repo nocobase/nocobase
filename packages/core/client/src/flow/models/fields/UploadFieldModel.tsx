@@ -97,28 +97,27 @@ export const CardUpload = (props) => {
       }
     >
       <div style={{ display: 'flex' }}>
-        {quickUpload && (
-          <Upload
-            onPreview={handlePreview}
-            {...props}
-            listType="picture-card"
-            fileList={fileList}
-            onChange={(newFileList) => {
-              setFileList(newFileList);
-              const doneFiles = newFileList.filter((f: any) => f.status === 'done' || f.id);
-              if (newFileList.every((f: any) => f.status === 'done' || f.id)) {
-                if (props.maxCount === 1) {
-                  const firstFile = doneFiles[0];
-                  props.onChange(firstFile ? firstFile.response : null);
-                } else {
-                  props.onChange(doneFiles.map((file) => file.response || file).filter(Boolean));
-                }
+        <Upload
+          onPreview={handlePreview}
+          {...props}
+          listType="picture-card"
+          fileList={fileList}
+          onChange={(newFileList) => {
+            setFileList(newFileList);
+            const doneFiles = newFileList.filter((f: any) => f.status === 'done' || f.id);
+            if (newFileList.every((f: any) => f.status === 'done' || f.id)) {
+              if (props.maxCount === 1) {
+                const firstFile = doneFiles[0];
+                props.onChange(firstFile ? firstFile.response : null);
+              } else {
+                props.onChange(doneFiles.map((file) => file.response || file).filter(Boolean));
               }
-            }}
-          >
-            <UploadOutlined style={{ fontSize: 20 }} />
-          </Upload>
-        )}
+            }
+          }}
+        >
+          {quickUpload && <UploadOutlined style={{ fontSize: 20 }} />}
+        </Upload>
+
         {previewImage && (
           <Image
             wrapperStyle={{ display: 'none' }}
