@@ -18,14 +18,46 @@ pkg: "@nocobase/plugin-email-manager"
 
 ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_37_PM.png)
 
-### 数据筛选配置
+### 基于邮箱地址进行数据筛选
 
-点击表格右侧的配置，选择 **数据范围**，可以设置筛选邮件的数据范围。  
+点击邮件消息区块右侧的配置，选择 **数据范围**，设置筛选邮件的数据范围。  
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_39_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_32_PM.png)
 
-可通过变量筛选相同后缀的邮件：  
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_41_PM.png)
+配置邮箱地址字段，点击 **确定** 保存。
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_26_PM.png)
+
+邮件消息区块数据将显示符合条件的邮件
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_29_PM.png)
+
+> 基于邮箱地址的筛选会忽略大小写
+
+### 基于邮箱后缀进行数据筛选
+
+在业务表中创建用于存储邮箱后缀的字段，用于后续筛选邮件消息
+
+![](https://static-docs.nocobase.com/email-manager/data-source-manager-main-NocoBase-12-02-2025_04_36_PM.png)
+
+维护和管理邮箱后缀信息
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_38_PM.png)
+
+点击邮件消息区块右侧的配置，选择 **数据范围**，设置筛选邮件的数据范围。  
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_32_PM.png)
+
+配置邮箱后缀字段，点击 **确定** 保存。
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_41_PM.png)
+
+邮件消息表数据将显示符合条件的邮件
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_48_PM.png)
+
+
+
 
 ## 邮件详情区块
 
