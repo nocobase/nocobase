@@ -802,7 +802,9 @@ export class FlowContext {
       if (isPromise) {
         this._pending[key] = (result as Promise<any>).then(
           (v) => {
-            this[cacheKey][key] = v;
+            if (v != null) {
+              this[cacheKey][key] = v;
+            }
             delete this._pending[key];
             return v;
           },
@@ -815,7 +817,9 @@ export class FlowContext {
       }
 
       // sync 直接缓存
-      this[cacheKey][key] = result;
+      if (result != null) {
+        this[cacheKey][key] = result;
+      }
       return result;
     }
 

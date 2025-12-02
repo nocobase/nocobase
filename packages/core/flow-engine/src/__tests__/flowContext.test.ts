@@ -97,6 +97,26 @@ describe('FlowContext properties and methods', () => {
     expect(getter).toHaveBeenCalledTimes(1);
   });
 
+  it('should not cache null or undefined get results (sync)', () => {
+    const ctx = new FlowContext();
+    const getter = vi.fn().mockReturnValueOnce(null).mockReturnValueOnce('final');
+    ctx.defineProperty('nullable', { get: getter });
+
+    expect(ctx.nullable).toBeNull();
+    expect(ctx.nullable).toBe('final');
+    expect(getter).toHaveBeenCalledTimes(2);
+  });
+
+  it('should not cache null or undefined get results (async)', async () => {
+    const ctx = new FlowContext();
+    const getter = vi.fn().mockResolvedValueOnce(undefined).mockResolvedValueOnce('final-async');
+    ctx.defineProperty('nullableAsync', { get: getter });
+
+    await expect(ctx.nullableAsync).resolves.toBeUndefined();
+    await expect(ctx.nullableAsync).resolves.toBe('final-async');
+    expect(getter).toHaveBeenCalledTimes(2);
+  });
+
   it('should not cache get result when cache=false', async () => {
     const ctx = new FlowContext();
     const getter = vi.fn().mockResolvedValue(101112);
