@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Authenticatie: OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
 supportedVersions:

@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "תנאים",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "מאפיינים מתקדמים",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

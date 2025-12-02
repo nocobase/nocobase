@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Campos de Relacionamento
 
 No NocoBase, os campos de relacionamento não são campos reais, mas são usados para estabelecer conexões entre **coleções**. Esse conceito é equivalente aos relacionamentos em bancos de dados relacionais.

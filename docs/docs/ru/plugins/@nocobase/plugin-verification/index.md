@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Верификация"
 packageName: '@nocobase/plugin-verification'
 description: |

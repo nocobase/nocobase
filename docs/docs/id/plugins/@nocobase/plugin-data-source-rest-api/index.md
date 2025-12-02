@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Sumber data: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:

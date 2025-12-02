@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # API-sleutels gebruiken in NocoBase
 
 Deze handleiding laat u aan de hand van een praktisch "To-Do's" voorbeeld zien hoe u API-sleutels gebruikt in NocoBase om gegevens op te halen. Volg de onderstaande stapsgewijze instructies om de volledige workflow te begrijpen.

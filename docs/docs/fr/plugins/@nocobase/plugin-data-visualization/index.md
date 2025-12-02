@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Visualisation de données"
 packageName: '@nocobase/plugin-data-visualization'
 description: |

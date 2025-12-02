@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # FlowModel'i Kaydetme
 
 ## Özel bir FlowModel ile Başlayın

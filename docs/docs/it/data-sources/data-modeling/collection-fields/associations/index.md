@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Campi di relazione
 
 In NocoBase, i campi di relazione non sono campi reali, ma vengono utilizzati per stabilire connessioni tra le collezioni. Questo concetto è equivalente alle relazioni nei database relazionali.

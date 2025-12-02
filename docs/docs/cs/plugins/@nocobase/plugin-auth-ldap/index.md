@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Ověřování: LDAP"
 packageName: '@nocobase/plugin-auth-ldap'
 supportedVersions:

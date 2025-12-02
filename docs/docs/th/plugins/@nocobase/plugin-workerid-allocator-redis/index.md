@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "ตัวจัดสรร ID ของ Worker ด้วย Redis"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 description: |

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Manajemen Email"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Trình quản lý tệp"
 packageName: '@nocobase/plugin-file-manager'
 description: |

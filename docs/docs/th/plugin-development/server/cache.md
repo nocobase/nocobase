@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 # แคช
 
 โมดูลแคชของ NocoBase พัฒนาขึ้นโดยอิงจาก <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> เพื่อให้ฟังก์ชันการแคชสำหรับการพัฒนาปลั๊กอินครับ/ค่ะ ระบบมีประเภทแคชในตัวสองแบบดังนี้:

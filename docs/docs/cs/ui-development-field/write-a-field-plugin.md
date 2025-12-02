@@ -1,6 +1,11 @@
 ---
 title: Pracovní postup: HTTP požadavek
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 # Pracovní postup: HTTP požadavek
 

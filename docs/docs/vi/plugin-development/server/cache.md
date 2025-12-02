@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Cache
 
 Mô-đun Cache của NocoBase được xây dựng dựa trên <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a>, cung cấp chức năng bộ nhớ đệm cho việc phát triển plugin. Hệ thống tích hợp sẵn hai loại bộ nhớ đệm:

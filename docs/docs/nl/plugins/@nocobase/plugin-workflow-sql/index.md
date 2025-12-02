@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Workflow: SQL-knooppunt"
 packageName: '@nocobase/plugin-workflow-sql'
 description: |

@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "ตัวกรองหลายคีย์เวิร์ด"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Gebruikersauthenticatie
 
 De gebruikersauthenticatie in NocoBase is opgebouwd uit twee belangrijke onderdelen:

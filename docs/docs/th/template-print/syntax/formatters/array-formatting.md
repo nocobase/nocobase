@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 ### การจัดรูปแบบอาร์เรย์ (Array Formatting)
 
 #### 1. `:arrayJoin(separator, index, count)`

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Srovnání hlavních a externích databází
 
 Rozdíly mezi hlavními a externími databázemi v NocoBase se projevují především ve čtyřech oblastech: podpora typů databází, podpora typů kolekcí, podpora typů polí a možnosti zálohování a migrace.

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Übersicht
 
 Die Entwicklung von NocoBase Client-Plugins bietet vielfältige Funktionen und Möglichkeiten, um Entwicklern die Anpassung und Erweiterung der Frontend-Funktionen von NocoBase zu erleichtern. Im Folgenden finden Sie die wichtigsten Funktionen der NocoBase Client-Plugin-Entwicklung und die entsprechenden Kapitel:

@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Integração de Single Sign-On (SSO)
 
 O NocoBase oferece soluções completas de Single Sign-On (SSO), também conhecido como Login Único, que suportam diversos protocolos de autenticação populares para uma integração perfeita com os sistemas de identidade corporativos existentes.

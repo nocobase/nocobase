@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "RabbitMQ Nachrichtenwarteschlangen-Adapter"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:

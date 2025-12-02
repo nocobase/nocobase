@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Kolom koleksi: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |

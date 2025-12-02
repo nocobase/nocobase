@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Snel aan de slag
 
 ## Uw eerste workflow configureren

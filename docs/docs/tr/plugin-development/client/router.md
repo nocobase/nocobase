@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Yönlendirici (Router)
 
 NocoBase istemcisi, `router.add()` ve `pluginSettingsRouter.add()` metotları aracılığıyla sayfaları ve eklenti ayar sayfalarını genişletmeyi destekleyen esnek bir yönlendirici yöneticisi sunar.

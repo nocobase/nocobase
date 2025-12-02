@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-file-storage-s3-pro"
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 
 # Dateispeicher: S3 (Pro)
 

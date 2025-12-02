@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Historik för poster"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:

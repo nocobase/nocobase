@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Рабочий процесс: Событие пользовательского действия"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:

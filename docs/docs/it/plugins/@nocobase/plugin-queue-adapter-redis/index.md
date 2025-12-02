@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Adattatore coda di messaggi Redis"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:

@@ -113,6 +113,11 @@ spec:
     app: nocobase
   type: ClusterIP
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Deployment aplikacji, który może wdrożyć wiele kontenerów aplikacji.
 apiVersion: apps/v1
 kind: Deployment

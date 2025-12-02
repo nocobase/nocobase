@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # İş Akışı Webhook Entegrasyonu
 
 Webhook tetikleyicileri aracılığıyla NocoBase, üçüncü taraf sistemlerden HTTP çağrıları alabilir ve iş akışlarını otomatik olarak tetikleyerek harici sistemlerle sorunsuz entegrasyon sağlayabilir.

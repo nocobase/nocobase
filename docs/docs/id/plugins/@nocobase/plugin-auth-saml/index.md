@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Autentikasi: SAML 2.0"
 packageName: '@nocobase/plugin-auth-saml'
 supportedVersions:

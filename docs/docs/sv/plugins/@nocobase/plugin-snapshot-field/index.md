@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Samlingsfält: Ögonblicksbild"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |

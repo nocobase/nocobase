@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 ### Formatowanie tablic
 
 #### 1. :arrayJoin(separator, index, count)

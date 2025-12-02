@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Hesaplama
 
 Hesaplama düğümü, bir ifadeyi değerlendirerek sonucunu ilgili düğümde saklar ve bu sonuç, sonraki düğümler tarafından kullanılabilir. Bu düğüm, verileri hesaplamak, işlemek ve dönüştürmek için güçlü bir araçtır. Bir bakıma, programlama dillerinde bir değer üzerinde fonksiyon çağırıp sonucu bir değişkene atama işlevini karşılar.

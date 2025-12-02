@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Vytvořte svůj první blokový plugin
 
 Než začnete, doporučujeme si přečíst „[Vytvořte svůj první plugin](../plugin-development/write-your-first-plugin.md)“, abyste se dozvěděli, jak rychle vytvořit základní plugin. Dále jej rozšíříme o jednoduchou funkci bloku.

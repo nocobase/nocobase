@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "เวิร์กโฟลว์: เหตุการณ์การทำงานแบบกำหนดเอง"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:

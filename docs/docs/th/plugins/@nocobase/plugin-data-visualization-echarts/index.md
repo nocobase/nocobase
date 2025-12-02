@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "การแสดงภาพข้อมูล: ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:

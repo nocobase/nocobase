@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Autentizace: DingTalk"
 packageName: '@nocobase/plugin-auth-dingtalk'
 supportedVersions:

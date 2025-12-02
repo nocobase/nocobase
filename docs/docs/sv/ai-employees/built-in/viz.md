@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # AI-medarbetare · Viz: Insiktsanalytiker
 
 > Generera diagram och insikter med ett klick, och låt datan tala för sig själv.

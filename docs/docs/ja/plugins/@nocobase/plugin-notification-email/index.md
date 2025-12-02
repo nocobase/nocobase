@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 ```yaml
 displayName: "通知：メール"
 packageName: '@nocobase/plugin-notification-email'

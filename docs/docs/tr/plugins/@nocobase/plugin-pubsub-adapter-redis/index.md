@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Redis Yayın-Abonelik Adaptörü"
 packageName: '@nocobase/plugin-pubsub-adapter-redis'
 supportedVersions:

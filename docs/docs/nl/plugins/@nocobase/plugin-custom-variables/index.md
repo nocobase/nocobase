@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Aangepaste variabelen"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:

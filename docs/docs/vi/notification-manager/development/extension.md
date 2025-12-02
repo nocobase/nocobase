@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Mở rộng các loại kênh thông báo
 
 NocoBase hỗ trợ mở rộng các loại kênh thông báo theo nhu cầu, ví dụ như thông báo SMS và thông báo đẩy ứng dụng.

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Datakälla (abstrakt)
 
 `DataSource` är en abstrakt klass som används för att representera en typ av datakälla, till exempel en databas eller ett API.

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Používání API klíčů v NocoBase
 
 Tento průvodce vám na praktickém příkladu "Úkolů" ukáže, jak v NocoBase používat API klíče k získávání dat. Pro pochopení celého pracovního postupu se řiďte níže uvedenými podrobnými pokyny.

@@ -17,6 +17,10 @@ Tedarik zinciri veya ticaret senaryolarında, standart bir "Tedarik ve Satın Al
 Mevcut sistem yalnızca tek kayıt yazdırmayı desteklediği için, "Sözleşme Detayları" sayfasında "Yazdır" düğmesine tıklayacağız. Sistem, ilgili sözleşme kaydını ve ilişkili taraflar gibi diğer bilgileri otomatik olarak alacak ve bunları Word veya PDF belgelerine dolduracaktır.
 
 ---
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
 
 ## 2. Hazırlık
 

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Middleware
 
 Middleware NocoBase Serveru je v podstatě **Koa middleware**. Můžete pracovat s objektem `ctx` a zpracovávat požadavky a odpovědi stejně jako v Koa. Protože však NocoBase potřebuje spravovat logiku na různých obchodních vrstvách, bylo by velmi obtížné udržovat a spravovat všechna middleware, kdyby byla umístěna pohromadě.

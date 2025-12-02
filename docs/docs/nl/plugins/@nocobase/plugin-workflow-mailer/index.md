@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Workflow: e-mailverzender knooppunt"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |

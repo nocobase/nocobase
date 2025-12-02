@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Khối: Thẻ lưới"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |

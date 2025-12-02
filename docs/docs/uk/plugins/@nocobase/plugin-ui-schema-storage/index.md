@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Зберігання UI-схеми"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |

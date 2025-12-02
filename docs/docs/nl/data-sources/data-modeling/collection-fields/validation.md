@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Veldvalidatie
 Om de nauwkeurigheid, veiligheid en consistentie van uw collecties te waarborgen, biedt NocoBase de functionaliteit voor veldvalidatie. Deze functionaliteit bestaat uit twee hoofdonderdelen: het configureren van regels en het toepassen van validatieregels.
 

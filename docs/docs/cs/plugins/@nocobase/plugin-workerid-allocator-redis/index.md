@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Redis worker ID alokátor"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 description: |

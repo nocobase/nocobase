@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Workflow: notificatieknooppunt"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Koleksi: Menghubungkan ke Data Eksternal (FDW)"
 packageName: '@nocobase/plugin-collection-fdw'
 supportedVersions:

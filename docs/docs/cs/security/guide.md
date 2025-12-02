@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Bezpečnostní příručka NocoBase
 
 NocoBase klade důraz na bezpečnost dat a aplikací od návrhu funkcí až po implementaci systému. Platforma má vestavěné bezpečnostní funkce, jako je ověřování uživatelů, řízení přístupu a šifrování dat, a zároveň umožňuje flexibilní konfiguraci bezpečnostních zásad podle skutečných potřeb. Ať už jde o ochranu uživatelských dat, správu přístupových oprávnění nebo izolaci vývojového a produkčního prostředí, NocoBase poskytuje praktické nástroje a řešení. Cílem této příručky je poskytnout návod pro bezpečné používání NocoBase, pomoci uživatelům chránit bezpečnost dat, aplikací a prostředí a zajistit efektivní využívání systémových funkcí při zachování bezpečnosti uživatelů.

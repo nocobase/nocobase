@@ -1,6 +1,10 @@
 ---
 pkg: "@nocobase/plugin-embed"
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
 
 ```yaml
 ---

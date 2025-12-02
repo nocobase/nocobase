@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Requête de données
 
 Le panneau de configuration des graphiques est divisé en trois sections principales : Requête de données, Options du graphique et Événements d'interaction, sans oublier les boutons Annuler, Prévisualiser et Enregistrer situés en bas.

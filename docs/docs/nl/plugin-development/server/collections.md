@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Collecties
 
 Binnen de NocoBase plugin-ontwikkeling is een **collectie (gegevenstabel)** een van de meest fundamentele concepten. U kunt de structuur van gegevenstabellen in plugins toevoegen of aanpassen door collecties te definiëren of uit te breiden. In tegenstelling tot gegevenstabellen die u via de interface voor gegevensbronbeheer aanmaakt, zijn **collecties die in code zijn gedefinieerd meestal systeemgerelateerde metadatatabellen** en verschijnen ze niet in de lijst van gegevensbronbeheer.

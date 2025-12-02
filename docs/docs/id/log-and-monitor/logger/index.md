@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-logger"
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 pkg: '@nocobase/plugin-logger'
 ---

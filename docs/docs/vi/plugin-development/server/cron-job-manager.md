@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # CronJobManager
 
 `CronJobManager` là một trình quản lý tác vụ định kỳ do NocoBase cung cấp, được xây dựng dựa trên [cron](https://www.npmjs.com/package/cron). Nó cho phép các plugin đăng ký các tác vụ định kỳ trên máy chủ để thực thi logic cụ thể theo chu kỳ.

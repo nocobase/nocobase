@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-collection-view"
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 # Databasvy
 

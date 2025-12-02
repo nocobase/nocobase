@@ -33,6 +33,11 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Git のフローを通じて同期・更新します。
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 
 # インストール方法とバージョンの比較
 

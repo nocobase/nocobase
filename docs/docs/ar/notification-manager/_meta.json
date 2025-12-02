@@ -1,0 +1,44 @@
+[
+  {
+    "type": "custom-link",
+    "label": "نظرة عامة",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "قنوات الإشعارات",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "站内信",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "电子邮件",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "企业微信",
+        "link": "/notification-manager/wecom"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "دليل التطوير",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "扩展通知渠道类型",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "扩展通知API",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

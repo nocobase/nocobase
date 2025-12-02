@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # StepDefinition
 
 StepDefinition định nghĩa một bước riêng lẻ trong một luồng. Mỗi bước có thể là một hành động, xử lý sự kiện hoặc một thao tác khác. Một bước là đơn vị thực thi cơ bản của một luồng.

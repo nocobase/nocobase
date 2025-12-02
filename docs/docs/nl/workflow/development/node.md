@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Knooppunttypen uitbreiden
 
 Het type van een knooppunt is in essentie een operationele instructie. Verschillende instructies vertegenwoordigen verschillende bewerkingen die in de **workflow** worden uitgevoerd.

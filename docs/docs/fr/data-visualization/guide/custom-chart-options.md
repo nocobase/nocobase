@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Configuration de graphique personnalisée
 
 En mode personnalisé, vous pouvez configurer des graphiques en écrivant du code JS dans l'éditeur. Basé sur `ctx.data`, cela renvoie une `option` ECharts complète. Cette approche est idéale pour fusionner plusieurs séries, gérer des info-bulles complexes et appliquer des styles dynamiques. En théorie, toutes les fonctionnalités et tous les types de graphiques ECharts sont pris en charge.

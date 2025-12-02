@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Sự kiện
 
 Máy chủ (Server) của NocoBase kích hoạt các sự kiện (Event) tương ứng trong các giai đoạn như vòng đời ứng dụng, vòng đời plugin và các thao tác cơ sở dữ liệu. Các nhà phát triển plugin có thể lắng nghe các sự kiện này để triển khai logic mở rộng, các thao tác tự động hoặc hành vi tùy chỉnh.

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Bildirim Kanalı Türlerini Genişletme
 
 NocoBase, ihtiyaç duyulduğunda SMS bildirimleri ve uygulama anlık bildirimleri gibi bildirim kanalı türlerini genişletmenize olanak tanır.

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # FlowEngine Nedir?
 
 FlowEngine, NocoBase 2.0 ile sunulan yepyeni bir ön uç kodsuz/düşük kodlu geliştirme motorudur. Model'leri ve Flow'ları bir araya getirerek ön uç mantığını basitleştirir, yeniden kullanılabilirliği ve sürdürülebilirliği artırır. Aynı zamanda, Flow'ların yapılandırılabilirliğinden faydalanarak ön uç bileşenlerine ve iş mantığına kodsuz yapılandırma ve düzenleme yetenekleri kazandırır.

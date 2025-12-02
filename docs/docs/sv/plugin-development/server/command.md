@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Kommandon
 
 I NocoBase använder ni kommandon för att utföra operationer relaterade till applikationer eller plugin i kommandoraden. Detta kan vara att köra systemuppgifter, utföra migreringar eller synkroniseringar, initiera konfiguration, eller interagera med körande applikationsinstanser. Utvecklare kan definiera anpassade kommandon för plugin och registrera dem via `app`-objektet, för att sedan köra dem i CLI som `nocobase <command>`.

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Adaptor Antrean Pesan RabbitMQ"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Middleware
 
 Middleware của NocoBase Server về cơ bản là **Koa middleware**. Bạn có thể thao tác đối tượng `ctx` để xử lý yêu cầu và phản hồi giống như trong Koa. Tuy nhiên, vì NocoBase cần quản lý logic ở nhiều tầng nghiệp vụ khác nhau, nếu tất cả middleware được đặt chung, việc bảo trì và quản lý sẽ rất phức tạp.

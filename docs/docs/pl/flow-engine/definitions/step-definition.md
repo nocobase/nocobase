@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Definicja kroku (StepDefinition)
 
 StepDefinition definiuje pojedynczy krok w przepływie pracy. Każdy krok może być akcją, obsługą zdarzeń lub inną operacją. Krok jest podstawową jednostką wykonawczą przepływu pracy.

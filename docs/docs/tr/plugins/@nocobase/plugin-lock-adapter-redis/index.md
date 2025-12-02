@@ -11,5 +11,10 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 
 # Redis Dağıtık Kilit Adaptörü

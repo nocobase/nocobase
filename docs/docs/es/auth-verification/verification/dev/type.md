@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Extensión de Tipos de Validación
 
 ## Lado del cliente

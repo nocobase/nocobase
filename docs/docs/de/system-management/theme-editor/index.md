@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Themen-Editor
 
 > Die aktuelle Themenfunktion basiert auf Ant Design 5.x. Wir empfehlen Ihnen, sich vor dem Lesen dieses Dokuments mit den Konzepten zur [Anpassung von Themen](https://ant.design/docs/react/customize-theme-cn#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%BB%E9%A2%98) vertraut zu machen.

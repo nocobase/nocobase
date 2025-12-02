@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 ## Uso Básico
 
 El **plugin** de impresión de plantillas ofrece varias sintaxis para insertar datos dinámicos y estructuras lógicas de forma flexible en sus plantillas. A continuación, encontrará explicaciones detalladas de la sintaxis y ejemplos de uso.

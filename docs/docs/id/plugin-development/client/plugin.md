@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Plugin
 
 Di NocoBase, **Plugin Klien** adalah cara utama untuk memperluas dan menyesuaikan fungsionalitas *frontend*. Dengan mewarisi kelas dasar `Plugin` yang disediakan oleh `@nocobase/client`, pengembang dapat mendaftarkan logika, menambahkan komponen halaman, memperluas menu, atau mengintegrasikan fungsionalitas pihak ketiga pada berbagai tahap siklus hidup.

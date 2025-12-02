@@ -33,6 +33,11 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Synchronizujte aktualizace prostřednictvím Git.
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 # Porovnání způsobů instalace a verzí
 

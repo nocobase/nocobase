@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Daten im SQL-Modus abfragen
 
 Wechseln Sie im Bereich „Datenabfrage“ in den SQL-Modus, schreiben und führen Sie Ihre Abfrage aus. Das zurückgegebene Ergebnis können Sie dann direkt für die Diagrammzuordnung und -darstellung verwenden.

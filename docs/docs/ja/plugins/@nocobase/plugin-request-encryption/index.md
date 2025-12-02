@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "HTTPリクエストの暗号化"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:

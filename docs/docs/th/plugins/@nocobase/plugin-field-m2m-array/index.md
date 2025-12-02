@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "ฟิลด์คอลเลกชัน: หลายต่อหลาย (อาร์เรย์)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |

@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # AI Employee · Guida alla configurazione per amministratori
 
 > Questo documento Le illustrerà rapidamente come configurare e gestire gli AI Employee, guidandoLa passo dopo passo attraverso l'intero processo, dai servizi di modello all'assegnazione dei compiti.

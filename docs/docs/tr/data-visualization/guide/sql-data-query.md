@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # SQL Modunda Veri Sorgulama
 
 Veri sorgulama panelinde SQL moduna geçerek sorgu ifadelerinizi yazabilir ve çalıştırabilirsiniz. Elde ettiğiniz sonuçları doğrudan grafik eşleme ve oluşturma için kullanabilirsiniz.

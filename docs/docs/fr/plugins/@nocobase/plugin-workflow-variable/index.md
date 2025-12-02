@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Flux de travail : Variable personnalisée"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:

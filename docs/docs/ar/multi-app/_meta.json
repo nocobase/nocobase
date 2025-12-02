@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "نظرة عامة",
+    "link": "/multi-app/"
+  },
+  {
+    "type": "custom-link",
+    "label": "تطبيقات متعددة",
+    "link": "/multi-app/multi-app"
+  },
+  {
+    "type": "custom-link",
+    "label": "مساحات متعددة",
+    "link": "/multi-app/multi-space"
+  }
+]

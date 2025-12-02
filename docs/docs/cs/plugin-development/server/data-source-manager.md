@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # DataSourceManager Správa zdrojů dat
 
 NocoBase poskytuje `DataSourceManager` pro správu více zdrojů dat. Každý `DataSource` má vlastní instance `Database`, `ResourceManager` a `ACL`, což vývojářům umožňuje flexibilně spravovat a rozšiřovat více zdrojů dat.

@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Colección de expresiones
 
 ## Crear una colección de plantilla de "expresiones"

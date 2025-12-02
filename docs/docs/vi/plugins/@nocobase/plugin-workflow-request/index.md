@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Luồng công việc: Nút yêu cầu HTTP"
 packageName: '@nocobase/plugin-workflow-request'
 description: |

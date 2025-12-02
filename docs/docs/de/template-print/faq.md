@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 ## Häufige Probleme und Lösungen
 
 ### 1. Leere Spalten und Zellen in Excel-Vorlagen verschwinden beim Rendern

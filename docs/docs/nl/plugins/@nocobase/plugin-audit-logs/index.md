@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Auditlogboeken (verouderd)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |

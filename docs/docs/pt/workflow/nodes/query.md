@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Consultar Dados
 
 Use este nó para consultar e recuperar registros de dados de uma **coleção** que atendam a condições específicas.

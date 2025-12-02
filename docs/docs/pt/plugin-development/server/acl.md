@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Controle de Acesso ACL
 
 ACL (Access Control List) é usado para controlar as permissões de operação de recursos. Você pode conceder permissões a funções, ou ignorar as restrições de função e definir permissões diretamente. O sistema ACL oferece um mecanismo flexível de gerenciamento de permissões, suportando fragmentos de permissão (snippets), middlewares, avaliação condicional e outros métodos.

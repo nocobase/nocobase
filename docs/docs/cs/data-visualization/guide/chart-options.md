@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Možnosti grafu
 
 Zde můžete nastavit způsob zobrazení grafů. Podporovány jsou dva režimy: Základní (vizuální) a Vlastní (JS). Základní režim je ideální pro rychlé mapování a běžná nastavení; Vlastní režim se hodí pro složité scénáře a pokročilé úpravy.

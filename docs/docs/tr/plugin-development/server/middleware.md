@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Middleware
 
 NocoBase Sunucusu'nun middleware'i temelde bir **Koa middleware**'idir. Koa'da olduğu gibi `ctx` nesnesini kullanarak istekleri ve yanıtları işleyebilirsiniz. Ancak NocoBase'in farklı iş katmanlarındaki mantığı yönetmesi gerektiği için, tüm middleware'ler tek bir yerde toplandığında bakımı ve yönetimi oldukça zorlaşır.

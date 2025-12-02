@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # ModelDefinition
 
 `ModelDefinition` definieert de creatie-opties voor een `flow` model. U gebruikt dit om een modelinstantie te maken via de `FlowEngine.createModel()` methode. Het bevat de basisconfiguratie, eigenschappen, submodellen en andere relevante informatie van het model.

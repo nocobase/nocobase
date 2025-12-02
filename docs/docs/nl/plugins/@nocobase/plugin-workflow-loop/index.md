@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Workflow: Lus-node"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |

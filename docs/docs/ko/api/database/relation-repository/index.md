@@ -1,3 +1,8 @@
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 # RelationRepository
 
 `RelationRepository`는 관계(association) 유형의 `Repository` 객체입니다. `RelationRepository`를 사용하면 관계를 로드하지 않고도 관련 데이터를 조작할 수 있습니다. `RelationRepository`를 기반으로, 각 관계 유형은 다음과 같은 파생 구현을 가집니다:

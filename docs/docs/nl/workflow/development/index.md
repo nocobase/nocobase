@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Overzicht
 
 De ingebouwde functionaliteiten van de workflow kunnen niet alle scenario's afdekken. De ingebouwde knooppunttypen kunnen bijvoorbeeld niet elke mogelijke handeling in alle bedrijfsscenario's omvatten. Daarom bieden we ook de mogelijkheid om de workflow uit te breiden, onder andere met extra triggertypen en knooppunttypen. In bedrijfsscenario's waar de ingebouwde functionaliteiten tekortschieten, kunt u deze uitbreiden met behulp van low-code methoden.

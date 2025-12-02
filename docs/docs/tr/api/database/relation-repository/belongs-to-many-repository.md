@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # BelongsToManyRepository
 
 `BelongsToManyRepository`, `BelongsToMany` ilişkilerini yönetmek için kullanılan bir `İlişki Deposu`'dur.

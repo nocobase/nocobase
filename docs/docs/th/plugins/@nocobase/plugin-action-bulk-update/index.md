@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "แอคชัน: อัปเดตแบบกลุ่ม"
 packageName: '@nocobase/plugin-action-bulk-update'
 description: |

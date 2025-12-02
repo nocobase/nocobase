@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Sürüm Yönetimi
 
 Yapılandırılmış bir iş akışı en az bir kez tetiklendikten sonra, eğer iş akışının yapılandırmasını veya düğümlerini değiştirmek isterseniz, önce yeni bir sürüm oluşturmanız gerekir. Bu yaklaşım, daha önce tetiklenmiş iş akışlarının yürütme geçmişini incelerken, gelecekteki değişikliklerden etkilenmemesini de sağlar.

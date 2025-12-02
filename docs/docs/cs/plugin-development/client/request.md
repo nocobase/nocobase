@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Požadavky
 
 NocoBase poskytuje `APIClient` založený na knihovně [Axios](https://axios-http.com/), který můžete použít k odesílání HTTP požadavků z jakéhokoli místa, kde je dostupný `Context`.

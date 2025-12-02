@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Agente de IA · Dex: Assistente de Organização de Dados
 
 > Extraia e preencha formulários rapidamente, transformando informações desorganizadas em dados estruturados.

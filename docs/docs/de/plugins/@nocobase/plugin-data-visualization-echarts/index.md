@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Datenvisualisierung: ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:

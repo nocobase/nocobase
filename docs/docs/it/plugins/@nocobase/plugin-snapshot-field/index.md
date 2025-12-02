@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Campo della collezione: Snapshot"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |

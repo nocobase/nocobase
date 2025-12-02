@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Estendere i tipi di trigger
 
 Ogni flusso di lavoro deve essere configurato con un trigger specifico, che funge da punto di ingresso per l'avvio dell'esecuzione del processo.

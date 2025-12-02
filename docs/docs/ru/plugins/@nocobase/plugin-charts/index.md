@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Диаграммы (устаревший)"
 packageName: '@nocobase/plugin-charts'
 description: |

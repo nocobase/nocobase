@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Servizio di archiviazione schema UI"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |

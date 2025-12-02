@@ -1,3 +1,8 @@
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 # 로거
 
 NocoBase의 로깅은 <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>을 기반으로 합니다. 기본적으로 NocoBase는 로그를 API 요청 로그, 시스템 런타임 로그, 그리고 SQL 실행 로그로 나눕니다. 이 중 API 요청 로그와 SQL 실행 로그는 애플리케이션 내부에서 출력되며, 플러그인 개발자는 일반적으로 플러그인과 관련된 시스템 런타임 로그만 출력하면 됩니다.

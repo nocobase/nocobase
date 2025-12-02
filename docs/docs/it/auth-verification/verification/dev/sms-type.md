@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Estendere i fornitori di servizi SMS
 
 Questo articolo spiega come estendere la funzionalità dei fornitori di servizi SMS nella funzione [Verifica: SMS](../sms) tramite un plugin.

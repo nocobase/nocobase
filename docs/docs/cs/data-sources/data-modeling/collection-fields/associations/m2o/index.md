@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Vztah mnoho k jedné
 
 V databázi knihovny máme dvě entity: knihy a autory. Jeden autor může napsat více knih, ale každá kniha má obvykle pouze jednoho autora. V takovém případě je vztah mezi autory a knihami typu mnoho k jedné. Více knih může být spojeno se stejným autorem, ale každá kniha může mít pouze jednoho autora.

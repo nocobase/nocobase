@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Адаптер черги повідомлень RabbitMQ"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:

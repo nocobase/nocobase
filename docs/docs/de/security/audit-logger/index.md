@@ -17,6 +17,11 @@ Das Audit-Log dient dazu, Benutzeraktivitäten und die Historie von Ressourcenop
 ```yaml
 pkg: '@nocobase/plugin-audit-logger'
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 
 # Audit-Log
 

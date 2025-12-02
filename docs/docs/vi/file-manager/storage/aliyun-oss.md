@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Công cụ lưu trữ: Aliyun OSS
 
 Đây là một công cụ lưu trữ dựa trên Aliyun OSS. Trước khi sử dụng, bạn cần chuẩn bị tài khoản và các quyền truy cập liên quan.

@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Plugin
 
 No NocoBase, um **plugin** de servidor oferece uma forma modular de estender e personalizar as funcionalidades do lado do servidor. Você, como desenvolvedor(a), pode estender a classe `Plugin` de `@nocobase/server` para registrar eventos, APIs, configurações de permissão e outras lógicas personalizadas em diferentes estágios do ciclo de vida.

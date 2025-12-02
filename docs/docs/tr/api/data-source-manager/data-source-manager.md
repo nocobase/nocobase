@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # DataSourceManager
 
 `DataSourceManager`, birden fazla `dataSource` örneğinin yönetim sınıfıdır.

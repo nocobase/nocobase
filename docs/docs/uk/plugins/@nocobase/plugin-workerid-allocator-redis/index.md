@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Redis розподільник worker ID"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 description: |

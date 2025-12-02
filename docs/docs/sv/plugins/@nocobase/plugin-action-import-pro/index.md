@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Åtgärd: Importera poster Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:

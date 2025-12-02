@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # En-till-en
 
 I relationen mellan anställda och personliga profiler kan varje anställd endast ha en personlig profilpost, och varje personlig profilpost kan endast motsvara en anställd. I det här fallet är relationen mellan den anställde och den personliga profilen en en-till-en-relation.

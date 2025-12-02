@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Файловый менеджер"
 packageName: '@nocobase/plugin-file-manager'
 description: |

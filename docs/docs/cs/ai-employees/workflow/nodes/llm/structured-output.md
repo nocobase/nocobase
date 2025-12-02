@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-ai-ee"
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 # Strukturovaný výstup
 

@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "แอคชัน: ส่งออกข้อมูล Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:

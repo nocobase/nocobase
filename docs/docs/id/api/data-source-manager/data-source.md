@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # DataSource (abstrak)
 
 `DataSource` adalah kelas abstrak yang digunakan untuk merepresentasikan jenis sumber data, seperti database, API, dan lain-lain.

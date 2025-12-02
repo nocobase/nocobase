@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "AI: Cơ sở tri thức"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Sjabloon afdrukken"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Seitenfilter und Verknüpfung
 
 Der Seitenfilter (Filter-Block) dient dazu, auf Seitenebene Filterbedingungen einheitlich einzugeben und diese in Diagrammabfragen zusammenzuführen. Dies ermöglicht eine konsistente Filterung und Verknüpfung über mehrere Diagramme hinweg.

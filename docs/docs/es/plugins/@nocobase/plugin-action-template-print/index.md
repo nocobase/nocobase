@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Impresión de plantillas"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 id: create-delete-and-update-in-bulk
 title: Creazione, aggiornamento ed eliminazione in blocco
 ---

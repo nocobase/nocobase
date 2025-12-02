@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Nhân viên AI · Nathan: Kỹ sư Frontend
 
 > Giúp bạn viết và tối ưu hóa mã frontend để triển khai logic tương tác phức tạp.

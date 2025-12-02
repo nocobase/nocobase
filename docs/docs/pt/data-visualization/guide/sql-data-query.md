@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Consultar dados no modo SQL
 
 No painel "Consulta de dados", alterne para o modo SQL, escreva e execute a consulta, e use o resultado retornado diretamente para mapeamento e renderização de gráficos.

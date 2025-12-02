@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Relazione tra FlowEngine e i plugin
 
 **FlowEngine** non è un plugin, ma un'**API di base** fornita ai plugin per connettere le funzionalità del core con le estensioni aziendali. In NocoBase 2.0, tutte le API sono centralizzate in FlowEngine, e i plugin possono accedervi tramite `this.engine`.

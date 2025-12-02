@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Fonte de dados: Principal"
 packageName: '@nocobase/plugin-data-source-main'
 description: |

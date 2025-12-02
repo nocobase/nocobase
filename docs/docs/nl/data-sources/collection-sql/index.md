@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-collection-sql"
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 # SQL collectie
 

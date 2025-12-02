@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "ฟิลด์คอลเลกชัน: สูตร"
 packageName: '@nocobase/plugin-field-formula'
 description: |

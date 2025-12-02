@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Danh sách ngôn ngữ
 
 NocoBase hỗ trợ đa ngôn ngữ (i18n). Dưới đây là danh sách các ngôn ngữ được tích hợp sẵn. Mỗi cấu hình ngôn ngữ bao gồm một **Mã ngôn ngữ (Locale Code)** và một **Tên hiển thị (Label)**.

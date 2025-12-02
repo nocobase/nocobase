@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 ### Instalacja wtyczek
 
 Proszę zapoznać się z dokumentacją dotyczącą instalacji i aktualizacji wtyczek komercyjnych.

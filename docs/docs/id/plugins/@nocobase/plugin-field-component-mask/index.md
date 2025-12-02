@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Komponen Bidang: Masker"
 packageName: '@nocobase/plugin-field-component-mask'
 supportedVersions:

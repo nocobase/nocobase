@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Eklenti
 
 NocoBase'de, **istemci eklentisi** (Client Plugin), ön uç işlevselliğini genişletmenin ve özelleştirmenin ana yoludur. `@nocobase/client` tarafından sağlanan `Plugin` temel sınıfını miras alarak, geliştiriciler farklı yaşam döngüsü aşamalarında mantık kaydedebilir, sayfa bileşenleri ekleyebilir, menüleri genişletebilir veya üçüncü taraf işlevselliğini entegre edebilirler.

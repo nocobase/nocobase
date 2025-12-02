@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Um para Muitos
 
 A relação entre uma turma e seus alunos é um exemplo de um relacionamento um para muitos: uma turma pode ter vários alunos, mas cada aluno pertence a apenas uma turma.

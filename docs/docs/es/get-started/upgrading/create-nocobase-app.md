@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Actualización de una instalación de `create-nocobase-app`
 
 :::warning Preparación antes de actualizar

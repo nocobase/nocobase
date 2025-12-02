@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Kopia zapasowa i przywracanie aplikacji (przestarzałe)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |

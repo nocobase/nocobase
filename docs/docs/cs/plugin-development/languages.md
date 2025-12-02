@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Seznam jazyků
 
 NocoBase nabízí vícejazyčnou podporu (i18n). Níže naleznete seznam aktuálně vestavěných jazyků.

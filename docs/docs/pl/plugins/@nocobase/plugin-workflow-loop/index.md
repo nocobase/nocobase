@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Przepływ pracy: Węzeł pętli"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |

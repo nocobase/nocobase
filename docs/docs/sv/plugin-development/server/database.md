@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Databas
 
 `Database` är en viktig komponent i datakällor av databastyp (`DataSource`). Varje datakälla av databastyp har en motsvarande `Database`-instans, som ni kan komma åt via `dataSource.db`. Huvuddatakällans databasinstans erbjuder även det praktiska aliaset `app.db`. Att känna till `db`:s vanliga metoder är grundläggande för att skriva server-sidiga `plugin`.

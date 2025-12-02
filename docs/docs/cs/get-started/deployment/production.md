@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Nasazení v produkčním prostředí
 
 Při nasazování NocoBase v produkčním prostředí může být instalace závislostí poměrně složitá kvůli rozdílům ve způsobech sestavování napříč různými systémy a prostředími. Pro získání plnohodnotného funkčního zážitku doporučujeme nasazení pomocí **Dockeru**. Pokud vaše systémové prostředí nemůže Docker využít, můžete k nasazení použít i **create-nocobase-app**.

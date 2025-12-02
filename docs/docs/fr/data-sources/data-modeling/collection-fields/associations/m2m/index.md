@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Plusieurs-à-plusieurs
 
 Dans un système de gestion des inscriptions aux cours, il existe deux entités : les étudiants et les cours. Un étudiant peut s'inscrire à plusieurs cours, et un cours peut accueillir plusieurs étudiants. Cela constitue une relation plusieurs-à-plusieurs. Dans une base de données relationnelle, pour représenter cette relation plusieurs-à-plusieurs entre les étudiants et les cours, on utilise généralement une `collection` intermédiaire, comme une `collection` d'inscriptions. Cette `collection` peut enregistrer les cours choisis par chaque étudiant et les étudiants inscrits à chaque cours. Cette conception permet de représenter efficacement la relation plusieurs-à-plusieurs entre les étudiants et les cours.

@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Agent AI · Przewodnik po inżynierii promptów
 
 > Od "jak pisać" do "jak pisać dobrze" – ten przewodnik nauczy Pana/Panią, jak tworzyć wysokiej jakości prompty w prosty, stabilny i wielokrotnego użytku sposób.

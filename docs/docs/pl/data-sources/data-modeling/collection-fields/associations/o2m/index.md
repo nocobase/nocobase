@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Jeden do wielu
 
 Relacja między klasą a jej uczniami to przykład relacji jeden do wielu: jedna klasa może mieć wielu uczniów, ale każdy uczeń należy tylko do jednej klasy.

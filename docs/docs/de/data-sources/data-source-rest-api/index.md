@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-data-source-rest-api"
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 
 ```yaml
 pkg: "@nocobase/plugin-data-source-rest-api"

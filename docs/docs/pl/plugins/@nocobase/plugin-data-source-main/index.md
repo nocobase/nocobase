@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Źródło danych: Główne"
 packageName: '@nocobase/plugin-data-source-main'
 description: |

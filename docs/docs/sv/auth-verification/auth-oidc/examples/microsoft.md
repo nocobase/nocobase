@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Microsoft Entra ID
 
 > https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app  

@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "การดำเนินการ: นำเข้ารายการโปร"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Arbetsflöde: Godkännande"
 packageName: '@nocobase/plugin-workflow-approval'
 description: |

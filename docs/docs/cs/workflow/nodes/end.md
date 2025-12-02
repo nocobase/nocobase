@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Ukončit pracovní postup
 
 Když se tento uzel spustí, okamžitě ukončí aktuálně běžící pracovní postup se stavem nakonfigurovaným v uzlu. Obvykle se používá pro řízení toku na základě specifické logiky, kdy po splnění určitých logických podmínek opustíte aktuální pracovní postup a zastavíte provádění následných procesů. Lze jej přirovnat k instrukci `return` v programovacích jazycích, která slouží k ukončení aktuálně prováděné funkce.

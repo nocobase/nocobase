@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Двухфакторная аутентификация (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:

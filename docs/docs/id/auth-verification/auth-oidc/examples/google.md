@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Masuk dengan Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect

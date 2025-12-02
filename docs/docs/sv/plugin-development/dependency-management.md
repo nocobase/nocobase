@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Beroendehantering
 
 I NocoBase pluginutveckling delas beroenden in i två kategorier: **pluginberoenden** och **globala beroenden**.

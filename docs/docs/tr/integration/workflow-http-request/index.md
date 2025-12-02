@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # İş Akışı HTTP İstek Entegrasyonu
 
 HTTP İstek düğümü sayesinde, NocoBase iş akışları herhangi bir HTTP servisine proaktif olarak istek gönderebilir, böylece harici sistemlerle veri alışverişi ve iş entegrasyonu sağlanır.

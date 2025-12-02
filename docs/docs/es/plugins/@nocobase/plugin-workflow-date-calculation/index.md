@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Flujo de trabajo: nodo de cálculo de fechas"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:

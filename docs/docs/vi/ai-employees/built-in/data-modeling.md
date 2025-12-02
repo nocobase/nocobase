@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Đại lý AI · Orin: Chuyên gia Mô hình Dữ liệu
 
 > Thiết kế bộ sưu tập thông minh và tối ưu hóa cấu trúc cơ sở dữ liệu.

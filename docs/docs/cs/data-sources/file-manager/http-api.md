@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # HTTP API
 
 Nahrávání souborů pro pole příloh i pro kolekce souborů lze zpracovat pomocí HTTP API. Způsob volání se liší v závislosti na úložném enginu, který příloha nebo kolekce souborů používá.

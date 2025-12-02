@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Block: Flerstegsformulär"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "ワークフロー：操作後イベント"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |

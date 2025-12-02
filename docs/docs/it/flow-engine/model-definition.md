@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 pkg: "@nocobase/plugin-china-region"
 title: Campo Regione Cinese
 description: Il plugin Campo Regione Cinese (`field-china-region`) aggiunge il tipo di campo "Regione Cinese" a NocoBase.

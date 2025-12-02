@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Plugin
 
 V NocoBase je **Klientský plugin** hlavním způsobem, jak rozšířit a přizpůsobit frontendové funkce. Děděním základní třídy `Plugin`, kterou poskytuje `@nocobase/client`, mohou vývojáři registrovat logiku, přidávat komponenty stránek, rozšiřovat menu nebo integrovat funkce třetích stran v různých fázích životního cyklu.

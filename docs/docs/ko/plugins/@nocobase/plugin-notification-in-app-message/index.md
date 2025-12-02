@@ -1,3 +1,8 @@
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 displayName: "알림: 인앱 메시지"
 packageName: '@nocobase/plugin-notification-in-app-message'
 description: |

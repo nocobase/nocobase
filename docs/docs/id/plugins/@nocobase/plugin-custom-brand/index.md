@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Merek Kustom"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:

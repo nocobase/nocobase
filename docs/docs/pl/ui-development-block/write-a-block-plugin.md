@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Tworzenie pierwszej wtyczki bloku
 
 Zanim zaczniemy, zalecamy zapoznanie się z artykułem „[Tworzenie pierwszej wtyczki](../plugin-development/write-your-first-plugin.md)”, aby dowiedzieć się, jak szybko stworzyć podstawową wtyczkę. Następnie, rozszerzymy ją o prostą funkcjonalność bloku.

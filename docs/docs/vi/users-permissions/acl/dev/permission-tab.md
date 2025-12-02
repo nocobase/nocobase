@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Mở rộng các thẻ cấu hình quyền
 
 Dưới đây, chúng ta sẽ lấy mục cấu hình "Mobile Menu" làm ví dụ để minh họa cách mở rộng một thẻ cấu hình quyền mới. Kết quả được hiển thị trong hình dưới đây:

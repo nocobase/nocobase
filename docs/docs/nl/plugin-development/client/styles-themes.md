@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Stijlen & Thema's
 
 Om optimaal gebruik te maken van de dynamische themamogelijkheden van NocoBase, raden we u aan om in plugins [antd-style](https://ant-design.github.io/antd-style/guide) te gebruiken voor het schrijven van stijlen. Combineer dit met de bestaande [theme token](https://ant.design/docs/react/customize-theme#seedtoken) om de dynamische aspecten van thema's te beheren. NocoBase biedt ook een [Thema-editor plugin](#) voor het eenvoudig aanpassen van stijlen.

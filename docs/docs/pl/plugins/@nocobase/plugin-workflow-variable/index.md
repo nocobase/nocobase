@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Przepływ pracy: Zmienna niestandardowa"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:

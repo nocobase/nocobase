@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 ### Installare i Plugin
 
 Faccia riferimento alla documentazione sull'installazione e l'aggiornamento dei plugin commerciali.

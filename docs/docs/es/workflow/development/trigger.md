@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Extender Tipos de Disparadores
 
 Cada **flujo de trabajo** debe configurarse con un disparador específico, que actúa como el punto de entrada para iniciar la ejecución del proceso.

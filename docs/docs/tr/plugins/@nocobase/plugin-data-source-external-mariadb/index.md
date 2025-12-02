@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Veri kaynağı: Harici MariaDB"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
 supportedVersions:

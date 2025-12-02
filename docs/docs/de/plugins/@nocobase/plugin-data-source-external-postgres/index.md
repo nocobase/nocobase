@@ -11,5 +11,10 @@ builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 
 # Datenquelle: Externes PostgreSQL

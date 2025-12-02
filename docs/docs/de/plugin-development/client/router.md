@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Router
 
 Der NocoBase-Client bietet einen flexiblen Router-Manager, der es Ihnen ermöglicht, Seiten und Plugin-Einstellungsseiten mithilfe von `router.add()` und `pluginSettingsRouter.add()` zu erweitern.

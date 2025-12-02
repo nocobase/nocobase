@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Sammlungsfeld: Chinesische Verwaltungsregionen"
 packageName: '@nocobase/plugin-field-china-region'
 description: |

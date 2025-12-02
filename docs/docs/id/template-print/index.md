@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-action-template-print"
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 # Pencetakan Template
 

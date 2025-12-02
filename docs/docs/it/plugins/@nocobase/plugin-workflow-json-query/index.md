@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Flusso di lavoro: Calcolo JSON"
 packageName: '@nocobase/plugin-workflow-json-query'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Pencadangan & Pemulihan Aplikasi (Usang)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |

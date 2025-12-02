@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Příkazy
 
 V NocoBase se příkazy používají ke spouštění operací z příkazové řádky souvisejících s aplikacemi nebo pluginy, například spouštění systémových úloh, provádění migrací nebo synchronizací, inicializace konfigurace, nebo interakce s běžícími instancemi aplikace. Vývojáři mohou pro pluginy definovat vlastní příkazy a registrovat je prostřednictvím objektu `app`, které se pak v CLI spouštějí ve formátu `nocobase <příkaz>`.

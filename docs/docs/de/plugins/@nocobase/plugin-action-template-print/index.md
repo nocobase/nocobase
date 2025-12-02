@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Vorlagen drucken"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:

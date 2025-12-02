@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Sumber data: External PostgreSQL"
 packageName: '@nocobase/plugin-data-source-external-postgres'
 supportedVersions:

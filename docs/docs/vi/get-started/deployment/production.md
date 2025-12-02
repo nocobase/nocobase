@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Triển khai trong môi trường sản xuất
 
 Khi triển khai NocoBase trong môi trường sản xuất, việc cài đặt các phần phụ thuộc có thể phức tạp do sự khác biệt trong cách xây dựng giữa các hệ thống và môi trường. Để có trải nghiệm đầy đủ tính năng, chúng tôi khuyến nghị sử dụng **Docker** để triển khai. Nếu môi trường hệ thống của bạn không thể sử dụng Docker, bạn cũng có thể triển khai bằng **create-nocobase-app**.

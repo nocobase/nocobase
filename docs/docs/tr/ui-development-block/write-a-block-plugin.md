@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # İlk Blok Eklentinizi Yazın
 
 Başlamadan önce, temel bir eklentiyi nasıl hızlıca oluşturacağınızı öğrenmek için "[İlk Eklentinizi Yazın](../plugin-development/write-your-first-plugin.md)" belgesini okumanızı öneririz. Ardından, bu temeli basit bir Blok özelliği ekleyerek genişleteceğiz.

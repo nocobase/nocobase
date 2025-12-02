@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Filhantering: S3 (Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Chuẩn bị
 
 Trước khi triển khai ứng dụng theo cụm, bạn cần hoàn tất các bước chuẩn bị sau.

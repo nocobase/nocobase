@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "การสำรองและกู้คืนแอปพลิเคชัน (เลิกใช้งานแล้ว)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |

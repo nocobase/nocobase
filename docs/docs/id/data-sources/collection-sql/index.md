@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-collection-sql"
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 # Koleksi SQL
 

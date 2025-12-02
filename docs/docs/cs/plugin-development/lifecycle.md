@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Životní cyklus
 
 Tato sekce popisuje háčky životního cyklu pluginů na straně serveru i klienta, aby pomohla vývojářům správně registrovat a uvolňovat zdroje.

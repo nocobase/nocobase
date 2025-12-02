@@ -33,6 +33,11 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Đồng bộ hóa cập nhật thông qua quy trình Git
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 
 # So sánh các phương thức cài đặt và phiên bản
 

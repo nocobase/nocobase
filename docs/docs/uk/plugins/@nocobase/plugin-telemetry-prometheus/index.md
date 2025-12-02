@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Телеметрія: Prometheus"
 packageName: '@nocobase/plugin-telemetry-prometheus'
 supportedVersions:

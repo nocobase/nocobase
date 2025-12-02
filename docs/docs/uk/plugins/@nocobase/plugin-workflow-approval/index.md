@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Робочий процес: Схвалення"
 packageName: '@nocobase/plugin-workflow-approval'
 description: |

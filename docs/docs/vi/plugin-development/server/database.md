@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Database
 
 `Database` là một thành phần quan trọng của các nguồn dữ liệu (`DataSource`) thuộc loại cơ sở dữ liệu. Mỗi nguồn dữ liệu loại cơ sở dữ liệu sẽ có một thể hiện `Database` tương ứng, có thể truy cập thông qua `dataSource.db`. Thể hiện cơ sở dữ liệu của nguồn dữ liệu chính cũng cung cấp bí danh tiện lợi `app.db`. Việc làm quen với các phương thức phổ biến của `db` là nền tảng để viết các plugin phía máy chủ.

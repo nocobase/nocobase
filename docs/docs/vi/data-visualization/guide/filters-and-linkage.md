@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Bộ lọc trang và liên kết
 
 Bộ lọc trang (Filter Block) cung cấp một giao diện nhập liệu thống nhất cho các điều kiện lọc ở cấp độ trang, sau đó hợp nhất chúng vào các truy vấn biểu đồ. Điều này giúp đảm bảo các biểu đồ được lọc nhất quán và liên kết với nhau.

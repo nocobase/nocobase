@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Doğrulama: TOTP Kimlik Doğrulayıcı"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:

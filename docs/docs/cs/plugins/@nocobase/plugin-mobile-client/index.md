@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Mobilní klient (zastaralý)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |

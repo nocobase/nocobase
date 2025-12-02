@@ -1,3 +1,8 @@
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 displayName: "모바일 클라이언트 (더 이상 사용되지 않음)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |

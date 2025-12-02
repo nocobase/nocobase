@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Test
 
 NocoBase bietet eine umfassende Suite von Testwerkzeugen, die Entwicklern dabei helfen, die Korrektheit von Datenbanklogik, API-Schnittstellen und Funktionsimplementierungen während der Plugin-Entwicklung schnell zu überprüfen. Dieser Leitfaden erklärt, wie Sie diese Tests schreiben, ausführen und organisieren.

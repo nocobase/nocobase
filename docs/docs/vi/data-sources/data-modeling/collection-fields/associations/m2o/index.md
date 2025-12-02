@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Nhiều-một
 
 Trong một cơ sở dữ liệu thư viện, có hai thực thể: sách và tác giả. Một tác giả có thể viết nhiều cuốn sách, nhưng mỗi cuốn sách thường chỉ có một tác giả. Trong trường hợp này, mối quan hệ giữa tác giả và sách là nhiều-một. Nhiều cuốn sách có thể liên kết với cùng một tác giả, nhưng mỗi cuốn sách chỉ có thể có một tác giả.

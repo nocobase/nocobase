@@ -17,6 +17,10 @@ Em nosso exemplo, existem aproximadamente as seguintes **coleções** principais
 Como o sistema atual suporta apenas a impressão de registros individuais, clicaremos em "Imprimir" na página "Detalhes do Contrato", e o sistema recuperará automaticamente o registro de `contracts` correspondente, bem como as `parties` associadas e outras informações, preenchendo-as em documentos Word ou PDF.
 
 ---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
 
 ## 2. Preparação
 

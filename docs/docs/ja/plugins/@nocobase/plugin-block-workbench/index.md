@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "ブロック：操作パネル"
 packageName: '@nocobase/plugin-block-workbench'
 description: |

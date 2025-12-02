@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Bildirim: E-posta"
 packageName: '@nocobase/plugin-notification-email'
 description: |

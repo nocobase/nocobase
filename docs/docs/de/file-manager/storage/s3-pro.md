@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 pkg: '@nocobase/plugin-file-storage-s3-pro'
 ---
 

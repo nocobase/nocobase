@@ -26,6 +26,10 @@ Clique na caixa de seleção na coluna `Available` da lista de Funcionários de 
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
 
 ---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
 
 ## Permissões de Acesso a Dados
 

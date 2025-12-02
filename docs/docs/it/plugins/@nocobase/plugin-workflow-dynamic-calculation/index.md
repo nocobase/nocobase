@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Flusso di lavoro: Nodo di calcolo dinamico"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |

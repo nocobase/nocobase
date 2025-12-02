@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Çoklu Koşullu Dallanma <Badge>v2.0.0+</Badge>
 
 ## Giriş

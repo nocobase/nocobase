@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Một-một
 
 Trong mối quan hệ giữa nhân viên và hồ sơ cá nhân, mỗi nhân viên chỉ có thể có một bản ghi hồ sơ cá nhân, và mỗi bản ghi hồ sơ cá nhân cũng chỉ có thể tương ứng với một nhân viên. Trong trường hợp này, mối quan hệ giữa nhân viên và hồ sơ cá nhân là một-một.

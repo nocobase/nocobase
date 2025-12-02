@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Aktion: Datensätze importieren Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:

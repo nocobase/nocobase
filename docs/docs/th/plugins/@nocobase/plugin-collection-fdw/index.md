@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "คอลเลกชัน: เชื่อมต่อข้อมูลภายนอก (FDW)"
 packageName: '@nocobase/plugin-collection-fdw'
 supportedVersions:

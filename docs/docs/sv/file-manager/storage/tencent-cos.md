@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Tencent Cloud COS
 
 En lagringsmotor baserad på Tencent Cloud COS. Innan ni kan använda den behöver ni förbereda relevanta konton och behörigheter.

@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "หลายพื้นที่"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:

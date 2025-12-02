@@ -57,6 +57,11 @@ const model = this.flowEngine.createModel({
 ```
 
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 ## Krok 2: Přidání PropsFlow pro konfigurovatelnost vlastností tlačítka
 

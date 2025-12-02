@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-block-iframe"
 ---
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 
 ```yaml
 pkg: "@nocobase/plugin-block-iframe"

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Speicher-Engine: Amazon S3
 
 Die Amazon S3 Speicher-Engine erfordert vor der Verwendung die Einrichtung der entsprechenden Konten und Berechtigungen.

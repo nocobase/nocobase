@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Azione: Duplica record"
 packageName: '@nocobase/plugin-action-duplicate'
 description: |

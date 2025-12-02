@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Validação de Campos
 Para garantir a precisão, segurança e consistência das **coleções** de dados, o NocoBase oferece a funcionalidade de validação de campos. Este recurso é dividido em duas partes principais: configuração de regras e aplicação de regras.
 

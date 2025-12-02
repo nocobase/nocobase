@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Önizleme ve Kaydetme
 
 *   **Önizleme:** Yapılandırma panelindeki değişiklikleri geçici olarak sayfa grafiğine yansıtır ve böylece etkilerini doğrulamanızı sağlar.

@@ -57,6 +57,11 @@ const model = this.flowEngine.createModel({
 ```
 
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 
 ## Krok 2: Dodawanie PropsFlow, aby właściwości przycisku były konfigurowalne
 

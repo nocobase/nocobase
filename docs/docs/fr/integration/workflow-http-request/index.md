@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Intégration des requêtes HTTP dans les flux de travail
 
 Le nœud de requête HTTP permet aux flux de travail NocoBase d'envoyer proactivement des requêtes à n'importe quel service HTTP, facilitant ainsi l'échange de données et l'intégration métier avec des systèmes externes.

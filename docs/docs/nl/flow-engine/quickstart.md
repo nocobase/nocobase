@@ -57,6 +57,11 @@ const model = this.flowEngine.createModel({
 ```
 
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 ## Stap 2: PropsFlow toevoegen om knopeigenschappen configureerbaar te maken
 

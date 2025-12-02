@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Integración de inicio de sesión único (SSO)
 
 NocoBase ofrece soluciones completas de inicio de sesión único (SSO), compatibles con múltiples protocolos de autenticación principales para una integración fluida con los sistemas de identidad empresariales existentes.

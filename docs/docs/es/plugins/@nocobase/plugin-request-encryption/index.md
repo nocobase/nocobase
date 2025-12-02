@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Cifrado de solicitudes HTTP"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:

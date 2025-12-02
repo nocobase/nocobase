@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-ai"
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 
 # Text-Chat
 

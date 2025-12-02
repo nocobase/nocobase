@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Eylem: Kayıtları Dışa Aktar Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:

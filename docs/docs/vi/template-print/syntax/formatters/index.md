@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 ## Trình định dạng
 
 Trình định dạng được dùng để chuyển đổi dữ liệu thô thành văn bản dễ đọc. Chúng được áp dụng cho dữ liệu bằng dấu hai chấm (`:`) và có thể được gọi theo chuỗi, sao cho đầu ra của mỗi trình định dạng sẽ trở thành đầu vào cho trình định dạng tiếp theo. Một số trình định dạng hỗ trợ tham số hằng số hoặc tham số động.

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Arbetsflöde: e-postnod"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |

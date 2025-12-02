@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # AI Medewerker · Nathan: Frontend Engineer
 
 > Helpt u bij het schrijven en optimaliseren van frontend code om complexe interactieve logica te implementeren.

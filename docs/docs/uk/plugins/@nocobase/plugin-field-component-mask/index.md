@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Компонент поля: маска"
 packageName: '@nocobase/plugin-field-component-mask'
 supportedVersions:

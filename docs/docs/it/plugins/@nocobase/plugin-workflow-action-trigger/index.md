@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Flusso di lavoro: Evento post-azione"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |

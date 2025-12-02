@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Extensión de tipos de nodo
 
 El tipo de un nodo es, en esencia, una instrucción operativa. Diferentes instrucciones representan distintas operaciones que se ejecutan en el **flujo de trabajo**.

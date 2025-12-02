@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Kullanıcı Kimlik Doğrulaması
 
 NocoBase'in kullanıcı kimlik doğrulama modülü temel olarak iki bölümden oluşur:

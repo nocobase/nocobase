@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Vòng đời
 
 Phần này tổng hợp các hook vòng đời của plugin ở cả phía máy chủ và phía máy khách, giúp nhà phát triển đăng ký và giải phóng tài nguyên một cách chính xác.

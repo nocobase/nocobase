@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Event
 
 De server van NocoBase genereert events (gebeurtenissen) tijdens de levenscyclus van de applicatie, de levenscyclus van plugins en databasebewerkingen. Plugin-ontwikkelaars kunnen naar deze events luisteren om uitbreidingslogica, geautomatiseerde handelingen of aangepast gedrag te implementeren.

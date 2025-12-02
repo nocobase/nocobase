@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Estendere le schede di configurazione dei permessi
 
 Prendiamo come esempio la voce di configurazione "Menu mobile" per dimostrare come estendere una nuova scheda di configurazione dei permessi. Il risultato è illustrato nell'immagine seguente:

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # DataSourceManager
 
 `DataSourceManager` là lớp quản lý cho nhiều thể hiện (instance) của `dataSource`.

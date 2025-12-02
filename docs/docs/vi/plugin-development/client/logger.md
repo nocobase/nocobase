@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Logger
 
 NocoBase cung cấp một hệ thống ghi nhật ký hiệu suất cao dựa trên [pino](https://github.com/pinojs/pino). Ở bất kỳ đâu có thể truy cập `context`, bạn đều có thể lấy một thể hiện logger thông qua `ctx.logger` để ghi lại các nhật ký quan trọng trong quá trình chạy của **plugin** hoặc hệ thống.

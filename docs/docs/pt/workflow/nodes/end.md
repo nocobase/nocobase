@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Encerrar Fluxo de Trabalho
 
 Quando este nó é executado, ele encerra imediatamente o fluxo de trabalho atual, usando o status que você configurou para ele. É uma ferramenta útil para controlar o fluxo com base em lógicas específicas: se certas condições forem atendidas, o fluxo de trabalho é interrompido e os processos seguintes não são executados. Pense nele como a instrução `return` em linguagens de programação, que serve para sair de uma função em execução.

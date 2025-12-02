@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Versionshantering
 
 När ett konfigurerat arbetsflöde har triggats minst en gång och ni vill ändra dess konfiguration eller noder, måste ni skapa en ny version innan ni gör ändringar. Detta säkerställer att exekveringshistoriken för tidigare triggade arbetsflöden inte påverkas av framtida modifieringar.

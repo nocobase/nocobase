@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Поле коллекции: Многие ко многим (массив)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |

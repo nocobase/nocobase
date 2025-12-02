@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Filtros de Página e Interligação
 
 O filtro de página (Bloco de Filtro) permite inserir condições de filtro de forma unificada no nível da página e as mescla em consultas de gráficos, garantindo que múltiplos gráficos sejam filtrados de forma consistente e interligados.

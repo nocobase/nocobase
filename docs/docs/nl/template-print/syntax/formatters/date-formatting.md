@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 ### Datumopmaak
 
 #### 1. `:formatD(patternOut, patternIn)`

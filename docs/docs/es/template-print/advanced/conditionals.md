@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 ## Sentencias Condicionales
 
 Las sentencias condicionales le permiten controlar dinámicamente la visualización u ocultamiento del contenido en un documento, basándose en los valores de los datos. Ofrecemos tres formas principales de escribir condiciones:

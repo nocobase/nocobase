@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Tvåfaktorsautentisering (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:

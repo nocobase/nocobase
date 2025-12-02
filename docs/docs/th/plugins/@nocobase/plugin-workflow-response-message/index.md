@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "เวิร์กโฟลว์: ข้อความตอบกลับ"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |

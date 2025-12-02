@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 # Microsoft Entra ID
 
 > https://learn.microsoft.com/en-us/entra/identity-platform/quickstart-register-app  

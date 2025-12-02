@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "AI: Base di conoscenza"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:

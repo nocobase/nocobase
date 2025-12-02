@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Akce: Export záznamů Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:

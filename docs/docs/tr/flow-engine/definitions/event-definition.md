@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # EventDefinition
 
 EventDefinition, bir iş akışındaki olay işleme mantığını tanımlar ve belirli olay tetikleyicilerine yanıt vermek için kullanılır. Olaylar, iş akışı motorunda iş akışı yürütmesini tetiklemek için önemli bir mekanizmadır.

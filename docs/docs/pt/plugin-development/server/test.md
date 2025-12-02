@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Testes
 
 NocoBase oferece um conjunto completo de ferramentas de teste para ajudar desenvolvedores a verificar rapidamente a correção da lógica do banco de dados, interfaces de API e implementações de funcionalidades durante o desenvolvimento de **plugins**. Este guia mostrará como escrever, executar e organizar esses testes.

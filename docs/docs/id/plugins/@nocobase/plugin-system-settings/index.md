@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Pengaturan Sistem"
 packageName: '@nocobase/plugin-system-settings'
 description: |

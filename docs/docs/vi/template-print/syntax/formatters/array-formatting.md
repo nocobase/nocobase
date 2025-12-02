@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 ### Định dạng Mảng
 
 #### 1. :arrayJoin(separator, index, count)

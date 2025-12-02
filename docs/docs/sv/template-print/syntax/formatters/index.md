@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 ## Formatters
 
 Formaterare används för att omvandla rådata till lättläst text. De tillämpas på data med ett kolon (':') och kan kedjas, så att utdata från en formaterare blir indata för nästa. Vissa formaterare stöder konstanta parametrar eller dynamiska parametrar.

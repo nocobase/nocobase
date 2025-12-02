@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # ActionDefinition
 
 ActionDefinition mendefinisikan aksi yang dapat digunakan kembali, yang dapat direferensikan dalam berbagai alur kerja dan langkah. Sebuah aksi adalah unit eksekusi inti dalam FlowEngine, yang merangkum logika bisnis spesifik.

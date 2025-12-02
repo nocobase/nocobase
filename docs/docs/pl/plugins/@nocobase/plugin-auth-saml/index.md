@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Uwierzytelnianie: SAML 2.0"
 packageName: '@nocobase/plugin-auth-saml'
 supportedVersions:

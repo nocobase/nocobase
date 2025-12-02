@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Rychlý start
 
 Pojďme si od začátku nakonfigurovat graf. Projdeme si základní a nezbytné funkce, zatímco volitelné možnosti probereme v dalších kapitolách.

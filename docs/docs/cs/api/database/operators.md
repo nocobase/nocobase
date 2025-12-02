@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Filtrační operátory
 
 Používají se v parametru `filter` u API, jako jsou `find`, `findOne`, `findAndCount`, `count` v rámci Repository:

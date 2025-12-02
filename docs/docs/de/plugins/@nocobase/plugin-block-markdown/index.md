@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Block: Markdown"
 packageName: '@nocobase/plugin-block-markdown'
 description: |

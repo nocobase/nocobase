@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 ### Tekstopmaak
 
 Deze sectie beschrijft verschillende formatters voor tekstdata. Hieronder vindt u per formatter de syntaxis, voorbeelden en de verwachte resultaten.

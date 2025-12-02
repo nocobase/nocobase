@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Meerdere trefwoorden filter"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:

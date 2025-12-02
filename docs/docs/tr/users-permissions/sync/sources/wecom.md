@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-wecom"
 ---
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 
 # WeChat Work'ten Kullanıcı Verilerini Senkronize Etme
 

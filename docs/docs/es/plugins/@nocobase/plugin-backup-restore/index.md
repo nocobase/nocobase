@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Copia de seguridad y restauración de la aplicación (obsoleto)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |

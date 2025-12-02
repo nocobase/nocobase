@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # HasManyRepository
 
 `HasManyRepository`, `HasMany` ilişkilerini yönetmek için kullanılan bir `Relation Repository`'dir.

@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Brouillons de formulaire"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:

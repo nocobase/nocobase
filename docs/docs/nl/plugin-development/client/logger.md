@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Logger
 
 NocoBase biedt een krachtig loggingsysteem aan, gebaseerd op [pino](https://github.com/pinojs/pino). Overal waar u toegang heeft tot de `context`, kunt u via `ctx.logger` een logger-instantie verkrijgen. Deze kunt u gebruiken om belangrijke logboeken vast te leggen tijdens de uitvoering van een plugin of het systeem.

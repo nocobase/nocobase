@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Aksi
 
 Di UI, aksi adalah tombol yang digunakan untuk memicu serangkaian instruksi. Tombol ini dapat ditempatkan langsung di halaman, kotak dialog, atau laci, dan juga dapat digunakan dalam kombinasi dengan blok. Saat ini, aksi yang dapat dikonfigurasi secara dinamis sebagian besar digunakan dalam kombinasi dengan blok.

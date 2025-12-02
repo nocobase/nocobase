@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 ## Formattatori
 
 I formattatori vengono utilizzati per convertire i dati grezzi in testo di facile lettura. Si applicano ai dati utilizzando i due punti (`:`) e possono essere concatenati, in modo che l'output di ciascun formattatore diventi l'input per il successivo. Alcuni formattatori supportano parametri costanti o parametri dinamici.

@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # EventDefinition
 
 `EventDefinition` definisce la logica di gestione degli eventi all'interno di un flusso di lavoro, utilizzata per rispondere a specifici trigger di evento. Gli eventi sono un meccanismo fondamentale nel `FlowEngine` per avviare l'esecuzione dei flussi di lavoro.

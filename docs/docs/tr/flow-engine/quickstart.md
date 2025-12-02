@@ -57,6 +57,10 @@ const model = this.flowEngine.createModel({
 ```
 
 ---
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
 
 ## Adım 2: Düğme Özelliklerini Yapılandırılabilir Hale Getirmek İçin PropsFlow Ekleyin
 

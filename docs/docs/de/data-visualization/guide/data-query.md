@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Datenabfrage
 
 Das Konfigurationspanel für Diagramme ist in drei Hauptbereiche unterteilt: Datenabfrage, Diagrammoptionen und Interaktionsereignisse. Hinzu kommen die Schaltflächen „Abbrechen“, „Vorschau“ und „Speichern“ am unteren Rand.

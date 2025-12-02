@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Samlingar (datatabeller)
 
 Inom NocoBase-pluginutveckling är **samlingar (datatabeller)** ett av de mest centrala koncepten. Genom att definiera eller utöka samlingar kan ni lägga till eller ändra datatabellstrukturer i era plugin. Till skillnad från datatabeller som skapas via gränssnittet för datakällshantering, är **samlingar som definieras i kod oftast systemomfattande metadata-tabeller** och visas inte i listan för datakällshantering.

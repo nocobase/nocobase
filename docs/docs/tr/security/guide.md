@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # NocoBase Güvenlik Rehberi
 
 NocoBase, işlevsel tasarımından sistem uygulamasına kadar veri ve uygulama güvenliğine büyük önem verir. Platform, kullanıcı kimlik doğrulaması, erişim kontrolü ve veri şifreleme gibi birçok yerleşik güvenlik özelliği sunar. Ayrıca, gerçek ihtiyaçlarınıza göre güvenlik politikalarını esnek bir şekilde yapılandırmanıza olanak tanır. Kullanıcı verilerini korumaktan, erişim izinlerini yönetmeye veya geliştirme ve üretim ortamlarını birbirinden ayırmaya kadar NocoBase, pratik araçlar ve çözümler sağlar. Bu rehber, NocoBase'i güvenli bir şekilde kullanmanız için size yol göstermeyi, verilerinizin, uygulamalarınızın ve ortamınızın güvenliğini korumanıza yardımcı olmayı ve güvenliğinizi sağlarken sistem özelliklerini verimli bir şekilde kullanmanızı amaçlamaktadır.

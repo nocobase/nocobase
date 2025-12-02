@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Motor de Armazenamento: Armazenamento Local
 
 Os arquivos enviados serão salvos em um diretório local no disco rígido do servidor. Isso é ideal para cenários onde o volume total de arquivos enviados gerenciados pelo sistema é pequeno ou para fins experimentais.

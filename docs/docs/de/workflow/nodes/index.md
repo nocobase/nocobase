@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Übersicht
 
 Ein Workflow besteht typischerweise aus mehreren miteinander verbundenen Arbeitsschritten. Jeder Knoten stellt einen dieser Schritte dar und dient als grundlegende logische Einheit im Prozess. Ähnlich wie in einer Programmiersprache repräsentieren verschiedene Knotentypen unterschiedliche Anweisungen, die das Verhalten des Knotens bestimmen. Wenn der Workflow ausgeführt wird, durchläuft das System jeden Knoten nacheinander und führt dessen Anweisungen aus.

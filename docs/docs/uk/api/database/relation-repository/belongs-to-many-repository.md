@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 # BelongsToManyRepository
 
 `BelongsToManyRepository` — це `Relation Repository` для роботи з відносинами типу `BelongsToMany`.

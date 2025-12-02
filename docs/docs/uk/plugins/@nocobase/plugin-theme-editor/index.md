@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Редактор тем"
 packageName: '@nocobase/plugin-theme-editor'
 description: |

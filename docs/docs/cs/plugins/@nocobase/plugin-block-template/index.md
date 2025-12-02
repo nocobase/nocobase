@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Blok: šablona (zastaralé)"
 packageName: '@nocobase/plugin-block-template'
 description: |

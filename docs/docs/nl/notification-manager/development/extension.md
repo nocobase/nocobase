@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Notificatiekanaaltypes uitbreiden
 
 NocoBase ondersteunt het naar behoefte uitbreiden van notificatiekanaaltypes, zoals sms-notificaties en app-pushberichten.

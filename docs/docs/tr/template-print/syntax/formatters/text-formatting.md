@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 ### Metin Biçimlendirme
 
 Metin verileri için çeşitli biçimlendiriciler sunulmaktadır. Aşağıdaki bölümlerde her bir biçimlendiricinin söz dizimi, örnekleri ve sonuçları sırasıyla açıklanmaktadır.

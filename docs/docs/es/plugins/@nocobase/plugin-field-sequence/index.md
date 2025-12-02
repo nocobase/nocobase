@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Campo de colección: Auto-codificación"
 packageName: '@nocobase/plugin-field-sequence'
 description: |

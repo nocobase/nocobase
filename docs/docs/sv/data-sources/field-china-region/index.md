@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-field-china-region"
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 # Kinas administrativa regioner
 

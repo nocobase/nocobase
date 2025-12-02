@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Hướng dẫn bảo mật NocoBase
 
 NocoBase chú trọng đến bảo mật dữ liệu và ứng dụng từ khâu thiết kế tính năng đến triển khai hệ thống. Nền tảng này tích hợp nhiều tính năng bảo mật như xác thực người dùng, kiểm soát truy cập và mã hóa dữ liệu, đồng thời cho phép cấu hình linh hoạt các chính sách bảo mật theo nhu cầu thực tế. Dù là bảo vệ dữ liệu người dùng, quản lý quyền truy cập hay cô lập môi trường phát triển và sản xuất, NocoBase đều cung cấp các công cụ và giải pháp thiết thực. Hướng dẫn này nhằm cung cấp chỉ dẫn để sử dụng NocoBase một cách an toàn, giúp người dùng bảo vệ dữ liệu, ứng dụng và môi trường, đảm bảo an toàn cho người dùng đồng thời sử dụng các tính năng hệ thống một cách hiệu quả.

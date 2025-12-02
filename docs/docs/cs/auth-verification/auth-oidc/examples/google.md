@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Přihlášení pomocí Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect

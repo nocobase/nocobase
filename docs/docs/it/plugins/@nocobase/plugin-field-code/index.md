@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Campo della collezione: Codice"
 packageName: '@nocobase/plugin-field-code'
 description: |

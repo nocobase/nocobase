@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Gambaran Umum Koleksi
 
 NocoBase menyediakan DSL unik untuk mendeskripsikan struktur data, yang disebut **koleksi**. Ini menyatukan struktur data dari berbagai sumber, menyediakan fondasi yang andal untuk manajemen, analisis, dan aplikasi data di kemudian hari.

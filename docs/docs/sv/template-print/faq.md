@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 ## Vanliga problem och lösningar
 
 ### 1. Tomma kolumner och celler i Excel-mallar försvinner vid rendering

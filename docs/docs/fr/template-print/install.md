@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 ### Installation des plugins
 
 Veuillez consulter la documentation sur l'installation et la mise à niveau des plugins commerciaux.

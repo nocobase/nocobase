@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Gestore multi-applicazione (deprecato)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |

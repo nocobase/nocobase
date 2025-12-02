@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Cách bật Federated Engine trong MySQL
 
 Cơ sở dữ liệu MySQL không bật mô-đun federated theo mặc định. Bạn cần sửa đổi cấu hình `my.cnf`. Nếu bạn đang sử dụng phiên bản Docker, bạn có thể xử lý việc mở rộng thông qua `volumes`:

@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "AI: База знань"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:

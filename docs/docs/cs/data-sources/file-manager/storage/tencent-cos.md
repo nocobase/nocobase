@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Tencent COS
 
 Úložný engine založený na Tencent Cloud COS. Před použitím je nutné připravit odpovídající účet a oprávnění.

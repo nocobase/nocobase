@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Vytvořte svůj první plugin
 
 Tento průvodce vás provede vytvořením blokového pluginu, který můžete použít na stránkách, a pomůže vám pochopit základní strukturu a vývojový pracovní postup pluginů NocoBase.

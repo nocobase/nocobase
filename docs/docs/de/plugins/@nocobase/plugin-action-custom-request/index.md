@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Aktion: Benutzerdefinierte Anfrage"
 packageName: '@nocobase/plugin-action-custom-request'
 description: |

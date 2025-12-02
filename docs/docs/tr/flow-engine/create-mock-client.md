@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # createMockClient
 
 Örnekler ve testler için genellikle `createMockClient` kullanarak hızlıca bir Mock uygulama oluşturmanız önerilir. Mock uygulama, hiçbir eklentinin etkinleştirilmediği, yalnızca örnekler ve testler için tasarlanmış temiz, boş bir uygulamadır.

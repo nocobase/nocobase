@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Mối quan hệ giữa FlowEngine và các plugin
 
 **FlowEngine** không phải là một plugin, mà là một **API cốt lõi** được cung cấp cho các plugin sử dụng, nhằm kết nối các khả năng cốt lõi với các tiện ích mở rộng nghiệp vụ.

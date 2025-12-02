@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Layanan Penyimpanan Skema UI"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |

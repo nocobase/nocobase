@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Úložný engine: Lokální úložiště
 
 Nahrané soubory se uloží do lokálního adresáře na pevném disku serveru. Tento způsob je vhodný pro scénáře s menším celkovým objemem nahraných souborů spravovaných systémem nebo pro experimentální účely.

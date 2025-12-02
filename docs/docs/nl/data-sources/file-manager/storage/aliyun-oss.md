@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Aliyun OSS
 
 Opslag-engine gebaseerd op Aliyun OSS. Voordat u deze gebruikt, moet u de benodigde accounts en machtigingen voorbereiden.

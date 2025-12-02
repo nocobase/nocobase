@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-data-source-external-mariadb"
 ---
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 
 pkg: "@nocobase/plugin-data-source-external-mariadb"
 ---

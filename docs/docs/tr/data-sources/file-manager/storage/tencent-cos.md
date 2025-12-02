@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Tencent COS
 
 Tencent Cloud COS tabanlı bir depolama motorudur. Kullanmadan önce ilgili hesap ve izinleri hazırlamanız gerekmektedir.

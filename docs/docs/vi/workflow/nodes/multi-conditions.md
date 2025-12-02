@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Phân nhánh đa điều kiện <Badge>v2.0.0+</Badge>
 
 ## Giới thiệu

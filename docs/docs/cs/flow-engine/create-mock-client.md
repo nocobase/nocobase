@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # createMockClient
 
 Při tvorbě příkladů a testů se obvykle doporučuje rychle vytvořit mock aplikaci pomocí `createMockClient`. Mock aplikace je čistá, prázdná aplikace bez aktivovaných pluginů, určená výhradně pro příklady a testování.

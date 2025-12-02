@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Campo da coleção: Snapshot de Relacionamento"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |

@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-action-import"
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Import
 
 ## Úvod

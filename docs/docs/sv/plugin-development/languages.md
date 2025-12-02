@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Språklista
 
 NocoBase erbjuder stöd för flera språk (i18n). Nedan hittar ni en lista över de språk som för närvarande är inbyggda. Varje språkkonfiguration består av en **språkkod (Locale Code)** och ett **visningsnamn (Label)**.

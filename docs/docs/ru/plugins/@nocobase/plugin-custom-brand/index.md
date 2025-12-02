@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Настраиваемый бренд"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:

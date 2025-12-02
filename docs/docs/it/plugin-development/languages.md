@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Elenco delle Lingue
 
 NocoBase offre supporto multilingue (i18n). Di seguito trova l'elenco delle lingue attualmente integrate.

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Vícepodmínkové větvení <Badge>v2.0.0+</Badge>
 
 ## Úvod

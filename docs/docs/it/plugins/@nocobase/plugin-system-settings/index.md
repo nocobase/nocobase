@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Impostazioni di sistema"
 packageName: '@nocobase/plugin-system-settings'
 description: |

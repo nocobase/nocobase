@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # FlowModel'i Render Etme
 
 `FlowModelRenderer`, bir `FlowModel`'i render etmek için kullanılan temel React bileşenidir. Bir `FlowModel` örneğini görsel bir React bileşenine dönüştürmekten sorumludur.

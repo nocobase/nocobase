@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Верификация: TOTP-аутентификатор"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:

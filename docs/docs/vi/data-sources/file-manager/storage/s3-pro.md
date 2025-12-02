@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-file-storage-s3-pro"
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 
 # Lưu trữ Tệp: S3 (Pro)
 

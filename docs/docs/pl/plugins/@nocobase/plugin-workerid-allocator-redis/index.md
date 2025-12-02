@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Alokator ID procesów roboczych Redis"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 description: |

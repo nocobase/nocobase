@@ -34,6 +34,11 @@ install_methods:
     upgrade_method: Sinkronkan pembaruan melalui proses Git.
 
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 # Perbandingan Metode Instalasi dan Versi
 

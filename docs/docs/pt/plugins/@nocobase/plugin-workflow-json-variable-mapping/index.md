@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Fluxo de Trabalho: Mapeamento de Variáveis JSON"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
 supportedVersions:

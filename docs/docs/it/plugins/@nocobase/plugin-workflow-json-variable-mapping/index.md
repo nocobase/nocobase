@@ -10,5 +10,10 @@ isFree: true
 builtIn: true
 defaultEnabled: true
 ---
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 
 # Flusso di lavoro: Mappatura variabili JSON

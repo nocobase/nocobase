@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Användardatasynkronisering"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Sammlungsfreigabe für mehrere Anwendungen"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |

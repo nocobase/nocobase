@@ -113,6 +113,11 @@ spec:
     app: nocobase
   type: ClusterIP
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Deployment của ứng dụng, có thể triển khai nhiều container ứng dụng.
 apiVersion: apps/v1
 kind: Deployment

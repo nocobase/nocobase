@@ -57,6 +57,11 @@ const model = this.flowEngine.createModel({
 ```
 
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 ## Steg 2: Lägg till PropsFlow för att göra knappegenskaper konfigurerbara
 

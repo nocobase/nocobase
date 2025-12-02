@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Collectie: Verbinden met externe gegevens (FDW)"
 packageName: '@nocobase/plugin-collection-fdw'
 supportedVersions:

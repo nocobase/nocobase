@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Багатоключовий фільтр"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:

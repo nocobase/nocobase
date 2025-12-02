@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Gegevensbron: Externe Oracle"
 packageName: '@nocobase/plugin-data-source-external-oracle'
 supportedVersions:

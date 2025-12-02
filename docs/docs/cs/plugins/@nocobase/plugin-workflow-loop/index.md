@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Pracovní postup: Cyklický uzel"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |

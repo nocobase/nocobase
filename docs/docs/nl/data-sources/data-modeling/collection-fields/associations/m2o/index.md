@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Veel-op-één
 
 In een bibliotheekdatabase zijn er twee entiteiten: boeken en auteurs. Een auteur kan meerdere boeken schrijven, maar elk boek heeft meestal maar één auteur. In zo'n geval is de relatie tussen auteurs en boeken een veel-op-één relatie. Meerdere boeken kunnen aan dezelfde auteur gekoppeld zijn, maar elk boek kan slechts één auteur hebben.

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Använda API-nycklar i NocoBase
 
 Den här guiden visar hur ni använder API-nycklar i NocoBase för att hämta data, med ett praktiskt exempel för "Att göra"-listor. Följ de stegvisa instruktionerna nedan för att förstå hela arbetsflödet.

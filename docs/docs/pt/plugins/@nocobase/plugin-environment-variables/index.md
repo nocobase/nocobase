@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Variáveis e segredos"
 packageName: '@nocobase/plugin-environment-variables'
 description: |

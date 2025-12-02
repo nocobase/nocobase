@@ -33,6 +33,11 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Synchroniseer updates via het Git-proces.
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 # Installatiemethoden en versieoverzicht
 

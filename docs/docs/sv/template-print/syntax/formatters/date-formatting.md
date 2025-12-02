@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 ### Datumformatering
 
 #### 1. :formatD(patternOut, patternIn)

@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "การจัดการการแจ้งเตือน"
 packageName: '@nocobase/plugin-notification-manager'
 description: |

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Bire Çok İlişki
 
 Bir sınıfın birden fazla öğrencisi olabilir, ancak her öğrenci yalnızca bir sınıfa aittir. Sınıf ve öğrenciler arasındaki bu ilişki, bire çok ilişkiye bir örnektir.

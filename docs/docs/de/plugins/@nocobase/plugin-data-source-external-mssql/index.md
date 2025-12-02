@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Datenquelle: Externer SQL Server"
 packageName: '@nocobase/plugin-data-source-external-mssql'
 supportedVersions:

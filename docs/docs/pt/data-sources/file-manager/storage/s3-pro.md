@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-file-storage-s3-pro"
 ---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 
 pkg: "@nocobase/plugin-file-storage-s3-pro"
 ---

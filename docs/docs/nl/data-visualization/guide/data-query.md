@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Gegevens opvragen
 
 Het configuratiepaneel van de grafiek is onderverdeeld in drie secties: Gegevens opvragen, Grafiekopties en Interactie-evenementen, plus de knoppen Annuleren, Voorbeeld en Opslaan onderaan.

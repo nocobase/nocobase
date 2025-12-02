@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Niestandardowe zdarzenia interakcji
 
 Proszę napisać kod JavaScript w edytorze zdarzeń i zarejestrować interakcje za pomocą instancji ECharts `chart`, aby umożliwić powiązania, takie jak nawigacja do nowej strony lub otwarcie okna dialogowego do analizy szczegółowej.

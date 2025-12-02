@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Logger (Günlük Kaydı)
 
 NocoBase günlük kaydı, <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a> üzerine kurulmuştur. Varsayılan olarak, NocoBase günlükleri API istek günlükleri, sistem çalışma günlükleri ve SQL yürütme günlükleri olarak üçe ayırır. API istek günlükleri ve SQL yürütme günlükleri uygulamanın kendisi tarafından oluşturulurken, **eklenti** geliştiricilerinin genellikle yalnızca **eklenti** ile ilgili sistem çalışma günlüklerini kaydetmeleri yeterlidir.

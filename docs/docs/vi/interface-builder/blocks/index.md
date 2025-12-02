@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Khối
 
 Khối là nơi chứa dữ liệu và nội dung. Chúng có thể được đặt trong trang (Page), hộp thoại (Modal) hoặc ngăn kéo (Drawer), và nhiều khối có thể được kéo thả, sắp xếp tự do.

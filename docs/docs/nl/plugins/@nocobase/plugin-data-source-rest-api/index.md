@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Gegevensbron: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:

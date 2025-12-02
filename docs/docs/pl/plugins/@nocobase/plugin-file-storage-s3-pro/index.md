@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Przechowywanie plików: S3 (Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
 supportedVersions:

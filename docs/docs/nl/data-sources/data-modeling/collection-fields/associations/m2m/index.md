@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Veel-op-veel
 
 In een systeem voor cursusinschrijvingen zijn er twee entiteiten: studenten en cursussen. Een student kan zich inschrijven voor meerdere cursussen, en een cursus kan meerdere ingeschreven studenten hebben. Dit vormt een veel-op-veel relatie. In een relationele database wordt voor het weergeven van een veel-op-veel relatie tussen studenten en cursussen meestal een tussenliggende `collectie` gebruikt, zoals een inschrijvings`collectie`. Deze `collectie` kan bijhouden welke cursussen elke student heeft gekozen en welke studenten zich voor elke cursus hebben ingeschreven. Dit ontwerp is een effectieve manier om de veel-op-veel relatie tussen studenten en cursussen weer te geven.

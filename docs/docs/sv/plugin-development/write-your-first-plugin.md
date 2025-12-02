@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Skapa din första plugin
 
 Den här guiden tar dig igenom hur du skapar en block-plugin från grunden som kan användas på sidor. Den hjälper dig att förstå den grundläggande strukturen och utvecklingsprocessen för NocoBase-plugins.

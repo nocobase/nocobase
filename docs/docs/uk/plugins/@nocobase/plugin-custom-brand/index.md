@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Налаштування бренду"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:

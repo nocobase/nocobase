@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Supprimer des données
 
 Ce nœud permet de supprimer des données d'une collection qui remplissent certaines conditions.

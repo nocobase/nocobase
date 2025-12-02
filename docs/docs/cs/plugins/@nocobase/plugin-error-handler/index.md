@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Zpracovatel chyb"
 packageName: '@nocobase/plugin-error-handler'
 description: |

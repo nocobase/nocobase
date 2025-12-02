@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "अवलोकन",
+    "link": "/multi-app/"
+  },
+  {
+    "type": "custom-link",
+    "label": "बहु-एप्लिकेशन",
+    "link": "/multi-app/multi-app"
+  },
+  {
+    "type": "custom-link",
+    "label": "बहु-स्पेस",
+    "link": "/multi-app/multi-space"
+  }
+]

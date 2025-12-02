@@ -10,5 +10,10 @@ isFree: true
 builtIn: true
 defaultEnabled: true
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 
 # เวิร์กโฟลว์: การแมปตัวแปร JSON

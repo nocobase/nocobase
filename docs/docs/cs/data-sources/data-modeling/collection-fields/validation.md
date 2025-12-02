@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Validace polí
 Abychom zajistili přesnost, bezpečnost a konzistenci dat v **kolekcích**, NocoBase nabízí funkci validace polí. Tato funkce se skládá ze dvou hlavních částí: konfigurace pravidel a aplikace pravidel.
 

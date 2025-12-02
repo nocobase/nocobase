@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "İş Akışı: E-posta Gönderme Düğümü"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |

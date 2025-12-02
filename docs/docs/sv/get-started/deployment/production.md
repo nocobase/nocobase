@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Driftsättning i produktionsmiljö
 
 När ni driftsätter NocoBase i en produktionsmiljö kan installationen av beroenden vara omständlig på grund av skillnader i byggmetoder mellan olika system och miljöer. För en komplett funktionsupplevelse rekommenderar vi att ni driftsätter med **Docker**. Om er systemmiljö inte kan använda Docker, kan ni även driftsätta med **create-nocobase-app**.

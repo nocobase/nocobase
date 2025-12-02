@@ -26,6 +26,10 @@ Klicken Sie das Kontrollkästchen in der Spalte `Available` der KI-Mitarbeiterli
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
 
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
 
 ## Datenzugriffsberechtigungen
 

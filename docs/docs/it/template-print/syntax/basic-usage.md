@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 ## Uso Base
 
 Il plugin di stampa dei modelli offre diverse sintassi per inserire in modo flessibile dati dinamici e strutture logiche nei modelli. Di seguito trova le spiegazioni dettagliate della sintassi e gli esempi di utilizzo.

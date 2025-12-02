@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 title: "Podstawowe pojęcia"
 description: "Poznaj podstawowe pojęcia NocoBase, aby lepiej zrozumieć, jak działa system."
 ---

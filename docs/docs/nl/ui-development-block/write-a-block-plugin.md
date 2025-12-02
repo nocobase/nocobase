@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Uw eerste blok-plugin schrijven
 
 Voordat u begint, raden we u aan om eerst '[Uw eerste plugin schrijven](../plugin-development/write-your-first-plugin.md)' te lezen. Hierin leert u hoe u snel een basis-plugin maakt. Vervolgens gaan we hierop voortbouwen door een eenvoudige blok-functionaliteit toe te voegen.

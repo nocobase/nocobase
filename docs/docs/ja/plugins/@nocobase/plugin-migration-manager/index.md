@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "移行マネージャー"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:

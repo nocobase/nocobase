@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Prévisualisation et Enregistrement
 
 *   **Prévisualisation** : Affiche temporairement les modifications du panneau de configuration dans le graphique de la page afin de vérifier le résultat.

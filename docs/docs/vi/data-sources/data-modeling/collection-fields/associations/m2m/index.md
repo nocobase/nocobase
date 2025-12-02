@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Nhiều-Nhiều
 
 Trong một hệ thống đăng ký khóa học, có hai thực thể: sinh viên và khóa học. Một sinh viên có thể đăng ký nhiều khóa học, và một khóa học cũng có thể có nhiều sinh viên đăng ký. Điều này tạo thành một mối quan hệ nhiều-nhiều. Trong cơ sở dữ liệu quan hệ, để biểu diễn mối quan hệ nhiều-nhiều giữa sinh viên và khóa học, người ta thường sử dụng một `bộ sưu tập` trung gian, ví dụ như `bộ sưu tập` đăng ký khóa học. `Bộ sưu tập` này có thể ghi lại những khóa học mà mỗi sinh viên đã chọn và những sinh viên đã đăng ký mỗi khóa học. Thiết kế này giúp biểu diễn mối quan hệ nhiều-nhiều giữa sinh viên và khóa học một cách hiệu quả.

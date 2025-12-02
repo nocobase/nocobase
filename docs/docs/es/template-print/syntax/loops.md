@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 ## Procesamiento de Bucles
 
 El procesamiento de bucles se utiliza para renderizar repetidamente datos de arreglos u objetos. Se logra definiendo marcadores de inicio y fin para identificar el contenido que necesita repetirse. A continuación, exploraremos algunos escenarios comunes.

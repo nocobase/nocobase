@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Zdroj dat: Externí SQL Server"
 packageName: '@nocobase/plugin-data-source-external-mssql'
 supportedVersions:

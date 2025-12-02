@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Рабочий процесс: Узел задержки"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |

@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Источник данных: Основной"
 packageName: '@nocobase/plugin-data-source-main'
 description: |

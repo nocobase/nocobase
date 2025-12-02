@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # ICollection
 
 `ICollection` är gränssnittet för datamodellen och innehåller information som modellens namn, fält och associationer.

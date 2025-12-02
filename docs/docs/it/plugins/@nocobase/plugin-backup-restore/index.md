@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Backup e ripristino dell'applicazione (deprecato)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |

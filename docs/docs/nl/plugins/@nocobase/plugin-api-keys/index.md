@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Authenticatie: API-sleutels"
 packageName: '@nocobase/plugin-api-keys'
 description: |

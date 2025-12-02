@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Acción: Imprimir"
 packageName: '@nocobase/plugin-action-print'
 description: |

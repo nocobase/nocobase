@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "ブロック：テンプレート（非推奨）"
 packageName: '@nocobase/plugin-block-template'
 description: |

@@ -1,0 +1,17 @@
+[
+  {
+    "type": "custom-link",
+    "label": "סקירה כללית",
+    "link": "/multi-app/"
+  },
+  {
+    "type": "custom-link",
+    "label": "ריבוי יישומים",
+    "link": "/multi-app/multi-app"
+  },
+  {
+    "type": "custom-link",
+    "label": "ריבוי מרחבים",
+    "link": "/multi-app/multi-space"
+  }
+]

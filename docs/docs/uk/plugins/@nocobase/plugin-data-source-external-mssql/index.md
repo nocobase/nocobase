@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Джерело даних: Зовнішній SQL Server"
 packageName: '@nocobase/plugin-data-source-external-mssql'
 supportedVersions:

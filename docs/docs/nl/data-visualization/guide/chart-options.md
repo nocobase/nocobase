@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Grafiekopties
 
 Configureer hoe grafieken worden weergegeven. Er zijn twee modi beschikbaar: Basic (visueel) en Custom (JS). De Basic-modus is ideaal voor snelle toewijzing en veelgebruikte eigenschappen; de Custom-modus is geschikt voor complexe scenario's en geavanceerde aanpassingen.

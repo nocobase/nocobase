@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Visão Geral
 
 O desenvolvimento de **plugins** para o lado do servidor do NocoBase oferece diversas funcionalidades e recursos para ajudar você a personalizar e estender as capacidades principais do NocoBase. Abaixo, você encontra as principais funcionalidades e os capítulos relacionados ao desenvolvimento de **plugins** para o lado do servidor do NocoBase:

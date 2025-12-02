@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Samling: Träd"
 packageName: '@nocobase/plugin-collection-tree'
 description: |

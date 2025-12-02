@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Sicherung und Wiederherstellung der Anwendung (veraltet)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |

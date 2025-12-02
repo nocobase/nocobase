@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Google ile Oturum Açma
 
 > https://developers.google.com/identity/openid-connect/openid-connect

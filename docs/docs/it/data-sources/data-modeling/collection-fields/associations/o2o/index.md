@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Uno a Uno
 
 Nel rapporto tra dipendenti e profili personali, ogni dipendente può avere una sola voce di profilo personale, e ogni voce di profilo personale può corrispondere a un solo dipendente. In questo scenario, la relazione tra dipendente e profilo personale è di tipo uno a uno.

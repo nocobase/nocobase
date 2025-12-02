@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Plugin
 
 Trong NocoBase, **Client Plugin** là cách chính để mở rộng và tùy chỉnh các chức năng frontend. Bằng cách kế thừa lớp cơ sở `Plugin` được cung cấp bởi `@nocobase/client`, nhà phát triển có thể đăng ký logic, thêm các thành phần trang, mở rộng menu hoặc tích hợp các chức năng của bên thứ ba tại các giai đoạn vòng đời khác nhau.

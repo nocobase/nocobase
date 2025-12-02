@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Kolekcja: Połączenie z zewnętrznymi danymi (FDW)"
 packageName: '@nocobase/plugin-collection-fdw'
 supportedVersions:

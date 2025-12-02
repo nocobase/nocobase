@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 ## Obsługa pętli
 
 Obsługa pętli służy do wielokrotnego renderowania danych z tablic lub obiektów. Odbywa się to poprzez zdefiniowanie znaczników początku i końca pętli, które określają powtarzaną zawartość. Poniżej przedstawiamy kilka typowych scenariuszy.

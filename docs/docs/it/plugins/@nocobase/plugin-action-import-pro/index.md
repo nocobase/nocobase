@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Azione: Importa record Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:

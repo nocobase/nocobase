@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-ai-ee"
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 # Multimodale Conversatie
 

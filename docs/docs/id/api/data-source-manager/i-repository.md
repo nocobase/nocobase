@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # IRepository
 
 Antarmuka `Repository` mendefinisikan serangkaian metode operasi model untuk mengadaptasi operasi CRUD pada **sumber data**.

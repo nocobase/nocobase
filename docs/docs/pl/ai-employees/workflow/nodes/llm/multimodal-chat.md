@@ -1,6 +1,10 @@
 ---
 pkg: "@nocobase/plugin-ai-ee"
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
 
 ```yaml
 ---

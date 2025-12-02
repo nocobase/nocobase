@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "शर्त निर्णय",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "उन्नत विशेषताएँ",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

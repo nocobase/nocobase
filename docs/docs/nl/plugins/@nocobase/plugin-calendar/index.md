@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Kalender"
 packageName: '@nocobase/plugin-calendar'
 description: |

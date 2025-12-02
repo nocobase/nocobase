@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # HasManyRepository
 
 `HasManyRepository` je `Relation Repository` používaný pro správu vztahů typu `HasMany`.

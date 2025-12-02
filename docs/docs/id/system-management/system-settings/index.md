@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Pengaturan Sistem
 
 Pengaturan sistem digunakan untuk mengonfigurasi informasi sistem global, termasuk nama sistem, LOGO utama, bahasa yang diaktifkan, dan lain-lain.

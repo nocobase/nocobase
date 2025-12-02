@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Візуальне керування колекціями"
 packageName: '@nocobase/plugin-graph-collection-manager'
 description: |

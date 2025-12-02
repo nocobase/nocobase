@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Bloc : Panneau d'actions"
 packageName: '@nocobase/plugin-block-workbench'
 description: |

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Yapay Zeka Çalışanı · İstek Mühendisliği Rehberi
 
 > "Nasıl yazılır"dan "iyi yazılır"a geçişi sağlayan bu rehber, yüksek kaliteli istekleri basit, istikrarlı ve yeniden kullanılabilir bir şekilde yazmayı öğretir.

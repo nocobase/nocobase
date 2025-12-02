@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # FlowModel vs React.Component
 
 ## Perbandingan Tanggung Jawab Dasar

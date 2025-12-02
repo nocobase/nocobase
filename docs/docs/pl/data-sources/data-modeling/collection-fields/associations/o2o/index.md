@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Jeden do jednego
 
 W relacji między pracownikami a ich profilami osobistymi, każdy pracownik może mieć tylko jeden profil osobisty, a każdy profil osobisty może należeć tylko do jednego pracownika. W takiej sytuacji mówimy o relacji jeden do jednego.

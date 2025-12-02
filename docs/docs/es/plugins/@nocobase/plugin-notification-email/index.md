@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Notificación: Correo electrónico"
 packageName: '@nocobase/plugin-notification-email'
 description: |

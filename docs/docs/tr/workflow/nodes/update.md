@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Veri Güncelle
 
 Belirli koşulları karşılayan bir `koleksiyon`daki verileri güncellemek için kullanılır.

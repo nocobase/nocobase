@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Utöka SMS-leverantör
 
 Den här artikeln beskriver hur du kan utöka funktionaliteten för SMS-leverantörer i [Verifiering: SMS](../sms) med hjälp av ett plugin.

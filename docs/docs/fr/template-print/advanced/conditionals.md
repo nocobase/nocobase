@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 ## Conditions
 
 Les conditions vous permettent de contrôler dynamiquement l'affichage ou le masquage du contenu d'un document en fonction des valeurs de vos données. Nous proposons trois méthodes principales pour définir ces conditions :

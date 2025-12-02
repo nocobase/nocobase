@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Чернетки форм"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:

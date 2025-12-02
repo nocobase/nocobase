@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 ### Formátování polí
 
 #### 1. :arrayJoin(separator, index, count)

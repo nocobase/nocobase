@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # AI zaměstnanec · Průvodce tvorbou promptů
 
 > Od „jak psát“ k „jak psát dobře“ – tento průvodce vás naučí, jak psát vysoce kvalitní prompty jednoduchým, stabilním a opakovaně použitelným způsobem.

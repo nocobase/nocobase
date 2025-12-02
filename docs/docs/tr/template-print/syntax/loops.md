@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 ## Döngü İşleme
 
 Döngü işleme, dizilerdeki veya nesnelerdeki verileri tekrar tekrar oluşturmak için kullanılır. Tekrarlanacak içeriği belirlemek için döngü başlangıç ve bitiş işaretleri tanımlanır. Aşağıda sık karşılaşılan birkaç durumu inceleyeceğiz.

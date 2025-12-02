@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # ActionDefinition
 
 ActionDefinition definuje opakovaně použitelné akce, na které lze odkazovat v různých pracovních postupech a krocích. Akce je základní vykonávací jednotkou v FlowEngine, která zapouzdřuje specifickou obchodní logiku.

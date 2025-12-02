@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Router
 
 Klien NocoBase menyediakan pengelola router yang fleksibel, yang mendukung perluasan halaman dan halaman pengaturan plugin melalui `router.add()` dan `pluginSettingsRouter.add()`.

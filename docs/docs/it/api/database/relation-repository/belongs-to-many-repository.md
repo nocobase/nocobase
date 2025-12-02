@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # BelongsToManyRepository
 
 `BelongsToManyRepository` è un `Relation Repository` utilizzato per gestire le relazioni `BelongsToMany`.

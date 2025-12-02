@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Collectieveld: Markdown(Vditor)"
 packageName: '@nocobase/plugin-field-markdown-vditor'
 description: |

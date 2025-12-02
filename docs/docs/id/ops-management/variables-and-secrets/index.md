@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-environment-variables"
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 # Variabel dan Kunci Rahasia
 

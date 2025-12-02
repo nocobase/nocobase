@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-block-iframe"
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 # Blok Iframe
 

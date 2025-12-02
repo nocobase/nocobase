@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-environment-variables"
 ---
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 
 # Değişkenler ve Sırlar
 

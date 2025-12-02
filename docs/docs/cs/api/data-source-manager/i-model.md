@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # IModel
 
 Rozhraní `IModel` definuje základní vlastnosti a metody objektu modelu.

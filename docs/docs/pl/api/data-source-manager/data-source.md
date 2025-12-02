@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Źródło danych (abstrakcyjne)
 
 `Źródło danych` to abstrakcyjna klasa służąca do reprezentowania typu źródła danych, którym może być na przykład baza danych, API i tym podobne.

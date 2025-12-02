@@ -36,6 +36,11 @@ FlowEngineContext (global kontext)
 - `FlowRuntimeContext` kommer alltid åt sin motsvarande `FlowModelContext` via en delegeringsmekanism, men propagerar inte ändringar uppåt.
 
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 ## 🧭 Körnings- och inställningsläge (mode)
 

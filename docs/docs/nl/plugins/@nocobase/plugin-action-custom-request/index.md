@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Actie: Aangepast verzoek"
 packageName: '@nocobase/plugin-action-custom-request'
 description: |

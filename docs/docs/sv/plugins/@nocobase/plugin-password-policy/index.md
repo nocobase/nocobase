@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Lösenordspolicy"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:

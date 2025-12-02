@@ -1,6 +1,11 @@
 ---
 title: Collectie selectieveld
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 # Collectie selectieveld
 

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Menggunakan Variabel Konteks
 
 Dengan variabel konteks, Anda dapat menggunakan kembali informasi dari halaman saat ini, pengguna, waktu, atau kondisi filter untuk merender bagan dan mengaktifkan tautan berdasarkan konteks.

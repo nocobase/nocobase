@@ -2,6 +2,11 @@
 title: Giới thiệu về NocoBase
 description: Tìm hiểu NocoBase là gì và cách nó giúp bạn xây dựng ứng dụng.
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 
 ## NocoBase là gì?
 

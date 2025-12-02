@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # DataSourceManager
 
 `DataSourceManager` je třída pro správu více instancí `dataSource`.

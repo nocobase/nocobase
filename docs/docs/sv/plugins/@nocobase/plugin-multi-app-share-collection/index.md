@@ -8,6 +8,11 @@ builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 # Delad samling för flera appar
 

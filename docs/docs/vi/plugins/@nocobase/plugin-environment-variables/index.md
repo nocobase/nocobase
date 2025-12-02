@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Biến và khóa bí mật"
 packageName: '@nocobase/plugin-environment-variables'
 description: |

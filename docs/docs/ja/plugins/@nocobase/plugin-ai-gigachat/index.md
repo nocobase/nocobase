@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "AI LLM：GigaChat"
 packageName: '@nocobase/plugin-ai-gigachat'
 supportedVersions:

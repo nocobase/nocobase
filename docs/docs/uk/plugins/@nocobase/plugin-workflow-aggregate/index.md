@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Робочий процес: Вузол агрегації"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |

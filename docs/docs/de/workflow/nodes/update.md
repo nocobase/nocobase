@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Daten aktualisieren
 
 Dieser Knoten dient dazu, Daten in einer Sammlung zu aktualisieren, die bestimmte Bedingungen erfüllen.

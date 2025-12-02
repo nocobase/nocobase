@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 # ลงชื่อเข้าใช้ด้วย Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect

@@ -33,6 +33,11 @@ pkg: '@nocobase/plugin-auth-oidc'
 ```yaml
 pkg: '@nocobase/plugin-auth-oidc'
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 
 # การยืนยันตัวตน: OIDC
 

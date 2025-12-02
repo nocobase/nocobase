@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-wecom"
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 # Gebruikersgegevens synchroniseren vanuit WeChat Work
 

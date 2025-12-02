@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Thao tác
 
 Trong giao diện người dùng (UI), thao tác là một nút dùng để kích hoạt một tập hợp các lệnh. Nó có thể được đặt trực tiếp trên trang, trong hộp thoại, hoặc trong ngăn kéo, và cũng có thể được sử dụng kết hợp với các khối. Hiện tại, các thao tác có thể cấu hình động chủ yếu được sử dụng kết hợp với các khối.

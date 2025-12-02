@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Benachrichtigung: In-App-Nachricht"
 packageName: '@nocobase/plugin-notification-in-app-message'
 description: |

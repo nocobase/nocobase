@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Синхронизация пользовательских данных"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |

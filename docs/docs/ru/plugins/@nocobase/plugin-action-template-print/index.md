@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Печать по шаблону"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:

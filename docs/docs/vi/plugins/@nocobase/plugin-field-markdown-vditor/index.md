@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Trường bộ sưu tập: Markdown(Vditor)"
 packageName: '@nocobase/plugin-field-markdown-vditor'
 description: |

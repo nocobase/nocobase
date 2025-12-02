@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 ### Formátování textu
 
 Tato sekce představuje různé formátovače pro textová data. Následující podsekce postupně popisují syntaxi, příklady a výsledky jednotlivých formátovačů.

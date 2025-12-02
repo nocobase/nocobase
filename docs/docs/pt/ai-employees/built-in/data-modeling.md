@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Agente de IA · Orin: Modelador de Dados
 
 > Projete coleções de forma inteligente e otimize a estrutura do banco de dados.

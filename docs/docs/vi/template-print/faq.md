@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 ## Các vấn đề thường gặp và giải pháp
 
 ### 1. Cột và ô trống trong mẫu Excel bị biến mất khi kết xuất

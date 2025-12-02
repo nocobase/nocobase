@@ -10,5 +10,10 @@ builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 
 # ฝัง NocoBase

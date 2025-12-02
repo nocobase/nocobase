@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "İş Akışı: Paralel Düğüm"
 packageName: '@nocobase/plugin-workflow-parallel'
 description: |

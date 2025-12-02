@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Viele-zu-Eins
 
 Stellen Sie sich eine Bibliotheksdatenbank mit zwei Entitäten vor: Büchern und Autoren. Ein Autor kann mehrere Bücher schreiben, aber jedes Buch hat (meistens) nur einen Autor. In diesem Fall besteht eine Viele-zu-Eins-Beziehung zwischen Autoren und Büchern. Mehrere Bücher können demselben Autor zugeordnet sein, aber jedes Buch kann nur einen Autor haben.

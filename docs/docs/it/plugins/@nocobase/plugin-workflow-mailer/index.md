@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Flusso di lavoro: nodo di invio email"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |

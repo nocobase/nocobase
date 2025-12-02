@@ -1,3 +1,8 @@
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 # DataSourceManager
 
 `DataSourceManager`는 여러 `dataSource` 인스턴스를 관리하는 클래스입니다.

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Migration (Yükseltme Betikleri)
 
 NocoBase eklenti geliştirme ve güncelleme süreçlerinde, eklentilerin veri tabanı yapıları veya konfigürasyonları uyumsuz değişikliklere uğrayabilir. Yükseltmelerin sorunsuz bir şekilde gerçekleşmesini sağlamak için NocoBase, bu değişiklikleri migration dosyaları yazarak yöneten bir **Migration** mekanizması sunar. Bu rehber, Migration kullanımını ve geliştirme iş akışını sistematik bir şekilde anlamanıza yardımcı olacaktır.

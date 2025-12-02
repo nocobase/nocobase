@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Хранилище файлов: S3 (Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
 supportedVersions:

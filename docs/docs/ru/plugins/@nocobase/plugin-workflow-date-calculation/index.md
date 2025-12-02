@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Рабочий процесс: узел вычисления даты"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:

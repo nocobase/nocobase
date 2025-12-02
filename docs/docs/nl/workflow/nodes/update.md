@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Gegevens bijwerken
 
 Gebruikt voor het bijwerken van gegevens in een collectie die voldoen aan specifieke voorwaarden.

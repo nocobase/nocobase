@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Sử dụng biến ngữ cảnh
 
 Với biến ngữ cảnh, bạn có thể sử dụng lại thông tin từ trang hiện tại, người dùng, thời gian, điều kiện lọc, v.v., để hiển thị biểu đồ và liên kết dữ liệu theo ngữ cảnh.

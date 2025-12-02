@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Smazat data
 
 Slouží ke smazání dat z kolekce, která splňují určité podmínky.

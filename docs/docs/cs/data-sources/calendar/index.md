@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-calendar"
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 # Kalendářový blok
 

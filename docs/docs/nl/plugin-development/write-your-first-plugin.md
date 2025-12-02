@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Uw eerste plugin schrijven
 
 Deze handleiding begeleidt u stap voor stap bij het maken van een blok-plugin die u op pagina's kunt gebruiken. Zo krijgt u inzicht in de basisstructuur en het ontwikkelproces van NocoBase plugins.

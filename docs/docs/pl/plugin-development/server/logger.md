@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Logger
 
 Logowanie w NocoBase opiera się na bibliotece <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. Domyślnie NocoBase dzieli logi na logi żądań API, logi działania systemu oraz logi wykonywania zapytań SQL. Logi żądań API i logi wykonywania zapytań SQL są generowane wewnętrznie przez aplikację. Deweloperzy wtyczek zazwyczaj potrzebują jedynie rejestrować logi działania systemu związane z ich wtyczkami.

@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-ip-restriction"
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 ```yaml
 pkg: '@nocobase/plugin-ip-restriction'

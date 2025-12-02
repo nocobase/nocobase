@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "AI LLM: GigaChat"
 packageName: '@nocobase/plugin-ai-gigachat'
 supportedVersions:

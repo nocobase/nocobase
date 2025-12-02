@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Alur Kerja: Peristiwa Setelah Tindakan"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |

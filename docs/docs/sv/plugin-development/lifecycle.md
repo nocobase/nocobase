@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Livscykel
 
 Detta avsnitt organiserar livscykelkrokarna för **plugin** på både serversidan och klientsidan, för att hjälpa utvecklare att korrekt registrera och frisläppa resurser.

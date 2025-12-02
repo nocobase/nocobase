@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # CronJobManager Gestione delle attività pianificate
 
 `CronJobManager` è un gestore di attività pianificate fornito da NocoBase, basato su [cron](https://www.npmjs.com/package/cron). Permette ai plugin di registrare attività pianificate sul server per eseguire periodicamente una logica specifica.

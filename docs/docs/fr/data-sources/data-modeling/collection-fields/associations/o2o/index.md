@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Un-à-un
 
 Dans une relation entre des employés et des profils personnels, chaque employé ne peut avoir qu'un seul enregistrement de profil personnel, et chaque enregistrement de profil personnel ne peut correspondre qu'à un seul employé. On parle alors d'une relation un-à-un entre l'employé et le profil personnel.

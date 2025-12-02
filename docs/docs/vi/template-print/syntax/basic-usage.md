@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 ## Cách dùng cơ bản
 
 Plugin In Mẫu cung cấp nhiều cú pháp khác nhau để bạn linh hoạt chèn dữ liệu động và cấu trúc logic vào các mẫu. Dưới đây là giải thích chi tiết về cú pháp và các ví dụ sử dụng.

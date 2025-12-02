@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # FlowEngine là gì?
 
 FlowEngine là một công cụ phát triển giao diện người dùng (frontend) không mã, ít mã mới được NocoBase 2.0 ra mắt. Nó kết hợp các mô hình (Model) với các luồng (Flow) để đơn giản hóa logic frontend, nâng cao khả năng tái sử dụng và bảo trì. Đồng thời, nhờ khả năng cấu hình của Flow, nó cung cấp khả năng cấu hình và điều phối không mã cho các thành phần frontend và logic nghiệp vụ.

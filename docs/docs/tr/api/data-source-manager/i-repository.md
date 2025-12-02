@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # IRepository
 
 `Repository` arayüzü, veri kaynağının CRUD işlemlerini uyarlamak için bir dizi model işlem metodu tanımlar.

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Jak povolit federated engine v MySQL
 
 Databáze MySQL ve výchozím nastavení nemá povolen modul federated. Je potřeba upravit konfiguraci `my.cnf`. Pokud používáte verzi v Dockeru, můžete rozšíření řešit pomocí `volumes`:

@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-client"
 ---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 
 # Administrador de Rutas
 

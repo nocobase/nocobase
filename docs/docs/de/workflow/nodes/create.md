@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Daten Hinzufügen
 
 Mit diesem Knoten können Sie einer Sammlung eine neue Datenzeile hinzufügen.

@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Action
 
 Dans l'interface utilisateur (UI), une action est un bouton utilisé pour déclencher un ensemble d'instructions. Elle peut être placée directement sur une page, dans une boîte de dialogue ou un tiroir, et peut également être utilisée en combinaison avec des blocs. Actuellement, les actions configurables dynamiquement sont principalement utilisées en combinaison avec des blocs.

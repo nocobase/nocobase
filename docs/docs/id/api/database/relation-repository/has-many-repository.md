@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # HasManyRepository
 
 `HasManyRepository` adalah `Relation Repository` yang digunakan untuk menangani relasi `HasMany`.

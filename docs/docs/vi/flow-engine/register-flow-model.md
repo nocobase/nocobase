@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Đăng ký FlowModel
 
 ## Bắt đầu với FlowModel tùy chỉnh

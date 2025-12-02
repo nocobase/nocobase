@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Event
 
 Server NocoBase akan memicu event (peristiwa) yang sesuai selama siklus hidup aplikasi, siklus hidup plugin, dan operasi basis data. Pengembang plugin dapat mendengarkan event ini untuk mengimplementasikan logika ekstensi, operasi otomatis, atau perilaku kustom.

@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Zapytanie o dane
 
 Umożliwia wyszukiwanie i pobieranie rekordów z **kolekcji**, które spełniają określone warunki.

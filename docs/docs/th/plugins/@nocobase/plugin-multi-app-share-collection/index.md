@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "การแชร์คอลเลกชันระหว่างหลายแอป"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |

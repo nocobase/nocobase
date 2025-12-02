@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Servicios distribuidos <Badge>v1.9.0+</Badge>
 
 ## Introducción

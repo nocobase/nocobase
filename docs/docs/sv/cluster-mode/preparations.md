@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Förberedelser
 
 Innan ni driftsätter en klusterapplikation behöver ni slutföra följande förberedelser.

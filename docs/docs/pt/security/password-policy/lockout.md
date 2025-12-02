@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-password-policy"
 ---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 
 ```yaml
 pkg: '@nocobase/plugin-password-policy'

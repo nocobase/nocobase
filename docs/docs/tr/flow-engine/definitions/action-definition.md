@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # ActionDefinition
 
 ActionDefinition, birden fazla iş akışında ve adımda referans alınabilen, yeniden kullanılabilir eylemleri tanımlar. Bir eylem, iş akışı motorundaki temel yürütme birimidir ve belirli iş mantığını kapsüller.

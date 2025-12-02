@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Джерело даних: Головна база даних"
 packageName: '@nocobase/plugin-data-source-main'
 description: |

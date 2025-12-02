@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-block-iframe"
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 
 # Iframe-Block
 

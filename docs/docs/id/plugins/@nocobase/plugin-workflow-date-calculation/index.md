@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Alur Kerja: Node Perhitungan Tanggal"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:

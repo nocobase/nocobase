@@ -11,5 +11,10 @@ builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 
 # 데이터 소스: 외부 MySQL

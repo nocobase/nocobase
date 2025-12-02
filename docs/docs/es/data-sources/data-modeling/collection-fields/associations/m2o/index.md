@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Muchos a Uno
 
 Imagine una base de datos de una biblioteca con dos entidades: libros y autores. Un autor puede escribir varios libros, pero cada libro suele tener un solo autor. En este escenario, la relación entre autores y libros es de muchos a uno. Varios libros pueden estar asociados al mismo autor, pero cada libro solo puede tener un autor.

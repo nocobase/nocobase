@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Implementatie in Productieomgeving
 
 Wanneer u NocoBase implementeert in een productieomgeving, kan het installeren van afhankelijkheden omslachtig zijn vanwege de uiteenlopende opbouwmethoden van verschillende systemen en omgevingen. Voor een complete functionele ervaring raden wij aan om NocoBase te implementeren met **Docker**. Als uw systeemomgeving geen Docker kan gebruiken, kunt u ook implementeren met **create-nocobase-app**.

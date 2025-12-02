@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # AI-medarbetare · Administratörsguide för konfiguration
 
 > Det här dokumentet hjälper dig att snabbt förstå hur du konfigurerar och hanterar AI-medarbetare, och guidar dig steg för steg genom hela processen, från modelltjänster till uppgiftsfördelning.

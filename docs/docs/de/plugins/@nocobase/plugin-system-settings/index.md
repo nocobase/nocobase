@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Systemeinstellungen"
 packageName: '@nocobase/plugin-system-settings'
 description: |

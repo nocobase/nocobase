@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # ICollectionManager
 
 Giao diện `ICollectionManager` được dùng để quản lý các thể hiện (instance) của `bộ sưu tập` thuộc một `nguồn dữ liệu`.

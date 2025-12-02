@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Uwierzytelnianie: Klucze API"
 packageName: '@nocobase/plugin-api-keys'
 description: |

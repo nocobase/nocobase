@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "เวิร์กโฟลว์: ตัวแปรที่กำหนดเอง"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:

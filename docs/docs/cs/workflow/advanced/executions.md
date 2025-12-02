@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Plán spuštění (Historie)
 
 Po spuštění pracovního postupu se vytvoří odpovídající plán spuštění pro sledování průběhu této úlohy. Každý plán spuštění má stavovou hodnotu, která udává jeho aktuální stav. Tento stav si můžete prohlédnout v seznamu i v detailech historie spuštění:

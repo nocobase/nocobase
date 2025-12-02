@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Arbetsflöde: Händelse före åtgärd"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:

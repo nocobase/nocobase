@@ -1,6 +1,10 @@
 ---
 pkg: "@nocobase/plugin-collection-sql"
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
 
 ```yaml
 ---

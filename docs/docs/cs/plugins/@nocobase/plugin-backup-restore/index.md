@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Zálohování a obnova aplikace (zastaralé)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |

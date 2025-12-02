@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Übersicht
 
 Ein Trigger ist der Einstiegspunkt für einen Workflow. Wenn während der Ausführung der Anwendung ein Ereignis eintritt, das die Bedingungen des Triggers erfüllt, wird der Workflow ausgelöst und ausgeführt. Der Typ des Triggers bestimmt auch den Typ des Workflows. Sie wählen ihn bei der Erstellung des Workflows aus, und er kann danach nicht mehr geändert werden. Die aktuell unterstützten Trigger-Typen sind:

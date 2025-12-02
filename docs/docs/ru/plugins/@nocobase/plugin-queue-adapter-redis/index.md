@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Адаптер очереди Redis"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:

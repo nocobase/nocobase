@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # CronJobManager
 
 `CronJobManager` je správce plánovaných úloh, který NocoBase poskytuje a je založen na [cronu](https://www.npmjs.com/package/cron). Umožňuje pluginům registrovat plánované úlohy na serveru pro pravidelné spouštění specifické logiky.

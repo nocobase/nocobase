@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Přehled rozšíření bloků
 
 V NocoBase 2.0 byl mechanismus rozšíření bloků výrazně zjednodušen. Vývojáři stačí zdědit odpovídající základní třídu **FlowModel** a implementovat související metody rozhraní (především metodu `renderComponent()`), aby mohli rychle přizpůsobit bloky.

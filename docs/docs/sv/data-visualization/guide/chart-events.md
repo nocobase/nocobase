@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Anpassade interaktionshändelser
 
 Skriv JavaScript i händelseeditorn och registrera interaktioner via ECharts-instansen `chart` för att möjliggöra kopplingar. Det kan till exempel vara att navigera till en ny sida eller öppna en dialogruta för att analysera detaljer.

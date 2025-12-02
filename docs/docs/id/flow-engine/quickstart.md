@@ -57,6 +57,11 @@ const model = this.flowEngine.createModel({
 ```
 
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 ## Langkah 2: Menambahkan PropsFlow untuk Membuat Properti Tombol Dapat Dikonfigurasi
 

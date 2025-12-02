@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Робочий процес: Вузол циклу"
 packageName: '@nocobase/plugin-workflow-loop'
 description: |

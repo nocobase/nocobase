@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Comparaison : Bases de données principales et externes
 
 Les différences entre les bases de données principales et les bases de données externes dans NocoBase se manifestent principalement à travers quatre aspects : le support des types de bases de données, le support des types de collections, le support des types de champs et les capacités de sauvegarde et de migration.

@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Campo della collezione: Molti a molti (array)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |

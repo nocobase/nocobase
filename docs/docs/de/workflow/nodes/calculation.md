@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Berechnung
 
 Der Berechnungs-Knoten kann einen Ausdruck auswerten. Das Ergebnis wird im jeweiligen Knoten gespeichert und steht nachfolgenden Knoten zur Verfügung. Er ist ein Werkzeug zum Berechnen, Verarbeiten und Transformieren von Daten. Bis zu einem gewissen Grad kann er die Funktion in Programmiersprachen ersetzen, bei der eine Funktion auf einen Wert angewendet und das Ergebnis einer Variablen zugewiesen wird.

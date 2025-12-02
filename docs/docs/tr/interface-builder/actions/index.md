@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Eylem
 
 Kullanıcı arayüzünde (UI), bir eylem bir dizi talimatı tetiklemek için kullanılan bir düğmedir. Doğrudan bir sayfaya, diyalog kutusuna veya çekmeceye yerleştirilebilir; ayrıca bloklarla birlikte de kullanılabilir. Şu anda, dinamik olarak yapılandırılabilen eylemler genellikle bloklarla birlikte kullanılır.

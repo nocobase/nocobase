@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Campo de coleção: divisões administrativas da China"
 packageName: '@nocobase/plugin-field-china-region'
 description: |

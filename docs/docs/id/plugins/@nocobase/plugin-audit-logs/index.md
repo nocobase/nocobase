@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Log Audit (Usang)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |

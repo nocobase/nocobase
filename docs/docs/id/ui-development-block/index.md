@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Ikhtisar Ekstensi Blok
 
 Di NocoBase 2.0, mekanisme ekstensi blok telah sangat disederhanakan. Pengembang hanya perlu mewarisi kelas dasar (base class) **FlowModel** yang sesuai dan mengimplementasikan metode antarmuka terkait (terutama metode `renderComponent()`) untuk dapat menyesuaikan blok dengan cepat.

@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 ### Formatowanie Walut
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)

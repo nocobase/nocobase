@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 ### Formátování časových intervalů
 
 #### 1. :formatI(patternOut, patternIn)

@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Consulta de datos
 
 El panel de configuración de gráficos se divide en tres secciones principales: **Consulta de datos**, **Opciones del gráfico** y **Eventos de interacción**, además de los botones de **Cancelar**, **Previsualizar** y **Guardar** en la parte inferior. Primero, exploremos el panel de "Consulta de datos" para entender sus dos modos de consulta (Builder/SQL) y sus funciones más comunes.

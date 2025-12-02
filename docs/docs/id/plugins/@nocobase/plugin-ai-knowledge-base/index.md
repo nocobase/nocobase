@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "AI: Basis Pengetahuan"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:

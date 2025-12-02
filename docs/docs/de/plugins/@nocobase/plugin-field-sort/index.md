@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Sammlungsfeld: Sortieren"
 packageName: '@nocobase/plugin-field-sort'
 description: |

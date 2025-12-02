@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-ip-restriction"
 ---
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 
 pkg: '@nocobase/plugin-ip-restriction'
 ---

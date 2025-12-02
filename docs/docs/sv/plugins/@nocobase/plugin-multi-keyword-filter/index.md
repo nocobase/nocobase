@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Filter för flera nyckelord"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Workflow: JSON-Berechnung"
 packageName: '@nocobase/plugin-workflow-json-query'
 supportedVersions:

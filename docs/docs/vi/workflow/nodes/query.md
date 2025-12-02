@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Truy vấn Dữ liệu
 
 Dùng để truy vấn và lấy các bản ghi dữ liệu từ một **bộ sưu tập** thỏa mãn các điều kiện cụ thể.

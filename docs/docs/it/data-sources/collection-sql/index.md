@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-collection-sql"
 ---
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 
 # Collezione SQL
 

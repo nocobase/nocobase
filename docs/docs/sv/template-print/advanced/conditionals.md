@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 ## Villkorssatser
 
 Villkorssatser låter dig dynamiskt styra visningen eller döljandet av innehåll i dokumentet baserat på datavärden. Det finns tre huvudsakliga sätt att skriva villkor:

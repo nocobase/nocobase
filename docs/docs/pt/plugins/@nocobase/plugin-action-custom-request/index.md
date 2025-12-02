@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Ação: Requisição personalizada"
 packageName: '@nocobase/plugin-action-custom-request'
 description: |

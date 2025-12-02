@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Quản lý Phiên bản
 
 Sau khi một luồng công việc đã được cấu hình và kích hoạt ít nhất một lần, nếu bạn muốn sửa đổi cấu hình hoặc các nút của luồng công việc đó, bạn cần tạo một phiên bản mới trước khi thực hiện thay đổi. Điều này cũng đảm bảo rằng khi xem lại lịch sử thực thi của các luồng công việc đã được kích hoạt trước đó, chúng sẽ không bị ảnh hưởng bởi các sửa đổi trong tương lai.

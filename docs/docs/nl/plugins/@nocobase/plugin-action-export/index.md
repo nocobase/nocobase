@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Actie: Records exporteren"
 packageName: '@nocobase/plugin-action-export'
 description: |

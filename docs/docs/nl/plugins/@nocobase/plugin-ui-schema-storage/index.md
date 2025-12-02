@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "UI schema opslag"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |

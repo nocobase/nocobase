@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 ```yaml
 displayName: "Champ de collection : Instantané"
 packageName: '@nocobase/plugin-snapshot-field'

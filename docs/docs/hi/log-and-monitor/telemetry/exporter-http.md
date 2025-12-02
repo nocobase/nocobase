@@ -1,0 +1,26 @@
+:::tip AI अनुवाद सूचना
+यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
+:::
+
+
+pkg: '@nocobase/plugin-telemetry'
+---
+
+# टेलीमेट्री एक्सपोर्टर: HTTP
+
+## पर्यावरण वैरिएबल कॉन्फ़िगरेशन
+
+### TELEMETRY_METRIC_READER
+
+टेलीमेट्री मेट्रिक एक्सपोर्टर का प्रकार।
+
+```bash
+TELEMETRY_METRIC_READER=http
+```
+
+### TELEMETRY_HTTP_URL
+
+टेलीमेट्री डेटा एक्सपोर्ट करने के लिए HTTP URL।
+
+```bash
+TELEMETRY_HTTP_URL=

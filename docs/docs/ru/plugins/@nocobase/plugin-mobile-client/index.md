@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Мобильный клиент (Устаревший)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |

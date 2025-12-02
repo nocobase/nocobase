@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Plan wykonania (Historia)
 
 Po każdym wyzwoleniu **przepływu pracy** tworzony jest odpowiadający mu plan wykonania, aby śledzić przebieg tego zadania. Każdy plan wykonania ma wartość statusu, która wskazuje jego bieżący stan. Status ten można sprawdzić zarówno na liście historii wykonań, jak i w jej szczegółach:

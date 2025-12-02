@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Block: iframe"
 packageName: '@nocobase/plugin-block-iframe'
 description: |

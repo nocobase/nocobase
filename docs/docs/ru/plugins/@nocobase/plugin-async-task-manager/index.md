@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Менеджер асинхронных задач"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |

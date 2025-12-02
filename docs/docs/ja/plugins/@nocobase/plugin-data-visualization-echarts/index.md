@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "データ可視化：ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:

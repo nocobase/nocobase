@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Viết & Chạy JS Trực Tuyến
 
 Trong NocoBase, **RunJS** cung cấp một phương pháp mở rộng nhẹ nhàng, phù hợp cho các tình huống **thử nghiệm nhanh và xử lý logic tạm thời**. Không cần tạo **plugin** hoặc sửa đổi mã nguồn, bạn có thể tùy chỉnh giao diện hoặc tương tác một cách cá nhân hóa thông qua JavaScript.

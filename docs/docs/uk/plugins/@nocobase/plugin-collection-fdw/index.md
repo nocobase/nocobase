@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Колекція: Підключення до зовнішніх даних (FDW)"
 packageName: '@nocobase/plugin-collection-fdw'
 supportedVersions:

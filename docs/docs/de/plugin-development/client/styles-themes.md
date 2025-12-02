@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Stile & Themes
 
 Um die dynamischen Theme-Fähigkeiten von NocoBase optimal zu nutzen, empfehlen wir in Plugins die Verwendung von [antd-style](https://ant-design.github.io/antd-style/zh-CN/guide) zum Schreiben von Stilen. In Kombination mit den bestehenden [Theme-Tokens](https://ant.design/docs/react/customize-theme-cn#seedtoken) können Sie die dynamischen Theme-Fähigkeiten steuern. NocoBase bietet außerdem ein [Theme-Editor-Plugin](#) an, mit dem Sie Stile bequem anpassen können.

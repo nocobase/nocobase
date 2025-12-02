@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 ```yaml
 displayName: "Pengelola Tugas Asinkron"
 packageName: '@nocobase/plugin-async-task-manager'

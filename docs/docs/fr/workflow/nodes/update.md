@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Mettre à jour des données
 
 Permet de mettre à jour les données d'une `collection` qui remplissent des conditions spécifiques.

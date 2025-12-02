@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 ## Biçimlendiriciler
 
 Biçimlendiriciler, ham veriyi okunması kolay metne dönüştürmek için kullanılır. Verilere iki nokta üst üste (:) kullanarak uygulanırlar ve zincirleme olarak çağrılabilirler; böylece her biçimlendiricinin çıktısı bir sonrakinin girdisi olur. Bazı biçimlendiriciler sabit veya dinamik parametreleri destekler.

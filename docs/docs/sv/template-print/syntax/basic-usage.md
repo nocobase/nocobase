@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 ## Grundläggande användning
 
 Mallutskrifts-pluginen erbjuder flera syntaxer för att flexibelt infoga dynamisk data och logiska strukturer i mallar. Nedan följer detaljerade syntaxförklaringar och användningsexempel.

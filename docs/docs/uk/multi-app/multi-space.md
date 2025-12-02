@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-multi-space"
 ---
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 
 ```yaml
 pkg: "@nocobase/plugin-multi-space"

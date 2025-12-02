@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Authentifizierung: OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
 supportedVersions:

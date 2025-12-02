@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Flusso di lavoro: nodo di calcolo data"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:

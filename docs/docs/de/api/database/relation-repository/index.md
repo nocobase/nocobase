@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # RelationRepository
 
 `RelationRepository` ist ein `Repository`-Objekt für Beziehungstypen. Es ermöglicht die Bearbeitung von verknüpften Daten, ohne die Verknüpfung selbst laden zu müssen. Aufbauend auf dem `RelationRepository` gibt es für jeden Beziehungstyp eine entsprechende abgeleitete Implementierung:

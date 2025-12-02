@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Employé IA · Nathan : Développeur Frontend
 
 > Vous aide à écrire et optimiser le code frontend pour implémenter des logiques interactives complexes.

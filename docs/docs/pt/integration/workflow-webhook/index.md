@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Integração de Webhook do Fluxo de Trabalho
 
 Através de gatilhos Webhook, o NocoBase pode receber chamadas HTTP de sistemas de terceiros e acionar automaticamente **fluxos de trabalho**, permitindo uma integração perfeita com sistemas externos.

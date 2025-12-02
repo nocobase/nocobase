@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Dotazování dat
 
 Konfigurační panel grafu je rozdělen do tří hlavních částí: Dotazování dat, Možnosti grafu a Interaktivní události, doplněné o tlačítka Zrušit, Náhled a Uložit ve spodní části.

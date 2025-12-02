@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Aktualizace instalace ze zdrojového kódu Git
 
 :::warning Příprava před aktualizací

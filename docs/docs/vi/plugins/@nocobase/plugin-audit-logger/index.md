@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Nhật ký kiểm toán"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:

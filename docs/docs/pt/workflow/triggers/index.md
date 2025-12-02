@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Visão Geral
 
 Um gatilho é o ponto de entrada para um fluxo de trabalho. Quando um evento que atende às condições do gatilho ocorre enquanto o aplicativo está em execução, o fluxo de trabalho será acionado e executado. O tipo de gatilho também define o tipo do fluxo de trabalho, sendo selecionado durante a criação e não podendo ser modificado posteriormente. Os tipos de gatilho atualmente suportados são:

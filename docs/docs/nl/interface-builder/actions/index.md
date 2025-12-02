@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Actie
 
 In de UI is een actie een knop die u gebruikt om een reeks instructies te activeren. U kunt deze direct op een pagina, in een dialoogvenster of in een lade plaatsen, en ook in combinatie met blokken gebruiken. Momenteel worden dynamisch configureerbare acties voornamelijk in combinatie met blokken gebruikt.

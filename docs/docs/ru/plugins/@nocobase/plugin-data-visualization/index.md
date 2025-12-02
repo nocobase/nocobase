@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Визуализация данных"
 packageName: '@nocobase/plugin-data-visualization'
 description: |

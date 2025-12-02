@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # ICollectionManager
 
 A interface `ICollectionManager` é usada para gerenciar instâncias de `coleção` de uma `fonte de dados`.

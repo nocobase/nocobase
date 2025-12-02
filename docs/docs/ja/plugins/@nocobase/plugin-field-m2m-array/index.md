@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "コレクションフィールド：多対多 (配列)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |

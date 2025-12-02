@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Relační pole
 
 V NocoBase nejsou relační pole skutečná pole, ale slouží k navázání propojení mezi kolekcemi. Tento koncept je ekvivalentní vztahům v relačních databázích.

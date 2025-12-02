@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Робочий процес: Підпроцес"
 packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Ciclo de Vida
 
 Esta seção organiza os ganchos de ciclo de vida para *plugins* tanto no servidor quanto no cliente, ajudando os desenvolvedores a registrar e liberar recursos corretamente.

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Cài đặt Ngôn ngữ
 
 Trong mục "Cài đặt Hệ thống", Quý vị có thể điều chỉnh môi trường ngôn ngữ chung của hệ thống bằng cách cấu hình "Ngôn ngữ được bật". Ngôn ngữ đầu tiên trong danh sách sẽ được sử dụng làm ngôn ngữ mặc định.

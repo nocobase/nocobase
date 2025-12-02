@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # DataSourceManager: Manajemen Sumber Data
 
 NocoBase menyediakan `DataSourceManager` untuk mengelola banyak sumber data. Setiap `DataSource` memiliki instans `Database`, `ResourceManager`, dan `ACL` sendiri, sehingga memudahkan pengembang untuk mengelola dan memperluas berbagai sumber data secara fleksibel.

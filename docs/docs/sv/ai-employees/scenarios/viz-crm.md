@@ -40,6 +40,11 @@ För att förstå hur ni utökar Viz måste ni först förstå dess interna lage
 Denna lagerdesign gör att Viz kan bibehålla en stabil personlighet (konsekvent analyslogik) samtidigt som den snabbt kan anpassas till olika affärsscenarier (CRM, sjukhushantering, kanalanalys, produktionsdrift...).
 
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 ## 3. Mönster ett: Mallbaserad analysmotor (rekommenderas)
 

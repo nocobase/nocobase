@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 # フィルター演算子
 
 Repository の `find`、`findOne`、`findAndCount`、`count` といったAPIの `filter` パラメーターで使用します。

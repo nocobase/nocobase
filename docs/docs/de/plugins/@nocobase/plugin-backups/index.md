@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Backup-Manager"
 packageName: '@nocobase/plugin-backups'
 supportedVersions:

@@ -1,0 +1,48 @@
+[
+  {
+    "type": "custom-link",
+    "label": "מדריך אבטחה",
+    "link": "/security/guide"
+  },
+  {
+    "type": "custom-link",
+    "label": "מדיניות אסימונים",
+    "link": "/security/token-policy/"
+  },
+  {
+    "type": "custom-link",
+    "label": "מדיניות סיסמאות",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "密码策略",
+        "link": "/security/password-policy/"
+      },
+      {
+        "type": "custom-link",
+        "label": "用户锁定",
+        "link": "/security/password-policy/lockout"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "הגבלת IP",
+    "link": "/security/ip-restriction/"
+  },
+  {
+    "type": "custom-link",
+    "label": "יומני ביקורת",
+    "link": "/security/audit-logger/"
+  },
+  {
+    "type": "custom-link",
+    "label": "אימות דו-שלבי (2FA)",
+    "link": "/auth-verification/2fa/"
+  },
+  {
+    "type": "custom-link",
+    "label": "הצפנת שדות",
+    "link": "/data-sources/field-encryption"
+  }
+]

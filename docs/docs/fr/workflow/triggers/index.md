@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Présentation
 
 Un déclencheur est le point d'entrée d'un flux de travail. Lorsqu'un événement qui remplit les conditions du déclencheur se produit pendant l'exécution de l'application, le flux de travail sera déclenché et exécuté. Le type de déclencheur est aussi le type de flux de travail ; vous le choisissez lors de la création du flux de travail, et il ne peut pas être modifié par la suite. Voici les types de déclencheurs actuellement pris en charge :

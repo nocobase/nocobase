@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Przepływ pracy: węzeł obliczania daty"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Verificatie: TOTP-authenticator"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:

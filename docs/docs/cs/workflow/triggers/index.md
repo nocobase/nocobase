@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Přehled
 
 Spouštěč je vstupním bodem pro pracovní postup. Když během běhu aplikace nastane událost, která splňuje podmínky spouštěče, pracovní postup se spustí a provede. Typ spouštěče je zároveň typem pracovního postupu. Volí se při vytváření pracovního postupu a po jeho vytvoření jej nelze změnit. Aktuálně jsou podporovány následující typy spouštěčů:

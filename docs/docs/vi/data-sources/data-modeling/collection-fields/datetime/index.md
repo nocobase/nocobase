@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Các loại trường Ngày giờ
 
 ## Các loại trường Ngày giờ

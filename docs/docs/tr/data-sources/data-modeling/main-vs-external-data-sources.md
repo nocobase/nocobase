@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Ana ve Harici Veritabanları Karşılaştırması
 
 NocoBase'deki ana ve harici veritabanları arasındaki farklar başlıca dört alanda kendini gösterir: veritabanı türü desteği, koleksiyon türü desteği, alan türü desteği ve yedekleme ile taşıma yetenekleri.

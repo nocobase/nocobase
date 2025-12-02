@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Адаптер блокування Redis"
 packageName: '@nocobase/plugin-lock-adapter-redis'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Integrace jednotného přihlášení (SSO)
 
 NocoBase nabízí komplexní řešení jednotného přihlášení (SSO), které podporuje řadu běžných autentizačních protokolů a umožňuje bezproblémovou integraci s vašimi stávajícími podnikovými identitními systémy.

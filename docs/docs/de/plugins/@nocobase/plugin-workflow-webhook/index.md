@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Workflow: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:

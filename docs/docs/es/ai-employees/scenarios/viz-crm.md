@@ -41,6 +41,10 @@ Este diseño por capas permite a Viz mantener una personalidad estable (lógica 
 y, al mismo tiempo, adaptarse rápidamente a diferentes escenarios de negocio (CRM, gestión hospitalaria, análisis de canales, operaciones de producción...).
 
 ---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
 
 ## 3. Patrón uno: Motor de análisis basado en plantillas (Recomendado)
 

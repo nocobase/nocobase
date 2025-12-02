@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Integracja z Jednokrotnym Logowaniem (SSO)
 
 NocoBase oferuje kompleksowe rozwiązania w zakresie jednokrotnego logowania (SSO), obsługujące wiele popularnych protokołów uwierzytelniania, co umożliwia płynną integrację z istniejącymi systemami tożsamości w Państwa firmie.

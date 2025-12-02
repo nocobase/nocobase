@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-wecom"
 ---
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 
 # Sincronizzare i Dati Utente da WeChat Work
 

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Avsluta arbetsflöde
 
 När den här noden körs avslutas det aktuella arbetsflödet omedelbart med den status som konfigurerats i noden. Den används vanligtvis för flödeskontroll baserad på specifik logik, där man lämnar det aktuella arbetsflödet när vissa villkor är uppfyllda och stoppar körningen av efterföljande processer. Det kan jämföras med `return`-instruktionen i programmeringsspråk, som används för att avsluta den aktuella funktionen.

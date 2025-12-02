@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Olay Akışı
 
 FlowEngine'de, arayüzdeki tüm bileşenler **olay odaklıdır**.

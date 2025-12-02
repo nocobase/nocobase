@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Redis låsadapter"
 packageName: '@nocobase/plugin-lock-adapter-redis'
 supportedVersions:

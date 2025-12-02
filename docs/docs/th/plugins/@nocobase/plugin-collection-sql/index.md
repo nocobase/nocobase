@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "คอลเลกชัน: SQL"
 packageName: '@nocobase/plugin-collection-sql'
 description: |

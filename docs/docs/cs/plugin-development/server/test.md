@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Testování
 
 NocoBase nabízí kompletní sadu testovacích nástrojů, které vývojářům pomáhají rychle ověřit správnost databázové logiky, API rozhraní a implementace funkcí během vývoje **pluginů**. Tento článek představí, jak tyto testy psát, spouštět a organizovat.

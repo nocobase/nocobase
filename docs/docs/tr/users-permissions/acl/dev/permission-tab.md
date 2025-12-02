@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # İzin Yapılandırma Sekmelerini Genişletme
 
 Aşağıda, "Mobil Menü" yapılandırma öğesini örnek alarak yeni bir izin yapılandırma sekmesini nasıl genişletebileceğinizi göstereceğiz. Sonuç aşağıdaki görselde gösterilmiştir:

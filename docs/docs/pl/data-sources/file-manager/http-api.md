@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # HTTP API
 
 Przesyłanie plików zarówno dla pól załączników, jak i dla kolekcji plików, może być obsługiwane za pośrednictwem HTTP API. Sposób wywołania różni się w zależności od silnika przechowywania danych używanego przez załącznik lub kolekcję plików.

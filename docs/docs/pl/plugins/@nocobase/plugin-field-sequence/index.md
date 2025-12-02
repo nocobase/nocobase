@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Pole kolekcji: Sekwencja"
 packageName: '@nocobase/plugin-field-sequence'
 description: |

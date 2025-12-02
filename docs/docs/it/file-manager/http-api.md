@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # API HTTP
 
 Il caricamento di file, sia per i campi di allegato che per le collezioni di file, è supportato tramite l'API HTTP. Le modalità di richiamo variano a seconda del motore di archiviazione utilizzato dal campo di allegato o dalla collezione di file.

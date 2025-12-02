@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "เวิร์กโฟลว์: โหนดคำนวณวันที่"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:

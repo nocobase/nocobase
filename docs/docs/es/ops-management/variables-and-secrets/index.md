@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-environment-variables"
 ---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 
 # Variables y Claves Secretas
 

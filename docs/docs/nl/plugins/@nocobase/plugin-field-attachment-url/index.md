@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Collectieveld: Bijlage (URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |

@@ -1,6 +1,11 @@
 ---
 title: Akce kolekce
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 V NocoBase můžete s kolekcemi provádět následující akce:
 

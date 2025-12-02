@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # FlowDefinition
 
 `FlowDefinition` definiuje podstawową strukturę i konfigurację przepływu pracy i jest jedną z kluczowych koncepcji silnika przepływów pracy (FlowEngine). Opisuje metadane przepływu pracy, warunki wyzwalania, kroki wykonania itp.

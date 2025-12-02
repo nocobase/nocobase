@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Arbetsflöde: Efter-åtgärd-händelse"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |

@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-auth-ldap"
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 pkg: '@nocobase/plugin-auth-ldap'
 ---

@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Menedżer poczty e-mail"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:

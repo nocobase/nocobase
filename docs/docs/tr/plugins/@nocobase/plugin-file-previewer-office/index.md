@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Office Dosya Önizleyici"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |

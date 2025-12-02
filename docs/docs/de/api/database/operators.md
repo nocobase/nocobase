@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Filter-Operatoren
 
 Diese Operatoren werden im `filter`-Parameter von Repository-APIs wie `find`, `findOne`, `findAndCount` und `count` verwendet:

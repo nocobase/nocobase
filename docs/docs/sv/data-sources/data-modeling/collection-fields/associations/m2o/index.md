@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Många-till-en
 
 I en biblioteksdatabas finns det två entiteter: böcker och författare. En författare kan skriva flera böcker, men varje bok har oftast bara en författare. I det här fallet är relationen mellan författare och böcker många-till-en. Flera böcker kan kopplas till samma författare, men varje bok kan bara ha en författare.

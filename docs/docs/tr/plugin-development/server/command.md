@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Komut
 
 NocoBase'de komutlar, komut satırında uygulama veya eklentilerle ilgili işlemleri yürütmek için kullanılır. Örneğin, sistem görevlerini çalıştırmak, geçiş (migration) veya senkronizasyon işlemleri gerçekleştirmek, yapılandırmayı başlatmak ya da çalışan uygulama örnekleriyle etkileşimde bulunmak gibi. Geliştiriciler, eklentiler için özel komutlar tanımlayabilir ve bunları `app` nesnesi aracılığıyla kaydederek CLI'da `nocobase <komut>` şeklinde çalıştırabilirler.

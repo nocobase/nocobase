@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 ## Les formateurs
 
 Les formateurs servent à transformer des données brutes en texte facile à lire. Ils s'appliquent aux données à l'aide d'un deux-points (`:`) et peuvent être chaînés, de sorte que la sortie de chaque formateur devienne l'entrée du suivant. Certains formateurs prennent en charge des paramètres constants ou dynamiques.

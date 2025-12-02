@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Xác thực: Trình xác thực TOTP"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:

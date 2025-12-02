@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Správa závislostí
 
 Při vývoji **pluginů** pro NocoBase se závislosti dělí na dvě hlavní kategorie: **závislosti pluginu** a **globální závislosti**.

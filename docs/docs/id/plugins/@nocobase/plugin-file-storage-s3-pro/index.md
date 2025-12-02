@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Penyimpanan File: S3 (Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
 supportedVersions:

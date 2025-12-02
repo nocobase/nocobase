@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Kueri Data
 
 Panel konfigurasi bagan secara keseluruhan terbagi menjadi tiga bagian: Kueri Data, Opsi Bagan, dan Event Interaksi, ditambah tombol Batalkan, Pratinjau, dan Simpan di bagian bawah.

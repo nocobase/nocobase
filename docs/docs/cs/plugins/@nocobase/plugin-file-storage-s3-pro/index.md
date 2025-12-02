@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Úložiště souborů: S3 (Pro)"
 packageName: '@nocobase/plugin-file-storage-s3-pro'
 supportedVersions:

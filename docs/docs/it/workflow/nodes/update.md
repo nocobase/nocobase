@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Aggiorna Dati
 
 Utilizzato per aggiornare i dati in una collezione che soddisfano condizioni specifiche.

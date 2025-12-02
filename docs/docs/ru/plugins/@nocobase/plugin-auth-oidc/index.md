@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Аутентификация: OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
 supportedVersions:

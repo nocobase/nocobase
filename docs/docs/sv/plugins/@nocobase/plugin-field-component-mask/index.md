@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Fältkomponent: maskering"
 packageName: '@nocobase/plugin-field-component-mask'
 supportedVersions:

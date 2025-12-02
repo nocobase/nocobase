@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Rascunhos de Formulário"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:

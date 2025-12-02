@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Sammlungsfeld: Viele zu Viele (Array)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |

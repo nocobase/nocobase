@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 ### Plugins installeren
 
 Raadpleeg de documentatie over het installeren en upgraden van commerciële plugins.

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Lokale opslag
 
 Geüploade bestanden worden opgeslagen in een lokale map op de server. Dit is geschikt voor kleinschalige of experimentele scenario's waarbij het totale aantal bestanden dat door het systeem wordt beheerd relatief klein is.

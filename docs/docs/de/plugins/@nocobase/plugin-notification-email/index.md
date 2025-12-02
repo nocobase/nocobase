@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Benachrichtigung: E-Mail"
 packageName: '@nocobase/plugin-notification-email'
 description: |

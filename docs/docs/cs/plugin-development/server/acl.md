@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Řízení oprávnění ACL
 
 ACL (Access Control List) slouží k řízení oprávnění pro operace s prostředky. Oprávnění můžete přidělit rolím, nebo je přímo omezit bez ohledu na role. Systém ACL nabízí flexibilní mechanismus správy oprávnění, který podporuje fragmenty oprávnění (snippets), middleware, podmíněné posuzování a další metody.

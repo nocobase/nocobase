@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 ## Gestione dei Cicli
 
 La gestione dei cicli Le permette di eseguire il rendering ripetuto dei dati da array o oggetti, definendo marcatori di inizio e fine per identificare il contenuto da ripetere. Di seguito presentiamo alcuni scenari comuni.

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # DataSourceManager Veri Kaynağı Yönetimi
 
 NocoBase, birden fazla veri kaynağını yönetmek için `DataSourceManager` sağlar. Her bir `DataSource`'un kendine ait bir `Database`, `ResourceManager` ve `ACL` örneği bulunur. Bu yapı, geliştiricilerin birden fazla veri kaynağını esnek bir şekilde yönetmesini ve genişletmesini kolaylaştırır.

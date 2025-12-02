@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Používání kontextových proměnných
 
 Díky kontextovým proměnným můžete přímo znovu využít informace z aktuální stránky, uživatele, času nebo filtrovacích podmínek. To vám umožní dynamicky vykreslovat grafy a propojovat je na základě aktuálního kontextu.

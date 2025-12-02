@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Struktura projektu
 
 Ať už klonujete zdrojový kód z Gitu, nebo inicializujete projekt pomocí `create-nocobase-app`, vygenerovaný projekt NocoBase je v podstatě monorepo založené na **Yarn Workspace**.

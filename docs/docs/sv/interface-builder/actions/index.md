@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Åtgärd
 
 I användargränssnittet (UI) är en åtgärd en knapp som används för att utlösa en uppsättning instruktioner. Den kan placeras direkt på en sida, i en dialogruta eller i en sidopanel, och kan även användas i kombination med block. För närvarande används dynamiskt konfigurerbara åtgärder främst i kombination med block.

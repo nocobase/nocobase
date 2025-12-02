@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Gestion des versions
 
 Une fois qu'un flux de travail configuré a été déclenché au moins une fois, si vous souhaitez modifier sa configuration ou ses nœuds, vous devrez créer une nouvelle version avant d'apporter des changements. Cette approche garantit que l'historique d'exécution des flux de travail précédemment déclenchés ne sera pas affecté par les modifications futures.

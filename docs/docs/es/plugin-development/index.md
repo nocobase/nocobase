@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Descripción general del desarrollo de plugins
 
 NocoBase utiliza una **arquitectura de microkernel**, donde el núcleo solo se encarga de la programación del ciclo de vida de los plugins, la gestión de dependencias y la encapsulación de capacidades básicas. Todas las funcionalidades de negocio se ofrecen en forma de plugins. Por lo tanto, comprender la estructura organizativa, el ciclo de vida y la forma de gestionar los plugins es el primer paso para personalizar NocoBase.

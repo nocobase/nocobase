@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # CronJobManager – Menedżer Zadań Cyklicznych
 
 `CronJobManager` to menedżer zadań cyklicznych dostarczany przez NocoBase, oparty na bibliotece [cron](https://www.npmjs.com/package/cron). Umożliwia wtyczkom rejestrowanie zadań cyklicznych na serwerze, które służą do okresowego wykonywania określonej logiki.

@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Політика паролів"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:

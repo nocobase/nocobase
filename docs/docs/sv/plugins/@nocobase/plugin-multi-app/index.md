@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Flera appar"
 packageName: '@nocobase/plugin-multi-app'
 supportedVersions:

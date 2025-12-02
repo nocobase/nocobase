@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Variabel dan Rahasia"
 packageName: '@nocobase/plugin-environment-variables'
 description: |

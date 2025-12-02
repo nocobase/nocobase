@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Extension des types de canaux de notification
 
 NocoBase vous permet d'étendre les types de canaux de notification selon vos besoins, par exemple pour les notifications par SMS ou les notifications push d'applications.

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # EventDefinition
 
 `EventDefinition` mendefinisikan logika penanganan *event* dalam sebuah alur kerja, yang digunakan untuk merespons pemicu *event* tertentu. *Event* adalah mekanisme penting dalam *FlowEngine* untuk memicu eksekusi alur kerja.

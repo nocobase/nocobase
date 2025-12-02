@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Veri Sorgulama
 
 Grafik yapılandırma paneli genel olarak üç ana bölüme ayrılmıştır: Veri sorgulama, Grafik seçenekleri ve Etkileşim olayları. Ayrıca en altta İptal, Önizle ve Kaydet düğmeleri bulunur.

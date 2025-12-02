@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Enkripsi Permintaan HTTP"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:

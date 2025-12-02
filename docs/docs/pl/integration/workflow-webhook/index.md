@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Integracja przepływów pracy z Webhookami
 
 Dzięki wyzwalaczom Webhook, NocoBase może odbierać wywołania HTTP z systemów zewnętrznych i automatycznie uruchamiać przepływy pracy, co pozwala na płynną integrację z innymi platformami.

@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 ### Formato de Texto
 
 Esta sección le presenta varios formateadores para datos de texto. A continuación, exploraremos la sintaxis, los ejemplos y los resultados de cada uno.

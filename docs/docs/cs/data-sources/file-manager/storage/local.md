@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Lokální úložiště
 
 Nahrané soubory se ukládají do lokálního adresáře na serveru. To je vhodné pro menší nebo experimentální scénáře, kde je celkový objem souborů spravovaných systémem relativně malý.

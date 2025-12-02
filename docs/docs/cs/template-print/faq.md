@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 ## Časté problémy a řešení
 
 ### 1. Prázdné sloupce a buňky v šablonách Excelu mizí ve vygenerovaných výsledcích

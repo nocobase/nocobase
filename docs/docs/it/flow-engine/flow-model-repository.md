@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Persistenza di FlowModel
 
 FlowEngine offre un sistema di persistenza completo.

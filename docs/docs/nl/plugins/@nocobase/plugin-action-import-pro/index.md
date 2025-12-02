@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Actie: Records importeren Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:

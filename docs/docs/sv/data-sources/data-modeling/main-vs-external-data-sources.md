@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Huvuddatabas kontra externa databaser
 
 Skillnaderna mellan huvuddatabasen och externa databaser i NocoBase märks främst inom fyra områden: stöd för databastyper, stöd för samlingstyper, stöd för fälttyper samt funktioner för säkerhetskopiering och migrering.

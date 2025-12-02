@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Auditní protokoly"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:

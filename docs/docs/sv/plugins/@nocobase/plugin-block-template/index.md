@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Block: mall (föråldrad)"
 packageName: '@nocobase/plugin-block-template'
 description: |

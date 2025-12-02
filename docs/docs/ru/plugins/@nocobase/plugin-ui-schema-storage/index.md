@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Сервис хранения UI-схем"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |

@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-data-source-rest-api"
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 ```yaml
 pkg: "@nocobase/plugin-data-source-rest-api"

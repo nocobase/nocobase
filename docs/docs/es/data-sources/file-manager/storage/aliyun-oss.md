@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Aliyun OSS
 
 Motor de almacenamiento basado en Aliyun OSS. Antes de usarlo, necesita preparar las cuentas y permisos relevantes.

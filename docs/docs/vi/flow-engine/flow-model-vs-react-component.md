@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # FlowModel so với React.Component
 
 ## So sánh trách nhiệm cơ bản

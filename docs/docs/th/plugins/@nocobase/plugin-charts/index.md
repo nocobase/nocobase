@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "แผนภูมิ (เลิกใช้งานแล้ว)"
 packageName: '@nocobase/plugin-charts'
 description: |

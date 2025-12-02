@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Banyak-ke-Banyak
 
 Dalam sistem pemilihan mata kuliah, terdapat dua entitas: mahasiswa dan mata kuliah. Seorang mahasiswa dapat mengambil beberapa mata kuliah, dan satu mata kuliah dapat diambil oleh beberapa mahasiswa, yang membentuk hubungan banyak-ke-banyak. Dalam basis data relasional, untuk menggambarkan hubungan banyak-ke-banyak antara mahasiswa dan mata kuliah, biasanya digunakan sebuah koleksi perantara, seperti koleksi pendaftaran. Koleksi ini dapat mencatat mata kuliah mana saja yang dipilih oleh setiap mahasiswa, dan mahasiswa mana saja yang mengambil setiap mata kuliah. Desain seperti ini dapat menggambarkan hubungan banyak-ke-banyak antara mahasiswa dan mata kuliah dengan efektif.

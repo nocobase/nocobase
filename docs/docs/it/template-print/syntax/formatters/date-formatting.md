@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 ### Formattazione delle date
 
 #### 1. :formatD(patternOut, patternIn)

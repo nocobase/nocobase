@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Blocco: Modulo a più passaggi"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:

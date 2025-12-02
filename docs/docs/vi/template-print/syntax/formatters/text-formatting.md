@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 ### Định dạng Văn bản
 
 Phần này cung cấp nhiều bộ định dạng khác nhau cho dữ liệu văn bản. Các phần dưới đây sẽ lần lượt giới thiệu cú pháp, ví dụ và kết quả của từng bộ định dạng.

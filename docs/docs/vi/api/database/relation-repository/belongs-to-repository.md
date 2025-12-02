@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 ## BelongsToRepository
 
 Giao diện của nó tương tự như [HasOneRepository](./has-one-repository.md).

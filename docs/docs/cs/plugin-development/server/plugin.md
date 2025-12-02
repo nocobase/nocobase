@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Plugin
 
 V NocoBase poskytuje serverový plugin (Server Plugin) modulární způsob, jak rozšířit a přizpůsobit funkcionalitu serveru. Vývojáři mohou rozšířením třídy `Plugin` z `@nocobase/server` registrovat události, API rozhraní, konfigurace oprávnění a další vlastní logiku v různých fázích životního cyklu.

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # KI-Mitarbeiter · Konfigurationshandbuch für Administratoren
 
 > Dieses Dokument erklärt Ihnen Schritt für Schritt, wie Sie KI-Mitarbeiter konfigurieren und verwalten – von den Modell-Services bis zur Aufgabenverteilung.

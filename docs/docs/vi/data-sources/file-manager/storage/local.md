@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Lưu trữ cục bộ
 
 Các tệp được tải lên sẽ được lưu trữ trong một thư mục cục bộ trên máy chủ. Điều này phù hợp với các kịch bản quy mô nhỏ hoặc thử nghiệm, nơi tổng số tệp được hệ thống quản lý tương đối ít.

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Pratinjau File Office"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |

@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Gestione delle versioni
 
 Dopo che un flusso di lavoro configurato è stato attivato almeno una volta, se desidera modificarne la configurazione o i suoi nodi, è necessario creare una nuova versione prima di apportare le modifiche. Ciò assicura anche che, quando si esamina la cronologia di esecuzione dei flussi di lavoro attivati in precedenza, essa non sia influenzata da modifiche future.

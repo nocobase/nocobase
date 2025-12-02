@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Xem trước tệp Office"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |

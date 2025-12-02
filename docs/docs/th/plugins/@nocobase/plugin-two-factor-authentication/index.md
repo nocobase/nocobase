@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "การยืนยันตัวตนแบบสองปัจจัย (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:

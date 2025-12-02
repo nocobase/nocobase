@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-file-storage-s3-pro"
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 pkg: "@nocobase/plugin-file-storage-s3-pro"
 ---

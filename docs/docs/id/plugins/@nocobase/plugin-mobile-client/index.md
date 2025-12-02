@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Klien Seluler (Tidak Digunakan Lagi)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |

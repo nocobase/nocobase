@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # ICollection
 
 `ICollection` je rozhraní pro datový model, které obsahuje informace, jako je název modelu, jeho pole a asociace.

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Migrationsmanager"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:

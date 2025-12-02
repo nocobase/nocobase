@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Xác thực người dùng"
 packageName: '@nocobase/plugin-auth'
 description: |

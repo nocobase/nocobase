@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Vérification : Authentificateur TOTP"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:

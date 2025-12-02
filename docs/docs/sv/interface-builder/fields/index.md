@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Fält
 
 I användargränssnittet är ett fält en fältkomponent som fungerar som en bärare för enhetsdata. Olika typer av data presenteras med olika fältkomponenter. Fält kan endast kopplas till block och kan inte användas fristående.

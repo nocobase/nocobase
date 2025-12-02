@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Panduan Rekayasa Prompt · Agen AI
 
 > Dari "cara menulis" hingga "menulis dengan baik," panduan ini akan mengajarkan Anda cara menulis prompt berkualitas tinggi dengan cara yang sederhana, stabil, dan dapat digunakan kembali.

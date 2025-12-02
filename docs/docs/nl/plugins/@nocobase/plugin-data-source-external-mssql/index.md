@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 ```yaml
 displayName: "Gegevensbron: Externe SQL Server"
 packageName: '@nocobase/plugin-data-source-external-mssql'

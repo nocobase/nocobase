@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # KI-Mitarbeiter · Viz: Ihr Insight-Analyst
 
 > Erstellen Sie Diagramme und gewinnen Sie Einblicke mit einem Klick, und lassen Sie die Daten für sich sprechen.

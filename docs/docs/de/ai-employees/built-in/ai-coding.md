@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # AI-Mitarbeiter · Nathan: Frontend-Entwickler
 
 > Er hilft Ihnen, Frontend-Code zu schreiben und zu optimieren, um komplexe interaktive Logik zu implementieren.

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Workflow: Benachrichtigungsknoten"
 packageName: '@nocobase/plugin-workflow-notification'
 description: |

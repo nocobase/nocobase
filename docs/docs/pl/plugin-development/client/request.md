@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Żądania
 
 NocoBase udostępnia `APIClient` oparty na bibliotece [Axios](https://axios-http.com/), który umożliwia wysyłanie żądań HTTP z każdego miejsca, gdzie dostępny jest obiekt `Context`.

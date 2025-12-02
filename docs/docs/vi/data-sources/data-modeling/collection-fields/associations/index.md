@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Trường Quan hệ
 
 Trong NocoBase, trường quan hệ không phải là các trường dữ liệu thực sự, mà chúng được dùng để thiết lập kết nối giữa các **bộ sưu tập**. Khái niệm này tương đương với các mối quan hệ trong cơ sở dữ liệu quan hệ.

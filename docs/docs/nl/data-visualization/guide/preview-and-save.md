@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Voorbeeldweergave en Opslaan
 
 *   **Voorbeeldweergave**: Toont tijdelijk de wijzigingen uit het configuratiepaneel in de paginagrafiek om het resultaat te controleren.

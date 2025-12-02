@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Collectieveld: Automatische codering"
 packageName: '@nocobase/plugin-field-sequence'
 description: |

@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Baza danych
 
 `Database` jest kluczowym elementem źródeł danych typu baza danych (`DataSource`). Każde źródło danych typu baza danych posiada odpowiadającą mu instancję `Database`, dostępną poprzez `dataSource.db`. Instancja bazy danych głównego źródła danych oferuje również wygodny alias `app.db`. Zapoznanie się z typowymi metodami `db` jest podstawą do pisania wtyczek po stronie serwera.

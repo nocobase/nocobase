@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Bloc : Grille de cartes"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |

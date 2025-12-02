@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Lagringsmotor: Aliyun OSS
 
 Detta är en lagringsmotor baserad på Aliyun OSS. Innan ni kan använda den behöver ni förbereda relevanta konton och behörigheter.

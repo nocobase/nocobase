@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Kolekce: Připojení k externím datům (FDW)"
 packageName: '@nocobase/plugin-collection-fdw'
 supportedVersions:

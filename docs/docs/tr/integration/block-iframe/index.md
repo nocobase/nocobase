@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-block-iframe"
 ---
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 
 # Iframe Bloğu
 

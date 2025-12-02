@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Uitvoeringsplan (Geschiedenis)
 
 Zodra een workflow wordt geactiveerd, wordt er een bijbehorend uitvoeringsplan aangemaakt om het uitvoeringsproces van die taak te volgen. Elk uitvoeringsplan heeft een statuswaarde die de huidige uitvoeringsstatus aangeeft. Deze status kunt u zowel in de lijst als in de details van de uitvoeringsgeschiedenis bekijken:

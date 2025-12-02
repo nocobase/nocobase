@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 ## Koşullu İfadeler
 
 Koşullu ifadeler, verilerin değerlerine göre belgedeki içeriğin görüntülenmesini veya gizlenmesini dinamik olarak kontrol etmenizi sağlar. Üç ana koşul yazma yöntemi sunulmuştur:

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Blok
 
 Bloklar, veri ve içeriği taşıyan yapılardır. Bunları bir Sayfa (Page), Modal (Modal) veya Çekmece (Drawer) içine yerleştirebilir, birden fazla bloğu serbestçe sürükleyip düzenleyebilirsiniz.

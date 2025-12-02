@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Alur Kerja: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:

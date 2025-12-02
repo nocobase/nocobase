@@ -40,6 +40,10 @@ Per capire come estendere Viz, deve prima comprendere la sua progettazione inter
 Questa progettazione a strati permette a Viz di mantenere una personalità stabile (logica di analisi coerente) e allo stesso tempo di adattarsi rapidamente a diversi scenari di business (CRM, gestione ospedaliera, analisi dei canali, operazioni di produzione...).
 
 ---
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
 
 ## 3. Modello Uno: Motore di Analisi Basato su Template (Consigliato)
 

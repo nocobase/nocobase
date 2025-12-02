@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Logger
 
 Die Protokollierung in NocoBase basiert auf <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. Standardmäßig unterteilt NocoBase die Logs in API-Anfrage-Logs, Systemlaufzeit-Logs und SQL-Ausführungs-Logs. Während API-Anfrage-Logs und SQL-Ausführungs-Logs intern von der Anwendung protokolliert werden, müssen Plugin-Entwickler in der Regel nur die für ihre Plugins relevanten Systemlaufzeit-Logs protokollieren.

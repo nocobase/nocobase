@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Siklus Hidup
 
 Bagian ini menjelaskan *hook* siklus hidup untuk *plugin* di sisi server dan sisi klien, membantu pengembang mendaftarkan dan melepaskan sumber daya dengan benar.

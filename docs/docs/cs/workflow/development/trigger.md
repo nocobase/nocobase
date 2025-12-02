@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Rozšíření typů spouštěčů
 
 Každý pracovní postup musí být nakonfigurován s konkrétním spouštěčem, který slouží jako vstupní bod pro zahájení jeho provádění.

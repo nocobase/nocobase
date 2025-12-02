@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Rozšíření záložek konfigurace oprávnění
 
 Níže si na příkladu konfigurační položky „Mobilní menu“ ukážeme, jak přidat novou záložku pro konfiguraci oprávnění. Výsledek je znázorněn na obrázku níže:

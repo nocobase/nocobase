@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "UI-schemalagringstjänst"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tính toán
 
 Nút Tính toán có thể đánh giá một biểu thức, và kết quả tính toán sẽ được lưu trữ trong kết quả của nút tương ứng để các nút tiếp theo sử dụng. Đây là một công cụ dùng để tính toán, xử lý và chuyển đổi dữ liệu, ở một mức độ nhất định, nó có thể thay thế chức năng gọi hàm trên một giá trị và gán kết quả cho biến trong các ngôn ngữ lập trình.

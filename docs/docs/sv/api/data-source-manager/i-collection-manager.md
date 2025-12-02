@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # ICollectionManager
 
 `ICollectionManager`-gränssnittet används för att hantera `samling`-instanser för en `datakälla`.

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # ACL-Berechtigungssteuerung
 
 ACL (Access Control List) wird zur Steuerung von Berechtigungen für Ressourcenoperationen verwendet. Sie können Rollen Berechtigungen zuweisen oder Berechtigungen direkt festlegen, indem Sie Rollenbeschränkungen umgehen. Das ACL-System bietet einen flexiblen Mechanismus zur Berechtigungsverwaltung, der verschiedene Methoden wie Berechtigungs-Snippets, Middleware und Bedingungsprüfungen unterstützt.

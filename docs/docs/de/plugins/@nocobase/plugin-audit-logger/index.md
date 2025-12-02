@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Audit-Logs"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Yürütme Planı (Geçmiş)
 
 Bir iş akışı tetiklendiğinde, bu görevin yürütme sürecini takip etmek için ilgili bir yürütme planı oluşturulur. Her yürütme planının, mevcut yürütme durumunu gösteren bir durum değeri vardır. Bu durum, yürütme geçmişi listesinde ve detaylarında görüntülenebilir:

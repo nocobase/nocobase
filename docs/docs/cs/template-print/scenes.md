@@ -17,6 +17,11 @@ V našem příkladu existují zhruba následující hlavní kolekce (ostatní ir
 Jelikož současný systém podporuje pouze tisk jednotlivých záznamů, klikneme na „Tisk“ na stránce „Detaily smlouvy“ a systém automaticky načte odpovídající záznamy smluv a související informace o stranách atd., a vyplní je do dokumentů Word nebo PDF.
 
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 ## 2. Příprava
 

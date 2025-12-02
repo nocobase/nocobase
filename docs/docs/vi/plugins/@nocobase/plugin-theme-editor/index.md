@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Trình chỉnh sửa chủ đề"
 packageName: '@nocobase/plugin-theme-editor'
 description: |

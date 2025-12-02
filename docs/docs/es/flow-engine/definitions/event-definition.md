@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # EventDefinition
 
 `EventDefinition` define la lógica de manejo de eventos dentro de un flujo, utilizada para responder a disparadores de eventos específicos. Los eventos son un mecanismo importante en el motor de flujos (`FlowEngine`) para iniciar la ejecución de un flujo.

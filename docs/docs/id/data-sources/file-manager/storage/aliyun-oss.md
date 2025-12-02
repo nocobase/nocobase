@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Aliyun OSS
 
 Mesin penyimpanan berbasis Aliyun OSS. Sebelum menggunakannya, Anda perlu menyiapkan akun dan izin yang relevan.

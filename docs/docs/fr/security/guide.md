@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Guide de sécurité NocoBase
 
 NocoBase met l'accent sur la sécurité des données et des applications, de la conception fonctionnelle à l'implémentation système. La plateforme intègre plusieurs fonctionnalités de sécurité (authentification utilisateur, contrôle d'accès, chiffrement des données) et permet de configurer des politiques de sécurité flexibles selon vos besoins. Que ce soit pour protéger les données utilisateur, gérer les permissions d'accès ou isoler les environnements de développement et de production, NocoBase offre des outils et solutions pratiques. Ce guide vise à vous accompagner pour utiliser NocoBase en toute sécurité, protéger vos données, applications et environnements, et garantir une utilisation efficace du système.

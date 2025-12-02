@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # ActionDefinition
 
 ActionDefinition definiuje akcje wielokrotnego użytku, które mogą być wywoływane w wielu przepływach pracy i krokach. Akcja jest podstawową jednostką wykonawczą w silniku przepływów pracy (FlowEngine), hermetyzującą konkretną logikę biznesową.

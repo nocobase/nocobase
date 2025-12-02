@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-collection-sql"
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 ```yaml
 pkg: "@nocobase/plugin-collection-sql"

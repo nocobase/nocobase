@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 ## Formátovače
 
 Formátovače slouží k převodu nezpracovaných dat do snadno čitelného textu. Aplikují se na data pomocí dvojtečky (`:`) a lze je řetězit, takže výstup jednoho formátovače se stane vstupem pro další. Některé formátovače podporují konstantní nebo dynamické parametry.

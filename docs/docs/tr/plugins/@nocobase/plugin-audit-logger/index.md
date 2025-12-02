@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Denetim Günlükleri"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:

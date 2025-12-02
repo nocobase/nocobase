@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Estender Tipos de Gatilho
 
 Todo fluxo de trabalho precisa ser configurado com um gatilho específico, que serve como ponto de entrada para iniciar a execução do processo.

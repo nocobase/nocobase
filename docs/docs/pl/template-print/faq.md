@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 ## Częste problemy i rozwiązania
 
 ### 1. Puste kolumny i komórki w szablonach Excela znikają w wygenerowanych dokumentach

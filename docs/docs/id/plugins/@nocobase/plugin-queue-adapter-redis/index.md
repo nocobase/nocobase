@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Adaptor Antrean Redis"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:

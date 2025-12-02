@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # FlowModel: Akış ve Yapılandırma
 
 FlowModel, bileşenlerin yapılandırma mantığını uygulamak için "Akış (Flow)" tabanlı bir yaklaşım sunar. Bu sayede bileşenlerin davranışı ve yapılandırması daha genişletilebilir ve görsel hale gelir.

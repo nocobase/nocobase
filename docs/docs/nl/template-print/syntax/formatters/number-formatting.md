@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 ### Getalnotatie
 
 #### 1. `:formatN(precision)`

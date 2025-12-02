@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Test
 
 NocoBase, eklenti geliştirme sürecinde veritabanı mantığının, API arayüzlerinin ve özellik uygulamalarının doğruluğunu hızlıca doğrulamanıza yardımcı olacak eksiksiz bir test araçları seti sunar. Bu makale, bu testleri nasıl yazacağınızı, çalıştıracağınızı ve organize edeceğinizi anlatacaktır.

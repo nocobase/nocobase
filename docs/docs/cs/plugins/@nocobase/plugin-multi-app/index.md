@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Více aplikací"
 packageName: '@nocobase/plugin-multi-app'
 supportedVersions:

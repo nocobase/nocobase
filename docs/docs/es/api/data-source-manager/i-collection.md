@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # ICollection
 
 `ICollection` es la interfaz para el modelo de datos, que contiene información como el nombre del modelo, sus campos y sus asociaciones.

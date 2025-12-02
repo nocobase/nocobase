@@ -1,0 +1,12 @@
+[
+  {
+    "type": "custom-link",
+    "label": "الشروط",
+    "link": "/template-print/advanced/conditionals"
+  },
+  {
+    "type": "custom-link",
+    "label": "خصائص متقدمة",
+    "link": "/template-print/advanced/advanced-features"
+  }
+]

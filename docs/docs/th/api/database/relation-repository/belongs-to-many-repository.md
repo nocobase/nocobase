@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 # BelongsToManyRepository
 
 `BelongsToManyRepository` เป็น `Relation Repository` สำหรับจัดการความสัมพันธ์แบบ `BelongsToMany` ครับ/ค่ะ

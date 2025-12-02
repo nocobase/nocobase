@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Plugin
 
 In NocoBase biedt een Server Plugin een modulaire manier om de functionaliteit aan de serverzijde uit te breiden en aan te passen. Ontwikkelaars kunnen de `Plugin`-klasse van `@nocobase/server` uitbreiden om in verschillende levenscyclusfasen events, API's, permissieconfiguraties en andere aangepaste logica te registreren.

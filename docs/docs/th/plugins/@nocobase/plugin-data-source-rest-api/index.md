@@ -11,5 +11,10 @@ builtIn: false
 defaultEnabled: false
 points: 4
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 
 # แหล่งข้อมูล: REST API

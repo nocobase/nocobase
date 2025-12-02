@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Campo
 
 En la interfaz de usuario (UI), un campo es un componente que sirve como contenedor para datos individuales. Los distintos tipos de datos se muestran a través de diferentes componentes de campo. Los campos solo pueden adjuntarse a bloques y no pueden usarse de forma independiente.

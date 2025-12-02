@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-data-source-external-mariadb"
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 # Externe gegevensbron - MariaDB
 

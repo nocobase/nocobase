@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 ### Formato de Intervalos
 
 #### 1. :formatI(patternOut, patternIn)

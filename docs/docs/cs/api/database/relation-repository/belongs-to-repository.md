@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 ## BelongsToRepository
 
 Jeho rozhraní je shodné s [HasOneRepository](./has-one-repository.md).

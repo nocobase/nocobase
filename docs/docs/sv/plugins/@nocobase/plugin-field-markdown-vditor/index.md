@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Samlingsfält: Markdown(Vditor)"
 packageName: '@nocobase/plugin-field-markdown-vditor'
 description: |

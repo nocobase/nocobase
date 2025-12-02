@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Genel Bakış
 
 Bir iş akışı genellikle birbirine bağlı çeşitli işlem adımlarından oluşur. Her düğüm, bu adımlardan birini temsil eder ve süreçteki temel mantık birimi olarak işlev görür. Tıpkı bir programlama dilinde olduğu gibi, farklı düğüm türleri de düğümün davranışını belirleyen farklı talimatları temsil eder. İş akışı çalıştığında, sistem her düğüme sırayla girer ve talimatlarını yürütür.

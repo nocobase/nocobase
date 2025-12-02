@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Rozszerzanie typów kanałów powiadomień
 
 NocoBase umożliwia rozszerzanie typów kanałów powiadomień zgodnie z potrzebami, na przykład o powiadomienia SMS czy powiadomienia push w aplikacjach.

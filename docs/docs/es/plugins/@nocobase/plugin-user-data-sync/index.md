@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Sincronización de datos de usuario"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |

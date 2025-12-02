@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # İlk Eklentinizi Yazın
 
 Bu kılavuz, NocoBase eklentilerinin temel yapısını ve geliştirme iş akışını anlamanıza yardımcı olmak için, sıfırdan başlayarak sayfalarda kullanılabilecek bir blok eklentisi oluşturma sürecinde size yol gösterecektir.

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # FlowDefinition
 
 FlowDefinition mendefinisikan struktur dasar dan konfigurasi sebuah alur kerja, menjadikannya salah satu konsep inti dari FlowEngine. Ini menjelaskan metadata, kondisi pemicu, langkah-langkah eksekusi, dan informasi lainnya dari alur kerja.

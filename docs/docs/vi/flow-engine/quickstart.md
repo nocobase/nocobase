@@ -57,6 +57,11 @@ const model = this.flowEngine.createModel({
 ```
 
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 
 ## Bước 2: Thêm PropsFlow để làm cho thuộc tính nút có thể cấu hình
 

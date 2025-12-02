@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Block
 
 Block är bärare av data och innehåll. De kan placeras på en sida (Page), i en dialogruta (Modal) eller i en sidopanel (Drawer), och flera block kan fritt dras och arrangeras.

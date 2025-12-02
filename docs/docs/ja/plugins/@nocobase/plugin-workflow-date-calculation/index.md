@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "ワークフロー: 日付計算ノード"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:

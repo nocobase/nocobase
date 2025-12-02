@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # ResourceManager
 
 Fungsi manajemen sumber daya NocoBase dapat secara otomatis mengubah `koleksi` dan `asosiasi` yang ada menjadi sumber daya, dengan tipe operasi bawaan untuk membantu pengembang membangun operasi sumber daya REST API dengan cepat. Sedikit berbeda dari REST API tradisional, operasi sumber daya NocoBase tidak bergantung pada metode permintaan HTTP, melainkan menentukan operasi spesifik yang akan dijalankan melalui definisi `:action` yang eksplisit.

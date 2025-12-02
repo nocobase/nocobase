@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Dotazování dat v režimu SQL
 
 V panelu „Dotazování dat“ přepněte do režimu SQL, napište a spusťte dotaz, a přímo použijte vrácené výsledky pro mapování a vykreslování grafů.

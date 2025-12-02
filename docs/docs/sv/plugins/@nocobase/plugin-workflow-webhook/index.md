@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Arbetsflöde: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:

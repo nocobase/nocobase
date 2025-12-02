@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 ## Zpracování cyklů
 
 Zpracování cyklů slouží k opakovanému vykreslování dat z polí nebo objektů. Opakovaný obsah se identifikuje definováním počátečních a koncových značek cyklu. Níže si představíme několik běžných scénářů.

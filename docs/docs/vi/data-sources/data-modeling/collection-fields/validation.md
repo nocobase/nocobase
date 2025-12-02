@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Xác thực trường
 Để đảm bảo tính chính xác, bảo mật và nhất quán của dữ liệu trong các bộ sưu tập, NocoBase cung cấp chức năng xác thực trường. Chức năng này bao gồm hai phần chính: cấu hình quy tắc và áp dụng quy tắc.
 

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Workflow: Benutzerdefiniertes Aktionsereignis"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:

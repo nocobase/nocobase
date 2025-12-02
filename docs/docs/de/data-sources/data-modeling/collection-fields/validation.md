@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Feldvalidierung
 Um die Genauigkeit, Sicherheit und Konsistenz Ihrer Sammlungen zu gewährleisten, bietet NocoBase eine Funktion zur Feldvalidierung. Diese Funktion gliedert sich hauptsächlich in zwei Bereiche: die Konfiguration von Regeln und die Anwendung dieser Regeln.
 

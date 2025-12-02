@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-action-template-print"
 ---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 
 # Impresión de Plantillas
 

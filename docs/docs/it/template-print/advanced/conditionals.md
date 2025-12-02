@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 ## Condizioni
 
 Le condizioni le permettono di controllare dinamicamente la visualizzazione o l'occultamento dei contenuti nel documento in base ai valori dei dati. Sono disponibili tre tipi principali di sintassi per le condizioni:

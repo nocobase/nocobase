@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Workflow Webhook-Integration
 
 Durch Webhook-Trigger kann NocoBase HTTP-Aufrufe von Drittsystemen empfangen und Workflows automatisch auslösen, was eine nahtlose Integration mit externen Systemen ermöglicht.

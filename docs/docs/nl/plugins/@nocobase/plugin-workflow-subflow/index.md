@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Workflow: Subflow"
 packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "AI: Kennisbank"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:

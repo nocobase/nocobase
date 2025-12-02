@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Kommentare"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:

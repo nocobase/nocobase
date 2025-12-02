@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Flusso di lavoro: Evento azione personalizzata"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Адаптер черги повідомлень Redis"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:

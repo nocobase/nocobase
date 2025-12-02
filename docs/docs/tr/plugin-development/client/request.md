@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # İstekler
 
 NocoBase, [Axios](https://axios-http.com/) tabanlı bir `APIClient` sunar. Bu `APIClient`'ı, `Context`'e erişebildiğiniz her yerden HTTP istekleri yapmak için kullanabilirsiniz.

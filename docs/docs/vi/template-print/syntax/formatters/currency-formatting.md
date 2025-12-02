@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 ### Định dạng Tiền tệ
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)

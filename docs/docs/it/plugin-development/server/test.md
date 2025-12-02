@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Test
 
 NocoBase offre un set completo di strumenti di test per aiutare gli sviluppatori a verificare rapidamente la correttezza della logica del database, delle interfacce API e dell'implementazione delle funzionalità durante lo sviluppo dei plugin. Questa guida Le mostrerà come scrivere, eseguire e organizzare questi test.

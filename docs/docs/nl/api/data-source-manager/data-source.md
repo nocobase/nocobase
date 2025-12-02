@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # DataSource (abstract)
 
 `DataSource` is een abstracte klasse die wordt gebruikt om een type gegevensbron te representeren, zoals een database of een API.

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # CronJobManager Pengelola Tugas Terjadwal
 
 `CronJobManager` adalah pengelola tugas terjadwal yang disediakan oleh NocoBase, dibangun berdasarkan [cron](https://www.npmjs.com/package/cron). Ini memungkinkan plugin untuk mendaftarkan tugas terjadwal di sisi server, yang digunakan untuk menjalankan logika tertentu secara berkala.

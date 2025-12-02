@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 ## Základní použití
 
 Plugin pro tisk šablon nabízí různé syntaxe pro flexibilní vkládání dynamických dat a logických struktur do šablon. Níže naleznete podrobné vysvětlení syntaxe a příklady použití.

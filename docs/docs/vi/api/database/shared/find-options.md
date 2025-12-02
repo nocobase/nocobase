@@ -2,6 +2,11 @@
 title: Bắt đầu với Bộ sưu tập
 description: Tìm hiểu cách tạo và quản lý các bộ sưu tập trong NocoBase.
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 
 ## Bộ sưu tập là gì?
 

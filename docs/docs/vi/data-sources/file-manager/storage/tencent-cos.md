@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tencent COS
 
 Đây là công cụ lưu trữ dựa trên Tencent Cloud COS. Trước khi sử dụng, bạn cần chuẩn bị tài khoản và các quyền truy cập liên quan.

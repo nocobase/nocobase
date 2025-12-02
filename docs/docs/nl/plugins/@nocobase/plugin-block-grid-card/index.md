@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Blok: Rasterkaart"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |

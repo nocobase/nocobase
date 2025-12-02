@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-embed"
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 
 # Nhúng NocoBase
 

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Správce migrace"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:

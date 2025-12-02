@@ -17,6 +17,11 @@ W naszym przykładzie istnieją zasadniczo następujące główne **kolekcje** (
 Ponieważ obecny system obsługuje tylko drukowanie pojedynczych rekordów, klikniemy „Drukuj” na stronie „Szczegóły umowy”, a system automatycznie pobierze odpowiedni rekord z **kolekcji** `contracts` oraz powiązane informacje z **kolekcji** `parties` i wypełni nimi dokumenty Word lub PDF.
 
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 
 ## 2. Przygotowanie
 

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Blok
 
 Bloky jsou nosiče dat a obsahu. Můžete je umístit na stránku (Page), do modálního okna (Modal) nebo do postranního panelu (Drawer). Více bloků lze volně přetahovat a uspořádat.

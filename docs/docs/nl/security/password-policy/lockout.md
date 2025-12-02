@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-password-policy"
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 pkg: '@nocobase/plugin-password-policy'
 ---

@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 # HasManyRepository
 
 `HasManyRepository` คือ `Relation Repository` ที่ใช้สำหรับจัดการความสัมพันธ์แบบ `HasMany` ครับ/ค่ะ

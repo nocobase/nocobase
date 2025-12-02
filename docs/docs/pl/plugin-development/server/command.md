@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Komendy
 
 W NocoBase komendy służą do wykonywania operacji związanych z aplikacjami lub wtyczkami w wierszu poleceń. Mogą to być na przykład uruchamianie zadań systemowych, wykonywanie migracji lub synchronizacji, inicjowanie konfiguracji, czy też interakcja z działającymi instancjami aplikacji. Deweloperzy mogą definiować własne komendy dla wtyczek i rejestrować je za pomocą obiektu `app`, a następnie wykonywać je w CLI w formie `nocobase <komenda>`.

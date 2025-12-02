@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Visión General de Colecciones
 
 NocoBase ofrece un DSL único para describir la estructura de los datos, conocido como **colección**. Este DSL unifica la estructura de datos de diversas fuentes, sentando una base sólida para la gestión, el análisis y la aplicación de los datos.

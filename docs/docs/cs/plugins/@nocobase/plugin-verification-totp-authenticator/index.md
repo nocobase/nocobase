@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Ověření: TOTP autentifikátor"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:

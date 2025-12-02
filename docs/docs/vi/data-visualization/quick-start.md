@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Bắt đầu nhanh
 
 Hướng dẫn này sẽ giúp bạn cấu hình một biểu đồ từ đầu bằng cách sử dụng các tính năng cơ bản và cần thiết. Các khả năng tùy chọn khác sẽ được trình bày chi tiết trong các chương sau.

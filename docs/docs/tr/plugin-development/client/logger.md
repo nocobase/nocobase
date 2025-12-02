@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Logger
 
 NocoBase, [pino](https://github.com/pinojs/pino) tabanlı yüksek performanslı bir günlükleme sistemi sunar. `context` erişiminizin olduğu her yerde, `ctx.logger` aracılığıyla bir `logger` örneği alabilir ve eklenti veya sistem çalışma zamanındaki kritik günlükleri kayıt altına alabilirsiniz.

@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Менеджер асинхронних завдань"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |

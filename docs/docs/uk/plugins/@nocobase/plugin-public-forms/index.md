@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Публічні форми"
 packageName: '@nocobase/plugin-public-forms'
 description: |

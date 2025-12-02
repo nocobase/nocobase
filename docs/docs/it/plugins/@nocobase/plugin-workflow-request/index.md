@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Flusso di lavoro: nodo richiesta HTTP"
 packageName: '@nocobase/plugin-workflow-request'
 description: |

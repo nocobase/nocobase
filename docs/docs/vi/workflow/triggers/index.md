@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tổng quan
 
 Bộ kích hoạt là điểm khởi đầu để thực thi một luồng công việc. Khi một sự kiện thỏa mãn các điều kiện của bộ kích hoạt xảy ra trong quá trình ứng dụng đang chạy, luồng công việc sẽ được kích hoạt và thực thi. Loại bộ kích hoạt cũng chính là loại luồng công việc, được chọn khi tạo luồng công việc và không thể thay đổi sau khi tạo. Các loại bộ kích hoạt hiện được hỗ trợ bao gồm:

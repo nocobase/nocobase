@@ -40,6 +40,10 @@ Viz'i nasıl genişleteceğinizi anlamak için, öncelikle içindeki katmanlı t
 Bu katmanlı tasarım, Viz'in istikrarlı bir kişiliği (tutarlı analiz mantığı) korumasını sağlarken, aynı zamanda farklı iş senaryolarına (CRM, hastane yönetimi, kanal analizi, üretim operasyonları...) hızlıca adapte olabilmesine olanak tanır.
 
 ---
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
 
 ## 3. Desen Bir: Şablon Tabanlı Analiz Motoru (Önerilen)
 

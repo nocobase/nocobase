@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Робочий процес: вузол обчислення дати"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Använd kontextvariabler
 
 Med kontextvariabler kan du återanvända information från den aktuella sidan, användaren, tiden och filtreringsvillkoren. Detta gör det möjligt att rendera diagram och möjliggöra kopplingar baserat på kontexten.

@@ -26,6 +26,11 @@ Kliknutím na zaškrtávací políčko ve sloupci `Dostupné` v seznamu AI zamě
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
 
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 ## Oprávnění k přístupu k datům
 

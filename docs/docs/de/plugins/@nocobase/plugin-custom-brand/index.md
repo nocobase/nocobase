@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Benutzerdefiniertes Branding"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:

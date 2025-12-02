@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Acción: Actualización masiva"
 packageName: '@nocobase/plugin-action-bulk-update'
 description: |

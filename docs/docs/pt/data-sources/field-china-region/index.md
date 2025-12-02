@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-field-china-region"
 ---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 
 pkg: "@nocobase/plugin-field-china-region"
 ---

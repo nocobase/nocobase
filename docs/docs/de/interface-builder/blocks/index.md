@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Blöcke
 
 Blöcke sind Träger für Daten und Inhalte. Sie können auf einer Seite (Page), in einem Dialogfeld (Modal) oder in einem Schubladenmenü (Drawer) platziert werden. Mehrere Blöcke lassen sich frei per Drag & Drop anordnen.

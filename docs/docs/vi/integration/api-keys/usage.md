@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Sử dụng API Key trong NocoBase
 
 Hướng dẫn này sẽ trình bày cách sử dụng API Key trong NocoBase để truy xuất dữ liệu thông qua một ví dụ thực tế về "Việc cần làm". Hãy làm theo các bước hướng dẫn dưới đây để hiểu rõ toàn bộ quy trình làm việc.

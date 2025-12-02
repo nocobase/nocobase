@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Блок: Багатоетапна форма"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:

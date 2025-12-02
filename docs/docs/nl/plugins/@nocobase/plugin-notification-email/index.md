@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Melding: E-mail"
 packageName: '@nocobase/plugin-notification-email'
 description: |

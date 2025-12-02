@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Dotazování dat
 
 Slouží k dotazování a získávání datových záznamů z kolekce, které splňují specifické podmínky.

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Redis worker ID-tilldelare"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 description: |

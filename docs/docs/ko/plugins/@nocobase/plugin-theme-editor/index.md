@@ -1,3 +1,8 @@
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 displayName: "테마 편집기"
 packageName: '@nocobase/plugin-theme-editor'
 description: |

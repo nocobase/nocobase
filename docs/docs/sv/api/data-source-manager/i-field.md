@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # IField
 
 `IField` definierar gränssnittet som ett fält behöver implementera.

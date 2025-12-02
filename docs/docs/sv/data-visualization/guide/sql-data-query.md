@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Fråga data i SQL-läge
 
 I panelen "Datafråga" kan ni växla till SQL-läge, skriva och köra en fråga, och sedan direkt använda det returnerade resultatet för att mappa och rendera diagram.

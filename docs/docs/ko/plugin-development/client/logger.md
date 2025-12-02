@@ -1,3 +1,8 @@
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 # 로거
 
 NocoBase는 [pino](https://github.com/pinojs/pino) 기반의 고성능 로깅 시스템을 제공합니다. `context`에 접근할 수 있는 모든 곳에서 `ctx.logger`를 통해 로거 인스턴스를 가져와 플러그인 또는 시스템 실행 중 발생하는 중요한 로그를 기록할 수 있습니다.

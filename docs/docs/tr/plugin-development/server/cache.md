@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Cache
 
 NocoBase'in Cache modülü, <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> üzerine kuruludur ve eklenti geliştirme için önbellekleme işlevselliği sunar. Sistemde iki yerleşik önbellek türü bulunur:

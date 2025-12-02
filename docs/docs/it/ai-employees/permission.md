@@ -26,6 +26,10 @@ Clicchi sulla casella di spunta nella colonna `Available` dell'elenco degli impi
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
 
 ---
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
 
 ## Permessi di accesso ai dati
 

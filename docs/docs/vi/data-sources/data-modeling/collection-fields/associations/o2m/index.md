@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Một-nhiều
 
 Mối quan hệ giữa một lớp học và các học sinh của nó là một ví dụ điển hình cho quan hệ một-nhiều: một lớp học có thể có nhiều học sinh, nhưng mỗi học sinh chỉ thuộc về duy nhất một lớp học.

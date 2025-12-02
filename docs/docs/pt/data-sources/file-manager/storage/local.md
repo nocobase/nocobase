@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Armazenamento Local
 
 Os arquivos enviados serão salvos em um diretório local no servidor. Isso é ideal para cenários de pequena escala ou experimentais, onde o volume total de arquivos gerenciados pelo sistema é relativamente pequeno.

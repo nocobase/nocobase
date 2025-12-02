@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-api-doc"
 ---
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 
 pkg: "@nocobase/plugin-api-doc"
 ---

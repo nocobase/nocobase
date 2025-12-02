@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Überblick
 
 Die NocoBase Serverseitige Plugin-Entwicklung bietet Ihnen vielfältige Funktionen und Möglichkeiten, um die Kernfunktionen von NocoBase anzupassen und zu erweitern. Hier finden Sie eine Übersicht der Hauptfunktionen und der entsprechenden Kapitel:

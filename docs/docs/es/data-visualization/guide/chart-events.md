@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Eventos de interacción personalizados
 
 Escriba código JavaScript en el editor de eventos y registre interacciones a través de la instancia de ECharts `chart` para habilitar la vinculación. Por ejemplo, puede navegar a una nueva página o abrir un diálogo para un análisis más detallado (drill-down).

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Trợ lý AI · Hướng dẫn Kỹ thuật Prompt
 
 > Từ "cách viết" đến "viết hay", hướng dẫn này sẽ chỉ cho bạn cách viết các prompt chất lượng cao một cách đơn giản, ổn định và có thể tái sử dụng.

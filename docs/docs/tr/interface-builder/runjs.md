@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # JS'i Çevrimiçi Yazma ve Çalıştırma
 
 NocoBase'de, **RunJS** hızlı denemeler ve geçici mantık işlemleri gerektiren durumlar için ideal, hafif bir genişletme yöntemi sunar. Eklenti oluşturmanıza veya kaynak kodunu değiştirmenize gerek kalmadan, JavaScript aracılığıyla arayüzleri veya etkileşimleri kişiselleştirebilirsiniz.

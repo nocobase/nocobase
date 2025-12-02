@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Servicio de almacenamiento de esquemas de UI"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |

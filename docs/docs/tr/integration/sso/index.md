@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Tek Oturum Açma (SSO) Entegrasyonu
 
 NocoBase, mevcut kurumsal kimlik sistemlerinizle sorunsuz entegrasyon için çeşitli ana akım kimlik doğrulama protokollerini destekleyen kapsamlı Tek Oturum Açma (SSO) çözümleri sunar.

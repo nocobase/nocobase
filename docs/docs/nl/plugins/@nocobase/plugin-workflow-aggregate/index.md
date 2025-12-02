@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Workflow: Aggregatieknooppunt"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |

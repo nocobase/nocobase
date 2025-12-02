@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Estensione dei tipi di canale di notifica
 
 NocoBase supporta l'estensione dei tipi di canale di notifica in base alle Sue esigenze, come le notifiche via SMS o le notifiche push per app.

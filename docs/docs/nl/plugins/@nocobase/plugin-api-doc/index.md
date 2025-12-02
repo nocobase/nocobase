@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "API-documentatie"
 packageName: '@nocobase/plugin-api-doc'
 description: |

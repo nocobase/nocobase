@@ -17,6 +17,11 @@ Dalam contoh ini, secara garis besar terdapat koleksi-koleksi utama berikut (den
 Karena sistem saat ini hanya mendukung pencetakan satu catatan, kami akan mengeklik "Cetak" pada halaman "Detail Kontrak", dan sistem akan secara otomatis mengambil catatan `contracts` yang sesuai, serta informasi `parties` terkait dan lainnya, lalu mengisinya ke dalam dokumen Word atau PDF.
 
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 ## 2. Persiapan
 

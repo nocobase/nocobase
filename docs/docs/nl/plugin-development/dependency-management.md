@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Afhankelijkheidsbeheer
 
 Bij de ontwikkeling van NocoBase plugins worden afhankelijkheden onderverdeeld in twee categorieën: **pluginafhankelijkheden** en **globale afhankelijkheden**.

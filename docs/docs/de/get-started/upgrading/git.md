@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Aktualisierung einer NocoBase-Installation aus dem Git-Quellcode
 
 :::warning Vorbereitungen vor der Aktualisierung

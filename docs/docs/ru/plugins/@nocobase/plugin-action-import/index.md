@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Действие: Импорт записей"
 packageName: '@nocobase/plugin-action-import'
 description: |

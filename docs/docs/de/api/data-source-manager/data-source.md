@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Datenquelle (abstrakt)
 
 Die abstrakte Klasse `DataSource` repräsentiert eine Art von Datenquelle, wie zum Beispiel eine Datenbank oder eine API.

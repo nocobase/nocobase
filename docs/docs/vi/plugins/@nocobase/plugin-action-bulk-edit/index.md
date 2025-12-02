@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Thao tác: Chỉnh sửa hàng loạt"
 packageName: '@nocobase/plugin-action-bulk-edit'
 description: |

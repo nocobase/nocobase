@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-data-source-external-mariadb"
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 
 # Externe Datenquelle - MariaDB
 

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # RelationRepository
 
 `RelationRepository` är ett `Repository`-objekt för relationstyper. Det gör det möjligt att hantera relaterad data utan att behöva ladda relationen först. Baserat på `RelationRepository` har varje relationstyp en motsvarande härledd implementering:

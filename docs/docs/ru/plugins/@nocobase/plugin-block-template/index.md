@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Блок: шаблон (устарел)"
 packageName: '@nocobase/plugin-block-template'
 description: |

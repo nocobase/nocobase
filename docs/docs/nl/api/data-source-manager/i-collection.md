@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # ICollection
 
 `ICollection` is de interface voor het gegevensmodel, die informatie bevat zoals de naam, velden en associaties van het model.

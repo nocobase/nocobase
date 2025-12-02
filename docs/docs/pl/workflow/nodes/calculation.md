@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Obliczenia
 
 Węzeł Obliczenia może ewaluować wyrażenie, a wynik obliczeń jest zapisywany w wyniku odpowiedniego węzła, aby mógł być użyty przez kolejne węzły. Jest to narzędzie służące do obliczania, przetwarzania i transformowania danych. W pewnym stopniu może zastąpić funkcjonalność wywoływania funkcji na wartości i przypisywania jej do zmiennej, typową dla języków programowania.

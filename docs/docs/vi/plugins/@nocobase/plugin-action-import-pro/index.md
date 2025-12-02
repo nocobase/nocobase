@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Hành động: Nhập bản ghi Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:

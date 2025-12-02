@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Veldcomponent: masker"
 packageName: '@nocobase/plugin-field-component-mask'
 supportedVersions:

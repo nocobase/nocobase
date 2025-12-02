@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Tvorba uživatelského rozhraní
 
 ## WYSIWYG (Co vidíte, to dostanete)

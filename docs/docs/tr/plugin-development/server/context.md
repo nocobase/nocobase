@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Bağlam
 
 NocoBase'de her istek, Context sınıfının bir örneği olan bir `ctx` nesnesi oluşturur. Bağlam, istek ve yanıt bilgilerini kapsarken, aynı zamanda veritabanı erişimi, önbellek işlemleri, yetki yönetimi, uluslararasılaştırma ve günlük kaydı gibi NocoBase'e özgü işlevler sunar.

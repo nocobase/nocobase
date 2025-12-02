@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # So sánh Cơ sở dữ liệu chính và Cơ sở dữ liệu ngoài
 
 Sự khác biệt giữa cơ sở dữ liệu chính và cơ sở dữ liệu ngoài trong NocoBase chủ yếu thể hiện ở bốn khía cạnh sau: hỗ trợ loại cơ sở dữ liệu, hỗ trợ loại bộ sưu tập, hỗ trợ loại trường và khả năng sao lưu, di chuyển.

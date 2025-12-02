@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Bộ điều hợp khóa phân tán Redis"
 packageName: '@nocobase/plugin-lock-adapter-redis'
 supportedVersions:

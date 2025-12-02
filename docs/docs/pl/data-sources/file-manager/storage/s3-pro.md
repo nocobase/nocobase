@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-file-storage-s3-pro"
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 
 # Przechowywanie plików: S3 (Pro)
 

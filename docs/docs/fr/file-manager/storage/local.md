@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Moteur de stockage : Stockage local
 
 Les fichiers téléchargés seront enregistrés dans un répertoire local sur le disque dur du serveur. Cette option convient aux scénarios où le volume total de fichiers gérés par le système est faible, ou à des fins expérimentales.

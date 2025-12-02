@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Sistem Ayarları
 
 Sistem ayarları, sistem adı, ana LOGO ve etkin diller gibi genel sistem bilgilerini yapılandırmanızı sağlar.

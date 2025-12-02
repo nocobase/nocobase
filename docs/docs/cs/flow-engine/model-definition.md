@@ -3,6 +3,11 @@ pkg: "@nocobase/plugin-china-region"
 title: Pole Čínský region
 description: Plugin Pole Čínský region (`field-china-region`) přidává do NocoBase typ pole „Čínský region“.
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 # Pole Čínský region
 

@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "การแจ้งเตือน: อีเมล"
 packageName: '@nocobase/plugin-notification-email'
 description: |

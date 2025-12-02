@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Bloc : Formulaire pas à pas"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:

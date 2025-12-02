@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tổng quan về Mở rộng Block
 
 Trong NocoBase 2.0, cơ chế mở rộng block đã được đơn giản hóa đáng kể. Các nhà phát triển chỉ cần kế thừa lớp cơ sở **FlowModel** tương ứng và triển khai các phương thức giao diện liên quan (chủ yếu là phương thức `renderComponent()`) là có thể nhanh chóng tùy chỉnh block.

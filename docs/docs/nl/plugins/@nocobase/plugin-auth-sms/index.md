@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Authenticatie: SMS"
 packageName: '@nocobase/plugin-auth-sms'
 description: |

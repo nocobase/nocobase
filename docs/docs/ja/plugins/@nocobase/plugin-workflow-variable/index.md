@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "ワークフロー：カスタム変数ノード"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Commando's op de Commandoregel
 
 In NocoBase worden commando's gebruikt om acties uit te voeren die gerelateerd zijn aan applicaties of plugins via de commandoregel. Denk hierbij aan het uitvoeren van systeemtaken, migratie- of synchronisatieoperaties, het initialiseren van configuraties, of het communiceren met actieve applicatie-instanties. Ontwikkelaars kunnen aangepaste commando's definiëren voor plugins en deze registreren via het `app`-object, waarna u ze in de CLI kunt uitvoeren als `nocobase <command>`.

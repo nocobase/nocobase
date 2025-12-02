@@ -41,6 +41,11 @@ Thiết kế phân lớp này giúp Viz duy trì tính cách ổn định (logic
 đồng thời có thể nhanh chóng thích ứng với các kịch bản nghiệp vụ khác nhau (CRM, quản lý bệnh viện, phân tích kênh, vận hành sản xuất...).
 
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 
 ## 3. Mô hình một: Công cụ phân tích mẫu hóa (Khuyên dùng)
 

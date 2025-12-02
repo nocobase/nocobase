@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Diagramme (veraltet)"
 packageName: '@nocobase/plugin-charts'
 description: |

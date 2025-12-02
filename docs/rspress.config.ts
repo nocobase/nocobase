@@ -173,6 +173,24 @@ export default defineConfig({
       title: 'Dokumentace NocoBase',
       description: 'Pomáhá vám rychle se naučit a zvládnout NocoBase',
     },
+    {
+      lang: 'ar',
+      label: 'العربية',
+      title: 'وثائق NocoBase',
+      description: 'مساعدتك على تعلم وإتقان NocoBase بسرعة',
+    },
+    {
+      lang: 'he',
+      label: 'עברית',
+      title: 'תיעוד NocoBase',
+      description: 'עוזר לך ללמוד ולשלוט ב-NocoBase במהירות',
+    },
+    {
+      lang: 'hi',
+      label: 'हिन्दी',
+      title: 'NocoBase दस्तावेज़ीकरण',
+      description: 'आपको NocoBase को तेजी से सीखने और महारत हासिल करने में मदद करना',
+    },
   ],
   lang: 'en',
   themeConfig: {

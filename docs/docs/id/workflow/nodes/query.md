@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Kueri Data
 
 Digunakan untuk mengueri dan mengambil catatan data dari sebuah koleksi yang memenuhi kondisi tertentu.

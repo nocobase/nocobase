@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Grafik Seçenekleri
 
 Grafiklerin nasıl görüntüleneceğini yapılandırın. İki mod desteklenmektedir: Temel (görsel) ve Özel (JS). Temel mod, hızlı eşleme ve sık kullanılan özellikler için idealdir; Özel mod ise karmaşık senaryolar ve gelişmiş özelleştirmeler için uygundur.

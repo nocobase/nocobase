@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Kiểm soát quyền ACL
 
 ACL (Access Control List) được sử dụng để kiểm soát quyền thao tác tài nguyên. Bạn có thể cấp quyền cho các vai trò, hoặc bỏ qua các ràng buộc vai trò để trực tiếp giới hạn quyền. Hệ thống ACL cung cấp một cơ chế quản lý quyền linh hoạt, hỗ trợ các đoạn quyền (snippet), middleware, đánh giá điều kiện và nhiều phương pháp khác.

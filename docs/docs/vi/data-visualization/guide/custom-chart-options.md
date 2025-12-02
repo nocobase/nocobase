@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Cấu hình biểu đồ tùy chỉnh
 
 Ở chế độ tùy chỉnh, bạn có thể cấu hình biểu đồ bằng cách viết mã JS trong trình chỉnh sửa. Dựa trên `ctx.data`, bạn sẽ trả về một đối tượng `option` hoàn chỉnh của ECharts. Chế độ này phù hợp cho việc kết hợp nhiều chuỗi dữ liệu, tạo các gợi ý phức tạp và kiểu dáng động. Về lý thuyết, nó hỗ trợ đầy đủ tất cả các tính năng và loại biểu đồ của ECharts.

@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Рабочий процесс: узел отправки почты"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |

@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Gerenciamento de E-mail"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:

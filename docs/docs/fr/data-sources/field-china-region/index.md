@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-field-china-region"
 ---
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 
 # Région administrative de Chine
 

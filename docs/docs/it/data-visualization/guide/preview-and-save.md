@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Anteprima e Salvataggio
 
 *   **Anteprima**: Permette di visualizzare temporaneamente le modifiche apportate nel pannello di configurazione all'interno del grafico della pagina, per verificarne l'effetto.

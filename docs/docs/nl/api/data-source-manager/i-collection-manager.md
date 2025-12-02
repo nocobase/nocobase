@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # ICollectionManager
 
 De `ICollectionManager`-interface gebruikt u om `collectie`-instanties van een gegevensbron te beheren.

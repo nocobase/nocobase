@@ -33,6 +33,11 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Sincronizzare gli aggiornamenti tramite il flusso Git.
 ---
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 
 # Confronto tra Metodi di Installazione e Versioni
 

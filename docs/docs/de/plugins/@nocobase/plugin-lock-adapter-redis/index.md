@@ -11,5 +11,10 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 
 # Redis Sperr-Adapter

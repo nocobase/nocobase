@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Panoramica sulle collezioni
 
 NocoBase offre un DSL (Domain-Specific Language) unico per descrivere la struttura dei dati, chiamato **collezione**. Questo DSL unifica le strutture dati provenienti da diverse fonti, fornendo una base affidabile per la gestione, l'analisi e l'applicazione dei dati.

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Upgraden van een Git-broninstallatie
 
 :::warning Voorbereidingen vóór de upgrade

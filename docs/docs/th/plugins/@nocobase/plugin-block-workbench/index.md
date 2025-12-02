@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "บล็อก: แผงการดำเนินการ"
 packageName: '@nocobase/plugin-block-workbench'
 description: |

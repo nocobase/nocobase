@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "ユーザー認証"
 packageName: '@nocobase/plugin-auth'
 description: |

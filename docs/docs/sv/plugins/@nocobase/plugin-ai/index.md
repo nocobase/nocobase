@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "AI-medarbetare"
 packageName: '@nocobase/plugin-ai'
 description: |

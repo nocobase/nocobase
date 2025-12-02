@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Componente di campo: maschera"
 packageName: '@nocobase/plugin-field-component-mask'
 supportedVersions:

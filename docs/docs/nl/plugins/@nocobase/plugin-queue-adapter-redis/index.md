@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Redis wachtrij-adapter"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:

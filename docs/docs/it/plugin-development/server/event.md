@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Evento
 
 Il server di NocoBase (Server) attiva eventi specifici durante il ciclo di vita dell'applicazione, quello dei plugin e le operazioni sul database. Gli sviluppatori di plugin possono ascoltare questi eventi per implementare logiche di estensione, automatizzare operazioni o definire comportamenti personalizzati.

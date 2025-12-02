@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Benutzerdatensynchronisation"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |

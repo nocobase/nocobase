@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "NocoBase の埋め込み"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Aktion: Datensatz duplizieren"
 packageName: '@nocobase/plugin-action-duplicate'
 description: |

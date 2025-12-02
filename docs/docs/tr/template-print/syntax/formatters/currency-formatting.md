@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 ### Para Birimi Biçimlendirme
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)

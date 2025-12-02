@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-multi-space"
 ---
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 
 ```yaml
 pkg: "@nocobase/plugin-multi-space"

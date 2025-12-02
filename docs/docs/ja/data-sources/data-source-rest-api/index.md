@@ -1,6 +1,10 @@
 ---
 pkg: "@nocobase/plugin-data-source-rest-api"
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
 
 ```yaml
 ---

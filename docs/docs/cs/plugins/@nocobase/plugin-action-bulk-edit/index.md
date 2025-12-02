@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Akce: Hromadná úprava"
 packageName: '@nocobase/plugin-action-bulk-edit'
 description: |

@@ -17,6 +17,10 @@ Dans notre exemple, nous avons principalement les **collections** suivantes (les
 Étant donné que le système actuel ne prend en charge que l'impression d'un seul enregistrement à la fois, nous cliquerons sur « Imprimer » sur la page « Détails du contrat ». Le système récupérera alors automatiquement l'enregistrement de contrat correspondant, ainsi que les informations associées des parties, et les remplira dans des documents Word ou PDF.
 
 ---
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
 
 ## 2. Préparation
 

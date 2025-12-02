@@ -57,6 +57,10 @@ const model = this.flowEngine.createModel({
 ```
 
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
 
 ## Schritt 2: PropsFlow hinzufügen, um Schaltflächeneigenschaften konfigurierbar zu machen
 

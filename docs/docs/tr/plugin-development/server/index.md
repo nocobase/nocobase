@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Genel Bakış
 
 NocoBase sunucu tarafı eklenti geliştirme, geliştiricilerin NocoBase'in temel özelliklerini özelleştirmelerine ve genişletmelerine yardımcı olmak için çeşitli işlevler ve yetenekler sunar. NocoBase sunucu tarafı eklenti geliştirmenin ana yetenekleri ve ilgili bölümleri aşağıdadır:

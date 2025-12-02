@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Back-up en herstel van apps (verouderd)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |

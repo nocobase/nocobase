@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 ## Parametry
 
 | Nazwa parametru        | Typ           | Wartość domyślna | Opis                                                              |

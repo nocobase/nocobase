@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Přehled
 
 Vývoj klientských pluginů pro NocoBase nabízí řadu funkcí a možností, které vám pomohou přizpůsobit a rozšířit frontendové funkce NocoBase. Níže naleznete přehled hlavních možností a souvisejících kapitol:

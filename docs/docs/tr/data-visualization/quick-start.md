@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Hızlı Başlangıç
 
 Bu kılavuzda, temel özelliklerini kullanarak sıfırdan bir grafik yapılandırmayı adım adım inceleyeceğiz. İsteğe bağlı yetenekler sonraki bölümlerde ele alınacaktır.

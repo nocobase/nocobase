@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Bộ lọc đa từ khóa"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:

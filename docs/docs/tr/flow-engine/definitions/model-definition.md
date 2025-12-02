@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # ModelDefinition
 
 ModelDefinition, `FlowEngine.createModel()` metodu aracılığıyla bir model örneği oluşturmak için kullanılan bir akış modelinin oluşturma seçeneklerini tanımlar. Bu tanım, modelin temel yapılandırmasını, özelliklerini, alt modellerini ve diğer bilgilerini içerir.

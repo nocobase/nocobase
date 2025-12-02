@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "WEB-klient"
 packageName: '@nocobase/plugin-client'
 description: |

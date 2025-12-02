@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Client mobile (Obsoleto)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |

@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Переменные и секреты"
 packageName: '@nocobase/plugin-environment-variables'
 description: |

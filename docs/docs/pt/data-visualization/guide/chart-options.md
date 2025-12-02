@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Opções de Gráfico
 
 Configure como os gráficos são exibidos. Duas modalidades são suportadas: Basic (visual) e Custom (JS). A modalidade Basic é ideal para mapeamentos rápidos e propriedades comuns, enquanto a Custom se encaixa em cenários complexos e personalizações avançadas.

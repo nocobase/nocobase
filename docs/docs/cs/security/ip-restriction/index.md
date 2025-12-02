@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-ip-restriction"
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 pkg: '@nocobase/plugin-ip-restriction'
 ---

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # FlowDefinition
 
 FlowDefinition definuje základní strukturu a konfiguraci toku a je jedním z klíčových konceptů FlowEngine. Popisuje metadata toku, podmínky spuštění, kroky provedení atd.

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Datavisualisering: ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:

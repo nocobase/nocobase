@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "AI: База знаний"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:

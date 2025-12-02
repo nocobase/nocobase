@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # createMockClient
 
 Per gli esempi e i test, si consiglia generalmente di costruire rapidamente un'applicazione mock utilizzando `createMockClient`. Un'applicazione mock è un'applicazione pulita e vuota, senza alcun plugin attivato, destinata unicamente a esempi e test.

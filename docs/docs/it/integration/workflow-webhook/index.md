@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Integrazione di flussi di lavoro con Webhook
 
 Grazie ai trigger Webhook, NocoBase può ricevere chiamate HTTP da sistemi di terze parti e attivare automaticamente i flussi di lavoro, consentendo un'integrazione senza interruzioni con sistemi esterni.

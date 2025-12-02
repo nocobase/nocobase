@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Depolama Motoru: Amazon S3
 
 Amazon S3 tabanlı bir depolama motorudur. Kullanmaya başlamadan önce ilgili hesap ve izinleri hazırlamanız gerekmektedir.

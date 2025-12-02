@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # HTTP API
 
 Bestandsuploads voor zowel bijlagevelden als bestandscollecties kunt u afhandelen via de HTTP API. De manier van aanroepen verschilt afhankelijk van de opslagengine die de bijlage of bestandscollectie gebruikt.

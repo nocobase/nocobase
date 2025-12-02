@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "ฟิลด์คอลเลกชัน: เรียงลำดับ"
 packageName: '@nocobase/plugin-field-sort'
 description: |

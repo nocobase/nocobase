@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Робочий процес: JSON-обчислення"
 packageName: '@nocobase/plugin-workflow-json-query'
 supportedVersions:

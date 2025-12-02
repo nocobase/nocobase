@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # JS online schreiben & ausführen
 
 In NocoBase bietet **RunJS** eine leichtgewichtige Erweiterungsmöglichkeit, die sich ideal für **schnelle Experimente und die temporäre Verarbeitung von Logik** eignet. Sie können damit Oberflächen oder Interaktionen mittels JavaScript individuell anpassen, ohne Plugins erstellen oder den Quellcode ändern zu müssen.

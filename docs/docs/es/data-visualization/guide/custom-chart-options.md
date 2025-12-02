@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Configuración de gráficos personalizados
 
 En el modo personalizado, puede configurar gráficos escribiendo código JavaScript en el editor. Basándose en `ctx.data`, debe devolver una `option` completa de ECharts. Esto es ideal para combinar múltiples series, crear tooltips complejos y aplicar estilos dinámicos. En teoría, se pueden utilizar todas las funciones y tipos de gráficos de ECharts.

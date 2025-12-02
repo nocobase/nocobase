@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Yapay Zeka Çalışanı · Yönetici Yapılandırma Rehberi
 
 > Bu belge, Yapay Zeka Çalışanlarını nasıl yapılandıracağınızı ve yöneteceğinizi hızlıca anlamanıza yardımcı olacak. Model hizmetlerinden görev atamasına kadar tüm süreci adım adım sizinle birlikte tamamlayacağız.

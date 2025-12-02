@@ -17,6 +17,11 @@ In ons voorbeeld zijn er grofweg de volgende hoofdcollecties (andere irrelevante
 Aangezien het huidige systeem alleen het afdrukken van individuele records ondersteunt, klikken we op "Afdrukken" op de pagina "Contractdetails". Het systeem haalt dan automatisch het bijbehorende contractrecord en de gerelateerde partij-informatie op, en vult deze in Word- of PDF-documenten in.
 
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 ## 2. Voorbereiding
 

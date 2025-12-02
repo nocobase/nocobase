@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 # CronJobManager (定期実行タスク管理)
 
 `CronJobManager` は、NocoBase が提供する [cron](https://www.npmjs.com/package/cron) をベースとした定期実行タスク管理機能です。プラグインがサーバーサイドで定期実行タスクを登録し、特定のロジックを周期的に実行できるようにします。

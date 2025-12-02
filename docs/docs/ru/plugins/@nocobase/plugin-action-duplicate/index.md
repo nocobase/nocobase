@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Действие: Дублировать запись"
 packageName: '@nocobase/plugin-action-duplicate'
 description: |

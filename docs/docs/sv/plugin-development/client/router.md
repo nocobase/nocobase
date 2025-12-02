@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Router
 
 NocoBase-klienten erbjuder en flexibel routerhanterare som gör det möjligt att utöka sidor och inställningssidor för plugin via `router.add()` och `pluginSettingsRouter.add()`.

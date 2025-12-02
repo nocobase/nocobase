@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-file-manager"
 ---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 
 # Coleção de Arquivos
 

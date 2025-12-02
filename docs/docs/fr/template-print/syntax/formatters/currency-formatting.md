@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 ### Formatage de devise
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 ### Eklentileri Kurma
 
 Ticari Eklentileri Kurma ve Yükseltme belgelerine bakınız.

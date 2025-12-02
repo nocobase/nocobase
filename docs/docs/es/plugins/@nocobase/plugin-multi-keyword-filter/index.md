@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Filtro de múltiples palabras clave"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:

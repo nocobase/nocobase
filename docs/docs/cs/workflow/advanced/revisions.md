@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Správa verzí
 
 Poté, co byl nakonfigurovaný pracovní postup spuštěn alespoň jednou, pokud chcete upravit jeho konfiguraci nebo uzly, je nutné nejprve vytvořit novou verzi. Tímto způsobem zajistíte, že při prohlížení historie spuštění dříve spuštěných pracovních postupů nebudou tyto záznamy ovlivněny budoucími úpravami.

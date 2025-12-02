@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Автентифікація: CAS"
 packageName: '@nocobase/plugin-auth-cas'
 supportedVersions:

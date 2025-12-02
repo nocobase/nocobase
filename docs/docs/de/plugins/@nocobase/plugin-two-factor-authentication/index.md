@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Zwei-Faktor-Authentifizierung (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:

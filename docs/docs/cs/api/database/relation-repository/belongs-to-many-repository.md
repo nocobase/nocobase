@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # BelongsToManyRepository
 
 `BelongsToManyRepository` je `Relation Repository` pro práci se vztahy typu `BelongsToMany`.

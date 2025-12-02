@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # EventDefinition
 
 `EventDefinition` definiuje logikę obsługi zdarzeń w przepływie pracy, służącą do reagowania na określone wyzwalacze zdarzeń. Zdarzenia są kluczowym mechanizmem w silniku przepływów pracy, który uruchamia ich wykonanie.

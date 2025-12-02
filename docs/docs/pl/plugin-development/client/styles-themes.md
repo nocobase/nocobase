@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Style i motywy
 
 Aby lepiej wykorzystać dynamiczne możliwości motywów w NocoBase, w wtyczkach zalecamy używanie [antd-style](https://ant-design.github.io/antd-style/guide) do pisania stylów. Można to połączyć z istniejącymi [tokenami motywu](https://ant-design.github.io/antd-design/docs/react/customize-theme#seedtoken) w celu obsługi dynamicznych funkcji motywów. NocoBase oferuje również [wtyczkę Edytor motywów](#), która ułatwia dostosowywanie stylów.

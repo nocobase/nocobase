@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Adaptador de bloqueo distribuido de Redis"
 packageName: '@nocobase/plugin-lock-adapter-redis'
 supportedVersions:

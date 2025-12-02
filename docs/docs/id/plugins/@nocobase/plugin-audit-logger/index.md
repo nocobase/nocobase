@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Log Audit"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:

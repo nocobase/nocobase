@@ -36,6 +36,11 @@ FlowEngineContext (Globale Context)
 - `FlowRuntimeContext` heeft altijd via een delegatiemechanisme toegang tot de bijbehorende `FlowModelContext`, maar geeft wijzigingen niet door naar boven.
 
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 ## 🧭 Runtime- en Configuratiemodus (mode)
 

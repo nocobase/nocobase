@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Filtry stránky a propojení
 
 Blok filtru (Filter Block) slouží k jednotnému zadávání podmínek filtrování na úrovni stránky a jejich sloučení do dotazů grafů, čímž zajišťuje konzistentní filtrování a propojení více grafů.

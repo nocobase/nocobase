@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Piano di Esecuzione (Cronologia)
 
 Ogni volta che un flusso di lavoro viene attivato, viene creato un piano di esecuzione corrispondente per tracciare il processo di esecuzione di tale attività. Ogni piano di esecuzione ha un valore di stato che indica lo stato di esecuzione corrente, visualizzabile nell'elenco e nei dettagli della cronologia di esecuzione:

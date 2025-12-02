@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Block: Gantt"
 packageName: '@nocobase/plugin-gantt'
 description: |

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Prosedur Pemeliharaan
 
 ## Memulai Aplikasi untuk Pertama Kali

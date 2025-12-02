@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Log di audit"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:

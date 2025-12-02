@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tùy chọn biểu đồ
 
 Cấu hình cách biểu đồ được hiển thị. Hỗ trợ hai chế độ: Basic (trực quan) và Custom (JS tùy chỉnh). Chế độ Basic lý tưởng cho việc ánh xạ nhanh và các thuộc tính phổ biến; chế độ Custom phù hợp với các tình huống phức tạp và tùy chỉnh nâng cao.

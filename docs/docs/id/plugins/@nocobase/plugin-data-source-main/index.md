@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Sumber Data: Basis Data Utama"
 packageName: '@nocobase/plugin-data-source-main'
 description: |

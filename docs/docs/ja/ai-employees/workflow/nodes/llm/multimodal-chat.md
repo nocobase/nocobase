@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-ai-ee"
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 
 ```yaml
 pkg: "@nocobase/plugin-ai-ee"

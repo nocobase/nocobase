@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Editor de temas"
 packageName: '@nocobase/plugin-theme-editor'
 description: |

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Foutafhandelaar"
 packageName: '@nocobase/plugin-error-handler'
 description: |

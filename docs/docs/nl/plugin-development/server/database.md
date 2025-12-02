@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Database
 
 `Database` is een belangrijk onderdeel van gegevensbronnen (`DataSource`) van het type database. Elke gegevensbron van het type database heeft een corresponderende `Database`-instantie, die u kunt benaderen via `dataSource.db`. De database-instantie van de hoofdgegevensbron biedt ook het handige alias `app.db`. Het is essentieel om bekend te zijn met de veelgebruikte methoden van `db` voor het schrijven van server-side plugins.

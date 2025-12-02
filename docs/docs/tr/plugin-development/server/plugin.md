@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Eklenti
 
 NocoBase'de, Sunucu Eklentisi (Server Plugin), sunucu tarafı işlevselliğini genişletmek ve özelleştirmek için modüler bir yol sunar. Geliştiriciler, `@nocobase/server` paketindeki `Plugin` sınıfını miras alarak, farklı yaşam döngüsü aşamalarında olayları, API'leri, izin yapılandırmalarını ve diğer özel mantıkları kaydedebilirler.

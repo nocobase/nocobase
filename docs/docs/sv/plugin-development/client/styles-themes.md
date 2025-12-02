@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Stilar och teman
 
 För att bättre anpassa sig till NocoBase dynamiska temafunktioner rekommenderas det att använda [antd-style](https://ant-design.github.io/antd-style/zh-CN/guide) för att skriva stilar i plugins. Detta kan kombineras med befintliga [theme token](https://ant.design/docs/react/customize-theme-cn#seedtoken) för att hantera temanens dynamiska funktioner. NocoBase erbjuder också ett [plugin för temaredigeraren](#) för smidiga stiljusteringar.

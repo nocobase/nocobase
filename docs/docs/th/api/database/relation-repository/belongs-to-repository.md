@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 ## BelongsToRepository
 
 อินเทอร์เฟซของ `BelongsToRepository` เป็นแบบเดียวกับ [HasOneRepository](./has-one-repository.md) ครับ/ค่ะ

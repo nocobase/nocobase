@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Télémétrie : Prometheus"
 packageName: '@nocobase/plugin-telemetry-prometheus'
 supportedVersions:

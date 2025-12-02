@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Vlastní konfigurace grafu
 
 V režimu Vlastní konfigurace můžete grafy nastavit psaním JS kódu v editoru. Na základě `ctx.data` vrátíte kompletní `option` pro ECharts. To je ideální pro slučování více datových řad, komplexní popisky a dynamické styly. Teoreticky jsou podporovány všechny funkce ECharts a všechny typy grafů.

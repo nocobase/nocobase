@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "İki Faktörlü Kimlik Doğrulama (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:

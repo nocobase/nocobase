@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "データソース管理"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |

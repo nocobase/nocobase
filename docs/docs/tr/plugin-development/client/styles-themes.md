@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Stiller ve Temalar
 
 NocoBase'in dinamik tema yeteneklerine daha iyi uyum sağlamak için, eklentilerde stil yazmak için [antd-style](https://ant-design.github.io/antd-style/zh-CN/guide) kullanmanız önerilir. Mevcut [tema token'larını](https://ant.design/docs/react/customize-theme-cn#seedtoken) kullanarak temaların dinamik yeteneklerini yönetebilirsiniz. Ayrıca NocoBase, stilleri kolayca ayarlayabilmeniz için bir [Tema Düzenleyici eklentisi](#) de sunar.

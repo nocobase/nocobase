@@ -1,3 +1,8 @@
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 # 요청
 
 NocoBase는 [Axios](https://axios-http.com/)를 기반으로 래핑된 `APIClient`를 제공하여, `Context`를 얻을 수 있는 모든 곳에서 HTTP 요청을 보낼 수 있도록 합니다.

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Manajer multi-aplikasi (usang)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |

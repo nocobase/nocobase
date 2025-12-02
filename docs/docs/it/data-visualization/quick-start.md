@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Guida rapida
 
 Iniziamo configurando un grafico da zero, utilizzando le funzionalità essenziali. Le capacità opzionali verranno trattate nei capitoli successivi.

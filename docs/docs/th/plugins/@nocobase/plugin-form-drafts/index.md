@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "ฟอร์มฉบับร่าง"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:

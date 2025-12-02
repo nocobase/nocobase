@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tách dịch vụ <Badge>v1.9.0+</Badge>
 
 ## Giới thiệu

@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Muitos para Um
 
 Em um banco de dados de biblioteca, temos duas entidades: livros e autores. Um autor pode escrever vários livros, mas cada livro geralmente tem apenas um autor. Nesse cenário, a relação entre autores e livros é de muitos para um. Vários livros podem ser associados ao mesmo autor, mas cada livro só pode ter um autor.

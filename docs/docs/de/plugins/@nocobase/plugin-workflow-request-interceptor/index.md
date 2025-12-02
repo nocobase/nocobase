@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Workflow: Vor-Aktions-Ereignis"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 ## Basisgebruik
 
 De Template Printing plugin biedt verschillende syntaxes om flexibel dynamische gegevens en logische structuren in sjablonen in te voegen. Hieronder vindt u gedetailleerde uitleg van de syntaxis en gebruiksvoorbeelden.

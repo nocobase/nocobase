@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Gerenciamento de Versões
 
 Depois que um **fluxo de trabalho** configurado for acionado pelo menos uma vez, se você quiser modificar a configuração do **fluxo de trabalho** ou seus nós, precisará criar uma nova versão antes de fazer as alterações. Isso garante que, ao revisar o histórico de execução de **fluxos de trabalho** acionados anteriormente, ele não será afetado por modificações futuras.

@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "การซิงค์ข้อมูลผู้ใช้"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |

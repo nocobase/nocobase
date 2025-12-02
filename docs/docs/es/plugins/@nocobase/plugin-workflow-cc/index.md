@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Flujo de trabajo: CC"
 packageName: '@nocobase/plugin-workflow-cc'
 description: |

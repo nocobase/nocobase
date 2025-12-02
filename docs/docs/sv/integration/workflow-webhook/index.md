@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Arbetsflödesintegration med Webhook
 
 Med Webhook-utlösare kan NocoBase ta emot HTTP-anrop från tredjepartssystem och automatiskt trigga arbetsflöden, vilket möjliggör sömlös integration med externa system.

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Adaptor Kunci Terdistribusi Redis"
 packageName: '@nocobase/plugin-lock-adapter-redis'
 supportedVersions:

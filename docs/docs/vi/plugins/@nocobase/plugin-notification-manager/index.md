@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Quản lý thông báo"
 packageName: '@nocobase/plugin-notification-manager'
 description: |

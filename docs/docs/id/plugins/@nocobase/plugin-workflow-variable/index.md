@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Alur kerja: Variabel kustom"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:

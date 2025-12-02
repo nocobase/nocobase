@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Aangepaste interactie-evenementen
 
 Schrijf JavaScript (JS) in de evenementeneditor en registreer interacties via de ECharts-instantie `chart` om koppelingen mogelijk te maken. Denk hierbij aan navigeren naar een nieuwe pagina of het openen van een detailvenster (drill-down).

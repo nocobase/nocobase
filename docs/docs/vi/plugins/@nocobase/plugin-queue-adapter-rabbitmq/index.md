@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Bộ điều hợp hàng đợi RabbitMQ"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:

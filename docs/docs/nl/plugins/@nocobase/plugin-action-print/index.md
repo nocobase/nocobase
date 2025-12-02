@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Actie: Afdrukken"
 packageName: '@nocobase/plugin-action-print'
 description: |

@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 # การคงอยู่ของ FlowModel (FlowModel Persistence)
 FlowEngine มีระบบการคงอยู่ของข้อมูล (persistence system) ที่สมบูรณ์แบบครับ/ค่ะ
 

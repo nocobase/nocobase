@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Công cụ lưu trữ: Lưu trữ cục bộ
 
 Các tệp được tải lên sẽ được lưu trữ trong một thư mục cục bộ trên ổ cứng của máy chủ. Giải pháp này phù hợp cho các tình huống mà tổng dung lượng tệp tải lên do hệ thống quản lý là nhỏ hoặc cho mục đích thử nghiệm.

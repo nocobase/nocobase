@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Fluxo de trabalho: JavaScript"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:

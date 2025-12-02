@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # StepDefinition
 
 `StepDefinition` mendefinisikan satu langkah dalam sebuah alur kerja. Setiap langkah dapat berupa sebuah tindakan (action), penanganan kejadian (event handling), atau operasi lainnya. Sebuah langkah adalah unit eksekusi dasar dari sebuah alur kerja.

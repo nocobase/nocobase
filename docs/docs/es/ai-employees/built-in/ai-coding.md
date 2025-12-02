@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Empleado de IA · Nathan: Ingeniero Frontend
 
 > Le ayuda a escribir y optimizar código frontend para implementar lógica interactiva compleja.

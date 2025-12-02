@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # StepDefinition
 
 StepDefinition definuje jednotlivý krok v pracovním postupu. Každý krok může představovat akci, zpracování události nebo jinou operaci. Krok je základní vykonávací jednotkou pracovního postupu.

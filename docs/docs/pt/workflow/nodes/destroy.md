@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Excluir dados
 
 Usado para excluir dados de uma **coleção** que atenda a certas condições.

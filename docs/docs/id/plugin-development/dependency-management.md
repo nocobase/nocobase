@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Manajemen Dependensi
 
 Dalam pengembangan **plugin** NocoBase, dependensi dibagi menjadi dua kategori: **dependensi mandiri** dan **dependensi global**.

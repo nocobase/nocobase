@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # ResourceManager Správa zdrojů
 
 Funkce správy zdrojů v NocoBase dokáže automaticky převádět existující databázové tabulky (kolekce) a asociace na zdroje. Obsahuje vestavěné typy operací, které vývojářům pomáhají rychle vytvářet operace se zdroji REST API. Na rozdíl od tradičních REST API se operace se zdroji v NocoBase nespoléhají na metody HTTP požadavků, ale určují konkrétní operaci k provedení prostřednictvím explicitních definic `:action`.

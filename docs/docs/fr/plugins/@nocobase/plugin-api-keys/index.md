@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Authentification : Clés API"
 packageName: '@nocobase/plugin-api-keys'
 description: |

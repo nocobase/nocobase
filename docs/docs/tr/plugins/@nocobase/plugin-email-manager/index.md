@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "E-posta Yönetimi"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:

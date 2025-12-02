@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 ```yaml
 displayName: "Khối: Bảng thao tác"
 packageName: '@nocobase/plugin-block-workbench'

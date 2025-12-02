@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # NocoBase'de API Anahtarlarını Kullanma
 
 Bu rehber, NocoBase'de API Anahtarlarını kullanarak veri almayı pratik bir "Yapılacaklar" örneği üzerinden göstermektedir. Tüm iş akışını anlamak için aşağıdaki adım adım talimatları takip ediniz.

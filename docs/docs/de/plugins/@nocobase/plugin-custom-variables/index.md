@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Benutzerdefinierte Variablen"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:

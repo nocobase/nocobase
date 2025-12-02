@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Рабочий процесс: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:

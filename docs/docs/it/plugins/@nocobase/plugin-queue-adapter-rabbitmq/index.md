@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Adattatore coda messaggi RabbitMQ"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:

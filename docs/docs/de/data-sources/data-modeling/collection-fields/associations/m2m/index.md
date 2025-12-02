@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Viele-zu-Viele
 
 In einem Kurswahlsystem gibt es zwei Entitäten: Studenten und Kurse. Ein Student kann sich für mehrere Kurse einschreiben, und ein Kurs kann von mehreren Studenten belegt werden. Dies bildet eine Viele-zu-Viele-Beziehung. In einer relationalen Datenbank wird zur Darstellung der Viele-zu-Viele-Beziehung zwischen Studenten und Kursen üblicherweise eine Vermittlungs-Sammlung, wie zum Beispiel eine Einschreibungs-Sammlung, verwendet. Diese Sammlung kann festhalten, welche Kurse jeder Student gewählt hat und welche Studenten sich für jeden Kurs eingeschrieben haben. Dieses Design stellt die Viele-zu-Viele-Beziehung zwischen Studenten und Kursen effektiv dar.

@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "Redis อะแดปเตอร์คิวข้อความ"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:

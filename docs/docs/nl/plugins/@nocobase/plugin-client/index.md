@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "WEB-client"
 packageName: '@nocobase/plugin-client'
 description: |

@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Источник данных: Внешний Oracle"
 packageName: '@nocobase/plugin-data-source-external-oracle'
 supportedVersions:

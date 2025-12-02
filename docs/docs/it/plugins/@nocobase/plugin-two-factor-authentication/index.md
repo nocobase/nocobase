@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Autenticazione a due fattori (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:

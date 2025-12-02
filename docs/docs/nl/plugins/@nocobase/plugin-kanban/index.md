@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Blok: Kanban"
 packageName: '@nocobase/plugin-kanban'
 description: |

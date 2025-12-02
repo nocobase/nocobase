@@ -7,5 +7,10 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 # Upozornění: Zpráva přímo v aplikaci

@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-wecom"
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 # Synkronisera användardata från WeChat Work
 

@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Usando Chaves de API no NocoBase
 
 Este guia demonstra como usar Chaves de API no NocoBase para obter dados, utilizando um exemplo prático de "Tarefas" (To-Dos). Siga as instruções passo a passo abaixo para entender o fluxo de trabalho completo.

@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "คอมโพเนนต์ฟิลด์: มาสก์"
 packageName: '@nocobase/plugin-field-component-mask'
 supportedVersions:

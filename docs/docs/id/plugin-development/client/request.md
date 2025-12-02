@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Permintaan
 
 NocoBase menyediakan `APIClient` yang dibangun di atas [Axios](https://axios-http.com/). Anda bisa menggunakannya untuk membuat permintaan HTTP dari mana saja Anda bisa mendapatkan `Context`.

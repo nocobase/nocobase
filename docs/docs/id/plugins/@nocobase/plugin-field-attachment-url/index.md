@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Bidang Koleksi: Lampiran (URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |

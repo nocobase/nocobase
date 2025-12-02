@@ -57,6 +57,10 @@ const model = this.flowEngine.createModel({
 ```
 
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
 
 ## ステップ2：PropsFlowを追加してボタンのプロパティを設定可能にする
 

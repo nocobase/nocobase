@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Блок: шаблон (застарілий)"
 packageName: '@nocobase/plugin-block-template'
 description: |

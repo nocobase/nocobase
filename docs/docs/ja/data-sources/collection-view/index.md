@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-collection-view"
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 
 # データベースビュー
 

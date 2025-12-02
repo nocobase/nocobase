@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-field-china-region"
 ---
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 
 # 중국 행정 구역
 

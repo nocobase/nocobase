@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Opslag-engine: Amazon S3
 
 Een opslag-engine gebaseerd op Amazon S3. Voordat u deze kunt gebruiken, moet u de relevante accounts en machtigingen voorbereiden.

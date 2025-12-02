@@ -41,6 +41,11 @@ Tato vrstvená architektura umožňuje Viz udržovat stabilní osobnost (konzist
 a zároveň se rychle přizpůsobovat různým obchodním scénářům (CRM, správa nemocnic, analýza kanálů, řízení výroby...).
 
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 ## 3. Režim jedna: Šablonový analytický engine (doporučeno)
 

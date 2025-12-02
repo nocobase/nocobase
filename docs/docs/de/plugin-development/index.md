@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Übersicht zur Plugin-Entwicklung
 
 NocoBase setzt auf eine **Mikrokernel-Architektur**. Der Kern ist dabei ausschließlich für die Planung des Plugin-Lebenszyklus, das Abhängigkeitsmanagement und die Kapselung grundlegender Funktionen zuständig. Alle Geschäftsfunktionen werden als Plugins bereitgestellt. Das Verständnis der Organisationsstruktur, des Lebenszyklus und der Verwaltung von Plugins ist daher der erste Schritt, um NocoBase anzupassen.

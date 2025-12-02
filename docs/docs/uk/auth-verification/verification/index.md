@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-verification"
 ---
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 
 pkg: '@nocobase/plugin-verification'
 ---

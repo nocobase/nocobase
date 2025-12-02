@@ -26,6 +26,11 @@ Klik op het selectievakje in de kolom `Beschikbaar` van de lijst met AI-medewerk
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
 
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 ## Gegevenstoegangsrechten
 

@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Блок: Панель дій"
 packageName: '@nocobase/plugin-block-workbench'
 description: |

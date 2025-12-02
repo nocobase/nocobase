@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-action-template-print"
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 
 # Drukowanie z szablonów
 

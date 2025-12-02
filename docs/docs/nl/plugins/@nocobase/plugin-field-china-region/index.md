@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Collectieveld: Chinese administratieve regio's"
 packageName: '@nocobase/plugin-field-china-region'
 description: |

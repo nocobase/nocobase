@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # ICollectionManager
 
 L'interfaccia `ICollectionManager` serve a gestire le istanze di `collezione` di una `fonte dati`.

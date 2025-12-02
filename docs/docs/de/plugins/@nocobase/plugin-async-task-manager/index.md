@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Asynchroner Aufgabenmanager"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |

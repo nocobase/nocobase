@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Uno a Uno
 
 En la relación entre empleados y perfiles personales, cada empleado solo puede tener un registro de perfil personal, y cada registro de perfil personal solo puede corresponder a un empleado. En este caso, la relación entre el empleado y el perfil personal es uno a uno.

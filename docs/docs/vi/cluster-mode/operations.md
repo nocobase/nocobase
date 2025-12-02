@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Quy trình bảo trì
 
 ## Khởi động ứng dụng lần đầu

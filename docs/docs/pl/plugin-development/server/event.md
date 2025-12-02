@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Zdarzenia
 
 Serwer NocoBase wyzwala odpowiednie zdarzenia podczas cyklu życia aplikacji, cyklu życia wtyczek oraz operacji na bazie danych. Deweloperzy wtyczek mogą nasłuchiwać tych zdarzeń, aby implementować logikę rozszerzeń, automatyzować operacje lub tworzyć niestandardowe zachowania.

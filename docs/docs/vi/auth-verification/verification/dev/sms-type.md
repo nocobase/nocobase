@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Mở rộng nhà cung cấp dịch vụ SMS
 
 Bài viết này chủ yếu giới thiệu cách mở rộng chức năng nhà cung cấp dịch vụ SMS trong tính năng [Xác minh: SMS](../sms) thông qua một plugin.

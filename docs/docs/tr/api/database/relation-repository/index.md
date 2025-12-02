@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # RelationRepository
 
 `RelationRepository`, ilişki türleri için bir `Repository` nesnesidir. `RelationRepository`, ilişkili veriler üzerinde, ilişkiyi yüklemeye gerek kalmadan işlem yapmanızı sağlar. `RelationRepository` temel alınarak, her ilişki türü için karşılık gelen türetilmiş uygulamalar şunlardır:

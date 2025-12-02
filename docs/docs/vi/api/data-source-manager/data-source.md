@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # DataSource (trừu tượng)
 
 `DataSource` là một lớp trừu tượng, được dùng để biểu diễn một loại **nguồn dữ liệu**, có thể là cơ sở dữ liệu, API, v.v.

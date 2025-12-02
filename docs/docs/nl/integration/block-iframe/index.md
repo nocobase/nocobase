@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-block-iframe"
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 
 # Iframe-blok
 

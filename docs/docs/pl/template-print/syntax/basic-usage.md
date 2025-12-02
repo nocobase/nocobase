@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 ## Podstawowe użycie
 
 Wtyczka do drukowania szablonów oferuje różnorodne składnie, które pozwalają elastycznie wstawiać dane dynamiczne i struktury logiczne do szablonów. Poniżej znajdą Państwo szczegółowe wyjaśnienia składni oraz przykłady użycia.

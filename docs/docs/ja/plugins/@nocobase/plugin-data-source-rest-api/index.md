@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "データソース：REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:

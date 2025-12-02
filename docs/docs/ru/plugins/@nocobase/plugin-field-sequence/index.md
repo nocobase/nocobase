@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Поле коллекции: Автоматическая нумерация"
 packageName: '@nocobase/plugin-field-sequence'
 description: |

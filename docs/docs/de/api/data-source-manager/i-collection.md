@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # ICollection
 
 `ICollection` ist das Interface für das Datenmodell, das Informationen wie den Namen des Modells, dessen Felder und Assoziationen enthält.

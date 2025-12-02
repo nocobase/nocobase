@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "E-Mail-Verwaltung"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:

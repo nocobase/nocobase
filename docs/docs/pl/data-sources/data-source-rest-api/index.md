@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-data-source-rest-api"
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 
 pkg: "@nocobase/plugin-data-source-rest-api"
 ---

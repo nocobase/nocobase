@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Uwierzytelnianie: DingTalk"
 packageName: '@nocobase/plugin-auth-dingtalk'
 supportedVersions:

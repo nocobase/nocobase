@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Gegevensbron: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
 description: |

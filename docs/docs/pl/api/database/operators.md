@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Operatory Filtrowania
 
 Używane w parametrze `filter` w API repozytorium, takich jak `find`, `findOne`, `findAndCount`, `count`:

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Authenticatie: SAML 2.0"
 packageName: '@nocobase/plugin-auth-saml'
 supportedVersions:

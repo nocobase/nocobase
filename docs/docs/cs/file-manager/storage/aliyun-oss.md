@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Úložný engine: Aliyun OSS
 
 Úložný engine založený na Aliyun OSS. Před použitím je nutné připravit si příslušný účet a oprávnění.

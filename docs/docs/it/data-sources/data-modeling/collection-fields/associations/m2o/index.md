@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Molti a Uno
 
 In un database di una biblioteca, abbiamo due entità: libri e autori. Un autore può scrivere più libri, ma ogni libro di solito ha un solo autore. In questo scenario, la relazione tra autori e libri è di tipo molti a uno. Più libri possono essere associati allo stesso autore, ma ogni libro può avere un solo autore.

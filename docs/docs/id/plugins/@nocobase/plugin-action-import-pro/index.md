@@ -11,5 +11,10 @@ builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 # Aksi: Impor catatan Pro

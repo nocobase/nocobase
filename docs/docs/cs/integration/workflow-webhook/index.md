@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Integrace Webhooků do pracovních postupů
 
 Pomocí spouštěčů Webhooků může NocoBase přijímat HTTP volání z externích systémů a automaticky spouštět pracovní postupy, čímž zajišťuje bezproblémovou integraci s externími systémy.

@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 ```yaml
 displayName: "Источник данных: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'

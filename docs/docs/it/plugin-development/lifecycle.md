@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Ciclo di vita
 
 Questa sezione illustra gli hook del ciclo di vita dei plugin, sia lato server che lato client. L'obiettivo è aiutare gli sviluppatori a registrare e rilasciare le risorse in modo corretto.

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Vizualizovaný správce kolekcí"
 packageName: '@nocobase/plugin-graph-collection-manager'
 description: |

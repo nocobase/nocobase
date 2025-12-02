@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 ```yaml
 displayName: "Управление уведомлениями"
 packageName: '@nocobase/plugin-notification-manager'

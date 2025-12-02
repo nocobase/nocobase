@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Verifiering: TOTP-autentiserare"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:

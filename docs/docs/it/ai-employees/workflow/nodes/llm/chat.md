@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-ai"
 ---
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 
 # Chat di testo
 

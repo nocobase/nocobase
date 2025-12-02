@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Xóa dữ liệu
 
 Dùng để xóa dữ liệu từ một bộ sưu tập thỏa mãn các điều kiện nhất định.

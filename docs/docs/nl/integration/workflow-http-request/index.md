@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Integratie van HTTP-verzoeken in workflows
 
 Met de HTTP-verzoeknode kunnen NocoBase workflows proactief verzoeken sturen naar elke HTTP-dienst, waardoor gegevensuitwisseling en bedrijfsintegratie met externe systemen mogelijk wordt.

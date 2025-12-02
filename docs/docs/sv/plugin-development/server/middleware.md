@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Middleware
 
 NocoBase Servers middleware är i grunden **Koa middleware**. Ni kan hantera förfrågningar och svar genom att manipulera `ctx`-objektet, precis som i Koa. Men eftersom NocoBase behöver hantera logik på olika affärsnivåer, blir det mycket svårt att underhålla och hantera om all middleware placeras tillsammans.

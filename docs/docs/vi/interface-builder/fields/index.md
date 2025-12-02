@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Trường
 
 Trong giao diện người dùng (UI), trường là một thành phần trường, đóng vai trò là phương tiện chứa dữ liệu đơn vị. Các loại dữ liệu khác nhau sẽ được hiển thị bằng các thành phần trường khác nhau. Trường chỉ có thể gắn vào khối và không thể sử dụng độc lập.

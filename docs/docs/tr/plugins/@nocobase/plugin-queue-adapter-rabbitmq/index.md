@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "RabbitMQ Mesaj Kuyruğu Adaptörü"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:

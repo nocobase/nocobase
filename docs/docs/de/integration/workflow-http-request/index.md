@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Integration von HTTP-Anfragen in Workflows
 
 Mit dem HTTP-Anfrage-Knoten können NocoBase Workflows proaktiv Anfragen an beliebige HTTP-Dienste senden. Dies ermöglicht den Datenaustausch und die Geschäftsintegration mit externen Systemen.

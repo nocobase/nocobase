@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Overzicht
 
 Een trigger is het startpunt voor een workflow. Wanneer er tijdens het uitvoeren van de applicatie een gebeurtenis plaatsvindt die voldoet aan de voorwaarden van de trigger, wordt de workflow geactiveerd en uitgevoerd. Het type trigger is tevens het type workflow; u kiest dit bij het aanmaken van de workflow en kunt het daarna niet meer wijzigen. De momenteel ondersteunde triggertypes zijn:

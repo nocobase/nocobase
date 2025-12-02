@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "HTTP-förfrågningskryptering"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:

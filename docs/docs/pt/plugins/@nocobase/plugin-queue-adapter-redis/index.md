@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Adaptador de Fila Redis"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:

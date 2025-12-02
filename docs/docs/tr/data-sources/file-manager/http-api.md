@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # HTTP API
 
 Ek alanları ve dosya koleksiyonları için dosya yüklemeleri HTTP API aracılığıyla yapılabilir. Çağrı yöntemleri, ek veya dosya koleksiyonunun kullandığı depolama motoruna göre farklılık gösterir.

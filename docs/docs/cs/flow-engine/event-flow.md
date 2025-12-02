@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Tok událostí
 
 Ve FlowEngine jsou všechny komponenty rozhraní **řízeny událostmi (Event-driven)**. Chování, interakce a změny dat komponent jsou spouštěny událostmi (Event) a prováděny prostřednictvím toku (Flow).

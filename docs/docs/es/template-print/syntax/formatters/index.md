@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 ## Formateadores
 
 Los formateadores se utilizan para convertir datos sin procesar en texto fácil de leer. Se aplican a los datos usando dos puntos (`:`) y pueden encadenarse de modo que la salida de un formateador se convierte en la entrada del siguiente. Algunos formateadores admiten parámetros constantes o dinámicos.

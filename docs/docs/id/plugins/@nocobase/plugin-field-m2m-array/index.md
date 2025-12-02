@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Bidang Koleksi: Banyak ke Banyak (array)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |

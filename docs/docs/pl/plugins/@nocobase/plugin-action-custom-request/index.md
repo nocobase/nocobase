@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Akcja: Niestandardowe żądanie"
 packageName: '@nocobase/plugin-action-custom-request'
 description: |

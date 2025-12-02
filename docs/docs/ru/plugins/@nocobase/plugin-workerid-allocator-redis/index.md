@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Распределитель worker ID на Redis"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 description: |

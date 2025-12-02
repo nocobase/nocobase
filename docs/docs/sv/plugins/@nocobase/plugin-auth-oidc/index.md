@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Autentisering: OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
 supportedVersions:

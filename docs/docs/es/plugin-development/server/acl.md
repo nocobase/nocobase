@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Control de permisos ACL
 
 ACL (Access Control List) se utiliza para controlar los permisos de operación sobre los recursos. Usted puede asignar permisos a roles, o bien, omitir las restricciones de rol y definir permisos directamente. El sistema ACL ofrece un mecanismo flexible para la gestión de permisos, compatible con fragmentos de permisos, middleware, evaluación condicional y otros métodos.

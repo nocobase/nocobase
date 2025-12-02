@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Colecciones
 
 En el desarrollo de **plugins** de NocoBase, la **colección (tabla de datos)** es uno de los conceptos centrales. Usted puede añadir o modificar estructuras de tablas de datos en sus **plugins** definiendo o extendiendo **colecciones**. A diferencia de las tablas de datos creadas a través de la interfaz de gestión de **fuentes de datos**, las **colecciones** definidas en el código suelen ser tablas de metadatos a nivel de sistema y no aparecerán en la lista de gestión de **fuentes de datos**.

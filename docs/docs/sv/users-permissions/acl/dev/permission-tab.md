@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Utöka behörighetsflikar
 
 Nedan ser ni ett exempel på konfigurationsobjektet "Mobilmeny", som visar hur ni utökar en ny behörighetsflik. Resultatet visas i bilden nedan:

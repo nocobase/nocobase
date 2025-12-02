@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # CronJobManager Zamanlanmış Görev Yönetimi
 
 `CronJobManager`, NocoBase tarafından sunulan, [cron](https://www.npmjs.com/package/cron) tabanlı bir zamanlanmış görev yöneticisidir. Eklentilerin, sunucu tarafında belirli bir mantığı periyodik olarak yürütmek üzere zamanlanmış görevler kaydetmesine olanak tanır.

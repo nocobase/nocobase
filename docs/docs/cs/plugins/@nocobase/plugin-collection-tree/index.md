@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Kolekce: Strom"
 packageName: '@nocobase/plugin-collection-tree'
 description: |

@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Flujo de trabajo: Nodo de procesamiento manual"
 packageName: '@nocobase/plugin-workflow-manual'
 description: |

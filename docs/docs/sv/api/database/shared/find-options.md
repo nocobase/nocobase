@@ -1,6 +1,11 @@
 ---
 title: Tomt läge
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 # Tomt läge
 

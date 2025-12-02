@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Przegląd
 
 Modelowanie danych to kluczowy etap w projektowaniu baz danych. Polega ono na dogłębnej analizie i abstrakcji różnorodnych typów danych z rzeczywistego świata oraz ich wzajemnych relacji. W tym procesie staramy się odkryć wewnętrzne powiązania między danymi i sformalizować je w modele danych, co stanowi podstawę struktury baz danych dla systemów informatycznych. NocoBase to platforma oparta na modelach danych, charakteryzująca się następującymi cechami:

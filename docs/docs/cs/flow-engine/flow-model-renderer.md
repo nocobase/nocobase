@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Vykreslení FlowModel
 
 `FlowModelRenderer` je klíčová React komponenta pro vykreslování `FlowModel`. Jejím úkolem je převést instanci `FlowModel` na vizuální React komponentu.

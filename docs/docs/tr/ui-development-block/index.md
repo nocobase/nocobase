@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Blok Uzantılarına Genel Bakış
 
 NocoBase 2.0'da, blok uzantı mekanizması önemli ölçüde basitleştirilmiştir. Geliştiriciler, blokları hızlıca özelleştirmek için yalnızca ilgili **FlowModel** temel sınıfını miras alıp ilgili arayüz metotlarını (başlıca `renderComponent()` metodu) uygulamalıdır.

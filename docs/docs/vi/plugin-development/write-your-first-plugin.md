@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Viết plugin đầu tiên của bạn
 
 Hướng dẫn này sẽ giúp bạn tạo một plugin khối (block plugin) có thể sử dụng trong các trang, bắt đầu từ con số 0. Qua đó, bạn sẽ hiểu được cấu trúc cơ bản và quy trình phát triển các **plugin** của NocoBase.

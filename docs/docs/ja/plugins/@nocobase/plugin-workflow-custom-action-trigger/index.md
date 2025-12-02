@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "ワークフロー：カスタムアクションイベント"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:

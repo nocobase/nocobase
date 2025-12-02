@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Förhandsgranskning av Office-filer"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |

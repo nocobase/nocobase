@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Nguồn dữ liệu: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:

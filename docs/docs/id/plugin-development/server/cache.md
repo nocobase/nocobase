@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Cache
 
 Modul Cache NocoBase dibangun di atas <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> dan menyediakan fungsionalitas *caching* untuk pengembangan *plugin*. Sistem ini memiliki dua jenis *cache* bawaan:

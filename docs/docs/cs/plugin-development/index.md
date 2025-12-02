@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Přehled vývoje pluginů
 
 NocoBase využívá **mikrojádrovou architekturu**, kde jádro je zodpovědné pouze za plánování životního cyklu pluginů, správu závislostí a zapouzdření základních funkcí. Všechny obchodní funkce jsou poskytovány ve formě pluginů. Proto je pochopení organizační struktury, životního cyklu a způsobu správy pluginů prvním krokem k přizpůsobení NocoBase.

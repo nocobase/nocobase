@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Samlingsfält: Sortering"
 packageName: '@nocobase/plugin-field-sort'
 description: |

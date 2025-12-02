@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # IField
 
 `IField` định nghĩa giao diện mà một trường cần triển khai.

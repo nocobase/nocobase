@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Openbare formulieren"
 packageName: '@nocobase/plugin-public-forms'
 description: |

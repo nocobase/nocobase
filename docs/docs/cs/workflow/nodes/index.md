@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Přehled
 
 Pracovní postup se obvykle skládá z několika propojených operačních kroků. Každý uzel představuje jeden z těchto kroků a slouží jako základní logická jednotka v procesu. Stejně jako v programovacím jazyce, různé typy uzlů reprezentují různé instrukce, které určují chování uzlu. Když se pracovní postup spustí, systém postupně vstupuje do každého uzlu a provádí jeho instrukce.

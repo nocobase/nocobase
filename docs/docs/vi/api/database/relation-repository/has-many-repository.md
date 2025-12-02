@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # HasManyRepository
 
 `HasManyRepository` là một `Relation Repository` được dùng để xử lý các mối quan hệ `HasMany`.

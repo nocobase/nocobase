@@ -1,0 +1,37 @@
+[
+  {
+    "type": "custom-link",
+    "label": "نظرة عامة",
+    "link": "/template-print/syntax/formatters/"
+  },
+  {
+    "type": "custom-link",
+    "label": "تنسيق النص",
+    "link": "/template-print/syntax/formatters/text-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "تنسيق الأرقام",
+    "link": "/template-print/syntax/formatters/number-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "تنسيق العملات",
+    "link": "/template-print/syntax/formatters/currency-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "تنسيق التاريخ",
+    "link": "/template-print/syntax/formatters/date-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "تنسيق الفواصل الزمنية",
+    "link": "/template-print/syntax/formatters/time-interval-formatting"
+  },
+  {
+    "type": "custom-link",
+    "label": "تنسيق المصفوفات",
+    "link": "/template-print/syntax/formatters/array-formatting"
+  }
+]

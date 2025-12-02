@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Akhiri Alur Kerja
 
 Ketika node ini dieksekusi, ia akan segera mengakhiri alur kerja yang sedang berjalan dengan status yang dikonfigurasi pada node tersebut. Ini biasanya digunakan untuk mengontrol alur berdasarkan logika tertentu, yaitu keluar dari alur kerja saat ini ketika kondisi tertentu terpenuhi dan menghentikan eksekusi proses selanjutnya. Ini mirip dengan instruksi `return` dalam bahasa pemrograman, yang digunakan untuk keluar dari fungsi yang sedang berjalan.

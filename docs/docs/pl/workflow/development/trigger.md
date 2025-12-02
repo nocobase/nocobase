@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Rozszerzanie typów wyzwalaczy
 
 Każdy przepływ pracy musi być skonfigurowany z określonym wyzwalaczem, który stanowi punkt wejścia do rozpoczęcia jego wykonania.

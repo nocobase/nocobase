@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Adaptador Redis de Publicação e Assinatura"
 packageName: '@nocobase/plugin-pubsub-adapter-redis'
 supportedVersions:

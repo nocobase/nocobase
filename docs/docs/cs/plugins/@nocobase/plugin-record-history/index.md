@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Historie záznamů"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:

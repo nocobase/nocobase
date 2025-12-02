@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Události
 
 Server NocoBase spouští odpovídající události během životního cyklu aplikace, životního cyklu pluginů a databázových operací. Vývojáři pluginů mohou tyto události poslouchat a implementovat tak rozšiřující logiku, automatizované operace nebo vlastní chování.

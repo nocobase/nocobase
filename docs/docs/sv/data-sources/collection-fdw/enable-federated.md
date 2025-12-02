@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Hur man aktiverar Federated-motorn i MySQL
 
 MySQL-databasen har inte federated-modulen aktiverad som standard. Ni behöver ändra my.cnf-konfigurationen. Om ni använder Docker-versionen kan ni hantera utökningen via volymer:

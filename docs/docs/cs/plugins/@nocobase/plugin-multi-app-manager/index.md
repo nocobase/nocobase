@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Správce více aplikací (zastaralé)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |

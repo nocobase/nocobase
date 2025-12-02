@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Přehled
 
 Vestavěné funkce pracovního postupu nemohou pokrýt všechny scénáře. Například vestavěné typy uzlů nemohou zahrnout každou možnou operaci ve všech obchodních scénářích. Proto jsme navrhli možnost rozšíření pracovního postupu, včetně rozšíření typů spouštěčů a uzlů. V obchodních scénářích, kde vestavěné funkce nestačí, je můžete rozšířit pomocí low-code metod.

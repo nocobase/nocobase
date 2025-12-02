@@ -26,6 +26,11 @@ Klicka i kryssrutan i kolumnen `Available` i listan över AI-medarbetare för at
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
 
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 ## Dataåtkomstbehörigheter
 

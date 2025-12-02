@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Renderizar FlowModel
 
 `FlowModelRenderer` es el componente principal de React que se encarga de renderizar un `FlowModel`. Su función es transformar una instancia de `FlowModel` en un componente visual de React.

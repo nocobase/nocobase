@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Trường của bộ sưu tập: Tệp đính kèm (URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |

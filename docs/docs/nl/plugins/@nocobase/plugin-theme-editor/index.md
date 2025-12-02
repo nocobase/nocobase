@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Thema-editor"
 packageName: '@nocobase/plugin-theme-editor'
 description: |

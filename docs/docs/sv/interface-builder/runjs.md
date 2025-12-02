@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Skriv och kör JS online
 
 I NocoBase erbjuder **RunJS** en lättviktig utökningsmetod som passar för **snabba experiment och tillfällig logikhantering**. Utan att behöva skapa en plugin eller ändra källkoden kan ni anpassa gränssnitt eller interaktioner med JavaScript.

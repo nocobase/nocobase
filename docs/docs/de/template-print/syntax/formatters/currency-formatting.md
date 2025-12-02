@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 ### Währungsformatierung
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)

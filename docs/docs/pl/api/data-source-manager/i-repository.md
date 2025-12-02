@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # IRepository
 
 Interfejs `Repository` definiuje zestaw metod operacji na modelach, które służą do adaptacji operacji CRUD (tworzenie, odczytywanie, aktualizowanie, usuwanie) dla źródła danych.

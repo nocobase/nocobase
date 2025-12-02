@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Sayfa Filtreleri ve Etkileşim
 
 Sayfa filtresi (Filtre Bloğu), sayfa düzeyinde filtre koşullarını tek bir yerden girmenizi sağlar ve bu koşulları grafik sorgularına dahil ederek birden fazla grafiğin tutarlı bir şekilde filtrelenmesini ve etkileşimli çalışmasını mümkün kılar.

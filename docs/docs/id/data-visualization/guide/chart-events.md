@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Event Interaksi Kustom
 
 Di editor event, Anda dapat menulis kode JS dan mendaftarkan perilaku interaksi melalui instance ECharts `chart` untuk mengaktifkan keterkaitan. Contohnya, navigasi ke halaman baru atau membuka dialog untuk analisis mendalam (drill-down).

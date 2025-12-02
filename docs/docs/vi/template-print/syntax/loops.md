@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 ## Xử lý vòng lặp
 
 Xử lý vòng lặp được dùng để hiển thị lặp lại dữ liệu từ các mảng hoặc đối tượng. Chúng ta xác định nội dung cần lặp bằng cách định nghĩa các điểm đánh dấu bắt đầu và kết thúc vòng lặp. Dưới đây là một số trường hợp phổ biến.

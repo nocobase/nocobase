@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Шифрование HTTP-запросов"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:

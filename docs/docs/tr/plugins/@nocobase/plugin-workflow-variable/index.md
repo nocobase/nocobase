@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "İş Akışı: Özel Değişken"
 packageName: '@nocobase/plugin-workflow-variable'
 supportedVersions:

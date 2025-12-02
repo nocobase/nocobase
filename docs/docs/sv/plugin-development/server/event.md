@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Händelser
 
 NocoBases server utlöser motsvarande händelser under applikationens livscykel, plugin-programmens livscykel och databasoperationer. Plugin-utvecklare kan lyssna på dessa händelser för att implementera utökad logik, automatiska operationer eller anpassade beteenden.

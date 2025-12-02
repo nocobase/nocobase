@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # FlowEngine ve Eklentiler Arasındaki İlişki
 
 **FlowEngine** bir eklenti değildir; **çekirdek API** olarak eklentilerin kullanımına sunulur ve çekirdek yeteneklerle iş uzantılarını birbirine bağlar.

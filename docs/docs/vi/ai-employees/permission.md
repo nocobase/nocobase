@@ -26,6 +26,11 @@ Nhấp vào ô chọn trong cột `Available` của danh sách nhân viên AI đ
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
 
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 
 ## Quyền truy cập dữ liệu
 

@@ -9,5 +9,10 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 
 # AI LLM: GigaChat

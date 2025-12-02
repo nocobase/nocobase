@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "UI-Schema-Speicherdienst"
 packageName: '@nocobase/plugin-ui-schema-storage'
 description: |

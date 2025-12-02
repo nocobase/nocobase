@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "แหล่งข้อมูล: MariaDB ภายนอก"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
 supportedVersions:

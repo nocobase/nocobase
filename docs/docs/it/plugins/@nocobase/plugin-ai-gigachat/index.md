@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "AI LLM: GigaChat"
 packageName: '@nocobase/plugin-ai-gigachat'
 supportedVersions:

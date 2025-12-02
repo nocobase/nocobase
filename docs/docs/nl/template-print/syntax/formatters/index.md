@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 ## Formatters
 
 Formatters worden gebruikt om ruwe data om te zetten in gemakkelijk leesbare tekst. U past ze toe op data met behulp van een dubbele punt (`:`). Ze kunnen aan elkaar gekoppeld worden, waarbij de uitvoer van de ene formatter de invoer wordt voor de volgende. Sommige formatters ondersteunen constante of dynamische parameters.

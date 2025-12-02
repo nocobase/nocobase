@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Sumber data: KingbaseES (人大金仓)"
 packageName: '@nocobase/plugin-data-source-kingbase'
 description: |

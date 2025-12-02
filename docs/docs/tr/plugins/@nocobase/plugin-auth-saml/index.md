@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Kimlik Doğrulama: SAML 2.0"
 packageName: '@nocobase/plugin-auth-saml'
 supportedVersions:

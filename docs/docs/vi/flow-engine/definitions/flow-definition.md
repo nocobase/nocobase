@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # FlowDefinition
 
 FlowDefinition định nghĩa cấu trúc và cấu hình cơ bản của một luồng, là một trong những khái niệm cốt lõi của FlowEngine. Nó mô tả siêu dữ liệu, điều kiện kích hoạt, các bước thực thi, v.v. của luồng.

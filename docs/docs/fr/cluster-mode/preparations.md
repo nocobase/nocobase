@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Prérequis
 
 Avant de déployer une application en mode cluster, vous devez effectuer les préparatifs suivants.

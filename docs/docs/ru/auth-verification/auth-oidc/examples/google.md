@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 # Вход через Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect

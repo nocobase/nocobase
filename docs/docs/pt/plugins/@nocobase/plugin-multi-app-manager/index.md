@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Gerenciador de multiaplicativos (obsoleto)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |

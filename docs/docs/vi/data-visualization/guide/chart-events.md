@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Sự kiện tương tác tùy chỉnh
 
 Viết mã JS trong trình chỉnh sửa sự kiện và đăng ký các tương tác thông qua thể hiện ECharts `chart` để kích hoạt liên kết. Ví dụ, bạn có thể điều hướng đến một trang mới hoặc mở hộp thoại chi tiết (drill-down).

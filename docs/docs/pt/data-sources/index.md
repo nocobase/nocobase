@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Visão Geral
 
 A modelagem de dados é uma etapa crucial no design de bancos de dados, envolvendo um processo de análise aprofundada e abstração de vários tipos de dados do mundo real e suas inter-relações. Nesse processo, buscamos revelar as conexões intrínsecas entre os dados e formalizá-las em modelos de dados, estabelecendo a base para a estrutura do banco de dados do sistema de informação. O NocoBase é uma plataforma orientada por modelos de dados, com as seguintes características:

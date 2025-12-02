@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "เครื่องมือทดสอบภาษา"
 packageName: '@nocobase/plugin-locale-tester'
 description: |

@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Relacja między FlowEngine a wtyczkami
 
 **FlowEngine** nie jest wtyczką, lecz **rdzeniowym API** udostępnianym wtyczkom, służącym do łączenia podstawowych funkcjonalności z rozszerzeniami biznesowymi. W NocoBase 2.0 wszystkie API są scentralizowane w FlowEngine, a wtyczki mogą uzyskać dostęp do FlowEngine za pośrednictwem `this.engine`.

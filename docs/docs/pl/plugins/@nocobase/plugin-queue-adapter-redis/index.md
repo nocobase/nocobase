@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Adapter kolejki Redis"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:

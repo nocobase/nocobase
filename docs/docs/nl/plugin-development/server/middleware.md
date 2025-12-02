@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Middleware
 
 De middleware van de NocoBase Server is in essentie **Koa middleware**. U kunt het `ctx`-object manipuleren om verzoeken en antwoorden af te handelen, net als in Koa. Echter, aangezien NocoBase logica op verschillende bedrijfslagen moet beheren, wordt het erg moeilijk te onderhouden en te beheren als alle middleware bij elkaar wordt geplaatst. Daarom verdeelt NocoBase middleware in **vier lagen**:

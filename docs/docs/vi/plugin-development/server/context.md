@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Context
 
 Trong NocoBase, mỗi yêu cầu (request) sẽ tạo ra một đối tượng `ctx`, đây là một thể hiện (instance) của Context. Context đóng gói thông tin về yêu cầu và phản hồi, đồng thời cung cấp các chức năng đặc thù của NocoBase như truy cập cơ sở dữ liệu, thao tác bộ nhớ đệm (cache), quản lý quyền hạn, quốc tế hóa (i18n) và ghi nhật ký (logging).

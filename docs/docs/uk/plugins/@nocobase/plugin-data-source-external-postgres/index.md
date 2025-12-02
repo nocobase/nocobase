@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Джерело даних: Зовнішній PostgreSQL"
 packageName: '@nocobase/plugin-data-source-external-postgres'
 supportedVersions:

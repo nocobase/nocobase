@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Acción: Importar registros Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:

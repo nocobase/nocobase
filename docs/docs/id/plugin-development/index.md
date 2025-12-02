@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Ikhtisar Pengembangan Plugin
 
 NocoBase mengadopsi **arsitektur mikrokernel**, di mana inti sistem hanya bertanggung jawab untuk penjadwalan siklus hidup plugin, manajemen dependensi, dan enkapsulasi kemampuan dasar. Semua fungsi bisnis disediakan dalam bentuk plugin. Oleh karena itu, memahami struktur organisasi, siklus hidup, dan cara pengelolaan plugin adalah langkah pertama dalam menyesuaikan NocoBase.

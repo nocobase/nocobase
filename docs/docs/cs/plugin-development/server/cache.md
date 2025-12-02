@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Cache
 
 Modul Cache v NocoBase je postaven na knihovně <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> a poskytuje funkcionalitu cachování pro vývoj pluginů. Systém obsahuje dva vestavěné typy cache:

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Přehled kolekcí
 
 NocoBase nabízí jedinečný DSL pro popis struktury dat, známý jako kolekce. Tento DSL sjednocuje datové struktury z různých zdrojů a poskytuje spolehlivý základ pro správu, analýzu a aplikace dat.

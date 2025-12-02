@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Plugin
 
 I NocoBase erbjuder en server-plugin (Server Plugin) ett modulärt sätt att utöka och anpassa serverns funktionalitet. Utvecklare kan ärva `Plugin`-klassen från `@nocobase/server` för att registrera händelser, API:er, behörighetskonfigurationer och annan anpassad logik i olika livscykelfaser.

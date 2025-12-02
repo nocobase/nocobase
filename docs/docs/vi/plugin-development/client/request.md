@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Yêu cầu
 
 NocoBase cung cấp một `APIClient` được đóng gói dựa trên [Axios](https://axios-http.com/), cho phép bạn gửi các yêu cầu HTTP từ bất kỳ đâu có thể truy cập `Context`.

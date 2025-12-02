@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Fonte dati: MariaDB Esterno"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
 supportedVersions:

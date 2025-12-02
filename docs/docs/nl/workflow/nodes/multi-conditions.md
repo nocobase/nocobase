@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Meervoudige voorwaarden <Badge>v2.0.0+</Badge>
 
 ## Introductie

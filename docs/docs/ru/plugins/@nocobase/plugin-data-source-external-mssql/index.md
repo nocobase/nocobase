@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Источник данных: Внешний SQL Server"
 packageName: '@nocobase/plugin-data-source-external-mssql'
 supportedVersions:

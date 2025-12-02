@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "RabbitMQ meddelandekö-adapter"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Công cụ lưu trữ: Amazon S3
 
 Đây là công cụ lưu trữ dựa trên Amazon S3. Trước khi sử dụng, bạn cần chuẩn bị tài khoản và các quyền liên quan.

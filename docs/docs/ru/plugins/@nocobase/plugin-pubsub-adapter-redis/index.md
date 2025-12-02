@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Адаптер Redis для публикации/подписки"
 packageName: '@nocobase/plugin-pubsub-adapter-redis'
 supportedVersions:

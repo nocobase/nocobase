@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "บล็อก: แกนต์"
 packageName: '@nocobase/plugin-gantt'
 description: |

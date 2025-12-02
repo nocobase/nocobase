@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tổng quan về bộ sưu tập
 
 NocoBase cung cấp một DSL đặc thù để mô tả cấu trúc dữ liệu, được gọi là **bộ sưu tập**. Điều này giúp thống nhất cấu trúc dữ liệu từ nhiều nguồn khác nhau, tạo nền tảng vững chắc cho việc quản lý, phân tích và ứng dụng dữ liệu sau này.

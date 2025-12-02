@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Drukowanie szablonów"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:

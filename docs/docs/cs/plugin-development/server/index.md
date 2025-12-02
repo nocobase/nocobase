@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Přehled
 
 Vývoj serverových pluginů pro NocoBase nabízí širokou škálu funkcí a možností, které vývojářům pomáhají přizpůsobit a rozšířit základní funkce NocoBase. Níže naleznete přehled hlavních možností a souvisejících kapitol:

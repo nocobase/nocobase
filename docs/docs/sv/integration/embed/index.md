@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-embed"
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 # Bädda in NocoBase
 

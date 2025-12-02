@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Powiadomienie: E-mail"
 packageName: '@nocobase/plugin-notification-email'
 description: |

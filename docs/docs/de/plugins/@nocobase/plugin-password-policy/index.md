@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Passwortrichtlinie"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:

@@ -36,6 +36,11 @@ FlowEngineContext (globální kontext)
 - `FlowRuntimeContext` vždy přistupuje ke svému odpovídajícímu `FlowModelContext` prostřednictvím mechanismu delegování, ale nešíří změny nahoru.
 
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 ## 🧭 Režim běhu a nastavení (mode)
 

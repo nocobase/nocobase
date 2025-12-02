@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Manajemen Versi
 
 Setelah sebuah alur kerja yang telah dikonfigurasi terpicu setidaknya satu kali, jika Anda ingin mengubah konfigurasi alur kerja atau node di dalamnya, Anda perlu membuat versi baru sebelum melakukan perubahan. Hal ini juga memastikan bahwa saat meninjau riwayat eksekusi alur kerja yang telah terpicu sebelumnya, riwayat tersebut tidak akan terpengaruh oleh modifikasi di masa mendatang.

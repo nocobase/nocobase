@@ -26,6 +26,11 @@ Haga clic en la casilla de verificación de la columna `Available` de la lista d
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
 
 ---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 
 ## Permisos de acceso a datos
 

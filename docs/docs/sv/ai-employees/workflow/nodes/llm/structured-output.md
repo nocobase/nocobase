@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-ai-ee"
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 # Strukturerad utdata
 

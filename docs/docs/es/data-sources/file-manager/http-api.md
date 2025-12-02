@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # API HTTP
 
 La carga de archivos para los campos de adjunto y las colecciones de archivos se puede gestionar a través de la API HTTP. La forma de invocar el proceso varía según el motor de almacenamiento que utilice el adjunto o la colección de archivos.

@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Multi-aplicación"
 packageName: '@nocobase/plugin-multi-app'
 supportedVersions:

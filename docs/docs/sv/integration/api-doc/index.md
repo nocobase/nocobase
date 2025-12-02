@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-api-doc"
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 # API-dokumentation
 

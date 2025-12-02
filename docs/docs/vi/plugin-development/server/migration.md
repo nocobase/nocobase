@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Migration
 
 Trong quá trình phát triển và cập nhật các plugin của NocoBase, cấu trúc cơ sở dữ liệu hoặc cấu hình của plugin có thể có những thay đổi không tương thích. Để đảm bảo quá trình nâng cấp diễn ra suôn sẻ, NocoBase cung cấp cơ chế **Migration** (di chuyển dữ liệu), cho phép bạn xử lý các thay đổi này bằng cách viết các tệp migration. Bài viết này sẽ hướng dẫn bạn tìm hiểu một cách có hệ thống về cách sử dụng và quy trình phát triển Migration.

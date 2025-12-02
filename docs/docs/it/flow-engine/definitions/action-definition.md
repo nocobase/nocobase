@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # ActionDefinition
 
 ActionDefinition definisce azioni riutilizzabili che possono essere richiamate in più flussi di lavoro e passaggi. Un'azione è l'unità di esecuzione centrale nel FlowEngine, e incapsula la logica di business specifica.

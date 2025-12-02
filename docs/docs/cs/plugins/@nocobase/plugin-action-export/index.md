@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Akce: Exportovat záznamy"
 packageName: '@nocobase/plugin-action-export'
 description: |

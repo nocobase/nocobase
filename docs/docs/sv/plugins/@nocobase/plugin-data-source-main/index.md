@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Datakälla: Huvuddatabas"
 packageName: '@nocobase/plugin-data-source-main'
 description: |

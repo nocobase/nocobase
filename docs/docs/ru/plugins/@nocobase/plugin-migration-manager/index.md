@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Менеджер миграции"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:

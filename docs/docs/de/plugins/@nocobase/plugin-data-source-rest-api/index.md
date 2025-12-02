@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Datenquelle: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:

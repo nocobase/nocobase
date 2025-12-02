@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Cấu trúc dự án
 
 Dù bạn clone mã nguồn từ Git hay khởi tạo dự án bằng `create-nocobase-app`, dự án NocoBase được tạo ra về bản chất đều là một monorepo (kho lưu trữ đa gói) dựa trên **Yarn Workspace**.

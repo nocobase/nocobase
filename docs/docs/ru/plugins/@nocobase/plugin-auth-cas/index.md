@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Аутентификация: CAS"
 packageName: '@nocobase/plugin-auth-cas'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tổng quan về phát triển plugin
 
 NocoBase áp dụng **kiến trúc vi nhân (microkernel)**, trong đó phần lõi chỉ chịu trách nhiệm điều phối vòng đời plugin, quản lý các phụ thuộc và đóng gói các khả năng cơ bản. Tất cả các chức năng nghiệp vụ đều được cung cấp dưới dạng plugin. Do đó, việc hiểu rõ cấu trúc tổ chức, vòng đời và cách quản lý plugin là bước đầu tiên để tùy chỉnh NocoBase.

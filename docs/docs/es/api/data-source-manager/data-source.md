@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # DataSource (abstracta)
 
 `DataSource` es una clase abstracta que se utiliza para representar un tipo de fuente de datos, como una base de datos, una API, etc.

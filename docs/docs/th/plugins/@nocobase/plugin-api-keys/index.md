@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "การยืนยันตัวตน: API Keys"
 packageName: '@nocobase/plugin-api-keys'
 description: |

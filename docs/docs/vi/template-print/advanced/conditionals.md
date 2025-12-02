@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 ## Điều kiện phán đoán
 
 Điều kiện phán đoán cho phép bạn kiểm soát động việc hiển thị hoặc ẩn nội dung trong tài liệu dựa trên giá trị dữ liệu. Có ba cách chính để viết điều kiện:

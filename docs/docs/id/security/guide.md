@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Panduan Keamanan NocoBase
 
 NocoBase sangat memperhatikan keamanan data dan aplikasi, mulai dari desain fungsional hingga implementasi sistem. Platform ini dilengkapi dengan berbagai fitur keamanan bawaan seperti autentikasi pengguna, kontrol akses, dan enkripsi data, serta memungkinkan konfigurasi kebijakan keamanan yang fleksibel sesuai kebutuhan. Baik untuk melindungi data pengguna, mengelola izin akses, maupun mengisolasi lingkungan pengembangan dan produksi, NocoBase menyediakan alat dan solusi praktis. Panduan ini bertujuan untuk memberikan arahan penggunaan NocoBase secara aman, membantu pengguna melindungi keamanan data, aplikasi, dan lingkungan mereka, serta memastikan penggunaan fitur sistem yang efisien dengan tetap menjaga keamanan pengguna.

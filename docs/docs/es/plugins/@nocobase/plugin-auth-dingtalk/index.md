@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Autenticación: DingTalk"
 packageName: '@nocobase/plugin-auth-dingtalk'
 supportedVersions:

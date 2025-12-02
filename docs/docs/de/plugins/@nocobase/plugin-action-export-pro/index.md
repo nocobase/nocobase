@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Aktion: Datensätze exportieren Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:

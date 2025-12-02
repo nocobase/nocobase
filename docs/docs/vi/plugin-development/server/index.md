@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tổng quan
 
 Phát triển plugin phía máy chủ của NocoBase cung cấp nhiều chức năng và khả năng, giúp nhà phát triển tùy chỉnh và mở rộng các tính năng cốt lõi của NocoBase. Dưới đây là các khả năng chính và các chương liên quan trong quá trình phát triển plugin phía máy chủ của NocoBase:

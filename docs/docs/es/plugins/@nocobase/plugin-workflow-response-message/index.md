@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Flujo de trabajo: Mensaje de respuesta"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |

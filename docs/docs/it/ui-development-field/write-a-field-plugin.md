@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 In NocoBase, è possibile eseguire diverse azioni su una collezione.
 
 

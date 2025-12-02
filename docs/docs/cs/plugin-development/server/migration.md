@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Migrace
 
 Během vývoje a aktualizací pluginů NocoBase může dojít k nekompatibilním změnám v databázové struktuře nebo konfiguraci pluginu. Pro zajištění hladkého průběhu upgradu NocoBase nabízí mechanismus **Migrace**, který tyto změny řeší pomocí migračních souborů. Tento článek vás systematicky provede používáním Migrace a jejím vývojovým procesem.

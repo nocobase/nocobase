@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Blok: Markdown"
 packageName: '@nocobase/plugin-block-markdown'
 description: |

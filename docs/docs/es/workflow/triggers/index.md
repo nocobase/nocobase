@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Resumen
 
 Un disparador es el punto de entrada para un flujo de trabajo. Cuando ocurre un evento que cumple las condiciones del disparador mientras la aplicación está en ejecución, el flujo de trabajo se activará y ejecutará. El tipo de disparador también define el tipo de flujo de trabajo. Se selecciona al crear el flujo de trabajo y no se puede modificar después de su creación. Los tipos de disparadores actualmente compatibles son los siguientes:

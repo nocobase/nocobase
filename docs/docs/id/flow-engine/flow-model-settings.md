@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # FlowModel: Alur dan Konfigurasi
 
 FlowModel menyediakan pendekatan berbasis "Alur" untuk mengimplementasikan logika konfigurasi komponen, membuat perilaku dan konfigurasi komponen lebih mudah diperluas dan divisualisasikan.

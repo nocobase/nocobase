@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Pole kolekce: Vzorec"
 packageName: '@nocobase/plugin-field-formula'
 description: |

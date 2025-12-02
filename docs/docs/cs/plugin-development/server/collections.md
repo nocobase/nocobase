@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Kolekce
 
 V rámci vývoje **pluginů** pro NocoBase je **kolekce (datová tabulka)** jedním z klíčových konceptů. Pomocí definování nebo rozšiřování kolekcí můžete v pluginech přidávat nebo upravovat struktury datových tabulek. Na rozdíl od datových tabulek vytvářených prostřednictvím rozhraní pro správu **zdrojů dat** jsou **kolekce definované v kódu obvykle systémové metadatové tabulky** a nezobrazují se v seznamu správy **zdrojů dat**.

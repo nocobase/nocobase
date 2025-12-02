@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Source de données : REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Mulai Cepat
 
 Panduan ini akan memandu Anda mengonfigurasi sebuah bagan dari awal menggunakan fitur-fitur penting. Kemampuan opsional akan dibahas di bab-bab selanjutnya.

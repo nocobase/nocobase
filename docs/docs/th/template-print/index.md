@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-action-template-print"
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 
 pkg: "@nocobase/plugin-action-template-print"
 

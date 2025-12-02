@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Migration
 
 Selama proses pengembangan dan pembaruan **plugin** NocoBase, struktur basis data atau konfigurasi **plugin** mungkin mengalami perubahan yang tidak kompatibel. Untuk memastikan peningkatan berjalan lancar, NocoBase menyediakan mekanisme **Migration** yang menangani perubahan ini dengan menulis berkas migration. Artikel ini akan memandu Anda memahami penggunaan dan **alur kerja** pengembangan Migration secara sistematis.

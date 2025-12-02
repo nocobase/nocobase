@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # AI Çalışanı · Nathan: Ön Uç Mühendisi
 
 > Karmaşık etkileşimli mantıkları uygulamanız için ön uç kodları yazmanıza ve optimize etmenize yardımcı olur.

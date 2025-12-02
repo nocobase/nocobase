@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Câu hỏi thường gặp
 
 ## Vấn đề chọn biểu đồ

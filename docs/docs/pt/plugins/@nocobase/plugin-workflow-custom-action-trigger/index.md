@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Fluxo de trabalho: Evento de ação personalizada"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:

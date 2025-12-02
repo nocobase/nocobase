@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Archiviazione locale
 
 I file caricati verranno salvati in una directory locale sul server. Questa soluzione è adatta per scenari su piccola scala o sperimentali, dove il numero totale di file gestiti dal sistema è relativamente ridotto.

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Eklenti Geliştirmeye Genel Bakış
 
 NocoBase, **mikro çekirdek mimarisi** kullanır. Çekirdek yalnızca eklenti yaşam döngüsü planlaması, bağımlılık yönetimi ve temel yeteneklerin kapsüllenmesinden sorumludur. Tüm işlevler eklenti olarak sağlanır. Bu nedenle, eklentinin organizasyon yapısını, yaşam döngüsünü ve yönetim yaklaşımını anlamak, NocoBase'i özelleştirmenin ilk adımıdır.

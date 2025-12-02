@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Événements
 
 Le serveur de NocoBase déclenche des événements tout au long du cycle de vie de l'application, du cycle de vie des `plugin`s et des opérations de base de données. Les développeurs de `plugin`s peuvent écouter ces événements pour implémenter des logiques d'extension, des opérations automatisées ou des comportements personnalisés.

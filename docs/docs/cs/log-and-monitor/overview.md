@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Protokoly serveru, protokoly auditu a historie záznamů
 
 ## Serverové protokoly

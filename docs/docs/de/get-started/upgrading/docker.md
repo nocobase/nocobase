@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Die Aktualisierung einer Docker-Installation
 
 :::warning Vor der Aktualisierung

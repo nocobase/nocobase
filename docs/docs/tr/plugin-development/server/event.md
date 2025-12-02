@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Olaylar
 
 NocoBase'in sunucusu, uygulama yaşam döngüsü, eklenti yaşam döngüsü ve veritabanı işlemleri gibi çeşitli aşamalarda ilgili olayları tetikler. Eklenti geliştiricileri, bu olayları dinleyerek genişletme mantığı, otomatik işlemler veya özel davranışlar uygulayabilirler.

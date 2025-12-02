@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Cập nhật dữ liệu
 
 Dùng để cập nhật dữ liệu trong một bộ sưu tập thỏa mãn các điều kiện đã chỉ định.

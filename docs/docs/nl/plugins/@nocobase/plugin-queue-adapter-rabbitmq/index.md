@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "RabbitMQ berichtenwachtrij-adapter"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:

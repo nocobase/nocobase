@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Synchronizace uživatelských dat přes HTTP API
 
 ## Získání API klíče

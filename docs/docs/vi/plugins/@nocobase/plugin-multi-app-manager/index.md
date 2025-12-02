@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Trình quản lý đa ứng dụng (đã ngừng sử dụng)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |

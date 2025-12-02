@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "テンプレート印刷"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:

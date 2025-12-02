@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Karyawan AI · Panduan Konfigurasi Administrator
 
 > Dokumen ini akan membantu Anda memahami cara mengonfigurasi dan mengelola Karyawan AI dengan cepat, memandu Anda langkah demi langkah melalui seluruh proses, mulai dari layanan model hingga penugasan tugas.

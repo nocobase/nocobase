@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Спільне використання колекцій між застосунками"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |

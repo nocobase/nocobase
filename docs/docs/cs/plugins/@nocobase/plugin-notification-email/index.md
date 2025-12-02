@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Oznámení: E-mail"
 packageName: '@nocobase/plugin-notification-email'
 description: |

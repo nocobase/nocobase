@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 ```yaml
 displayName: "Restrição de IP"
 packageName: '@nocobase/plugin-ip-restriction'

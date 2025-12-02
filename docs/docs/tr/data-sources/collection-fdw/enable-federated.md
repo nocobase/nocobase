@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # MySQL'de Federated Motoru Nasıl Etkinleştirilir?
 
 MySQL veritabanı varsayılan olarak federated modülünü etkinleştirmez. Bunun için `my.cnf` yapılandırmasını değiştirmeniz gerekir. Eğer Docker sürümünü kullanıyorsanız, bu genişletme durumunu `volumes` aracılığıyla yönetebilirsiniz:

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Utöka triggertyper
 
 Varje arbetsflöde måste konfigureras med en specifik trigger, som fungerar som startpunkt för processens exekvering.

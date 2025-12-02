@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Действие: Массовое редактирование"
 packageName: '@nocobase/plugin-action-bulk-edit'
 description: |

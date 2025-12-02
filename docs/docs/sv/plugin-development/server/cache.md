@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Cache
 
 NocoBase's cache-modul bygger på <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> och tillhandahåller cache-funktionalitet för plugin-utveckling. Systemet har två inbyggda cache-typer:

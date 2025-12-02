@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 # HasManyRepository
 
 `HasManyRepository` は `HasMany` リレーションシップを扱うための `Relation Repository` です。

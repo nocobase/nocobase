@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Redis vergrendelingsadapter"
 packageName: '@nocobase/plugin-lock-adapter-redis'
 supportedVersions:

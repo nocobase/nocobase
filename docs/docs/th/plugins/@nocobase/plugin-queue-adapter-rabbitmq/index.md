@@ -11,5 +11,10 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 
 # อะแดปเตอร์คิวข้อความ RabbitMQ

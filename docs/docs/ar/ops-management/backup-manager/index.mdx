@@ -1,0 +1,210 @@
+:::tip إشعار الترجمة بالذكاء الاصطناعي
+تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
+:::
+
+
+pkg: '@nocobase/plugin-backups'
+---
+
+# إدارة النسخ الاحتياطية
+
+## مقدمة
+
+توفر إضافة إدارة النسخ الاحتياطية من NocoBase ميزات للنسخ الاحتياطي الكامل لقاعدة بيانات NocoBase والملفات التي يرفعها المستخدمون، بما في ذلك جدولة النسخ الاحتياطية وتنزيلها وحذفها واستعادتها.
+
+:::warning
+تُضمّن إضافة إدارة النسخ الاحتياطية في الإصدارين الاحترافي والمؤسسي. بالنسبة لمستخدمي الإصدارين المجتمعي والقياسي، يمكنكم عمل نسخة احتياطية من قاعدة البيانات مباشرةً؛ راجع التفاصيل في: [`كيفية عمل نسخة احتياطية واستعادة NocoBase`](https://www.nocobase.com/cn/blog/nocobase-backup-restore)
+:::
+
+## تثبيت عميل قاعدة البيانات
+
+تعتمد إدارة النسخ الاحتياطية على عميل قاعدة البيانات المطابق. قبل الاستخدام، يرجى زيارة الموقع الرسمي لتنزيل العميل الذي يتوافق مع إصدار قاعدة البيانات التي تستخدمها:
+
+- MySQL: https://dev.mysql.com/downloads/
+- PostgreSQL: https://www.postgresql.org/download/
+
+بالنسبة لإصدارات Docker، يمكنك كتابة سكريبت مباشرة في مجلد `./storage/scripts`
+
+```bash
+mkdir ./storage/scripts
+cd ./storage/scripts
+vim install-database-client.sh
+```
+
+محتوى `install-database-client.sh` هو كما يلي:
+
+<Tabs>
+
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+#!/bin/bash
+
+# التحقق مما إذا كان pg_dump مثبتًا
+if [ ! -f /usr/bin/pg_dump ]; then
+    echo "pg_dump غير مثبت، جاري بدء تثبيت عميل PostgreSQL..."
+
+    # تهيئة مستودعات Aliyun
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    # تثبيت الأدوات الضرورية وتنظيف ذاكرة التخزين المؤقت
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+      && rm -rf /var/lib/apt/lists/*
+
+    # تهيئة مصدر PostgreSQL
+    echo "deb [signed-by=/usr/share/keyrings/pgdg.asc] http://mirrors.aliyun.com/postgresql/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+    wget --quiet -O /usr/share/keyrings/pgdg.asc http://mirrors.aliyun.com/postgresql/repos/apt/ACCC4CF8.asc
+
+    # تثبيت عميل PostgreSQL
+    apt-get update && apt-get install -y --no-install-recommends postgresql-client-16 \
+      && rm -rf /var/lib/apt/lists/*
+
+    echo "اكتمل تثبيت عميل PostgreSQL."
+else
+    echo "pg_dump مثبت بالفعل، سيتم تخطي تثبيت عميل PostgreSQL."
+fi
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+#!/bin/bash
+
+if [ ! -f /usr/bin/mysql ]; then
+    echo "عميل MySQL غير مثبت، جاري بدء تثبيت عميل MySQL..."
+
+    tee /etc/apt/sources.list > /dev/null <<EOF
+deb http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm main contrib non-free
+deb http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb-src http://mirrors.aliyun.com/debian-security/ bookworm-security main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-updates main contrib non-free
+deb http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+deb-src http://mirrors.aliyun.com/debian/ bookworm-backports main contrib non-free
+EOF
+
+    echo "جاري تحديث قائمة الحزم وتثبيت الأدوات الضرورية..."
+    rm -rf /etc/apt/sources.list.d/debian.sources && apt-get update && apt-get install -y --no-install-recommends wget gnupg \
+        && rm -rf /var/lib/apt/lists/*
+
+    wget --no-check-certificate https://downloads.mysql.com/archives/get/p/23/file/mysql-community-client-core_8.0.39-1debian12_amd64.deb && \
+        dpkg -x mysql-community-client-core_8.0.39-1debian12_amd64.deb /tmp/mysql-client && \
+        cp /tmp/mysql-client/usr/bin/mysqldump /usr/bin/ && \
+        cp /tmp/mysql-client/usr/bin/mysql /usr/bin/
+
+    echo "اكتمل تثبيت عميل MySQL."
+else
+    echo "عميل MySQL مثبت بالفعل، سيتم تخطي التثبيت."
+fi
+```
+
+</Tab>
+
+</Tabs>
+
+ثم أعد تشغيل حاوية التطبيق (app container)
+
+```bash
+docker compose restart app
+# عرض السجلات
+docker compose logs app
+```
+
+تحقق من رقم إصدار عميل قاعدة البيانات، يجب أن يتطابق مع رقم إصدار خادم قاعدة البيانات.
+
+<Tabs>
+<Tab label="PostgreSQL" name="PostgreSQL">
+
+```bash
+docker compose exec app bash -c "pg_dump -V"
+```
+
+</Tab>
+<Tab label="MySQL/MariaDB" name="MySQL/MariaDB">
+
+```bash
+docker compose exec app bash -c "mysql -V"
+```
+
+</Tab>
+</Tabs>
+
+## تعليمات الاستخدام
+
+![](https://static-docs.nocobase.com/202510302154966.png)
+
+### إنشاء نسخة احتياطية جديدة
+
+انقر على زر "إنشاء نسخة احتياطية جديدة" لإنشاء نسخة احتياطية بناءً على إعدادات النسخ الاحتياطي، وسيتم عرض حالة النسخة الاحتياطية في قائمة النسخ الاحتياطية.
+
+![](https://static-docs.nocobase.com/202510302154912.png)
+
+### استعادة نسخة احتياطية
+
+يدعم استعادة النسخ الاحتياطية من قائمة النسخ الاحتياطية أو تحميل ملفات النسخ الاحتياطية المحلية لاستعادتها.
+لا يُسمح بعمليات الاستعادة في السيناريوهات التالية:
+
+- عندما يكون إصدار NocoBase الحالي أقل من إصدار NocoBase في ملف النسخة الاحتياطية.
+- عندما تكون قاعدة بيانات NocoBase الحالية غير متوافقة مع الإعدادات التالية في ملف النسخة الاحتياطية:
+  - dialect (نوع قاعدة البيانات)
+  - underscored (تكوين الحقول)
+  - table prefix (بادئة الجدول)
+  - schema (هيكل الجدول)
+- عندما لا يكون "وضع التسامح" (Tolerant mode) مفعّلاً، ويكون إصدار قاعدة البيانات عند إنشاء النسخة الاحتياطية أعلى من إصدار قاعدة بيانات التطبيق الحالي.
+
+> **عملية الاستعادة هي عملية شاملة لقاعدة البيانات بأكملها. يُوصى بعمل نسخة احتياطية من قاعدة البيانات الحالية قبل استعادة أي نسخة احتياطية.**
+
+#### الاستعادة من قائمة النسخ الاحتياطية
+
+انقر على زر "استعادة" الخاص بعنصر النسخة الاحتياطية في قائمة النسخ الاحتياطية، ثم أدخل كلمة مرور تشفير ملف النسخة الاحتياطية في النافذة المنبثقة، وانقر على "تأكيد" لاستعادة النسخة الاحتياطية.
+
+> لا يلزم إدخال كلمة مرور لملفات النسخ الاحتياطية غير المشفرة.
+
+> إذا كنت بحاجة إلى استعادة النسخة الاحتياطية إلى إصدار أقدم من قاعدة البيانات، فيجب تفعيل وضع التسامح.
+
+![](https://static-docs.nocobase.com/202510302156882.png)
+
+#### الاستعادة من ملف نسخة احتياطية محلي
+
+انقر على زر "استعادة من نسخة احتياطية محلية"، ثم اختر ملف النسخة الاحتياطية المحلي في النافذة المنبثقة، وأدخل كلمة مرور تشفير ملف النسخة الاحتياطية، وانقر على "تأكيد" لاستعادة النسخة الاحتياطية.
+
+> لا يلزم إدخال كلمة مرور لملفات النسخ الاحتياطية غير المشفرة.
+
+> إذا كنت بحاجة إلى استعادة النسخة الاحتياطية إلى إصدار أقدم من قاعدة البيانات، فيجب تفعيل وضع التسامح.
+
+![](https://static-docs.nocobase.com/202510302155602.png)
+
+#### تنزيل ملف النسخة الاحتياطية
+
+انقر على زر "تنزيل" الخاص بعنصر النسخة الاحتياطية في قائمة النسخ الاحتياطية لتنزيل ملف النسخة الاحتياطية.
+
+#### حذف نسخة احتياطية
+
+انقر على زر "حذف" الخاص بعنصر النسخة الاحتياطية في قائمة النسخ الاحتياطية لحذف ملف النسخة الاحتياطية.
+
+## إعدادات النسخ الاحتياطي
+
+انتقل إلى علامة التبويب "الإعدادات"، وقم بتعديل إعدادات النسخ الاحتياطي، ثم انقر على "حفظ" لتطبيق التغييرات.
+
+![](https://static-docs.nocobase.com/202510302156326.png)
+
+### وصف إعدادات النسخ الاحتياطي
+
+- `النسخ الاحتياطي التلقائي`: بعد تفعيل "تشغيل النسخ الاحتياطي التلقائي حسب جدول Cron"، يمكنك تعيين النسخ الاحتياطي التلقائي في أوقات محددة.
+- `الحد الأقصى لعدد النسخ الاحتياطية`: حدد الحد الأقصى لعدد ملفات النسخ الاحتياطية المحفوظة محليًا. عند تجاوز هذا العدد، سيتم حذف أقدم ملفات النسخ الاحتياطية تلقائيًا.
+- `مزامنة النسخ الاحتياطية مع التخزين السحابي`: حدد التخزين السحابي الذي تُرفع إليه ملفات النسخ الاحتياطية تلقائيًا بعد نجاح عملية النسخ الاحتياطي.
+- `النسخ الاحتياطي لملفات التخزين المحلي`: ما إذا كان سيتم تضمين الملفات التي يرفعها المستخدمون إلى التخزين المحلي للخادم (storage/uploads) في النسخة الاحتياطية.
+- `كلمة مرور الاستعادة`: إذا تم تعيين كلمة مرور للاستعادة، فيجب إدخالها عند استعادة النسخة الاحتياطية.
+
+> **يرجى الاحتفاظ بكلمة مرور الاستعادة بأمان. نسيان كلمة المرور سيجعل من المستحيل استعادة ملف النسخة الاحتياطية.**

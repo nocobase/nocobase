@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Pracovní postup: uzel pro výpočet data"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:

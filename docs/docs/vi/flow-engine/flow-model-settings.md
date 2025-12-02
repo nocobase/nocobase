@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # FlowModel: Luồng Sự Kiện và Cấu Hình
 
 FlowModel cung cấp một cách tiếp cận dựa trên "luồng sự kiện (Flow)" để triển khai logic cấu hình cho các thành phần, giúp hành vi và cấu hình của chúng dễ mở rộng và trực quan hơn.

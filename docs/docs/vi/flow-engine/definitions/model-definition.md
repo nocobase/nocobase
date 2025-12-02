@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # ModelDefinition
 
 ModelDefinition định nghĩa các tùy chọn tạo mô hình luồng, dùng để tạo một thể hiện mô hình thông qua phương thức `FlowEngine.createModel()`. Nó bao gồm cấu hình cơ bản, thuộc tính, các mô hình con và các thông tin khác của mô hình.

@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Fuente de datos: Oracle externo"
 packageName: '@nocobase/plugin-data-source-external-oracle'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Nhân viên AI · Viz: Chuyên gia Phân tích Insight
 
 > Tạo biểu đồ và insight chỉ với một cú nhấp chuột, để dữ liệu tự lên tiếng.

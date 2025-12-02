@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Výpočet
 
 Uzel Výpočet dokáže vyhodnotit výraz a jeho výsledek se uloží do výsledku odpovídajícího uzlu pro použití dalšími uzly. Jedná se o nástroj pro výpočet, zpracování a transformaci dat. Do jisté míry může nahradit volání funkce na hodnotu a přiřazení výsledku proměnné, což je běžná operace v programovacích jazycích.

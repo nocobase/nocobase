@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Panoramica
 
 Un trigger è il punto di ingresso per un flusso di lavoro. Quando un evento che soddisfa le condizioni del trigger si verifica durante l'esecuzione dell'applicazione, il flusso di lavoro viene attivato ed eseguito. Il tipo di trigger definisce anche il tipo di flusso di lavoro; viene selezionato al momento della creazione e non può essere modificato in seguito. I tipi di trigger attualmente supportati sono i seguenti:

@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Documentation API"
 packageName: '@nocobase/plugin-api-doc'
 description: |

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Åtgärd: Exportera poster"
 packageName: '@nocobase/plugin-action-export'
 description: |

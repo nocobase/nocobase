@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Rozšíření typů uzlů
 
 Typ uzlu je v podstatě operační instrukce. Různé instrukce představují různé operace prováděné v rámci pracovního postupu.

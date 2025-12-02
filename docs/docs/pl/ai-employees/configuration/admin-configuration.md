@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Pracownik AI · Przewodnik konfiguracji dla administratora
 
 Ten dokument pomoże Panu/Pani szybko zrozumieć, jak skonfigurować i zarządzać Pracownikami AI, prowadząc krok po kroku przez cały proces – od usług modelowych po przydzielanie zadań.

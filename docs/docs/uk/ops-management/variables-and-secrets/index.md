@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-environment-variables"
 ---
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 
 ```yaml
 pkg: "@nocobase/plugin-environment-variables"

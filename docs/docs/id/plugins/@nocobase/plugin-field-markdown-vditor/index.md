@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Bidang Koleksi: Markdown(Vditor)"
 packageName: '@nocobase/plugin-field-markdown-vditor'
 description: |

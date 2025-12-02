@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Mehrere Arbeitsbereiche"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:

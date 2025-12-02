@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Aliyun OSS
 
 Silnik przechowywania danych oparty na Aliyun OSS. Przed użyciem należy przygotować odpowiednie konta i uprawnienia.

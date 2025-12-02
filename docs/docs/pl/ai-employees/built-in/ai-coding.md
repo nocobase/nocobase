@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # AI Pracownik · Nathan: Inżynier Frontendowy
 
 > Pomaga Panu/Pani pisać i optymalizować kod frontendowy, aby implementować złożoną logikę interaktywną.

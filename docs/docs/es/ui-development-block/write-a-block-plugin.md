@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Escriba su primer plugin de bloque
 
 Antes de empezar, le recomendamos leer "[Escriba su primer plugin](../plugin-development/write-your-first-plugin.md)" para aprender a crear rápidamente un plugin básico. A continuación, ampliaremos esa base añadiendo una funcionalidad de bloque (Block) sencilla.

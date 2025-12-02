@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # ModelDefinition
 
 ModelDefinition definierar skapandealternativen för en flödesmodell, som används för att skapa en modellinstans via metoden `FlowEngine.createModel()`. Den innehåller modellens grundläggande konfiguration, egenskaper, undermodeller och annan information.

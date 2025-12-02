@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Các Toán Tử Lọc
 
 Sử dụng trong tham số `filter` của các API như `find`, `findOne`, `findAndCount`, `count` của một Repository:

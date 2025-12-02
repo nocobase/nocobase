@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Sincronizar datos de usuario a través de la API HTTP
 
 ## Obtener una clave API

@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # IRepository
 
 A interface `Repository` define uma série de métodos para operações de modelo, adaptando as operações de CRUD (criar, ler, atualizar e excluir) da fonte de dados.

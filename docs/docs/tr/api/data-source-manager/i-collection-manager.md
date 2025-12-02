@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # ICollectionManager
 
 `ICollectionManager` arayüzü, bir veri kaynağının `koleksiyon` örneklerini yönetmek için kullanılır.

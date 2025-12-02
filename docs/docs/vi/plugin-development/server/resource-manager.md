@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # ResourceManager Quản lý tài nguyên
 
 Tính năng quản lý tài nguyên của NocoBase có thể tự động chuyển đổi các bảng dữ liệu (bộ sưu tập) và các liên kết (association) hiện có thành tài nguyên. NocoBase cũng tích hợp sẵn nhiều loại thao tác, giúp nhà phát triển nhanh chóng xây dựng các thao tác tài nguyên REST API. Khác một chút so với REST API truyền thống, các thao tác tài nguyên của NocoBase không phụ thuộc vào phương thức yêu cầu HTTP mà xác định thao tác cụ thể cần thực hiện thông qua việc định nghĩa `:action` một cách rõ ràng.

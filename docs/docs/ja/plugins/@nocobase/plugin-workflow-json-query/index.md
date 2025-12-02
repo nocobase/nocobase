@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "ワークフロー: JSON計算"
 packageName: '@nocobase/plugin-workflow-json-query'
 supportedVersions:

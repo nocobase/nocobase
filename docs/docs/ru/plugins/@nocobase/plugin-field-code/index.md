@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Поле коллекции: Код"
 packageName: '@nocobase/plugin-field-code'
 description: |

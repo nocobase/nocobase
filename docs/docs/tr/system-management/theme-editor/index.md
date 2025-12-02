@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Tema Düzenleyici
 
 > Şu anki tema özelliği Ant Design 5.x sürümüne dayanmaktadır. Bu belgeye devam etmeden önce [Tema Özelleştirme](https://ant.design/docs/react/customize-theme-cn#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%BB%E9%A2%98) kavramlarını incelemeniz önerilir.

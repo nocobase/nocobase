@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Pengaturan Bahasa
 
 Di "Pengaturan Sistem", Anda dapat menyesuaikan lingkungan bahasa global sistem dengan mengonfigurasi "Bahasa yang Diaktifkan". Bahasa pertama dalam daftar akan menjadi bahasa default.

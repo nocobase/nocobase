@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Workflow: E-Mail-Versand-Knoten"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |

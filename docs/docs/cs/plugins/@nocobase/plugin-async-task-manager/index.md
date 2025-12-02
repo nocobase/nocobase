@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Asynchronní správce úloh"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |

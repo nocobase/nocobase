@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # ICollectionManager
 
 Antarmuka `ICollectionManager` digunakan untuk mengelola instans `koleksi` dari sebuah `sumber data`.

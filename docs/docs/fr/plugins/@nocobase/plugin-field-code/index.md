@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Champ de collection : Code"
 packageName: '@nocobase/plugin-field-code'
 description: |

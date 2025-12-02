@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Variablen und Geheimnisse"
 packageName: '@nocobase/plugin-environment-variables'
 description: |

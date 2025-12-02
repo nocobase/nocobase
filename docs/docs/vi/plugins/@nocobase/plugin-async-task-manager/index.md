@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Trình quản lý tác vụ bất đồng bộ"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |

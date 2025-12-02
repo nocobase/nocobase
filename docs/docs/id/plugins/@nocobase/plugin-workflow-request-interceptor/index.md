@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Alur Kerja: Kejadian Pra-tindakan"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:

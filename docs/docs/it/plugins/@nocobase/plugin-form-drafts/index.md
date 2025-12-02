@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Bozze di modulo"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:

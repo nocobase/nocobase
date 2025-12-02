@@ -9,6 +9,11 @@ El desarrollo de **plugins** para el lado del servidor de NocoBase le ofrece div
 title: 插件类
 order: 1
 ---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 ```
 
 # 插件类

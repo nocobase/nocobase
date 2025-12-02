@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Flujo de trabajo: Evento previo a la acción"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Kế hoạch Thực thi (Lịch sử)
 
 Sau khi một luồng công việc được kích hoạt, một kế hoạch thực thi tương ứng sẽ được tạo để theo dõi quá trình thực hiện của tác vụ đó. Mỗi kế hoạch thực thi có một giá trị trạng thái để biểu thị trạng thái thực thi hiện tại, trạng thái này có thể được xem trong danh sách và chi tiết của lịch sử thực thi:

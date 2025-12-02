@@ -10,5 +10,10 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 
 # Multi-espace

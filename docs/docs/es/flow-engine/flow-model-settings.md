@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # FlowModel: Flujo de Eventos y Configuración
 
 FlowModel ofrece un enfoque basado en el **flujo de eventos (Flow)** para implementar la lógica de configuración de componentes. Esto hace que el comportamiento y la configuración de los componentes sean más extensibles y visuales.

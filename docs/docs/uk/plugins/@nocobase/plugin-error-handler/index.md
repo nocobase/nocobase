@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Обробник помилок"
 packageName: '@nocobase/plugin-error-handler'
 description: |

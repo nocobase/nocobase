@@ -33,6 +33,11 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Git 워크플로우를 통해 업데이트를 동기화합니다.
 ---
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 
 # 설치 방법 및 버전 비교
 

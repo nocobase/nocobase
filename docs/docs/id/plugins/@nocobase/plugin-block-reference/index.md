@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Blok: Referensi"
 packageName: '@nocobase/plugin-block-reference'
 supportedVersions:

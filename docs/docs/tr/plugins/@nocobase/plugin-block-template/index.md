@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Blok: Şablon (Kullanımdan Kaldırıldı)"
 packageName: '@nocobase/plugin-block-template'
 description: |

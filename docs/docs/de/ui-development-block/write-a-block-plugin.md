@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Erstellen Sie Ihr erstes Block-Plugin
 
 Bevor Sie beginnen, empfehlen wir Ihnen, zuerst „[Erstellen Sie Ihr erstes Plugin](../plugin-development/write-your-first-plugin.md)“ zu lesen. Dort erfahren Sie, wie Sie schnell ein grundlegendes Plugin erstellen können. Anschließend erweitern wir dieses um eine einfache Block-Funktion.

@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Дія: Користувацький запит"
 packageName: '@nocobase/plugin-action-custom-request'
 description: |

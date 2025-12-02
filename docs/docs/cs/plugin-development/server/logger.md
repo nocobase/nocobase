@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Logger
 
 Logování v NocoBase je založeno na knihovně <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. Ve výchozím nastavení NocoBase dělí záznamy na logy požadavků API, logy běhu systému a logy provádění SQL dotazů. Logy požadavků API a provádění SQL dotazů jsou generovány interně aplikací. Vývojáři pluginů obvykle potřebují zaznamenávat pouze logy běhu systému související s jejich pluginy.

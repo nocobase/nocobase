@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Source de données : MariaDB externe"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
 supportedVersions:

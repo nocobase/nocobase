@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Asynchrone taakbeheerder"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |

@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Resumen
 
 El modelado de datos es un paso clave en el diseño de bases de datos. Implica un proceso de análisis profundo y abstracción de los diversos tipos de datos del mundo real y sus interrelaciones. En este proceso, buscamos revelar las conexiones intrínsecas entre los datos y formalizarlas en modelos de datos, sentando las bases para la estructura de la base de datos de un sistema de información. NocoBase es una plataforma impulsada por modelos de datos, con las siguientes características:

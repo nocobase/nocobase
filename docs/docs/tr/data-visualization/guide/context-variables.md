@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Bağlam Değişkenlerini Kullanma
 
 Bağlam değişkenleri sayesinde, mevcut sayfa, kullanıcı, zaman ve filtre girdileri gibi bilgileri doğrudan yeniden kullanabilirsiniz. Bu, grafiklerinizi bağlama göre oluşturmanıza ve aralarında etkileşim kurmanıza olanak tanır.

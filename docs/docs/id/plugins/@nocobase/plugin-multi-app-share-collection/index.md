@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Berbagi Koleksi Antar-Aplikasi"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |

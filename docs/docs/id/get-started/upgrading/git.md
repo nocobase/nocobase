@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Memperbarui Instalasi dari Kode Sumber Git
 
 :::warning Persiapan Sebelum Pembaruan

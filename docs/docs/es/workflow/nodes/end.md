@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Finalizar flujo de trabajo
 
 Cuando este nodo se ejecuta, finaliza inmediatamente el flujo de trabajo actual con el estado configurado en el nodo. Se utiliza normalmente para el control de flujos basado en lógica específica, saliendo del flujo de trabajo actual cuando se cumplen ciertas condiciones y deteniendo la ejecución de procesos posteriores. Es análogo a la instrucción `return` en lenguajes de programación, que se usa para salir de la función actual.

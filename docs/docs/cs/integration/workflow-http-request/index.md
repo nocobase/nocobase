@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Integrace HTTP požadavků v pracovních postupech
 
 Pomocí uzlu HTTP požadavek mohou **pracovní postupy** NocoBase aktivně odesílat požadavky na libovolnou HTTP službu, což umožňuje výměnu dat a obchodní integraci s externími systémy.

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Kayıt geçmişi"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:

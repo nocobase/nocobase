@@ -8,6 +8,11 @@ builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 
 # Sdílení kolekcí napříč aplikacemi
 

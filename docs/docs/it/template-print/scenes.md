@@ -17,6 +17,10 @@ Nel nostro esempio, esistono all'incirca le seguenti **collezioni** principali (
 Poiché il sistema attuale supporta solo la stampa di singoli record, faremo clic su "Stampa" nella pagina "Dettagli Contratto". Il sistema recupererà automaticamente il record del contratto corrispondente, insieme alle informazioni associate sulle parti e altri dettagli, e li inserirà nei documenti Word o PDF.
 
 ---
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
 
 ## 2. Preparazione
 

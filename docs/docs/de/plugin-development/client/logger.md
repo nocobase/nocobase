@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Logger
 
 NocoBase bietet ein leistungsstarkes Logging-System, das auf [pino](https://github.com/pinojs/pino) basiert. Überall dort, wo Sie Zugriff auf den `context` haben, können Sie eine Logger-Instanz über `ctx.logger` abrufen. Diese Instanz dient dazu, wichtige Logs während der Laufzeit von Plugins oder des Systems zu erfassen.

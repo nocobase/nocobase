@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Vue d'ensemble des collections
 
 NocoBase propose un DSL unique pour décrire la structure des données, appelé `collection`. Cela permet d'unifier les structures de données provenant de diverses sources, offrant ainsi une base fiable pour la gestion, l'analyse et l'application des données.

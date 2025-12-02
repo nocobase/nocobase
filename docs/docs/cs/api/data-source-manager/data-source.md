@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # DataSource (abstraktní)
 
 `DataSource` je abstraktní třída, která slouží k reprezentaci typu zdroje dat, jako je například databáze nebo API.

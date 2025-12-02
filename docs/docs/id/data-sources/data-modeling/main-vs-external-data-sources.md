@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Perbandingan Database Utama dan Database Eksternal
 
 Perbedaan antara database utama dan database eksternal di NocoBase terutama terlihat pada empat aspek berikut: dukungan jenis database, dukungan jenis koleksi, dukungan jenis bidang, serta kemampuan pencadangan dan migrasi.

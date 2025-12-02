@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Contextvariabelen gebruiken
 
 Met contextvariabelen kunt u informatie van de huidige pagina, gebruiker, tijd en filterinvoer direct hergebruiken. Zo kunt u grafieken renderen en koppelingen inschakelen op basis van de context.

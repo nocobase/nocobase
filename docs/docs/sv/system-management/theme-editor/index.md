@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Temaredigerare
 
 > Den nuvarande temafunktionen är implementerad baserat på Ant Design 5.x. Vi rekommenderar att ni läser om konceptet [Anpassa tema](https://ant.design/docs/react/customize-theme) innan ni fortsätter med detta dokument.

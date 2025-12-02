@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Aangepast merk"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:

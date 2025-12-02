@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Bloco: Formulário de várias etapas"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Workflow: Gebeurtenis na actie"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |

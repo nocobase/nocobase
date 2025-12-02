@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Veritabanı
 
 `Database`, veritabanı türündeki veri kaynaklarının (`DataSource`) önemli bir bileşenidir. Her veritabanı türündeki veri kaynağının, `dataSource.db` üzerinden erişilebilen karşılık gelen bir `Database` örneği bulunur. Ana veri kaynağının veritabanı örneği ayrıca kullanışlı `app.db` takma adını da sağlar. `db`'nin yaygın yöntemlerine aşina olmanız, sunucu tarafı eklentileri yazmanın temelini oluşturur.

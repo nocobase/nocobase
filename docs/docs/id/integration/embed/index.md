@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-embed"
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 # Sematkan NocoBase
 

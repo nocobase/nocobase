@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Історія записів"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:

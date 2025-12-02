@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Kiểm thử
 
 NocoBase cung cấp một bộ công cụ kiểm thử toàn diện, giúp các nhà phát triển nhanh chóng xác minh tính đúng đắn của logic cơ sở dữ liệu, giao diện API và việc triển khai tính năng trong quá trình phát triển **plugin**. Bài viết này sẽ hướng dẫn cách viết, chạy và tổ chức các bài kiểm thử này.

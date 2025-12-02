@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "AI сотрудники"
 packageName: '@nocobase/plugin-ai'
 description: |

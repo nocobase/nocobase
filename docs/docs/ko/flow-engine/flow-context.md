@@ -36,6 +36,11 @@ FlowEngineContext (글로벌 컨텍스트)
 - `FlowRuntimeContext`는 항상 위임(delegate) 메커니즘을 통해 해당 `FlowModelContext`에 접근하지만, 상위로 변경 사항을 전파하지는 않습니다.
 
 ---
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 
 ## 🧭 런타임 모드와 설정 모드 (mode)
 

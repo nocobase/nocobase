@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Quản lý nguồn dữ liệu"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |

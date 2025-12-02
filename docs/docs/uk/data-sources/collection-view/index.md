@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-collection-view"
 ---
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 
 pkg: "@nocobase/plugin-collection-view"
 ---

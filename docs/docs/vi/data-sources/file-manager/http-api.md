@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # HTTP API
 
 Tải tệp lên cho cả trường đính kèm và các bộ sưu tập tệp đều có thể được xử lý thông qua HTTP API. Phương thức gọi API sẽ khác nhau tùy thuộc vào công cụ lưu trữ mà trường đính kèm hoặc bộ sưu tập tệp sử dụng.

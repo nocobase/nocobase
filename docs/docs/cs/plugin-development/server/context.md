@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Context
 
 V NocoBase každý požadavek vygeneruje objekt `ctx`, což je instance Contextu. Context zapouzdřuje informace o požadavku a odpovědi a zároveň nabízí funkce specifické pro NocoBase, jako je přístup k databázi, operace s cache, správa oprávnění, internacionalizace a logování.

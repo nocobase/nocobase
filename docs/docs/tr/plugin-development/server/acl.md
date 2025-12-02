@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # ACL İzin Kontrolü
 
 ACL (Erişim Kontrol Listesi), kaynak işlemlerine yönelik izinleri kontrol etmek için kullanılır. İzinleri rollere atayabilir veya rol kısıtlamalarını atlayarak doğrudan izinleri belirleyebilirsiniz. ACL sistemi, izin parçacıkları (snippet), ara yazılımlar (middleware), koşullu değerlendirme gibi çeşitli yöntemleri destekleyen esnek bir izin yönetimi mekanizması sunar.

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 ## Pertanyaan Umum dan Solusi
 
 ### 1. Kolom dan Sel Kosong di Template Excel Hilang dalam Hasil Render

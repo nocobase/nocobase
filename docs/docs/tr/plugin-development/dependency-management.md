@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Bağımlılık Yönetimi
 
 NocoBase eklenti geliştirme sürecinde, bağımlılıklar iki ana kategoriye ayrılır: **eklenti bağımlılıkları** ve **genel bağımlılıklar**.

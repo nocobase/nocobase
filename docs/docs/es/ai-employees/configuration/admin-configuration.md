@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Empleados IA · Guía de configuración para administradores
 
 > Este documento le ayudará a comprender rápidamente cómo configurar y gestionar los empleados IA, guiándole paso a paso por todo el proceso, desde los servicios de modelo hasta la asignación de tareas.

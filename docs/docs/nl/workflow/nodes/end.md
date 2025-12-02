@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Workflow beëindigen
 
 Dit knooppunt beëindigt de huidige workflow onmiddellijk bij uitvoering, met de status die u in het knooppunt hebt ingesteld. U gebruikt dit doorgaans voor procesbeheer op basis van specifieke logica. Zodra aan bepaalde logische voorwaarden is voldaan, stopt de huidige workflow en worden verdere processen niet meer uitgevoerd. U kunt het vergelijken met de `return`-instructie in programmeertalen, die wordt gebruikt om de huidige functie te verlaten.

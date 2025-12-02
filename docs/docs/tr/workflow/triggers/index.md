@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Genel Bakış
 
 Tetikleyici, bir iş akışının yürütme giriş noktasıdır. Uygulama çalışırken, tetikleyicinin koşullarını karşılayan bir olay meydana geldiğinde, iş akışı tetiklenir ve yürütülür. Tetikleyici türü aynı zamanda iş akışının türüdür; bu, iş akışı oluşturulurken seçilir ve oluşturulduktan sonra değiştirilemez. Şu anda desteklenen tetikleyici türleri şunlardır:

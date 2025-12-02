@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Đồng bộ dữ liệu người dùng qua HTTP API
 
 ## Lấy API Key

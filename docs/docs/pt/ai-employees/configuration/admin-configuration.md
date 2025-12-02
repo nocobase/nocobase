@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Funcionário IA · Guia de Configuração para Administradores
 
 > Este documento vai te ajudar a entender rapidamente como configurar e gerenciar Funcionários IA, guiando você passo a passo por todo o processo, desde os serviços de modelo até a atribuição de tarefas.

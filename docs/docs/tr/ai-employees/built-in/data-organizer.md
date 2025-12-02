@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Yapay Zeka Asistanı · Dex: Veri Düzenleme Uzmanı
 
 > Formlardan hızlıca veri çekin ve doldurun, dağınık bilgileri yapılandırın.

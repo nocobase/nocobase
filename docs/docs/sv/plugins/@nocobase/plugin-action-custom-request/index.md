@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Åtgärd: Anpassad förfrågan"
 packageName: '@nocobase/plugin-action-custom-request'
 description: |

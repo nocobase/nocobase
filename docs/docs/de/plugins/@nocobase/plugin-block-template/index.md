@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Block: Vorlage (veraltet)"
 packageName: '@nocobase/plugin-block-template'
 description: |

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Alur Kerja: Pesan Respons"
 packageName: '@nocobase/plugin-workflow-response-message'
 description: |

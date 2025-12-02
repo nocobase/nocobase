@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Struktura katalogów projektu
 
 Niezależnie od tego, czy klonują Państwo kod źródłowy z Git, czy inicjują projekt za pomocą `create-nocobase-app`, każdy wygenerowany projekt NocoBase jest w istocie monorepo opartym na **Yarn Workspace**.

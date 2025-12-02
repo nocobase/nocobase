@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Licentie-instellingen"
 packageName: '@nocobase/plugin-license'
 description: |

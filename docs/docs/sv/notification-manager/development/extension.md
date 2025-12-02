@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Utöka typer av meddelandekanaler
 
 NocoBase stöder att utöka typer av meddelandekanaler vid behov, till exempel för SMS-meddelanden och push-notiser i appar.

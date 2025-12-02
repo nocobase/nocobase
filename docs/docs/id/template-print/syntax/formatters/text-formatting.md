@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 ### Pemformatan Teks
 
 Bagian ini menyediakan berbagai pemformat untuk data teks. Sub-bagian berikut akan memperkenalkan sintaksis, contoh, dan hasil dari setiap pemformat secara berurutan.

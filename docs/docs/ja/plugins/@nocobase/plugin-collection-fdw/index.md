@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "コレクション: 外部データに接続 (FDW)"
 packageName: '@nocobase/plugin-collection-fdw'
 supportedVersions:

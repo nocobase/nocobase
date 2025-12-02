@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Prévisualiseur de fichiers Office"
 packageName: '@nocobase/plugin-file-previewer-office'
 description: |

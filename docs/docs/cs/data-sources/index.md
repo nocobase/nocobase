@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Přehled
 
 Datové modelování je klíčovým krokem při návrhu databází, zahrnující hloubkovou analýzu a abstrakci různých typů dat a jejich vzájemných vztahů v reálném světě. V tomto procesu se snažíme odhalit vnitřní souvislosti mezi daty a formalizovat je do datových modelů, čímž pokládáme základ pro databázovou strukturu informačního systému. NocoBase je platforma řízená datovými modely, která nabízí následující funkce:

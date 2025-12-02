@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Context
 
 I NocoBase genererar varje förfrågan ett `ctx`-objekt, som är en instans av Context. Context kapslar in information om förfrågan och svaret, samtidigt som den tillhandahåller NocoBase-specifika funktioner som databasåtkomst, cache-operationer, behörighetshantering, internationalisering och loggning.

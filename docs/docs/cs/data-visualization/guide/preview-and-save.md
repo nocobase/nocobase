@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Náhled a uložení
 
 *   **Náhled**: Dočasně zobrazí změny z konfiguračního panelu v grafu na stránce pro ověření výsledku.

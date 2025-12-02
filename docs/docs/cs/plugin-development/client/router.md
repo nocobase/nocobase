@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Router
 
 Klient NocoBase nabízí flexibilního správce routeru, který umožňuje rozšířit stránky a stránky nastavení **pluginů** pomocí metod `router.add()` a `pluginSettingsRouter.add()`.

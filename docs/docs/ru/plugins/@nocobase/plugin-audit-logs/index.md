@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Журналы аудита (устаревший)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |

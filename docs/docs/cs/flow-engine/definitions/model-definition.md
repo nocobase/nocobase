@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # ModelDefinition
 
 ModelDefinition definuje možnosti vytvoření pro model toku, které se používají k vytvoření instance modelu pomocí metody `FlowEngine.createModel()`. Obsahuje základní konfiguraci modelu, jeho vlastnosti, podmodely a další informace.

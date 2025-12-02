@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Redis meddelandeköadapter"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:

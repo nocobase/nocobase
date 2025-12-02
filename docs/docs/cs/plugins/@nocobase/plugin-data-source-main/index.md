@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Zdroj dat: Hlavní"
 packageName: '@nocobase/plugin-data-source-main'
 description: |

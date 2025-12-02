@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Xem trước và Lưu
 
 *   **Xem trước**: Tạm thời hiển thị các thay đổi từ bảng cấu hình lên biểu đồ trang để xác minh kết quả.

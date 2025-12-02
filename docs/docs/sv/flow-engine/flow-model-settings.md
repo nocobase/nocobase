@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # FlowModel – Flöden och Konfiguration
 
 FlowModel erbjuder ett tillvägagångssätt baserat på "händelseflöden" (Flow) för att implementera komponenters konfigurationslogik. Detta gör komponenternas beteende och konfiguration mer utbyggbara och visuella.

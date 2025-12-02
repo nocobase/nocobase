@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # IRepository
 
 Rozhraní `Repository` definuje sadu metod pro práci s modely, které slouží k adaptaci CRUD operací zdroje dat.

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Testen
 
 NocoBase biedt een complete set testtools om ontwikkelaars te helpen bij het snel verifiëren van de correctheid van databaselogica, API-interfaces en functionaliteitsimplementaties tijdens de ontwikkeling van plugins. Deze handleiding beschrijft hoe u deze tests schrijft, uitvoert en organiseert.

@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Consulta de Dados
 
 O painel de configuração do gráfico é dividido em três seções: Consulta de Dados, Opções do Gráfico e Eventos de Interação, além dos botões Cancelar, Visualizar e Salvar na parte inferior.

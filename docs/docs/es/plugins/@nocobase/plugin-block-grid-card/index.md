@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Bloque: Tarjeta de Cuadrícula"
 packageName: '@nocobase/plugin-block-grid-card'
 description: |

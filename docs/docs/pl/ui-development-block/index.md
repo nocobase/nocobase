@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Przegląd rozszerzeń bloków
 
 W NocoBase 2.0 mechanizm rozszerzeń bloków został znacznie uproszczony. Deweloperzy, aby szybko dostosować bloki, muszą jedynie dziedziczyć po odpowiedniej klasie bazowej **FlowModel** i zaimplementować powiązane metody interfejsu (głównie metodę `renderComponent()`).

@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Autenticação: LDAP"
 packageName: '@nocobase/plugin-auth-ldap'
 supportedVersions:

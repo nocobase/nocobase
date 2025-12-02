@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Blocco: modello (deprecato)"
 packageName: '@nocobase/plugin-block-template'
 description: |

@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Colección: Conectar a datos externos (FDW)"
 packageName: '@nocobase/plugin-collection-fdw'
 supportedVersions:

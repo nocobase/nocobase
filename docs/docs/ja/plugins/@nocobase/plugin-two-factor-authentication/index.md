@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "二段階認証 (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:

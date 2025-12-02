@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Editor motivů
 
 > Funkce motivů je aktuálně implementována na základě Ant Design 5.x. Doporučujeme, abyste si před čtením tohoto dokumentu přečetli o konceptech [přizpůsobení motivů](https://ant.design/docs/react/customize-theme).

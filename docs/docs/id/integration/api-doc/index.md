@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-api-doc"
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 ```yaml
 pkg: "@nocobase/plugin-api-doc"

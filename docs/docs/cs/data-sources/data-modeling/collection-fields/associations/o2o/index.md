@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Vztah jeden k jednomu
 
 Ve vztahu mezi zaměstnanci a osobními profily může mít každý zaměstnanec pouze jeden záznam osobního profilu a každý záznam osobního profilu může odpovídat pouze jednomu zaměstnanci. V takovém případě je vztah mezi zaměstnancem a osobním profilem jeden k jednomu.

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # SMS Sağlayıcısını Genişletme
 
 Bu makale, [Doğrulama: SMS](../sms) özelliğindeki SMS sağlayıcı işlevselliğini bir eklenti aracılığıyla nasıl genişleteceğinizi açıklamaktadır.

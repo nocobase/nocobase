@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Cycle de vie
 
 Cette section organise les hooks de cycle de vie pour les **plugins** côté serveur et côté client, afin d'aider les développeurs à enregistrer et à libérer correctement les ressources.

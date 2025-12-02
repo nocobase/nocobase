@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Grafikler (Kullanımdan Kaldırıldı)"
 packageName: '@nocobase/plugin-charts'
 description: |

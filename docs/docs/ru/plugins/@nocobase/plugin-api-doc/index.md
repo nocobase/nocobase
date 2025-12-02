@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Документация API"
 packageName: '@nocobase/plugin-api-doc'
 description: |

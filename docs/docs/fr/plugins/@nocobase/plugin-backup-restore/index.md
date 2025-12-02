@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Sauvegarde et restauration d'applications (obsolète)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |

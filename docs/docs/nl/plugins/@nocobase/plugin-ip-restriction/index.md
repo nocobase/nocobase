@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "IP-beperking"
 packageName: '@nocobase/plugin-ip-restriction'
 supportedVersions:

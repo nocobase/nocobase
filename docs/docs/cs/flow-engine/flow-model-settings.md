@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # FlowModel – Toky a konfigurace
 
 `FlowModel` nabízí přístup založený na „tocích (Flow)“ pro implementaci konfigurační logiky komponent, čímž zajišťuje větší rozšiřitelnost a vizualizaci chování a konfigurace komponent.

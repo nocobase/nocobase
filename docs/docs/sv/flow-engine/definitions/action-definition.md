@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # ActionDefinition
 
 ActionDefinition definierar återanvändbara åtgärder som kan refereras till i flera arbetsflöden och steg. En åtgärd är den centrala exekveringsenheten i FlowEngine och kapslar in specifik affärslogik.

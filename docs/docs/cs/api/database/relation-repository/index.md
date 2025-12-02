@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # RelationRepository
 
 `RelationRepository` je objekt typu `Repository` pro práci s relacemi (asociacemi). Umožňuje manipulovat s daty relací, aniž by bylo nutné relaci načítat. Z `RelationRepository` jsou odvozeny specifické implementace pro každý typ relace:

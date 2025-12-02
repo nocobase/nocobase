@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Blok: Çok Adımlı Form"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:

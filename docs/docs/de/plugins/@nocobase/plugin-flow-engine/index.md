@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Flow-Engine"
 packageName: '@nocobase/plugin-flow-engine'
 description: |

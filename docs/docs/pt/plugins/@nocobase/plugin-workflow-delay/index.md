@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Fluxo de trabalho: Nó de atraso"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |

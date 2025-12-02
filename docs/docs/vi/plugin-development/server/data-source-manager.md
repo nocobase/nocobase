@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # DataSourceManager Quản lý nguồn dữ liệu
 
 NocoBase cung cấp `DataSourceManager` để quản lý nhiều nguồn dữ liệu. Mỗi `DataSource` có các thể hiện (instance) `Database`, `ResourceManager` và `ACL` riêng, giúp nhà phát triển dễ dàng quản lý và mở rộng nhiều nguồn dữ liệu một cách linh hoạt.

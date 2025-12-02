@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # StepDefinition
 
 Eine StepDefinition definiert einen einzelnen Schritt in einem Workflow. Jeder Schritt kann eine Aktion, eine Ereignisbehandlung oder eine andere Operation sein. Ein Schritt ist die grundlegende Ausführungseinheit eines Workflows.

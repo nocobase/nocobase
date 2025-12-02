@@ -57,6 +57,10 @@ const model = this.flowEngine.createModel({
 ```
 
 ---
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
 
 ## 두 번째 단계: PropsFlow를 추가하여 버튼 속성 구성 가능하게 만들기
 

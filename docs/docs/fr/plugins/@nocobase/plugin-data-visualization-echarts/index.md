@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Visualisation de données : ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "หลายแอป"
 packageName: '@nocobase/plugin-multi-app'
 supportedVersions:

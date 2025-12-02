@@ -1,6 +1,11 @@
 ---
 title: Pemilih Koleksi
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 # Pemilih Koleksi
 

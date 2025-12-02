@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Alan
 
 Kullanıcı arayüzünde, bir alan bir alan bileşenidir ve tekil verilerin taşıyıcısıdır. Farklı veri türleri, farklı alan bileşenleriyle sunulur. Alanlar yalnızca bloklara bağlı olabilir, bağımsız olarak kullanılamazlar.

@@ -41,6 +41,11 @@ Taka warstwowa konstrukcja pozwala Viz zachować stabilną osobowość (spójną
 jednocześnie szybko adaptując się do różnych scenariuszy biznesowych (CRM, zarządzanie szpitalem, analiza kanałów, operacje produkcyjne…).
 
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 
 ## 3. Wzorzec pierwszy: Szablonowy silnik analityczny (zalecany)
 

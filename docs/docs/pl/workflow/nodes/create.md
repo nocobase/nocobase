@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Dodaj rekord
 
 Służy do dodawania nowego rekordu do kolekcji. Wartości pól dla nowego rekordu mogą wykorzystywać zmienne z kontekstu przepływu pracy. Aby przypisać wartości do pól relacji, można bezpośrednio odwołać się do odpowiednich zmiennych danych w kontekście, które mogą być obiektem lub wartością klucza obcego. Jeśli nie używa się zmiennych, należy ręcznie wprowadzić wartości kluczy obcych. Dla wielu wartości kluczy obcych w relacjach, należy je oddzielić przecinkami.

@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Rozszerzanie typów węzłów
 
 Typ węzła to w zasadzie instrukcja operacyjna. Różne instrukcje reprezentują różne operacje wykonywane w ramach przepływu pracy.

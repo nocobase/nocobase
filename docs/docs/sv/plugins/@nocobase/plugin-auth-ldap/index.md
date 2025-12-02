@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Autentisering: LDAP"
 packageName: '@nocobase/plugin-auth-ldap'
 supportedVersions:

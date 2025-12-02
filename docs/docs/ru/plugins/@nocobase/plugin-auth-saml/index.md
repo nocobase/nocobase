@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Аутентификация: SAML 2.0"
 packageName: '@nocobase/plugin-auth-saml'
 supportedVersions:

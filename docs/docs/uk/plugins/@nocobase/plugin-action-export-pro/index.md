@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Дія: Експорт записів Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:

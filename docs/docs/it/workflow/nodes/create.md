@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Crea Record
 
 Utilizzato per aggiungere un nuovo record a una collezione.

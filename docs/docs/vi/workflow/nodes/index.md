@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tổng quan
 
 Một luồng công việc thường được tạo thành từ nhiều bước thao tác được kết nối với nhau. Mỗi nút đại diện cho một bước thao tác và là một đơn vị logic cơ bản trong quy trình. Giống như trong ngôn ngữ lập trình, các loại nút khác nhau đại diện cho các chỉ thị khác nhau, quyết định hành vi của nút. Khi luồng công việc chạy, hệ thống sẽ lần lượt đi vào từng nút và thực thi các chỉ thị của nút đó.

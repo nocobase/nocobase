@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # ActionDefinition
 
 ActionDefinition định nghĩa các hành động có thể tái sử dụng, những hành động này có thể được tham chiếu trong nhiều luồng công việc và bước khác nhau. Một hành động là đơn vị thực thi cốt lõi trong FlowEngine, đóng gói logic nghiệp vụ cụ thể.

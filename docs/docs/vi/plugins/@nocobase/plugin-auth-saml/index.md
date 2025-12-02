@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Xác thực: SAML 2.0"
 packageName: '@nocobase/plugin-auth-saml'
 supportedVersions:

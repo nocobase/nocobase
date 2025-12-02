@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Tetikleyici Türlerini Genişletme
 
 Her iş akışı, sürecin yürütülmesini başlatan bir giriş noktası görevi gören belirli bir tetikleyici ile yapılandırılmalıdır.

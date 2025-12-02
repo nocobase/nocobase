@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Mehrere Anwendungen"
 packageName: '@nocobase/plugin-multi-app'
 supportedVersions:

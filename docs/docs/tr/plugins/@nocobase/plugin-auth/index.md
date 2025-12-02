@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Kullanıcı Kimlik Doğrulaması"
 packageName: '@nocobase/plugin-auth'
 description: |

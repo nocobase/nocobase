@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Pole
 
 V uživatelském rozhraní (UI) je pole komponentou pole, která slouží jako nosič jednotlivých dat. Různé typy dat jsou prezentovány různými komponentami pole. Pole mohou být připojena pouze k blokům a nelze je používat samostatně.

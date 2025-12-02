@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Veri Kaynağı (Soyut)
 
 `DataSource` soyut bir sınıftır ve bir veritabanı, API gibi çeşitli veri kaynağı türlerini temsil etmek için kullanılır.

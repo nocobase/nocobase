@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Gestor de archivos"
 packageName: '@nocobase/plugin-file-manager'
 description: |

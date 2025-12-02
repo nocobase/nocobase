@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Gebeurtenis-flow
 
 In FlowEngine zijn alle interfacecomponenten **gebeurtenisgestuurd (Event-driven)**.

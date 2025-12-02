@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Yapay Zeka Çalışanı · Viz: İçgörü Analisti
 
 > Tek tıklamayla grafikler ve içgörüler oluşturun ve verilerin kendi kendine konuşmasını sağlayın.

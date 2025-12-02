@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Benachrichtigungsverwaltung"
 packageName: '@nocobase/plugin-notification-manager'
 description: |

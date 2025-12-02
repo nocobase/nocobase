@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Contexte
 
 Dans NocoBase, chaque requête génère un objet `ctx`, qui est une instance de Contexte. Le Contexte encapsule les informations de la requête et de la réponse, tout en offrant des fonctionnalités spécifiques à NocoBase, telles que l'accès à la base de données, les opérations de cache, la gestion des permissions, l'internationalisation et la journalisation.

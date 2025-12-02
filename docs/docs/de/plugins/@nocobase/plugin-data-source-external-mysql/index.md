@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Datenquelle: Externes MySQL"
 packageName: '@nocobase/plugin-data-source-external-mysql'
 supportedVersions:

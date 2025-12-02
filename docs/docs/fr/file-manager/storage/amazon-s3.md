@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Moteur de stockage : Amazon S3
 
 Le moteur de stockage basé sur Amazon S3 nécessite la préparation des comptes et des autorisations nécessaires avant utilisation.

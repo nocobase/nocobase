@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Bloco: modelo (obsoleto)"
 packageName: '@nocobase/plugin-block-template'
 description: |

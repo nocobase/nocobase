@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Niestandardowa konfiguracja wykresów
 
 W trybie niestandardowym mogą Państwo konfigurować wykresy, pisząc kod JS w edytorze. Na podstawie `ctx.data` zwracana jest kompletna opcja ECharts (`option`). Jest to idealne rozwiązanie do łączenia wielu serii, tworzenia złożonych podpowiedzi i dynamicznych stylów. Teoretycznie obsługiwane są wszystkie funkcje ECharts i wszystkie typy wykresów.

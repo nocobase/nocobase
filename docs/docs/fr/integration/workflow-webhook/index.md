@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Intégration de Webhook dans les flux de travail
 
 Grâce aux déclencheurs Webhook, NocoBase peut recevoir des appels HTTP de systèmes tiers et déclencher automatiquement des flux de travail, permettant ainsi une intégration transparente avec des systèmes externes.

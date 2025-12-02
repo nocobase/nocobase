@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # ResourceManager: Gestión de Recursos
 
 La funcionalidad de gestión de recursos de NocoBase puede convertir automáticamente las `colecciones` (tablas de datos) y `asociaciones` existentes en recursos. Incluye varios tipos de operaciones para ayudar a los desarrolladores a construir rápidamente operaciones de recursos para APIs REST. A diferencia de las APIs REST tradicionales, las operaciones de recursos de NocoBase no dependen de los métodos de solicitud HTTP, sino que determinan la operación específica a ejecutar mediante la definición explícita de `:action`.

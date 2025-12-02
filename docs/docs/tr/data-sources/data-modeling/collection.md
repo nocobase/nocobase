@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Koleksiyonlara Genel Bakış
 
 NocoBase, verilerin yapısını tanımlamak için **koleksiyon** adını verdiğimiz benzersiz bir DSL (Alan Odaklı Dil) sunar. Bu DSL, farklı kaynaklardan gelen veri yapılarını bir araya getirerek veri yönetimi, analizi ve uygulamaları için sağlam bir temel oluşturur.

@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Comando
 
 In NocoBase, i comandi vengono utilizzati per eseguire operazioni relative ad applicazioni o plugin nella riga di comando, come l'esecuzione di task di sistema, operazioni di migrazione o sincronizzazione, l'inizializzazione della configurazione o l'interazione con istanze dell'applicazione in esecuzione. Gli sviluppatori possono definire comandi personalizzati per i plugin e registrarli tramite l'oggetto `app`, eseguendoli nella CLI con il formato `nocobase <command>`.

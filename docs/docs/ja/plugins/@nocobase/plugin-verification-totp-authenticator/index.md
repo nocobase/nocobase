@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "検証：TOTP認証器"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:

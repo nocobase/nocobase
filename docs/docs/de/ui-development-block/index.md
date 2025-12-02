@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Block-Erweiterungen im Überblick
 
 In NocoBase 2.0 haben wir den Mechanismus für Block-Erweiterungen erheblich vereinfacht. Entwickler müssen lediglich die entsprechende **FlowModel**-Basisklasse erben und die zugehörigen Schnittstellenmethoden (hauptsächlich die Methode `renderComponent()`) implementieren, um Blöcke schnell anzupassen.

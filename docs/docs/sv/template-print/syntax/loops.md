@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 ## Loophantering
 
 Loophantering används för att upprepat rendera data från arrayer eller objekt genom att definiera start- och slutmarkörer för loopen. Nedan beskrivs flera vanliga scenarier.

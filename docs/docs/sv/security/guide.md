@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # NocoBase Säkerhetsguide
 
 NocoBase fokuserar på säkerheten för data och applikationer, från funktionsdesign till systemimplementering. Plattformen har inbyggda säkerhetsfunktioner som användarautentisering, åtkomstkontroll och datakryptering, och tillåter även flexibel konfiguration av säkerhetspolicyer efter faktiska behov. Oavsett om det handlar om att skydda användardata, hantera åtkomstbehörigheter eller isolera utvecklings- och produktionsmiljöer, erbjuder NocoBase praktiska verktyg och lösningar. Denna guide syftar till att ge vägledning för säker användning av NocoBase, hjälpa dig att skydda data, applikationer och miljöer, samt säkerställa effektiv användning av systemfunktionerna under förutsättning att användarsäkerheten är garanterad.

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Uppgradera en `create-nocobase-app`-installation
 
 :::warning Förberedelser inför uppgraderingen

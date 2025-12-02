@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Depolama Motoru: Yerel Depolama
 
 Yüklenen dosyalar, sunucunun yerel sabit disk dizinine kaydedilir. Bu, sistem tarafından yönetilen toplam yüklenen dosya hacminin az olduğu veya deneysel amaçlar için uygun bir senaryodur.

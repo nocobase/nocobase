@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Flerappshanterare (föråldrad)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |

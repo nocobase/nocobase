@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Genel Bakış
 
 Veri modelleme, veritabanı tasarlarken kritik bir adımdır. Gerçek dünyadaki çeşitli veri türlerini ve bunların birbirleriyle olan ilişkilerini derinlemesine analiz etme ve soyutlama sürecini içerir. Bu süreçte, veriler arasındaki içsel bağlantıları ortaya çıkarmaya ve bunları veri modelleri olarak biçimlendirmeye çalışırız; böylece bilgi sisteminin veritabanı yapısı için temel oluştururuz. NocoBase, veri modelleriyle çalışan bir platformdur ve aşağıdaki özelliklere sahiptir:

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Vorbereitungen
 
 Bevor Sie eine Anwendung im Cluster-Modus bereitstellen, sind einige Vorbereitungen erforderlich.

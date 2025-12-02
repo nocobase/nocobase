@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Tencent Cloud COS
 
 Dies ist ein Speicher-Engine, das auf Tencent Cloud COS basiert. Bevor Sie es nutzen können, müssen Sie die entsprechenden Konten und Berechtigungen einrichten.

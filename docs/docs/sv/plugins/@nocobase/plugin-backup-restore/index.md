@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Säkerhetskopiering och återställning av app (föråldrad)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |

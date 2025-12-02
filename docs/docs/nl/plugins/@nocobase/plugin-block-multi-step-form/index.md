@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Blok: Meerstapformulier"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:

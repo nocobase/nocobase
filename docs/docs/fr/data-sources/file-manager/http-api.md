@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # API HTTP
 
 Les téléchargements de fichiers, qu'il s'agisse de champs de pièce jointe ou de collections de fichiers, peuvent être gérés via l'API HTTP. La méthode d'appel varie en fonction du moteur de stockage utilisé par la pièce jointe ou la collection de fichiers.

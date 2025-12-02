@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Block: Aktionspanel"
 packageName: '@nocobase/plugin-block-workbench'
 description: |

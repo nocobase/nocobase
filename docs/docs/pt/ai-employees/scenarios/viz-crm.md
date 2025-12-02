@@ -41,6 +41,10 @@ Esse design em camadas permite que o Viz mantenha uma personalidade estável (l�
 ao mesmo tempo em que se adapta rapidamente a diferentes cenários de negócios (CRM, gestão hospitalar, análise de canais, operações de produção...).
 
 ---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
 
 ## 3. Padrão Um: Mecanismo de Análise por Modelo (Recomendado)
 

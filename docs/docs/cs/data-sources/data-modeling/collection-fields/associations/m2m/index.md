@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Mnoho ku mnoha
 
 V systému pro zápis do kurzů existují dvě entity: studenti a kurzy. Jeden student se může zapsat do více kurzů a jeden kurz může mít zapsáno více studentů, což vytváří vztah mnoho ku mnoha. V relační databázi se pro vyjádření vztahu mnoho ku mnoha mezi studenty a kurzy obvykle používá prostřední kolekce, například kolekce zápisů. Tato kolekce může zaznamenávat, které kurzy si každý student vybral a kteří studenti se zapsali do jednotlivých kurzů. Takový návrh dokáže efektivně reprezentovat vztah mnoho ku mnoha mezi studenty a kurzy.

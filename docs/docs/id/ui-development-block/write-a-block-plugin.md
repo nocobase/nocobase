@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Menulis Plugin Blok Pertama Anda
 
 Sebelum memulai, disarankan untuk membaca "[Menulis Plugin Pertama Anda](../plugin-development/write-your-first-plugin.md)" untuk memahami cara cepat membuat plugin dasar. Selanjutnya, kita akan mengembangkan fungsionalitas **blok** sederhana berdasarkan itu.

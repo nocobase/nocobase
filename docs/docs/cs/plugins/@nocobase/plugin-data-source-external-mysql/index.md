@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Zdroj dat: Externí MySQL"
 packageName: '@nocobase/plugin-data-source-external-mysql'
 supportedVersions:

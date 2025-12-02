@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # createMockClient
 
 Trong các ví dụ và khi viết kiểm thử, bạn nên sử dụng `createMockClient` để nhanh chóng xây dựng một ứng dụng Mock. Ứng dụng Mock là một ứng dụng trống, sạch sẽ, không kích hoạt bất kỳ plugin nào, chỉ dùng cho mục đích minh họa và kiểm thử.

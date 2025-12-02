@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # BelongsToManyRepository
 
 `BelongsToManyRepository` là một `Relation Repository` dùng để xử lý các quan hệ `BelongsToMany`.

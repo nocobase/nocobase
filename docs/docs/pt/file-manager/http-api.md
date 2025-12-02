@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # API HTTP
 
 O upload de arquivos para campos de anexo e **coleções** de arquivos é suportado via API HTTP. O método de invocação difere dependendo do motor de armazenamento usado pelo campo de anexo ou pela **coleção** de arquivos.

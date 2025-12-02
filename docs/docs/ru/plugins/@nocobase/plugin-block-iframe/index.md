@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Блок: iframe"
 packageName: '@nocobase/plugin-block-iframe'
 description: |

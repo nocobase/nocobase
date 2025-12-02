@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Bộ sưu tập (Collections)
 
 Trong quá trình phát triển **plugin** NocoBase, **Bộ sưu tập (Collection)** là một trong những khái niệm cốt lõi nhất. Bạn có thể thêm mới hoặc sửa đổi cấu trúc bảng dữ liệu trong các **plugin** bằng cách định nghĩa hoặc mở rộng các Bộ sưu tập. Khác với các bảng dữ liệu được tạo thông qua giao diện quản lý **nguồn dữ liệu**, **các Bộ sưu tập được định nghĩa bằng mã thường là các bảng siêu dữ liệu cấp hệ thống** và sẽ không xuất hiện trong danh sách quản lý **nguồn dữ liệu**.

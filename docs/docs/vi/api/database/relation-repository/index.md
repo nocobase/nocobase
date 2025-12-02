@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # RelationRepository
 
 `RelationRepository` là một đối tượng `Repository` dành cho các kiểu quan hệ. `RelationRepository` cho phép bạn thao tác với dữ liệu liên quan mà không cần tải toàn bộ mối quan hệ. Dựa trên `RelationRepository`, mỗi kiểu quan hệ sẽ có một triển khai phái sinh tương ứng, bao gồm:

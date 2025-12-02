@@ -36,6 +36,11 @@ FlowEngineContext (Ngữ cảnh Toàn cục)
 - `FlowRuntimeContext` luôn truy cập `FlowModelContext` tương ứng của nó thông qua cơ chế ủy quyền (delegate), nhưng không truyền ngược lên trên.
 
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 
 ## 🧭 Chế độ Thời gian Chạy và Cấu hình (mode)
 

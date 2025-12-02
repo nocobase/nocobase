@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Política de senha"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:

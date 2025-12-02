@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Datakälla: REST API"
 packageName: '@nocobase/plugin-data-source-rest-api'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 ```yaml
 pkg: "@nocobase/plugin-china-region"
 title: ฟิลด์ภูมิภาคจีน

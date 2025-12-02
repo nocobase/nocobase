@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Termina flusso di lavoro
 
 Quando questo nodo viene eseguito, termina immediatamente il flusso di lavoro corrente con lo stato configurato nel nodo. Lo si utilizza solitamente per il controllo del flusso basato su logiche specifiche, uscendo dal flusso di lavoro corrente quando determinate condizioni vengono soddisfatte e interrompendo l'esecuzione dei processi successivi. È analogo all'istruzione `return` nei linguaggi di programmazione, utilizzata per uscire dalla funzione corrente.

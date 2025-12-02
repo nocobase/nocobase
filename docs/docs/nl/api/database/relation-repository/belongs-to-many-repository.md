@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # BelongsToManyRepository
 
 `BelongsToManyRepository` is een `Relation Repository` voor het beheren van `BelongsToMany`-relaties.

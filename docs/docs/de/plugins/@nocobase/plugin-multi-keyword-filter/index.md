@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Mehrfach-Schlüsselwortfilter"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:

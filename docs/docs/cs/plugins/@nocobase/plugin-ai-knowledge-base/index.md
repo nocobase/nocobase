@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "AI: Znalostní báze"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # IModel
 
 Das `IModel`-Interface definiert die grundlegenden Eigenschaften und Methoden eines Modellobjekts.

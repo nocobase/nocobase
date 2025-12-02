@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Migration
 
 Vid utveckling och uppdatering av NocoBase-plugins kan databasstrukturer eller konfigurationer ändras på ett inkompatibelt sätt. För att säkerställa smidiga uppgraderingar erbjuder NocoBase en **Migration**-mekanism för att hantera dessa ändringar genom att skriva migrationsfiler. I den här guiden får ni en systematisk genomgång av hur Migration används och dess utvecklingsflöde.

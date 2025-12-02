@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # İlişki Alanları
 
 NocoBase'de, ilişki alanları gerçek alanlar değildir; bunun yerine koleksiyonlar arasında bağlantı kurmak için kullanılır. Bu kavram, ilişkisel veritabanlarındaki ilişkilere eşdeğerdir.

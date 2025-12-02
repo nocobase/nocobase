@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Ação: Exportar registros Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:

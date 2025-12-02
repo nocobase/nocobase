@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Dil Ayarları
 
 "Sistem Ayarları"nda, "Etkin Diller"i yapılandırarak sistemin genel dil ortamını ayarlayabilirsiniz. Listedeki ilk dil varsayılan dil olarak kullanılacaktır.

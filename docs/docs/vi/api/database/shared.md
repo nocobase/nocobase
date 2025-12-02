@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 **Tham số**
 
 | Tên tham số            | Kiểu          | Giá trị mặc định | Mô tả                                                 |

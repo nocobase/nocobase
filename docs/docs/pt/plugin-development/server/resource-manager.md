@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Gerenciador de Recursos
 
 A funcionalidade de gerenciamento de recursos do NocoBase pode converter automaticamente **coleções** e associações existentes em recursos, com tipos de operação integrados para ajudar desenvolvedores a construir rapidamente operações de recursos REST API. Um pouco diferente das REST APIs tradicionais, as operações de recurso do NocoBase não dependem de métodos de requisição HTTP, mas determinam a operação específica a ser executada através de definições explícitas de `:action`.

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Proje Dizin Yapısı
 
 İster Git'ten kaynak kodunu klonlayın, ister `create-nocobase-app` kullanarak bir proje başlatın, oluşturulan NocoBase projesi esasen **Yarn Workspace** tabanlı bir çoklu paket deposudur (monorepo).

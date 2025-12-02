@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Workflow: HTTP-verzoekknooppunt"
 packageName: '@nocobase/plugin-workflow-request'
 description: |

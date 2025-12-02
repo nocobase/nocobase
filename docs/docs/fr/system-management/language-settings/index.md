@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Paramètres de langue
 
 Dans les « Paramètres système », vous pouvez ajuster l'environnement linguistique global du système en configurant les « Langues activées ». La première langue de la liste sera la langue par défaut.

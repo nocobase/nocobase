@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Çoka Bir
 
 Bir kütüphane veritabanında iki varlık bulunur: kitaplar ve yazarlar. Bir yazar birden fazla kitap yazabilir, ancak her kitabın genellikle tek bir yazarı vardır. Bu durumda, yazarlar ve kitaplar arasındaki ilişki çoka bir şeklindedir. Birden çok kitap aynı yazarla ilişkilendirilebilir, ancak her kitabın yalnızca bir yazarı olabilir.

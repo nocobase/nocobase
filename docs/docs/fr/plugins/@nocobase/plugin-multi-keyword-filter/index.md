@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Filtre multi-mots-clés"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:

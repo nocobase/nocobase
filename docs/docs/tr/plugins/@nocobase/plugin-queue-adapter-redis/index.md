@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Redis mesaj kuyruğu adaptörü"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:

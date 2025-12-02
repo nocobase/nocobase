@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Eventos de interação personalizados
 
 Escreva JavaScript no editor de eventos e registre interações através da instância `chart` do ECharts para criar comportamentos interativos. Por exemplo, você pode navegar para uma nova página ou abrir um modal de detalhamento (drill-down).

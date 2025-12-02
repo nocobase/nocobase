@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Logs de Auditoria (Obsoleto)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |

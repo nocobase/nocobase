@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "E-posthantering"
 packageName: '@nocobase/plugin-email-manager'
 supportedVersions:

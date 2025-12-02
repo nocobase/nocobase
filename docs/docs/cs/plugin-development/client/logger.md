@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Logger
 
 NocoBase poskytuje vysoce výkonný systém pro logování založený na [pino](https://github.com/pinojs/pino). Kdekoli máte přístup ke `contextu`, můžete získat instanci loggeru prostřednictvím `ctx.logger` pro zaznamenávání klíčových logů během běhu pluginu nebo systému.

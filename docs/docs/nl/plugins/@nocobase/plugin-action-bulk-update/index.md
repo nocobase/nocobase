@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Actie: Bulk bijwerken"
 packageName: '@nocobase/plugin-action-bulk-update'
 description: |

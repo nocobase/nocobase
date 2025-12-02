@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Database
 
 `Database` adalah komponen penting dari `sumber data` bertipe database (`DataSource`). Setiap `sumber data` bertipe database memiliki instance `Database` yang sesuai, yang dapat diakses melalui `dataSource.db`. Instance database dari `sumber data` utama juga menyediakan alias `app.db` yang mudah digunakan. Memahami metode umum `db` adalah dasar untuk menulis `plugin` sisi server.

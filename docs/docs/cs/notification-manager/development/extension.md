@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Rozšíření typů notifikačních kanálů
 
 NocoBase umožňuje rozšířit typy notifikačních kanálů podle potřeby, například o SMS notifikace nebo push notifikace do aplikací.

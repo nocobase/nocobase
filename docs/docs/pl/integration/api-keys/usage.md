@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Używanie kluczy API w NocoBase
 
 Ten przewodnik pokazuje, jak używać kluczy API w NocoBase do pobierania danych, wykorzystując praktyczny przykład "Listy zadań". Proszę postępować zgodnie z poniższymi instrukcjami krok po kroku, aby zrozumieć cały przepływ pracy.

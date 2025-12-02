@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Adapter Redis pub/sub"
 packageName: '@nocobase/plugin-pubsub-adapter-redis'
 supportedVersions:

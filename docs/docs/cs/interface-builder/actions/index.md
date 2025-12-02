@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Akce
 
 V uživatelském rozhraní je akce tlačítko, které slouží ke spuštění sady instrukcí. Může být umístěna přímo na stránce, v dialogovém okně nebo v postranním panelu, a lze ji také použít v kombinaci s bloky. V současné době se dynamicky konfigurovatelné akce používají převážně v kombinaci s bloky.

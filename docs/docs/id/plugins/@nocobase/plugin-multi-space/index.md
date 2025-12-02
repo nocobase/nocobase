@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Multi-ruang"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:

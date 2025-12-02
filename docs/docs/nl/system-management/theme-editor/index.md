@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Thema-editor
 
 > De huidige themafunctionaliteit is gebaseerd op Ant Design 5.x. We raden u aan om eerst de concepten van [thema's aanpassen](https://ant.design/docs/react/customize-theme) te lezen voordat u verdergaat met dit document.

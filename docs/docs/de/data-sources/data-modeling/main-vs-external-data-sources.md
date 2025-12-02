@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Haupt- und externe Datenbanken im Vergleich
 
 Die Unterschiede zwischen Haupt- und externen Datenbanken in NocoBase zeigen sich hauptsächlich in vier Bereichen: der Unterstützung von Datenbanktypen, der Unterstützung von Sammlungstypen, der Unterstützung von Feldtypen sowie den Funktionen für Sicherung und Migration.

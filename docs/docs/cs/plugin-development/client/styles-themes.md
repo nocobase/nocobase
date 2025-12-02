@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Styly a témata
 
 Abychom lépe využili možnosti dynamických témat NocoBase, doporučujeme v pluginech pro psaní stylů používat [antd-style](https://ant-design.github.io/antd-style/zh-CN/guide). To lze zkombinovat se stávajícími [theme tokeny](https://ant.design/docs/react/customize-theme-cn#seedtoken) pro správu dynamických možností témat. NocoBase také nabízí [plugin Editor témat](#), který slouží k pohodlnému nastavení stylů.

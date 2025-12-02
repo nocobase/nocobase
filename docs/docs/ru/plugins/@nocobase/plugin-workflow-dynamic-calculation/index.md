@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Рабочий процесс: Узел динамических вычислений"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |

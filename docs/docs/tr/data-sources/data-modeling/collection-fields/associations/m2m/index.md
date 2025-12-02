@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Çoktan Çoka
 
 Bir ders kayıt sisteminde, öğrenciler ve dersler olmak üzere iki varlık bulunur. Bir öğrenci birden fazla derse kaydolabilir ve bir dersin de birden fazla öğrencisi olabilir; bu durum çoktan çoka bir ilişkiyi oluşturur. İlişkisel bir veritabanında, öğrenciler ve dersler arasındaki çoktan çoka ilişkiyi temsil etmek için genellikle bir ders kayıt koleksiyonu gibi bir ara koleksiyon kullanılır. Bu koleksiyon, her öğrencinin hangi dersleri seçtiğini ve her dersin hangi öğrenciler tarafından alındığını kaydedebilir. Bu tasarım, öğrenciler ve dersler arasındaki çoktan çoka ilişkiyi etkili bir şekilde temsil eder.

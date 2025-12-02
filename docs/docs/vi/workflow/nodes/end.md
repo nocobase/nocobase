@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Kết thúc luồng công việc
 
 Khi nút này được kích hoạt, nó sẽ kết thúc ngay lập tức luồng công việc đang chạy với trạng thái được cấu hình tại nút. Nút này thường được sử dụng để kiểm soát luồng dựa trên các logic cụ thể, thoát khỏi luồng công việc hiện tại khi đáp ứng các điều kiện logic nhất định, và không tiếp tục thực thi các quy trình tiếp theo. Có thể hình dung nó tương tự như lệnh `return` trong các ngôn ngữ lập trình, dùng để thoát khỏi hàm đang thực thi.

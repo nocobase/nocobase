@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Stili e Temi
 
 Per adattarsi al meglio alle capacità di tema dinamico di NocoBase, nei **plugin**, si consiglia di utilizzare [antd-style](https://ant-design.github.io/antd-style/zh-CN/guide) per scrivere gli stili. Questo può essere combinato con i [token del tema](https://ant.design.github.io/antd-style/zh-CN/guide) esistenti per gestire le capacità dinamiche dei temi. NocoBase offre anche un **plugin** [Editor di Temi](#) per regolare comodamente gli stili.

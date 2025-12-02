@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Рабочий процесс: Событие после действия"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |

@@ -114,6 +114,11 @@ spec:
     app: nocobase
   type: ClusterIP
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 # アプリケーションのDeployment。複数のアプリケーションコンテナをデプロイできます。
 apiVersion: apps/v1
 kind: Deployment

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Collectieveld: Momentopname"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |

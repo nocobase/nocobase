@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Менеджер резервного копіювання"
 packageName: '@nocobase/plugin-backups'
 supportedVersions:

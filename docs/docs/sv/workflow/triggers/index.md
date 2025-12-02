@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Översikt
 
 En trigger är startpunkten för ett arbetsflöde. När en händelse som uppfyller triggerns villkor inträffar medan applikationen körs, kommer arbetsflödet att triggas och köras. Triggertypen är också arbetsflödets typ, som väljs när du skapar arbetsflödet och kan inte ändras efteråt. De för närvarande stödda triggertyperna är följande:

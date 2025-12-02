@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Системные настройки"
 packageName: '@nocobase/plugin-system-settings'
 description: |

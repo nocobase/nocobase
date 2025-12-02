@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Fråga efter data
 
 Används för att fråga efter och hämta dataposter från en samling som uppfyller specifika villkor.

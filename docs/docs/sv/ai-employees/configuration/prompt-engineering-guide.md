@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # AI-medarbetare · Guide för prompt-engineering
 
 > Från "hur man skriver" till "att skriva bra" – den här guiden lär dig att skriva högkvalitativa prompter på ett enkelt, stabilt och återanvändbart sätt.

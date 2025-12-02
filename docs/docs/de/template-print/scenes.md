@@ -17,6 +17,10 @@ In unserem Beispiel gibt es grob die folgenden Haupt-Sammlungen (andere irreleva
 Da das aktuelle System nur das Drucken einzelner Datensätze unterstützt, klicken wir auf der Seite „Vertragsdetails“ auf „Drucken“. Das System ruft dann automatisch den entsprechenden Vertragsdatensatz sowie die zugehörigen Parteien und andere Informationen ab und füllt diese in Word- oder PDF-Dokumente ein.
 
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
 
 ## 2. Vorbereitung
 

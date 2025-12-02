@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Многопространство"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Lokalna pamięć masowa
 
 Przesłane pliki będą zapisywane w lokalnym katalogu na serwerze. Jest to odpowiednie dla scenariuszy, w których całkowita liczba plików zarządzanych przez system jest stosunkowo niewielka, lub dla celów eksperymentalnych.

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Aktion: Massenbearbeitung"
 packageName: '@nocobase/plugin-action-bulk-edit'
 description: |

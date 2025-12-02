@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Autenticação de Usuários
 
 O módulo de autenticação de usuários do NocoBase é composto principalmente por duas partes:

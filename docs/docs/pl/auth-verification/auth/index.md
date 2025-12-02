@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Uwierzytelnianie użytkowników
 
 Moduł uwierzytelniania użytkowników w NocoBase składa się głównie z dwóch części:

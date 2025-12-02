@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Luồng công việc: Nút tính toán biểu thức động"
 packageName: '@nocobase/plugin-workflow-dynamic-calculation'
 description: |

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Úložný engine: Amazon S3
 
 Úložný engine založený na Amazon S3. Před použitím je nutné připravit příslušný účet a oprávnění.

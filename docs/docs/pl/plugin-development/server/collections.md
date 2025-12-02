@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Kolekcje
 
 W kontekście tworzenia wtyczek NocoBase, **kolekcja (tabela danych)** jest jedną z kluczowych koncepcji. Mogą Państwo dodawać lub modyfikować struktury tabel danych we wtyczkach, definiując lub rozszerzając kolekcje. W przeciwieństwie do tabel danych tworzonych za pośrednictwem interfejsu zarządzania źródłami danych, **kolekcje definiowane w kodzie są zazwyczaj tabelami metadanych na poziomie systemu** i nie pojawiają się na liście zarządzania źródłami danych.

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Deployment di Lingkungan Produksi
 
 Saat melakukan deployment NocoBase di lingkungan produksi, instalasi dependensi bisa jadi rumit karena perbedaan dalam metode pembangunan di berbagai sistem dan lingkungan. Untuk mendapatkan pengalaman fungsional yang lengkap, kami merekomendasikan deployment menggunakan **Docker**. Jika lingkungan sistem Anda tidak dapat menggunakan Docker, Anda juga dapat melakukan deployment menggunakan **create-nocobase-app**.

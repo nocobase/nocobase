@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Flergrenat villkor <Badge>v2.0.0+</Badge>
 
 ## Introduktion

@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Uso de variables de contexto
 
 Con las variables de contexto, puede reutilizar directamente información de la página actual, el usuario, la hora o las condiciones de filtro. Esto le permite renderizar gráficos e interactuar con ellos según el contexto.

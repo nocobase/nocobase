@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Workflow: Pre-actiegebeurtenis"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:

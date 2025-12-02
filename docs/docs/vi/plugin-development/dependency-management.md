@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Quản lý Phụ thuộc
 
 Trong quá trình phát triển plugin NocoBase, các phụ thuộc được chia thành hai loại chính: **phụ thuộc của plugin** và **phụ thuộc toàn cục**.

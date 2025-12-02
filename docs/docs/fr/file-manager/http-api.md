@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # API HTTP
 
 Les téléversements de fichiers pour les champs de pièce jointe et les collections de fichiers sont tous deux pris en charge via l'API HTTP. La méthode d'appel diffère selon le moteur de stockage utilisé par le champ de pièce jointe ou la collection de fichiers.

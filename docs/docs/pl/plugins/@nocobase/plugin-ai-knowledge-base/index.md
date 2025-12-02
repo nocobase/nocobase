@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "AI: Baza wiedzy"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:

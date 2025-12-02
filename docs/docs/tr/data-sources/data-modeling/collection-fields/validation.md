@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Alan Doğrulama
 koleksiyonlardaki verilerin doğruluğunu, güvenliğini ve tutarlılığını sağlamak amacıyla NocoBase, alan doğrulama işlevselliği sunar. Bu özellik temel olarak iki ana bölümden oluşur: kural yapılandırması ve kural uygulaması.
 

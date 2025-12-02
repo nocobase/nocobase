@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Panoramica
 
 La modellazione dei dati è un passaggio chiave nella progettazione dei database, che implica un processo di analisi approfondita e astrazione di vari tipi di dati e delle loro interrelazioni nel mondo reale. In questo processo, cerchiamo di rivelare le connessioni intrinseche tra i dati e di formalizzarle in modelli di dati, ponendo le basi per la struttura del database del sistema informativo. NocoBase è una piattaforma basata su modelli di dati, che offre le seguenti caratteristiche:

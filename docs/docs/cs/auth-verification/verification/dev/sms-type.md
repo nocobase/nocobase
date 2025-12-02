@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Rozšíření poskytovatele SMS služeb
 
 V tomto článku se dozvíte, jak rozšířit funkcionalitu poskytovatele SMS služeb ve funkci [Ověření: SMS](../sms) pomocí pluginu.

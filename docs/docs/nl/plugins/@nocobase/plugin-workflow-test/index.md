@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Workflow: testkit"
 packageName: '@nocobase/plugin-workflow-test'
 description: |

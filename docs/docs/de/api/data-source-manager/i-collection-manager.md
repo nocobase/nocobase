@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # ICollectionManager
 
 Das `ICollectionManager` Interface dient zur Verwaltung von `Sammlung`-Instanzen einer `Datenquelle`.

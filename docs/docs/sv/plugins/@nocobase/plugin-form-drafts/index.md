@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Formulärutkast"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:

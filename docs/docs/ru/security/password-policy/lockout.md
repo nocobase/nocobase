@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-password-policy"
 ---
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 
 pkg: '@nocobase/plugin-password-policy'
 ---

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 ## Sık Karşılaşılan Sorunlar ve Çözümleri
 
 ### 1. Excel Şablonlarındaki Boş Sütunlar ve Hücreler Oluşturulan Sonuçlarda Kayboluyor

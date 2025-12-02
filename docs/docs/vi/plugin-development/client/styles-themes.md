@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Kiểu dáng & Chủ đề
 
 Để thích ứng tốt hơn với khả năng chủ đề động của NocoBase, trong các plugin, chúng tôi khuyến nghị sử dụng [antd-style](https://ant-design.github.io/antd-style/zh-CN/guide) để viết kiểu dáng. Việc này kết hợp với [theme token](https://ant.design/docs/react/customize-theme-cn#seedtoken) hiện có sẽ giúp xử lý các khả năng động của chủ đề. Đồng thời, NocoBase cũng cung cấp [plugin Trình chỉnh sửa Chủ đề](#) để quý vị có thể điều chỉnh kiểu dáng một cách tiện lợi.

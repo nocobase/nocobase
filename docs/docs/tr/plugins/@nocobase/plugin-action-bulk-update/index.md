@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Eylem: Toplu Güncelleme"
 packageName: '@nocobase/plugin-action-bulk-update'
 description: |

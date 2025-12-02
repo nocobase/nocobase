@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Filtre Operatörleri
 
 Repository'nin `find`, `findOne`, `findAndCount`, `count` gibi API'lerinin `filter` parametresinde kullanılır:

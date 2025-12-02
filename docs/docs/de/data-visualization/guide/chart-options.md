@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Diagramm-Optionen
 
 Konfigurieren Sie die Anzeige Ihrer Diagramme. Es werden zwei Modi unterstützt: Basic (visuell) und Custom (JS). Der Basic-Modus eignet sich ideal für schnelle Zuordnungen und gängige Eigenschaften; der Custom-Modus ist für komplexe Szenarien und erweiterte Anpassungen gedacht.

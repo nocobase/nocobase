@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Integracja przepływu pracy z żądaniami HTTP
 
 Dzięki węzłowi żądania HTTP, przepływy pracy NocoBase mogą aktywnie wysyłać żądania do dowolnej usługi HTTP, umożliwiając wymianę danych i integrację biznesową z systemami zewnętrznymi.

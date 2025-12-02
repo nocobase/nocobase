@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # EventDefinition
 
 EventDefinition definuje logiku zpracování událostí v rámci pracovního postupu, která slouží k reakci na konkrétní spouštěče událostí. Události jsou v FlowEngine důležitým mechanismem pro spouštění provedení pracovních postupů.

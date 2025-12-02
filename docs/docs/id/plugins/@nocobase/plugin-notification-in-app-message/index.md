@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Notifikasi: Pesan dalam Aplikasi"
 packageName: '@nocobase/plugin-notification-in-app-message'
 description: |

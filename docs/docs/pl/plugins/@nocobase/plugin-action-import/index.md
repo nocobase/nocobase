@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Akcja: Importuj rekordy"
 packageName: '@nocobase/plugin-action-import'
 description: |

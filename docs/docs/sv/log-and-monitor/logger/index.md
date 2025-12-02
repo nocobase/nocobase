@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-logger"
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 pkg: '@nocobase/plugin-logger'
 ---

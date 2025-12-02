@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Mở rộng các loại nút
 Loại của một nút về cơ bản là một chỉ thị thực thi. Các chỉ thị khác nhau đại diện cho các thao tác khác nhau được thực hiện trong luồng công việc.
 

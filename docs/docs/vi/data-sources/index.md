@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tổng quan
 
 Mô hình hóa dữ liệu là một bước quan trọng trong việc thiết kế cơ sở dữ liệu, bao gồm quá trình phân tích sâu sắc và trừu tượng hóa các loại dữ liệu trong thế giới thực cùng với mối quan hệ giữa chúng. Trong quá trình này, chúng tôi cố gắng khám phá các mối liên hệ nội tại giữa dữ liệu và hình thức hóa chúng thành các mô hình dữ liệu, đặt nền tảng cho cấu trúc cơ sở dữ liệu của hệ thống thông tin. NocoBase là một nền tảng được điều khiển bởi mô hình dữ liệu, với các tính năng sau:

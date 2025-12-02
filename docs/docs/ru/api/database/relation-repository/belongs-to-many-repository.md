@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 # BelongsToManyRepository
 
 `BelongsToManyRepository` — это репозиторий связей (`Relation Repository`), предназначенный для работы с отношениями типа `BelongsToMany`.

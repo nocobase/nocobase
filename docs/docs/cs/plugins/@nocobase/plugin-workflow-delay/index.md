@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Pracovní postup: Uzel zpoždění"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |

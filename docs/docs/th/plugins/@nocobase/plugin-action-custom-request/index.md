@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "แอคชัน: คำขอที่กำหนดเอง"
 packageName: '@nocobase/plugin-action-custom-request'
 description: |

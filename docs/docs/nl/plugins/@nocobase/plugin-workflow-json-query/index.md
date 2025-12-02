@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Workflow: JSON-berekening"
 packageName: '@nocobase/plugin-workflow-json-query'
 supportedVersions:

@@ -26,6 +26,11 @@ Proszę kliknąć pole wyboru w kolumnie `Available` na liście pracowników AI,
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
 
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 
 ## Uprawnienia dostępu do danych
 

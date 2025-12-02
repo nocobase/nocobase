@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Zmienne i sekrety"
 packageName: '@nocobase/plugin-environment-variables'
 description: |

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Workflow: Verzögerungsknoten"
 packageName: '@nocobase/plugin-workflow-delay'
 description: |

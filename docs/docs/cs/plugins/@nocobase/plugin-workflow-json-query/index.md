@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Pracovní postup: Výpočet JSON"
 packageName: '@nocobase/plugin-workflow-json-query'
 supportedVersions:

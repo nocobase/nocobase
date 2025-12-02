@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Een create-nocobase-app installatie upgraden
 
 :::warning Voorbereidingen voor de upgrade

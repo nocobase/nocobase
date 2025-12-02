@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # StepDefinition
 
 StepDefinition, bir iş akışındaki tek bir adımı tanımlar. Her adım bir eylem, olay işleme veya başka bir işlem olabilir. Adım, bir iş akışının temel yürütme birimidir.

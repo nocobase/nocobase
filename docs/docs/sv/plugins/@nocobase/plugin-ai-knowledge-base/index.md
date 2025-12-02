@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "AI: Kunskapsbas"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:

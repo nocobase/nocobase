@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 ### Zaman Aralığı Biçimlendirme
 
 #### 1. :formatI(patternOut, patternIn)

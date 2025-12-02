@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Stampa modelli"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:

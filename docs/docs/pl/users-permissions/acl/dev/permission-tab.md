@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Rozszerzanie zakładek konfiguracji uprawnień
 
 Poniżej przedstawiono przykład elementu konfiguracji „Menu mobilne”, pokazujący, jak rozszerzyć nową zakładkę konfiguracji uprawnień. Efekt widoczny jest na poniższym obrazku:

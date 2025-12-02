@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Filteroperatorer
 
 Används i parametern `filter` för API:er som `find`, `findOne`, `findAndCount` och `count` i ett Repository:

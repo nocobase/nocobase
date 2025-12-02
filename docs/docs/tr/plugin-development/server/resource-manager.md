@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # ResourceManager Kaynak Yönetimi
 
 NocoBase'in kaynak yönetimi özelliği, mevcut **koleksiyonları** ve ilişkileri (association) otomatik olarak kaynaklara dönüştürebilir. Bu özellik, geliştiricilerin REST API kaynak işlemlerini hızla oluşturmasına yardımcı olmak için çeşitli yerleşik işlem türleri sunar. Geleneksel REST API'lerinden biraz farklı olarak, NocoBase kaynak işlemleri HTTP istek yöntemlerine doğrudan bağlı değildir; bunun yerine, gerçekleştirilecek belirli işlemi açıkça tanımlanmış `:action` ile belirlersiniz.

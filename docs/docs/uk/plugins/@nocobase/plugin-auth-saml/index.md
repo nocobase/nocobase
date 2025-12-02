@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Автентифікація: SAML 2.0"
 packageName: '@nocobase/plugin-auth-saml'
 supportedVersions:

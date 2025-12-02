@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Datakälla: Extern MariaDB"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
 supportedVersions:

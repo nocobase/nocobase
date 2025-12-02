@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Tencent Cloud COS
 
 Mesin penyimpanan berbasis Tencent Cloud COS. Sebelum menggunakannya, Anda perlu menyiapkan akun dan izin yang relevan.

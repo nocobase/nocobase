@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Adaptateur de file de messages Redis"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:

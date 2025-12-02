@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Рабочий процесс: Подпроцесс"
 packageName: '@nocobase/plugin-workflow-subflow'
 supportedVersions:

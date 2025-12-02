@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Lệnh (Command)
 
 Trong NocoBase, các lệnh (Command) dùng để thực thi trên dòng lệnh các thao tác liên quan đến ứng dụng hoặc **plugin**, ví dụ như chạy các tác vụ hệ thống, thực hiện các thao tác di chuyển (migration) hoặc đồng bộ hóa, khởi tạo cấu hình, hoặc tương tác với các phiên bản ứng dụng đang chạy. Các nhà phát triển có thể định nghĩa các lệnh tùy chỉnh cho **plugin** và đăng ký chúng thông qua đối tượng `app`, để thực thi trong CLI dưới dạng `nocobase <command>`.

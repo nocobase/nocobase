@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Wtyczka
 
 W NocoBase, wtyczka zapewnia modułowy sposób na rozszerzanie i dostosowywanie funkcjonalności po stronie serwera. Deweloperzy mogą dziedziczyć po klasie `Plugin` z `@nocobase/server`, aby rejestrować zdarzenia, interfejsy API, konfiguracje uprawnień i inną niestandardową logikę na różnych etapach cyklu życia.

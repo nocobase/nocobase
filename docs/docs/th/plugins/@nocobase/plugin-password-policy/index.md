@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "นโยบายรหัสผ่าน"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:

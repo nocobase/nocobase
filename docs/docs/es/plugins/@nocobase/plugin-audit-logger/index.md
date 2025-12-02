@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Registros de auditoría"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:

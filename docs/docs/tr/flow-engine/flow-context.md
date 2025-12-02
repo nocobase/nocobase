@@ -36,6 +36,11 @@ FlowEngineContext (Genel Bağlam)
 - `FlowRuntimeContext` her zaman ilgili `FlowModelContext`'ine bir vekil (delegate) mekanizması aracılığıyla erişir, ancak değişiklikleri yukarı doğru yaymaz.
 
 ---
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 
 ## 🧭 Çalışma Zamanı ve Ayarlar Modu (mode)
 

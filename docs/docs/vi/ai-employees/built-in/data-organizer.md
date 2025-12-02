@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Trợ lý AI · Dex: Chuyên gia Sắp xếp Dữ liệu
 
 > Nhanh chóng trích xuất và điền biểu mẫu, biến thông tin lộn xộn thành dữ liệu có cấu trúc.

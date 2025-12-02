@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Przepływ pracy: Zdarzenie przed akcją"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:

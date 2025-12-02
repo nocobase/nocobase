@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Administrador de múltiples aplicaciones (obsoleto)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |

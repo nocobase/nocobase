@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "HTTP-Anfrage-Verschlüsselung"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:

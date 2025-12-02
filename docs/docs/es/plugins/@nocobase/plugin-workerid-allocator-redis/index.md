@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Asignador de ID de worker de Redis"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 description: |

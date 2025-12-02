@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Notificação: Mensagem no aplicativo"
 packageName: '@nocobase/plugin-notification-in-app-message'
 description: |

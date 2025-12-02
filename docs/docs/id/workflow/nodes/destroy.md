@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Hapus Data
 
 Digunakan untuk menghapus data dari sebuah koleksi yang memenuhi kondisi tertentu.

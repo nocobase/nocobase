@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Authentifizierung: SAML 2.0"
 packageName: '@nocobase/plugin-auth-saml'
 supportedVersions:

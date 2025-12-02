@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 ### Array-Formatierung
 
 #### 1. :arrayJoin(separator, index, count)

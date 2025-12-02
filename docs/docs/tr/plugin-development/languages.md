@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Dil Listesi
 
 NocoBase çoklu dil desteği (i18n) sunar. Aşağıda, şu anda yerleşik olarak bulunan dillerin listesini bulabilirsiniz.

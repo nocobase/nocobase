@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Menedżer migracji"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:

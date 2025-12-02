@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # AI zaměstnanec · Orin: Datový modelář
 
 > Inteligentně navrhuje kolekce a optimalizuje strukturu databáze.

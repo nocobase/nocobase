@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # CronJobManager: Gestión de Tareas Programadas
 
 `CronJobManager` es un gestor de tareas programadas que NocoBase le ofrece, basado en [cron](https://www.npmjs.com/package/cron). Permite que los `plugin`s registren tareas programadas en el servidor para ejecutar lógica específica de forma periódica.

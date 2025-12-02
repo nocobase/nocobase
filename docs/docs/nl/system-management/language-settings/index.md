@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Taalinstellingen
 
 Via de 'Systeeminstellingen' kunt u de globale taalinstellingen van het systeem aanpassen. Configureer hiervoor de 'Ingeschakelde talen'. De eerste taal in deze lijst wordt automatisch de standaardtaal.

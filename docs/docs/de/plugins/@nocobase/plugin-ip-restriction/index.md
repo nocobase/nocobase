@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "IP-Beschränkung"
 packageName: '@nocobase/plugin-ip-restriction'
 supportedVersions:

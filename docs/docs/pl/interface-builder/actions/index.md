@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Akcja
 
 W interfejsie użytkownika (UI), akcja to przycisk służący do wywołania zestawu instrukcji. Można ją umieścić bezpośrednio na stronie, w oknie dialogowym lub w panelu bocznym, a także używać w połączeniu z blokami. Obecnie, dynamicznie konfigurowalne akcje są głównie wykorzystywane w połączeniu z blokami.

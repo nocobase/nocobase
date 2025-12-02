@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Samlingsfält: Många till många (array)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |

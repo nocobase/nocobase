@@ -1,0 +1,44 @@
+[
+  {
+    "type": "custom-link",
+    "label": "अवलोकन",
+    "link": "/notification-manager"
+  },
+  {
+    "type": "custom-link",
+    "label": "अधिसूचना चैनल",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "站内信",
+        "link": "/notification-manager/notification-in-app-message"
+      },
+      {
+        "type": "custom-link",
+        "label": "电子邮件",
+        "link": "/notification-manager/notification-email"
+      },
+      {
+        "type": "custom-link",
+        "label": "企业微信",
+        "link": "/notification-manager/wecom"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "विकास मार्गदर्शिका",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "扩展通知渠道类型",
+        "link": "/notification-manager/development/extension"
+      },
+      {
+        "type": "custom-link",
+        "label": "扩展通知API",
+        "link": "/notification-manager/development/api"
+      }
+    ]
+  }
+]

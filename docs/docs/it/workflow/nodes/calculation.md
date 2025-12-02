@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Calcolo
 
 Il nodo Calcolo può valutare un'espressione e il risultato viene salvato nel risultato del nodo corrispondente per essere utilizzato dai nodi successivi. È uno strumento per calcolare, elaborare e trasformare i dati. In un certo senso, può sostituire la funzionalità dei linguaggi di programmazione di chiamare una funzione su un valore e assegnarlo a una variabile.

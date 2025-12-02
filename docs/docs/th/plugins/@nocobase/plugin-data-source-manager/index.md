@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "การจัดการแหล่งข้อมูล"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |

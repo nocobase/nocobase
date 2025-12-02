@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Yerel Depolama
 
 Yüklenen dosyalar sunucunun yerel disk dizinine kaydedilir. Bu yöntem, sistem tarafından yönetilen toplam dosya miktarının az olduğu veya deneysel kullanımlar için uygundur.

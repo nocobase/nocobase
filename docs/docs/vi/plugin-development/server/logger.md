@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Logger
 
 Hệ thống ghi nhật ký (logging) của NocoBase được xây dựng dựa trên <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. Theo mặc định, NocoBase phân loại nhật ký thành nhật ký yêu cầu API, nhật ký hoạt động hệ thống và nhật ký thực thi SQL. Trong đó, nhật ký yêu cầu API và nhật ký thực thi SQL được ứng dụng in ra nội bộ. Các nhà phát triển plugin thường chỉ cần in các nhật ký hoạt động hệ thống liên quan đến plugin.

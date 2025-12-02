@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Vztah mezi FlowEngine a pluginy
 
 **FlowEngine** není plugin, ale **základní API**, které je poskytováno pluginům k použití pro propojení klíčových funkcí s rozšířeními pro konkrétní obchodní potřeby.

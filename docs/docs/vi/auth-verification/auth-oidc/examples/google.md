@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Đăng nhập bằng Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect

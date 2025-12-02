@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # IRepository
 
 Giao diện `Repository` định nghĩa một loạt các phương thức thao tác mô hình, được sử dụng để thích ứng với các hoạt động CRUD (Tạo, Đọc, Cập nhật, Xóa) của nguồn dữ liệu.

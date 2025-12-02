@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # FlowModel Persistentie
 
 FlowEngine biedt een compleet persistentiesysteem.

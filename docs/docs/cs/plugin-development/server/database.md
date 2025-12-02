@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Databáze
 
 `Database` je důležitou součástí zdrojů dat (`DataSource`) typu databáze. Každý zdroj dat typu databáze má odpovídající instanci `Database`, ke které lze přistupovat prostřednictvím `dataSource.db`. Instance databáze hlavního zdroje dat navíc poskytuje pohodlný alias `app.db`. Seznámení se s běžnými metodami `db` je základem pro psaní serverových pluginů.

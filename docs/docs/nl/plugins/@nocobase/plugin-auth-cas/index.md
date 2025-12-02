@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Authenticatie: CAS"
 packageName: '@nocobase/plugin-auth-cas'
 supportedVersions:

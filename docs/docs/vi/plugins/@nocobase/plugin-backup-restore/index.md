@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 ```yaml
 displayName: "Sao lưu và khôi phục ứng dụng (đã ngừng hỗ trợ)"
 packageName: '@nocobase/plugin-backup-restore'

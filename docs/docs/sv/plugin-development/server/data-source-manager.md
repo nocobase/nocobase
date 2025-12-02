@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # DataSourceManager – Hantering av datakällor
 
 NocoBase erbjuder `DataSourceManager` för hantering av flera datakällor. Varje `DataSource` har sina egna instanser av `Database`, `ResourceManager` och `ACL`, vilket gör det enkelt för utvecklare att flexibelt hantera och utöka flera datakällor.

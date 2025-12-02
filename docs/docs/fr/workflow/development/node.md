@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Extension des types de nœuds
 
 Le type d'un nœud est essentiellement une instruction opérationnelle. Des instructions différentes représentent des opérations différentes exécutées dans le **flux de travail**.

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # ICollection
 
 `ICollection` là một giao diện (interface) cho mô hình dữ liệu, chứa các thông tin như tên, trường (field) và các liên kết (association) của mô hình.

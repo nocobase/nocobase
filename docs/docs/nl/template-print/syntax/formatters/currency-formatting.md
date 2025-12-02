@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 ### Valuta opmaak
 
 #### 1. `:formatC(precisionOrFormat, targetCurrency)`

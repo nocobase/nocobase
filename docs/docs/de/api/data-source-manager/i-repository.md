@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # IRepository
 
 Das `Repository`-Interface definiert eine Reihe von Methoden zur Modelloperation, die zur Anpassung der CRUD-Operationen (Create, Read, Update, Delete) einer Datenquelle dienen.

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tích hợp Webhook vào luồng công việc
 
 Với trình kích hoạt Webhook, NocoBase có thể nhận các lệnh gọi HTTP từ các hệ thống bên thứ ba và tự động kích hoạt các luồng công việc, giúp tích hợp liền mạch với các hệ thống bên ngoài.

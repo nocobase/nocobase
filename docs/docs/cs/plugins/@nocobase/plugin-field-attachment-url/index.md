@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Pole kolekce: Příloha (URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |

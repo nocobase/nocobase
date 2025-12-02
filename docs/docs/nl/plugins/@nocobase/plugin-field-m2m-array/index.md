@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Collectieveld: Veel-op-veel (array)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |

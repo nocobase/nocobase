@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Vlastní značka"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Systémová nastavení"
 packageName: '@nocobase/plugin-system-settings'
 description: |

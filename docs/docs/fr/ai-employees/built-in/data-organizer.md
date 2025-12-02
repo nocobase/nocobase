@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Agent IA · Dex : Expert en organisation de données
 
 > Extrayez et remplissez rapidement des formulaires, transformant les informations désordonnées en données structurées.

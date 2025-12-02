@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 ## Uso Básico
 
 O **plugin** de Impressão de Modelos oferece várias sintaxes para você inserir dados dinâmicos e estruturas lógicas de forma flexível nos seus modelos. Abaixo, você encontra explicações detalhadas da sintaxe e exemplos de uso.

@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Workflow: Genehmigung"
 packageName: '@nocobase/plugin-workflow-approval'
 description: |

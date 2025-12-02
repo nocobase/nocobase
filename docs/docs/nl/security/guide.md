@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # NocoBase Beveiligingsgids
 
 NocoBase legt de nadruk op de veiligheid van gegevens en applicaties, van functioneel ontwerp tot systeemimplementatie. Het platform beschikt over ingebouwde beveiligingsfuncties zoals gebruikersauthenticatie, toegangscontrole en gegevensversleuteling, en maakt tevens flexibele configuratie van beveiligingsbeleid mogelijk, afhankelijk van uw specifieke behoeften. Of het nu gaat om het beschermen van gebruikersgegevens, het beheren van toegangsrechten of het isoleren van ontwikkel- en productieomgevingen, NocoBase biedt praktische tools en oplossingen. Deze gids is bedoeld om u te begeleiden bij het veilig gebruiken van NocoBase, zodat u uw gegevens, applicaties en omgeving kunt beschermen en tegelijkertijd efficiënt gebruik kunt maken van de systeemfuncties.

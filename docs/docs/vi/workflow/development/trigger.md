@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Mở rộng các loại trình kích hoạt
 
 Mỗi luồng công việc cần được cấu hình với một trình kích hoạt cụ thể, đóng vai trò là điểm khởi đầu để thực thi quy trình.

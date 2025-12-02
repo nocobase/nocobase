@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Dateimanager"
 packageName: '@nocobase/plugin-file-manager'
 description: |

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 ## Podmíněné příkazy
 
 Podmíněné příkazy Vám umožňují dynamicky řídit zobrazení nebo skrytí obsahu v dokumentu na základě hodnot dat. Existují tři hlavní způsoby zápisu podmínek:

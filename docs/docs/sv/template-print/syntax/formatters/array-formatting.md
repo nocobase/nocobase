@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 ### Array-formatering
 
 #### 1. :arrayJoin(separator, index, count)

@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Motore di Archiviazione: Aliyun OSS
 
 Un motore di archiviazione basato su Aliyun OSS. Prima di utilizzarlo, deve preparare l'account e le autorizzazioni necessarie.

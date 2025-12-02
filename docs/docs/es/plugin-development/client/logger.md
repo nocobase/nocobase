@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Logger
 
 NocoBase le ofrece un sistema de registro (logger) de alto rendimiento basado en [pino](https://github.com/pinojs/pino). En cualquier lugar donde tenga acceso al `context`, puede obtener una instancia del logger a través de `ctx.logger` para registrar los eventos clave durante la ejecución de sus **plugins** o del sistema.

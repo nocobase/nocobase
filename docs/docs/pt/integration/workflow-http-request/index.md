@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Integração de Requisições HTTP em Fluxos de Trabalho
 
 Através do nó de Requisição HTTP, os **fluxos de trabalho** do NocoBase podem enviar requisições proativamente para qualquer serviço HTTP, facilitando a troca de dados e a integração de negócios com sistemas externos.

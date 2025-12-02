@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Filtry na stronie i ich powiązania
 
 Blok filtrujący (Filter Block) służy do jednolitego wprowadzania warunków filtrowania na poziomie strony i łączenia ich z zapytaniami wykresów. Pozwala to na spójne filtrowanie i powiązania wielu wykresów.

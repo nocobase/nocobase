@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # FlowModel vs React.Component
 
 ## Vergelijking van basisverantwoordelijkheden

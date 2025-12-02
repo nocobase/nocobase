@@ -57,6 +57,10 @@ const model = this.flowEngine.createModel({
 ```
 
 ---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
 
 ## Paso 2: Agregue PropsFlow para hacer que las propiedades del botón sean configurables
 

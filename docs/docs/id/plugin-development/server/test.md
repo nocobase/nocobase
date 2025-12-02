@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 ## Pengujian
 
 NocoBase menyediakan seperangkat alat pengujian lengkap untuk membantu pengembang memverifikasi kebenaran logika basis data, antarmuka API, dan implementasi fitur dengan cepat selama pengembangan **plugin**. Panduan ini akan menjelaskan cara menulis, menjalankan, dan mengelola pengujian tersebut.

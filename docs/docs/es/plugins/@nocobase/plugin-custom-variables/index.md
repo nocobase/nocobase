@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Variables personalizadas"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:

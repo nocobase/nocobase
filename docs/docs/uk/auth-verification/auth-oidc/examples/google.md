@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 # Вхід за допомогою Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect

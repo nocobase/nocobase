@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 ## Temel Kullanım
 
 Şablon Yazdırma eklentisi, şablonlara dinamik veri ve mantıksal yapılar eklemek için çeşitli söz dizimleri sunar. Aşağıda, bu söz dizimlerinin ayrıntılı açıklamalarını ve kullanım örneklerini bulabilirsiniz.

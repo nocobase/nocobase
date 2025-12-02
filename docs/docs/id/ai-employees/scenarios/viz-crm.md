@@ -41,6 +41,11 @@ Desain berlapis ini memungkinkan Viz untuk mempertahankan kepribadian yang stabi
 sekaligus dapat dengan cepat beradaptasi dengan berbagai skenario bisnis (CRM, manajemen rumah sakit, analisis saluran, operasi produksi...).
 
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 ## 3. Pola Satu: Mesin Analisis Bertemplate (Direkomendasikan)
 

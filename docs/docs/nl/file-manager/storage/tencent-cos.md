@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Tencent Cloud COS
 
 Een opslagengine gebaseerd op Tencent Cloud COS. Voordat u deze kunt gebruiken, dient u de benodigde accounts en machtigingen voor te bereiden.

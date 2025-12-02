@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Context
 
 In NocoBase genereert elk verzoek een `ctx` object, een instantie van Context. Context omvat informatie over het verzoek en de respons, en biedt tegelijkertijd NocoBase-specifieke functionaliteiten, zoals databasetoegang, cachebewerkingen, rechtenbeheer, internationalisering en logging.

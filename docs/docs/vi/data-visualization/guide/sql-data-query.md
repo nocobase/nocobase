@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Truy vấn dữ liệu ở chế độ SQL
 
 Trong bảng điều khiển Truy vấn dữ liệu, chuyển sang chế độ SQL, viết và chạy truy vấn, sau đó sử dụng trực tiếp kết quả trả về để ánh xạ và hiển thị biểu đồ.

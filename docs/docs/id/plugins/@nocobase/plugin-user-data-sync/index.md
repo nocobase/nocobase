@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Sinkronisasi Data Pengguna"
 packageName: '@nocobase/plugin-user-data-sync'
 description: |

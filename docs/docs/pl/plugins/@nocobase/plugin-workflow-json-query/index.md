@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Przepływ pracy: Obliczenia JSON"
 packageName: '@nocobase/plugin-workflow-json-query'
 supportedVersions:

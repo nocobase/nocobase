@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Opslag-engine: Lokale opslag
 
 Geüploade bestanden worden opgeslagen in een lokale map op de harde schijf van de server. Dit is geschikt voor situaties waarin het totale volume aan geüploade bestanden dat door het systeem wordt beheerd klein is, of voor experimentele doeleinden.

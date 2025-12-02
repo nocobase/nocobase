@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-file-manager"
 ---
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 
 # Dosya Koleksiyonu
 

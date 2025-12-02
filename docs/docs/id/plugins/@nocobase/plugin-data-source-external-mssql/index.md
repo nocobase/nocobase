@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Sumber Data: SQL Server Eksternal"
 packageName: '@nocobase/plugin-data-source-external-mssql'
 supportedVersions:

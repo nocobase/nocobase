@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Управление несколькими приложениями (устарело)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |

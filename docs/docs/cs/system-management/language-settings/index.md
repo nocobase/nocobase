@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Nastavení jazyka
 
 V „Nastavení systému“ můžete nastavit globální jazykové prostředí systému konfigurací „Povolených jazyků“. První jazyk v seznamu bude sloužit jako výchozí jazyk.

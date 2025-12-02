@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "เวิร์กโฟลว์: โหนดส่งอีเมล"
 packageName: '@nocobase/plugin-workflow-mailer'
 description: |

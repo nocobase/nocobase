@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Despliegue en Entorno de Producción
 
 Al desplegar NocoBase en un entorno de producción, la instalación de dependencias puede ser complicada debido a las diferencias en los métodos de construcción entre distintos sistemas y entornos. Para una experiencia funcional completa, le recomendamos desplegarlo con **Docker**. Si su entorno de sistema no puede usar Docker, también puede desplegarlo utilizando **create-nocobase-app**.

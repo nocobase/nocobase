@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-ai"
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 
 # Đối thoại văn bản
 

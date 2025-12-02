@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Düğüm Türlerini Genişletme
 
 Bir düğümün türü aslında bir işlem talimatıdır. Farklı talimatlar, iş akışı içinde yürütülen farklı işlemleri temsil eder.

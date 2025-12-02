@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # AI Çalışanı · Orin: Veri Modelleme Uzmanı
 
 > Koleksiyonları akıllıca tasarlar ve veritabanı yapısını optimize eder.

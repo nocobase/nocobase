@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Действие: Экспорт записей Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:

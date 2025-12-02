@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Autentizace uživatelů
 
 Modul pro autentizaci uživatelů v NocoBase se skládá hlavně ze dvou částí:

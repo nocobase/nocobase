@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Motore di Archiviazione: Archiviazione Locale
 
 I file caricati verranno salvati in una directory locale sul disco rigido del server. Questa soluzione è adatta per scenari in cui il volume totale di file caricati gestiti dal sistema è ridotto o per scopi sperimentali.

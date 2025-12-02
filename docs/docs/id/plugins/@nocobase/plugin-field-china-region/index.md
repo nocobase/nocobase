@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Bidang Koleksi: Pembagian Wilayah Administratif Tiongkok"
 packageName: '@nocobase/plugin-field-china-region'
 description: |

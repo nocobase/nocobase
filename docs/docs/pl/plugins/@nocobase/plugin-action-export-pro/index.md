@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Akcja: Eksportuj rekordy Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:

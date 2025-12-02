@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Autentisering: SAML 2.0"
 packageName: '@nocobase/plugin-auth-saml'
 supportedVersions:

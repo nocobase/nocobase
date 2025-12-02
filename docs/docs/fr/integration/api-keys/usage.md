@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Utiliser les clés API dans NocoBase
 
 Ce guide vous montre comment utiliser les clés API dans NocoBase pour récupérer des données, en s'appuyant sur un exemple pratique de "liste de tâches". Suivez les instructions étape par étape ci-dessous pour comprendre le flux de travail complet.

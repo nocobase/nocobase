@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Özel Etkileşim Olayları
 
 Olay düzenleyicide JavaScript yazarak, ECharts `chart` örneği aracılığıyla etkileşim davranışlarını kaydedebilir ve bağlantı kurabilirsiniz. Örneğin, yeni bir sayfaya yönlendirme veya detaylı analiz için bir açılır pencere açma gibi işlemleri gerçekleştirebilirsiniz.

@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Workflow: JSON-variabeletoewijzing"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
 supportedVersions:

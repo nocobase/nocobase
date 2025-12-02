@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Workflow: JavaScript Knoten"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:

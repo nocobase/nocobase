@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Дія: Дублювати запис"
 packageName: '@nocobase/plugin-action-duplicate'
 description: |

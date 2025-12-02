@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Pamięć podręczna (Cache)
 
 Moduł Cache w NocoBase opiera się na bibliotece <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> i zapewnia funkcjonalność buforowania dla rozwoju wtyczek. System posiada wbudowane dwa typy pamięci podręcznej:

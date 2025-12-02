@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Черновики форм"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:

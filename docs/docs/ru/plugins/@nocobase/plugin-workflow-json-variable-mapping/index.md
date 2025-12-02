@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Рабочий процесс: Сопоставление JSON-переменных"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
 supportedVersions:

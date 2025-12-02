@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Gegevensvisualisatie: ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:

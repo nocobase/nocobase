@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Satu-ke-Banyak
 
 Hubungan antara kelas dan siswa adalah contoh hubungan satu-ke-banyak: satu kelas dapat memiliki banyak siswa, tetapi setiap siswa hanya dapat menjadi anggota satu kelas.

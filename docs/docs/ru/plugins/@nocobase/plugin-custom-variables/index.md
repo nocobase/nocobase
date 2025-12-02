@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Пользовательские переменные"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Hiển thị FlowModel
 
 `FlowModelRenderer` là một component React cốt lõi dùng để hiển thị một `FlowModel`. Component này có nhiệm vụ chuyển đổi một thể hiện (instance) của `FlowModel` thành một component React trực quan.

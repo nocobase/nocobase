@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # AI Zaměstnanec · Nathan: Frontendový vývojář
 
 > Pomůže vám psát a optimalizovat frontendový kód pro implementaci složité interaktivní logiky.

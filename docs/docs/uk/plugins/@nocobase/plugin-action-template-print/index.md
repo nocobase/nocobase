@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Друк за шаблоном"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Поле колекції: Код"
 packageName: '@nocobase/plugin-field-code'
 description: |

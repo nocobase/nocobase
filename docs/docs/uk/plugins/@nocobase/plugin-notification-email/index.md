@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Сповіщення: Електронна пошта"
 packageName: '@nocobase/plugin-notification-email'
 description: |

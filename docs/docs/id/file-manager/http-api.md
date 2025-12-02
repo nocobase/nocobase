@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # HTTP API
 
 Unggahan berkas untuk bidang lampiran dan koleksi berkas didukung melalui HTTP API. Metode pemanggilan berbeda-beda tergantung pada mesin penyimpanan yang digunakan oleh bidang lampiran atau koleksi berkas.

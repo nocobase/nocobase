@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # ICollectionManager
 
 Interfejs `ICollectionManager` służy do zarządzania instancjami `kolekcji` dla `źródła danych`.

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Variabler och hemligheter"
 packageName: '@nocobase/plugin-environment-variables'
 description: |

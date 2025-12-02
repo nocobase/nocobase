@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Variabelen en geheimen"
 packageName: '@nocobase/plugin-environment-variables'
 description: |

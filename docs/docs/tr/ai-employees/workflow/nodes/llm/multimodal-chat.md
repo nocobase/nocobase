@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-ai-ee"
 ---
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 
 # Çok Modlu Sohbet
 

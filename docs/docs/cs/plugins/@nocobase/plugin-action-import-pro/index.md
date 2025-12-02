@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Akce: Import záznamů Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:

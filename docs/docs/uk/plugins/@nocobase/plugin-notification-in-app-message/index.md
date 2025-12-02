@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Повідомлення: Внутрішньосистемні повідомлення"
 packageName: '@nocobase/plugin-notification-in-app-message'
 description: |

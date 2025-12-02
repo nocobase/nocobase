@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Bộ định tuyến
 
 NocoBase client cung cấp một trình quản lý bộ định tuyến linh hoạt, cho phép bạn mở rộng các trang và trang cài đặt của plugin thông qua `router.add()` và `pluginSettingsRouter.add()`.

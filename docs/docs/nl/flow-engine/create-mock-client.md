@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # createMockClient
 
 Voor voorbeelden en tests wordt over het algemeen aanbevolen om snel een mock-applicatie te bouwen met behulp van `createMockClient`. Een mock-applicatie is een schone, lege applicatie zonder geactiveerde plugins, uitsluitend bedoeld voor voorbeelden en tests.

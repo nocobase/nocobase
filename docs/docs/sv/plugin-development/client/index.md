@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Översikt
 
 NocoBase klient-sidiga plugin-utveckling erbjuder olika funktioner och möjligheter för att hjälpa utvecklare att anpassa och utöka NocoBase:s frontend-funktionalitet. Nedan följer de huvudsakliga funktionerna och relaterade kapitel för NocoBase klient-sidiga plugin-utveckling:

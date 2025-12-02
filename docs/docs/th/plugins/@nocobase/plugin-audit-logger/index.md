@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "บันทึกการตรวจสอบ"
 packageName: '@nocobase/plugin-audit-logger'
 supportedVersions:

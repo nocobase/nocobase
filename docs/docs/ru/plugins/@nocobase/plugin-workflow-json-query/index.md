@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Рабочий процесс: Вычисление JSON"
 packageName: '@nocobase/plugin-workflow-json-query'
 supportedVersions:

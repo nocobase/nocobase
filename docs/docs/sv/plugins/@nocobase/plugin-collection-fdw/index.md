@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Samling: Anslut till extern data (FDW)"
 packageName: '@nocobase/plugin-collection-fdw'
 supportedVersions:

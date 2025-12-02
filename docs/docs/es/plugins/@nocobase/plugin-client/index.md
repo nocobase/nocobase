@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Cliente WEB"
 packageName: '@nocobase/plugin-client'
 description: |

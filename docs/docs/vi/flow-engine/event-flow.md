@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Luồng Sự Kiện
 
 Trong FlowEngine, tất cả các thành phần giao diện đều được **điều khiển bởi sự kiện (event-driven)**.

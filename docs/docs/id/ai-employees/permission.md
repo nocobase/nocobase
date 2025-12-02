@@ -26,6 +26,11 @@ Klik kotak centang di kolom `Available` pada daftar karyawan AI untuk mengontrol
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
 
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 
 ## Izin Akses Data
 

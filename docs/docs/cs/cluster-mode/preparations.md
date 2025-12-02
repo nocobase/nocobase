@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Příprava
 
 Před nasazením clusterové aplikace je potřeba dokončit následující přípravy.

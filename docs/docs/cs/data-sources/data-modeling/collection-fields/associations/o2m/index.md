@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Jeden k mnoha
 
 Vztah mezi třídou a jejími studenty je příkladem vztahu jeden k mnoha: jedna třída může mít více studentů, ale každý student patří pouze do jedné třídy.

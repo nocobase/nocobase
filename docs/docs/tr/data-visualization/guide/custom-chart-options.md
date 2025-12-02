@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Özel Grafik Yapılandırması
 
 Özel modda grafik yapılandırması yaparken, kod düzenleyicide JavaScript (JS) yazabilirsiniz. `ctx.data`'yı temel alarak eksiksiz bir ECharts `option` nesnesi döndürürsünüz. Bu yaklaşım, birden fazla seriyi birleştirmek, karmaşık ipuçları (tooltips) ve dinamik stiller oluşturmak için idealdir. Prensip olarak, tüm ECharts özelliklerini ve tüm grafik türlerini destekler.

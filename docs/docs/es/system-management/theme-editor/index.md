@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Editor de Temas
 
 > La funcionalidad de temas actual está implementada basándose en Ant Design 5.x. Le recomendamos que se familiarice con los conceptos de [personalización de temas](https://ant.design/docs/react/customize-theme) antes de leer este documento.

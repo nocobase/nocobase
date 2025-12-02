@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Biểu đồ (đã ngừng hỗ trợ)"
 packageName: '@nocobase/plugin-charts'
 description: |

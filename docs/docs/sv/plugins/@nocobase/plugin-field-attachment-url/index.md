@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Samlingsfält: Bilaga (URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |

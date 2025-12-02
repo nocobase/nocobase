@@ -1,3 +1,8 @@
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
+
+
 displayName: "การยืนยันตัวตนผู้ใช้"
 packageName: '@nocobase/plugin-auth'
 description: |

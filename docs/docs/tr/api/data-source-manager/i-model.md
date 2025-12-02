@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # IModel
 
 `IModel` arayüzü, bir model nesnesinin temel özelliklerini ve metotlarını tanımlar.

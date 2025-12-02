@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Editor témat"
 packageName: '@nocobase/plugin-theme-editor'
 description: |

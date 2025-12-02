@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Redis Worker-ID-Zuweiser"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 description: |

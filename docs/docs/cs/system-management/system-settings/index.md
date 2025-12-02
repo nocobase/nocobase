@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Nastavení systému
 
 V nastavení systému můžete konfigurovat globální informace, jako je název systému, hlavní logo, povolené jazyky a další.

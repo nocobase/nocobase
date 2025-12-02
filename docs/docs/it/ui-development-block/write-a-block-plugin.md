@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Scrivere il Suo primo plugin di blocco
 
 Prima di iniziare, Le consigliamo di leggere "[Scrivere il Suo primo plugin](../plugin-development/write-your-first-plugin.md)" per imparare a creare rapidamente un plugin di base. Successivamente, estenderemo questa base aggiungendo una semplice funzionalità di blocco.

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Viết plugin khối đầu tiên của bạn
 
 Trước khi bắt đầu, bạn nên đọc bài viết "[Viết plugin đầu tiên của bạn](../plugin-development/write-your-first-plugin.md)" để hiểu cách tạo nhanh một plugin cơ bản. Tiếp theo, chúng ta sẽ mở rộng plugin đó bằng cách thêm một tính năng khối (Block) đơn giản.

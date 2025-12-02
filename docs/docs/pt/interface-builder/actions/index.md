@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Ação
 
 Na UI, uma ação é um botão usado para acionar um conjunto de instruções. Ela pode ser colocada diretamente em uma página, em uma caixa de diálogo ou em uma gaveta, e também pode ser usada em combinação com blocos. Atualmente, as ações configuráveis dinamicamente são usadas principalmente em combinação com blocos.

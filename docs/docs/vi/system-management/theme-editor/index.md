@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Trình chỉnh sửa chủ đề
 
 > Tính năng chủ đề hiện tại được triển khai dựa trên Ant Design 5.x. Chúng tôi khuyến nghị bạn nên tìm hiểu về các khái niệm liên quan đến [tùy chỉnh chủ đề](https://ant.design/docs/react/customize-theme-cn#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%BB%E9%A2%98) trước khi đọc tài liệu này.

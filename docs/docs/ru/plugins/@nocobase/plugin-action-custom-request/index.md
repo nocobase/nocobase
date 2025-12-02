@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Операция: Пользовательский запрос"
 packageName: '@nocobase/plugin-action-custom-request'
 description: |

@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Anpassat varumärke"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Vlastní interaktivní události
 
 V editoru událostí můžete psát JavaScript a registrovat interaktivní chování prostřednictvím instance ECharts `chart`, abyste umožnili propojení. Například můžete přesměrovat na novou stránku nebo otevřít vyskakovací okno pro podrobnou analýzu.

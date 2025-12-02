@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Psaní a spouštění JS online
 
 V NocoBase **RunJS** nabízí odlehčený způsob rozšíření, který je ideální pro **rychlé experimenty a dočasné zpracování logiky**. Bez nutnosti vytvářet pluginy nebo upravovat zdrojový kód můžete pomocí JavaScriptu personalizovat rozhraní nebo interakce.

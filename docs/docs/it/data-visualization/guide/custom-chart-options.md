@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Configurazione personalizzata dei grafici
 
 Nella modalità personalizzata, può configurare i grafici scrivendo codice JS nell'editor. Basandosi su `ctx.data`, restituisce un `option` completo di ECharts. Questo approccio è ideale per unire più serie, gestire tooltip complessi e applicare stili dinamici. In teoria, sono supportate tutte le funzionalità e tutti i tipi di grafico di ECharts.

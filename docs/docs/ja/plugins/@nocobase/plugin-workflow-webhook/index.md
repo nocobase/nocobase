@@ -1,3 +1,8 @@
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 displayName: "ワークフロー：Webhook トリガー"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:

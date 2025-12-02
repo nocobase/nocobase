@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Authentifizierung: CAS"
 packageName: '@nocobase/plugin-auth-cas'
 supportedVersions:

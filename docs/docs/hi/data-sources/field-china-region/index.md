@@ -1,0 +1,25 @@
+---
+pkg: "@nocobase/plugin-field-china-region"
+---
+:::tip AI अनुवाद सूचना
+यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
+:::
+
+
+```yaml
+---
+pkg: "@nocobase/plugin-field-china-region"
+---
+```
+
+# चीन क्षेत्र
+
+## परिचय
+
+## फ़ील्ड कॉन्फ़िगरेशन
+
+![20240512180305](https://static-docs.nocobase.com/20240512180305.png)
+
+## उदाहरण
+
+जल्द ही जोड़ा जाएगा।

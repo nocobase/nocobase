@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Champ de collection : Plusieurs à plusieurs (tableau)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |

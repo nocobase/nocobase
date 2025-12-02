@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # İş Akışını Sonlandır
 
 Bu düğüm çalıştırıldığında, mevcut iş akışını düğümde yapılandırılan durumla birlikte anında sonlandırır. Genellikle belirli bir mantığa dayalı iş akışı kontrolü için kullanılır; belirli koşullar karşılandığında mevcut iş akışından çıkarak sonraki işlemlerin yürütülmesini durdurur. Bu, programlama dillerindeki, mevcut fonksiyondan çıkmak için kullanılan `return` komutuna benzetilebilir.

@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Blok: Formulir Multi-Langkah"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:

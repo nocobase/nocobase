@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 ## Condições
 
 As condições permitem que você controle dinamicamente a exibição ou ocultação de conteúdo no documento com base nos valores dos dados. Existem três formas principais de escrever condições:

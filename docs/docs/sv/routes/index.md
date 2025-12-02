@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-client"
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 # Routhanterare
 

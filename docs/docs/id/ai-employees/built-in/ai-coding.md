@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Karyawan AI · Nathan: Teknisi Frontend
 
 > Membantu Anda menulis dan mengoptimalkan kode frontend untuk mengimplementasikan logika interaktif yang kompleks.

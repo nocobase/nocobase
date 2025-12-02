@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tích hợp Yêu cầu HTTP trong luồng công việc
 
 Thông qua nút Yêu cầu HTTP, các luồng công việc của NocoBase có thể chủ động gửi yêu cầu đến bất kỳ dịch vụ HTTP nào, giúp trao đổi dữ liệu và tích hợp nghiệp vụ với các hệ thống bên ngoài.

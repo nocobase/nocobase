@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Berechtigungs-Tabs erweitern
 
 Im Folgenden wird am Beispiel des Konfigurationselements „Mobile Menü“ gezeigt, wie Sie einen neuen Berechtigungskonfigurations-Tab erweitern können. Das Ergebnis sehen Sie in der Abbildung unten:

@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # IModel
 
 Interfejs `IModel` definiuje podstawowe właściwości i metody obiektu modelu.

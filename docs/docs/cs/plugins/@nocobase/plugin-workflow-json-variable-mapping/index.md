@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Pracovní postup: Mapování JSON proměnných"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
 supportedVersions:

@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Bire Bir
 
 Çalışanlar ve kişisel profiller arasındaki ilişkide, her çalışanın yalnızca bir kişisel profil kaydı olabilir ve her kişisel profil kaydı da yalnızca bir çalışana karşılık gelebilir. Bu durumda, çalışan ile kişisel profil arasındaki ilişki bire bir olarak tanımlanır.

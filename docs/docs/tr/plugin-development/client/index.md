@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Genel Bakış
 
 NocoBase istemci tarafı eklenti geliştirme, geliştiricilerin NocoBase'in ön uç özelliklerini özelleştirmelerine ve genişletmelerine yardımcı olmak için çeşitli işlevler ve yetenekler sunar. NocoBase istemci tarafı eklenti geliştirmenin temel yetenekleri ve ilgili bölümleri aşağıda listelenmiştir:

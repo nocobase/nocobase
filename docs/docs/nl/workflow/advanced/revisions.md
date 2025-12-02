@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Versiebeheer
 
 Nadat een geconfigureerde workflow minstens één keer is geactiveerd, moet u, als u de configuratie van de workflow of de bijbehorende knooppunten wilt wijzigen, eerst een nieuwe versie aanmaken voordat u wijzigingen aanbrengt. Dit zorgt er tevens voor dat de uitvoeringsgeschiedenis van eerder geactiveerde workflows niet wordt beïnvloed door toekomstige aanpassingen.

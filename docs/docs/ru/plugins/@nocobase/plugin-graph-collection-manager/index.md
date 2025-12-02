@@ -1,3 +1,8 @@
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
+
 displayName: "Визуальное управление коллекциями"
 packageName: '@nocobase/plugin-graph-collection-manager'
 description: |

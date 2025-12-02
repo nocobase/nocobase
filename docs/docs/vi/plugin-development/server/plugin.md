@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Plugin
 
 Trong NocoBase, plugin phía máy chủ cung cấp một phương thức module hóa để mở rộng và tùy chỉnh chức năng phía máy chủ. Các nhà phát triển có thể kế thừa lớp `Plugin` từ `@nocobase/server` để đăng ký các sự kiện, API, cấu hình quyền và các logic tùy chỉnh khác tại các giai đoạn vòng đời khác nhau.

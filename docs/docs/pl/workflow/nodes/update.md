@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Aktualizacja Danych
 
 Służy do aktualizacji danych w kolekcji, które spełniają określone warunki.

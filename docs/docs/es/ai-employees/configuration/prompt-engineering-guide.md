@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Guía de Ingeniería de Prompts para Agentes de IA
 
 > Desde "cómo escribir" hasta "escribir bien", esta guía le enseña a redactar prompts de alta calidad de forma sencilla, estable y reutilizable.

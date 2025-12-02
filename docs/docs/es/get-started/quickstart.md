@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Comparación de métodos de instalación y versiones
 
 Puede instalar NocoBase de diferentes maneras.

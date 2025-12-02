@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Kontekst
 
 W NocoBase, każde żądanie tworzy obiekt `ctx`, będący instancją Kontekstu. Kontekst zawiera w sobie informacje o żądaniu i odpowiedzi, jednocześnie oferując funkcjonalności specyficzne dla NocoBase, takie jak dostęp do bazy danych, operacje na pamięci podręcznej, zarządzanie uprawnieniami, internacjonalizacja oraz logowanie.

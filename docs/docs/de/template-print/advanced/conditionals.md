@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 ## Bedingte Anweisungen
 
 Bedingte Anweisungen ermöglichen es Ihnen, die Anzeige oder das Ausblenden von Inhalten in einem Dokument dynamisch basierend auf Datenwerten zu steuern. Dafür stehen Ihnen drei Hauptmethoden zur Verfügung:

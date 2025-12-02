@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tích hợp Đăng nhập một lần (SSO)
 
 NocoBase cung cấp giải pháp Đăng nhập một lần (SSO) toàn diện, hỗ trợ nhiều giao thức xác thực phổ biến, giúp tích hợp liền mạch với các hệ thống nhận dạng hiện có của doanh nghiệp.

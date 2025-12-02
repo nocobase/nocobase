@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Chia sẻ bộ sưu tập đa ứng dụng"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |

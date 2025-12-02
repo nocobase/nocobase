@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # AI Agent · Dex: Expert na uspořádání dat
 
 > Rychle extrahujte a vyplňujte formuláře, a proměňte tak neuspořádané informace ve strukturované.

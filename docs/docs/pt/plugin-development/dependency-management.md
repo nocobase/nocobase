@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Gerenciamento de Dependências
 
 No desenvolvimento de **plugins** NocoBase, as dependências são divididas em duas categorias: **dependências próprias** e **dependências globais**.

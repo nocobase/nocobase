@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Ön Hazırlıklar
 
 Bir küme uygulaması dağıtmadan önce, aşağıdaki ön hazırlıkları tamamlamanız gerekir.

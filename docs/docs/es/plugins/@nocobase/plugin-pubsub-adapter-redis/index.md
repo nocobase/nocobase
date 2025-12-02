@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Adaptador de publicación/suscripción de Redis"
 packageName: '@nocobase/plugin-pubsub-adapter-redis'
 supportedVersions:

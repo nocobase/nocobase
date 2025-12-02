@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 displayName: "Sumber data: Oracle Eksternal"
 packageName: '@nocobase/plugin-data-source-external-oracle'
 supportedVersions:

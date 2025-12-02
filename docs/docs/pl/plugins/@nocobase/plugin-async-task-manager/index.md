@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Menedżer zadań asynchronicznych"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |

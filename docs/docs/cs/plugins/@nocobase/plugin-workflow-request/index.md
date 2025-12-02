@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 displayName: "Pracovní postup: Uzel HTTP požadavku"
 packageName: '@nocobase/plugin-workflow-request'
 description: |

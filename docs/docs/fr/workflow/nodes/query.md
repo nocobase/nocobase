@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Interroger des données
 
 Permet de rechercher et de récupérer des enregistrements de données dans une collection qui répondent à des conditions spécifiques.

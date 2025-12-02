@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Översikt över pluginutveckling
 
 NocoBase använder en **mikrokärnarkitektur**, där kärnan endast ansvarar för schemaläggning av pluginens livscykel, beroendehantering och inkapsling av grundläggande funktioner. Alla affärsfunktioner tillhandahålls som plugin. Därför är det första steget för att anpassa NocoBase att förstå pluginens organisationsstruktur, livscykel och hanteringssätt.

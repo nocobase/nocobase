@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 # Operatori di Filtro
 
 Utilizzati nel parametro `filter` delle API di un Repository, come `find`, `findOne`, `findAndCount` e `count`:

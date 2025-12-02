@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 displayName: "Fuente de datos: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
 description: |

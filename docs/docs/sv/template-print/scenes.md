@@ -17,6 +17,11 @@ I vårt exempel finns det i stort sett följande huvudsakliga samlingar (andra i
 Eftersom det nuvarande systemet endast stöder utskrift av enskilda poster, kommer vi att klicka på "Skriv ut" på sidan "Avtalsdetaljer". Systemet kommer då automatiskt att hämta den motsvarande `contracts`-posten, samt relaterad `parties`-information och annan data, och fylla i dem i Word- eller PDF-dokument.
 
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 
 ## 2. Förberedelser
 

@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 ```yaml
 displayName: "Nhật ký kiểm toán (đã ngừng sử dụng)"
 packageName: '@nocobase/plugin-audit-logs'

@@ -113,6 +113,11 @@ spec:
     app: nocobase
   type: ClusterIP
 ---
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 # 애플리케이션 Deployment는 여러 애플리케이션 컨테이너를 배포할 수 있습니다.
 apiVersion: apps/v1
 kind: Deployment

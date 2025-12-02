@@ -41,6 +41,10 @@ Dieses geschichtete Design ermöglicht es Viz, eine stabile Persönlichkeit (kon
 und sich gleichzeitig schnell an verschiedene Geschäftsszenarien anzupassen (CRM, Krankenhausverwaltung, Kanalanalyse, Produktionsabläufe...).
 
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
 
 ## 3. Muster Eins: Vorlagenbasierte Analyse-Engine (Empfohlen)
 

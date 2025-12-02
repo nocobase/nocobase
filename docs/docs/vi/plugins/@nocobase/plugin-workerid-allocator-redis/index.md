@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 displayName: "Bộ cấp phát ID worker Redis"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 description: |

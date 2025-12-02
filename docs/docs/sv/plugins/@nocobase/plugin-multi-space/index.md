@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "Multiutrymme"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:

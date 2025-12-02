@@ -57,6 +57,10 @@ const model = this.flowEngine.createModel({
 ```
 
 ---
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
 
 ## Secondo passo: Aggiungere PropsFlow per rendere configurabili le proprietà del pulsante
 

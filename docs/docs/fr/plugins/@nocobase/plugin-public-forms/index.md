@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Formulaires publics"
 packageName: '@nocobase/plugin-public-forms'
 description: |

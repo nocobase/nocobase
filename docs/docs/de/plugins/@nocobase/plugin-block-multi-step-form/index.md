@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "Block: Mehrstufiges Formular"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:

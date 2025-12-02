@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Üretim Ortamına Dağıtım
 
 NocoBase'i bir üretim ortamına dağıtırken, farklı sistem ve ortamların yapılandırma yöntemlerindeki farklılıklar nedeniyle bağımlılıkları kurmak zahmetli olabilir. Eksiksiz bir işlevsel deneyim için, **Docker** kullanarak dağıtım yapmanızı öneririz. Sistem ortamınız Docker kullanamıyorsa, **create-nocobase-app** kullanarak da dağıtım yapabilirsiniz.

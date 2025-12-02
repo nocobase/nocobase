@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Sammlungen (Collections)
 
 Bei der Entwicklung von NocoBase-Plugins ist die **Sammlung (Collection)** eines der zentralen Konzepte. Sie können die Struktur von Datentabellen in Ihren Plugins hinzufügen oder ändern, indem Sie Sammlungen definieren oder erweitern. Im Gegensatz zu Datentabellen, die über die Oberfläche der Datenquellenverwaltung erstellt werden, handelt es sich bei **im Code definierten Sammlungen in der Regel um Metadatentabellen auf Systemebene**, die nicht in der Liste der Datenquellenverwaltung erscheinen.

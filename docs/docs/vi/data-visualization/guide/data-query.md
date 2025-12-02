@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Truy vấn dữ liệu
 
 Bảng điều khiển cấu hình biểu đồ được chia thành ba phần chính: Truy vấn dữ liệu, Tùy chọn biểu đồ và Sự kiện tương tác, cùng với các nút Hủy, Xem trước và Lưu ở phía dưới.

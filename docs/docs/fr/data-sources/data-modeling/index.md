@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Vue d'ensemble
 
 La modélisation des données est une étape cruciale lors de la conception de bases de données. Elle implique une analyse approfondie et une abstraction des différents types de données du monde réel et de leurs interrelations. Ce processus vise à révéler les liens intrinsèques entre les données et à les formaliser en modèles de données, jetant ainsi les bases de la structure de la base de données d'un système d'information. NocoBase est une plateforme axée sur les modèles de données, offrant les caractéristiques suivantes :

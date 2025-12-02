@@ -1,3 +1,8 @@
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Diseñador de UI
 
 ## WYSIWYG (Lo que ve es lo que obtiene)

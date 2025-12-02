@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 displayName: "Gerenciamento de Fontes de Dados"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |

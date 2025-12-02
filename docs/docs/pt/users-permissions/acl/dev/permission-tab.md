@@ -1,3 +1,8 @@
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
+
 # Estendendo as abas de configuração de permissões
 
 Abaixo, vamos usar o item de configuração "Menu Mobile" como exemplo para demonstrar como estender uma nova aba de configuração de permissões. O resultado é mostrado na imagem a seguir:

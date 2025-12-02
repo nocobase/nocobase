@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # EventDefinition
 
 EventDefinition định nghĩa logic xử lý sự kiện trong một luồng công việc, dùng để phản hồi các sự kiện kích hoạt cụ thể. Các sự kiện là một cơ chế quan trọng trong FlowEngine để kích hoạt việc thực thi luồng công việc.

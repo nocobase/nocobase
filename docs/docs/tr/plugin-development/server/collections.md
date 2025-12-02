@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Koleksiyonlar
 
 NocoBase eklenti geliştirme sürecinde, **koleksiyon (veri tablosu)** en temel kavramlardan biridir. Koleksiyonları tanımlayarak veya genişleterek, eklentilerinizde yeni veri tablosu yapıları ekleyebilir veya mevcut olanları değiştirebilirsiniz. Veri kaynağı yönetim arayüzü üzerinden oluşturulan veri tablolarından farklı olarak, **kodda tanımlanan koleksiyonlar genellikle sistem düzeyinde meta veri tablolarıdır** ve veri kaynağı yönetim listesinde görünmezler.

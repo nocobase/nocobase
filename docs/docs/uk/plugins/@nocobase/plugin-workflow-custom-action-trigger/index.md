@@ -1,3 +1,8 @@
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
+
 displayName: "Робочий процес: Подія користувацької дії"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:

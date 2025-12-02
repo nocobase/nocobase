@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # FlowDefinition
 
 FlowDefinition, bir akışın temel yapısını ve yapılandırmasını tanımlar ve Akış Motoru'nun (FlowEngine) temel kavramlarından biridir. Akışın meta bilgilerini, tetikleme koşullarını, yürütme adımlarını vb. açıklar.

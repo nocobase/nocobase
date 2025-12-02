@@ -1,6 +1,11 @@
 ---
 pkg: "@nocobase/plugin-client"
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 
 pkg: "@nocobase/plugin-client"
 ---

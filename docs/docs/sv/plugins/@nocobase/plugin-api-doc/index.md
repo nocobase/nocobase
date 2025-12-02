@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 displayName: "API-dokumentation"
 packageName: '@nocobase/plugin-api-doc'
 description: |

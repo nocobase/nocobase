@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Przegląd
 
 Rozwój wtyczek po stronie serwera NocoBase oferuje różnorodne funkcje i możliwości, aby pomóc deweloperom dostosowywać i rozszerzać podstawowe funkcje NocoBase. Poniżej przedstawiono główne możliwości rozwoju wtyczek po stronie serwera NocoBase oraz powiązane rozdziały:

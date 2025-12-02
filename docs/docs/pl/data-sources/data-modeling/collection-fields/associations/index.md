@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Pola relacji
 
 W NocoBase pola relacji nie są rzeczywistymi polami, lecz służą do nawiązywania połączeń między **kolekcjami**. Koncepcja ta jest równoważna relacjom w relacyjnych bazach danych.

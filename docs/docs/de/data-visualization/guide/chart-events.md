@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Benutzerdefinierte Interaktionsereignisse
 
 Schreiben Sie JavaScript im Ereignis-Editor und registrieren Sie Interaktionen über die ECharts-Instanz `chart`, um Verknüpfungen zu ermöglichen. Dazu gehören beispielsweise das Navigieren zu einer neuen Seite oder das Öffnen eines Drill-down-Dialogs.

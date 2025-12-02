@@ -1,3 +1,8 @@
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Thêm Dữ Liệu
 
 Dùng để thêm một bản ghi mới vào một bộ sưu tập.

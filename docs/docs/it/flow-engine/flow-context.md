@@ -36,6 +36,11 @@ FlowEngineContext (Contesto Globale)
 - Il `FlowRuntimeContext` accede sempre al suo `FlowModelContext` corrispondente tramite un meccanismo di delega, ma non propaga le modifiche verso l'alto.
 
 ---
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 
 ## 🧭 Modalità di Esecuzione e di Configurazione (mode)
 

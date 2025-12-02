@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Écrire votre premier plugin
 
 Ce guide vous accompagnera pas à pas dans la création d'un plugin de bloc utilisable sur vos pages. Il vous aidera à comprendre la structure de base et le flux de travail de développement des plugins NocoBase.

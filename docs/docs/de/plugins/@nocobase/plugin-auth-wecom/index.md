@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 displayName: "WeCom"
 packageName: '@nocobase/plugin-auth-wecom'
 supportedVersions:

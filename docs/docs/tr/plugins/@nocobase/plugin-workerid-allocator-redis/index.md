@@ -1,3 +1,8 @@
+:::tip Yapay Zeka Çeviri Bildirimi
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 displayName: "Redis worker ID Ayırıcı"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 description: |

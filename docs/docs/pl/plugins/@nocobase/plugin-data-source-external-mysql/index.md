@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Źródło danych: Zewnętrzny MySQL"
 packageName: '@nocobase/plugin-data-source-external-mysql'
 supportedVersions:

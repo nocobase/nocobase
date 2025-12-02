@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 # Employé IA · Viz : L'analyste d'insights
 
 > Générez des graphiques et des insights en un clic, et laissez les données parler d'elles-mêmes.

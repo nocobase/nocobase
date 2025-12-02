@@ -1,3 +1,8 @@
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
+
 # Lokaler Speicher
 
 Hochgeladene Dateien werden in einem lokalen Verzeichnis auf dem Server gespeichert. Dies ist ideal für Szenarien, in denen die Gesamtanzahl der vom System verwalteten Dateien gering ist, oder für experimentelle Zwecke.

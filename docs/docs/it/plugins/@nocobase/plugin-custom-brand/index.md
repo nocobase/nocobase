@@ -1,3 +1,8 @@
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
+
 displayName: "Brand personalizzato"
 packageName: '@nocobase/plugin-custom-brand'
 supportedVersions:

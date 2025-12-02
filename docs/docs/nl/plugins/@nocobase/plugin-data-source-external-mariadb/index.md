@@ -1,3 +1,8 @@
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 displayName: "Gegevensbron: Externe MariaDB"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
 supportedVersions:

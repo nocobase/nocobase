@@ -17,6 +17,11 @@ Trong ví dụ này, chúng ta có các **bộ sưu tập** dữ liệu chính s
 Vì hệ thống hiện tại chỉ hỗ trợ in từng bản ghi một, chúng ta sẽ nhấp vào "In" trên trang "Chi tiết hợp đồng". Hệ thống sẽ tự động lấy bản ghi hợp đồng tương ứng, cùng với các thông tin bên liên quan khác, và điền chúng vào tài liệu Word hoặc PDF.
 
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 
 ## 2. Chuẩn bị
 

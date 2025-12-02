@@ -1,3 +1,8 @@
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 displayName: "Gestionnaire visuel de collections"
 packageName: '@nocobase/plugin-graph-collection-manager'
 description: |

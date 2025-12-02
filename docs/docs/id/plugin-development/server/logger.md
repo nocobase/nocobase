@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Logger
 
 Pencatatan NocoBase dibangun berdasarkan <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. Secara default, NocoBase membagi log menjadi log permintaan API, log waktu proses sistem, dan log eksekusi SQL. Log permintaan API dan log eksekusi SQL dicetak secara internal oleh aplikasi, sementara pengembang plugin biasanya hanya perlu mencetak log waktu proses sistem yang terkait dengan plugin.

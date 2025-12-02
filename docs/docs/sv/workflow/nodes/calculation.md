@@ -1,3 +1,8 @@
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Beräkning
 
 Beräkningsnoden kan utvärdera ett uttryck, och resultatet av beräkningen sparas i nodens resultat för att kunna användas av efterföljande noder. Det är ett verktyg för att beräkna, bearbeta och transformera data. I viss mån kan den ersätta funktionen i programmeringsspråk där ni anropar en funktion på ett värde och tilldelar det till en variabel.

@@ -1,3 +1,8 @@
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 displayName: "Pole kolekcji: Wiele do wielu (tablica)"
 packageName: '@nocobase/plugin-field-m2m-array'
 description: |

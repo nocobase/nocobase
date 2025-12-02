@@ -1,3 +1,8 @@
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 ## Formatter
 
 Formatter digunakan untuk mengubah data mentah menjadi teks yang mudah dibaca. Formatter diterapkan pada data menggunakan titik dua (`:`) dan dapat dirangkai sehingga keluaran dari setiap formatter menjadi masukan untuk formatter berikutnya. Beberapa formatter mendukung parameter konstan atau parameter dinamis.
