@@ -1,6 +1,5 @@
 ---
 pageType: home
----
 
 pageName: guide
 
