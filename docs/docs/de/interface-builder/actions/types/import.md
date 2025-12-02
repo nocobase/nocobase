@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-import"
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: "@nocobase/plugin-action-import"
----
 # Import
 
 ## Einführung

@@ -1,8 +1,4 @@
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
+---
 displayName: "Xác thực: OIDC"
 packageName: '@nocobase/plugin-auth-oidc'
 supportedVersions:
@@ -15,5 +11,8 @@ builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
 
 # Xác thực: OIDC

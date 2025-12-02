@@ -1,8 +1,4 @@
-:::tip Upozornění na překlad AI
-Tato dokumentace byla automaticky přeložena umělou inteligencí.
-:::
-
-
+---
 displayName: "Blok: šablona (zastaralé)"
 packageName: '@nocobase/plugin-block-template'
 description: |
@@ -12,6 +8,9 @@ builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
 
 # Blok: šablona (zastaralé)
 

@@ -7,10 +7,6 @@ pkg: "@nocobase/plugin-email-manager"
 
 
 
-```yaml
-pkg: "@nocobase/plugin-email-manager"
----
-
 # Центр електронної пошти
 
 ## Вступ

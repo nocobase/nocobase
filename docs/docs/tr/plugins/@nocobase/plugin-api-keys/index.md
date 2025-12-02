@@ -1,8 +1,4 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
-
+---
 displayName: "Kimlik Doğrulama: API Anahtarları"
 packageName: '@nocobase/plugin-api-keys'
 description: |
@@ -11,5 +7,8 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
 
 # Kimlik Doğrulama: API Anahtarları

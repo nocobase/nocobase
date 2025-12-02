@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # FlowDefinition
 
 FlowDefinition define la estructura básica y la configuración de un flujo, siendo uno de los conceptos fundamentales del motor de flujos. Describe los metadatos del flujo, las condiciones de activación, los pasos de ejecución, entre otros.

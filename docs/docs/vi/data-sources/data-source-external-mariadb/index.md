@@ -7,9 +7,6 @@ Tài liệu này đã được dịch tự động bằng AI.
 
 
 
-pkg: "@nocobase/plugin-data-source-external-mariadb"
----
-
 # Nguồn Dữ Liệu Ngoài - MariaDB
 
 ## Giới Thiệu

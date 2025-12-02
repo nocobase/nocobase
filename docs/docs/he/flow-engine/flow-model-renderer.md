@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 # רינדור FlowModel
 
 `FlowModelRenderer` הוא רכיב ה-React הליבתי המשמש לרינדור `FlowModel`. הוא אחראי להמיר מופע של `FlowModel` לרכיב React ויזואלי.

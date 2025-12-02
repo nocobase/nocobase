@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-sequence"
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: "@nocobase/plugin-field-sequence"
----
 
 # Penomoran Urut Otomatis
 

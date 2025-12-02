@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Come abilitare il motore federated in MySQL
 
 Il database MySQL non abilita il modulo federated per impostazione predefinita. È necessario modificare la configurazione di `my.cnf`. Se sta utilizzando la versione Docker, può gestire l'estensione tramite i volumi:

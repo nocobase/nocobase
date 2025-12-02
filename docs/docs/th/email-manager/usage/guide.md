@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-email-manager"
 
 
 
-pkg: "@nocobase/plugin-email-manager"
----
-
 # ศูนย์จัดการอีเมล
 
 ## บทนำ

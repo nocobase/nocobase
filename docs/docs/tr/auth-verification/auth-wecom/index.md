@@ -1,11 +1,12 @@
-:::tip Yapay Zeka Çeviri Bildirimi
+---
+pkg: '@nocobase/plugin-auth-wecom'
+---
+
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-auth-wecom'
----
 
 # Kimlik Doğrulama: WeCom
 

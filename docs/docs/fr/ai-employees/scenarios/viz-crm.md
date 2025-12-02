@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Agent IA · Viz : Guide de configuration pour les scénarios CRM
 
 > En prenant l'exemple du CRM, découvrez comment permettre à votre analyste d'insights IA de véritablement comprendre votre activité et de libérer tout son potentiel.

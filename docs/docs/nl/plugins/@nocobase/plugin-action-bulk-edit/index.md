@@ -1,11 +1,12 @@
+---
+displayName: "Actie: Bulk bewerken"
+packageName: '@nocobase/plugin-action-bulk-edit'
+description: |
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-displayName: "Actie: Bulk bewerken"
-packageName: '@nocobase/plugin-action-bulk-edit'
-description: |
   Bewerk alle gegevens of geselecteerde gegevens in bulk.
 isFree: true
 builtIn: true

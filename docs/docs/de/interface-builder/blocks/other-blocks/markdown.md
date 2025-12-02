@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Markdown-Block
 
 ## Einführung

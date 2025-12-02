@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Menyinkronkan Data Pengguna melalui HTTP API
 
 ## Mendapatkan Kunci API

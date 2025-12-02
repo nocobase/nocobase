@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-external-postgres"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-external-postgres"
----
 
 # مصدر بيانات خارجي - PostgreSQL
 

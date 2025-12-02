@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-subflow'
+---
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-subflow'
----
 
 # Invocar um Fluxo de Trabalho
 

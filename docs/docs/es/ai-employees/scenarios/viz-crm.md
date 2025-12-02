@@ -1,3 +1,9 @@
+
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Empleado de IA · Viz: Guía de configuración para escenarios de CRM
 
 > Tomando como ejemplo un escenario de CRM, aprenda cómo hacer que su analista de IA Viz realmente comprenda su negocio y desarrolle todo su potencial.
@@ -39,12 +45,6 @@ Para entender cómo extender Viz, primero debe comprender su diseño interno por
 
 Este diseño por capas permite a Viz mantener una personalidad estable (lógica de análisis consistente)
 y, al mismo tiempo, adaptarse rápidamente a diferentes escenarios de negocio (CRM, gestión hospitalaria, análisis de canales, operaciones de producción...).
-
----
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 ## 3. Patrón uno: Motor de análisis basado en plantillas (Recomendado)
 

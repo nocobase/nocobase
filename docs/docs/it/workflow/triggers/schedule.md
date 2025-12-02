@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Attività pianificata
 
 ## Introduzione

@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Gambaran Umum
 
 Pemicu adalah titik masuk untuk sebuah alur kerja. Ketika sebuah peristiwa yang memenuhi kondisi pemicu terjadi saat aplikasi berjalan, alur kerja akan dipicu dan dieksekusi. Jenis pemicu juga merupakan jenis alur kerja, yang dipilih saat membuat alur kerja, dan tidak dapat diubah setelah dibuat. Jenis pemicu yang saat ini didukung adalah sebagai berikut:

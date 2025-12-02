@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-action-trigger'
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-action-trigger'
----
 
 # Событие после действия
 

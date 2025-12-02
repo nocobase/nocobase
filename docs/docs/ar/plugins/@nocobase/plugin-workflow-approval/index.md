@@ -1,11 +1,12 @@
+---
+displayName: "سير العمل: الموافقة"
+packageName: '@nocobase/plugin-workflow-approval'
+description: |
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-displayName: "سير العمل: الموافقة"
-packageName: '@nocobase/plugin-workflow-approval'
-description: |
   يتم تشغيله عند بدء طلب موافقة عبر زر إجراء أو واجهة برمجة تطبيقات (API). مصمم خصيصًا لعملية الموافقة، مع عقدة موافقة وكتلة حصرية لإدارة المستندات وتتبع سير المعالجة.
 isFree: false
 builtIn: false

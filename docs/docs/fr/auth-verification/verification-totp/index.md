@@ -1,9 +1,9 @@
+---
+pkg: '@nocobase/plugin-verification-totp-authenticator'
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
-
-
-pkg: '@nocobase/plugin-verification-totp-authenticator'
 
 # Vérification : Authentificateur TOTP
 

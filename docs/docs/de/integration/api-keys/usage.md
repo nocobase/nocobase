@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # API-Schlüssel in NocoBase verwenden
 
 Diese Anleitung zeigt Ihnen anhand eines praktischen "To-Do"-Beispiels, wie Sie API-Schlüssel in NocoBase verwenden, um Daten abzurufen. Folgen Sie den Schritt-für-Schritt-Anweisungen, um den gesamten Workflow zu verstehen.

@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Banco de Dados Externo
 
 ## Introdução

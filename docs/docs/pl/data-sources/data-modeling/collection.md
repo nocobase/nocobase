@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Przegląd kolekcji
 
 NocoBase oferuje unikalny DSL (Domain-Specific Language) do opisywania struktury danych, nazywany **kolekcją**. Ujednolica on struktury danych z różnych źródeł, stanowiąc solidną podstawę dla zarządzania danymi, ich analizy i późniejszych zastosowań.

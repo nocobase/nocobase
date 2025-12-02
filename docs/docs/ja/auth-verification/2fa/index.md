@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-two-factor-authentication'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: '@nocobase/plugin-two-factor-authentication'
----
 
 # 二要素認証 (2FA)
 

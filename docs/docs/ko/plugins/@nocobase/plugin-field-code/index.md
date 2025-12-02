@@ -1,11 +1,12 @@
+---
+displayName: "컬렉션 필드: 코드"
+packageName: '@nocobase/plugin-field-code'
+description: |
+---
 :::tip AI 번역 안내
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
-displayName: "컬렉션 필드: 코드"
-packageName: '@nocobase/plugin-field-code'
-description: |
   코드 편집 및 하이라이팅을 위해 사용되며, Java, JavaScript, Python, SQL 등 다양한 언어를 지원합니다.
 isFree: false
 builtIn: false

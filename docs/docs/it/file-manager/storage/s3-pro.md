@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-storage-s3-pro'
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-pkg: '@nocobase/plugin-file-storage-s3-pro'
----
 
 # Motore di Archiviazione: S3 (Pro)
 

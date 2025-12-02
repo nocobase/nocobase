@@ -1,8 +1,4 @@
-:::tip ประกาศการแปลด้วย AI
-เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
-:::
-
-
+---
 displayName: "การยืนยัน"
 packageName: '@nocobase/plugin-verification'
 description: |
@@ -11,5 +7,8 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
 
 # การยืนยัน

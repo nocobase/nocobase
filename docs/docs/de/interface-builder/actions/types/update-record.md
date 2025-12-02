@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Datensatz aktualisieren
 
 ## Einführung

@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-comments"
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-pkg: "@nocobase/plugin-comments"
----
 
 # Kolekcja Komentarzy
 

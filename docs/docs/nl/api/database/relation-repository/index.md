@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # RelationRepository
 
 `RelationRepository` is een `Repository`-object voor relatietypen. Met `RelationRepository` kunt u gerelateerde gegevens bewerken zonder de relatie te laden. Op basis van `RelationRepository` is er voor elk relatietype een overeenkomstige afgeleide implementatie:

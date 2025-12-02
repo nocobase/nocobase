@@ -1,8 +1,4 @@
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
-
-
+---
 displayName: "IP-обмеження"
 packageName: '@nocobase/plugin-ip-restriction'
 supportedVersions:
@@ -15,5 +11,8 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
 
 # IP-обмеження

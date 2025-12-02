@@ -7,10 +7,6 @@ Cette documentation a été traduite automatiquement par IA.
 
 
 
-```yaml
-pkg: "@nocobase/plugin-collection-sql"
----
-
 # Collection SQL
 
 ## Introduction

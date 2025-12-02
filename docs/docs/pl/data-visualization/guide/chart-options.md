@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Opcje wykresów
 
 Skonfiguruj sposób wyświetlania wykresów. Dostępne są dwa tryby: Basic (wizualny) i Custom (niestandardowy JS). Tryb Basic jest idealny do szybkiego mapowania i konfiguracji podstawowych właściwości; tryb Custom sprawdzi się w złożonych scenariuszach i zaawansowanej personalizacji.

@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-attachment-url"
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: "@nocobase/plugin-field-attachment-url"
----
 
 # שדה נתונים: קובץ מצורף (URL)
 

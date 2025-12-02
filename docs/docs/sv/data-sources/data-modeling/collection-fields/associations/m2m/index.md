@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Många-till-många
 
 I ett kursregistreringssystem finns det två entiteter: studenter och kurser. En student kan registrera sig för flera kurser, och en kurs kan ha flera studenter registrerade, vilket utgör en många-till-många-relation. I en relationsdatabas används vanligtvis en mellanliggande samling, till exempel en registreringssamling, för att representera många-till-många-relationen mellan studenter och kurser. Denna samling kan registrera vilka kurser varje student har valt och vilka studenter som har registrerat sig för varje kurs. Denna design representerar effektivt många-till-många-relationen mellan studenter och kurser.

@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Logger
 
 NocoBase menyediakan sistem pencatatan (logging) berkinerja tinggi yang didasarkan pada [pino](https://github.com/pinojs/pino). Di mana pun Anda memiliki akses ke `context`, Anda bisa mendapatkan instance logger melalui `ctx.logger` untuk mencatat log penting selama runtime plugin atau sistem.

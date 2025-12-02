@@ -1,8 +1,4 @@
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
+---
 displayName: "AI: Cơ sở tri thức"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:
@@ -14,5 +10,8 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
 
 # AI: Cơ sở tri thức

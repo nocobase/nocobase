@@ -1,8 +1,4 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
-
+---
 displayName: "Kimlik Doğrulama: LDAP"
 packageName: '@nocobase/plugin-auth-ldap'
 supportedVersions:
@@ -15,5 +11,8 @@ builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
 
 # Kimlik Doğrulama: LDAP

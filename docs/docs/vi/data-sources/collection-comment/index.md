@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-comments"
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: "@nocobase/plugin-comments"
----
 
 # Bộ sưu tập Bình luận
 

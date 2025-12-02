@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Logs do Servidor, Logs de Auditoria e Histórico de Registros
 
 ## Logs do Servidor

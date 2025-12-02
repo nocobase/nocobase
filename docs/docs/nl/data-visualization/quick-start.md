@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Snel aan de slag
 
 In deze handleiding configureren we een grafiek helemaal vanaf nul, waarbij we de essentiële functies gebruiken. Meer geavanceerde functionaliteiten worden in latere hoofdstukken besproken.

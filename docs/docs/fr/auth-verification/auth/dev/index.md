@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Étendre les types d'authentification
 
 ## Vue d'ensemble

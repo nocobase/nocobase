@@ -2,7 +2,6 @@
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
 ### 通貨のフォーマット
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)

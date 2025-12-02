@@ -1,10 +1,10 @@
-:::tip Yapay Zeka Çeviri Bildirimi
+---
+pkg: "@nocobase/plugin-action-import-pro"
+---
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 
-
-pkg: "@nocobase/plugin-action-import-pro"
----
 # Pro İçe Aktarma
 
 ## Giriş

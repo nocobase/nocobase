@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Lista języków
 
 NocoBase oferuje wsparcie dla wielu języków (i18n). Poniżej znajdą Państwo listę aktualnie wbudowanych języków. Każda konfiguracja językowa składa się z **kodu języka (Locale Code)** oraz **nazwy wyświetlanej (Label)**.

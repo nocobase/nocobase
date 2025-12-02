@@ -1,11 +1,10 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
-
+---
 pkg: "@nocobase/plugin-ai"
 deprecated: true
 ---
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
 
 # Gelişmiş
 

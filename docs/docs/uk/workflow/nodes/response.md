@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-workflow-response-message"
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
-
-
-pkg: "@nocobase/plugin-workflow-response-message"
----
 
 # HTTP Відповідь
 

@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Gambaran Umum
 
 Pengembangan plugin sisi klien NocoBase menawarkan beragam fungsionalitas dan kemampuan untuk membantu pengembang menyesuaikan dan memperluas fitur frontend NocoBase. Berikut adalah kemampuan utama dan bab terkait dalam pengembangan plugin sisi klien NocoBase:

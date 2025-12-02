@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Google Workspace
 
 ## Mengatur Google sebagai IdP

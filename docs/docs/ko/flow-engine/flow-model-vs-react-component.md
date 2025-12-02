@@ -2,7 +2,6 @@
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
 # FlowModel 대 React.Component
 
 ## 기본 역할 비교

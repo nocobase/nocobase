@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-subflow'
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-subflow'
----
 
 # Виклик робочого процесу
 

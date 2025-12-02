@@ -1,11 +1,12 @@
+---
+displayName: "Переменные и секреты"
+packageName: '@nocobase/plugin-environment-variables'
+description: |
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-displayName: "Переменные и секреты"
-packageName: '@nocobase/plugin-environment-variables'
-description: |
   Централизованное управление переменными окружения и секретами, используемое для хранения конфиденциальных данных, повторного использования конфигурационных данных, изоляции в различных средах и многого другого.
 isFree: true
 builtIn: true

@@ -1,11 +1,11 @@
+---
+pkg: "@nocobase/plugin-ai"
+deprecated: true
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: "@nocobase/plugin-ai"
-deprecated: true
----
 
 # Avancerat
 

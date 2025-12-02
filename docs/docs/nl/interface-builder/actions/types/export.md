@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-export"
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-action-export"
----
 # Exporteren
 
 ## Introductie

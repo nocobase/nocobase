@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Controllo delle autorizzazioni ACL
 
 ACL (Access Control List) viene utilizzato per controllare le autorizzazioni di operazione sulle risorse. Lei può assegnare le autorizzazioni ai ruoli, oppure ignorare le restrizioni di ruolo e vincolare direttamente le autorizzazioni. Il sistema ACL offre un meccanismo flessibile di gestione delle autorizzazioni, supportando frammenti di autorizzazione, middleware, valutazione condizionale e altri metodi.

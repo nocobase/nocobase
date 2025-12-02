@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Logger
 
 ## Creazione del Logger

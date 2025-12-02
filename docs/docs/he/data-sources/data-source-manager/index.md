@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-manager"
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-manager"
----
 
 # ניהול מקורות נתונים
 

@@ -1,14 +1,15 @@
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-
+---
 displayName: "パスワードポリシー"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
   すべてのユーザーに対してパスワードルールとログインロックアウトポリシーを設定します。
 isFree: false
 builtIn: false

@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 ### Formatowanie Dat
 
 #### 1. :formatD(patternOut, patternIn)

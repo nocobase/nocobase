@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Zaczynamy z FlowModel
 
 ## Tworzenie własnego FlowModel

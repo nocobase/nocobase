@@ -1,3 +1,9 @@
+
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Roller ve İzinler
 
 ## Giriş
@@ -24,12 +30,6 @@ Bir rol seçin, `İzinler` sekmesine ve ardından `YZ Çalışanları` sekmesine
 YZ çalışanları listesindeki `Kullanılabilir` sütunundaki onay kutusuna tıklayarak, mevcut rolün ilgili YZ çalışanına erişip erişemeyeceğini kontrol edebilirsiniz.
 
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
-
----
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
 
 ## Veri Erişim İzinleri
 

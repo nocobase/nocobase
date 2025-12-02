@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Selector de Colección
 
 ## Introducción

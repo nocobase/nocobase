@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-workbench"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: "@nocobase/plugin-block-workbench"
----
 # كتلة: لوحة العمل
 
 ## مقدمة

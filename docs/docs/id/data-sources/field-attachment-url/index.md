@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-attachment-url"
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: "@nocobase/plugin-field-attachment-url"
----
 
 # Bidang Data: Lampiran (URL)
 

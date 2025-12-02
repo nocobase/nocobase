@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-user-data-sync'
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-pkg: '@nocobase/plugin-user-data-sync'
----
 
 # Sincronizzazione Dati Utente
 

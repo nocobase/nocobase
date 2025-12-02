@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-import-pro"
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
-pkg: "@nocobase/plugin-action-import-pro"
----
 # Import Pro
 
 ## Introduction

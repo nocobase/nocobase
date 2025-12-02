@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth-saml'
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-pkg: '@nocobase/plugin-auth-saml'
----
 
 # Uwierzytelnianie: SAML 2.0
 

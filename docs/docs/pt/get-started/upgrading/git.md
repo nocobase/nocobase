@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Atualizando uma Instalação NocoBase via Código-Fonte (Git)
 
 :::warning Preparação Antes da Atualização

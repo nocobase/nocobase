@@ -1,6 +1,6 @@
 ---
 pageType: home
-pageName: sviluppo
+pageName: development
 
 features:
   - title: Architettura Core

@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Aangepaste grafiekconfiguratie
 
 In de aangepaste modus configureert u grafieken door JavaScript (JS) te schrijven in de code-editor. Op basis van `ctx.data` retourneert u een complete ECharts `option`. Dit is ideaal voor het samenvoegen van meerdere series, complexe tooltips en dynamische stijlen. In principe worden alle ECharts-functionaliteiten en grafiektypen ondersteund.

@@ -1,8 +1,4 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
-
+---
 displayName: "Telemetri: Prometheus"
 packageName: '@nocobase/plugin-telemetry-prometheus'
 supportedVersions:
@@ -15,5 +11,8 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
 
 # Telemetri: Prometheus

@@ -1,8 +1,4 @@
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
+---
 displayName: "Xác thực"
 packageName: '@nocobase/plugin-verification'
 description: |
@@ -11,5 +7,8 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
 
 # Xác thực

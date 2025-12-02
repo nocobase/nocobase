@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Panoramica sulle estensioni dei blocchi
 
 In NocoBase 2.0, il meccanismo di estensione dei blocchi è stato notevolmente semplificato. Gli sviluppatori devono solo ereditare la classe base **FlowModel** corrispondente e implementare i metodi di interfaccia correlati (principalmente il metodo `renderComponent()`) per personalizzare rapidamente i blocchi.

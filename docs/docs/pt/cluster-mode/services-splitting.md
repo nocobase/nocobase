@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Separação de Serviços <Badge>v1.9.0+</Badge>
 
 ## Introdução

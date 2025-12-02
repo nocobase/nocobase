@@ -1,3 +1,9 @@
+
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # AI Çalışanı · Viz: CRM Senaryosu Yapılandırma Rehberi
 
 > CRM örneğini kullanarak, yapay zeka içgörü analistinizin işinizi gerçekten anlamasını ve tüm potansiyelini ortaya çıkarmasını nasıl sağlayacağınızı öğrenin.
@@ -38,12 +44,6 @@ Viz'i nasıl genişleteceğinizi anlamak için, öncelikle içindeki katmanlı t
 | **Araç Yapılandırması** | Viz'in harici veri kaynaklarını veya iş akışlarını çağırması için köprü              | Serbestçe değiştirilebilir |
 
 Bu katmanlı tasarım, Viz'in istikrarlı bir kişiliği (tutarlı analiz mantığı) korumasını sağlarken, aynı zamanda farklı iş senaryolarına (CRM, hastane yönetimi, kanal analizi, üretim operasyonları...) hızlıca adapte olabilmesine olanak tanır.
-
----
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
 
 ## 3. Desen Bir: Şablon Tabanlı Analiz Motoru (Önerilen)
 

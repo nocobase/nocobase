@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-previewer-office'
+---
 :::tip AI अनुवाद सूचना
 यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
 :::
 
-
-pkg: '@nocobase/plugin-file-previewer-office'
----
 
 # Office फ़ाइल पूर्वावलोकन <Badge>v1.8.11+</Badge>
 

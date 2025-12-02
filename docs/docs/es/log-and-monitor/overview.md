@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Registros del Servidor, Registros de Auditoría e Historial de Registros
 
 ## Registros del Servidor

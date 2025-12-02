@@ -1,12 +1,11 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
-
+---
 pkg: "@nocobase/plugin-china-region"
 title: Çin Bölgesi Alanı
 description: Çin Bölgesi Alanı eklentisi (field-china-region), NocoBase'e "Çin Bölgesi" alan türünü ekler.
 ---
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
 
 # Çin Bölgesi Alanı
 

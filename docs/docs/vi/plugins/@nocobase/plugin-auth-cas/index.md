@@ -1,8 +1,4 @@
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
+---
 displayName: "Xác thực: CAS"
 packageName: '@nocobase/plugin-auth-cas'
 supportedVersions:
@@ -15,5 +11,8 @@ builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
 
 # Xác thực: CAS

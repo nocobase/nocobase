@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Tipi di campo Data/Ora
 
 I tipi di campo Data/Ora includono i seguenti:

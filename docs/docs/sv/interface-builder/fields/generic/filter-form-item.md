@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Fält för filterformulär
 
 ## Introduktion

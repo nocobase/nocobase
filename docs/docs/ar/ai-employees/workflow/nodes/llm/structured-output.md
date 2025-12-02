@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-ai-ee"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-ai-ee"
----
-```
-
 # المخرجات المهيكلة
 
 ## مقدمة

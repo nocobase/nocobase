@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 ## Grundlegende Anwendung
 
 Das Plugin für Vorlagendruck bietet verschiedene Syntax-Möglichkeiten, um dynamische Daten und logische Strukturen flexibel in Vorlagen einzufügen. Im Folgenden finden Sie detaillierte Erläuterungen zur Syntax und Anwendungsbeispiele.

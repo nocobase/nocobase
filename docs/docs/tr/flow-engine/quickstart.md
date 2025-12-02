@@ -1,3 +1,9 @@
+
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Hızlı Başlangıç: Düzenlenebilir Bir Düğme Bileşeni Oluşturma
 
 React'te bir düğme bileşenini genellikle şu şekilde render ederiz:
@@ -55,12 +61,6 @@ const model = this.flowEngine.createModel({
 ```tsx pure
 <FlowModelRenderer model={model} />
 ```
-
----
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
 
 ## Adım 2: Düğme Özelliklerini Yapılandırılabilir Hale Getirmek İçin PropsFlow Ekleyin
 

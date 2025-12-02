@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # IModel
 
 Gränssnittet `IModel` definierar ett modellobjekts grundläggande egenskaper och metoder.

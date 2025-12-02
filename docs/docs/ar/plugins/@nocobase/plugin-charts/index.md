@@ -1,9 +1,4 @@
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
-
-
-```yaml
+---
 displayName: "الرسوم البيانية (مهمل)"
 packageName: '@nocobase/plugin-charts'
 description: |
@@ -12,7 +7,11 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
-```
+---
+:::tip إشعار الترجمة بالذكاء الاصطناعي
+تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
+:::
+
 
 # الرسوم البيانية (مهمل)
 

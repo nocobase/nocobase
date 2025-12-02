@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-collection-fdw"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: "@nocobase/plugin-collection-fdw"
----
 
 # เชื่อมต่อตารางข้อมูลภายนอก (FDW)
 

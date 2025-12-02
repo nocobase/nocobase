@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Actualización de una instalación desde código fuente (Git)
 
 :::warning Preparación antes de actualizar

@@ -7,10 +7,6 @@ Tato dokumentace byla automaticky přeložena umělou inteligencí.
 
 
 
-```yaml
-pkg: "@nocobase/plugin-data-source-rest-api"
----
-
 # Zdroj dat REST API
 
 ## Úvod

@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Extensión de los recursos de destino de sincronización
 
 ## Resumen

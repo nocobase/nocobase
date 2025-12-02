@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-cc'
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-cc'
----
 
 # CC <Badge>v1.8.2+</Badge>
 

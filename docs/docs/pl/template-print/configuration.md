@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 ## Instrukcje konfiguracji
 
 ### Aktywacja funkcji drukowania szablonów

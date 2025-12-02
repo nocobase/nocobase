@@ -1,8 +1,4 @@
-:::tip Upozornění na překlad AI
-Tato dokumentace byla automaticky přeložena umělou inteligencí.
-:::
-
-
+---
 displayName: "Šifrování HTTP požadavků"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
@@ -15,5 +11,8 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
 
 # Šifrování HTTP požadavků

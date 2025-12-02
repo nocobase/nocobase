@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Étendre les types de déclencheurs
 
 Chaque **flux de travail** doit être configuré avec un déclencheur spécifique, qui sert de point d'entrée pour démarrer l'exécution du processus.

@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-attachment-url"
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-pkg: "@nocobase/plugin-field-attachment-url"
----
 
 # Campo Dati: Allegato (URL)
 

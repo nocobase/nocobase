@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Desenvolvimento de Extensões
 
 ## Estendendo Motores de Armazenamento

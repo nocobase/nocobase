@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-sequence"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: "@nocobase/plugin-field-sequence"
----
 
 # التسلسل
 

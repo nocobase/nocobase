@@ -1,8 +1,4 @@
-:::tip ประกาศการแปลด้วย AI
-เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
-:::
-
-
+---
 displayName: "ฟิลด์คอลเลกชัน: โค้ด"
 packageName: '@nocobase/plugin-field-code'
 description: |
@@ -11,5 +7,8 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
 
 # ฟิลด์คอลเลกชัน: โค้ด

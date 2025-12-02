@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-data-visualization'
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: '@nocobase/plugin-data-visualization'
----
 
 # Graf
 

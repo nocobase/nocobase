@@ -1,3 +1,9 @@
+
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Wdrożenie w Kubernetes
 
 Ten artykuł ma na celu szybkie przeprowadzenie Państwa przez proces wdrożenia NocoBase w trybie klastrowym w środowisku Kubernetes. Zakłada się, że są Państwo zaznajomieni ze środowiskiem Kubernetes i ukończyli Państwo kroki opisane w [Przygotowaniach](./preparations.md).
@@ -112,12 +118,6 @@ spec:
   selector:
     app: nocobase
   type: ClusterIP
----
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
 # Deployment aplikacji, który może wdrożyć wiele kontenerów aplikacji.
 apiVersion: apps/v1
 kind: Deployment

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-custom-action-trigger'
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-custom-action-trigger'
----
 
 # حدث الإجراء المخصص
 

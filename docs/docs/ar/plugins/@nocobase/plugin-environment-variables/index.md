@@ -1,11 +1,12 @@
+---
+displayName: "المتغيرات والأسرار"
+packageName: '@nocobase/plugin-environment-variables'
+description: |
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-displayName: "المتغيرات والأسرار"
-packageName: '@nocobase/plugin-environment-variables'
-description: |
   إدارة مركزية لمتغيرات البيئة والأسرار، تُستخدم لتخزين البيانات الحساسة، وإعادة استخدام بيانات التكوين، وعزل البيئات المتعددة، وغير ذلك.
 isFree: صحيح
 builtIn: صحيح

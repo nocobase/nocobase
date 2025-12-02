@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Estilos e Temas
 
 Para se adaptar melhor às capacidades de tema dinâmico do NocoBase, recomendamos usar o [antd-style](https://ant-design.github.io/antd-style/zh-CN/guide) para escrever estilos em seus **plugins**. Isso pode ser combinado com o [token de tema](https://ant.design/docs/react/customize-theme-cn#seedtoken) existente para lidar com as capacidades dinâmicas dos temas. O NocoBase também oferece um **plugin** de [Editor de Tema](#), que você pode usar para ajustar estilos de forma conveniente.

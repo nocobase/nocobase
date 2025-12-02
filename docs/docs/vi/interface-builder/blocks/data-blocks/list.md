@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-list"
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
 
-
-pkg: "@nocobase/plugin-block-list"
----
 # Khối Danh sách
 
 ## Giới thiệu

@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-api-keys'
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: '@nocobase/plugin-api-keys'
----
 
 # API klíče
 

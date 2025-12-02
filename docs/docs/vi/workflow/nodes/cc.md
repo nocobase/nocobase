@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-cc'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-cc'
----
 
 # Sao Chép (CC) <Badge>v1.8.2+</Badge>
 

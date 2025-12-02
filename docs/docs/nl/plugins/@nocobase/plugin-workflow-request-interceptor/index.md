@@ -1,14 +1,15 @@
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
-
+---
 displayName: "Workflow: Pre-actiegebeurtenis"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
   Wordt geactiveerd vóór de uitvoering van een verzoek dat is geïnitieerd via een actieknop of API, zoals vóór het toevoegen, bijwerken of verwijderen van gegevens. Dit is handig voor gegevensvalidatie en logische controles vóór een actie, en het verzoek kan worden geweigerd met behulp van het "Proces beëindigen"-knooppunt.
 isFree: false
 builtIn: false

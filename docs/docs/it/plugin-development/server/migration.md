@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Migration
 
 Durante lo sviluppo e gli aggiornamenti dei **plugin** NocoBase, le strutture del database o le configurazioni dei **plugin** potrebbero subire modifiche incompatibili. Per garantire aggiornamenti fluidi, NocoBase offre un meccanismo di **Migration** per gestire queste modifiche attraverso la scrittura di file di migration. Questa guida Le fornirà una comprensione sistematica dell'utilizzo e del **flusso di lavoro** di sviluppo delle Migration.

@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Skapa ditt första block-plugin
 
 Innan du börjar rekommenderar vi att du läser "[Skapa ditt första plugin](../plugin-development/write-your-first-plugin.md)" för att lära dig hur du snabbt skapar ett grundläggande plugin. Därefter kommer vi att utöka det med en enkel block-funktion.

@@ -1,8 +1,4 @@
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
-
+---
 displayName: "Collectie delen tussen meerdere apps"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
@@ -12,6 +8,10 @@ builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
 
 # Collectie delen tussen meerdere apps
 

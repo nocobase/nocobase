@@ -1,3 +1,9 @@
+
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Szybki start: Budowanie komponentu przycisku z możliwością orkiestracji
 
 W React zazwyczaj renderujemy komponent przycisku w następujący sposób:
@@ -55,13 +61,6 @@ const model = this.flowEngine.createModel({
 ```tsx pure
 <FlowModelRenderer model={model} />
 ```
-
----
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
 
 ## Krok 2: Dodawanie PropsFlow, aby właściwości przycisku były konfigurowalne
 

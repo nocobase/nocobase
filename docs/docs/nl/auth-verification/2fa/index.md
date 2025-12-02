@@ -1,11 +1,10 @@
+---
+pkg: '@nocobase/plugin-two-factor-authentication'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-```yaml
-pkg: '@nocobase/plugin-two-factor-authentication'
-```
 
 # Twee-factorauthenticatie (2FA)
 

@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-client"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-client"
----
-```
-
 # रूट मैनेजर
 
 ## परिचय

@@ -1,11 +1,12 @@
+---
+displayName: "Блок: шаблон (устарел)"
+packageName: '@nocobase/plugin-block-template'
+description: |
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-displayName: "Блок: шаблон (устарел)"
-packageName: '@nocobase/plugin-block-template'
-description: |
   Создавайте и управляйте шаблонами блоков для повторного использования на страницах.
 isFree: true
 builtIn: true

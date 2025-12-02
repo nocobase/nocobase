@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-data-source-manager"
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
-
-
-pkg: "@nocobase/plugin-data-source-manager"
----
 
 # Керування джерелами даних
 

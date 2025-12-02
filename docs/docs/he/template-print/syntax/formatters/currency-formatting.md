@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 ### עיצוב מטבע
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)

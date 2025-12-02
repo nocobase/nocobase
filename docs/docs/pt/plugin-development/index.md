@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Visão Geral do Desenvolvimento de Plugins
 
 O NocoBase adota uma **arquitetura de microkernel**, onde o núcleo é responsável apenas pelo agendamento do ciclo de vida dos plugins, pelo gerenciamento de dependências e pela encapsulação de capacidades básicas. Todas as funcionalidades de negócio são fornecidas na forma de plugins. Portanto, entender a estrutura organizacional, o ciclo de vida e a forma de gerenciamento dos plugins é o primeiro passo para personalizar o NocoBase.

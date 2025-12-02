@@ -2,5 +2,4 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Gerenciador de Fonte de Dados

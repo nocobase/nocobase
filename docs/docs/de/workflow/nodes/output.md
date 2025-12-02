@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-subflow'
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-subflow'
----
 
 # Workflow-Ausgabe
 

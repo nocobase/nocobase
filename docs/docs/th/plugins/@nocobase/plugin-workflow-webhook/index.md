@@ -1,8 +1,4 @@
-:::tip ประกาศการแปลด้วย AI
-เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
-:::
-
-
+---
 displayName: "เวิร์กโฟลว์: Webhook ทริกเกอร์"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
@@ -15,5 +11,8 @@ builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
 
 # เวิร์กโฟลว์: Webhook ทริกเกอร์

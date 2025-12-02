@@ -1,11 +1,12 @@
+---
+displayName: "UI-Schema-Speicherdienst"
+packageName: '@nocobase/plugin-ui-schema-storage'
+description: |
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-displayName: "UI-Schema-Speicherdienst"
-packageName: '@nocobase/plugin-ui-schema-storage'
-description: |
   Bietet einen zentralen UI-Schema-Speicherdienst.
 isFree: true
 builtIn: true

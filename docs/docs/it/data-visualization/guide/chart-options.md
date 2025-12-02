@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Opzioni del grafico
 
 Configuri come vengono visualizzati i grafici. Sono supportate due modalità: Basic (visuale) e Custom (JS). La modalità Basic è ideale per una mappatura rapida e proprietà comuni; la modalità Custom si adatta a scenari complessi e personalizzazioni avanzate.

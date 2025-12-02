@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 ### Pemformatan Mata Uang
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)

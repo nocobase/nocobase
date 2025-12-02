@@ -1,13 +1,14 @@
+---
+pkg: "@nocobase/plugin-china-region"
+title: ฟิลด์ภูมิภาคจีน
+description: ปลั๊กอินฟิลด์ภูมิภาคจีน (`field-china-region`) เพิ่มประเภทฟิลด์ "ภูมิภาคจีน" ให้กับ NocoBase ครับ
+---
+
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-china-region"
-title: ฟิลด์ภูมิภาคจีน
-description: ปลั๊กอินฟิลด์ภูมิภาคจีน (`field-china-region`) เพิ่มประเภทฟิลด์ "ภูมิภาคจีน" ให้กับ NocoBase ครับ
----
 
 # ฟิลด์ภูมิภาคจีน
 

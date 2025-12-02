@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Accedere con Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect

@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Lijst met talen
 
 NocoBase biedt meertalige ondersteuning (i18n). Hieronder vindt u een lijst van de momenteel ingebouwde talen.

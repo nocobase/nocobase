@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Validasi Bidang
 Untuk memastikan akurasi, keamanan, dan konsistensi koleksi data, NocoBase menyediakan fungsi validasi bidang. Fitur ini terdiri dari dua bagian utama: konfigurasi aturan dan penerapan aturan validasi.
 

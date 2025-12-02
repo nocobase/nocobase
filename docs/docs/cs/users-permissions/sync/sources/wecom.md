@@ -6,12 +6,6 @@ Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-wecom"
----
-```
-
 # Synchronizace uživatelských dat z WeChat Work
 
 ## Úvod

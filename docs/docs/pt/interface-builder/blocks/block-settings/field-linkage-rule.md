@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Regras de Interligação de Campos
 
 ## Introdução

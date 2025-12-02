@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Rechtenconfiguratietabbladen uitbreiden
 
 Hieronder demonstreren we, aan de hand van het configuratie-item "Mobiel menu", hoe u een nieuw tabblad voor rechtenconfiguratie kunt uitbreiden. Het resultaat ziet u in de onderstaande afbeelding:

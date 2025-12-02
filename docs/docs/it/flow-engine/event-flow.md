@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Flusso di Eventi
 
 In FlowEngine, tutti i componenti dell'interfaccia sono **guidati dagli eventi (event-driven)**.

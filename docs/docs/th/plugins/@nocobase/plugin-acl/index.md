@@ -1,8 +1,4 @@
-:::tip ประกาศการแปลด้วย AI
-เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
-:::
-
-
+---
 displayName: "การควบคุมสิทธิ์"
 packageName: '@nocobase/plugin-acl'
 description: |
@@ -11,5 +7,8 @@ isFree: true
 builtIn: true
 defaultEnabled: true
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
 
 # การควบคุมสิทธิ์

@@ -2,7 +2,6 @@
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
 # BelongsToManyRepository
 
 `BelongsToManyRepository` は、`BelongsToMany` リレーションシップを扱うための「リレーションリポジトリ」です。

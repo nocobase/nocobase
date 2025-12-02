@@ -1,9 +1,4 @@
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
-
-
-```yaml
+---
 displayName: "المصادقة"
 packageName: '@nocobase/plugin-auth'
 description: |
@@ -11,6 +6,10 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
-```
+---
+:::tip إشعار الترجمة بالذكاء الاصطناعي
+تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
+:::
+
 
 # المصادقة

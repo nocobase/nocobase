@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # FlowDefinition
 
 `FlowDefinition` define a estrutura básica e a configuração de um fluxo de trabalho, sendo um dos conceitos centrais do `FlowEngine`. Ele descreve os metadados do fluxo de trabalho, condições de disparo, etapas de execução, entre outros.

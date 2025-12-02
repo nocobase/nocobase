@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Perintah
 
 Di NocoBase, perintah (Command) digunakan untuk menjalankan operasi terkait aplikasi atau plugin di baris perintah. Contohnya, untuk menjalankan tugas sistem, melakukan operasi migrasi atau sinkronisasi, menginisialisasi konfigurasi, atau berinteraksi dengan instans aplikasi yang sedang berjalan. Pengembang dapat mendefinisikan perintah kustom untuk plugin dan mendaftarkannya melalui objek `app`, lalu menjalankannya di CLI dalam format `nocobase <command>`.

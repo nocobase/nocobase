@@ -1,8 +1,4 @@
-:::tip ประกาศการแปลด้วย AI
-เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
-:::
-
-
+---
 displayName: "ตัวแปรแบบกำหนดเอง"
 packageName: '@nocobase/plugin-custom-variables'
 supportedVersions:
@@ -14,5 +10,8 @@ builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
 
 # ตัวแปรแบบกำหนดเอง

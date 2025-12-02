@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-departments'
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: '@nocobase/plugin-departments'
----
 
 # الأقسام
 

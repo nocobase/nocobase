@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Sviluppo di Estensioni
 
 ## Estensione dei Motori di Archiviazione

@@ -2,7 +2,6 @@
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
 # スタイルとテーマ
 
 NocoBaseの動的なテーマ機能にうまく対応するため、プラグインでは[antd-style](https://ant-design.github.io/antd-style/zh-CN/guide) を使ってスタイルを記述することをおすすめします。既存の[テーマトークン](https://ant.design/docs/react/customize-theme-cn#seedtoken)と組み合わせることで、テーマの動的な機能を扱えます。さらに、NocoBaseにはスタイルを簡単に調整できる[テーマエディタープラグイン](#)も用意されています。

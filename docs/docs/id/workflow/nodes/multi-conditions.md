@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Percabangan Multi-kondisi <Badge>v2.0.0+</Badge>
 
 ## Pendahuluan

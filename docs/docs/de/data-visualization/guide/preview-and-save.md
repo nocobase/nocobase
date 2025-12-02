@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Vorschau und Speichern
 
 *   **Vorschau**: Zeigt Änderungen aus dem Konfigurationspanel temporär im Seiten-Diagramm an, um deren Wirkung zu überprüfen.

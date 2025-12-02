@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Systeminställningar
 
 Systeminställningarna används för att konfigurera systemets globala information, inklusive systemnamn, huvudlogotyp och aktiverade språk.

@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Banyak-ke-Satu
 
 Dalam sebuah basis data perpustakaan, terdapat dua entitas: buku dan penulis. Seorang penulis dapat menulis beberapa buku, tetapi setiap buku biasanya hanya memiliki satu penulis. Dalam kasus ini, hubungan antara penulis dan buku adalah banyak-ke-satu. Beberapa buku dapat dikaitkan dengan penulis yang sama, tetapi setiap buku hanya dapat memiliki satu penulis.

@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # ACL
 
 Les ACL (Access Control List) servent à contrôler les permissions d'accès aux ressources. Vous pouvez attribuer des permissions à des rôles, ou contourner les restrictions de rôle pour définir des permissions directes. Le système ACL offre un mécanisme de gestion des permissions flexible, prenant en charge les fragments de permission (snippets), les middlewares, les jugements conditionnels et d'autres approches.

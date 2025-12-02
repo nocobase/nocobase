@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Actualizar datos
 
 Se utiliza para actualizar datos en una **colección** que cumplen con ciertas condiciones.

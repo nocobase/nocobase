@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 # ICollectionManager
 
 ממשק `ICollectionManager` משמש לניהול מופעי `אוסף` של `מקור נתונים`.

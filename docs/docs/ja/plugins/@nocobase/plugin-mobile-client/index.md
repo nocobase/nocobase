@@ -1,11 +1,12 @@
+---
+displayName: "モバイルクライアント（非推奨）"
+packageName: '@nocobase/plugin-mobile-client'
+description: |
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-displayName: "モバイルクライアント（非推奨）"
-packageName: '@nocobase/plugin-mobile-client'
-description: |
   モバイルページを設定する機能を提供します。
 isFree: true
 builtIn: true

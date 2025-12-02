@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Overzicht van **plugin**-ontwikkeling
 
 NocoBase maakt gebruik van een **microkernel-architectuur**. De kern is alleen verantwoordelijk voor het plannen van de levenscyclus van **plugins**, het beheren van afhankelijkheden en het inkapselen van basisfunctionaliteiten. Alle bedrijfsfuncties worden geleverd als **plugins**. Het begrijpen van de organisatiestructuur, levenscyclus en het beheer van **plugins** is daarom de eerste stap in het aanpassen van NocoBase.

@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-ai"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-ai"
----
-```
-
 # שיחת טקסט
 
 ## מבוא

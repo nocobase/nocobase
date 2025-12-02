@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Lagringsmotor: Amazon S3
 
 En lagringsmotor baserad på Amazon S3. Innan ni kan använda den behöver ni förbereda ett konto och relevanta behörigheter.

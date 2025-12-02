@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Migration : Scripts de mise à niveau
 
 Lors du développement et des mises à jour des plugins NocoBase, la structure de la base de données ou la configuration de ces plugins peuvent subir des modifications incompatibles. Pour garantir une exécution fluide des mises à niveau, NocoBase propose un mécanisme de **Migration**. Ce mécanisme permet de gérer ces changements en écrivant des fichiers de migration. Ce guide vous aidera à comprendre de manière systématique l'utilisation des Migrations et leur processus de développement.

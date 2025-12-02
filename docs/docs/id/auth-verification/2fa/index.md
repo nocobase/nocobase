@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-two-factor-authentication'
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: '@nocobase/plugin-two-factor-authentication'
----
 
 # Autentikasi Dua Faktor (2FA)
 

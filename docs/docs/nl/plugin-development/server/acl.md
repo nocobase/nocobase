@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # ACL-toegangscontrole
 
 ACL (Access Control List) wordt gebruikt om de toegangsrechten voor resource-operaties te beheren. U kunt rechten toekennen aan rollen, of rolbeperkingen overslaan en rechten direct afdwingen. Het ACL-systeem biedt een flexibel mechanisme voor rechtenbeheer, met ondersteuning voor rechtenfragmenten (snippets), middleware, voorwaardelijke controles en andere methoden.

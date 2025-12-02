@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # ACL-behörighetskontroll
 
 ACL (Access Control List) används för att kontrollera behörigheter för resursoperationer. Ni kan tilldela behörigheter till roller, eller kringgå rollbegränsningar och direkt styra behörigheterna. ACL-systemet erbjuder en flexibel mekanism för behörighetshantering, som stöder behörighetssnuttar, middleware, villkorsbedömning och andra metoder.

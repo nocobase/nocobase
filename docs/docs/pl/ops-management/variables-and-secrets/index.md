@@ -7,10 +7,6 @@ Ta dokumentacja została automatycznie przetłumaczona przez AI.
 
 
 
-```yaml
-pkg: "@nocobase/plugin-environment-variables"
----
-
 # Zmienne i klucze tajne
 
 ## Wprowadzenie

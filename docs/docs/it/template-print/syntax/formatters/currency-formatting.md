@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 ### Formattazione della Valuta
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)

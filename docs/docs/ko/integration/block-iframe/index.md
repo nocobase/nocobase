@@ -7,10 +7,6 @@ pkg: "@nocobase/plugin-block-iframe"
 
 
 
-```yaml
-pkg: "@nocobase/plugin-block-iframe"
----
-
 # Iframe 블록
 
 ## 소개

@@ -1,3 +1,9 @@
+
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Deployment Kubernetes
 
 Artikel ini bertujuan untuk memandu pengguna dalam melakukan deployment NocoBase mode klaster dengan cepat di lingkungan Kubernetes (K8S). Diasumsikan pembaca sudah familiar dengan lingkungan K8S dan telah menyelesaikan langkah-langkah di [Persiapan](./preparations.md).
@@ -112,12 +118,6 @@ spec:
   selector:
     app: nocobase
   type: ClusterIP
----
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
-
 # Deployment aplikasi, yang dapat men-deploy beberapa kontainer aplikasi.
 apiVersion: apps/v1
 kind: Deployment

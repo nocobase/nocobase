@@ -7,10 +7,6 @@ pkg: "@nocobase/plugin-environment-variables"
 
 
 
-```yaml
-pkg: "@nocobase/plugin-environment-variables"
----
-
 # Змінні та секрети
 
 ## Вступ

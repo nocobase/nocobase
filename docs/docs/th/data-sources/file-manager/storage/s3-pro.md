@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-file-storage-s3-pro"
 
 
 
-pkg: "@nocobase/plugin-file-storage-s3-pro"
----
-
 # การจัดเก็บไฟล์: S3 (Pro)
 
 ## บทนำ

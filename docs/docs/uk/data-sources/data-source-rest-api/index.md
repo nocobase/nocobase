@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-data-source-rest-api"
 
 
 
-pkg: "@nocobase/plugin-data-source-rest-api"
----
-
 # Джерело даних REST API
 
 ## Вступ

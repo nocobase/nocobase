@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-workflow-parallel'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-parallel'
----
 
 # Parallelle Vertakking
 

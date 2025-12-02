@@ -2,7 +2,6 @@
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
 # NocoBase CLI
 
 ## yarn install

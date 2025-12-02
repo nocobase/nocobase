@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Visão Geral
 
 Um **fluxo de trabalho** geralmente é composto por várias etapas operacionais conectadas. Cada nó representa uma dessas etapas e serve como uma unidade lógica básica no processo. Assim como em uma linguagem de programação, diferentes tipos de nós representam diferentes instruções, que determinam o comportamento do nó. Quando o **fluxo de trabalho** é executado, o sistema entra em cada nó sequencialmente e executa suas instruções.

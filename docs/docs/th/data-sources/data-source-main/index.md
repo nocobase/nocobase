@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-data-source-main"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: "@nocobase/plugin-data-source-main"
----
 
 # ฐานข้อมูลหลัก
 

@@ -1,8 +1,4 @@
-:::tip הודעת תרגום AI
-תיעוד זה תורגם אוטומטית על ידי AI.
-:::
-
-
+---
 displayName: "שיתוף אוסף בין יישומים מרובים"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
@@ -12,6 +8,10 @@ builtIn: כן
 defaultEnabled: לא
 deprecated: כן
 ---
+:::tip הודעת תרגום AI
+תיעוד זה תורגם אוטומטית על ידי AI.
+:::
+
 
 # שיתוף אוסף בין יישומים מרובים
 

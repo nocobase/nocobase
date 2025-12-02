@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-workflow-subflow'
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-subflow'
----
 
 # Вызов рабочего процесса
 

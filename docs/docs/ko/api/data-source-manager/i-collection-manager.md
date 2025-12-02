@@ -2,7 +2,6 @@
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
 # ICollectionManager
 
 `ICollectionManager` 인터페이스는 데이터 소스의 `컬렉션` 인스턴스를 관리하는 데 사용됩니다.

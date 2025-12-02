@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Regler för kopplade åtgärder
 
 ## Introduktion

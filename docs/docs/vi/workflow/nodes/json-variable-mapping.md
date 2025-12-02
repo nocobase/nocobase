@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-json-variable-mapping'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-json-variable-mapping'
----
 
 # Ánh xạ biến JSON
 

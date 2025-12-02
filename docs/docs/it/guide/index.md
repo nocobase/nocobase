@@ -1,7 +1,8 @@
 ---
 pageType: home
+---
 
-pageName: guida
+pageName: guide
 
 features:
   - title: Funzionalità Principali

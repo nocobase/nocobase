@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Agen AI · Orin: Pemodel Data
 
 > Merancang koleksi secara cerdas dan mengoptimalkan struktur basis data.

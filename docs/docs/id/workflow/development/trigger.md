@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Memperluas Tipe Pemicu
 
 Setiap alur kerja harus dikonfigurasi dengan pemicu spesifik, yang berfungsi sebagai titik masuk untuk memulai eksekusi proses.

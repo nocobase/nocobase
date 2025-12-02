@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-approval'
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-approval'
----
 
 # Schvalování
 

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-request-interceptor'
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-request-interceptor'
----
 
 # Событие "До выполнения действия"
 

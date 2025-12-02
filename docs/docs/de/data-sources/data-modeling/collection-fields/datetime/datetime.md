@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Datum und Uhrzeit (mit Zeitzone)
 
 ## Einführung

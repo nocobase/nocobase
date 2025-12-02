@@ -1,9 +1,9 @@
+---
+pkg: '@nocobase/plugin-record-history'
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
-
-
-pkg: '@nocobase/plugin-record-history'
 
 # Historique des enregistrements
 

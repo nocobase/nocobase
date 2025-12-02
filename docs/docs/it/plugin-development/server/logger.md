@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Logger
 
 Il sistema di logging di NocoBase si basa su <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. Per impostazione predefinita, NocoBase categorizza i log in log delle richieste API, log di runtime del sistema e log di esecuzione SQL. I log delle richieste API e quelli di esecuzione SQL vengono generati internamente dall'applicazione, mentre gli sviluppatori di **plugin** di solito devono solo occuparsi dei log di runtime del sistema relativi ai loro **plugin**.

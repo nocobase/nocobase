@@ -1,8 +1,4 @@
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
-
-
+---
 displayName: "Верифікація: TOTP-автентифікатор"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:
@@ -15,5 +11,8 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
 
 # Верифікація: TOTP-автентифікатор

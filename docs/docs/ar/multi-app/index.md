@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-multi-app"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-multi-app-manager"
----
-```
-
 # تطبيقات متعددة
 
 ## مقدمة

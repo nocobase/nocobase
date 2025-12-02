@@ -2,7 +2,6 @@
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
 ### 시간 간격 포맷팅
 
 #### 1. :formatI(patternOut, patternIn)

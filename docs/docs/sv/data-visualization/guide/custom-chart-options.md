@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Anpassad diagramkonfiguration
 
 I anpassat läge konfigurerar ni diagram genom att skriva JS i kodredigeraren. Baserat på `ctx.data` returnerar ni ett komplett ECharts `option`. Detta lämpar sig för att slå samman flera serier, komplexa verktygstips och dynamiska stilar. I princip stöds alla ECharts-funktioner och diagramtyper.

@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Lagringsmotor: Lokal lagring
 
 Uppladdade filer sparas i en lokal katalog på serverns hårddisk. Detta passar bra för scenarier där systemet hanterar en liten total volym av uppladdade filer, eller för experimentella syften.

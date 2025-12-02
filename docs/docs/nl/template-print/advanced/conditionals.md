@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 ## Voorwaardelijke instructies
 
 Voorwaardelijke instructies stellen u in staat om de weergave of het verbergen van inhoud in het document dynamisch te beheren op basis van datawaarden. Er zijn drie belangrijke manieren om voorwaarden te schrijven:

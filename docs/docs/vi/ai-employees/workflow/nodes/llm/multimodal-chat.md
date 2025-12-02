@@ -7,10 +7,6 @@ Tài liệu này đã được dịch tự động bằng AI.
 
 
 
-```yaml
-pkg: "@nocobase/plugin-ai-ee"
-```
-
 # Đối thoại Đa phương thức
 
 ## Hình ảnh

@@ -1,11 +1,12 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
+
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-email-manager"
----
 
 # บันทึกร่างอัตโนมัติ
 

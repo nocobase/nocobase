@@ -5,11 +5,6 @@ pkg: "@nocobase/plugin-verification"
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
 
-
-
-pkg: '@nocobase/plugin-verification'
----
-
 # Ověřování
 
 :::info{title=Poznámka}

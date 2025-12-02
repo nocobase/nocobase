@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: "@nocobase/plugin-email-manager"
----
 
 # E-Mail-Vorlagen
 

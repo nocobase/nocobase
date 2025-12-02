@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-workflow-json-query'
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-json-query'
----
 
 # Вычисление JSON
 

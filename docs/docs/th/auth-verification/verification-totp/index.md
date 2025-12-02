@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-verification-totp-authenticator'
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: '@nocobase/plugin-verification-totp-authenticator'
----
 
 # การยืนยันตัวตน: TOTP Authenticator
 

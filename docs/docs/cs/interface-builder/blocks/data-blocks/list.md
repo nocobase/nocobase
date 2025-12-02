@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-list"
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
 
-
-pkg: "@nocobase/plugin-block-list"
----
 # Blok seznamu
 
 ## Úvod

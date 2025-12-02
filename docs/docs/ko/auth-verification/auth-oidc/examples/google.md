@@ -2,7 +2,6 @@
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
 # Google로 로그인
 
 > https://developers.google.com/identity/openid-connect/openid-connect

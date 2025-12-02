@@ -1,9 +1,4 @@
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
-
-
-```yaml
+---
 displayName: "إدارة الإشعارات"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
@@ -11,6 +6,10 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
-```
+---
+:::tip إشعار الترجمة بالذكاء الاصطناعي
+تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
+:::
+
 
 # إدارة الإشعارات

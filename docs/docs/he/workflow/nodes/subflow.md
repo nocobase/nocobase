@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-subflow'
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-subflow'
----
 
 # הפעלת תהליך עבודה
 

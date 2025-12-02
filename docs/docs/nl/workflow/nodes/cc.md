@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-cc'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-cc'
----
 
 # CC <Badge>v1.8.2+</Badge>
 

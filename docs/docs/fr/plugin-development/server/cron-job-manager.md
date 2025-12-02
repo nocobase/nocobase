@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # CronJobManager
 
 `CronJobManager` est un gestionnaire de tâches planifiées proposé par NocoBase, basé sur [cron](https://www.npmjs.com/package/cron). Il permet à vos plugins d'enregistrer des tâches planifiées sur le serveur pour exécuter périodiquement une logique spécifique.

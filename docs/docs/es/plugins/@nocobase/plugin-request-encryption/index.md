@@ -1,14 +1,15 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
-
+---
 displayName: "Cifrado de solicitudes HTTP"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
   Cifra los parámetros de la solicitud (Query Parameters) antes de enviar una solicitud HTTP.
 isFree: false
 builtIn: false

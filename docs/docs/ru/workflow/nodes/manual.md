@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-workflow-manual'
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-manual'
----
 
 # Ручная обработка
 

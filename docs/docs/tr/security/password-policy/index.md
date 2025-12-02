@@ -1,11 +1,12 @@
-:::tip Yapay Zeka Çeviri Bildirimi
+---
+pkg: '@nocobase/plugin-password-policy'
+---
+
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-password-policy'
----
 
 # Parola Politikası
 

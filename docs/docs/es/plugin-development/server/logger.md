@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Logger
 
 El sistema de registro de NocoBase se basa en <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. Por defecto, NocoBase clasifica los registros en: registros de solicitudes de API, registros de ejecución del sistema y registros de ejecución de SQL. Los registros de solicitudes de API y los registros de ejecución de SQL se imprimen internamente por la aplicación. Los desarrolladores de plugins, por lo general, solo necesitan imprimir los registros de ejecución del sistema relacionados con sus plugins.

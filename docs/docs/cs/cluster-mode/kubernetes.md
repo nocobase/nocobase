@@ -1,3 +1,8 @@
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Nasazení v Kubernetes
 
 Tento článek vás provede rychlým nasazením NocoBase v klastrovém režimu v prostředí Kubernetes. Předpokládá se, že jste obeznámeni s prostředím Kubernetes a dokončili jste kroky v [Přípravách](./preparations.md).
@@ -113,11 +118,6 @@ spec:
     app: nocobase
   type: ClusterIP
 ---
-:::tip Upozornění na překlad AI
-Tato dokumentace byla automaticky přeložena umělou inteligencí.
-:::
-
-
 # Deployment aplikace, který může nasadit více kontejnerů aplikace.
 apiVersion: apps/v1
 kind: Deployment

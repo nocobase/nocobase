@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-import"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
 
-
-pkg: "@nocobase/plugin-action-import"
----
 # นำเข้า
 
 ## บทนำ

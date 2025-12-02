@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Ereignisfluss
 
 Im FlowEngine sind alle Komponenten der Benutzeroberfläche **ereignisgesteuert**. Das Verhalten, die Interaktionen und Datenänderungen von Komponenten werden durch Ereignisse ausgelöst und über einen Flow ausgeführt.

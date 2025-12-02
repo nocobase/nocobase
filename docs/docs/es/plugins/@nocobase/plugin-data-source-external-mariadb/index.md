@@ -1,14 +1,15 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
-
+---
 displayName: "Fuente de datos: MariaDB externo"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
   Utilice bases de datos MariaDB externas como fuentes de datos.
 isFree: false
 builtIn: false

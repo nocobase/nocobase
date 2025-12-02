@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Plan d'exécution (Historique)
 
 Chaque fois qu'un flux de travail est déclenché, un plan d'exécution correspondant est créé pour suivre le processus de cette tâche. Chaque plan d'exécution possède une valeur de statut qui indique son état actuel, que vous pouvez consulter dans la liste et les détails de l'historique d'exécution :

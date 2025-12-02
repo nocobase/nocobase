@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-acl'
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: '@nocobase/plugin-acl'
----
 
 # การใช้งานใน UI
 

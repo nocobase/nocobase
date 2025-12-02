@@ -1,14 +1,15 @@
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
+---
 displayName: "Uwierzytelnianie dwuskładnikowe (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
   Umożliwia włączenie uwierzytelniania dwuskładnikowego (2FA) dla logowania za pomocą hasła.
 isFree: false
 builtIn: false

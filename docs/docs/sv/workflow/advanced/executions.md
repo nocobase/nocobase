@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Körningsplan (Historik)
 
 När ett arbetsflöde utlöses skapas en motsvarande körningsplan för att spåra hur uppgiften utförs. Varje körningsplan har ett statusvärde som anger den aktuella körningsstatusen, vilken ni kan se i listan och detaljerna för körningshistoriken:

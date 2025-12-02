@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Variables d'environnement
 
 ## Comment définir les variables d'environnement ?

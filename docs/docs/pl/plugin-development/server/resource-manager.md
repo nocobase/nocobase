@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # ResourceManager Zarządzanie zasobami
 
 Funkcja zarządzania zasobami w NocoBase automatycznie konwertuje istniejące tabele danych (kolekcje) i powiązania (associations) w zasoby. Oferuje również wbudowane typy operacji, aby pomóc deweloperom szybko tworzyć operacje na zasobach REST API. W przeciwieństwie do tradycyjnych REST API, operacje na zasobach w NocoBase nie polegają na metodach żądań HTTP, lecz określają konkretną operację do wykonania poprzez jawne zdefiniowanie `:action`.

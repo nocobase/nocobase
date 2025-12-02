@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Tjänstesplittring <Badge>v1.9.0+</Badge>
 
 ## Introduktion

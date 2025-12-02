@@ -1,3 +1,9 @@
+
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Roller och behörigheter
 
 ## Introduktion
@@ -24,13 +30,6 @@ Välj en roll, klicka på fliken `Permissions` och sedan på fliken `AI employee
 Klicka i kryssrutan i kolumnen `Available` i listan över AI-medarbetare för att styra om den aktuella rollen kan komma åt den AI-medarbetaren.
 
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
-
----
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
 
 ## Dataåtkomstbehörigheter
 

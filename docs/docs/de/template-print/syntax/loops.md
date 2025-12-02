@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 ## Schleifenverarbeitung
 
 Die Schleifenverarbeitung wird verwendet, um Daten aus Arrays oder Objekten wiederholt zu rendern. Dabei definieren Sie Start- und Endmarkierungen für die Schleife, um den zu wiederholenden Inhalt zu kennzeichnen. Im Folgenden werden verschiedene gängige Szenarien beschrieben.

@@ -7,10 +7,6 @@ pkg: "@nocobase/plugin-file-storage-s3-pro"
 
 
 
-```yaml
-pkg: "@nocobase/plugin-file-storage-s3-pro"
----
-
 # Хранилище файлов: S3 (Pro)
 
 ## Введение

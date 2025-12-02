@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Mehrfachbedingungen <Badge>v2.0.0+</Badge>
 
 ## Einführung

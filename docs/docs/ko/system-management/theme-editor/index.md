@@ -2,7 +2,6 @@
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
 # 테마 편집기
 
 > 현재 테마 기능은 Ant Design 5.x 버전을 기반으로 구현되었습니다. 이 문서를 읽기 전에 [테마 사용자 지정](https://ant.design/docs/react/customize-theme-cn#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%BB%E9%A2%98) 관련 개념을 먼저 이해하시는 것을 권장합니다.

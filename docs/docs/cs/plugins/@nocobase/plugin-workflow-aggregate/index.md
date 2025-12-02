@@ -1,8 +1,4 @@
-:::tip Upozornění na překlad AI
-Tato dokumentace byla automaticky přeložena umělou inteligencí.
-:::
-
-
+---
 displayName: "Pracovní postup: Agregační uzel"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
@@ -11,5 +7,8 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
 
 # Pracovní postup: Agregační uzel

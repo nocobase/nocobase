@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-field-attachment-url"
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
-
-
-pkg: "@nocobase/plugin-field-attachment-url"
----
 
 # Поле даних: Вкладення (URL)
 

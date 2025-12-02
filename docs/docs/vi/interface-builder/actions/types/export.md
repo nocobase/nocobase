@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-export"
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
 
-
-pkg: "@nocobase/plugin-action-export"
----
 # Xuất dữ liệu
 
 ## Giới thiệu

@@ -2,7 +2,6 @@
 यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
 :::
 
-
 # कैश
 
 NocoBase का कैश मॉड्यूल <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> पर आधारित है और प्लगइन (plugin) डेवलपमेंट के लिए कैशिंग (caching) कार्यक्षमता प्रदान करता है। सिस्टम में दो अंतर्निहित कैश प्रकार हैं:

@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-list"
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: "@nocobase/plugin-block-list"
----
 # בלוק רשימה
 
 ## מבוא

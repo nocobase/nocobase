@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-list"
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: "@nocobase/plugin-block-list"
----
 # Listblock
 
 ## Introduktion

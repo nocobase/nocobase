@@ -1,12 +1,12 @@
+---
+pkg: "@nocobase/plugin-ai"
+deprecated: true
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-ai"
-deprecated: true
----
 
 # Erweitert
 

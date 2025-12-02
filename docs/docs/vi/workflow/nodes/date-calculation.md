@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-date-calculation'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-date-calculation'
----
 
 # Tính toán Ngày tháng
 

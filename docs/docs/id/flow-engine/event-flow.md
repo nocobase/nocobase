@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Alur Peristiwa
 
 Di FlowEngine, semua komponen antarmuka bersifat **event-driven**.

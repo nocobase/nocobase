@@ -1,11 +1,12 @@
+---
+pkg: "@nocobase/plugin-data-source-external-postgres"
+---
+
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-data-source-external-postgres"
----
 
 # Зовнішнє джерело даних - PostgreSQL
 

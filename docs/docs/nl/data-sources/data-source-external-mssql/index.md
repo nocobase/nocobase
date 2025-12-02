@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-external-mssql"
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-external-mssql"
----
 
 # Externe gegevensbron - MSSQL
 

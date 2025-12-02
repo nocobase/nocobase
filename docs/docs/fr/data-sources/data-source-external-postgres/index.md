@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-external-postgres"
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-external-postgres"
----
 
 # Source de données externe - PostgreSQL
 

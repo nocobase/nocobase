@@ -1,8 +1,4 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
-
+---
 displayName: "Bildirim Yönetimi"
 packageName: '@nocobase/plugin-notification-manager'
 description: |
@@ -10,6 +6,7 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
-```
-
-# Bildirim Yönetimi
+---
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::

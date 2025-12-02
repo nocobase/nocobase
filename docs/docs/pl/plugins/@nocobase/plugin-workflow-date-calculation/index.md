@@ -1,14 +1,15 @@
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
+---
 displayName: "Przepływ pracy: węzeł obliczania daty"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
   Umożliwia wykonywanie operacji na datach w przepływach pracy, takich jak dodawanie, odejmowanie, porównywanie czy formatowanie.
 isFree: false
 builtIn: false

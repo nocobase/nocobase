@@ -1,9 +1,4 @@
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
-```yaml
+---
 displayName: "Lokalisering"
 packageName: '@nocobase/plugin-localization'
 description: |
@@ -11,6 +6,10 @@ description: |
 isFree: sant
 builtIn: sant
 defaultEnabled: falskt
-```
+---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
 
 # Lokalisering

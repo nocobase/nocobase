@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Übersicht
 
 Die integrierten Funktionen des Workflows können nicht alle Szenarien abdecken. Beispielsweise können die integrierten Knotentypen nicht jede mögliche Operation in allen Geschäftsszenarien erschöpfend abbilden. Daher bieten wir auch ein Design zur Erweiterung des Workflows an, das die Erweiterung von Trigger- und Knotentypen umfasst. In Geschäftsszenarien, in denen die integrierten Funktionen nicht ausreichen, können Sie diese mithilfe von Low-Code-Methoden erweitern.

@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Le Logger
 
 NocoBase propose un système de journalisation (logging) performant basé sur [pino](https://github.com/pinojs/pino). Partout où vous avez accès à un `context`, vous pouvez obtenir une instance de logger via `ctx.logger` pour enregistrer les journaux essentiels lors de l'exécution d'un **plugin** ou du système.

@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Tencent COS
 
 En lagringsmotor baserad på Tencent Cloud COS. Innan du använder den behöver du förbereda relevanta konton och behörigheter.

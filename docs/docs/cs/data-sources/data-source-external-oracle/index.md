@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-data-source-external-oracle"
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: "@nocobase/plugin-data-source-external-oracle"
----
 
 # Externí zdroj dat - Oracle
 

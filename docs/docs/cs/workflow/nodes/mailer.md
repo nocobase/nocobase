@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-mailer'
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-mailer'
----
 
 # Odeslání e-mailu
 

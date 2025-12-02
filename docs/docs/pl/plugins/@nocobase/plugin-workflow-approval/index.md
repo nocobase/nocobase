@@ -1,11 +1,12 @@
+---
+displayName: "Przepływ pracy: Zatwierdzanie"
+packageName: '@nocobase/plugin-workflow-approval'
+description: |
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-displayName: "Przepływ pracy: Zatwierdzanie"
-packageName: '@nocobase/plugin-workflow-approval'
-description: |
   Ten przepływ pracy uruchamia się, gdy wniosek o zatwierdzenie zostanie zainicjowany za pomocą przycisku akcji lub API. Jest on dedykowany procesom zatwierdzania i zawiera specjalne węzły zatwierdzania oraz bloki do zarządzania dokumentami i śledzenia ich przetwarzania.
 isFree: false
 builtIn: false

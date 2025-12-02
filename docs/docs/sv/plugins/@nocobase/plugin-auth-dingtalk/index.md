@@ -1,14 +1,15 @@
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
+---
 displayName: "Autentisering: DingTalk"
 packageName: '@nocobase/plugin-auth-dingtalk'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
   Autentisering med DingTalk-konto.
 isFree: false
 builtIn: false

@@ -1,14 +1,15 @@
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-
+---
 displayName: "HTTPリクエストの暗号化"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
   HTTPリクエストを送信する前に、リクエストパラメータ（クエリパラメータ）を暗号化します。
 isFree: false
 builtIn: false

@@ -1,9 +1,9 @@
+---
+pkg: '@nocobase/plugin-api-keys'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
-
-
-pkg: '@nocobase/plugin-api-keys'
 
 # API-sleutels
 

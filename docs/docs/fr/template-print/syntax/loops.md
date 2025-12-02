@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 ## Traitement en boucle
 
 Le traitement en boucle permet de rendre des données de manière répétée à partir de tableaux ou d'objets. Pour cela, vous définissez des marqueurs de début et de fin de boucle afin d'identifier le contenu à répéter. Nous allons explorer ci-dessous plusieurs scénarios courants.

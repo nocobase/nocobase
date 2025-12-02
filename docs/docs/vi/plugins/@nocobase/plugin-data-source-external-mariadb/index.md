@@ -1,8 +1,4 @@
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
+---
 displayName: "Nguồn dữ liệu: MariaDB bên ngoài"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
 supportedVersions:
@@ -15,5 +11,8 @@ builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
 
 # Nguồn dữ liệu: MariaDB bên ngoài

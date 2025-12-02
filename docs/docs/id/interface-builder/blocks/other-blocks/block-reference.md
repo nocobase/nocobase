@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-reference"
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: "@nocobase/plugin-block-reference"
----
 
 # Blok Referensi
 

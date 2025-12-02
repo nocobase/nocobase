@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # StepDefinition
 
 `StepDefinition` définit une étape individuelle dans un flux de travail. Chaque étape peut représenter une action, la gestion d'un événement ou toute autre opération. Une étape est l'unité d'exécution fondamentale d'un flux de travail.

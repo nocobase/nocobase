@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Journaux du serveur, Journaux d'audit et Historique des modifications
 
 ## Journaux du serveur

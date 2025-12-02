@@ -1,8 +1,4 @@
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
-
-
+---
 displayName: "Джерело даних: Зовнішня MariaDB"
 packageName: '@nocobase/plugin-data-source-external-mariadb'
 supportedVersions:
@@ -15,5 +11,8 @@ builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
 
 # Джерело даних: Зовнішня MariaDB

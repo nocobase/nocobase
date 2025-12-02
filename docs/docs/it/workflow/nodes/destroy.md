@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Eliminare dati
 
 Questo nodo le permette di eliminare dati da una collezione che soddisfano determinate condizioni.

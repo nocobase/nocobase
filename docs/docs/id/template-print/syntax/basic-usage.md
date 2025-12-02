@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 ## Penggunaan Dasar
 
 Plugin Pencetakan Template menyediakan berbagai sintaks untuk menyisipkan data dinamis dan struktur logis ke dalam template secara fleksibel. Berikut adalah penjelasan sintaks dan contoh penggunaannya secara detail.

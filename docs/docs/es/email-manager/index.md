@@ -1,11 +1,11 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
 :::tip Aviso de traducción por IA
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-email-manager"
----
 
 # Gestor de Correo Electrónico
 

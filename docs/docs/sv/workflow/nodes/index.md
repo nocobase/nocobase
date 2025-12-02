@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Översikt
 
 Ett arbetsflöde består vanligtvis av flera sammankopplade operationssteg. Varje nod representerar ett sådant steg och fungerar som en grundläggande logisk enhet i processen. Precis som i ett programmeringsspråk representerar olika typer av noder olika instruktioner som bestämmer nodens beteende. När arbetsflödet körs går systemet igenom varje nod sekventiellt och utför dess instruktioner.

@@ -1,8 +1,4 @@
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
-
-
+---
 displayName: "Робочий процес: Мапування JSON змінних"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
 supportedVersions:
@@ -14,5 +10,8 @@ isFree: true
 builtIn: true
 defaultEnabled: true
 ---
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
 
 # Робочий процес: Мапування JSON змінних

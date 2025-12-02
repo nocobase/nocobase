@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-api-keys'
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: '@nocobase/plugin-api-keys'
----
 
 # מפתחות API
 

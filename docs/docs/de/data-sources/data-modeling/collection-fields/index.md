@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Sammlungsfelder
 
 ## Interface-Typen von Feldern

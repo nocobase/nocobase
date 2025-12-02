@@ -1,14 +1,15 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
-
+---
 displayName: "Restriction d'IP"
 packageName: '@nocobase/plugin-ip-restriction'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
    Contrôlez l'accès au système en configurant des listes noires et des listes blanches d'adresses IP, afin de garantir la sécurité.
 isFree: false
 builtIn: false

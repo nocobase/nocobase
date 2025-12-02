@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-grid-card"
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: "@nocobase/plugin-block-grid-card"
----
 # Rutnätskort
 
 ## Introduktion

@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Editor de Temas
 
 > O recurso de tema atual é implementado com base no Ant Design 5.x. Recomendamos que você entenda os conceitos de [personalização de temas](https://ant.design/docs/react/customize-theme-cn#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%BB%E9%A2%98) antes de ler este documento.

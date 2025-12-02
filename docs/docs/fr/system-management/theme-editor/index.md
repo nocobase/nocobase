@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Éditeur de thèmes
 
 > La fonctionnalité de thème actuelle est basée sur Ant Design 5.x. Nous vous recommandons de vous familiariser avec les concepts de [personnalisation de thème](https://ant.design/docs/react/customize-theme) avant de poursuivre la lecture de ce document.

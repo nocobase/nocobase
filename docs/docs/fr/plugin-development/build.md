@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Construction
 
 ## Configuration de compilation personnalisée

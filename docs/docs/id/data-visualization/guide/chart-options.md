@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Opsi Bagan
 
 Konfigurasi cara bagan ditampilkan. Dua mode didukung: Basic (visual) dan Custom (JS). Mode Basic ideal untuk pemetaan cepat dan properti umum; mode Custom cocok untuk skenario kompleks dan kustomisasi tingkat lanjut.

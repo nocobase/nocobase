@@ -1,3 +1,9 @@
+
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Overzicht van het Contextsysteem
 
 Het contextsysteem van de NocoBase FlowEngine is verdeeld in drie lagen, elk met een eigen bereik. Door deze lagen correct te gebruiken, kunt u services, configuraties en gegevens flexibel delen en isoleren, wat de onderhoudbaarheid en schaalbaarheid van uw bedrijfsprocessen verbetert.
@@ -34,13 +40,6 @@ FlowEngineContext (Globale Context)
 - De `FlowModelContext` van een submodel heeft via een delegatiemechanisme toegang tot de context van het bovenliggende model (synchrone relatie), waarbij overschrijven met dezelfde naam wordt ondersteund.
 - Asynchrone bovenliggende en onderliggende modellen leggen geen delegatierelatie vast om statusvervuiling te voorkomen.
 - `FlowRuntimeContext` heeft altijd via een delegatiemechanisme toegang tot de bijbehorende `FlowModelContext`, maar geeft wijzigingen niet door naar boven.
-
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
-
 
 ## 🧭 Runtime- en Configuratiemodus (mode)
 

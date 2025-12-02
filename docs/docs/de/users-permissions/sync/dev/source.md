@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Erweitern von synchronisierten Datenquellen
 
 ## Übersicht

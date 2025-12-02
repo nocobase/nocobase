@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 ### Pemformatan Interval Waktu
 
 #### 1. :formatI(patternOut, patternIn)

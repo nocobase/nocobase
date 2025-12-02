@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-storage-s3-pro'
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: '@nocobase/plugin-file-storage-s3-pro'
----
 
 # מנוע אחסון: S3 (Pro)
 

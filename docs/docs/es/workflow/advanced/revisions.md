@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Gestión de versiones
 
 Una vez que un `flujo de trabajo` configurado se ha activado al menos una vez, si desea modificar su configuración o sus nodos, deberá crear una nueva versión antes de realizar cualquier cambio. Esto también asegura que, al revisar el historial de ejecución de `flujos de trabajo` activados previamente, este no se vea afectado por futuras modificaciones.

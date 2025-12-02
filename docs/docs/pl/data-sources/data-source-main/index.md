@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-main"
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-main"
----
 
 # Główna baza danych
 

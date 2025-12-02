@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Agent AI · Dex: Ekspert ds. organizacji danych
 
 > Szybko wyodrębnia i wypełnia formularze, porządkując chaotyczne informacje w ustrukturyzowane dane.

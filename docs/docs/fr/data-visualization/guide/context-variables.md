@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Utiliser les variables de contexte
 
 Avec les variables de contexte, vous pouvez réutiliser des informations telles que la page actuelle, l'utilisateur, l'heure ou les conditions de filtrage. Cela vous permet d'afficher des graphiques et d'activer des interactions en fonction du contexte.

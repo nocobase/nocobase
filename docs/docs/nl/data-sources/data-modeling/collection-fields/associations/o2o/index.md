@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Eén-op-één
 
 In de relatie tussen medewerkers en persoonlijke profielen kan elke medewerker slechts één persoonlijk profiel hebben, en elk persoonlijk profiel kan slechts aan één medewerker gekoppeld zijn. In zo'n geval spreken we van een één-op-één relatie tussen de medewerker en het persoonlijke profiel.

@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-comments"
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: "@nocobase/plugin-comments"
----
 
 # Koleksi Komentar
 

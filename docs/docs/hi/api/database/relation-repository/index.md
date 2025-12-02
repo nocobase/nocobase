@@ -2,7 +2,6 @@
 यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
 :::
 
-
 # RelationRepository
 
 `RelationRepository` संबंध (association) प्रकारों के लिए एक `Repository` ऑब्जेक्ट है। `RelationRepository` आपको संबंध को लोड किए बिना संबंधित डेटा पर काम करने की सुविधा देता है। `RelationRepository` पर आधारित, प्रत्येक संबंध प्रकार की अपनी व्युत्पन्न (derived) इम्प्लीमेंटेशन है:

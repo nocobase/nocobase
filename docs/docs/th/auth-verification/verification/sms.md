@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-verification'
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: '@nocobase/plugin-verification'
----
 
 # การยืนยัน: SMS
 

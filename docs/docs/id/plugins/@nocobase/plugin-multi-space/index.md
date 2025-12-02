@@ -1,13 +1,14 @@
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
-
+---
 displayName: "Multi-ruang"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
   - 2.x
 description: |
+---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
   Menerapkan beberapa ruang data independen dalam satu instans aplikasi melalui isolasi logis.
 isFree: false
 builtIn: false

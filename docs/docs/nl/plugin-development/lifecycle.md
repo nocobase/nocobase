@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Levenscyclus
 
 Deze sectie organiseert de levenscyclus-hooks voor plugins, zowel aan de server- als aan de clientzijde, om ontwikkelaars te helpen bij het correct registreren en vrijgeven van resources.

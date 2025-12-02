@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-response-message'
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: '@nocobase/plugin-workflow-response-message'
----
 
 # ข้อความตอบกลับ
 

@@ -1,9 +1,4 @@
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
-
-
-```yaml
+---
 displayName: "تصفية متعددة الكلمات المفتاحية"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
@@ -14,6 +9,10 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
-```
+---
+:::tip إشعار الترجمة بالذكاء الاصطناعي
+تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
+:::
+
 
 # تصفية متعددة الكلمات المفتاحية

@@ -7,10 +7,6 @@ Deze documentatie is automatisch vertaald door AI.
 
 
 
-```yaml
-pkg: "@nocobase/plugin-email-manager"
----
-
 # E-mailcentrum
 
 ## Introductie

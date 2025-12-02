@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Zapytania danych w trybie SQL
 
 W panelu „Zapytania danych” przełącz się na tryb SQL, napisz i uruchom zapytanie, a następnie bezpośrednio wykorzystaj zwrócone wyniki do mapowania i renderowania wykresów.

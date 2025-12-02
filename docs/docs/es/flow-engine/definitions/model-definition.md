@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # ModelDefinition
 
 ModelDefinition define las opciones de creación para un modelo de flujo, que se utilizan para crear una instancia de modelo a través del método `FlowEngine.createModel()`. Incluye la configuración básica del modelo, sus propiedades, submodelos y otra información relevante.

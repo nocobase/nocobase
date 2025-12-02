@@ -1,6 +1,6 @@
 ---
 pageType: home
-pageName: développement
+pageName: development
 
 features:
   - title: Architecture du cœur

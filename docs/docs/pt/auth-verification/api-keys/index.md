@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-api-keys'
+---
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
-pkg: '@nocobase/plugin-api-keys'
----
 
 # Chaves de API
 

@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-field-sort"
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: "@nocobase/plugin-field-sort"
----
 
 # Pole pro řazení
 

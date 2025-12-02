@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Przepływ zdarzeń
 
 W FlowEngine wszystkie komponenty interfejsu są **sterowane zdarzeniami (event-driven)**.

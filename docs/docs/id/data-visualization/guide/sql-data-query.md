@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Kueri Data dalam Mode SQL
 
 Di panel "Kueri Data", beralihlah ke mode SQL, tulis dan jalankan pernyataan kueri, lalu gunakan hasil yang dikembalikan secara langsung untuk pemetaan dan rendering bagan.

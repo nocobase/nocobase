@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-main"
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-main"
----
 
 # Обычная коллекция
 

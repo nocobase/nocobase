@@ -1,8 +1,4 @@
-:::tip ประกาศการแปลด้วย AI
-เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
-:::
-
-
+---
 displayName: "เวิร์กโฟลว์: เหตุการณ์หลังการดำเนินการ"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |
@@ -11,5 +7,8 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
 
 # เวิร์กโฟลว์: เหตุการณ์หลังการดำเนินการ

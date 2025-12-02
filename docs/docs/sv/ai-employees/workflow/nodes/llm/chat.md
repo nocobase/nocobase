@@ -6,12 +6,6 @@ Denna dokumentation har översatts automatiskt av AI.
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-ai"
----
-```
-
 # Textchatt
 
 ## Introduktion

@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Panoramica sullo sviluppo di plugin
 
 NocoBase adotta un'**architettura a microkernel**, dove il core è responsabile solo della gestione del ciclo di vita dei **plugin**, della gestione delle dipendenze e dell'incapsulamento delle funzionalità di base. Tutte le funzionalità di business sono fornite sotto forma di **plugin**. Pertanto, comprendere la struttura organizzativa, il ciclo di vita e le modalità di gestione dei **plugin** è il primo passo per personalizzare NocoBase.

@@ -1,11 +1,12 @@
+---
+displayName: "בקרת הרשאות"
+packageName: '@nocobase/plugin-acl'
+description: |
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-displayName: "בקרת הרשאות"
-packageName: '@nocobase/plugin-acl'
-description: |
   בקרת הרשאות, המבוססת על תפקידים, משאבים ופעולות, מאפשרת לכם לשלוט באופן מדויק על הרשאות תצורת הממשק, הרשאות פעולות הנתונים, הרשאות גישה לתפריטים והרשאות תוספים.
 isFree: נכון
 builtIn: נכון

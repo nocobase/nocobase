@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Panoramica
 
 Un flusso di lavoro è tipicamente composto da diversi passaggi operativi collegati. Ogni nodo rappresenta uno di questi passaggi e funge da unità logica fondamentale nel processo. Proprio come in un linguaggio di programmazione, diversi tipi di nodi rappresentano istruzioni diverse, che ne determinano il comportamento. Quando il flusso di lavoro viene eseguito, il sistema entra sequenzialmente in ogni nodo ed esegue le sue istruzioni.

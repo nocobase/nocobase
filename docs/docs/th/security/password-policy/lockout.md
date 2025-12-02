@@ -7,10 +7,6 @@ pkg: "@nocobase/plugin-password-policy"
 
 
 
-```yaml
-pkg: '@nocobase/plugin-password-policy'
----
-
 # การล็อกผู้ใช้
 
 ## บทนำ

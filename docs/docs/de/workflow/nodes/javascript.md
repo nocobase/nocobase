@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-javascript'
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-javascript'
----
 
 # JavaScript-Skript
 

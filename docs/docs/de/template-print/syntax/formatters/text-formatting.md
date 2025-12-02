@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 ### Textformatierung
 
 Dieser Abschnitt stellt verschiedene Formatierer für Textdaten vor. In den folgenden Unterabschnitten werden Syntax, Beispiele und Ergebnisse der einzelnen Formatierer erläutert.

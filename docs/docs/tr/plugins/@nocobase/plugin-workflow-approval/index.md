@@ -1,8 +1,4 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
-
+---
 displayName: "İş Akışı: Onay"
 packageName: '@nocobase/plugin-workflow-approval'
 description: |
@@ -12,5 +8,8 @@ builtIn: false
 defaultEnabled: false
 points: 8
 ---
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
 
 # İş Akışı: Onay

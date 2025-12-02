@@ -1,11 +1,12 @@
+---
+displayName: "Licensinställningar"
+packageName: '@nocobase/plugin-license'
+description: |
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-displayName: "Licensinställningar"
-packageName: '@nocobase/plugin-license'
-description: |
   Inställningar för instans-ID och licensnyckel
 isFree: true
 builtIn: true

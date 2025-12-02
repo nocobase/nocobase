@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Blok
 
 Blok adalah wadah untuk data dan konten. Blok dapat ditempatkan di Halaman (Page), Dialog (Modal), atau Laci (Drawer), dan beberapa blok dapat diatur dengan cara seret dan lepas (drag and drop) secara bebas.

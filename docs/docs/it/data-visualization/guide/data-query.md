@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Query sui Dati
 
 Il pannello di configurazione del grafico è suddiviso in tre sezioni: Query sui dati, Opzioni grafico ed Eventi di interazione, oltre ai pulsanti Annulla, Anteprima e Salva in fondo.

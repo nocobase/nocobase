@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Workflow beenden
 Dieser Knoten beendet bei Ausführung sofort den aktuellen Workflow mit dem im Knoten konfigurierten Status. Er wird typischerweise für die Ablaufsteuerung basierend auf spezifischer Logik eingesetzt, um den aktuellen Workflow zu verlassen, sobald bestimmte Bedingungen erfüllt sind, und die weitere Ausführung nachfolgender Prozesse zu unterbrechen. Dies ist vergleichbar mit dem `return`-Befehl in Programmiersprachen, der zum Beenden der aktuellen Funktion dient.
 

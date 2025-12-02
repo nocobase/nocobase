@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 ## Warunki
 
 Instrukcje warunkowe pozwalają dynamicznie kontrolować wyświetlanie lub ukrywanie treści w dokumencie, w zależności od wartości danych. Dostępne są trzy główne sposoby definiowania warunków:

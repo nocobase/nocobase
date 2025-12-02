@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Gegevens verwijderen
 
 Gebruik dit om gegevens te verwijderen uit een collectie die aan specifieke voorwaarden voldoen.

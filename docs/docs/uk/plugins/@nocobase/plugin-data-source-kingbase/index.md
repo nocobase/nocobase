@@ -1,8 +1,4 @@
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
-
-
+---
 displayName: "Джерело даних: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
 description: |
@@ -12,5 +8,8 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
 
 # Джерело даних: KingbaseES

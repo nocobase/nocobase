@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Campi della collezione
 
 ## Tipi di interfaccia dei campi

@@ -1,8 +1,4 @@
-:::tip ประกาศการแปลด้วย AI
-เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
-:::
-
-
+---
 displayName: "แหล่งข้อมูล: KingbaseES"
 packageName: '@nocobase/plugin-data-source-kingbase'
 description: |
@@ -12,5 +8,8 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
 
 # แหล่งข้อมูล: KingbaseES

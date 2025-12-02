@@ -2,7 +2,6 @@
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
 # リクエスト
 
 NocoBase は、[Axios](https://axios-http.com/) をベースにした `APIClient` を提供しており、`Context` を取得できるあらゆる場所から HTTP リクエストを発行できます。

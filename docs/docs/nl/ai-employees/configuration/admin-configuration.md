@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # AI-medewerker · Beheerdersconfiguratiegids
 
 > Dit document helpt u snel te begrijpen hoe u AI-medewerkers configureert en beheert. We begeleiden u stap voor stap door het hele proces, van modeldiensten tot taaktoewijzing.

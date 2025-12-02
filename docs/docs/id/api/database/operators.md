@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Operator Filter
 
 Digunakan dalam parameter `filter` pada API seperti `find`, `findOne`, `findAndCount`, `count` dari sebuah Repository:

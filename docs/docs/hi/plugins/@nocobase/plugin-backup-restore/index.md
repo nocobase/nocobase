@@ -1,11 +1,12 @@
+---
+displayName: "ऐप का बैकअप और रीस्टोर (अप्रचलित)"
+packageName: '@nocobase/plugin-backup-restore'
+description: |
+---
 :::tip AI अनुवाद सूचना
 यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
 :::
 
-
-displayName: "ऐप का बैकअप और रीस्टोर (अप्रचलित)"
-packageName: '@nocobase/plugin-backup-restore'
-description: |
   यह एप्लिकेशन का बैकअप लेने और उसे रीस्टोर करने के लिए है, जिसका उपयोग एप्लिकेशन की कॉपी बनाने, माइग्रेट करने और अपग्रेड करने जैसे कामों में किया जा सकता है।
 isFree: true
 builtIn: true

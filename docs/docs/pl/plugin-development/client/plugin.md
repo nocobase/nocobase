@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Wtyczka
 
 W NocoBase **wtyczka kliencka** to główny sposób na rozszerzanie i dostosowywanie funkcjonalności frontendu. Dziedzicząc po klasie bazowej `Plugin` dostarczanej przez `@nocobase/client`, deweloperzy mogą rejestrować logikę, dodawać komponenty stron, rozszerzać menu lub integrować funkcje stron trzecich na różnych etapach cyklu życia.

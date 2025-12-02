@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 ## Istruzioni di configurazione
 
 ### Attivare la funzione di stampa dei modelli

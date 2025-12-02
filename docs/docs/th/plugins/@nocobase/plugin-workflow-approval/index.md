@@ -1,8 +1,4 @@
-:::tip ประกาศการแปลด้วย AI
-เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
-:::
-
-
+---
 displayName: "เวิร์กโฟลว์: การอนุมัติ"
 packageName: '@nocobase/plugin-workflow-approval'
 description: |
@@ -12,5 +8,8 @@ builtIn: false
 defaultEnabled: false
 points: 8
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
 
 # เวิร์กโฟลว์: การอนุมัติ

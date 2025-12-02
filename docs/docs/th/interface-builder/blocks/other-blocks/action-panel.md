@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-workbench"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
 
-
-pkg: "@nocobase/plugin-block-workbench"
----
 # บล็อก: เวิร์กเบนช์
 
 ## บทนำ

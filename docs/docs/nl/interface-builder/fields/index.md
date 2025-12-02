@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Veld
 
 In de UI is een veld een veldcomponent, die dient als drager voor individuele gegevens. Verschillende gegevenstypen worden gepresenteerd met verschillende veldcomponenten. Velden kunnen alleen aan blokken worden gekoppeld en kunnen niet zelfstandig worden gebruikt.

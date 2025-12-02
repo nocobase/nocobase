@@ -7,10 +7,6 @@ pkg: "@nocobase/plugin-ai-ee"
 
 
 
-```yaml
-pkg: "@nocobase/plugin-ai-ee"
----
-
 # マルチモーダル会話
 
 ## 画像

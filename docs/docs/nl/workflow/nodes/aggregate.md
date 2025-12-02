@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-aggregate'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-aggregate'
----
 
 # Aggregatiequery
 

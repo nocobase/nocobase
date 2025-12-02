@@ -1,8 +1,4 @@
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
-
-
+---
 displayName: "Візуалізація даних: ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:
@@ -14,5 +10,8 @@ builtIn: false
 defaultEnabled: false
 points: 8
 ---
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
 
 # Візуалізація даних: ECharts

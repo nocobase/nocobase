@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-graph-collection-manager"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: "@nocobase/plugin-graph-collection-manager"
----
 
 # إدارة مجموعات الرسم البياني
 

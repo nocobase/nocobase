@@ -1,11 +1,12 @@
+---
+displayName: "Bloc : modèle (déprécié)"
+packageName: '@nocobase/plugin-block-template'
+description: |
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
-displayName: "Bloc : modèle (déprécié)"
-packageName: '@nocobase/plugin-block-template'
-description: |
   Créez et gérez des modèles de blocs pour les réutiliser dans vos pages.
 isFree: true
 builtIn: true

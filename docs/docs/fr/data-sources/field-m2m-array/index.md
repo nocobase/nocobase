@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-m2m-array"
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
-pkg: "@nocobase/plugin-field-m2m-array"
----
 
 # Relation plusieurs-à-plusieurs (array)
 

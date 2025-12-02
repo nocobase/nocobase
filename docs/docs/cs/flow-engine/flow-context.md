@@ -1,3 +1,9 @@
+
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Přehled systému kontextů
 
 Systém kontextů enginu pracovních postupů NocoBase je rozdělen do tří vrstev, z nichž každá má svůj vlastní rozsah působnosti (scope). Správné použití umožňuje flexibilní sdílení a izolaci služeb, konfigurací a dat, čímž se zlepšuje udržovatelnost a škálovatelnost vašich obchodních procesů.
@@ -34,13 +40,6 @@ FlowEngineContext (globální kontext)
 - `FlowModelContext` podmodelu může přistupovat ke kontextu rodičovského modelu (synchronní vztah) prostřednictvím mechanismu delegování, s podporou přepsání se stejným názvem.
 - Asynchronní rodičovské a podřízené modely nevytvářejí vztah delegování, aby se zabránilo znečištění stavu.
 - `FlowRuntimeContext` vždy přistupuje ke svému odpovídajícímu `FlowModelContext` prostřednictvím mechanismu delegování, ale nešíří změny nahoru.
-
----
-:::tip Upozornění na překlad AI
-Tato dokumentace byla automaticky přeložena umělou inteligencí.
-:::
-
-
 
 ## 🧭 Režim běhu a nastavení (mode)
 

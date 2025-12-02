@@ -1,8 +1,4 @@
-:::tip ประกาศการแปลด้วย AI
-เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
-:::
-
-
+---
 displayName: "เวิร์กโฟลว์: เหตุการณ์ก่อนการดำเนินการ"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:
@@ -15,5 +11,8 @@ builtIn: false
 defaultEnabled: false
 points: 4
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
 
 # เวิร์กโฟลว์: เหตุการณ์ก่อนการดำเนินการ

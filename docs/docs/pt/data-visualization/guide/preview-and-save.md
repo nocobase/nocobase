@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Visualizar e Salvar
 
 -   **Visualizar:** Renderiza temporariamente as alterações feitas no painel de configuração no gráfico da página para que você possa verificar o resultado.

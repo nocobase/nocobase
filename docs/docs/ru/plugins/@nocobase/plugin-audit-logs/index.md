@@ -1,11 +1,12 @@
+---
+displayName: "Журналы аудита (устаревший)"
+packageName: '@nocobase/plugin-audit-logs'
+description: |
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-displayName: "Журналы аудита (устаревший)"
-packageName: '@nocobase/plugin-audit-logs'
-description: |
   Этот плагин устарел и не рекомендуется к использованию. В будущем появится новый плагин для журналов аудита.
 isFree: true
 builtIn: true

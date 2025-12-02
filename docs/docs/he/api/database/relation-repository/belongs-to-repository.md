@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 ## BelongsToRepository
 
 הממשק שלו זהה ל-[HasOneRepository](./has-one-repository.md).

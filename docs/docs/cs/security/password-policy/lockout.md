@@ -7,10 +7,6 @@ Tato dokumentace byla automaticky přeložena umělou inteligencí.
 
 
 
-```yaml
-pkg: '@nocobase/plugin-password-policy'
----
-
 # Uzamčení uživatelů
 
 ## Úvod

@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-embed"
 
 
 
-pkg: "@nocobase/plugin-embed"
----
-
 # Вбудовування NocoBase
 
 ## Вступ

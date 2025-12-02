@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Configuración del Sistema
 
 La configuración del sistema se utiliza para configurar la información global del sistema, incluyendo el nombre del sistema, el logotipo principal, los idiomas habilitados, etc.

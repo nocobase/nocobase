@@ -1,11 +1,12 @@
+---
+displayName: "Gegevensbron: KingbaseES"
+packageName: '@nocobase/plugin-data-source-kingbase'
+description: |
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-displayName: "Gegevensbron: KingbaseES"
-packageName: '@nocobase/plugin-data-source-kingbase'
-description: |
   Gebruik de KingbaseES-database als gegevensbron. U kunt deze zowel als primaire database als externe database inzetten.
 isFree: false
 builtIn: false

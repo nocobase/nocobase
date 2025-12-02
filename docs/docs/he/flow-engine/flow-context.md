@@ -1,3 +1,9 @@
+
+:::tip הודעת תרגום AI
+תיעוד זה תורגם אוטומטית על ידי AI.
+:::
+
+
 # מבט כללי על מערכת ההקשר
 
 מערכת ההקשר של מנוע ה-Flow של NocoBase מחולקת לשלוש שכבות, שכל אחת מהן מתאימה לתחום פעולה (scope) שונה. שימוש נכון מאפשר שיתוף ובידוד גמישים של שירותים, תצורות ונתונים, ומשפר את יכולת התחזוקה וההרחבה של המערכת העסקית.
@@ -34,13 +40,6 @@ FlowEngineContext (הקשר גלובלי)
 - ה-`FlowModelContext` של מודל משנה יכול לגשת להקשר של מודל ההורה (יחס סינכרוני) באמצעות מנגנון האצלה (delegate), ותומך בדריסה של שמות זהים.
 - מודלי הורה-בן אסינכרוניים אינם יוצרים יחס האצלה (delegate) כדי למנוע זיהום מצב.
 - `FlowRuntimeContext` תמיד ניגש ל-`FlowModelContext` המתאים לו באמצעות מנגנון האצלה (delegate), אך אינו מעביר שינויים כלפי מעלה.
-
----
-:::tip הודעת תרגום AI
-תיעוד זה תורגם אוטומטית על ידי AI.
-:::
-
-
 
 ## 🧭 מצב ריצה ומצב תצורה (mode)
 

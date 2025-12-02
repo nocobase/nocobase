@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Validazione dei Campi
 Per garantire l'accuratezza, la sicurezza e la coerenza dei dati nelle `collezioni`, NocoBase offre la funzionalità di validazione dei campi. Questa funzionalità si divide principalmente in due parti: la configurazione delle regole e l'applicazione delle regole.
 

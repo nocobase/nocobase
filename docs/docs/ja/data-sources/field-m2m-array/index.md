@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-m2m-array"
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: "@nocobase/plugin-field-m2m-array"
----
 
 # 多対多（配列）
 

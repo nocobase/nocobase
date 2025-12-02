@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Relationsfält
 
 I NocoBase är relationsfält inte faktiska fält, utan används för att upprätta kopplingar mellan samlingar. Detta koncept är likvärdigt med relationer i relationsdatabaser.

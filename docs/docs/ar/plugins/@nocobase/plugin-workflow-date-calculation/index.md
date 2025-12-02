@@ -1,9 +1,4 @@
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
-
-
-```yaml
+---
 displayName: "سير العمل: عقدة حساب التاريخ"
 packageName: '@nocobase/plugin-workflow-date-calculation'
 supportedVersions:
@@ -15,6 +10,10 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
-```
+---
+:::tip إشعار الترجمة بالذكاء الاصطناعي
+تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
+:::
+
 
 # سير العمل: عقدة حساب التاريخ

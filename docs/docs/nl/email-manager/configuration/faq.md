@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-email-manager"
----
 
 # Veelgestelde vragen
 

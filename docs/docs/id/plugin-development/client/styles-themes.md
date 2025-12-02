@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Gaya & Tema
 
 Untuk beradaptasi lebih baik dengan kemampuan tema dinamis NocoBase, dalam **plugin**, disarankan untuk menggunakan [antd-style](https://ant-design.github.io/antd-style/zh-CN/guide) untuk menulis gaya. Ini dapat dikombinasikan dengan [token tema](https://ant.design/docs/react/customize-theme-cn#seedtoken) yang sudah ada untuk menangani kemampuan dinamis tema. NocoBase juga menyediakan [**plugin** Editor Tema](#) untuk penyesuaian gaya yang mudah.

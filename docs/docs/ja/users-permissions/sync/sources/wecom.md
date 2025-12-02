@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-wecom"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-wecom"
----
-```
-
 # WeChat Workからユーザーデータを同期する
 
 ## はじめに

@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Confronto tra database principale e database esterni
 
 Le differenze tra il database principale e i database esterni in NocoBase si manifestano principalmente in quattro aspetti: supporto per i tipi di database, supporto per i tipi di collezione, supporto per i tipi di campo e capacità di backup e migrazione.

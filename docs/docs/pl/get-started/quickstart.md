@@ -1,8 +1,3 @@
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
 ---
 versions:
   - label: Najnowsza (Stabilna)
@@ -37,6 +32,13 @@ install_methods:
     scenarios: Deweloperzy techniczni, użytkownicy chcący wypróbować niewydane wersje.
     technical_requirement: ★★★★★
     upgrade_method: Synchronizuj aktualizacje poprzez proces Git.
+---
+
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 ```
 
 # Porównanie metod instalacji i wersji
@@ -60,4 +62,3 @@ NocoBase można zainstalować na kilka sposobów.
 | **Scenariusze użycia** | Użytkownicy bez kodu, użytkownicy chcący szybko wdrożyć na serwer. | Programiści front-end/full-stack, projekty zespołowe, rozwój low-code. | Deweloperzy techniczni, użytkownicy chcący wypróbować niewydane wersje. |
 | **Wymagania techniczne** | ★☆☆☆☆ | ★★★☆☆ | ★★★★★ |
 | **Metoda aktualizacji** | Pobierz najnowszy obraz i uruchom ponownie kontener. | Zaktualizuj zależności za pomocą yarn. | Synchronizuj aktualizacje poprzez proces Git. |
-| **Samouczki** | [<code>Instalacja</code>](#) [<code>Aktualizacja</code>](#) [<code>Wdrożenie</code>](#) | [<code>Instalacja</code>](#) [<code>Aktualizacja</code>](#) [<code>Wdrożenie</code>](#) | [<code>Instalacja</code>](#) [<code>Aktualizacja</code>](#) [<code>Wdrożenie</code>](#) |

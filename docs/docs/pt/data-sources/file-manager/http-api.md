@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # API HTTP
 
 O upload de arquivos para campos de anexo e coleções de arquivos pode ser feito via API HTTP. A forma de invocação difere dependendo do motor de armazenamento usado pelo anexo ou pela coleção de arquivos.

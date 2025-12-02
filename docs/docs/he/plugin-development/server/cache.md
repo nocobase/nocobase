@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 # מטמון
 
 מודול המטמון של NocoBase מבוסס על <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> ומספק פונקציונליות מטמון לפיתוח תוספים. המערכת כוללת שני סוגי מטמון מובנים:

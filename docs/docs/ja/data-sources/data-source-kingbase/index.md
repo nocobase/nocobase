@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-kingbase"
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: "@nocobase/plugin-data-source-kingbase"
----
 
 # データソース - KingbaseES データベース
 

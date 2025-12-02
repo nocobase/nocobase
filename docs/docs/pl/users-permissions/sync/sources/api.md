@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Synchronizowanie danych użytkowników za pomocą API HTTP
 
 ## Uzyskiwanie klucza API

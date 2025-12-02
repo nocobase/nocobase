@@ -1,3 +1,9 @@
+
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Gambaran Umum Sistem Konteks
 
 Sistem konteks pada NocoBase FlowEngine terbagi menjadi tiga lapisan, yang masing-masing memiliki cakupan (scope) berbeda. Penggunaan yang tepat dapat memungkinkan pembagian dan isolasi layanan, konfigurasi, serta data secara fleksibel, sehingga meningkatkan pemeliharaan dan skalabilitas bisnis.
@@ -34,13 +40,6 @@ FlowEngineContext (Konteks Global)
 - `FlowModelContext` dari sub-model dapat mengakses konteks model induknya (hubungan sinkron) melalui mekanisme delegasi, mendukung penimpaan dengan nama yang sama.
 - Model induk-anak asinkron tidak akan membentuk hubungan delegasi untuk menghindari polusi status.
 - `FlowRuntimeContext` selalu mengakses `FlowModelContext` yang sesuai dengannya melalui mekanisme delegasi, tetapi tidak akan menyebarkan perubahan ke atas.
-
----
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
-
 
 ## 🧭 Mode Runtime dan Pengaturan (mode)
 

@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-collection-fdw"
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-collection-fdw"
----
 
 # Externe datatabellen verbinden (FDW)
 

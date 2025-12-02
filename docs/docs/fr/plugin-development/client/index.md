@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Vue d'ensemble
 
 Le développement de plugins côté client NocoBase offre diverses fonctionnalités et capacités pour vous aider à personnaliser et à étendre les fonctionnalités front-end de NocoBase. Vous trouverez ci-dessous les principales capacités et les chapitres associés au développement de plugins côté client NocoBase :

@@ -1,8 +1,4 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
-
+---
 displayName: "Flux de travail : Nœud d'agrégation"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
@@ -11,5 +7,9 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
 
 # Flux de travail : Nœud d'agrégation

@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 # סגנונות ועיצובים
 
 כדי להתאים טוב יותר ליכולות העיצוב הדינמיות של NocoBase, מומלץ להשתמש ב-[antd-style](https://ant-design.github.io/antd-style/zh-CN/guide) לכתיבת סגנונות בתוספים. ניתן לשלב זאת עם ה-[theme token](https://ant.design/docs/react/customize-theme-cn#seedtoken) הקיים כדי לטפל ביכולות הדינמיות של העיצובים. בנוסף, NocoBase מספקת גם [תוסף עורך עיצובים](#) שניתן להשתמש בו להתאמות סגנון נוחות.

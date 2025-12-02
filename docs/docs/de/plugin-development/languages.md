@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Sprachliste
 
 NocoBase bietet Mehrsprachigkeit (i18n) an. Hier finden Sie eine Liste der aktuell integrierten Sprachen. Jede Sprachkonfiguration besteht aus einem **Sprachcode (Locale Code)** und einem **Anzeigenamen (Label)**.

@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-multi-space"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: "@nocobase/plugin-multi-space"
----
 
 # พื้นที่
 

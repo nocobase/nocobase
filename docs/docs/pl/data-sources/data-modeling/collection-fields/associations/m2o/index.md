@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Wiele do jednego
 
 W bazie danych biblioteki istnieją dwie encje: książki i autorzy. Jeden autor może napisać wiele książek, ale każda książka zazwyczaj ma tylko jednego autora. W takiej sytuacji relacja między autorami a książkami to relacja wiele do jednego. Wiele książek może być powiązanych z tym samym autorem, ale każda książka może mieć tylko jednego autora.

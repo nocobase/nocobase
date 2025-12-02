@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-import-pro"
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-pkg: "@nocobase/plugin-action-import-pro"
----
 # Import Pro
 
 ## Wprowadzenie

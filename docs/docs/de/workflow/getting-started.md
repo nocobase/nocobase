@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Schnellstart
 
 ## Ihren ersten Workflow konfigurieren

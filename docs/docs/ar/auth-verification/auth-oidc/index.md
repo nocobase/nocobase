@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-auth-oidc'
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-auth-oidc'
----
 
 # المصادقة: OIDC
 

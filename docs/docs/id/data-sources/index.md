@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Ikhtisar
 
 Pemodelan data adalah langkah kunci dalam merancang basis data, melibatkan proses analisis mendalam dan abstraksi berbagai jenis data di dunia nyata beserta hubungan timbal baliknya. Dalam proses ini, kita berupaya mengungkap koneksi intrinsik antar data dan memformalkannya menjadi model data, meletakkan dasar bagi struktur basis data sistem informasi. NocoBase adalah platform berbasis model data, dengan fitur-fitur berikut:

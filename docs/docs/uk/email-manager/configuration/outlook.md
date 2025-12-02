@@ -1,11 +1,12 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
+
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-email-manager"
----
 
 # Налаштування Microsoft
 

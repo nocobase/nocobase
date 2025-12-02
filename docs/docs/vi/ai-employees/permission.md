@@ -1,3 +1,9 @@
+
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Vai trò và Quyền hạn
 
 ## Giới thiệu
@@ -24,13 +30,6 @@ Chọn một vai trò, nhấp vào tab `Permissions`, sau đó nhấp vào tab `
 Nhấp vào ô chọn trong cột `Available` của danh sách nhân viên AI để kiểm soát xem vai trò hiện tại có thể truy cập nhân viên AI đó hay không.
 
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
-
----
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
 
 ## Quyền truy cập dữ liệu
 

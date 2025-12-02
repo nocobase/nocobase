@@ -1,11 +1,12 @@
+---
+displayName: "Źródło danych: KingbaseES"
+packageName: '@nocobase/plugin-data-source-kingbase'
+description: |
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-displayName: "Źródło danych: KingbaseES"
-packageName: '@nocobase/plugin-data-source-kingbase'
-description: |
   Użyj bazy danych KingbaseES jako źródła danych. Może ona służyć jako główna baza danych lub jako zewnętrzna baza danych.
 isFree: false
 builtIn: false

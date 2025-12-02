@@ -1,9 +1,4 @@
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
-
-
-```yaml
+---
 displayName: "المصادقة: CAS"
 packageName: '@nocobase/plugin-auth-cas'
 supportedVersions:
@@ -15,6 +10,10 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
-```
+---
+:::tip إشعار الترجمة بالذكاء الاصطناعي
+تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
+:::
+
 
 # المصادقة: CAS

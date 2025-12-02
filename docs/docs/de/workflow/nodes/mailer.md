@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-mailer'
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-mailer'
----
 
 # E-Mail senden
 

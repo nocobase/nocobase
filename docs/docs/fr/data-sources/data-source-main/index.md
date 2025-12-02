@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-main"
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-main"
----
 
 # Base de données principale
 

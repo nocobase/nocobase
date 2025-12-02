@@ -1,8 +1,4 @@
-:::tip Upozornění na překlad AI
-Tato dokumentace byla automaticky přeložena umělou inteligencí.
-:::
-
-
+---
 displayName: "Pole kolekce: Snímek"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
@@ -12,6 +8,9 @@ builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
 
 # Pole kolekce: Snímek
 

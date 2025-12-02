@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # EventDefinition
 
 Een EventDefinition definieert de logica voor gebeurtenisafhandeling binnen een workflow. Het wordt gebruikt om te reageren op specifieke gebeurtenistriggers. Gebeurtenissen zijn een belangrijk mechanisme in de FlowEngine voor het activeren van de uitvoering van workflows.

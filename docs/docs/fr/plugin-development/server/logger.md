@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Logger
 
 La journalisation NocoBase est basée sur <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. Par défaut, NocoBase catégorise les journaux en journaux de requêtes API, journaux d'exécution système et journaux d'exécution SQL. Les journaux de requêtes API et d'exécution SQL sont générés en interne par l'application. Les développeurs de **plugins** n'ont généralement besoin d'enregistrer que les journaux d'exécution système liés à leurs **plugins**.

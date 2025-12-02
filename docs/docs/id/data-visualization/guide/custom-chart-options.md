@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Konfigurasi Bagan Kustom
 
 Dalam mode Kustom, Anda dapat mengonfigurasi bagan dengan menulis kode JS di editor. Berdasarkan `ctx.data`, Anda dapat mengembalikan `option` ECharts yang lengkap. Mode ini cocok untuk menggabungkan beberapa seri, membuat tooltip yang kompleks, dan gaya dinamis. Secara teori, semua fitur ECharts dan semua jenis bagan dapat didukung.

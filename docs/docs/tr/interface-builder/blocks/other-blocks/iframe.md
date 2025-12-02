@@ -1,10 +1,10 @@
-:::tip Yapay Zeka Çeviri Bildirimi
+---
+pkg: "@nocobase/plugin-block-iframe"
+---
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 
-
-pkg: "@nocobase/plugin-block-iframe"
----
 # Iframe Bloğu
 
 ## Giriş

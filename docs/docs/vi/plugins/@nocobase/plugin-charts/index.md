@@ -1,8 +1,4 @@
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
+---
 displayName: "Biểu đồ (đã ngừng hỗ trợ)"
 packageName: '@nocobase/plugin-charts'
 description: |
@@ -12,6 +8,9 @@ builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
 
 # Biểu đồ (đã ngừng hỗ trợ)
 

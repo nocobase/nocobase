@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-departments'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-departments'
----
 
 # Quản lý Vai trò Phòng ban
 

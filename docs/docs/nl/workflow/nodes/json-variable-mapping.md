@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-json-variable-mapping'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-json-variable-mapping'
----
 
 # JSON Variabele Mapping
 

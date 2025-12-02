@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Créez votre premier plugin de bloc
 
 Avant de commencer, nous vous recommandons de lire « [Créez votre premier plugin](../plugin-development/write-your-first-plugin.md) » pour apprendre à créer rapidement un plugin de base. Ensuite, nous allons l'étendre en ajoutant une fonctionnalité de bloc simple.

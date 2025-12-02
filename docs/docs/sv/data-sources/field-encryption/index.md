@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-encryption"
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: "@nocobase/plugin-field-encryption"
----
 
 # Kryptering
 

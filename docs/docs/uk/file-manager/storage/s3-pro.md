@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-file-storage-s3-pro'
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
-
-
-pkg: '@nocobase/plugin-file-storage-s3-pro'
----
 
 # Рушій сховища: S3 (Pro)
 

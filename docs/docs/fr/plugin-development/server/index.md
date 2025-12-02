@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Vue d'ensemble
 
 Le développement de plugins côté serveur NocoBase vous offre diverses fonctionnalités et capacités pour personnaliser et étendre les fonctionnalités principales de NocoBase. Vous trouverez ci-dessous les principales capacités et les chapitres associés :

@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # ResourceManager
 
 La funzionalità di gestione delle risorse di NocoBase converte automaticamente le `collezioni` e le associazioni esistenti in risorse, e include diversi tipi di operazioni predefinite per aiutare gli sviluppatori a costruire rapidamente operazioni sulle risorse REST API. A differenza delle REST API tradizionali, le operazioni sulle risorse di NocoBase non dipendono dai metodi di richiesta HTTP, ma determinano l'operazione specifica da eseguire tramite la definizione esplicita di `:action`.

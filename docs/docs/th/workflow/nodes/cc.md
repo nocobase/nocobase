@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-cc'
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: '@nocobase/plugin-workflow-cc'
----
 
 # 抄送 <Badge>v1.8.2+</Badge>
 

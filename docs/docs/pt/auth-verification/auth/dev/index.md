@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Estender Tipos de Autenticação
 
 ## Visão Geral

@@ -1,11 +1,12 @@
+---
+displayName: "التقويم"
+packageName: '@nocobase/plugin-calendar'
+description: |
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-displayName: "التقويم"
-packageName: '@nocobase/plugin-calendar'
-description: |
   يوفر قالب مجموعة التقويم وكتلة لإدارة بيانات التاريخ، وعادةً ما يستخدم للمعلومات المتعلقة بالتاريخ/الوقت مثل الأحداث والمواعيد والمهام وما إلى ذلك.
 isFree: true
 builtIn: true

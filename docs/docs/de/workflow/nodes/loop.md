@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-loop'
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-loop'
----
 
 # Schleife
 

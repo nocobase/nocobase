@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Übersicht
 
 Die Datenmodellierung ist ein entscheidender Schritt beim Entwurf von Datenbanken. Sie umfasst die tiefgehende Analyse und Abstraktion verschiedener Datentypen der realen Welt und ihrer wechselseitigen Beziehungen. Dabei versuchen wir, die intrinsischen Verbindungen zwischen den Daten aufzudecken und sie formal in Datenmodellen zu beschreiben, wodurch das Fundament für die Datenbankstruktur von Informationssystemen gelegt wird. NocoBase ist eine datenmodellgesteuerte Plattform, die folgende Merkmale aufweist:

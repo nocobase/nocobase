@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Context
 
 In NocoBase wird für jede Anfrage ein `ctx`-Objekt generiert. Dieses Objekt ist eine Instanz des Context. Der Context kapselt Anfrage- und Antwortinformationen und bietet gleichzeitig NocoBase-spezifische Funktionen wie Datenbankzugriff, Cache-Operationen, Berechtigungsverwaltung, Internationalisierung und Protokollierung.

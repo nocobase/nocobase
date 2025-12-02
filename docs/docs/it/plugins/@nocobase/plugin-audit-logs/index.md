@@ -1,11 +1,12 @@
+---
+displayName: "Log di audit (deprecato)"
+packageName: '@nocobase/plugin-audit-logs'
+description: |
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-displayName: "Log di audit (deprecato)"
-packageName: '@nocobase/plugin-audit-logs'
-description: |
   Questo plugin è deprecato. Si prega di non utilizzarlo. In futuro sarà disponibile un nuovo plugin per i log di audit.
 isFree: true
 builtIn: true

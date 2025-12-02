@@ -1,9 +1,4 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
-
-```yaml
+---
 displayName: "Dosya yöneticisi"
 packageName: '@nocobase/plugin-file-manager'
 description: |
@@ -11,6 +6,10 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
-```
+---
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
 
 # Dosya yöneticisi

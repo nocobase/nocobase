@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Aktualisieren einer create-nocobase-app Installation
 
 :::warning Vorbereitungen vor dem Upgrade

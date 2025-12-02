@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Inloggen met Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect

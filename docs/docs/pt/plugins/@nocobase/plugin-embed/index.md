@@ -1,9 +1,4 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
-
-```yaml
+---
 displayName: "Incorporar NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
@@ -14,6 +9,10 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
-```
+---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
 
 # Incorporar NocoBase

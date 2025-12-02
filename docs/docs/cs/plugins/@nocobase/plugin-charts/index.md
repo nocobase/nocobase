@@ -1,8 +1,4 @@
-:::tip Upozornění na překlad AI
-Tato dokumentace byla automaticky přeložena umělou inteligencí.
-:::
-
-
+---
 displayName: "Grafy (zastaralé)"
 packageName: '@nocobase/plugin-charts'
 description: |
@@ -12,6 +8,9 @@ builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
 
 # Grafy (zastaralé)
 

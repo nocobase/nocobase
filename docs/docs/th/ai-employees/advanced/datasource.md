@@ -1,12 +1,13 @@
+---
+pkg: "@nocobase/plugin-ai"
+deprecated: true
+---
+
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-ai"
-deprecated: true
----
 
 # ขั้นสูง
 

@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-field-attachment-url"
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: "@nocobase/plugin-field-attachment-url"
----
 
 # Trường dữ liệu: Đính kèm (URL)
 

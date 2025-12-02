@@ -1,11 +1,12 @@
+---
+displayName: "Przepływ pracy: Węzeł żądania HTTP"
+packageName: '@nocobase/plugin-workflow-request'
+description: |
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-displayName: "Przepływ pracy: Węzeł żądania HTTP"
-packageName: '@nocobase/plugin-workflow-request'
-description: |
   Umożliwia wysyłanie żądań HTTP do dowolnej usługi HTTP w przepływie pracy, w celu wymiany danych.
 isFree: true
 builtIn: true

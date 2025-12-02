@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-formula"
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: "@nocobase/plugin-field-formula"
----
 
 # 計算式
 

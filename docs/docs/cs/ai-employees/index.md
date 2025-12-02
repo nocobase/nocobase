@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-ai"
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: "@nocobase/plugin-ai"
----
 
 # AI Zaměstnanci · Začínáme
 

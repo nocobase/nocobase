@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-graph-collection-manager"
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: "@nocobase/plugin-graph-collection-manager"
----
 
 # Vizuální správa kolekcí
 

@@ -1,8 +1,4 @@
-:::tip ประกาศการแปลด้วย AI
-เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
-:::
-
-
+---
 displayName: "บล็อก: เทมเพลต (เลิกใช้งานแล้ว)"
 packageName: '@nocobase/plugin-block-template'
 description: |
@@ -12,6 +8,9 @@ builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
 
 # บล็อก: เทมเพลต (เลิกใช้งานแล้ว)
 

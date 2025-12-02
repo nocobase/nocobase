@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-collection-sql"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-collection-sql"
----
-```
-
 # คอลเลกชัน SQL
 
 ## บทนำ

@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-workbench"
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: "@nocobase/plugin-block-workbench"
----
 # Block: Werkbank
 
 ## Einführung

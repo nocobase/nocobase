@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-import-pro"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: "@nocobase/plugin-action-import-pro"
----
 # استيراد احترافي
 
 ## مقدمة

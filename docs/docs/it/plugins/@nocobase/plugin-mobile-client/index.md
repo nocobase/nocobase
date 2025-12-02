@@ -1,11 +1,12 @@
+---
+displayName: "Client mobile (Obsoleto)"
+packageName: '@nocobase/plugin-mobile-client'
+description: |
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-displayName: "Client mobile (Obsoleto)"
-packageName: '@nocobase/plugin-mobile-client'
-description: |
   Permette di configurare le pagine per dispositivi mobili.
 isFree: true
 builtIn: true

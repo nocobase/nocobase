@@ -1,8 +1,7 @@
-```yaml
 ---
 title: Docker Kurulumunu Yükseltme
 ---
-:::tip Yapay Zeka Çeviri Bildirimi
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 
@@ -23,7 +22,6 @@ Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 cd /your/path/my-project/
 # Windows
 cd C:\your\path\my-project
-```
 
 ## 2. Image Sürüm Numarasını Güncelleyin
 

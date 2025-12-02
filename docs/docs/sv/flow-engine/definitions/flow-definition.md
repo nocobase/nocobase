@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # FlowDefinition
 
 FlowDefinition definierar den grundläggande strukturen och konfigurationen för ett flöde och är ett av kärnkoncepten i FlowEngine. Den beskriver flödets metadata, utlösningsvillkor, exekveringssteg med mera.

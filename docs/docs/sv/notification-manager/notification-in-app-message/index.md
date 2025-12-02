@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-notification-in-app-message'
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: '@nocobase/plugin-notification-in-app-message'
----
 
 # Avisering: App-interna meddelanden
 

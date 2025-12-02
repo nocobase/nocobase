@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Eventos
 
 El servidor de NocoBase desencadena eventos correspondientes durante el ciclo de vida de la aplicación, el ciclo de vida de los **plugins** y las operaciones de la base de datos. Los desarrolladores de **plugins** pueden escuchar estos eventos para implementar lógica de extensión, operaciones automatizadas o comportamientos personalizados.

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-request-interceptor'
+---
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-request-interceptor'
----
 
 # Evento Antes da Ação
 

@@ -1,8 +1,4 @@
-:::tip Upozornění na překlad AI
-Tato dokumentace byla automaticky přeložena umělou inteligencí.
-:::
-
-
+---
 displayName: "Pracovní postup: Schvalování"
 packageName: '@nocobase/plugin-workflow-approval'
 description: |
@@ -12,5 +8,8 @@ builtIn: false
 defaultEnabled: false
 points: 8
 ---
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
 
 # Pracovní postup: Schvalování

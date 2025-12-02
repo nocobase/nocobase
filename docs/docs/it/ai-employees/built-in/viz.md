@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Dipendente AI · Viz: Analista di Insight
 
 > Generi grafici e insight con un solo clic, lasciando che i dati parlino da soli.

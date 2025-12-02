@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-ai"
 
 
 
-pkg: "@nocobase/plugin-ai"
----
-
 # Текстовий чат
 
 ## Вступ

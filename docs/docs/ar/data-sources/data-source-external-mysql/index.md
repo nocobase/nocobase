@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-external-mysql"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-external-mysql"
----
 
 # مصدر بيانات خارجي - MySQL
 

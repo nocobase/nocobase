@@ -1,14 +1,15 @@
-:::tip הודעת תרגום AI
-תיעוד זה תורגם אוטומטית על ידי AI.
-:::
-
-
+---
 displayName: "תהליך עבודה: אירוע פעולה מותאמת אישית"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip הודעת תרגום AI
+תיעוד זה תורגם אוטומטית על ידי AI.
+:::
+
   מופעל בלחיצה על כפתור המוגדר כפעולה מותאמת אישית. מתאים לארגון וניהול פעולות מותאמות אישית על שורות נתונים.
 isFree: false
 builtIn: false

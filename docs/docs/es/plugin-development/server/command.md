@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Comando
 
 En NocoBase, los comandos se utilizan para ejecutar operaciones relacionadas con aplicaciones o **plugins** desde la línea de comandos. Esto incluye tareas como ejecutar tareas del sistema, realizar operaciones de migración o sincronización, inicializar la configuración, o interactuar con instancias de la aplicación en ejecución. Los desarrolladores pueden definir comandos personalizados para los **plugins** y registrarlos a través del objeto `app`, ejecutándolos en la CLI como `nocobase <command>`.

@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-verification"
 
 
 
-pkg: '@nocobase/plugin-verification'
----
-
 # การยืนยันตัวตน
 
 :::info{title=ข้อแนะนำ}

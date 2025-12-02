@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # DataSourceManager
 
 `DataSourceManager` ist die Verwaltungs-Klasse für mehrere `dataSource`-Instanzen.

@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-main"
+---
 :::tip AI 번역 안내
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-main"
----
 
 # 주 데이터베이스
 

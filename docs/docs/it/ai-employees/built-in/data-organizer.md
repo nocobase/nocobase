@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Agente AI · Dex: Esperto di Organizzazione Dati
 
 > Estrae e compila rapidamente i moduli, trasformando le informazioni disordinate in dati strutturati.

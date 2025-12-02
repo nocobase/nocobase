@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: '@nocobase/plugin-auth'
----
 
 # 認証器管理
 

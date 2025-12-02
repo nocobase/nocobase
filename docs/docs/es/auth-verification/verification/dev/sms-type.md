@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Extender un proveedor de servicios SMS
 
 Este artículo explica cómo puede extender la funcionalidad de los proveedores de servicios SMS en la característica de [Verificación: SMS](../sms) a través de un **plugin**.

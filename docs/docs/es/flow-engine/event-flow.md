@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Flujo de Eventos
 
 En FlowEngine, todos los componentes de la interfaz están **orientados por eventos (Event-driven)**. El comportamiento, la interacción y los cambios de datos de los componentes se activan mediante eventos y se ejecutan a través de un flujo.

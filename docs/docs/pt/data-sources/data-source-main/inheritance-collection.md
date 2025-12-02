@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-main"
+---
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-main"
----
 
 # Coleção de Herança
 

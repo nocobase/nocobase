@@ -1,11 +1,12 @@
+---
+displayName: "Klien Seluler (Tidak Digunakan Lagi)"
+packageName: '@nocobase/plugin-mobile-client'
+description: |
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-displayName: "Klien Seluler (Tidak Digunakan Lagi)"
-packageName: '@nocobase/plugin-mobile-client'
-description: |
   Menyediakan kemampuan untuk mengonfigurasi halaman seluler.
 isFree: true
 builtIn: true

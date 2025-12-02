@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # RelationRepository
 
 `RelationRepository` est un objet `Repository` pour les types d'association. Il vous permet d'opérer sur des données associées sans avoir à charger l'association. Chaque type d'association dérive de `RelationRepository` pour fournir une implémentation spécifique :

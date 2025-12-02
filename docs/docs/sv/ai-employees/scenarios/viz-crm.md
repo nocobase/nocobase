@@ -1,3 +1,9 @@
+
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # AI-agent · Viz: Konfigurationsguide för CRM-scenarier
 
 > Använd CRM-exemplet för att lära dig hur du får din AI-insiktsanalytiker att verkligen förstå din verksamhet och utnyttja dess fulla potential.
@@ -38,13 +44,6 @@ För att förstå hur ni utökar Viz måste ni först förstå dess interna lage
 | **Verktygskonfiguration** | Bryggan för Viz att anropa externa datakällor eller arbetsflöden | Fritt utbytbar |
 
 Denna lagerdesign gör att Viz kan bibehålla en stabil personlighet (konsekvent analyslogik) samtidigt som den snabbt kan anpassas till olika affärsscenarier (CRM, sjukhushantering, kanalanalys, produktionsdrift...).
-
----
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
 
 ## 3. Mönster ett: Mallbaserad analysmotor (rekommenderas)
 

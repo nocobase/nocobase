@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Campos da Coleção
 
 ## Tipos de Interface dos Campos

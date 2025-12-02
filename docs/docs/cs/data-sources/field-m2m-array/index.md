@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-field-m2m-array"
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: "@nocobase/plugin-field-m2m-array"
----
 
 # Mnoho k mnoha (pole)
 

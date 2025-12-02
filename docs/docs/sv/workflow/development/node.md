@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Utöka nodtyper
 
 En nods typ är i grunden en operationell instruktion. Olika instruktioner representerar olika operationer som utförs i arbetsflödet.

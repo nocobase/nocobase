@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-field-m2m-array"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: "@nocobase/plugin-field-m2m-array"
----
 
 # แบบหลายต่อหลาย (อาร์เรย์)
 

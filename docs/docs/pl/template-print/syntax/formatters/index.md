@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 ## Formatery
 
 Formatery służą do przekształcania surowych danych w tekst łatwy do odczytania. Stosuje się je do danych za pomocą dwukropka (`:`) i można je łączyć w łańcuchy, tak aby wynik jednego formatera stawał się wejściem dla kolejnego. Niektóre formatery obsługują parametry stałe lub dynamiczne.

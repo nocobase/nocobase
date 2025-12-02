@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # DataSourceManager: Gestión de Fuentes de Datos
 
 NocoBase le ofrece `DataSourceManager` para la gestión de múltiples **fuentes de datos**. Cada `DataSource` cuenta con sus propias instancias de `Database`, `ResourceManager` y `ACL`, lo que facilita a los desarrolladores la gestión y extensión flexible de múltiples **fuentes de datos**.

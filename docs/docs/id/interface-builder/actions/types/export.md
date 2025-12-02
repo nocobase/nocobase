@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-export"
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: "@nocobase/plugin-action-export"
----
 # Ekspor
 
 ## Pendahuluan

@@ -1,13 +1,14 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
-
+---
 displayName: "Bloco: Formulário de várias etapas"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
+---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
   Divida formulários com muitos campos em várias etapas, facilitando o preenchimento e aliviando a carga sobre os usuários.
 isFree: false
 builtIn: false

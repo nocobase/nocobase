@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-json-variable-mapping'
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-json-variable-mapping'
----
 
 # Pemetaan Variabel JSON
 

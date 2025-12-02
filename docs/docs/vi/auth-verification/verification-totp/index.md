@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-verification-totp-authenticator'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-verification-totp-authenticator'
----
 
 # Xác thực: Trình xác thực TOTP
 

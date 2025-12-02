@@ -1,9 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-subflow'
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-subflow'
 
 # Wywoływanie przepływu pracy
 

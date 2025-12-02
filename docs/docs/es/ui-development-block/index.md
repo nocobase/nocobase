@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Resumen de las extensiones de bloque
 
 En NocoBase 2.0, el mecanismo de extensión de bloques se ha simplificado considerablemente. Los desarrolladores solo necesitan heredar la clase base **FlowModel** correspondiente e implementar los métodos de interfaz relacionados (principalmente el método `renderComponent()`) para personalizar bloques rápidamente.

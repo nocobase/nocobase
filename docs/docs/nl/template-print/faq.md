@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 ## Veelvoorkomende problemen en oplossingen
 
 ### 1. Lege kolommen en cellen in Excel-sjablonen verdwijnen in de gerenderde resultaten

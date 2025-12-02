@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # StepDefinition
 
 StepDefinition definisce un singolo passo all'interno di un flusso. Ogni passo può rappresentare un'azione, la gestione di un evento o un'altra operazione. Un passo è l'unità di esecuzione fondamentale di un flusso.

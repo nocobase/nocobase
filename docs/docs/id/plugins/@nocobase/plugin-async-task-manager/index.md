@@ -1,9 +1,4 @@
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
-
-```yaml
+---
 displayName: "Pengelola Tugas Asinkron"
 packageName: '@nocobase/plugin-async-task-manager'
 description: |
@@ -11,6 +6,10 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
-```
+---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
 
 # Pengelola Tugas Asinkron

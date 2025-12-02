@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-block-iframe"
 
 
 
-pkg: "@nocobase/plugin-block-iframe"
----
-
 # Блок Iframe
 
 ## Вступ

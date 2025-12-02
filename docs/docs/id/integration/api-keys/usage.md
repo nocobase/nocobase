@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Menggunakan Kunci API di NocoBase
 
 Panduan ini menunjukkan cara menggunakan Kunci API di NocoBase untuk mengambil data melalui contoh praktis "Daftar Tugas". Ikuti petunjuk langkah demi langkah di bawah ini untuk memahami alur kerja secara lengkap.

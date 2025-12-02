@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Funcionário AI · Nathan: Engenheiro Frontend
 
 > Ajuda você a escrever e otimizar código frontend para implementar lógicas interativas complexas.

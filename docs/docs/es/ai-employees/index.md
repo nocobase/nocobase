@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+---
 :::tip Aviso de traducción por IA
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
-pkg: "@nocobase/plugin-ai"
----
 
 # Empleados de IA · Introducción
 

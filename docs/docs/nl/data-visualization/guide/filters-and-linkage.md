@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Paginafilters en koppeling
 
 Paginafilters (filterblokken) worden gebruikt om op paginaniveau filtercondities uniform in te voeren. Deze condities worden vervolgens samengevoegd in grafiekquery's, waardoor meerdere grafieken consistent gefilterd en gekoppeld kunnen worden.

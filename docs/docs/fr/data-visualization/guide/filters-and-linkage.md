@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Filtres de page et liaison
 
 Le filtre de page (bloc de filtre) permet de saisir des conditions de filtrage de manière unifiée au niveau de la page et de les fusionner dans les requêtes des graphiques, afin d'assurer un filtrage cohérent et une liaison entre plusieurs graphiques.

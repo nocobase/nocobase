@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-workflow-json-variable-mapping'
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-json-variable-mapping'
----
 
 # Mappage de variables JSON
 

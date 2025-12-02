@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # IRepository
 
 De `Repository`-interface definieert een reeks methoden voor modelbewerkingen, bedoeld om de CRUD-bewerkingen (aanmaken, lezen, bijwerken, verwijderen) van de gegevensbron aan te passen.

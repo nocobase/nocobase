@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # IRepository
 
 L'interfaccia `Repository` definisce una serie di metodi per le operazioni sui modelli, pensati per adattarsi alle operazioni CRUD (Creazione, Lettura, Aggiornamento, Eliminazione) della **fonte dati**.

@@ -1,11 +1,11 @@
+---
+pkg: "@nocobase/plugin-ai"
+deprecated: true
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-pkg: "@nocobase/plugin-ai"
-deprecated: true
----
 
 # Zaawansowane
 

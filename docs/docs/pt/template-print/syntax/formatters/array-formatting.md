@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 ### Formatação de Array
 
 #### 1. :arrayJoin(separator, index, count)

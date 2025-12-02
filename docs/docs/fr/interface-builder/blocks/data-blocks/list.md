@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-list"
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
-pkg: "@nocobase/plugin-block-list"
----
 # Bloc Liste
 
 ## Introduction

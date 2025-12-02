@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Editor di Temi
 
 > La funzionalità del tema attuale è implementata basandosi sulla versione 5.x di Ant Design. Si consiglia di leggere i concetti relativi alla [personalizzazione del tema](https://ant.design/docs/react/customize-theme-cn#%E8%87%AA%E5%AE%9A%E4%B9%89%E4%B8%BB%E9%A2%98) prima di procedere con questo documento.

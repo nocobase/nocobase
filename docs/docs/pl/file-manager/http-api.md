@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # HTTP API
 
 Przesyłanie plików zarówno dla pól załączników, jak i dla kolekcji plików jest obsługiwane przez HTTP API. Sposób wywołania różni się w zależności od silnika przechowywania używanego przez pole załącznika lub kolekcję plików.

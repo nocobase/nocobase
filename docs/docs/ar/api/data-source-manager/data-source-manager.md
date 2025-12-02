@@ -2,7 +2,6 @@
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
 # DataSourceManager
 
 `DataSourceManager` هو فئة الإدارة لعدة نُسخ من `dataSource`.

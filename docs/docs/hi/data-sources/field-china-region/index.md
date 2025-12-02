@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-field-china-region"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-field-china-region"
----
-```
-
 # चीन क्षेत्र
 
 ## परिचय

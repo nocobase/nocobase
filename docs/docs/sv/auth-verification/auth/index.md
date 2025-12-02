@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Användarautentisering
 
 NocoBase användarautentiseringsmodul består huvudsakligen av två delar:

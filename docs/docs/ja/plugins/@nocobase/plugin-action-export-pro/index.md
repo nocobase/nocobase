@@ -1,14 +1,15 @@
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-
+---
 displayName: "アクション：レコードのエクスポート Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
   データのエクスポート機能を強化するプラグインです。非同期エクスポートに対応しており、大量のデータも処理できます。添付ファイルのエクスポートも可能です。
 isFree: false
 builtIn: false

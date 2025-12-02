@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-external-mssql"
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-external-mssql"
----
 
 # Extern datakälla - MSSQL
 

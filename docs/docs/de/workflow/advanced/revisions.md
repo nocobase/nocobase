@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Versionsverwaltung
 
 Nachdem ein konfigurierter Workflow mindestens einmal ausgelöst wurde, müssen Sie, wenn Sie die Konfiguration des Workflows oder seine Knoten ändern möchten, zuerst eine neue Version erstellen. Dies stellt gleichzeitig sicher, dass die Ausführungshistorie bereits ausgelöster Workflows bei der Überprüfung nicht durch zukünftige Änderungen beeinflusst wird.

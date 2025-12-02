@@ -1,14 +1,15 @@
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
+---
 displayName: "Przepływ pracy: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
   Odbiera wywołania HTTP z systemów zewnętrznych i wyzwala zdarzenia. Jest to idealne rozwiązanie do przesyłania danych i powiadomień o zdarzeniach inicjowanych przez systemy zewnętrzne, takich jak potwierdzenia płatności (callbacki) czy powiadomienia o wiadomościach.
 isFree: false
 builtIn: false

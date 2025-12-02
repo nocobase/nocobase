@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-multi-space"
 
 
 
-pkg: "@nocobase/plugin-multi-space"
----
-
 # หลายสเปซ
 
 ## บทนำ

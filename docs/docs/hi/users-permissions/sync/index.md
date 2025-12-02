@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-user-data-sync'
+---
 :::tip AI अनुवाद सूचना
 यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
 :::
 
-
-pkg: '@nocobase/plugin-user-data-sync'
----
 
 # उपयोगकर्ता डेटा सिंक्रनाइज़ेशन
 

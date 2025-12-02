@@ -1,11 +1,12 @@
-:::tip Yapay Zeka Çeviri Bildirimi
+---
+pkg: "@nocobase/plugin-email-manager"
+---
+
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-email-manager"
----
 
 # Sıkça Sorulan Sorular
 

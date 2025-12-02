@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-graph-collection-manager"
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-pkg: "@nocobase/plugin-graph-collection-manager"
----
 
 # Gestione Grafica delle Collezioni
 

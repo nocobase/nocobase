@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-calendar"
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: "@nocobase/plugin-calendar"
----
 
 # Kalender-Block
 

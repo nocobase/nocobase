@@ -2,7 +2,6 @@
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
 # CronJobManager: 정기 작업 관리
 
 `CronJobManager`는 NocoBase에서 제공하는 [cron](https://www.npmjs.com/package/cron) 기반의 정기 작업 관리자입니다. 플러그인은 이 관리자를 사용하여 서버에 정기 작업을 등록하고 특정 로직을 주기적으로 실행할 수 있습니다.

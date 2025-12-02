@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Używanie zmiennych kontekstowych
 
 Dzięki zmiennym kontekstowym można bezpośrednio ponownie wykorzystać informacje z bieżącej strony, użytkownika, czasu, warunków filtrowania itp., aby renderować wykresy i umożliwiać interakcje w oparciu o kontekst.

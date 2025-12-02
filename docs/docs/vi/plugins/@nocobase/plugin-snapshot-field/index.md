@@ -1,9 +1,4 @@
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
-```yaml
+---
 displayName: "Trường của bộ sưu tập: Ảnh chụp nhanh"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
@@ -12,7 +7,11 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
-```
+---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
 
 # Trường của bộ sưu tập: Ảnh chụp nhanh
 

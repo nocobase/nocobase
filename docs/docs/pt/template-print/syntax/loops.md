@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 ## Processamento de Loop
 
 O processamento de loop é usado para renderizar dados repetidamente de arrays ou objetos, definindo marcadores de início e fim para identificar o conteúdo que precisa ser repetido. Abaixo, descrevemos alguns cenários comuns.

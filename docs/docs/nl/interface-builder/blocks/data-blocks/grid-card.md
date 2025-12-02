@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-grid-card"
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-block-grid-card"
----
 # Rasterkaart
 
 ## Introductie

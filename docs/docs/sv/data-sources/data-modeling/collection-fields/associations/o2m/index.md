@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # En-till-många
 
 Relationen mellan en klass och dess elever är ett exempel på en en-till-många-relation: en klass kan ha flera elever, men varje elev tillhör endast en klass.

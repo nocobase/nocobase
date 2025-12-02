@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Date et heure (sans fuseau horaire)
 
 ## Introduction

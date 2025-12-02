@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: "@nocobase/plugin-email-manager"
----
 
 # תהליך הגדרה
 

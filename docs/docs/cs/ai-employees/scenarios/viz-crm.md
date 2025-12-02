@@ -1,3 +1,9 @@
+
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # AI zaměstnanec · Viz: Průvodce konfigurací scénáře CRM
 
 > Na příkladu CRM se dozvíte, jak zajistit, aby váš AI analytik pro získávání poznatků skutečně rozuměl vašemu podnikání a naplno využil svůj potenciál.
@@ -39,13 +45,6 @@ Abyste pochopili, jak rozšířit Viz, musíte nejprve porozumět jeho vrstvené
 
 Tato vrstvená architektura umožňuje Viz udržovat stabilní osobnost (konzistentní analytická logika),
 a zároveň se rychle přizpůsobovat různým obchodním scénářům (CRM, správa nemocnic, analýza kanálů, řízení výroby...).
-
----
-:::tip Upozornění na překlad AI
-Tato dokumentace byla automaticky přeložena umělou inteligencí.
-:::
-
-
 
 ## 3. Režim jedna: Šablonový analytický engine (doporučeno)
 

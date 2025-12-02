@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-multi-app-manager"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: "@nocobase/plugin-multi-app-manager"
----
 
 # หลายแอป
 

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-notification-in-app-message'
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: '@nocobase/plugin-notification-in-app-message'
----
 
 # Уведомления: Внутрисистемные сообщения
 

@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Motor de Almacenamiento: Amazon S3
 
 Este es un motor de almacenamiento basado en Amazon S3. Antes de usarlo, usted necesita preparar la cuenta y los permisos correspondientes.

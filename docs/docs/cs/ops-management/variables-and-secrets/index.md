@@ -7,9 +7,6 @@ Tato dokumentace byla automaticky přeložena umělou inteligencí.
 
 
 
-pkg: "@nocobase/plugin-environment-variables"
----
-
 # Proměnné a citlivé údaje
 
 ## Úvod

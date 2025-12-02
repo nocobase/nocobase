@@ -1,3 +1,9 @@
+
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Despliegue en Kubernetes
 
 Este artículo tiene como objetivo guiarle para desplegar rápidamente NocoBase en modo clúster dentro de un entorno Kubernetes. Asumimos que usted ya está familiarizado con Kubernetes y ha completado los pasos descritos en [Preparativos](./preparations.md).
@@ -113,12 +119,6 @@ spec:
   selector:
     app: nocobase
   type: ClusterIP
----
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
-
 # El Deployment de la aplicación, que puede desplegar múltiples contenedores de aplicación.
 apiVersion: apps/v1
 kind: Deployment

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-audit-logger'
+---
 :::tip Aviso de traducción por IA
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
-pkg: '@nocobase/plugin-audit-logger'
----
 
 # Registro de Auditoría
 

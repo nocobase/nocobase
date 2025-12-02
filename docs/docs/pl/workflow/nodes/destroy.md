@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Usuwanie danych
 
 Służy do usuwania danych z `kolekcji`, które spełniają określone warunki.

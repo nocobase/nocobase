@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-export-pro"
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: "@nocobase/plugin-action-export-pro"
----
 # ייצוא קבצים מצורפים
 
 ## מבוא

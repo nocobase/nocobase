@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Samlingsöversikt
 
 NocoBase erbjuder ett unikt DSL för att beskriva datastrukturer. Detta DSL, som kallas en samling, förenar datastrukturer från olika källor och lägger en pålitlig grund för datahantering, analys och applikationer.

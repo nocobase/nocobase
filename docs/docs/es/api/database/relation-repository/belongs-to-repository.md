@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 ## BelongsToRepository
 
 Su interfaz es la misma que la de [HasOneRepository](./has-one-repository.md).

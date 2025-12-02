@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-workbench"
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: "@nocobase/plugin-block-workbench"
----
 # Block: Arbetsbänk
 
 ## Introduktion

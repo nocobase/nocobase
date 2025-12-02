@@ -1,3 +1,9 @@
+
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Rychlý start: Vytvoření orchestrovatelné komponenty tlačítka
 
 V Reactu obvykle vykreslujeme komponentu tlačítka takto:
@@ -55,13 +61,6 @@ const model = this.flowEngine.createModel({
 ```tsx pure
 <FlowModelRenderer model={model} />
 ```
-
----
-:::tip Upozornění na překlad AI
-Tato dokumentace byla automaticky přeložena umělou inteligencí.
-:::
-
-
 
 ## Krok 2: Přidání PropsFlow pro konfigurovatelnost vlastností tlačítka
 

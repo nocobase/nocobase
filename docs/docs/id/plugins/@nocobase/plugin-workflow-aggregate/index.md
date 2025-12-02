@@ -1,8 +1,4 @@
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
-
+---
 displayName: "Alur Kerja: Node Agregat"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
@@ -11,5 +7,9 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
 
 # Alur Kerja: Node Agregat

@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Plan de Ejecución (Historial)
 
 Cuando se activa un **flujo de trabajo**, se crea un **plan de ejecución** correspondiente para rastrear el proceso de la tarea. Cada **plan de ejecución** tiene un valor de estado que indica su estado actual, el cual puede ver tanto en la lista como en los detalles del historial de ejecución:

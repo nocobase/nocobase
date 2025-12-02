@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-import"
+---
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
-pkg: "@nocobase/plugin-action-import"
----
 # Importar
 
 ## Introdução

@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Relation entre FlowEngine et les plugins
 
 Le **FlowEngine** n'est pas un plugin. Il s'agit plutôt d'une **API de cœur** mise à la disposition des plugins pour relier les fonctionnalités fondamentales aux extensions métier.

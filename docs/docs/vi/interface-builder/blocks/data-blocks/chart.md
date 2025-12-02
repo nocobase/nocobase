@@ -1,9 +1,9 @@
+---
+pkg: '@nocobase/plugin-data-visualization'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-data-visualization'
 
 # Biểu đồ
 

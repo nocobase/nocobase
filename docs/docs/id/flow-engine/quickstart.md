@@ -1,3 +1,9 @@
+
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Mulai Cepat: Membangun Komponen Tombol yang Dapat Diorkestrasi
 
 Di React, kita biasanya merender komponen tombol seperti ini:
@@ -55,13 +61,6 @@ const model = this.flowEngine.createModel({
 ```tsx pure
 <FlowModelRenderer model={model} />
 ```
-
----
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
-
 
 ## Langkah 2: Menambahkan PropsFlow untuk Membuat Properti Tombol Dapat Dikonfigurasi
 

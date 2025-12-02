@@ -1,9 +1,4 @@
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-
-```yaml
+---
 displayName: "WeCom"
 packageName: '@nocobase/plugin-auth-wecom'
 supportedVersions:
@@ -15,6 +10,10 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 points: 4
-```
+---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
 
 # WeCom

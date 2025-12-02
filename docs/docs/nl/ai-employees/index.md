@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-ai"
----
 
 # AI Medewerkers · Aan de slag
 

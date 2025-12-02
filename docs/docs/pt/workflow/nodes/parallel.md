@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-workflow-parallel'
+---
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-parallel'
----
 
 # Ramificação Paralela
 

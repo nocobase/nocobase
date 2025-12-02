@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-action-trigger'
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: '@nocobase/plugin-workflow-action-trigger'
----
 
 # เหตุการณ์หลังการดำเนินการ
 

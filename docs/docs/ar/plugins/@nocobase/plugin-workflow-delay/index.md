@@ -1,11 +1,12 @@
+---
+displayName: "سير العمل: عقدة التأخير"
+packageName: '@nocobase/plugin-workflow-delay'
+description: |
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-displayName: "سير العمل: عقدة التأخير"
-packageName: '@nocobase/plugin-workflow-delay'
-description: |
   يمكن استخدامها في الفروع المتوازية لسير العمل لانتظار اكتمال تنفيذ الفروع الأخرى.
 isFree: صحيح
 builtIn: صحيح

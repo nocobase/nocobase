@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Créer un enregistrement
 
 Permet d'ajouter un nouvel enregistrement à une collection.

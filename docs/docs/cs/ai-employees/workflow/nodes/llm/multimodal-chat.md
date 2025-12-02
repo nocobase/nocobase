@@ -6,12 +6,6 @@ Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-ai-ee"
----
-```
-
 # Multimodální konverzace
 
 ## Obrázky

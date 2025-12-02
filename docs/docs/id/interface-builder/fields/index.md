@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Bidang
 
 Di antarmuka pengguna (UI), bidang adalah komponen bidang yang berfungsi sebagai pembawa data unit. Berbagai jenis data ditampilkan menggunakan komponen bidang yang berbeda. Bidang hanya dapat melekat pada blok dan tidak dapat digunakan secara mandiri.

@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Migracje
 
 Podczas tworzenia i aktualizowania wtyczek NocoBase, struktura bazy danych lub konfiguracja wtyczki może ulec niekompatybilnym zmianom. Aby zapewnić płynne aktualizacje, NocoBase oferuje mechanizm **migracji**, który pozwala zarządzać tymi zmianami poprzez tworzenie plików migracji. W tym artykule przedstawimy Państwu systematyczne podejście do korzystania z migracji i ich procesu tworzenia.

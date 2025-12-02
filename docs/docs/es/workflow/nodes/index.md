@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Descripción general
 
 Un flujo de trabajo se compone generalmente de varios pasos operativos conectados. Cada nodo representa uno de estos pasos y sirve como una unidad lógica fundamental en el proceso. Al igual que en un lenguaje de programación, los diferentes tipos de nodos representan distintas instrucciones que determinan su comportamiento. Cuando el flujo de trabajo se ejecuta, el sistema entra en cada nodo secuencialmente y ejecuta sus instrucciones.

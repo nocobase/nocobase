@@ -1,9 +1,4 @@
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
-
-
-```yaml
+---
 displayName: "إعدادات النظام"
 packageName: '@nocobase/plugin-system-settings'
 description: |
@@ -11,6 +6,10 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
-```
+---
+:::tip إشعار الترجمة بالذكاء الاصطناعي
+تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
+:::
+
 
 # إعدادات النظام

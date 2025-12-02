@@ -1,3 +1,9 @@
+
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Snelstart: Een orkestreerbare knopcomponent bouwen
 
 In React renderen we een knopcomponent meestal als volgt:
@@ -55,13 +61,6 @@ const model = this.flowEngine.createModel({
 ```tsx pure
 <FlowModelRenderer model={model} />
 ```
-
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
-
 
 ## Stap 2: PropsFlow toevoegen om knopeigenschappen configureerbaar te maken
 

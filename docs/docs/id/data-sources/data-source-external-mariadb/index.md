@@ -6,12 +6,6 @@ Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-data-source-external-mariadb"
----
-```
-
 # Sumber Data Eksternal - MariaDB
 
 ## Pendahuluan

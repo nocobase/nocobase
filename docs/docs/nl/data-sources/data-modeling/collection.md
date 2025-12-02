@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Collectieoverzicht
 
 NocoBase biedt een unieke DSL (Domain-Specific Language) om de structuur van gegevens te beschrijven, die we een collectie noemen. Deze aanpak verenigt de datastructuren van diverse bronnen en legt zo een betrouwbare basis voor gegevensbeheer, -analyse en -toepassingen.

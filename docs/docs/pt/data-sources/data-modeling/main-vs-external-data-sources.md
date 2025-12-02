@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Comparativo: Bancos de Dados Principal e Externos
 
 As diferenças entre os bancos de dados principal e externos no NocoBase se manifestam principalmente em quatro aspectos: suporte a tipos de banco de dados, suporte a tipos de coleção, suporte a tipos de campo e recursos de backup e migração.

@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Blocs
 
 Les blocs sont des conteneurs pour vos données et contenus. Vous pouvez les placer sur une Page, dans une Modale (boîte de dialogue) ou un Tiroir. De plus, vous pouvez organiser plusieurs blocs en les déplaçant librement par glisser-déposer.

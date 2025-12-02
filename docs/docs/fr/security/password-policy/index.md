@@ -1,9 +1,9 @@
+---
+pkg: '@nocobase/plugin-password-policy'
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
-
-
-pkg: '@nocobase/plugin-password-policy'
 
 # Stratégie de mot de passe
 

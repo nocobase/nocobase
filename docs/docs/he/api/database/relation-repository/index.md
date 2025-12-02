@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 # RelationRepository
 
 `RelationRepository` הוא אובייקט `Repository` עבור סוגי קשרים. `RelationRepository` מאפשר לבצע פעולות על נתונים מקושרים מבלי לטעון את הקשר עצמו. בהתבסס על `RelationRepository`, כל סוג קשר גוזר מימוש מתאים:

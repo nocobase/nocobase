@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Intégration de l'authentification unique (SSO)
 
 NocoBase propose des solutions complètes d'authentification unique (SSO), prenant en charge plusieurs protocoles d'authentification courants pour une intégration fluide avec vos systèmes d'identité d'entreprise existants.

@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-file-manager"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-file-manager"
----
-```
-
 # Файловый менеджер
 
 ## Введение

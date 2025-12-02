@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-aggregate'
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-aggregate'
----
 
 # Aggregerad fråga
 

@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Collection d'expressions
 
 ## Créer une collection modèle "Expression"

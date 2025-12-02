@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Preparação
 
 Antes de implantar um aplicativo em cluster, você precisa concluir as seguintes preparações.

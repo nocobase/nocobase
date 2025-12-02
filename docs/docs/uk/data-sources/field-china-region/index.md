@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-field-china-region"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-field-china-region"
----
-```
-
 # Китайський регіон
 
 ## Вступ

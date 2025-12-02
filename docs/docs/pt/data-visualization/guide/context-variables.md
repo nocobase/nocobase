@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Usar variáveis de contexto
 
 Com as variáveis de contexto, você pode reutilizar informações da página atual, do usuário, do tempo e dos filtros para renderizar gráficos e permitir a interligação baseada no contexto.

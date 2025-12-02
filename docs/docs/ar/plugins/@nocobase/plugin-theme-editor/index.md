@@ -1,11 +1,12 @@
+---
+displayName: "محرر السمات"
+packageName: '@nocobase/plugin-theme-editor'
+description: |
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-displayName: "محرر السمات"
-packageName: '@nocobase/plugin-theme-editor'
-description: |
   تخصيص ألوان الواجهة الرسومية (UI) وأحجامها وغيرها، وحفظ النتيجة كسمة للتبديل بين سمات متعددة.
 isFree: صحيح
 builtIn: صحيح

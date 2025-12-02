@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Atualizando uma instalação do create-nocobase-app
 
 :::warning Preparação antes de atualizar

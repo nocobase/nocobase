@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Kalkulasi
 
 Node Kalkulasi dapat mengevaluasi sebuah ekspresi, dan hasilnya akan disimpan dalam hasil node terkait untuk digunakan oleh node-node berikutnya. Ini adalah alat untuk menghitung, memproses, dan mengubah data. Sampai batas tertentu, ini dapat menggantikan fungsi pemanggilan fungsi pada suatu nilai dan penetapan ke variabel dalam bahasa pemrograman.

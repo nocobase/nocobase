@@ -1,13 +1,14 @@
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
-
+---
 displayName: "Formulierconcepten"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
+---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
   Maakt het mogelijk om concepten op te slaan tijdens het invullen van formulieren, zodat u deze later verder kunt bewerken en indienen.
 isFree: false
 builtIn: false

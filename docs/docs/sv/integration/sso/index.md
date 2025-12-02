@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Enkel inloggning (SSO) – Integration
 
 NocoBase erbjuder kompletta lösningar för enkel inloggning (Single Sign-On, SSO) som stöder flera vanliga autentiseringsprotokoll för sömlös integration med befintliga identitetssystem i företag.

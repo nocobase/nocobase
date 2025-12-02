@@ -1,11 +1,11 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-email-manager"
----
 
 # Заметки к письмам
 

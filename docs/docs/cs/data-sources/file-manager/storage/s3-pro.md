@@ -6,9 +6,6 @@ Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
 
 
-
-pkg: "@nocobase/plugin-file-storage-s3-pro"
----
 # Úložiště souborů: S3 (Pro)
 
 ## Úvod

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth-dingtalk'
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-pkg: '@nocobase/plugin-auth-dingtalk'
----
 
 # Uwierzytelnianie: DingTalk
 

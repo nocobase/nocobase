@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-cc'
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-cc'
----
 
 # Копия <Badge>v1.8.2+</Badge>
 

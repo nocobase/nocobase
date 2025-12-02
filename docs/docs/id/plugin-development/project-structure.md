@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Struktur Direktori Proyek
 
 Baik Anda mengkloning kode sumber dari Git atau menginisialisasi proyek menggunakan `create-nocobase-app`, proyek NocoBase yang dihasilkan pada dasarnya adalah sebuah monorepo berbasis **Yarn Workspace**.

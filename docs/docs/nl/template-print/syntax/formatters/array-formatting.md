@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 ### Array-opmaak
 
 #### 1. :arrayJoin(separator, index, count)

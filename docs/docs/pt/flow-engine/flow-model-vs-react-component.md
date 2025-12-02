@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # FlowModel vs React.Component
 
 ## Comparativo de Responsabilidades Básicas

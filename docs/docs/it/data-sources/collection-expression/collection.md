@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Collezione di Espressioni
 
 ## Creazione di una collezione modello "Espressione"

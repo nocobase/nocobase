@@ -1,11 +1,12 @@
-:::tip Yapay Zeka Çeviri Bildirimi
+---
+pkg: "@nocobase/plugin-data-source-external-mysql"
+---
+
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-data-source-external-mysql"
----
 
 # Harici Veri Kaynağı - MySQL
 

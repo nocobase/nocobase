@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: "@nocobase/plugin-email-manager"
----
 
 # Pengiriman Massal
 

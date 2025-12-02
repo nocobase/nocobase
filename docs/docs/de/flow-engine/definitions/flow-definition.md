@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # FlowDefinition
 
 FlowDefinition definiert die grundlegende Struktur und Konfiguration eines Workflows und ist eines der Kernkonzepte der Workflow-Engine. Es beschreibt die Metadaten, Auslösebedingungen und Ausführungsschritte des Workflows.

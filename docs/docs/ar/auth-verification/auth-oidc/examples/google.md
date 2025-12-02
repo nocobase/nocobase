@@ -2,7 +2,6 @@
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
 # تسجيل الدخول باستخدام Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect

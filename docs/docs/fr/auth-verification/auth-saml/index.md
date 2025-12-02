@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth-saml'
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
-pkg: '@nocobase/plugin-auth-saml'
----
 
 # Authentification : SAML 2.0
 

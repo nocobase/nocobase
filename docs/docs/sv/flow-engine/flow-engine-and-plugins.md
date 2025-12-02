@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Sambandet mellan FlowEngine och plugin
 
 **FlowEngine** är inte en plugin, utan ett **kärn-API** som tillhandahålls för att plugin ska kunna använda det. Det kopplar samman kärnfunktioner med affärsutökningar.

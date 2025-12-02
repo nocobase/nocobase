@@ -1,14 +1,15 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
-
+---
 displayName: "Gerenciador de Migração"
 packageName: '@nocobase/plugin-migration-manager'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
   Usado para migrar conteúdo de configuração entre ambientes de aplicação.
 isFree: false
 builtIn: false

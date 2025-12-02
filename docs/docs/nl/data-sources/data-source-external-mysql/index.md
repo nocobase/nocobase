@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-external-mysql"
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-external-mysql"
----
 
 # Externe gegevensbron - MySQL
 

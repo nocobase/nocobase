@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-notification-email'
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: '@nocobase/plugin-notification-email'
----
 
 # Notifikasi: Email
 

@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 ### עיצוב מערכים
 
 #### 1. :arrayJoin(separator, index, count)

@@ -1,3 +1,9 @@
+
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 # Kubernetes 배포
 
 이 문서는 K8S 환경에서 NocoBase를 클러스터 모드로 빠르게 배포하는 방법을 안내합니다. 독자가 K8S 환경에 익숙하고 [준비 작업](./preparations.md)을 완료했다고 가정합니다.
@@ -112,12 +118,6 @@ spec:
   selector:
     app: nocobase
   type: ClusterIP
----
-:::tip AI 번역 안내
-이 문서는 AI로 자동 번역되었습니다.
-:::
-
-
 # 애플리케이션 Deployment는 여러 애플리케이션 컨테이너를 배포할 수 있습니다.
 apiVersion: apps/v1
 kind: Deployment

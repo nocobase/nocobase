@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Séparation des services <Badge>v1.9.0+</Badge>
 
 ## Introduction

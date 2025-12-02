@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Molti-a-Molti
 
 In un sistema di iscrizione ai corsi, esistono due entità: studenti e corsi. Uno studente può iscriversi a più corsi e un corso può avere più studenti iscritti, il che costituisce una relazione molti-a-molti. In un database relazionale, per rappresentare la relazione molti-a-molti tra studenti e corsi, si utilizza solitamente una collezione intermedia, come una collezione di iscrizioni. Questa collezione può registrare quali corsi ha scelto ogni studente e quali studenti si sono iscritti a ciascun corso. Questo design rappresenta efficacemente la relazione molti-a-molti tra studenti e corsi.

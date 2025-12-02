@@ -1,11 +1,12 @@
+---
+displayName: "Block: GridCard"
+packageName: '@nocobase/plugin-block-grid-card'
+description: |
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-displayName: "Block: GridCard"
-packageName: '@nocobase/plugin-block-grid-card'
-description: |
   Zeigt Daten in einer Rasterliste an, mit Unterstützung für Paginierung.
 isFree: true
 builtIn: true

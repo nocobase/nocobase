@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-file-storage-s3-pro'
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: '@nocobase/plugin-file-storage-s3-pro'
----
 
 # Úložiště: S3 (Pro)
 

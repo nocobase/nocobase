@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-action-trigger'
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-action-trigger'
----
 
 # Händelse efter åtgärd
 

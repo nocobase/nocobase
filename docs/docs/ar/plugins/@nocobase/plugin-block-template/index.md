@@ -1,9 +1,4 @@
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
-
-
-```yaml
+---
 displayName: "الكتلة: القالب (مهمل)"
 packageName: '@nocobase/plugin-block-template'
 description: |
@@ -12,7 +7,11 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
-```
+---
+:::tip إشعار الترجمة بالذكاء الاصطناعي
+تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
+:::
+
 
 # الكتلة: القالب (مهمل)
 

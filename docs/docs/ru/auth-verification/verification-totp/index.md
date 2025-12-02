@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-verification-totp-authenticator'
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: '@nocobase/plugin-verification-totp-authenticator'
----
 
 # Верификация: TOTP-аутентификатор
 

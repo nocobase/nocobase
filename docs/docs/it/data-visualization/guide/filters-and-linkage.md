@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Filtri di pagina e interconnessione
 
 Il filtro di pagina (Filter Block) consente di inserire in modo unificato le condizioni di filtro a livello di pagina e di unirle alle query dei grafici, garantendo un filtraggio e un'interconnessione coerenti tra più grafici.

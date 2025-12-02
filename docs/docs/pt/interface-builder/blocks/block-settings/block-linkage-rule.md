@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Regras de Vinculação de Blocos
 
 ## Introdução

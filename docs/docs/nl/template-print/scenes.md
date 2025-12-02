@@ -1,3 +1,9 @@
+
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # De functie "Sjabloon afdrukken" gebruiken om inkoop- en verkoopcontracten te genereren
 
 In supply chain- of handelsscenario's is het vaak nodig om snel een gestandaardiseerd "Inkoop- en Verkoopcontract" te genereren en de inhoud dynamisch in te vullen op basis van informatie uit gegevensbronnen, zoals kopers, verkopers en productdetails. Hieronder laten we u aan de hand van een vereenvoudigd "Contract"-voorbeeld zien hoe u de functie "Sjabloon afdrukken" configureert en gebruikt om gegevensinformatie toe te wijzen aan plaatshouders in contractsjablonen, zodat het uiteindelijke contractdocument automatisch wordt gegenereerd.
@@ -15,13 +21,6 @@ In ons voorbeeld zijn er grofweg de volgende hoofdcollecties (andere irrelevante
 ![template_print-2025-11-01-16-34-04](https://static-docs.nocobase.com/template_print-2025-11-01-16-34-04.png)
 
 Aangezien het huidige systeem alleen het afdrukken van individuele records ondersteunt, klikken we op "Afdrukken" op de pagina "Contractdetails". Het systeem haalt dan automatisch het bijbehorende contractrecord en de gerelateerde partij-informatie op, en vult deze in Word- of PDF-documenten in.
-
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
-
 
 ## 2. Voorbereiding
 

@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-field-encryption"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: "@nocobase/plugin-field-encryption"
----
 
 # การเข้ารหัส
 

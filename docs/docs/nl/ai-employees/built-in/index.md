@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Ingebouwde AI-medewerkers
 
 ## Overzicht

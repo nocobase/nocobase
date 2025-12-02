@@ -1,11 +1,12 @@
+---
+displayName: "Diagramme (veraltet)"
+packageName: '@nocobase/plugin-charts'
+description: |
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-displayName: "Diagramme (veraltet)"
-packageName: '@nocobase/plugin-charts'
-description: |
   Dieses Plugin ist veraltet. Bitte verwenden Sie stattdessen das Datenvisualisierungs-Plugin.
 isFree: true
 builtIn: true

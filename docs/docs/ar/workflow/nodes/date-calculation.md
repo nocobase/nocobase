@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-date-calculation'
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-date-calculation'
----
 
 # حساب التاريخ
 

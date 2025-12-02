@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-workbench"
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: "@nocobase/plugin-block-workbench"
----
 # Blok: Workbench
 
 ## Pendahuluan

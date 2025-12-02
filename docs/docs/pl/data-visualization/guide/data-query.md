@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Zapytania o dane
 
 Panel konfiguracji wykresu jest podzielony na trzy sekcje: Zapytania o dane, Opcje wykresu i Zdarzenia interakcji, a także przyciski Anuluj, Podgląd i Zapisz na dole.

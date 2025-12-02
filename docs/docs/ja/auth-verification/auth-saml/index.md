@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth-saml'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: '@nocobase/plugin-auth-saml'
----
 
 # 認証：SAML 2.0
 

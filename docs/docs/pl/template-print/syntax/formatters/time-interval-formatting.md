@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 ### Formatowanie Interwałów Czasowych
 
 #### 1. :formatI(patternOut, patternIn)

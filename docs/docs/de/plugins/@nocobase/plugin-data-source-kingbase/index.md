@@ -1,11 +1,12 @@
+---
+displayName: "Datenquelle: KingbaseES"
+packageName: '@nocobase/plugin-data-source-kingbase'
+description: |
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-displayName: "Datenquelle: KingbaseES"
-packageName: '@nocobase/plugin-data-source-kingbase'
-description: |
   Verwenden Sie die KingbaseES-Datenbank als Datenquelle. Sie können sie als Hauptdatenbank oder als externe Datenbank nutzen.
 isFree: false
 builtIn: false

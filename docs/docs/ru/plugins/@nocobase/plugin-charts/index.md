@@ -1,11 +1,12 @@
+---
+displayName: "Диаграммы (устаревший)"
+packageName: '@nocobase/plugin-charts'
+description: |
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-displayName: "Диаграммы (устаревший)"
-packageName: '@nocobase/plugin-charts'
-description: |
   Этот плагин устарел. Пожалуйста, используйте вместо него плагин для визуализации данных.
 isFree: true
 builtIn: true

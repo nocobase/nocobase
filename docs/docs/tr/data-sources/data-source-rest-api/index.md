@@ -1,15 +1,11 @@
 ---
 pkg: "@nocobase/plugin-data-source-rest-api"
 ---
-:::tip Yapay Zeka Çeviri Bildirimi
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 
 
-
-```yaml
-pkg: "@nocobase/plugin-data-source-rest-api"
----
 
 # REST API Veri Kaynağı
 

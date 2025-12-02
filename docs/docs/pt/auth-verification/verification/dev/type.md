@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Estendendo Tipos de Validação
 
 ## No Cliente

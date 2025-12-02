@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Regole di Interconnessione delle Azioni
 
 ## Introduzione

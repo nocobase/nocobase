@@ -1,11 +1,12 @@
+---
+displayName: "Audit-Logs (veraltet)"
+packageName: '@nocobase/plugin-audit-logs'
+description: |
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-displayName: "Audit-Logs (veraltet)"
-packageName: '@nocobase/plugin-audit-logs'
-description: |
   Dieses Plugin ist veraltet. Bitte verwenden Sie es nicht. Zukünftig wird es ein neues Audit-Log-Plugin geben.
 isFree: true
 builtIn: true

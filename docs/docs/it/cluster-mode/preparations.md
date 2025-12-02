@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Prerequisiti
 
 Prima di implementare un'applicazione in modalità cluster, è necessario completare i seguenti prerequisiti.

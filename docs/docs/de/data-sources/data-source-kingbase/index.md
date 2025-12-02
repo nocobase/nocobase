@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-kingbase"
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-kingbase"
----
 
 # Datenquelle - KingbaseES-Datenbank
 

@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Cara Mengaktifkan Federated Engine di MySQL
 
 Secara default, database MySQL tidak mengaktifkan modul federated. Anda perlu memodifikasi konfigurasi `my.cnf`. Jika Anda menggunakan versi Docker, Anda dapat menangani ekstensi ini melalui `volumes`:

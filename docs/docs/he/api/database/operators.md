@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 # אופרטורים לסינון
 
 אופרטורים אלו משמשים בפרמטר `filter` של ממשקי API כמו `find`, `findOne`, `findAndCount` ו-`count` של Repository:

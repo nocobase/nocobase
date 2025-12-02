@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Walidacja pól
 Aby zapewnić dokładność, bezpieczeństwo i spójność danych w **kolekcjach**, NocoBase oferuje funkcję walidacji pól. Funkcja ta składa się z dwóch głównych części: konfiguracji reguł oraz ich zastosowania.
 

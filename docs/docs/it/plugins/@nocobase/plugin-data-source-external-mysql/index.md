@@ -1,14 +1,15 @@
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
-
-
+---
 displayName: "Fonte dati: MySQL esterno"
 packageName: '@nocobase/plugin-data-source-external-mysql'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
+
   Utilizzi database MySQL esterni come fonte dati.
 isFree: false
 builtIn: false

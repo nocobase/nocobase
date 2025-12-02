@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-graph-collection-manager"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: "@nocobase/plugin-graph-collection-manager"
----
 
 # ตัวจัดการคอลเลกชันแบบกราฟ
 

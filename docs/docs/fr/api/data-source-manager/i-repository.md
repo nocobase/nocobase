@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # IRepository
 
 L'interface `Repository` définit une série de méthodes d'opération de modèle, conçues pour s'adapter aux opérations CRUD des sources de données.

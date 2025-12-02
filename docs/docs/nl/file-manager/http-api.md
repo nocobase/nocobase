@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # HTTP API
 
 Bestandsuploads voor zowel bijlagevelden als bestands**collecties** worden ondersteund via de HTTP API. De manier van aanroepen verschilt afhankelijk van de opslag-engine die door het bijlageveld of de bestands**collectie** wordt gebruikt.

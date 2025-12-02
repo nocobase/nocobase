@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Blok
 
 Bloki to nośniki danych i treści. Można je umieszczać na stronach (Page), w oknach dialogowych (Modal) lub panelach bocznych (Drawer), a wiele bloków można swobodnie przeciągać i układać.

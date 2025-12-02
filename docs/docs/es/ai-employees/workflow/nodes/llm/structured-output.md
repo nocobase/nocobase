@@ -6,12 +6,6 @@ Esta documentación ha sido traducida automáticamente por IA.
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-ai-ee"
----
-```
-
 # Salida Estructurada
 
 ## Introducción

@@ -1,14 +1,15 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
-
+---
 displayName: "Telemetrie: Prometheus"
 packageName: '@nocobase/plugin-telemetry-prometheus'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
   Integrieren Sie Prometheus in das Telemetrie-Modul von NocoBase.
 isFree: false
 builtIn: false

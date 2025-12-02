@@ -2,7 +2,6 @@
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
 ## BelongsToRepository
 
 واجهته مطابقة لواجهة `[HasOneRepository](./has-one-repository.md)`.

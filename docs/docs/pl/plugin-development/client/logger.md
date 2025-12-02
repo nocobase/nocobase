@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Logger
 
 NocoBase oferuje wysokowydajny system logowania oparty na [pino](https://github.com/pinojs/pino). W każdym miejscu, w którym mają Państwo dostęp do `context`, mogą Państwo uzyskać instancję loggera poprzez `ctx.logger`, aby rejestrować kluczowe zdarzenia podczas działania wtyczki lub systemu.

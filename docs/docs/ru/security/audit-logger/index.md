@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-audit-logger'
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-audit-logger'
----
 
 # Журнал аудита
 

@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Filter Halaman dan Keterkaitan
 
 Filter halaman (Blok Filter) digunakan untuk menyediakan input kondisi filter yang terpadu di tingkat halaman, kemudian menggabungkannya ke dalam kueri bagan. Ini memungkinkan beberapa bagan difilter secara konsisten dan saling terkait.

@@ -1,3 +1,9 @@
+
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # "Şablon Yazdırma" Özelliğini Kullanarak Tedarik ve Satın Alma Sözleşmeleri Oluşturma
 
 Tedarik zinciri veya ticaret senaryolarında, standart bir "Tedarik ve Satın Alma Sözleşmesi"ni hızlıca oluşturmak ve veri kaynaklarındaki alıcı, satıcı, ürün detayları gibi bilgilere göre içeriği dinamik olarak doldurmak sıkça karşılaşılan bir ihtiyaçtır. Aşağıda, basitleştirilmiş bir "Sözleşme" kullanım örneği üzerinden, "Şablon Yazdırma" özelliğini nasıl yapılandıracağınızı ve kullanacağınızı göstereceğiz. Bu sayede, veri bilgilerini sözleşme şablonlarındaki yer tutuculara eşleyerek nihai sözleşme belgesini otomatik olarak oluşturabileceksiniz.
@@ -15,12 +21,6 @@ Tedarik zinciri veya ticaret senaryolarında, standart bir "Tedarik ve Satın Al
 ![template_print-2025-11-01-16-34-04](https://static-docs.nocobase.com/template_print-2025-11-01-16-34-04.png)
 
 Mevcut sistem yalnızca tek kayıt yazdırmayı desteklediği için, "Sözleşme Detayları" sayfasında "Yazdır" düğmesine tıklayacağız. Sistem, ilgili sözleşme kaydını ve ilişkili taraflar gibi diğer bilgileri otomatik olarak alacak ve bunları Word veya PDF belgelerine dolduracaktır.
-
----
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
 
 ## 2. Hazırlık
 

@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Upgraden van een Docker-installatie
 
 :::warning Voor u begint met upgraden

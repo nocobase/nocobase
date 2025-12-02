@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-reference"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: "@nocobase/plugin-block-reference"
----
 
 # الكتلة المرجعية
 

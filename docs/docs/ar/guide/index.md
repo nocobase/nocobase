@@ -1,4 +1,6 @@
+---
 pageType: home
+---
 
 pageName: guide
 
@@ -98,3 +100,4 @@ features:
       - title: سجل التغييرات
         details: تتبع وتخزين سجل التغييرات لسجلات المجموعة.
         link: /record-history/
+---

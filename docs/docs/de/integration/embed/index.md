@@ -6,12 +6,6 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-embed"
----
-```
-
 # NocoBase einbetten
 
 ## Einführung

@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Beziehungsfelder
 
 In NocoBase sind Beziehungsfelder keine echten Felder, sondern dienen dazu, Verbindungen zwischen Sammlungen herzustellen. Dieses Konzept entspricht den Beziehungen in relationalen Datenbanken.

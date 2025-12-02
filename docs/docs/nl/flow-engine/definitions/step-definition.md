@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # StepDefinition
 
 Een StepDefinition definieert een enkele stap in een **workflow**. Elke stap kan een actie, gebeurtenisafhandeling of andere bewerking zijn. Een stap is de fundamentele uitvoeringseenheid van een **workflow**.

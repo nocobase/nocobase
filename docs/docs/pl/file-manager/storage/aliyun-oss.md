@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Silnik przechowywania: Aliyun OSS
 
 Silnik przechowywania oparty na Aliyun OSS. Przed rozpoczęciem korzystania należy przygotować odpowiednie konto oraz uprawnienia.

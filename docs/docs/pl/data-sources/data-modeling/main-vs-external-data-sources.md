@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Porównanie głównych i zewnętrznych baz danych
 
 Różnice między głównymi a zewnętrznymi bazami danych w NocoBase widoczne są przede wszystkim w czterech obszarach: obsłudze typów baz danych, obsłudze typów kolekcji, obsłudze typów pól oraz możliwościach tworzenia kopii zapasowych i migracji.

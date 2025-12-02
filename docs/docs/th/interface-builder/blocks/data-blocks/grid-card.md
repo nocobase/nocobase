@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-grid-card"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
 
-
-pkg: "@nocobase/plugin-block-grid-card"
----
 # การ์ดกริด
 
 ## บทนำ

@@ -1,14 +1,15 @@
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-
+---
 displayName: "テンプレート印刷"
 packageName: '@nocobase/plugin-action-template-print'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
   NocoBaseアプリケーション内で、ユーザーがテンプレートを印刷する機能を提供します。
 isFree: false
 builtIn: false

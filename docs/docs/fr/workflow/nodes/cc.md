@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-cc'
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-cc'
----
 
 # Copie Carbone <Badge>v1.8.2+</Badge>
 

@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Log del Server, Log di Audit e Cronologia dei Record
 
 ## Log del Server

@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Pole
 
 W interfejsie użytkownika (UI) pole jest komponentem, który służy do przechowywania pojedynczych danych. Różne typy danych są prezentowane za pomocą różnych komponentów pól. Pola mogą być przypisane wyłącznie do bloków i nie mogą być używane samodzielnie.

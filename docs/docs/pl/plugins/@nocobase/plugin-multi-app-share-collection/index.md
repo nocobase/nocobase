@@ -1,8 +1,4 @@
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
+---
 displayName: "Współdzielenie kolekcji między wieloma aplikacjami"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
@@ -12,6 +8,10 @@ builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
 
 # Współdzielenie kolekcji między wieloma aplikacjami
 

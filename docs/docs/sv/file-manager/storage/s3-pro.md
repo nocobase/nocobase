@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-storage-s3-pro'
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: '@nocobase/plugin-file-storage-s3-pro'
----
 
 # Lagringsmotor: S3 (Pro)
 

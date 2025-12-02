@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Fältvalidering
 För att säkerställa att data i era samlingar är korrekt, säker och konsekvent, erbjuder NocoBase en funktion för fältvalidering. Denna funktion består huvudsakligen av två delar: konfiguration av regler och tillämpning av regler.
 

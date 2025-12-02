@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Uno a Molti
 
 La relazione tra una classe e i suoi studenti è un esempio di relazione uno a molti: una classe può avere più studenti, ma ogni studente appartiene a una sola classe.

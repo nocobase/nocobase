@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth-saml'
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: '@nocobase/plugin-auth-saml'
----
 
 # Autentikasi: SAML 2.0
 

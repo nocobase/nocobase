@@ -7,10 +7,6 @@ pkg: "@nocobase/plugin-email-manager"
 
 
 
-```yaml
-pkg: "@nocobase/plugin-email-manager"
----
-
 # 이메일 센터
 
 ## 소개

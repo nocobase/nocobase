@@ -7,10 +7,6 @@ pkg: "@nocobase/plugin-api-doc"
 
 
 
-```yaml
-pkg: "@nocobase/plugin-api-doc"
----
-
 # API 문서
 
 

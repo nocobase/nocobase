@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-two-factor-authentication'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-two-factor-authentication'
----
 
 # Xác thực hai yếu tố (2FA)
 

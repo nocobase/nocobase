@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Bloque
 
 Los bloques son contenedores de datos y contenido. Puede colocarlos en una página (Page), un Modal o un Drawer, y organizar múltiples bloques libremente arrastrándolos.

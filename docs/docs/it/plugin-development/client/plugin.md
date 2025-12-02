@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Plugin
 
 In NocoBase, il **plugin client** è il modo principale per estendere e personalizzare le funzionalità frontend. Ereditando la classe base `Plugin` fornita da `@nocobase/client`, gli sviluppatori possono registrare logiche, aggiungere componenti di pagina, estendere menu o integrare funzionalità di terze parti nelle diverse fasi del ciclo di vita.

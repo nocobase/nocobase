@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 # HasManyRepository
 
 `HasManyRepository` הוא `Relation Repository` המשמש לטיפול במערכות יחסים מסוג `HasMany`.

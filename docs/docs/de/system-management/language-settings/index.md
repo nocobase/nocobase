@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Spracheinstellungen
 
 Unter „Systemeinstellungen“ können Sie die globale Sprachumgebung des Systems anpassen. Konfigurieren Sie dazu die „Aktivierten Sprachen“. Die erste Sprache in dieser Liste wird als Standardsprache verwendet.

@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-sequence"
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-pkg: "@nocobase/plugin-field-sequence"
----
 
 # Automatyczne numerowanie
 

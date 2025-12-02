@@ -1,3 +1,9 @@
+
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Triển khai Kubernetes
 
 Bài viết này hướng dẫn người dùng triển khai NocoBase ở chế độ cụm (cluster mode) trong môi trường Kubernetes (K8S) một cách nhanh chóng. Chúng tôi giả định rằng bạn đã quen thuộc với môi trường K8S và đã hoàn thành các bước trong phần [Chuẩn bị](./preparations.md).
@@ -112,12 +118,6 @@ spec:
   selector:
     app: nocobase
   type: ClusterIP
----
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
 # Deployment của ứng dụng, có thể triển khai nhiều container ứng dụng.
 apiVersion: apps/v1
 kind: Deployment

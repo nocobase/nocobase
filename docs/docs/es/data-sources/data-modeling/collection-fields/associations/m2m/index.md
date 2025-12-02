@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Relación de Muchos a Muchos
 
 En un sistema de inscripción a cursos, tenemos dos entidades principales: estudiantes y cursos. Un estudiante puede inscribirse en múltiples cursos, y un curso puede tener a varios estudiantes inscritos. Esto es lo que conocemos como una relación de muchos a muchos. En una base de datos relacional, para representar esta relación entre estudiantes y cursos, normalmente utilizamos una **colección** intermedia, como una colección de inscripciones. Esta colección se encarga de registrar qué cursos ha elegido cada estudiante y qué estudiantes se han inscrito en cada curso. Este diseño nos permite representar de manera efectiva la relación de muchos a muchos entre estudiantes y cursos.

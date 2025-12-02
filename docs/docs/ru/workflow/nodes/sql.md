@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-sql'
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-sql'
----
 
 # SQL-операция
 

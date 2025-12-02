@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-variable'
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-variable'
----
 
 # Variabel
 

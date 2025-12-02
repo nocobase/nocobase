@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-file-storage-s3-pro'
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: '@nocobase/plugin-file-storage-s3-pro'
----
 
 # เอนจินจัดเก็บข้อมูล: S3 (Pro)
 

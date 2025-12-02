@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Tencent COS
 
 Silnik przechowywania danych oparty na Tencent Cloud COS. Przed użyciem należy przygotować odpowiednie konto i uprawnienia.

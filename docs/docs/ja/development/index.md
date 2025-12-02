@@ -4,10 +4,10 @@ pageName: development
 
 features:
   - title: コアアーキテクチャ
-    details: NocoBaseの基盤となる拡張メカニズムと動作原理を習得し、**プラグイン**システム、FlowEngine、データベースコアモジュールを含め、強固な開発基盤を構築しましょう。
+    details: NocoBaseの基盤となる拡張メカニズムと動作原理を習得し、プラグインシステム、FlowEngine、データベースコアモジュールを含め、強固な開発基盤を構築しましょう。
     items:
-      - title: **プラグイン**開発
-        details: カスタム**プラグイン**の作成、公開、および保守方法を学びます。
+      - title: プラグイン開発
+        details: カスタムプラグインの作成、公開、および保守方法を学びます。
         link: /plugin-development
         showOnHome: true
       - title: フロントエンド FlowEngine
@@ -15,7 +15,7 @@ features:
         link: /flow-engine
         showOnHome: true
       - title: データベース
-        details: NocoBaseコアのデータベースモジュールで、**プラグイン**に統一されたデータアクセス、モデリング、操作APIを提供します。**プラグイン**間のデータ連携における中核的な基盤です。
+        details: NocoBaseコアのデータベースモジュールで、プラグインに統一されたデータアクセス、モデリング、操作APIを提供します。プラグイン間のデータ連携における中核的な基盤です。
         link: /database
         showOnHome: true
   - title: インターフェースとインタラクション
@@ -33,15 +33,15 @@ features:
         details: 操作の動作を拡張またはカスタマイズし、多様なビジネスプロセスとユーザーインタラクションを実現します。
         link: /ui-development-action
         showOnHome: true
-  - title: **プラグイン**エコシステム
-    details: 既存の**プラグイン**の機能を他の**プラグイン**で拡張し、階層的でモジュール化された**プラグイン**エコシステムを構築することで、システムの拡張性と連携能力を向上させます。
+  - title: プラグインエコシステム
+    details: 既存のプラグインの機能を他のプラグインで拡張し、階層的でモジュール化されたプラグインエコシステムを構築することで、システムの拡張性と連携能力を向上させます。
     items:
-      - title: **データソース**拡張
-        details: 外部**データソース**を拡張または統合し、サードパーティのデータベースやサービスに接続して、システム間のデータアクセスと同期を実現します。
+      - title: データソース拡張
+        details: 外部データソースを拡張または統合し、サードパーティのデータベースやサービスに接続して、システム間のデータアクセスと同期を実現します。
         link: /data-sources/development
         showOnHome: true
-      - title: **ワークフロー**拡張
-        details: **ワークフロー**関連機能を拡張または統合し、自動化されたプロセス指向のビジネスシナリオを実現します。
+      - title: ワークフロー拡張
+        details: ワークフロー関連機能を拡張または統合し、自動化されたプロセス指向のビジネスシナリオを実現します。
         link: /workflow/development
         showOnHome: true
       - title: 通知チャネル拡張

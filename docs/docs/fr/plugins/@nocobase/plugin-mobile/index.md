@@ -1,11 +1,12 @@
+---
+displayName: "Mobile (déprécié)"
+packageName: '@nocobase/plugin-mobile'
+description: |
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
-displayName: "Mobile (déprécié)"
-packageName: '@nocobase/plugin-mobile'
-description: |
   Permet de configurer des pages mobiles.
 isFree: true
 builtIn: true

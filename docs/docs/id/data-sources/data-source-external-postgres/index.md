@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-external-postgres"
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-external-postgres"
----
 
 # Sumber Data Eksternal - PostgreSQL
 

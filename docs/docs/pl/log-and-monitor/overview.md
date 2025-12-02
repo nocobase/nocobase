@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Logi serwera, logi audytu i historia zmian danych
 
 ## Logi serwera

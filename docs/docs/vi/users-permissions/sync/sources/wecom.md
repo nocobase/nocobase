@@ -6,12 +6,6 @@ Tài liệu này đã được dịch tự động bằng AI.
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-wecom"
----
-```
-
 # Đồng bộ dữ liệu người dùng từ WeChat Work (WeCom)
 
 ## Giới thiệu

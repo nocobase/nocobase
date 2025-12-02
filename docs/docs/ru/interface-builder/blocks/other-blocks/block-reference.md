@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-reference"
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: "@nocobase/plugin-block-reference"
----
 
 # Блок-ссылка
 

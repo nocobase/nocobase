@@ -1,3 +1,9 @@
+
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Uso de la función «Impresión de plantillas» para generar un ejemplo de Contrato de Suministro y Compra
 
 En escenarios de cadena de suministro o comercio, a menudo es necesario generar rápidamente un "Contrato de Suministro y Compra" estandarizado y rellenar su contenido dinámicamente con información de **fuentes de datos** como compradores, vendedores y detalles de productos. A continuación, utilizaremos un caso de uso simplificado de "Contrato" como ejemplo para mostrarle cómo configurar y usar la función «Impresión de plantillas» para mapear la información de los datos a los marcadores de posición en las plantillas de contrato, generando así automáticamente el documento de contrato final.
@@ -15,12 +21,6 @@ En nuestro ejemplo, existen aproximadamente las siguientes **colecciones** princ
 ![template_print-2025-11-01-16-34-04](https://static-docs.nocobase.com/template_print-2025-11-01-16-34-04.png)
 
 Dado que el sistema actual solo admite la impresión de registros individuales, haremos clic en "Imprimir" en la página de "Detalles del Contrato". El sistema recuperará automáticamente el registro de `contracts` correspondiente, así como la información asociada de `parties` y otros datos, y los rellenará en documentos de Word o PDF.
-
----
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 ## 2. Preparación
 

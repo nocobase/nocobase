@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # AI-agent · Dex: Expert på datahantering
 
 > Extrahera snabbt information och fyll i formulär för att omvandla ostrukturerad data till strukturerad.

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-record-history'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-record-history'
----
 
 # Recordgeschiedenis
 

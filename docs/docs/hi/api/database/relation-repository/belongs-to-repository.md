@@ -2,7 +2,6 @@
 यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
 :::
 
-
 ## BelongsToRepository
 
 इसका इंटरफ़ेस [HasOneRepository](./has-one-repository.md) के समान है।

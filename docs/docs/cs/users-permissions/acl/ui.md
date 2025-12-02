@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-acl'
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: '@nocobase/plugin-acl'
----
 
 # Použití v uživatelském rozhraní
 

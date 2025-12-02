@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Overzicht
 
 Het ontwikkelen van NocoBase client-side plugins biedt diverse functionaliteiten en mogelijkheden om ontwikkelaars te helpen de frontend-functionaliteiten van NocoBase aan te passen en uit te breiden. Hieronder vindt u de belangrijkste mogelijkheden en gerelateerde hoofdstukken voor het ontwikkelen van NocoBase client-side plugins:

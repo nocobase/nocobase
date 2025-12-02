@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Eén-op-veel
 
 De relatie tussen een klas en haar studenten is een voorbeeld van een één-op-veel-relatie: één klas kan meerdere studenten hebben, maar elke student behoort slechts tot één klas.

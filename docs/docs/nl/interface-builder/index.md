@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Interface opbouwen
 
 ## Wat u ziet, is wat u krijgt (WYSIWYG)

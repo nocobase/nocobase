@@ -1,11 +1,12 @@
+---
+displayName: "Notifica: Email"
+packageName: '@nocobase/plugin-notification-email'
+description: |
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-displayName: "Notifica: Email"
-packageName: '@nocobase/plugin-notification-email'
-description: |
   Consente di inviare notifiche via email, supportando attualmente solo il trasporto SMTP.
 isFree: true
 builtIn: true

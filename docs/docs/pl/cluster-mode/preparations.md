@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Przygotowanie
 
 Przed wdrożeniem aplikacji klastrowej należy wykonać następujące czynności przygotowawcze.

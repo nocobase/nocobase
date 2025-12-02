@@ -1,9 +1,9 @@
+---
+pkg: '@nocobase/plugin-notification-manager'
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
-
-
-pkg: '@nocobase/plugin-notification-manager'
 
 # Zarządzanie powiadomieniami
 

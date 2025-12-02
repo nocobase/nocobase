@@ -1,11 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-bulk-update"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-```yaml
-pkg: "@nocobase/plugin-action-bulk-update"
-```
 # تحديث مجمع
 
 ## مقدمة

@@ -1,8 +1,4 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
-
+---
 displayName: "Sammlungsfeld: Formel"
 packageName: '@nocobase/plugin-field-formula'
 description: |
@@ -11,5 +7,9 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
 
 # Sammlungsfeld: Formel

@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Aktion
 
 In der UI ist eine Aktion ein Button, der eine Reihe von Anweisungen auslöst. Sie kann direkt auf einer Seite, in einem Dialogfeld oder in einem Drawer platziert und auch in Kombination mit Blöcken verwendet werden. Derzeit werden dynamisch konfigurierbare Aktionen hauptsächlich in Kombination mit Blöcken eingesetzt.

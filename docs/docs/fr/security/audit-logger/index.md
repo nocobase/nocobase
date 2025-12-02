@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-audit-logger'
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
-pkg: '@nocobase/plugin-audit-logger'
----
 
 # Journal d'audit
 

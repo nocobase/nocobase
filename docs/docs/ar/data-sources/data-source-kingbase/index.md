@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-kingbase"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-kingbase"
----
 
 # مصدر البيانات - قاعدة بيانات KingbaseES
 

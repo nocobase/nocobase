@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Rozszerzanie Typów Walidacji
 
 ## Po stronie klienta

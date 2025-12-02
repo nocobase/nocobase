@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Context
 
 Di NocoBase, setiap permintaan akan menghasilkan objek `ctx`, yang merupakan instance dari Context. Context merangkum informasi permintaan dan respons, sekaligus menyediakan fungsionalitas khusus NocoBase, seperti akses basis data, operasi cache, manajemen izin, internasionalisasi, dan pencatatan log.

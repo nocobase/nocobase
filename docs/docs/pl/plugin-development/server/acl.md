@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Kontrola uprawnień ACL
 
 ACL (Access Control List) służy do kontrolowania uprawnień do operacji na zasobach. Mogą Państwo przypisywać uprawnienia do ról, a także pomijać ograniczenia ról i bezpośrednio je definiować. System ACL oferuje elastyczny mechanizm zarządzania uprawnieniami, wspierający fragmenty uprawnień (snippets), middleware, warunkowe sprawdzanie i wiele innych metod.

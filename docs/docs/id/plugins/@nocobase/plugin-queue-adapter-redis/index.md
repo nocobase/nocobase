@@ -1,14 +1,15 @@
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
-
+---
 displayName: "Adaptor Antrean Redis"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
   Memproses antrean pesan aplikasi berbasis Redis.
 isFree: false
 builtIn: false

@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 # DataSourceManager
 
 `DataSourceManager` היא מחלקת הניהול עבור מופעי `dataSource` מרובים.

@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 **Paramètres**
 
 | Nom du paramètre       | Type          | Valeur par défaut | Description                                                                 |

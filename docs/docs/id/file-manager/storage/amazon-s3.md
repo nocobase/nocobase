@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Mesin Penyimpanan: Amazon S3
 
 Mesin penyimpanan berbasis Amazon S3. Sebelum menggunakannya, Anda perlu menyiapkan akun dan izin yang relevan.

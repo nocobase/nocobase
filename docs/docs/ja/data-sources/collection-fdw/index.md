@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-collection-fdw"
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: "@nocobase/plugin-collection-fdw"
----
 
 # 外部データテーブル（FDW）に接続する
 

@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Extensión de las pestañas de configuración de permisos
 
 A continuación, le mostraremos un ejemplo con la opción de configuración "Menú Móvil" para demostrar cómo extender una nueva pestaña de configuración de permisos. El resultado se muestra en la siguiente imagen:

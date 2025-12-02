@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-users'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-users'
----
 
 # Gebruikers
 

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-date-calculation'
+---
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-date-calculation'
----
 
 # Cálculo de Data
 

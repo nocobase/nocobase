@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Consultar Datos
 
 Este nodo le permite consultar y recuperar registros de datos de una **colección** que cumplen con condiciones específicas.

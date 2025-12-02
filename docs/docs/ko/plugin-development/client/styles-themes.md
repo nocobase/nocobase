@@ -2,7 +2,6 @@
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
 # 스타일 및 테마
 
 NocoBase의 동적 테마 기능을 더 잘 활용하기 위해 플러그인에서 [antd-style](https://ant-design.github.io/antd-style/zh-CN/guide)을 사용하여 스타일을 작성하는 것을 권장합니다. 기존 [테마 토큰](https://ant.design/docs/react/customize-theme-cn#seedtoken)과 함께 사용하여 테마의 동적 기능을 구현할 수 있습니다. 또한 NocoBase는 스타일을 편리하게 조정할 수 있는 [테마 편집기 플러그인](#)을 제공합니다.

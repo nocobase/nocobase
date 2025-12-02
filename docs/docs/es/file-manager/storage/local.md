@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Motor de Almacenamiento: Almacenamiento Local
 
 Los archivos que suba se guardarán en un directorio local del disco duro del servidor. Esta opción es ideal para escenarios donde el volumen total de archivos subidos gestionados por el sistema es pequeño o para fines experimentales.

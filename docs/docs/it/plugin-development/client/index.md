@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Panoramica
 
 Lo sviluppo di **plugin** lato client per NocoBase offre diverse funzionalità e capacità per aiutare gli sviluppatori a personalizzare ed estendere le caratteristiche frontend di NocoBase. Di seguito sono elencate le principali capacità e i capitoli correlati dello sviluppo di **plugin** lato client per NocoBase:

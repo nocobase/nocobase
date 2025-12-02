@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # ICollectionManager
 
 La interfaz `ICollectionManager` se utiliza para gestionar las instancias de `colección` de una `fuente de datos`.

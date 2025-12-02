@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # EventDefinition
 
 `EventDefinition` define a lógica de tratamento de eventos em um **fluxo de trabalho**, usada para responder a gatilhos de eventos específicos. Eventos são um mecanismo importante no `FlowEngine` para iniciar a execução de **fluxos de trabalho**.

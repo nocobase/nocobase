@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-users'
+---
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
-pkg: '@nocobase/plugin-users'
----
 
 # Usuários
 

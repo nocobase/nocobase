@@ -1,3 +1,9 @@
+
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Descripción general del sistema de contexto
 
 El sistema de contexto del motor de flujo de NocoBase se divide en tres capas, cada una con un ámbito diferente. Su uso adecuado permite compartir y aislar de forma flexible servicios, configuraciones y datos, lo que mejora la mantenibilidad y escalabilidad del negocio.
@@ -34,13 +40,6 @@ FlowEngineContext (Contexto Global)
 - El `FlowModelContext` de un submodelo puede acceder al contexto del modelo padre (relación síncrona) a través de un mecanismo de delegación, lo que permite sobrescribir elementos con el mismo nombre.
 - Los modelos padre-hijo asíncronos no establecen una relación de delegación para evitar la contaminación del estado.
 - `FlowRuntimeContext` siempre accede a su `FlowModelContext` correspondiente mediante un mecanismo de delegación, pero no propaga los cambios hacia arriba.
-
----
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
-
 
 ## 🧭 Modo de ejecución y modo de configuración (mode)
 

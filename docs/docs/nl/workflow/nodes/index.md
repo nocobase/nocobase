@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Overzicht
 
 Een workflow bestaat doorgaans uit verschillende met elkaar verbonden stappen. Elk knooppunt vertegenwoordigt één van deze stappen en is een fundamentele logische eenheid binnen het proces. Net als in een programmeertaal vertegenwoordigen verschillende typen knooppunten verschillende instructies, die het gedrag van het knooppunt bepalen. Wanneer de workflow wordt uitgevoerd, doorloopt het systeem elk knooppunt achtereenvolgens en voert het de instructies ervan uit.

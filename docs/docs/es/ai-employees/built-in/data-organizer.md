@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Agente de IA · Dex: Experto en Organización de Datos
 
 > Extraiga y complete formularios rápidamente, transformando la información desordenada en estructurada.

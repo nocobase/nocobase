@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Wdrożenie w środowisku produkcyjnym
 
 Podczas wdrażania NocoBase w środowisku produkcyjnym, instalacja zależności może być kłopotliwa ze względu na różnice w metodach budowania w różnych systemach i środowiskach. Aby zapewnić pełne doświadczenie funkcjonalne, zalecamy wdrożenie za pomocą **Docker**. Jeśli środowisko systemowe nie pozwala na użycie Dockera, mogą Państwo również wdrożyć aplikację za pomocą **create-nocobase-app**.

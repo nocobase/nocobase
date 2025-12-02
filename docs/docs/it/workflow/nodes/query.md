@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Query Dati
 
 Questo nodo le permette di interrogare e recuperare record di dati da una collezione, basandosi su condizioni specifiche.

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-password-policy'
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: '@nocobase/plugin-password-policy'
----
 
 # سياسة كلمة المرور
 

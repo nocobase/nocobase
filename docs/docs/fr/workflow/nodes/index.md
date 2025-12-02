@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Vue d'ensemble
 
 Un flux de travail est généralement composé de plusieurs étapes opérationnelles connectées. Chaque nœud représente l'une de ces étapes et constitue une unité logique de base dans le processus. Tout comme dans un langage de programmation, différents types de nœuds représentent différentes instructions, ce qui détermine leur comportement. Lorsque le flux de travail s'exécute, le système entre séquentiellement dans chaque nœud et exécute ses instructions.

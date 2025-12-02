@@ -1,14 +1,15 @@
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
+---
 displayName: "Åtgärd: Exportera poster Pro"
 packageName: '@nocobase/plugin-action-export-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
   Förbättrar dataexportfunktionerna med asynkron export för hantering av stora datamängder. Stöder export av bilagor.
 isFree: false
 builtIn: false

@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # StepDefinition
 
 StepDefinition define um único passo em um fluxo. Cada passo pode ser uma ação, um tratamento de evento ou outra operação. Um passo é a unidade de execução básica de um fluxo.

@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Plusieurs-à-un
 
 Dans une base de données de bibliothèque, il y a deux entités : les livres et les auteurs. Un auteur peut écrire plusieurs livres, mais chaque livre n'a généralement qu'un seul auteur. Dans ce cas, la relation entre les auteurs et les livres est de type plusieurs-à-un. Plusieurs livres peuvent être associés au même auteur, mais chaque livre ne peut avoir qu'un seul auteur.

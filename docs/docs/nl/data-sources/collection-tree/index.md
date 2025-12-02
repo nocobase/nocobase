@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-collection-tree"
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-collection-tree"
----
 
 # Boomstructuur collectie
 

@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-notification-manager'
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
-
-
-pkg: '@nocobase/plugin-notification-manager'
----
 
 # Менеджер сповіщень
 

@@ -1,3 +1,9 @@
+
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
+
 # Kubernetes デプロイ
 
 本記事では、Kubernetes環境にNocoBaseをクラスターモードで迅速にデプロイする方法を解説します。読者の皆様がKubernetes環境に精通しており、[準備作業](./preparations.md)を完了していることを前提としています。
@@ -113,12 +119,6 @@ spec:
   selector:
     app: nocobase
   type: ClusterIP
----
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-
 # アプリケーションのDeployment。複数のアプリケーションコンテナをデプロイできます。
 apiVersion: apps/v1
 kind: Deployment

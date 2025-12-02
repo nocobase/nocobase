@@ -1,6 +1,3 @@
-:::tip Powiadomienie o tłumaczeniu AI
+---:::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
-
-
----

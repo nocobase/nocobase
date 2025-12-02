@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Beziehung zwischen FlowEngine und Plugins
 
 **FlowEngine** ist kein Plugin, sondern wird als **Kern-API** bereitgestellt, die Plugins nutzen können, um Kernfunktionen mit Geschäftserweiterungen zu verbinden. In NocoBase 2.0 sind alle APIs im FlowEngine zentralisiert, und Plugins können über `this.engine` darauf zugreifen.

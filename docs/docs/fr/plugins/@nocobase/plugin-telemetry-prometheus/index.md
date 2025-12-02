@@ -1,14 +1,15 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
-
+---
 displayName: "Télémétrie : Prometheus"
 packageName: '@nocobase/plugin-telemetry-prometheus'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
   Intégrez Prometheus au module de télémétrie de NocoBase.
 isFree: false
 builtIn: false

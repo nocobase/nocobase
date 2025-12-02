@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-data-source-main"
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: "@nocobase/plugin-data-source-main"
----
 
 # Bộ sưu tập thông thường
 

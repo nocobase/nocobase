@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Napisz swoją pierwszą wtyczkę
 
 Ten przewodnik poprowadzi Panią/Pana przez proces tworzenia wtyczki blokowej, którą można wykorzystać na stronach, od podstaw. Pomoże to Pani/Panu zrozumieć podstawową strukturę i proces tworzenia wtyczek NocoBase.

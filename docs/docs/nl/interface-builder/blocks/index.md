@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Blok
 
 Blokken zijn dragers van gegevens en inhoud. U kunt ze plaatsen in een pagina (Page), dialoogvenster (Modal) of lade (Drawer). Meerdere blokken kunt u vrijelijk verslepen en rangschikken.

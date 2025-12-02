@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Champs du formulaire de filtre
 
 ## Introduction

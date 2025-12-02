@@ -1,3 +1,9 @@
+
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Kubernetes-implementatie
 
 Dit artikel begeleidt u bij het snel implementeren van NocoBase in clustermodus binnen een Kubernetes-omgeving. We gaan ervan uit dat u bekend bent met de Kubernetes-omgeving en de stappen in [Voorbereidingen](./preparations.md) hebt voltooid.
@@ -112,12 +118,6 @@ spec:
   selector:
     app: nocobase
   type: ClusterIP
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
-
 # De Deployment van de applicatie, die meerdere applicatiecontainers kan implementeren.
 apiVersion: apps/v1
 kind: Deployment

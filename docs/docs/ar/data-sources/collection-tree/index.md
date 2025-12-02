@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-collection-tree"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: "@nocobase/plugin-collection-tree"
----
 
 # المجموعة الشجرية
 

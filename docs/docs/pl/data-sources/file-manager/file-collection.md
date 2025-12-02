@@ -6,12 +6,6 @@ Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-file-manager"
----
-```
-
 # Kolekcja plików
 
 ## Wprowadzenie

@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-collection-tree"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: "@nocobase/plugin-collection-tree"
----
 
 # คอลเลกชันแบบต้นไม้
 

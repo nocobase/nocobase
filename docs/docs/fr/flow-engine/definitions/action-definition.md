@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # ActionDefinition
 
 Une `ActionDefinition` définit des actions réutilisables qui peuvent être référencées dans plusieurs flux de travail et étapes. Une action est l'unité d'exécution centrale du moteur de flux, encapsulant une logique métier spécifique.

@@ -1,14 +1,15 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
-
+---
 displayName: "Verificação: Autenticador TOTP"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
   Permite que os usuários vinculem um autenticador TOTP e verifiquem sua identidade usando códigos de uso único baseados em tempo (TOTP).
 isFree: false
 builtIn: false

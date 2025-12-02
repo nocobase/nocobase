@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-comments"
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-comments"
----
 
 # Collectie voor opmerkingen
 

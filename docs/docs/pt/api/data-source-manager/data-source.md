@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # DataSource (abstrata)
 
 `DataSource` é uma classe abstrata usada para representar um tipo de fonte de dados, que pode ser um banco de dados, uma API, etc.

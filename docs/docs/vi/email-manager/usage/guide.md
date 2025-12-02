@@ -7,9 +7,6 @@ Tài liệu này đã được dịch tự động bằng AI.
 
 
 
-pkg: "@nocobase/plugin-email-manager"
----
-
 # Trung tâm Email
 
 ## Giới thiệu

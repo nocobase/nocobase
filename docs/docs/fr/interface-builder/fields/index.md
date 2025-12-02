@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Champ
 
 Dans l'interface utilisateur, un champ est un composant qui sert de support aux données unitaires. Chaque type de donnée est présenté par un composant de champ distinct. Les champs ne peuvent être attachés qu'à des blocs et ne peuvent pas être utilisés indépendamment.

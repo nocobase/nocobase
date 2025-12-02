@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-previewer-office'
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: '@nocobase/plugin-file-previewer-office'
----
 
 # معاينة ملفات Office <Badge>v1.8.11+</Badge>
 

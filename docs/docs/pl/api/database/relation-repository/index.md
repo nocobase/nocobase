@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # RelationRepository
 
 `RelationRepository` to obiekt `Repository` dla typów powiązań. Umożliwia on operowanie na powiązanych danych bez konieczności ładowania całego powiązania. Na podstawie `RelationRepository` każdy typ powiązania ma swoją pochodną implementację:

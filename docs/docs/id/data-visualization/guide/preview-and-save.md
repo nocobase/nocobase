@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Pratinjau dan Simpan
 
 *   **Pratinjau**: Menampilkan sementara perubahan dari panel konfigurasi ke dalam grafik halaman untuk memverifikasi hasilnya.

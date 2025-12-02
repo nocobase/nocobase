@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Branchement multi-conditions <Badge>v2.0.0+</Badge>
 
 ## Introduction

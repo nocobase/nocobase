@@ -1,8 +1,4 @@
-:::tip ประกาศการแปลด้วย AI
-เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
-:::
-
-
+---
 displayName: "บล็อก: Markdown"
 packageName: '@nocobase/plugin-block-markdown'
 description: |
@@ -11,5 +7,8 @@ isFree: จริง
 builtIn: จริง
 defaultEnabled: เท็จ
 ---
+:::tip ประกาศการแปลด้วย AI
+เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
+:::
 
 # บล็อก: Markdown

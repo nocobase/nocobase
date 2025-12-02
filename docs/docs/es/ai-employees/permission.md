@@ -1,3 +1,9 @@
+
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Roles y Permisos
 
 ## Introducción
@@ -24,13 +30,6 @@ Seleccione un rol, haga clic en la pestaña `Permissions` y luego en la pestaña
 Haga clic en la casilla de verificación de la columna `Available` de la lista de empleados de IA para controlar si el rol actual puede acceder a ese empleado de IA.
 
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
-
----
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
-
 
 ## Permisos de acceso a datos
 

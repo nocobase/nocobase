@@ -1,14 +1,15 @@
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
-
+---
 displayName: "Telemetrie: Prometheus"
 packageName: '@nocobase/plugin-telemetry-prometheus'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
   Integreer Prometheus met de telemetriemodule van NocoBase.
 isFree: false
 builtIn: false

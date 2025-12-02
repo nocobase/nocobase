@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-verification'
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: '@nocobase/plugin-verification'
----
 
 # Verifizierung: SMS
 

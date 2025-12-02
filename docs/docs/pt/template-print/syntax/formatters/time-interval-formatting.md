@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 ### Formatação de Intervalos
 
 #### 1. :formatI(patternOut, patternIn)

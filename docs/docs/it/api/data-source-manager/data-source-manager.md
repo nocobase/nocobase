@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # DataSourceManager
 
 `DataSourceManager` è la classe di gestione per le istanze multiple di `dataSource`.

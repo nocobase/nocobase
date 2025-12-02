@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-audit-logger'
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: '@nocobase/plugin-audit-logger'
----
 
 # บันทึกการตรวจสอบ (Audit Logger)
 

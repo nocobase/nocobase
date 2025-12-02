@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-parallel'
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-parallel'
----
 
 # Parallele Verzweigung
 

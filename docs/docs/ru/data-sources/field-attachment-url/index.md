@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-attachment-url"
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: "@nocobase/plugin-field-attachment-url"
----
 
 # Поле данных: Вложение (URL)
 

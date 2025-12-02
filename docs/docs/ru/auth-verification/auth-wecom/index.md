@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-auth-wecom'
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-auth-wecom'
----
 
 # Аутентификация: WeCom
 

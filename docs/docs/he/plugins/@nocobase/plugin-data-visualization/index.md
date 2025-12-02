@@ -1,11 +1,12 @@
+---
+displayName: "הצגת נתונים חזותית"
+packageName: '@nocobase/plugin-data-visualization'
+description: |
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-displayName: "הצגת נתונים חזותית"
-packageName: '@nocobase/plugin-data-visualization'
-description: |
   מספק יכולות הצגת נתונים חזותית, הכולל בלוק תרשים ובלוק סינון תרשימים. תומך ביותר מתריסר סוגי תרשימים, כגון תרשימי קו, תרשימי שטח, תרשימי עמודות ועוד. באפשרותכם גם להרחיב ולהוסיף סוגי תרשימים נוספים.
 isFree: true
 builtIn: true

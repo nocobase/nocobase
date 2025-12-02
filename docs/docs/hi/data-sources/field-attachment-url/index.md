@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-attachment-url"
+---
 :::tip AI अनुवाद सूचना
 यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
 :::
 
-
-pkg: "@nocobase/plugin-field-attachment-url"
----
 
 # डेटा फ़ील्ड: अटैचमेंट (URL)
 

@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Uaktualnianie instalacji Docker
 
 :::warning Przed uaktualnieniem

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-migration-manager'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-migration-manager'
----
 
 # Migratiebeheer
 

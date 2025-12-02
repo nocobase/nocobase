@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Zarządzanie wersjami
 
 Po tym, jak skonfigurowany przepływ pracy zostanie uruchomiony co najmniej raz, jeśli chcą Państwo zmodyfikować jego konfigurację lub węzły, należy najpierw utworzyć nową wersję, a dopiero potem wprowadzić zmiany. Zapewnia to również, że podczas przeglądania historii wykonania wcześniej uruchomionych przepływów pracy, nie będzie ona zmieniana przez przyszłe modyfikacje.

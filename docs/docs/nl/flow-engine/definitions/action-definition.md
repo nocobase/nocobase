@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # ActionDefinition
 
 `ActionDefinition` definieert herbruikbare acties die in meerdere workflows en stappen kunnen worden gebruikt. Een actie is de kernuitvoeringsunit binnen de FlowEngine en omvat specifieke bedrijfslogica.

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth-sms'
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: '@nocobase/plugin-auth-sms'
----
 
 # SMS-autentisering
 

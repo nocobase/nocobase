@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-reference"
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-pkg: "@nocobase/plugin-block-reference"
----
 
 # Blocco di Riferimento
 

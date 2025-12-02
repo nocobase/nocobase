@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Zakończ przepływ pracy
 
 Po wykonaniu tego węzła, bieżący przepływ pracy zostanie natychmiast zakończony ze statusem skonfigurowanym w węźle. Jest to zazwyczaj używane do kontroli przepływu opartej na określonej logice, aby wyjść z bieżącego przepływu pracy po spełnieniu pewnych warunków logicznych i zatrzymać wykonywanie kolejnych procesów. Można to porównać do instrukcji `return` w językach programowania, służącej do wyjścia z aktualnie wykonywanej funkcji.

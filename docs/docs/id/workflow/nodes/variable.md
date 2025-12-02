@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-workflow-variable'
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-variable'
----
 
 # Variabel
 

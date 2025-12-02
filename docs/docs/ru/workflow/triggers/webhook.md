@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-webhook'
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-webhook'
----
 
 # Вебхук
 

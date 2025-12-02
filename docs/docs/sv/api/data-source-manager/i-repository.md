@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # IRepository
 
 Gränssnittet `Repository` definierar en serie metoder för modelloperationer som anpassar sig till datakällans CRUD-operationer.

@@ -1,11 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-subflow'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
 
-
-```yaml
-pkg: '@nocobase/plugin-workflow-subflow'
-```
 
 # Đầu ra của luồng công việc
 

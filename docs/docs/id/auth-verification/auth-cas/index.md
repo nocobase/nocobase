@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth-cas'
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: '@nocobase/plugin-auth-cas'
----
 
 # Autentikasi: CAS
 

@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-embed"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-embed"
----
-```
-
 # הטמעת NocoBase
 
 ## מבוא

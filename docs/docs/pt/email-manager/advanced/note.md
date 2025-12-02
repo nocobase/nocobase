@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
-pkg: "@nocobase/plugin-email-manager"
----
 
 # Notas de E-mail
 

@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-block-reference"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: "@nocobase/plugin-block-reference"
----
 
 # บล็อกอ้างอิง
 

@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 ## Problemas Comunes y Soluciones
 
 ### 1. Las columnas y celdas vacías en las plantillas de Excel desaparecen en los resultados renderizados

@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 ### Formatação de Números
 
 #### 1. :formatN(precision)

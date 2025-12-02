@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Migration
 
 Während der Entwicklung und Aktualisierung von NocoBase-Plugins können sich die Datenbankstrukturen oder Konfigurationen der Plugins inkompatibel ändern. Um reibungslose Upgrades zu gewährleisten, bietet NocoBase einen **Migration**-Mechanismus an. Dieser ermöglicht es Ihnen, diese Änderungen durch das Schreiben von Migrationsdateien zu verwalten. Dieser Leitfaden führt Sie systematisch durch die Verwendung und den Entwicklungsprozess von Migrationen.

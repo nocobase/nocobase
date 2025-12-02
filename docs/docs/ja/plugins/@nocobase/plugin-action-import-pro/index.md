@@ -1,14 +1,15 @@
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-
+---
 displayName: "アクション：レコードのインポート Pro"
 packageName: '@nocobase/plugin-action-import-pro'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
   データインポート機能を強化するプラグインです。非同期インポートにより大容量データに対応し、データ処理の認識、データ更新、ワークフローのトリガーなどの機能もサポートしています。
 isFree: false
 builtIn: false

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-acl'
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: '@nocobase/plugin-acl'
----
 
 # Mengonfigurasi Izin
 

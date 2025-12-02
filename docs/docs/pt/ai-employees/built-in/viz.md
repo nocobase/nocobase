@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Funcionário de IA · Viz: Analista de Insights
 
 > Gere gráficos e insights com um clique, e deixe os dados falarem por si.

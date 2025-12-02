@@ -1,3 +1,4 @@
+---
 pageType: home
 pageName: development
 
@@ -55,3 +56,4 @@ features:
       - title: توسيع معاينة الملفات
         details: وسّع قدرات معاينة الملفات لدعم المعاينة والعرض عبر الإنترنت لمزيد من تنسيقات الملفات.
         link: /file-manager/development
+---

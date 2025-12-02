@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-bulk-update"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
 
-
-pkg: "@nocobase/plugin-action-bulk-update"
----
 # การอัปเดตเป็นชุด
 
 ## บทนำ

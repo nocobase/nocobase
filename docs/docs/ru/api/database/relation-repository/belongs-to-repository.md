@@ -2,7 +2,6 @@
 Эта документация была автоматически переведена ИИ.
 :::
 
-
 ## BelongsToRepository
 
 Его интерфейс совпадает с [HasOneRepository](./has-one-repository.md).

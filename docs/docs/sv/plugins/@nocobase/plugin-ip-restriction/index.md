@@ -1,14 +1,15 @@
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
+---
 displayName: "IP-begränsning"
 packageName: '@nocobase/plugin-ip-restriction'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
   Kontrollera systemåtkomst genom att konfigurera IP-svartlistor och vitlistor för att säkerställa säkerheten.
 isFree: false
 builtIn: false

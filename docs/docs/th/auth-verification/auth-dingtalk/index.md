@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-auth-dingtalk'
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: '@nocobase/plugin-auth-dingtalk'
----
 
 # การยืนยันตัวตน: DingTalk
 

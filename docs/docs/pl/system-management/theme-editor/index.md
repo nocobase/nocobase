@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Edytor motywów
 
 > Obecna funkcja motywów jest zaimplementowana w oparciu o Ant Design 5.x. Przed zapoznaniem się z tym dokumentem zalecamy przeczytanie o koncepcji [dostosowywania motywów](https://ant.design/docs/react/customize-theme).

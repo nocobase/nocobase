@@ -1,14 +1,15 @@
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-
+---
 displayName: "ワークフロー：操作前イベント"
 packageName: '@nocobase/plugin-workflow-request-interceptor'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
   操作ボタンやAPIを通じて発行されたリクエストが実行される前にトリガーされます。例えば、データの追加、更新、削除の前などに利用できます。操作前のデータ検証やロジック判断に適しており、「終了ノード」を使ってリクエストを拒否することも可能です。
 isFree: false
 builtIn: false

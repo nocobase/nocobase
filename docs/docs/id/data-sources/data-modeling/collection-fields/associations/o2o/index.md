@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Satu-ke-Satu
 
 Dalam hubungan antara karyawan dan profil pribadi, setiap karyawan hanya dapat memiliki satu catatan profil pribadi, dan setiap catatan profil pribadi hanya dapat berkorespondensi dengan satu karyawan. Dalam kasus ini, hubungan antara karyawan dan profil pribadi adalah satu-ke-satu.

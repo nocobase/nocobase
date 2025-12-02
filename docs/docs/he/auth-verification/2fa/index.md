@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-two-factor-authentication'
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: '@nocobase/plugin-two-factor-authentication'
----
 
 # אימות דו-שלבי (2FA)
 

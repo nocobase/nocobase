@@ -7,9 +7,6 @@ Tato dokumentace byla automaticky přeložena umělou inteligencí.
 
 
 
-pkg: "@nocobase/plugin-multi-space"
----
-
 # Více prostorů
 
 ## Úvod

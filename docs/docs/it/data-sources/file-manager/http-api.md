@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # API HTTP
 
 I caricamenti di file sia per i campi allegato che per le collezioni di file possono essere gestiti tramite l'API HTTP. Il metodo di invocazione varia a seconda del motore di archiviazione utilizzato dal campo allegato o dalla collezione di file.

@@ -1,14 +1,15 @@
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
-
-
+---
 displayName: "القياس عن بعد: Prometheus"
 packageName: '@nocobase/plugin-telemetry-prometheus'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip إشعار الترجمة بالذكاء الاصطناعي
+تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
+:::
+
   يدمج Prometheus مع وحدة القياس عن بعد في NocoBase.
 isFree: لا
 builtIn: لا

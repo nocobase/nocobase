@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Déploiement en environnement de production
 
 Lors du déploiement de NocoBase en environnement de production, l'installation des dépendances peut s'avérer complexe en raison des différentes méthodes de construction selon les systèmes et les environnements. Pour une expérience fonctionnelle complète, nous vous recommandons d'utiliser **Docker** pour le déploiement. Si votre environnement système ne permet pas l'utilisation de Docker, vous pouvez également déployer NocoBase avec **create-nocobase-app**.

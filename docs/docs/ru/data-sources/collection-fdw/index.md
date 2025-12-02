@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-collection-fdw"
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: "@nocobase/plugin-collection-fdw"
----
 
 # Подключение внешних таблиц данных (FDW)
 

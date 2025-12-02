@@ -1,14 +1,11 @@
 ---
 pkg: "@nocobase/plugin-auth-ldap"
 ---
-:::tip Yapay Zeka Çeviri Bildirimi
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 
 
-
-pkg: '@nocobase/plugin-auth-ldap'
----
 
 # Kimlik Doğrulama: LDAP
 

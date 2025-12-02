@@ -1,4 +1,3 @@
-
 ---
 pageType: home
 

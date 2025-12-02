@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-cc'
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-cc'
----
 
 # Kopia <Badge>v1.8.2+</Badge>
 

@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Uppdatera data
 
 Används för att uppdatera data i en samling som uppfyller angivna villkor.

@@ -1,11 +1,12 @@
+---
+displayName: "Powiadomienie: Wiadomość w aplikacji"
+packageName: '@nocobase/plugin-notification-in-app-message'
+description: |
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-displayName: "Powiadomienie: Wiadomość w aplikacji"
-packageName: '@nocobase/plugin-notification-in-app-message'
-description: |
   Umożliwia użytkownikom otrzymywanie powiadomień w czasie rzeczywistym bezpośrednio w aplikacji NocoBase.
 isFree: true
 builtIn: true

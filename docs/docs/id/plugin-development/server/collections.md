@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Koleksi
 
 Dalam pengembangan **plugin** NocoBase, **koleksi (tabel data)** adalah salah satu konsep paling inti. Anda dapat menambah atau mengubah struktur tabel data dalam **plugin** dengan mendefinisikan atau memperluas **koleksi**. Berbeda dengan tabel data yang dibuat melalui antarmuka manajemen **sumber data**, **koleksi** yang didefinisikan dalam kode biasanya merupakan tabel metadata tingkat sistem dan tidak akan muncul dalam daftar manajemen **sumber data**.

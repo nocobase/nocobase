@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-external-oracle"
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-external-oracle"
----
 
 # Fonte Dati Esterna - Oracle
 

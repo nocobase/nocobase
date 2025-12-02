@@ -1,11 +1,11 @@
+---
+id: create-delete-and-update-in-bulk
+title: Creazione, aggiornamento ed eliminazione in blocco
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-id: create-delete-and-update-in-bulk
-title: Creazione, aggiornamento ed eliminazione in blocco
----
 
 Le azioni per i blocchi forniscono tre tipi di operazioni: "Creazione in blocco", "Aggiornamento in blocco" ed "Eliminazione in blocco", che permettono di agire su più record di dati contemporaneamente.
 

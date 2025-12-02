@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Jak włączyć silnik federated w MySQL
 
 Baza danych MySQL domyślnie nie ma włączonego modułu federated. Muszą Państwo zmodyfikować konfigurację my.cnf. Jeśli korzystają Państwo z wersji Docker, rozszerzenie można obsłużyć za pomocą woluminów:

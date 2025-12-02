@@ -1,11 +1,12 @@
+---
+displayName: "Sammlungsfeld: Sortieren"
+packageName: '@nocobase/plugin-field-sort'
+description: |
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-displayName: "Sammlungsfeld: Sortieren"
-packageName: '@nocobase/plugin-field-sort'
-description: |
   Dient dazu, die Daten in einer Sammlung zu sortieren.
 isFree: wahr
 builtIn: wahr

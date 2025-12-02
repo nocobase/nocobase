@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Filtros de página y vinculación
 
 El filtro de página (bloque de filtro) le permite introducir condiciones de filtro de forma unificada a nivel de página y las combina con las consultas de los gráficos. Esto asegura que múltiples gráficos se filtren de manera consistente y estén vinculados entre sí.

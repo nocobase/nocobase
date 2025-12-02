@@ -1,11 +1,12 @@
+---
+displayName: "ブロック：テンプレート（非推奨）"
+packageName: '@nocobase/plugin-block-template'
+description: |
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-displayName: "ブロック：テンプレート（非推奨）"
-packageName: '@nocobase/plugin-block-template'
-description: |
   ページで再利用するためのブロックテンプレートを作成・管理します。
 isFree: true
 builtIn: true

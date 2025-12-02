@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-verification-totp-authenticator'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: '@nocobase/plugin-verification-totp-authenticator'
----
 
 # 認証：TOTP 認証器
 

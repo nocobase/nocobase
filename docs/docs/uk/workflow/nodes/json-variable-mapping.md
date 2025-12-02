@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-json-variable-mapping'
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-json-variable-mapping'
----
 
 # Зіставлення змінних JSON
 

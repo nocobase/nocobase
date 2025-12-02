@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # JS online schrijven en uitvoeren
 
 In NocoBase biedt **RunJS** een lichtgewicht uitbreidingsmethode die ideaal is voor **snelle experimenten en tijdelijke logicaverwerking**. U kunt hiermee interfaces of interacties personaliseren met JavaScript, zonder dat u plugins hoeft te maken of de broncode hoeft aan te passen.

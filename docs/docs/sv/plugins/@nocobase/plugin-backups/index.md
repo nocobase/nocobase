@@ -1,14 +1,15 @@
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
+---
 displayName: "Säkerhetskopieringshanterare"
 packageName: '@nocobase/plugin-backups'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
   Tillhandahåller funktioner för säkerhetskopiering och återställning, stöder schemalagda säkerhetskopior och säkerställer datasäkerhet och snabb återställning.
 isFree: false
 builtIn: false

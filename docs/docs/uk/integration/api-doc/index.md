@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-api-doc"
 
 
 
-pkg: "@nocobase/plugin-api-doc"
----
-
 # Документація API
 
 ## Вступ

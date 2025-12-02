@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Previsualizar y Guardar
 
 *   **Previsualizar**: Muestra temporalmente los cambios realizados en el panel de configuración en el gráfico de la página para verificar el resultado.

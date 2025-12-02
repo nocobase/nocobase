@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Schnellstart
 
 In dieser Anleitung konfigurieren wir gemeinsam ein Diagramm von Grund auf und nutzen dabei die grundlegenden Funktionen. Weitere optionale Möglichkeiten werden in späteren Kapiteln behandelt.

@@ -1,13 +1,14 @@
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
+---
 displayName: "Bädda in NocoBase"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x
 description: |
+---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
   Bädda in NocoBase i ett externt system eller på en webbsida, så att det blir en del av det systemet eller den sidan.
 isFree: false
 builtIn: false

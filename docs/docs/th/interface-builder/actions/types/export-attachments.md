@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-export-pro"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
 
-
-pkg: "@nocobase/plugin-action-export-pro"
----
 # ส่งออกไฟล์แนบ
 
 ## บทนำ

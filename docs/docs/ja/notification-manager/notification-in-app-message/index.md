@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-notification-in-app-message'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: '@nocobase/plugin-notification-in-app-message'
----
 
 # 通知：アプリ内メッセージ
 

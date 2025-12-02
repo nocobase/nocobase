@@ -1,11 +1,12 @@
+---
+displayName: "Bloco: iframe"
+packageName: '@nocobase/plugin-block-iframe'
+description: |
+---
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
-displayName: "Bloco: iframe"
-packageName: '@nocobase/plugin-block-iframe'
-description: |
   Crie um bloco iframe na página para incorporar e exibir páginas web ou conteúdo externo.
 isFree: true
 builtIn: true

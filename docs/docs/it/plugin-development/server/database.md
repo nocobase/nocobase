@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Database
 
 `Database` è un componente fondamentale delle `fonte dati` di tipo database. Ogni `fonte dati` di tipo database possiede un'istanza `Database` corrispondente, accessibile tramite `dataSource.db`. L'istanza `Database` della `fonte dati` principale offre anche l'alias `app.db` per comodità. Familiarizzare con i metodi comuni di `db` è fondamentale per scrivere i `plugin` lato server.

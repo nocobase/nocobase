@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # FlowDefinition
 
 FlowDefinition definieert de basisstructuur en configuratie van een flow en is een van de kernconcepten van de FlowEngine. Het beschrijft de metadata, triggercondities en uitvoeringsstappen van de flow.

@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Gestione delle Dipendenze
 
 Nello sviluppo di **plugin** per NocoBase, le dipendenze si dividono in due categorie: **dipendenze proprie del plugin** e **dipendenze globali**.

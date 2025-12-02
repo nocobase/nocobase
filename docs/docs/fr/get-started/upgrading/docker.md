@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Mise à niveau d'une installation Docker
 
 :::warning Avant la mise à niveau

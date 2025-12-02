@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-request-interceptor'
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-request-interceptor'
----
 
 # حدث ما قبل الإجراء
 

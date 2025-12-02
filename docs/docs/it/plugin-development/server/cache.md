@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Cache
 
 Il modulo Cache di NocoBase si basa su <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a> e offre funzionalità di caching per lo sviluppo di **plugin**. Il sistema include due tipi di cache predefiniti:

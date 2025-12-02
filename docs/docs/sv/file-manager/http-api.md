@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # HTTP API
 
 Bilduppladdningar för både bilagefält och fil-samlingar stöds via HTTP API. Hur anropet görs skiljer sig beroende på vilken lagringsmotor som används av bilagefältet eller fil-samlingen.

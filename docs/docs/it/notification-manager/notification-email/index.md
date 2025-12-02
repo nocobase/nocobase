@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-notification-email'
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-pkg: '@nocobase/plugin-notification-email'
----
 
 # Notifica: E-mail
 

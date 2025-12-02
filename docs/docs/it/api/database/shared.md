@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 **Parametri**
 
 | Nome parametro         | Tipo          | Valore predefinito | Descrizione                                                                 |

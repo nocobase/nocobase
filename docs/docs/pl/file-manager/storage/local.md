@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Silnik przechowywania: Pamięć lokalna
 
 Przesłane pliki będą zapisywane w lokalnym katalogu na dysku twardym serwera. Rozwiązanie to jest odpowiednie dla scenariuszy, w których całkowita objętość przesyłanych plików zarządzanych przez system jest niewielka, lub do celów eksperymentalnych.

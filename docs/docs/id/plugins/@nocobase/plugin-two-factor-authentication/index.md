@@ -1,14 +1,15 @@
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
-
+---
 displayName: "Autentikasi Dua Faktor (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
   Mendukung pengaktifan autentikasi dua faktor (2FA) untuk masuk menggunakan kata sandi.
 isFree: false
 builtIn: false

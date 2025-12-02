@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Plugin
 
 In NocoBase is een **client-side plugin** de belangrijkste manier om frontend-functionaliteit uit te breiden en aan te passen. Door de `Plugin` basisklasse van `@nocobase/client` te gebruiken, kunt u als ontwikkelaar logica registreren, paginaonderdelen toevoegen, menu's uitbreiden of functionaliteit van derden integreren in verschillende levenscyclusfasen.

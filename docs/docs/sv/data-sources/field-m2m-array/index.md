@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-m2m-array"
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: "@nocobase/plugin-field-m2m-array"
----
 
 # Många-till-många (Array)
 

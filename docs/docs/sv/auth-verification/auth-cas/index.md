@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth-cas'
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: '@nocobase/plugin-auth-cas'
----
 
 # Autentisering: CAS
 

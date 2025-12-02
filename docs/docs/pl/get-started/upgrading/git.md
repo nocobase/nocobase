@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Aktualizacja NocoBase zainstalowanego z kodu źródłowego Git
 
 :::warning Przygotowanie przed aktualizacją

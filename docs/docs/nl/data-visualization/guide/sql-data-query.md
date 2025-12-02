@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Gegevens opvragen in SQL-modus
 
 Schakel in het paneel "Gegevens opvragen" over naar de SQL-modus. Hier kunt u query's schrijven en uitvoeren, en de resultaten direct gebruiken voor het toewijzen en weergeven van grafieken.

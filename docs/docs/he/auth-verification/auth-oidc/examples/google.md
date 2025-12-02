@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 # התחברות עם Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect

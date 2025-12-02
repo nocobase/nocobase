@@ -1,13 +1,14 @@
-:::tip הודעת תרגום AI
-תיעוד זה תורגם אוטומטית על ידי AI.
-:::
-
-
+---
 displayName: "ריבוי מרחבים"
 packageName: '@nocobase/plugin-multi-space'
 supportedVersions:
   - 2.x
 description: |
+---
+:::tip הודעת תרגום AI
+תיעוד זה תורגם אוטומטית על ידי AI.
+:::
+
   מאפשר מספר מרחבי נתונים עצמאיים בתוך מופע יישום יחיד באמצעות בידוד לוגי.
 isFree: false
 builtIn: false

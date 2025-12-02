@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Hoofd- versus externe databases
 
 De verschillen tussen hoofd- en externe databases in NocoBase komen voornamelijk tot uiting in vier aspecten: ondersteuning voor databasetypen, ondersteuning voor collectietypen, ondersteuning voor veldtypen en mogelijkheden voor back-up en migratie.

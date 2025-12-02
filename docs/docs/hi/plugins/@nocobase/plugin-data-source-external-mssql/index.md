@@ -1,14 +1,15 @@
-:::tip AI अनुवाद सूचना
-यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
-:::
-
-
+---
 displayName: "डेटा स्रोत: बाहरी SQL सर्वर"
 packageName: '@nocobase/plugin-data-source-external-mssql'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI अनुवाद सूचना
+यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
+:::
+
   बाहरी SQL सर्वर डेटाबेस को डेटा स्रोत के रूप में उपयोग करें।
 isFree: false
 builtIn: false

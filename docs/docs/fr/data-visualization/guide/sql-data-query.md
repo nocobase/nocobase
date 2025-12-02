@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Interroger les données en mode SQL
 
 Dans le panneau de Requête de données, passez en mode SQL, rédigez et exécutez la requête, puis utilisez directement le résultat obtenu pour le mappage et le rendu des graphiques.

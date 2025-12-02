@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Overzicht van Blokextensies
 
 In NocoBase 2.0 is het mechanisme voor blokextensies aanzienlijk vereenvoudigd. Ontwikkelaars hoeven alleen de bijbehorende **FlowModel** basisklasse te overerven en de relevante interfacemethoden (voornamelijk de `renderComponent()` methode) te implementeren om snel blokken aan te passen.

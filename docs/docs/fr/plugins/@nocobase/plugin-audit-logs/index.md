@@ -1,9 +1,4 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
-
-```yaml
+---
 displayName: "Journaux d'audit (obsolète)"
 packageName: '@nocobase/plugin-audit-logs'
 description: |
@@ -12,7 +7,11 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
-```
+---
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
 
 # Journaux d'audit (obsolète)
 

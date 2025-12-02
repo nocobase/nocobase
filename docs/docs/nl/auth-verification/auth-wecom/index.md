@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth-wecom'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-auth-wecom'
----
 
 # Authenticatie: WeCom
 

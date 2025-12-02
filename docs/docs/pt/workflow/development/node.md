@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Estendendo Tipos de Nós
 O tipo de um nó é, essencialmente, uma instrução de operação. Instruções diferentes representam operações distintas executadas no **fluxo de trabalho**.
 

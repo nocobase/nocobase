@@ -1,11 +1,12 @@
+---
+displayName: "앱 백업 및 복원 (사용 중단됨)"
+packageName: '@nocobase/plugin-backup-restore'
+description: |
+---
 :::tip AI 번역 안내
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
-displayName: "앱 백업 및 복원 (사용 중단됨)"
-packageName: '@nocobase/plugin-backup-restore'
-description: |
   앱을 백업하고 복원하여 앱 복제, 마이그레이션, 업그레이드 등의 다양한 상황에 활용할 수 있습니다.
 isFree: true
 builtIn: true

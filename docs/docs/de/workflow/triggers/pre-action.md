@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-workflow-request-interceptor'
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-request-interceptor'
----
 
 # Ereignis vor der Aktion
 

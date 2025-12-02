@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-collection-tree"
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
-
-
-pkg: "@nocobase/plugin-collection-tree"
----
 
 # Колекція-дерево
 

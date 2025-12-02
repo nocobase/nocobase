@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Integrasi Webhook Alur Kerja
 
 Melalui pemicu Webhook, NocoBase dapat menerima panggilan HTTP dari sistem pihak ketiga dan secara otomatis memicu alur kerja, memungkinkan integrasi tanpa hambatan dengan sistem eksternal.

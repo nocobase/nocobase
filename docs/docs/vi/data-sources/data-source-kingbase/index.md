@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-data-source-kingbase"
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: "@nocobase/plugin-data-source-kingbase"
----
 
 # Nguồn dữ liệu - KingbaseES
 

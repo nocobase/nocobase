@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-sql'
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-sql'
----
 
 # SQL operace
 

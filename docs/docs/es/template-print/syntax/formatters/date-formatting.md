@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 ### Formato de Fechas
 
 #### 1. :formatD(patternOut, patternIn)

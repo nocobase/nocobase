@@ -1,11 +1,12 @@
-:::tip Yapay Zeka Çeviri Bildirimi
+---
+pkg: '@nocobase/plugin-workflow-subflow'
+---
+
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-subflow'
----
 
 # İş Akışı Çıktısı
 

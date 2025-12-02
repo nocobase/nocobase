@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Scrivere il Suo primo plugin
 
 Questa guida La accompagnerà nella creazione di un plugin a blocchi utilizzabile nelle pagine, partendo da zero. L'obiettivo è aiutarLa a comprendere la struttura di base e il flusso di sviluppo dei plugin NocoBase.

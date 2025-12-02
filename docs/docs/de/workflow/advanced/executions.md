@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Ausführungsplan (Verlauf)
 
 Nach dem Auslösen eines Workflows wird ein entsprechender Ausführungsplan erstellt, um den Ausführungsprozess dieser Aufgabe zu verfolgen. Jeder Ausführungsplan besitzt einen Statuswert, der den aktuellen Ausführungsstatus anzeigt. Dieser Status ist sowohl in der Liste als auch in den Details des Ausführungsverlaufs sichtbar:

@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # createMockClient
 
 Für Beispiele und Tests empfiehlt es sich in der Regel, schnell eine Mock-Anwendung mit `createMockClient` zu erstellen. Eine Mock-Anwendung ist eine saubere, leere Anwendung ohne aktivierte Plugins, die ausschließlich für Beispiele und Tests gedacht ist.

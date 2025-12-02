@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Karyawan AI · Viz: Analis Wawasan
 
 > Hasilkan grafik dan wawasan dengan sekali klik, biarkan data berbicara sendiri.

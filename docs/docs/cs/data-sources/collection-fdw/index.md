@@ -1,11 +1,12 @@
+---
+pkg: "@nocobase/plugin-collection-fdw"
+---
+
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-collection-fdw"
----
 
 # Připojení externích datových tabulek (FDW)
 

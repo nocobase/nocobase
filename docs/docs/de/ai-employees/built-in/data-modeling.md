@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # AI Agent · Orin: Datenmodellierer
 
 > Intelligent Sammlungen entwerfen und die Datenbankstruktur optimieren.

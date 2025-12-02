@@ -1,14 +1,15 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
-
+---
 displayName: "Comentarios"
 packageName: '@nocobase/plugin-comments'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
   Proporciona una plantilla de colección de comentarios y un bloque para añadir funcionalidad de comentarios a cualquier colección.
 isFree: false
 builtIn: false

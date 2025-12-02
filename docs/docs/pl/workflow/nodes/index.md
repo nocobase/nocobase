@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Przegląd
 
 Przepływ pracy zazwyczaj składa się z kilku połączonych ze sobą kroków operacyjnych. Każdy węzeł reprezentuje jeden z tych kroków i stanowi podstawową jednostkę logiczną w procesie. Podobnie jak w języku programowania, różne typy węzłów reprezentują różne instrukcje, które określają ich zachowanie. Gdy przepływ pracy jest uruchamiany, system kolejno wchodzi w każdy węzeł i wykonuje jego instrukcje.

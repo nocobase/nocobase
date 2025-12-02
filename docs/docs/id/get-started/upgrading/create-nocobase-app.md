@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Peningkatan Instalasi `create-nocobase-app`
 
 :::warning Persiapan Sebelum Peningkatan

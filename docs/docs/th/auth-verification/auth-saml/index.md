@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-auth-saml'
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: '@nocobase/plugin-auth-saml'
----
 
 # การยืนยันตัวตน: SAML 2.0
 

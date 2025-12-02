@@ -7,10 +7,6 @@ pkg: "@nocobase/plugin-client"
 
 
 
-```yaml
-pkg: "@nocobase/plugin-client"
-```
-
 # מנהל נתיבים
 
 ## מבוא

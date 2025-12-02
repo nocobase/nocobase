@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-calendar"
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: "@nocobase/plugin-calendar"
----
 
 # Kalenderblock
 

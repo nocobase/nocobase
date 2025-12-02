@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-auth-sms'
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-auth-sms'
----
 
 # Authentification par SMS
 

@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-auth-ldap"
 
 
 
-pkg: '@nocobase/plugin-auth-ldap'
----
-
 # Автентифікація: LDAP
 
 ## Вступ

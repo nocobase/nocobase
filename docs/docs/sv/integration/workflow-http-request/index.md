@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Arbetsflödesintegration med HTTP-förfrågningar
 
 Med noden för HTTP-förfrågningar kan NocoBase-arbetsflöden proaktivt skicka förfrågningar till valfri HTTP-tjänst, vilket möjliggör datautbyte och affärsintegration med externa system.

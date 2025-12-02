@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-departments'
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: '@nocobase/plugin-departments'
----
 
 # Hantering av avdelningsroller
 

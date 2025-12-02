@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 ## Paramètres de configuration des collections
 
 ```ts

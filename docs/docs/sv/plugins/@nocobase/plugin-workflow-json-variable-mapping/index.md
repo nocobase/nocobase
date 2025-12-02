@@ -1,14 +1,15 @@
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
+---
 displayName: "Arbetsflöde: JSON-variabelmappning"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
   Används för att mappa valfri JSON-data till strukturerade variabler för användning i efterföljande noder.
 isFree: true
 builtIn: true

@@ -1,14 +1,15 @@
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
-
+---
 displayName: "Gegevensbron: Externe MySQL"
 packageName: '@nocobase/plugin-data-source-external-mysql'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
   Gebruik externe MySQL-databases als gegevensbronnen.
 isFree: false
 builtIn: false

@@ -1,8 +1,4 @@
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
+---
 displayName: "Trường bộ sưu tập: Mã nguồn"
 packageName: '@nocobase/plugin-field-code'
 description: |
@@ -11,5 +7,8 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
 
 # Trường bộ sưu tập: Mã nguồn

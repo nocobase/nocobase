@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Eins-zu-Viele
 
 Die Beziehung zwischen einer Klasse und ihren Schülern ist ein Beispiel für eine Eins-zu-Viele-Beziehung: Eine Klasse kann mehrere Schüler haben, aber jeder Schüler gehört nur zu einer Klasse.

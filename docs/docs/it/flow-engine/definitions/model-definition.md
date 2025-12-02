@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # ModelDefinition
 
 ModelDefinition definisce le opzioni di creazione per un modello di **flusso di lavoro**, utilizzate per creare un'istanza di modello tramite il metodo `FlowEngine.createModel()`. Include la configurazione di base del modello, le proprietà, i sotto-modelli e altre informazioni.

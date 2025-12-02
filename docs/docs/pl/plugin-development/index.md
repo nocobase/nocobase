@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Przegląd tworzenia wtyczek
 
 NocoBase wykorzystuje **architekturę mikrojądra**, gdzie rdzeń odpowiada wyłącznie za harmonogramowanie cyklu życia wtyczek, zarządzanie zależnościami oraz hermetyzację podstawowych funkcji. Wszystkie funkcje biznesowe są dostarczane w formie wtyczek. Z tego powodu, zrozumienie struktury organizacyjnej, cyklu życia i sposobu zarządzania wtyczkami jest pierwszym krokiem w dostosowywaniu NocoBase do Państwa potrzeb.

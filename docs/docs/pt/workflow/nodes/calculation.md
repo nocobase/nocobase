@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Cálculo
 
 O nó de Cálculo pode avaliar uma expressão, e o resultado é salvo no nó correspondente para ser usado por nós subsequentes. É uma ferramenta para calcular, processar e transformar dados. Em certa medida, ele pode substituir a funcionalidade de chamar uma função e atribuir seu resultado a uma variável, como em linguagens de programação.

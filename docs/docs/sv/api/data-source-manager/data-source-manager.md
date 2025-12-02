@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # DataSourceManager
 
 `DataSourceManager` är hanteringsklassen för flera `dataSource`-instanser.

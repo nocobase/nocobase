@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Variables de Entorno
 
 ## ¿Cómo configurar las variables de entorno?

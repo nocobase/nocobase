@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Command – Kommandozeile
 
 In NocoBase verwenden Sie Befehle (Commands), um anwendungs- oder pluginbezogene Operationen in der Kommandozeile auszuführen. Dazu gehören beispielsweise das Starten von Systemaufgaben, das Ausführen von Migrations- oder Synchronisationsoperationen, das Initialisieren von Konfigurationen oder die Interaktion mit laufenden Anwendungsinstanzen. Entwickler können für Plugins eigene Befehle definieren und diese über das `app`-Objekt registrieren. In der CLI werden diese dann im Format `nocobase <command>` ausgeführt.

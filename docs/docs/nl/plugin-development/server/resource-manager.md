@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # ResourceManager (Resourcebeheer)
 
 De resourcebeheerfunctie van NocoBase kan bestaande **collecties** en associaties automatisch omzetten in resources. Het biedt ingebouwde bewerkingstypen om ontwikkelaars te helpen snel REST API-resourcebewerkingen te bouwen. In tegenstelling tot traditionele REST API's zijn NocoBase-resourcebewerkingen niet afhankelijk van HTTP-aanvraagmethoden, maar bepalen ze de specifieke uit te voeren bewerking via expliciete `:action`-definities.

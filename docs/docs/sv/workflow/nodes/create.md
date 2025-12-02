@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Skapa post
 
 Används för att lägga till en ny post i en samling.

@@ -2,7 +2,6 @@
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
 # ICollectionManager
 
 `ICollectionManager` インターフェースは、データソースの`コレクション` インスタンスを管理するために使用されます。

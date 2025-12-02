@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-notification-in-app-message'
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: '@nocobase/plugin-notification-in-app-message'
----
 
 # إشعار: رسالة داخل التطبيق
 

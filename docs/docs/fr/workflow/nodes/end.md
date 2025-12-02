@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Terminer le flux de travail
 
 Lorsque ce nœud est exécuté, il met immédiatement fin au flux de travail en cours avec l'état configuré dans le nœud. Il est généralement utilisé pour le contrôle de flux basé sur une logique spécifique, permettant de quitter le flux de travail actuel lorsque certaines conditions sont remplies et d'arrêter l'exécution des processus ultérieurs. On peut le comparer à l'instruction `return` des langages de programmation, qui sert à quitter la fonction en cours d'exécution.

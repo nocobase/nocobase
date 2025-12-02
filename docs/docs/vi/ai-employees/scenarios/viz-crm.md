@@ -1,3 +1,9 @@
+
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Trợ lý AI · Viz: Hướng dẫn cấu hình kịch bản CRM
 
 > Lấy ví dụ về CRM, tìm hiểu cách để chuyên viên phân tích AI của bạn thực sự hiểu nghiệp vụ và phát huy tối đa tiềm năng.
@@ -39,13 +45,6 @@ Hai phương pháp này không phải là lựa chọn duy nhất; chúng giốn
 
 Thiết kế phân lớp này giúp Viz duy trì tính cách ổn định (logic phân tích nhất quán),
 đồng thời có thể nhanh chóng thích ứng với các kịch bản nghiệp vụ khác nhau (CRM, quản lý bệnh viện, phân tích kênh, vận hành sản xuất...).
-
----
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
 
 ## 3. Mô hình một: Công cụ phân tích mẫu hóa (Khuyên dùng)
 

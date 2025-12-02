@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-bulk-update"
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
 
-
-pkg: "@nocobase/plugin-action-bulk-update"
----
 # Масове оновлення
 
 ## Вступ

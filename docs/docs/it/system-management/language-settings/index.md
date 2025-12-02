@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Impostazioni della lingua
 
 Nelle "Impostazioni di sistema", può regolare l'ambiente linguistico globale del sistema configurando le "Lingue abilitate". La prima lingua nell'elenco verrà utilizzata come lingua predefinita.

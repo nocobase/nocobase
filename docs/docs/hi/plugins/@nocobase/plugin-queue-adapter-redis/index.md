@@ -1,14 +1,15 @@
-:::tip AI अनुवाद सूचना
-यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
-:::
-
-
+---
 displayName: "Redis कतार एडाप्टर"
 packageName: '@nocobase/plugin-queue-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI अनुवाद सूचना
+यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
+:::
+
   Redis का उपयोग करके एप्लिकेशन संदेश कतारों को संभालने के लिए।
 isFree: false
 builtIn: false

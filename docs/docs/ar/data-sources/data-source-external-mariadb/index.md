@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-data-source-external-mariadb"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-data-source-external-mariadb"
----
-```
-
 # مصدر البيانات الخارجي - MariaDB
 
 ## مقدمة

@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Uitbreiding van Validatiescenario's
 
 ## Basisconcepten

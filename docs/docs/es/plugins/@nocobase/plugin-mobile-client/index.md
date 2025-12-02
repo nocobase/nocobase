@@ -1,9 +1,4 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
-
-```yaml
+---
 displayName: "Cliente móvil (Obsoleto)"
 packageName: '@nocobase/plugin-mobile-client'
 description: |
@@ -12,7 +7,11 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
-```
+---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
 
 # Cliente móvil (Obsoleto)
 

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-acl'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-acl'
----
 
 # Toepassing in de UI
 

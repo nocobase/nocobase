@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Ustawianie zakresu danych
 
 ## Wprowadzenie

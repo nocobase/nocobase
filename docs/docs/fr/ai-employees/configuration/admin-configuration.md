@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Employé IA · Guide de configuration pour les administrateurs
 
 > Ce document vous aide à comprendre rapidement comment configurer et gérer les employés IA, en vous guidant étape par étape à travers l'ensemble du processus, des services de modèle à l'affectation des tâches.

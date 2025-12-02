@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
-pkg: '@nocobase/plugin-file-manager'
----
 
 # Gestionnaire de fichiers
 

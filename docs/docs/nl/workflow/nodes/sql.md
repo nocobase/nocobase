@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-sql'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-sql'
----
 
 # SQL-actie
 

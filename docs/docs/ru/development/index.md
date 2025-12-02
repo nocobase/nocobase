@@ -1,6 +1,6 @@
 ---
 pageType: home
-pageName: разработка
+pageName: development
 
 features:
   - title: Основная архитектура

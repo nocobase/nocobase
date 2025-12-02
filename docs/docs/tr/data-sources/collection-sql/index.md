@@ -1,7 +1,7 @@
 ---
 pkg: "@nocobase/plugin-collection-sql"
 ---
-:::tip Yapay Zeka Çeviri Bildirimi
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 

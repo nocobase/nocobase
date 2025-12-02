@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-ip-restriction"
 
 
 
-pkg: '@nocobase/plugin-ip-restriction'
----
-
 # Обмеження IP-адрес
 
 ## Вступ

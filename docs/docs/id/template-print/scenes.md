@@ -1,3 +1,9 @@
+
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Menggunakan Fitur "Cetak Template" untuk Membuat Contoh Kontrak Pengadaan dan Pembelian
 
 Dalam skenario rantai pasok atau perdagangan, seringkali diperlukan untuk dengan cepat membuat "Kontrak Pengadaan dan Pembelian" yang terstandardisasi dan mengisi konten secara dinamis berdasarkan informasi dari sumber data seperti pembeli, penjual, detail produk, dan lainnya. Berikut ini, kami akan menggunakan contoh kasus penggunaan "Kontrak" yang disederhanakan untuk menunjukkan kepada Anda cara mengonfigurasi dan menggunakan fitur "Cetak Template" untuk memetakan informasi data ke *placeholder* dalam template kontrak, sehingga dokumen kontrak akhir dapat dibuat secara otomatis.
@@ -15,13 +21,6 @@ Dalam contoh ini, secara garis besar terdapat koleksi-koleksi utama berikut (den
 ![template_print-2025-11-01-16-34-04](https://static-docs.nocobase.com/template_print-2025-11-01-16-34-04.png)
 
 Karena sistem saat ini hanya mendukung pencetakan satu catatan, kami akan mengeklik "Cetak" pada halaman "Detail Kontrak", dan sistem akan secara otomatis mengambil catatan `contracts` yang sesuai, serta informasi `parties` terkait dan lainnya, lalu mengisinya ke dalam dokumen Word atau PDF.
-
----
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
-
 
 ## 2. Persiapan
 

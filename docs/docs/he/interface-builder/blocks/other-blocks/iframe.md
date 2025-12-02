@@ -1,11 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-iframe"
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-```yaml
-pkg: "@nocobase/plugin-block-iframe"
-```
 # בלוק Iframe
 
 ## מבוא

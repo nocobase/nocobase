@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Eliminar datos
 
 Permite eliminar datos de una **colección** que cumplan ciertas condiciones.

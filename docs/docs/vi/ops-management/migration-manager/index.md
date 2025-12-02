@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-migration-manager'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-migration-manager'
----
 
 # Trình quản lý di chuyển
 

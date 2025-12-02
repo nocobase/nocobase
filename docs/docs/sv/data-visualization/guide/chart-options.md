@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Diagramalternativ
 
 Här kan ni konfigurera hur diagram visas. Två lägen stöds: Basic (grafisk) och Custom (JS-anpassad). Basic är perfekt för snabb mappning och vanliga egenskaper, medan Custom passar för komplexa scenarier och avancerad anpassning.

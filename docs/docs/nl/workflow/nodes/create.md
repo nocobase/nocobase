@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Gegevens aanmaken
 
 Gebruik deze functie om een nieuwe rij gegevens toe te voegen aan een collectie. De veldwaarden voor de nieuwe gegevensrij kunnen variabelen uit de workflowcontext gebruiken. Voor het toewijzen van waarden aan relatievelden kunt u direct verwijzen naar de corresponderende gegevensvariabelen in de context; dit kan een object zijn of de waarde van een foreign key. Als u geen variabelen gebruikt, moet u de foreign key-waarden handmatig invullen. Voor relaties met meerdere waarden moeten de foreign key-waarden met komma's worden gescheiden.

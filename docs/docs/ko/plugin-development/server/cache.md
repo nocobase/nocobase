@@ -2,7 +2,6 @@
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
 # 캐시
 
 NocoBase의 캐시 모듈은 <a href="https://github.com/node-cache-manager/node-cache-manager" target="_blank">node-cache-manager</a>를 기반으로 개발되었으며, 플러그인 개발을 위한 캐시 기능을 제공합니다. 시스템에는 두 가지 캐시 유형이 내장되어 있습니다.

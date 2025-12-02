@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Budowanie interfejsu
 
 ## Co widzisz, to dostajesz (WYSIWYG)

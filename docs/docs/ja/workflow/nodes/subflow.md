@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-subflow'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: '@nocobase/plugin-workflow-subflow'
----
 
 # ワークフローの呼び出し
 

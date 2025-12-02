@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-notification-in-app-message'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-notification-in-app-message'
----
 
 # Thông báo: Tin nhắn trong ứng dụng
 

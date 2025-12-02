@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Pracownik AI · Viz: Analityk Danych
 
 > Generuj wykresy i analizy jednym kliknięciem, pozwól danym mówić za siebie.

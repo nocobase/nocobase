@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-collection-tree"
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: "@nocobase/plugin-collection-tree"
----
 
 # Древовидная коллекция
 

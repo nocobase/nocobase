@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Verwendung von Kontextvariablen
 
 Mit Kontextvariablen können Sie Informationen der aktuellen Seite, des Benutzers, der Zeit und der Filter direkt wiederverwenden, um Diagramme kontextbezogen zu rendern und Interaktionen zu ermöglichen.

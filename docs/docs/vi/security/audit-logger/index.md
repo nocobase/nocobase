@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-audit-logger'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-audit-logger'
----
 
 # Nhật ký Kiểm toán
 

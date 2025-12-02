@@ -1,11 +1,12 @@
+---
+displayName: "مدير التطبيقات المتعددة (مهمل)"
+packageName: '@nocobase/plugin-multi-app-manager'
+description: |
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-displayName: "مدير التطبيقات المتعددة (مهمل)"
-packageName: '@nocobase/plugin-multi-app-manager'
-description: |
   يعمل مدير التطبيقات المتعددة على تشغيل التطبيقات بطريقة مشاركة العمليات، وهو مناسب لبيئات الاختبار والعرض التوضيحي فقط. يرجى عدم استخدامه في بيئات الإنتاج.
 isFree: true
 builtIn: true

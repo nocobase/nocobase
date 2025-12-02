@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # StepDefinition
 
 `StepDefinition` define un paso individual en un flujo de trabajo. Cada paso puede ser una acción, un manejo de eventos u otra operación. Un paso es la unidad de ejecución fundamental de un flujo.

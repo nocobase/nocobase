@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-verification"
 
 
 
-pkg: '@nocobase/plugin-verification'
----
-
 # Верифікація
 
 :::info{title=Примітка}

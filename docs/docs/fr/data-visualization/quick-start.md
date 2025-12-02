@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Démarrage rapide
 
 Ce guide vous montrera comment configurer un graphique de A à Z en utilisant les fonctionnalités essentielles. Les capacités optionnelles seront abordées dans les chapitres suivants.

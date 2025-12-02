@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-previewer-office'
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: '@nocobase/plugin-file-previewer-office'
----
 
 # תצוגה מקדימה של קבצי Office <Badge>v1.8.11+</Badge>
 

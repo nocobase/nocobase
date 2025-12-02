@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # HTTP API
 
 Filuppladdningar för både bilagefält och filsamlingar kan hanteras via HTTP API:et. Anropsmetoden skiljer sig åt beroende på vilken lagringsmotor som används av bilagan eller filsamlingen.

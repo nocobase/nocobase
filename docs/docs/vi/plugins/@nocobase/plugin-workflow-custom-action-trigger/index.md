@@ -1,8 +1,4 @@
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
+---
 displayName: "Luồng công việc: Sự kiện hành động tùy chỉnh"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:
@@ -15,5 +11,8 @@ builtIn: false
 defaultEnabled: false
 points: 4
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
 
 # Luồng công việc: Sự kiện hành động tùy chỉnh

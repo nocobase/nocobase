@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Aliyun OSS
 
 Motore di archiviazione basato su Aliyun OSS. Prima di utilizzarlo, è necessario preparare gli account e le autorizzazioni pertinenti.

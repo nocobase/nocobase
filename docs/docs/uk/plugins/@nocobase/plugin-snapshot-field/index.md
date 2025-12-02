@@ -1,9 +1,4 @@
-:::tip Повідомлення про переклад ШІ
-Ця документація була автоматично перекладена штучним інтелектом.
-:::
-
-
-```yaml
+---
 displayName: "Поле колекції: Знімок"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
@@ -12,7 +7,11 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
-```
+---
+:::tip Повідомлення про переклад ШІ
+Ця документація була автоматично перекладена штучним інтелектом.
+:::
+
 
 # Поле колекції: Знімок
 

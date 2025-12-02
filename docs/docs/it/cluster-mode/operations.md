@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Procedure di Manutenzione
 
 ## Avvio Iniziale dell'Applicazione

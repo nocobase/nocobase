@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Memperluas Sumber Data yang Tersinkronisasi
 
 ## Gambaran Umum

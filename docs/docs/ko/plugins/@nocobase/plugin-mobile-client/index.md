@@ -1,11 +1,12 @@
+---
+displayName: "모바일 클라이언트 (더 이상 사용되지 않음)"
+packageName: '@nocobase/plugin-mobile-client'
+description: |
+---
 :::tip AI 번역 안내
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
-displayName: "모바일 클라이언트 (더 이상 사용되지 않음)"
-packageName: '@nocobase/plugin-mobile-client'
-description: |
   모바일 페이지를 구성할 수 있는 기능을 제공합니다.
 isFree: true
 builtIn: true

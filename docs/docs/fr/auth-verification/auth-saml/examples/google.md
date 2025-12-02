@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Google Workspace
 
 ## Configurer Google comme IdP

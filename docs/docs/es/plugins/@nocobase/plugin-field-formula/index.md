@@ -1,9 +1,4 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
-
-```yaml
+---
 displayName: "Campo de colección: Fórmula"
 packageName: '@nocobase/plugin-field-formula'
 description: |
@@ -11,6 +6,10 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
-```
+---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
 
 # Campo de colección: Fórmula

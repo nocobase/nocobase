@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-action-trigger'
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-action-trigger'
----
 
 # Event Pasca-Aksi
 

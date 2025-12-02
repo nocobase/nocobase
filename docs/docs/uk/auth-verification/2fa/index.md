@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-two-factor-authentication'
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
-
-
-pkg: '@nocobase/plugin-two-factor-authentication'
----
 
 # Двофакторна автентифікація (2FA)
 

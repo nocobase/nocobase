@@ -7,10 +7,6 @@ Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 
 
 
-```yaml
-pkg: "@nocobase/plugin-ai-ee"
----
-
 # Percakapan Multimodal
 
 ## Gambar

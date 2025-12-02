@@ -2,5 +2,4 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Gestionnaire de sources de données

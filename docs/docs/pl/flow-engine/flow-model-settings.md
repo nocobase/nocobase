@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # FlowModel: przepływ zdarzeń i konfiguracja
 
 FlowModel oferuje podejście oparte na „przepływie zdarzeń (Flow)” do implementacji logiki konfiguracji komponentów, co sprawia, że ich zachowanie i konfiguracja są bardziej rozszerzalne i wizualne.

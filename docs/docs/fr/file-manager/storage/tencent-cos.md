@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Tencent Cloud COS
 
 Un moteur de stockage basé sur Tencent Cloud COS. Avant de l'utiliser, vous devrez préparer les comptes et les autorisations nécessaires.

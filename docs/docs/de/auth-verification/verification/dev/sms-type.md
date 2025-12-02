@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # SMS-Anbieter erweitern
 
 In diesem Artikel erfahren Sie, wie Sie die Funktionalität von SMS-Anbietern in der [Verifizierung: SMS](../sms)-Funktion mithilfe eines Plugins erweitern können.

@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Estendendo Fontes de Dados Sincronizadas
 
 ## Visão Geral

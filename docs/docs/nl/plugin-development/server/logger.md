@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Logger
 
 NocoBase-logging is gebaseerd op een wrapper rondom <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. Standaard verdeelt NocoBase logs in API-verzoeklogs, systeemruntime-logs en SQL-uitvoerlogs. API-verzoeklogs en SQL-uitvoerlogs worden intern door de applicatie gegenereerd. Plugin-ontwikkelaars hoeven doorgaans alleen systeemruntime-logs te genereren die gerelateerd zijn aan hun plugin.

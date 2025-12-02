@@ -1,13 +1,13 @@
 ---
 pageType: home
-pageName: utveckling
+pageName: development
 
 features:
   - title: Kärnarkitektur
-    details: Bemästra NocoBases underliggande utökningsmekanismer och driftsprinciper, inklusive **plugin**-systemet, FlowEngine och databaskärnmodulen, för att bygga en stabil utvecklingsgrund.
+    details: Bemästra NocoBases underliggande utökningsmekanismer och driftsprinciper, inklusive plugin-systemet, FlowEngine och databaskärnmodulen, för att bygga en stabil utvecklingsgrund.
     items:
       - title: Plugin-utveckling
-        details: Lär dig hur ni skapar, publicerar och underhåller anpassade **plugin**.
+        details: Lär dig hur ni skapar, publicerar och underhåller anpassade plugin.
         link: /plugin-development
         showOnHome: true
       - title: Frontend FlowEngine
@@ -15,7 +15,7 @@ features:
         link: /flow-engine
         showOnHome: true
       - title: Databas
-        details: Databasmodulen i NocoBases kärna, som tillhandahåller ett enhetligt API för dataåtkomst, modellering och operationer för **plugin**. Den utgör den centrala grunden för datainteraktion mellan **plugin**.
+        details: Databasmodulen i NocoBases kärna, som tillhandahåller ett enhetligt API för dataåtkomst, modellering och operationer för plugin. Den utgör den centrala grunden för datainteraktion mellan plugin.
         link: /database
         showOnHome: true
   - title: Gränssnitt och interaktion
@@ -34,14 +34,14 @@ features:
         link: /ui-development-action
         showOnHome: true
   - title: Plugin-ekosystem
-    details: Utöka befintliga **plugin**s kapacitet genom andra **plugin**, och bygg ett hierarkiskt och modulärt **plugin**-ekosystem för att förbättra systemets utökningsbarhet och samarbetsförmåga.
+    details: Utöka befintliga plugins kapacitet genom andra plugin, och bygg ett hierarkiskt och modulärt plugin-ekosystem för att förbättra systemets utökningsbarhet och samarbetsförmåga.
     items:
       - title: Datakälla-utökning
-        details: Utöka eller integrera externa **datakälla**r, anslut till tredjepartsdatabaser eller -tjänster, och uppnå systemövergripande dataåtkomst och synkronisering.
+        details: Utöka eller integrera externa datakällor, anslut till tredjepartsdatabaser eller -tjänster, och uppnå systemövergripande dataåtkomst och synkronisering.
         link: /data-sources/development
         showOnHome: true
       - title: Arbetsflöde-utökning
-        details: Utöka eller integrera **arbetsflöde**-relaterade funktioner för att implementera automatiserade och processorienterade affärsscenarier.
+        details: Utöka eller integrera arbetsflöde-relaterade funktioner för att implementera automatiserade och processorienterade affärsscenarier.
         link: /workflow/development
         showOnHome: true
       - title: Utökning av meddelandekanaler

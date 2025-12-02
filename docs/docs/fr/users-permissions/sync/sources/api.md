@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Synchronisation des données utilisateur via l'API HTTP
 
 ## Obtenir une clé API

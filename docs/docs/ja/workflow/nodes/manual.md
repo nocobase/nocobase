@@ -1,11 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-manual'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-```yaml
-pkg: '@nocobase/plugin-workflow-manual'
-```
 
 # 手動処理
 

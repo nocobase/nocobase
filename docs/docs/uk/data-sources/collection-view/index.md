@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-collection-view"
 
 
 
-pkg: "@nocobase/plugin-collection-view"
----
-
 # Подання бази даних
 
 ## Вступ

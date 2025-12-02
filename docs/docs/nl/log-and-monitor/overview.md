@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Serverlogboeken, auditlogboeken en recordgeschiedenis
 
 ## Serverlogboeken

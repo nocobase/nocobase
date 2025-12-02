@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Plano de Execução (Histórico)
 
 Após um **fluxo de trabalho** ser acionado, um **plano de execução** correspondente é criado para rastrear o processo de execução dessa tarefa. Cada **plano de execução** possui um valor de status para indicar o estado atual da execução, que pode ser visualizado na lista e nos detalhes do histórico de execução:

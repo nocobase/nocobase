@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Lista de idiomas
 
 NocoBase ofrece soporte multilingüe (i18n). A continuación, encontrará la lista de idiomas integrados actualmente. Cada configuración de idioma se compone de un **código de idioma (Locale Code)** y un **nombre de visualización (Label)**.

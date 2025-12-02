@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-notification-email'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-notification-email'
----
 
 # Notificatie: E-mail
 

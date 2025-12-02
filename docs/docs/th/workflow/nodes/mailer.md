@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-mailer'
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: '@nocobase/plugin-workflow-mailer'
----
 
 # ส่งอีเมล
 

@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # RelationRepository
 
 `RelationRepository` adalah objek `Repository` untuk tipe relasi. `RelationRepository` memungkinkan operasi pada data terkait tanpa perlu memuat relasi tersebut. Berdasarkan `RelationRepository`, setiap tipe relasi memiliki implementasi turunan yang sesuai, yaitu:

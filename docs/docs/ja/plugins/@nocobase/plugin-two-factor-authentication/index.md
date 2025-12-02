@@ -1,14 +1,15 @@
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-
+---
 displayName: "二段階認証 (2FA)"
 packageName: '@nocobase/plugin-two-factor-authentication'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
   パスワードログインに二段階認証 (2FA) を有効化する機能をサポートします。
 isFree: false
 builtIn: false

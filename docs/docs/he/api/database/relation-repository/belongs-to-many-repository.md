@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 # BelongsToManyRepository
 
 `BelongsToManyRepository` הוא `Relation Repository` (מאגר יחסים) המיועד לטיפול ביחסי `BelongsToMany`.

@@ -1,11 +1,12 @@
-:::tip Yapay Zeka Çeviri Bildirimi
+---
+pkg: '@nocobase/plugin-workflow-sql'
+---
+
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-sql'
----
 
 # SQL İşlemi
 
@@ -49,8 +50,6 @@ Düzenleyici kutusunun sağ üst köşesindeki değişken düğmesini kullanarak
 
 ```sql
 select count(id) from posts;
-```
-
 `v1.3.15-beta` öncesi sonuç:
 
 ```json

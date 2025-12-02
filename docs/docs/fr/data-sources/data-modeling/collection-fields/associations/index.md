@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Champs de relation
 
 Dans NocoBase, les champs de relation ne sont pas des champs à proprement parler, mais ils servent à établir des connexions entre les collections. Ce concept est équivalent aux relations que l'on trouve dans les bases de données relationnelles.

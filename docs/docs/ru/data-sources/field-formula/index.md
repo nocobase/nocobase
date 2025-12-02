@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-formula"
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: "@nocobase/plugin-field-formula"
----
 
 # Расчетная формула
 

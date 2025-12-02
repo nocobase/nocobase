@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-auth-oidc'
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: '@nocobase/plugin-auth-oidc'
----
 
 # Autentizace: OIDC
 

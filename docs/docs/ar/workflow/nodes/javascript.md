@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-javascript'
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-javascript'
----
 
 # `JavaScript` سكريبت
 

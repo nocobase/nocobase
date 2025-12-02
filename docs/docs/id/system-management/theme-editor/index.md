@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Editor Tema
 
 > Fitur tema saat ini diimplementasikan berdasarkan Ant Design 5.x. Disarankan untuk memahami konsep terkait [Kustomisasi Tema](https://ant.design/docs/react/customize-theme) sebelum membaca dokumen ini.

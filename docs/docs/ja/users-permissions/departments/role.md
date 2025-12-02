@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-departments'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: '@nocobase/plugin-departments'
----
 
 # 部門ロール管理
 

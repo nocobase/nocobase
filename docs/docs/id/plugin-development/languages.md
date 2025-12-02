@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Daftar Bahasa
 
 NocoBase menyediakan dukungan multibahasa (i18n). Berikut adalah daftar bahasa bawaan yang tersedia saat ini.

@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-request-interceptor'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-request-interceptor'
----
 
 # Sự kiện Trước Thao tác
 

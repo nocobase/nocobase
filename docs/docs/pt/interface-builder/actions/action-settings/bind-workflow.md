@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Vincular Fluxo de Trabalho
 
 ## Introdução

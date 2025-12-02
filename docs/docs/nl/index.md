@@ -18,7 +18,7 @@ features:
   - title: Aan de slag
     details: Ontdek hoe u NocoBase gebruikt en voltooi de installatie en implementatie.
     items:
-      - title: NocoBase: Aan de slag
+      - title: "NocoBase: Aan de slag"
         details: Begrijp de kernconcepten en basisbewerkingen van NocoBase.
         link: /get-started/how-nocobase-works
       - title: Installatie, upgrade en implementatie

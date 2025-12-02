@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Perguntas Frequentes
 
 ## Seleção de Gráficos

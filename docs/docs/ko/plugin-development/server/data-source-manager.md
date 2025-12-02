@@ -2,7 +2,6 @@
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
 # DataSourceManager 데이터 소스 관리
 
 NocoBase는 다중 데이터 소스 관리를 위한 `DataSourceManager`를 제공합니다. 각 `DataSource`는 자체 `Database`, `ResourceManager`, `ACL` 인스턴스를 포함하고 있어, 개발자가 여러 데이터 소스를 유연하게 관리하고 확장할 수 있도록 돕습니다.

@@ -1,8 +1,4 @@
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
+---
 displayName: "Datakällshanterare"
 packageName: '@nocobase/plugin-data-source-manager'
 description: |
@@ -11,5 +7,9 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
 
 # Datakällshanterare

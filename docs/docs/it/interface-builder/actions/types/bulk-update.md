@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-bulk-update"
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-pkg: "@nocobase/plugin-action-bulk-update"
----
 # Aggiornamento in Blocco
 
 ## Introduzione

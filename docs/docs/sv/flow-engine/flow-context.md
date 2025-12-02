@@ -1,3 +1,9 @@
+
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Översikt över kontextsystemet
 
 NocoBase FlowEngines kontextsystem är uppdelat i tre lager, där varje lager motsvarar ett specifikt omfång. Genom att använda dem på rätt sätt kan ni uppnå flexibel delning och isolering av tjänster, konfigurationer och data, vilket förbättrar verksamhetens underhållbarhet och skalbarhet.
@@ -34,13 +40,6 @@ FlowEngineContext (global kontext)
 - En undermodells `FlowModelContext` kan komma åt föräldermodellens kontext (synkron relation) via en delegeringsmekanism, vilket stöder överskrivning av namn.
 - Asynkrona förälder-barn-modeller upprättar inte en delegeringsrelation för att undvika tillståndsförorening.
 - `FlowRuntimeContext` kommer alltid åt sin motsvarande `FlowModelContext` via en delegeringsmekanism, men propagerar inte ändringar uppåt.
-
----
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
 
 ## 🧭 Körnings- och inställningsläge (mode)
 

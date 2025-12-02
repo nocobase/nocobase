@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Mesin Penyimpanan: Aliyun OSS
 
 Mesin penyimpanan ini berbasis Aliyun OSS. Sebelum menggunakannya, Anda perlu menyiapkan akun dan izin yang relevan.

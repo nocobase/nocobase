@@ -1,11 +1,12 @@
+---
+pkg: '@nocobase/plugin-workflow-subflow'
+---
+
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-subflow'
----
 
 # เอาต์พุตของเวิร์กโฟลว์
 

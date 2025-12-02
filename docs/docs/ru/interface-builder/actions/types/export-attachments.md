@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-export-pro"
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-pkg: "@nocobase/plugin-action-export-pro"
----
 # Экспорт вложений
 
 :::tip Совет

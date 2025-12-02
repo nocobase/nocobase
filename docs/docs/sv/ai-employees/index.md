@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: "@nocobase/plugin-ai"
----
 
 # AI-medarbetare · Kom igång
 

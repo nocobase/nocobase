@@ -1,9 +1,4 @@
-:::tip Уведомление о переводе ИИ
-Эта документация была автоматически переведена ИИ.
-:::
-
-
-```yaml
+---
 displayName: "Многокритериальный фильтр"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
@@ -14,6 +9,10 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
-```
+---
+:::tip Уведомление о переводе ИИ
+Эта документация была автоматически переведена ИИ.
+:::
+
 
 # Многокритериальный фильтр

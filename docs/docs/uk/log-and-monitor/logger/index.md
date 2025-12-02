@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-logger"
 
 
 
-pkg: '@nocobase/plugin-logger'
----
-
 # Журнали
 
 ## Вступ

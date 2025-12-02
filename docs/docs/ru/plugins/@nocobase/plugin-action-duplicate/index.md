@@ -1,11 +1,12 @@
+---
+displayName: "Действие: Дублировать запись"
+packageName: '@nocobase/plugin-action-duplicate'
+description: |
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-displayName: "Действие: Дублировать запись"
-packageName: '@nocobase/plugin-action-duplicate'
-description: |
   Дублирует запись. Вы можете скопировать ее в форму для редактирования перед сохранением, либо сразу создать новую запись без изменений.
 isFree: true
 builtIn: true

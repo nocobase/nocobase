@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # HasManyRepository
 
 `HasManyRepository` to `Relation Repository` służące do zarządzania relacjami typu `HasMany`.

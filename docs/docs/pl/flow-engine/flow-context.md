@@ -1,3 +1,9 @@
+
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Przegląd systemu kontekstowego
 
 System kontekstowy silnika przepływów pracy NocoBase podzielony jest na trzy warstwy, z których każda odpowiada innemu zakresowi. Odpowiednie wykorzystanie pozwala na elastyczne współdzielenie i izolację usług, konfiguracji i danych, co zwiększa łatwość utrzymania i skalowalność biznesową.
@@ -34,13 +40,6 @@ FlowEngineContext (Kontekst globalny)
 - `FlowModelContext` modelu podrzędnego może uzyskać dostęp do kontekstu modelu nadrzędnego (relacja synchroniczna) za pomocą mechanizmu delegowania, obsługując nadpisywanie nazw.
 - Asynchroniczne modele nadrzędne-podrzędne nie ustanawiają relacji delegowania, aby uniknąć zanieczyszczenia stanu.
 - `FlowRuntimeContext` zawsze uzyskuje dostęp do odpowiadającego mu `FlowModelContext` za pomocą mechanizmu delegowania, ale nie propaguje zmian w górę.
-
----
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
 
 ## 🧭 Tryb wykonania i tryb konfiguracji (mode)
 

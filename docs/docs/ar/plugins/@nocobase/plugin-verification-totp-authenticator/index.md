@@ -1,14 +1,15 @@
-:::tip إشعار الترجمة بالذكاء الاصطناعي
-تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
-:::
-
-
+---
 displayName: "التحقق: مصادق TOTP"
 packageName: '@nocobase/plugin-verification-totp-authenticator'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip إشعار الترجمة بالذكاء الاصطناعي
+تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
+:::
+
   يدعم المستخدمين في ربط مصادق TOTP والتحقق من هويتهم باستخدام رموز المرور لمرة واحدة المستندة إلى الوقت (TOTP).
 isFree: false
 builtIn: false

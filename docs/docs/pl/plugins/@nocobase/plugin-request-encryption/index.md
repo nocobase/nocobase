@@ -1,14 +1,15 @@
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
+---
 displayName: "Szyfrowanie żądań HTTP"
 packageName: '@nocobase/plugin-request-encryption'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
   Szyfruje parametry żądania (Query Parameters) przed wysłaniem żądania HTTP.
 isFree: false
 builtIn: false

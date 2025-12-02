@@ -1,3 +1,9 @@
+
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Sử dụng tính năng "In mẫu" để tạo Hợp đồng Cung cấp và Mua bán
 
 Trong các tình huống chuỗi cung ứng hoặc thương mại, việc nhanh chóng tạo ra một "Hợp đồng Cung cấp và Mua bán" tiêu chuẩn, với nội dung được điền tự động từ các **nguồn dữ liệu** như thông tin người mua, người bán và chi tiết sản phẩm, là rất cần thiết. Dưới đây, chúng tôi sẽ sử dụng một ví dụ đơn giản về "Hợp đồng" để hướng dẫn quý vị cách cấu hình và sử dụng tính năng "In mẫu" để ánh xạ thông tin dữ liệu vào các vị trí giữ chỗ trong mẫu hợp đồng, từ đó tự động tạo ra tài liệu hợp đồng cuối cùng.
@@ -15,13 +21,6 @@ Trong ví dụ này, chúng ta có các **bộ sưu tập** dữ liệu chính s
 ![template_print-2025-11-01-16-34-04](https://static-docs.nocobase.com/template_print-2025-11-01-16-34-04.png)
 
 Vì hệ thống hiện tại chỉ hỗ trợ in từng bản ghi một, chúng ta sẽ nhấp vào "In" trên trang "Chi tiết hợp đồng". Hệ thống sẽ tự động lấy bản ghi hợp đồng tương ứng, cùng với các thông tin bên liên quan khác, và điền chúng vào tài liệu Word hoặc PDF.
-
----
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
 
 ## 2. Chuẩn bị
 

@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Utilizzo delle variabili
 
 ## Concetti chiave

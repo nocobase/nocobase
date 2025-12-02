@@ -1,14 +1,15 @@
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
+---
 displayName: "WeCom"
 packageName: '@nocobase/plugin-auth-wecom'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
   Zapewnia możliwości integracji z WeCom, w tym metody uwierzytelniania, kanał powiadomień oraz źródło danych do synchronizacji danych użytkowników.
 isFree: fałsz
 builtIn: fałsz

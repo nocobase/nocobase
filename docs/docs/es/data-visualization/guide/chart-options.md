@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Opciones de gráficos
 
 Configure cómo se muestran los gráficos. Se admiten dos modos: Básico (visual) y Personalizado (JS). El modo Básico es ideal para un mapeo rápido y propiedades comunes; el modo Personalizado se adapta a escenarios complejos y personalizaciones avanzadas.

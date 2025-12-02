@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Estrutura do Projeto
 
 Seja ao clonar o código-fonte do Git ou ao inicializar um projeto com `create-nocobase-app`, o projeto NocoBase gerado é, essencialmente, um monorepo baseado em **Yarn Workspace**.

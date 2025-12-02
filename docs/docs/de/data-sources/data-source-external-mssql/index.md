@@ -1,11 +1,11 @@
+---
+pkg: "@nocobase/plugin-data-source-external-mssql"
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-data-source-external-mssql"
----
 
 # Externe Datenquelle - MSSQL
 

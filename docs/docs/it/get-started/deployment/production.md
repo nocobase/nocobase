@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Distribuzione in Ambiente di Produzione
 
 Quando si distribuisce NocoBase in un ambiente di produzione, l'installazione delle dipendenze può risultare complessa a causa delle diverse modalità di costruzione tra i vari sistemi e ambienti. Per un'esperienza funzionale completa, Le consigliamo di utilizzare **Docker** per la distribuzione. Se il Suo ambiente di sistema non consente l'uso di Docker, può anche optare per la distribuzione tramite **create-nocobase-app**.

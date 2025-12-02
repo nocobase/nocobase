@@ -7,8 +7,6 @@ pkg: "@nocobase/plugin-action-template-print"
 
 
 
-pkg: "@nocobase/plugin-action-template-print"
-
 # การพิมพ์เอกสารจากเทมเพลต
 
 ## บทนำ

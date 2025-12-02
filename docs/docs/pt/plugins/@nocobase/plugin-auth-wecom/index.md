@@ -1,14 +1,15 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
-
+---
 displayName: "WeCom"
 packageName: '@nocobase/plugin-auth-wecom'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
   Fornece recursos para integrar o WeCom, incluindo autenticação, canal de notificação e fonte de dados para sincronização de dados de usuário.
 isFree: false
 builtIn: false

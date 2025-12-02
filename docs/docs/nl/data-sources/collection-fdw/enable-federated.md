@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Hoe u de Federated Engine in MySQL inschakelt
 
 De MySQL-database schakelt de federated module standaard niet in. U moet hiervoor de `my.cnf`-configuratie aanpassen. Als u de Docker-versie gebruikt, kunt u dit regelen via volumes:

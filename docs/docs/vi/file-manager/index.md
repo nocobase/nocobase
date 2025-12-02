@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-file-manager'
----
 
 # Trình quản lý tệp
 

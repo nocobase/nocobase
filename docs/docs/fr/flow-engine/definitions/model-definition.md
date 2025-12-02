@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # ModelDefinition
 
 `ModelDefinition` définit les options de création d'un modèle de flux, utilisées pour créer une instance de modèle via la méthode `FlowEngine.createModel()`. Elle regroupe la configuration de base du modèle, ses propriétés, ses sous-modèles et d'autres informations.

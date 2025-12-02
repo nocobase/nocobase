@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Pruebas
 
 NocoBase le ofrece un conjunto completo de herramientas de prueba para ayudarle a verificar rápidamente la lógica de la base de datos, las interfaces API y la correcta implementación de las funcionalidades durante el desarrollo de sus **plugins**. Esta guía le mostrará cómo escribir, ejecutar y organizar estas pruebas.

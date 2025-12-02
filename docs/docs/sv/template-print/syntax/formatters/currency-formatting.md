@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 ### Valutaformatering
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)

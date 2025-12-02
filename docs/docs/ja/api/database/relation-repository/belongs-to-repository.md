@@ -2,7 +2,6 @@
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
 ## BelongsToRepository
 
 インターフェースは [HasOneRepository](./has-one-repository.md) と同じです。

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-notification-in-app-message'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-notification-in-app-message'
----
 
 # Notificatie: In-app bericht
 

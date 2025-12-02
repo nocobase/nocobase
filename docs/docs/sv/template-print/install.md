@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 ### Installera plugin
 
 Se dokumentationen för installation och uppgradering av kommersiella plugin.

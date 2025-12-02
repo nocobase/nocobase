@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Språkinställningar
 
 I "Systeminställningar" kan ni justera systemets globala språkinställningar genom att konfigurera "Aktiverade språk". Det första språket i listan kommer att vara standardspråket.

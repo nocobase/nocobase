@@ -2,7 +2,6 @@
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
 # Google Workspace
 
 ## Google を IdP として設定する

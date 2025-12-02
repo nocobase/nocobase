@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Campo
 
 Na interface do usuário (UI), um campo é um componente de campo que serve como um portador para dados individuais. Diferentes tipos de dados são apresentados com diferentes componentes de campo. Os campos só podem ser anexados a blocos e não podem ser usados de forma independente.

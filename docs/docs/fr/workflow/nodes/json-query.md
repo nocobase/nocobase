@@ -1,9 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-json-query'
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-json-query'
 
 # Calcul JSON
 

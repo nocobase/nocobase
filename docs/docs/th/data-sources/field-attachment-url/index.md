@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-field-attachment-url"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: "@nocobase/plugin-field-attachment-url"
----
 
 # ฟิลด์ข้อมูล: ไฟล์แนบ (URL)
 

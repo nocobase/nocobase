@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-sort"
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
-pkg: "@nocobase/plugin-field-sort"
----
 
 # Champ de tri
 

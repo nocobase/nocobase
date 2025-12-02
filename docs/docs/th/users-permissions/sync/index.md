@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-user-data-sync'
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: '@nocobase/plugin-user-data-sync'
----
 
 # การซิงค์ข้อมูลผู้ใช้
 

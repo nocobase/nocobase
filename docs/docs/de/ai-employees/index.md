@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-ai"
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: "@nocobase/plugin-ai"
----
 
 # KI-Mitarbeiter · Erste Schritte
 

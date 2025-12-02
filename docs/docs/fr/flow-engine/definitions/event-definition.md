@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # EventDefinition
 
 `EventDefinition` définit la logique de gestion des événements au sein d'un flux de travail. Elle permet de réagir à des déclencheurs d'événements spécifiques. Les événements sont un mécanisme essentiel du moteur de flux de travail pour initier l'exécution des flux.

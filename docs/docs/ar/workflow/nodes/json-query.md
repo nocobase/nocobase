@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-workflow-json-query'
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-json-query'
----
 
 # حساب JSON
 

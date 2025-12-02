@@ -1,3 +1,9 @@
+
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Kubernetes-distribution
 
 Den här artikeln syftar till att snabbt guida er som användare att distribuera NocoBase i klusterläge i en Kubernetes-miljö. Vi förutsätter att ni är bekanta med Kubernetes-miljön och har slutfört stegen i [Förberedelser](./preparations.md).
@@ -112,12 +118,6 @@ spec:
   selector:
     app: nocobase
   type: ClusterIP
----
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
 # Applikationens Deployment, som kan distribuera flera applikationscontainrar.
 apiVersion: apps/v1
 kind: Deployment

@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Um para Um
 
 Na relação entre funcionários e perfis pessoais, cada funcionário pode ter apenas um registro de perfil pessoal, e cada registro de perfil pessoal pode corresponder a apenas um funcionário. Nesse caso, a relação entre funcionário e perfil pessoal é de um para um.

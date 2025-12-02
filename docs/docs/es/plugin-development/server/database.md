@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Database
 
 `Database` es un componente fundamental de las **fuentes de datos** (`DataSource`) de tipo base de datos. Cada fuente de datos de este tipo tiene una instancia `Database` correspondiente, a la que puede acceder a través de `dataSource.db`. La instancia de base de datos de la fuente de datos principal también ofrece el práctico alias `app.db`. Familiarizarse con los métodos comunes de `db` es esencial para desarrollar **plugins** del lado del servidor.

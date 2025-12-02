@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Logga in med Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect

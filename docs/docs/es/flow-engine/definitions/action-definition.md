@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # ActionDefinition
 
 ActionDefinition define acciones reutilizables que pueden ser referenciadas en múltiples flujos de trabajo y pasos. Una acción es la unidad de ejecución central en el FlowEngine, encapsulando una lógica de negocio específica.

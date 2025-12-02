@@ -2,5 +2,4 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Recurso de Flujo de Trabajo

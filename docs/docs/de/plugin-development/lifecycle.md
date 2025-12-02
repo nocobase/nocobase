@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Lebenszyklus
 
 Dieser Abschnitt fasst die Lebenszyklus-Hooks für Plugins auf Server- und Clientseite zusammen. Er hilft Entwicklern dabei, Ressourcen korrekt zu registrieren und freizugeben.

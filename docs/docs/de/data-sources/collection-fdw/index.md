@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-collection-fdw"
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: "@nocobase/plugin-collection-fdw"
----
 
 # Fremddatentabellen verbinden (FDW)
 

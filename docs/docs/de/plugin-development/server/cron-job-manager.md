@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # CronJobManager – Verwaltung zeitgesteuerter Aufgaben
 
 `CronJobManager` ist ein von NocoBase bereitgestellter Manager für zeitgesteuerte Aufgaben, der auf [cron](https://www.npmjs.com/package/cron) basiert. Er ermöglicht es Plugins, serverseitig zeitgesteuerte Aufgaben zu registrieren, um bestimmte Logik periodisch auszuführen.

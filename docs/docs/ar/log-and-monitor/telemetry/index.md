@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-telemetry'
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-telemetry'
----
 
 # القياس عن بعد (Telemetry)
 

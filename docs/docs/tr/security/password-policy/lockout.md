@@ -1,14 +1,11 @@
 ---
 pkg: "@nocobase/plugin-password-policy"
 ---
-:::tip Yapay Zeka Çeviri Bildirimi
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 
 
-
-pkg: '@nocobase/plugin-password-policy'
----
 
 # Kullanıcı Kilitleme
 

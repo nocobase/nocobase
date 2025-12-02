@@ -1,3 +1,9 @@
+
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Agent AI · Viz: Przewodnik konfiguracji scenariusza CRM
 
 > Na przykładzie CRM dowiedz się, jak sprawić, by Twój analityk AI naprawdę zrozumiał(a) Twój biznes i wykorzystał(a) swój pełny potencjał.
@@ -39,13 +45,6 @@ Aby zrozumieć, jak rozszerzyć Viz, należy najpierw poznać jego(jej) warstwow
 
 Taka warstwowa konstrukcja pozwala Viz zachować stabilną osobowość (spójną logikę analizy),
 jednocześnie szybko adaptując się do różnych scenariuszy biznesowych (CRM, zarządzanie szpitalem, analiza kanałów, operacje produkcyjne…).
-
----
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
 
 ## 3. Wzorzec pierwszy: Szablonowy silnik analityczny (zalecany)
 

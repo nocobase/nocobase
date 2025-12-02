@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-notification-in-app-message'
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: '@nocobase/plugin-notification-in-app-message'
----
 
 # Oznámení: Interní zpráva
 

@@ -1,11 +1,12 @@
+---
+displayName: "UI 스키마 저장 서비스"
+packageName: '@nocobase/plugin-ui-schema-storage'
+description: |
+---
 :::tip AI 번역 안내
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
-displayName: "UI 스키마 저장 서비스"
-packageName: '@nocobase/plugin-ui-schema-storage'
-description: |
   중앙 집중식 UI 스키마 저장 서비스를 제공합니다.
 isFree: true
 builtIn: true

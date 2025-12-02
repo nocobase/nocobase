@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-custom-action-trigger'
+---
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-custom-action-trigger'
----
 
 # Evento de Ação Personalizada
 

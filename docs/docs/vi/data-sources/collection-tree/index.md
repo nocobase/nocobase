@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-collection-tree"
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: "@nocobase/plugin-collection-tree"
----
 
 # Bộ sưu tập dạng cây
 

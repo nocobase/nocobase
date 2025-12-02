@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # FlowModel Ereignisfluss und Konfiguration
 
 FlowModel bietet einen auf „Flows“ basierenden Ansatz, um die Konfigurationslogik von Komponenten zu implementieren. Dies macht das Verhalten und die Konfiguration von Komponenten erweiterbarer und visueller.

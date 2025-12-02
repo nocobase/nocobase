@@ -7,10 +7,6 @@ pkg: "@nocobase/plugin-ai-ee"
 
 
 
-```yaml
-pkg: "@nocobase/plugin-ai-ee"
----
-
 # المحادثة متعددة الوسائط
 
 ## الصور

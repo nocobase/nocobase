@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-notification-email'
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: '@nocobase/plugin-notification-email'
----
 
 # การแจ้งเตือน: อีเมล
 

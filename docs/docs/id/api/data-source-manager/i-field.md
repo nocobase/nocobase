@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # IField
 
 `IField` mendefinisikan antarmuka yang perlu diimplementasikan oleh sebuah *field*.

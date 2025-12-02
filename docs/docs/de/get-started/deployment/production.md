@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Bereitstellung in der Produktionsumgebung
 
 Wenn Sie NocoBase in einer Produktionsumgebung bereitstellen, kann die Installation von Abhängigkeiten aufwendig sein, da die Build-Methoden in verschiedenen Systemen und Umgebungen variieren. Für ein vollständiges Funktionserlebnis empfehlen wir die Bereitstellung mit **Docker**. Wenn Ihre Systemumgebung Docker nicht verwenden kann, können Sie auch **create-nocobase-app** für die Bereitstellung nutzen.

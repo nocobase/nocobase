@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Variáveis de Ambiente Globais
 
 ## TZ

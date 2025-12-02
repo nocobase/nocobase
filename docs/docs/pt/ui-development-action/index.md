@@ -2,5 +2,4 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Extensões de Ação

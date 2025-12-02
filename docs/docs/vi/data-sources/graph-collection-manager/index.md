@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-graph-collection-manager"
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: "@nocobase/plugin-graph-collection-manager"
----
 
 # Trình quản lý Bộ sưu tập Dạng đồ thị
 

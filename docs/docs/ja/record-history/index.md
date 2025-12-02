@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-record-history'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: '@nocobase/plugin-record-history'
----
 
 # 履歴記録
 

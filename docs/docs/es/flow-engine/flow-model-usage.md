@@ -2,5 +2,4 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Uso y Renderizado de FlowModel

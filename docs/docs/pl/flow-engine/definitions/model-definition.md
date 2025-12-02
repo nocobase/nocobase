@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # ModelDefinition
 
 ModelDefinition określa opcje tworzenia modelu przepływu pracy, które są wykorzystywane do tworzenia instancji modelu za pomocą metody `FlowEngine.createModel()`. Zawiera podstawową konfigurację modelu, jego właściwości, podmodele oraz inne istotne informacje.

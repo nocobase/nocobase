@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Förhandsgranska och spara
 
 *   **Förhandsgranska:** Renderar tillfälligt ändringar från konfigurationspanelen till sidans diagram för att verifiera resultatet.

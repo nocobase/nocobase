@@ -1,11 +1,12 @@
+---
+displayName: "Arbetsflöde"
+packageName: '@nocobase/plugin-workflow'
+description: |
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-displayName: "Arbetsflöde"
-packageName: '@nocobase/plugin-workflow'
-description: |
   Ett kraftfullt BPM-verktyg som ger grundläggande stöd för affärsautomatisering och kan utökas med obegränsat antal utlösare och noder.
 isFree: true
 builtIn: true

@@ -1,11 +1,12 @@
+---
+displayName: "Mobilklient (Föråldrad)"
+packageName: '@nocobase/plugin-mobile-client'
+description: |
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-displayName: "Mobilklient (Föråldrad)"
-packageName: '@nocobase/plugin-mobile-client'
-description: |
   Möjliggör konfiguration av mobila sidor.
 isFree: true
 builtIn: true

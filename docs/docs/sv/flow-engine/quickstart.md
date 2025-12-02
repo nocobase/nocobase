@@ -1,3 +1,9 @@
+
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Snabbstart: Bygga en orkestrerbar knappkomponent
 
 I React renderar vi vanligtvis en knappkomponent så här:
@@ -55,13 +61,6 @@ const model = this.flowEngine.createModel({
 ```tsx pure
 <FlowModelRenderer model={model} />
 ```
-
----
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
 
 ## Steg 2: Lägg till PropsFlow för att göra knappegenskaper konfigurerbara
 

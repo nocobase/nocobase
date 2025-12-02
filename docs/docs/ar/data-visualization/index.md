@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-visualization"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: "@nocobase/plugin-data-visualization"
----
 
 # نظرة عامة
 

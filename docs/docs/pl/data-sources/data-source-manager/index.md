@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-manager"
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-manager"
----
 
 # Zarządzanie źródłami danych
 

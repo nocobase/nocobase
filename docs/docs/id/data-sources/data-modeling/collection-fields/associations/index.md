@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Bidang Relasi
 
 Di NocoBase, bidang relasi bukanlah bidang yang sebenarnya, melainkan digunakan untuk membangun koneksi antar **koleksi**. Konsep ini setara dengan relasi dalam basis data relasional.

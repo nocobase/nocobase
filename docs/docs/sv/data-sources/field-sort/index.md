@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-sort"
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: "@nocobase/plugin-field-sort"
----
 
 # Sorteringsfält
 

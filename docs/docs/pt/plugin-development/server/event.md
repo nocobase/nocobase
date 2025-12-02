@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Eventos
 
 O servidor do NocoBase (Server) dispara eventos correspondentes durante o ciclo de vida da aplicação, o ciclo de vida dos **plugins** e as operações de banco de dados. Desenvolvedores de **plugins** podem escutar esses eventos para implementar lógicas de extensão, operações automatizadas ou comportamentos personalizados.

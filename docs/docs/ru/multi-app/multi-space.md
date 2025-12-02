@@ -7,10 +7,6 @@ pkg: "@nocobase/plugin-multi-space"
 
 
 
-```yaml
-pkg: "@nocobase/plugin-multi-space"
-```
-
 # Мультипространство
 
 ## Введение

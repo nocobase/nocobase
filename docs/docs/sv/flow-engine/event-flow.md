@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Händelseflöde
 
 I FlowEngine är alla gränssnittskomponenter **händelsedrivna**.

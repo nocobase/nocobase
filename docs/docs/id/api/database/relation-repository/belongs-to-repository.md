@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 ## BelongsToRepository
 
 Antarmukanya sama dengan [HasOneRepository](./has-one-repository.md).

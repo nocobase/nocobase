@@ -1,11 +1,12 @@
+---
+displayName: "Отделы"
+packageName: '@nocobase/plugin-departments'
+description: |
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-displayName: "Отделы"
-packageName: '@nocobase/plugin-departments'
-description: |
   Организуйте пользователей по отделам, настраивайте иерархические отношения, привязывайте роли для управления разрешениями и используйте отделы как переменные в рабочих процессах и выражениях.
 isFree: true
 builtIn: true

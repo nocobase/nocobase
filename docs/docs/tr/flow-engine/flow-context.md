@@ -1,3 +1,9 @@
+
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Bağlam Sistemi Genel Bakış
 
 NocoBase İş Akışı motorunun bağlam sistemi, her biri farklı bir kapsama alanına karşılık gelen üç katmana ayrılmıştır. Bu sistemi doğru kullanarak hizmetlerin, yapılandırmaların ve verilerin esnek bir şekilde paylaşılmasını ve yalıtılmasını sağlayabilir, böylece iş sürdürülebilirliğini ve ölçeklenebilirliğini artırabilirsiniz.
@@ -34,13 +40,6 @@ FlowEngineContext (Genel Bağlam)
 - Bir alt modelin `FlowModelContext`'i, bir vekil (delegate) mekanizması aracılığıyla üst modelin bağlamına (senkron ilişki) erişebilir ve aynı ada sahip öğelerin üzerine yazmayı destekler.
 - Asenkron üst-alt modeller, durum kirliliğini önlemek için bir vekil (delegate) ilişkisi kurmaz.
 - `FlowRuntimeContext` her zaman ilgili `FlowModelContext`'ine bir vekil (delegate) mekanizması aracılığıyla erişir, ancak değişiklikleri yukarı doğru yaymaz.
-
----
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
-
 
 ## 🧭 Çalışma Zamanı ve Ayarlar Modu (mode)
 

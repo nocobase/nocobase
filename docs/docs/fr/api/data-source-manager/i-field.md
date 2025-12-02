@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # IField
 
 `IField` définit l'interface qu'un champ doit implémenter.

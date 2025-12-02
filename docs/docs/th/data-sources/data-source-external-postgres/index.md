@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-data-source-external-postgres"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: "@nocobase/plugin-data-source-external-postgres"
----
 
 # แหล่งข้อมูลภายนอก - PostgreSQL
 

@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Podgląd i Zapisywanie
 
 *   **Podgląd**: Tymczasowo wyświetla zmiany wprowadzone w panelu konfiguracji na wykresie strony, aby Państwo mogli zweryfikować ich efekt.

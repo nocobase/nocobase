@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-audit-logger'
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: '@nocobase/plugin-audit-logger'
----
 
 # Granskningslogg
 

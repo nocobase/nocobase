@@ -1,9 +1,4 @@
-:::tip הודעת תרגום AI
-תיעוד זה תורגם אוטומטית על ידי AI.
-:::
-
-
-```yaml
+---
 displayName: "בלוק: עץ"
 packageName: '@nocobase/plugin-block-tree'
 supportedVersions:
@@ -14,6 +9,10 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
-```
+---
+:::tip הודעת תרגום AI
+תיעוד זה תורגם אוטומטית על ידי AI.
+:::
+
 
 # בלוק: עץ

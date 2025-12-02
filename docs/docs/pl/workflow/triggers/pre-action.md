@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-request-interceptor'
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-request-interceptor'
----
 
 # Zdarzenie Przed Akcją
 

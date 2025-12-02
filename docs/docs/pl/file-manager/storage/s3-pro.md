@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-storage-s3-pro'
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-pkg: '@nocobase/plugin-file-storage-s3-pro'
----
 
 # Silnik przechowywania: S3 (Pro)
 

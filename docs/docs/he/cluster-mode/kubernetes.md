@@ -1,3 +1,9 @@
+
+:::tip הודעת תרגום AI
+תיעוד זה תורגם אוטומטית על ידי AI.
+:::
+
+
 # פריסת Kubernetes
 
 מאמר זה נועד להדריך אתכם בפריסה מהירה של NocoBase במצב אשכול בסביבת K8S, בהנחה שאתם מכירים את סביבת K8S והשלמתם את השלבים ב[הכנות](./preparations.md).
@@ -113,12 +119,6 @@ spec:
   selector:
     app: nocobase
   type: ClusterIP
----
-:::tip הודעת תרגום AI
-תיעוד זה תורגם אוטומטית על ידי AI.
-:::
-
-
 # ה-Deployment של היישום, שיכול לפרוס מספר קונטיינרים של יישומים.
 apiVersion: apps/v1
 kind: Deployment

@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Autentikasi Pengguna
 
 Modul autentikasi pengguna NocoBase terdiri dari dua bagian utama:

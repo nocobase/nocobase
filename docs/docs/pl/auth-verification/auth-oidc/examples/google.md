@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Logowanie za pomocą Google
 
 > https://developers.google.com/identity/openid-connect/openid-connect

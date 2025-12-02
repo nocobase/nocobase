@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth-wecom'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: '@nocobase/plugin-auth-wecom'
----
 
 # 認証：WeCom
 

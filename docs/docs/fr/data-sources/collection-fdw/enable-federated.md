@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Comment activer le moteur federated dans MySQL
 
 La base de données MySQL n'active pas le module federated par défaut. Vous devez modifier la configuration `my.cnf`. Si vous utilisez la version Docker, vous pouvez gérer cette extension via des volumes :

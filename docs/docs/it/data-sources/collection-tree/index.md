@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-collection-tree"
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-pkg: "@nocobase/plugin-collection-tree"
----
 
 # Collezione ad albero
 

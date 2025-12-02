@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Snabbstart
 
 Låt oss konfigurera ett diagram från grunden, med fokus på de grundläggande funktionerna. Mer avancerade funktioner beskrivs i senare kapitel.

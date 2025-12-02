@@ -1,8 +1,4 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
-
+---
 displayName: "Uygulama yedekleme ve geri yükleme (kullanımdan kaldırıldı)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
@@ -12,6 +8,9 @@ builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
 
 # Uygulama Yedekleme ve Geri Yükleme (Kullanımdan Kaldırıldı)
 

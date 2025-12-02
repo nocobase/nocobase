@@ -1,13 +1,13 @@
 ---
 pageType: home
-pageName: desenvolvimento
+pageName: development
 
 features:
   - title: Arquitetura Essencial
-    details: Domine os mecanismos de extensão e princípios de funcionamento do NocoBase, incluindo o sistema de **plugins**, o FlowEngine e o módulo de banco de dados, para construir uma base de desenvolvimento sólida.
+    details: Domine os mecanismos de extensão e princípios de funcionamento do NocoBase, incluindo o sistema de plugins, o FlowEngine e o módulo de banco de dados, para construir uma base de desenvolvimento sólida.
     items:
       - title: Desenvolvimento de Plugins
-        details: Aprenda a criar, publicar e manter **plugins** personalizados.
+        details: Aprenda a criar, publicar e manter plugins personalizados.
         link: /plugin-development
         showOnHome: true
       - title: FlowEngine Frontend
@@ -15,7 +15,7 @@ features:
         link: /flow-engine
         showOnHome: true
       - title: Banco de Dados
-        details: O módulo de banco de dados do núcleo do NocoBase, que oferece uma API unificada para acesso, modelagem e operações de dados para **plugins**. É a base essencial para a interação de dados entre os **plugins**.
+        details: O módulo de banco de dados do núcleo do NocoBase, que oferece uma API unificada para acesso, modelagem e operações de dados para plugins. É a base essencial para a interação de dados entre os plugins.
         link: /database
         showOnHome: true
   - title: Interface e Interação
@@ -34,14 +34,14 @@ features:
         link: /ui-development-action
         showOnHome: true
   - title: Ecossistema de Plugins
-    details: Estenda as capacidades de **plugins** existentes através de outros **plugins**, construindo um ecossistema de **plugins** hierárquico e modular para aprimorar a extensibilidade e a capacidade de colaboração do sistema.
+    details: Estenda as capacidades de plugins existentes através de outros plugins, construindo um ecossistema de plugins hierárquico e modular para aprimorar a extensibilidade e a capacidade de colaboração do sistema.
     items:
       - title: Extensão de Fonte de Dados
-        details: Estenda ou integre **fontes de dados** externas, conecte-se a bancos de dados ou serviços de terceiros e realize acesso e sincronização de dados entre sistemas.
+        details: Estenda ou integre fontes de dados externas, conecte-se a bancos de dados ou serviços de terceiros e realize acesso e sincronização de dados entre sistemas.
         link: /data-sources/development
         showOnHome: true
       - title: Extensão de Fluxo de Trabalho
-        details: Estenda ou integre funcionalidades relacionadas a **fluxos de trabalho** para implementar cenários de negócio automatizados e processuais.
+        details: Estenda ou integre funcionalidades relacionadas a fluxos de trabalho para implementar cenários de negócio automatizados e processuais.
         link: /workflow/development
         showOnHome: true
       - title: Extensão de Canal de Notificação

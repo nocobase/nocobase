@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # HTTP API
 
 Das Hochladen von Dateien für Anhangsfelder und Datei-Sammlungen wird über die HTTP API unterstützt. Die Aufrufmethode unterscheidet sich je nach dem Speicher-Engine, der für das Anhangsfeld oder die Datei-Sammlung verwendet wird.

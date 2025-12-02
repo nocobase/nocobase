@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth-oidc'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-auth-oidc'
----
 
 # Authenticatie: OIDC
 

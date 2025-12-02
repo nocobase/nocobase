@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Solicitudes
 
 NocoBase le ofrece un `APIClient` basado en [Axios](https://axios-http.com/), que puede utilizar para realizar solicitudes HTTP desde cualquier lugar donde pueda acceder a un `Context`.

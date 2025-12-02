@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-m2m-array"
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: "@nocobase/plugin-field-m2m-array"
----
 
 # רבים-לרבים (מערך)
 

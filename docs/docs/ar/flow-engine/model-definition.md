@@ -1,13 +1,13 @@
+---
+pkg: "@nocobase/plugin-china-region"
+title: حقل المنطقة الصينية
+description: تضيف إضافة حقل المنطقة الصينية (`field-china-region`) نوع حقل "المنطقة الصينية" إلى NocoBase.
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-china-region"
-title: حقل المنطقة الصينية
-description: تضيف إضافة حقل المنطقة الصينية (`field-china-region`) نوع حقل "المنطقة الصينية" إلى NocoBase.
----
 
 # حقل المنطقة الصينية
 

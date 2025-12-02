@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 ## BelongsToRepository
 
 Dess gränssnitt är detsamma som [HasOneRepository](./has-one-repository.md).

@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # AI Agent · Dex: Expert in gegevensorganisatie
 
 > Extraheer en vul snel formulieren in, en structureer zo ongestructureerde informatie.

@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Reglas de vinculación de acciones
 
 ## Introducción

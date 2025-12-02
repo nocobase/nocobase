@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-password-policy'
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: '@nocobase/plugin-password-policy'
----
 
 # Lösenordspolicy
 

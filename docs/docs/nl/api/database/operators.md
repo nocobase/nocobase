@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Filteroperatoren
 
 Gebruikt in de `filter`-parameter van API's zoals `find`, `findOne`, `findAndCount` en `count` van een Repository:

@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Flux d'événements
 
 Dans FlowEngine, tous les composants de l'interface sont **pilotés par les événements**.

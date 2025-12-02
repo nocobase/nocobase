@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-sort"
+---
 :::tip AI अनुवाद सूचना
 यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
 :::
 
-
-pkg: "@nocobase/plugin-field-sort"
----
 
 # सॉर्ट फ़ील्ड
 

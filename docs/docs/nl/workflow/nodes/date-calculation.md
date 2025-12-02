@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-date-calculation'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-date-calculation'
----
 
 # Datumberekening
 

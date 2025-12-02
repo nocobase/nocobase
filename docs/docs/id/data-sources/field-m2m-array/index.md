@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-m2m-array"
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: "@nocobase/plugin-field-m2m-array"
----
 
 # Banyak-ke-Banyak (Array)
 

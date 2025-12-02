@@ -1,9 +1,4 @@
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-
-```yaml
+---
 displayName: "コレクションフィールド: 自動採番"
 packageName: '@nocobase/plugin-field-sequence'
 description: |
@@ -11,6 +6,10 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
-```
+---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
 
 # コレクションフィールド: 自動採番

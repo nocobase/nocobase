@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Gambaran Umum
 
 Sebuah alur kerja biasanya terdiri dari beberapa langkah operasional yang saling terhubung. Setiap node merepresentasikan satu langkah operasional dan berfungsi sebagai unit logis dasar dalam proses. Sama seperti dalam bahasa pemrograman, berbagai jenis node merepresentasikan instruksi yang berbeda, yang menentukan perilaku node tersebut. Ketika alur kerja berjalan, sistem akan masuk ke setiap node secara berurutan dan menjalankan instruksinya.

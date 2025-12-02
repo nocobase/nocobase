@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Overzicht
 
 De ontwikkeling van server-side plugins voor NocoBase biedt diverse functionaliteiten en mogelijkheden om ontwikkelaars te helpen de kernfunctionaliteiten van NocoBase aan te passen en uit te breiden. Hieronder vindt u de belangrijkste mogelijkheden van NocoBase server-side plugin ontwikkeling en de bijbehorende hoofdstukken:

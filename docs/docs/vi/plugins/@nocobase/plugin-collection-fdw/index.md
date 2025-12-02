@@ -1,8 +1,4 @@
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
+---
 displayName: "Bộ sưu tập: Kết nối dữ liệu ngoài (FDW)"
 packageName: '@nocobase/plugin-collection-fdw'
 supportedVersions:
@@ -15,5 +11,8 @@ builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
 
 # Bộ sưu tập: Kết nối dữ liệu ngoài (FDW)

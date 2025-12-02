@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth-dingtalk'
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: '@nocobase/plugin-auth-dingtalk'
----
 
 # אימות: DingTalk
 

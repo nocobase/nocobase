@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Przewodnik po bezpieczeństwie NocoBase
 
 NocoBase, od projektu funkcjonalnego po implementację systemu, kładzie nacisk na bezpieczeństwo danych i aplikacji. Platforma ma wbudowane liczne funkcje bezpieczeństwa, takie jak uwierzytelnianie użytkowników, kontrola dostępu i szyfrowanie danych, a jednocześnie pozwala na elastyczną konfigurację polityk bezpieczeństwa zgodnie z rzeczywistymi potrzebami. Niezależnie od tego, czy chodzi o ochronę danych użytkownika, zarządzanie uprawnieniami dostępu, czy izolowanie środowisk deweloperskich i produkcyjnych, NocoBase dostarcza praktyczne narzędzia i rozwiązania. Ten przewodnik ma na celu dostarczenie wskazówek dotyczących bezpiecznego korzystania z NocoBase, pomagając użytkownikom chronić bezpieczeństwo danych, aplikacji i środowiska, a także zapewnić efektywne wykorzystanie funkcji systemu przy jednoczesnym zachowaniu bezpieczeństwa.

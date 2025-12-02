@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Configurações de Idioma
 
 Em "Configurações do Sistema", você pode ajustar o ambiente de idioma global do sistema configurando os "Idiomas Ativados". O primeiro idioma da lista será usado como o idioma padrão.

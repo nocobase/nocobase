@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Integrazione delle richieste HTTP nei flussi di lavoro
 
 Attraverso il nodo di richiesta HTTP, i flussi di lavoro di NocoBase possono inviare proattivamente richieste a qualsiasi servizio HTTP, facilitando l'interazione di dati e l'integrazione aziendale con sistemi esterni.

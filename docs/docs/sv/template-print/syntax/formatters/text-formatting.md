@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 ### Textformatering
 
 Här beskriver vi de olika formaterare som finns för textdata. I de följande underavsnitten går vi igenom varje formaterares syntax, exempel och förväntade resultat.

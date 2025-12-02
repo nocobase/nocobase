@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-export-pro"
+---
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
-pkg: "@nocobase/plugin-action-export-pro"
----
 # Exporter les pièces jointes
 
 ## Introduction

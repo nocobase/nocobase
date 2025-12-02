@@ -1,14 +1,15 @@
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
-
+---
 displayName: "Workflow: Aangepaste actiegebeurtenis"
 packageName: '@nocobase/plugin-workflow-custom-action-trigger'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
   Wordt geactiveerd na het klikken op een knop waaraan een aangepaste actie is gekoppeld. Dit is handig voor het orkestreren van aangepaste bewerkingen op datarijen.
 isFree: false
 builtIn: false

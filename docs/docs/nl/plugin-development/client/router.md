@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Router
 
 De NocoBase-client biedt een flexibele routermanager die het uitbreiden van pagina's en instellingenpagina's voor plugins ondersteunt via `router.add()` en `pluginSettingsRouter.add()`.

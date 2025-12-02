@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-departments'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-departments'
----
 
 # 部門
 

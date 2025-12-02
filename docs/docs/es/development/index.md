@@ -1,13 +1,13 @@
 ---
 pageType: home
-pageName: desarrollo
+pageName: development
 
 features:
   - title: Arquitectura Central
-    details: Domine el mecanismo de extensión subyacente y los principios de funcionamiento de NocoBase, incluyendo el sistema de `plugin`s, FlowEngine y el módulo central de la base de datos, para construir una base de desarrollo sólida.
+    details: Domine el mecanismo de extensión subyacente y los principios de funcionamiento de NocoBase, incluyendo el sistema de plugins, FlowEngine y el módulo central de la base de datos, para construir una base de desarrollo sólida.
     items:
-      - title: Desarrollo de `plugin`s
-        details: Aprenda cómo crear, publicar y mantener `plugin`s personalizados.
+      - title: Desarrollo de plugins
+        details: Aprenda cómo crear, publicar y mantener plugins personalizados.
         link: /plugin-development
         showOnHome: true
       - title: FlowEngine Frontend
@@ -15,7 +15,7 @@ features:
         link: /flow-engine
         showOnHome: true
       - title: Base de Datos
-        details: El módulo de base de datos del núcleo de NocoBase, que proporciona una API unificada para el acceso, modelado y operaciones de datos para los `plugin`s. Es la base fundamental para la interacción de datos entre `plugin`s.
+        details: El módulo de base de datos del núcleo de NocoBase, que proporciona una API unificada para el acceso, modelado y operaciones de datos para los plugins. Es la base fundamental para la interacción de datos entre plugins.
         link: /database
         showOnHome: true
   - title: Interfaz e Interacción
@@ -33,15 +33,15 @@ features:
         details: Extienda o personalice los comportamientos de las acciones para implementar diversos procesos de negocio e interacciones con el usuario.
         link: /ui-development-action
         showOnHome: true
-  - title: Ecosistema de `plugin`s
-    details: Extienda las capacidades de los `plugin`s existentes a través de otros `plugin`s, construyendo un ecosistema de `plugin`s jerárquico y modular para mejorar la extensibilidad y la capacidad de colaboración del sistema.
+  - title: Ecosistema de plugins
+    details: Extienda las capacidades de los plugins existentes a través de otros plugins, construyendo un ecosistema de plugins jerárquico y modular para mejorar la extensibilidad y la capacidad de colaboración del sistema.
     items:
-      - title: Extensión de `fuente de datos`
-        details: Extienda o integre `fuente de datos`s externas, conéctese a bases de datos o servicios de terceros, y logre el acceso y la sincronización de datos entre sistemas.
+      - title: Extensión de fuente de datos
+        details: Extienda o integre fuentes de datos externas, conéctese a bases de datos o servicios de terceros, y logre el acceso y la sincronización de datos entre sistemas.
         link: /data-sources/development
         showOnHome: true
-      - title: Extensión de `flujo de trabajo`
-        details: Extienda o integre funciones relacionadas con el `flujo de trabajo` para implementar escenarios de negocio automatizados y basados en procesos.
+      - title: Extensión de flujo de trabajo
+        details: Extienda o integre funciones relacionadas con el flujo de trabajo para implementar escenarios de negocio automatizados y basados en procesos.
         link: /workflow/development
         showOnHome: true
       - title: Extensión de Canal de Notificaciones

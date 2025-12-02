@@ -1,11 +1,11 @@
+---
+pkg: "@nocobase/plugin-field-attachment-url"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-field-attachment-url"
----
 
 # حقل البيانات: المرفق (URL)
 

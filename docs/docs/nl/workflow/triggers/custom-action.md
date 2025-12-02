@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-custom-action-trigger'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-custom-action-trigger'
----
 
 # Aangepaste Actie-gebeurtenis
 

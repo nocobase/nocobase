@@ -1,14 +1,15 @@
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
-
+---
 displayName: "Otentikasi: CAS"
 packageName: '@nocobase/plugin-auth-cas'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
   Melakukan otentikasi identitas melalui protokol CAS.
 isFree: false
 builtIn: false

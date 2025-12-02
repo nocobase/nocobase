@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-ai-ee"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-ai-ee"
----
-```
-
 # Структурированный вывод
 
 ## Введение

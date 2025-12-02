@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Rencana Eksekusi (Riwayat)
 
 Setelah sebuah alur kerja terpicu, sebuah rencana eksekusi yang sesuai akan dibuat untuk melacak proses eksekusi tugas tersebut. Setiap rencana eksekusi memiliki nilai status untuk menunjukkan status eksekusi saat ini, yang dapat dilihat di daftar dan detail riwayat eksekusi:

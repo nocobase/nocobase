@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-auth-wecom'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-auth-wecom'
----
 
 # Thông báo: WeCom
 

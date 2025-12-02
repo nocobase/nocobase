@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-password-policy"
 
 
 
-pkg: '@nocobase/plugin-password-policy'
----
-
 # Блокування користувачів
 
 ## Вступ

@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Prerrequisitos
 
 Antes de implementar una aplicación en clúster, debe completar los siguientes preparativos.

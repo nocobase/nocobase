@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-two-factor-authentication'
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-two-factor-authentication'
----
 
 # Двухфакторная аутентификация (2FA)
 

@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Aggiornamento di un'installazione da sorgente Git
 
 :::warning Preparazione prima dell'aggiornamento

@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # HTTP API
 
 Unggahan berkas untuk kolom lampiran dan koleksi berkas dapat ditangani melalui HTTP API. Cara pemanggilan berbeda-beda tergantung pada mesin penyimpanan yang digunakan oleh lampiran atau koleksi berkas.

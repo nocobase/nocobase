@@ -1,8 +1,4 @@
-:::tip הודעת תרגום AI
-תיעוד זה תורגם אוטומטית על ידי AI.
-:::
-
-
+---
 displayName: "תהליך עבודה: צומת צבירה"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
@@ -11,5 +7,9 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip הודעת תרגום AI
+תיעוד זה תורגם אוטומטית על ידי AI.
+:::
+
 
 # תהליך עבודה: צומת צבירה

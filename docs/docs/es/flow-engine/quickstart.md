@@ -1,3 +1,9 @@
+
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Inicio rápido: Construyendo un componente de botón orquestable
 
 En React, normalmente renderizamos un componente de botón de esta manera:
@@ -55,12 +61,6 @@ const model = this.flowEngine.createModel({
 ```tsx pure
 <FlowModelRenderer model={model} />
 ```
-
----
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
 
 ## Paso 2: Agregue PropsFlow para hacer que las propiedades del botón sean configurables
 

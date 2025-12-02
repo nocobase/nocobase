@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-response-message'
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-response-message'
----
 
 # Odpovědní zpráva
 

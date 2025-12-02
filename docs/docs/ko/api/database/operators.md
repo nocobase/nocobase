@@ -2,7 +2,6 @@
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
 # 필터 연산자
 
 Repository의 `find`, `findOne`, `findAndCount`, `count` 등 API의 `filter` 파라미터에서 사용됩니다:

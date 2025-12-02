@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 ## Formatadores
 
 Formatadores são usados para converter dados brutos em texto de fácil leitura. Eles são aplicados aos dados usando dois pontos (`:`) e podem ser encadeados, de modo que a saída de um formatador se torna a entrada para o próximo. Alguns formatadores suportam parâmetros constantes ou parâmetros dinâmicos.

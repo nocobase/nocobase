@@ -2,7 +2,6 @@
 Эта документация была автоматически переведена ИИ.
 :::
 
-
 # HasManyRepository
 
 `HasManyRepository` — это репозиторий связей (`Relation Repository`), используемый для работы со связями типа `HasMany`.

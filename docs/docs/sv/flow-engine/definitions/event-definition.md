@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # EventDefinition
 
 `EventDefinition` definierar logiken för händelsehantering i ett arbetsflöde, som används för att svara på specifika händelsetriggers. Händelser är en viktig mekanism i `FlowEngine` för att trigga arbetsflödesexekvering.

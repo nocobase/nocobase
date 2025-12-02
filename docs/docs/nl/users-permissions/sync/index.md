@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-user-data-sync'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-user-data-sync'
----
 
 # Gebruikersgegevenssynchronisatie
 

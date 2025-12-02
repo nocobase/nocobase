@@ -1,14 +1,15 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
-
+---
 displayName: "Adaptador de cola de mensajes RabbitMQ"
 packageName: '@nocobase/plugin-queue-adapter-rabbitmq'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
   Permite gestionar la cola de mensajes de la aplicación utilizando RabbitMQ.
 isFree: false
 builtIn: false

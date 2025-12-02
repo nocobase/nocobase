@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Aktualizacja instalacji `create-nocobase-app`
 
 :::warning Przygotowanie przed aktualizacją

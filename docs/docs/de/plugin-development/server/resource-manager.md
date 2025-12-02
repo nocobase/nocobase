@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # ResourceManager Ressourcenverwaltung
 
 Die Ressourcenverwaltung von NocoBase kann bestehende Datenbanktabellen (Sammlungen) und Verknüpfungen (Associations) automatisch in Ressourcen umwandeln. Sie bietet zudem integrierte Operationstypen, die Entwicklern helfen, REST-API-Ressourcenoperationen schnell zu erstellen. Im Gegensatz zu traditionellen REST-APIs basieren NocoBase-Ressourcenoperationen nicht auf HTTP-Anfragemethoden, sondern definieren die auszuführende Operation explizit über `:action`.

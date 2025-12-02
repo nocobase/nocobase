@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Relación entre FlowEngine y los plugins
 
 **FlowEngine** no es un plugin, sino una **API central** que se proporciona a los plugins para que la utilicen. Su propósito es conectar las capacidades del núcleo con las extensiones de negocio.

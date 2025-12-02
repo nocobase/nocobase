@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Utilizzare le chiavi API in NocoBase
 
 Questa guida Le mostra come utilizzare le chiavi API in NocoBase per recuperare dati, attraverso un esempio pratico di "Cose da fare". Segua le istruzioni passo-passo qui sotto per comprendere il flusso di lavoro completo.

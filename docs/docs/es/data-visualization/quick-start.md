@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Inicio rápido
 
 En esta guía, configuraremos un gráfico desde cero, utilizando las funciones esenciales. Las capacidades opcionales se abordarán en capítulos posteriores.

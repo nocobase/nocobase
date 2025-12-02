@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+---
 :::tip Aviso de traducción por IA
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-file-manager'
----
 
 # Gestor de Archivos
 

@@ -1,11 +1,12 @@
+---
+displayName: "Form pubblici"
+packageName: '@nocobase/plugin-public-forms'
+description: |
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-displayName: "Form pubblici"
-packageName: '@nocobase/plugin-public-forms'
-description: |
   Condivida moduli pubblici esternamente per raccogliere informazioni da utenti anonimi.
 isFree: true
 builtIn: true

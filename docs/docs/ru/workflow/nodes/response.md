@@ -1,11 +1,11 @@
+---
+pkg: "@nocobase/plugin-workflow-response-message"
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-workflow-response-message"
----
 
 # HTTP-ответ
 

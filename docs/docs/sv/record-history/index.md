@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-record-history'
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: '@nocobase/plugin-record-history'
----
 
 # Historik
 

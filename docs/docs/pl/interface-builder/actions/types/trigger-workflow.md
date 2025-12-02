@@ -2,5 +2,4 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Wyzwalanie przepływu pracy

@@ -1,11 +1,12 @@
+---
+pkg: '@nocobase/plugin-acl'
+---
+
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-acl'
----
 
 # Ứng dụng trong Giao diện người dùng
 

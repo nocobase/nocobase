@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-acl'
+---
 :::tip Aviso de traducción por IA
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
-pkg: '@nocobase/plugin-acl'
----
 
 # Aplicación en la interfaz de usuario (UI)
 

@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Bloco
 
 Blocos são os portadores de dados e conteúdo. Eles podem ser colocados em uma Página (Page), Modal (Modal) ou Gaveta (Drawer), e vários blocos podem ser arrastados e organizados livremente.

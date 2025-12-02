@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Memperluas Penyedia Layanan SMS
 
 Artikel ini menjelaskan cara memperluas fungsionalitas penyedia layanan SMS dalam fitur [Verifikasi: SMS](../sms) melalui sebuah plugin.

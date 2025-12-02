@@ -6,12 +6,6 @@ Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-ai-ee"
----
-```
-
 # Rozmowa multimodalna
 
 ## Obrazy

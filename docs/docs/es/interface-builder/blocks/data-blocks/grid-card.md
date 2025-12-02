@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-grid-card"
+---
 :::tip Aviso de traducción por IA
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
-pkg: "@nocobase/plugin-block-grid-card"
----
 # Tarjeta de Cuadrícula
 
 ## Introducción

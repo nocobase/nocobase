@@ -1,8 +1,4 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
-
+---
 displayName: "Koleksiyon alanı: Kod"
 packageName: '@nocobase/plugin-field-code'
 description: |
@@ -11,5 +7,8 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 ---
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
 
 # Koleksiyon alanı: Kod

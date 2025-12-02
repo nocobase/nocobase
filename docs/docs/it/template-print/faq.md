@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 ## Domande frequenti e soluzioni
 
 ### 1. Le colonne e le celle vuote nei modelli Excel non vengono visualizzate nel risultato finale

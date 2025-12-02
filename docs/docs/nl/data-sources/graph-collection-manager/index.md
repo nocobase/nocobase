@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-graph-collection-manager"
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-graph-collection-manager"
----
 
 # Grafisch collectiebeheer
 

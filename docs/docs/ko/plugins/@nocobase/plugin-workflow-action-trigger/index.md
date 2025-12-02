@@ -1,9 +1,4 @@
-:::tip AI 번역 안내
-이 문서는 AI로 자동 번역되었습니다.
-:::
-
-
-```yaml
+---
 displayName: "워크플로우: 액션 후 이벤트"
 packageName: '@nocobase/plugin-workflow-action-trigger'
 description: |
@@ -11,6 +6,10 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
-```
+---
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
 
 # 워크플로우: 액션 후 이벤트

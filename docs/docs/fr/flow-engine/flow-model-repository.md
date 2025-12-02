@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Persistance de FlowModel
 
 FlowEngine offre un système de persistance complet.

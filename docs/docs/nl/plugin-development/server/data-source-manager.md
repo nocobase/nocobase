@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Gegevensbronbeheer
 
 NocoBase biedt de `DataSourceManager` voor het beheren van meerdere gegevensbronnen. Elke `DataSource` heeft zijn eigen `Database`-, `ResourceManager`- en `ACL`-instanties, wat ontwikkelaars de flexibiliteit geeft om meerdere gegevensbronnen te beheren en uit te breiden.

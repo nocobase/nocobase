@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Gegevens opvragen
 
 Dit wordt gebruikt om gegevensrecords op te vragen en op te halen uit een `collectie` die aan specifieke voorwaarden voldoen. U kunt configureren om één record of meerdere records op te vragen. Het `query`-resultaat kan als variabele worden gebruikt in volgende `workflow`-stappen (nodes). Bij het opvragen van meerdere records is het resultaat een array. Als het `query`-resultaat leeg is, kunt u kiezen of de volgende stappen wel of niet worden uitgevoerd.

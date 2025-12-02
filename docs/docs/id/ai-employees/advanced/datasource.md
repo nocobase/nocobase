@@ -1,12 +1,12 @@
+---
+pkg: "@nocobase/plugin-ai"
+deprecated: true
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-ai"
-deprecated: true
----
 
 # Tingkat Lanjut
 

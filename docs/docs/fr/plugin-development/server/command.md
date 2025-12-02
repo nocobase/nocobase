@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Commande
 
 Dans NocoBase, les commandes vous permettent d'exécuter des opérations liées aux applications ou aux plugins directement depuis la ligne de commande. Il peut s'agir de tâches système, d'opérations de migration ou de synchronisation, d'initialisation de configurations, ou encore d'interactions avec des instances d'application en cours d'exécution. Les développeurs peuvent définir des commandes personnalisées pour leurs plugins, les enregistrer via l'objet `app`, et les exécuter dans la CLI sous la forme `nocobase <commande>`.

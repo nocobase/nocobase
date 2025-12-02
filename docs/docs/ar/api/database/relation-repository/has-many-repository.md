@@ -2,7 +2,6 @@
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
 # HasManyRepository
 
 `HasManyRepository` هو `مستودع علاقات` (Relation Repository) يُستخدم للتعامل مع علاقات `HasMany`.

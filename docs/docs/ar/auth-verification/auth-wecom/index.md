@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth-wecom'
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: '@nocobase/plugin-auth-wecom'
----
 
 # المصادقة: WeCom
 

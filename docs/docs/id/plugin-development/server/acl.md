@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Kontrol Izin ACL
 
 ACL (Access Control List) digunakan untuk mengontrol izin operasi sumber daya. Anda dapat memberikan izin kepada peran, atau melewati batasan peran untuk langsung mengatur izin. Sistem ACL menyediakan mekanisme manajemen izin yang fleksibel, mendukung snippet izin, middleware, penilaian kondisi, dan berbagai metode lainnya.

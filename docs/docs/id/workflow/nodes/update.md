@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Memperbarui Data
 
 Digunakan untuk memperbarui data dalam sebuah **koleksi** yang memenuhi kondisi tertentu.

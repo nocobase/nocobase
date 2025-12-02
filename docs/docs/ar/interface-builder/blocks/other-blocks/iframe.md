@@ -1,11 +1,11 @@
+---
+pkg: "@nocobase/plugin-block-iframe"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-block-iframe"
----
 # كتلة Iframe
 
 ## مقدمة

@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-data-source-rest-api"
 
 
 
-```yaml
-pkg: "@nocobase/plugin-data-source-rest-api"
----
 # Источник данных REST API
 
 ## Введение

@@ -1,11 +1,12 @@
+---
+displayName: "موظفو الذكاء الاصطناعي"
+packageName: '@nocobase/plugin-ai'
+description: |
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-displayName: "موظفو الذكاء الاصطناعي"
-packageName: '@nocobase/plugin-ai'
-description: |
   أنشئ موظفي ذكاء اصطناعي بمهارات متنوعة للتعاون مع البشر، وبناء الأنظمة، ومعالجة العمليات التجارية.
 isFree: true
 builtIn: true

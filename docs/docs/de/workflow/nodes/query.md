@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Daten abfragen
 
 Dient dazu, Daten aus einer Sammlung abzufragen und abzurufen, die bestimmte Bedingungen erfüllen.

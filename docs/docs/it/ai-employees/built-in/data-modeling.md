@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Agente AI · Orin: Modellatore di Dati
 
 > Progetta in modo intelligente le collezioni e ottimizza la struttura del database.

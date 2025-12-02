@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-external-mssql"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-external-mssql"
----
 
 # مصدر البيانات الخارجي - MSSQL
 

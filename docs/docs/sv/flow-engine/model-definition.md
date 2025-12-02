@@ -1,13 +1,13 @@
+---
+pkg: "@nocobase/plugin-china-region"
+title: Fält för Kina-region
+description: Pluginet för Kina-regionfältet (`field-china-region`) lägger till fälttypen "Kina-region" i NocoBase.
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-china-region"
-title: Fält för Kina-region
-description: Pluginet för Kina-regionfältet (`field-china-region`) lägger till fälttypen "Kina-region" i NocoBase.
----
 
 # Fält för Kina-region
 

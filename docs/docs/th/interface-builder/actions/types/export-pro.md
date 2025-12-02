@@ -1,11 +1,12 @@
+---
+pkg: "@nocobase/plugin-action-export-pro"
+---
+
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-action-export-pro"
----
 
 # เอ็กซ์พอร์ต Pro
 

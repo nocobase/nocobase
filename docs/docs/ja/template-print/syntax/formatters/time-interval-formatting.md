@@ -2,7 +2,6 @@
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
 ### 期間のフォーマット
 
 #### 1. :formatI(patternOut, patternIn)

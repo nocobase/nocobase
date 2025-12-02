@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Ereignisse
 
 Der NocoBase-Server löst während des Anwendungslebenszyklus, des Plugin-Lebenszyklus und bei Datenbankoperationen entsprechende Ereignisse aus. Plugin-Entwickler können diese Ereignisse abonnieren, um Erweiterungslogik, automatisierte Abläufe oder benutzerdefinierte Verhaltensweisen zu implementieren.

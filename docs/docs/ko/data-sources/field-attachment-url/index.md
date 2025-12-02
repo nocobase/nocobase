@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-attachment-url"
+---
 :::tip AI 번역 안내
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
-pkg: "@nocobase/plugin-field-attachment-url"
----
 
 # 데이터 필드: 첨부 파일 (URL)
 

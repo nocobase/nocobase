@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Per iniziare
 
 ## Configurare il Suo primo flusso di lavoro

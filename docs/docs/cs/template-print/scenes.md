@@ -1,3 +1,9 @@
+
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Použití funkce „Tisk z šablony“ pro generování smluv o dodávkách a nákupu
 
 V rámci dodavatelského řetězce nebo obchodních scénářů je často nutné rychle generovat standardizovanou „Smlouvu o dodávkách a nákupu“ a dynamicky vyplňovat její obsah na základě informací ze zdrojů dat, jako jsou kupující, prodávající a detaily produktů. Níže Vám na příkladu zjednodušeného případu použití „Smlouvy“ ukážeme, jak nakonfigurovat a používat funkci „Tisk z šablony“ pro mapování datových informací na zástupné symboly v šablonách smluv, a tím automaticky generovat finální smluvní dokument.
@@ -15,13 +21,6 @@ V našem příkladu existují zhruba následující hlavní kolekce (ostatní ir
 ![template_print-2025-11-01-16-34-04](https://static-docs.nocobase.com/template_print-2025-11-01-16-34-04.png)
 
 Jelikož současný systém podporuje pouze tisk jednotlivých záznamů, klikneme na „Tisk“ na stránce „Detaily smlouvy“ a systém automaticky načte odpovídající záznamy smluv a související informace o stranách atd., a vyplní je do dokumentů Word nebo PDF.
-
----
-:::tip Upozornění na překlad AI
-Tato dokumentace byla automaticky přeložena umělou inteligencí.
-:::
-
-
 
 ## 2. Příprava
 

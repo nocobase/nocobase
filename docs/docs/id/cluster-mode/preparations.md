@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Persiapan
 
 Sebelum menerapkan aplikasi klaster, Anda perlu menyelesaikan persiapan berikut.

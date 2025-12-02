@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Omgevingsvariabelen
 
 ## Hoe stelt u omgevingsvariabelen in?

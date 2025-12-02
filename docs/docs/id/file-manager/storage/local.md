@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Mesin Penyimpanan: Penyimpanan Lokal
 
 File yang diunggah akan disimpan di direktori lokal pada hard drive server. Ini cocok untuk skenario di mana volume total file yang diunggah yang dikelola oleh sistem relatif kecil, atau untuk tujuan eksperimental.

@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Écrire et exécuter du JS en ligne
 
 Dans NocoBase, **RunJS** offre une méthode d'extension légère, idéale pour les scénarios d'**expérimentation rapide** et de **traitement logique temporaire**. Sans avoir besoin de créer des plugins ou de modifier le code source, vous pouvez personnaliser les interfaces ou les interactions grâce à JavaScript.

@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Resurshanteraren
 
 NocoBase:s resurshanteringsfunktion kan automatiskt omvandla befintliga datatabeller (samlingar) och associationer till resurser, och har inbyggda operationstyper som hjälper utvecklare att snabbt bygga REST API-resursoperationer. Till skillnad från traditionella REST API:er förlitar sig NocoBase:s resursoperationer inte på HTTP-förfrågningsmetoder, utan bestämmer den specifika operationen som ska utföras genom att explicit definiera `:action`.

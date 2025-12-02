@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-collection-tree"
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: "@nocobase/plugin-collection-tree"
----
 
 # ツリー コレクション
 

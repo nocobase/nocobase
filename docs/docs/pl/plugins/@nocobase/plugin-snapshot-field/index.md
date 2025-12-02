@@ -1,9 +1,4 @@
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
-```yaml
+---
 displayName: "Pole kolekcji: Migawka"
 packageName: '@nocobase/plugin-snapshot-field'
 description: |
@@ -12,7 +7,11 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
-```
+---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
 
 # Pole kolekcji: Migawka
 

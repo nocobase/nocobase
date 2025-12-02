@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Tencent COS
 
 Un motore di archiviazione basato su Tencent Cloud COS. Prima dell'uso, è necessario preparare l'account e le autorizzazioni pertinenti.

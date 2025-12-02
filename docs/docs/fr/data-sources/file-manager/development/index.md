@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Développement d'extensions
 
 ## Extension des types de fichiers front-end

@@ -2,7 +2,6 @@
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
 # DataSourceManager ניהול מקורות נתונים
 
 NocoBase מספקת `DataSourceManager` לניהול מספר מקורות נתונים. לכל `DataSource` יש מופעים משלו של `Database`, `ResourceManager` ו-`ACL`, מה שמאפשר למפתחים לנהל ולהרחיב מספר מקורות נתונים בצורה גמישה.

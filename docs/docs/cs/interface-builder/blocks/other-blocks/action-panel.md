@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-workbench"
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
 
-
-pkg: "@nocobase/plugin-block-workbench"
----
 # Blok: Pracovní panel
 
 ## Úvod

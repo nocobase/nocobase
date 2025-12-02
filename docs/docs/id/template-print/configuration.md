@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 ## Petunjuk Konfigurasi
 
 ### Mengaktifkan Fitur Cetak Templat

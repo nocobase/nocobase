@@ -1,3 +1,9 @@
+
+:::tip Upozornění na překlad AI
+Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::
+
+
 # Role a oprávnění
 
 ## Úvod
@@ -24,13 +30,6 @@ Vyberte roli, klikněte na záložku `Oprávnění` a poté na záložku `AI zam
 Kliknutím na zaškrtávací políčko ve sloupci `Dostupné` v seznamu AI zaměstnanců určíte, zda má aktuální role přístup k danému AI zaměstnanci.
 
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
-
----
-:::tip Upozornění na překlad AI
-Tato dokumentace byla automaticky přeložena umělou inteligencí.
-:::
-
-
 
 ## Oprávnění k přístupu k datům
 

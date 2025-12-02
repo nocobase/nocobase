@@ -1,11 +1,12 @@
+---
+pkg: '@nocobase/plugin-workflow-request-interceptor'
+---
+
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-request-interceptor'
----
 
 # Událost před akcí
 
@@ -129,8 +130,6 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
     "content": "This is a test post."
   }'
   "http://localhost:3000/api/posts:create?triggerWorkflows=workflowKey"
-```
-
 Parametr URL `triggerWorkflows` je klíč pracovního postupu; více klíčů pracovních postupů je odděleno čárkami. Tento klíč lze získat najetím myši na název pracovního postupu v horní části plátna pracovního postupu:
 
 ![Pracovní postup_Klíč_Způsob zobrazení](https://static-docs.nocobase.com/20240426135108.png)

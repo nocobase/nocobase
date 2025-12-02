@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 ### Formattazione del Testo
 
 Questa sezione presenta diversi formattatori per i dati testuali. Nelle sottosezioni seguenti, esploreremo la sintassi, gli esempi e i risultati di ciascun formattatore.

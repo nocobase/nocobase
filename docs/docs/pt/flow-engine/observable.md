@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Mecanismo de Reatividade: Observable
 
 :::info

@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Aplicación
 
 En el desarrollo de plugins, `app` es un objeto muy utilizado. Entre los objetos comunes se encuentran:

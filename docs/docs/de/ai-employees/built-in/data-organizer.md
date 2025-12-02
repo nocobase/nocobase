@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # KI-Mitarbeiter · Dex: Der Datenorganisations-Experte
 
 > Extrahieren und füllen Sie Formulare im Handumdrehen, um unstrukturierte Informationen zu strukturieren.

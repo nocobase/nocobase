@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Autenticación de Usuarios
 
 El módulo de autenticación de usuarios de NocoBase se compone principalmente de dos partes:

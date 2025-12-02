@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-record-history'
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: '@nocobase/plugin-record-history'
----
 
 # Historie
 

@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # BelongsToManyRepository
 
 `BelongsToManyRepository` é um `Relation Repository` usado para gerenciar relacionamentos `BelongsToMany`.

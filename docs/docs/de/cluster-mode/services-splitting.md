@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Dienstaufteilung <Badge>v1.9.0+</Badge>
 
 ## Einführung

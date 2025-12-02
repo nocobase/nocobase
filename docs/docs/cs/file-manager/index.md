@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: '@nocobase/plugin-file-manager'
----
 
 # Správce souborů
 

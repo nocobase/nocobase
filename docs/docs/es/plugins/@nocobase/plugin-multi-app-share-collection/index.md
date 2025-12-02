@@ -1,8 +1,4 @@
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
-
+---
 displayName: "Compartir colecciones entre varias aplicaciones"
 packageName: '@nocobase/plugin-multi-app-share-collection'
 description: |
@@ -12,6 +8,10 @@ builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
 
 # Compartir colecciones entre varias aplicaciones
 

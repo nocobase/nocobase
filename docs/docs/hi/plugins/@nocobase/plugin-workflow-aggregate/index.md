@@ -1,8 +1,4 @@
-:::tip AI अनुवाद सूचना
-यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
-:::
-
-
+---
 displayName: "वर्कफ़्लो: एग्रीगेट नोड"
 packageName: '@nocobase/plugin-workflow-aggregate'
 description: |
@@ -11,5 +7,9 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip AI अनुवाद सूचना
+यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
+:::
+
 
 # वर्कफ़्लो: एग्रीगेट नोड

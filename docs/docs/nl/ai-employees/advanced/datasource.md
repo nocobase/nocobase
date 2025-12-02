@@ -1,11 +1,11 @@
+---
+pkg: "@nocobase/plugin-ai"
+verouderd: true
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-ai"
-verouderd: true
----
 
 # Geavanceerd
 

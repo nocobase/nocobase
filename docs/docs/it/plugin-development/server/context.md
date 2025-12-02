@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Contesto
 
 In NocoBase, ogni richiesta genera un oggetto `ctx`, che è un'istanza di Context. Il Context incapsula le informazioni della richiesta e della risposta, fornendo al contempo funzionalità specifiche di NocoBase, come l'accesso al database, le operazioni di cache, la gestione dei permessi, l'internazionalizzazione e la registrazione dei log.

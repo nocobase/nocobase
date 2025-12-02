@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Logger
 
 NocoBase-loggning bygger på <a href="https://github.com/winstonjs/winston" target="_blank">Winston</a>. Som standard delar NocoBase upp loggar i API-förfrågningsloggar, systemkörtidsloggar och SQL-exekveringsloggar. API-förfrågningsloggar och SQL-exekveringsloggar skrivs ut internt av applikationen. Som plugin-utvecklare behöver ni vanligtvis bara skriva ut systemkörtidsloggar som är relaterade till era plugin.

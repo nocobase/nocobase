@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Hubungan antara FlowEngine dan Plugin
 
 **FlowEngine** bukanlah sebuah plugin, melainkan sebuah **API inti** yang disediakan untuk digunakan oleh plugin, berfungsi untuk menghubungkan kapabilitas inti dengan ekstensi bisnis.

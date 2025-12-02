@@ -1,9 +1,9 @@
+---
+pkg: '@nocobase/plugin-notification-email'
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
-
-
-pkg: '@nocobase/plugin-notification-email'
 
 # Сповіщення: Електронна пошта
 

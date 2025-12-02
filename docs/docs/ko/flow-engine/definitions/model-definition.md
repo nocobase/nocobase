@@ -2,7 +2,6 @@
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
 # ModelDefinition
 
 ModelDefinition은 `FlowEngine.createModel()` 메서드를 통해 모델 인스턴스를 생성하는 데 사용되는 플로우 모델의 생성 옵션을 정의합니다. 여기에는 모델의 기본 설정, 속성, 하위 모델 등의 정보가 포함됩니다.

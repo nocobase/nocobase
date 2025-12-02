@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 ## Pemrosesan Perulangan
 
 Pemrosesan perulangan digunakan untuk merender data berulang kali dari array atau objek, dengan mendefinisikan penanda awal dan akhir perulangan untuk mengidentifikasi konten yang perlu diulang. Berikut adalah beberapa skenario umum.

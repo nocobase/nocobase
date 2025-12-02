@@ -1,13 +1,14 @@
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
+---
 displayName: "Filter för flera nyckelord"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
   - 1.x
 description: |
+---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
   Stöder filtrering med flera nyckelord för vanliga fält. Du kan snabbt mata in nyckelord eller importera dem i bulk från Excel.
 isFree: false
 builtIn: false

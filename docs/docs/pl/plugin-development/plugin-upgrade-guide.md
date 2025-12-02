@@ -2,5 +2,4 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Przewodnik po aktualizacji wtyczek

@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Configurar el Alcance de los Datos
 
 ## Introducción

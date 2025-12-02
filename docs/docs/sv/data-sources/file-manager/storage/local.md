@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Lokal lagring
 
 Uppladdade filer sparas i en lokal katalog på servern. Detta lämpar sig för scenarier där systemet hanterar en relativt liten total mängd uppladdade filer, eller för experimentella ändamål.

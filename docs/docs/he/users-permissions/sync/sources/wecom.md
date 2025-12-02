@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-wecom"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-wecom"
----
-```
-
 # סנכרון נתוני משתמשים מ-WeChat Work
 
 ## מבוא

@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Procédures de maintenance
 
 ## Premier démarrage de l'application

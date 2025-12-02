@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 ## Configuration
 
 ### Activation de l'impression de modèles

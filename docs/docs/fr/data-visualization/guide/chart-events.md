@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Événements d'interaction personnalisés
 
 Dans l'éditeur d'événements, écrivez du JavaScript pour enregistrer des interactions via l'instance ECharts `chart` et créer des comportements liés. Par exemple, vous pouvez naviguer vers une nouvelle page ou ouvrir une boîte de dialogue pour une analyse approfondie.

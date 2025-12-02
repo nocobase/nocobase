@@ -1,11 +1,12 @@
+---
+pkg: '@nocobase/plugin-acl'
+---
+
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-acl'
----
 
 # การรวมบทบาท (Role Union)
 

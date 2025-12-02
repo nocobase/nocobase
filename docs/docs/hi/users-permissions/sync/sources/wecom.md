@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-wecom"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-wecom"
----
-```
-
 # वीचैट वर्क से उपयोगकर्ता डेटा सिंक करें
 
 ## परिचय

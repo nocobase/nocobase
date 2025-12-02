@@ -1,14 +1,15 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
-
+---
 displayName: "Fluxo de trabalho: JavaScript"
 packageName: '@nocobase/plugin-workflow-javascript'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
   Execute um trecho de JavaScript em um ambiente Node.js isolado.
 isFree: false
 builtIn: false

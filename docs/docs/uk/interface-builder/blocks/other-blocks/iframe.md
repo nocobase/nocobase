@@ -1,11 +1,12 @@
+---
+pkg: "@nocobase/plugin-block-iframe"
+---
+
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-block-iframe"
----
 # Блок Iframe
 
 ## Вступ
@@ -96,8 +97,6 @@ pkg: "@nocobase/plugin-block-iframe"
     </script>
   </body>
 </html>
-```
-
 ![20250320163250](https://static-docs.nocobase.com/20250320163250.png)
 
 Приклад: Простий компонент календаря, створений за допомогою React та Ant Design (antd), що використовує dayjs для роботи з датами.

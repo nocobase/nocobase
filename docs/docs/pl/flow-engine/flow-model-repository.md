@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Trwałość FlowModel
 
 FlowEngine oferuje kompletny system trwałości.

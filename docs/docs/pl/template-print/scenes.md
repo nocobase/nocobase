@@ -1,3 +1,9 @@
+
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Korzystanie z funkcji „Drukowanie z szablonu” do generowania przykładowych umów dostawy i zakupu
 
 W scenariuszach łańcucha dostaw lub handlu często pojawia się potrzeba szybkiego generowania ustandaryzowanych „Umów dostawy i zakupu” oraz dynamicznego wypełniania ich treścią na podstawie informacji ze **źródeł danych**, takich jak dane kupujących, sprzedających i szczegóły produktów. Poniżej, na przykładzie uproszczonego przypadku użycia „Umowy”, pokażemy Państwu, jak skonfigurować i używać funkcji „Drukowanie z szablonu”, aby mapować dane do symboli zastępczych w szablonach umów, automatycznie generując w ten sposób ostateczny dokument umowy.
@@ -15,13 +21,6 @@ W naszym przykładzie istnieją zasadniczo następujące główne **kolekcje** (
 ![template_print-2025-11-01-16-34-04](https://static-docs.nocobase.com/template_print-2025-11-01-16-34-04.png)
 
 Ponieważ obecny system obsługuje tylko drukowanie pojedynczych rekordów, klikniemy „Drukuj” na stronie „Szczegóły umowy”, a system automatycznie pobierze odpowiedni rekord z **kolekcji** `contracts` oraz powiązane informacje z **kolekcji** `parties` i wypełni nimi dokumenty Word lub PDF.
-
----
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
 
 ## 2. Przygotowanie
 

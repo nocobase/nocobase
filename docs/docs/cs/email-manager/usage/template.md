@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: "@nocobase/plugin-email-manager"
----
 
 # E-mailové šablony
 

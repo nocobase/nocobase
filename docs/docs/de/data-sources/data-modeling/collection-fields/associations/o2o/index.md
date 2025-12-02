@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Eins-zu-Eins
 
 In der Beziehung zwischen Mitarbeitern und persönlichen Profilen kann jeder Mitarbeiter nur einen Datensatz für ein persönliches Profil haben, und jeder Datensatz für ein persönliches Profil kann nur einem Mitarbeiter zugeordnet sein. In diesem Fall handelt es sich um eine Eins-zu-Eins-Beziehung.

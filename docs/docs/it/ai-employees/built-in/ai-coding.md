@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Dipendente AI · Nathan: Ingegnere Frontend
 
 > Le aiuta a scrivere e ottimizzare il codice frontend per implementare logiche interattive complesse.

@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Contexto
 
 No NocoBase, cada requisição gera um objeto `ctx`, que é uma instância de Contexto. O Contexto encapsula informações de requisição e resposta, e também oferece funcionalidades específicas do NocoBase, como acesso a banco de dados, operações de cache, gerenciamento de permissões, internacionalização e registro de logs.

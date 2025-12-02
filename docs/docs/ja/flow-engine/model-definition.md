@@ -1,12 +1,12 @@
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-
+---
 pkg: "@nocobase/plugin-china-region"
 title: 中国地域フィールド
 description: 中国地域フィールドプラグイン（`field-china-region`）は、NocoBaseに「中国地域」フィールドタイプを追加します。
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています。
+:::
+
 
 # 中国地域フィールド
 

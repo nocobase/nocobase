@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Visão Geral
 
 O desenvolvimento de **plugins** do lado do cliente no NocoBase oferece diversas funcionalidades e recursos para ajudar você a personalizar e estender os recursos de frontend do NocoBase. Abaixo, você encontra as principais capacidades e os capítulos relacionados ao desenvolvimento de **plugins** do lado do cliente no NocoBase:

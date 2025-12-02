@@ -7,10 +7,6 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 
 
-```yaml
-pkg: "@nocobase/plugin-wecom"
----
-
 # Benutzerdaten aus WeChat Work synchronisieren
 
 ## Einführung

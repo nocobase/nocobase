@@ -1,4 +1,6 @@
+---
 pageType: home
+---
 
 pageName: guide
 
@@ -98,3 +100,4 @@ features:
       - title: היסטוריית רשומות
         details: עוקב ואוגר את היסטוריית השינויים של רשומות אוספים.
         link: /record-history/
+---

@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Projectstructuur
 
 Of u nu de broncode kloont via Git of een project initialiseert met `create-nocobase-app`, het gegenereerde NocoBase-project is in essentie een monorepo gebaseerd op **Yarn Workspace**.

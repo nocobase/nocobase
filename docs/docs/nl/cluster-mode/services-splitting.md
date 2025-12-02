@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Service splitsing <Badge>v1.9.0+</Badge>
 
 ## Introductie

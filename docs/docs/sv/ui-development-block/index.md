@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Översikt över blocktillägg
 
 I NocoBase 2.0 har mekanismen för blocktillägg förenklats avsevärt. Utvecklare behöver bara ärva den motsvarande **FlowModel**-basklassen och implementera relevanta gränssnittsmetoder (främst `renderComponent()`-metoden) för att snabbt kunna anpassa block.

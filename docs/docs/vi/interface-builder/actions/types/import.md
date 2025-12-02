@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-import"
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
 
-
-pkg: "@nocobase/plugin-action-import"
----
 # Nhập dữ liệu
 
 ## Giới thiệu

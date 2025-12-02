@@ -1,11 +1,12 @@
+---
+displayName: "Przepływ pracy: węzeł SQL"
+packageName: '@nocobase/plugin-workflow-sql'
+description: |
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-displayName: "Przepływ pracy: węzeł SQL"
-packageName: '@nocobase/plugin-workflow-sql'
-description: |
   Umożliwia wykonywanie dowolnych zapytań SQL na bazie danych w ramach przepływu pracy.
 isFree: true
 builtIn: true

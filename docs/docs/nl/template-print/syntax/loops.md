@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 ## Lusverwerking
 
 Lusverwerking wordt gebruikt om gegevens uit arrays of objecten herhaaldelijk weer te geven. Dit doet u door start- en eindmarkeringen voor de lus te definiëren om de te herhalen inhoud te identificeren. Hieronder beschrijven we enkele veelvoorkomende situaties.

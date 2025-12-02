@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Speicher-Engine: Lokaler Speicher
 
 Hochgeladene Dateien werden direkt auf der lokalen Festplatte des Servers gespeichert. Dies ist ideal für Szenarien, in denen das System eine geringe Gesamtmenge an hochgeladenen Dateien verwaltet oder für experimentelle Zwecke.

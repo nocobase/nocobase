@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Utilizzo delle variabili di contesto
 
 Le variabili di contesto Le permettono di riutilizzare informazioni dalla pagina corrente, dall'utente, dall'ora e dai filtri applicati, per visualizzare grafici e abilitare collegamenti dinamici in base al contesto.

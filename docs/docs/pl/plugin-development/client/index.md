@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Przegląd
 
 Rozwój wtyczek klienckich NocoBase oferuje różnorodne funkcje i możliwości, które pomagają deweloperom dostosowywać i rozszerzać funkcjonalności front-endowe NocoBase. Poniżej przedstawiono główne możliwości rozwoju wtyczek klienckich NocoBase oraz powiązane z nimi rozdziały:

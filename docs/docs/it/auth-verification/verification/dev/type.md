@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Estendere i Tipi di Validazione
 
 ## Lato client

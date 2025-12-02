@@ -1,3 +1,9 @@
+
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
+
+
 # Kubernetes Dağıtımı
 
 Bu makale, NocoBase'i Kubernetes (K8S) ortamında küme modunda hızlıca nasıl dağıtabileceğinizi size göstermeyi amaçlamaktadır. Okuyucunun K8S ortamına aşina olduğunu ve [Hazırlıklar](./preparations.md) bölümündeki adımları tamamladığını varsayıyoruz.
@@ -113,12 +119,6 @@ spec:
   selector:
     app: nocobase
   type: ClusterIP
----
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
-
 # Uygulamanın Deployment'ı, birden fazla uygulama kapsayıcısı dağıtabilir.
 apiVersion: apps/v1
 kind: Deployment

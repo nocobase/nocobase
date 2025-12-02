@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-json-query'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-json-query'
----
 
 # JSON Berekening
 

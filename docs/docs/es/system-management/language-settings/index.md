@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Configuración de Idioma
 
 En «Ajustes del sistema», puede ajustar el entorno de idioma global del sistema al configurar los «Idiomas habilitados». El primer idioma de la lista se establecerá como el idioma predeterminado.

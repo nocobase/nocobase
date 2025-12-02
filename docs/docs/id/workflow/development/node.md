@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Memperluas Tipe Node
 
 Tipe node pada dasarnya adalah instruksi operasional. Instruksi yang berbeda merepresentasikan operasi yang berbeda yang dijalankan dalam alur kerja.

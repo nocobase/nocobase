@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-field-m2m-array"
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: "@nocobase/plugin-field-m2m-array"
----
 
 # Đa-đa (Mảng)
 

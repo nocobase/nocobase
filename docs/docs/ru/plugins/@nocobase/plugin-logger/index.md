@@ -1,11 +1,12 @@
+---
+displayName: "Журнал"
+packageName: '@nocobase/plugin-logger'
+description: |
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-displayName: "Журнал"
-packageName: '@nocobase/plugin-logger'
-description: |
   Серверные журналы, в основном включающие журналы запросов API и журналы работы системы, а также позволяющие упаковывать и скачивать файлы журналов.
 isFree: true
 builtIn: true

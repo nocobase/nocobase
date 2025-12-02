@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Opslag-engine: Aliyun OSS
 
 De Aliyun OSS opslag-engine vereist dat u vooraf de bijbehorende accounts en machtigingen configureert.

@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # ICollection
 
 `ICollection` to interfejs dla modelu danych, który zawiera informacje takie jak nazwa modelu, jego pola i powiązania.

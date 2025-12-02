@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Consultar datos en modo SQL
 
 En el panel de "Consulta de datos", cambie al modo SQL, escriba y ejecute su consulta, y utilice el resultado directamente para el mapeo y la renderización de gráficos.

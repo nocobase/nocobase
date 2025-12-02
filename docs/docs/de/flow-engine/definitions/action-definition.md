@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # ActionDefinition
 
 `ActionDefinition` definiert wiederverwendbare Aktionen, die in verschiedenen Workflows und Schritten referenziert werden können. Eine Aktion ist die zentrale Ausführungseinheit in der FlowEngine und kapselt spezifische Geschäftslogik.

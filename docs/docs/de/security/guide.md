@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # NocoBase Sicherheitsleitfaden
 
 NocoBase legt von der Funktionsplanung bis zur Systemimplementierung Wert auf die Sicherheit von Daten und Anwendungen. Die Plattform verfügt über integrierte Sicherheitsfunktionen wie Benutzerauthentifizierung, Zugriffskontrolle und Datenverschlüsselung und ermöglicht gleichzeitig die flexible Konfiguration von Sicherheitsrichtlinien gemäß den tatsächlichen Anforderungen. Ob es um den Schutz von Benutzerdaten, die Verwaltung von Zugriffsberechtigungen oder die Isolierung von Entwicklungs- und Produktionsumgebungen geht, NocoBase bietet praktische Werkzeuge und Lösungen. Dieser Leitfaden soll Anleitungen für die sichere Verwendung von NocoBase geben und Benutzern helfen, die Sicherheit von Daten, Anwendungen und der Umgebung zu schützen, um die effiziente Nutzung der Systemfunktionen unter der Voraussetzung der Benutzersicherheit zu gewährleisten.

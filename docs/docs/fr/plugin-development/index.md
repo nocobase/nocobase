@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Présentation du développement de plugins
 
 NocoBase adopte une **architecture à micro-noyau**, où le cœur est uniquement responsable de l'ordonnancement du cycle de vie des plugins, de la gestion des dépendances et de l'encapsulation des capacités de base. Toutes les fonctions métier sont fournies sous forme de plugins. Par conséquent, comprendre la structure organisationnelle, le cycle de vie et la méthode de gestion des plugins est la première étape pour personnaliser NocoBase.

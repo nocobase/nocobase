@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-data-source-external-mysql"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: "@nocobase/plugin-data-source-external-mysql"
----
 
 # แหล่งข้อมูลภายนอก - MySQL
 

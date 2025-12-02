@@ -1,3 +1,9 @@
+
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
+
 # Agen AI · Viz: Panduan Konfigurasi Skenario CRM
 
 > Menggunakan contoh CRM, pelajari cara membuat analis wawasan AI Anda benar-benar memahami bisnis dan mengeluarkan potensi penuhnya.
@@ -39,13 +45,6 @@ Untuk memahami cara memperluas Viz, Anda perlu memahami desain internalnya yang 
 
 Desain berlapis ini memungkinkan Viz untuk mempertahankan kepribadian yang stabil (logika analisis yang konsisten),
 sekaligus dapat dengan cepat beradaptasi dengan berbagai skenario bisnis (CRM, manajemen rumah sakit, analisis saluran, operasi produksi...).
-
----
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
-
 
 ## 3. Pola Satu: Mesin Analisis Bertemplate (Direkomendasikan)
 

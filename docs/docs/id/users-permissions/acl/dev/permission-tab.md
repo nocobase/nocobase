@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Memperluas Tab Konfigurasi Izin
 
 Berikut adalah contoh item konfigurasi "Menu Seluler", yang menunjukkan cara memperluas tab konfigurasi izin baru. Hasilnya dapat dilihat pada gambar di bawah ini:

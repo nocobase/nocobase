@@ -1,11 +1,11 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-email-manager"
----
 
 # Domande Frequenti
 

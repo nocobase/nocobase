@@ -7,10 +7,6 @@ pkg: "@nocobase/plugin-ai-ee"
 
 
 
-```yaml
-pkg: "@nocobase/plugin-ai-ee"
----
-
 # 멀티모달 대화
 
 ## 이미지

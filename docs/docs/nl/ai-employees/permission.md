@@ -1,3 +1,9 @@
+
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
+
 # Rollen & Rechten
 
 ## Introductie
@@ -24,13 +30,6 @@ Selecteer een rol, klik op het tabblad `Rechten` en vervolgens op het tabblad `A
 Klik op het selectievakje in de kolom `Beschikbaar` van de lijst met AI-medewerkers om te bepalen of de huidige rol toegang heeft tot die AI-medewerker.
 
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
-
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
-
 
 ## Gegevenstoegangsrechten
 

@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # CronJobManager
 
 De `CronJobManager` is een taakplanner die NocoBase aanbiedt, gebaseerd op [cron](https://www.npmjs.com/package/cron). Hiermee kunnen **plugins** geplande taken op de server registreren voor het periodiek uitvoeren van specifieke logica.

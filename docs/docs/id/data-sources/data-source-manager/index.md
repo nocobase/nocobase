@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-manager"
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-manager"
----
 
 # Manajemen Sumber Data
 

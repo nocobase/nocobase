@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Przegląd
 
 Wyzwalacz jest punktem wejścia dla przepływu pracy. Gdy podczas działania aplikacji wystąpi zdarzenie spełniające warunki wyzwalacza, przepływ pracy zostanie uruchomiony i wykonany. Typ wyzwalacza jest jednocześnie typem przepływu pracy. Wybiera się go podczas tworzenia przepływu pracy i nie można go później zmienić. Obecnie obsługiwane typy wyzwalaczy to:

@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Uitbreiden van triggertypen
 
 Elke workflow moet worden geconfigureerd met een specifieke trigger, die dient als het startpunt voor de uitvoering van het proces.

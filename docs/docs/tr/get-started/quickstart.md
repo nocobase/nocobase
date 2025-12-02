@@ -33,7 +33,7 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Git süreçleri aracılığıyla güncellemeleri senkronize edin.
 ---
-:::tip Yapay Zeka Çeviri Bildirimi
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 

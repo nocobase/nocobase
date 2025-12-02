@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-manager"
+---
 :::tip Aviso de tradução por IA
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-manager"
----
 
 # Gerenciamento de Fontes de Dados
 

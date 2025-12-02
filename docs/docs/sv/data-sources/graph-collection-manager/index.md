@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-graph-collection-manager"
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: "@nocobase/plugin-graph-collection-manager"
----
 
 # Visuell hantering av samlingar
 

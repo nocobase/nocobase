@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Plugin
 
 In NocoBase bietet das Server-Plugin eine modulare Möglichkeit, die serverseitige Funktionalität zu erweitern und anzupassen. Entwickler können die `Plugin`-Klasse von `@nocobase/server` erweitern, um Ereignisse, APIs, Berechtigungskonfigurationen und andere benutzerdefinierte Logik in verschiedenen Lebenszyklusphasen zu registrieren.

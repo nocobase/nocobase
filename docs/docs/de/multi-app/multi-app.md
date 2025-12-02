@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-multi-app-manager"
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: "@nocobase/plugin-multi-app-manager"
----
 
 # Multi-App
 

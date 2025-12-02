@@ -1,3 +1,9 @@
+
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Tổng quan về Hệ thống Ngữ cảnh
 
 Hệ thống ngữ cảnh của công cụ **luồng công việc** NocoBase được chia thành ba lớp, mỗi lớp tương ứng với một phạm vi khác nhau. Việc sử dụng hợp lý giúp chia sẻ và cô lập linh hoạt các dịch vụ, cấu hình và dữ liệu, từ đó nâng cao khả năng bảo trì và mở rộng của hệ thống.
@@ -34,13 +40,6 @@ FlowEngineContext (Ngữ cảnh Toàn cục)
 - `FlowModelContext` của mô hình con có thể truy cập ngữ cảnh của mô hình cha (quan hệ đồng bộ) thông qua cơ chế ủy quyền (delegate), hỗ trợ ghi đè tên trùng lặp.
 - Các mô hình cha-con không đồng bộ sẽ không thiết lập quan hệ ủy quyền (delegate) để tránh làm ô nhiễm trạng thái.
 - `FlowRuntimeContext` luôn truy cập `FlowModelContext` tương ứng của nó thông qua cơ chế ủy quyền (delegate), nhưng không truyền ngược lên trên.
-
----
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
 
 ## 🧭 Chế độ Thời gian Chạy và Cấu hình (mode)
 

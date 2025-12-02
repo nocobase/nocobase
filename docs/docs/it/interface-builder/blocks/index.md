@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Blocchi
 
 I blocchi sono contenitori per dati e contenuti. Possono essere posizionati in una Pagina (Page), in una Finestra di dialogo (Modal) o in un Pannello laterale (Drawer), e più blocchi possono essere disposti liberamente tramite trascinamento.

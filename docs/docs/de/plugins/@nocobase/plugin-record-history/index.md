@@ -1,13 +1,14 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
-
+---
 displayName: "Datensatzverlauf"
 packageName: '@nocobase/plugin-record-history'
 supportedVersions:
   - 2.x
 description: |
+---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
   Verfolgt und speichert den Änderungsverlauf von Sammlungsdatensätzen.
 isFree: false
 builtIn: false

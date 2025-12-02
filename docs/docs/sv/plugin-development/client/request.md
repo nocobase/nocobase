@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Förfrågningar
 
 NocoBase tillhandahåller en `APIClient` som är baserad på [Axios](https://axios-http.com/). Den kan användas för att skicka HTTP-förfrågningar från alla platser där ni har tillgång till ett `Context`.

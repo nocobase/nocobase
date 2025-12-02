@@ -2,5 +2,4 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # JS-tabelkolom

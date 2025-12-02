@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-file-manager"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-file-manager"
----
-```
-
 # מנהל קבצים
 
 ## מבוא

@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Szybki start
 
 Ten przewodnik pokaże, jak skonfigurować wykres od podstaw, korzystając z podstawowych funkcji. Więcej opcjonalnych możliwości omówimy w kolejnych rozdziałach.

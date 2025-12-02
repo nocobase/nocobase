@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-record-history'
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-record-history'
----
 
 # Riwayat Catatan
 

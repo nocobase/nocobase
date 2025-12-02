@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # SMS-provider uitbreiden
 
 In dit artikel leggen we uit hoe u de functionaliteit van SMS-providers in de [Verificatie: SMS](../sms) functie kunt uitbreiden met behulp van een plugin.

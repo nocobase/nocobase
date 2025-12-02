@@ -7,10 +7,6 @@ Questa documentazione è stata tradotta automaticamente dall'IA.
 
 
 
-```yaml
-pkg: "@nocobase/plugin-email-manager"
----
-
 # Centro Email
 
 ## Introduzione

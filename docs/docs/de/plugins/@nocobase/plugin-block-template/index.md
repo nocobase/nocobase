@@ -1,11 +1,12 @@
+---
+displayName: "Block: Vorlage (veraltet)"
+packageName: '@nocobase/plugin-block-template'
+description: |
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-displayName: "Block: Vorlage (veraltet)"
-packageName: '@nocobase/plugin-block-template'
-description: |
   Erstellen und Verwalten von Block-Vorlagen zur Wiederverwendung auf Seiten.
 isFree: true
 builtIn: true

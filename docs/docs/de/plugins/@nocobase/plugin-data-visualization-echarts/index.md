@@ -1,13 +1,14 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
-
+---
 displayName: "Datenvisualisierung: ECharts"
 packageName: '@nocobase/plugin-data-visualization-echarts'
 supportedVersions:
   - 1.x
 description: |
+---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
   Nutzen Sie ECharts für die Datenvisualisierung. Dieses Plugin unterstützt Trichter-, Radar- und weitere Diagrammtypen und bietet benutzerfreundliche Konfigurationsmöglichkeiten.
 isFree: false
 builtIn: false

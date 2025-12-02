@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Muitos para Muitos
 
 Em um sistema de matrícula de cursos, existem duas entidades: alunos e cursos. Um aluno pode se matricular em várias disciplinas, e uma disciplina pode ter vários alunos matriculados, o que configura um relacionamento de muitos para muitos. Em um banco de dados relacional, para representar o relacionamento de muitos para muitos entre alunos e cursos, geralmente usamos uma **coleção** intermediária, como uma **coleção** de matrículas. Essa **coleção** pode registrar quais disciplinas cada aluno escolheu e quais alunos se matricularam em cada disciplina. Esse design representa de forma eficaz o relacionamento de muitos para muitos entre alunos e cursos.

@@ -2,7 +2,6 @@
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
 ### 日付のフォーマット
 
 #### 1. :formatD(patternOut, patternIn)

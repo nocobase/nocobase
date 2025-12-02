@@ -1,13 +1,14 @@
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
-
+---
 displayName: "AI: Basis Pengetahuan"
 packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:
   - 2.x
 description: |
+---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
+
   Mendukung integrasi dengan basis data vektor untuk memvektorisasi dokumen, menyediakan pencarian cerdas dan dukungan pengetahuan bagi karyawan AI.
 isFree: false
 builtIn: false

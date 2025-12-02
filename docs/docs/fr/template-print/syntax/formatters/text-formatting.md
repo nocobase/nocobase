@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 ### Formatage de texte
 
 Cette section présente les différents formateurs disponibles pour les données textuelles. Nous allons détailler la syntaxe, les exemples et les résultats de chaque formateur.

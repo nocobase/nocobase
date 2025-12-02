@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-custom-action-trigger'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-custom-action-trigger'
----
 
 # Sự kiện Thao tác Tùy chỉnh
 

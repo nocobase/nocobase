@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-cc'
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-cc'
----
 
 # Копія <Badge>v1.8.2+</Badge>
 

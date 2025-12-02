@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-auth'
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: '@nocobase/plugin-auth'
----
 
 # Authentifikatoren verwalten
 

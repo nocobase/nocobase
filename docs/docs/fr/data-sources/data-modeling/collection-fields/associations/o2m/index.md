@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Un-à-plusieurs
 
 La relation entre une classe et ses étudiants est un exemple de relation un-à-plusieurs : une classe peut avoir plusieurs étudiants, mais chaque étudiant n'appartient qu'à une seule classe.

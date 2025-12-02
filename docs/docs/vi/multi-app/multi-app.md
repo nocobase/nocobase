@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-multi-app-manager"
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: "@nocobase/plugin-multi-app-manager"
----
 
 # Đa ứng dụng
 

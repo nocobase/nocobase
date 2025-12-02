@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-source-external-oracle"
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: "@nocobase/plugin-data-source-external-oracle"
----
 
 # Sumber Data Eksternal - Oracle
 

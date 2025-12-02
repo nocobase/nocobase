@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-sort"
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-field-sort"
----
 
 # Sorteerveld
 

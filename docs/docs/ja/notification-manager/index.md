@@ -1,11 +1,10 @@
+---
+pkg: '@nocobase/plugin-notification-manager'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-```yaml
-pkg: '@nocobase/plugin-notification-manager'
-```
 
 # 通知マネージャー
 

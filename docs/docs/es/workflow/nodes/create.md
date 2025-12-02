@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Crear Registro
 
 Se utiliza para añadir un nuevo registro a una colección.

@@ -1,11 +1,12 @@
+---
+displayName: "संग्रह फ़ील्ड: संबंध स्नैपशॉट"
+packageName: '@nocobase/plugin-snapshot-field'
+description: |
+---
 :::tip AI अनुवाद सूचना
 यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
 :::
 
-
-displayName: "संग्रह फ़ील्ड: संबंध स्नैपशॉट"
-packageName: '@nocobase/plugin-snapshot-field'
-description: |
   जब आप कोई नया रिकॉर्ड जोड़ते हैं, तो उसके संबंधित डेटा का एक स्नैपशॉट बनाया जाता है और उसे नए रिकॉर्ड में सहेजा जाता है। संबंधित डेटा के अपडेट होने पर यह स्नैपशॉट अपडेट नहीं होगा।
 isFree: true
 builtIn: true

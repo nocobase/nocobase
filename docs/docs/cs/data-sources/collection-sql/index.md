@@ -7,11 +7,6 @@ Tato dokumentace byla automaticky přeložena umělou inteligencí.
 
 
 
-```yaml
-pkg: "@nocobase/plugin-collection-sql"
----
-```
-
 # SQL kolekce
 
 ## Úvod

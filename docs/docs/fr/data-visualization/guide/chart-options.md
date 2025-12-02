@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Options de graphique
 
 Configurez la manière dont les graphiques sont affichés. Deux modes sont disponibles : Basique (graphique) et Personnalisé (JS). Le mode Basique est idéal pour un mappage rapide et les propriétés courantes ; le mode Personnalisé convient aux scénarios complexes et à la personnalisation avancée.

@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Gebruikersgegevens synchroniseren via HTTP API
 
 ## API-sleutel verkrijgen

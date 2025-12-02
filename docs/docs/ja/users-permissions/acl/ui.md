@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-acl'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-pkg: '@nocobase/plugin-acl'
----
 
 # UIでの権限設定
 

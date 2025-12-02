@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Data i czas (bez strefy czasowej)
 
 ## Wprowadzenie

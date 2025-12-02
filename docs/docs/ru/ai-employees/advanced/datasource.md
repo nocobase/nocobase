@@ -1,12 +1,12 @@
+---
+pkg: "@nocobase/plugin-ai"
+deprecated: true
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-ai"
-deprecated: true
----
 
 # Расширенные возможности
 

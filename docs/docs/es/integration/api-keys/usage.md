@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Uso de claves API en NocoBase
 
 Esta guía le mostrará cómo usar claves API en NocoBase para obtener datos, utilizando un ejemplo práctico de "Tareas pendientes". Siga las instrucciones paso a paso para comprender el flujo de trabajo completo.

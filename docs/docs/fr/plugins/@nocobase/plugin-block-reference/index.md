@@ -1,9 +1,4 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
-
-```yaml
+---
 displayName: "Bloc : Référence"
 packageName: '@nocobase/plugin-block-reference'
 supportedVersions:
@@ -14,5 +9,10 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
+
 
 # Bloc : Référence

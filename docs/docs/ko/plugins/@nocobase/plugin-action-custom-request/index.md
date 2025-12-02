@@ -1,11 +1,12 @@
+---
+displayName: "액션: 사용자 지정 요청"
+packageName: '@nocobase/plugin-action-custom-request'
+description: |
+---
 :::tip AI 번역 안내
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
-displayName: "액션: 사용자 지정 요청"
-packageName: '@nocobase/plugin-action-custom-request'
-description: |
   어떤 HTTP 서비스로든 요청을 보낼 수 있으며, 대상 서비스로 컨텍스트 데이터를 전송하는 것을 지원합니다.
 isFree: true
 builtIn: true

@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Berekening
 
 Met het Berekeningsknooppunt kunt u een uitdrukking evalueren. Het resultaat wordt opgeslagen in het knooppunt zelf, zodat andere knooppunten het later kunnen gebruiken. Het is een hulpmiddel voor het berekenen, verwerken en transformeren van gegevens. Tot op zekere hoogte kan het de functionaliteit in programmeertalen vervangen, waarbij u een functie aanroept op een waarde en het resultaat toewijst aan een variabele.

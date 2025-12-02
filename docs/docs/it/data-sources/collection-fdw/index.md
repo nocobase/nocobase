@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-collection-fdw"
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-pkg: "@nocobase/plugin-collection-fdw"
----
 
 # Connettere Tabelle Dati Esterne (FDW)
 

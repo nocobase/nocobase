@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-block-iframe"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
 
-
-pkg: "@nocobase/plugin-block-iframe"
----
 # บล็อก Iframe
 
 ## บทนำ

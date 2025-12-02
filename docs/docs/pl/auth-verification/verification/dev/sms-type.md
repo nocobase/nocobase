@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Rozszerzanie dostawców usług SMS
 
 Ten artykuł wyjaśnia, jak rozszerzyć funkcjonalność dostawców usług SMS w ramach funkcji [Weryfikacja: SMS](../sms) za pomocą **wtyczki**.

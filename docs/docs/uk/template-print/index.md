@@ -7,9 +7,6 @@ pkg: "@nocobase/plugin-action-template-print"
 
 
 
-pkg: "@nocobase/plugin-action-template-print"
----
-
 # Друк за шаблоном
 
 ## Вступ

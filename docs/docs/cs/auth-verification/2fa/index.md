@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-two-factor-authentication'
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: '@nocobase/plugin-two-factor-authentication'
----
 
 # Dvoufaktorové ověřování (2FA)
 

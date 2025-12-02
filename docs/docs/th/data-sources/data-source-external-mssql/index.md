@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-data-source-external-mssql"
+---
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
-
-
-pkg: "@nocobase/plugin-data-source-external-mssql"
----
 
 # แหล่งข้อมูลภายนอก - MSSQL
 

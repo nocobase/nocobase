@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-audit-logger'
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: '@nocobase/plugin-audit-logger'
----
 
 # יומן ביקורת
 

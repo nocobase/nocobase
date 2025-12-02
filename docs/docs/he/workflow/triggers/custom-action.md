@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-workflow-custom-action-trigger'
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-workflow-custom-action-trigger'
----
 
 # אירוע פעולה מותאמת אישית
 

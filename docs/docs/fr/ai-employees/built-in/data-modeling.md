@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Agent IA · Orin : Modélisateur de données
 
 > Concevez intelligemment des collections et optimisez la structure de votre base de données.

@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Penyimpanan Lokal
 File yang diunggah akan disimpan di direktori lokal pada server. Ini cocok untuk skenario di mana jumlah total file yang dikelola oleh sistem relatif kecil atau untuk tujuan eksperimen.
 

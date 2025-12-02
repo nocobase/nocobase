@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-ai"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-ai"
----
-```
-
 # टेक्स्ट चैट
 
 ## परिचय

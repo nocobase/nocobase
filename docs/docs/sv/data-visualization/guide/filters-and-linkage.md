@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Sidfilter och länkning
 
 Sidfiltret (filterblocket) används för att på sidnivå erbjuda en enhetlig inmatning av filtervillkor och slå samman dessa med diagramfrågor, för att uppnå konsekvent filtrering och länkning mellan flera diagram.

@@ -7,9 +7,6 @@ Tài liệu này đã được dịch tự động bằng AI.
 
 
 
-pkg: "@nocobase/plugin-action-template-print"
----
-
 # In Tài liệu Mẫu
 
 

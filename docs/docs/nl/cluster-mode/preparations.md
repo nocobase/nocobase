@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Voorbereidingen
 
 Voordat u een clusterapplicatie implementeert, moet u de volgende voorbereidingen treffen.

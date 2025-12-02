@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Edycja i uruchamianie JS online
 
 W NocoBase, **RunJS** oferuje lekką metodę rozszerzania, idealną do scenariuszy **szybkich eksperymentów i tymczasowego przetwarzania logiki**. Bez konieczności tworzenia wtyczek lub modyfikowania kodu źródłowego, mogą Państwo spersonalizować interfejsy lub interakcje za pomocą JavaScript.

@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Criação de FlowModel
 
 ## Como um Nó Raiz

@@ -1,14 +1,15 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
-
+---
 displayName: "Adaptateur de verrouillage distribué Redis"
 packageName: '@nocobase/plugin-lock-adapter-redis'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
   Implémentation de verrouillage distribué basée sur Redis.
 isFree: false
 builtIn: false

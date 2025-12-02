@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Aggiornamento di un'installazione Docker
 
 :::warning Prima di aggiornare

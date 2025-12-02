@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # createMockClient
 
 W przypadku przykładów i testów zazwyczaj zaleca się szybkie tworzenie aplikacji Mock za pomocą `createMockClient`. Aplikacja Mock to czysta, pusta aplikacja, w której nie aktywowano żadnych wtyczek, przeznaczona wyłącznie do przykładów i testów.

@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-action-import-pro"
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
 
-
-pkg: "@nocobase/plugin-action-import-pro"
----
 # Імпорт Pro
 
 ## Вступ

@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-manual'
+---
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-manual'
----
 
 # Ręczne przetwarzanie
 

@@ -1,11 +1,12 @@
+---
+pkg: '@nocobase/plugin-notification-in-app-message'
+---
+
 :::tip ประกาศการแปลด้วย AI
 เอกสารนี้ได้รับการแปลโดยอัตโนมัติโดย AI
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-notification-in-app-message'
----
 
 # การแจ้งเตือน: ข้อความในแอป
 

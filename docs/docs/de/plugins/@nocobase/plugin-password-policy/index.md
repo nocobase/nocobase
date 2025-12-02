@@ -1,14 +1,15 @@
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
-
+---
 displayName: "Passwortrichtlinie"
 packageName: '@nocobase/plugin-password-policy'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
+
   Legen Sie Passwortregeln und eine Sperrrichtlinie für die Anmeldung für alle Benutzer fest.
 isFree: false
 builtIn: false

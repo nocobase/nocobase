@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Expressiecollectie
 
 ## Een "expressiecollectie"-sjabloon aanmaken

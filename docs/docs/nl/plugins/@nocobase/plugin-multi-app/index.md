@@ -1,9 +1,4 @@
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
-
-```yaml
+---
 displayName: "Meerdere apps"
 packageName: '@nocobase/plugin-multi-app'
 supportedVersions:
@@ -14,6 +9,10 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
-```
+---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
 
 # Meerdere apps

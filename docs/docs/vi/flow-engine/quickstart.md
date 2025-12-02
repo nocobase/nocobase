@@ -1,3 +1,9 @@
+
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
+
+
 # Bắt đầu nhanh: Xây dựng thành phần nút có thể điều phối
 
 Trong React, chúng ta thường render một thành phần nút như sau:
@@ -55,13 +61,6 @@ const model = this.flowEngine.createModel({
 ```tsx pure
 <FlowModelRenderer model={model} />
 ```
-
----
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
 
 ## Bước 2: Thêm PropsFlow để làm cho thuộc tính nút có thể cấu hình
 

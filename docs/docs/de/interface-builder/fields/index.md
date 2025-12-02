@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Felder
 
 Im UI ist ein Feld eine Feldkomponente, die als Träger für einzelne Daten dient. Verschiedene Datentypen werden durch unterschiedliche Feldkomponenten dargestellt. Felder können nur Blöcken zugeordnet werden und nicht eigenständig verwendet werden.

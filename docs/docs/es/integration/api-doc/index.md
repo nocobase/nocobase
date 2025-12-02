@@ -7,10 +7,6 @@ Esta documentación ha sido traducida automáticamente por IA.
 
 
 
-```yaml
-pkg: "@nocobase/plugin-api-doc"
----
-
 # Documentación de la API
 
 ## Introducción

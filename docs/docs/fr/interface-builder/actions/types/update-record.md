@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Mise à jour d'un enregistrement
 
 ## Introduction

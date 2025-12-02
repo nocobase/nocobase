@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-workflow-response-message"
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-pkg: "@nocobase/plugin-workflow-response-message"
----
 
 # استجابة HTTP
 

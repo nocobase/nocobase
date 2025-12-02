@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-multi-space"
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-multi-space"
----
 
 # Ruimte
 

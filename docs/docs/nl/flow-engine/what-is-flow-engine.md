@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Wat is FlowEngine?
 
 FlowEngine is een nieuwe front-end no-code/low-code ontwikkelingsengine, geïntroduceerd in NocoBase 2.0. Het combineert Models en Flows om front-end logica te vereenvoudigen en de herbruikbaarheid en onderhoudbaarheid te verbeteren. Tegelijkertijd maakt het gebruik van de configureerbaarheid van Flows om no-code configuratie- en orkestratiemogelijkheden te bieden voor front-end componenten en bedrijfslogica.

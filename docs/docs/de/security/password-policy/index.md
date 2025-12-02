@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-password-policy'
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
-pkg: '@nocobase/plugin-password-policy'
----
 
 # Passwortrichtlinie
 

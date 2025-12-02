@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Rejestrowanie FlowModel
 
 ## Zacznijmy od niestandardowego FlowModel

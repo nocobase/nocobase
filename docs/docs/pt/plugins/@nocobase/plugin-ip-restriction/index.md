@@ -1,9 +1,4 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
-
-```yaml
+---
 displayName: "Restrição de IP"
 packageName: '@nocobase/plugin-ip-restriction'
 supportedVersions:
@@ -15,6 +10,10 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
-```
+---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
 
 # Restrição de IP

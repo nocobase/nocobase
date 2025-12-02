@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 ## Utilisation de base
 
 Le plugin d'impression de modèles offre diverses syntaxes pour insérer de manière flexible des données dynamiques et des structures logiques dans vos modèles. Vous trouverez ci-dessous des explications détaillées sur la syntaxe et des exemples d'utilisation.

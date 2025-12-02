@@ -1,13 +1,14 @@
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
+---
 displayName: "Blok: Formularz wieloetapowy"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
+---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
   Dzieli formularz zawierający wiele pól na kilka etapów, aby ułatwić użytkownikom jego wypełnianie.
 isFree: false
 builtIn: false

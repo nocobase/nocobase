@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Database
 
 `Database` ist ein wichtiger Bestandteil von Datenquellen (`DataSource`) vom Typ Datenbank. Jede datenbankbasierte Datenquelle verfügt über eine entsprechende `Database`-Instanz, die Sie über `dataSource.db` aufrufen können. Die `Database`-Instanz der Haupt-Datenquelle bietet zusätzlich den praktischen Alias `app.db`. Die Kenntnis der gängigen `db`-Methoden ist die Grundlage für die Entwicklung von serverseitigen Plugins.

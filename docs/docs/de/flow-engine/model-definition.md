@@ -1,13 +1,13 @@
+---
+pkg: "@nocobase/plugin-china-region"
+title: China Region Feld
+description: Das China Region Feld Plugin (`field-china-region`) fügt den Feldtyp „China Region“ zu NocoBase hinzu.
+---
 :::tip KI-Übersetzungshinweis
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-china-region"
-title: China Region Feld
-description: Das China Region Feld Plugin (`field-china-region`) fügt den Feldtyp „China Region“ zu NocoBase hinzu.
----
 
 # China Region Feld
 

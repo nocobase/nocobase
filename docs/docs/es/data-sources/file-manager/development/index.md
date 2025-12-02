@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Desarrollo de extensiones
 
 ## Extensión de tipos de archivo en el frontend

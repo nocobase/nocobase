@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Integrasi Permintaan HTTP Alur Kerja
 
 Melalui node Permintaan HTTP, alur kerja NocoBase dapat secara proaktif mengirimkan permintaan ke layanan HTTP mana pun, memungkinkan pertukaran data dan integrasi bisnis dengan sistem eksternal.

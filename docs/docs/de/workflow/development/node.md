@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Knotentypen erweitern
 
 Der Typ eines Knotens ist im Wesentlichen eine Anweisungslogik. Verschiedene Anweisungen repräsentieren unterschiedliche Operationen, die im Workflow ausgeführt werden.

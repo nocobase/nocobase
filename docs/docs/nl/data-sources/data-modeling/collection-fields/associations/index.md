@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Relatievelden
 
 In NocoBase zijn relatievelden geen echte velden, maar worden ze gebruikt om verbindingen tussen collecties tot stand te brengen. Dit concept is vergelijkbaar met relaties in relationele databases.

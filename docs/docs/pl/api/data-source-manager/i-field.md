@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # IField
 
 `IField` definiuje interfejs, który musi zaimplementować pole.

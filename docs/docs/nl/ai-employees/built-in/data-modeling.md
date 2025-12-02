@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # AI-medewerker · Orin: Gegevensmodeler
 
 > Ontwerp intelligent collecties en optimaliseer de databasestructuur.

@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # IField
 
 `IField` definieert de interface die een veld moet implementeren.

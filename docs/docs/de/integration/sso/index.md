@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Single Sign-On (SSO) Integration
 
 NocoBase bietet umfassende Single Sign-On (SSO)-Lösungen, die verschiedene gängige Authentifizierungsprotokolle unterstützen und eine nahtlose Integration in bestehende Unternehmens-Identitätssysteme ermöglichen.

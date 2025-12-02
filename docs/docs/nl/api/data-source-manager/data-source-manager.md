@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # DataSourceManager
 
 `DataSourceManager` is de beheerklasse voor meerdere `gegevensbron`-instanties.

@@ -1,11 +1,11 @@
+---
+pkg: "@nocobase/plugin-ai"
+deprecated: true
+---
 :::tip Avviso di traduzione IA
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
-pkg: "@nocobase/plugin-ai"
-deprecated: true
----
 
 # Avanzate
 

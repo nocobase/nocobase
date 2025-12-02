@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # IModel
 
 Antarmuka `IModel` mendefinisikan properti dan metode dasar dari objek model.

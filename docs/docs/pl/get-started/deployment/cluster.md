@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Wdrożenie klastrowe
 
 NocoBase wspiera wdrażanie aplikacji w trybie klastrowym, aby zwiększyć ich wydajność i dostępność. Wdrożenie w klastrze umożliwia uruchamianie różnych instancji aplikacji na wielu serwerach lub uruchamianie wielu procesów w trybie wielordzeniowym na jednym serwerze.

@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 ### Formatowanie Tekstu
 
 Ta sekcja przedstawia różne formatery dla danych tekstowych. Poniżej omówimy składnię, przykłady i wyniki działania każdego z nich.

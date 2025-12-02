@@ -2,7 +2,6 @@
 이 문서는 AI로 자동 번역되었습니다.
 :::
 
-
 # create-nocobase-app 설치 업그레이드
 
 :::warning 업그레이드 전 준비 사항

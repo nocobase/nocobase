@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Motor de Armazenamento: Aliyun OSS
 
 Um motor de armazenamento baseado no Aliyun OSS. Antes de usá-lo, você precisará preparar a conta e as permissões necessárias.

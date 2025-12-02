@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Almacenamiento local
 
 Los archivos subidos se guardarán en un directorio local del servidor. Esto es adecuado para escenarios de pequeña escala o experimentales donde el volumen total de archivos gestionados por el sistema es relativamente bajo.

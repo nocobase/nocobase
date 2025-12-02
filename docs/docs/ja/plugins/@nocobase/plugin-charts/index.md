@@ -1,11 +1,12 @@
+---
+displayName: "チャート（非推奨）"
+packageName: '@nocobase/plugin-charts'
+description: |
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-displayName: "チャート（非推奨）"
-packageName: '@nocobase/plugin-charts'
-description: |
   このプラグインは非推奨です。代わりにデータ可視化プラグインをご利用ください。
 isFree: true
 builtIn: true

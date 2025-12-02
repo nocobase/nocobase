@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 ### Formatage des dates
 
 #### 1. :formatD(patternOut, patternIn)

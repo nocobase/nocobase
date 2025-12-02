@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Silnik przechowywania: Amazon S3
 
 Silnik przechowywania oparty na Amazon S3. Przed użyciem należy przygotować odpowiednie konto i uprawnienia.

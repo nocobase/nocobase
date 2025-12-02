@@ -1,11 +1,12 @@
+---
+displayName: "Workflow: HTTP-verzoekknooppunt"
+packageName: '@nocobase/plugin-workflow-request'
+description: |
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-displayName: "Workflow: HTTP-verzoekknooppunt"
-packageName: '@nocobase/plugin-workflow-request'
-description: |
   Verstuur HTTP-verzoeken naar elke HTTP-service voor gegevensuitwisseling binnen een workflow.
 isFree: true
 builtIn: true

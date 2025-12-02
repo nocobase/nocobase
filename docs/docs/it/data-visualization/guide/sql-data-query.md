@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Interrogare i dati in modalità SQL
 
 Nel pannello "Query dati", passi alla modalità SQL, scriva ed esegua la query, e utilizzi direttamente il risultato per la mappatura e il rendering del grafico.

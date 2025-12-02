@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Router
 
 Klient NocoBase oferuje elastyczny menedżer routera, który umożliwia rozszerzanie stron oraz stron ustawień wtyczek za pomocą metod `router.add()` i `pluginSettingsRouter.add()`.

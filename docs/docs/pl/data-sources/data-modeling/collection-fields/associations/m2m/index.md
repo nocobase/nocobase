@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Wiele do wielu
 
 W systemie zapisów na kursy mamy dwie encje: studentów i kursy. Jeden student może zapisać się na wiele kursów, a jeden kurs może mieć wielu zapisanych studentów, co tworzy relację wiele do wielu. W relacyjnej bazie danych, aby przedstawić relację wiele do wielu między studentami a kursami, zazwyczaj używa się pośredniej kolekcji, na przykład kolekcji zapisów. Ta kolekcja może rejestrować, które kursy wybrał każdy student i którzy studenci zapisali się na każdy kurs. Takie podejście skutecznie reprezentuje relację wiele do wielu między studentami a kursami.

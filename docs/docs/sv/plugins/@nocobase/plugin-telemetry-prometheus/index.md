@@ -1,8 +1,4 @@
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
+---
 displayName: "Telemetri: Prometheus"
 packageName: '@nocobase/plugin-telemetry-prometheus'
 supportedVersions:
@@ -15,5 +11,9 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
 
 # Telemetri: Prometheus

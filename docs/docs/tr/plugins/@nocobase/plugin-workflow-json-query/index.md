@@ -1,8 +1,4 @@
-:::tip Yapay Zeka Çeviri Bildirimi
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
-:::
-
-
+---
 displayName: "İş Akışı: JSON Hesaplama"
 packageName: '@nocobase/plugin-workflow-json-query'
 supportedVersions:
@@ -14,5 +10,8 @@ isFree: true
 builtIn: true
 defaultEnabled: true
 ---
+:::tip AI Çeviri Uyarısı
+Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::
 
 # İş Akışı: JSON Hesaplama

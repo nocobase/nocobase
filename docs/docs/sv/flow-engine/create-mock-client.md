@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # createMockClient
 
 För exempel och tester rekommenderas det vanligtvis att snabbt bygga en mock-applikation med hjälp av `createMockClient`. En mock-applikation är en ren, tom applikation utan aktiverade plugin, endast avsedd för exempel och tester.

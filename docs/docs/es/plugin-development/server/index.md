@@ -1,3 +1,9 @@
+
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
+
+
 # Descripción General
 
 El desarrollo de **plugins** para el lado del servidor de NocoBase le ofrece diversas funcionalidades y capacidades para ayudarle a personalizar y extender las características principales de NocoBase. A continuación, se presentan las principales capacidades del desarrollo de **plugins** para el lado del servidor de NocoBase y sus capítulos relacionados:
@@ -8,12 +14,6 @@ El desarrollo de **plugins** para el lado del servidor de NocoBase le ofrece div
 ---
 title: 插件类
 order: 1
----
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
-
 ```
 
 # 插件类

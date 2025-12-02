@@ -1,13 +1,14 @@
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
-
+---
 displayName: "Rascunhos de Formulário"
 packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
+---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
+
   Permite que os usuários salvem rascunhos de formulários e continuem a edição mais tarde.
 isFree: false
 builtIn: false

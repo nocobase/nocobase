@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-approval'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-approval'
----
 
 # Goedkeuring
 

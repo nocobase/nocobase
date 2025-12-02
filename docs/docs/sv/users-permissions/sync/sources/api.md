@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Synkronisera användardata via HTTP API
 
 ## Skaffa en API-nyckel

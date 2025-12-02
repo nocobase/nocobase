@@ -1,7 +1,8 @@
 ---
 pageType: home
+---
 
-pageName: przewodnik
+pageName: guide
 
 features:
   - title: Kluczowe funkcje

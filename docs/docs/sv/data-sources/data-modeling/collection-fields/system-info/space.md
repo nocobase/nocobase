@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-multi-space"
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: "@nocobase/plugin-multi-space"
----
 
 # Utrymme
 

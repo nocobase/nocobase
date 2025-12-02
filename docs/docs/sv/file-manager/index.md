@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-file-manager'
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: '@nocobase/plugin-file-manager'
----
 
 # Filhanterare
 

@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Ustawienia języka
 
 W `Ustawieniach systemu` mogą Państwo dostosować globalne środowisko językowe systemu, konfigurując `Włączone języki`. Pierwszy język na liście będzie językiem domyślnym.

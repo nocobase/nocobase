@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # HasManyRepository
 
 `HasManyRepository` é um `Relation Repository` usado para gerenciar relacionamentos `HasMany`.

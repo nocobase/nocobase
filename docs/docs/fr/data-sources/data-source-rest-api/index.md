@@ -7,10 +7,6 @@ Cette documentation a été traduite automatiquement par IA.
 
 
 
-```yaml
-pkg: "@nocobase/plugin-data-source-rest-api"
----
-
 # Source de données REST API
 
 ## Introduction

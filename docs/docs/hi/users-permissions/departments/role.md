@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-departments'
+---
 :::tip AI अनुवाद सूचना
 यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-departments'
----
 
 # विभाग भूमिका प्रबंधन
 

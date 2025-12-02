@@ -1,11 +1,12 @@
+---
+displayName: "حقل المجموعة: متعدد لمتعدد (مصفوفة)"
+packageName: '@nocobase/plugin-field-m2m-array'
+description: |
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-displayName: "حقل المجموعة: متعدد لمتعدد (مصفوفة)"
-packageName: '@nocobase/plugin-field-m2m-array'
-description: |
   يتيح هذا الحقل إنشاء علاقات متعدد لمتعدد عن طريق تخزين مصفوفة من المفاتيح الفريدة للنموذج الهدف.
 isFree: صحيح
 builtIn: صحيح

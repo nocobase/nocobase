@@ -1,11 +1,12 @@
+---
+displayName: "AI कर्मचारी"
+packageName: '@nocobase/plugin-ai'
+description: |
+---
 :::tip AI अनुवाद सूचना
 यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
 :::
 
-
-displayName: "AI कर्मचारी"
-packageName: '@nocobase/plugin-ai'
-description: |
   विभिन्न कौशलों वाले AI कर्मचारी बनाएँ, ताकि वे मनुष्यों के साथ सहयोग कर सकें, सिस्टम बना सकें और व्यावसायिक कार्यों को संभाल सकें।
 isFree: सही
 builtIn: सही

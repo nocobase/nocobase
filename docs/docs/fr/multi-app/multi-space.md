@@ -7,10 +7,6 @@ Cette documentation a été traduite automatiquement par IA.
 
 
 
-```yaml
-pkg: "@nocobase/plugin-multi-space"
-```
-
 # Multi-espace
 
 ## Introduction

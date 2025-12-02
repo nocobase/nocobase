@@ -1,14 +1,15 @@
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
+---
 displayName: "Arbetsflöde: Webhook"
 packageName: '@nocobase/plugin-workflow-webhook'
 supportedVersions:
   - 1.x
   - 2.x
 description: |
+---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
   Tar emot HTTP-anrop från externa system och utlöser händelser. Lämplig för dataskick och händelsenotifikationer initierade av tredjepartssystem, till exempel betalningsåterkopplingar och meddelandenotifikationer.
 isFree: false
 builtIn: false

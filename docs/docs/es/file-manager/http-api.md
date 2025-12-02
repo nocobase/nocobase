@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # API HTTP
 
 La carga de archivos, tanto para los campos de adjuntos como para las colecciones de archivos, se puede realizar a través de la API HTTP. El método de invocación varía según el motor de almacenamiento que utilice el campo de adjunto o la colección de archivos.

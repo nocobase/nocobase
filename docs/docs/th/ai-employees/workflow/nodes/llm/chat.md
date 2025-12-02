@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-ai"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-ai"
----
-```
-
 # การสนทนาด้วยข้อความ (Text Chat)
 
 ## บทนำ

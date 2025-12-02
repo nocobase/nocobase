@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Systeeminstellingen
 
 Systeeminstellingen gebruikt u om de globale systeeminformatie te configureren, zoals de systeemnaam, het hoofdlogo en de ingeschakelde talen.

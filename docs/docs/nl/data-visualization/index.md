@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-data-visualization"
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: "@nocobase/plugin-data-visualization"
----
 
 # Overzicht
 

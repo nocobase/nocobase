@@ -1,11 +1,12 @@
+---
+displayName: "Поле коллекции: Автоматическая нумерация"
+packageName: '@nocobase/plugin-field-sequence'
+description: |
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-displayName: "Поле коллекции: Автоматическая нумерация"
-packageName: '@nocobase/plugin-field-sequence'
-description: |
   Автоматически генерирует коды на основе настроенных правил, поддерживая комбинации дат, чисел и текста.
 isFree: true
 builtIn: true

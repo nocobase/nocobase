@@ -1,11 +1,12 @@
+---
+pkg: "@nocobase/plugin-workflow-response-message"
+---
+
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-workflow-response-message"
----
 
 # Phản hồi HTTP
 

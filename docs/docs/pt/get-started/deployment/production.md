@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Implantação em Ambiente de Produção
 
 Ao implantar o NocoBase em um ambiente de produção, a instalação de dependências pode ser um pouco trabalhosa devido às diferenças nos métodos de construção entre os diversos sistemas e ambientes. Para ter uma experiência funcional completa, recomendamos a implantação com **Docker**. Se o seu ambiente não puder usar o Docker, você também pode implantar usando o **create-nocobase-app**.

@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Extension des ressources cibles de synchronisation
 
 ## Aperçu

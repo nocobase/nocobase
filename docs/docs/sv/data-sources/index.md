@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Översikt
 
 Datamodellering är ett avgörande steg när du designar databaser, som innebär en djupgående analys och abstraktion av olika typer av data och deras inbördes relationer i den verkliga världen. Under denna process försöker vi avslöja de inneboende kopplingarna mellan data och formalisera dem till datamodeller, vilket lägger grunden för informationssystemets databasstruktur. NocoBase är en datamodellsdriven plattform med följande funktioner:

@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-user-data-sync'
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-user-data-sync'
----
 
 # Sinkronisasi Data Pengguna
 

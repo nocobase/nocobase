@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-calendar"
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: "@nocobase/plugin-calendar"
----
 
 # Bộ sưu tập Lịch
 

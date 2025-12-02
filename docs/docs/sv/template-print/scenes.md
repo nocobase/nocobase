@@ -1,3 +1,9 @@
+
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
+
 # Använda funktionen "Mallutskrift" för att generera exempel på leverans- och inköpsavtal
 
 I scenarier inom leveranskedjan eller handel är det ofta nödvändigt att snabbt generera ett standardiserat "Leverans- och inköpsavtal" och dynamiskt fylla i innehåll baserat på information från datakällor som köpare, säljare och produktdetaljer. Nedan kommer vi att använda ett förenklat "Avtal"-användningsfall som exempel för att visa er hur ni konfigurerar och använder funktionen "Mallutskrift" för att mappa datainformation till platshållare i avtalsmallar, och därmed automatiskt generera det slutliga avtalsdokumentet.
@@ -15,13 +21,6 @@ I vårt exempel finns det i stort sett följande huvudsakliga samlingar (andra i
 ![template_print-2025-11-01-16-34-04](https://static-docs.nocobase.com/template_print-2025-11-01-16-34-04.png)
 
 Eftersom det nuvarande systemet endast stöder utskrift av enskilda poster, kommer vi att klicka på "Skriv ut" på sidan "Avtalsdetaljer". Systemet kommer då automatiskt att hämta den motsvarande `contracts`-posten, samt relaterad `parties`-information och annan data, och fylla i dem i Word- eller PDF-dokument.
-
----
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
-
 
 ## 2. Förberedelser
 

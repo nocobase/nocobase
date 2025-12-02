@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # Onderhoudsprocedures
 
 ## Eerste keer opstarten van de applicatie

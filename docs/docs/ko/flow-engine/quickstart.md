@@ -1,3 +1,9 @@
+
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
+
+
 # 빠른 시작: 오케스트레이션 가능한 버튼 컴포넌트 구축하기
 
 React에서는 일반적으로 다음과 같이 버튼 컴포넌트를 렌더링합니다:
@@ -55,12 +61,6 @@ const model = this.flowEngine.createModel({
 ```tsx pure
 <FlowModelRenderer model={model} />
 ```
-
----
-:::tip AI 번역 안내
-이 문서는 AI로 자동 번역되었습니다.
-:::
-
 
 ## 두 번째 단계: PropsFlow를 추가하여 버튼 속성 구성 가능하게 만들기
 

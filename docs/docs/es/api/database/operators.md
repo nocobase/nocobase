@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Operadores de Filtro
 
 Se utilizan en el parámetro `filter` de las APIs del Repository como `find`, `findOne`, `findAndCount` y `count`:

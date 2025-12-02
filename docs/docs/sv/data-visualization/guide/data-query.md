@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Datafråga
 
 Diagrammets konfigurationspanel är uppdelad i tre delar: Datafråga, Diagramalternativ och Interaktionshändelser, samt knapparna Avbryt, Förhandsgranska och Spara längst ner.

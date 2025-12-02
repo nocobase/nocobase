@@ -11,7 +11,7 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
-:::tip Yapay Zeka Çeviri Bildirimi
+:::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
 

@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Eventi di interazione personalizzati
 
 Scriva codice JS nell'editor degli eventi e registri le interazioni tramite l'istanza ECharts `chart` per abilitare collegamenti, come la navigazione a una nuova pagina o l'apertura di un popup per l'analisi dettagliata (drill-down).

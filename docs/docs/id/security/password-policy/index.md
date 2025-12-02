@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-password-policy'
+---
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
-pkg: '@nocobase/plugin-password-policy'
----
 
 # Kebijakan Kata Sandi
 

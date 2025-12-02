@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # FlowDefinition
 
 `FlowDefinition` définit la structure et la configuration de base d'un **flux de travail** et constitue l'un des concepts fondamentaux du moteur de **flux de travail**. Il décrit les métadonnées, les conditions de déclenchement et les étapes d'exécution du **flux de travail**.

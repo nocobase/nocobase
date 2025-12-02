@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Integración de Solicitudes HTTP en Flujos de Trabajo
 
 El nodo de Solicitud HTTP permite que los **flujos de trabajo** de NocoBase envíen solicitudes de forma proactiva a cualquier servicio HTTP, facilitando el intercambio de datos y la integración de negocios con sistemas externos.

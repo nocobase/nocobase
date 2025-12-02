@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Przegląd
 
 Wbudowane funkcje przepływu pracy nie są w stanie pokryć wszystkich scenariuszy. Na przykład, wbudowane typy węzłów nie obejmują każdej możliwej operacji we wszystkich scenariuszach biznesowych. Dlatego też oferujemy możliwość rozszerzania przepływu pracy, w tym rozszerzania typów wyzwalaczy i typów węzłów. W scenariuszach biznesowych, gdzie wbudowane funkcje są niewystarczające, mogą Państwo rozszerzyć je za pomocą metod low-code.

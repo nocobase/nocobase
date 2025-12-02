@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Nodo de Cálculo
 
 El nodo de Cálculo le permite evaluar una expresión. El resultado de esta evaluación se guarda en el propio nodo, quedando disponible para su uso en nodos posteriores del flujo de trabajo. Es una herramienta potente para calcular, procesar y transformar datos. En cierta medida, puede reemplazar la funcionalidad de llamar a una función sobre un valor y asignar el resultado a una variable, como se haría en lenguajes de programación.

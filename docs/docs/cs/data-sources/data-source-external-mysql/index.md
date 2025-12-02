@@ -1,11 +1,12 @@
+---
+pkg: "@nocobase/plugin-data-source-external-mysql"
+---
+
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-data-source-external-mysql"
----
 
 # Externí zdroj dat - MySQL
 

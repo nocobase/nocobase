@@ -1,11 +1,12 @@
+---
+displayName: "Рабочий процесс: Копия"
+packageName: '@nocobase/plugin-workflow-cc'
+description: |
+---
 :::tip Уведомление о переводе ИИ
 Эта документация была автоматически переведена ИИ.
 :::
 
-
-displayName: "Рабочий процесс: Копия"
-packageName: '@nocobase/plugin-workflow-cc'
-description: |
   Добавляет функцию отправки копии (CC) в рабочие процессы, позволяя отправлять согласования или любую другую информацию указанным пользователям.
 isFree: true
 builtIn: true

@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # CronJobManager – Hantering av schemalagda uppgifter
 
 `CronJobManager` är en hanterare för schemalagda uppgifter som NocoBase tillhandahåller, baserad på [cron](https://www.npmjs.com/package/cron). Den låter **plugin** registrera schemalagda uppgifter på servern för att periodiskt utföra specifik logik.

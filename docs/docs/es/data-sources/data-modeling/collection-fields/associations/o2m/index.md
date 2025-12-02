@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Uno a muchos
 
 La relación entre una clase y sus estudiantes es un ejemplo de relación uno a muchos: una clase puede tener varios estudiantes, pero cada estudiante pertenece a una sola clase.

@@ -1,8 +1,4 @@
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
-:::
-
-
+---
 displayName: "Luồng công việc: Ánh xạ biến JSON"
 packageName: '@nocobase/plugin-workflow-json-variable-mapping'
 supportedVersions:
@@ -14,5 +10,8 @@ isFree: true
 builtIn: true
 defaultEnabled: true
 ---
+:::tip Thông báo dịch AI
+Tài liệu này đã được dịch tự động bằng AI.
+:::
 
 # Luồng công việc: Ánh xạ biến JSON

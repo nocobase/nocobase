@@ -1,13 +1,14 @@
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
+---
 displayName: "Wielokryteriowy filtr słów kluczowych"
 packageName: '@nocobase/plugin-multi-keyword-filter'
 supportedVersions:
   - 1.x
 description: |
+---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
   Umożliwia filtrowanie wielu słów kluczowych dla typowych pól, z możliwością szybkiego wprowadzania lub masowego importu słów kluczowych z Excela.
 isFree: false
 builtIn: false

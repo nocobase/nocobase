@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 # Server-Logs, Audit-Logs und Änderungsverlauf
 
 ## Server-Logs

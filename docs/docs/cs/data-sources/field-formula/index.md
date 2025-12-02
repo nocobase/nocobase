@@ -1,10 +1,9 @@
+---
+pkg: "@nocobase/plugin-field-formula"
+---
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
-
-
-pkg: "@nocobase/plugin-field-formula"
----
 
 # Vzorec
 

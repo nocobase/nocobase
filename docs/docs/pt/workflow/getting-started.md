@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Começando
 
 ## Configure Seu Primeiro Fluxo de Trabalho

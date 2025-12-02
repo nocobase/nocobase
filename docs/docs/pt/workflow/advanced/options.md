@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Configurações Avançadas
 
 ## Modo de Execução

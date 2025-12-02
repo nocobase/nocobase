@@ -7,9 +7,6 @@ Tài liệu này đã được dịch tự động bằng AI.
 
 
 
-pkg: '@nocobase/plugin-ip-restriction'
----
-
 # Giới hạn IP
 
 ## Giới thiệu

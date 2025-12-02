@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Cykl życia
 
 W tej sekcji porządkujemy haki cyklu życia dla wtyczek, zarówno po stronie serwera, jak i klienta, aby pomóc deweloperom poprawnie rejestrować i zwalniać zasoby.

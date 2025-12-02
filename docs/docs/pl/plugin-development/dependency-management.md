@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Zarządzanie zależnościami
 
 W tworzeniu wtyczek NocoBase, zależności dzielą się na dwie kategorie: **zależności wtyczki** i **zależności globalne**.

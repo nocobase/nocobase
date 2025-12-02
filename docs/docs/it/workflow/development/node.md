@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Estensione dei tipi di nodo
 
 Il tipo di un nodo è essenzialmente un'istruzione operativa. Istruzioni diverse rappresentano operazioni diverse eseguite nel flusso di lavoro.

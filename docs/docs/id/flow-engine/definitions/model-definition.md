@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # ModelDefinition
 
 ModelDefinition mendefinisikan opsi pembuatan untuk model alur kerja, yang digunakan untuk membuat instans model melalui metode `FlowEngine.createModel()`. Ini mencakup konfigurasi dasar model, properti, sub-model, dan informasi lainnya.

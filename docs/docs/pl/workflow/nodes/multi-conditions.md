@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Wielokrotne warunki <Badge>v2.0.0+</Badge>
 
 ## Wprowadzenie

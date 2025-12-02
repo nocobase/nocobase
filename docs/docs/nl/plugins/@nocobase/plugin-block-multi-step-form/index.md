@@ -1,13 +1,14 @@
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
-
+---
 displayName: "Blok: Meerstapformulier"
 packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
+---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
+
   Deel een formulier met veel velden op in meerdere stappen om de gebruiker te ontlasten.
 isFree: false
 builtIn: false

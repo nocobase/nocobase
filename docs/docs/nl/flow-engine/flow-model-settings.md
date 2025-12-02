@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # FlowModel: Eventstroom en Configuratie
 
 FlowModel biedt een op 'eventstromen' (Flows) gebaseerde aanpak om de configuratielogica van componenten te implementeren. Dit maakt het gedrag en de configuratie van componenten flexibeler en visueler.

@@ -7,11 +7,6 @@ pkg: "@nocobase/plugin-file-storage-s3-pro"
 
 
 
-```yaml
-pkg: "@nocobase/plugin-file-storage-s3-pro"
----
-```
-
 # 파일 스토리지: S3 (Pro)
 
 ## 소개

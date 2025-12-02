@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-notification-in-app-message'
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
-
-
-pkg: '@nocobase/plugin-notification-in-app-message'
----
 
 # Сповіщення: Повідомлення в застосунку
 

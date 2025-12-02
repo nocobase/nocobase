@@ -2,7 +2,6 @@
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
 
-
 # Memperluas Tipe Saluran Notifikasi
 
 NocoBase mendukung perluasan tipe saluran notifikasi sesuai kebutuhan, seperti notifikasi SMS dan notifikasi push aplikasi.

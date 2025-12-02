@@ -1,11 +1,11 @@
+---
+pkg: '@nocobase/plugin-migration-manager'
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
 
-```yaml
-pkg: '@nocobase/plugin-migration-manager'
----
 
 # 移行マネージャー
 

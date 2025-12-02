@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-json-query'
+---
 :::tip Повідомлення про переклад ШІ
 Ця документація була автоматично перекладена штучним інтелектом.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-json-query'
----
 
 # Обчислення JSON
 

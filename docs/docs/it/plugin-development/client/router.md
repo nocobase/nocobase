@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Router
 
 Il client NocoBase offre un gestore di router flessibile che Le permette di estendere le pagine e le pagine di impostazioni dei plugin tramite `router.add()` e `pluginSettingsRouter.add()`.

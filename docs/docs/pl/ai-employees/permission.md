@@ -1,3 +1,9 @@
+
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
+
+
 # Role i uprawnienia
 
 ## Wprowadzenie
@@ -24,13 +30,6 @@ Proszę wybrać rolę, kliknąć zakładkę `Permissions`, a następnie zakładk
 Proszę kliknąć pole wyboru w kolumnie `Available` na liście pracowników AI, aby określić, czy dana rola może uzyskać dostęp do tego pracownika AI.
 
 ![20251022013942](https://static-docs.nocobase.com/20251022013942.png)
-
----
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
-
 
 ## Uprawnienia dostępu do danych
 

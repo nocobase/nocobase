@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # StepDefinition
 
 StepDefinition definierar ett enskilt steg i ett arbetsflöde. Varje steg kan vara en åtgärd, händelsehantering eller annan operation. Ett steg är den grundläggande exekveringsenheten i ett arbetsflöde.

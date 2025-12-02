@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Mise à niveau d'une installation NocoBase depuis les sources Git
 
 :::warning Préparation avant la mise à niveau

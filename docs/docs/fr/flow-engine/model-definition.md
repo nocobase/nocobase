@@ -1,12 +1,12 @@
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
-
+---
 pkg: "@nocobase/plugin-china-region"
 title: Champ Région Chine
 description: Le plugin Champ Région Chine (field-china-region) ajoute le type de champ "Région Chine" à NocoBase.
 ---
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
+
 
 # Champ Région Chine
 

@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-auth-saml'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-auth-saml'
----
 
 # Xác thực: SAML 2.0
 

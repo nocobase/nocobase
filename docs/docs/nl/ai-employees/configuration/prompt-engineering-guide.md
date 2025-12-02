@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 # AI Agent · Prompt Engineering Gids
 
 > Van 'hoe te schrijven' naar 'goed schrijven': deze gids leert u hoe u op een eenvoudige, stabiele en herbruikbare manier prompts van hoge kwaliteit kunt opstellen.

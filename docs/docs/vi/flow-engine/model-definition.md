@@ -1,13 +1,14 @@
+---
+pkg: "@nocobase/plugin-china-region"
+title: Trường Khu vực Trung Quốc
+description: Plugin Trường Khu vực Trung Quốc (`field-china-region`) bổ sung loại trường "Khu vực Trung Quốc" vào NocoBase.
+---
+
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
 
 
-```yaml
-pkg: "@nocobase/plugin-china-region"
-title: Trường Khu vực Trung Quốc
-description: Plugin Trường Khu vực Trung Quốc (`field-china-region`) bổ sung loại trường "Khu vực Trung Quốc" vào NocoBase.
----
 
 # Trường Khu vực Trung Quốc
 

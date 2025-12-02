@@ -1,11 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-sequence"
+---
 :::tip AI翻訳のお知らせ
 本ドキュメントはAIにより自動翻訳されています。
 :::
 
-
-```yaml
-pkg: "@nocobase/plugin-field-sequence"
-```
 
 # 自動採番
 

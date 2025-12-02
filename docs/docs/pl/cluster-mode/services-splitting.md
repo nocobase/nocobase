@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Rozdzielanie usług <Badge>v1.9.0+</Badge>
 
 ## Wprowadzenie

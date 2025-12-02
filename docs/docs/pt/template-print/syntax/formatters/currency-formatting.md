@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 ### Formatação de Moeda
 
 #### 1. :formatC(precisionOrFormat, targetCurrency)

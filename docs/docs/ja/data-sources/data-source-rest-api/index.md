@@ -6,12 +6,6 @@ pkg: "@nocobase/plugin-data-source-rest-api"
 :::
 
 
-```yaml
----
-pkg: "@nocobase/plugin-data-source-rest-api"
----
-```
-
 # REST API データソース
 
 ## はじめに

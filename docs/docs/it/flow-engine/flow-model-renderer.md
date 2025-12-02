@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Rendering di FlowModel
 
 `FlowModelRenderer` è il componente React principale per il rendering di un'istanza di `FlowModel`. È responsabile della conversione di un'istanza di `FlowModel` in un componente React visuale.

@@ -1,10 +1,9 @@
+---
+pkg: '@nocobase/plugin-workflow-aggregate'
+---
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
-
-
-pkg: '@nocobase/plugin-workflow-aggregate'
----
 
 # Truy vấn tổng hợp
 

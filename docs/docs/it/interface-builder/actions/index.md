@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Operazione
 
 In UI, un'operazione è un pulsante utilizzato per attivare una serie di istruzioni. Può essere posizionato direttamente su una pagina, in una finestra di dialogo o in un cassetto laterale (drawer), e può anche essere utilizzato in combinazione con i blocchi. Attualmente, le operazioni configurabili dinamicamente vengono utilizzate principalmente in combinazione con i blocchi.

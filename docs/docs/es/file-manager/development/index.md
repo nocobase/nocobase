@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Desarrollo de Extensiones
 
 ## Extensión de Motores de Almacenamiento

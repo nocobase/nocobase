@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Múltiplas Condições <Badge>v2.0.0+</Badge>
 
 ## Introdução

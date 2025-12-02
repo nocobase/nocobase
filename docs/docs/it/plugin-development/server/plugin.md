@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Plugin
 
 In NocoBase, il plugin lato server offre un modo modulare per estendere e personalizzare le funzionalità lato server. Gli sviluppatori possono estendere la classe `Plugin` di `@nocobase/server` per registrare eventi, API, configurazioni di permessi e altre logiche personalizzate nelle diverse fasi del ciclo di vita.

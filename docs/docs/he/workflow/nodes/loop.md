@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-loop'
+---
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-loop'
----
 
 # לולאה
 

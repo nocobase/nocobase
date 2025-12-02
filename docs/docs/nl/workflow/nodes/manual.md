@@ -1,10 +1,10 @@
+---
+pkg: '@nocobase/plugin-workflow-manual'
+---
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
-pkg: '@nocobase/plugin-workflow-manual'
----
 
 # Handmatige actie
 

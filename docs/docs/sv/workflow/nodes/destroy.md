@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Ta bort data
 Denna funktion används för att ta bort data från en samling som uppfyller specifika villkor.
 

@@ -7,11 +7,6 @@ Deze documentatie is automatisch vertaald door AI.
 
 
 
-```yaml
-pkg: "@nocobase/plugin-data-source-rest-api"
----
-```
-
 # REST API Gegevensbron
 
 ## Introductie

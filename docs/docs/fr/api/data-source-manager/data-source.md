@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # DataSource (abstraite)
 
 `DataSource` est une classe abstraite utilisée pour représenter un type de **source de données**, qui peut être une base de données, une API, etc.

@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Editar Dica de Ferramenta
 
 ## Introdução

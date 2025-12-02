@@ -2,7 +2,6 @@
 Esta documentação foi traduzida automaticamente por IA.
 :::
 
-
 # Coleção de Expressões
 
 ## Criando uma Coleção de Modelo "Expressão"

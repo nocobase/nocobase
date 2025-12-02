@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Plugin
 
 En NocoBase, un plugin de servidor (Server Plugin) ofrece una forma modular de extender y personalizar la funcionalidad del lado del servidor. Los desarrolladores pueden heredar de la clase `Plugin` de `@nocobase/server` para registrar eventos, interfaces, configuraciones de permisos y otra lógica personalizada en las distintas etapas del ciclo de vida.

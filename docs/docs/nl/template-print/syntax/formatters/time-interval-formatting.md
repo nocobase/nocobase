@@ -2,7 +2,6 @@
 Deze documentatie is automatisch vertaald door AI.
 :::
 
-
 ### Tijdinterval formatteren
 
 #### 1. :formatI(patternOut, patternIn)

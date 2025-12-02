@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # Ustawienia Systemowe
 
 Ustawienia systemowe służą do konfiguracji globalnych informacji o systemie, w tym nazwy systemu, głównego logo, włączonych języków itp.

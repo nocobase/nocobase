@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Plugin
 
 Dans NocoBase, un plugin offre une approche modulaire pour étendre et personnaliser les fonctionnalités côté serveur. Les développeurs peuvent étendre la classe `Plugin` de `@nocobase/server` pour enregistrer des événements, des interfaces, des configurations de permissions et d'autres logiques personnalisées à différentes étapes de leur cycle de vie.

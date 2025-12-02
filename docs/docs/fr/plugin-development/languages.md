@@ -2,7 +2,6 @@
 Cette documentation a été traduite automatiquement par IA.
 :::
 
-
 # Liste des langues
 
 NocoBase offre un support multilingue (i18n). Vous trouverez ci-dessous la liste des langues intégrées actuellement.

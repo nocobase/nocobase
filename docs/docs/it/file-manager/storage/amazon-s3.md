@@ -2,7 +2,6 @@
 Questa documentazione è stata tradotta automaticamente dall'IA.
 :::
 
-
 # Motore di Archiviazione: Amazon S3
 
 Un motore di archiviazione basato su Amazon S3. Prima di utilizzarlo, è necessario preparare l'account e le autorizzazioni pertinenti.

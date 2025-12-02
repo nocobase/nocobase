@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-email-manager"
+---
 :::tip AI अनुवाद सूचना
 यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
 :::
 
-
-pkg: "@nocobase/plugin-email-manager"
----
 
 # माइक्रोसॉफ्ट कॉन्फ़िगरेशन
 

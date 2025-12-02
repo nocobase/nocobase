@@ -1,10 +1,10 @@
+---
+pkg: "@nocobase/plugin-field-formula"
+---
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
-pkg: "@nocobase/plugin-field-formula"
----
 
 # Formel
 

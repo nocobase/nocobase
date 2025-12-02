@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # AI-medarbetare · Nathan: Frontend-utvecklare
 
 > Hjälper dig att skriva och optimera frontend-kod för att implementera komplex interaktiv logik.

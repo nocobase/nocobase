@@ -2,7 +2,6 @@
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
 
-
 # DataSourceManager
 
 `DataSourceManager` to klasa zarządzająca wieloma instancjami `dataSource`.

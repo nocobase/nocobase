@@ -2,7 +2,6 @@
 Denna dokumentation har översatts automatiskt av AI.
 :::
 
-
 # Utöka målresurser för synkronisering
 
 ## Översikt

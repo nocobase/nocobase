@@ -2,7 +2,6 @@
 Diese Dokumentation wurde automatisch von KI übersetzt.
 :::
 
-
 ## Formatierer
 
 Formatierer werden verwendet, um Rohdaten in gut lesbaren Text umzuwandeln. Sie werden auf Daten angewendet, indem man einen Doppelpunkt (`:`) verwendet, und lassen sich verketten, wobei die Ausgabe eines Formatierers zur Eingabe für den nächsten wird. Einige Formatierer unterstützen konstante oder dynamische Parameter.

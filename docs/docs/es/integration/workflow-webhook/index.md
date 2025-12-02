@@ -2,7 +2,6 @@
 Esta documentación ha sido traducida automáticamente por IA.
 :::
 
-
 # Integración de Webhooks en flujos de trabajo
 
 A través de los disparadores de Webhook, NocoBase puede recibir llamadas HTTP de sistemas de terceros y activar automáticamente flujos de trabajo, logrando una integración fluida con sistemas externos.

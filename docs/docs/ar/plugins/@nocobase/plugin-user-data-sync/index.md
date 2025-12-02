@@ -1,11 +1,12 @@
+---
+displayName: "مزامنة بيانات المستخدم"
+packageName: '@nocobase/plugin-user-data-sync'
+description: |
+---
 :::tip إشعار الترجمة بالذكاء الاصطناعي
 تمت ترجمة هذه الوثائق تلقائيًا بواسطة الذكاء الاصطناعي.
 :::
 
-
-displayName: "مزامنة بيانات المستخدم"
-packageName: '@nocobase/plugin-user-data-sync'
-description: |
   تسجيل وإدارة مصادر مزامنة بيانات المستخدم القابلة للتوسيع، ويوفر واجهة برمجة تطبيقات HTTP (API) افتراضيًا. يدعم مزامنة البيانات مع موارد مثل المستخدمين والأقسام.
 isFree: صحيح
 builtIn: صحيح
