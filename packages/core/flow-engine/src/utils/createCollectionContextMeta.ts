@@ -93,7 +93,7 @@ function createMetaBaseProperties(field: CollectionField) {
 export function createCollectionContextMeta(
   collectionOrFactory: Collection | (() => Collection | null),
   title?: string,
-  skipNonFilterableFields?: boolean,
+  includeNonFilterable?: boolean,
 ): PropertyMetaFactory {
   const metaFn: PropertyMetaFactory = async () => {
     const collection = typeof collectionOrFactory === 'function' ? collectionOrFactory() : collectionOrFactory;
@@ -111,7 +111,7 @@ export function createCollectionContextMeta(
 
         // 添加所有字段
         collection.fields.forEach((field) => {
-          if (!skipNonFilterableFields || field.filterable) {
+          if (includeNonFilterable || field.filterable) {
             properties[field.name] = createFieldMetadata(field);
           }
         });
