@@ -122,7 +122,7 @@ export function createAssociationAwareObjectMetaFactory(
   title: string,
   valueAccessor: (ctx: FlowContext) => any,
 ): PropertyMetaFactory {
-  const baseFactory = createCollectionContextMeta(collectionAccessor, title);
+  const baseFactory = createCollectionContextMeta(collectionAccessor, title, true);
   const factory: PropertyMetaFactory = async () => {
     const base = (await baseFactory()) as PropertyMeta | null;
     if (!base) return null;
