@@ -466,8 +466,7 @@ RecordSelectFieldModel.registerFlow({
         const sourceValue = ctx.record?.[collectionField?.sourceKey];
         // 构建 $or 条件数组
         const orFilters: Record<string, any>[] = [];
-
-        if (sourceValue != null) {
+        if (sourceValue != null && isOToAny) {
           const eqKey = `${foreignKey}.$eq`;
           orFilters.push({ [eqKey]: sourceValue });
         }
