@@ -84,10 +84,13 @@ function createWithACLMetaMiddleware() {
           return undefined;
         },
         app: {
+          dataSourceManager: ctx.app.dataSourceManager,
           getDb() {
             return db;
           },
         },
+        log: ctx.log,
+        logger: ctx.logger,
         getCurrentRepository: ctx.getCurrentRepository,
         action: {
           actionName: action,
