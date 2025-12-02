@@ -149,3 +149,4 @@ Arayüz şimdi filtrelenmiş öğelere göre yeni sıralamayı gösterir:
 
 ```
 [5,9,1]
+```

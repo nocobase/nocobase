@@ -150,3 +150,4 @@ La interfaz ahora muestra el nuevo orden basado en los elementos filtrados:
 
 ```
 [5,9,1]
+```

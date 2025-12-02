@@ -12,7 +12,6 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
-```
 
 # 감사 로그 (폐기됨)
 

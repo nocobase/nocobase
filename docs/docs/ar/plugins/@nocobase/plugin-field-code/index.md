@@ -11,6 +11,5 @@ description: |
 isFree: false
 builtIn: false
 defaultEnabled: false
-```
 
 # حقل المجموعة: كود

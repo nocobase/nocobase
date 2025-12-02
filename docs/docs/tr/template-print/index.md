@@ -132,3 +132,4 @@ Kurulumun başarılı olup olmadığını doğrulayın:
 $ docker compose exec app bash -c "libreoffice --version"
 
 LibreOffice 24.8.4.2 bb3cfa12c7b1bf994ecc5649a80400d06cd71002
+```

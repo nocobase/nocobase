@@ -456,3 +456,4 @@ yarn cross-env \
   INIT_ROOT_PASSWORD=admin123 \
   INIT_ROOT_NICKNAME="Super Admin" \
   nocobase install
+```

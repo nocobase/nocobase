@@ -180,3 +180,4 @@ curl -X POST -H 'Authorization: Bearer <your token>' -H 'X-Role: <roleName>' -d 
 :::info{title="Tip"}
 Při spouštění události před akcí prostřednictvím volání HTTP API je také třeba věnovat pozornost stavu povolení pracovního postupu a tomu, zda konfigurace kolekce odpovídá, jinak se volání nemusí podařit nebo může dojít k chybě.
 :::
+```

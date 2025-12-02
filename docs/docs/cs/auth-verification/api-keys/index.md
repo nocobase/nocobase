@@ -40,3 +40,4 @@ Pro instalaci ze zdrojového kódu nebo pomocí `create-nocobase-app` můžete p
 
 ```bash
 APP_KEY=4jAokvLKTJgM0v_JseUkJ
+```

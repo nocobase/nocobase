@@ -12,7 +12,6 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
-```
 
 # Sauvegarde et restauration d'applications (obsolète)
 

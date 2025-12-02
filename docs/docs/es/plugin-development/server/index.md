@@ -37,7 +37,6 @@ NocoBase 服务端插件开发提供了多种功能和能力，帮助开发者�
 | **日志输出** | 自定义日志格式和输出方式，提升调试和监控能力 | [logger.md](logger.md) |
 | **自定义命令** | 扩展 NocoBase CLI，添加自定义命令 | [command.md](command.md) |
 | **编写测试用例** | 编写和运行测试用例，保证插件稳定性和功能准确性 | [test.md](test.md) |
-```
 ```yaml
 ---
 title: Clase de Plugin

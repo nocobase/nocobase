@@ -12,6 +12,5 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
-```
 
 # Distributeur d'ID de worker Redis

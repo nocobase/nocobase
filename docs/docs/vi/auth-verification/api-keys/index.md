@@ -40,3 +40,4 @@ services:
 
 ```bash
 APP_KEY=4jAokvLKTJgM0v_JseUkJ
+```

@@ -184,3 +184,4 @@ pkg: "@nocobase/plugin-block-iframe"
 ![20251026212608](https://static-docs.nocobase.com/20251026212608.png)
 
 Більше інформації про змінні дивіться у розділі [Змінні](/interface-builder/variables).
+```

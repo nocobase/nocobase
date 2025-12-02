@@ -82,3 +82,4 @@ NocoBase düşürmeyi desteklemez. Geri almanız gerekirse, lütfen yükseltme �
 **S: Ticari eklenti indirme veya güncelleme başarısız oldu**
 
 Ticari eklentiler için lütfen sistemde lisans anahtarını doğrulayın ve ardından Docker konteynerini yeniden başlatın. Ayrıntılar için [NocoBase Ticari Lisans Aktivasyon Kılavuzu](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide) bölümüne bakın.
+```

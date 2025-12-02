@@ -11,6 +11,5 @@ description: |
 isFree: true
 builtIn: true
 defaultEnabled: false
-```
 
 # Действие: Экспорт записей

@@ -80,3 +80,4 @@ Eğer bir `SELECT` ifadesi kullanıldıysa, sorgu sonucu düğümde Sequelize'in
 ### SQL işlemi koleksiyon olaylarını tetikler mi?
 
 **Hayır**. SQL işlemi, SQL ifadesini doğrudan veritabanına göndererek işlenmesini sağlar. İlgili `CREATE` / `UPDATE` / `DELETE` işlemleri veritabanında gerçekleşirken, **koleksiyon** olayları Node.js uygulama katmanında (ORM tarafından işlenir) meydana gelir. Bu nedenle, **koleksiyon** olayları tetiklenmez.
+```

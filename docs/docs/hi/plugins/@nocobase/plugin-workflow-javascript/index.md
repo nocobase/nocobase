@@ -15,6 +15,5 @@ isFree: असत्य
 builtIn: असत्य
 defaultEnabled: असत्य
 points: 4
-```
 
 # वर्कफ़्लो: JavaScript

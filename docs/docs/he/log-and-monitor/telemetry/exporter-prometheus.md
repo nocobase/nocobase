@@ -56,3 +56,4 @@ scrape_configs:
   - job_name: 'nocobase'
     static_configs:
       - targets: ['localhost:9464']
+```
