@@ -49,7 +49,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private appDbCreator: AppDbCreator = async () => {};
   private appOptionsFactory: AppOptionsFactory = () => ({}) as any;
   private subAppUpgradeHandler: SubAppUpgradeHandler = async () => {};
-  private suppressEvents = false;
 
   private constructor() {
     super();
@@ -70,7 +69,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   private resolveProcessAdapterName() {
-    return process.env.APP_PROCESS_ADPATER || AppSupervisor.defaultProcessAdapterName;
+    return process.env.APP_PROCESS_ADAPTER || AppSupervisor.defaultProcessAdapterName;
   }
 
   private createDiscoveryAdapter(): AppDiscoveryAdapter {

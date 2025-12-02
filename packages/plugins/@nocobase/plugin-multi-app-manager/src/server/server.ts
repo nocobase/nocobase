@@ -221,6 +221,10 @@ export class PluginMultiAppManagerServer extends Plugin {
     AppSupervisor.setDefaultProcessAdapter('legacy-memory');
   }
 
+  static staticImport() {
+    this.registerLegacyAdapter();
+  }
+
   beforeLoad() {
     this.db.registerModels({
       ApplicationModel,

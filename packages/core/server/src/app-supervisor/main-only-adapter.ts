@@ -14,30 +14,45 @@ import type { AppSupervisor } from './index';
 /** Minimal single-process adapter only for booting the main application. */
 export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   readonly name = 'main-only';
-  apps: Record<string, Application> = {};
-  statuses: Record<string, AppStatus> = {};
+  app: Application;
+  status: AppStatus;
+  appError: Error;
 
   constructor(private readonly supervisor: AppSupervisor) {}
 
   async getApp(appName: string, options: GetAppOptions = {}) {
-    return this.apps[appName];
+    if (!options.withOutBootStrap) {
+      await this.bootStrapApp();
+    }
+    return this.app;
   }
 
   async bootStrapApp() {
+    const status = this.getAppStatus('main');
+    if (this.hasApp() && status && status !== 'preparing') {
+      return;
+    }
+    this.setAppStatus('main', 'initializing');
     this.setAppStatus('main', 'initialized');
   }
 
   addApp(app: Application) {
-    this.apps[app.name] = app;
+    if (this.app) {
+      throw new Error(`app ${app.name} already exists`);
+    }
+    this.app = app;
+    if (!this.status || this.status === 'not_found') {
+      this.setAppStatus(app.name, 'preparing');
+    }
     return app;
   }
 
   subApps() {
-    return Object.values(this.apps);
+    return [this.app];
   }
 
-  hasApp(appName: string) {
-    return !!this.apps[appName];
+  hasApp() {
+    return !!this.app;
   }
 
   async startApp(appName: string) {
@@ -46,34 +61,41 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   }
 
   async stopApp(appName: string) {
-    await this.apps[appName]?.runCommand('stop');
-    delete this.apps[appName];
+    await this.app.runCommand('stop');
   }
 
   async removeApp(appName: string) {
-    await this.apps[appName]?.runCommand('destroy');
-    delete this.apps[appName];
+    await this.app.runCommand('destroy');
   }
 
   reset() {
-    this.apps = {};
-    this.statuses = {};
-    return Promise.resolve();
+    return this.removeApp('main');
   }
 
-  setAppStatus(appName: string, status: AppStatus) {
-    this.statuses[appName] = status;
+  setAppStatus(appName: string, status: AppStatus, options = {}) {
+    if (this.status === status) {
+      return;
+    }
+    this.status = status;
+    this.supervisor.emit('appStatusChanged', { appName, status, options });
   }
 
   getAppStatus(appName: string, defaultStatus?: AppStatus) {
-    return this.statuses[appName] ?? defaultStatus ?? null;
+    return this.status ?? defaultStatus ?? null;
   }
 
   hasAppError() {
-    return false;
+    return !!this.appError;
   }
 
-  setAppError() {}
-  clearAppError() {}
+  setAppError(appName: string, error: Error) {
+    this.appError = error;
+    this.supervisor.emit('appError', { appName, error });
+  }
+
+  clearAppError() {
+    this.appError = null;
+  }
+
   touchApp() {}
 }
