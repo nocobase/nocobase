@@ -396,6 +396,32 @@ export default {
         title: '{{t("Hidden")}}',
       },
     },
+    {
+      name: 'path',
+      type: 'string',
+      interface: 'input',
+      description: null,
+      collectionName: 'desktopRoutes',
+      parentKey: null,
+      reverseKey: null,
+      unique: true,
+      uiSchema: {
+        type: 'string',
+        'x-component': 'Input',
+        title: '{{t("Path")}}',
+        description: '{{t("URL path for the page. Should be unique and URL-friendly (e.g., my-custom-page)")}}',
+        'x-validator': [
+          {
+            pattern: '^(?!/).*$', // does not start with slash
+            message: '{{t("Path should not start with /")}}',
+          },
+          {
+            pattern: '^[a-zA-Z0-9-_]+(?:/[a-zA-Z0-9-_]+)*$', // URL-friendly characters
+            message: '{{t("Path should only contain letters, numbers, hyphens, and underscores")}}',
+          }
+        ],
+      },
+    },
   ],
   category: [],
   logging: true,
