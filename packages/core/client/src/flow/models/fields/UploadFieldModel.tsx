@@ -291,6 +291,35 @@ UploadFieldModel.registerFlow({
         ctx.model.setProps({ allowSelectExistingRecord: params.allowSelectExistingRecord });
       },
     },
+    allowMultiple: {
+      title: tExpr('Allow multiple'),
+      uiSchema(ctx) {
+        if (ctx.collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)) {
+          return {
+            multiple: {
+              'x-component': 'Switch',
+              type: 'boolean',
+              'x-decorator': 'FormItem',
+            },
+          };
+        } else {
+          return null;
+        }
+      },
+      defaultParams(ctx) {
+        return {
+          multiple:
+            ctx.collectionField &&
+            ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.model.context.collectionField.type),
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          multiple: params?.multiple,
+          maxCount: !params?.multiple ? 1 : null,
+        });
+      },
+    },
   },
 });
 
