@@ -1100,6 +1100,66 @@ describe('xlsx importer', () => {
     expect(post.get('region').map((item: any) => item.code)).toEqual(['14', '1404', '140406']);
   });
 
+  it('should keep boolean field nullable when cell value is empty', async () => {
+    const BooleanUser = app.db.collection({
+      name: 'booleanUsers',
+      fields: [
+        { type: 'string', name: 'name' },
+        { type: 'boolean', name: 'isActive', interface: 'boolean', allowNull: true },
+      ],
+    });
+
+    await app.db.sync();
+
+    const columns = [
+      { dataIndex: ['name'], defaultTitle: '姓名' },
+      { dataIndex: ['isActive'], defaultTitle: '是否启用' },
+    ];
+
+    const templateCreator = new TemplateCreator({
+      collection: BooleanUser,
+      columns,
+    });
+
+    const template = (await templateCreator.run({ returnXLSXWorkbook: true })) as XLSX.WorkBook;
+    const worksheet = template.Sheets[template.SheetNames[0]];
+
+    XLSX.utils.sheet_add_aoa(
+      worksheet,
+      [
+        ['User1', '是'],
+        ['User2', null],
+      ],
+      {
+        origin: 'A2',
+      },
+    );
+
+    const importer = new XlsxImporter({
+      collectionManager: app.mainDataSource.collectionManager,
+      collection: BooleanUser,
+      columns,
+      workbook: template,
+    });
+
+    await importer.run();
+
+    const user1 = await BooleanUser.repository.findOne({
+      filter: {
+        name: 'User1',
+      },
+    });
+
+    const user2 = await BooleanUser.repository.findOne({
+      filter: {
+        name: 'User2',
+      },
+    });
+
+    expect(user1.get('isActive')).toBe(true);
+    expect(user2.get('isActive')).toBeNull();
+  });
+
   it.skipIf(process.env['DB_DIALECT'] === 'sqlite')('should import with number field', async () => {
     const User = app.db.collection({
       name: 'users',
