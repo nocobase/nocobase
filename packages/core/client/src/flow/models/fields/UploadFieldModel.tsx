@@ -32,7 +32,7 @@ import { RecordPickerContent } from './AssociationFieldModel/RecordPickerFieldMo
 import { matchMimetype } from '../../../schema-component/antd/upload/shared';
 
 export const CardUpload = (props) => {
-  const { allowSelectExistingRecord, multiple, value, disabled, onSelectExitRecordClick } = props;
+  const { allowSelectExistingRecord, multiple, value, disabled, onSelectExitRecordClick, quickUpload = true } = props;
   const [fileList, setFileList] = useState(castArray(value || []));
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
@@ -97,26 +97,28 @@ export const CardUpload = (props) => {
       }
     >
       <div style={{ display: 'flex' }}>
-        <Upload
-          onPreview={handlePreview}
-          {...props}
-          listType="picture-card"
-          fileList={fileList}
-          onChange={(newFileList) => {
-            setFileList(newFileList);
-            const doneFiles = newFileList.filter((f: any) => f.status === 'done' || f.id);
-            if (newFileList.every((f: any) => f.status === 'done' || f.id)) {
-              if (props.maxCount === 1) {
-                const firstFile = doneFiles[0];
-                props.onChange(firstFile ? firstFile.response : null);
-              } else {
-                props.onChange(doneFiles.map((file) => file.response || file).filter(Boolean));
+        {quickUpload && (
+          <Upload
+            onPreview={handlePreview}
+            {...props}
+            listType="picture-card"
+            fileList={fileList}
+            onChange={(newFileList) => {
+              setFileList(newFileList);
+              const doneFiles = newFileList.filter((f: any) => f.status === 'done' || f.id);
+              if (newFileList.every((f: any) => f.status === 'done' || f.id)) {
+                if (props.maxCount === 1) {
+                  const firstFile = doneFiles[0];
+                  props.onChange(firstFile ? firstFile.response : null);
+                } else {
+                  props.onChange(doneFiles.map((file) => file.response || file).filter(Boolean));
+                }
               }
-            }
-          }}
-        >
-          <UploadOutlined style={{ fontSize: 20 }} />
-        </Upload>
+            }}
+          >
+            <UploadOutlined style={{ fontSize: 20 }} />
+          </Upload>
+        )}
         {previewImage && (
           <Image
             wrapperStyle={{ display: 'none' }}
@@ -265,6 +267,32 @@ UploadFieldModel.registerFlow({
   key: 'uploadSettings',
   title: tExpr('Upload file settings'),
   steps: {
+    quickUpload: {
+      title: tExpr('Quick upload'),
+      uiSchema(ctx) {
+        if (!ctx.collectionField.isAssociationField() || !ctx.collectionField.targetCollection) {
+          return null;
+        }
+        return {
+          quickUpload: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+            'x-component-props': {
+              checkedChildren: tExpr('Yes'),
+              unCheckedChildren: tExpr('No'),
+            },
+          },
+        };
+      },
+      defaultParams(ctx) {
+        return {
+          quickUpload: true,
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ quickUpload: params.quickUpload });
+      },
+    },
     allowSelectExistingRecord: {
       title: tExpr('Allow selection of existing file'),
       uiSchema(ctx) {
