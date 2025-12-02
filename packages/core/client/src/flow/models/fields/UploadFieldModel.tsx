@@ -20,6 +20,7 @@ import {
   ZoomInOutlined,
   ZoomOutOutlined,
 } from '@ant-design/icons';
+import { css } from '@emotion/css';
 import { Upload } from '@formily/antd-v5';
 import { Image, Space, Alert } from 'antd';
 import { castArray } from 'lodash';
@@ -32,7 +33,15 @@ import { RecordPickerContent } from './AssociationFieldModel/RecordPickerFieldMo
 import { matchMimetype } from '../../../schema-component/antd/upload/shared';
 
 export const CardUpload = (props) => {
-  const { allowSelectExistingRecord, multiple, value, disabled, onSelectExitRecordClick, quickUpload = true } = props;
+  const {
+    allowSelectExistingRecord,
+    multiple,
+    value,
+    disabled,
+    onSelectExitRecordClick,
+    quickUpload = true,
+    showFileName,
+  } = props;
   const [fileList, setFileList] = useState(castArray(value || []));
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewImage, setPreviewImage] = useState('');
@@ -96,7 +105,14 @@ export const CardUpload = (props) => {
         } as any
       }
     >
-      <div style={{ display: 'flex' }}>
+      <div
+        style={{ display: 'flex' }}
+        className={css`
+          .ant-upload-list-picture-card {
+            margin-bottom: 10px;
+          }
+        `}
+      >
         <Upload
           onPreview={handlePreview}
           {...props}
@@ -113,6 +129,26 @@ export const CardUpload = (props) => {
                 props.onChange(doneFiles.map((file) => file.response || file).filter(Boolean));
               }
             }
+          }}
+          itemRender={(originNode, file: any) => {
+            return (
+              <>
+                {originNode}
+                {showFileName && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
+                      overflow: 'hidden',
+                    }}
+                    title={file.filename}
+                  >
+                    {file.filename}
+                  </div>
+                )}
+              </>
+            );
           }}
         >
           {quickUpload && <UploadOutlined style={{ fontSize: 20 }} />}
@@ -345,6 +381,23 @@ UploadFieldModel.registerFlow({
           multiple: params?.multiple,
           maxCount: !params?.multiple ? 1 : null,
         });
+      },
+    },
+    showFileName: {
+      title: tExpr('Show file name'),
+      uiSchema: (ctx) => {
+        return {
+          showFileName: {
+            'x-component': 'Switch',
+            'x-decorator': 'FormItem',
+          },
+        };
+      },
+      defaultParams: {
+        showFileName: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('showFileName', params.showFileName);
       },
     },
   },
