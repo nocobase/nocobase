@@ -88,7 +88,9 @@ export function toSelectValue(
     if (!Array.isArray(record)) return [];
     return record.map(convert).filter(Boolean);
   }
-
+  if (Array.isArray(record) && !multiple) {
+    return convert(record[0]);
+  }
   return convert(record as AssociationOption);
 }
 
