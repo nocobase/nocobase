@@ -58,30 +58,30 @@ REST API 数据源的 Collection 配置如下
 
 配置查看资源列表的接口映射
 
-![20240716211351](https://static-docs.nocobase.com/20240716211351.png)
+![20251201162457](https://static-docs.nocobase.com/20251201162457.png)
 
 ### Get
 
 配置查看资源详情的接口映射
 
-![20240716211532](https://static-docs.nocobase.com/20240716211532.png)
+![20251201162744](https://static-docs.nocobase.com/20251201162744.png)
 
 ### Create
 
 配置创建资源的接口映射
 
-![20240716211634](https://static-docs.nocobase.com/20240716211634.png)
+![20251201163000](https://static-docs.nocobase.com/20251201163000.png)
 
 ### Update
 
 配置更新资源的接口映射
-![20240716211733](https://static-docs.nocobase.com/20240716211733.png)
+![20251201163058](https://static-docs.nocobase.com/20251201163058.png)
 
 ### Destroy
 
 配置删除资源的接口映射
 
-![20240716211808](https://static-docs.nocobase.com/20240716211808.png)
+![20251201163204](https://static-docs.nocobase.com/20251201163204.png)
 
 其中 List 和 Get 是 必须配置的两个接口。
 ## 调试 API
@@ -90,7 +90,7 @@ REST API 数据源的 Collection 配置如下
 
 示例: 为 List 接口配置分页参数（如果第三方 API 本身不支持分页，则以取到的列表数据来分页）。
 
-![20241121205229](https://static-docs.nocobase.com/20241121205229.png)
+![20251201163500](https://static-docs.nocobase.com/20251201163500.png)
 
 请注意，只有在接口中已添加的变量才会生效。
 
@@ -101,7 +101,7 @@ REST API 数据源的 Collection 配置如下
 
 可以点击 Try it out 进行调试，查看响应结果。
 
-![20241121210320](https://static-docs.nocobase.com/20241121210320.png)
+![20251201163635](https://static-docs.nocobase.com/20251201163635.png)
 
 <video width="100%" height="440" controls>
       <source src="https://static-docs.nocobase.com/20241121211034.mp4" type="video/mp4">
@@ -111,15 +111,30 @@ REST API 数据源的 Collection 配置如下
 
 第三方 API 的响应格式可能并不是 NocoBase 标准，需要转换之后才能正确的在前端显示。
 
-![20241121214638](https://static-docs.nocobase.com/20241121214638.png)
+![20251201164529](https://static-docs.nocobase.com/20251201164529.png)
 
 根据第三方 API 的响应格式调整转换规则，使其符合 NocoBase 输出标准。
 
-![20241121215100](https://static-docs.nocobase.com/20241121215100.png)
+![20251201164629](https://static-docs.nocobase.com/20251201164629.png)
 
 调试流程说明
 
 ![20240717110051](https://static-docs.nocobase.com/20240717110051.png)
+
+### 异常信息转换
+
+第三方 API 出现异常，响应的异常信息格式可能不是 NocoBase 标准，需要转换之后才能正确的在前端显示。
+
+![20251201170545](https://static-docs.nocobase.com/20251201170545.png)
+
+未配置异常信息转换时，默认转换为包含 http 状态码的异常信息。
+
+![20251201170732](https://static-docs.nocobase.com/20251201170732.png)
+
+配置异常信息转换后，使其符合 NocoBase 输出标准，前端可以正确展示第三方 API 的异常信息。
+
+![20251201170946](https://static-docs.nocobase.com/20251201170946.png)
+![20251201171113](https://static-docs.nocobase.com/20251201171113.png)
 
 ## 变量
 
@@ -142,13 +157,13 @@ REST API 数据源提供了三类变量用于接口的对接
 - Body：请求的 Body；
 - Token：当前 NocoBase 请求的 API token。
 
-![20240716222042](https://static-docs.nocobase.com/20240716222042.png)
+![20251201164833](https://static-docs.nocobase.com/20251201164833.png)
 
 ### 第三方响应
 
 目前提供的只有响应的 Body
 
-![20240716222303](https://static-docs.nocobase.com/20240716222303.png)
+![20251201164915](https://static-docs.nocobase.com/20251201164915.png)
 
 各个接口对接时可用变量如下：
 
@@ -207,7 +222,7 @@ REST API 数据源提供了三类变量用于接口的对接
 
 提取字段元数据。
 
-![20241121230436](https://static-docs.nocobase.com/20241121230436.png)
+![20251201165133](https://static-docs.nocobase.com/20251201165133.png)
 
 字段及预览。
 

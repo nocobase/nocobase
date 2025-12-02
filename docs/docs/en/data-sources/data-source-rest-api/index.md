@@ -71,7 +71,7 @@ The Collection configuration for a REST API data source includes the following:
 Map the interface for viewing a list of resources.
 
 
-![20240716211351](https://static-docs.nocobase.com/20240716211351.png)
+![20251201162457](https://static-docs.nocobase.com/20251201162457.png)
 
 
 ### Get
@@ -79,7 +79,7 @@ Map the interface for viewing a list of resources.
 Map the interface for viewing resource details.
 
 
-![20240716211532](https://static-docs.nocobase.com/20240716211532.png)
+![20251201162744](https://static-docs.nocobase.com/20251201162744.png)
 
 
 ### Create
@@ -87,7 +87,7 @@ Map the interface for viewing resource details.
 Map the interface for creating a resource.
 
 
-![20240716211634](https://static-docs.nocobase.com/20240716211634.png)
+![20251201163000](https://static-docs.nocobase.com/20251201163000.png)
 
 
 ### Update
@@ -95,7 +95,7 @@ Map the interface for creating a resource.
 Map the interface for updating a resource.
 
 
-![20240716211733](https://static-docs.nocobase.com/20240716211733.png)
+![20251201163058](https://static-docs.nocobase.com/20251201163058.png)
 
 
 ### Destroy
@@ -103,7 +103,7 @@ Map the interface for updating a resource.
 Map the interface for deleting a resource.
 
 
-![20240716211808](https://static-docs.nocobase.com/20240716211808.png)
+![20251201163204](https://static-docs.nocobase.com/20251201163204.png)
 
 
 Both the List and Get interfaces are required to be configured.
@@ -115,7 +115,7 @@ Both the List and Get interfaces are required to be configured.
 Example: Configure pagination parameters for the List API. If the third-party API does not support pagination natively, NocoBase will paginate based on the retrieved list data.
 
 
-![20241121205229](https://static-docs.nocobase.com/20241121205229.png)
+![20251201163500](https://static-docs.nocobase.com/20251201163500.png)
 
 
 Please note that only variables added in the interface will take effect.
@@ -128,8 +128,7 @@ Please note that only variables added in the interface will take effect.
 You can click Try it out to debug and view the response.
 
 
-![20241121210320](https://static-docs.nocobase.com/20241121210320.png)
-
+![20251201163635](https://static-docs.nocobase.com/20251201163635.png)
 
 <video width="100%" height="440" controls>
       <source src="https://static-docs.nocobase.com/20241121211034.mp4" type="video/mp4">
@@ -140,20 +139,33 @@ You can click Try it out to debug and view the response.
 The response format of the third-party API may not be in NocoBase standard, and it needs to be transformed before it can be correctly displayed on the front end.
 
 
-![20241121214638](https://static-docs.nocobase.com/20241121214638.png)
-
+![20251201164529](https://static-docs.nocobase.com/20251201164529.png)
 
 Adjust the conversion rules based on the response format of the third-party API to ensure the output conforms to the NocoBase standard.
 
 
-![20241121215100](https://static-docs.nocobase.com/20241121215100.png)
+![20251201164629](https://static-docs.nocobase.com/20251201164629.png)
 
 
 Debugging process description
 
 
-![20240717110051](https://static-docs.nocobase.com/20240717110051.png)
+![20250418085020](https://static-docs.nocobase.com/20250418085020.png)
 
+### Extract error message
+
+When a third-party API throws an exception, its response format may not follow NocoBase’s standard. In such cases, the error message needs to be transformed before it can be correctly displayed on the frontend.
+
+![20251201170545](https://static-docs.nocobase.com/20251201170545.png)
+
+If no error message transformer is configured, NocoBase will apply the default transformation, converting the error into a message that contains the HTTP status code.
+
+![20251201170732](https://static-docs.nocobase.com/20251201170732.png)
+
+After configuring an error message transformer to match NocoBase’s output standard, the frontend will be able to properly display the exception messages returned by the third-party API.
+
+![20251201170946](https://static-docs.nocobase.com/20251201170946.png)
+![20251201171113](https://static-docs.nocobase.com/20251201171113.png)
 
 ## Variables
 
@@ -181,15 +193,14 @@ The REST API data source supports three types of variables for API integration:
 - Token: The API token for the current NocoBase request.
 
 
-![20240716222042](https://static-docs.nocobase.com/20240716222042.png)
-
+![20251201164833](https://static-docs.nocobase.com/20251201164833.png)
 
 ### Third-Party Responses
 
 Currently, only the response body is available.
 
 
-![20240716222303](https://static-docs.nocobase.com/20240716222303.png)
+![20251201164915](https://static-docs.nocobase.com/20251201164915.png)
 
 
 Below are the variables available for each interface:
@@ -246,13 +257,13 @@ Below are the variables available for each interface:
 Field metadata (Fields) is extracted from the CRUD interface data of the adapted resource to serve as the fields of the collection.
 
 
-![20240716223636](https://static-docs.nocobase.com/20240716223636.png)
+![20250418085048](https://static-docs.nocobase.com/20250418085048.png)
 
 
 Extract field metadata.
 
 
-![20241121230436](https://static-docs.nocobase.com/20241121230436.png)
+![20251201165133](https://static-docs.nocobase.com/20251201165133.png)
 
 
 Fields and preview.
