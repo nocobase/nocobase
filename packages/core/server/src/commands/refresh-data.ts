@@ -16,7 +16,13 @@ export default (app: Application) => {
     .preload()
     .action(async (options) => {
       app.log.info('refreshing data...');
-      await app.emitAsync('beforeStart', app, {});
+      const Collection = app.db.getCollection('collections');
+      if (Collection) {
+        // @ts-ignore
+        await Collection.repository.setApp(app);
+        // @ts-ignore
+        await Collection.repository.load();
+      }
       await app.emitAsync('refresh-data', options);
     });
 };

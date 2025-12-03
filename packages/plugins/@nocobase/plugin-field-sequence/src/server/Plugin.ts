@@ -124,9 +124,7 @@ export default class PluginFieldSequenceServer extends Plugin {
           const fields: Field[] = collection.getFields();
           const fieldMap = Object.fromEntries<Field>(fields.map((field) => [field.name, field]));
 
-          const [autoIncrementField] = fields.filter(
-            (field) => field.options.primaryKey && field.options.autoIncrement,
-          );
+          const [autoIncrementField] = fields.filter((field) => field.options.primaryKey && field.type === 'bigInt');
           const [createAtField] = fields.filter((field) => field.options.interface === 'createdAt');
           if (!autoIncrementField && !createAtField) {
             app.log.warn(
