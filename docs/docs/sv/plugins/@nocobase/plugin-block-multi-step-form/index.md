@@ -4,16 +4,15 @@ packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
----
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
   Dela upp formulär med många fält i flera steg för att underlätta för användaren.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
 
 # Block: Flerstegsformulär

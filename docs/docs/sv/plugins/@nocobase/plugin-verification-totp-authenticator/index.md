@@ -5,16 +5,15 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
   Stöder användare att koppla en TOTP-autentiserare och verifiera sin identitet med tidsbaserade engångskoder (TOTP).
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
 
 # Verifiering: TOTP-autentiserare

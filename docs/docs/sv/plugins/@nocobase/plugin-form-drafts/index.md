@@ -4,16 +4,15 @@ packageName: '@nocobase/plugin-form-drafts'
 supportedVersions:
   - 2.x
 description: |
----
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
   Gör det möjligt att spara utkast när ni fyller i formulär, och sedan fortsätta redigera och skicka in dem.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
 
 # Formulärutkast

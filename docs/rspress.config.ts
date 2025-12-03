@@ -162,12 +162,6 @@ export default defineConfig({
       description: 'Helpt u NocoBase snel te leren en beheersen',
     },
     {
-      lang: 'sv',
-      label: 'Svenska',
-      title: 'NocoBase Dokumentation',
-      description: 'Hjälper dig att snabbt lära dig och bemästra NocoBase',
-    },
-    {
       lang: 'cs',
       label: 'Čeština',
       title: 'Dokumentace NocoBase',
@@ -190,6 +184,12 @@ export default defineConfig({
       label: 'हिन्दी',
       title: 'NocoBase दस्तावेज़ीकरण',
       description: 'आपको NocoBase को तेजी से सीखने और महारत हासिल करने में मदद करना',
+    },
+    {
+      lang: 'sv',
+      label: 'Svenska',
+      title: 'NocoBase Dokumentation',
+      description: 'Hjälper dig att snabbt lära dig och bemästra NocoBase',
     },
   ],
   lang: 'en',

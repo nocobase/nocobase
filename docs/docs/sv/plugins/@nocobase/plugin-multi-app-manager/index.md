@@ -2,15 +2,14 @@
 displayName: "Flerappshanterare (föråldrad)"
 packageName: '@nocobase/plugin-multi-app-manager'
 description: |
----
-:::tip AI-översättningsmeddelande
-Denna dokumentation har översatts automatiskt av AI.
-:::
-
   Flerappsfunktionen kör applikationer på ett processdelande sätt och är endast lämplig för test- och demo-miljöer. Använd den inte i produktionsmiljöer.
 isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip AI-översättningsmeddelande
+Denna dokumentation har översatts automatiskt av AI.
+:::
+
 
 # Flerappshanterare (föråldrad)
