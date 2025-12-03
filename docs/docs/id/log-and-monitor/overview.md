@@ -8,7 +8,7 @@ Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 
 ### Log Sistem
 
-> Lihat [Log Sistem](./logger/index.md#system-logs)
+> Lihat [Log Sistem](#)
 
 - Mencatat informasi operasional sistem aplikasi, melacak alur eksekusi logika kode, dan menelusuri informasi anomali seperti kesalahan eksekusi kode.
 - Log dikategorikan berdasarkan tingkat keparahan dan modul fungsional.
@@ -17,7 +17,7 @@ Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 
 ### Log Permintaan
 
-> Lihat [Log Permintaan](./logger/index.md#request-logs)
+> Lihat [Log Permintaan](#)
 
 - Mencatat informasi permintaan dan respons HTTP API, dengan fokus pada ID permintaan, jalur API, header, kode status respons, dan durasi.
 - Ditampilkan melalui terminal atau disimpan dalam bentuk file.

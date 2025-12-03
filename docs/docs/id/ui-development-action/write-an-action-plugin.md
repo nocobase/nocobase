@@ -20,4 +20,4 @@ Koleksi adalah unit dasar untuk menyimpan dan mengelola data di NocoBase. Anda d
     *   **Nama koleksi**: `orders`
 5.  Klik `OK` untuk menyimpan.
 
-Setelah berhasil dibuat, Anda dapat mulai [menambahkan field](./add-fields).
+Setelah berhasil dibuat, Anda dapat mulai [menambahkan field](#).

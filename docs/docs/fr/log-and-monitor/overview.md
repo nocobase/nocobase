@@ -8,7 +8,7 @@ Cette documentation a été traduite automatiquement par IA.
 
 ### Journaux système
 
-> Voir [Journaux système](./logger/index.md#system-logs)
+> Voir [Journaux système](#)
 
 - Enregistrent les informations d'exécution du système applicatif, suivent les chaînes d'exécution du code et retracent les exceptions ou les erreurs d'exécution.
 - Ils sont classés par niveaux de gravité et par modules fonctionnels.
@@ -17,7 +17,7 @@ Cette documentation a été traduite automatiquement par IA.
 
 ### Journaux des requêtes
 
-> Voir [Journaux des requêtes](./logger/index.md#request-logs)
+> Voir [Journaux des requêtes](#)
 
 - Enregistrent les détails des requêtes et réponses HTTP API, en se concentrant sur l'ID de la requête, le chemin de l'API, les en-têtes, le code de statut de la réponse et la durée.
 - Ils sont affichés via le terminal ou stockés sous forme de fichiers.

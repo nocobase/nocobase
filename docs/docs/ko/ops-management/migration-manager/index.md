@@ -71,7 +71,7 @@ pkg: '@nocobase/plugin-migration-manager'
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-애플리케이션 환경 변수 확인 ([환경 변수](../variables-and-secrets/index.md)에 대해 자세히 알아보세요)
+애플리케이션 환경 변수 확인 ([환경 변수](#)에 대해 자세히 알아보세요)
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

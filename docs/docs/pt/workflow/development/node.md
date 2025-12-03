@@ -145,7 +145,7 @@ No final, o próximo status de todo o **fluxo de trabalho** é determinado nos n
 
 Se qualquer nó retornar um status "pendente" após a execução, todo o processo de execução será temporariamente interrompido e suspenso, aguardando que um evento definido pelo nó correspondente acione a retomada da execução do **fluxo de trabalho**. Por exemplo, o Nó Manual, quando executado, pausará nesse nó com um status "pendente", aguardando intervenção manual para decidir se aprova. Se o status inserido manualmente for de aprovação, os nós subsequentes do **fluxo de trabalho** continuarão; caso contrário, será tratado de acordo com a lógica de falha descrita anteriormente.
 
-Para mais status de retorno de instrução, consulte a seção [Referência da API de **Fluxo de Trabalho**](TODO_LINK).
+Para mais status de retorno de instrução, consulte a seção [Referência da API de **Fluxo de Trabalho**](#).
 
 ### Saída Antecipada
 
@@ -159,7 +159,7 @@ O agendamento de **fluxos de trabalho** de ramificação com nós estendidos pos
 
 ### Saiba Mais
 
-Para as definições dos vários parâmetros para a definição de tipos de nós, consulte a seção [Referência da API de **Fluxo de Trabalho**](TODO_LINK).
+Para as definições dos vários parâmetros para a definição de tipos de nós, consulte a seção [Referência da API de **Fluxo de Trabalho**](#).
 
 ## Lado do Cliente
 
@@ -332,4 +332,4 @@ isAvailable({ engine, workflow, upstream, branchIndex }) {
 
 ### Saiba Mais
 
-Para as definições dos vários parâmetros para a definição de tipos de nós, consulte a seção [Referência da API de **Fluxo de Trabalho**](TODO_LINK).
+Para as definições dos vários parâmetros para a definição de tipos de nós, consulte a seção [Referência da API de **Fluxo de Trabalho**](#).

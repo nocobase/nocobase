@@ -70,7 +70,7 @@ Unabhängige Regeln und die Tabellen auswählen, die von den aktuellen unabhäng
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-Überprüfung der Anwendungsumgebungsvariablen (Erfahren Sie mehr über [Umgebungsvariablen](../variables-and-secrets/index.md))
+Überprüfung der Anwendungsumgebungsvariablen (Erfahren Sie mehr über [Umgebungsvariablen](#))
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

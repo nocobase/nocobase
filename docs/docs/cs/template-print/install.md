@@ -5,7 +5,7 @@ Tato dokumentace byla automaticky přeložena umělou inteligencí.
 
 ### Instalace pluginů
 
-Viz dokumentaci k [instalaci a upgradu komerčních pluginů](/install-and-upgrade-commercial-plugins).
+Viz dokumentaci k [instalaci a upgradu komerčních pluginů](#).
 
 ### Instalace LibreOffice (volitelné)
 

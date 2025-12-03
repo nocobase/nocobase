@@ -92,4 +92,4 @@ return {
 ![20251026192816](https://static-docs.nocobase.com/20251026192816.png)
 
 > [!TIP]
-> Para obtener más información sobre las opciones de gráficos, consulte [Uso avanzado — Configuración de gráficos personalizados](link-to-advanced-custom-chart-config).
+> Para obtener más información sobre las opciones de gráficos, consulte [Uso avanzado — Configuración de gráficos personalizados](#).

@@ -70,4 +70,4 @@ dataSourceManager.afterAddDataSource((dataSource) => {
 
 ## Rozszerzanie źródeł danych
 
-Aby uzyskać pełne informacje na temat rozszerzania źródeł danych, proszę zapoznać się z [rozdziałem poświęconym rozszerzaniu źródeł danych](data-source-extension).
+Aby uzyskać pełne informacje na temat rozszerzania źródeł danych, proszę zapoznać się z [rozdziałem poświęconym rozszerzaniu źródeł danych](#).

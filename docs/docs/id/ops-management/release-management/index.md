@@ -15,7 +15,7 @@ Tiga plugin ini esensial untuk manajemen rilis. Pastikan semua plugin berikut su
 ### Variabel Lingkungan
 
 - Plugin bawaan, diinstal dan diaktifkan secara default.
-- Menyediakan konfigurasi dan manajemen terpusat untuk variabel lingkungan dan kunci rahasia, digunakan untuk penyimpanan data sensitif, penggunaan kembali data konfigurasi, isolasi konfigurasi berbasis lingkungan, dll. ([Lihat Dokumentasi](../variables-and-secrets/index.md)).
+- Menyediakan konfigurasi dan manajemen terpusat untuk variabel lingkungan dan kunci rahasia, digunakan untuk penyimpanan data sensitif, penggunaan kembali data konfigurasi, isolasi konfigurasi berbasis lingkungan, dll. ([Lihat Dokumentasi](#)).
 
 ### Manajer Cadangan
 

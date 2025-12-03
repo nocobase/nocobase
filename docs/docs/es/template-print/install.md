@@ -4,7 +4,7 @@ Esta documentación ha sido traducida automáticamente por IA.
 
 ### Instalar plugins
 
-Consulte la documentación sobre [Instalación y actualización de plugins comerciales](link-to-documentation).
+Consulte la documentación sobre [Instalación y actualización de plugins comerciales](#).
 
 ### Instalar LibreOffice (Opcional)
 

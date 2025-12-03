@@ -15,7 +15,7 @@ Dans NocoBase, une **collection** est un concept fondamental pour organiser vos 
 - **Champs :** Définissent les attributs de vos données (par exemple, `name`, `email`, `price`).
 - **Relations :** Permettent de lier les collections entre elles (par exemple, une collection `Commande` peut être liée à une collection `Utilisateur`).
 - **Permissions :** Contrôlent qui peut consulter, créer, modifier ou supprimer des données au sein d'une collection.
-- **Actions :** Exécutent des opérations sur les données de la collection, souvent intégrées aux [flux de travail](/docs/workflow).
+- **Actions :** Exécutent des opérations sur les données de la collection, souvent intégrées aux [flux de travail](#).
 
 ### Créer une nouvelle collection
 

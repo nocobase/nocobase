@@ -66,7 +66,7 @@ Votre version de NocoBase doit être v1.4.0-beta ou supérieure.
 
 Cette option permet de configurer la couleur d'arrière-plan des événements du calendrier. Voici comment l'utiliser :
 
-1.  Votre [collection](collection.md) de données de calendrier doit contenir un champ de type **Sélection unique (Single select)** ou **Groupe de boutons radio (Radio group)**, et ce champ doit être configuré avec des couleurs.
+1.  Votre [collection](#) de données de calendrier doit contenir un champ de type **Sélection unique (Single select)** ou **Groupe de boutons radio (Radio group)**, et ce champ doit être configuré avec des couleurs.
 2.  Ensuite, retournez à l'interface de configuration du bloc Calendrier et sélectionnez le champ que vous venez de configurer avec des couleurs dans le **Champ de couleur d'arrière-plan**.
 3.  Enfin, vous pouvez essayer de sélectionner une couleur pour un événement du calendrier et de cliquer sur Soumettre. Vous verrez que la couleur a été appliquée.
 

@@ -82,4 +82,4 @@ LIMIT 100;
 Successivamente, durante la configurazione delle "Opzioni grafico", mapperà i campi basandosi sulle colonne del risultato della query.
 
 > [!TIP]
-> Per maggiori informazioni sulla modalità SQL, consulti [Uso avanzato — Interrogare i dati in modalità SQL](advanced-usage-sql-mode).
+> Per maggiori informazioni sulla modalità SQL, consulti [Uso avanzato — Interrogare i dati in modalità SQL](#).

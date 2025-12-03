@@ -15,7 +15,7 @@ Trzy **wtyczki** są niezbędne do zarządzania wydaniami. Proszę upewnić się
 ### Zmienne środowiskowe i klucze
 
 - Wbudowana **wtyczka**, domyślnie zainstalowana i aktywna.
-- Umożliwia scentralizowaną konfigurację i zarządzanie zmiennymi środowiskowymi oraz kluczami, wykorzystywanymi do przechowywania wrażliwych danych, ponownego użycia danych konfiguracyjnych, izolacji konfiguracji środowiskowej itp. ([Zobacz dokumentację](../variables-and-secrets/index.md)).
+- Umożliwia scentralizowaną konfigurację i zarządzanie zmiennymi środowiskowymi oraz kluczami, wykorzystywanymi do przechowywania wrażliwych danych, ponownego użycia danych konfiguracyjnych, izolacji konfiguracji środowiskowej itp. ([Zobacz dokumentację](#)).
 
 ### Menedżer kopii zapasowych
 

@@ -70,7 +70,7 @@ Välj oberoende regler och de tabeller som ska bearbetas enligt de aktuella ober
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-Kontroll av applikationens miljövariabler (läs mer om [Miljövariabler](../variables-and-secrets/index.md))
+Kontroll av applikationens miljövariabler (läs mer om [Miljövariabler](#))
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

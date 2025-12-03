@@ -15,7 +15,7 @@ Per la gestione delle release sono essenziali tre plugin. Si prega di assicurars
 ### Variabili d'ambiente
 
 - Plugin integrato, installato e attivato per impostazione predefinita.
-- Offre configurazione e gestione centralizzate delle variabili d'ambiente e delle chiavi, utilizzate per l'archiviazione di dati sensibili, il riutilizzo di dati di configurazione, l'isolamento della configurazione basato sull'ambiente e altro ancora ([Vedi documentazione](../variables-and-secrets/index.md)).
+- Offre configurazione e gestione centralizzate delle variabili d'ambiente e delle chiavi, utilizzate per l'archiviazione di dati sensibili, il riutilizzo di dati di configurazione, l'isolamento della configurazione basato sull'ambiente e altro ancora ([Vedi documentazione](#)).
 
 ### Gestore dei Backup
 

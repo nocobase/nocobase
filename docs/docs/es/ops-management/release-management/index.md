@@ -15,7 +15,7 @@ Para la gestión de lanzamientos, son indispensables tres plugins. Asegúrese de
 ### Variables y Claves de Entorno
 
 - Plugin integrado, instalado y activado por defecto.
-- Permite la configuración y gestión centralizada de variables y claves de entorno, utilizadas para el almacenamiento de datos sensibles, la reutilización de datos de configuración, el aislamiento de configuraciones por entorno, entre otros fines ([Ver Documentación](../variables-and-secrets/index.md)).
+- Permite la configuración y gestión centralizada de variables y claves de entorno, utilizadas para el almacenamiento de datos sensibles, la reutilización de datos de configuración, el aislamiento de configuraciones por entorno, entre otros fines ([Ver Documentación](#)).
 
 ### Gestor de Copias de Seguridad
 

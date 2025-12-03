@@ -69,7 +69,7 @@ Výběr nezávislých pravidel a tabulek, které mají být zpracovány podle ak
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-Kontrola proměnných prostředí aplikace (více se dozvíte o [proměnných prostředí](../variables-and-secrets/index.md))
+Kontrola proměnných prostředí aplikace (více se dozvíte o [proměnných prostředí](#))
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

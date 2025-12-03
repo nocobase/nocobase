@@ -9,7 +9,7 @@ Tato dokumentace byla automaticky přeložena umělou inteligencí.
 
 ### Systémové protokoly
 
-> Viz [Systémové protokoly](./logger/index.md#system-logs)
+> Viz [Systémové protokoly](#)
 
 - Zaznamenávají informace o běhu aplikačního systému, sledují řetězce provádění kódu a pomáhají dohledávat výjimky nebo chyby při běhu.
 - Protokoly jsou rozděleny podle úrovní závažnosti a kategorizovány podle funkčních modulů.
@@ -18,7 +18,7 @@ Tato dokumentace byla automaticky přeložena umělou inteligencí.
 
 ### Protokoly požadavků
 
-> Viz [Protokoly požadavků](./logger/index.md#request-logs)
+> Viz [Protokoly požadavků](#)
 
 - Zaznamenávají detaily HTTP API požadavků a odpovědí, se zaměřením na ID požadavku, cestu API, hlavičky, stavový kód odpovědi a dobu trvání.
 - Jsou vypisovány do terminálu nebo ukládány ve formě souborů.

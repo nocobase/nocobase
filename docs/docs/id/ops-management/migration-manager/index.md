@@ -70,7 +70,7 @@ Pilih aturan independen dan tabel yang akan diproses oleh aturan independen saat
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-Pemeriksaan variabel lingkungan aplikasi (pelajari lebih lanjut tentang [Variabel Lingkungan](../variables-and-secrets/index.md))
+Pemeriksaan variabel lingkungan aplikasi (pelajari lebih lanjut tentang [Variabel Lingkungan](#))
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

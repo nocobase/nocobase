@@ -8,7 +8,7 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 ### System-Logs
 
-> Siehe [System-Logs](./logger/index.md#system-logs)
+> Siehe [System-Logs](#)
 
 - Erfassen Laufzeitinformationen des Anwendungssystems, verfolgen die Ausführungspfade des Codes und identifizieren Ausnahmen oder Laufzeitfehler.
 - Die Logs sind nach Schweregraden und Funktionsmodulen kategorisiert.
@@ -17,7 +17,7 @@ Diese Dokumentation wurde automatisch von KI übersetzt.
 
 ### Request-Logs
 
-> Siehe [Request-Logs](./logger/index.md#request-logs)
+> Siehe [Request-Logs](#)
 
 - Erfassen Details zu HTTP-API-Anfragen und -Antworten, wobei der Schwerpunkt auf der Erfassung von Anfrage-ID, API-Pfad, Headern, Antwortstatuscode und Dauer liegt.
 - Die Ausgabe erfolgt über das Terminal oder die Speicherung in Dateien.

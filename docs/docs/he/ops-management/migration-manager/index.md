@@ -70,7 +70,7 @@ pkg: '@nocobase/plugin-migration-manager'
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-בדיקת משתני סביבה של היישום (למדו עוד על [משתני סביבה](../variables-and-secrets/index.md))
+בדיקת משתני סביבה של היישום (למדו עוד על [משתני סביבה](#))
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

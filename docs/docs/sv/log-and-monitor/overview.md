@@ -8,7 +8,7 @@ Denna dokumentation har översatts automatiskt av AI.
 
 ### Systemloggar
 
-> Se [Systemloggar](./logger/index.md#system-logs)
+> Se [Systemloggar](#)
 
 - Registrerar körningsinformation för applikationssystemet, spårar exekveringskedjor för kod och spårar undantag eller körningsfel.
 - Loggarna kategoriseras efter allvarlighetsgrader och funktionsmoduler.
@@ -17,7 +17,7 @@ Denna dokumentation har översatts automatiskt av AI.
 
 ### Begärandeloggar
 
-> Se [Begärandeloggar](./logger/index.md#request-logs)
+> Se [Begärandeloggar](#)
 
 - Registrerar detaljer om HTTP API-begäranden och svar, med fokus på begärande-ID, API-sökväg, rubriker, svarsstatuskod och varaktighet.
 - Utmatas via terminalen eller lagras som filer.

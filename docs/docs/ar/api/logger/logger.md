@@ -37,7 +37,7 @@ interface LoggerOptions
 
 ### `createSystemLogger()`
 
-ينشئ سجلات تشغيل النظام التي تُطبع بطريقة محددة. راجع [المسجل - سجل النظام](/log-and-monitor/logger/index.md#system-log)
+ينشئ سجلات تشغيل النظام التي تُطبع بطريقة محددة. راجع [المسجل - سجل النظام](#)
 
 #### التوقيع
 
@@ -166,4 +166,4 @@ const transport = Transports.console({
 ## الوثائق ذات الصلة
 
 - [دليل التطوير - المسجل](/plugin-development/server/logger)
-- [المسجل](/log-and-monitor/logger/index.md)
+- [المسجل](#)

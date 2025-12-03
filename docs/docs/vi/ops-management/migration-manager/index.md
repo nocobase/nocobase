@@ -69,7 +69,7 @@ Chọn quy tắc độc lập và các bảng sẽ được xử lý theo quy t�
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-Kiểm tra biến môi trường ứng dụng (tìm hiểu thêm về [Biến môi trường](../variables-and-secrets/index.md))
+Kiểm tra biến môi trường ứng dụng (tìm hiểu thêm về [Biến môi trường](#))
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

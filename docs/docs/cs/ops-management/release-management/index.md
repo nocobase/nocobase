@@ -16,7 +16,7 @@ Pro správu vydání jsou nezbytné tři pluginy. Ujistěte se, že máte aktivo
 ### Proměnné prostředí
 
 - Vestavěný plugin, ve výchozím nastavení nainstalovaný a aktivovaný.
-- Poskytuje centralizovanou konfiguraci a správu proměnných prostředí a klíčů, používaných pro ukládání citlivých dat, opakovaně použitelná konfigurační data, izolaci konfigurace prostředí atd. ([Zobrazit dokumentaci](../variables-and-secrets/index.md)).
+- Poskytuje centralizovanou konfiguraci a správu proměnných prostředí a klíčů, používaných pro ukládání citlivých dat, opakovaně použitelná konfigurační data, izolaci konfigurace prostředí atd. ([Zobrazit dokumentaci](#)).
 
 ### Správce záloh
 

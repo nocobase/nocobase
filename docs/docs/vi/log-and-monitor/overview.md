@@ -9,7 +9,7 @@ Tài liệu này đã được dịch tự động bằng AI.
 
 ### Nhật ký hệ thống
 
-> Xem thêm [Nhật ký hệ thống](./logger/index.md#system-logs)
+> Xem thêm [Nhật ký hệ thống](#)
 
 - Ghi lại thông tin hoạt động của hệ thống ứng dụng, theo dõi chuỗi thực thi logic mã, và truy vết các lỗi hoặc ngoại lệ trong quá trình chạy mã.
 - Nhật ký được phân cấp và phân loại theo các module chức năng.
@@ -18,7 +18,7 @@ Tài liệu này đã được dịch tự động bằng AI.
 
 ### Nhật ký yêu cầu
 
-> Xem thêm [Nhật ký yêu cầu](./logger/index.md#request-logs)
+> Xem thêm [Nhật ký yêu cầu](#)
 
 - Ghi lại chi tiết yêu cầu và phản hồi HTTP API, tập trung vào ID yêu cầu, đường dẫn API, tiêu đề, mã trạng thái phản hồi và thời gian xử lý.
 - Xuất ra terminal hoặc lưu trữ dưới dạng tệp.

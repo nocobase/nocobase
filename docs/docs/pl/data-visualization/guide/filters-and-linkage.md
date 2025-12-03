@@ -14,7 +14,7 @@ Blok filtrujący (Filter Block) służy do jednolitego wprowadzania warunków fi
 
 ![clipboard-image-1761487702](https://static-docs.nocobase.com/clipboard-image-1761487702.png)
 
-Więcej informacji na temat używania filtrów na stronie oraz ich powiązań z wykresami i innymi blokami danych znajdą Państwo w dokumentacji [Filtry na stronie](page-filter-documentation).
+Więcej informacji na temat używania filtrów na stronie oraz ich powiązań z wykresami i innymi blokami danych znajdą Państwo w dokumentacji [Filtry na stronie](#).
 
 ## Używanie wartości filtrów strony w zapytaniach wykresów
 - Tryb konstruktora (zalecany)

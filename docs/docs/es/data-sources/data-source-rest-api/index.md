@@ -54,7 +54,7 @@ POST /users:update?filterByTk=1
 POST /users:destroy?filterByTk=1
 ```
 
-Para una guía completa sobre las especificaciones de diseño de la API de NocoBase, consulte la [documentación de la API](/api-reference/core/introduction).
+Para una guía completa sobre las especificaciones de diseño de la API de NocoBase, consulte la [documentación de la API](#).
 
 ![20240716213344](https://static-docs.nocobase.com/20240716213344.png)
 

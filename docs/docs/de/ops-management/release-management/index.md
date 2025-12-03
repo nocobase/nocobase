@@ -15,7 +15,7 @@ Für das Freigabemanagement sind drei Plugins unerlässlich. Bitte stellen Sie s
 ### Variablen und Schlüssel
 
 - Integriertes Plugin, standardmäßig installiert und aktiviert.
-- Es ermöglicht die zentrale Konfiguration und Verwaltung von Umgebungsvariablen und Schlüsseln. Dies wird für die Speicherung sensibler Daten, die Wiederverwendung von Konfigurationsdaten und die Isolierung von Umgebungskonfigurationen genutzt. ([Dokumentation ansehen](../variables-and-secrets/index.md))
+- Es ermöglicht die zentrale Konfiguration und Verwaltung von Umgebungsvariablen und Schlüsseln. Dies wird für die Speicherung sensibler Daten, die Wiederverwendung von Konfigurationsdaten und die Isolierung von Umgebungskonfigurationen genutzt. ([Dokumentation ansehen](#))
 
 ### Backup-Manager
 

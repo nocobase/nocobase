@@ -69,7 +69,7 @@ Bağımsız kuralları ve mevcut bağımsız kurallara göre işlenecek tablolar
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-Uygulama ortam değişkeni kontrolü ([Ortam Değişkenleri](../variables-and-secrets/index.md) hakkında daha fazla bilgi edinin)
+Uygulama ortam değişkeni kontrolü ([Ortam Değişkenleri](#) hakkında daha fazla bilgi edinin)
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

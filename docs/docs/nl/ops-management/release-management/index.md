@@ -15,7 +15,7 @@ Drie plugins zijn essentieel voor releasebeheer. Zorg ervoor dat de volgende plu
 ### Variabelen en sleutels
 
 - Ingebouwde plugin, standaard geïnstalleerd en geactiveerd.
-- Biedt gecentraliseerde configuratie en beheer van omgevingsvariabelen en sleutels, gebruikt voor het opslaan van gevoelige gegevens, herbruikbare configuratiegegevens, omgevingsspecifieke isolatie, enz. ([Bekijk documentatie](../variables-and-secrets/index.md)).
+- Biedt gecentraliseerde configuratie en beheer van omgevingsvariabelen en sleutels, gebruikt voor het opslaan van gevoelige gegevens, herbruikbare configuratiegegevens, omgevingsspecifieke isolatie, enz. ([Bekijk documentatie](#)).
 
 ### Back-upbeheerder
 

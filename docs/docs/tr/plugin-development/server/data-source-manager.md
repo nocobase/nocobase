@@ -71,4 +71,4 @@ dataSourceManager.afterAddDataSource((dataSource) => {
 
 ## Veri Kaynağı Genişletme
 
-Veri kaynağı genişletme hakkında daha fazla bilgi için lütfen [veri kaynağı genişletme bölümüne](data-source-extension) bakınız.
+Veri kaynağı genişletme hakkında daha fazla bilgi için lütfen [veri kaynağı genişletme bölümüne](#) bakınız.

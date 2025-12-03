@@ -81,4 +81,4 @@ LIMIT 100;
 Posteriormente, al configurar las "Opciones del gráfico", realizará el mapeo de campos basándose en las columnas del resultado de la consulta.
 
 > [!TIP]
-> Para obtener más información sobre el modo SQL, consulte [Uso avanzado — Consulta de datos en modo SQL](/advanced-usage/sql-mode-query-data).
+> Para obtener más información sobre el modo SQL, consulte [Uso avanzado — Consulta de datos en modo SQL](#).

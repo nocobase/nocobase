@@ -69,7 +69,7 @@ pkg: '@nocobase/plugin-migration-manager'
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-Перевірка змінних середовища застосунку (дізнайтеся більше про [Змінні середовища](../variables-and-secrets/index.md))
+Перевірка змінних середовища застосунку (дізнайтеся більше про [Змінні середовища](#))
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

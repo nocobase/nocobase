@@ -224,7 +224,7 @@ Definuje `kolekci`. Toto volání je podobné metodě `define` v Sequelize, kter
 
 **Parametry**
 
-Všechny konfigurační parametry `options` jsou shodné s konstruktorem třídy `kolekce`, viz [Kolekce](/api/database/kolekce#constructor).
+Všechny konfigurační parametry `options` jsou shodné s konstruktorem třídy `kolekce`, viz [Kolekce](#).
 
 **Události**
 

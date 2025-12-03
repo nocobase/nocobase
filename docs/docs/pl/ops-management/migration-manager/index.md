@@ -70,7 +70,7 @@ Wybór niezależnych reguł oraz tabel, które mają być przetwarzane zgodnie z
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-Sprawdzanie zmiennych środowiskowych aplikacji (dowiedz się więcej o [Zmiennych Środowiskowych](../variables-and-secrets/index.md))
+Sprawdzanie zmiennych środowiskowych aplikacji (dowiedz się więcej o [Zmiennych Środowiskowych](#))
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

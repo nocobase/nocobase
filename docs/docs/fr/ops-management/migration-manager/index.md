@@ -70,7 +70,7 @@ Sélectionnez les règles indépendantes et les tables à traiter selon ces règ
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-Vérification des variables d'environnement de l'application (en savoir plus sur les [Variables d'environnement](../variables-and-secrets/index.md))
+Vérification des variables d'environnement de l'application (en savoir plus sur les [Variables d'environnement](#))
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

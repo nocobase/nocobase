@@ -24,4 +24,4 @@ Trước khi sử dụng NocoBase, điều quan trọng là phải hiểu các k
 
 ### Bắt đầu nhanh
 
-Để bắt đầu sử dụng NocoBase, vui lòng truy cập [Hướng dẫn cài đặt](/getting-started/installation) của chúng tôi.
+Để bắt đầu sử dụng NocoBase, vui lòng truy cập [Hướng dẫn cài đặt](#) của chúng tôi.

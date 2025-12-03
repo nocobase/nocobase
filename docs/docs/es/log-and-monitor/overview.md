@@ -8,7 +8,7 @@ Esta documentación ha sido traducida automáticamente por IA.
 
 ### Registros del Sistema
 
-> Consulte [Registros del Sistema](./logger/index.md#system-logs)
+> Consulte [Registros del Sistema](#)
 
 - Registran la información de ejecución del sistema de la aplicación, rastrean las cadenas de ejecución del código y permiten identificar excepciones o errores en tiempo de ejecución.
 - Se clasifican por niveles de gravedad y módulos funcionales.
@@ -17,7 +17,7 @@ Esta documentación ha sido traducida automáticamente por IA.
 
 ### Registros de Solicitudes
 
-> Consulte [Registros de Solicitudes](./logger/index.md#request-logs)
+> Consulte [Registros de Solicitudes](#)
 
 - Registran los detalles de las solicitudes y respuestas de la API HTTP, centrándose en el ID de la solicitud, la ruta de la API, los encabezados, el código de estado de la respuesta y la duración.
 - Se muestran por terminal o se almacenan como archivos.

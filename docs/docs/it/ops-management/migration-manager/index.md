@@ -70,7 +70,7 @@ Selezionare le regole indipendenti e le tabelle da elaborare secondo tali regole
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-Verifica delle variabili d'ambiente dell'applicazione (scopra di più sulle [Variabili d'ambiente](../variables-and-secrets/index.md))
+Verifica delle variabili d'ambiente dell'applicazione (scopra di più sulle [Variabili d'ambiente](#))
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

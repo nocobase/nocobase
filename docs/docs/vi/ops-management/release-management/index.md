@@ -16,7 +16,7 @@ Ba plugin sau đây là cần thiết cho việc quản lý phát hành. Hãy đ
 ### Biến môi trường và Khóa bí mật
 
 - Là một plugin tích hợp sẵn, được cài đặt và kích hoạt mặc định.
-- Cung cấp khả năng cấu hình và quản lý tập trung các biến môi trường và khóa bí mật, dùng để lưu trữ dữ liệu nhạy cảm, tái sử dụng dữ liệu cấu hình, cách ly cấu hình môi trường, v.v. ([Xem tài liệu](../variables-and-secrets/index.md)).
+- Cung cấp khả năng cấu hình và quản lý tập trung các biến môi trường và khóa bí mật, dùng để lưu trữ dữ liệu nhạy cảm, tái sử dụng dữ liệu cấu hình, cách ly cấu hình môi trường, v.v. ([Xem tài liệu](#)).
 
 ### Quản lý Sao lưu
 

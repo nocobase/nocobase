@@ -82,4 +82,4 @@ LIMIT 100;
 Selanjutnya, saat mengonfigurasi "Opsi Bagan", Anda akan memetakan bidang berdasarkan kolom dari hasil kueri.
 
 > [!TIP]
-> Untuk informasi lebih lanjut tentang mode SQL, silakan lihat [Penggunaan Lanjutan — Kueri Data dalam Mode SQL](/advanced-usage/query-data-in-sql-mode).
+> Untuk informasi lebih lanjut tentang mode SQL, silakan lihat [Penggunaan Lanjutan — Kueri Data dalam Mode SQL](#).

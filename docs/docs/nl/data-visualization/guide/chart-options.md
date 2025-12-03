@@ -93,4 +93,4 @@ return {
 ![20251026192816](https://static-docs.nocobase.com/20251026192816.png)
 
 > [!TIP]
-> Voor meer informatie over grafiekopties, zie [Geavanceerd — Aangepaste grafiekconfiguratie](link-to-advanced-custom-chart-config).
+> Voor meer informatie over grafiekopties, zie [Geavanceerd — Aangepaste grafiekconfiguratie](#).

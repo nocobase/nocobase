@@ -70,7 +70,7 @@ pkg: '@nocobase/plugin-migration-manager'
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-Проверка переменных окружения приложения (узнайте больше о [Переменных окружения](../variables-and-secrets/index.md))
+Проверка переменных окружения приложения (узнайте больше о [Переменных окружения](#))
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

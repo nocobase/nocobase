@@ -70,7 +70,7 @@ pkg: '@nocobase/plugin-migration-manager'
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-एप्लिकेशन एनवायरनमेंट वेरिएबल जाँच ( [एनवायरनमेंट वेरिएबल](../variables-and-secrets/index.md) के बारे में और जानें)
+एप्लिकेशन एनवायरनमेंट वेरिएबल जाँच ( [एनवायरनमेंट वेरिएबल](#) के बारे में और जानें)
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

@@ -93,4 +93,4 @@ return {
 ![20251026192816](https://static-docs.nocobase.com/20251026192816.png)
 
 > [!TIP]
-> 차트 옵션에 대한 더 자세한 내용은 [고급 사용법 — 사용자 정의 차트 설정](/advanced/custom-chart-configuration)을 참고해 주세요.
+> 차트 옵션에 대한 더 자세한 내용은 [고급 사용법 — 사용자 정의 차트 설정](#)을 참고해 주세요.

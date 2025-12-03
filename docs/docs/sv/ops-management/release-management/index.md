@@ -15,7 +15,7 @@ För versionshantering krävs tre plugin. Se till att ni har aktiverat följande
 ### Miljövariabler
 
 - Inbyggt plugin, installeras och aktiveras som standard.
-- Ger centraliserad konfiguration och hantering av miljövariabler och nycklar. Används för att lagra känslig data, återanvända konfigurationsdata och isolera miljöspecifika inställningar med mera ([Se dokumentation](../variables-and-secrets/index.md)).
+- Ger centraliserad konfiguration och hantering av miljövariabler och nycklar. Används för att lagra känslig data, återanvända konfigurationsdata och isolera miljöspecifika inställningar med mera ([Se dokumentation](#)).
 
 ### Säkerhetskopieringshanterare
 

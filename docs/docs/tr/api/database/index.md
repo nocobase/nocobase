@@ -224,7 +224,7 @@ Bir `koleksiyon` tanımlar. Bu çağrı, Sequelize'ın `define` metoduna benzer;
 
 **Parametreler**
 
-Tüm `options` yapılandırma parametreleri, `koleksiyon` sınıfının yapılandırıcısıyla uyumludur, [koleksiyon](/api/database/koleksiyon#constructor) bölümüne bakın.
+Tüm `options` yapılandırma parametreleri, `koleksiyon` sınıfının yapılandırıcısıyla uyumludur, [koleksiyon](#) bölümüne bakın.
 
 **Olaylar**
 

@@ -16,7 +16,7 @@ Yayın yönetimi için gerekli üç eklenti bulunmaktadır. Lütfen aşağıdaki
 ### Ortam Değişkenleri ve Anahtarlar
 
 - Yerleşik bir eklentidir, varsayılan olarak yüklü ve etkinleştirilmiştir.
-- Hassas veri depolama, yapılandırma verilerinin yeniden kullanımı ve ortama dayalı izolasyon gibi amaçlar için ortam değişkenlerinin ve anahtarların merkezi olarak yapılandırılmasını ve yönetilmesini sağlar. ([Belgeleri Görüntüle](../variables-and-secrets/index.md))
+- Hassas veri depolama, yapılandırma verilerinin yeniden kullanımı ve ortama dayalı izolasyon gibi amaçlar için ortam değişkenlerinin ve anahtarların merkezi olarak yapılandırılmasını ve yönetilmesini sağlar. ([Belgeleri Görüntüle](#))
 
 ### Yedekleme Yöneticisi
 

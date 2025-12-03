@@ -19,7 +19,7 @@ Le Champ JS permet de personnaliser le rendu du contenu à l'emplacement d'un ch
 
 - **En lecture seule**
   - **Bloc de détails** : Affichage de contenu en lecture seule tel que des résultats de calcul, des badges de statut, des extraits de texte enrichi, des graphiques, etc.
-  - **Bloc de tableau** : Utilisé comme « Autre colonne personnalisée > Champ JS » pour un affichage en lecture seule. (Si vous avez besoin d'une colonne non liée à un champ, veuillez utiliser la [Colonne JS](/concepts/js-column)).
+  - **Bloc de tableau** : Utilisé comme « Autre colonne personnalisée > Champ JS » pour un affichage en lecture seule. (Si vous avez besoin d'une colonne non liée à un champ, veuillez utiliser la [Colonne JS](#)).
 
 - **Modifiable**
   - **Bloc de formulaire (CreateForm/EditForm)** : Utilisé pour des contrôles de saisie personnalisés ou des entrées composites, qui sont validés et soumis avec le formulaire.

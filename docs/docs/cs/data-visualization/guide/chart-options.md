@@ -94,4 +94,4 @@ return {
 ![20251026192816](https://static-docs.nocobase.com/20251026192816.png)
 
 > [!TIP]
-> Další informace o možnostech grafu naleznete v části [Pokročilé — Vlastní konfigurace grafu](link-to-advanced-custom-chart-config).
+> Další informace o možnostech grafu naleznete v části [Pokročilé — Vlastní konfigurace grafu](#).

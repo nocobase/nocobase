@@ -15,7 +15,7 @@ Trois plugins sont essentiels pour la gestion des versions. Veuillez vous assure
 ### Variables d'environnement et clés
 
 - Plugin intégré, installé et activé par défaut.
-- Il permet la configuration et la gestion centralisées des variables d'environnement et des clés, utilisées pour le stockage de données sensibles, la réutilisation de données de configuration, l'isolation des configurations par environnement, etc. ([Consulter la documentation](../variables-and-secrets/index.md)).
+- Il permet la configuration et la gestion centralisées des variables d'environnement et des clés, utilisées pour le stockage de données sensibles, la réutilisation de données de configuration, l'isolation des configurations par environnement, etc. ([Consulter la documentation](#)).
 
 ### Gestionnaire de sauvegardes
 

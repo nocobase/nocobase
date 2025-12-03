@@ -70,7 +70,7 @@ Selecteer onafhankelijke regels en de tabellen die door de huidige onafhankelijk
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-Controle van omgevingsvariabelen van de applicatie (lees meer over [Omgevingsvariabelen](../variables-and-secrets/index.md))
+Controle van omgevingsvariabelen van de applicatie (lees meer over [Omgevingsvariabelen](#))
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

@@ -15,7 +15,7 @@ Três plugins são essenciais para o gerenciamento de lançamentos. Certifique-s
 ### Variáveis e Segredos
 
 - Plugin integrado, instalado e ativado por padrão.
-- Oferece configuração e gerenciamento centralizados de variáveis de ambiente e segredos, utilizados para armazenamento de dados sensíveis, reutilização de dados de configuração, isolamento de configurações por ambiente, etc. ([Ver Documentação](../variables-and-secrets/index.md)).
+- Oferece configuração e gerenciamento centralizados de variáveis de ambiente e segredos, utilizados para armazenamento de dados sensíveis, reutilização de dados de configuração, isolamento de configurações por ambiente, etc. ([Ver Documentação](#)).
 
 ### Gerenciador de Backup
 

@@ -8,7 +8,7 @@ Questa documentazione è stata tradotta automaticamente dall'IA.
 
 ### Log di Sistema
 
-> Vedere [Log di Sistema](./logger/index.md#system-logs)
+> Vedere [Log di Sistema](#)
 
 - Registrano le informazioni di runtime del sistema applicativo, tracciano la catena di esecuzione della logica del codice e individuano eccezioni o errori di runtime.
 - I log sono categorizzati per livelli di gravità e moduli funzionali.
@@ -17,7 +17,7 @@ Questa documentazione è stata tradotta automaticamente dall'IA.
 
 ### Log delle Richieste
 
-> Vedere [Log delle Richieste](./logger/index.md#request-logs)
+> Vedere [Log delle Richieste](#)
 
 - Registrano i dettagli delle richieste e delle risposte delle API HTTP, concentrandosi su ID della richiesta, percorso API, intestazioni, codice di stato della risposta e durata.
 - Vengono visualizzati tramite terminale o archiviati come file.

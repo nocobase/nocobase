@@ -312,7 +312,7 @@ Registra il pannello di configurazione corrispondente al tipo di nodo.
 Registra un gruppo di tipi di nodo. NocoBase fornisce 4 gruppi di tipi di nodo predefiniti:
 
 *   `'control'`: Controllo
-*   `'collection'`: Operazioni sulle [collezione](collection)
+*   `'collection'`: Operazioni sulle [collezione](#)
 *   `'manual'`: Elaborazione manuale
 *   `'extended'`: Altre estensioni
 
@@ -353,7 +353,7 @@ Classe base per i trigger, utilizzata per estendere i tipi di trigger personaliz
 | `components?`   | `{ [key: string]: React.FC }`                                    | Collezione di componenti che potrebbero essere utilizzati nello Schema degli elementi di configurazione |
 | `useVariables?` | `(config: any, options: UseVariableOptions ) => VariableOptions` | Accessore del valore per i dati di contesto del trigger                    |
 
-- Se `useVariables` non è impostato, significa che questo tipo di trigger non fornisce una funzione di recupero del valore e i dati di contesto del trigger non possono essere selezionati nei nodi del [flusso di lavoro](workflow).
+- Se `useVariables` non è impostato, significa che questo tipo di trigger non fornisce una funzione di recupero del valore e i dati di contesto del trigger non possono essere selezionati nei nodi del [flusso di lavoro](#).
 
 ### `Instruction`
 
@@ -384,4 +384,4 @@ export type NodeAvailableContext = {
 - Se `useVariables` non è impostato, significa che questo tipo di nodo non fornisce una funzione di recupero del valore e i dati risultanti di questo tipo di nodo non possono essere selezionati nei nodi del flusso di lavoro. Se il valore del risultato è singolo (non selezionabile), può restituire un contenuto statico che esprime le informazioni corrispondenti (veda: [codice sorgente del nodo di calcolo](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/calculation.tsx#L68)). Se è necessario che sia selezionabile (ad esempio, una proprietà di un oggetto), può personalizzare l'output del componente di selezione corrispondente (veda: [codice sorgente del nodo di creazione dati](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/create.tsx#L41)).
 - `Component` è un componente di rendering personalizzato per il nodo. Quando il rendering predefinito del nodo non è sufficiente, può essere completamente sovrascritto e utilizzato per un rendering personalizzato della vista del nodo. Ad esempio, se ha bisogno di fornire più pulsanti di azione o altre interazioni per il nodo iniziale di un tipo di ramo, dovrà utilizzare questo metodo (veda: [codice sorgente del ramo parallelo](https://github.com/nocobase/nocobase/blob/main/packages/plugins/%40nocobase/plugin-workflow-parallel/src/client/ParallelInstruction.tsx)).
 - `useInitializers` viene utilizzato per fornire un metodo per l'inizializzazione dei blocchi. Ad esempio, in un nodo manuale, può inizializzare i blocchi utente correlati in base ai nodi a monte. Se questo metodo viene fornito, sarà disponibile durante l'inizializzazione dei blocchi nella configurazione dell'interfaccia del nodo manuale (veda: [codice sorgente del nodo di creazione dati](https://github.com/nocobase/nocobase/blob/main/packages/plugins/@nocobase/plugin-workflow/src/client/nodes/create.tsx#L71)).
-- `isAvailable` viene utilizzato principalmente per determinare se un nodo può essere utilizzato (aggiunto) nell'ambiente corrente. L'ambiente corrente include il [flusso di lavoro](workflow) attuale, i nodi a monte e l'indice del ramo corrente.
+- `isAvailable` viene utilizzato principalmente per determinare se un nodo può essere utilizzato (aggiunto) nell'ambiente corrente. L'ambiente corrente include il [flusso di lavoro](#) attuale, i nodi a monte e l'indice del ramo corrente.

@@ -305,7 +305,7 @@ LOGGER_MAX_SIZE=20971520
 LOGGER_FORMAT=json
 ```
 
-المرجع: [تنسيق السجل](/log-and-monitor/logger/index.md#log-format)
+المرجع: [تنسيق السجل](#)
 
 ### CACHE_DEFAULT_STORE
 

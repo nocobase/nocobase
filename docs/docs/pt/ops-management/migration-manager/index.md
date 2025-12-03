@@ -70,7 +70,7 @@ Selecione as regras independentes e as tabelas a serem processadas pelas regras 
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-Verificação de variáveis de ambiente do aplicativo (saiba mais sobre [Variáveis de Ambiente](../variables-and-secrets/index.md))
+Verificação de variáveis de ambiente do aplicativo (saiba mais sobre [Variáveis de Ambiente](#))
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

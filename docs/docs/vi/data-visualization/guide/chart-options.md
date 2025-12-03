@@ -94,4 +94,4 @@ return {
 ![20251026192816](https://static-docs.nocobase.com/20251026192816.png)
 
 > [!TIP]
-> Để biết thêm thông tin về các tùy chọn biểu đồ, vui lòng xem mục [Cách dùng nâng cao — Cấu hình biểu đồ tùy chỉnh](link-to-advanced-custom-chart-config).
+> Để biết thêm thông tin về các tùy chọn biểu đồ, vui lòng xem mục [Cách dùng nâng cao — Cấu hình biểu đồ tùy chỉnh](#).

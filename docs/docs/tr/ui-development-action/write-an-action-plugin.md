@@ -36,8 +36,8 @@ NocoBase'in eklenti sistemi, platformu kendi ihtiyaçlarınıza göre genişletm
 
 Docker veya Create NocoBase App (CNA) ile hızlı bir başlangıç yapabilirsiniz.
 
-*   [Docker ile Kurulum](./getting-started/installation-docker)
-*   [CNA ile Kurulum](./getting-started/installation-cna)
+*   [Docker ile Kurulum](#)
+*   [CNA ile Kurulum](#)
 
 ## Topluluk
 

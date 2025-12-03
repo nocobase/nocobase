@@ -8,7 +8,7 @@ Esta documentação foi traduzida automaticamente por IA.
 
 ### Logs do Sistema
 
-> Veja [Logs do Sistema](./logger/index.md#system-logs)
+> Veja [Logs do Sistema](#)
 
 - Registram informações de tempo de execução do sistema da aplicação, rastreiam cadeias de execução de código e localizam exceções ou erros de tempo de execução.
 - Os logs são categorizados por níveis de severidade e módulos funcionais.
@@ -17,7 +17,7 @@ Esta documentação foi traduzida automaticamente por IA.
 
 ### Logs de Requisição
 
-> Veja [Logs de Requisição](./logger/index.md#request-logs)
+> Veja [Logs de Requisição](#)
 
 - Registram detalhes de requisições e respostas de APIs HTTP, com foco no ID da requisição, caminho da API, cabeçalhos, código de status da resposta e duração.
 - São exibidos via terminal ou armazenados como arquivos.

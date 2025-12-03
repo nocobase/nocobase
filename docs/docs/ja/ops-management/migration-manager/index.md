@@ -71,7 +71,7 @@ pkg: '@nocobase/plugin-migration-manager'
 
 ![20250102205915](https://static-docs.nocobase.com/20250102205915.png)
 
-アプリケーション環境変数のチェック（[環境変数](../variables-and-secrets/index.md)について詳しくはこちら）
+アプリケーション環境変数のチェック（[環境変数](#)について詳しくはこちら）
 
 ![20250102212311](https://static-docs.nocobase.com/20250102212311.png)
 

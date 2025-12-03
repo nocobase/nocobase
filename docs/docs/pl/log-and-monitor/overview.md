@@ -8,7 +8,7 @@ Ta dokumentacja została automatycznie przetłumaczona przez AI.
 
 ### Logi systemowe
 
-> Zobacz [Logi systemowe](./logger/index.md#system-logs)
+> Zobacz [Logi systemowe](#)
 
 - Rejestrują informacje o działaniu systemu aplikacji, śledzą ścieżki wykonania logiki kodu oraz pomagają w identyfikacji błędów wykonania kodu i innych anomalii.
 - Logi są kategoryzowane według poziomów ważności i modułów funkcjonalnych.
@@ -17,7 +17,7 @@ Ta dokumentacja została automatycznie przetłumaczona przez AI.
 
 ### Logi żądań
 
-> Zobacz [Logi żądań](./logger/index.md#request-logs)
+> Zobacz [Logi żądań](#)
 
 - Rejestrują szczegóły żądań i odpowiedzi HTTP API, koncentrując się na identyfikatorze żądania, ścieżce API, nagłówkach, kodzie statusu odpowiedzi oraz czasie trwania.
 - Są wyprowadzane do terminala lub przechowywane w plikach.

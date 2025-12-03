@@ -6,7 +6,7 @@ Esta documentação foi traduzida automaticamente por IA.
 
 ## Visão Geral
 
-`Auth` é uma classe abstrata para tipos de autenticação de usuário. Ela define as interfaces necessárias para completar a autenticação de um usuário. Para estender um novo tipo de autenticação, você precisa herdar a classe `Auth` e implementar seus métodos. Para uma implementação básica, consulte: [BaseAuth](./base-base.md).
+`Auth` é uma classe abstrata para tipos de autenticação de usuário. Ela define as interfaces necessárias para completar a autenticação de um usuário. Para estender um novo tipo de autenticação, você precisa herdar a classe `Auth` e implementar seus métodos. Para uma implementação básica, consulte: [BaseAuth](#).
 
 ```ts
 interface IAuth {

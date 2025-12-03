@@ -14,7 +14,7 @@ Paginafilters (filterblokken) worden gebruikt om op paginaniveau filtercondities
 
 ![clipboard-image-1761487702](https://static-docs.nocobase.com/clipboard-image-1761487702.png)
 
-Raadpleeg de [paginafilter documentatie](page-filter-documentation) voor meer informatie over het gebruik van paginafilters en de interactie met grafieken of andere datablokken.
+Raadpleeg de [paginafilter documentatie](#) voor meer informatie over het gebruik van paginafilters en de interactie met grafieken of andere datablokken.
 
 ## Paginafilterwaarden gebruiken in grafiekquery's
 - Builder-modus (aanbevolen)

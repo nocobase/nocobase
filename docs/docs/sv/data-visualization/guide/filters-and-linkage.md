@@ -14,7 +14,7 @@ Sidfiltret (filterblocket) används för att på sidnivå erbjuda en enhetlig in
 
 ![clipboard-image-1761487702](https://static-docs.nocobase.com/clipboard-image-1761487702.png)
 
-För mer om hur du använder sidfilter och hur de länkar med diagram eller andra datablock, se [sidfilter](internal-link-path) dokumentationen.
+För mer om hur du använder sidfilter och hur de länkar med diagram eller andra datablock, se [sidfilter](#) dokumentationen.
 
 ## Använd sidfiltervärden i diagramfrågor
 - Builder-läge (rekommenderas)

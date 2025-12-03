@@ -8,7 +8,7 @@ Deze documentatie is automatisch vertaald door AI.
 
 ### Systeemlogboeken
 
-> Zie [Systeemlogboeken](./logger/index.md#system-logs)
+> Zie [Systeemlogboeken](#)
 
 - Legt runtime-informatie van het applicatiesysteem vast, volgt de uitvoeringsketens van code en spoort uitzonderingen of runtime-fouten op.
 - Logboeken worden gecategoriseerd op ernstniveaus en functionele modules.
@@ -17,7 +17,7 @@ Deze documentatie is automatisch vertaald door AI.
 
 ### Verzoeklogboeken
 
-> Zie [Verzoeklogboeken](./logger/index.md#request-logs)
+> Zie [Verzoeklogboeken](#)
 
 - Legt HTTP API-verzoek- en antwoordinformatie vast, met de nadruk op het vastleggen van de verzoek-ID, API-pad, headers, HTTP-statuscode en duur.
 - Worden via de terminal uitgevoerd of als bestanden opgeslagen.
