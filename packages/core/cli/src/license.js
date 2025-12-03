@@ -54,7 +54,7 @@ const LicenseKeyError = {
     content: 'Please check your license key, or regenerate the license key on the service platform.',
   },
   notMatch: {
-    title: 'License key mismatch',
+    title: 'License key not match current environment',
     content:
       'Please go to the license settings page to obtain the Instance ID for the current environment, and then regenerate the license key on the service platform.',
   },
@@ -68,31 +68,31 @@ const LicenseKeyError = {
 exports.LicenseKeyError = LicenseKeyError;
 
 function showLicenseInfo({ title, content, env }) {
-  const rows = [];
-  const length = 40;
-  let row = '';
-  content.split(' ').forEach((word) => {
-    if (row.length + word.length > length) {
-      rows.push(row);
-      row = '';
-    }
-    row += word + ' ';
-  });
-  if (row) {
-    rows.push(row);
-  }
-  console.log(Array(length).fill('-').join(''));
-  console.log(chalk.yellow(title));
-  console.log(chalk.yellow(rows.join('\n')));
+  // const rows = [];
+  // const length = 40;
+  // let row = '';
+  // content.split(' ').forEach((word) => {
+  //   if (row.length + word.length > length) {
+  //     rows.push(row);
+  //     row = '';
+  //   }
+  //   row += word + ' ';
+  // });
+  // if (row) {
+  //   rows.push(row);
+  // }
+  // console.log(Array(length).fill('-').join(''));
+  // console.log(chalk.yellow(title));
+  // console.log(chalk.yellow(rows.join('\n')));
 
-  if (env) {
-    console.log(chalk.yellow('Current environment: '));
-    console.log(chalk.yellow(`  System: ${env.sys}-${env.osVer}`));
-    console.log(chalk.yellow(`  Database: ${JSON.stringify(env.db)}`));
-  }
-  console.log(Array(length).fill('-').join(''));
-  logger.error(title);
-  logger.error('Current environment: ', pick(env, ['sys', 'osVer', 'db']));
+  // if (env) {
+  //   console.log(chalk.yellow('Current environment: '));
+  //   console.log(chalk.yellow(`  System: ${env.sys}-${env.osVer}`));
+  //   console.log(chalk.yellow(`  Database: ${JSON.stringify(env.db)}`));
+  // }
+  // console.log(Array(length).fill('-').join(''));
+  logger.error(title + '. ' + content);
+  logger.error('Current environment', pick(env, ['sys', 'osVer', 'db']));
 }
 
 exports.showLicenseInfo = showLicenseInfo;

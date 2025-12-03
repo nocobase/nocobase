@@ -66,7 +66,6 @@ export function isDomainMatch(currentDomain: string, keyData: KeyData) {
 export function isEnvMatch(env: Env, keyData: KeyData) {
   if (!env || !keyData?.instanceData) return false;
 
-  // 关键修正：任意一边没有 db，直接 false
   if (!env.db || !keyData.instanceData.db) return false;
 
   const envDbId = env?.db?.id;

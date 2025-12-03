@@ -286,7 +286,7 @@ module.exports = (cli) => {
       try {
         ({ accessKeyId, accessKeySecret } = await getAccessKeyPair());
       } catch (e) {
-        logger.error('Get AccessKey Pair error', e);
+        // logger.error('Get AccessKey Pair error', e);
         return;
       }
       if (NOCOBASE_PKG_USERNAME && NOCOBASE_PKG_PASSWORD && !accessKeyId && !accessKeySecret) {

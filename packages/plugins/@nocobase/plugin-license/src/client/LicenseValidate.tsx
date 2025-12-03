@@ -29,6 +29,7 @@ export const LicenseValidate = () => {
     isPkgConnection: boolean;
     isPkgLogin: boolean;
     pkgUrl: string;
+    isExpired: boolean;
   }>(null);
 
   const { i18n } = useTranslation();
@@ -52,6 +53,10 @@ export const LicenseValidate = () => {
     // message.warning('授权Key保存成功，当前环境无法连接NocoBase Service，仅支持手动安装商业插件', 10);
     // message.success('授权key保存成功，如需安装商业插件，请重启NocoBase服务', 10);
   }, []);
+
+  if (state?.isExpired) {
+    return <Alert message={t('The license key has expired')} type="error" />;
+  }
 
   if (state?.envMatch === false) {
     return (

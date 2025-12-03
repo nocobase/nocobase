@@ -14,6 +14,7 @@ import fs from 'fs';
 import { KeyData } from './interface';
 import { LICENSE_ERROR } from './interface';
 import axios from 'axios';
+import { logger } from '@nocobase/logger';
 
 export async function request(
   {
@@ -100,10 +101,10 @@ export async function getKey(ctx?: Context): Promise<string> {
       ctx?.cache?.set(CACHE_KEY, key);
       fs.writeFileSync(keyFile, key);
     }
-    console.log('Successfully retrieved the remote license key');
+    logger.info('Successfully retrieved the remote license key');
     return key;
   } catch (e) {
-    console.warn('Unable to retrieve the remote license key');
+    logger.warn('Unable to retrieve the remote license key');
     return key;
   }
 }

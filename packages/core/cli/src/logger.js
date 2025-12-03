@@ -42,7 +42,10 @@ function createSystemLogger({ dirname, filename, defaultMeta = {} }) {
   const logger = winston.createLogger({
     level: 'info',
     format: winston.format.combine(
-      winston.format.timestamp(),
+      winston.format.colorize({ all: true }),
+      winston.format.timestamp({
+        format: 'YYYY-MM-DD HH:mm:ss',
+      }),
       winston.format.printf((info) => {
         const meta = info.meta ? JSON.stringify(info.meta) : '';
         return `${info.timestamp} [${info.level}] ${info.message} ${meta}`;
@@ -52,8 +55,8 @@ function createSystemLogger({ dirname, filename, defaultMeta = {} }) {
     defaultMeta,
   });
 
-  const wrap = (level) => (message, meta = {}) => {
-    logger.log({ level, message, meta: { ...defaultMeta, ...meta } });
+  const wrap = (level) => (message, meta) => {
+    logger.log({ level, message, meta });
     return logger;
   };
 
@@ -71,10 +74,10 @@ const getLoggerFilePath = (...paths) => {
 const logger = createSystemLogger({
   dirname: getLoggerFilePath('main'),
   filename: 'system',
-  defaultMeta: {
-    app: 'main',
-    module: 'cli',
-  },
+  // defaultMeta: {
+  //   app: 'main',
+  //   module: 'cli',
+  // },
 });
 
 module.exports = {
