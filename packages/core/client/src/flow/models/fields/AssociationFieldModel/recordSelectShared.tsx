@@ -54,6 +54,7 @@ export function LabelByField(props: Readonly<LabelByFieldProps>) {
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
     get: () => option,
+    cache: false,
     meta: createCurrentRecordMetaFactory(fieldModel.context, () => fieldModel.context.collection),
   });
   const labelValue = option?.[fieldNames.label] || option.label;

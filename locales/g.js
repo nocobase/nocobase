@@ -128,7 +128,17 @@ async function main() {
   for (const locale of Object.keys(locales)) {
     const outputPath = path.resolve(outputDir, `${locale}.json`);
 
-    // 如果输出文件已存在，先读取它
+    // zh-CN 和 en-US：始终使用最新生成的内容，直接覆盖（包括已存在的 key）
+    if (locale === 'zh-CN' || locale === 'en-US') {
+      const json = await fs.readJSON(outputPath);
+      locales[locale]['cronstrue'] = json['cronstrue'];
+      locales[locale]['react-js-cron'] = json['react-js-cron'];
+      await fs.writeFile(outputPath, JSON.stringify(sortJSON(locales[locale]), null, 2));
+      console.log(`Generated (overwrite): ${outputPath}`);
+      continue;
+    }
+
+    // 其他语言：如果输出文件已存在，先读取它
     let existingContent = {};
     if (await fs.pathExists(outputPath)) {
       try {
@@ -139,7 +149,7 @@ async function main() {
       }
     }
 
-    // 合并：保留已存在的值，只添加新的 key
+    // 其他语言的合并：保留已存在的值，只添加新的 key
     const finalContent =
       Object.keys(existingContent).length > 0
         ? mergePreserveExisting(existingContent, locales[locale])

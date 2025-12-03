@@ -626,6 +626,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                           });
                           fork.context.defineProperty('record', {
                             get: () => record,
+                            cache: false,
                           });
                           return fork;
                         })();
