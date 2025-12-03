@@ -44,7 +44,12 @@ export class DetailsGridModel extends GridModel<{
       below: { offsetTop: -14, height: 24 },
     },
   };
+
   renderAddSubModelButton() {
+    if (!this.enableUIConfiguration) {
+      return null;
+    }
+
     return (
       <AddSubModelButton
         model={this}
