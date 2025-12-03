@@ -17,6 +17,13 @@ export const createLLMSchema = {
       'x-decorator': 'FormV2',
       'x-use-decorator-props': 'useCreateFormProps',
       properties: {
+        provider: {
+          type: 'string',
+          'x-decorator': 'FormItem',
+          title: '{{ t("Provider") }}',
+          'x-component': 'Input',
+          'x-pattern': 'readPretty',
+        },
         name: {
           type: 'string',
           'x-decorator': 'FormItem',
