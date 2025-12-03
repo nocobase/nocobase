@@ -99,15 +99,22 @@ export const FilterContainer: FC<FilterContentProps> = observer(
     const translate = ctx?.model?.translate || ((text: string) => text);
 
     return (
-      <>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
+        }}
+      >
         <FilterGroup value={value} FilterItem={FilterItem} />
         <Space style={{ width: '100%', display: 'flex', justifyContent: 'flex-end' }}>
-          <Button onClick={handleReset}>{translate('Reset')}</Button>
-          <Button type="primary" onClick={handleSubmit}>
+          <Button htmlType="button" onClick={handleReset}>
+            {translate('Reset')}
+          </Button>
+          <Button type="primary" htmlType="submit">
             {translate('Submit')}
           </Button>
         </Space>
-      </>
+      </form>
     );
   },
   {

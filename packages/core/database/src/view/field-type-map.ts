@@ -21,7 +21,7 @@ const postgres = {
   integer: ['integer', 'unixTimestamp', 'sort'],
   bigint: ['bigInt', 'snowflakeId', 'unixTimestamp', 'sort'],
   decimal: 'decimal',
-  numeric: 'float',
+  numeric: 'decimal',
   real: 'float',
   'double precision': 'float',
 

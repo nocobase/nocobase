@@ -43,9 +43,10 @@ export function inferViewRecordRef(ctx: FlowContext): RecordRef | undefined {
   const collection = inputArgs?.collectionName || (view as any)?.record?.collection;
   const dataSourceKey = inputArgs?.dataSourceKey || (view as any)?.record?.dataSourceKey || 'main';
   const filterByTk = inputArgs?.filterByTk || (view as any)?.record?.filterByTk;
+  const associationName = inputArgs?.associationName;
   const sourceId = inputArgs?.sourceId;
   if (!collection || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
-  return { collection, dataSourceKey, filterByTk, sourceId };
+  return { collection, dataSourceKey, filterByTk, sourceId, associationName };
 }
 
 // 统一视图场景中“视图记录”的本地复用逻辑：
@@ -173,7 +174,7 @@ export async function buildRecordMeta(
   title?: string,
   paramsBuilder?: RecordParamsBuilder,
 ): Promise<PropertyMeta | null> {
-  const base = await createCollectionContextMeta(collectionAccessor, title)();
+  const base = await createCollectionContextMeta(collectionAccessor, title, true)();
   if (!base) return null;
   return {
     ...base,

@@ -1,7 +1,7 @@
 {
-  "Title field": "标题字段",
-  "Time scale": "时间缩放等级",
-  "Start date field": "开始日期字段",
   "End date field": "结束日期字段",
-  "Progress field": "进度字段"
+  "Progress field": "进度字段",
+  "Start date field": "开始日期字段",
+  "Time scale": "时间缩放等级",
+  "Title field": "标题字段"
 }

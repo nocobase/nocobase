@@ -75,6 +75,39 @@ describe('variablesParams helpers', () => {
     expect(res).not.toHaveProperty('user');
   });
 
+  it('collectContextParamsForTemplate keeps associationName/sourceId from RecordRef', async () => {
+    const ctx: any = {
+      getPropertyOptions: (k: string) => ({
+        meta:
+          k === 'popup'
+            ? async () => ({
+                type: 'object',
+                title: 'Popup',
+                buildVariablesParams: () => ({
+                  record: {
+                    collection: 'posts',
+                    dataSourceKey: 'main',
+                    filterByTk: 1,
+                    associationName: 'users.posts',
+                    sourceId: 9,
+                  },
+                }),
+              })
+            : undefined,
+      }),
+    };
+
+    const tpl = { value: '{{ ctx.popup.record.id }}' } as any;
+    const res = await collectContextParamsForTemplate(ctx, tpl);
+    expect(res?.['popup.record']).toMatchObject({
+      collection: 'posts',
+      dataSourceKey: 'main',
+      filterByTk: 1,
+      associationName: 'users.posts',
+      sourceId: 9,
+    });
+  });
+
   it('createRecordResolveOnServerWithLocal: no local record => always use server', () => {
     const resolver = createRecordResolveOnServerWithLocal(
       () => ({ name: 'posts', dataSourceKey: 'main' }) as any,

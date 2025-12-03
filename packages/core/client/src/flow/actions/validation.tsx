@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, tExpr, jioToJoiSchema } from '@nocobase/flow-engine';
+import { defineAction, jioToJoiSchema, tExpr } from '@nocobase/flow-engine';
 import { FieldValidation } from '../../collection-manager';
 
 export const validation = defineAction({
@@ -44,13 +44,20 @@ export const validation = defineAction({
       rules.push({
         validator: (_, value) => {
           const { error } = schema.validate(value, {
-            context: { label },
             abortEarly: false,
           });
 
           if (error) {
-            const message = error.details.map((d: any) => d.message.replace(/"value"/g, `"${label}"`)).join(', ');
-            return Promise.reject(message);
+            const messages = error.details.map((d) => {
+              return ctx.t(`${d.type}`, {
+                ...d.context,
+                ns: 'data-source-main',
+                label,
+              });
+            });
+            const div = document.createElement('div');
+            div.innerHTML = messages.join('; ');
+            return Promise.reject(div.textContent);
           }
 
           return Promise.resolve();

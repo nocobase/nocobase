@@ -257,10 +257,11 @@ type FlowPageProps = {
   pageModelClass?: string;
   parentId?: string;
   onModelLoaded?: (uid: string, model: FlowModel) => void;
+  defaultTabTitle?: string;
 };
 
 export const FlowPage = (props: FlowPageProps & Record<string, unknown>) => {
-  const { pageModelClass = 'ChildPageModel', parentId, onModelLoaded, ...rest } = props;
+  const { pageModelClass = 'ChildPageModel', parentId, onModelLoaded, defaultTabTitle, ...rest } = props;
   const flowEngine = useFlowEngine();
   const ctx = useFlowViewContext();
   const { loading, data } = useRequest(
@@ -273,6 +274,7 @@ export const FlowPage = (props: FlowPageProps & Record<string, unknown>) => {
         use: pageModelClass,
       };
       if (pageModelClass === 'ChildPageModel') {
+        const tabTitle = defaultTabTitle || flowEngine.translate?.('Details');
         options['subModels'] = {
           tabs: [
             {
@@ -280,7 +282,7 @@ export const FlowPage = (props: FlowPageProps & Record<string, unknown>) => {
               stepParams: {
                 pageTabSettings: {
                   tab: {
-                    title: 'Details',
+                    title: tabTitle,
                   },
                 },
               },

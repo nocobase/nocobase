@@ -193,6 +193,10 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       },
     ];
     if (this._isScene('one')) {
+      const currentCollection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
+      if (!currentCollection || !this.filterCollection(currentCollection)) {
+        return items;
+      }
       const initOptions = {
         dataSourceKey,
         collectionName,

@@ -64,7 +64,7 @@ function AssignFieldsEditor() {
     // 批量配置态：移除 ctx.record（Action 为区块级，不具备单条记录上下文）
     const isBulk = action instanceof CollectionActionModel && !(action instanceof RecordActionModel);
     if (isBulk && (formModel as any)?.context?.defineProperty) {
-      formModel.context.defineProperty('record', { get: () => undefined });
+      formModel.context.defineProperty('record', { get: () => undefined, cache: false });
     }
     initializedRef.current = true;
   }, [action, blockModel?.collection, formModel]);
@@ -202,21 +202,9 @@ UpdateRecordActionModel.registerFlow({
           ctx.message.error(ctx.t('Record is required to perform this action'));
           return;
         }
-        let result = assignedValues;
-        const tkData = ctx.collection?.getFilterByTK(ctx.record);
-        if (Array.isArray(filterByTk)) {
-          result = {
-            ...assignedValues,
-            ...(tkData || {}),
-          };
-        } else {
-          result = {
-            ...assignedValues,
-            [filterByTk]: tkData,
-          };
-        }
-
-        await ctx.api.resource(collection).update({ filterByTk, values: result, ...params.requestConfig?.params });
+        await ctx.api
+          .resource(collection)
+          .update({ filterByTk, values: assignedValues, ...params.requestConfig?.params });
         // 刷新与提示
         ctx.blockModel?.resource?.refresh?.();
         ctx.message.success(ctx.t('Saved successfully'));

@@ -1,0 +1,9 @@
+{
+  "Execute a SQL statement in database": "SQL utasítás végrehajtása az adatbázisban",
+  "Execute a SQL statement in database.": "SQL utasítás végrehajtása az adatbázisban.",
+  "Include meta information of this query in result": "A lekérdezés metainformációinak belefoglalása az eredménybe",
+  "SQL action": "SQL művelet",
+  "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "Az SQL lekérdezés eredménye a <1>JSON lekérdezési csomóponton</1> keresztül használható (Kereskedelmi bővítmény).",
+  "Select a data source to execute SQL.": "Válasszon adatforrást az SQL végrehajtásához.",
+  "Usage of SQL query result is not supported yet.": "Az SQL lekérdezési eredmény használata még nem támogatott."
+}

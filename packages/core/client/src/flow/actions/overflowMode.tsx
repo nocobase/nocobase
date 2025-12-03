@@ -8,7 +8,7 @@
  */
 
 import { defineAction, tExpr } from '@nocobase/flow-engine';
-import { TableBlockModel } from '../models/blocks/table';
+import { TableColumnModel } from '../models/blocks/table';
 
 export const overflowMode = defineAction({
   name: 'overflowMode',
@@ -26,7 +26,7 @@ export const overflowMode = defineAction({
     };
   },
   defaultParams: (ctx) => {
-    return { overflowMode: ctx.blockModel instanceof TableBlockModel ? 'ellipsis' : 'wrap' };
+    return { overflowMode: ctx.model.parent instanceof TableColumnModel ? 'ellipsis' : 'wrap' };
   },
   handler(ctx, params) {
     ctx.model.setProps({

@@ -39,7 +39,7 @@ describe('QuickEditFormModel - quick edit save triggers API (regression)', () =>
         // filterByTk 通过 params 传入
         expect(config.params?.filterByTk).toBe(1);
         // data 应包含要更新的字段以及主键（由 ctx.collection + ctx.record 推导）
-        expect(config.data).toMatchObject({ name: 'new-name', id: 1 });
+        expect(config.data).toMatchObject({ name: 'new-name' });
         return { data: { data: {} } } as any;
       }),
     } as any;
@@ -59,7 +59,7 @@ describe('QuickEditFormModel - quick edit save triggers API (regression)', () =>
 
     // 预置当前记录（ctx.record 由 QuickEditFormModel.onInit 提供）与 tk
     res.setFilterByTk(1);
-    res.setData({ id: 1, name: 'old-name' });
+    res.setData({ name: 'old-name' });
 
     // 4) 保存：应触发 update 请求，并包含主键
     await res.save({ name: 'new-name' }, { refresh: false });
