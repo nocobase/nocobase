@@ -144,7 +144,7 @@ const openStepSettingsDialog = async ({
     ...toJS(uiModeProps),
     // 透传 navigation，便于变量元信息根据真实视图栈推断父级弹窗
     inputArgs: buildSettingsViewInputArgs(
-      model as any,
+      model,
       { ...(toJS(uiModeProps)?.inputArgs || {}), __isSettingsPopup: true },
       { navigationOverride: ctx?.view?.navigation },
     ),
