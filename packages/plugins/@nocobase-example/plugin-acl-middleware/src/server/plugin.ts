@@ -15,22 +15,33 @@ export class PluginAclMiddlewareServer extends Plugin {
   async beforeLoad() {}
 
   async load() {
-    // Visit http://localhost:13000/api/users:action1?token=<your_login_token>
-    this.app.resourceManager.registerActionHandler('users:action1', async (ctx, next) => {
-      ctx.body = {
-        message: 'You have permission to access this action.',
-      };
-      await next();
+    this.app.resourceManager.define({
+      name: 'testAclMiddleware',
+      actions: {
+        // Visit http://localhost:13000/api/testAclMiddleware:action1?token=<your_login_token>
+        action1: async (ctx, next) => {
+          ctx.body = {
+            message: 'You have permission to access this action.',
+          };
+          await next();
+        },
+      },
     });
-    this.app.acl.use(async (ctx, next) => {
-      const { resourceName, actionName } = ctx.action;
-      if (resourceName === 'users' && actionName === 'action1') {
-        if (ctx.auth.user?.id === 2) {
-          ctx.permission.skip = true;
+    this.app.acl.use(
+      async (ctx, next) => {
+        const { resourceName, actionName } = ctx.action;
+        if (resourceName === 'testAclMiddleware' && actionName === 'action1') {
+          // ID 为 2 的用户跳过 testAclMiddleware:action1 权限校验（可以访问）
+          if (ctx.state.currentRoles?.includes('member')) {
+            ctx.permission.skip = true;
+          }
         }
-      }
-      await next();
-    });
+        await next();
+      },
+      {
+        before: 'core',
+      },
+    );
   }
 
   async install() {}

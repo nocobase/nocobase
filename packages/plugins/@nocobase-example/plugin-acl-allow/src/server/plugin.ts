@@ -15,31 +15,36 @@ export class PluginAclAllowServer extends Plugin {
   async beforeLoad() {}
 
   async load() {
-    // Visit http://localhost:13000/api/users:action1
-    this.app.resourceManager.registerActionHandler('users:action1', async (ctx, next) => {
-      ctx.body = {
-        message: 'You have permission to access this action.',
-      };
-      await next();
+    this.app.resourceManager.define({
+      name: 'testAclAllow',
+      actions: {
+        // Visit http://localhost:13000/api/testAclAllow:action1
+        action1: async (ctx, next) => {
+          ctx.body = {
+            message: 'You have permission to access this action.',
+          };
+          await next();
+        },
+        // Visit http://localhost:13000/api/testAclAllow:action2?token=<your_login_token>
+        action2: async (ctx, next) => {
+          ctx.body = {
+            message: 'You have permission to access this action.',
+          };
+          await next();
+        },
+        // Visit http://localhost:13000/api/testAclAllow:action3?token=<your_login_token>
+        action3: async (ctx, next) => {
+          ctx.body = {
+            message: 'You have permission to access this action.',
+          };
+          await next();
+        },
+      },
     });
-    // Visit http://localhost:13000/api/users:action2?token=<your_login_token>
-    this.app.resourceManager.registerActionHandler('users:action2', async (ctx, next) => {
-      ctx.body = {
-        message: 'You have permission to access this action.',
-      };
-      await next();
-    });
-    // Visit http://localhost:13000/api/users:action3?token=<your_login_token>
-    this.app.resourceManager.registerActionHandler('users:action3', async (ctx, next) => {
-      ctx.body = {
-        message: 'You have permission to access this action.',
-      };
-      await next();
-    });
-    this.app.acl.allow('users', 'action1', 'public');
-    this.app.acl.allow('users', 'action2', 'loggedIn');
-    this.app.acl.allow('users', 'action3', (ctx) => {
-      return ctx.auth.user?.id !== 2;
+    this.app.acl.allow('testAclAllow', 'action1', 'public');
+    this.app.acl.allow('testAclAllow', 'action2', 'loggedIn');
+    this.app.acl.allow('testAclAllow', 'action3', (ctx) => {
+      return ctx.auth.user?.id === 2;
     });
   }
 
