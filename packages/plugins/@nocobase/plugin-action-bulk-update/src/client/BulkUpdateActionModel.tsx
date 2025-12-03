@@ -60,6 +60,7 @@ function AssignFieldsEditor() {
     // formModel.context.defineProperty('formValues', { get: () => undefined });
     formModel.context.defineProperty('record', {
       get: () => undefined,
+      cache: false,
     });
     initializedRef.current = true;
   }, [action, blockModel?.collection, formModel]);
