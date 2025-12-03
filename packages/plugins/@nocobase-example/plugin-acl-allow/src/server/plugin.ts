@@ -41,16 +41,6 @@ export class PluginAclAllowServer extends Plugin {
     this.app.acl.allow('users', 'action3', (ctx) => {
       return ctx.auth.user?.id !== 2;
     });
-    // this.app.acl.use(async function testMiddleware(ctx, next) {
-    //   console.log(
-    //     'ACL checking:',
-    //     ctx.path,
-    //     ctx.state,
-    //     ctx.app.resourceManager.middlewares.nodes,
-    //     ctx.app.acl['middlewares'].nodes,
-    //   );
-    //   await next();
-    // });
   }
 
   async install() {}
