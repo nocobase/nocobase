@@ -87,7 +87,6 @@ export class DisplayJSONFieldModel extends DisplayTitleFieldModel {
     }
 
     if (overflowMode === 'ellipsis') {
-      console.log(888);
       return <EllipsisJSON content={content} style={style} className={cx(className, JSONClassName)} />;
     }
 

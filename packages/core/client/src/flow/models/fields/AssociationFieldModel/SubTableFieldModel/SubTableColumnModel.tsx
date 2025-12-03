@@ -28,7 +28,6 @@ import { TableColumnProps, Tooltip } from 'antd';
 import React, { useRef } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base';
-import { FormComponent, FormItemModel } from '../../../blocks';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
@@ -46,7 +45,6 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
       others.onChange(val);
       onChange(val);
     };
-
     return <FieldModelRenderer model={model} {...rest} onChange={handelChange} />;
   };
   const handleClick = async (e) => {
@@ -63,13 +61,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
           },
         },
         content: (popover) => {
-          return (
-            <FormComponent model={model}>
-              <FormItem name={fieldPath} showLabel={false} initialValue={defaultValue}>
-                <FieldModelRendererCom model={model} {...others} />
-              </FormItem>
-            </FormComponent>
-          );
+          return <FieldModelRendererCom model={model} value={defaultValue} {...others} />;
         },
       });
     } catch (error) {
