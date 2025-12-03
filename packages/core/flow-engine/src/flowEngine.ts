@@ -702,6 +702,44 @@ export class FlowEngine {
   }
 
   /**
+   * Remove a local model instance and all its sub-models recursively.
+   * @param {string} uid UID of the model instance to destroy
+   * @returns {boolean} Returns true if successfully destroyed, false otherwise
+   */
+  public removeModelWithSubModels(uid: string): boolean {
+    const model = this.getModel(uid);
+    if (!model) {
+      return false;
+    }
+
+    const collectDescendants = (m: FlowModel, acc: FlowModel[]) => {
+      if (m.subModels) {
+        for (const key in m.subModels) {
+          const sub = m.subModels[key];
+          if (Array.isArray(sub)) {
+            [...sub].forEach((s) => collectDescendants(s, acc));
+          } else if (sub) {
+            collectDescendants(sub, acc);
+          }
+        }
+      }
+      acc.push(m);
+    };
+
+    const allModels: FlowModel[] = [];
+    collectDescendants(model, allModels);
+
+    let success = true;
+    for (const m of allModels) {
+      if (!this.removeModel(m.uid)) {
+        success = false;
+      }
+    }
+
+    return success;
+  }
+
+  /**
    * Check if the model repository is set.
    * @returns {boolean} Returns true if set, false otherwise.
    * @private
