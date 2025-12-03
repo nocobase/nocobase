@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.8](https://github.com/nocobase/nocobase/compare/v1.9.7...v1.9.8) - 2025-11-18
+
+### 🐛 Bug Fixes
+
+- **[Workflow: Custom action event]** Fix the error caused by listening to non-existent external data source events by @mytharcher
+
+- **[Template print]** parse the variables in the filter by @jiannx
+
+- **[Workflow: Approval]** Fix an issue where race conditions occurring during concurrent approval processing by multiple approvers could cause a workflow node to execute more than once by @mytharcher
+
 ## [v1.9.7](https://github.com/nocobase/nocobase/compare/v1.9.6...v1.9.7) - 2025-11-17
 
 ### 🐛 Bug Fixes
