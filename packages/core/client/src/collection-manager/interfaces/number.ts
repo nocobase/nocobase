@@ -34,11 +34,24 @@ export class NumberFieldInterface extends CollectionFieldInterface {
   validationType = 'number';
   excludeValidationOptions = ['integer'];
   properties = {
+    type: {
+      type: 'string',
+      title: '{{t("Data type")}}',
+      'x-component': 'Select',
+      'x-decorator': 'FormItem',
+      'x-disabled': '{{ !createOnly }}',
+      default: 'double',
+      enum: [
+        { label: '{{t("Double")}}', value: 'double' },
+        { label: '{{t("Float")}}', value: 'float' },
+        { label: '{{t("Decimal")}}', value: 'decimal' },
+      ],
+    },
     ...defaultProps,
     unique,
     'uiSchema.x-component-props.step': {
       type: 'string',
-      title: '{{t("Precision")}}',
+      title: '{{t("Precision(UI)")}}',
       'x-component': 'Select',
       'x-decorator': 'FormItem',
       default: '1',
@@ -53,6 +66,38 @@ export class NumberFieldInterface extends CollectionFieldInterface {
         { value: '0.0000001', label: '1.0000000' },
         { value: '0.00000001', label: '1.00000000' },
       ],
+    },
+    precision: {
+      type: 'string',
+      title: '{{t("Precision")}}',
+      'x-component': 'InputNumber',
+      'x-decorator': 'FormItem',
+      'x-disabled': '{{ !createOnly }}',
+      default: 10,
+      'x-reactions': {
+        dependencies: ['type'],
+        fulfill: {
+          state: {
+            visible: '{{$deps[0] === "decimal"}}',
+          },
+        },
+      },
+    },
+    scale: {
+      type: 'string',
+      title: '{{t("Scale")}}',
+      'x-component': 'InputNumber',
+      'x-decorator': 'FormItem',
+      'x-disabled': '{{ !createOnly }}',
+      default: 2,
+      'x-reactions': {
+        dependencies: ['type'],
+        fulfill: {
+          state: {
+            visible: '{{$deps[0] === "decimal"}}',
+          },
+        },
+      },
     },
   };
   filterable = {
