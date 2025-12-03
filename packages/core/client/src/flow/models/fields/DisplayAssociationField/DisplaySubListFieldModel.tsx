@@ -54,6 +54,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
             });
             fork.context.defineProperty('record', {
               get: () => record,
+              cache: false,
             });
             forksRef.current[key] = fork;
           }

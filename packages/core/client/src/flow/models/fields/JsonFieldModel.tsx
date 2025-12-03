@@ -60,12 +60,13 @@ export const JsonInput = observer((props: any) => {
 
   // 失焦时格式化 JSON
   const handleBlur = (ev) => {
+    const val = ev.target.value;
     try {
       const parsed = _JSON.parse(text);
       setText(_JSON.stringify(parsed, null, space));
       onChange?.(parsed); // 外部接收对象或 null
     } catch {
-      onChange?.(ev);
+      onChange?.(val.trim() !== '' ? val : null);
     }
   };
 
@@ -92,7 +93,7 @@ JsonFieldModel.registerFlow({
   steps: {
     initValidation: {
       handler(ctx, params) {
-        const rules = ctx.model.parent.props.rules;
+        const rules = ctx.model.parent.props.rules || [];
         // 添加 JSON 语法校验规则
         rules.push({
           validator: (_, value) => {

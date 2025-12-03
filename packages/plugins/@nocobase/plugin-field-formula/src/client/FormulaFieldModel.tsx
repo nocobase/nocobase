@@ -9,7 +9,7 @@
 
 import { useTranslation } from 'react-i18next';
 import { toJS } from '@formily/reactive';
-import { EditableItemModel, DisplayItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, DisplayItemModel, FilterableItemModel } from '@nocobase/flow-engine';
 import { Form } from 'antd';
 import { Checkbox, DatePicker, FieldModel, InputNumber, Input as InputString } from '@nocobase/client';
 import { Evaluator, evaluators } from '@nocobase/evaluators/client';
@@ -166,3 +166,5 @@ DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['formula'], {
     return true;
   },
 });
+
+FilterableItemModel.bindModelToInterface('FormulaFieldModel', ['formula'], { isDefault: true });
