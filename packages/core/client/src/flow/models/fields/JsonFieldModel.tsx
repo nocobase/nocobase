@@ -92,7 +92,7 @@ JsonFieldModel.registerFlow({
   steps: {
     initValidation: {
       handler(ctx, params) {
-        const rules = ctx.model.parent.props.rules;
+        const rules = ctx.model.parent.props.rules || [];
         // 添加 JSON 语法校验规则
         rules.push({
           validator: (_, value) => {
