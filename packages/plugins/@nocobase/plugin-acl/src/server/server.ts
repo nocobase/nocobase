@@ -628,8 +628,10 @@ export class PluginACLServer extends Plugin {
       { after: 'dataSource', group: 'with-acl-meta' },
     );
 
-    this.app.acl.use(checkAssociationOperate, {
-      before: 'core',
+    this.app.dataSourceManager.afterAddDataSource((dataSource) => {
+      dataSource.acl.use(checkAssociationOperate, {
+        before: 'core',
+      });
     });
 
     this.db.on('afterUpdateCollection', async (collection) => {
