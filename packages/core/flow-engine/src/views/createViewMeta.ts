@@ -229,6 +229,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
         title: t('Parent popup'),
         disabled: () => !hasParentNow(level),
         disabledReason: () => (!hasParentNow(level) ? t('No parent popup') : undefined),
+        hidden: () => !hasParentNow(level),
         properties: async () => {
           const parentRef = await getParentRecordRef(level);
           const props: Record<string, any> = {};
@@ -287,6 +288,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
       title: t('Current popup'),
       disabled: () => !hasPopupNow(),
       disabledReason: () => (!hasPopupNow() ? t('No parent popup') : undefined),
+      hidden: () => !hasPopupNow(),
       buildVariablesParams: async (c) => {
         if (!hasPopupNow()) return undefined;
         const ref = await resolveRecordRef(c);

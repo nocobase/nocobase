@@ -59,7 +59,6 @@ export { extractPropertyPath, formatPathToVariable, isVariableExpression } from 
 
 export { clearAutoFlowError, getAutoFlowError, setAutoFlowError, type AutoFlowError } from './autoFlowError';
 export { parsePathnameToViewParams, type ViewParam } from './parsePathnameToViewParams';
-export { buildSettingsViewInputArgs } from './buildSettingsViewInputArgs';
 
 // 安全全局对象（window/document）
 export { createSafeDocument, createSafeWindow, createSafeNavigator } from './safeGlobals';
