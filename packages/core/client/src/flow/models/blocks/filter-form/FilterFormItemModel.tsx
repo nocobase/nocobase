@@ -256,7 +256,11 @@ FilterFormItemModel.registerFlow({
       async handler(ctx, params) {
         const collectionField = ctx.model.collectionField;
         if (collectionField?.getComponentProps) {
-          ctx.model.setProps(collectionField.getComponentProps());
+          const componentProps = collectionField.getComponentProps();
+          const { rules, required, ...restProps } = componentProps || {};
+
+          // 筛选表单不继承字段的后端校验
+          ctx.model.setProps({ ...restProps, rules: undefined, required: undefined });
         }
         ctx.model.setProps({
           name: `${ctx.model.fieldPath}_${ctx.model.uid}`, // 确保每个字段的名称唯一
