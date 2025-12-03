@@ -189,6 +189,10 @@ DetailsBlockModel.registerFlow({
     dataScope: {
       use: 'dataScope',
     },
+    defaultSorting: {
+      use: 'sortingRule',
+      title: tExpr('Default sorting'),
+    },
     linkageRules: {
       use: 'detailsFieldLinkageRules',
     },
