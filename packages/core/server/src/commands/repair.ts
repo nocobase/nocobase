@@ -11,11 +11,11 @@ import Application from '../application';
 
 export default (app: Application) => {
   app
-    .command('refresh-data')
+    .command('repair')
     .auth()
     .preload()
     .action(async (options) => {
-      app.log.info('refreshing data...');
+      app.log.info('start repair data...');
       const Collection = app.db.getCollection('collections');
       if (Collection) {
         // @ts-ignore
@@ -23,6 +23,6 @@ export default (app: Application) => {
         // @ts-ignore
         await Collection.repository.load();
       }
-      await app.emitAsync('refresh-data', options);
+      await app.emitAsync('repair', options);
     });
 };

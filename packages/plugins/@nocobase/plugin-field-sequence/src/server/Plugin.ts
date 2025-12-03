@@ -111,8 +111,8 @@ export default class PluginFieldSequenceServer extends Plugin {
       });
     });
 
-    app.on('refresh-data', async () => {
-      app.log.info(`app ${app.name} plugin ${this.name} start refresh data...`);
+    app.on('repair', async () => {
+      app.log.info(`app ${app.name} plugin ${this.name} start repair data...`);
       const sequencesModel = app.db.getModel('sequences');
       const allSequences = await sequencesModel.findAll();
       const groupedSequences = _.groupBy(allSequences, 'collection');
@@ -138,7 +138,7 @@ export default class PluginFieldSequenceServer extends Plugin {
             limit: 1,
           });
           if (!record) {
-            app.log.warn(`Collection [${collection}] has no records. Skipping sequences refresh`);
+            app.log.warn(`Collection [${collection}] has no records. Skipping sequences repair`);
             return;
           }
 
@@ -147,7 +147,7 @@ export default class PluginFieldSequenceServer extends Plugin {
             const field = fieldMap[sequencesField] as SequenceField;
             if (!field) {
               app.log.warn(
-                `Collection [${collection}] field [${sequencesField}] definition not found. Skipping sequences refresh`,
+                `Collection [${collection}] field [${sequencesField}] definition not found. Skipping sequences repair`,
               );
               continue;
             }
@@ -157,7 +157,7 @@ export default class PluginFieldSequenceServer extends Plugin {
         });
       }
       await Promise.all(tasks.map((t) => t()));
-      app.log.info(`app ${app.name} plugin ${this.name} finish refresh data`);
+      app.log.info(`app ${app.name} plugin ${this.name} finish repair data`);
     });
   }
 

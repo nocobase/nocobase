@@ -105,7 +105,7 @@ describe('Should update sequence collection`s current base on business collectio
       expect(sequences).toBeDefined();
       expect(sequences.current).toBe(0);
 
-      await app.runCommand('refresh-data');
+      await app.runCommand('repair');
 
       sequences = await sequencesRepository.findOne({
         filter: {
@@ -171,7 +171,7 @@ describe('Should update sequence collection`s current base on business collectio
       expect(sequences).toBeDefined();
       expect(sequences.current).toBe(0);
 
-      await app.runCommand('refresh-data');
+      await app.runCommand('repair');
 
       sequences = await sequencesRepository.findOne({
         filter: {
@@ -268,7 +268,7 @@ describe('Should update sequence collection`s current base on business collectio
         expect(sequences).toBeDefined();
         expect(sequences.current).toBe(0);
 
-        await app.runCommand('refresh-data');
+        await app.runCommand('repair');
 
         sequences = await sequencesRepository.findOne({
           filter: {
@@ -360,7 +360,7 @@ describe('Should update sequence collection`s current base on business collectio
         expect(sequences).toBeDefined();
         expect(sequences.current).toBe(0);
 
-        await app.runCommand('refresh-data');
+        await app.runCommand('repair');
 
         sequences = await sequencesRepository.findOne({
           filter: {
@@ -454,7 +454,7 @@ describe('Should update sequence collection`s current base on business collectio
       expect(sequences).toBeDefined();
       expect(sequences.current).toBe(0);
 
-      await app.runCommand('refresh-data');
+      await app.runCommand('repair');
 
       sequences = await sequencesRepository.findOne({
         filter: {
@@ -539,7 +539,7 @@ describe('Should update sequence collection`s current base on business collectio
       expect(sequences).toBeDefined();
       expect(sequences.current).toBe(0);
 
-      await app.runCommand('refresh-data');
+      await app.runCommand('repair');
 
       sequences = await sequencesRepository.findOne({
         filter: {
@@ -655,7 +655,7 @@ describe('Should update sequence collection`s current base on business collectio
         expect(sequences).toBeDefined();
         expect(sequences.current).toBe(0);
 
-        await app.runCommand('refresh-data');
+        await app.runCommand('repair');
 
         sequences = await sequencesRepository.findOne({
           filter: {
@@ -766,7 +766,7 @@ describe('Should update sequence collection`s current base on business collectio
         expect(sequences).toBeDefined();
         expect(sequences.current).toBe(0);
 
-        await app.runCommand('refresh-data');
+        await app.runCommand('repair');
 
         sequences = await sequencesRepository.findOne({
           filter: {
@@ -937,7 +937,7 @@ describe('Should update sequence collection`s current base on business collectio
           expect(sequences).toBeDefined();
           expect(sequences.current).toBe(0);
 
-          await app.runCommand('refresh-data');
+          await app.runCommand('repair');
 
           sequences = await sequencesRepository.findOne({
             filter: {
@@ -1114,7 +1114,7 @@ describe('Should update sequence collection`s current base on business collectio
             expect(sequences).toBeDefined();
             expect(sequences.current).toBe(0);
 
-            await app.runCommand('refresh-data');
+            await app.runCommand('repair');
 
             sequences = await sequencesRepository.findOne({
               filter: {
