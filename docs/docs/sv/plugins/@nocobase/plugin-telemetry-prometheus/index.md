@@ -11,7 +11,6 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
----
 :::tip AI-översättningsmeddelande
 Denna dokumentation har översatts automatiskt av AI.
 :::
