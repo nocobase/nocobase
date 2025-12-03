@@ -20,7 +20,7 @@ import { FlowRuntimeContext } from './flowContext';
 import { FlowEngine, untracked } from '.';
 import { FlowSettingsContextProvider, useFlowSettingsContext } from './hooks/useFlowSettingsContext';
 import type { FlowModel } from './models';
-import { StepSettingsDialogProps, ToolbarItemConfig } from './types';
+import { ParamObject, StepSettingsDialogProps, ToolbarItemConfig } from './types';
 import {
   compileUiSchema,
   FlowExitException,
@@ -29,7 +29,6 @@ import {
   resolveStepUiSchema,
   resolveUiMode,
   setupRuntimeContextSteps,
-  buildSettingsViewInputArgs,
 } from './utils';
 import { FlowStepContext } from './hooks/useFlowStep';
 
@@ -615,17 +614,17 @@ export class FlowSettings {
         }
 
         // 构建 settings 上下文
-        const flowRuntimeContext = new FlowRuntimeContext(model as any, fk, 'settings');
-        setupRuntimeContextSteps(flowRuntimeContext as any, flow.steps, model as any, fk);
+        const flowRuntimeContext = new FlowRuntimeContext(model, fk, 'settings');
+        setupRuntimeContextSteps(flowRuntimeContext, flow.steps, model, fk);
         flowRuntimeContext.defineProperty('currentStep', { value: step });
         flowRuntimeContext.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
           return forms.get(keyOf({ flowKey, stepKey }))?.values;
         });
 
         // 解析默认值 + 当前参数
-        const modelStepParams = (model as any).getStepParams(fk, sk) || {};
-        const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext as any);
-        const resolvedActionDefaults = await resolveDefaultParams(actionDefaultParams, flowRuntimeContext as any);
+        const modelStepParams = model.getStepParams(fk, sk) || {};
+        const resolvedDefaultParams = await resolveDefaultParams(step.defaultParams, flowRuntimeContext);
+        const resolvedActionDefaults = await resolveDefaultParams(actionDefaultParams, flowRuntimeContext);
         const initialValues = {
           ...(resolvedActionDefaults || {}),
           ...(resolvedDefaultParams || {}),
@@ -657,13 +656,13 @@ export class FlowSettings {
 
     // 渲染视图（对话框/抽屉）
     // 兼容新的 uiMode 定义：字符串或 { type, props }
-    const viewer = (model as any).context.viewer;
+    const viewer = model.context.viewer;
     // 解析 uiMode，支持函数式
     const resolvedUiMode =
       entries.length === 1 ? await resolveUiMode(entries[0].uiMode || uiMode, entries[0].ctx) : uiMode;
     const modeType = typeof resolvedUiMode === 'string' ? resolvedUiMode : resolvedUiMode.type || 'dialog';
     const openView = viewer[modeType || 'dialog'].bind(viewer);
-    const flowEngine = (model as any).flowEngine as FlowEngine;
+    const flowEngine = model.flowEngine;
     const scopes = {
       // 为 schema 表达式提供上下文能力（可在表达式中使用 useFlowSettingsContext 等）
       useFlowSettingsContext,
@@ -761,6 +760,14 @@ export class FlowSettings {
       );
     };
 
+    const baseViewInputArgs = model.context.view?.inputArgs || {};
+    const navigation = model.context.view?.navigation;
+    const inputArgs = {
+      ...baseViewInputArgs,
+      ...(navigation ? { navigation } : {}),
+      ...(modeProps?.inputArgs || {}),
+    };
+
     openView({
       // 默认标题与宽度可被传入的 props 覆盖
       title: modeProps.title || getTitle(),
@@ -771,7 +778,7 @@ export class FlowSettings {
       // 允许透传其它 props（如 maskClosable、footer 等），但确保 content 由我们接管
       ...modeProps,
       // 统一构造 settings 弹窗的 inputArgs（集合/记录/父导航/关联）
-      inputArgs: buildSettingsViewInputArgs(model as any, (modeProps as any)?.inputArgs),
+      inputArgs,
       content: (currentView, viewCtx) => {
         viewCtx?.defineMethod('getStepFormValues', (flowKey: string, stepKey: string) => {
           return forms.get(keyOf({ flowKey, stepKey }))?.values;
@@ -854,7 +861,7 @@ export class FlowSettings {
               if (!form) continue;
               await form.submit();
               const currentValues = form.values;
-              (model as any).setStepParams(e.flowKey, e.stepKey, currentValues);
+              model.setStepParams(e.flowKey, e.stepKey, currentValues as ParamObject);
 
               if (typeof e.beforeParamsSave === 'function') {
                 await e.beforeParamsSave(e.ctx, currentValues, e.previousParams);
