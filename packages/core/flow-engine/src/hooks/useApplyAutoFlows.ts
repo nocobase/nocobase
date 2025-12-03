@@ -40,7 +40,7 @@ export function useApplyAutoFlows(
       await model.dispatchEvent('beforeRender', inputArgs, { useCache: options?.useCache });
     },
     {
-      refreshDeps: [model, inputArgs],
+      refreshDeps: [model, inputArgs, options?.useCache],
     },
   );
 
