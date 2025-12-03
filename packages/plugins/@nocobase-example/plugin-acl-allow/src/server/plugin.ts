@@ -39,12 +39,7 @@ export class PluginAclAllowServer extends Plugin {
     this.app.acl.allow('users', 'action1', 'public');
     this.app.acl.allow('users', 'action2', 'loggedIn');
     this.app.acl.allow('users', 'action3', (ctx) => {
-      console.log('ctx.auth.user', ctx.auth.user);
-      if (!ctx.auth.user) {
-        return false;
-      }
-      console.log('ctx.auth.user', ctx.auth.user.id);
-      return ctx.auth.user.id === 2;
+      return ctx.auth.user?.id !== 2;
     });
     // this.app.acl.use(async function testMiddleware(ctx, next) {
     //   console.log(
