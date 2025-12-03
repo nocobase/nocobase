@@ -42,7 +42,7 @@ const database = new Database({
 
 ```
 
-Detaylı yapılandırma parametreleri için lütfen [Yapılandırıcı](#yapılandırıcı) bölümüne bakın.
+Detaylı yapılandırma parametreleri için lütfen [Yapılandırıcı](#constructor) bölümüne bakın.
 
 ### Veri Modeli Tanımlama
 
@@ -71,7 +71,7 @@ Veritabanı yapısı tanımlandıktan sonra, `sync()` metodunu kullanarak verita
 await database.sync();
 ```
 
-`koleksiyon` kullanımının daha detaylı açıklaması için lütfen [koleksiyon](/api/database/koleksiyon) bölümüne bakın.
+`koleksiyon` kullanımının daha detaylı açıklaması için lütfen [koleksiyon](/api/database/collection) bölümüne bakın.
 
 ### Veri Okuma/Yazma
 
@@ -224,7 +224,7 @@ Bir `koleksiyon` tanımlar. Bu çağrı, Sequelize'ın `define` metoduna benzer;
 
 **Parametreler**
 
-Tüm `options` yapılandırma parametreleri, `koleksiyon` sınıfının yapılandırıcısıyla uyumludur, [koleksiyon](/api/database/koleksiyon#yapılandırıcı) bölümüne bakın.
+Tüm `options` yapılandırma parametreleri, `koleksiyon` sınıfının yapılandırıcısıyla uyumludur, [koleksiyon](/api/database/koleksiyon#constructor) bölümüne bakın.
 
 **Olaylar**
 

@@ -5,15 +5,13 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
   Digunakan untuk memetakan data JSON apa pun ke variabel terstruktur agar dapat digunakan oleh node selanjutnya.
 isFree: true
 builtIn: true
 defaultEnabled: true
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
 
 # Alur Kerja: Pemetaan Variabel JSON

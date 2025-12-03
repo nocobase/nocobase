@@ -4,16 +4,14 @@ packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
----
-:::tip הודעת תרגום AI
-תיעוד זה תורגם אוטומטית על ידי AI.
-:::
-
   פצלו טופס המכיל שדות רבים למספר שלבים כדי להקל על המשתמשים.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip הודעת תרגום AI
+תיעוד זה תורגם אוטומטית על ידי AI.
+:::
 
 # בלוק: טופס רב-שלבי

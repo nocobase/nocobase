@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-  パスワードログインに二段階認証 (2FA) を有効化する機能をサポートします。
+  パスワードログインに二段階認証 (2FA) を有効化する機能をサポートします
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています
+:::
 
 # 二段階認証 (2FA)

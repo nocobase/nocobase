@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
   Integrieren Sie Prometheus in das Telemetrie-Modul von NocoBase.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
 
 # Telemetrie: Prometheus

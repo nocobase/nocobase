@@ -4,16 +4,14 @@ packageName: '@nocobase/plugin-record-history'
 supportedVersions:
   - 2.x
 description: |
----
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-  コレクションのレコードの変更履歴を追跡し、保存します。
+  コレクションのレコードの変更履歴を追跡し、保存します
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています
+:::
 
 # レコード履歴

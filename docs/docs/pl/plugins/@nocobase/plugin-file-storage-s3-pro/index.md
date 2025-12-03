@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
   Obsługuje przechowywanie plików kompatybilne z protokołem S3, w tym usługi takie jak Amazon S3, Aliyun OSS, Tencent Cloud COS oraz MinIO. Umożliwia bezpośrednie przesyłanie plików i prywatny dostęp.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 4
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
 
 # Przechowywanie plików: S3 (Pro)

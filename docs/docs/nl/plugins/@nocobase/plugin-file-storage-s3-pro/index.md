@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
   Ondersteunt S3-compatibele bestandsopslag, waaronder diensten zoals Amazon S3, Aliyun OSS, Tencent Cloud COS en MinIO. Biedt functies zoals directe bestandsuploads en privétoegang.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 4
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
 
 # Bestandsopslag: S3 (Pro)

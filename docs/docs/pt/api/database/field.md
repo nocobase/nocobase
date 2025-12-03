@@ -8,7 +8,7 @@ Esta documentação foi traduzida automaticamente por IA.
 
 Classe de gerenciamento de campos de **coleção** (classe abstrata). É também a classe base para todos os tipos de campo. Qualquer outro tipo de campo é implementado herdando esta classe.
 
-Para saber como personalizar campos, consulte [Estender Tipos de Campo](/pt-BR/docs/api/field/extend-field-types)
+Para saber como personalizar campos, consulte [Estender Tipos de Campo](/pt-BR/api/field/extend-field-types)
 
 ## Construtor
 

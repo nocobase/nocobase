@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip Avviso di traduzione IA
-Questa documentazione è stata tradotta automaticamente dall'IA.
-:::
-
   Potenzia le funzionalità di importazione dei dati, offrendo importazioni asincrone per la gestione di grandi volumi. Supporta il riconoscimento dell'elaborazione dei dati, l'aggiornamento dei dati e l'attivazione di flussi di lavoro.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip Avviso di traduzione IA
+Questa documentazione è stata tradotta automaticamente dall'IA.
+:::
 
 # Azione: Importa record Pro

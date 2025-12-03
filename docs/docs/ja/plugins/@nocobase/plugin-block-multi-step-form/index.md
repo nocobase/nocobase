@@ -4,16 +4,14 @@ packageName: '@nocobase/plugin-block-multi-step-form'
 supportedVersions:
   - 1.x
 description: |
----
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-  多くのフィールドを含むフォームを複数のステップに分けて入力することで、ユーザーの負担を軽減します。
+  多くのフィールドを含むフォームを複数のステップに分けて入力することで、ユーザーの負担を軽減します
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています
+:::
 
 # ブロック：多段階フォーム

@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
   Gebruik externe MariaDB-databases als gegevensbronnen.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
 
 # Gegevensbron: Externe MariaDB

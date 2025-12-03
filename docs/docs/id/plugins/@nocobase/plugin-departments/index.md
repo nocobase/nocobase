@@ -2,15 +2,13 @@
 displayName: "Departemen"
 packageName: '@nocobase/plugin-departments'
 description: |
----
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
   Mengatur pengguna berdasarkan departemen, menetapkan hubungan hierarkis, mengikat peran untuk mengontrol izin, serta mendukung penggunaan sebagai variabel dalam alur kerja dan ekspresi.
 isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
 
 # Departemen

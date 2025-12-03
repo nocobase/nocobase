@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
   Passen Sie den Markennamen und weitere markenbezogene Informationen an.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 1
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
 
 # Benutzerdefiniertes Branding

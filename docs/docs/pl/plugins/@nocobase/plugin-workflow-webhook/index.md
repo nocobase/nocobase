@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
   Odbiera wywołania HTTP z systemów zewnętrznych i wyzwala zdarzenia. Jest to idealne rozwiązanie do przesyłania danych i powiadomień o zdarzeniach inicjowanych przez systemy zewnętrzne, takich jak potwierdzenia płatności (callbacki) czy powiadomienia o wiadomościach.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
 
 # Przepływ pracy: Webhook

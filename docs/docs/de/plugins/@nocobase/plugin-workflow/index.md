@@ -2,15 +2,13 @@
 displayName: "Workflow"
 packageName: '@nocobase/plugin-workflow'
 description: |
----
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
   Ein leistungsstarkes BPM-Tool, das grundlegende Unterstützung für die Geschäftsautomatisierung bietet und sich beliebig um weitere Trigger und Knoten erweitern lässt.
 isFree: true
 builtIn: true
 defaultEnabled: true
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
 
 # Workflow

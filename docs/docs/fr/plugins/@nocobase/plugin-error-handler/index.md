@@ -1,5 +1,5 @@
 ---
-displayName: "Gestionnaire d'erreurs"
+displayName: "Gestionnaire d\"erreurs"
 packageName: '@nocobase/plugin-error-handler'
 description: |
   Gère les erreurs et les exceptions au sein de l'application.

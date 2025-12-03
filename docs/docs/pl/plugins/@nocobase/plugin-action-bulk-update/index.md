@@ -2,15 +2,13 @@
 displayName: "Akcja: Aktualizacja zbiorcza"
 packageName: '@nocobase/plugin-action-bulk-update'
 description: |
----
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
   Zbiorczo aktualizuje wszystkie dane lub wybrane dane.
 isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
 
 # Akcja: Aktualizacja zbiorcza

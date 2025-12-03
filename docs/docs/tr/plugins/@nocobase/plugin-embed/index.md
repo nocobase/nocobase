@@ -1,5 +1,5 @@
 ---
-displayName: "NocoBase'i Gömme"
+displayName: "NocoBase\"i Gömme"
 packageName: '@nocobase/plugin-embed'
 supportedVersions:
   - 1.x

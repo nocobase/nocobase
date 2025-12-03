@@ -4,15 +4,13 @@ packageName: '@nocobase/plugin-ai-gigachat'
 supportedVersions:
   - 2.x
 description: |
----
-:::tip AI अनुवाद सूचना
-यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
-:::
-
   गीगाचैट एलएलएम सेवा के साथ एकीकरण का समर्थन करता है।
 isFree: false
 builtIn: false
 defaultEnabled: false
 ---
+:::tip AI अनुवाद सूचना
+यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
+:::
 
 # एआई एलएलएम: गीगाचैट

@@ -1,10 +1,8 @@
----
-title: Operaciones de la colección
-group: Operaciones de bloque
----
 :::tip Aviso de traducción por IA
 Esta documentación ha sido traducida automáticamente por IA.
 :::
+
+# Operaciones de la colección
 
 
 

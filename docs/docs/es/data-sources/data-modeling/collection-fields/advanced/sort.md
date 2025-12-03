@@ -1,9 +1,8 @@
----
-title: Selector de colección
----
 :::tip Aviso de traducción por IA
 Esta documentación ha sido traducida automáticamente por IA.
 :::
+
+# Selector de colección
 
 
 

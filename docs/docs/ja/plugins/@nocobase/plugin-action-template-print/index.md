@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-  NocoBaseアプリケーション内で、ユーザーがテンプレートを印刷する機能を提供します。
+  NocoBaseアプリケーション内で、ユーザーがテンプレートを印刷する機能を提供します
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています
+:::
 
 # テンプレート印刷

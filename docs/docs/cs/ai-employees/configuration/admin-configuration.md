@@ -1,9 +1,8 @@
----
-title: AI zaměstnanec · Průvodce konfigurací pro administrátory
----
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
+
+# AI zaměstnanec · Průvodce konfigurací pro administrátory
 
 
 

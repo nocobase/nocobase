@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
   Koppel NocoBase aan zakelijke e-mailaccounts zoals Gmail en Outlook, en verstuur en ontvang e-mails direct vanuit NocoBase, net zoals u gewend bent in andere CRM-producten.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 8
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
 
 # E-mailbeheer

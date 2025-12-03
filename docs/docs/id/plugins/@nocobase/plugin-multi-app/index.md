@@ -4,16 +4,14 @@ packageName: '@nocobase/plugin-multi-app'
 supportedVersions:
   - 2.x
 description: |
----
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
   Membuat, mengelola, dan menjalankan beberapa instans sub-aplikasi independen dalam satu aplikasi induk.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
 
 # Multi-app

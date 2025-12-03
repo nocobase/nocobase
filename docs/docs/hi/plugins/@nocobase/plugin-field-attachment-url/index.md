@@ -2,15 +2,13 @@
 displayName: "संग्रह फ़ील्ड: अटैचमेंट (URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
----
-:::tip AI अनुवाद सूचना
-यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
-:::
-
   यह URL प्रारूप में अटैचमेंट का समर्थन करता है।
 isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip AI अनुवाद सूचना
+यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
+:::
 
 # संग्रह फ़ील्ड: अटैचमेंट (URL)

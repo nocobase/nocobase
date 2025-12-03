@@ -4,16 +4,14 @@ packageName: '@nocobase/plugin-ai-knowledge-base'
 supportedVersions:
   - 2.x
 description: |
----
-:::tip AI अनुवाद सूचना
-यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
-:::
-
   यह वेक्टर डेटाबेस के साथ एकीकरण का समर्थन करता है, दस्तावेज़ों को वेक्टरराइज़ करता है, और AI कर्मचारियों को बुद्धिमान खोज व ज्ञान सहायता प्रदान करता है।
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
+:::tip AI अनुवाद सूचना
+यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
+:::
 
 # AI: ज्ञानकोष

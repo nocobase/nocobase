@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI 번역 안내
-이 문서는 AI로 자동 번역되었습니다.
-:::
-
   외부 시스템의 HTTP 호출을 수신하여 이벤트를 트리거합니다. 결제 콜백, 메시지 알림 등 서드파티 시스템에서 시작되는 데이터 푸시 및 이벤트 알림 등에 활용할 수 있습니다.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
 
 # 워크플로우: Webhook 트리거

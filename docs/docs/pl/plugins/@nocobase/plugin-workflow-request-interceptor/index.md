@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
   Uruchamiane przed wykonaniem żądania zainicjowanego za pomocą przycisku akcji lub API, na przykład przed dodaniem, aktualizacją lub usunięciem danych. Nadaje się do walidacji danych i oceny logiki przed wykonaniem akcji, a żądanie może zostać odrzucone za pomocą węzła „Zakończ proces”.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 4
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
 
 # Przepływ pracy: Zdarzenie przed akcją

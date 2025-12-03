@@ -1,9 +1,8 @@
----
-title: Koleksiyon Seçici
----
 :::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
+
+# Koleksiyon Seçici
 
 
 

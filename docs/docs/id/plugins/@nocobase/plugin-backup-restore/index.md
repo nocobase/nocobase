@@ -2,17 +2,15 @@
 displayName: "Pencadangan & Pemulihan Aplikasi (Usang)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
----
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
   Mencadangkan dan memulihkan aplikasi, dapat digunakan untuk skenario seperti replikasi, migrasi, dan peningkatan aplikasi.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
 
 # Pencadangan & Pemulihan Aplikasi (Usang)
 

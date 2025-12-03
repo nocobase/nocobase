@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
   Digunakan untuk membuat variabel kustom atau menetapkan nilai padanya dalam alur kerja, guna menyimpan data sementara selama proses.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
 
 # Alur kerja: Variabel kustom

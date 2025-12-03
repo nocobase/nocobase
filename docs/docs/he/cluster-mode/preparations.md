@@ -132,7 +132,7 @@ QUEUE_ADAPTER_REDIS_URL=
 
 ### מקצה Worker ID
 
-מכיוון שחלק מ[האוספים](/docs/key-terms#collection) במערכת NocoBase משתמשים במזהים גלובליים ייחודיים כמפתחות ראשיים, נדרש מקצה Worker ID כדי להבטיח שכל מופע יישום באשכול יקבל Worker ID ייחודי, ובכך למנוע בעיות של התנגשות מפתחות ראשיים. טווח ה-Worker ID הנוכחי הוא 0-31, כלומר, אותו יישום תומך בהפעלה של עד 32 צמתים בו-זמנית. לפרטים נוספים על תכנון מזהה גלובלי ייחודי, עיינו ב- [@nocobase/snowflake-id](https://github.com/nocobase/nocobase/tree/main/packages/core/snowflake-id).
+מכיוון שחלק מהאוספים במערכת NocoBase משתמשים במזהים גלובליים ייחודיים כמפתחות ראשיים, נדרש מקצה Worker ID כדי להבטיח שכל מופע יישום באשכול יקבל Worker ID ייחודי, ובכך למנוע בעיות של התנגשות מפתחות ראשיים. טווח ה-Worker ID הנוכחי הוא 0-31, כלומר, אותו יישום תומך בהפעלה של עד 32 צמתים בו-זמנית. לפרטים נוספים על תכנון מזהה גלובלי ייחודי, עיינו ב- [@nocobase/snowflake-id](https://github.com/nocobase/nocobase/tree/main/packages/core/snowflake-id).
 
 ```ini
 # כתובת חיבור Redis למקצה Worker ID. אם לא מוגדר, יוקצה Worker ID אקראי.

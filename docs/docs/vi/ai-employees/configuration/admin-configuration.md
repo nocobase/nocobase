@@ -1,10 +1,8 @@
----
-title: Nhân viên AI · Hướng dẫn cấu hình quản trị
-description: Tài liệu này giúp bạn nhanh chóng nắm bắt cách cấu hình và quản lý Nhân viên AI, hướng dẫn từng bước toàn bộ quy trình từ dịch vụ mô hình đến phân công nhiệm vụ.
----
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
+
+# Nhân viên AI · Hướng dẫn cấu hình quản trị
 
 
 

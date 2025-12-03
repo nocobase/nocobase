@@ -5,15 +5,13 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
   Gebruikt om willekeurige JSON-gegevens toe te wijzen aan gestructureerde variabelen, zodat deze in volgende knooppunten kunnen worden gebruikt.
 isFree: true
 builtIn: true
 defaultEnabled: true
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
 
 # Workflow: JSON-variabeletoewijzing

@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
   Gebruikt om aangepaste variabelen aan te maken of er waarden aan toe te wijzen in workflows, voor het opslaan van tijdelijke gegevens binnen het proces.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
 
 # Workflow: Aangepaste variabele

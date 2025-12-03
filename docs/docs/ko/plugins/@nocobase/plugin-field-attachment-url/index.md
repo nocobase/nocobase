@@ -2,15 +2,13 @@
 displayName: "컬렉션 필드: 첨부 파일(URL)"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
----
-:::tip AI 번역 안내
-이 문서는 AI로 자동 번역되었습니다.
-:::
-
   URL 형식의 첨부 파일을 지원합니다.
 isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
 
 # 컬렉션 필드: 첨부 파일(URL)

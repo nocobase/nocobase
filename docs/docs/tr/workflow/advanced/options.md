@@ -1,9 +1,8 @@
----
-title: Gelişmiş Yapılandırma
----
 :::tip AI Çeviri Uyarısı
 Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
 :::
+
+# Gelişmiş Yapılandırma
 
 
 

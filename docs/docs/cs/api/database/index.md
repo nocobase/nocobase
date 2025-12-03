@@ -42,7 +42,7 @@ const database = new Database({
 
 ```
 
-Podrobné konfigurační parametry naleznete v části [Konstruktor](#konstruktor).
+Podrobné konfigurační parametry naleznete v části [Konstruktor](#constructor).
 
 ### Definice datového modelu
 
@@ -71,7 +71,7 @@ Jakmile je struktura databáze definována, můžete použít metodu `sync()` k 
 await database.sync();
 ```
 
-Podrobnější informace o používání `kolekce` naleznete v části [Kolekce](/api/database/kolekce).
+Podrobnější informace o používání `kolekce` naleznete v části [Kolekce](/api/database/collection).
 
 ### Čtení a zápis dat
 
@@ -224,7 +224,7 @@ Definuje `kolekci`. Toto volání je podobné metodě `define` v Sequelize, kter
 
 **Parametry**
 
-Všechny konfigurační parametry `options` jsou shodné s konstruktorem třídy `kolekce`, viz [Kolekce](/api/database/kolekce#konstruktor).
+Všechny konfigurační parametry `options` jsou shodné s konstruktorem třídy `kolekce`, viz [Kolekce](/api/database/kolekce#constructor).
 
 **Události**
 

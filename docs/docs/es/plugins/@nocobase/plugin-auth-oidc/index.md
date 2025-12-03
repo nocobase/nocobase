@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip Aviso de traducción por IA
-Esta documentación ha sido traducida automáticamente por IA.
-:::
-
   Autentica la identidad a través del protocolo OIDC (OpenID Connect).
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip Aviso de traducción por IA
+Esta documentación ha sido traducida automáticamente por IA.
+:::
 
 # Autenticación: OIDC

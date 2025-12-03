@@ -41,7 +41,7 @@ const database = new Database({
 
 ```
 
-Szczegółowe parametry konfiguracji znajdą Państwo w sekcji [Konstruktor](#konstruktor).
+Szczegółowe parametry konfiguracji znajdą Państwo w sekcji [Konstruktor](#constructor).
 
 ### Definicja modelu danych
 
@@ -223,7 +223,7 @@ Definiuje kolekcję. To wywołanie jest podobne do metody `define` w Sequelize, 
 
 **Parametry**
 
-Wszystkie parametry konfiguracji `options` są zgodne z konstruktorem klasy `kolekcja`, proszę zapoznać się z sekcją [Kolekcja](/api/database/collection#konstruktor).
+Wszystkie parametry konfiguracji `options` są zgodne z konstruktorem klasy `kolekcja`, proszę zapoznać się z sekcją [Kolekcja](/api/database/collection#constructor).
 
 **Zdarzenia**
 

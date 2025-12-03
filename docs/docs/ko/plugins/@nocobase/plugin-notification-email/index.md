@@ -2,15 +2,13 @@
 displayName: "알림: 이메일"
 packageName: '@nocobase/plugin-notification-email'
 description: |
----
-:::tip AI 번역 안내
-이 문서는 AI로 자동 번역되었습니다.
-:::
-
   이메일 알림을 보낼 때 사용하며, 현재 SMTP 전송 방식만 지원합니다.
 isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
 
 # 알림: 이메일

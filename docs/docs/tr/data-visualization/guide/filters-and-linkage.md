@@ -15,7 +15,7 @@ Sayfa filtresi (Filtre Bloğu), sayfa düzeyinde filtre koşullarını tek bir y
 
 ![clipboard-image-1761487702](https://static-docs.nocobase.com/clipboard-image-1761487702.png)
 
-Sayfa filtrelerinin kullanımı ve grafikler gibi diğer veri bloklarıyla etkileşimi hakkında daha fazla bilgi için lütfen [Sayfa Filtreleri](/docs/page-filter) belgesine bakın.
+Sayfa filtrelerinin kullanımı ve grafikler gibi diğer veri bloklarıyla etkileşimi hakkında daha fazla bilgi için lütfen [Sayfa Filtreleri](/page-filter) belgesine bakın.
 
 ## Grafik Sorgularında Sayfa Filtre Değerlerini Kullanma
 - Builder Modu (Önerilen)

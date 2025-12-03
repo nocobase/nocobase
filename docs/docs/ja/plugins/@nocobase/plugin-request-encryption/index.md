@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-  HTTPリクエストを送信する前に、リクエストパラメータ（クエリパラメータ）を暗号化します。
+  HTTPリクエストを送信する前に、リクエストパラメータ（クエリパラメータ）を暗号化します
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています
+:::
 
 # HTTPリクエストの暗号化

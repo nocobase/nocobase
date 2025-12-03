@@ -41,7 +41,7 @@ const database = new Database({
 
 ```
 
-För detaljerade konfigurationsparametrar, se [Konstruktorn](#konstruktorn).
+För detaljerade konfigurationsparametrar, se [Konstruktorn](#constructorn).
 
 ### Datamodellens definition
 
@@ -223,7 +223,7 @@ Definierar en `samling`. Detta anrop liknar Sequenzes `define`-metod och skapar 
 
 **Parametrar**
 
-Alla `options`-konfigurationsparametrar överensstämmer med konstruktorn för `samling`-klassen, se [Samling](/api/database/collection#konstruktorn).
+Alla `options`-konfigurationsparametrar överensstämmer med konstruktorn för `samling`-klassen, se [Samling](/api/database/collection#constructorn).
 
 **Händelser**
 

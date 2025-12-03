@@ -41,7 +41,7 @@ const database = new Database({
 
 ```
 
-Detaillierte Konfigurationsparameter finden Sie unter [Konstruktor](#konstruktor).
+Detaillierte Konfigurationsparameter finden Sie unter [Konstruktor](#constructor).
 
 ### Datenmodell-Definition
 

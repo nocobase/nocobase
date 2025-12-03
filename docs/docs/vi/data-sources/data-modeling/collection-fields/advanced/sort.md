@@ -1,9 +1,8 @@
----
-title: Bộ chọn bộ sưu tập
----
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
+
+# Bộ chọn bộ sưu tập
 
 
 

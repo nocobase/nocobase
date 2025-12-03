@@ -1,5 +1,5 @@
 ---
-displayName: "Distributeur d'ID de worker Redis"
+displayName: "Distributeur d\"ID de worker Redis"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 description: |
 ---

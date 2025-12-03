@@ -1,10 +1,8 @@
----
-title: "AI Medewerker · Viz: CRM Scenario Configuratiegids"
-description: "Gebruik het CRM-voorbeeld om te leren hoe u uw AI-inzichtanalist echt uw bedrijf kunt laten begrijpen en zijn volledige potentieel kunt benutten."
----
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
+
+# AI Medewerker · Viz: CRM Scenario Configuratiegids
 
 
 # AI Medewerker · Viz: CRM Scenario Configuratiegids

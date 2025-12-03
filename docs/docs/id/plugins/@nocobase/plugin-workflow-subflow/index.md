@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
   Digunakan untuk memanggil alur kerja lain dalam satu alur kerja. Anda dapat menggunakan variabel dari alur kerja saat ini sebagai input sub-alur, dan menggunakan output sub-alur sebagai variabel alur kerja saat ini.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 4
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
 
 # Alur Kerja: Sub-alur

@@ -1,10 +1,8 @@
----
-title: AI Medewerker · Viz: Inzichtanalist
-description: Genereer grafieken en inzichten met één klik, en laat de data voor zichzelf spreken.
----
 :::tip AI-vertaalmelding
 Deze documentatie is automatisch vertaald door AI.
 :::
+
+# AI Medewerker · Viz: Inzichtanalist
 
 
 

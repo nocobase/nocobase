@@ -2,15 +2,13 @@
 displayName: "Bidang Koleksi: Formula"
 packageName: '@nocobase/plugin-field-formula'
 description: |
----
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
   Memungkinkan konfigurasi dan penyimpanan hasil perhitungan antara nilai-nilai dari beberapa bidang dalam satu catatan yang sama, dengan dukungan untuk mesin Math.js dan fungsi formula Excel.
 isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
 
 # Bidang Koleksi: Formula

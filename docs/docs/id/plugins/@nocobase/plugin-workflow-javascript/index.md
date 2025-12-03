@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
-:::
-
   Jalankan sepotong kode JavaScript dalam lingkungan Node.js yang terisolasi.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 4
 ---
+:::tip Pemberitahuan Terjemahan AI
+Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::
 
 # Alur Kerja: JavaScript

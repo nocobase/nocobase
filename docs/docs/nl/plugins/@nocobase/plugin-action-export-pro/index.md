@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
   Verbetert de exportmogelijkheden van gegevens. Maakt asynchrone export mogelijk voor grote hoeveelheden data en ondersteunt het exporteren van bijlagen.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
 
 # Actie: Records exporteren Pro

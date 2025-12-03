@@ -2,17 +2,15 @@
 displayName: "Back-up en herstel van apps (verouderd)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
   Maak back-ups van apps en herstel deze. Dit is handig voor scenario's zoals het repliceren, migreren en upgraden van apps.
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
 
 # Back-up en herstel van apps (verouderd)
 

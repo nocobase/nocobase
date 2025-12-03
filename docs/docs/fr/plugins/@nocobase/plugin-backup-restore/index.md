@@ -1,5 +1,5 @@
 ---
-displayName: "Sauvegarde et restauration d'applications (obsolète)"
+displayName: "Sauvegarde et restauration d\"applications (obsolète)"
 packageName: '@nocobase/plugin-backup-restore'
 description: |
 ---

@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip Avis de traduction IA
-Cette documentation a été traduite automatiquement par IA.
-:::
-
   Connectez NocoBase à vos comptes de messagerie d'entreprise (Gmail, Outlook, etc.) pour envoyer et recevoir des e-mails directement depuis NocoBase, tout comme vous le feriez avec d'autres produits CRM.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 8
 ---
+:::tip Avis de traduction IA
+Cette documentation a été traduite automatiquement par IA.
+:::
 
 # Gestion des e-mails

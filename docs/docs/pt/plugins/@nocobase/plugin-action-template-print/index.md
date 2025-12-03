@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip Aviso de tradução por IA
-Esta documentação foi traduzida automaticamente por IA.
-:::
-
   Permite que os usuários imprimam modelos dentro do aplicativo NocoBase.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip Aviso de tradução por IA
+Esta documentação foi traduzida automaticamente por IA.
+:::
 
 # Impressão de Modelo

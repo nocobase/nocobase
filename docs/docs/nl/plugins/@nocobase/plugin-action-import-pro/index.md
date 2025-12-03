@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
   Verbetert de mogelijkheden voor gegevensimport met asynchrone imports voor het verwerken van grote hoeveelheden data. Ondersteunt functies zoals het herkennen van gegevensverwerking, het bijwerken van gegevens en het activeren van workflows.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
 
 # Actie: Records importeren Pro

@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
   Wordt geactiveerd na het klikken op een knop waaraan een aangepaste actie is gekoppeld. Dit is handig voor het orkestreren van aangepaste bewerkingen op datarijen.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 4
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
 
 # Workflow: Aangepaste actiegebeurtenis

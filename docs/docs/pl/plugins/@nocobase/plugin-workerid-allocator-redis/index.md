@@ -2,16 +2,14 @@
 displayName: "Alokator ID procesów roboczych Redis"
 packageName: '@nocobase/plugin-workerid-allocator-redis'
 description: |
----
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
   Alokator ID procesów roboczych oparty na Redis.
 isFree: false
 builtIn: false
 defaultEnabled: false
 editionLevel: 3
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
 
 # Alokator ID procesów roboczych Redis

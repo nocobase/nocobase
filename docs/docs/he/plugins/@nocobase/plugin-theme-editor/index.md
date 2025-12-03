@@ -2,15 +2,13 @@
 displayName: "עורך ערכות נושא"
 packageName: '@nocobase/plugin-theme-editor'
 description: |
----
-:::tip הודעת תרגום AI
-תיעוד זה תורגם אוטומטית על ידי AI.
-:::
-
   התאימו אישית את צבעי ממשק המשתמש, גדלים ועוד, ושמרו את התוצאה כערכת נושא. ניתן לעבור בין מספר ערכות נושא שונות.
 isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip הודעת תרגום AI
+תיעוד זה תורגם אוטומטית על ידי AI.
+:::
 
 # עורך ערכות נושא

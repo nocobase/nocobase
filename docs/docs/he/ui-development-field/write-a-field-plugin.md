@@ -1,10 +1,8 @@
----
-title: מבוא ל-NocoBase
-description: למדו את מושגי הליבה של NocoBase.
----
 :::tip הודעת תרגום AI
 תיעוד זה תורגם אוטומטית על ידי AI.
 :::
+
+# מבוא ל-NocoBase
 
 
 

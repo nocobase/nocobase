@@ -1,10 +1,8 @@
----
-title: Membuat Koleksi
-description: Pelajari cara membuat koleksi data baru di NocoBase.
----
 :::tip Pemberitahuan Terjemahan AI
 Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
 :::
+
+# Membuat Koleksi
 
 
 

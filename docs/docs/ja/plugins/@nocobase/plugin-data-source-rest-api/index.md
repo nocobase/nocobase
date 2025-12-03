@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-  外部のREST APIデータソースを利用できます。
+  外部のREST APIデータソースを利用できます
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 4
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています
+:::
 
 # データソース：REST API

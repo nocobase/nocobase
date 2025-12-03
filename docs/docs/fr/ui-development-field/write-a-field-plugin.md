@@ -1,10 +1,8 @@
----
-title: Comprendre les collections
-description: Découvrez comment utiliser les collections dans NocoBase pour gérer vos données.
----
 :::tip Avis de traduction IA
 Cette documentation a été traduite automatiquement par IA.
 :::
+
+# Comprendre les collections
 
 
 

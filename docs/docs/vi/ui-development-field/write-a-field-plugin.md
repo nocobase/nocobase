@@ -1,10 +1,8 @@
----
-title: Giới thiệu về NocoBase
-description: Tìm hiểu NocoBase là gì và cách nó giúp bạn xây dựng ứng dụng.
----
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
+
+# Giới thiệu về NocoBase
 
 
 
@@ -26,4 +24,4 @@ Trước khi sử dụng NocoBase, điều quan trọng là phải hiểu các k
 
 ### Bắt đầu nhanh
 
-Để bắt đầu sử dụng NocoBase, vui lòng truy cập [Hướng dẫn cài đặt](/docs/getting-started/installation) của chúng tôi.
+Để bắt đầu sử dụng NocoBase, vui lòng truy cập [Hướng dẫn cài đặt](/getting-started/installation) của chúng tôi.

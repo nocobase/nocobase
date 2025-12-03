@@ -1,11 +1,8 @@
----
-title: AI zaměstnanec · Viz: Analytik datových poznatků
----
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
 
-
+# AI zaměstnanec · Viz: Analytik datových poznatků
 
 > Generujte grafy a poznatky jedním kliknutím a nechte data mluvit sama za sebe.
 

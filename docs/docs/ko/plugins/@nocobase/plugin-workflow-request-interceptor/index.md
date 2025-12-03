@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI 번역 안내
-이 문서는 AI로 자동 번역되었습니다.
-:::
-
   작업 버튼이나 API를 통해 요청이 시작될 때, 예를 들어 데이터를 추가, 업데이트, 삭제하기 전에 실행됩니다. 이 이벤트는 작업 전에 데이터 유효성 검사나 로직 판단을 수행하는 데 적합하며, '종료 노드'를 사용하여 요청을 차단할 수도 있습니다.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 4
 ---
+:::tip AI 번역 안내
+이 문서는 AI로 자동 번역되었습니다.
+:::
 
 # 워크플로우: 작업 전 이벤트

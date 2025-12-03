@@ -2,17 +2,15 @@
 displayName: "ब्लॉक: टेम्पलेट (बंद कर दिया गया है)"
 packageName: '@nocobase/plugin-block-template'
 description: |
----
-:::tip AI अनुवाद सूचना
-यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
-:::
-
   पेजों में दोबारा इस्तेमाल के लिए ब्लॉक टेम्पलेट बनाएँ और प्रबंधित करें।
 isFree: true
 builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
+:::tip AI अनुवाद सूचना
+यह दस्तावेज़ AI द्वारा स्वचालित रूप से अनुवादित किया गया है।
+:::
 
 # ब्लॉक: टेम्पलेट (बंद कर दिया गया है)
 

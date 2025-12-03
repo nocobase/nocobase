@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
   Połącz NocoBase z firmowymi kontami e-mail, takimi jak Gmail i Outlook, aby odbierać i wysyłać wiadomości e-mail bezpośrednio z NocoBase, podobnie jak w innych systemach CRM.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 8
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
 
 # Menedżer poczty e-mail

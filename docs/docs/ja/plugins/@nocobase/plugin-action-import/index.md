@@ -2,15 +2,13 @@
 displayName: "アクション：レコードのインポート"
 packageName: '@nococase/plugin-action-import'
 description: |
----
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-  Excelテンプレートを使用してデータをインポートします。どのフィールドをインポートするか設定でき、テンプレートは自動的に生成されます。
+  Excelテンプレートを使用してデータをインポートします。どのフィールドをインポートするか設定でき、テンプレートは自動的に生成されます
 isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています
+:::
 
 # アクション：レコードのインポート

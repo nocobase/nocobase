@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
-:::
-
   Uruchamia się po kliknięciu przycisku, który jest powiązany z niestandardową akcją. Jest to przydatne do orkiestracji niestandardowych operacji na wierszach danych.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 4
 ---
+:::tip Powiadomienie o tłumaczeniu AI
+Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::
 
 # Przepływ pracy: Zdarzenie niestandardowej akcji

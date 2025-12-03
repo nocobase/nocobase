@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip KI-Übersetzungshinweis
-Diese Dokumentation wurde automatisch von KI übersetzt.
-:::
-
   Verbinden Sie NocoBase mit Ihren Unternehmens-E-Mail-Konten wie Gmail und Outlook. So können Sie E-Mails direkt in NocoBase empfangen und versenden, genau wie in anderen CRM-Produkten.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 8
 ---
+:::tip KI-Übersetzungshinweis
+Diese Dokumentation wurde automatisch von KI übersetzt.
+:::
 
 # E-Mail-Verwaltung

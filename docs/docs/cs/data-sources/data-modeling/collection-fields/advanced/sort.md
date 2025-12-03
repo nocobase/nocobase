@@ -1,9 +1,8 @@
----
-title: Selektor kolekcí
----
 :::tip Upozornění na překlad AI
 Tato dokumentace byla automaticky přeložena umělou inteligencí.
 :::
+
+# Selektor kolekcí
 
 
 

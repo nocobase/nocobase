@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-  SAML 2.0 プロトコルによる認証を提供します。
+  SAML 2.0 プロトコルによる認証を提供します
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 2
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています
+:::
 
 # 認証：SAML 2.0

@@ -1,10 +1,8 @@
----
-title: Giới thiệu về luồng công việc NocoBase
-description: Tìm hiểu về tính năng luồng công việc của NocoBase, cách tạo và quản lý các quy trình tự động.
----
 :::tip Thông báo dịch AI
 Tài liệu này đã được dịch tự động bằng AI.
 :::
+
+# Giới thiệu về luồng công việc NocoBase
 
 
 

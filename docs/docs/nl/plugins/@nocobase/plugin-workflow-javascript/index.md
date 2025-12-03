@@ -5,16 +5,14 @@ supportedVersions:
   - 1.x
   - 2.x
 description: |
----
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
-:::
-
   Voert een stuk JavaScript-code uit in een geïsoleerde Node.js-omgeving.
 isFree: false
 builtIn: false
 defaultEnabled: false
 points: 4
 ---
+:::tip AI-vertaalmelding
+Deze documentatie is automatisch vertaald door AI.
+:::
 
 # Workflow: JavaScript knooppunt

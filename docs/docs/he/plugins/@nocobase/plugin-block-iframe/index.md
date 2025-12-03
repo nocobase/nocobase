@@ -2,15 +2,13 @@
 displayName: "בלוק: iframe"
 packageName: '@nocobase/plugin-block-iframe'
 description: |
----
-:::tip הודעת תרגום AI
-תיעוד זה תורגם אוטומטית על ידי AI.
-:::
-
   מאפשר ליצור ולנהל בלוק iframe בדף, כדי להטמיע ולהציג דפי אינטרנט או תוכן חיצוני.
 isFree: כן
 builtIn: כן
 defaultEnabled: לא
 ---
+:::tip הודעת תרגום AI
+תיעוד זה תורגם אוטומטית על ידי AI.
+:::
 
 # בלוק: iframe

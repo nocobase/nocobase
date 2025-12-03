@@ -79,4 +79,4 @@ LIMIT 100;
 나중에 "차트 옵션"을 설정할 때, 쿼리 결과의 열을 기반으로 필드를 매핑합니다.
 
 > [!TIP]
-> SQL 모드에 대한 더 자세한 내용은 [고급 사용법 — SQL 모드에서 데이터 쿼리](/docs/advanced-usage/query-data-in-sql-mode)를 참조하십시오.
+> SQL 모드에 대한 더 자세한 내용은 [고급 사용법 — SQL 모드에서 데이터 쿼리](/advanced-usage/query-data-in-sql-mode)를 참조하십시오.

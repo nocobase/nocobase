@@ -1,10 +1,8 @@
----
-title: NocoBase의 컬렉션과 워크플로우
-description: NocoBase의 핵심 개념인 컬렉션과 워크플로우에 대해 알아봅니다.
----
 :::tip AI 번역 안내
 이 문서는 AI로 자동 번역되었습니다.
 :::
+
+# NocoBase의 컬렉션과 워크플로우
 
 
 

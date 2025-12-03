@@ -1,10 +1,8 @@
----
-title: "Podstawowe pojęcia"
-description: "Poznaj podstawowe pojęcia NocoBase, aby lepiej zrozumieć, jak działa system."
----
 :::tip Powiadomienie o tłumaczeniu AI
 Ta dokumentacja została automatycznie przetłumaczona przez AI.
 :::
+
+# Podstawowe pojęcia
 
 
 W NocoBase znajdą Państwo kilka kluczowych pojęć, które pomogą Państwu zrozumieć, jak działa system i jak go efektywnie wykorzystywać.

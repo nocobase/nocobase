@@ -41,7 +41,7 @@ const database = new Database({
 
 ```
 
-Untuk parameter konfigurasi yang lebih detail, silakan merujuk ke [Konstruktor](#konstruktor).
+Untuk parameter konfigurasi yang lebih detail, silakan merujuk ke [Konstruktor](#constructor).
 
 ### Definisi Model Data
 
@@ -223,7 +223,7 @@ Mendefinisikan sebuah koleksi. Panggilan ini mirip dengan metode `define` Sequel
 
 **Parameter**
 
-Semua parameter konfigurasi `options` konsisten dengan konstruktor kelas `koleksi`, silakan merujuk ke [koleksi](/api/database/collection#konstruktor).
+Semua parameter konfigurasi `options` konsisten dengan konstruktor kelas `koleksi`, silakan merujuk ke [koleksi](/api/database/collection#constructor).
 
 **Peristiwa**
 

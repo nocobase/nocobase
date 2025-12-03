@@ -2,15 +2,13 @@
 displayName: "コレクションフィールド：添付ファイル（URL）"
 packageName: '@nocobase/plugin-field-attachment-url'
 description: |
----
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
-:::
-
-  URL形式の添付ファイルに対応しています。
+  URL形式の添付ファイルに対応しています
 isFree: true
 builtIn: true
 defaultEnabled: false
 ---
+:::tip AI翻訳のお知らせ
+本ドキュメントはAIにより自動翻訳されています
+:::
 
 # コレクションフィールド：添付ファイル（URL）
