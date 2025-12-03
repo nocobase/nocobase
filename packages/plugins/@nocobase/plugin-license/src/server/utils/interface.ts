@@ -9,7 +9,6 @@
 
 export interface KeyData {
   upgradeExpirationDate: string;
-  licensedEdition: string;
   licenseKey: {
     id: string;
     licensee: string;
@@ -18,11 +17,6 @@ export interface KeyData {
     domain: string;
     licenseStatus: string;
   };
-  plugins: Array<{
-    displayName: string;
-    packageName: string;
-    updateExpirationDate?: string;
-  }>;
   instanceData: {
     timestamp: string;
     sys: string;
