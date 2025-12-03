@@ -72,6 +72,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
   return (
     <div
       ref={ref}
+      onClick={handleClick}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -80,19 +81,14 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
         width: '100%',
         maxHeight: 300,
         overflowY: 'auto',
+        cursor: 'pointer',
       }}
     >
-      <span>{<FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />}</span>
-      <div
-        onClick={handleClick}
-        style={{
-          position: 'absolute',
-          inset: 0,
-          cursor: 'pointer',
-          zIndex: 10,
-          background: 'transparent', // 保持内容可见
-        }}
-      />
+      <span
+        style={{ pointerEvents: 'none' }} // 不拦截点击
+      >
+        {<FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />}
+      </span>
     </div>
   );
 });
