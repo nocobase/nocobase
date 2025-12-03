@@ -1,0 +1,16 @@
+{
+  "Add variable": "변수 추가",
+  "Bulk import": "일괄 가져오기",
+  "Delete variable": "변수 삭제",
+  "Encrypted": "암호화됨",
+  "Environment": "환경",
+  "Name": "이름",
+  "Plain text": "일반 텍스트",
+  "Restart now": "지금 다시 시작",
+  "Secrets": "비밀",
+  "Type": "유형",
+  "Value": "값",
+  "Variables": "변수",
+  "Variables and secrets": "변수 및 비밀",
+  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "Variables and secrets have been updated. A restart is required for the changes to take effect."
+}

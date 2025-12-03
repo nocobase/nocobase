@@ -1,11 +1,18 @@
 {
-  "Multi-app manager": "다중 앱 관리",
-  "Applications": "앱",
+  "An independent JWT secret ensures data and session isolation from other applications.": "An independent JWT secret ensures data and session isolation from other applications.",
+  "App ID": "앱 ID",
   "App display name": "앱 표시 이름",
-  "App ID": "앱 식별자",
-  "Pin to menu": "메뉴에 고정",
+  "Applications": "애플리케이션",
+  "Authentication options": "Authentication options",
+  "Auto start": "자동 시작",
+  "Automatically generate a JWT secret": "Automatically generate a JWT secret",
   "Custom domain": "사용자 정의 도메인",
-  "Manage applications": "앱 관리",
+  "JWT secret": "JWT secret",
+  "Manage applications": "애플리케이션 관리",
+  "Multi-app manager": "다중 앱 관리자",
+  "Pin to menu": "메뉴에 고정",
   "Standalone deployment": "독립형 배포",
-  "Auto start": "자동 시작"  
+  "Start mode": "시작 모드",
+  "Start on first visit": "첫 방문 시 시작",
+  "Start with main application": "메인 애플리케이션과 함께 시작"
 }

@@ -323,13 +323,13 @@ export async function updateSingleAssociation(
       transaction,
     });
     if (instance) {
-      await model[setAccessor](value, { context, transaction, associationKey: key });
+      await model[setAccessor](value, { context, transaction });
     }
     return true;
   }
 
   if (value instanceof Model) {
-    await model[setAccessor](value, { context, transaction, associationKey: key });
+    await model[setAccessor](value, { context, transaction });
     model.setDataValue(key, value);
     return true;
   }
@@ -357,7 +357,7 @@ export async function updateSingleAssociation(
           delete updateValues[association.foreignKey];
         }
 
-        await instance.update(updateValues, { ...options, transaction, associationKey: key });
+        await instance.update(updateValues, { ...options, transaction, inputValues: updateValues });
       }
 
       await updateAssociations(instance, value, {
@@ -375,7 +375,7 @@ export async function updateSingleAssociation(
     values: value,
     operation: 'create',
   });
-  const instance = await model[createAccessor](value, { context, transaction, associationKey: key });
+  const instance = await model[createAccessor](value, { context, transaction, inputValues: value });
 
   await updateAssociations(instance, value, {
     ...options,
@@ -542,7 +542,7 @@ export async function updateMultipleAssociation(
         values: item,
         operation: 'create',
       });
-      const instance = await model[createAccessor](item, accessorOptions);
+      const instance = await model[createAccessor](item, { ...accessorOptions, inputValues: item });
 
       await updateAssociations(instance, item, {
         ...options,
@@ -566,7 +566,7 @@ export async function updateMultipleAssociation(
           values: item,
           operation: 'create',
         });
-        instance = await model[createAccessor](item, accessorOptions);
+        instance = await model[createAccessor](item, { ...accessorOptions, inputValues: item });
         await updateAssociations(instance, item, {
           ...options,
           transaction,
@@ -591,7 +591,7 @@ export async function updateMultipleAssociation(
           values: item,
           operation: 'update',
         });
-        await instance.update(item, { ...options, transaction });
+        await instance.update(item, { ...options, transaction, inputValues: item });
       }
       await updateAssociations(instance, item, {
         ...options,

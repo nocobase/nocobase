@@ -267,7 +267,15 @@ export class XlsxImporter extends EventEmitter {
         ctx.filterKey = column.dataIndex[1];
       }
 
-      rowValues[dataKey] = await interfaceInstance.toValue(this.trimString(str), ctx);
+      try {
+        rowValues[dataKey] = str == null ? null : await interfaceInstance.toValue(this.trimString(str), ctx);
+      } catch (error) {
+        throw new ImportValidationError('Failed to parse field {{field}} in row {{rowIndex}}: {{message}}', {
+          rowIndex: options?.context?.handingRowIndex || 1,
+          field: dataKey,
+          message: error.message,
+        });
+      }
     }
     const model = this.getModel();
     const guard = UpdateGuard.fromOptions(model, {
@@ -358,11 +366,6 @@ export class XlsxImporter extends EventEmitter {
       const instance = instances[i];
       const value = values[i];
 
-      await this.loggerService.measureExecutedTime(
-        async () => updateAssociations(instance, value, { transaction }),
-        `Row ${i + 1}: updateAssociations completed in {time}ms`,
-        'debug',
-      );
       if (insertOptions.hooks !== false) {
         await this.loggerService.measureExecutedTime(
           async () => {
@@ -378,6 +381,13 @@ export class XlsxImporter extends EventEmitter {
           'debug',
         );
       }
+
+      await this.loggerService.measureExecutedTime(
+        async () => updateAssociations(instance, value, { transaction }),
+        `Row ${i + 1}: updateAssociations completed in {time}ms`,
+        'debug',
+      );
+
       if (context?.skipWorkflow !== true) {
         await this.loggerService.measureExecutedTime(
           async () => {

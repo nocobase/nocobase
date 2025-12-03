@@ -309,13 +309,7 @@ export const usePopupUtils = (
       return setVisibleFromAction?.(false);
     }
 
-    // 1. If there is a previous route in the route stack, navigate back to the previous route.
-    // 2. If the popup was opened directly via a URL and there is no previous route in the stack, navigate to the route of the previous popup.
-    if (getPopupLayerState(currentLevel)) {
-      navigate(-1);
-    } else {
-      navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
-    }
+    navigate(withSearchParams(removeLastPopupPath(location.pathname)), { replace: true });
     removePopupLayerState(currentLevel);
     popupParams?.popupuid && deletePopupContext(popupParams.popupuid);
   }, [

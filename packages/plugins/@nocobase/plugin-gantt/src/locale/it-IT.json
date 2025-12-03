@@ -1,7 +1,7 @@
 {
-  "Title field": "Campo titolo",
-  "Time scale": "Scala temporale",
-  "Start date field": "Campo data di inizio",
   "End date field": "Campo data di fine",
-  "Progress field": "Campo progresso"
+  "Progress field": "Campo progresso",
+  "Start date field": "Campo data di inizio",
+  "Time scale": "Scala temporale",
+  "Title field": "Campo titolo"
 }

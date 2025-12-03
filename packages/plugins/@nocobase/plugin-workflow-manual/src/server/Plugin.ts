@@ -9,9 +9,7 @@
 
 import { Plugin } from '@nocobase/server';
 import { Model } from '@nocobase/database';
-import actions from '@nocobase/actions';
-import { HandlerType } from '@nocobase/resourcer';
-import WorkflowPlugin, { EXECUTION_STATUS, JOB_STATUS } from '@nocobase/plugin-workflow';
+import WorkflowPlugin, { EXECUTION_STATUS } from '@nocobase/plugin-workflow';
 
 import * as jobActions from './actions';
 
@@ -21,12 +19,10 @@ import { TASK_TYPE_MANUAL, TASK_STATUS } from '../common/constants';
 export default class extends Plugin {
   onTaskSave = async (task: Model, { transaction }) => {
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
-    const workflowId = Array.from(workflowPlugin.enabledCache.keys());
     const ModelClass = task.constructor as unknown as Model;
     const pending = await ModelClass.count({
       where: {
         userId: task.userId,
-        workflowId,
         status: TASK_STATUS.PENDING,
       },
       include: [
@@ -46,7 +42,6 @@ export default class extends Plugin {
     const all = await ModelClass.count({
       where: {
         userId: task.userId,
-        workflowId,
       },
       col: 'id',
       transaction,
@@ -94,7 +89,6 @@ export default class extends Plugin {
       where: {
         status: TASK_STATUS.PENDING,
         userId,
-        workflowId: execution.workflowId,
       },
       include: [
         {
@@ -113,7 +107,6 @@ export default class extends Plugin {
     const allCounts = await WorkflowManualTaskModel.count({
       where: {
         userId,
-        workflowId: execution.workflowId,
       },
       col: 'id',
       group: ['userId'],

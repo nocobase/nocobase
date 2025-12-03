@@ -66,37 +66,28 @@ export const setDepartments = async (ctx: Context, next: Next) => {
   const departmentIds = departments.map((department: any) => department.id);
   const main = departments.find((department: any) => department.isMain);
   const owners = departments.filter((department: any) => department.isOwner);
+
   await ctx.db.sequelize.transaction(async (t) => {
     await user.setDepartments(departmentIds, {
-      through: {
-        isMain: false,
-        isOwner: false,
-      },
+      through: { isOwner: false },
       transaction: t,
     });
-    if (main) {
-      await throughRepo.update({
-        filter: {
-          userId,
-          departmentId: main.id,
-        },
-        values: {
-          isMain: true,
-        },
-        transaction: t,
-      });
-    }
+
+    // ensure main department id
+    await repo.update({
+      filterByTk: userId,
+      values: { mainDepartmentId: main ? main.id : null },
+      transaction: t,
+    });
+
+    // owner flags
     if (owners.length) {
       await throughRepo.update({
         filter: {
           userId,
-          departmentId: {
-            $in: owners.map((owner: any) => owner.id),
-          },
+          departmentId: { $in: owners.map((o: any) => o.id) },
         },
-        values: {
-          isOwner: true,
-        },
+        values: { isOwner: true },
         transaction: t,
       });
     }
@@ -106,28 +97,31 @@ export const setDepartments = async (ctx: Context, next: Next) => {
 
 export const setMainDepartment = async (ctx: Context, next: Next) => {
   const { userId, departmentId } = ctx.action.params.values || {};
+  const repo = ctx.db.getRepository('users');
   const throughRepo = ctx.db.getRepository('departmentsUsers');
+
   await ctx.db.sequelize.transaction(async (t) => {
-    await throughRepo.update({
-      filter: {
-        userId,
-        isMain: true,
-      },
-      values: {
-        isMain: false,
-      },
+    await repo.update({
+      filterByTk: userId,
+      values: { mainDepartmentId: departmentId },
       transaction: t,
     });
-    await throughRepo.update({
-      filter: {
-        userId,
-        departmentId,
-      },
-      values: {
-        isMain: true,
-      },
+
+    const existingAssoc = await throughRepo.findOne({
+      filter: { userId, departmentId },
       transaction: t,
     });
+    if (!existingAssoc) {
+      await throughRepo.create({
+        values: {
+          userId,
+          departmentId,
+          isOwner: false,
+        },
+        transaction: t,
+      });
+    }
   });
+
   await next();
 };
