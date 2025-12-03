@@ -230,8 +230,8 @@ const Preview = (props) => {
 };
 export class DisplayPreviewFieldModel extends FieldModel {
   render(): any {
-    const { value, titleField, template } = this.props;
-    if (titleField && template !== 'file') {
+    const { value, titleField, template, target } = this.props;
+    if (titleField && template !== 'file' && target !== 'attachments') {
       return castArray(value).flatMap((v, idx) => {
         const result = v?.[titleField];
         const content = result ? (
