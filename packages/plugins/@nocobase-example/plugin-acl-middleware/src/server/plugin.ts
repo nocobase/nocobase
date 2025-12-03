@@ -14,7 +14,24 @@ export class PluginAclMiddlewareServer extends Plugin {
 
   async beforeLoad() {}
 
-  async load() {}
+  async load() {
+    // Visit http://localhost:13000/api/users:action1?token=<your_login_token>
+    this.app.resourceManager.registerActionHandler('users:action1', async (ctx, next) => {
+      ctx.body = {
+        message: 'You have permission to access this action.',
+      };
+      await next();
+    });
+    this.app.acl.use(async (ctx, next) => {
+      const { resourceName, actionName } = ctx.action;
+      if (resourceName === 'users' && actionName === 'action1') {
+        if (ctx.auth.user?.id === 2) {
+          ctx.permission.skip = true;
+        }
+      }
+      await next();
+    });
+  }
 
   async install() {}
 
