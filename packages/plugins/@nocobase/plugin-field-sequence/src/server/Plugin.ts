@@ -152,7 +152,7 @@ export default class PluginFieldSequenceServer extends Plugin {
               continue;
             }
 
-            await field.update(record, {});
+            await field.update(record, { overwrite: true });
           }
         });
       }
