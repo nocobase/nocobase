@@ -122,12 +122,16 @@ export class DetailsBlockModel extends CollectionBlockModel<{
 
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
     return (
       <>
         <DndProvider>
           <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
             <Space>
               {this.mapSubModels('actions', (action) => {
+                if (action.hidden && !isConfigMode) {
+                  return;
+                }
                 return (
                   <Droppable model={action} key={action.uid}>
                     <FlowModelRenderer
