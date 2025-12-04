@@ -687,6 +687,18 @@ const appContainerStyle: React.CSSProperties = {
 };
 const embedContainerStyle: React.CSSProperties = { width: 'fit-content', position: 'relative' };
 
+const GlobalStyle = () => {
+  const { token } = useToken();
+  const El: FC<any> = useMemo(() => {
+    if (token.globalStyle) {
+      return createGlobalStyle`${token.globalStyle}`;
+    }
+    return () => null;
+  }, [token.globalStyle]);
+
+  return <El />;
+};
+
 export const InternalAdminLayout = () => {
   const { allAccessRoutes } = useAllAccessDesktopRoutes();
   const { designable: _designable } = useDesignable();
@@ -760,14 +772,6 @@ export const InternalAdminLayout = () => {
       doNotChangeCollapsedRef.current = false;
     });
   }, []);
-
-  const GlobalStyle = () => {
-    let El: FC<any> = () => null;
-    if (token.globalStyle) {
-      El = createGlobalStyle`${token.globalStyle}`;
-    }
-    return <El />;
-  };
 
   const menuProps = useMemo(() => {
     return {
