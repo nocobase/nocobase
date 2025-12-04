@@ -9,7 +9,6 @@
 
 import { Env } from '@nocobase/license-kit';
 import { KeyData } from './interface';
-import { logger } from '@nocobase/logger';
 import omit from 'lodash/omit';
 import isEqual from 'lodash/isEqual';
 
@@ -21,7 +20,7 @@ export function getClientDomain(ctx: any) {
     try {
       return new URL(referer).origin;
     } catch {
-      logger.error('Invalid Referer URL:', referer);
+      console.error('Invalid Referer URL:', referer);
     }
   }
 

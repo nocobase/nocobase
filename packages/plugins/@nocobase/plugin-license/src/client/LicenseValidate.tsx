@@ -8,11 +8,9 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { SchemaComponent, useAPIClient, useFormBlockContext } from '@nocobase/client';
-import { Card, Typography, Spin, message, Input, Button, Alert } from 'antd';
-import { useAsyncEffect } from 'ahooks';
+import { useAPIClient } from '@nocobase/client';
+import { Alert } from 'antd';
 import { useT } from './locale';
-import { CopyOutlined } from '@ant-design/icons';
 import { Env } from '@nocobase/license-kit';
 import { useTranslation } from 'react-i18next';
 
@@ -47,11 +45,6 @@ export const LicenseValidate = () => {
       .catch((err) => {
         console.log(err);
       });
-    // message.error('授权key格式异常，请前往NocoBase Service重新获取授权key', 10);
-    // message.error('授权key与当前环境不匹配，请前往NocoBase Service重新获取授权key', 10);
-    // message.error('授权key与当前域名不匹配，请前往NocoBase Service重新获取授权key', 10);
-    // message.warning('授权Key保存成功，当前环境无法连接NocoBase Service，仅支持手动安装商业插件', 10);
-    // message.success('授权key保存成功，如需安装商业插件，请重启NocoBase服务', 10);
   }, []);
 
   if (state?.isExpired) {

@@ -1,4 +1,12 @@
 'use strict';
+/**
+ * This file is part of the NocoBase (R) project.
+ * Copyright (c) 2020-2024 NocoBase Co., Ltd.
+ * Authors: NocoBase Team.
+ *
+ * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
+ * For more information, please refer to: https://www.nocobase.com/agreement.
+ */
 var __importDefault =
   (this && this.__importDefault) ||
   function (mod) {
@@ -7,77 +15,65 @@ var __importDefault =
 Object.defineProperty(exports, '__esModule', { value: true });
 exports.isEnvMatch = exports.isDomainMatch = exports.getClientDomain = void 0;
 const omit_1 = __importDefault(require('lodash/omit'));
+const isEqual_1 = __importDefault(require('lodash/isEqual'));
 function getClientDomain(ctx) {
-  if (!ctx) {
-    return '';
-  }
-  // const proto = ctx.headers['x-forwarded-proto']?.split(',')[0] || ctx.protocol;
-  // const host = ctx.headers['x-forwarded-host']?.split(',')[0] || ctx.host;
-  // let origin = `${proto}://${host}`;
-  // // 如果 referer 存在，并且域名与 host 相同，可作为辅助
-  // const referer = ctx.get('referer');
-  // if (referer) {
-  //   try {
-  //     const url = new URL(referer);
-  //     if (url.host === host) {
-  //       origin = url.origin;
-  //     }
-  //   } catch {
-  //     //
-  //   }
-  // }
-  // return origin;
-  if (!ctx.get) {
-    return '';
-  }
-  let fullHost = `${ctx?.protocol}://${ctx?.request?.host || ctx?.host}`; // 默认完整地址
-  const referer = ctx?.get?.('referer');
+  if (!ctx) return '';
+  const referer = typeof ctx.get === 'function' ? ctx.get('referer') : null;
   if (referer) {
     try {
-      const url = new URL(referer);
-      fullHost = url.origin;
-    } catch (err) {
-      console.error('Invalid Referer URL:', err);
+      return new URL(referer).origin;
+    } catch {
+      console.error('Invalid Referer URL:', referer);
     }
   }
-  return fullHost;
+  const protocol = ctx.headers?.['x-forwarded-proto'] || ctx.protocol || ctx.request?.protocol || 'http';
+  const host = ctx.headers?.['x-forwarded-host'] || ctx.host || ctx.request?.host || '';
+  return host ? `${protocol}://${host}` : '';
 }
 exports.getClientDomain = getClientDomain;
-function isDomainMatch(currentDomain, keyData) {
-  function domainMatch(licenseDomain, currentDomain) {
-    // 非泛域名匹配
+function matchSingleDomain(licenseDomain, currentDomain) {
+  let hostname = '';
+  let port = '';
+  try {
     const url = new URL(currentDomain);
-    const domain = url.hostname + (url.port ? `:${url.port}` : '');
-    if (licenseDomain.indexOf('*') === -1) {
-      return domain === licenseDomain;
-    }
-    // 泛域名
-    const licenseBaseDomain = licenseDomain.replace('*', '');
-    return domain.endsWith(licenseBaseDomain);
-  }
-  const licenseDomain = keyData?.licenseKey?.domain;
-  if (!licenseDomain || !currentDomain) {
+    hostname = url.hostname;
+    port = url.port ? `:${url.port}` : '';
+  } catch {
     return false;
   }
-  if (licenseDomain.includes(',')) {
-    return licenseDomain
-      .replace(/\s/g, '')
-      .split(',')
-      .some((domain) => domainMatch(domain, currentDomain));
+  const fullDomain = hostname + port;
+  if (!licenseDomain.includes('*')) {
+    return fullDomain === licenseDomain;
   }
-  return domainMatch(licenseDomain, currentDomain);
+  const base = licenseDomain.replace('*', '');
+  return fullDomain.endsWith(base);
+}
+function isDomainMatch(currentDomain, keyData) {
+  if (!keyData?.licenseKey?.domain || !currentDomain) return false;
+  const licenseDomains = keyData.licenseKey.domain
+    .split(',')
+    .map((d) => d.trim())
+    .filter(Boolean);
+  return licenseDomains.some((licenseDomain) => matchSingleDomain(licenseDomain, currentDomain));
 }
 exports.isDomainMatch = isDomainMatch;
 function isEnvMatch(env, keyData) {
-  const idMatchId = env?.db?.id && keyData?.instanceData?.db?.id;
-  const getMatchStr = (envData) => {
-    const data = {
-      sys: envData?.sys,
-      osVer: envData?.osVer,
-      db: idMatchId ? { id: envData?.db?.id } : (0, omit_1.default)(envData?.db, ['id']),
+  if (!env || !keyData?.instanceData) return false;
+  if (!env.db || !keyData.instanceData.db) return false;
+  const envDbId = env?.db?.id;
+  const keyDbId = keyData?.instanceData?.db?.id;
+  const matchById = Boolean(envDbId && keyDbId);
+  const normalizeEnvData = (envItem) => {
+    if (!envItem) return null;
+    const { sys, osVer, db } = envItem;
+    return {
+      sys,
+      osVer,
+      db: matchById ? { id: db?.id } : (0, omit_1.default)(db, ['id']),
     };
-    return JSON.stringify(data);
   };
-  return getMatchStr(env) === getMatchStr(keyData?.instanceData);
+  const a = normalizeEnvData(env);
+  const b = normalizeEnvData(keyData.instanceData);
+  return (0, isEqual_1.default)(a, b);
 }
 exports.isEnvMatch = isEnvMatch;

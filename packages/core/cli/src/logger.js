@@ -21,7 +21,6 @@ function ensureDir(dir) {
 function createSystemLogger({ dirname, filename, defaultMeta = {} }) {
   ensureDir(dirname);
 
-  // 公用格式（无颜色版本用于文件）
   const commonFormat = winston.format.combine(
     winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
     winston.format.printf((info) => {
@@ -30,7 +29,6 @@ function createSystemLogger({ dirname, filename, defaultMeta = {} }) {
     }),
   );
 
-  // 控制台格式（带颜色）
   const consoleFormat = winston.format.combine(winston.format.colorize(), commonFormat);
 
   const fileTransport = new winston.transports.DailyRotateFile({

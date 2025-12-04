@@ -17,6 +17,6 @@
     "@nocobase/test": "1.x"
   },
   "scripts": {
-    "env": "tsc -p tsconfig.env.json"
+    "ts:env": "tsc -p tsconfig.env.json"
   }
 }
