@@ -11,12 +11,20 @@ import React from 'react';
 import { defineAction } from '@nocobase/flow-engine';
 import { FilterFormItemModel } from '../../filter-form/FilterFormItemModel';
 import { InputFieldModel } from '../../../fields/InputFieldModel';
+import { resolveOperatorComponent } from '../../../../internal/utils/operatorSchemaHelper';
 
 const KEYWORD_OPERATORS = new Set(['$in', '$notIn']);
 
 function isOperatorSupported(model: FilterFormItemModel, operator: string) {
   const ops = model.collectionField?.filterable?.operators || [];
   return ops.some((op) => op.value === operator);
+}
+
+// 重新包裹 render，确保仍由 flow-engine 的响应式包装驱动
+function rewrapReactiveRender(fieldModel: any) {
+  if (!fieldModel) return;
+  fieldModel._reactiveWrapperCache = undefined;
+  fieldModel.setupReactiveRender?.();
 }
 
 export function applyCustomizeFilterRender(model: FilterFormItemModel) {
@@ -33,6 +41,8 @@ export function applyCustomizeFilterRender(model: FilterFormItemModel) {
   if (!KEYWORD_OPERATORS.has(operator)) {
     const originalRender = fieldModel['__originalRender'];
     if (typeof originalRender === 'function') {
+      // 清理缓存，防止沿用上一轮的 reactive wrapper
+      (fieldModel as any)._reactiveWrapperCache = undefined;
       fieldModel.render = originalRender;
     }
     return;
@@ -41,20 +51,21 @@ export function applyCustomizeFilterRender(model: FilterFormItemModel) {
   if (!(fieldModel instanceof InputFieldModel)) return;
   if (!isOperatorSupported(model, operator)) return;
 
-  // 优先使用操作符 schema 中声明的组件/props
-  const opSchema = (model.collectionField?.filterable?.operators || []).find((op) => op.value === operator)?.schema;
-  const xComp = opSchema?.['x-component'];
-  const xProps = opSchema?.['x-component-props'] || {};
-  if (!xComp) return;
-  const Comp = model.context.app?.getComponent?.(xComp as any);
-  if (!Comp) return;
+  const resolved = resolveOperatorComponent(
+    model.context.app,
+    operator,
+    model.collectionField?.filterable?.operators || [],
+  );
+  if (!resolved) return;
+  const { Comp, props: xProps } = resolved;
 
   // 缓存一次原始 render/props，用于回退
   if (!fieldModel['__originalRender']) {
     fieldModel['__originalRender'] = fieldModel.render;
   }
 
-  fieldModel.render = () => <Comp {...fieldModel.props} {...xProps} />;
+  fieldModel.render = () => <Comp {...xProps} {...fieldModel.props} />;
+  rewrapReactiveRender(fieldModel);
 }
 
 export const customizeFilterRender = defineAction<FilterFormItemModel>({
