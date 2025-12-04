@@ -15,7 +15,7 @@ import { DefaultStructure, FlowModel } from '@nocobase/flow-engine';
  * - 否则回退到自身（保持原来的 use）。
  */
 export class FieldModel<T = DefaultStructure> extends FlowModel<T> {
-  static resolveUse(options: any) {
+  static resolveUse(options: any, engine, parentModel) {
     const bindingUse = options?.stepParams?.fieldBinding?.use;
     // 避免入口与目标类间来回跳转：仅在 bindingUse 与当前 use 不一致时才跳转
     if (bindingUse && bindingUse !== options?.use) {

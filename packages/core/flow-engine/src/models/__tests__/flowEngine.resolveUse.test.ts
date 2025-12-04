@@ -109,4 +109,62 @@ describe('FlowEngine.createModel resolveUse hook', () => {
     expect(model).toBeInstanceOf(DynamicTarget);
     expect(serialized.use).toBe('DynamicEntry');
   });
+
+  test('should receive parent model in resolveUse for sub-model decision', () => {
+    class ChildA extends FlowModel {}
+    class ChildB extends FlowModel {}
+    class Parent extends FlowModel {}
+    class ChildEntry extends FlowModel {
+      static resolveUse(options, _engine, parent?: FlowModel) {
+        return parent?.props?.variant === 'B' ? 'ChildB' : 'ChildA';
+      }
+    }
+
+    engine.registerModels({ Parent, ChildEntry, ChildA, ChildB });
+
+    const parentA = engine.createModel({ use: 'Parent', uid: 'p-a', flowEngine: engine, props: { variant: 'A' } });
+    const childA = engine.createModel({
+      use: 'ChildEntry',
+      uid: 'c-a',
+      flowEngine: engine,
+      parentId: parentA.uid,
+      subKey: 'child',
+    });
+    expect(childA).toBeInstanceOf(ChildA);
+
+    const parentB = engine.createModel({ use: 'Parent', uid: 'p-b', flowEngine: engine, props: { variant: 'B' } });
+    const childB = engine.createModel({
+      use: 'ChildEntry',
+      uid: 'c-b',
+      flowEngine: engine,
+      parentId: parentB.uid,
+      subKey: 'child',
+    });
+    expect(childB).toBeInstanceOf(ChildB);
+  });
+
+  test('should stop resolveUse chain when stop flag is true', () => {
+    const leafSpy = vi.fn();
+
+    class Leaf extends FlowModel {
+      static resolveUse = leafSpy;
+    }
+    class Mid extends FlowModel {
+      static resolveUse() {
+        return 'Leaf';
+      }
+    }
+    class Entry extends FlowModel {
+      static resolveUse() {
+        return { use: 'Mid', stop: true };
+      }
+    }
+
+    engine.registerModels({ Entry, Mid, Leaf });
+
+    const model = engine.createModel({ use: 'Entry', uid: 'stop-flag', flowEngine: engine });
+
+    expect(model).toBeInstanceOf(Mid);
+    expect(leafSpy).not.toHaveBeenCalled();
+  });
 });

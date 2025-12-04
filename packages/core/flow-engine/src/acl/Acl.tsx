@@ -7,8 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { FlowModel } from '../models/flowModel';
 import { FlowEngine } from '../flowEngine';
+import { FlowModel } from '../models/flowModel';
 
 interface CheckOptions {
   dataSourceKey: string;
@@ -18,7 +18,7 @@ interface CheckOptions {
 }
 
 export class ACL {
-  private dataSources: Record<string, any> = {};
+  private data: Record<string, any> = {};
   private loaded = false;
   private loadingPromise: Promise<void> | null = null;
   // 用于识别当前鉴权状态（例如切换登录用户后应重新加载）
@@ -26,6 +26,10 @@ export class ACL {
   private lastToken: string | null = null;
 
   constructor(private flowEngine: FlowEngine) {}
+
+  setData(data: Record<string, any>) {
+    this.data = data;
+  }
 
   async load() {
     // 基于 token 识别登录态是否发生变化
@@ -35,42 +39,34 @@ export class ACL {
     if (this.loaded && this.lastToken !== currentToken) {
       this.loaded = false;
       this.loadingPromise = null;
-      this.dataSources = {};
+      this.data = {};
     }
 
-    if (this.loaded) return;
-
-    if (!this.loadingPromise) {
-      this.loadingPromise = (async () => {
-        const { data } = await this.flowEngine.context.api.request({
-          url: 'roles:check',
-        });
-        this.dataSources = data || {};
-        this.loaded = true;
-        this.lastToken = currentToken;
-      })();
-    }
+    const { data } = await this.flowEngine.context.api.request({
+      url: 'roles:check',
+    });
+    this.data = data?.data || {};
+    this.loaded = true;
+    this.lastToken = currentToken;
 
     await this.loadingPromise;
   }
 
   getActionAlias(actionName: string) {
-    return this.dataSources.data?.actionAlias?.[actionName] || actionName;
+    return this.data.actionAlias?.[actionName] || actionName;
   }
 
   inResources(resourceName: string) {
-    return this.dataSources.data?.resources?.includes?.(resourceName);
+    return this.data.resources?.includes?.(resourceName);
   }
   getResourceActionParams(resourceName, actionName) {
     const actionAlias = this.getActionAlias(actionName);
-    return (
-      this.dataSources.data?.actions?.[`${resourceName}:${actionAlias}`] || this.dataSources.data?.actions?.[actionName]
-    );
+    return this.data.actions?.[`${resourceName}:${actionAlias}`] || this.data.actions?.[actionName];
   }
 
   getStrategyActionParams(actionName: string) {
     const actionAlias = this.getActionAlias(actionName);
-    const strategyAction = this.dataSources.data?.strategy?.actions?.find((action) => {
+    const strategyAction = this.data?.strategy?.actions?.find((action) => {
       const [value] = action.split(':');
       return value === actionAlias;
     });
@@ -109,9 +105,8 @@ export class ACL {
   }
 
   async aclCheck(options: CheckOptions): Promise<boolean> {
-    await this.load();
-    const { data } = this.dataSources;
-    const { allowAll } = data;
+    // await this.load();
+    const { allowAll } = this.data;
     if (allowAll) {
       return true;
     }

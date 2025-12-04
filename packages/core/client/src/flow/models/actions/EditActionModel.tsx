@@ -14,6 +14,7 @@ import { ActionSceneEnum, PopupActionModel } from '../base';
 export class EditActionModel extends PopupActionModel {
   static scene = ActionSceneEnum.record;
 
+  defaultPopupTitle = tExpr('Edit');
   defaultProps: ButtonProps = {
     title: tExpr('Edit'),
   };

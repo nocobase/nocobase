@@ -75,7 +75,7 @@ const aiResource: ResourceOptions = {
       return next();
     },
     testFlightModels: async (ctx, next) => {
-      const { provider, options } = ctx.action.params.values ?? {};
+      const { provider, options, model } = ctx.action.params.values ?? {};
       const plugin = ctx.app.pm.get('ai') as PluginAIServer;
 
       const providerOptions = plugin.aiManager.llmProviders.get(provider);
@@ -94,7 +94,12 @@ const aiResource: ResourceOptions = {
         ctx.log.error(res.errMsg);
         ctx.throw(500, ctx.t('Get models list failed, you can enter a model name manually.'));
       }
-      ctx.body = res.models || [];
+      const models = res.models || [];
+      if (model) {
+        ctx.body = models.filter((m) => m.id.toLowerCase().includes(model.toLowerCase()));
+      } else {
+        ctx.body = models;
+      }
 
       return next();
     },

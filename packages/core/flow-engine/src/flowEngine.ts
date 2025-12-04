@@ -31,6 +31,7 @@ import type {
   PersistOptions,
   ResourceType,
   RegisteredModelClassName,
+  ResolveUseResult,
 } from './types';
 import { isInheritedFrom } from './utils';
 
@@ -459,9 +460,11 @@ export class FlowEngine {
     extra?: { delegateToParent?: boolean; delegate?: FlowContext },
   ): T {
     const { parentId, uid, use: modelClassName, subModels } = options;
+    const parentModel = parentId ? (this._modelInstances.get(parentId) as FlowModel | undefined) : undefined;
     const ModelClass = this._resolveModelClass(
       typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName,
       options,
+      parentModel,
     );
 
     if (uid && this._modelInstances.has(uid)) {
@@ -516,7 +519,18 @@ export class FlowEngine {
   private _resolveModelClass(
     initial: ModelConstructor | undefined,
     options: CreateModelOptions,
+    parent?: FlowModel,
   ): ModelConstructor | undefined {
+    const normalize = (
+      resolved: ResolveUseResult | void,
+    ): { target?: RegisteredModelClassName | ModelConstructor; stop?: boolean } => {
+      if (!resolved) return {};
+      if (typeof resolved === 'object' && 'use' in resolved) {
+        return { target: resolved.use, stop: !!resolved.stop };
+      }
+      return { target: resolved as any, stop: false };
+    };
+
     let current = initial;
     const visited = new Set<ModelConstructor>();
 
@@ -528,29 +542,32 @@ export class FlowEngine {
       visited.add(current);
 
       const resolver = (current as any)?.resolveUse as
-        | ((opts: CreateModelOptions, engine: FlowEngine) => RegisteredModelClassName | ModelConstructor | void)
+        | ((opts: CreateModelOptions, engine: FlowEngine, parent?: FlowModel) => ResolveUseResult | void)
         | undefined;
       if (typeof resolver !== 'function') {
         break;
       }
 
-      const resolved = resolver(options, this);
-      if (!resolved || resolved === current) {
+      const { target, stop } = normalize(resolver(options, this, parent));
+      if (!target || target === current) {
         break;
       }
 
       let next: ModelConstructor | undefined;
-      if (typeof resolved === 'string') {
-        next = this.getModelClass(resolved);
+      if (typeof target === 'string') {
+        next = this.getModelClass(target);
         if (!next) {
-          console.warn(`FlowEngine: resolveUse returned '${resolved}' but no model is registered under that name.`);
+          console.warn(`FlowEngine: resolveUse returned '${target}' but no model is registered under that name.`);
           return undefined;
         }
       } else {
-        next = resolved;
+        next = target;
       }
 
       current = next;
+      if (stop) {
+        break;
+      }
     }
 
     return current;
@@ -682,6 +699,44 @@ export class FlowEngine {
       model: modelInstance,
     });
     return true;
+  }
+
+  /**
+   * Remove a local model instance and all its sub-models recursively.
+   * @param {string} uid UID of the model instance to destroy
+   * @returns {boolean} Returns true if successfully destroyed, false otherwise
+   */
+  public removeModelWithSubModels(uid: string): boolean {
+    const model = this.getModel(uid);
+    if (!model) {
+      return false;
+    }
+
+    const collectDescendants = (m: FlowModel, acc: FlowModel[]) => {
+      if (m.subModels) {
+        for (const key in m.subModels) {
+          const sub = m.subModels[key];
+          if (Array.isArray(sub)) {
+            [...sub].forEach((s) => collectDescendants(s, acc));
+          } else if (sub) {
+            collectDescendants(sub, acc);
+          }
+        }
+      }
+      acc.push(m);
+    };
+
+    const allModels: FlowModel[] = [];
+    collectDescendants(model, allModels);
+
+    let success = true;
+    for (const m of allModels) {
+      if (!this.removeModel(m.uid)) {
+        success = false;
+      }
+    }
+
+    return success;
   }
 
   /**

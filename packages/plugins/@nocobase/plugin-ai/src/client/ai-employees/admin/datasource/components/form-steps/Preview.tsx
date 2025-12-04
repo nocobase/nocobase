@@ -13,6 +13,7 @@ import { ReloadOutlined } from '@ant-design/icons';
 import { CollectionField, FlowModelContext, MultiRecordResource, useFlowContext } from '@nocobase/flow-engine';
 import { useCollectionContext } from '../../context';
 import { dayjs } from '@nocobase/utils/client';
+import { useCompile } from '@nocobase/client';
 
 const { Text, Paragraph } = Typography;
 
@@ -108,6 +109,7 @@ const PreviewTable: React.FC<{
   onRefresh?: () => void;
 }> = ({ title, loading, collectionFields, datasource, onRefresh }) => {
   const ctx = useFlowContext<FlowModelContext & { resource: MultiRecordResource }>();
+  const compile = useCompile();
   const [columns, setColumns] = useState<any>([]);
 
   useEffect(() => {
@@ -137,8 +139,11 @@ const PreviewTable: React.FC<{
             );
           } else {
             return (
-              <Text style={{ minWidth: 100, maxWidth: 300 }} ellipsis={{ tooltip: value }}>
-                {value}
+              <Text
+                style={{ minWidth: 100, maxWidth: 300 }}
+                ellipsis={{ tooltip: typeof value === 'string' ? compile(value) : value }}
+              >
+                {typeof value === 'string' ? compile(value) : value}
               </Text>
             );
           }

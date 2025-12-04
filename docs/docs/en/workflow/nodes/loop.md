@@ -68,6 +68,19 @@ Since version `v1.4.0-beta`, when a node inside the loop fails to execute (due t
 
 The default is "Exit workflow," which can be changed as needed.
 
+## Environment Variables
+
+### WORKFLOW_LOOP_LIMIT
+
+Used to limit the maximum number of iterations for loop nodes by operations roles, preventing infinite loops caused by configuration errors. The default is unlimited, and this limit can be adjusted by configuring this environment variable.
+
+```ini
+# Limit to a maximum of 100 iterations
+WORKFLOW_LOOP_LIMIT=100
+```
+
+If a limit value is set, when the loop node executes and exceeds this number, it will directly report an error and exit the process. The node result will include the `exceeded` information with a value of true.
+
 ## Example
 
 For example, when an order is placed, you need to check the stock for each product in the order. If the stock is sufficient, deduct the stock; otherwise, update the product in the order detail as invalid.

@@ -180,7 +180,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     // 使用 View 上下文，确保可访问 ctx.view 的异步子树
     const ctx = useFlowViewContext();
     const t = model.translate;
-    const { path, operator, value: rightValue } = value;
+    const { path, operator, value: rightValueRaw } = value;
 
     // 左侧选中的元数据节点
     const [leftMeta, setLeftMeta] = useState<MetaTreeNode | null>(null);
@@ -212,9 +212,12 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     }, [leftMeta, model]);
 
     useEffect(() => {
-      if (operatorMetaList.length > 0 && !_.find(operatorMetaList, (o) => o.value === value.operator)) {
-        value.operator = '';
-        value.value = '';
+      if (!operatorMetaList.length) return;
+      const matched = _.find(operatorMetaList, (o) => o.value === value.operator);
+      if (!matched) {
+        const first = operatorMetaList[0];
+        value.operator = first.value;
+        value.value = first.noValue ? true : undefined;
       }
     }, [operatorMetaList, value]);
 
@@ -280,6 +283,22 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       const opSchema = currentOpMeta?.schema || {};
       return merge({}, fieldSchema, opSchema);
     }, [leftMeta, currentOpMeta]);
+
+    // 仅在组件类型切换且新组件为日期/时间类时，检测不兼容旧值并清空；首渲染保留旧值
+    const prevXComponentRef = React.useRef<string | undefined>(mergedSchema?.['x-component'] as string | undefined);
+    const xComp = mergedSchema?.['x-component'] as string | undefined;
+    const rightValue = useMemo(() => {
+      const prev = prevXComponentRef.current;
+      prevXComponentRef.current = xComp;
+
+      const switched = prev !== undefined && prev !== xComp; // 首次渲染 prev 为 undefined，不做清空
+
+      if (switched && rightValueRaw != null) {
+        value.value = undefined;
+        return undefined;
+      }
+      return rightValueRaw;
+    }, [xComp, rightValueRaw, value]);
 
     // 右侧静态输入（无变量模式）与右侧 VariableInput 的静态渲染组件，统一复用
     // t 可能每次渲染产生新引用，导致 staticInputRenderer 引用不稳定，进而触发右侧输入卸载/重建。
@@ -375,7 +394,6 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     //
 
     const renderRightValueComponent = useCallback(() => {
-      const xComp = mergedSchema?.['x-component'] as string | undefined;
       if (isStaticSupported(xComp)) {
         const Comp = staticInputRenderer;
         return (
@@ -386,7 +404,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       }
       const DynamicRightInput = DynamicRightValue;
       return <DynamicRightInput dynValue={rightValue} />;
-    }, [DynamicRightValue, isStaticSupported, mergedSchema, rightValue, staticInputRenderer]);
+    }, [DynamicRightValue, isStaticSupported, rightValue, staticInputRenderer, xComp, value]);
 
     // Null 占位组件（仿照 DefaultValue.tsx 的实现）
     const NullComponent = useMemo(() => {

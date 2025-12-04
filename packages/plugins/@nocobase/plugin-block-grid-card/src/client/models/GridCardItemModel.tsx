@@ -121,6 +121,7 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
                     get: () => this.context.record,
                     resolveOnServer: true,
                     meta: recordMeta,
+                    cache: false,
                   });
 
                   return (
