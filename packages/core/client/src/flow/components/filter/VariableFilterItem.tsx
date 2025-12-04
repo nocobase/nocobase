@@ -29,6 +29,7 @@ import { NumberPicker } from '@formily/antd-v5';
 import { lazy } from '../../../lazy-helper';
 import { enumToOptions } from '../../internal/utils/enumOptionsUtils';
 import { FormProvider, SchemaComponent } from '../../../schema-component/core';
+import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
   () => import('../../../schema-component'),
@@ -91,6 +92,7 @@ function createStaticInputRenderer(
   schema: ISchema,
   meta: MetaTreeNode | null,
   t: (s: string) => string,
+  app?: any,
 ): (
   p: { value?: VariableFilterItemValue['value']; onChange?: (v: VariableFilterItemValue['value']) => void } & Record<
     string,
@@ -160,6 +162,21 @@ function createStaticInputRenderer(
           onChange={(v: unknown) => onChange?.(v as VariableFilterItemValue['value'])}
         />
       );
+    // 未内置的 x-component：尝试从 app 解析组件
+    if (xComp && app?.getComponent) {
+      const Comp = app.getComponent(xComp as any);
+      if (Comp) {
+        return (
+          <Comp
+            {...commonProps}
+            {...rest}
+            value={value}
+            onChange={(v: any) => onChange?.(v as VariableFilterItemValue['value'])}
+            style={{ width: 200, ...(commonProps.style || {}), ...(rest as any)?.style }}
+          />
+        );
+      }
+    }
     // 普通文本输入：透传组合输入事件，避免 IME 被中断
     return (
       <Input
@@ -310,8 +327,8 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     const stableT = React.useCallback((s: string) => tRef.current?.(s) ?? s, []);
 
     const staticInputRenderer = useMemo(
-      () => createStaticInputRenderer(mergedSchema, leftMeta, stableT),
-      [mergedSchema, leftMeta, stableT],
+      () => createStaticInputRenderer(mergedSchema, leftMeta, stableT, model.context.app),
+      [mergedSchema, leftMeta, stableT, model.context.app],
     );
 
     // 判断是否需要使用 SchemaComponent 动态渲染（支持更多 x-component，如行政区、代码编辑器等）
@@ -394,6 +411,38 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     //
 
     const renderRightValueComponent = useCallback(() => {
+      // 文本类多关键词：优先使用操作符 schema 声明的组件
+      const resolved = resolveOperatorComponent(model.context.app, operator, operatorMetaList);
+      const supportKeyword = operator === '$in' || operator === '$notIn';
+      if (resolved && supportKeyword) {
+        const { Comp, props: xProps } = resolved;
+        const style = {
+          flex: '1 1 40%',
+          minWidth: 160,
+          maxWidth: '100%',
+          ...(xProps?.style || {}),
+        };
+        const normalized =
+          Array.isArray(rightValue) && rightValue.every((v) => typeof v === 'string' || typeof v === 'number')
+            ? (rightValue as Array<string | number>)
+            : typeof rightValue === 'string'
+              ? rightValue
+                  .split(/\r?\n/)
+                  .map((v) => v.trim())
+                  .filter(Boolean)
+              : [];
+        return (
+          <div style={style}>
+            <Comp
+              {...xProps}
+              style={{ width: '100%', ...(xProps?.style || {}) }}
+              value={normalized}
+              onChange={(vals: any) => (value.value = vals)}
+            />
+          </div>
+        );
+      }
+
       if (isStaticSupported(xComp)) {
         const Comp = staticInputRenderer;
         return (
@@ -404,7 +453,16 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       }
       const DynamicRightInput = DynamicRightValue;
       return <DynamicRightInput dynValue={rightValue} />;
-    }, [DynamicRightValue, isStaticSupported, rightValue, staticInputRenderer, xComp, value]);
+    }, [
+      DynamicRightValue,
+      isStaticSupported,
+      operator,
+      operatorMetaList,
+      rightValue,
+      staticInputRenderer,
+      value,
+      model.context.app,
+    ]);
 
     // Null 占位组件（仿照 DefaultValue.tsx 的实现）
     const NullComponent = useMemo(() => {
