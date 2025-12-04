@@ -53,7 +53,7 @@ const ResponsiveSpace = (props) => {
 };
 
 export class ActionPanelBlockModel extends BlockModel {
-  renderConfiguireActions() {
+  renderConfigureActions() {
     return (
       <AddSubModelButton
         key={'action-panel-add-actions'}
@@ -257,7 +257,9 @@ export class ActionPanelBlockModel extends BlockModel {
             </div>
           </DndProvider>
         </ConfigProvider>
-        <div style={{ marginTop: '10px' }}>{this.renderConfiguireActions()}</div>
+        {this.flowEngine?.flowSettings?.enabled && (
+          <div style={{ marginTop: '10px' }}>{this.renderConfigureActions()}</div>
+        )}
       </div>
     );
   }
