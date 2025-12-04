@@ -6,8 +6,8 @@ supportedVersions:
   - 2.x
 description: |
 ---
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::tip
+Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
 :::
 
   Mengautentikasi identitas menggunakan akun DingTalk.

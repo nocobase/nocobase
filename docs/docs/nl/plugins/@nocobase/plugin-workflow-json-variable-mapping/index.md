@@ -10,8 +10,8 @@ isFree: true
 builtIn: true
 defaultEnabled: true
 ---
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
+:::tip
+Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
 :::
 
 # Workflow: JSON-variabeletoewijzing

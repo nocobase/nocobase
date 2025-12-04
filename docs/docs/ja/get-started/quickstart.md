@@ -33,8 +33,8 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Git のフローを通じて同期・更新します。
 ---
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています。
+:::tip
+このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
 :::
 
 

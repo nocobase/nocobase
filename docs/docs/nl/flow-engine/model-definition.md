@@ -3,8 +3,8 @@ pkg: "@nocobase/plugin-china-region"
 title: China Regio Veld
 description: De China Regio Veld plugin (field-china-region) voegt het veldtype "China Regio" toe aan NocoBase.
 ---
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
+:::tip
+Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
 :::
 
 

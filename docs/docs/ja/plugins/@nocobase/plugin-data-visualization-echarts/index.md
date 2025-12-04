@@ -10,8 +10,8 @@ builtIn: false
 defaultEnabled: false
 points: 8
 ---
-:::tip AI翻訳のお知らせ
-本ドキュメントはAIにより自動翻訳されています
+:::tip
+このドキュメントはAIによって翻訳されました。不正確な情報については、[英語版](/en)をご参照ください
 :::
 
 # データ可視化：ECharts

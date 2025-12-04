@@ -1,8 +1,8 @@
 ---
 pkg: "@nocobase/plugin-data-source-external-postgres"
 ---
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::tip
+Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
 :::
 
 

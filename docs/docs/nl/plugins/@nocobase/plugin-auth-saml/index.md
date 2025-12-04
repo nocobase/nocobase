@@ -11,8 +11,8 @@ builtIn: false
 defaultEnabled: false
 points: 2
 ---
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
+:::tip
+Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
 :::
 
 # Authenticatie: SAML 2.0

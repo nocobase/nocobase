@@ -8,8 +8,8 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::tip
+Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
 :::
 
 # Sumber data: KingbaseES (人大金仓)

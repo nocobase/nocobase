@@ -9,8 +9,8 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 ---
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::tip
+Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
 :::
 
 # AI LLM: GigaChat

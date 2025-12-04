@@ -8,8 +8,8 @@ builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
-:::tip Thông báo dịch AI
-Tài liệu này đã được dịch tự động bằng AI.
+:::tip
+Tài liệu này được dịch bởi AI. Đối với bất kỳ thông tin không chính xác nào, vui lòng tham khảo [phiên bản tiếng Anh](/en)
 :::
 
 # Ứng dụng di động (Đã ngừng phát triển)

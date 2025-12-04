@@ -5,8 +5,8 @@ supportedVersions:
   - 2.x
 description: |
 ---
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::tip
+Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
 :::
 
   Mendukung integrasi dengan basis data vektor untuk memvektorisasi dokumen, menyediakan pencarian cerdas dan dukungan pengetahuan bagi karyawan AI.

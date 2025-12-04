@@ -1,8 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-subflow'
 ---
-:::tip AI Çeviri Uyarısı
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::tip
+Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
 :::
 
 # İş Akışı Çağırma

@@ -3,8 +3,8 @@ pkg: "@nocobase/plugin-china-region"
 title: Pole Regionu Chin
 description: Wtyczka Pola Regionu Chin (`field-china-region`) dodaje typ pola „Region Chin” do NocoBase.
 ---
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::tip
+Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
 :::
 
 

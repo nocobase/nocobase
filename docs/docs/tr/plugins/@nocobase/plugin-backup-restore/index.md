@@ -8,8 +8,8 @@ builtIn: true
 defaultEnabled: false
 deprecated: true
 ---
-:::tip AI Çeviri Uyarısı
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::tip
+Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
 :::
 
 # Uygulama Yedekleme ve Geri Yükleme (Kullanımdan Kaldırıldı)

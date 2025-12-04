@@ -1,8 +1,8 @@
 ---
 pkg: '@nocobase/plugin-file-storage-s3-pro'
 ---
-:::tip AI Çeviri Uyarısı
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::tip
+Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
 :::
 
 # Depolama Motoru: S3 (Pro)

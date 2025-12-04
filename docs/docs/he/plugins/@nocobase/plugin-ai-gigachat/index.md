@@ -9,8 +9,8 @@ isFree: false
 builtIn: false
 defaultEnabled: false
 ---
-:::tip הודעת תרגום AI
-תיעוד זה תורגם אוטומטית על ידי AI.
+:::tip
+מסמך זה תורגם על ידי בינה מלאכותית. לכל אי דיוק, אנא עיין ב[גרסה האנגלית](/en)
 :::
 
 # AI LLM: GigaChat

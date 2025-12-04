@@ -3,8 +3,8 @@ pkg: "@nocobase/plugin-china-region"
 title: Kolom Wilayah Tiongkok
 description: Plugin Kolom Wilayah Tiongkok (`field-china-region`) menambahkan tipe kolom "Wilayah Tiongkok" ke NocoBase.
 ---
-:::tip Pemberitahuan Terjemahan AI
-Dokumentasi ini telah diterjemahkan secara otomatis oleh AI.
+:::tip
+Dokumen ini diterjemahkan oleh AI. Untuk ketidakakuratan apa pun, silakan lihat [versi bahasa Inggris](/en)
 :::
 
 

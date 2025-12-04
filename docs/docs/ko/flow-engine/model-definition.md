@@ -3,8 +3,8 @@ pkg: "@nocobase/plugin-china-region"
 title: 중국 지역 필드
 description: 중국 지역 필드 플러그인(`field-china-region`)은 NocoBase에 '중국 지역' 필드 유형을 추가합니다.
 ---
-:::tip AI 번역 안내
-이 문서는 AI로 자동 번역되었습니다.
+:::tip
+이 문서는 AI로 번역되었습니다. 부정확한 내용이 있을 경우 [영어 버전](/en)을 참조하세요
 :::
 
 

@@ -9,8 +9,8 @@ isFree: true
 builtIn: true
 defaultEnabled: false
 ---
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
+:::tip
+Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
 :::
 
 # Blok: Referentie

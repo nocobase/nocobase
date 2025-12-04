@@ -1,8 +1,8 @@
 ---
 pkg: "@nocobase/plugin-collection-tree"
 ---
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
+:::tip
+Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
 :::
 
 

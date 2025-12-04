@@ -10,8 +10,8 @@ isFree: tak
 builtIn: tak
 defaultEnabled: tak
 ---
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::tip
+Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
 :::
 
 # Przepływ pracy: Mapowanie zmiennych JSON

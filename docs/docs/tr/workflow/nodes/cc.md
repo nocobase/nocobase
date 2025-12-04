@@ -1,8 +1,8 @@
 ---
 pkg: '@nocobase/plugin-workflow-cc'
 ---
-:::tip AI Çeviri Uyarısı
-Bu dokümantasyon yapay zeka tarafından otomatik olarak çevrilmiştir.
+:::tip
+Bu belge AI tarafından çevrilmiştir. Herhangi bir yanlışlık için lütfen [İngilizce sürümüne](/en) bakın
 :::
 
 # Bilgilendirme Kopyası <Badge>v1.8.2+</Badge>

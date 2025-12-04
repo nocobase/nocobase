@@ -33,8 +33,8 @@ install_methods:
     technical_requirement: ★★★★★
     upgrade_method: Synchroniseer updates via het Git-proces.
 ---
-:::tip AI-vertaalmelding
-Deze documentatie is automatisch vertaald door AI.
+:::tip
+Dit document is vertaald door AI. Voor onnauwkeurigheden, raadpleeg [de Engelse versie](/en)
 :::
 
 

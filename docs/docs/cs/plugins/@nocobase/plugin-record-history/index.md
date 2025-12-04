@@ -10,8 +10,8 @@ builtIn: false
 defaultEnabled: false
 editionLevel: 2
 ---
-:::tip Upozornění na překlad AI
-Tato dokumentace byla automaticky přeložena umělou inteligencí.
+:::tip
+Tento dokument byl přeložen umělou inteligencí. V případě nepřesností se prosím obraťte na [anglickou verzi](/en)
 :::
 
 # Historie záznamů

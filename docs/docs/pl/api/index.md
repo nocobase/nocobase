@@ -2,8 +2,8 @@
 overview: true
 overviewHeaders: [2, 3]
 ---
-:::tip Powiadomienie o tłumaczeniu AI
-Ta dokumentacja została automatycznie przetłumaczona przez AI.
+:::tip
+Ten dokument został przetłumaczony przez AI. W przypadku niedokładności, proszę odnieść się do [wersji angielskiej](/en)
 :::
 
 
