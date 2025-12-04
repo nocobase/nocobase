@@ -379,9 +379,9 @@ export async function buildProPluginServer(cwd: string, userConfig: UserConfig, 
     };
     externalOptions.esbuildPlugins = [pluginEsbuildCommercialInject];
   }
-  if (cwd.includes(PLUGIN_COMMERCIAL)) {
-    externalOptions.noExternal = [/@nocobase\/plugin-license/, /dist\/server\/index\.js/];
-  }
+  // if (cwd.includes(PLUGIN_COMMERCIAL)) {
+  //   externalOptions.noExternal = [/@nocobase\/plugin-license/, /dist\/server\/index\.js/];
+  // }
 
   // bundle all files、inject commercial code and obfuscate
   await tsupBuild(
