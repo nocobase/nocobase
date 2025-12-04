@@ -577,7 +577,7 @@ RecordSelectFieldModel.registerFlow({
           { refresh: false },
         );
         if (data) {
-          if (['m2m', 'o2m'].includes(ctx.collectionField?.interface) && ctx.model.props.multiple !== false) {
+          if (['m2m', 'o2m'].includes(ctx.collectionField?.interface) && ctx.model.props.allowMultiple !== false) {
             const prev = ctx.model.props.value || [];
             const merged = [...prev, data.data];
 
@@ -673,9 +673,9 @@ RecordSelectFieldModel.registerFlow({
             collectionName: ctx.collectionField?.target,
             collectionField: ctx.collectionField,
             onChange: (e) => {
-              if (toOne) {
+              if (toOne || !ctx.model.props.allowMultiple) {
                 onChange(e);
-                const data = ctx.model.getDataSource();
+                const data = ctx.model.getDataSource() || [];
                 data.push(e);
                 ctx.model.setDataSource(data);
               } else {
@@ -689,7 +689,7 @@ RecordSelectFieldModel.registerFlow({
                     self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
                 );
                 onChange(unique);
-                const data = ctx.model.getDataSource();
+                const data = ctx.model.getDataSource() || [];
                 ctx.model.setDataSource(data.concat(unique));
               }
             },

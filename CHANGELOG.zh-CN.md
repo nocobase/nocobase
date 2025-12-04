@@ -5,6 +5,44 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.19](https://github.com/nocobase/nocobase/compare/v1.9.18...v1.9.19) - 2025-12-04
+
+### 🐛 修复
+
+- **[工作流：审批]**
+  - 修复加载审批列表时内存溢出的问题 by @mytharcher
+
+  - 修复审批人弹窗不显示标题的问题 by @zhangzhonghe
+
+## [v1.9.18](https://github.com/nocobase/nocobase/compare/v1.9.17...v1.9.18) - 2025-12-03
+
+### 🐛 修复
+
+- **[操作：导入记录]** 导入的字段和导入权限设置的字段不匹配 ([#8075](https://github.com/nocobase/nocobase/pull/8075)) by @2013xile
+
+- **[工作流]** 修复执行历史页面中当节点上的执行记录不存在时的报错 ([#8066](https://github.com/nocobase/nocobase/pull/8066)) by @mytharcher
+
+- **[权限控制]** 给外部数据源添加数据表关联操作的权限判断中间件 ([#8062](https://github.com/nocobase/nocobase/pull/8062)) by @2013xile
+
+- **[工作流：审批]**
+  - 修复在数据详情弹窗中加载相关审批时的权限报错 by @mytharcher
+
+  - 修复退回分支中无法使用审批节点结果中的审批记录数据的问题 by @mytharcher
+
+  - 修复分支模式和顺序会签时流程处理错误的问题 by @mytharcher
+
+## [v1.9.17](https://github.com/nocobase/nocobase/compare/v1.9.16...v1.9.17) - 2025-12-02
+
+### 🐛 修复
+
+- **[client]** 修复联动规则下拉选择框闪烁的问题 ([#8018](https://github.com/nocobase/nocobase/pull/8018)) by @zhangzhonghe
+
+- **[acl]** 修复外部数据源的权限数据范围使用了当前用户相关变量时， acl meta 信息获取不正确的问题 ([#8013](https://github.com/nocobase/nocobase/pull/8013)) by @2013xile
+
+- **[主题编辑器]** 移动端支持切换主题 ([#8046](https://github.com/nocobase/nocobase/pull/8046)) by @zhangzhonghe
+
+- **[多应用管理器]** 设置日志级别，子应用不生效 ([#8045](https://github.com/nocobase/nocobase/pull/8045)) by @2013xile
+
 ## [v1.9.16](https://github.com/nocobase/nocobase/compare/v1.9.15...v1.9.16) - 2025-12-01
 
 ### 🎉 新特性
