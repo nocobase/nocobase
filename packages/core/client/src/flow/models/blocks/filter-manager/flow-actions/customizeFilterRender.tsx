@@ -13,60 +13,52 @@ import { FilterFormItemModel } from '../../filter-form/FilterFormItemModel';
 import { InputFieldModel } from '../../../fields/InputFieldModel';
 
 const KEYWORD_OPERATORS = new Set(['$in', '$notIn']);
-const TEXT_INTERFACES = new Set([
-  'input',
-  'phone',
-  'email',
-  'uuid',
-  'sequence',
-  'integer',
-  'number',
-  'percent',
-  'nanoid',
-]);
+
+function isOperatorSupported(model: FilterFormItemModel, operator: string) {
+  const ops = model.collectionField?.filterable?.operators || [];
+  return ops.some((op) => op.value === operator);
+}
 
 export function applyCustomizeFilterRender(model: FilterFormItemModel) {
-  const operator = (model as any)?.operator;
-  const fieldModel = model.subModels?.field as any;
+  const operator = model.operator;
+  const fieldModel = model.subModels?.field;
   if (!fieldModel) return;
 
-  const protoRender = Object.getPrototypeOf(fieldModel)?.render;
+  // 强制子组件在 operator 变更时刷新
+  model.setProps({
+    key: `${model.uid}-${operator || ''}`,
+  });
+
   // 非关键词操作符，恢复原始渲染
   if (!KEYWORD_OPERATORS.has(operator)) {
-    if (typeof protoRender === 'function') {
-      fieldModel.render = protoRender;
+    const originalRender = fieldModel['__originalRender'];
+    if (typeof originalRender === 'function') {
+      fieldModel.render = originalRender;
     }
     return;
   }
 
   if (!(fieldModel instanceof InputFieldModel)) return;
-  if (!TEXT_INTERFACES.has(model.collectionField?.interface)) return;
+  if (!isOperatorSupported(model, operator)) return;
 
-  const MultipleKeywordsInput = model.context.app?.getComponent?.('MultipleKeywordsInput');
-  if (!MultipleKeywordsInput) return;
+  // 优先使用操作符 schema 中声明的组件/props
+  const opSchema = (model.collectionField?.filterable?.operators || []).find((op) => op.value === operator)?.schema;
+  const xComp = opSchema?.['x-component'];
+  const xProps = opSchema?.['x-component-props'] || {};
+  if (!xComp) return;
+  const Comp = model.context.app?.getComponent?.(xComp as any);
+  if (!Comp) return;
 
-  const placeholder = model.context.t('Multiple keywords separated by line breaks');
+  // 缓存一次原始 render/props，用于回退
+  if (!fieldModel['__originalRender']) {
+    fieldModel['__originalRender'] = fieldModel.render;
+  }
 
-  fieldModel.setProps({
-    mode: 'tags',
-    tokenSeparators: ['\n'],
-    placeholder,
-    suffixIcon: null,
-    allowClear: true,
-  });
-  fieldModel.render = () => (
-    <MultipleKeywordsInput
-      fieldInterface={model.collectionField?.interface}
-      {...fieldModel.props}
-      placeholder={fieldModel.props?.placeholder ?? placeholder}
-      tokenSeparators={fieldModel.props?.tokenSeparators ?? ['\n']}
-    />
-  );
+  fieldModel.render = () => <Comp {...fieldModel.props} {...xProps} />;
 }
 
 export const customizeFilterRender = defineAction<FilterFormItemModel>({
   name: 'customizeFilterRender',
-  // 无 UI，仅在保存/初始化时应用渲染改写
   handler(ctx) {
     applyCustomizeFilterRender(ctx.model);
   },
