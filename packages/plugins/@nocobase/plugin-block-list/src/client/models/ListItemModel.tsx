@@ -103,6 +103,7 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
                     get: () => this.context.record,
                     resolveOnServer: true,
                     meta: recordMeta,
+                    cache: false,
                   });
 
                   return (

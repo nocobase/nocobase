@@ -28,7 +28,6 @@ import { TableColumnProps, Tooltip } from 'antd';
 import React, { useRef } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base';
-import { FormComponent, FormItemModel } from '../../../blocks';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
@@ -63,13 +62,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
           },
         },
         content: (popover) => {
-          return (
-            <FormComponent model={model}>
-              <FormItem name={fieldPath} showLabel={false} initialValue={defaultValue}>
-                <FieldModelRendererCom model={model} {...others} />
-              </FormItem>
-            </FormComponent>
-          );
+          return <FieldModelRendererCom model={model} value={defaultValue} {...others} />;
         },
       });
     } catch (error) {
@@ -79,15 +72,28 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
   return (
     <div
       ref={ref}
-      style={{ display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', minHeight: 25, width: '100%' }}
       onClick={handleClick}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        whiteSpace: 'nowrap',
+        minHeight: 25,
+        width: '100%',
+        maxHeight: 300,
+        overflowY: 'auto',
+        cursor: 'pointer',
+      }}
     >
-      <span>{<FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />}</span>
+      <span
+        style={{ pointerEvents: 'none' }} // 不拦截点击
+      >
+        {<FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />}
+      </span>
     </div>
   );
 });
 
-export interface SubTableColumnModelStructor {
+export interface SubTableColumnModelStructure {
   parent: SubTableFieldModel;
   subModels: {
     field: FieldModel;
@@ -95,7 +101,7 @@ export interface SubTableColumnModelStructor {
 }
 
 export class SubTableColumnModel<
-  T extends SubTableColumnModelStructor = SubTableColumnModelStructor,
+  T extends SubTableColumnModelStructure = SubTableColumnModelStructure,
 > extends EditableItemModel<T> {
   static renderMode = ModelRenderMode.RenderFunction;
 

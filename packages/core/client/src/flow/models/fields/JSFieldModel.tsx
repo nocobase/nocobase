@@ -20,7 +20,24 @@ import { FieldModel } from '../base/FieldModel';
 import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 import { CodeEditor } from '../../components/code-editor';
 
-const DEFAULT_CODE = `const value = ctx.value;\nctx.element.innerHTML = \`<span class="nb-js-field-value">${'${'}String(value ?? '')}</span>\`;\n\n`;
+const DEFAULT_CODE = `
+function JsReadonlyField() {
+  const React = ctx.React;
+  const { prefix, suffix, overflowMode } = ctx.model?.props || {};
+  const text = String(ctx.value ?? '');
+  const whiteSpace = overflowMode === 'wrap' ? 'pre-line' : 'nowrap';
+
+  return (
+    <span style={{ whiteSpace }}>
+      {prefix}
+      {text}
+      {suffix}
+    </span>
+  );
+}
+
+ctx.render(<JsReadonlyField />);
+`.trim();
 
 /**
  * JS 字段（只读形态）：
@@ -146,22 +163,7 @@ JSFieldModel.registerFlow({
       defaultParams(ctx) {
         return {
           version: 'v1',
-          code: `
-function JsReadonlyField() {
-  const React = ctx.React;
-  const { Input } = ctx.antd;
-  return (
-    <Input
-      value={String(ctx.value ?? '')}
-      disabled
-      readOnly
-      style={{ width: '100%' }}
-    />
-  );
-}
-
-ctx.render(<JsReadonlyField />);
-`,
+          code: DEFAULT_CODE,
         };
       },
       async handler(ctx, params) {

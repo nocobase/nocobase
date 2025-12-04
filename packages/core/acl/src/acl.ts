@@ -16,9 +16,9 @@ import { ACLAvailableAction, AvailableActionOptions } from './acl-available-acti
 import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
 import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager, ConditionFunc } from './allow-manager';
+import { NoPermissionError } from './errors/no-permission-error';
 import FixedParamsManager, { Merger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
-import { NoPermissionError } from './errors/no-permission-error';
 import { mergeAclActionParams, removeEmptyParams } from './utils';
 
 interface CanResult {
@@ -336,6 +336,10 @@ export class ACL extends EventEmitter {
    * @deprecated
    */
   skip(resourceName: string, actionNames: string[] | string, condition?: string | ConditionFunc) {
+    if (!condition) {
+      condition = 'public';
+    }
+
     if (!Array.isArray(actionNames)) {
       actionNames = [actionNames];
     }
@@ -571,8 +575,10 @@ export class ACL extends EventEmitter {
 }
 
 function getUser(ctx) {
+  const dataSource = ctx.app.dataSourceManager.dataSources.get('main');
+  const db = dataSource.collectionManager.db;
   return async ({ fields }) => {
-    const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
+    const userFields = fields.filter((f) => f && db.getFieldByPath('users.' + f));
     ctx.logger?.info('filter-parse: ', { userFields });
     if (!ctx.state.currentUser) {
       return;
@@ -580,7 +586,7 @@ function getUser(ctx) {
     if (!userFields.length) {
       return;
     }
-    const user = await ctx.db.getRepository('users').findOne({
+    const user = await db.getRepository('users').findOne({
       filterByTk: ctx.state.currentUser.id,
       fields: userFields,
     });

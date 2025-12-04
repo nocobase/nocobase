@@ -52,6 +52,7 @@ flowEngine.setModelRepository(new FlowModelRepository(this.app));
 flowEngine.createModel(options); // 创建本地模型实例
 flowEngine.getModel(uid);        // 获取本地模型实例
 flowEngine.removeModel(uid);     // 移除本地模型实例
+flowEngine.removeModelWithSubModels(uid); // 移除本地模型实例及其所有子模型
 ```
 
 ### 远程方法（由 ModelRepository 实现）

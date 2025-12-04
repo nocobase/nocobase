@@ -148,9 +148,9 @@ describe('VariableFilterItem', () => {
     (model2.context.app as any).addFieldInterfaces([InputInterfaceAlt]);
     rerender(<VariableFilterItem value={value} model={model2} rightAsVariable={false} />);
 
-    // effect: 当 operator 列表为空时，应清空已选 operator 和右值
-    expect(value.operator).toBe('');
-    expect(value.value).toBe('');
+    // effect: 当当前 operator 不在新列表中时，自动回退到第一个可用操作符
+    expect(value.operator).toBe('$null');
+    expect(value.value).toBe(true);
   });
 
   it('prefers child operators injected via x-filter-operators over interface defaults', async () => {
