@@ -16,22 +16,22 @@
   },
   {
     "type": "custom-link",
-    "label": "עיצוב מטבעות",
+    "label": "עיצוב מטבע",
     "link": "/template-print/syntax/formatters/currency-formatting"
   },
   {
     "type": "custom-link",
-    "label": "עיצוב תאריכים",
+    "label": "עיצוב תאריך",
     "link": "/template-print/syntax/formatters/date-formatting"
   },
   {
     "type": "custom-link",
-    "label": "עיצוב מרווחי זמן",
+    "label": "עיצוב מרווח זמן",
     "link": "/template-print/syntax/formatters/time-interval-formatting"
   },
   {
     "type": "custom-link",
-    "label": "עיצוב מערכים",
+    "label": "עיצוב Array",
     "link": "/template-print/syntax/formatters/array-formatting"
   }
 ]

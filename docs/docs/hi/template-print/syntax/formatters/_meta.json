@@ -21,7 +21,7 @@
   },
   {
     "type": "custom-link",
-    "label": "दिनांक फ़ॉर्मेटिंग",
+    "label": "तिथि फ़ॉर्मेटिंग",
     "link": "/template-print/syntax/formatters/date-formatting"
   },
   {
@@ -31,7 +31,7 @@
   },
   {
     "type": "custom-link",
-    "label": "ऐरे फ़ॉर्मेटिंग",
+    "label": "Array फ़ॉर्मेटिंग",
     "link": "/template-print/syntax/formatters/array-formatting"
   }
 ]

@@ -1,16 +1,16 @@
 [
   {
     "type": "custom-link",
-    "label": "त्वरित आरंभ",
+    "label": "क्विक स्टार्ट",
     "items": [
       {
         "type": "custom-link",
-        "label": "介绍",
+        "label": "परिचय",
         "link": "/ui-development-action"
       },
       {
         "type": "custom-link",
-        "label": "编写一个操作插件",
+        "label": "एक एक्शन Plugin लिखें",
         "link": "/ui-development-action/write-an-action-plugin"
       }
     ]

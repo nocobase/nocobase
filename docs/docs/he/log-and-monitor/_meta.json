@@ -1,16 +1,16 @@
 [
   {
     "type": "custom-link",
-    "label": "יומנים",
+    "label": "יומן",
     "items": [
       {
         "type": "custom-link",
-        "label": "服务端日志",
+        "label": "יומן צד שרת",
         "link": "/log-and-monitor/logger"
       },
       {
         "type": "custom-link",
-        "label": "服务端日志、审计日志、历史记录",
+        "label": "יומן צד שרת, יומן ביקורת, היסטוריה",
         "link": "/log-and-monitor/logger/overview"
       }
     ]
@@ -21,12 +21,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "使用说明",
+        "label": "הוראות שימוש",
         "link": "/log-and-monitor/telemetry"
       },
       {
         "type": "custom-link",
-        "label": "导出器",
+        "label": "מייצא",
         "items": [
           {
             "type": "custom-link",

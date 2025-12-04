@@ -1,26 +1,26 @@
 [
   {
     "type": "custom-link",
-    "label": "ניהול מהדורות",
+    "label": "ניהול שחרורים",
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "סקירה כללית",
         "link": "/ops-management/release-management"
       },
       {
         "type": "custom-link",
-        "label": "变量和密钥",
+        "label": "משתנים ומפתחות",
         "link": "/ops-management/variables-and-secrets"
       },
       {
         "type": "custom-link",
-        "label": "备份管理",
+        "label": "ניהול גיבויים",
         "link": "/ops-management/backup-manager"
       },
       {
         "type": "custom-link",
-        "label": "迁移管理",
+        "label": "ניהול העברות",
         "link": "/ops-management/migration-manager"
       }
     ]

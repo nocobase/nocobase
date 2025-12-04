@@ -10,63 +10,63 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "数据源管理",
+        "label": "ניהול מקורות נתונים",
         "link": "/data-sources/data-source-manager/"
       },
       {
         "type": "custom-link",
-        "label": "主数据源",
+        "label": "מקור נתונים ראשי",
         "link": "/data-sources/data-source-main/"
       },
       {
         "type": "custom-link",
-        "label": "外部数据源（数据库）",
+        "label": "מקור נתונים חיצוני (Database)",
         "items": [
           {
             "type": "custom-link",
-            "label": "介绍",
+            "label": "מבוא",
             "link": "/data-sources/data-source-manager/external-database"
           },
           {
             "type": "custom-link",
-            "label": "外部 MySQL",
+            "label": "MySQL חיצוני",
             "link": "/data-sources/data-source-external-mysql/"
           },
           {
             "type": "custom-link",
-            "label": "外部 MariaDB",
+            "label": "MariaDB חיצוני",
             "link": "/data-sources/data-source-external-mariadb/"
           },
           {
             "type": "custom-link",
-            "label": "外部 PostgreSQL",
+            "label": "PostgreSQL חיצוני",
             "link": "/data-sources/data-source-external-postgres/"
           },
           {
             "type": "custom-link",
-            "label": "外部 MSSQL",
+            "label": "MSSQL חיצוני",
             "link": "/data-sources/data-source-external-mssql/"
           },
           {
             "type": "custom-link",
-            "label": "外部 Oracle",
+            "label": "Oracle חיצוני",
             "link": "/data-sources/data-source-external-oracle/"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "主、外部数据库对比",
+        "label": "השוואת מסדי נתונים: ראשי וחיצוני",
         "link": "/data-sources/data-modeling/main-vs-external-data-sources"
       },
       {
         "type": "custom-link",
-        "label": "REST API 数据源",
+        "label": "מקור נתונים REST API",
         "link": "/data-sources/data-source-rest-api/"
       },
       {
         "type": "custom-link",
-        "label": "人大金仓（KingbaseES）数据源",
+        "label": "מקור נתונים KingbaseES",
         "link": "/data-sources/data-source-kingbase/"
       }
     ]
@@ -77,92 +77,92 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "סקירה כללית",
         "link": "/data-sources/data-modeling/collection"
       },
       {
         "type": "custom-link",
-        "label": "普通表",
+        "label": "טבלה רגילה",
         "link": "/data-sources/data-source-main/general-collection"
       },
       {
         "type": "custom-link",
-        "label": "继承表",
+        "label": "טבלת ירושה",
         "link": "/data-sources/data-source-main/inheritance-collection"
       },
       {
         "type": "custom-link",
-        "label": "文件表",
+        "label": "טבלת קבצים",
         "link": "/data-sources/file-manager/file-collection"
       },
       {
         "type": "custom-link",
-        "label": "树表",
+        "label": "טבלת עץ",
         "link": "/data-sources/collection-tree/"
       },
       {
         "type": "custom-link",
-        "label": "日历表",
+        "label": "לוח שנה",
         "link": "/data-sources/calendar/calendar-collection"
       },
       {
         "type": "custom-link",
-        "label": "评论表",
+        "label": "טבלת תגובות",
         "link": "/data-sources/collection-comment/"
       },
       {
         "type": "custom-link",
-        "label": "表达式表",
+        "label": "טבלת ביטויים",
         "link": "/data-sources/collection-expression/collection"
       },
       {
         "type": "custom-link",
-        "label": "SQL 表",
+        "label": "טבלת SQL",
         "link": "/data-sources/collection-sql/"
       },
       {
         "type": "custom-link",
-        "label": "数据库视图",
+        "label": "תצוגת מסד נתונים",
         "link": "/data-sources/collection-view/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "שדות טבלת נתונים",
+    "label": "שדה טבלה",
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "סקירה כללית",
         "link": "/data-sources/data-modeling/collection-fields"
       },
       {
         "type": "custom-link",
-        "label": "字段验证",
+        "label": "אימות שדות",
         "link": "/data-sources/data-modeling/collection-fields/validation"
       },
       {
         "type": "custom-link",
-        "label": "基本类型",
+        "label": "סוגים בסיסיים",
         "items": [
           {
             "type": "custom-link",
-            "label": "单行文本",
+            "label": "טקסט בשורה אחת",
             "link": "/data-sources/data-modeling/collection-fields/basic/input"
           },
           {
             "type": "custom-link",
-            "label": "多行文本",
+            "label": "טקסט רב-שורתי",
             "link": "/data-sources/data-modeling/collection-fields/basic/textarea"
           },
           {
             "type": "custom-link",
-            "label": "手机号码",
+            "label": "מספר טלפון נייד",
             "link": "/data-sources/data-modeling/collection-fields/basic/phone"
           },
           {
             "type": "custom-link",
-            "label": "电子邮箱",
+            "label": "דוא'ל",
             "link": "/data-sources/data-modeling/collection-fields/basic/email"
           },
           {
@@ -172,70 +172,70 @@
           },
           {
             "type": "custom-link",
-            "label": "整数",
+            "label": "מספר שלם",
             "link": "/data-sources/data-modeling/collection-fields/basic/integer"
           },
           {
             "type": "custom-link",
-            "label": "数字",
+            "label": "מספר",
             "link": "/data-sources/data-modeling/collection-fields/basic/number"
           },
           {
             "type": "custom-link",
-            "label": "百分比",
+            "label": "אחוז",
             "link": "/data-sources/data-modeling/collection-fields/basic/percent"
           },
           {
             "type": "custom-link",
-            "label": "密码",
+            "label": "סיסמה",
             "link": "/data-sources/data-modeling/collection-fields/basic/password"
           },
           {
             "type": "custom-link",
-            "label": "颜色",
+            "label": "צבע",
             "link": "/data-sources/data-modeling/collection-fields/basic/color"
           },
           {
             "type": "custom-link",
-            "label": "图标",
+            "label": "אייקון",
             "link": "/data-sources/data-modeling/collection-fields/basic/icon"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "选择类型",
+        "label": "בחירת סוג",
         "items": [
           {
             "type": "custom-link",
-            "label": "勾选",
+            "label": "סימון",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox"
           },
           {
             "type": "custom-link",
-            "label": "下拉菜单（单选）",
+            "label": "בורר נפתח (בחירה יחידה)",
             "link": "/data-sources/data-modeling/collection-fields/choices/select"
           },
           {
             "type": "custom-link",
-            "label": "下拉菜单（多选）",
+            "label": "בורר נפתח (בחירה מרובה)",
             "link": "/data-sources/data-modeling/collection-fields/choices/multiple-select"
           },
           {
             "type": "custom-link",
-            "label": "单选框",
+            "label": "תיבת בחירה יחידה",
             "link": "/data-sources/data-modeling/collection-fields/choices/radio-group"
           },
           {
             "type": "custom-link",
-            "label": "复选框",
+            "label": "תיבת סימון",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "多媒体",
+        "label": "מולטימדיה",
         "items": [
           {
             "type": "custom-link",
@@ -249,86 +249,86 @@
           },
           {
             "type": "custom-link",
-            "label": "富文本",
+            "label": "טקסט עשיר",
             "link": "/data-sources/data-modeling/collection-fields/media/rich-text"
           },
           {
             "type": "custom-link",
-            "label": "附件（关系）",
+            "label": "קובץ מצורף (יחס)",
             "link": "/data-sources/file-manager/field-attachment"
           },
           {
             "type": "custom-link",
-            "label": "附件（URL）",
+            "label": "קובץ מצורף (URL)",
             "link": "/data-sources/field-attachment-url/"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "日期 & 时间",
+        "label": "תאריך ושעה",
         "items": [
           {
             "type": "custom-link",
-            "label": "概述",
+            "label": "סקירה כללית",
             "link": "/data-sources/data-modeling/collection-fields/datetime"
           },
           {
             "type": "custom-link",
-            "label": "日期时间（含时区）",
+            "label": "תאריך ושעה (כולל אזור זמן)",
             "link": "/data-sources/data-modeling/collection-fields/datetime/datetime"
           },
           {
             "type": "custom-link",
-            "label": "日期时间（不含时区）",
+            "label": "תאריך ושעה (ללא אזור זמן)",
             "link": "/data-sources/data-modeling/collection-fields/datetime/datetime-without-tz"
           },
           {
             "type": "custom-link",
-            "label": "Unix 时间戳",
+            "label": "Unix timestamp",
             "link": "/data-sources/data-modeling/collection-fields/datetime/unix-timestamp"
           },
           {
             "type": "custom-link",
-            "label": "日期（不含时间）",
+            "label": "תאריך (ללא שעה)",
             "link": "/data-sources/data-modeling/collection-fields/datetime/date"
           },
           {
             "type": "custom-link",
-            "label": "时间",
+            "label": "זמן",
             "link": "/data-sources/data-modeling/collection-fields/datetime/time"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "几何图形",
+        "label": "צורות גיאומטריות",
         "items": [
           {
             "type": "custom-link",
-            "label": "点",
+            "label": "נקודה",
             "link": "/data-sources/data-modeling/collection-fields/geometric/point"
           },
           {
             "type": "custom-link",
-            "label": "线",
+            "label": "קו",
             "link": "/data-sources/data-modeling/collection-fields/geometric/line"
           },
           {
             "type": "custom-link",
-            "label": "圆",
+            "label": "עיגול",
             "link": "/data-sources/data-modeling/collection-fields/geometric/circle"
           },
           {
             "type": "custom-link",
-            "label": "多边形",
+            "label": "מצולע",
             "link": "/data-sources/data-modeling/collection-fields/geometric/polygon"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "高级类型",
+        "label": "סוגים מתקדמים",
         "items": [
           {
             "type": "custom-link",
@@ -342,17 +342,17 @@
           },
           {
             "type": "custom-link",
-            "label": "排序",
+            "label": "מיון",
             "link": "/data-sources/field-sort/"
           },
           {
             "type": "custom-link",
-            "label": "计算公式",
+            "label": "נוסחת חישוב",
             "link": "/data-sources/field-formula/"
           },
           {
             "type": "custom-link",
-            "label": "自动编码",
+            "label": "קידוד אוטומטי",
             "link": "/data-sources/field-sequence/"
           },
           {
@@ -362,43 +362,43 @@
           },
           {
             "type": "custom-link",
-            "label": "数据表选择器",
+            "label": "בורר טבלאות נתונים",
             "link": "/data-sources/data-modeling/collection-fields/advanced/collection-select"
           },
           {
             "type": "custom-link",
-            "label": "加密",
+            "label": "הצפנה",
             "link": "/data-sources/field-encryption/"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "系统信息",
+        "label": "מידע מערכת",
         "items": [
           {
             "type": "custom-link",
-            "label": "创建日期",
+            "label": "תאריך יצירה",
             "link": "/data-sources/data-modeling/collection-fields/system-info/created-at"
           },
           {
             "type": "custom-link",
-            "label": "最后修改日期",
+            "label": "תאריך שינוי אחרון",
             "link": "/data-sources/data-modeling/collection-fields/system-info/updated-at"
           },
           {
             "type": "custom-link",
-            "label": "创建人",
+            "label": "יוצר",
             "link": "/data-sources/data-modeling/collection-fields/system-info/created-by"
           },
           {
             "type": "custom-link",
-            "label": "最后修改人",
+            "label": "משנה אחרון",
             "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
           },
           {
             "type": "custom-link",
-            "label": "空间",
+            "label": "מרחב",
             "link": "/data-sources/data-modeling/collection-fields/system-info/space"
           },
           {
@@ -410,36 +410,36 @@
       },
       {
         "type": "custom-link",
-        "label": "关系类型",
+        "label": "סוג קשר",
         "items": [
           {
             "type": "custom-link",
-            "label": "概述",
+            "label": "סקירה כללית",
             "link": "/data-sources/data-modeling/collection-fields/associations"
           },
           {
             "type": "custom-link",
-            "label": "一对一",
+            "label": "אחד לאחד",
             "link": "/data-sources/data-modeling/collection-fields/associations/o2o"
           },
           {
             "type": "custom-link",
-            "label": "一对多",
+            "label": "אחד לרבים",
             "link": "/data-sources/data-modeling/collection-fields/associations/o2m"
           },
           {
             "type": "custom-link",
-            "label": "多对一",
+            "label": "רבים לאחד",
             "link": "/data-sources/data-modeling/collection-fields/associations/m2o"
           },
           {
             "type": "custom-link",
-            "label": "多对多",
+            "label": "רבים לרבים",
             "link": "/data-sources/data-modeling/collection-fields/associations/m2m"
           },
           {
             "type": "custom-link",
-            "label": "多对多（数组）",
+            "label": "רבים לרבים (Array)",
             "link": "/data-sources/field-m2m-array/"
           }
         ]
@@ -452,7 +452,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "סקירה כללית",
         "link": "/data-sources/development"
       }
     ]

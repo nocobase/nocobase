@@ -1,12 +1,12 @@
 [
   {
     "type": "custom-link",
-    "label": "الشروط",
+    "label": "الحكم الشرطي",
     "link": "/template-print/advanced/conditionals"
   },
   {
     "type": "custom-link",
-    "label": "خصائص متقدمة",
+    "label": "ميزات متقدمة",
     "link": "/template-print/advanced/advanced-features"
   }
 ]

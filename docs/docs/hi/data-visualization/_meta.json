@@ -6,36 +6,36 @@
   },
   {
     "type": "custom-link",
-    "label": "त्वरित शुरुआत",
+    "label": "क्विक स्टार्ट",
     "link": "/data-visualization/quick-start"
   },
   {
     "type": "custom-link",
-    "label": "सुविधा परिचय",
+    "label": "फ़ीचर परिचय",
     "items": [
       {
         "type": "custom-link",
-        "label": "数据查询",
+        "label": "डेटा क्वेरी",
         "link": "/data-visualization/guide/data-query"
       },
       {
         "type": "custom-link",
-        "label": "图表选项",
+        "label": "चार्ट विकल्प",
         "link": "/data-visualization/guide/chart-options"
       },
       {
         "type": "custom-link",
-        "label": "预览与保存",
+        "label": "पूर्वावलोकन और सहेजें",
         "link": "/data-visualization/guide/preview-and-save"
       },
       {
         "type": "custom-link",
-        "label": "使用上下文环境变量",
+        "label": "संदर्भ पर्यावरण वैरिएबल का उपयोग करें",
         "link": "/data-visualization/guide/context-variables"
       },
       {
         "type": "custom-link",
-        "label": "页面筛选器与联动",
+        "label": "पेज फ़िल्टर और लिंकेज",
         "link": "/data-visualization/guide/filters-and-linkage"
       }
     ]
@@ -46,17 +46,17 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "SQL 模式查询数据",
+        "label": "SQL मोड में डेटा क्वेरी करें",
         "link": "/data-visualization/guide/sql-data-query"
       },
       {
         "type": "custom-link",
-        "label": "自定义图表配置",
+        "label": "कस्टम चार्ट कॉन्फ़िगरेशन",
         "link": "/data-visualization/guide/custom-chart-options"
       },
       {
         "type": "custom-link",
-        "label": "自定义交互事件",
+        "label": "कस्टम इंटरैक्टिव इवेंट",
         "link": "/data-visualization/guide/chart-events"
       }
     ]

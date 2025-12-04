@@ -1,16 +1,16 @@
 [
   {
     "type": "custom-link",
-    "label": "دليل البدء السريع",
+    "label": "بدء سريع",
     "items": [
       {
         "type": "custom-link",
-        "label": "介绍",
+        "label": "مقدمة",
         "link": "/ui-development-field"
       },
       {
         "type": "custom-link",
-        "label": "编写一个字段插件",
+        "label": "كتابة إضافة حقل",
         "link": "/ui-development-field/write-a-field-plugin"
       }
     ]

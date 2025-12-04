@@ -5,80 +5,80 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "什么是 FlowEngine？",
+        "label": "FlowEngine क्या है?",
         "link": "/flow-engine/what-is-flow-engine"
       },
       {
         "type": "custom-link",
-        "label": "FlowEngine 与插件的关系",
+        "label": "FlowEngine और Plugin के बीच संबंध",
         "link": "/flow-engine/flow-engine-and-plugins"
       },
       {
         "type": "custom-link",
-        "label": "快速开始",
+        "label": "क्विक स्टार्ट",
         "link": "/flow-engine/quickstart"
       },
       {
         "type": "custom-link",
-        "label": "学习路线图",
+        "label": "लर्निंग रोडमैप",
         "link": "/flow-engine/learning-roadmap"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "मार्गदर्शिका",
+    "label": "गाइड",
     "items": [
       {
         "type": "custom-link",
-        "label": "注册 FlowModel",
+        "label": "FlowModel रजिस्टर करें",
         "link": "/flow-engine/register-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "创建 FlowModel",
+        "label": "FlowModel बनाएँ",
         "link": "/flow-engine/create-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "渲染 FlowModel",
+        "label": "FlowModel रेंडर करें",
         "link": "/flow-engine/flow-model-renderer"
       },
       {
         "type": "custom-link",
-        "label": "FlowModel 事件流与配置化",
+        "label": "FlowModel इवेंट फ्लो और कॉन्फ़िगरेशन",
         "link": "/flow-engine/flow-model-settings"
       },
       {
         "type": "custom-link",
-        "label": "FlowModel 持久化",
+        "label": "FlowModel परसिस्टेंस",
         "link": "/flow-engine/flow-model-repository"
       },
       {
         "type": "custom-link",
-        "label": "FlowModel 生命周期",
+        "label": "FlowModel लाइफसाइकिल",
         "link": "/flow-engine/flow-model-lifecycle"
       },
       {
         "type": "custom-link",
-        "label": "FlowModel 的上下文体系",
+        "label": "FlowModel कॉन्टेक्स्ट सिस्टम",
         "link": "/flow-engine/flow-context"
       },
       {
         "type": "custom-link",
-        "label": "响应式机制：Observable",
+        "label": "रिएक्टिव मैकेनिज्म: Observable",
         "link": "/flow-engine/observable"
       },
       {
         "type": "custom-link",
-        "label": "FlowModel vs React.Component",
+        "label": "FlowModel बनाम React.Component",
         "link": "/flow-engine/flow-model-vs-react-component"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "परिभाषाएँ",
+    "label": "डेफिनेशंस",
     "items": [
       {
         "type": "custom-link",

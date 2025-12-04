@@ -14,22 +14,22 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Docker 安装",
+        "label": "تثبيت Docker",
         "link": "/get-started/installation/docker"
       },
       {
         "type": "custom-link",
-        "label": "create-nocobase-app 安装",
+        "label": "تثبيت create-nocobase-app",
         "link": "/get-started/installation/create-nocobase-app"
       },
       {
         "type": "custom-link",
-        "label": "Git 源码安装",
+        "label": "تثبيت من كود Git المصدري",
         "link": "/get-started/installation/git"
       },
       {
         "type": "custom-link",
-        "label": "环境变量",
+        "label": "متغيرات البيئة",
         "link": "/get-started/installation/env"
       }
     ]
@@ -40,17 +40,17 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Docker 安装的升级",
+        "label": "ترقية تثبيت Docker",
         "link": "/get-started/upgrading/docker"
       },
       {
         "type": "custom-link",
-        "label": "create-nocobase-app 安装的升级",
+        "label": "ترقية تثبيت create-nocobase-app",
         "link": "/get-started/upgrading/create-nocobase-app"
       },
       {
         "type": "custom-link",
-        "label": "Git 源码安装的升级",
+        "label": "ترقية تثبيت من كود Git المصدري",
         "link": "/get-started/upgrading/git"
       }
     ]
@@ -61,12 +61,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "生产环境部署",
+        "label": "نشر بيئة الإنتاج",
         "link": "/get-started/deployment/production"
       },
       {
         "type": "custom-link",
-        "label": "静态资源代理",
+        "label": "وكيل الموارد الثابتة",
         "items": [
           {
             "type": "custom-link",
@@ -87,7 +87,7 @@
       },
       {
         "type": "custom-link",
-        "label": "常用运维命令",
+        "label": "أوامر التشغيل الشائعة",
         "items": [
           {
             "type": "custom-link",
@@ -103,7 +103,7 @@
       },
       {
         "type": "custom-link",
-        "label": "如何部署才更快",
+        "label": "كيفية النشر بشكل أسرع",
         "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
       }
     ]

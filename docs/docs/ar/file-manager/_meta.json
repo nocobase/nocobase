@@ -14,12 +14,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "نظرة عامة",
         "link": "/file-manager/storage/index"
       },
       {
         "type": "custom-link",
-        "label": "本地存储",
+        "label": "تخزين محلي",
         "link": "/file-manager/storage/local"
       },
       {
@@ -29,12 +29,12 @@
       },
       {
         "type": "custom-link",
-        "label": "阿里云 OSS",
+        "label": "Alibaba Cloud OSS",
         "link": "/file-manager/storage/aliyun-oss"
       },
       {
         "type": "custom-link",
-        "label": "腾讯云 COS",
+        "label": "Tencent Cloud COS",
         "link": "/file-manager/storage/tencent-cos"
       },
       {
@@ -60,12 +60,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "نظرة عامة",
         "link": "/file-manager/file-preview/index"
       },
       {
         "type": "custom-link",
-        "label": "Office 文件预览",
+        "label": "معاينة ملفات Office",
         "link": "/file-manager/file-preview/ms-office"
       }
     ]

@@ -14,22 +14,22 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Docker 安装",
+        "label": "Docker इंस्टॉलेशन",
         "link": "/get-started/installation/docker"
       },
       {
         "type": "custom-link",
-        "label": "create-nocobase-app 安装",
+        "label": "create-nocobase-app इंस्टॉलेशन",
         "link": "/get-started/installation/create-nocobase-app"
       },
       {
         "type": "custom-link",
-        "label": "Git 源码安装",
+        "label": "Git सोर्स कोड इंस्टॉलेशन",
         "link": "/get-started/installation/git"
       },
       {
         "type": "custom-link",
-        "label": "环境变量",
+        "label": "एनवायरनमेंट वैरिएबल",
         "link": "/get-started/installation/env"
       }
     ]
@@ -40,17 +40,17 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Docker 安装的升级",
+        "label": "Docker इंस्टॉलेशन का अपग्रेड",
         "link": "/get-started/upgrading/docker"
       },
       {
         "type": "custom-link",
-        "label": "create-nocobase-app 安装的升级",
+        "label": "create-nocobase-app इंस्टॉलेशन का अपग्रेड",
         "link": "/get-started/upgrading/create-nocobase-app"
       },
       {
         "type": "custom-link",
-        "label": "Git 源码安装的升级",
+        "label": "Git सोर्स कोड इंस्टॉलेशन का अपग्रेड",
         "link": "/get-started/upgrading/git"
       }
     ]
@@ -61,37 +61,37 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "生产环境部署",
+        "label": "प्रोडक्शन एनवायरनमेंट डिप्लॉयमेंट",
         "link": "/get-started/deployment/production"
       },
       {
         "type": "custom-link",
-        "label": "静态资源代理",
+        "label": "स्टैटिक रिसोर्स प्रॉक्सी",
         "items": [
           {
             "type": "custom-link",
-            "label": "nginx",
+            "label": "Nginx",
             "link": "/get-started/deployment/static-resource-proxy/nginx"
           },
           {
             "type": "custom-link",
-            "label": "caddy",
+            "label": "Caddy",
             "link": "/get-started/deployment/static-resource-proxy/caddy"
           },
           {
             "type": "custom-link",
-            "label": "cdn",
+            "label": "CDN",
             "link": "/get-started/deployment/static-resource-proxy/cdn"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "常用运维命令",
+        "label": "सामान्य O&M कमांड",
         "items": [
           {
             "type": "custom-link",
-            "label": "docker compose",
+            "label": "Docker Compose",
             "link": "/get-started/deployment/common-commands/docker-compose"
           },
           {
@@ -103,14 +103,14 @@
       },
       {
         "type": "custom-link",
-        "label": "如何部署才更快",
+        "label": "तेज़ी से डिप्लॉय कैसे करें",
         "link": "https://www.nocobase.com/cn/tutorials/how-to-deploy-nocobase-faster"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "प्लगइन इंस्टॉल और अपग्रेड करें",
+    "label": "Plugin इंस्टॉल और अपग्रेड करें",
     "link": "/get-started/install-upgrade-plugins"
   }
 ]

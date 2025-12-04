@@ -1,16 +1,16 @@
 [
   {
     "type": "custom-link",
-    "label": "תחילת עבודה מהירה",
+    "label": "התחלה מהירה",
     "items": [
       {
         "type": "custom-link",
-        "label": "介绍",
+        "label": "מבוא",
         "link": "/ui-development-action"
       },
       {
         "type": "custom-link",
-        "label": "编写一个操作插件",
+        "label": "כתיבת Action Plugin",
         "link": "/ui-development-action/write-an-action-plugin"
       }
     ]

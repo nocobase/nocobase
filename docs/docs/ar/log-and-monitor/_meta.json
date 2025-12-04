@@ -5,12 +5,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "服务端日志",
+        "label": "سجلات الخادم",
         "link": "/log-and-monitor/logger"
       },
       {
         "type": "custom-link",
-        "label": "服务端日志、审计日志、历史记录",
+        "label": "سجلات الخادم، سجلات التدقيق، السجلات التاريخية",
         "link": "/log-and-monitor/logger/overview"
       }
     ]
@@ -21,12 +21,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "使用说明",
+        "label": "تعليمات الاستخدام",
         "link": "/log-and-monitor/telemetry"
       },
       {
         "type": "custom-link",
-        "label": "导出器",
+        "label": "المصدر",
         "items": [
           {
             "type": "custom-link",

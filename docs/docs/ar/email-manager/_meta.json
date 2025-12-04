@@ -10,22 +10,22 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "配置流程",
+        "label": "عملية الإعداد",
         "link": "/email-manager/configuration/guide"
       },
       {
         "type": "custom-link",
-        "label": "谷歌邮箱配置",
+        "label": "إعداد بريد Google",
         "link": "/email-manager/configuration/gmail"
       },
       {
         "type": "custom-link",
-        "label": "微软邮箱配置",
+        "label": "إعداد بريد Microsoft",
         "link": "/email-manager/configuration/outlook"
       },
       {
         "type": "custom-link",
-        "label": "常见问题",
+        "label": "الأسئلة الشائعة",
         "link": "/email-manager/configuration/faq"
       }
     ]
@@ -36,22 +36,22 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "邮件中心",
+        "label": "مركز البريد",
         "link": "/email-manager/usage/guide"
       },
       {
         "type": "custom-link",
-        "label": "邮件区块",
+        "label": "قالب البريد",
         "link": "/email-manager/usage/configuration"
       },
       {
         "type": "custom-link",
-        "label": "邮件签名",
+        "label": "توقيع البريد",
         "link": "/email-manager/usage/signature"
       },
       {
         "type": "custom-link",
-        "label": "邮件模板",
+        "label": "قوالب البريد",
         "link": "/email-manager/usage/template"
       }
     ]
@@ -62,27 +62,27 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "邮件备注",
+        "label": "ملاحظات البريد",
         "link": "/email-manager/advanced/note"
       },
       {
         "type": "custom-link",
-        "label": "邮件待办",
+        "label": "مهام البريد",
         "link": "/email-manager/advanced/todo"
       },
       {
         "type": "custom-link",
-        "label": "邮件标签",
+        "label": "تصنيفات البريد",
         "link": "/email-manager/advanced/label"
       },
       {
         "type": "custom-link",
-        "label": "批量发送",
+        "label": "الإرسال المجمع",
         "link": "/email-manager/advanced/batch-send"
       },
       {
         "type": "custom-link",
-        "label": "自动保存草稿",
+        "label": "حفظ المسودة تلقائيًا",
         "link": "/email-manager/advanced/auto-save-draft"
       }
     ]

@@ -5,22 +5,22 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "अवलोकन",
         "link": "/ops-management/release-management"
       },
       {
         "type": "custom-link",
-        "label": "变量和密钥",
+        "label": "वैरिएबल और कुंजी",
         "link": "/ops-management/variables-and-secrets"
       },
       {
         "type": "custom-link",
-        "label": "备份管理",
+        "label": "बैकअप प्रबंधन",
         "link": "/ops-management/backup-manager"
       },
       {
         "type": "custom-link",
-        "label": "迁移管理",
+        "label": "माइग्रेशन प्रबंधन",
         "link": "/ops-management/migration-manager"
       }
     ]

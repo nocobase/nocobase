@@ -6,12 +6,12 @@
   },
   {
     "type": "custom-link",
-    "label": "बहु-एप्लिकेशन",
+    "label": "मल्टी-ऐप",
     "link": "/multi-app/multi-app"
   },
   {
     "type": "custom-link",
-    "label": "बहु-स्पेस",
+    "label": "मल्टी-स्पेस",
     "link": "/multi-app/multi-space"
   }
 ]

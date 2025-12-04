@@ -5,12 +5,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "服务端日志",
+        "label": "सर्वर-साइड लॉग",
         "link": "/log-and-monitor/logger"
       },
       {
         "type": "custom-link",
-        "label": "服务端日志、审计日志、历史记录",
+        "label": "सर्वर-साइड लॉग, ऑडिट लॉग, इतिहास",
         "link": "/log-and-monitor/logger/overview"
       }
     ]
@@ -21,12 +21,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "使用说明",
+        "label": "उपयोग निर्देश",
         "link": "/log-and-monitor/telemetry"
       },
       {
         "type": "custom-link",
-        "label": "导出器",
+        "label": "एक्सपोर्टर",
         "items": [
           {
             "type": "custom-link",

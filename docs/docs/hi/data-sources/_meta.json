@@ -6,163 +6,163 @@
   },
   {
     "type": "custom-link",
-    "label": "डेटा स्रोत",
+    "label": "डेटा सोर्स",
     "items": [
       {
         "type": "custom-link",
-        "label": "数据源管理",
+        "label": "डेटा सोर्स प्रबंधन",
         "link": "/data-sources/data-source-manager/"
       },
       {
         "type": "custom-link",
-        "label": "主数据源",
+        "label": "मुख्य डेटा सोर्स",
         "link": "/data-sources/data-source-main/"
       },
       {
         "type": "custom-link",
-        "label": "外部数据源（数据库）",
+        "label": "बाहरी डेटा सोर्स (डेटाबेस)",
         "items": [
           {
             "type": "custom-link",
-            "label": "介绍",
+            "label": "परिचय",
             "link": "/data-sources/data-source-manager/external-database"
           },
           {
             "type": "custom-link",
-            "label": "外部 MySQL",
+            "label": "बाहरी MySQL",
             "link": "/data-sources/data-source-external-mysql/"
           },
           {
             "type": "custom-link",
-            "label": "外部 MariaDB",
+            "label": "बाहरी MariaDB",
             "link": "/data-sources/data-source-external-mariadb/"
           },
           {
             "type": "custom-link",
-            "label": "外部 PostgreSQL",
+            "label": "बाहरी PostgreSQL",
             "link": "/data-sources/data-source-external-postgres/"
           },
           {
             "type": "custom-link",
-            "label": "外部 MSSQL",
+            "label": "बाहरी MSSQL",
             "link": "/data-sources/data-source-external-mssql/"
           },
           {
             "type": "custom-link",
-            "label": "外部 Oracle",
+            "label": "बाहरी Oracle",
             "link": "/data-sources/data-source-external-oracle/"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "主、外部数据库对比",
+        "label": "मुख्य बनाम बाहरी डेटाबेस तुलना",
         "link": "/data-sources/data-modeling/main-vs-external-data-sources"
       },
       {
         "type": "custom-link",
-        "label": "REST API 数据源",
+        "label": "REST API डेटा सोर्स",
         "link": "/data-sources/data-source-rest-api/"
       },
       {
         "type": "custom-link",
-        "label": "人大金仓（KingbaseES）数据源",
+        "label": "KingbaseES डेटा सोर्स",
         "link": "/data-sources/data-source-kingbase/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "डेटा तालिका",
+    "label": "डेटा टेबल",
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "अवलोकन",
         "link": "/data-sources/data-modeling/collection"
       },
       {
         "type": "custom-link",
-        "label": "普通表",
+        "label": "सामान्य टेबल",
         "link": "/data-sources/data-source-main/general-collection"
       },
       {
         "type": "custom-link",
-        "label": "继承表",
+        "label": "इनहेरिटेड टेबल",
         "link": "/data-sources/data-source-main/inheritance-collection"
       },
       {
         "type": "custom-link",
-        "label": "文件表",
+        "label": "फ़ाइल टेबल",
         "link": "/data-sources/file-manager/file-collection"
       },
       {
         "type": "custom-link",
-        "label": "树表",
+        "label": "ट्री टेबल",
         "link": "/data-sources/collection-tree/"
       },
       {
         "type": "custom-link",
-        "label": "日历表",
+        "label": "कैलेंडर टेबल",
         "link": "/data-sources/calendar/calendar-collection"
       },
       {
         "type": "custom-link",
-        "label": "评论表",
+        "label": "कमेंट टेबल",
         "link": "/data-sources/collection-comment/"
       },
       {
         "type": "custom-link",
-        "label": "表达式表",
+        "label": "एक्सप्रेशन टेबल",
         "link": "/data-sources/collection-expression/collection"
       },
       {
         "type": "custom-link",
-        "label": "SQL 表",
+        "label": "SQL टेबल",
         "link": "/data-sources/collection-sql/"
       },
       {
         "type": "custom-link",
-        "label": "数据库视图",
+        "label": "डेटाबेस व्यू",
         "link": "/data-sources/collection-view/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "डेटा तालिका फ़ील्ड",
+    "label": "डेटा टेबल फ़ील्ड",
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "अवलोकन",
         "link": "/data-sources/data-modeling/collection-fields"
       },
       {
         "type": "custom-link",
-        "label": "字段验证",
+        "label": "फ़ील्ड वैलिडेशन",
         "link": "/data-sources/data-modeling/collection-fields/validation"
       },
       {
         "type": "custom-link",
-        "label": "基本类型",
+        "label": "बेसिक टाइप",
         "items": [
           {
             "type": "custom-link",
-            "label": "单行文本",
+            "label": "सिंगल लाइन टेक्स्ट",
             "link": "/data-sources/data-modeling/collection-fields/basic/input"
           },
           {
             "type": "custom-link",
-            "label": "多行文本",
+            "label": "मल्टी लाइन टेक्स्ट",
             "link": "/data-sources/data-modeling/collection-fields/basic/textarea"
           },
           {
             "type": "custom-link",
-            "label": "手机号码",
+            "label": "मोबाइल नंबर",
             "link": "/data-sources/data-modeling/collection-fields/basic/phone"
           },
           {
             "type": "custom-link",
-            "label": "电子邮箱",
+            "label": "ईमेल",
             "link": "/data-sources/data-modeling/collection-fields/basic/email"
           },
           {
@@ -172,70 +172,70 @@
           },
           {
             "type": "custom-link",
-            "label": "整数",
+            "label": "इंटीजर",
             "link": "/data-sources/data-modeling/collection-fields/basic/integer"
           },
           {
             "type": "custom-link",
-            "label": "数字",
+            "label": "नंबर",
             "link": "/data-sources/data-modeling/collection-fields/basic/number"
           },
           {
             "type": "custom-link",
-            "label": "百分比",
+            "label": "प्रतिशत",
             "link": "/data-sources/data-modeling/collection-fields/basic/percent"
           },
           {
             "type": "custom-link",
-            "label": "密码",
+            "label": "पासवर्ड",
             "link": "/data-sources/data-modeling/collection-fields/basic/password"
           },
           {
             "type": "custom-link",
-            "label": "颜色",
+            "label": "कलर",
             "link": "/data-sources/data-modeling/collection-fields/basic/color"
           },
           {
             "type": "custom-link",
-            "label": "图标",
+            "label": "आइकॉन",
             "link": "/data-sources/data-modeling/collection-fields/basic/icon"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "选择类型",
+        "label": "सिलेक्शन टाइप",
         "items": [
           {
             "type": "custom-link",
-            "label": "勾选",
+            "label": "चेकबॉक्स",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox"
           },
           {
             "type": "custom-link",
-            "label": "下拉菜单（单选）",
+            "label": "ड्रॉपडाउन (सिंगल सेलेक्ट)",
             "link": "/data-sources/data-modeling/collection-fields/choices/select"
           },
           {
             "type": "custom-link",
-            "label": "下拉菜单（多选）",
+            "label": "ड्रॉपडाउन (मल्टी सेलेक्ट)",
             "link": "/data-sources/data-modeling/collection-fields/choices/multiple-select"
           },
           {
             "type": "custom-link",
-            "label": "单选框",
+            "label": "रेडियो बटन",
             "link": "/data-sources/data-modeling/collection-fields/choices/radio-group"
           },
           {
             "type": "custom-link",
-            "label": "复选框",
+            "label": "चेकबॉक्स",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "多媒体",
+        "label": "मल्टीमीडिया",
         "items": [
           {
             "type": "custom-link",
@@ -244,91 +244,91 @@
           },
           {
             "type": "custom-link",
-            "label": "Markdown(Vditor)",
+            "label": "Markdown (Vditor)",
             "link": "/data-sources/field-markdown-vditor/"
           },
           {
             "type": "custom-link",
-            "label": "富文本",
+            "label": "रिच टेक्स्ट",
             "link": "/data-sources/data-modeling/collection-fields/media/rich-text"
           },
           {
             "type": "custom-link",
-            "label": "附件（关系）",
+            "label": "अटैचमेंट (रिलेशनशिप)",
             "link": "/data-sources/file-manager/field-attachment"
           },
           {
             "type": "custom-link",
-            "label": "附件（URL）",
+            "label": "अटैचमेंट (URL)",
             "link": "/data-sources/field-attachment-url/"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "日期 & 时间",
+        "label": "डेट और टाइम",
         "items": [
           {
             "type": "custom-link",
-            "label": "概述",
+            "label": "अवलोकन",
             "link": "/data-sources/data-modeling/collection-fields/datetime"
           },
           {
             "type": "custom-link",
-            "label": "日期时间（含时区）",
+            "label": "डेटटाइम (टाइमज़ोन सहित)",
             "link": "/data-sources/data-modeling/collection-fields/datetime/datetime"
           },
           {
             "type": "custom-link",
-            "label": "日期时间（不含时区）",
+            "label": "डेटटाइम (टाइमज़ोन रहित)",
             "link": "/data-sources/data-modeling/collection-fields/datetime/datetime-without-tz"
           },
           {
             "type": "custom-link",
-            "label": "Unix 时间戳",
+            "label": "Unix टाइमस्टैम्प",
             "link": "/data-sources/data-modeling/collection-fields/datetime/unix-timestamp"
           },
           {
             "type": "custom-link",
-            "label": "日期（不含时间）",
+            "label": "डेट (टाइम रहित)",
             "link": "/data-sources/data-modeling/collection-fields/datetime/date"
           },
           {
             "type": "custom-link",
-            "label": "时间",
+            "label": "टाइम",
             "link": "/data-sources/data-modeling/collection-fields/datetime/time"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "几何图形",
+        "label": "ज्योमेट्री",
         "items": [
           {
             "type": "custom-link",
-            "label": "点",
+            "label": "पॉइंट",
             "link": "/data-sources/data-modeling/collection-fields/geometric/point"
           },
           {
             "type": "custom-link",
-            "label": "线",
+            "label": "लाइन",
             "link": "/data-sources/data-modeling/collection-fields/geometric/line"
           },
           {
             "type": "custom-link",
-            "label": "圆",
+            "label": "सर्कल",
             "link": "/data-sources/data-modeling/collection-fields/geometric/circle"
           },
           {
             "type": "custom-link",
-            "label": "多边形",
+            "label": "पॉलीगॉन",
             "link": "/data-sources/data-modeling/collection-fields/geometric/polygon"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "高级类型",
+        "label": "एडवांस्ड टाइप",
         "items": [
           {
             "type": "custom-link",
@@ -342,17 +342,17 @@
           },
           {
             "type": "custom-link",
-            "label": "排序",
+            "label": "सॉर्टिंग",
             "link": "/data-sources/field-sort/"
           },
           {
             "type": "custom-link",
-            "label": "计算公式",
+            "label": "कैलकुलेशन फ़ॉर्मूला",
             "link": "/data-sources/field-formula/"
           },
           {
             "type": "custom-link",
-            "label": "自动编码",
+            "label": "ऑटो-एनकोडिंग",
             "link": "/data-sources/field-sequence/"
           },
           {
@@ -362,43 +362,43 @@
           },
           {
             "type": "custom-link",
-            "label": "数据表选择器",
+            "label": "डेटा टेबल सेलेक्टर",
             "link": "/data-sources/data-modeling/collection-fields/advanced/collection-select"
           },
           {
             "type": "custom-link",
-            "label": "加密",
+            "label": "एन्क्रिप्शन",
             "link": "/data-sources/field-encryption/"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "系统信息",
+        "label": "सिस्टम जानकारी",
         "items": [
           {
             "type": "custom-link",
-            "label": "创建日期",
+            "label": "निर्माण तिथि",
             "link": "/data-sources/data-modeling/collection-fields/system-info/created-at"
           },
           {
             "type": "custom-link",
-            "label": "最后修改日期",
+            "label": "अंतिम संशोधन तिथि",
             "link": "/data-sources/data-modeling/collection-fields/system-info/updated-at"
           },
           {
             "type": "custom-link",
-            "label": "创建人",
+            "label": "निर्माता",
             "link": "/data-sources/data-modeling/collection-fields/system-info/created-by"
           },
           {
             "type": "custom-link",
-            "label": "最后修改人",
+            "label": "अंतिम संशोधक",
             "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
           },
           {
             "type": "custom-link",
-            "label": "空间",
+            "label": "स्थान",
             "link": "/data-sources/data-modeling/collection-fields/system-info/space"
           },
           {
@@ -410,36 +410,36 @@
       },
       {
         "type": "custom-link",
-        "label": "关系类型",
+        "label": "संबंध प्रकार",
         "items": [
           {
             "type": "custom-link",
-            "label": "概述",
+            "label": "अवलोकन",
             "link": "/data-sources/data-modeling/collection-fields/associations"
           },
           {
             "type": "custom-link",
-            "label": "一对一",
+            "label": "एक-से-एक",
             "link": "/data-sources/data-modeling/collection-fields/associations/o2o"
           },
           {
             "type": "custom-link",
-            "label": "一对多",
+            "label": "एक-से-अनेक",
             "link": "/data-sources/data-modeling/collection-fields/associations/o2m"
           },
           {
             "type": "custom-link",
-            "label": "多对一",
+            "label": "अनेक-से-एक",
             "link": "/data-sources/data-modeling/collection-fields/associations/m2o"
           },
           {
             "type": "custom-link",
-            "label": "多对多",
+            "label": "अनेक-से-अनेक",
             "link": "/data-sources/data-modeling/collection-fields/associations/m2m"
           },
           {
             "type": "custom-link",
-            "label": "多对多（数组）",
+            "label": "अनेक-से-अनेक (Array)",
             "link": "/data-sources/field-m2m-array/"
           }
         ]
@@ -452,7 +452,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "अवलोकन",
         "link": "/data-sources/development"
       }
     ]

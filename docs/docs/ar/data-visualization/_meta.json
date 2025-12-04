@@ -15,27 +15,27 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "数据查询",
+        "label": "استعلام البيانات",
         "link": "/data-visualization/guide/data-query"
       },
       {
         "type": "custom-link",
-        "label": "图表选项",
+        "label": "خيارات الرسم البياني",
         "link": "/data-visualization/guide/chart-options"
       },
       {
         "type": "custom-link",
-        "label": "预览与保存",
+        "label": "معاينة وحفظ",
         "link": "/data-visualization/guide/preview-and-save"
       },
       {
         "type": "custom-link",
-        "label": "使用上下文环境变量",
+        "label": "استخدام متغيرات بيئة السياق",
         "link": "/data-visualization/guide/context-variables"
       },
       {
         "type": "custom-link",
-        "label": "页面筛选器与联动",
+        "label": "فلاتر الصفحة والربط",
         "link": "/data-visualization/guide/filters-and-linkage"
       }
     ]
@@ -46,17 +46,17 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "SQL 模式查询数据",
+        "label": "استعلام البيانات بوضع SQL",
         "link": "/data-visualization/guide/sql-data-query"
       },
       {
         "type": "custom-link",
-        "label": "自定义图表配置",
+        "label": "إعدادات الرسم البياني المخصصة",
         "link": "/data-visualization/guide/custom-chart-options"
       },
       {
         "type": "custom-link",
-        "label": "自定义交互事件",
+        "label": "أحداث التفاعل المخصصة",
         "link": "/data-visualization/guide/chart-events"
       }
     ]

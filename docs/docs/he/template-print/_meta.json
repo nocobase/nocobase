@@ -6,13 +6,13 @@
   },
   {
     "type": "custom-link",
-    "label": "הוראות תצורה",
+    "label": "הוראות הגדרה",
     "link": "/template-print/configuration"
   },
   {
     "type": "dir",
     "name": "syntax",
-    "label": "תחביר תבניות"
+    "label": "תחביר תבנית"
   },
   {
     "type": "dir",

@@ -10,32 +10,32 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "角色配置",
+        "label": "إعدادات الدور",
         "link": "/users-permissions/acl/role"
       },
       {
         "type": "custom-link",
-        "label": "权限配置",
+        "label": "إعدادات الصلاحيات",
         "link": "/users-permissions/acl/permissions"
       },
       {
         "type": "custom-link",
-        "label": "在 UI 中应用",
+        "label": "تطبيق في UI",
         "link": "/users-permissions/acl/ui"
       },
       {
         "type": "custom-link",
-        "label": "角色并集",
+        "label": "اتحاد الأدوار",
         "link": "/users-permissions/acl/union"
       },
       {
         "type": "dir",
-        "label": "开发指南",
+        "label": "دليل المطورين",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "扩展权限配置栏",
+            "label": "توسيع شريط إعدادات الصلاحيات",
             "link": "/users-permissions/acl/dev/permission-tab"
           }
         ]
@@ -48,32 +48,32 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "部门管理",
+        "label": "إدارة الأقسام",
         "link": "/users-permissions/departments"
       },
       {
         "type": "custom-link",
-        "label": "部门角色管理",
+        "label": "إدارة أدوار الأقسام",
         "link": "/users-permissions/departments/role"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "مزامنة بيانات المستخدم",
+    "label": "مزامنة بيانات المستخدمين",
     "items": [
       {
         "type": "custom-link",
-        "label": "同步管理",
+        "label": "إدارة المزامنة",
         "link": "/users-permissions/sync/"
       },
       {
         "type": "custom-link",
-        "label": "数据源",
+        "label": "مصدر البيانات",
         "items": [
           {
             "type": "custom-link",
-            "label": "企业微信",
+            "label": "WeChat للشركات",
             "link": "/users-permissions/sync/sources/wecom"
           },
           {
@@ -85,17 +85,17 @@
       },
       {
         "type": "dir",
-        "label": "开发指南",
+        "label": "دليل المطورين",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "扩展同步数据源",
+            "label": "توسيع مصدر بيانات المزامنة",
             "link": "/users-permissions/sync/dev/source"
           },
           {
             "type": "custom-link",
-            "label": "扩展同步目标资源",
+            "label": "توسيع مورد هدف المزامنة",
             "link": "/users-permissions/sync/dev/resource"
           }
         ]

@@ -1,12 +1,12 @@
 [
   {
     "type": "custom-link",
-    "label": "सुरक्षा मार्गदर्शिका",
+    "label": "सुरक्षा गाइड",
     "link": "/security/guide"
   },
   {
     "type": "custom-link",
-    "label": "टोकन नीति",
+    "label": "Token नीति",
     "link": "/security/token-policy/"
   },
   {
@@ -15,12 +15,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "密码策略",
+        "label": "पासवर्ड नीति",
         "link": "/security/password-policy/"
       },
       {
         "type": "custom-link",
-        "label": "用户锁定",
+        "label": "उपयोगकर्ता लॉक",
         "link": "/security/password-policy/lockout"
       }
     ]
@@ -37,7 +37,7 @@
   },
   {
     "type": "custom-link",
-    "label": "द्वि-कारक प्रमाणीकरण (2FA)",
+    "label": "टू-फ़ैक्टर ऑथेंटिकेशन (2FA)",
     "link": "/auth-verification/2fa/"
   },
   {

@@ -6,37 +6,37 @@
   },
   {
     "type": "custom-link",
-    "label": "अधिसूचना चैनल",
+    "label": "सूचना चैनल",
     "items": [
       {
         "type": "custom-link",
-        "label": "站内信",
+        "label": "इन-साइट संदेश",
         "link": "/notification-manager/notification-in-app-message"
       },
       {
         "type": "custom-link",
-        "label": "电子邮件",
+        "label": "ईमेल",
         "link": "/notification-manager/notification-email"
       },
       {
         "type": "custom-link",
-        "label": "企业微信",
+        "label": "वीकॉम",
         "link": "/notification-manager/wecom"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "विकास मार्गदर्शिका",
+    "label": "विकास गाइड",
     "items": [
       {
         "type": "custom-link",
-        "label": "扩展通知渠道类型",
+        "label": "सूचना चैनल प्रकार का विस्तार करें",
         "link": "/notification-manager/development/extension"
       },
       {
         "type": "custom-link",
-        "label": "扩展通知API",
+        "label": "सूचना API का विस्तार करें",
         "link": "/notification-manager/development/api"
       }
     ]

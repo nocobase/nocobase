@@ -1,16 +1,16 @@
 [
   {
     "type": "custom-link",
-    "label": "دليل البدء السريع",
+    "label": "بدء سريع",
     "items": [
       {
         "type": "custom-link",
-        "label": "介绍",
+        "label": "مقدمة",
         "link": "/ui-development-block"
       },
       {
         "type": "custom-link",
-        "label": "编写一个区块插件",
+        "label": "كتابة إضافة قالب",
         "link": "/ui-development-block/write-a-block-plugin"
       }
     ]

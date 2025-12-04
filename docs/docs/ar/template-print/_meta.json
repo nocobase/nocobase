@@ -6,13 +6,13 @@
   },
   {
     "type": "custom-link",
-    "label": "وصف الإعدادات",
+    "label": "تعليمات الإعداد",
     "link": "/template-print/configuration"
   },
   {
     "type": "dir",
     "name": "syntax",
-    "label": "بناء جملة القوالب"
+    "label": "بناء جملة القالب"
   },
   {
     "type": "dir",
@@ -26,7 +26,7 @@
   },
   {
     "type": "custom-link",
-    "label": "سيناريوهات الاستخدام",
+    "label": "سيناريوهات التطبيق",
     "link": "/template-print/scenes"
   }
 ]

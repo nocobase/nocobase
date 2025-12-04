@@ -16,7 +16,7 @@
   },
   {
     "type": "custom-link",
-    "label": "تنسيق العملات",
+    "label": "تنسيق العملة",
     "link": "/template-print/syntax/formatters/currency-formatting"
   },
   {
@@ -26,12 +26,12 @@
   },
   {
     "type": "custom-link",
-    "label": "تنسيق الفواصل الزمنية",
+    "label": "تنسيق الفاصل الزمني",
     "link": "/template-print/syntax/formatters/time-interval-formatting"
   },
   {
     "type": "custom-link",
-    "label": "تنسيق المصفوفات",
+    "label": "تنسيق المصفوفة",
     "link": "/template-print/syntax/formatters/array-formatting"
   }
 ]

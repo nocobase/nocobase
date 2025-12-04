@@ -6,32 +6,32 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "插件管理",
+        "label": "إدارة الـ Plugin",
         "link": "/system-management/plugin-manager/"
       },
       {
         "type": "custom-link",
-        "label": "系统设置",
+        "label": "إعدادات النظام",
         "link": "/system-management/system-settings/"
       },
       {
         "type": "custom-link",
-        "label": "自定义品牌",
+        "label": "تخصيص العلامة التجارية",
         "link": "/system-management/custom-brand/"
       },
       {
         "type": "custom-link",
-        "label": "主题编辑器",
+        "label": "محرر السمات",
         "link": "/system-management/theme-editor/"
       },
       {
         "type": "custom-link",
-        "label": "语言设置",
+        "label": "إعدادات اللغة",
         "link": "/system-management/language-settings/"
       },
       {
         "type": "custom-link",
-        "label": "本地化管理",
+        "label": "إدارة التوطين",
         "link": "/system-management/localization/"
       }
     ]

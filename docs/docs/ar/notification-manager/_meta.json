@@ -10,33 +10,33 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "站内信",
+        "label": "رسائل داخلية",
         "link": "/notification-manager/notification-in-app-message"
       },
       {
         "type": "custom-link",
-        "label": "电子邮件",
+        "label": "بريد إلكتروني",
         "link": "/notification-manager/notification-email"
       },
       {
         "type": "custom-link",
-        "label": "企业微信",
+        "label": "WeChat للشركات",
         "link": "/notification-manager/wecom"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "دليل التطوير",
+    "label": "دليل المطورين",
     "items": [
       {
         "type": "custom-link",
-        "label": "扩展通知渠道类型",
+        "label": "توسيع أنواع قنوات الإشعارات",
         "link": "/notification-manager/development/extension"
       },
       {
         "type": "custom-link",
-        "label": "扩展通知API",
+        "label": "توسيع Notification API",
         "link": "/notification-manager/development/api"
       }
     ]

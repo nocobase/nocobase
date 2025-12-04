@@ -20,12 +20,12 @@
   },
   {
     "type": "custom-link",
-    "label": "परिचालन प्रक्रिया",
+    "label": "O&M प्रक्रिया",
     "link": "/cluster-mode/operations"
   },
   {
     "type": "custom-link",
-    "label": "सेवा विभाजन",
+    "label": "सर्विस स्प्लिटिंग",
     "link": "/cluster-mode/services-splitting"
   },
   {

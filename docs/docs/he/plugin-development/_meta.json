@@ -1,183 +1,183 @@
 [
   {
     "type": "custom-link",
-    "label": "תחילת עבודה מהירה",
+    "label": "התחלה מהירה",
     "items": [
       {
         "type": "custom-link",
-        "label": "插件开发概述",
+        "label": "סקירת פיתוח Plugin",
         "link": "/plugin-development"
       },
       {
         "type": "custom-link",
-        "label": "编写第一个插件",
+        "label": "כתיבת Plugin ראשון",
         "link": "/plugin-development/write-your-first-plugin"
       },
       {
         "type": "custom-link",
-        "label": "项目目录结构",
+        "label": "מבנה תיקיות הפרויקט",
         "link": "/plugin-development/project-structure"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "פיתוח צד שרת",
+    "label": "פיתוח Server-side",
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "סקירה כללית",
         "link": "/plugin-development/server"
       },
       {
         "type": "custom-link",
-        "label": "Plugin 插件",
+        "label": "Plugin",
         "link": "/plugin-development/server/plugin"
       },
       {
         "type": "custom-link",
-        "label": "Collections 数据表",
+        "label": "Collections טבלאות נתונים",
         "link": "/plugin-development/server/collections"
       },
       {
         "type": "custom-link",
-        "label": "Database 数据库操作",
+        "label": "Database: פעולות",
         "link": "/plugin-development/server/database"
       },
       {
         "type": "custom-link",
-        "label": "DataSourceManager 数据源管理",
+        "label": "DataSourceManager - ניהול מקורות נתונים",
         "link": "/plugin-development/server/data-source-manager"
       },
       {
         "type": "custom-link",
-        "label": "ResourceManager 资源管理",
+        "label": "ResourceManager",
         "link": "/plugin-development/server/resource-manager"
       },
       {
         "type": "custom-link",
-        "label": "ACL 权限控制",
+        "label": "ACL בקרת הרשאות",
         "link": "/plugin-development/server/acl"
       },
       {
         "type": "custom-link",
-        "label": "Middleware 中间件",
+        "label": "Middleware",
         "link": "/plugin-development/server/middleware"
       },
       {
         "type": "custom-link",
-        "label": "Cache 缓存",
+        "label": "Cache",
         "link": "/plugin-development/server/cache"
       },
       {
         "type": "custom-link",
-        "label": "Event 事件",
+        "label": "Event",
         "link": "/plugin-development/server/event"
       },
       {
         "type": "custom-link",
-        "label": "Context 请求上下文",
+        "label": "Context - הקשר בקשה",
         "link": "/plugin-development/server/context"
       },
       {
         "type": "custom-link",
-        "label": "Migration 升级脚本",
+        "label": "Migration סקריפט שדרוג",
         "link": "/plugin-development/server/migration"
       },
       {
         "type": "custom-link",
-        "label": "Logger 日志",
+        "label": "Logger יומן",
         "link": "/plugin-development/server/logger"
       },
       {
         "type": "custom-link",
-        "label": "Telemetry 遥测",
+        "label": "Telemetry",
         "link": "/plugin-development/server/telemetry"
       },
       {
         "type": "custom-link",
-        "label": "I18n 国际化",
+        "label": "I18n בינאום",
         "link": "/plugin-development/server/i18n"
       },
       {
         "type": "custom-link",
-        "label": "Command 命令行",
+        "label": "Command",
         "link": "/plugin-development/server/command"
       },
       {
         "type": "custom-link",
-        "label": "CronJobManager 定时任务管理",
+        "label": "CronJobManager ניהול משימות מתוזמנות",
         "link": "/plugin-development/server/cron-job-manager"
       },
       {
         "type": "custom-link",
-        "label": "Test 测试",
+        "label": "Test",
         "link": "/plugin-development/server/test"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "פיתוח צד לקוח",
+    "label": "פיתוח Client-side",
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "סקירה כללית",
         "link": "/plugin-development/client"
       },
       {
         "type": "custom-link",
-        "label": "Plugin 插件",
+        "label": "Plugin",
         "link": "/plugin-development/client/plugin"
       },
       {
         "type": "custom-link",
-        "label": "Context 上下文",
+        "label": "Context",
         "link": "/plugin-development/client/context"
       },
       {
         "type": "custom-link",
-        "label": "Router 路由",
+        "label": "Router ניתוב",
         "link": "/plugin-development/client/router"
       },
       {
         "type": "custom-link",
-        "label": "ACL 权限控制",
+        "label": "ACL בקרת הרשאות",
         "link": "/plugin-development/client/acl"
       },
       {
         "type": "custom-link",
-        "label": "DataSourceManager 数据源管理",
+        "label": "DataSourceManager - ניהול מקורות נתונים",
         "link": "/plugin-development/client/data-source-manager"
       },
       {
         "type": "custom-link",
-        "label": "Resource 资源",
+        "label": "Resource",
         "link": "/plugin-development/client/resource"
       },
       {
         "type": "custom-link",
-        "label": "Request 请求",
+        "label": "Request",
         "link": "/plugin-development/client/request"
       },
       {
         "type": "custom-link",
-        "label": "Styles & Themes 样式与主题",
+        "label": "Styles & Themes",
         "link": "/plugin-development/client/styles-themes"
       },
       {
         "type": "custom-link",
-        "label": "Logger 日志",
+        "label": "Logger יומן",
         "link": "/plugin-development/client/logger"
       },
       {
         "type": "custom-link",
-        "label": "I18n 国际化",
+        "label": "I18n בינאום",
         "link": "/plugin-development/client/i18n"
       },
       {
         "type": "custom-link",
-        "label": "Test 测试",
+        "label": "Test",
         "link": "/plugin-development/client/test"
       }
     ]
@@ -188,22 +188,22 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "插件升级指南",
+        "label": "מדריך שדרוג Plugin",
         "link": "/plugin-development/plugin-upgrade-guide"
       },
       {
         "type": "custom-link",
-        "label": "语言列表",
+        "label": "רשימת שפות",
         "link": "/plugin-development/languages"
       },
       {
         "type": "custom-link",
-        "label": "依赖管理",
+        "label": "ניהול תלויות",
         "link": "/plugin-development/dependency-management"
       },
       {
         "type": "custom-link",
-        "label": "构建",
+        "label": "בנייה",
         "link": "/plugin-development/build"
       }
     ]

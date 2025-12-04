@@ -1,7 +1,7 @@
 [
   {
     "type": "section-header",
-    "label": "फ़ाइल प्रबंधक"
+    "label": "फ़ाइल मैनेजर"
   },
   {
     "type": "custom-link",
@@ -14,12 +14,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "अवलोकन",
         "link": "/file-manager/storage/index"
       },
       {
         "type": "custom-link",
-        "label": "本地存储",
+        "label": "लोकल स्टोरेज",
         "link": "/file-manager/storage/local"
       },
       {
@@ -29,12 +29,12 @@
       },
       {
         "type": "custom-link",
-        "label": "阿里云 OSS",
+        "label": "अलीबाबा क्लाउड OSS",
         "link": "/file-manager/storage/aliyun-oss"
       },
       {
         "type": "custom-link",
-        "label": "腾讯云 COS",
+        "label": "Tencent क्लाउड COS",
         "link": "/file-manager/storage/tencent-cos"
       },
       {
@@ -46,7 +46,7 @@
   },
   {
     "type": "custom-link",
-    "label": "फ़ाइल तालिका",
+    "label": "फ़ाइल टेबल",
     "link": "/file-manager/file-collection"
   },
   {
@@ -60,12 +60,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "अवलोकन",
         "link": "/file-manager/file-preview/index"
       },
       {
         "type": "custom-link",
-        "label": "Office 文件预览",
+        "label": "Office फ़ाइल पूर्वावलोकन",
         "link": "/file-manager/file-preview/ms-office"
       }
     ]

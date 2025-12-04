@@ -5,22 +5,22 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "نظرة عامة",
         "link": "/ops-management/release-management"
       },
       {
         "type": "custom-link",
-        "label": "变量和密钥",
+        "label": "المتغيرات والمفاتيح",
         "link": "/ops-management/variables-and-secrets"
       },
       {
         "type": "custom-link",
-        "label": "备份管理",
+        "label": "إدارة النسخ الاحتياطي",
         "link": "/ops-management/backup-manager"
       },
       {
         "type": "custom-link",
-        "label": "迁移管理",
+        "label": "إدارة الترحيل",
         "link": "/ops-management/migration-manager"
       }
     ]

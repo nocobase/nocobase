@@ -6,7 +6,7 @@
   },
   {
     "type": "custom-link",
-    "label": "מדיניות אסימונים",
+    "label": "מדיניות Token",
     "link": "/security/token-policy/"
   },
   {
@@ -15,12 +15,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "密码策略",
+        "label": "מדיניות סיסמאות",
         "link": "/security/password-policy/"
       },
       {
         "type": "custom-link",
-        "label": "用户锁定",
+        "label": "נעילת משתמש",
         "link": "/security/password-policy/lockout"
       }
     ]
@@ -32,7 +32,7 @@
   },
   {
     "type": "custom-link",
-    "label": "יומני ביקורת",
+    "label": "יומן ביקורת",
     "link": "/security/audit-logger/"
   },
   {
@@ -42,7 +42,7 @@
   },
   {
     "type": "custom-link",
-    "label": "הצפנת שדות",
+    "label": "הצפנת שדה",
     "link": "/data-sources/field-encryption"
   }
 ]

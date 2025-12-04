@@ -1,7 +1,7 @@
 [
   {
     "type": "section-header",
-    "label": "وضع التجمع"
+    "label": "وضع التكتل"
   },
   {
     "type": "custom-link",
@@ -20,7 +20,7 @@
   },
   {
     "type": "custom-link",
-    "label": "عملية التشغيل والصيانة",
+    "label": "عملية التشغيل",
     "link": "/cluster-mode/operations"
   },
   {

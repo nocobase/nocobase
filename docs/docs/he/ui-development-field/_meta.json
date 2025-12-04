@@ -1,16 +1,16 @@
 [
   {
     "type": "custom-link",
-    "label": "תחילת עבודה מהירה",
+    "label": "התחלה מהירה",
     "items": [
       {
         "type": "custom-link",
-        "label": "介绍",
+        "label": "מבוא",
         "link": "/ui-development-field"
       },
       {
         "type": "custom-link",
-        "label": "编写一个字段插件",
+        "label": "פיתוח Plugin שדה",
         "link": "/ui-development-field/write-a-field-plugin"
       }
     ]

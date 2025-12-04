@@ -6,7 +6,7 @@
   },
   {
     "type": "custom-link",
-    "label": "कॉन्फ़िगरेशन विवरण",
+    "label": "कॉन्फ़िगरेशन निर्देश",
     "link": "/template-print/configuration"
   },
   {
@@ -26,7 +26,7 @@
   },
   {
     "type": "custom-link",
-    "label": "उपयोग के मामले",
+    "label": "उपयोग के परिदृश्य",
     "link": "/template-print/scenes"
   }
 ]

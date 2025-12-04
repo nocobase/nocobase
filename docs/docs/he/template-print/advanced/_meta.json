@@ -1,12 +1,12 @@
 [
   {
     "type": "custom-link",
-    "label": "תנאים",
+    "label": "בדיקת תנאי",
     "link": "/template-print/advanced/conditionals"
   },
   {
     "type": "custom-link",
-    "label": "מאפיינים מתקדמים",
+    "label": "תכונות מתקדמות",
     "link": "/template-print/advanced/advanced-features"
   }
 ]

@@ -20,7 +20,7 @@
   },
   {
     "type": "custom-link",
-    "label": "תהליכי תפעול ותחזוקה",
+    "label": "תהליך תפעול ותחזוקה",
     "link": "/cluster-mode/operations"
   },
   {
@@ -30,7 +30,7 @@
   },
   {
     "type": "custom-link",
-    "label": "הפניה לפיתוח",
+    "label": "הפניה למפתחים",
     "link": "/cluster-mode/development"
   }
 ]

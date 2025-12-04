@@ -10,17 +10,17 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "API 密钥",
+        "label": "مفتاح API",
         "link": "/integration/api-keys/"
       },
       {
         "type": "custom-link",
-        "label": "API 文档",
+        "label": "وثائق API",
         "link": "/integration/api-doc/"
       },
       {
         "type": "custom-link",
-        "label": "使用场景",
+        "label": "حالات الاستخدام",
         "link": "/integration/api-keys/usage"
       }
     ]
@@ -41,14 +41,14 @@
       },
       {
         "type": "custom-link",
-        "label": "HTTP 请求",
+        "label": "طلب HTTP",
         "link": "/integration/workflow-http-request/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "مصدر بيانات خارجي",
+    "label": "مصادر البيانات الخارجية",
     "link": "/data-sources/"
   },
   {
@@ -57,12 +57,12 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "Iframe 区块",
+        "label": "قالب Iframe",
         "link": "/integration/block-iframe/"
       },
       {
         "type": "custom-link",
-        "label": "嵌入",
+        "label": "تضمين",
         "link": "/integration/embed/"
       }
     ]

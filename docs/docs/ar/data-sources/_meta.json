@@ -10,159 +10,159 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "数据源管理",
+        "label": "إدارة مصادر البيانات",
         "link": "/data-sources/data-source-manager/"
       },
       {
         "type": "custom-link",
-        "label": "主数据源",
+        "label": "مصدر البيانات الرئيسي",
         "link": "/data-sources/data-source-main/"
       },
       {
         "type": "custom-link",
-        "label": "外部数据源（数据库）",
+        "label": "مصدر بيانات خارجي (قاعدة بيانات)",
         "items": [
           {
             "type": "custom-link",
-            "label": "介绍",
+            "label": "مقدمة",
             "link": "/data-sources/data-source-manager/external-database"
           },
           {
             "type": "custom-link",
-            "label": "外部 MySQL",
+            "label": "MySQL خارجي",
             "link": "/data-sources/data-source-external-mysql/"
           },
           {
             "type": "custom-link",
-            "label": "外部 MariaDB",
+            "label": "MariaDB خارجي",
             "link": "/data-sources/data-source-external-mariadb/"
           },
           {
             "type": "custom-link",
-            "label": "外部 PostgreSQL",
+            "label": "PostgreSQL خارجي",
             "link": "/data-sources/data-source-external-postgres/"
           },
           {
             "type": "custom-link",
-            "label": "外部 MSSQL",
+            "label": "MSSQL خارجي",
             "link": "/data-sources/data-source-external-mssql/"
           },
           {
             "type": "custom-link",
-            "label": "外部 Oracle",
+            "label": "Oracle خارجي",
             "link": "/data-sources/data-source-external-oracle/"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "主、外部数据库对比",
+        "label": "مقارنة قواعد البيانات الرئيسية والخارجية",
         "link": "/data-sources/data-modeling/main-vs-external-data-sources"
       },
       {
         "type": "custom-link",
-        "label": "REST API 数据源",
+        "label": "مصدر بيانات REST API",
         "link": "/data-sources/data-source-rest-api/"
       },
       {
         "type": "custom-link",
-        "label": "人大金仓（KingbaseES）数据源",
+        "label": "مصدر بيانات KingbaseES",
         "link": "/data-sources/data-source-kingbase/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "جدول البيانات",
+    "label": "جداول البيانات",
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "نظرة عامة",
         "link": "/data-sources/data-modeling/collection"
       },
       {
         "type": "custom-link",
-        "label": "普通表",
+        "label": "جدول عادي",
         "link": "/data-sources/data-source-main/general-collection"
       },
       {
         "type": "custom-link",
-        "label": "继承表",
+        "label": "جدول موروث",
         "link": "/data-sources/data-source-main/inheritance-collection"
       },
       {
         "type": "custom-link",
-        "label": "文件表",
+        "label": "جدول الملفات",
         "link": "/data-sources/file-manager/file-collection"
       },
       {
         "type": "custom-link",
-        "label": "树表",
+        "label": "جدول شجري",
         "link": "/data-sources/collection-tree/"
       },
       {
         "type": "custom-link",
-        "label": "日历表",
+        "label": "جدول التقويم",
         "link": "/data-sources/calendar/calendar-collection"
       },
       {
         "type": "custom-link",
-        "label": "评论表",
+        "label": "جدول التعليقات",
         "link": "/data-sources/collection-comment/"
       },
       {
         "type": "custom-link",
-        "label": "表达式表",
+        "label": "جدول التعبيرات",
         "link": "/data-sources/collection-expression/collection"
       },
       {
         "type": "custom-link",
-        "label": "SQL 表",
+        "label": "جدول SQL",
         "link": "/data-sources/collection-sql/"
       },
       {
         "type": "custom-link",
-        "label": "数据库视图",
+        "label": "عرض قاعدة البيانات",
         "link": "/data-sources/collection-view/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "حقل جدول البيانات",
+    "label": "حقول جداول البيانات",
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "نظرة عامة",
         "link": "/data-sources/data-modeling/collection-fields"
       },
       {
         "type": "custom-link",
-        "label": "字段验证",
+        "label": "التحقق من الحقول",
         "link": "/data-sources/data-modeling/collection-fields/validation"
       },
       {
         "type": "custom-link",
-        "label": "基本类型",
+        "label": "الأنواع الأساسية",
         "items": [
           {
             "type": "custom-link",
-            "label": "单行文本",
+            "label": "نص سطر واحد",
             "link": "/data-sources/data-modeling/collection-fields/basic/input"
           },
           {
             "type": "custom-link",
-            "label": "多行文本",
+            "label": "نص متعدد الأسطر",
             "link": "/data-sources/data-modeling/collection-fields/basic/textarea"
           },
           {
             "type": "custom-link",
-            "label": "手机号码",
+            "label": "رقم الهاتف المحمول",
             "link": "/data-sources/data-modeling/collection-fields/basic/phone"
           },
           {
             "type": "custom-link",
-            "label": "电子邮箱",
+            "label": "البريد الإلكتروني",
             "link": "/data-sources/data-modeling/collection-fields/basic/email"
           },
           {
@@ -172,70 +172,70 @@
           },
           {
             "type": "custom-link",
-            "label": "整数",
+            "label": "عدد صحيح",
             "link": "/data-sources/data-modeling/collection-fields/basic/integer"
           },
           {
             "type": "custom-link",
-            "label": "数字",
+            "label": "رقم",
             "link": "/data-sources/data-modeling/collection-fields/basic/number"
           },
           {
             "type": "custom-link",
-            "label": "百分比",
+            "label": "نسبة مئوية",
             "link": "/data-sources/data-modeling/collection-fields/basic/percent"
           },
           {
             "type": "custom-link",
-            "label": "密码",
+            "label": "كلمة المرور",
             "link": "/data-sources/data-modeling/collection-fields/basic/password"
           },
           {
             "type": "custom-link",
-            "label": "颜色",
+            "label": "لون",
             "link": "/data-sources/data-modeling/collection-fields/basic/color"
           },
           {
             "type": "custom-link",
-            "label": "图标",
+            "label": "أيقونة",
             "link": "/data-sources/data-modeling/collection-fields/basic/icon"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "选择类型",
+        "label": "أنواع الاختيار",
         "items": [
           {
             "type": "custom-link",
-            "label": "勾选",
+            "label": "خانة اختيار",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox"
           },
           {
             "type": "custom-link",
-            "label": "下拉菜单（单选）",
+            "label": "قائمة منسدلة (اختيار واحد)",
             "link": "/data-sources/data-modeling/collection-fields/choices/select"
           },
           {
             "type": "custom-link",
-            "label": "下拉菜单（多选）",
+            "label": "قائمة منسدلة (اختيار متعدد)",
             "link": "/data-sources/data-modeling/collection-fields/choices/multiple-select"
           },
           {
             "type": "custom-link",
-            "label": "单选框",
+            "label": "زر اختيار",
             "link": "/data-sources/data-modeling/collection-fields/choices/radio-group"
           },
           {
             "type": "custom-link",
-            "label": "复选框",
+            "label": "خانة اختيار",
             "link": "/data-sources/data-modeling/collection-fields/choices/checkbox-group"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "多媒体",
+        "label": "الوسائط المتعددة",
         "items": [
           {
             "type": "custom-link",
@@ -244,91 +244,91 @@
           },
           {
             "type": "custom-link",
-            "label": "Markdown(Vditor)",
+            "label": "Markdown (Vditor)",
             "link": "/data-sources/field-markdown-vditor/"
           },
           {
             "type": "custom-link",
-            "label": "富文本",
+            "label": "نص منسق",
             "link": "/data-sources/data-modeling/collection-fields/media/rich-text"
           },
           {
             "type": "custom-link",
-            "label": "附件（关系）",
+            "label": "مرفق (علا",
             "link": "/data-sources/file-manager/field-attachment"
           },
           {
             "type": "custom-link",
-            "label": "附件（URL）",
+            "label": "مرفق (URL)",
             "link": "/data-sources/field-attachment-url/"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "日期 & 时间",
+        "label": "التاريخ والوقت",
         "items": [
           {
             "type": "custom-link",
-            "label": "概述",
+            "label": "نظرة عامة",
             "link": "/data-sources/data-modeling/collection-fields/datetime"
           },
           {
             "type": "custom-link",
-            "label": "日期时间（含时区）",
+            "label": "التاريخ والوقت (مع المنطقة الزمنية)",
             "link": "/data-sources/data-modeling/collection-fields/datetime/datetime"
           },
           {
             "type": "custom-link",
-            "label": "日期时间（不含时区）",
+            "label": "التاريخ والوقت (بدون منطقة زمنية)",
             "link": "/data-sources/data-modeling/collection-fields/datetime/datetime-without-tz"
           },
           {
             "type": "custom-link",
-            "label": "Unix 时间戳",
+            "label": "طابع زمني Unix",
             "link": "/data-sources/data-modeling/collection-fields/datetime/unix-timestamp"
           },
           {
             "type": "custom-link",
-            "label": "日期（不含时间）",
+            "label": "التاريخ (بدون وقت)",
             "link": "/data-sources/data-modeling/collection-fields/datetime/date"
           },
           {
             "type": "custom-link",
-            "label": "时间",
+            "label": "الوقت",
             "link": "/data-sources/data-modeling/collection-fields/datetime/time"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "几何图形",
+        "label": "أشكال هندسية",
         "items": [
           {
             "type": "custom-link",
-            "label": "点",
+            "label": "نقطة",
             "link": "/data-sources/data-modeling/collection-fields/geometric/point"
           },
           {
             "type": "custom-link",
-            "label": "线",
+            "label": "خط",
             "link": "/data-sources/data-modeling/collection-fields/geometric/line"
           },
           {
             "type": "custom-link",
-            "label": "圆",
+            "label": "دائرة",
             "link": "/data-sources/data-modeling/collection-fields/geometric/circle"
           },
           {
             "type": "custom-link",
-            "label": "多边形",
+            "label": "مضلع",
             "link": "/data-sources/data-modeling/collection-fields/geometric/polygon"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "高级类型",
+        "label": "أنواع متقدمة",
         "items": [
           {
             "type": "custom-link",
@@ -342,17 +342,17 @@
           },
           {
             "type": "custom-link",
-            "label": "排序",
+            "label": "ترتيب",
             "link": "/data-sources/field-sort/"
           },
           {
             "type": "custom-link",
-            "label": "计算公式",
+            "label": "صيغة حسابية",
             "link": "/data-sources/field-formula/"
           },
           {
             "type": "custom-link",
-            "label": "自动编码",
+            "label": "ترميز تلقائي",
             "link": "/data-sources/field-sequence/"
           },
           {
@@ -362,43 +362,43 @@
           },
           {
             "type": "custom-link",
-            "label": "数据表选择器",
+            "label": "محدد جدول البيانات",
             "link": "/data-sources/data-modeling/collection-fields/advanced/collection-select"
           },
           {
             "type": "custom-link",
-            "label": "加密",
+            "label": "تشفير",
             "link": "/data-sources/field-encryption/"
           }
         ]
       },
       {
         "type": "custom-link",
-        "label": "系统信息",
+        "label": "معلومات النظام",
         "items": [
           {
             "type": "custom-link",
-            "label": "创建日期",
+            "label": "تاريخ الإنشاء",
             "link": "/data-sources/data-modeling/collection-fields/system-info/created-at"
           },
           {
             "type": "custom-link",
-            "label": "最后修改日期",
+            "label": "تاريخ آخر تعديل",
             "link": "/data-sources/data-modeling/collection-fields/system-info/updated-at"
           },
           {
             "type": "custom-link",
-            "label": "创建人",
+            "label": "المنشئ",
             "link": "/data-sources/data-modeling/collection-fields/system-info/created-by"
           },
           {
             "type": "custom-link",
-            "label": "最后修改人",
+            "label": "آخر معدّل",
             "link": "/data-sources/data-modeling/collection-fields/system-info/updated-by"
           },
           {
             "type": "custom-link",
-            "label": "空间",
+            "label": "المساحة",
             "link": "/data-sources/data-modeling/collection-fields/system-info/space"
           },
           {
@@ -410,36 +410,36 @@
       },
       {
         "type": "custom-link",
-        "label": "关系类型",
+        "label": "نوع العلاقة",
         "items": [
           {
             "type": "custom-link",
-            "label": "概述",
+            "label": "نظرة عامة",
             "link": "/data-sources/data-modeling/collection-fields/associations"
           },
           {
             "type": "custom-link",
-            "label": "一对一",
+            "label": "واحد لواحد",
             "link": "/data-sources/data-modeling/collection-fields/associations/o2o"
           },
           {
             "type": "custom-link",
-            "label": "一对多",
+            "label": "واحد لمتعدد",
             "link": "/data-sources/data-modeling/collection-fields/associations/o2m"
           },
           {
             "type": "custom-link",
-            "label": "多对一",
+            "label": "متعدد لواحد",
             "link": "/data-sources/data-modeling/collection-fields/associations/m2o"
           },
           {
             "type": "custom-link",
-            "label": "多对多",
+            "label": "متعدد لمتعدد",
             "link": "/data-sources/data-modeling/collection-fields/associations/m2m"
           },
           {
             "type": "custom-link",
-            "label": "多对多（数组）",
+            "label": "متعدد لمتعدد (مصفوفة)",
             "link": "/data-sources/field-m2m-array/"
           }
         ]
@@ -452,7 +452,7 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "نظرة عامة",
         "link": "/data-sources/development"
       }
     ]

@@ -10,17 +10,17 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "API 密钥",
+        "label": "API कुंजी",
         "link": "/integration/api-keys/"
       },
       {
         "type": "custom-link",
-        "label": "API 文档",
+        "label": "API डॉक्यूमेंटेशन",
         "link": "/integration/api-doc/"
       },
       {
         "type": "custom-link",
-        "label": "使用场景",
+        "label": "उपयोग परिदृश्य",
         "link": "/integration/api-keys/usage"
       }
     ]
@@ -32,7 +32,7 @@
   },
   {
     "type": "custom-link",
-    "label": "कार्यप्रवाह",
+    "label": "वर्कफ़्लो",
     "items": [
       {
         "type": "custom-link",
@@ -41,28 +41,28 @@
       },
       {
         "type": "custom-link",
-        "label": "HTTP 请求",
+        "label": "HTTP रिक्वेस्ट",
         "link": "/integration/workflow-http-request/"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "बाहरी डेटा स्रोत",
+    "label": "बाहरी डेटा सोर्स",
     "link": "/data-sources/"
   },
   {
     "type": "custom-link",
-    "label": "एम्बेडेड सामग्री",
+    "label": "एम्बेडेड कंटेंट",
     "items": [
       {
         "type": "custom-link",
-        "label": "Iframe 区块",
+        "label": "Iframe ब्लॉक",
         "link": "/integration/block-iframe/"
       },
       {
         "type": "custom-link",
-        "label": "嵌入",
+        "label": "एम्बेड करें",
         "link": "/integration/embed/"
       }
     ]

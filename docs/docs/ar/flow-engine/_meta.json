@@ -5,22 +5,22 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "什么是 FlowEngine？",
+        "label": "ما هو FlowEngine؟",
         "link": "/flow-engine/what-is-flow-engine"
       },
       {
         "type": "custom-link",
-        "label": "FlowEngine 与插件的关系",
+        "label": "العلاقة بين FlowEngine والإضافات",
         "link": "/flow-engine/flow-engine-and-plugins"
       },
       {
         "type": "custom-link",
-        "label": "快速开始",
+        "label": "بدء سريع",
         "link": "/flow-engine/quickstart"
       },
       {
         "type": "custom-link",
-        "label": "学习路线图",
+        "label": "خارطة طريق التعلم",
         "link": "/flow-engine/learning-roadmap"
       }
     ]
@@ -31,54 +31,54 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "注册 FlowModel",
+        "label": "تسجيل FlowModel",
         "link": "/flow-engine/register-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "创建 FlowModel",
+        "label": "إنشاء FlowModel",
         "link": "/flow-engine/create-flow-model"
       },
       {
         "type": "custom-link",
-        "label": "渲染 FlowModel",
+        "label": "عرض FlowModel",
         "link": "/flow-engine/flow-model-renderer"
       },
       {
         "type": "custom-link",
-        "label": "FlowModel 事件流与配置化",
+        "label": "تدفق أحداث FlowModel والإعداد",
         "link": "/flow-engine/flow-model-settings"
       },
       {
         "type": "custom-link",
-        "label": "FlowModel 持久化",
+        "label": "استمرارية FlowModel",
         "link": "/flow-engine/flow-model-repository"
       },
       {
         "type": "custom-link",
-        "label": "FlowModel 生命周期",
+        "label": "دورة حياة FlowModel",
         "link": "/flow-engine/flow-model-lifecycle"
       },
       {
         "type": "custom-link",
-        "label": "FlowModel 的上下文体系",
+        "label": "نظام سياق FlowModel",
         "link": "/flow-engine/flow-context"
       },
       {
         "type": "custom-link",
-        "label": "响应式机制：Observable",
+        "label": "آلية التفاعل: Observable",
         "link": "/flow-engine/observable"
       },
       {
         "type": "custom-link",
-        "label": "FlowModel vs React.Component",
+        "label": "FlowModel مقابل React.Component",
         "link": "/flow-engine/flow-model-vs-react-component"
       }
     ]
   },
   {
     "type": "custom-link",
-    "label": "تعريفات",
+    "label": "Definitions",
     "items": [
       {
         "type": "custom-link",

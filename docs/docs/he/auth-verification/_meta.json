@@ -5,26 +5,26 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "סקירה כללית",
         "link": "/auth-verification/auth/"
       },
       {
         "type": "custom-link",
-        "label": "认证器管理",
+        "label": "ניהול מאמתים",
         "link": "/auth-verification/auth/authenticators"
       },
       {
         "type": "custom-link",
-        "label": "认证类型",
+        "label": "סוגי אימות",
         "items": [
           {
             "type": "custom-link",
-            "label": "密码",
+            "label": "סיסמה",
             "link": "/auth-verification/auth/password"
           },
           {
             "type": "custom-link",
-            "label": "短信",
+            "label": "SMS",
             "link": "/auth-verification/auth-sms/"
           },
           {
@@ -34,21 +34,21 @@
             "items": [
               {
                 "type": "custom-link",
-                "label": "配置",
+                "label": "הגדרות",
                 "link": "/auth-verification/auth-oidc/"
               },
               {
                 "type": "custom-link",
-                "label": "示例",
+                "label": "דוגמה",
                 "items": [
                   {
                     "type": "custom-link",
-                    "label": "谷歌登录",
+                    "label": "התחברות עם גוגל",
                     "link": "/auth-verification/auth-oidc/examples/google"
                   },
                   {
                     "type": "custom-link",
-                    "label": "微软登录",
+                    "label": "התחברות עם מיקרוסופט",
                     "link": "/auth-verification/auth-oidc/examples/microsoft"
                   }
                 ]
@@ -62,16 +62,16 @@
             "items": [
               {
                 "type": "custom-link",
-                "label": "配置",
+                "label": "הגדרות",
                 "link": "/auth-verification/auth-saml/"
               },
               {
                 "type": "custom-link",
-                "label": "示例",
+                "label": "דוגמה",
                 "items": [
                   {
                     "type": "custom-link",
-                    "label": "谷歌登录",
+                    "label": "התחברות עם גוגל",
                     "link": "/auth-verification/auth-saml/examples/google"
                   }
                 ]
@@ -90,34 +90,34 @@
           },
           {
             "type": "custom-link",
-            "label": "企业微信",
+            "label": "WeChat Work",
             "link": "/auth-verification/auth-wecom/"
           },
           {
             "type": "custom-link",
-            "label": "钉钉",
+            "label": "DingTalk",
             "link": "/auth-verification/auth-dingtalk/"
           },
           {
             "type": "custom-link",
-            "label": "API 密钥",
+            "label": "API Key",
             "link": "/auth-verification/api-keys/"
           }
         ]
       },
       {
         "type": "dir",
-        "label": "开发指南",
+        "label": "מדריך למפתחים",
         "collapsed": true,
         "items": [
           {
             "type": "custom-link",
-            "label": "扩展认证类型",
+            "label": "סוגי אימות מורחבים",
             "link": "/auth-verification/auth/dev"
           },
           {
             "type": "custom-link",
-            "label": "API 参考",
+            "label": "API Reference",
             "link": "/auth-verification/auth/dev/api"
           }
         ]
@@ -130,21 +130,21 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "概述",
+        "label": "סקירה כללית",
         "link": "/auth-verification/verification/"
       },
       {
         "type": "custom-link",
-        "label": "验证类型",
+        "label": "סוגי אימות",
         "items": [
           {
             "type": "custom-link",
-            "label": "短信",
+            "label": "SMS",
             "link": "/auth-verification/verification/sms"
           },
           {
             "type": "custom-link",
-            "label": "TOTP 认证器",
+            "label": "TOTP Authenticator",
             "link": "/auth-verification/verification-totp/"
           }
         ]
@@ -152,26 +152,26 @@
       {
         "type": "dir",
         "collapsed": true,
-        "label": "开发指南",
+        "label": "מדריך למפתחים",
         "items": [
           {
             "type": "custom-link",
-            "label": "扩展验证类型",
+            "label": "סוגי אימות מורחבים",
             "link": "/auth-verification/verification/dev/type"
           },
           {
             "type": "custom-link",
-            "label": "扩展验证场景",
+            "label": "תרחישי אימות מורחבים",
             "link": "/auth-verification/verification/dev/scene"
           },
           {
             "type": "custom-link",
-            "label": "扩展短信服务商",
+            "label": "ספקי SMS מורחבים",
             "link": "/auth-verification/verification/dev/sms-type"
           },
           {
             "type": "custom-link",
-            "label": "API 参考",
+            "label": "API Reference",
             "link": "/auth-verification/verification/dev/api"
           }
         ]

@@ -10,17 +10,17 @@
     "items": [
       {
         "type": "custom-link",
-        "label": "API 密钥",
+        "label": "API Key",
         "link": "/integration/api-keys/"
       },
       {
         "type": "custom-link",
-        "label": "API 文档",
+        "label": "תיעוד API",
         "link": "/integration/api-doc/"
       },
       {
         "type": "custom-link",
-        "label": "使用场景",
+        "label": "תרחישי שימוש",
         "link": "/integration/api-keys/usage"
       }
     ]
@@ -41,7 +41,7 @@
       },
       {
         "type": "custom-link",
-        "label": "HTTP 请求",
+        "label": "בקשת HTTP",
         "link": "/integration/workflow-http-request/"
       }
     ]
@@ -53,16 +53,16 @@
   },
   {
     "type": "custom-link",
-    "label": "תוכן מוטבע",
+    "label": "תוכן מוטמע",
     "items": [
       {
         "type": "custom-link",
-        "label": "Iframe 区块",
+        "label": "בלוק Iframe",
         "link": "/integration/block-iframe/"
       },
       {
         "type": "custom-link",
-        "label": "嵌入",
+        "label": "הטמעה",
         "link": "/integration/embed/"
       }
     ]
