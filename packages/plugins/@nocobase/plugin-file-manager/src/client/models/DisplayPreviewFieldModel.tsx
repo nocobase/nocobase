@@ -223,7 +223,11 @@ const Preview = (props) => {
     >
       <Space size={5} wrap={true}>
         {Array.isArray(value) &&
-          value.map((file, index) => <FilePreview file={file} size={size} key={index} showFileName={showFileName} />)}
+          value.map((file, index) => (
+            <div style={{ border: '1px solid #d9d9d9', padding: '2px', borderRadius: '4px' }} key={index}>
+              <FilePreview file={file} size={size} key={index} showFileName={showFileName} />
+            </div>
+          ))}
       </Space>
     </Image.PreviewGroup>
   );
