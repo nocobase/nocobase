@@ -9,3 +9,4 @@
 
 export * from './connectFields';
 export * from './defaultOperator';
+export * from './customizeFilterRender';
