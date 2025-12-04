@@ -153,9 +153,9 @@ export function useDialog() {
             key={`dialog-${uuid}`}
             ref={dialogRef}
             hidden={config.inputArgs?.hidden?.value}
-            {...config}
             footer={currentFooter}
             header={currentHeader}
+            {...config}
             afterClose={() => {
               closeFunc?.();
               config.onClose?.();
