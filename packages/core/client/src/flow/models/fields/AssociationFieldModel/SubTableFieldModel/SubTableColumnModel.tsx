@@ -79,7 +79,6 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
 
       return <Input value={inputValue} />;
     } else {
-      console.log(8888);
       return <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />;
     }
   }, [collectionField.interface, defaultValue, fieldModel]);
