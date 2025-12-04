@@ -111,7 +111,9 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     super.onInit(options);
     this.emitter.on('onSubModelAdded', (subModel: FieldModel) => {
       if (this.collectionField) {
-        subModel.setProps(this.collectionField.getComponentProps());
+        const componentProps = this.collectionField.getComponentProps();
+        subModel.setProps(componentProps);
+        this.setProps({ ...(_.pick(componentProps, 'rules') || {}) });
       }
     });
   }
@@ -201,9 +203,6 @@ FormItemModel.registerFlow({
         const fullName = fieldPath.includes('.') ? fieldPath.split('.') : fieldPath;
         ctx.model.setProps({
           name: fullName,
-        });
-        ctx.model.setProps({
-          ...ctx.collectionField.getComponentProps(),
         });
       },
     },
