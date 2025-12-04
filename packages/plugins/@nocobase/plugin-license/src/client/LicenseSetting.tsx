@@ -9,12 +9,11 @@
 
 import React, { useState, useEffect } from 'react';
 import { SchemaComponent, useAPIClient, useFormBlockContext } from '@nocobase/client';
-import { Card, Typography, Spin, message, Input, Button, Alert } from 'antd';
+import { Card, Typography, Spin, message, Input, Button, Alert, Modal } from 'antd';
 import { useAsyncEffect } from 'ahooks';
 import { useT } from './locale';
 import { CopyOutlined } from '@ant-design/icons';
 import { LicenseValidate } from './LicenseValidate';
-import { LicenseValidateResult } from '@nocobase/utils';
 import { LICENSE_TIPS } from '../const';
 
 const copyTextToClipboard = ({
@@ -115,7 +114,49 @@ const useSubmitProps = () => {
         },
       });
       setLoading(false);
-      const licenseValidateResult: LicenseValidateResult = res?.data?.data || {};
+      const licenseValidateResult: any = res?.data?.data || {};
+      if (!licenseValidateResult.envMatch) {
+        Modal.error({
+          title: t('Environment mismatch'),
+          content: (
+            <>
+              {t(
+                'The licensed environment does not match the current environment. Please go to NocoBase Service to obtain a new license key.',
+              )}
+              <br />
+              {t('Current environment')}:
+              <ul style={{ margin: 0 }}>
+                <li>
+                  {t('System')}:{' '}
+                  <strong>
+                    {licenseValidateResult?.current?.env?.sys} {licenseValidateResult?.current?.env?.osVer}
+                  </strong>
+                </li>
+                <li>
+                  {t('Database')}:{' '}
+                  <strong>
+                    {licenseValidateResult?.current?.env?.db?.type} ({licenseValidateResult?.current?.env?.db?.name})
+                  </strong>
+                </li>
+              </ul>
+            </>
+          ),
+        });
+        return;
+      }
+      if (!licenseValidateResult.domainMatch) {
+        Modal.error({
+          title: t('Domain mismatch'),
+          content: t(
+            'The licensed domain does not match the current domain {{domain}}. Please go to NocoBase Service to obtain a new license key.',
+            {
+              domain: licenseValidateResult.current.domain,
+              interpolation: { escapeValue: false },
+            },
+          ),
+        });
+        return;
+      }
       if (licenseValidateResult.isPkgConnection === false) {
         message.success(t('The license key was saved successfully'), 5);
         message.warning(t(LICENSE_TIPS.PKG_CONNECTION_ERROR), 5);

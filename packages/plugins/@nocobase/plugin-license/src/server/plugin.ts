@@ -34,23 +34,12 @@ export class PluginLicenseServer extends Plugin {
           }
 
           const licenseValidate = await getLicenseValidate({ key: licenseKey, ctx });
-          if (!licenseValidate.envMatch) {
-            return ctx.throw(500, ctx.t(LICENSE_TIPS.ENV_NOT_MATCH, { ns: '@nocobase/plugin-license' }));
-          }
-          if (!licenseValidate.domainMatch) {
-            return ctx.throw(
-              500,
-              ctx.t(LICENSE_TIPS.DOMAIN_NOT_MATCH, {
-                ns: '@nocobase/plugin-license',
-                domain: licenseValidate.current.domain,
-                interpolation: { escapeValue: false },
-              }),
-            );
-          }
           ctx.body = {
             ...licenseValidate,
           };
-          await saveLicenseKey(licenseKey);
+          if (licenseValidate.envMatch && licenseValidate.domainMatch) {
+            await saveLicenseKey(licenseKey);
+          }
           await next();
         },
         'is-exists': async (ctx, next) => {
