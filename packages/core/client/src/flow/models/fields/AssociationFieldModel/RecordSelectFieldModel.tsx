@@ -28,6 +28,7 @@ import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { LabelByField, resolveOptions, toSelectValue, type LazySelectProps } from './recordSelectShared';
 import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
+import { BlockSceneEnum } from '../../base';
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
@@ -532,6 +533,9 @@ RecordSelectFieldModel.registerFlow({
       title: tExpr('Quick create'),
       uiSchema(ctx) {
         const t = ctx.t;
+        if (ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter) {
+          return null;
+        }
         return {
           quickCreate: {
             enum: [
