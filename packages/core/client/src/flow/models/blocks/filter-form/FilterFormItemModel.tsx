@@ -355,6 +355,9 @@ FilterFormItemModel.registerFlow({
     defaultOperator: {
       use: 'defaultOperator',
     },
+    operatorComponentProps: {
+      use: 'operatorComponentProps',
+    },
     customizeFilterRender: {
       use: 'customizeFilterRender',
     },

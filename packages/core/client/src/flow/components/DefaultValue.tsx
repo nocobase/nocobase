@@ -492,6 +492,20 @@ export const DefaultValue = connect((props: Props) => {
       fieldModel.render = originalRender;
     }
   }, [model, tempRoot, (model as any)?.operator]);
+
+  // 根据操作符 schema 的 x-component-props 补全临时字段的输入属性（如多选）
+  React.useEffect(() => {
+    const operator = (model as any)?.operator;
+    const fieldModel = tempRoot?.subModels?.fields?.[0];
+    if (!fieldModel || !operator) return;
+    const ops = model.collectionField?.filterable?.operators || [];
+    const meta = ops.find((op) => op.value === operator);
+    const xComponentProps = meta?.schema?.['x-component-props'];
+    if (xComponentProps) {
+      fieldModel.setProps(xComponentProps);
+    }
+  }, [model, tempRoot, (model as any)?.operator]);
+
   const NullComponent = useMemo(() => {
     function NullValuePlaceholder() {
       return <Input placeholder={`<${flowContext.t?.('Null') ?? 'Null'}>`} readOnly />;
