@@ -21,36 +21,32 @@ function ensureDir(dir) {
 function createSystemLogger({ dirname, filename, defaultMeta = {} }) {
   ensureDir(dirname);
 
+  // 公用格式（无颜色版本用于文件）
+  const commonFormat = winston.format.combine(
+    winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+    winston.format.printf((info) => {
+      const meta = info.meta ? JSON.stringify(info.meta) : '';
+      return `${info.timestamp} [${info.level}] ${info.message} ${meta}`;
+    }),
+  );
+
+  // 控制台格式（带颜色）
+  const consoleFormat = winston.format.combine(winston.format.colorize(), commonFormat);
+
   const fileTransport = new winston.transports.DailyRotateFile({
     dirname,
     filename: `${filename}_%DATE%.log`,
     datePattern: 'YYYY-MM-DD',
     zippedArchive: false,
+    format: commonFormat,
   });
 
   const consoleTransport = new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.timestamp(),
-      winston.format.printf((info) => {
-        const meta = info.meta ? JSON.stringify(info.meta) : '';
-        return `${info.timestamp} [${info.level}] ${info.message} ${meta}`;
-      }),
-    ),
+    format: consoleFormat,
   });
 
   const logger = winston.createLogger({
     level: 'info',
-    format: winston.format.combine(
-      winston.format.colorize({ all: true }),
-      winston.format.timestamp({
-        format: 'YYYY-MM-DD HH:mm:ss',
-      }),
-      winston.format.printf((info) => {
-        const meta = info.meta ? JSON.stringify(info.meta) : '';
-        return `${info.timestamp} [${info.level}] ${info.message} ${meta}`;
-      }),
-    ),
     transports: [consoleTransport, fileTransport],
     defaultMeta,
   });
@@ -74,10 +70,6 @@ const getLoggerFilePath = (...paths) => {
 const logger = createSystemLogger({
   dirname: getLoggerFilePath('main'),
   filename: 'system',
-  // defaultMeta: {
-  //   app: 'main',
-  //   module: 'cli',
-  // },
 });
 
 module.exports = {

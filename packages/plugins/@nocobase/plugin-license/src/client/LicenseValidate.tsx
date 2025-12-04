@@ -69,7 +69,10 @@ export const LicenseValidate = () => {
             {t('Current environment')}
             <ul style={{ margin: 0 }}>
               <li>
-                {t('System')}: <strong>{state?.current?.env?.sys}</strong>
+                {t('System')}:{' '}
+                <strong>
+                  {state?.current?.env?.sys} {state?.current?.env?.osVer}
+                </strong>
               </li>
               <li>
                 {t('Database')}:{' '}

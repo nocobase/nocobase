@@ -113,7 +113,7 @@ export function parseKey(key: string): KeyData {
   try {
     return JSON.parse(keyDecrypt(key));
   } catch (e) {
-    throw new Error(LICENSE_ERROR.KEY_FORMAT_ERROR);
+    throw new Error('The license key parsing failed, Please check and reconfigure it.');
   }
 }
 
