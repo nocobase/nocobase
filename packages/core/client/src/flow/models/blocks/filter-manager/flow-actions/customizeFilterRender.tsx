@@ -27,7 +27,7 @@ function rewrapReactiveRender(fieldModel: any) {
   fieldModel.setupReactiveRender?.();
 }
 
-export function applyCustomizeFilterRender(model: FilterFormItemModel) {
+function applyCustomizeFilterRender(model: FilterFormItemModel) {
   const operator = model.operator;
   const fieldModel = model.subModels?.field;
   if (!fieldModel) return;
