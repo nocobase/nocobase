@@ -32,6 +32,7 @@ import { TableColumnProps, Tooltip } from 'antd';
 import { get, omit } from 'lodash';
 import React, { useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { getRowKey } from './utils';
 
 function FieldDeletePlaceholder() {
   const { t } = useTranslation();
@@ -202,7 +203,8 @@ export class TableColumnModel extends DisplayItemModel {
     return (value, record, index) => (
       <>
         {this.mapSubModels('field', (field) => {
-          const fork = field.createFork({}, `${record.__index || index}`);
+          const rowKey = getRowKey(record, this.context.collection.filterTargetKey);
+          const fork = field.createFork({}, `${record.__index || index}_${rowKey}`);
           const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
             () => fork.context.collection,
             fork.context.t('Current record'),
