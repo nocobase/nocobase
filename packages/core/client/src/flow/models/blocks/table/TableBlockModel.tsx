@@ -376,7 +376,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     );
   };
 
-  renderConfiguireActions() {
+  renderConfigureActions() {
     return (
       <AddSubModelButton
         key={'table-column-add-actions'}
@@ -443,6 +443,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
 
   renderComponent() {
     const highlightedRowKey = this.props.highlightedRowKey;
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
     return !this.columns.value.length ? (
       <Skeleton paragraph={{ rows: 3 }} />
     ) : (
@@ -477,6 +478,9 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
             </Space>
             <Space wrap>
               {this.mapSubModels('actions', (action) => {
+                if (action.hidden && !isConfigMode) {
+                  return;
+                }
                 // @ts-ignore
                 if (action.props.position !== 'left') {
                   return (
@@ -498,7 +502,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
 
                 return null;
               })}
-              {this.renderConfiguireActions()}
+              {this.renderConfigureActions()}
             </Space>
           </div>
         </DndProvider>

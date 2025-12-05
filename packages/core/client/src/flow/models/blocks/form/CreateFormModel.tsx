@@ -46,21 +46,27 @@ export class CreateFormModel extends FormBlockModel {
 
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
     return (
       <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
           <Space>
-            {this.mapSubModels('actions', (action) => (
-              <Droppable model={action} key={action.uid}>
-                <MemoFlowModelRenderer
-                  key={action.uid}
-                  model={action}
-                  showFlowSettings={this.flowEngine.flowSettings.enabled ? this.actionFlowSettings : false}
-                  extraToolbarItems={this.actionExtraToolbarItems}
-                />
-              </Droppable>
-            ))}
+            {this.mapSubModels('actions', (action) => {
+              if (action.hidden && !isConfigMode) {
+                return;
+              }
+              return (
+                <Droppable model={action} key={action.uid}>
+                  <MemoFlowModelRenderer
+                    key={action.uid}
+                    model={action}
+                    showFlowSettings={this.flowEngine.flowSettings.enabled ? this.actionFlowSettings : false}
+                    extraToolbarItems={this.actionExtraToolbarItems}
+                  />
+                </Droppable>
+              );
+            })}
             {this.renderConfigureActions()}
           </Space>
         </DndProvider>
