@@ -634,12 +634,11 @@ export class PluginACLServer extends Plugin {
       dataSource.acl.use(checkAssociationOperate, {
         before: 'core',
       });
+      dataSource.resourceManager.registerPreActionHandler('create', checkChangesWithAssociation);
+      dataSource.resourceManager.registerPreActionHandler('firstOrCreate', checkChangesWithAssociation);
+      dataSource.resourceManager.registerPreActionHandler('updateOrCreate', checkChangesWithAssociation);
+      dataSource.resourceManager.registerPreActionHandler('update', checkChangesWithAssociation);
     });
-
-    this.app.resourceManager.registerPreActionHandler('create', checkChangesWithAssociation);
-    this.app.resourceManager.registerPreActionHandler('firstOrCreate', checkChangesWithAssociation);
-    this.app.resourceManager.registerPreActionHandler('updateOrCreate', checkChangesWithAssociation);
-    this.app.resourceManager.registerPreActionHandler('update', checkChangesWithAssociation);
 
     this.db.on('afterUpdateCollection', async (collection) => {
       if (collection.options.loadedFromCollectionManager || collection.options.asStrategyResource) {

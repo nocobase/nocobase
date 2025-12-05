@@ -136,6 +136,12 @@ describe('Change with association', async () => {
   });
 
   afterEach(async () => {
+    await db.getRepository('assoc1').destroy({
+      truncate: true,
+    });
+    await db.getRepository('assoc2').destroy({
+      truncate: true,
+    });
     await db.clean({ drop: true });
     await app.destroy();
   });
@@ -162,6 +168,7 @@ describe('Change with association', async () => {
 
     const ctx: any = app.context;
     ctx.database = db;
+    ctx.app = app;
     ctx.state = {
       currentUser: user,
       currentRoles: ['test-role'],
@@ -207,6 +214,7 @@ describe('Change with association', async () => {
     });
 
     const ctx = app.context;
+    ctx.app = app;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -267,6 +275,7 @@ describe('Change with association', async () => {
     });
 
     const ctx = app.context;
+    ctx.app = app;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -336,6 +345,7 @@ describe('Change with association', async () => {
     });
 
     const ctx = app.context;
+    ctx.app = app;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -421,6 +431,7 @@ describe('Change with association', async () => {
     });
 
     const ctx = app.context;
+    ctx.app = app;
     ctx.get = () => '';
     ctx.database = db;
     ctx.state = {
@@ -502,6 +513,7 @@ describe('Change with association', async () => {
     });
 
     const ctx = app.context;
+    ctx.app = app;
     ctx.get = () => '';
     ctx.database = db;
     ctx.state = {
@@ -574,6 +586,7 @@ describe('Change with association', async () => {
     });
 
     const ctx = app.context;
+    ctx.app = app;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -657,6 +670,7 @@ describe('Change with association', async () => {
     });
 
     const ctx = app.context;
+    ctx.app = app;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -757,6 +771,7 @@ describe('Change with association', async () => {
     });
 
     const ctx = app.context;
+    ctx.app = app;
     ctx.get = () => '';
     ctx.database = db;
     ctx.state = {
@@ -855,6 +870,7 @@ describe('Change with association', async () => {
     });
 
     const ctx = app.context;
+    ctx.app = app;
     ctx.get = () => '';
     ctx.database = db;
     ctx.state = {
@@ -922,6 +938,7 @@ describe('Change with association', async () => {
     });
 
     const ctx = app.context;
+    ctx.app = app;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -979,6 +996,7 @@ describe('Change with association', async () => {
     });
 
     const ctx = app.context;
+    ctx.app = app;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -1031,6 +1049,7 @@ describe('Change with association', async () => {
     });
 
     const ctx = app.context;
+    ctx.app = app;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
