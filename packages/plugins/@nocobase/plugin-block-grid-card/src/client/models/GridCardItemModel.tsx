@@ -88,7 +88,7 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
     return (
-      <Card bordered={false} role="button" aria-label="grid-card-item">
+      <Card role="button">
         <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
           <FlowModelRenderer model={grid as any} showFlowSettings={false} />
         </FormComponent>
