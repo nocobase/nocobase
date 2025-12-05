@@ -70,6 +70,7 @@ export class ActionPanelBlockModel extends BlockModel {
     const { layout, ellipsis } = this.props;
 
     const token = this.context.themeToken;
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
 
     return (
       <div id={`model-${this.uid}`} className="action-panel-block">
@@ -79,6 +80,9 @@ export class ActionPanelBlockModel extends BlockModel {
               {layout === WorkbenchLayout.Grid ? (
                 <ResponsiveSpace>
                   {this.mapSubModels('actions', (action: ActionModel) => {
+                    if (action.hidden && !isConfigMode) {
+                      return;
+                    }
                     const { icon, color = '#1677FF', title } = action.props;
                     action.enableEditDanger = false;
                     action.enableEditType = false;
