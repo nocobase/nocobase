@@ -270,19 +270,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         // 仅使用静态流（类级全局注册的 flows）
         const flowsMap = new Map((targetModel.constructor as typeof FlowModel).globalFlowRegistry.getFlows());
 
-        // 如果有原始 use 且与当前类不同，合并原始模型类的静态 flows（用于入口模型 resolveUse 场景）
-        const originUse = targetModel?.use;
-        if (typeof originUse === 'string' && originUse !== targetModel.constructor.name) {
-          const originCls = targetModel.flowEngine?.getModelClass(originUse) as typeof FlowModel | undefined;
-          if (originCls?.globalFlowRegistry) {
-            for (const [k, v] of originCls.globalFlowRegistry.getFlows()) {
-              if (!flowsMap.has(k)) {
-                flowsMap.set(k, v);
-              }
-            }
-          }
-        }
-
         const flows = flowsMap;
 
         const flowsArray = Array.from(flows.values());
