@@ -39,6 +39,8 @@ export class FilterFormBlockModel extends FilterBlockModel<{
    */
   autoTriggerFilter = true;
 
+  private removeTargetBlockListener?: () => void;
+
   get form() {
     return this.context.form;
   }
@@ -74,6 +76,47 @@ export class FilterFormBlockModel extends FilterBlockModel<{
     this.context.defineProperty('filterFormGridModel', {
       value: this.subModels.grid,
     });
+
+    // 监听页面区块删除，自动清理已失效的筛选字段
+    const blockGridModel = this.context.blockGridModel;
+    if (blockGridModel?.emitter) {
+      const handleTargetRemoved = (model) => {
+        if (!model?.uid || model.uid === this.uid) return;
+        this.handleTargetBlockRemoved(model.uid);
+      };
+      blockGridModel.emitter.on('onSubModelRemoved', handleTargetRemoved);
+      this.removeTargetBlockListener = () => blockGridModel.emitter.off('onSubModelRemoved', handleTargetRemoved);
+    }
+  }
+
+  onUnmount() {
+    this.removeTargetBlockListener?.();
+    super.onUnmount();
+  }
+
+  private async handleTargetBlockRemoved(targetUid: string) {
+    const filterManager: FilterManager = this.context.filterManager;
+    const gridModel = this.subModels.grid;
+    const fieldModels: FilterFormItemModel[] = gridModel.subModels.items || [];
+
+    for (const fieldModel of [...fieldModels]) {
+      const connectConfig = filterManager.getConnectFieldsConfig(fieldModel.uid);
+      const targets = connectConfig?.targets || [];
+      const hasTarget = targets.some((target) => target.targetId === targetUid);
+      const defaultMatches = fieldModel.defaultTargetUid === targetUid;
+
+      if (!hasTarget && !defaultMatches) continue;
+
+      const remainingTargets = targets.filter((target) => target.targetId !== targetUid);
+
+      if (remainingTargets.length > 0) {
+        await filterManager.saveConnectFieldsConfig(fieldModel.uid, { targets: remainingTargets });
+        continue;
+      }
+
+      await filterManager.removeFilterConfig({ filterId: fieldModel.uid });
+      await fieldModel.destroy();
+    }
   }
 
   async destroy(): Promise<boolean> {
