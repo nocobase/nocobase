@@ -51,6 +51,9 @@ export const ObjectNester = (props) => {
       get: () => record,
       cache: false,
     });
+    fork.context.defineProperty('fieldKey', {
+      get: () => rowIndex,
+    });
 
     return fork;
   }, [gridModel, rowIndex, record]);

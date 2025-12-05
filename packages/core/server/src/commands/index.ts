@@ -23,6 +23,7 @@ import start from './start';
 import stop from './stop';
 import upgrade from './upgrade';
 import consoleCommand from './console';
+import repair from './repair';
 
 export function registerCli(app: Application) {
   consoleCommand(app);
@@ -39,6 +40,7 @@ export function registerCli(app: Application) {
   destroy(app);
   start(app);
   refresh(app);
+  repair(app);
 
   // development only with @nocobase/cli
   app.command('build').argument('[packages...]');
