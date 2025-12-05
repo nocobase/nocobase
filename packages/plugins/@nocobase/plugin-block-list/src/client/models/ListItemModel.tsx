@@ -69,6 +69,8 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
       get: () => index,
     });
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+
     return (
       <div key={this.context.index} style={{ width: '100%' }}>
         <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
@@ -86,6 +88,9 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
               >
                 {this.mapSubModels('actions', (action) => {
                   const fork = action.createFork({}, `${index}`);
+                  if (fork.hidden && !isConfigMode) {
+                    return;
+                  }
                   const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
                     () => (fork.context as any).collection,
                     fork.context.t('Current record'),

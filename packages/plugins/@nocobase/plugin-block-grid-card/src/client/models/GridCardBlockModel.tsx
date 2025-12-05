@@ -125,6 +125,7 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
   renderComponent() {
     const { columnCount } = this.props;
     const token = this.context.themeToken;
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
     return (
       <>
         <DndProvider>
@@ -149,6 +150,9 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
             </Space>
             <Space wrap>
               {this.mapSubModels('actions', (action) => {
+                if (action.hidden && !isConfigMode) {
+                  return;
+                }
                 // @ts-ignore
                 if (action.props.position !== 'left') {
                   return (
