@@ -29,5 +29,6 @@
   "You can view operation guidelines: ": "您可以查看操作指南：",
   "Network exception": "网络异常",
   "The license key was saved successfully. To install commercial plugins, please restart the NocoBase service.": "授权密钥保存成功。如需安装商业插件，请重新启动NocoBase服务。",
-  "The license key has expired": "授权已过期"
+  "The license key has expired": "授权已过期",
+  "The license key is invalid": "授权密钥无效"
 }

@@ -25,6 +25,7 @@ export interface LicenseValidateResult {
   isExpired: boolean;
   keyData: KeyData;
   pkgUrl: string;
+  licenseStatus: 'active' | 'invalid';
 }
 
 export async function getLicenseValidate({ key, ctx }: { key?: string; ctx?: any }): Promise<LicenseValidateResult> {
@@ -49,5 +50,6 @@ export async function getLicenseValidate({ key, ctx }: { key?: string; ctx?: any
     isPkgLogin,
     isExpired,
     pkgUrl: getNocoBasePkgUrl(),
+    licenseStatus: keyData?.licenseKey?.licenseStatus as any,
   };
 }

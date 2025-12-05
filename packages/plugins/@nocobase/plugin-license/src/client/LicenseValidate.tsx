@@ -28,6 +28,7 @@ export const LicenseValidate = () => {
     isPkgLogin: boolean;
     pkgUrl: string;
     isExpired: boolean;
+    licenseStatus?: string;
   }>(null);
 
   const { i18n } = useTranslation();
@@ -47,8 +48,27 @@ export const LicenseValidate = () => {
       });
   }, []);
 
+  const helps = (
+    <>
+      {t('You can view common causes and solutions: ')}
+      {i18n.language === 'zh-CN' ? (
+        <a href="https://service-cn.nocobase.com/admin/rr0evd4ursl" target="_blank" rel="noreferrer">
+          https://service-cn.nocobase.com/admin/rr0evd4ursl
+        </a>
+      ) : (
+        <a href="https://service-en.nocobase.com/admin/pbox06h0o90" target="_blank" rel="noreferrer">
+          https://service-en.nocobase.com/admin/pbox06h0o90
+        </a>
+      )}
+    </>
+  );
+
+  if (state?.licenseStatus && state?.licenseStatus !== 'active') {
+    return <Alert message={t('The license key is invalid')} type="error" description={helps} />;
+  }
+
   if (state?.isExpired) {
-    return <Alert message={t('The license key has expired')} type="error" />;
+    return <Alert message={t('The license key has expired')} type="error" description={helps} />;
   }
 
   if (state?.envMatch === false) {
@@ -74,16 +94,7 @@ export const LicenseValidate = () => {
                 </strong>
               </li>
             </ul>
-            {t('You can view common causes and solutions: ')}
-            {i18n.language === 'zh-CN' ? (
-              <a href="https://service-cn.nocobase.com/admin/rr0evd4ursl" target="_blank" rel="noreferrer">
-                https://service-cn.nocobase.com/admin/rr0evd4ursl
-              </a>
-            ) : (
-              <a href="https://service-en.nocobase.com/admin/pbox06h0o90" target="_blank" rel="noreferrer">
-                https://service-en.nocobase.com/admin/pbox06h0o90
-              </a>
-            )}
+            {helps}
           </>
         }
         type="error"
@@ -101,16 +112,7 @@ export const LicenseValidate = () => {
             <br />
             {t('Current domain')}: <strong>{state?.current?.domain}</strong>
             <br />
-            {t('You can view common causes and solutions: ')}
-            {i18n.language === 'zh-CN' ? (
-              <a href="https://service-cn.nocobase.com/admin/rr0evd4ursl" target="_blank" rel="noreferrer">
-                https://service-cn.nocobase.com/admin/rr0evd4ursl
-              </a>
-            ) : (
-              <a href="https://service-en.nocobase.com/admin/pbox06h0o90" target="_blank" rel="noreferrer">
-                https://service-en.nocobase.com/admin/pbox06h0o90
-              </a>
-            )}
+            {helps}
           </>
         }
         type="error"

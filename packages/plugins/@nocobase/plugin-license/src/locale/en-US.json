@@ -16,5 +16,6 @@
   "The current key cannot log in to NocoBase Service, only manual installation of commercial plugins is supported.": "The current key cannot log in to NocoBase Service, only manual installation of commercial plugins is supported.",
   "The license key was saved successfully": "The license key was saved successfully",
   "The license key was saved successfully. To install commercial plugins, please restart the NocoBase service.": "The license key was saved successfully. To install commercial plugins, please restart the NocoBase service.",
-  "The license key has expired": "The license key has expired"
+  "The license key has expired": "The license key has expired",
+  "The license key is invalid": "The license key is invalid"
 }

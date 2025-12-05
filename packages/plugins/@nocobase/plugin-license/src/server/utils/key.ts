@@ -62,29 +62,47 @@ export async function request(
   }
 }
 
+export async function saveLicenseKey(licenseKey: string, ctx?: any) {
+  const dir = path.resolve(process.cwd(), 'storage/.license');
+  const filePath = path.resolve(dir, 'license-key');
+  await fs.promises.writeFile(filePath, licenseKey);
+
+  if (ctx && ctx.cache) {
+    await ctx.cache.set('license-key', licenseKey);
+  }
+}
+
 export async function getKey(ctx?: Context): Promise<string> {
+  let key: string | undefined;
+  const keyFile = path.resolve(process.cwd(), 'storage/.license/license-key');
+
   if (ctx?.cache) {
-    const cacheKey = await ctx.cache.get(CACHE_KEY);
-    if (cacheKey) {
-      return cacheKey;
+    try {
+      key = await ctx.cache.get(CACHE_KEY);
+    } catch (e) {
+      logger.warn('Failed to get license key from cache', e);
     }
   }
-  let key: string;
+
+  if (!key) {
+    try {
+      key = (await fs.promises.readFile(keyFile, 'utf8')).trim();
+    } catch (e) {
+      throw new Error('License key file not found or unreadable. Please configure the license key.');
+    }
+  }
+
+  if (!key) {
+    throw new Error('License key file not found or unreadable. Please configure the license key.');
+  }
+
   let keyData: KeyData;
-  const keyFile = path.resolve(process.cwd(), 'storage/.license/license-key');
-  if (!fs.existsSync(keyFile)) {
-    throw new Error('License key not exist, Please configure the License key to enable full functionality.');
-  }
-  try {
-    key = fs.readFileSync(keyFile, 'utf8').trim();
-  } catch (e) {
-    throw new Error('The license key is invalid. Please check and reconfigure it.');
-  }
   try {
     keyData = JSON.parse(keyDecrypt(key));
   } catch (e) {
     throw new Error('The license key parsing failed, Please check and reconfigure it.');
   }
+
   try {
     const { data } = await request({
       url: `${keyData?.service?.domain || 'https://service-cn.nocobase.com'}/api/license_keys:getKey`,
@@ -95,17 +113,18 @@ export async function getKey(ctx?: Context): Promise<string> {
       },
       headers: keyData?.service?.headers || {},
     });
-    const { key } = data || {};
-    if (key) {
-      ctx?.cache?.set(CACHE_KEY, key);
-      fs.writeFileSync(keyFile, key);
+    const { key: remoteKey } = data || {};
+    if (remoteKey && typeof remoteKey === 'string') {
+      await saveLicenseKey(remoteKey, ctx);
+      return remoteKey;
     }
-    logger.info('Successfully retrieved the remote license key');
-    return key;
+    // logger.info('Successfully retrieved the remote license key');
   } catch (e) {
-    logger.warn('Unable to retrieve the remote license key', e?.message ? { message: e?.message } : e);
+    // logger.warn('Unable to retrieve the remote license key', e?.message ? { message: e?.message } : e);
     return key;
   }
+
+  return key;
 }
 
 export function parseKey(key: string): KeyData {

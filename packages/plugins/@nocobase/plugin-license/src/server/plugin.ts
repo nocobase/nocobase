@@ -38,8 +38,7 @@ export class PluginLicenseServer extends Plugin {
             ...licenseValidate,
           };
           if (licenseValidate.envMatch && licenseValidate.domainMatch) {
-            await saveLicenseKey(licenseKey);
-            await ctx.cache.set(CACHE_KEY, licenseKey);
+            await saveLicenseKey(licenseKey, ctx);
           }
           await next();
         },
