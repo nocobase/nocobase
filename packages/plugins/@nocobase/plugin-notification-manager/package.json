@@ -6,7 +6,7 @@
   "description.ru-RU": "Предоставляет единый сервис управления, включающий конфигурирование каналов, логирование и другие функции, поддерживает настройку различных каналов уведомлений, включая внутренние сообщения и электронную почту.",
   "displayName.zh-CN": "通知管理",
   "description.zh-CN": "提供统一的管理服务，涵盖渠道配置、日志记录等功能，支持多种通知渠道的配置，包括站内信和电子邮件等。",
-  "version": "1.9.17",
+  "version": "1.9.19",
   "homepage": "https://docs.nocobase.com/handbook/notification-manager",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/notification-manager",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/notification-manager",

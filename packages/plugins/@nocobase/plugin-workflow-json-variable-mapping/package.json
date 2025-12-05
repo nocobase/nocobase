@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-workflow-json-variable-mapping",
-  "version": "1.9.17",
+  "version": "1.9.19",
   "displayName": "Workflow: JSON variable mapping",
   "displayName.zh-CN": "工作流：JSON 变量映射",
   "description": "Used for mapping any JSON data to structured variables for usage in subsequent nodes.",

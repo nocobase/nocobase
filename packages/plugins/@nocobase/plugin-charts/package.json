@@ -6,7 +6,7 @@
   "description": "The plugin has been deprecated, please use the data visualization plugin instead.",
   "description.ru-RU": "Данный плагин устарел, используйте вместо него плагин для визуализации данных.",
   "description.zh-CN": "已废弃插件，请使用数据可视化插件代替。",
-  "version": "1.9.17",
+  "version": "1.9.19",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {

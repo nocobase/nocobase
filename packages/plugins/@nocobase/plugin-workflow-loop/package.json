@@ -6,7 +6,7 @@
   "description": "Used to repeat the sub-process processing of each value in an array, and can also be used for fixed times of sub-process processing.",
   "description.zh-CN": "用于对一个数组中的每个值进行重复的子流程处理，也可用于固定次数的重复子流程处理。",
   "description.ru-RU": "Используется для повторения обработки каждого значения в массиве, а также может использоваться для фиксированного количества повторений подпроцесса.",
-  "version": "1.9.17",
+  "version": "1.9.19",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-loop",

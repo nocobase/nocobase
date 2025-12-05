@@ -6,7 +6,7 @@
   "description": "Send notification in workflow.",
   "description.ru-RU": "Отправляет уведомления в рамках рабочего процесса.",
   "description.zh-CN": "可用于在工作流中发送各类通知。",
-  "version": "1.9.17",
+  "version": "1.9.19",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-smtp-mailer",

@@ -6,7 +6,7 @@
   "description": "Send HTTP requests to any HTTP service for data interaction in workflow.",
   "description.ru-RU": "Отправляет HTTP-запросы к любому HTTP-сервису для взаимодействия с данными в рабочем процессе.",
   "description.zh-CN": "可用于在工作流中向任意 HTTP 服务发送请求，进行数据交互。",
-  "version": "1.9.17",
+  "version": "1.9.19",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-request",

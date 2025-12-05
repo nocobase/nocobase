@@ -6,7 +6,7 @@
   "description": "Provides a client interface for the NocoBase server",
   "description.ru-RU": "Предоставляет клиентский интерфейс для сервера NocoBase",
   "description.zh-CN": "为 NocoBase 服务端提供客户端界面",
-  "version": "1.9.17",
+  "version": "1.9.19",
   "main": "./dist/server/index.js",
   "license": "AGPL-3.0",
   "devDependencies": {

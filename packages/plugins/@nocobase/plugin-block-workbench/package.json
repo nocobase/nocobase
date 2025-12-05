@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-block-workbench",
-  "version": "1.9.17",
+  "version": "1.9.19",
   "displayName": "Block: Action panel",
   "displayName.ru-RU": "Блок: Панель действий",
   "displayName.zh-CN": "区块：操作面板",

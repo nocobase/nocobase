@@ -46,6 +46,9 @@ function attachJobs(nodes, jobs: any[] = []): void {
   });
   jobs.forEach((item) => {
     const node = nodesMap.get(item.nodeId);
+    if (!node) {
+      return;
+    }
     node.jobs.push(item);
     item.node = {
       id: node.id,

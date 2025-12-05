@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-field-attachment-url",
-  "version": "1.9.17",
+  "version": "1.9.19",
   "main": "dist/server/index.js",
   "displayName": "Collection field: Attachment(URL)",
   "displayName.ru-RU": "Поле коллекции: Вложение (URL)",

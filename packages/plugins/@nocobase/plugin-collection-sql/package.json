@@ -6,7 +6,7 @@
   "description": "Provides SQL collection template",
   "description.ru-RU": "Предоставляет шаблон коллекции на основе SQL",
   "description.zh-CN": "提供 SQL 数据表模板",
-  "version": "1.9.17",
+  "version": "1.9.19",
   "homepage": "https://docs-cn.nocobase.com/handbook/collection-sql",
   "homepage.ru-RU": "https://docs-ru.nocobase.com/handbook/collection-sql",
   "homepage.zh-CN": "https://docs-cn.nocobase.com/handbook/collection-sql",

@@ -6,7 +6,7 @@
   "description": "Based on roles, resources, and actions, access control can precisely manage interface configuration permissions, data operation permissions, menu access permissions, and plugin permissions.",
   "description.ru-RU": "На основе ролей, ресурсов и действий система контроля доступа может точно управлять разрешениями на изменение интерфейса, работу с данными, доступ к меню и разрешениями для подключаемых модулей.",
   "description.zh-CN": "基于角色、资源和操作的权限控制，可以精确控制界面配置权限、数据操作权限、菜单访问权限、插件权限。",
-  "version": "1.9.17",
+  "version": "1.9.19",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/acl",

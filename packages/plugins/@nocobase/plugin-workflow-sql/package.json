@@ -6,7 +6,7 @@
   "description": "Execute SQL statements in workflow.",
   "description.ru-RU": "Выполняет SQL-запросы в рамках рабочего процесса.",
   "description.zh-CN": "可用于在工作流中对数据库执行任意 SQL 语句。",
-  "version": "1.9.17",
+  "version": "1.9.19",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",
   "homepage": "https://docs.nocobase.com/handbook/workflow-sql",

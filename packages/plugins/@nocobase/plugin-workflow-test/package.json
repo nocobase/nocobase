@@ -3,7 +3,7 @@
   "displayName": "Workflow: test kit",
   "displayName.ru-RU": "Рабочий процесс: Набор тестов",
   "displayName.zh-CN": "工作流：测试工具包",
-  "version": "1.9.17",
+  "version": "1.9.19",
   "license": "AGPL-3.0",
   "main": "dist/server/index.js",
   "types": "./dist/server/index.d.ts",
