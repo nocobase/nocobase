@@ -8,7 +8,7 @@
  */
 
 import { EyeOutlined } from '@ant-design/icons';
-import { DetailsItemModel, FieldModel, TableColumnModel, matchMimetype } from '@nocobase/client';
+import { DetailsItemModel, FieldModel, TableColumnModel, matchMimetype, css } from '@nocobase/client';
 import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
 import {
@@ -95,18 +95,27 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
 
   const fallback = fallbackMap[ext] || fallbackMap.default;
   const imageNode = (
-    <Image
-      src={src}
-      fallback={fallback}
-      width={size}
-      height={size}
-      preview={{ mask: <EyeOutlined /> }}
-      style={{
-        borderRadius: 4,
-        objectFit: 'cover',
-        boxShadow: '0 0 0 2px #fff',
-      }}
-    />
+    <div
+      className={css`
+        .ant-image-img {
+          border: 1px solid #d9d9d9;
+          padding: 2px;
+        }
+      `}
+    >
+      <Image
+        src={src}
+        fallback={fallback}
+        width={size}
+        height={size}
+        preview={{ mask: <EyeOutlined /> }}
+        style={{
+          borderRadius: 4,
+          objectFit: 'cover',
+          boxShadow: '0 0 0 2px #fff',
+        }}
+      />
+    </div>
   );
   return (
     <div style={{ textAlign: 'center', width: size, wordBreak: 'break-all' }}>
@@ -221,11 +230,7 @@ const Preview = (props) => {
     >
       <Space size={5} wrap={true}>
         {Array.isArray(value) &&
-          value.map((file, index) => (
-            <div style={{ border: '1px solid #d9d9d9', padding: '2px', borderRadius: '4px' }} key={index}>
-              <FilePreview file={file} size={size} key={index} showFileName={showFileName} />
-            </div>
-          ))}
+          value.map((file, index) => <FilePreview file={file} size={size} key={index} showFileName={showFileName} />)}
       </Space>
     </Image.PreviewGroup>
   );
