@@ -475,6 +475,10 @@ SubTableColumnModel.registerFlow({
       title: tExpr('Required'),
       use: 'required',
     },
+    validation: {
+      title: tExpr('Validation'),
+      use: 'validation',
+    },
     model: {
       use: 'fieldComponent',
       title: tExpr('Field component'),
