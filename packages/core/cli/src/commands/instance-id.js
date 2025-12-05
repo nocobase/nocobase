@@ -40,7 +40,7 @@ module.exports = (cli) => {
           fs.writeFileSync(filePath, instanceId + '\n');
           logger.info(`InstanceID saved to ${filePath}`);
         } catch (e) {
-          logger.error('Failed to generate InstanceID', e);
+          logger.error('Failed to generate InstanceID', e.message || e);
         }
       }
     });
