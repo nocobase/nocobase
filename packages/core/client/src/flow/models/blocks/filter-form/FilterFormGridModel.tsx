@@ -135,6 +135,7 @@ export class FilterFormGridModel extends GridModel {
     // 向筛选表单区块添加字段 model
     return (
       <AddSubModelButton
+        key={this.context.blockGridModel?.subModels?.items?.length}
         subModelKey="items"
         model={this}
         afterSubModelInit={this.onModelCreated.bind(this)}

@@ -24,8 +24,8 @@ import {
   ModelRenderMode,
   useFlowEngine,
 } from '@nocobase/flow-engine';
-import { TableColumnProps, Tooltip } from 'antd';
-import React, { useRef } from 'react';
+import { TableColumnProps, Tooltip, Input } from 'antd';
+import React, { useRef, useMemo } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
@@ -69,6 +69,19 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
       console.log(error);
     }
   };
+  const collectionField = model.context.collectionField;
+  const content = useMemo(() => {
+    if (['textarea', 'richText', 'json', 'markdown', 'vditor'].includes(collectionField.interface)) {
+      const inputValue =
+        collectionField.interface === 'json' && defaultValue
+          ? JSON.stringify(defaultValue, null, 2)
+          : defaultValue ?? '';
+
+      return <Input value={inputValue} />;
+    } else {
+      return <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />;
+    }
+  }, [collectionField.interface, defaultValue, fieldModel]);
   return (
     <div
       ref={ref}
@@ -87,11 +100,19 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
       <span
         style={{ pointerEvents: 'none' }} // 不拦截点击
       >
-        {<FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />}
+        {/* {<FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />} */}
+        {content}
       </span>
     </div>
   );
 });
+
+const handleModelName = (modelName) => {
+  if (['RadioGroupFieldModel', 'CheckboxGroupFieldModel'].includes(modelName)) {
+    return 'SelectFieldModel';
+  }
+  return modelName;
+};
 
 export interface SubTableColumnModelStructure {
   parent: SubTableFieldModel;
@@ -127,7 +148,7 @@ export class SubTableColumnModel<
         }
         const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
         if (!binding) return null;
-        const fieldModel = binding.modelName;
+        const fieldModel = handleModelName(binding.modelName);
         const fullName = ctx.fieldPath ? `${ctx.fieldPath}.${field.name}` : field.name;
 
         return {
