@@ -50,3 +50,5 @@ export const enum LICENSE_ERROR {
   KEY_NOT_FOUND = 'KEY_NOT_FOUND',
   KEY_READ_ERROR = 'KEY_READ_ERROR',
 }
+
+export const CACHE_KEY = 'license-key';

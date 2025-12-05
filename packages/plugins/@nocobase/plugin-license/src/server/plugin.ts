@@ -8,7 +8,7 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { getInstanceId, saveLicenseKey, isLicenseKeyExists, getLicenseValidate } from './utils';
+import { getInstanceId, saveLicenseKey, isLicenseKeyExists, getLicenseValidate, CACHE_KEY } from './utils';
 import { keyDecrypt } from '@nocobase/license-kit';
 import { LICENSE_TIPS } from '../const';
 
@@ -39,6 +39,7 @@ export class PluginLicenseServer extends Plugin {
           };
           if (licenseValidate.envMatch && licenseValidate.domainMatch) {
             await saveLicenseKey(licenseKey);
+            await ctx.cache.set(CACHE_KEY, licenseKey);
           }
           await next();
         },

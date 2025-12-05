@@ -12,7 +12,7 @@ import { Context } from 'koa';
 import path from 'path';
 import fs from 'fs';
 import { KeyData } from './interface';
-import { LICENSE_ERROR } from './interface';
+import { CACHE_KEY } from './interface';
 import axios from 'axios';
 import { logger } from '@nocobase/logger';
 
@@ -63,7 +63,6 @@ export async function request(
 }
 
 export async function getKey(ctx?: Context): Promise<string> {
-  const CACHE_KEY = 'license-key';
   if (ctx?.cache) {
     const cacheKey = await ctx.cache.get(CACHE_KEY);
     if (cacheKey) {
@@ -104,7 +103,7 @@ export async function getKey(ctx?: Context): Promise<string> {
     logger.info('Successfully retrieved the remote license key');
     return key;
   } catch (e) {
-    logger.warn('Unable to retrieve the remote license key');
+    logger.warn('Unable to retrieve the remote license key', e?.message ? { message: e?.message } : e);
     return key;
   }
 }
