@@ -153,7 +153,7 @@ class AIChatConversationImpl implements AIChatConversation {
         const contents = [];
         if (attachments?.length) {
           for (const attachment of attachments) {
-            const parsed = await provider.parseAttachment(attachment);
+            const parsed = await provider.parseAttachment(this.ctx, attachment);
             contents.push(parsed);
           }
           if (content) {

@@ -14,6 +14,7 @@ import axios from 'axios';
 import { encodeFile, stripToolCallTags } from '../utils';
 import { Model } from '@nocobase/database';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
+import { Context } from '@nocobase/actions';
 
 export class AnthropicProvider extends LLMProvider {
   declare chatModel: ChatAnthropic;
@@ -105,10 +106,10 @@ export class AnthropicProvider extends LLMProvider {
     return stripToolCallTags(chunk);
   }
 
-  async parseAttachment(attachment: any): Promise<any> {
+  async parseAttachment(ctx: Context, attachment: any): Promise<any> {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
-    const data = await encodeFile(decodeURIComponent(url));
+    const data = await encodeFile(ctx, decodeURIComponent(url));
     if (attachment.mimetype.startsWith('image/')) {
       return {
         type: 'image_url',
