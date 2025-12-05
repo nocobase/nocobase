@@ -76,12 +76,17 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
     const hasNext = this.resource.getMeta('hasNext');
     const current = this.resource.getPage();
     const data = this.resource.getData();
+    const columns = this.props.columnCount?.[this._screens] || 1;
+    const multiples = [1, 2, 3, 5, 10];
+
+    const pageSizeOptions = multiples.map((m) => columns * m);
+
     if (totalCount) {
       return {
         current,
         pageSize,
         total: totalCount,
-        pageSizeOptions: [3, 6, 9, 15, 30, 60, 72],
+        pageSizeOptions: pageSizeOptions,
         showTotal: (total) => {
           return this.translate('Total {{count}} items', { count: total });
         },
