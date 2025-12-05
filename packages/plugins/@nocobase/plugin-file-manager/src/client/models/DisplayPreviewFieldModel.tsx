@@ -135,7 +135,6 @@ const Preview = (props) => {
   const { value = [], size = 28, showFileName } = props;
   const [current, setCurrent] = React.useState(0);
   const { t } = useTranslation();
-
   const onDownload = () => {
     const url = value[current].url || value[current];
     const suffix = url.slice(url.lastIndexOf('.'));
@@ -178,7 +177,6 @@ const Preview = (props) => {
           </Space>
         ),
         onChange: (index) => {
-          console.log(index);
           setCurrent(index);
         },
         imageRender: (originalNode, info) => {
@@ -239,7 +237,7 @@ export class DisplayPreviewFieldModel extends FieldModel {
       return castArray(value).flatMap((v, idx) => {
         const result = v?.[titleField];
         const content = result ? (
-          <Preview key={idx} {...this.props} value={castArray(result)} />
+          <Preview key={idx} {...this.props} value={castArray(result).filter(Boolean)} />
         ) : (
           <span key={idx}>N/A</span>
         );
@@ -247,7 +245,7 @@ export class DisplayPreviewFieldModel extends FieldModel {
         return idx === 0 ? [content] : [<span key={`sep-${idx}`}>, </span>, content];
       });
     } else {
-      return <Preview {...this.props} value={castArray(value)} />;
+      return <Preview {...this.props} value={castArray(value).filter(Boolean)} />;
     }
   }
 }
