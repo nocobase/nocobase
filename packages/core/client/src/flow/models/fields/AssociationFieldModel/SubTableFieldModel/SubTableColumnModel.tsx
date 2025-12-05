@@ -278,6 +278,11 @@ export class SubTableColumnModel<
             textOverflow: 'ellipsis',
           }}
           title={value}
+          className={css`
+            .ant-form-item-explain-error {
+              white-space: break-spaces;
+            }
+          `}
         >
           {this.mapSubModels('field', (action: FieldModel) => {
             const namePath = action.context.fieldPath.split('.').pop();
