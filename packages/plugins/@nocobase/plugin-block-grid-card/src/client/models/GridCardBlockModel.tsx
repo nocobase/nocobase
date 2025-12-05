@@ -21,7 +21,7 @@ import {
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, ActionModel } from '@nocobase/client';
 import React from 'react';
-import { List, Space, Slider, Grid } from 'antd';
+import { List, Space, Slider, Grid, InputNumber } from 'antd';
 import { css } from '@emotion/css';
 import { GridCardItemModel } from './GridCardItemModel';
 import { screenSizeTitleMaps, gridSizes, columnCountMarks, screenSizeMaps } from './utils';
@@ -278,15 +278,8 @@ GridCardBlockModel.registerFlow({
       title: tExpr('Number of Rows', { ns: 'block-grid-card' }),
       uiSchema: {
         rowCount: {
-          'x-component': 'Select',
+          'x-component': InputNumber,
           'x-decorator': 'FormItem',
-          enum: [
-            { label: '3', value: 3 },
-            { label: '6', value: 6 },
-            { label: '9', value: 9 },
-            { label: '15', value: 15 },
-            { label: '30', value: 30 },
-          ],
         },
       },
       defaultParams: {
