@@ -108,6 +108,8 @@ export class MapBlockModel extends CollectionBlockModel {
   }
 
   renderComponent() {
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+
     return (
       <div>
         <DndProvider>
@@ -132,6 +134,9 @@ export class MapBlockModel extends CollectionBlockModel {
             </Space>
             <Space wrap>
               {this.mapSubModels('actions', (action) => {
+                if (action.hidden && !isConfigMode) {
+                  return;
+                }
                 // @ts-ignore
                 if (action.props.position !== 'left') {
                   return (

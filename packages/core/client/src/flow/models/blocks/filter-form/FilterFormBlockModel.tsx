@@ -88,6 +88,8 @@ export class FilterFormBlockModel extends FilterBlockModel<{
 
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+
     return (
       <FormComponent
         model={this}
@@ -99,22 +101,27 @@ export class FilterFormBlockModel extends FilterBlockModel<{
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
           <FormButtonGroup align="right">
-            {this.mapSubModels('actions', (action) => (
-              <Droppable model={action} key={action.uid}>
-                <FlowModelRenderer
-                  key={action.uid}
-                  model={action}
-                  showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                  extraToolbarItems={[
-                    {
-                      key: 'drag-handler',
-                      component: DragHandler,
-                      sort: 1,
-                    },
-                  ]}
-                />
-              </Droppable>
-            ))}
+            {this.mapSubModels('actions', (action) => {
+              if (action.hidden && !isConfigMode) {
+                return;
+              }
+              return (
+                <Droppable model={action} key={action.uid}>
+                  <FlowModelRenderer
+                    key={action.uid}
+                    model={action}
+                    showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                    extraToolbarItems={[
+                      {
+                        key: 'drag-handler',
+                        component: DragHandler,
+                        sort: 1,
+                      },
+                    ]}
+                  />
+                </Droppable>
+              );
+            })}
             <AddSubModelButton
               key="filter-form-actions-add"
               model={this}
