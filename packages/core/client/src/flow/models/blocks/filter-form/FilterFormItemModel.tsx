@@ -19,7 +19,7 @@ import { Empty } from 'antd';
 import _, { debounce } from 'lodash';
 import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
-import { getAllDataModels } from '../filter-manager/utils';
+import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
 
 const getModelFields = async (model: CollectionBlockModel) => {
@@ -148,6 +148,19 @@ export class FilterFormItemModel extends FilterableItemModel<{
     return this.getStepParams('filterFormItemSettings', 'init').defaultTargetUid;
   }
 
+  private getCurrentOperatorMeta() {
+    const operator = getDefaultOperator(this);
+    if (!operator) return null;
+
+    const operatorList = this.collectionField?.filterable?.operators;
+
+    if (!Array.isArray(operatorList)) {
+      return null;
+    }
+
+    return operatorList.find((op) => op.value === operator) || null;
+  }
+
   onInit(options) {
     super.onInit(options);
     // 创建防抖的 doFilter 方法，延迟 300ms
@@ -173,6 +186,11 @@ export class FilterFormItemModel extends FilterableItemModel<{
    * @returns
    */
   getFilterValue() {
+    const operatorMeta = this.getCurrentOperatorMeta();
+    if (operatorMeta?.noValue) {
+      return true;
+    }
+
     if (this.subModels.field.getFilterValue) {
       return this.subModels.field.getFilterValue();
     }

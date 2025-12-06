@@ -69,6 +69,8 @@ export interface VariableFilterItemValue {
   operator: string;
   // 尽量收敛为常见联合类型，避免到处传播 unknown
   value: string | number | boolean | null | Array<string | number> | Record<string, unknown>;
+  /** 操作符是否无右值（用于透传到 transformFilter 等） */
+  noValue?: boolean;
 }
 
 export interface VariableFilterItemProps {
@@ -235,6 +237,9 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         const first = operatorMetaList[0];
         value.operator = first.value;
         value.value = first.noValue ? true : undefined;
+        value.noValue = !!first.noValue;
+      } else {
+        value.noValue = !!matched.noValue;
       }
     }, [operatorMetaList, value]);
 
@@ -280,8 +285,10 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         const cur = operatorMetaList.find((op) => op.value === operatorValue);
         if (cur?.noValue) {
           value.value = true;
+          value.noValue = true;
         } else {
           value.value = undefined;
+          value.noValue = false;
         }
       },
       [operatorMetaList, value],
