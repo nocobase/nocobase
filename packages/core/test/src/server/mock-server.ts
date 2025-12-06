@@ -223,7 +223,7 @@ export class MockServer extends Application {
   }
 }
 
-export function mockServer(options: ApplicationOptions = {}) {
+export function mockServer(options: MockServerOptions = {}) {
   if (typeof TextEncoder === 'undefined') {
     global.TextEncoder = require('util').TextEncoder;
   }
@@ -279,6 +279,7 @@ export async function startMockServer(options: ApplicationOptions = {}) {
 type BeforeInstallFn = (app) => Promise<void>;
 
 export type MockServerOptions = ApplicationOptions & {
+  acl?: boolean;
   version?: string;
   beforeInstall?: BeforeInstallFn;
   skipInstall?: boolean;
