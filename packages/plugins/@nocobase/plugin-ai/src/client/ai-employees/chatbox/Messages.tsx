@@ -16,6 +16,7 @@ import { useChatMessagesStore } from './stores/chat-messages';
 import { useChatMessageActions } from './hooks/useChatMessageActions';
 import { useChatBoxStore } from './stores/chat-box';
 import { useChatToolsStore } from './stores/chat-tools';
+import { Markdown } from './markdown/Markdown';
 
 export const Messages: React.FC = () => {
   const t = useT();
@@ -72,12 +73,15 @@ export const Messages: React.FC = () => {
             if (!role) {
               return null;
             }
-            return index === 0 && msg.content?.type !== 'greeting' ? (
+            const isGreeting = msg.content?.type === 'greeting';
+            const isUserMarkdown = msg.role === 'user' && typeof msg.content?.content === 'string' && !isGreeting;
+            const contentNode = isUserMarkdown ? <Markdown message={msg.content} /> : msg.content;
+            return index === 0 && !isGreeting ? (
               <div key={msg.key} ref={lastMessageRef}>
-                <Bubble {...role} loading={msg.loading} content={msg.content} />
+                <Bubble {...role} loading={msg.loading} content={contentNode} />
               </div>
             ) : (
-              <Bubble {...role} key={msg.key} loading={msg.loading} content={msg.content} />
+              <Bubble {...role} key={msg.key} loading={msg.loading} content={contentNode} />
             );
           })}
         </div>
