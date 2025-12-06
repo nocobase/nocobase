@@ -355,6 +355,10 @@ TELEMETRY_METRIC_READER=console,prometheus
 TELEMETRY_TRACE_PROCESSOR=console
 ```
 
+### WORKER_MODE
+
+用于配置集群模式下进行服务拆分时，不同节点的工作模式，详情查看「[服务拆分：如何拆分服务](/cluster-mode/services-splitting#如何拆分服务)」。
+
 ## 实验性环境变量
 
 ### APPEND_PRESET_LOCAL_PLUGINS
@@ -456,3 +460,13 @@ yarn cross-env \
   INIT_ROOT_NICKNAME="Super Admin" \
   nocobase install
 ```
+
+## 其他插件提供的环境变量
+
+### WORKFLOW_SCRIPT_MODULES
+
+工作流 JavaScript 节点可用的模块列表，详情查看「[JavaScript 节点：使用外部模块](/workflow/nodes/javascript#使用外部模块)」。
+
+### WORKFLOW_LOOP_LIMIT
+
+工作流循环节点的最大循环次数限制，详情查看「[循环节点](/workflow/nodes/loop#WORKFLOW_LOOP_LIMIT)」。

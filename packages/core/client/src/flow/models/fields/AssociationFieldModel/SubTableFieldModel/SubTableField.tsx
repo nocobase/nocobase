@@ -71,7 +71,7 @@ export function SubTableField(props) {
     const newValue = [...(value || [])];
     newValue.splice(index, 1);
     const lastPage = Math.ceil(newValue.length / currentPageSize);
-    setCurrentPage(lastPage);
+    setCurrentPage(currentPage > lastPage ? lastPage : currentPage);
     onChange?.(newValue);
   };
 

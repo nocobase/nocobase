@@ -54,6 +54,7 @@ export function LabelByField(props: Readonly<LabelByFieldProps>) {
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
     get: () => option,
+    cache: false,
     meta: createCurrentRecordMetaFactory(fieldModel.context, () => fieldModel.context.collection),
   });
   const labelValue = option?.[fieldNames.label] || option.label;
@@ -87,7 +88,9 @@ export function toSelectValue(
     if (!Array.isArray(record)) return [];
     return record.map(convert).filter(Boolean);
   }
-
+  if (Array.isArray(record) && !multiple) {
+    return convert(record[0]);
+  }
   return convert(record as AssociationOption);
 }
 

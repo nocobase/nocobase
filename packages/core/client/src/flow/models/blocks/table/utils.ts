@@ -66,3 +66,15 @@ export function extractIds(data) {
   });
   return ids;
 }
+
+/**
+ * 生成表格行唯一 key
+ * @param record 当前行数据
+ * @param key string | string[] 单字段或多字段
+ */
+export function getRowKey(record: any, key: string | string[]) {
+  if (Array.isArray(key)) {
+    return key.map((k) => String(record?.[k] ?? '')).join('-');
+  }
+  return record?.[key] ?? '';
+}

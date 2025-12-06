@@ -29,6 +29,7 @@ import { NumberPicker } from '@formily/antd-v5';
 import { lazy } from '../../../lazy-helper';
 import { enumToOptions } from '../../internal/utils/enumOptionsUtils';
 import { FormProvider, SchemaComponent } from '../../../schema-component/core';
+import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
 
 const { DateFilterDynamicComponent: DateFilterDynamicComponentLazy } = lazy(
   () => import('../../../schema-component'),
@@ -91,6 +92,7 @@ function createStaticInputRenderer(
   schema: ISchema,
   meta: MetaTreeNode | null,
   t: (s: string) => string,
+  app?: any,
 ): (
   p: { value?: VariableFilterItemValue['value']; onChange?: (v: VariableFilterItemValue['value']) => void } & Record<
     string,
@@ -160,6 +162,21 @@ function createStaticInputRenderer(
           onChange={(v: unknown) => onChange?.(v as VariableFilterItemValue['value'])}
         />
       );
+    // 未内置的 x-component：尝试从 app 解析组件
+    if (xComp && app?.getComponent) {
+      const Comp = app.getComponent(xComp as any);
+      if (Comp) {
+        return (
+          <Comp
+            {...commonProps}
+            {...rest}
+            value={value}
+            onChange={(v: any) => onChange?.(v as VariableFilterItemValue['value'])}
+            style={{ width: 200, ...(commonProps.style || {}), ...(rest as any)?.style }}
+          />
+        );
+      }
+    }
     // 普通文本输入：透传组合输入事件，避免 IME 被中断
     return (
       <Input
@@ -180,7 +197,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     // 使用 View 上下文，确保可访问 ctx.view 的异步子树
     const ctx = useFlowViewContext();
     const t = model.translate;
-    const { path, operator, value: rightValue } = value;
+    const { path, operator, value: rightValueRaw } = value;
 
     // 左侧选中的元数据节点
     const [leftMeta, setLeftMeta] = useState<MetaTreeNode | null>(null);
@@ -212,9 +229,12 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     }, [leftMeta, model]);
 
     useEffect(() => {
-      if (operatorMetaList.length > 0 && !_.find(operatorMetaList, (o) => o.value === value.operator)) {
-        value.operator = '';
-        value.value = '';
+      if (!operatorMetaList.length) return;
+      const matched = _.find(operatorMetaList, (o) => o.value === value.operator);
+      if (!matched) {
+        const first = operatorMetaList[0];
+        value.operator = first.value;
+        value.value = first.noValue ? true : undefined;
       }
     }, [operatorMetaList, value]);
 
@@ -281,6 +301,22 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       return merge({}, fieldSchema, opSchema);
     }, [leftMeta, currentOpMeta]);
 
+    // 仅在组件类型切换且新组件为日期/时间类时，检测不兼容旧值并清空；首渲染保留旧值
+    const prevXComponentRef = React.useRef<string | undefined>(mergedSchema?.['x-component'] as string | undefined);
+    const xComp = mergedSchema?.['x-component'] as string | undefined;
+    const rightValue = useMemo(() => {
+      const prev = prevXComponentRef.current;
+      prevXComponentRef.current = xComp;
+
+      const switched = prev !== undefined && prev !== xComp; // 首次渲染 prev 为 undefined，不做清空
+
+      if (switched && rightValueRaw != null) {
+        value.value = undefined;
+        return undefined;
+      }
+      return rightValueRaw;
+    }, [xComp, rightValueRaw, value]);
+
     // 右侧静态输入（无变量模式）与右侧 VariableInput 的静态渲染组件，统一复用
     // t 可能每次渲染产生新引用，导致 staticInputRenderer 引用不稳定，进而触发右侧输入卸载/重建。
     // 通过 stableT 包装，保持函数引用稳定，同时读取最新的 t。
@@ -291,8 +327,8 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     const stableT = React.useCallback((s: string) => tRef.current?.(s) ?? s, []);
 
     const staticInputRenderer = useMemo(
-      () => createStaticInputRenderer(mergedSchema, leftMeta, stableT),
-      [mergedSchema, leftMeta, stableT],
+      () => createStaticInputRenderer(mergedSchema, leftMeta, stableT, model.context.app),
+      [mergedSchema, leftMeta, stableT, model.context.app],
     );
 
     // 判断是否需要使用 SchemaComponent 动态渲染（支持更多 x-component，如行政区、代码编辑器等）
@@ -375,7 +411,38 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     //
 
     const renderRightValueComponent = useCallback(() => {
-      const xComp = mergedSchema?.['x-component'] as string | undefined;
+      // 文本类多关键词：优先使用操作符 schema 声明的组件
+      const resolved = resolveOperatorComponent(model.context.app, operator, operatorMetaList);
+      const supportKeyword = operator === '$in' || operator === '$notIn';
+      if (resolved && supportKeyword) {
+        const { Comp, props: xProps } = resolved;
+        const style = {
+          flex: '1 1 40%',
+          minWidth: 160,
+          maxWidth: '100%',
+          ...(xProps?.style || {}),
+        };
+        const normalized =
+          Array.isArray(rightValue) && rightValue.every((v) => typeof v === 'string' || typeof v === 'number')
+            ? (rightValue as Array<string | number>)
+            : typeof rightValue === 'string'
+              ? rightValue
+                  .split(/\r?\n/)
+                  .map((v) => v.trim())
+                  .filter(Boolean)
+              : [];
+        return (
+          <div style={style}>
+            <Comp
+              {...xProps}
+              style={{ width: '100%', ...(xProps?.style || {}) }}
+              value={normalized}
+              onChange={(vals: any) => (value.value = vals)}
+            />
+          </div>
+        );
+      }
+
       if (isStaticSupported(xComp)) {
         const Comp = staticInputRenderer;
         return (
@@ -386,7 +453,16 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       }
       const DynamicRightInput = DynamicRightValue;
       return <DynamicRightInput dynValue={rightValue} />;
-    }, [DynamicRightValue, isStaticSupported, mergedSchema, rightValue, staticInputRenderer]);
+    }, [
+      DynamicRightValue,
+      isStaticSupported,
+      operator,
+      operatorMetaList,
+      rightValue,
+      staticInputRenderer,
+      value,
+      model.context.app,
+    ]);
 
     // Null 占位组件（仿照 DefaultValue.tsx 的实现）
     const NullComponent = useMemo(() => {

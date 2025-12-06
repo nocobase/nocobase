@@ -112,6 +112,7 @@ export class QuickEditFormModel extends FlowModel {
     const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(this.context, () => this.collection);
     this.context.defineProperty('record', {
       get: () => this.resource.getData(),
+      cache: false,
       resolveOnServer: createRecordResolveOnServerWithLocal(
         () => this.collection,
         () => this.resource.getData(),

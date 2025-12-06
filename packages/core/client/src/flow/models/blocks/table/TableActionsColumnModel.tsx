@@ -27,6 +27,7 @@ import { ActionModel } from '../../base';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
 
 const Columns = observer<any>(({ record, model, index }) => {
+  const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
   return (
     <DndProvider>
       <Space
@@ -39,6 +40,9 @@ const Columns = observer<any>(({ record, model, index }) => {
       >
         {model.mapSubModels('actions', (action: ActionModel) => {
           const fork = action.createFork({}, `${record.__index || index}`);
+          if (fork.hidden && !isConfigMode) {
+            return;
+          }
           // TODO: reset fork 的状态, fork 复用存在旧状态污染问题
           fork.invalidateFlowCache('beforeRender');
           const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
@@ -56,6 +60,7 @@ const Columns = observer<any>(({ record, model, index }) => {
           );
           fork.context.defineProperty('record', {
             get: () => record,
+            cache: false,
             resolveOnServer: createRecordResolveOnServerWithLocal(
               () => (fork.context as any).collection,
               () => record,

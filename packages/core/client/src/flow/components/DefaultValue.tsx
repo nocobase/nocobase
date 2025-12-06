@@ -32,6 +32,7 @@ import { FieldModel } from '../models';
 import { RecordSelectFieldModel } from '../models/fields/AssociationFieldModel';
 import { InputFieldModel } from '../models/fields/InputFieldModel';
 import { ensureOptionsFromUiSchemaEnumIfAbsent } from '../internal/utils/enumOptionsUtils';
+import { resolveOperatorComponent } from '../internal/utils/operatorSchemaHelper';
 
 interface Props {
   value: any;
@@ -463,6 +464,48 @@ export const DefaultValue = connect((props: Props) => {
     };
     return ConstantValueEditor;
   }, [tempRoot]);
+
+  // 文本类多关键词：根据已注册的 operator schema 渲染（用于默认值配置）
+  React.useEffect(() => {
+    const operator = (model as any)?.operator;
+    const fieldModel = tempRoot?.subModels?.fields?.[0];
+    if (!operator || !fieldModel) return;
+    const originalRender = fieldModel['__originalRender'] || fieldModel.render;
+    fieldModel['__originalRender'] = originalRender;
+
+    const resolved = resolveOperatorComponent(
+      model.context.app,
+      operator,
+      model.collectionField?.filterable?.operators || [],
+    );
+
+    if (resolved && fieldModel instanceof InputFieldModel) {
+      const { Comp, props: xProps } = resolved;
+      fieldModel.render = () => (
+        <Comp
+          {...fieldModel.props}
+          {...xProps}
+          style={{ width: '100%', ...(fieldModel.props as any)?.style, ...xProps?.style }}
+        />
+      );
+    } else if (typeof originalRender === 'function') {
+      fieldModel.render = originalRender;
+    }
+  }, [model, tempRoot, (model as any)?.operator]);
+
+  // 根据操作符 schema 的 x-component-props 补全临时字段的输入属性（如多选）
+  React.useEffect(() => {
+    const operator = (model as any)?.operator;
+    const fieldModel = tempRoot?.subModels?.fields?.[0];
+    if (!fieldModel || !operator) return;
+    const ops = model.collectionField?.filterable?.operators || [];
+    const meta = ops.find((op) => op.value === operator);
+    const xComponentProps = meta?.schema?.['x-component-props'];
+    if (xComponentProps) {
+      fieldModel.setProps(xComponentProps);
+    }
+  }, [model, tempRoot, (model as any)?.operator]);
+
   const NullComponent = useMemo(() => {
     function NullValuePlaceholder() {
       return <Input placeholder={`<${flowContext.t?.('Null') ?? 'Null'}>`} readOnly />;

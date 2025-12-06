@@ -19,9 +19,9 @@ const postgres = {
 
   smallint: ['integer', 'sort'],
   integer: ['integer', 'unixTimestamp', 'sort'],
-  bigint: ['bigInt', 'unixTimestamp', 'sort'],
+  bigint: ['bigInt', 'snowflakeId', 'unixTimestamp', 'sort'],
   decimal: 'decimal',
-  numeric: 'float',
+  numeric: 'decimal',
   real: 'float',
   'double precision': 'float',
 
@@ -64,7 +64,7 @@ const mysql = {
   int: ['integer', 'unixTimestamp', 'sort'],
   'int unsigned': ['integer', 'unixTimestamp', 'sort'],
   integer: ['integer', 'unixTimestamp', 'sort'],
-  bigint: ['bigInt', 'unixTimestamp', 'sort'],
+  bigint: ['bigInt', 'snowflakeId', 'unixTimestamp', 'sort'],
   'bigint unsigned': ['bigInt', 'unixTimestamp', 'sort'],
   float: 'float',
   double: 'float',

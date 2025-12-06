@@ -19,7 +19,6 @@ function convertToText(markdownText: string) {
   // 使用 DOMParser 来解析 HTML 字符串
   const parser = new DOMParser();
   const doc = parser.parseFromString(markdownText, 'text/html'); // 解析为 HTML 文档
-
   // 提取所有图片标签，并替换为其 src 属性
   const imgTags = doc.querySelectorAll('img');
   imgTags.forEach((img) => {
@@ -159,8 +158,12 @@ export const Display = (props) => {
         onOpenChange={(visible) => {
           handlePopoverOpenChange(ellipsis && visible);
         }}
-        overlayStyle={{ maxWidth: 400, maxHeight: 450, overflow: 'auto' }}
-        content={<DisplayInner value={value} loadImages={imagesLoaded} />}
+        overlayStyle={{ maxWidth: 600 }}
+        content={
+          <div style={{ maxHeight: 400, overflow: 'auto' }}>
+            <DisplayInner value={value} loadImages={imagesLoaded} />
+          </div>
+        }
       >
         <div
           ref={elRef}
@@ -195,7 +198,7 @@ export const Display = (props) => {
                 }
               `}
             >
-              <DisplayInner value={value} />
+              <DisplayInner value={value} loadImages={true} />
             </div>
           )}
         </div>

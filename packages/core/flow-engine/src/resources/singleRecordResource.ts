@@ -33,28 +33,12 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
   async save(data: TData, options?: AxiosRequestConfig & { refresh?: boolean }): Promise<void> {
     const config = this.mergeRequestConfig(this.saveActionOptions, _.omit(options, ['refresh']));
     let actionName = 'create';
-    let result = data;
+    const result = data;
     // 如果有 filterByTk，则表示是更新操作
     if (!this.isNewRecord) {
       config.params = config.params || {};
       config.params.filterByTk = this.getFilterByTk();
       actionName = 'update';
-      const collection = this.context.collection;
-      const filterTargetKey = collection?.filterTargetKey;
-      const tkData = collection?.getFilterByTK(this.context.record);
-      if (collection && filterTargetKey) {
-        if (Array.isArray(filterTargetKey)) {
-          result = {
-            ...data,
-            ...(tkData || {}),
-          };
-        } else {
-          result = {
-            ...data,
-            [filterTargetKey]: tkData,
-          };
-        }
-      }
     }
     const res = await this.runAction(actionName, {
       ...config,
@@ -71,7 +55,7 @@ export class SingleRecordResource<TData = any> extends BaseRecordResource<TData>
     const config = this.mergeRequestConfig(
       {
         params: {
-          filterByTk: this.request.params.filterByTk,
+          filterByTk: this.jsonStringify(this.request.params.filterByTk),
         },
       },
       options,

@@ -133,26 +133,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   }
 
   async update(filterByTk: string | number, data: Partial<TDataItem>, options?: AxiosRequestConfig): Promise<void> {
-    const collection = this.context.collection;
-    const filterTargetKey = collection?.filterTargetKey;
-    const tkData = collection?.getFilterByTK(this.context.record);
-    let result = data;
-
-    // 安全处理 filterTargetKey & tkData
-    if (collection && filterTargetKey) {
-      if (Array.isArray(filterTargetKey)) {
-        result = {
-          ...data,
-          ...(tkData || {}),
-        };
-      } else {
-        result = {
-          ...data,
-          [filterTargetKey]: tkData,
-        };
-      }
-    }
-
+    const result = data;
     const config = this.mergeRequestConfig(
       {
         params: {
@@ -177,15 +158,13 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   }
 
   async destroy(
-    filterByTk: string | number | string[] | number[] | TDataItem | TDataItem[],
+    filterByTk: string | number | string[] | number[] | TDataItem | TDataItem[] | object,
     options?: AxiosRequestConfig,
   ): Promise<void> {
     const config = this.mergeRequestConfig(
       {
         params: {
-          filterByTk: _.castArray(filterByTk).map((item) => {
-            return typeof item === 'object' ? item['id'] : item; // TODO: ID 字段还需要根据实际情况更改
-          }),
+          filterByTk: this.jsonStringify(filterByTk),
         },
       },
       options,

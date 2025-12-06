@@ -7,23 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-const EXCLUDE_INTERFACES = [
-  // 'icon',
-  // 'formula',
-  // 'attachment',
-  // 'markdown',
-  // 'richText',
-  'id',
-  'createdAt',
-  'createdBy',
-  'updatedAt',
-  'updatedBy',
-  // 'sequence',
-];
-
 export const getOptionFields = (fields, t) => {
   const field2option = (field, depth) => {
-    if (!field.interface || EXCLUDE_INTERFACES.includes(field.interface)) {
+    if (!field.interface) {
       return;
     }
     const option = {

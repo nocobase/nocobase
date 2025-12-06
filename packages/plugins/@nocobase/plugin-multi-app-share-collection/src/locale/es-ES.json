@@ -1,12 +1,12 @@
 {
-  "Share collections": "Tablas compartidas",
-  "Unshared collections": "Tablas no compartidas",
-  "Shared collections": "Tablas compartidas",
   "All categories": "Todas las categorías",
-  "Enter name or title...": "Introducir nombre o título...",
   "Are you sure to add the following collections?": "¿Está seguro de que desea añadir las siguientes tablas?",
   "Are you sure to remove the following collections?": "¿Está seguro de que desea eliminar las siguientes tablas?",
+  "Collection category": "Categoría de tabla",
   "Collection display name": "Mostrar nombre de la tabla",
   "Collection name": "Nombre de la tabla",
-  "Collection category": "Categoría de tabla"
+  "Enter name or title...": "Introducir nombre o título...",
+  "Share collections": "Tablas compartidas",
+  "Shared collections": "Tablas compartidas",
+  "Unshared collections": "Tablas no compartidas"
 }

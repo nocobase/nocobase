@@ -121,6 +121,8 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
   }
 
   renderComponent() {
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+
     return (
       <>
         <DndProvider>
@@ -145,6 +147,9 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
             </Space>
             <Space wrap>
               {this.mapSubModels('actions', (action) => {
+                if (action.hidden && !isConfigMode) {
+                  return;
+                }
                 // @ts-ignore
                 if (action.props.position !== 'left') {
                   return (

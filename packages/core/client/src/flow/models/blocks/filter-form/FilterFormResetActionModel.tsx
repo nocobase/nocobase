@@ -14,7 +14,7 @@ import { tExpr } from '@nocobase/flow-engine';
 
 export class FilterFormResetActionModel extends FilterFormActionModel {
   defaultProps: ButtonProps = {
-    children: tExpr('Reset'),
+    title: tExpr('Reset'),
   };
 }
 

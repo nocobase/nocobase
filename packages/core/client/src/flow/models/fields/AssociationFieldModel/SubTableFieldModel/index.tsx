@@ -138,7 +138,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
 
 SubTableFieldModel.registerFlow({
   key: 'loadTableColumns',
-  title: tExpr('Association table settings'),
+  title: tExpr('Sub-table settings'),
   sort: 300,
   steps: {
     aclCheck: {

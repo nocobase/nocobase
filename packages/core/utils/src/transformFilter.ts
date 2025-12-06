@@ -199,7 +199,7 @@ export function removeInvalidFilterItems(filter: FilterGroupType): FilterGroupTy
   // 过滤掉无效的条件项
   filter.items = filter.items.filter((item) => {
     if (isFilterCondition(item)) {
-      return item.path && item.operator;
+      return !!item.operator;
     } else if (isFilterGroup(item)) {
       return removeInvalidFilterItems(item);
     }
