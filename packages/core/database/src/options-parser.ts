@@ -83,6 +83,18 @@ export class OptionsParser {
       return {};
     }
 
+    // multi filter target key array
+    // [{ a: 1, b: 2}, { a: 1, b: 3}]
+    if (Array.isArray(filterByTkOption)) {
+      if (!filterByTkOption.every(lodash.isPlainObject)) {
+        throw new Error('filterByTk array item must be plain object');
+      }
+
+      return {
+        [Op.or]: filterByTkOption,
+      };
+    }
+
     // multi filter target key
     if (lodash.isPlainObject(this.options.filterByTk)) {
       const where = {};
