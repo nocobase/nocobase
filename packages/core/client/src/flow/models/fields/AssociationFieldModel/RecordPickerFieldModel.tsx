@@ -39,8 +39,9 @@ function RemoteModelRenderer({ options, fieldModel }) {
     if (!data) {
       return;
     }
-
-    fieldModel.selectBlockModel = data;
+    if (fieldModel) {
+      fieldModel.selectBlockModel = data;
+    }
   }, [data]);
   if (loading || !data?.uid) {
     return <SkeletonFallback style={{ margin: 16 }} />;
@@ -74,7 +75,7 @@ export function RecordPickerContent({ model, toOne = false }) {
       <RemoteModelRenderer
         options={{
           parentId: ctx.view.inputArgs.parentId,
-          subKey: 'grid',
+          subKey: 'grid-block',
           async: true,
           delegateToParent: false,
           subType: 'object',
@@ -246,6 +247,7 @@ RecordPickerFieldModel.registerFlow({
         };
         const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
+        console.log(ctx.model);
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],

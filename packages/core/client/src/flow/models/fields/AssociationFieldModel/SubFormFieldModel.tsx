@@ -7,20 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { CloseOutlined, PlusOutlined } from '@ant-design/icons';
+import { CloseOutlined, PlusOutlined, ZoomInOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import {
   tExpr,
+  observable,
   FlowModelRenderer,
   useFlowModel,
   createAssociationAwareObjectMetaFactory,
   createAssociationSubpathResolver,
 } from '@nocobase/flow-engine';
-import { Button, Card, Divider, Form, Tooltip } from 'antd';
+import { Button, Card, Divider, Form, Tooltip, Space } from 'antd';
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { AssociationFieldModel } from './AssociationFieldModel';
+import { RecordPickerContent } from './RecordPickerFieldModel';
 
 class FormAssociationFieldModel extends AssociationFieldModel {
   onInit(options) {
@@ -138,7 +140,15 @@ SubFormFieldModel.registerFlow({
   },
 });
 
-const ArrayNester = ({ name, value, disabled }: any) => {
+const ArrayNester = ({
+  name,
+  value,
+  disabled,
+  allowAddNew,
+  allowSelectExistingRecord,
+  onSelectExitRecordClick,
+  allowDisassociation,
+}: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
   const { t } = useTranslation();
@@ -152,6 +162,7 @@ const ArrayNester = ({ name, value, disabled }: any) => {
       cache: false,
     });
   }, [disabled]);
+
   return (
     <Card
       bordered={true}
@@ -167,6 +178,7 @@ const ArrayNester = ({ name, value, disabled }: any) => {
           <>
             {fields.map((field, index) => {
               const { key, name: fieldName } = field;
+              console.log(value, value[index]);
               const fieldIndex = [...rowIndex, `${collectionName}:${index}`];
               // 每行只创建一次 fork
               if (!forksRef.current[key]) {
@@ -205,7 +217,7 @@ const ArrayNester = ({ name, value, disabled }: any) => {
               return (
                 // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
                 <div key={index} style={{ marginBottom: 12 }}>
-                  {!disabled && (
+                  {!disabled && (allowDisassociation || value[index]?.isNew) && (
                     <div style={{ textAlign: 'right' }}>
                       <Tooltip title={t('Remove')}>
                         <CloseOutlined
@@ -233,10 +245,19 @@ const ArrayNester = ({ name, value, disabled }: any) => {
                 </div>
               );
             })}
-            <Button type="link" onClick={() => add({})} disabled={disabled}>
-              <PlusOutlined />
-              {t('Add new')}
-            </Button>
+            <Space>
+              {allowAddNew && (
+                <Button type="link" onClick={() => add({ isNew: true })} disabled={disabled}>
+                  <PlusOutlined />
+                  {t('Add new')}
+                </Button>
+              )}
+              {!disabled && allowSelectExistingRecord && (
+                <a onClick={() => onSelectExitRecordClick()} style={{ marginTop: 8 }}>
+                  <ZoomInOutlined /> {t('Select record')}
+                </a>
+              )}
+            </Space>
           </>
         )}
       </Form.List>
@@ -245,6 +266,7 @@ const ArrayNester = ({ name, value, disabled }: any) => {
 };
 
 export class SubFormListFieldModel extends FormAssociationFieldModel {
+  selectedRows = observable.ref([]);
   updateAssociation = true;
   onInit(options) {
     super.onInit(options);
@@ -265,6 +287,17 @@ export class SubFormListFieldModel extends FormAssociationFieldModel {
       ),
       serverOnlyWhenContextParams: true,
     });
+
+    this.onSelectExitRecordClick = () => {
+      this.dispatchEvent('openView', {});
+    };
+  }
+
+  set onSelectExitRecordClick(fn) {
+    this.setProps({ onSelectExitRecordClick: fn });
+  }
+  change() {
+    this.props.onChange(this.selectedRows.value);
   }
   onMount() {
     super.onMount();
@@ -285,6 +318,191 @@ SubFormListFieldModel.define({
     subModels: {
       grid: {
         use: 'FormGridModel',
+      },
+    },
+  },
+});
+
+SubFormListFieldModel.registerFlow({
+  key: 'subFormListSettings',
+  title: tExpr('Sub-form settings'),
+  sort: 800,
+  steps: {
+    allowAddNew: {
+      title: tExpr('Allow add new data'),
+      uiSchema: {
+        allowAddNew: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            checkedChildren: tExpr('Yes'),
+            unCheckedChildren: tExpr('No'),
+          },
+        },
+      },
+      defaultParams: {
+        allowAddNew: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowAddNew: params.allowAddNew,
+        });
+      },
+    },
+    allowSelectExistingRecord: {
+      title: tExpr('Allow selection of existing records'),
+      uiSchema: {
+        allowSelectExistingRecord: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            checkedChildren: tExpr('Yes'),
+            unCheckedChildren: tExpr('No'),
+          },
+        },
+      },
+      defaultParams: {
+        allowSelectExistingRecord: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowSelectExistingRecord: params.allowSelectExistingRecord,
+        });
+      },
+    },
+    allowDisassociation: {
+      title: tExpr('Allow disassociation'),
+      uiSchema: {
+        allowDisassociation: {
+          'x-component': 'Switch',
+          'x-decorator': 'FormItem',
+          'x-component-props': {
+            checkedChildren: tExpr('Yes'),
+            unCheckedChildren: tExpr('No'),
+          },
+        },
+      },
+      defaultParams: {
+        allowDisassociation: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowDisassociation: params.allowDisassociation,
+        });
+      },
+    },
+  },
+});
+
+SubFormListFieldModel.registerFlow({
+  key: 'selectExitRecordSettings',
+  title: tExpr('Selector setting'),
+  on: {
+    eventName: 'openView',
+  },
+  steps: {
+    openView: {
+      title: tExpr('Edit popup'),
+      uiSchema(ctx) {
+        if (!ctx.model.props.allowSelectExistingRecord) {
+          return;
+        }
+        return {
+          mode: {
+            type: 'string',
+            title: tExpr('Open mode'),
+            enum: [
+              { label: tExpr('Drawer'), value: 'drawer' },
+              { label: tExpr('Dialog'), value: 'dialog' },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+          },
+          size: {
+            type: 'string',
+            title: tExpr('Popup size'),
+            enum: [
+              { label: tExpr('Small'), value: 'small' },
+              { label: tExpr('Medium'), value: 'medium' },
+              { label: tExpr('Large'), value: 'large' },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+          },
+        };
+      },
+      defaultParams: {
+        mode: 'drawer',
+        size: 'medium',
+      },
+      handler(ctx, params) {
+        const sizeToWidthMap: Record<string, any> = {
+          drawer: {
+            small: '30%',
+            medium: '50%',
+            large: '70%',
+          },
+          dialog: {
+            small: '40%',
+            medium: '50%',
+            large: '80%',
+          },
+          embed: {},
+        };
+        const openMode = ctx.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
+        const size = ctx.inputArgs.size || params.size || 'medium';
+        ctx.viewer.open({
+          type: openMode,
+          width: sizeToWidthMap[openMode][size],
+          inheritContext: false,
+          target: ctx.layoutContentElement,
+          inputArgs: {
+            parentId: ctx.model.uid,
+            scene: 'select',
+            dataSourceKey: ctx.collection.dataSourceKey,
+            collectionName: ctx.collectionField?.target,
+            collectionField: ctx.collectionField,
+            rowSelectionProps: {
+              type: 'checkbox',
+              defaultSelectedRows: () => {
+                return ctx.model.props.value;
+              },
+              renderCell: undefined,
+              selectedRowKeys: undefined,
+              onChange: (_, selectedRows) => {
+                const prev = ctx.model.props.value || [];
+                const merged = [
+                  ...prev,
+                  ...selectedRows.map((v) => {
+                    return {
+                      ...v,
+                      isNew: true,
+                    };
+                  }),
+                ];
+
+                // 去重，防止同一个值重复
+                const unique = merged.filter(
+                  (row, index, self) =>
+                    index ===
+                    self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
+                );
+                ctx.model.selectedRows.value = unique;
+              },
+            },
+          },
+          content: () => <RecordPickerContent model={ctx.model} />,
+          styles: {
+            content: {
+              padding: 0,
+              backgroundColor: ctx.model.flowEngine.context.themeToken.colorBgLayout,
+              ...(openMode === 'embed' ? { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 } : {}),
+            },
+            body: {
+              padding: 0,
+            },
+          },
+        });
       },
     },
   },
