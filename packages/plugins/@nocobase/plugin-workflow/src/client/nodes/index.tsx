@@ -131,8 +131,8 @@ function useUpdateAction() {
   };
 }
 
-export async function updateNodeConfig({ api, nodeId, config }) {
-  await api.resource('flow_nodes').update?.({
+export async function updateNodeConfig({ api, nodeId, config, resourceName = 'flow_nodes' }) {
+  await api.resource(resourceName).update?.({
     filterByTk: nodeId,
     values: {
       config,
