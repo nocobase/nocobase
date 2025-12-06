@@ -13,11 +13,46 @@ import {
   useCurrentRoleVariable,
   useCurrentUserVariable,
   useDatetimeVariable,
+  useRequest,
 } from '@nocobase/client';
 import React from 'react';
 import { AvatarSelect } from './AvatarSelect';
 import { useT } from '../../locale';
 import { Switch } from '@formily/antd-v5';
+import { Button, message } from 'antd';
+import { useForm } from '@formily/react';
+import { css } from '@emotion/css';
+
+const ResetButton: React.FC<{ className?: string }> = ({ className }) => {
+  const record = useCollectionRecordData();
+  const isBuiltIn = record?.builtIn;
+  const t = useT();
+  const form = useForm();
+  const { run } = useRequest(
+    {
+      resource: 'aiEmployees',
+      action: 'getBuiltInDefault',
+      params: { filterByTk: record?.username },
+    },
+    {
+      manual: true,
+      onSuccess: (resp) => {
+        const about = resp?.data?.about ?? resp?.about;
+        if (about !== undefined) {
+          form.setValuesIn('about', about);
+        }
+      },
+    },
+  );
+  if (!isBuiltIn) return null;
+  return (
+    <div className={className}>
+      <Button type="link" size="small" onClick={run}>
+        {t('Reset to default')}
+      </Button>
+    </div>
+  );
+};
 
 const useVariableOptions = () => {
   const t = useT();
@@ -51,7 +86,7 @@ export const ProfileSettings: React.FC<{
   return (
     <SchemaComponent
       scope={{ t }}
-      components={{ AvatarSelect, Switch }}
+      components={{ AvatarSelect, Switch, ResetButton }}
       schema={{
         type: 'void',
         properties: {
@@ -109,18 +144,40 @@ export const ProfileSettings: React.FC<{
               placeholder: t('Bio placeholder'),
             },
           },
-          about: {
-            type: 'string',
-            title: '{{t("About me")}}',
-            required: true,
-            'x-disabled': isBuiltIn,
-            'x-decorator': 'FormItem',
-            'x-component': 'Variable.RawTextArea',
+          aboutWrap: {
+            type: 'void',
+            'x-component': 'div',
             'x-component-props': {
-              scope: options,
-              placeholder: t('About me placeholder'),
-              autoSize: {
-                minRows: 15,
+              className: css`
+                position: relative;
+              `,
+            },
+            properties: {
+              about: {
+                type: 'string',
+                title: '{{t("About me")}}',
+                required: true,
+                'x-decorator': 'FormItem',
+                'x-component': 'Variable.RawTextArea',
+                'x-component-props': {
+                  scope: options,
+                  placeholder: t('About me placeholder'),
+                  autoSize: {
+                    minRows: 15,
+                  },
+                },
+              },
+              resetAbout: {
+                type: 'void',
+                'x-component': 'ResetButton',
+                'x-component-props': {
+                  className: css`
+                    position: absolute;
+                    right: 0;
+                    top: 0;
+                    z-index: 1;
+                  `,
+                },
               },
             },
           },

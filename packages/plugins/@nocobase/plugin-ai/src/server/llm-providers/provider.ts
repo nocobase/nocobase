@@ -16,6 +16,7 @@ import { AIChatContext } from '../types/ai-chat-conversation.type';
 import { encodeFile, parseResponseMessage, stripToolCallTags } from '../utils';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
 import { AIMessageChunk } from '@langchain/core/messages';
+import { Context } from '@nocobase/actions';
 
 export interface LLMProviderOptions {
   app: Application;
@@ -117,10 +118,10 @@ export abstract class LLMProvider {
     return stripToolCallTags(chunk);
   }
 
-  async parseAttachment(attachment: any): Promise<any> {
+  async parseAttachment(ctx: Context, attachment: any): Promise<any> {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
-    const data = await encodeFile(decodeURIComponent(url));
+    const data = await encodeFile(ctx, decodeURIComponent(url));
     if (attachment.mimetype.startsWith('image/')) {
       return {
         type: 'image_url',

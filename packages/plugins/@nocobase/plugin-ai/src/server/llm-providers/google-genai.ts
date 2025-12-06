@@ -15,6 +15,7 @@ import { encodeFile } from '../utils';
 import { PluginFileManagerServer } from '@nocobase/plugin-file-manager';
 import { LLMProviderMeta, SupportedModel } from '../manager/ai-manager';
 import { EmbeddingsInterface } from '@langchain/core/embeddings';
+import { Context } from '@nocobase/actions';
 
 const GOOGLE_GEN_AI_URL = 'https://generativelanguage.googleapis.com/v1beta/';
 
@@ -108,10 +109,10 @@ export class GoogleGenAIProvider extends LLMProvider {
     };
   }
 
-  async parseAttachment(attachment: any) {
+  async parseAttachment(ctx: Context, attachment: any) {
     const fileManager = this.app.pm.get('file-manager') as PluginFileManagerServer;
     const url = await fileManager.getFileURL(attachment);
-    const data = await encodeFile(decodeURIComponent(url));
+    const data = await encodeFile(ctx, decodeURIComponent(url));
     if (attachment.mimetype.startsWith('image/')) {
       return {
         type: 'image_url',

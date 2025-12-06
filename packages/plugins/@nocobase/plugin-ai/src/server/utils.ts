@@ -47,11 +47,20 @@ export async function encodeLocalFile(url: string) {
   return Buffer.from(data).toString('base64');
 }
 
-export async function encodeFile(url: string) {
+export async function encodeFile(ctx: Context, url: string) {
   if (!url.startsWith('http')) {
     return encodeLocalFile(url);
   }
-  const response = await axios.get(url, { responseType: 'arraybuffer' });
+  const referer = ctx.get('referer') || '';
+  const ua = ctx.get('user-agent') || '';
+  ctx.log.trace('llm message encode file', { url, referer, ua });
+  const response = await axios.get(url, {
+    responseType: 'arraybuffer',
+    headers: {
+      referer,
+      'User-Agent': ua,
+    },
+  });
   return Buffer.from(response.data).toString('base64');
 }
 
