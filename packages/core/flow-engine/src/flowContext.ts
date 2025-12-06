@@ -83,6 +83,8 @@ export interface MetaTreeNode {
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   paths: string[];
   parentTitles?: string[]; // 父级标题数组，不包含自身title，第一层可省略
+  // 显示控制：当 hidden 为 true（或函数返回 true）时，不在变量选择器中展示该节点
+  hidden?: boolean | (() => boolean);
   // 变量禁用状态与原因（用于变量选择器 UI 展示）
   disabled?: boolean | (() => boolean);
   disabledReason?: string | (() => string | undefined);
@@ -103,6 +105,8 @@ export interface PropertyMeta {
   disabled?: boolean | (() => boolean);
   // 禁用原因（用于 UI 小问号提示），可为函数
   disabledReason?: string | (() => string | undefined);
+  // 显示控制：当 hidden 为 true（或函数返回 true）时，不在变量选择器中展示该节点
+  hidden?: boolean | (() => boolean);
   // 变量解析参数构造器（用于 variables:resolve 的 contextParams，按属性名归位）。
   // 支持返回 RecordRef 或任意嵌套对象（将被 buildServerContextParams 扁平化，例如 { record: RecordRef } -> 'view.record'）。
   buildVariablesParams?: (
@@ -658,12 +662,13 @@ export class FlowContext {
 
     let node: MetaTreeNode;
 
-    // 计算禁用状态与原因的帮助函数
-    const computeDisabledFromMeta = (m: PropertyMeta): { disabled: boolean; reason?: string } => {
-      if (!m) return { disabled: false };
+    // 计算禁用/隐藏状态与原因的帮助函数
+    const computeStateFromMeta = (m: PropertyMeta): { disabled: boolean; reason?: string; hidden: boolean } => {
+      if (!m) return { disabled: false, hidden: false };
       const disabledVal = typeof m.disabled === 'function' ? m.disabled() : m.disabled;
       const reason = typeof m.disabledReason === 'function' ? m.disabledReason() : m.disabledReason;
-      return { disabled: !!disabledVal, reason };
+      const hiddenVal = typeof m.hidden === 'function' ? m.hidden() : m.hidden;
+      return { disabled: !!disabledVal, reason, hidden: !!hiddenVal };
     };
 
     if (typeof metaOrFactory === 'function') {
@@ -680,12 +685,17 @@ export class FlowContext {
         disabled: () => {
           const maybe = metaOrFactory();
           if (maybe && typeof maybe['then'] === 'function') return false;
-          return computeDisabledFromMeta(maybe as PropertyMeta).disabled;
+          return computeStateFromMeta(maybe as PropertyMeta).disabled;
         },
         disabledReason: () => {
           const maybe = metaOrFactory();
           if (maybe && typeof maybe['then'] === 'function') return undefined;
-          return computeDisabledFromMeta(maybe as PropertyMeta).reason;
+          return computeStateFromMeta(maybe as PropertyMeta).reason;
+        },
+        hidden: () => {
+          const maybe = metaOrFactory();
+          if (maybe && typeof maybe['then'] === 'function') return false;
+          return computeStateFromMeta(maybe as PropertyMeta).hidden;
         },
         // 注意：即便 hasChildren === false，也只是“没有子节点”的 UI 提示；
         // 节点自身依然通过 meta 工厂保持惰性特性（需要时可解析出 title/type 等）。
@@ -726,7 +736,7 @@ export class FlowContext {
     } else {
       // 同步 meta：直接创建节点
       const nodeTitle = metaOrFactory.title;
-      const { disabled, reason } = computeDisabledFromMeta(metaOrFactory);
+      const { disabled, reason, hidden } = computeStateFromMeta(metaOrFactory);
       node = {
         name,
         title: nodeTitle,
@@ -737,6 +747,7 @@ export class FlowContext {
         parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
         disabled,
         disabledReason: reason,
+        hidden,
         children: metaOrFactory.properties
           ? this.#createChildNodes(metaOrFactory.properties, paths, [...parentTitles, nodeTitle], metaOrFactory)
           : undefined,
