@@ -83,30 +83,27 @@ export class OptionsParser {
       return {};
     }
 
+    if (Array.isArray(filterByTkOption) && filterByTkOption.length === 0) {
+      return {};
+    }
+
+    const filterTargetKey = this.context.targetKey || this.collection.filterTargetKey;
+
     // multi filter target key array
     // [{ a: 1, b: 2}, { a: 1, b: 3}]
-    if (Array.isArray(filterByTkOption)) {
+    if (Array.isArray(filterByTkOption) && Array.isArray(filterTargetKey)) {
       if (!filterByTkOption.every(lodash.isPlainObject)) {
         throw new Error('filterByTk array item must be plain object');
       }
-
       return {
         [Op.or]: filterByTkOption,
       };
     }
 
     // multi filter target key
-    if (lodash.isPlainObject(this.options.filterByTk)) {
-      const where = {};
-      for (const [key, value] of Object.entries(filterByTkOption)) {
-        where[key] = value;
-      }
-
-      return where;
+    if (lodash.isPlainObject(filterByTkOption)) {
+      return filterByTkOption;
     }
-
-    // single filter target key
-    const filterTargetKey = this.context.targetKey || this.collection.filterTargetKey;
 
     if (Array.isArray(filterTargetKey)) {
       throw new Error('multi filter target key value must be object');
