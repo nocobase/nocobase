@@ -13,6 +13,7 @@ import lodash from 'lodash';
 import path from 'path';
 import { ApplicationModel } from '../server';
 import { Meter } from '@nocobase/telemetry';
+import { LegacyMemoryAdapter } from './adapters/legacy-memory-adapter';
 
 export type AppDbCreator = (
   app: Application,
@@ -47,7 +48,7 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
       continue;
     }
 
-    const beforeSubAppStatus = AppSupervisor.getInstance().getAppStatus(instance.name);
+    const beforeSubAppStatus = await AppSupervisor.getInstance().getAppStatus(instance.name);
 
     const subApp = await appSupervisor.getApp(instance.name, {
       upgrading: true,
@@ -56,7 +57,7 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
     try {
       mainApp.setMaintainingMessage(`upgrading sub app ${instance.name}...`);
       await subApp.runAsCLI(['upgrade'], { from: 'user' });
-      if (!beforeSubAppStatus && AppSupervisor.getInstance().getAppStatus(instance.name) === 'initialized') {
+      if (!beforeSubAppStatus && (await AppSupervisor.getInstance().getAppStatus(instance.name)) === 'initialized') {
         await AppSupervisor.getInstance().removeApp(instance.name);
       }
     } catch (error) {
@@ -148,9 +149,6 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
 };
 
 export class PluginMultiAppManagerServer extends Plugin {
-  appDbCreator: AppDbCreator = defaultDbCreator;
-  appOptionsFactory: AppOptionsFactory = defaultAppOptionsFactory;
-  subAppUpgradeHandler: SubAppUpgradeHandler = defaultSubAppUpgradeHandle;
   meter: Meter;
 
   static getDatabaseConfig(app: Application): IDatabaseOptions {
@@ -186,7 +184,8 @@ export class PluginMultiAppManagerServer extends Plugin {
       }
 
       const subApp = model.registerToSupervisor(this.app, {
-        appOptionsFactory: this.appOptionsFactory,
+        appOptionsFactory: (name: string, mainApp: Application) =>
+          AppSupervisor.getInstance().getAppOptionsFactory()(name, mainApp),
       });
 
       subApp.runCommand('start', '--quickstart');
@@ -204,15 +203,27 @@ export class PluginMultiAppManagerServer extends Plugin {
   }
 
   setSubAppUpgradeHandler(handler: SubAppUpgradeHandler) {
-    this.subAppUpgradeHandler = handler;
+    AppSupervisor.getInstance().setSubAppUpgradeHandler(handler);
   }
 
   setAppOptionsFactory(factory: AppOptionsFactory) {
-    this.appOptionsFactory = factory;
+    AppSupervisor.getInstance().setAppOptionsFactory(factory as any);
   }
 
   setAppDbCreator(appDbCreator: AppDbCreator) {
-    this.appDbCreator = appDbCreator;
+    AppSupervisor.getInstance().setAppDbCreator(appDbCreator);
+  }
+
+  protected static registerLegacyAdapter() {
+    const factory = ({ supervisor }) => new LegacyMemoryAdapter(supervisor);
+    AppSupervisor.registerDiscoveryAdapter('legacy-memory', factory);
+    AppSupervisor.registerProcessAdapter('legacy-memory', factory);
+    AppSupervisor.setDefaultDiscoveryAdapter('legacy-memory');
+    AppSupervisor.setDefaultProcessAdapter('legacy-memory');
+  }
+
+  static staticImport() {
+    this.registerLegacyAdapter();
   }
 
   beforeLoad() {
@@ -268,6 +279,10 @@ export class PluginMultiAppManagerServer extends Plugin {
   }
 
   async load() {
+    const supervisor = AppSupervisor.getInstance();
+    supervisor.setAppDbCreator(defaultDbCreator);
+    supervisor.setAppOptionsFactory((appName, mainApp) => defaultAppOptionsFactory(appName, mainApp));
+    supervisor.setSubAppUpgradeHandler(defaultSubAppUpgradeHandle);
     this.setMetrics();
 
     // after application created
@@ -283,7 +298,8 @@ export class PluginMultiAppManagerServer extends Plugin {
         }
 
         const subApp = model.registerToSupervisor(this.app, {
-          appOptionsFactory: this.appOptionsFactory,
+          appOptionsFactory: (name: string, mainAppInstance: Application) =>
+            AppSupervisor.getInstance().getAppOptionsFactory()(name, mainAppInstance),
         });
 
         subApp.on('afterStart', async () => {
@@ -303,14 +319,14 @@ export class PluginMultiAppManagerServer extends Plugin {
         const quickstart = async () => {
           // create database
           try {
-            await this.appDbCreator(subApp, {
+            await AppSupervisor.getInstance().getAppDbCreator()(subApp, {
               transaction,
               applicationModel: model,
               context: options.context,
             });
           } catch (error) {
             this.log.error(error, { method: 'appDbCreator' });
-            AppSupervisor.getInstance().setAppStatus(subApp.name, 'error');
+            await AppSupervisor.getInstance().setAppStatus(subApp.name, 'error');
             return;
           }
 
@@ -381,7 +397,8 @@ export class PluginMultiAppManagerServer extends Plugin {
       }
 
       const subApp = applicationRecord.registerToSupervisor(mainApp, {
-        appOptionsFactory: self.appOptionsFactory,
+        appOptionsFactory: (name: string, appInstance: Application) =>
+          AppSupervisor.getInstance().getAppOptionsFactory()(name, appInstance),
       });
 
       subApp.on('afterStart', async () => {
@@ -464,7 +481,7 @@ export class PluginMultiAppManagerServer extends Plugin {
     });
 
     this.app.on('afterUpgrade', async (app, options) => {
-      await this.subAppUpgradeHandler(app);
+      await AppSupervisor.getInstance().getSubAppUpgradeHandler()(app);
     });
 
     this.app.resourcer.registerActionHandlers({
@@ -517,7 +534,7 @@ export class PluginMultiAppManagerServer extends Plugin {
       if (actionName === 'list' && resourceName === 'applications') {
         const applications = ctx.body.rows;
         for (const application of applications) {
-          const appStatus = AppSupervisor.getInstance().getAppStatus(application.name, 'stopped');
+          const appStatus = await AppSupervisor.getInstance().getAppStatus(application.name, 'stopped');
           application.status = appStatus;
         }
       }
