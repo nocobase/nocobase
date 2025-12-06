@@ -168,12 +168,12 @@ export class RouterManager {
       const BaseLayout = useContext(BaseLayoutContext);
       return (
         <CustomRouterContextProvider>
-          <BaseLayout>
-            <VariablesProvider>
+          <VariablesProvider>
+            <BaseLayout>
               <Outlet />
               {children}
-            </VariablesProvider>
-          </BaseLayout>
+            </BaseLayout>
+          </VariablesProvider>
         </CustomRouterContextProvider>
       );
     };
