@@ -21,6 +21,8 @@ describe('workflow > action-trigger', () => {
   let agent;
   let PostRepo;
   let CategoryRepo;
+  let TagRepo;
+  let PostTagRepo;
   let WorkflowModel;
   let UserRepo;
   let root;
@@ -39,6 +41,8 @@ describe('workflow > action-trigger', () => {
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
     CategoryRepo = db.getCollection('categories').repository;
+    TagRepo = db.getCollection('tags').repository;
+    PostTagRepo = db.getCollection('postsTags').repository;
     UserRepo = db.getCollection('users').repository;
 
     root = await UserRepo.findOne({});
@@ -223,6 +227,34 @@ describe('workflow > action-trigger', () => {
       expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e1.context.user).toBeDefined();
       expect(e1.context.user.id).toBe(users[0].id);
+    });
+
+    it('multiple filterByTk', async () => {
+      const p1 = await PostRepo.create({
+        values: { title: 't1' },
+      });
+      const t1 = await TagRepo.create({
+        values: { name: 'tag1' },
+      });
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'postsTags',
+        },
+        sync: true,
+      });
+
+      const res1 = await userAgents[0].resource('postsTags').create({
+        values: { postId: p1.id, tagId: t1.id },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(200);
+
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1.context.data).toMatchObject({ postId: p1.id, tagId: t1.id });
     });
   });
 
