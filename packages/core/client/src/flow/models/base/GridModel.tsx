@@ -656,9 +656,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
             </DndProvider>
           </Space>
         )}
-        {this.flowEngine.flowSettings.enabled && (
-          <div style={{ marginBottom: 16 }}>{this.renderAddSubModelButton()}</div>
-        )}
+        {this.enableUIConfiguration && <div style={{ marginBottom: 16 }}>{this.renderAddSubModelButton()}</div>}
       </>
     );
   }
