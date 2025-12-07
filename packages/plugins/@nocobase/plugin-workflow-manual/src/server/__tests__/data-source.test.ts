@@ -22,7 +22,7 @@ describe('workflow > instructions > manual', () => {
   let AnotherPostRepo;
   let WorkflowModel;
   let workflow;
-  let UserModel;
+  let UserRepo;
   let users;
   let UserJobModel;
 
@@ -36,13 +36,15 @@ describe('workflow > instructions > manual', () => {
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
     AnotherPostRepo = app.dataSourceManager.dataSources.get('another').collectionManager.getRepository('posts');
-    UserModel = db.getCollection('users').model;
+    UserRepo = db.getRepository('users');
     UserJobModel = db.getModel('workflowManualTasks');
 
-    users = await UserModel.bulkCreate([
-      { id: 2, nickname: 'a' },
-      { id: 3, nickname: 'b' },
-    ]);
+    users = await UserRepo.create({
+      values: [
+        { id: 2, nickname: 'a' },
+        { id: 3, nickname: 'b' },
+      ],
+    });
 
     userAgents = await Promise.all(users.map((user) => app.agent().login(user)));
 

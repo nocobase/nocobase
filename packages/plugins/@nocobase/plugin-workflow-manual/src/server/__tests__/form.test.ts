@@ -39,8 +39,6 @@ describe('workflow > instructions > manual', () => {
     UserRepo = db.getRepository('users');
     UserJobModel = db.getModel('workflowManualTasks');
 
-    const root = await UserRepo.findOne();
-    rootAgent = await app.agent().login(root);
     users = await UserRepo.create({
       values: [
         { id: 2, nickname: 'a' },
