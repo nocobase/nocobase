@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { VariableFilterItem, VariableFilterItemValue } from '../VariableFilterItem';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { Application } from '../../../../application/Application';
@@ -131,6 +131,35 @@ describe('VariableFilterItem', () => {
     const input = await screen.findByPlaceholderText('Enter value');
     fireEvent.change(input, { target: { value: 'abc' } });
     expect(value.value).toBe('abc');
+  });
+
+  it('keeps numeric string when x-component uses InputNumber with stringMode', async () => {
+    const prevMeta = (globalThis as any).__TEST_META__;
+    const prevPath = (globalThis as any).__TEST_PATH__;
+    (globalThis as any).__TEST_PATH__ = 'price';
+    (globalThis as any).__TEST_META__ = {
+      interface: 'input',
+      uiSchema: { 'x-component': 'InputNumber', 'x-component-props': { stringMode: true } },
+      paths: ['collection', 'price'],
+      name: 'price',
+      title: 'Price',
+      type: 'number',
+    };
+
+    const value: VariableFilterItemValue = { path: 'price', operator: '$eq', value: '123.45' };
+    const model = CreateModel();
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      const input = screen.getByRole('spinbutton') as HTMLInputElement;
+      expect(input.value).toBe('123.45');
+      expect(value.value).toBe('123.45');
+    });
+
+    (globalThis as any).__TEST_META__ = prevMeta;
+    (globalThis as any).__TEST_PATH__ = prevPath;
   });
 
   it('normalizes synthetic event value when formula field renders Input from app components', async () => {
