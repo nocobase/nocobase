@@ -114,6 +114,17 @@ function createStaticInputRenderer(
     ...combinedProps,
   };
 
+  const resolveNumberValue = (val: VariableFilterItemValue['value']) => {
+    if (typeof val === 'number') {
+      return val;
+    }
+    // stringMode 下 InputNumber/NumberPicker 会返回字符串，直接回填以避免被清空
+    if (combinedProps?.stringMode === true && typeof val === 'string') {
+      return val;
+    }
+    return undefined;
+  };
+
   return (
     p: { value?: VariableFilterItemValue['value']; onChange?: (v: VariableFilterItemValue['value']) => void } & Record<
       string,
@@ -126,7 +137,7 @@ function createStaticInputRenderer(
         <InputNumber
           {...commonProps}
           {...rest}
-          value={typeof value === 'number' ? value : undefined}
+          value={resolveNumberValue(value)}
           onChange={(v) => onChange?.(v as unknown as VariableFilterItemValue['value'])}
         />
       );
@@ -135,7 +146,7 @@ function createStaticInputRenderer(
         <NumberPicker
           {...commonProps}
           {...rest}
-          value={typeof value === 'number' ? value : undefined}
+          value={resolveNumberValue(value)}
           onChange={(v) => onChange?.(v as unknown as VariableFilterItemValue['value'])}
         />
       );
