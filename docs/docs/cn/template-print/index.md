@@ -19,7 +19,7 @@
 
 ### 安装插件
 
-参考 [商业插件的安装与升级](https://www.nocobase.com/c/blog/nocobase-commercial-license-activation-guide)
+详细的安装与升级方式请参考：[商业插件激活指南](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
 
 ### 安装 LibreOffice(可选)
 
