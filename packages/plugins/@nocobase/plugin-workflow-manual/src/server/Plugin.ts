@@ -241,7 +241,7 @@ export default class extends Plugin {
       actions: jobActions,
     });
 
-    this.app.acl.allow('workflowManualTasks', ['list', 'listMine', 'get', 'submit'], 'loggedIn');
+    this.app.acl.allow('workflowManualTasks', ['listMine', 'get', 'submit'], 'loggedIn');
 
     const workflowPlugin = this.app.pm.get(WorkflowPlugin) as WorkflowPlugin;
     workflowPlugin.registerInstruction('manual', ManualInstruction);
