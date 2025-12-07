@@ -42,7 +42,7 @@ export const FilterRangePicker = (props: any) => {
   ];
 
   const targetPicker = value ? inferPickerType(value?.[0], picker) : picker;
-  const targetDateFormat = getPickerFormat(targetPicker) || format;
+  const targetDateFormat = format || getPickerFormat(targetPicker);
   const newProps: any = {
     utc: true,
     presets,
