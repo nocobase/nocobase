@@ -220,6 +220,7 @@ const transformSubModelItems = async (
         }
       } catch (error) {
         // ignore and fall back to existing useModel
+        console.error('[NocoBase]: Failed to resolve useModel for toggleable item:', error);
       }
     }
 
