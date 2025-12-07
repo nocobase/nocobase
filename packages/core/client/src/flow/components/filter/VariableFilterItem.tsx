@@ -353,12 +353,17 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
 
       const switched = prev !== undefined && prev !== xComp; // 首次渲染 prev 为 undefined，不做清空
 
+      // 对于 noValue 操作符（如布尔 isTruly/isFalsy），保留此前在 handleOperatorChange 中写入的占位值
+      if (currentOpMeta?.noValue) {
+        return rightValueRaw;
+      }
+
       if (switched && rightValueRaw != null) {
         value.value = undefined;
         return undefined;
       }
       return rightValueRaw;
-    }, [xComp, rightValueRaw, value]);
+    }, [xComp, rightValueRaw, value, currentOpMeta]);
 
     const setRightValue = useCallback(
       (next: unknown) => {
