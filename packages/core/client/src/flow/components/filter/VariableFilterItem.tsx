@@ -191,6 +191,18 @@ function createStaticInputRenderer(
   };
 }
 
+function normalizeRightValueInput(input: unknown) {
+  if (input && typeof input === 'object') {
+    const maybeEvent = input as { target?: { value?: unknown }; nativeEvent?: unknown; preventDefault?: () => void };
+    const isEventLike = typeof maybeEvent.preventDefault === 'function' || !!maybeEvent.nativeEvent;
+    if (isEventLike || 'target' in maybeEvent) {
+      const targetValue = maybeEvent.target?.value;
+      return targetValue !== undefined ? targetValue : input;
+    }
+  }
+  return input;
+}
+
 /**
  * 上下文筛选项组件
  */
@@ -305,7 +317,20 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     const mergedSchema: ISchema = useMemo(() => {
       const fieldSchema = leftMeta?.uiSchema || {};
       const opSchema = currentOpMeta?.schema || {};
-      return merge({}, fieldSchema, opSchema);
+      const merged = merge({}, fieldSchema, opSchema);
+      // 公式字段：在筛选场景下改为可编辑输入组件，并标记筛选上下文
+      if (leftMeta?.interface === 'formula') {
+        const override: ISchema = {
+          'x-read-pretty': false,
+          'x-component': 'Input',
+          'x-component-props': {
+            ...(merged['x-component-props'] as Record<string, any>),
+          },
+        };
+        const next = merge({}, merged, override);
+        return next;
+      }
+      return merged;
     }, [leftMeta, currentOpMeta]);
 
     // 仅在组件类型切换且新组件为日期/时间类时，检测不兼容旧值并清空；首渲染保留旧值
@@ -328,6 +353,13 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       }
       return rightValueRaw;
     }, [xComp, rightValueRaw, value, currentOpMeta]);
+
+    const setRightValue = useCallback(
+      (next: unknown) => {
+        value.value = normalizeRightValueInput(next) as VariableFilterItemValue['value'];
+      },
+      [value],
+    );
 
     // 右侧静态输入（无变量模式）与右侧 VariableInput 的静态渲染组件，统一复用
     // t 可能每次渲染产生新引用，导致 staticInputRenderer 引用不稳定，进而触发右侧输入卸载/重建。
@@ -363,9 +395,9 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         // 将外部变更回调保持最新引用
         const onChangeValue = useCallback(
           (v: VariableFilterItemValue['value']) => {
-            value.value = v;
+            setRightValue(v);
           },
-          [value],
+          [setRightValue],
         );
         useEffect(() => {
           onChangeValueRef.current = onChangeValue;
@@ -418,7 +450,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         );
       }
       return Dynamic;
-    }, [mergedSchema, stableT, value]);
+    }, [mergedSchema, stableT, setRightValue]);
 
     //
 
@@ -449,7 +481,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
               {...xProps}
               style={{ width: '100%', ...(xProps?.style || {}) }}
               value={normalized}
-              onChange={(vals: any) => (value.value = vals)}
+              onChange={(vals: any) => setRightValue(vals)}
             />
           </div>
         );
@@ -459,7 +491,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
         const Comp = staticInputRenderer;
         return (
           <div style={{ flex: '1 1 40%', minWidth: 160, maxWidth: '100%' }}>
-            <Comp value={rightValue} onChange={(val) => (value.value = val)} />
+            <Comp value={rightValue} onChange={(val) => setRightValue(val)} />
           </div>
         );
       }
@@ -472,8 +504,8 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       operatorMetaList,
       rightValue,
       staticInputRenderer,
-      value,
       model.context.app,
+      setRightValue,
     ]);
 
     // Null 占位组件（仿照 DefaultValue.tsx 的实现）
@@ -617,7 +649,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
           (rightAsVariable ? (
             <VariableInput
               value={rightValue}
-              onChange={(v) => (value.value = v)}
+              onChange={(v) => setRightValue(v)}
               metaTree={mergedRightMetaTree}
               converters={rightConverters}
               showValueComponent
