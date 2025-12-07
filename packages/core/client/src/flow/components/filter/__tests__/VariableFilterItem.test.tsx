@@ -9,11 +9,12 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { VariableFilterItem } from '../VariableFilterItem';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { Application } from '../../../../application/Application';
 import { CollectionFieldInterface } from '../../../../data-source/collection-field-interface/CollectionFieldInterface';
+import { observable } from '@formily/reactive';
 
 // Mock VariableInput to a minimal test double (single button)
 vi.mock('@nocobase/flow-engine', async () => {
@@ -109,7 +110,7 @@ describe('VariableFilterItem', () => {
   });
 
   it('renders right VariableInput when rightAsVariable=true and hides it for noValue operator', async () => {
-    const value = { path: '', operator: '', value: '' } as any;
+    const value = observable({ path: '', operator: '', value: '' }) as any;
     const model = CreateModel();
 
     const { rerender } = render(<VariableFilterItem value={value} model={model} rightAsVariable />);
@@ -125,6 +126,64 @@ describe('VariableFilterItem', () => {
     rerender(<VariableFilterItem value={nextValue} model={model} rightAsVariable />);
     // Only left VariableInput remains（右侧在 noValue 操作符下不渲染）
     expect(screen.queryAllByTestId('variable-input')).toHaveLength(1);
+  });
+
+  it('keeps noValue operator value when operator schema changes x-component', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as any;
+    const model = CreateModel();
+
+    // 注册一个布尔型接口，提供 noValue=true 且 schema 为 Select 的操作符
+    class CheckboxInterface extends CollectionFieldInterface {
+      name = 'checkbox';
+      group = 'choices';
+      filterable = {
+        operators: [
+          {
+            value: '$isTruly',
+            label: 'Yes',
+            noValue: true,
+            schema: {
+              'x-component': 'Select',
+              'x-component-props': {
+                options: [
+                  { label: 'Yes', value: true },
+                  { label: 'No', value: false },
+                ],
+              },
+            },
+          },
+        ],
+      };
+    }
+    (model.context.app as any).addFieldInterfaces([CheckboxInterface]);
+
+    // 模拟选择 Checkbox 字段，初始 uiSchema 的 x-component 是 Checkbox
+    const prevMeta = (globalThis as any).__TEST_META__;
+    const prevPath = (globalThis as any).__TEST_PATH__;
+    (globalThis as any).__TEST_PATH__ = 'flag';
+    (globalThis as any).__TEST_META__ = {
+      interface: 'checkbox',
+      uiSchema: { 'x-component': 'Checkbox' },
+      paths: ['collection', 'flag'],
+    };
+
+    const { rerender } = render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+
+    // 选择字段后，effect 会将 operator 设为 $isTruly，并写入占位值 true（对应 x-component: Checkbox）
+    fireEvent.click(screen.getByTestId('variable-input'));
+    await waitFor(() => {
+      expect(value.operator).toBe('$isTruly');
+    });
+
+    // rerender 触发 mergedSchema 的 x-component 从 Checkbox 切到 Select（来自 operator schema）
+    rerender(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+
+    // 旧逻辑会在上述切换时清空 value；修复后应保持 true
+    expect(value.value).toBe(true);
+
+    // 还原全局 mock 以避免污染其它用例
+    (globalThis as any).__TEST_META__ = prevMeta;
+    (globalThis as any).__TEST_PATH__ = prevPath;
   });
 
   it('resets operator and value when operators of current field become empty', async () => {
@@ -154,7 +213,7 @@ describe('VariableFilterItem', () => {
   });
 
   it('prefers child operators injected via x-filter-operators over interface defaults', async () => {
-    const value = { path: '', operator: '', value: '' } as any;
+    const value = observable({ path: '', operator: '', value: '' }) as any;
     const model = CreateModel();
 
     // 通过全局变量注入 child meta（包含 x-filter-operators）
