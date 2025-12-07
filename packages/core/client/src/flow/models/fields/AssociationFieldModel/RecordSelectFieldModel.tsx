@@ -463,16 +463,17 @@ RecordSelectFieldModel.registerFlow({
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(target);
         resource.setPageSize(paginationState.pageSize);
+        const isFilterScene = ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter;
         const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
         const sourceValue = ctx.record?.[collectionField?.sourceKey];
         // 构建 $or 条件数组
         const orFilters: Record<string, any>[] = [];
-        if (sourceValue != null && isOToAny) {
+        if (!isFilterScene && sourceValue != null && isOToAny) {
           const eqKey = `${foreignKey}.$eq`;
           orFilters.push({ [eqKey]: sourceValue });
         }
 
-        if (isOToAny) {
+        if (!isFilterScene && isOToAny) {
           const isKey = `${foreignKey}.$is`;
           orFilters.push({ [isKey]: null });
         }
