@@ -33,9 +33,10 @@ const ResetButton: React.FC<{ className?: string }> = ({ className }) => {
   const { run } = useRequest(() => api.resource('aiEmployees').getBuiltInDefault({ filterByTk: record?.username }), {
     manual: true,
     onSuccess: (resp) => {
-      const about = resp?.data?.about ?? resp?.about;
-      if (about !== undefined) {
+      const about = resp?.data?.data?.about;
+      if (typeof about === 'string') {
         form.setValuesIn('about', about);
+        message.success(t('Reset successfully'));
       }
     },
   });
