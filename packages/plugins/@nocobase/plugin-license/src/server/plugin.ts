@@ -8,8 +8,10 @@
  */
 
 import { Plugin } from '@nocobase/server';
-import { getInstanceId, saveLicenseKey, isLicenseKeyExists } from './utils';
+import { getInstanceId, saveLicenseKey, isLicenseKeyExists, getLicenseValidate, CACHE_KEY } from './utils';
 import { keyDecrypt } from '@nocobase/license-kit';
+import { LICENSE_TIPS } from '../const';
+import pick from 'lodash/pick';
 
 export class PluginLicenseServer extends Plugin {
   async afterAdd() {}
@@ -29,13 +31,37 @@ export class PluginLicenseServer extends Plugin {
           try {
             keyDecrypt(licenseKey);
           } catch (e) {
-            return ctx.throw(500, ctx.t('Invalid license key', { ns: '@nocobase/plugin-license' }));
+            return ctx.throw(500, ctx.t(LICENSE_TIPS.INVALID_LICENSE_KEY, { ns: '@nocobase/plugin-license' }));
           }
-          await saveLicenseKey(licenseKey);
+
+          const licenseValidate = await getLicenseValidate({ key: licenseKey, ctx });
+          ctx.body = {
+            ...licenseValidate,
+          };
+          if (licenseValidate.envMatch && licenseValidate.domainMatch) {
+            await saveLicenseKey(licenseKey, ctx);
+          }
           await next();
         },
         'is-exists': async (ctx, next) => {
           ctx.body = await isLicenseKeyExists();
+          await next();
+        },
+        'license-validate': async (ctx, next) => {
+          const isExists = await isLicenseKeyExists();
+          if (!isExists) {
+            ctx.body = {
+              keyNotExists: true,
+            };
+            await next();
+            return;
+          }
+          const licenseValidate = await getLicenseValidate({ ctx });
+          ctx.body = {
+            keyNotExists: false,
+            ...licenseValidate,
+            keyData: pick(licenseValidate.keyData, ['service']),
+          };
           await next();
         },
       },

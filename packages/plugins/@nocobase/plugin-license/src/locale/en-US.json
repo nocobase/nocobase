@@ -3,11 +3,20 @@
   "Copied": "Copied",
   "Copy": "Copy",
   "Enter license key": "Enter license key",
-  "Failed to copy, please open ./storage/.license/instance-id and copy it": "Failed to copy, please open ./storage/.license/instance-id and copy it",
   "Instance ID": "Instance ID",
   "Invalid license key": "Invalid license key",
   "License key": "License key",
   "License key has been set": "License key has been set",
   "License key saved successfully, please re-run the plugin installation.": "License key saved successfully, please re-run the plugin installation.",
-  "License settings": "License settings"
+  "License settings": "License settings",
+  "Failed to copy, please open ./storage/.license/instance-id and copy it": "Failed to copy, please open ./storage/.license/instance-id and copy it",
+  "The licensed environment does not match the current environment. Please go to NocoBase Service to obtain a new license key.": "The licensed environment does not match the current environment. Please go to NocoBase Service to obtain a new license key.",
+  "The licensed domain does not match the current domain {{domain}}. Please go to NocoBase Service to obtain a new license key.": "The licensed domain does not match the current domain {{domain}}. Please go to NocoBase Service to obtain a new license key.",
+  "The current environment cannot connect to NocoBase Service, only manual installation of commercial plugins is supported.": "The current environment cannot connect to NocoBase Service, only manual installation of commercial plugins is supported.",
+  "The current key cannot log in to NocoBase Service, only manual installation of commercial plugins is supported.": "The current key cannot log in to NocoBase Service, only manual installation of commercial plugins is supported.",
+  "The license key was saved successfully": "The license key was saved successfully",
+  "The license key was saved successfully. To install commercial plugins, please restart the NocoBase service.": "The license key was saved successfully. To install commercial plugins, please restart the NocoBase service.",
+  "The license key has expired": "The license key has expired",
+  "The license key is invalid": "The license key is invalid",
+  "You can visit the Service platform to view common issues and solutions": "You can visit the Service platform to view common issues and solutions"
 }

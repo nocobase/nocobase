@@ -13,6 +13,7 @@ const { run, isDev } = require('../util');
 const { getInstanceIdAsync } = require('@nocobase/license-kit');
 const path = require('path');
 const fs = require('fs');
+const { logger } = require('../logger');
 
 /**
  *
@@ -24,11 +25,11 @@ module.exports = (cli) => {
     .description('Generate InstanceID')
     .option('--force', 'Force generate InstanceID')
     .action(async (options) => {
-      console.log('Generating InstanceID...');
+      logger.info('Generating InstanceID...');
       const dir = path.resolve(process.cwd(), 'storage/.license');
       const filePath = path.resolve(dir, 'instance-id');
       if (fs.existsSync(filePath) && !options.force) {
-        console.log('InstanceID already exists at ' + filePath);
+        logger.info('InstanceID already exists at ' + filePath);
         return;
       } else {
         if (!fs.existsSync(dir)) {
@@ -37,9 +38,9 @@ module.exports = (cli) => {
         try {
           const instanceId = await getInstanceIdAsync();
           fs.writeFileSync(filePath, instanceId + '\n');
-          console.log(chalk.greenBright(`InstanceID saved to ${filePath}`));
+          logger.info(`InstanceID saved to ${filePath}`);
         } catch (e) {
-          console.log(e);
+          logger.error('Failed to generate InstanceID', e.message || e);
         }
       }
     });

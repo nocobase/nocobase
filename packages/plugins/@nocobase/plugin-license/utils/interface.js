@@ -1,3 +1,4 @@
+'use strict';
 /**
  * This file is part of the NocoBase (R) project.
  * Copyright (c) 2020-2024 NocoBase Co., Ltd.
@@ -6,6 +7,4 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
-export { default } from './plugin';
-export * from './utils';
+Object.defineProperty(exports, '__esModule', { value: true });

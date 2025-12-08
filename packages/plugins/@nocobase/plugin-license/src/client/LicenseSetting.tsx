@@ -7,12 +7,14 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { SchemaComponent, useAPIClient, useFormBlockContext } from '@nocobase/client';
-import { Card, Typography, Spin, message, Input, Button } from 'antd';
+import { Card, Typography, Spin, message, Input, Button, Alert, Modal } from 'antd';
 import { useAsyncEffect } from 'ahooks';
 import { useT } from './locale';
 import { CopyOutlined } from '@ant-design/icons';
+import { LicenseValidate } from './LicenseValidate';
+import { LICENSE_TIPS } from '../const';
 
 const copyTextToClipboard = ({
   text,
@@ -104,7 +106,7 @@ const useSubmitProps = () => {
   const saveLicenseKey = async (licenseKey: string) => {
     setLoading(true);
     try {
-      await api.request({
+      const res: any = await api.request({
         url: '/license:license-key',
         method: 'POST',
         data: {
@@ -112,7 +114,64 @@ const useSubmitProps = () => {
         },
       });
       setLoading(false);
-      message.success(t('License key saved successfully, please re-run the plugin installation.'));
+      const licenseValidateResult: any = res?.data?.data || {};
+      if (!licenseValidateResult.envMatch) {
+        Modal.error({
+          title: t('Environment mismatch'),
+          content: (
+            <>
+              {t(
+                'The licensed environment does not match the current environment. Please go to NocoBase Service to obtain a new license key.',
+              )}
+              <br />
+              {t('Current environment')}:
+              <ul style={{ margin: 0 }}>
+                <li>
+                  {t('System')}:{' '}
+                  <strong>
+                    {licenseValidateResult?.current?.env?.sys} {licenseValidateResult?.current?.env?.osVer}
+                  </strong>
+                </li>
+                <li>
+                  {t('Database')}:{' '}
+                  <strong>
+                    {licenseValidateResult?.current?.env?.db?.type} ({licenseValidateResult?.current?.env?.db?.name})
+                  </strong>
+                </li>
+              </ul>
+            </>
+          ),
+        });
+        return;
+      }
+      if (!licenseValidateResult.domainMatch) {
+        Modal.error({
+          title: t('Domain mismatch'),
+          content: t(
+            'The licensed domain does not match the current domain {{domain}}. Please go to NocoBase Service to obtain a new license key.',
+            {
+              domain: licenseValidateResult.current.domain,
+              interpolation: { escapeValue: false },
+            },
+          ),
+        });
+        return;
+      }
+      if (licenseValidateResult.isPkgConnection === false) {
+        message.success(t('The license key was saved successfully'), 5);
+        message.warning(t(LICENSE_TIPS.PKG_CONNECTION_ERROR), 5);
+        return;
+      }
+      if (licenseValidateResult.isPkgLogin === false) {
+        message.success(t('The license key was saved successfully'), 5);
+        message.warning(t(LICENSE_TIPS.PKG_LOGIN_ERROR), 5);
+        return;
+      }
+      message.success(
+        t(
+          'The license key was saved successfully. To install commercial plugins, please restart the NocoBase service.',
+        ),
+      );
     } catch (e) {
       setLoading(false);
     }
@@ -217,6 +276,7 @@ export default function LicenseSetting() {
       },
     },
   };
+
   return (
     <Card bordered={false}>
       <SchemaComponent
@@ -229,6 +289,8 @@ export default function LicenseSetting() {
           },
         }}
       />
+      <br />
+      <LicenseValidate />
     </Card>
   );
 }

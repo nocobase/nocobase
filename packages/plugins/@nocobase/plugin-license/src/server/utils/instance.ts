@@ -31,12 +31,6 @@ export async function createInstanceId(force = false) {
   });
 }
 
-export async function saveLicenseKey(licenseKey: string) {
-  const dir = path.resolve(process.cwd(), 'storage/.license');
-  const filePath = path.resolve(dir, 'license-key');
-  fs.writeFileSync(filePath, licenseKey);
-}
-
 export async function isLicenseKeyExists() {
   const dir = path.resolve(process.cwd(), 'storage/.license');
   const filePath = path.resolve(dir, 'license-key');
