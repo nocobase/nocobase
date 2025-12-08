@@ -18,6 +18,7 @@ import {
 import { Card } from 'antd';
 import React from 'react';
 import { BlockModel } from '../../base';
+import { BlockItemCard } from '../../../components';
 import { resolveRunJsParams } from '../../utils/resolveRunJsParams';
 import { CodeEditor } from '../../../components/code-editor';
 
@@ -30,16 +31,23 @@ export class JSBlockModel extends BlockModel {
     const decoratorProps = this.decoratorProps || {};
     const { className, id: _ignoredId, title, description, ...rest } = decoratorProps;
     const mergedClassName = ['code-block', className].filter(Boolean).join(' ');
-    const cardTitle =
-      title || description ? (
-        <div>
-          {title && <span>{title}</span>}
-          {description && <div>{description}</div>}
-        </div>
-      ) : undefined;
+
+    if (title || description) {
+      return (
+        <BlockItemCard
+          id={`model-${this.uid}`}
+          className={mergedClassName}
+          title={title}
+          description={description}
+          {...rest}
+        >
+          <div ref={this.context.ref} />
+        </BlockItemCard>
+      );
+    }
 
     return (
-      <Card id={`model-${this.uid}`} className={mergedClassName} title={cardTitle} {...rest}>
+      <Card id={`model-${this.uid}`} className={mergedClassName} {...rest}>
         <div ref={this.context.ref} />
       </Card>
     );
