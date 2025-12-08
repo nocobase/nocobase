@@ -9,11 +9,12 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import { VariableFilterItem } from '../VariableFilterItem';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { VariableFilterItem, VariableFilterItemValue } from '../VariableFilterItem';
 import { FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { Application } from '../../../../application/Application';
 import { CollectionFieldInterface } from '../../../../data-source/collection-field-interface/CollectionFieldInterface';
+import { observable } from '@formily/reactive';
 
 // Mock VariableInput to a minimal test double (single button)
 vi.mock('@nocobase/flow-engine', async () => {
@@ -29,6 +30,9 @@ vi.mock('@nocobase/flow-engine', async () => {
             interface: 'input',
             uiSchema: { 'x-component': 'Input', 'x-component-props': { placeholder: 'Enter value' } },
             paths: ['collection', 'name'],
+            name: 'name',
+            title: 'Name',
+            type: 'string',
           },
         )
       }
@@ -66,7 +70,17 @@ function CreateModel() {
       ],
     };
   }
-  app.addFieldInterfaces([InputInterface]);
+  class FormulaInterface extends CollectionFieldInterface {
+    name = 'formula';
+    group = 'advanced';
+    filterable = {
+      operators: [
+        { value: '$gt', label: '>' },
+        { value: '$empty', label: 'is empty', noValue: true },
+      ],
+    };
+  }
+  app.addFieldInterfaces([InputInterface, FormulaInterface]);
 
   // define collection meta so that getPropertyMetaTree('{{ ctx.collection }}') works
   model.context.defineProperty('collection', {
@@ -80,11 +94,22 @@ function CreateModel() {
           type: 'string',
           uiSchema: { 'x-component': 'Input', 'x-component-props': { placeholder: 'Enter value' } },
         },
+        formulaField: {
+          title: 'Formula field',
+          interface: 'formula',
+          type: 'string',
+          // MetaTreeNode likely doesn't have 'options' directly, but FormulaFieldModel reads it from options?
+          // Checking usage in VariableFilterItem line 317: (leftMeta as any)?.options?.dataType
+          // So strict MetaTreeNode might not have it, we may need to cast or use 'any' if valid in runtime.
+          // However, here we are defining property options for collection config, NOT MetaTreeNode directly yet.
+          options: { dataType: 'string' },
+          uiSchema: { 'x-component': 'Input', 'x-component-props': { placeholder: 'Enter value' } },
+        },
       },
     },
   });
 
-  return model as any;
+  return model;
 }
 
 describe('VariableFilterItem', () => {
@@ -94,7 +119,7 @@ describe('VariableFilterItem', () => {
   });
 
   it('renders static right input when rightAsVariable=false and updates value on typing', async () => {
-    const value = { path: '', operator: '', value: '' } as any;
+    const value: VariableFilterItemValue = { path: '', operator: '', value: '' };
     const model = CreateModel();
 
     render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
@@ -108,8 +133,72 @@ describe('VariableFilterItem', () => {
     expect(value.value).toBe('abc');
   });
 
+  it('keeps numeric string when x-component uses InputNumber with stringMode', async () => {
+    const prevMeta = (globalThis as any).__TEST_META__;
+    const prevPath = (globalThis as any).__TEST_PATH__;
+    (globalThis as any).__TEST_PATH__ = 'price';
+    (globalThis as any).__TEST_META__ = {
+      interface: 'input',
+      uiSchema: { 'x-component': 'InputNumber', 'x-component-props': { stringMode: true } },
+      paths: ['collection', 'price'],
+      name: 'price',
+      title: 'Price',
+      type: 'number',
+    };
+
+    const value: VariableFilterItemValue = { path: 'price', operator: '$eq', value: '123.45' };
+    const model = CreateModel();
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    await waitFor(() => {
+      const input = screen.getByRole('spinbutton') as HTMLInputElement;
+      expect(input.value).toBe('123.45');
+      expect(value.value).toBe('123.45');
+    });
+
+    (globalThis as any).__TEST_META__ = prevMeta;
+    (globalThis as any).__TEST_PATH__ = prevPath;
+  });
+
+  it('normalizes synthetic event value when formula field renders Input from app components', async () => {
+    const value: VariableFilterItemValue = { path: '', operator: '', value: '' };
+    const model = CreateModel();
+
+    // Use a simpler functional component type to avoid 'any'
+    const EventInput: React.FC<any> = ({ onChange, value: inputValue, ...rest }) => (
+      <input data-testid="formula-input" value={inputValue ?? ''} onChange={(e) => onChange?.(e)} {...rest} />
+    );
+    // Cast to any is unavoidable here if addComponents is not strictly typed in Application class for arbitrary components,
+    // but at least we scope it.
+    (model.context.app as unknown as Application).addComponents({ Input: EventInput });
+
+    (globalThis as any).__TEST_PATH__ = 'formulaField';
+    (globalThis as any).__TEST_META__ = {
+      interface: 'formula',
+      uiSchema: { 'x-component': 'Input', 'x-component-props': { placeholder: 'Enter value' } },
+      options: { dataType: 'string' },
+      paths: ['collection', 'formulaField'],
+      // Satisfy MetaTreeNode interface
+      name: 'formulaField',
+      title: 'Formula field',
+      type: 'string',
+    };
+
+    render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+    fireEvent.click(screen.getByTestId('variable-input'));
+
+    const input = await screen.findByPlaceholderText('Enter value');
+    fireEvent.change(input, { target: { value: '3.14' } });
+    expect(value.value).toBe('3.14');
+
+    delete (globalThis as any).__TEST_PATH__;
+    delete (globalThis as any).__TEST_META__;
+  });
+
   it('renders right VariableInput when rightAsVariable=true and hides it for noValue operator', async () => {
-    const value = { path: '', operator: '', value: '' } as any;
+    const value = observable({ path: '', operator: '', value: '' }) as any;
     const model = CreateModel();
 
     const { rerender } = render(<VariableFilterItem value={value} model={model} rightAsVariable />);
@@ -121,14 +210,72 @@ describe('VariableFilterItem', () => {
     expect(screen.queryAllByTestId('variable-input')).toHaveLength(2);
 
     // Set operator to a noValue operator and rerender -> right side should disappear
-    const nextValue: any = { ...value, operator: '$null' };
+    const nextValue: VariableFilterItemValue = { ...value, operator: '$null' };
     rerender(<VariableFilterItem value={nextValue} model={model} rightAsVariable />);
     // Only left VariableInput remains（右侧在 noValue 操作符下不渲染）
     expect(screen.queryAllByTestId('variable-input')).toHaveLength(1);
   });
 
+  it('keeps noValue operator value when operator schema changes x-component', async () => {
+    const value = observable({ path: '', operator: '', value: '' }) as any;
+    const model = CreateModel();
+
+    // 注册一个布尔型接口，提供 noValue=true 且 schema 为 Select 的操作符
+    class CheckboxInterface extends CollectionFieldInterface {
+      name = 'checkbox';
+      group = 'choices';
+      filterable = {
+        operators: [
+          {
+            value: '$isTruly',
+            label: 'Yes',
+            noValue: true,
+            schema: {
+              'x-component': 'Select',
+              'x-component-props': {
+                options: [
+                  { label: 'Yes', value: true },
+                  { label: 'No', value: false },
+                ],
+              },
+            },
+          },
+        ],
+      };
+    }
+    (model.context.app as any).addFieldInterfaces([CheckboxInterface]);
+
+    // 模拟选择 Checkbox 字段，初始 uiSchema 的 x-component 是 Checkbox
+    const prevMeta = (globalThis as any).__TEST_META__;
+    const prevPath = (globalThis as any).__TEST_PATH__;
+    (globalThis as any).__TEST_PATH__ = 'flag';
+    (globalThis as any).__TEST_META__ = {
+      interface: 'checkbox',
+      uiSchema: { 'x-component': 'Checkbox' },
+      paths: ['collection', 'flag'],
+    };
+
+    const { rerender } = render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+
+    // 选择字段后，effect 会将 operator 设为 $isTruly，并写入占位值 true（对应 x-component: Checkbox）
+    fireEvent.click(screen.getByTestId('variable-input'));
+    await waitFor(() => {
+      expect(value.operator).toBe('$isTruly');
+    });
+
+    // rerender 触发 mergedSchema 的 x-component 从 Checkbox 切到 Select（来自 operator schema）
+    rerender(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);
+
+    // 旧逻辑会在上述切换时清空 value；修复后应保持 true
+    expect(value.value).toBe(true);
+
+    // 还原全局 mock 以避免污染其它用例
+    (globalThis as any).__TEST_META__ = prevMeta;
+    (globalThis as any).__TEST_PATH__ = prevPath;
+  });
+
   it('resets operator and value when operators of current field become empty', async () => {
-    const value = { path: '', operator: '$eq', value: 'abc' } as any;
+    const value: VariableFilterItemValue = { path: '', operator: '$eq', value: 'abc' };
     const model1 = CreateModel();
 
     const { rerender } = render(<VariableFilterItem value={value} model={model1} rightAsVariable={false} />);
@@ -145,7 +292,7 @@ describe('VariableFilterItem', () => {
         operators: [{ value: '$null', label: 'Is null', noValue: true }],
       };
     }
-    (model2.context.app as any).addFieldInterfaces([InputInterfaceAlt]);
+    (model2.context.app as unknown as Application).addFieldInterfaces([InputInterfaceAlt]);
     rerender(<VariableFilterItem value={value} model={model2} rightAsVariable={false} />);
 
     // effect: 当当前 operator 不在新列表中时，自动回退到第一个可用操作符
@@ -154,7 +301,7 @@ describe('VariableFilterItem', () => {
   });
 
   it('prefers child operators injected via x-filter-operators over interface defaults', async () => {
-    const value = { path: '', operator: '', value: '' } as any;
+    const value = observable({ path: '', operator: '', value: '' }) as any;
     const model = CreateModel();
 
     // 通过全局变量注入 child meta（包含 x-filter-operators）
@@ -166,6 +313,9 @@ describe('VariableFilterItem', () => {
         'x-filter-operators': [{ value: '$includes', label: 'contains' }],
       },
       paths: ['collection', 'containsText'],
+      name: 'containsText',
+      title: 'Contains text',
+      type: 'string',
     };
 
     const { rerender } = render(<VariableFilterItem value={value} model={model} rightAsVariable={false} />);

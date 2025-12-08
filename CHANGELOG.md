@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.21](https://github.com/nocobase/nocobase/compare/v1.9.20...v1.9.21) - 2025-12-06
+
+### 🚀 Improvements
+
+- **[Audit logs]** Update the unique identifier field to `text` to prevent identifier length overflow during bulk edits by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Workflow: Approval]** Fix the issue where no data when loading related approvals with ACL scope variables by @mytharcher
+
 ## [v1.9.20](https://github.com/nocobase/nocobase/compare/v1.9.19...v1.9.20) - 2025-12-05
 
 ### 🎉 New Features

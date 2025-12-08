@@ -1541,5 +1541,7 @@
   "{{count}} more items": "还有 {{count}} 项",
   "≠": "≠",
   "≤": "≤",
-  "≥": "≥"
+  "≥": "≥",
+  "Sub-table settings": "子表格设置",
+  "Sub-form settings": "子表单设置"
 }
