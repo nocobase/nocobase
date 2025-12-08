@@ -301,6 +301,7 @@ export class SubTableColumnModel<
                   name={[(this.parent as FieldModel).context.fieldPath, rowIdx, namePath]}
                   style={{ marginBottom: 0 }}
                   showLabel={false}
+                  initialValue={value}
                 >
                   {fork.constructor.isLargeField ? (
                     <LargeFieldEdit
