@@ -237,22 +237,30 @@ DatePicker.RangePicker = function RangePicker(props: any) {
               value: 'year',
             },
           ])}
-          onChange={(value) => {
-            const format = getPickerFormat(value);
-            const dateTimeFormat = getDateTimeFormat(value, format, showTime, timeFormat);
+          onChange={(nextPicker) => {
+            const format = getPickerFormat(nextPicker);
+            const dateTimeFormat = getDateTimeFormat(nextPicker, format, showTime, timeFormat);
             field?.setComponentProps({
-              picker: value,
+              picker: nextPicker,
               format,
             });
-            newProps.picker = value;
+            newProps.picker = nextPicker;
             newProps.format = dateTimeFormat;
             setStateProps(newProps);
             if (fieldSchema) {
               fieldSchema['x-component-props'] = {
                 ...props,
-                picker: value,
+                picker: nextPicker,
                 format: dateTimeFormat,
               };
+            }
+            if (props.onChange) {
+              const normalizedRange = Array.isArray(value)
+                ? value
+                    .map((item) => formatFilterValueByPicker(item, nextPicker, showTime))
+                    .filter((item) => item !== undefined)
+                : [];
+              props.onChange(normalizedRange);
             }
             if (field) {
               field.value = undefined;
@@ -274,14 +282,22 @@ function toLocalNaiveISOString(dateString: string, format): string {
   return dateString;
 }
 
+const formatFilterValueByPicker = (rawValue: any, picker: any, showTime?: boolean) => {
+  if (!rawValue) return undefined;
+  const value = dayjs.isDayjs(rawValue) ? rawValue : dayjs(rawValue);
+  if (!value.isValid()) return undefined;
+  const format = showTime && picker === 'date' ? 'YYYY-MM-DD HH:mm:ss' : getPickerFormat(picker);
+  return value.format(format);
+};
+
 //筛选区块的日期字段总是输出无时区
 DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
   const { picker = 'date', format, showTime, timeFormat } = props;
   const isMobileMedia = isMobile();
   const { utc = true } = useDatePickerContext();
-  const value = Array.isArray(props.value) ? props.value[0] : props.value;
+  const rawValue = Array.isArray(props.value) ? props.value[0] : props.value;
   const fieldSchema = useFieldSchema();
-  const initPicker = value ? inferPickerType(value, picker) : picker;
+  const initPicker = rawValue ? inferPickerType(rawValue, picker) : picker;
   const [targetPicker, setTargetPicker] = useState(initPicker);
   const targetDateFormat = getPickerFormat(initPicker) || format;
   const { t } = useTranslation();
@@ -331,23 +347,27 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
             value: 'year',
           },
         ]}
-        onChange={(value) => {
-          setTargetPicker(value);
-          const format = getPickerFormat(value);
-          const dateTimeFormat = getDateTimeFormat(value, format, showTime, timeFormat);
+        onChange={(nextPicker) => {
+          setTargetPicker(nextPicker);
+          const format = getPickerFormat(nextPicker);
+          const dateTimeFormat = getDateTimeFormat(nextPicker, format, showTime, timeFormat);
           field?.setComponentProps({
-            picker: value,
+            picker: nextPicker,
             format,
           });
-          newProps.picker = value;
+          newProps.picker = nextPicker;
           newProps.format = dateTimeFormat;
           setStateProps(newProps);
           if (fieldSchema?.['x-component-props']) {
             fieldSchema['x-component-props'] = {
               ...props,
-              picker: value,
+              picker: nextPicker,
               format: dateTimeFormat,
             };
+          }
+          const normalized = formatFilterValueByPicker(rawValue, nextPicker, showTime);
+          if (props.onChange) {
+            props.onChange(normalized);
           }
           if (field) {
             field.value = null;
@@ -356,7 +376,7 @@ DatePicker.FilterWithPicker = function FilterWithPicker(props: any) {
       />
       <InternalDatePicker
         {...stateProps}
-        value={toLocalNaiveISOString(value, getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat))}
+        value={toLocalNaiveISOString(rawValue, getDateTimeFormat(targetPicker, targetDateFormat, showTime, timeFormat))}
       />
     </Space.Compact>
   );
