@@ -30,5 +30,6 @@
   "Network exception": "网络异常",
   "The license key was saved successfully. To install commercial plugins, please restart the NocoBase service.": "授权密钥保存成功。如需安装商业插件，请重新启动NocoBase服务。",
   "The license key has expired": "授权已过期",
-  "The license key is invalid": "授权密钥无效"
+  "The license key is invalid": "授权密钥无效",
+  "You can visit the Service platform to view common issues and solutions": "您可以前往Service平台查看常见问题与解决方案"
 }

@@ -113,12 +113,12 @@ export async function getKey(ctx?: Context): Promise<string> {
       },
       headers: keyData?.service?.headers || {},
     });
+    // logger.info('Successfully retrieved the remote license key');
     const { key: remoteKey } = data || {};
     if (remoteKey && typeof remoteKey === 'string') {
       await saveLicenseKey(remoteKey, ctx);
       return remoteKey;
     }
-    // logger.info('Successfully retrieved the remote license key');
   } catch (e) {
     // logger.warn('Unable to retrieve the remote license key', e?.message ? { message: e?.message } : e);
     return key;

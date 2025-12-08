@@ -17,5 +17,6 @@
   "The license key was saved successfully": "The license key was saved successfully",
   "The license key was saved successfully. To install commercial plugins, please restart the NocoBase service.": "The license key was saved successfully. To install commercial plugins, please restart the NocoBase service.",
   "The license key has expired": "The license key has expired",
-  "The license key is invalid": "The license key is invalid"
+  "The license key is invalid": "The license key is invalid",
+  "You can visit the Service platform to view common issues and solutions": "You can visit the Service platform to view common issues and solutions"
 }

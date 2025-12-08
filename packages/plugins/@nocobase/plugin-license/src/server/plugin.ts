@@ -11,6 +11,7 @@ import { Plugin } from '@nocobase/server';
 import { getInstanceId, saveLicenseKey, isLicenseKeyExists, getLicenseValidate, CACHE_KEY } from './utils';
 import { keyDecrypt } from '@nocobase/license-kit';
 import { LICENSE_TIPS } from '../const';
+import pick from 'lodash/pick';
 
 export class PluginLicenseServer extends Plugin {
   async afterAdd() {}
@@ -55,11 +56,11 @@ export class PluginLicenseServer extends Plugin {
             await next();
             return;
           }
-          const { licenseKey } = ctx.request.body;
-          const licenseValidate = await getLicenseValidate({ key: licenseKey, ctx });
+          const licenseValidate = await getLicenseValidate({ ctx });
           ctx.body = {
             keyNotExists: false,
             ...licenseValidate,
+            keyData: pick(licenseValidate.keyData, ['service']),
           };
           await next();
         },

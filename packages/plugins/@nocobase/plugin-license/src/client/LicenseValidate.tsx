@@ -29,6 +29,11 @@ export const LicenseValidate = () => {
     pkgUrl: string;
     isExpired: boolean;
     licenseStatus?: string;
+    keyData?: {
+      service?: {
+        docsUrl?: string;
+      };
+    };
   }>(null);
 
   const { i18n } = useTranslation();
@@ -50,14 +55,11 @@ export const LicenseValidate = () => {
 
   const helps = (
     <>
-      {t('You can view common causes and solutions: ')}
-      {i18n.language === 'zh-CN' ? (
-        <a href="https://service-cn.nocobase.com/admin/rr0evd4ursl" target="_blank" rel="noreferrer">
-          https://service-cn.nocobase.com/admin/rr0evd4ursl
-        </a>
-      ) : (
-        <a href="https://service-en.nocobase.com/admin/pbox06h0o90" target="_blank" rel="noreferrer">
-          https://service-en.nocobase.com/admin/pbox06h0o90
+      {t('You can visit the Service platform to view common issues and solutions')}
+      &nbsp;
+      {state?.keyData?.service?.docsUrl && (
+        <a href={state.keyData.service.docsUrl} target="_blank" rel="noreferrer">
+          {state.keyData.service.docsUrl}
         </a>
       )}
     </>
