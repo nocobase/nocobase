@@ -24,14 +24,13 @@ const toValue = (value: any, callback: (v: number) => number) => {
 };
 export class DisplayPercentFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
-    const { addonBefore = '', addonAfter } = this.props;
-    const result = getDisplayNumber({ value, ...this.props });
+    const { addonBefore = '', addonAfter, numberStep } = this.props;
+    const result = getDisplayNumber({ value, ...this.props, numberStep: numberStep / 100 });
     if (!result) {
       return null;
     }
 
     const content = toValue(result, (v) => v * 100);
-    console.log(content, result, value);
     return (
       <div>
         {addonBefore}
@@ -129,6 +128,7 @@ DisplayPercentFieldModel.registerFlow({
             title: '{{t("Suffix")}}',
             'x-component': 'Input',
             'x-decorator': 'FormItem',
+            'x-disabled': true,
           },
         };
       },
@@ -140,7 +140,7 @@ DisplayPercentFieldModel.registerFlow({
           unitConversion,
           unitConversionType,
           separator: separator || '0,0.00',
-          numberStep: '0.01',
+          numberStep: step || '1',
           addonBefore,
           addonAfter,
         };
