@@ -11,35 +11,33 @@ import { promisify } from 'util';
 import nodemailer from 'nodemailer';
 import { Transporter } from 'nodemailer';
 import { FlowNodeModel, IJob, Instruction, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
+import get from 'lodash/get';
 
+interface Provider {
+  port: number;
+  host: string;
+  secure: boolean;
+  auth: {
+    user: string;
+    pass: string;
+  };
+}
 export default class MailerInstruction extends Instruction {
   private static transporterMap = new Map<string, Transporter>();
   private static configMap = new Map<string, any>();
 
-  private getTransporterKey(channel) {
-    const { host, port, account } = channel.options;
-    return `${host}:${port}:${account}`;
+  private getTransporterKey(provider: Provider) {
+    const { host, port, auth } = provider;
+    return `${host}:${port}:${auth?.user}`;
   }
 
   private isConfigChanged(oldConfig: any, newConfig: any): boolean {
-    const fields = ['host', 'port', 'secure', 'account', 'password', 'from'];
-    return fields.some((key) => oldConfig[key] !== newConfig[key]);
+    const fields = ['host', 'port', 'secure', 'auth.user', 'auth.pass'];
+    return fields.some((key) => get(oldConfig, key) !== get(newConfig, key));
   }
 
-  private createNewTransporter(key: string, config: any): Transporter {
-    const { host, port, secure, account, password } = config;
-
-    const transporter = nodemailer.createTransport({
-      ...config,
-      pool: true,
-      host,
-      port,
-      secure,
-      auth: {
-        user: account,
-        pass: password,
-      },
-    });
+  private createNewTransporter(key: string, config: Provider): Transporter {
+    const transporter = nodemailer.createTransport(config);
 
     MailerInstruction.transporterMap.set(key, transporter);
     MailerInstruction.configMap.set(key, config);
@@ -47,10 +45,10 @@ export default class MailerInstruction extends Instruction {
     return transporter;
   }
 
-  private getTransporter(channel): Transporter {
-    const key = this.getTransporterKey(channel);
+  private getTransporter(provider: Provider): Transporter {
+    const key = this.getTransporterKey(provider);
 
-    const newConfig = channel.options;
+    const newConfig = provider;
     const oldConfig = MailerInstruction.configMap.get(key);
 
     if (!oldConfig) {
@@ -63,7 +61,6 @@ export default class MailerInstruction extends Instruction {
       if (oldTransporter) {
         oldTransporter.close();
       }
-
       return this.createNewTransporter(key, newConfig);
     }
 
@@ -88,6 +85,7 @@ export default class MailerInstruction extends Instruction {
     const sync = this.workflow.isWorkflowSync(workflow);
 
     const transporter = this.getTransporter(provider);
+    // const transporter = nodemailer.createTransport(provider);
     const send = promisify(transporter.sendMail.bind(transporter));
 
     const payload = {
