@@ -39,17 +39,17 @@ class PluginDataSourceMainClient extends Plugin {
       description: '{{t("Primary key, unique identifier, self growth") }}',
       value: {
         name: 'id',
-        type: 'bigInt',
-        autoIncrement: true,
+        type: 'snowflakeId',
+        autoIncrement: false,
         primaryKey: true,
         allowNull: false,
         uiSchema: {
-          type: 'number',
+          type: 'string',
           title: '{{t("ID")}}',
-          'x-component': 'InputNumber',
+          'x-component': 'Input',
           'x-read-pretty': true,
         },
-        interface: 'id',
+        interface: 'snowflakeId',
       },
     });
     this.addCollectionPresetField({
