@@ -105,7 +105,7 @@ export async function getKey(ctx?: Context): Promise<string> {
 
   try {
     const { data } = await request({
-      url: `${keyData?.service?.domain || 'https://service-cn.nocobase.com'}/api/license_keys:getKey`,
+      url: `${keyData?.service?.domain}/api/license_keys:getKey`,
       method: 'POST',
       body: {
         access_key_id: keyData?.accessKeyId,
