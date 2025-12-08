@@ -9,32 +9,158 @@
 
 import React from 'react';
 import * as math from 'mathjs';
-import { DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
 import { isNum } from '@formily/shared';
 import { ClickableFieldModel } from './ClickableFieldModel';
+import { UnitConversion, getDisplayNumber } from './DisplayNumberFieldModel';
 
 const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
 
 const toValue = (value: any, callback: (v: number) => number) => {
   if (isNumberLike(value)) {
-    return `${math.round(callback(value), 9)}%`;
+    return `${math.round(callback(value), 9)}`;
   }
   return null;
 };
 export class DisplayPercentFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
-    const { prefix = '', suffix = '' } = this.props;
+    const { addonBefore = '', addonAfter } = this.props;
+    const result = getDisplayNumber({ value, ...this.props });
+    if (!result) {
+      return null;
+    }
 
-    const content = toValue(value, (v) => v * 100);
+    const content = toValue(result, (v) => v * 100);
+    console.log(content, result, value);
     return (
       <div>
-        {prefix}
+        {addonBefore}
         {content}
-        {suffix}
+        {addonAfter}
       </div>
     );
   }
 }
+
+DisplayPercentFieldModel.registerFlow({
+  key: 'numberSettings',
+  sort: 100,
+  title: tExpr('Number settings'),
+  steps: {
+    format: {
+      title: tExpr('Format'),
+      uiSchema: (ctx) => {
+        return {
+          formatStyle: {
+            type: 'string',
+            enum: [
+              {
+                value: 'normal',
+                label: tExpr('Normal'),
+              },
+              {
+                value: 'scientifix',
+                label: tExpr('Scientifix notation'),
+              },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Select',
+            title: "{{t('Style')}}",
+          },
+          unitConversion: {
+            type: 'number',
+            'x-decorator': 'FormItem',
+            'x-component': 'NumberPicker',
+            title: "{{t('Unit conversion')}}",
+            'x-component-props': {
+              style: { width: '100%' },
+              addonBefore: <UnitConversion />,
+            },
+          },
+          separator: {
+            type: 'string',
+            enum: [
+              {
+                value: '0,0.00',
+                label: '100,000.00',
+              },
+              {
+                value: '0.0,00',
+                label: '100.000,00',
+              },
+              {
+                value: '0 0,00',
+                label: '100 000.00',
+              },
+              {
+                value: '0.00',
+                label: '100000.00',
+              },
+            ],
+            'x-decorator': 'FormItem',
+            'x-component': 'Select',
+            title: "{{t('Separator')}}",
+          },
+          numberStep: {
+            type: 'string',
+            title: '{{t("Precision")}}',
+            'x-component': 'Select',
+            'x-decorator': 'FormItem',
+            enum: [
+              { value: '1', label: '1' },
+              { value: '0.1', label: '1.0' },
+              { value: '0.01', label: '1.00' },
+              { value: '0.001', label: '1.000' },
+              { value: '0.0001', label: '1.0000' },
+              { value: '0.00001', label: '1.00000' },
+              { value: '0.000001', label: '1.000000' },
+              { value: '0.0000001', label: '1.0000000' },
+              { value: '0.00000001', label: '1.00000000' },
+            ],
+          },
+          addonBefore: {
+            type: 'string',
+            title: '{{t("Prefix")}}',
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+          },
+          addonAfter: {
+            type: 'string',
+            title: '{{t("Suffix")}}',
+            'x-component': 'Input',
+            'x-decorator': 'FormItem',
+          },
+        };
+      },
+      defaultParams: (ctx) => {
+        const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } =
+          ctx.collectionField.getComponentProps();
+        return {
+          formatStyle: formatStyle || 'normal',
+          unitConversion,
+          unitConversionType,
+          separator: separator || '0,0.00',
+          numberStep: '0.01',
+          addonBefore,
+          addonAfter,
+        };
+      },
+      handler(ctx, params) {
+        const { formatStyle, unitConversion, unitConversionType, separator, numberStep, addonBefore, addonAfter } =
+          params;
+        ctx.model.setProps({
+          formatStyle: formatStyle,
+          unitConversion,
+          unitConversionType,
+          separator: separator,
+          numberStep,
+          addonBefore,
+          addonAfter,
+        });
+      },
+    },
+  },
+});
 
 DisplayItemModel.bindModelToInterface('DisplayPercentFieldModel', ['percent'], {
   isDefault: true,
