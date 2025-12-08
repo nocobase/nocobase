@@ -14,6 +14,7 @@ import {
   useCurrentUserVariable,
   useDatetimeVariable,
   useRequest,
+  useAPIClient,
 } from '@nocobase/client';
 import React from 'react';
 import { AvatarSelect } from './AvatarSelect';
@@ -28,26 +29,20 @@ const ResetButton: React.FC<{ className?: string }> = ({ className }) => {
   const isBuiltIn = record?.builtIn;
   const t = useT();
   const form = useForm();
-  const { run } = useRequest(
-    {
-      resource: 'aiEmployees',
-      action: 'getBuiltInDefault',
-      params: { filterByTk: record?.username },
+  const api = useAPIClient();
+  const { run } = useRequest(() => api.resource('aiEmployees').getBuiltInDefault({ filterByTk: record?.username }), {
+    manual: true,
+    onSuccess: (resp) => {
+      const about = resp?.data?.about ?? resp?.about;
+      if (about !== undefined) {
+        form.setValuesIn('about', about);
+      }
     },
-    {
-      manual: true,
-      onSuccess: (resp) => {
-        const about = resp?.data?.about ?? resp?.about;
-        if (about !== undefined) {
-          form.setValuesIn('about', about);
-        }
-      },
-    },
-  );
+  });
   if (!isBuiltIn) return null;
   return (
     <div className={className}>
-      <Button type="link" size="small" onClick={run}>
+      <Button type="link" size="small" onClick={() => run()}>
         {t('Reset to default')}
       </Button>
     </div>
