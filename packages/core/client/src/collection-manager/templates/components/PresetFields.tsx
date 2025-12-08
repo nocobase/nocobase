@@ -8,11 +8,13 @@
  */
 
 import { observer, useForm } from '@formily/react';
-import { Table, Tag } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import { Space, Table, Tag } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager_deprecated } from '../../';
 import { useCompile, useApp } from '../../../';
+import { SetPrimaryKeyAction, ID_FIELD } from '../../Configuration/SetPrimaryKeyAction';
+import { DownOutlined, SettingOutlined } from '@ant-design/icons';
 
 const getDefaultCollectionFields = (presetFields, values, collectionPresetFields) => {
   if (values?.template === 'view' || values?.template === 'sql') {
@@ -41,16 +43,69 @@ export const PresetFields = observer(
     const mainDataSourcePlugin: any = app.pm.get('data-source-main');
     const collectionPresetFields = mainDataSourcePlugin.getCollectionPresetFields();
 
-    const presetFieldsDataSource = useMemo(() => {
-      return collectionPresetFields.map((v) => {
+    const [presetFieldsDataSource, setPresetFieldsDataSource] = useState(
+      collectionPresetFields.map((v) => {
         return {
           field: v.value.uiSchema.title,
           interface: v.value.interface,
           description: v.description,
           name: v.value.name,
         };
-      });
+      }),
+    );
+
+    const primaryKeyCandidateRef = useRef(null);
+    useEffect(() => {
+      primaryKeyCandidateRef.current = null;
     }, []);
+
+    const applyPrimaryKeyCandidate = () => {
+      const primaryKeyCandidate = primaryKeyCandidateRef.current;
+      if (!selectedRowKeys.includes(ID_FIELD) || !primaryKeyCandidate) {
+        return;
+      }
+
+      const fields = getDefaultCollectionFields(selectedRowKeys, form.values, collectionPresetFields);
+      if (!fields?.length) {
+        return;
+      }
+      const [idField] = fields.filter((x) => x.name === ID_FIELD);
+      const restFields = fields.filter((x) => x.name !== ID_FIELD);
+      if (!idField) {
+        return;
+      }
+
+      form.setValues({
+        ...form.values,
+        fields: [
+          {
+            ...primaryKeyCandidate,
+            name: ID_FIELD,
+          },
+          ...restFields,
+        ],
+        autoGenId: false,
+      });
+    };
+
+    const onSetPrimaryKey = (values) => {
+      primaryKeyCandidateRef.current = values;
+      applyPrimaryKeyCandidate();
+      setPresetFieldsDataSource((prev) => {
+        const idFieldIndex = prev.findIndex((x) => x.name === ID_FIELD);
+        if (idFieldIndex === -1) {
+          return prev;
+        }
+        prev[idFieldIndex] = {
+          field: values.uiSchema.title,
+          interface: values.interface,
+          description: values.description,
+          name: ID_FIELD,
+        };
+        return [...prev];
+      });
+    };
+
     const column = [
       {
         title: t('Field'),
@@ -62,7 +117,29 @@ export const PresetFields = observer(
         title: t('Interface'),
         dataIndex: 'interface',
         key: 'interface',
-        render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
+        render: (value, record) =>
+          record.name === ID_FIELD ? (
+            <SetPrimaryKeyAction
+              template={props.template}
+              onSetPrimaryKey={onSetPrimaryKey}
+              values={
+                primaryKeyCandidateRef.current ?? {
+                  uiSchema: { title: record['field'] },
+                  description: record['description'],
+                }
+              }
+            >
+              <Tag>
+                <Space>
+                  <SettingOutlined />
+                  <span>{compile(getInterface(value)?.title)}</span>
+                  <DownOutlined />
+                </Space>
+              </Tag>
+            </SetPrimaryKeyAction>
+          ) : (
+            <Tag>{compile(getInterface(value)?.title)}</Tag>
+          ),
       },
       {
         title: t('Description'),
@@ -83,6 +160,7 @@ export const PresetFields = observer(
         collectionPresetFields,
       );
       form.setValuesIn('fields', fields);
+      applyPrimaryKeyCandidate();
     }, [selectedRowKeys]);
     return (
       <Table
