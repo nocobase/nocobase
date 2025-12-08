@@ -570,7 +570,7 @@
   "Expand all rows by default": "默认展开所有行",
   "Expand button": "展开",
   "Expand/Collapse": "展开/折叠",
-  "Export": "导出记录",
+  "Export": "导出",
   "Exportable fields": "可导出字段",
   "Expression": "表达式",
   "Expression collection": "表达式表",
@@ -1542,5 +1542,6 @@
   "≠": "≠",
   "≤": "≤",
   "≥": "≥",
-  "Sub-table settings": "子表格设置"
+  "Sub-table settings": "子表格设置",
+  "Sub-form settings": "子表单设置"
 }

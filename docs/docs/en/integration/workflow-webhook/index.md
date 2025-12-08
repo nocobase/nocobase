@@ -53,7 +53,7 @@ When data changes in external systems (such as CRM, ERP), Webhooks push updates 
 
 Locate and install the **[Workflow: Webhook](/plugins/@nocobase/plugin-workflow-webhook/)** plugin in the plugin manager.
 
-> Note: This is a commercial plugin that requires separate purchase or subscription.
+> Note: This is a commercial plugin. For detailed activation instructions, please refer to: [Commercial Plugin Activation Guide](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)
 
 ### 2. Create Webhook Workflow
 

@@ -23,7 +23,7 @@ The Template Printing plugin lets you design templates in Word, Excel, and Power
 
 ### Install Plugins
 
-Refer to [Installing and Upgrading Commercial Plugins](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)
+For detailed installation and upgrade instructions, please refer to: [Commercial Plugin Activation Guide](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)
 
 ### Install LibreOffice (Optional)
 

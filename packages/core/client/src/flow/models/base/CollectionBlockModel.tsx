@@ -19,7 +19,7 @@ import {
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
-import { createDefaultCollectionBlockTitle } from '../../internal/utils/blockUtils';
+import { createDefaultCollectionBlockTitle } from '../../utils/blockUtils';
 import { FilterManager } from '../blocks/filter-manager/FilterManager';
 import { DataBlockModel } from './DataBlockModel';
 

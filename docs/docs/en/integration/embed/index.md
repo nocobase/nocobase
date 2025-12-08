@@ -10,10 +10,7 @@ This plugin is used to embed NocoBase pages into other websites or applications.
 
 ## Installation
 
-This plugin is a commercial plugin and needs to be uploaded and activated through the plugin manager.
-
-
-![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
+This is a commercial plugin. For detailed activation instructions, please refer to: [Commercial Plugin Activation Guide](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)
 
 
 ## User Guide

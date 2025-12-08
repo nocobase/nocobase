@@ -27,7 +27,7 @@ import {
 import _ from 'lodash';
 import { NumberPicker } from '@formily/antd-v5';
 import { lazy } from '../../../lazy-helper';
-import { enumToOptions } from '../../internal/utils/enumOptionsUtils';
+import { enumToOptions, translateOptions, UiSchemaEnumItem } from '../../internal/utils/enumOptionsUtils';
 import { FormProvider, SchemaComponent } from '../../../schema-component/core';
 import { resolveOperatorComponent } from '../../internal/utils/operatorSchemaHelper';
 
@@ -381,6 +381,11 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
     }, [t]);
     const stableT = React.useCallback((s: string) => tRef.current?.(s) ?? s, []);
 
+    const enumOptions = useMemo(
+      () => enumToOptions(mergedSchema?.enum as UiSchemaEnumItem[], stableT) || [],
+      [mergedSchema, stableT],
+    );
+
     const staticInputRenderer = useMemo(
       () => createStaticInputRenderer(mergedSchema, leftMeta, stableT, model.context.app),
       [mergedSchema, leftMeta, stableT, model.context.app],
@@ -471,6 +476,9 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       const supportKeyword = operator === '$in' || operator === '$notIn';
       if (resolved && supportKeyword) {
         const { Comp, props: xProps } = resolved;
+        if ((!xProps?.options || xProps?.options.length === 0) && enumOptions?.length) {
+          xProps.options = enumOptions;
+        }
         const style = {
           flex: '1 1 40%',
           minWidth: 160,
@@ -517,6 +525,7 @@ export const VariableFilterItem: React.FC<VariableFilterItemProps> = observer(
       staticInputRenderer,
       model.context.app,
       setRightValue,
+      enumOptions,
     ]);
 
     // Null 占位组件（仿照 DefaultValue.tsx 的实现）

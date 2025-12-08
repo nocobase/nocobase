@@ -111,16 +111,16 @@ export class ClickableFieldModel extends FieldModel {
     });
   }
 
-  renderComponent(value) {
+  renderComponent(value, wrap?) {
     return value;
   }
 
-  renderInDisplayStyle(value, record?, isToMany?) {
+  renderInDisplayStyle(value, record?, isToMany?, wrap?) {
     const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
     if (value && typeof value === 'object' && restProps.target) {
       return;
     }
-    const result = this.renderComponent(value);
+    const result = this.renderComponent(value, wrap);
     const display = record ? (value ? result : 'N/A') : result;
     const isTag = displayStyle === 'tag';
     const handleClick = (e) => {
@@ -193,7 +193,9 @@ export class ClickableFieldModel extends FieldModel {
       }
     } else {
       const textContent = (
-        <EllipsisWithTooltip ellipsis={ellipsis}>{this.renderInDisplayStyle(value)}</EllipsisWithTooltip>
+        <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={this.renderInDisplayStyle(value, null, null, true)}>
+          {this.renderInDisplayStyle(value)}
+        </EllipsisWithTooltip>
       );
       return textContent;
     }

@@ -10,10 +10,7 @@ This plugin allows you to integrate data from REST API sources seamlessly.
 
 ## Installation
 
-As a commercial plugin, it requires uploading and activation through the plugin manager.
-
-
-![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
+This is a commercial plugin. For detailed activation instructions, please refer to: [Commercial Plugin Activation Guide](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)
 
 
 ## Adding a REST API Source
