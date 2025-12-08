@@ -217,6 +217,7 @@ const EditCollectionAction = (props) => {
             filterTargetKeyOptions,
             isView: record.view,
             createMainOnly: true,
+            primaryKeyOnly: false,
             ...scope,
           }}
         />
