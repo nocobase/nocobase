@@ -42,7 +42,7 @@ export default class extends Trigger {
 
     const self = this;
 
-    async function triggerWorkflowActionMiddleware(context: Context, next: Next) {
+    workflow.app.dataSourceManager.use(async function triggerWorkflowActionMiddleware(context: Context, next: Next) {
       await next();
 
       const { actionName } = context.action;
@@ -52,9 +52,7 @@ export default class extends Trigger {
       }
 
       return self.collectionTriggerAction(context);
-    }
-
-    workflow.app.dataSourceManager.use(triggerWorkflowActionMiddleware);
+    });
 
     workflow.app.pm.get(PluginErrorHandler).errorHandler.register(
       (err) => err instanceof RequestOnActionTriggerError || err.name === 'RequestOnActionTriggerError',

@@ -82,6 +82,50 @@ describe('workflow > action-trigger', () => {
     await rootAgent.resource('roles.dataSourceResources', 'member').create({
       values: {
         dataSourceKey: 'main',
+        name: 'tags',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['title'],
+          },
+          {
+            name: 'create',
+            fields: ['title'],
+          },
+          {
+            name: 'update',
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+
+    await rootAgent.resource('roles.dataSourceResources', 'member').create({
+      values: {
+        dataSourceKey: 'main',
+        name: 'postsTags',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['postId', 'tagId'],
+          },
+          {
+            name: 'create',
+            fields: ['postId', 'tagId'],
+          },
+          {
+            name: 'update',
+            fields: ['postId', 'tagId'],
+          },
+        ],
+      },
+    });
+
+    await rootAgent.resource('roles.dataSourceResources', 'member').create({
+      values: {
+        dataSourceKey: 'main',
         name: 'comments',
         usingActionsConfig: true,
         actions: [
