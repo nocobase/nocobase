@@ -7,82 +7,22 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  SchemaComponent,
-  useCollectionRecordData,
-  useCurrentRoleVariable,
-  useCurrentUserVariable,
-  useDatetimeVariable,
-  useRequest,
-  useAPIClient,
-} from '@nocobase/client';
+import { SchemaComponent, useCollectionRecordData, useAPIClient } from '@nocobase/client';
 import React from 'react';
 import { AvatarSelect } from './AvatarSelect';
 import { useT } from '../../locale';
 import { Switch } from '@formily/antd-v5';
-import { Button, message } from 'antd';
-import { useForm } from '@formily/react';
-import { css } from '@emotion/css';
-
-const ResetButton: React.FC<{ className?: string }> = ({ className }) => {
-  const record = useCollectionRecordData();
-  const isBuiltIn = record?.builtIn;
-  const t = useT();
-  const form = useForm();
-  const api = useAPIClient();
-  const { run } = useRequest(() => api.resource('aiEmployees').getBuiltInDefault({ filterByTk: record?.username }), {
-    manual: true,
-    onSuccess: (resp) => {
-      const about = resp?.data?.data?.about;
-      if (typeof about === 'string') {
-        form.setValuesIn('about', about);
-        message.success(t('Reset successfully'));
-      }
-    },
-  });
-  if (!isBuiltIn) return null;
-  return (
-    <div className={className}>
-      <Button type="link" size="small" onClick={() => run()}>
-        {t('Reset to default')}
-      </Button>
-    </div>
-  );
-};
-
-const useVariableOptions = () => {
-  const t = useT();
-  const { currentUserSettings } = useCurrentUserVariable({
-    maxDepth: 3,
-    noDisabled: true,
-  });
-  const { currentRoleSettings } = useCurrentRoleVariable({
-    noDisabled: true,
-  });
-  const { datetimeSettings } = useDatetimeVariable({ noDisabled: true });
-  return [
-    currentUserSettings,
-    currentRoleSettings,
-    {
-      key: '$nLang',
-      value: '$nLang',
-      label: t('Current language'),
-    },
-    datetimeSettings,
-  ];
-};
 
 export const ProfileSettings: React.FC<{
   edit?: boolean;
 }> = ({ edit }) => {
   const t = useT();
-  const options = useVariableOptions();
   const record = useCollectionRecordData();
   const isBuiltIn = record?.builtIn;
   return (
     <SchemaComponent
       scope={{ t }}
-      components={{ AvatarSelect, Switch, ResetButton }}
+      components={{ AvatarSelect, Switch }}
       schema={{
         type: 'void',
         properties: {
@@ -138,43 +78,6 @@ export const ProfileSettings: React.FC<{
             'x-component': 'Input.TextArea',
             'x-component-props': {
               placeholder: t('Bio placeholder'),
-            },
-          },
-          aboutWrap: {
-            type: 'void',
-            'x-component': 'div',
-            'x-component-props': {
-              className: css`
-                position: relative;
-              `,
-            },
-            properties: {
-              about: {
-                type: 'string',
-                title: '{{t("About me")}}',
-                required: true,
-                'x-decorator': 'FormItem',
-                'x-component': 'Variable.RawTextArea',
-                'x-component-props': {
-                  scope: options,
-                  placeholder: t('About me placeholder'),
-                  autoSize: {
-                    minRows: 15,
-                  },
-                },
-              },
-              resetAbout: {
-                type: 'void',
-                'x-component': 'ResetButton',
-                'x-component-props': {
-                  className: css`
-                    position: absolute;
-                    right: 0;
-                    top: 0;
-                    z-index: 1;
-                  `,
-                },
-              },
             },
           },
           greeting: {
