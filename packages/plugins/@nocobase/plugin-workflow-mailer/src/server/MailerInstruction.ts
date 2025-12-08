@@ -8,12 +8,68 @@
  */
 
 import { promisify } from 'util';
-
 import nodemailer from 'nodemailer';
-
+import { Transporter } from 'nodemailer';
 import { FlowNodeModel, IJob, Instruction, JOB_STATUS, Processor } from '@nocobase/plugin-workflow';
 
-export default class extends Instruction {
+export default class MailerInstruction extends Instruction {
+  private static transporterMap = new Map<string, Transporter>();
+  private static configMap = new Map<string, any>();
+
+  private getTransporterKey(channel) {
+    const { host, port, account } = channel.options;
+    return `${host}:${port}:${account}`;
+  }
+
+  private isConfigChanged(oldConfig: any, newConfig: any): boolean {
+    const fields = ['host', 'port', 'secure', 'account', 'password', 'from'];
+    return fields.some((key) => oldConfig[key] !== newConfig[key]);
+  }
+
+  private createNewTransporter(key: string, config: any): Transporter {
+    const { host, port, secure, account, password } = config;
+
+    const transporter = nodemailer.createTransport({
+      ...config,
+      pool: true,
+      host,
+      port,
+      secure,
+      auth: {
+        user: account,
+        pass: password,
+      },
+    });
+
+    MailerInstruction.transporterMap.set(key, transporter);
+    MailerInstruction.configMap.set(key, config);
+
+    return transporter;
+  }
+
+  private getTransporter(channel): Transporter {
+    const key = this.getTransporterKey(channel);
+
+    const newConfig = channel.options;
+    const oldConfig = MailerInstruction.configMap.get(key);
+
+    if (!oldConfig) {
+      return this.createNewTransporter(key, newConfig);
+    }
+
+    if (this.isConfigChanged(oldConfig, newConfig)) {
+      const oldTransporter = MailerInstruction.transporterMap.get(key);
+
+      if (oldTransporter) {
+        oldTransporter.close();
+      }
+
+      return this.createNewTransporter(key, newConfig);
+    }
+
+    return MailerInstruction.transporterMap.get(key)!;
+  }
+
   async run(node: FlowNodeModel, prevJob, processor: Processor) {
     const {
       provider,
@@ -31,7 +87,7 @@ export default class extends Instruction {
     const { workflow } = processor.execution;
     const sync = this.workflow.isWorkflowSync(workflow);
 
-    const transporter = nodemailer.createTransport(provider);
+    const transporter = this.getTransporter(provider);
     const send = promisify(transporter.sendMail.bind(transporter));
 
     const payload = {
