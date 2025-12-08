@@ -180,9 +180,6 @@ interface displayNumberProps {
 export const getDisplayNumber = (props: displayNumberProps) => {
   const { numberStep: step, formatStyle, value, unitConversion, unitConversionType, separator } = props;
   const result = formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });
-  if (!result) {
-    return null;
-  }
 
   return result;
 };
@@ -191,6 +188,9 @@ export class DisplayNumberFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
     const { addonBefore, addonAfter } = this.props;
     const result = getDisplayNumber({ value, ...this.props });
+    if (!result) {
+      return null;
+    }
     return (
       <span>
         {addonBefore}
