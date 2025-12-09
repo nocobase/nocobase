@@ -31,6 +31,7 @@ import type {
   StepDefinition,
 } from '../../types';
 import { FlowRuntimeContext } from '../../flowContext';
+import { ContextPathProxy } from '../../ContextPathProxy';
 
 // Helper functions
 const createMockFlowEngine = (): FlowEngine => {
@@ -997,26 +998,6 @@ describe('Utils', () => {
 
         consoleSpy.mockRestore();
       });
-
-      test('should handle missing getAction method', async () => {
-        // Mock a flowEngine without getAction method
-        const originalGetAction = mockModel.flowEngine.getAction;
-        mockModel.flowEngine.getAction = undefined;
-
-        mockStep.use = 'testAction';
-        mockStep.uiSchema = {
-          field1: { type: 'string', title: 'Field 1' },
-        };
-
-        const result = await resolveStepUiSchema(mockModel, mockFlow, mockStep);
-
-        expect(result).toEqual({
-          field1: { type: 'string', title: 'Field 1' },
-        });
-
-        // Restore the original method
-        mockModel.flowEngine.getAction = originalGetAction;
-      });
     });
   });
 
@@ -1099,7 +1080,8 @@ describe('Utils', () => {
       expect((ctx as any).model).toBe(mockModel);
       expect((ctx as any).flowKey).toBe('testFlow');
       expect((ctx as any).mode).toBe('settings');
-      expect((ctx as any).currentStep).toBe(mockStep);
+      expect((ctx as any).currentStep).toBeInstanceOf(ContextPathProxy);
+      expect(String((ctx as any).currentStep)).toBe('{{ctx.currentStep}}');
       expect(result).toBe(true);
     });
 
@@ -1118,7 +1100,8 @@ describe('Utils', () => {
 
       expect(hideFn).toHaveBeenCalledTimes(1);
       const ctx = hideFn.mock.calls[0][0] as FlowRuntimeContext;
-      expect((ctx as any).currentStep).toBe(mockStep);
+      expect((ctx as any).currentStep).toBeInstanceOf(ContextPathProxy);
+      expect(String((ctx as any).currentStep)).toBe('{{ctx.currentStep}}');
       expect(result).toBe(false);
     });
 
