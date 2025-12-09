@@ -14,27 +14,18 @@ import { isNum } from '@formily/shared';
 import { ClickableFieldModel } from './ClickableFieldModel';
 import { UnitConversion, getDisplayNumber } from './DisplayNumberFieldModel';
 
-const isNumberLike = (index: any): index is number => isNum(index) || /^-?\d+(\.\d+)?$/.test(index);
-
-const toValue = (value: any, callback: (v: number) => number) => {
-  if (isNumberLike(value)) {
-    return `${math.round(callback(value), 9)}`;
-  }
-  return null;
-};
 export class DisplayPercentFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
     const { addonBefore = '', addonAfter, numberStep } = this.props;
-    const result = getDisplayNumber({ value, ...this.props, numberStep: numberStep / 100 });
+    const targetValue = math.round(value * 100, 9);
+    const result = getDisplayNumber({ ...this.props, value: targetValue, numberStep: numberStep });
     if (!result) {
       return null;
     }
-
-    const content = toValue(result, (v) => v * 100);
     return (
       <div>
         {addonBefore}
-        {content}
+        <span dangerouslySetInnerHTML={{ __html: result }} />
         {addonAfter}
       </div>
     );
