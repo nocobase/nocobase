@@ -245,7 +245,7 @@ ClickableFieldModel.registerFlow({
     },
 
     overflowMode: {
-      title: tExpr('Content overflow display mode'),
+      // title: tExpr('Content overflow display mode'),
       use: 'overflowMode',
     },
     clickToOpen: {

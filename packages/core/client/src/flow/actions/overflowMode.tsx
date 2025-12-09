@@ -12,25 +12,26 @@ import { TableColumnModel } from '../models/blocks/table';
 
 export const overflowMode = defineAction({
   name: 'overflowMode',
-  title: tExpr('Content overflow display mode'),
-  uiSchema(ctx) {
-    return {
-      overflowMode: {
-        'x-component': 'Select',
-        'x-decorator': 'FormItem',
-        enum: [
-          { label: tExpr('Ellipsis'), value: 'ellipsis' },
-          { label: tExpr('Wrap'), value: 'wrap' },
-        ],
-      },
-    };
-  },
+  title: tExpr('Content overflow ellipsis'),
+  uiMode: 'switch',
+  // uiSchema(ctx) {
+  //   return {
+  //     overflowMode: {
+  //       'x-component': 'Select',
+  //       'x-decorator': 'FormItem',
+  //       enum: [
+  //         { label: tExpr('Ellipsis'), value: 'ellipsis' },
+  //         { label: tExpr('Wrap'), value: 'wrap' },
+  //       ],
+  //     },
+  //   };
+  // },
   defaultParams: (ctx) => {
-    return { overflowMode: ctx.model.parent instanceof TableColumnModel ? 'ellipsis' : 'wrap' };
+    return { overflowMode: ctx.model.parent instanceof TableColumnModel ? true : false };
   },
   handler(ctx, params) {
     ctx.model.setProps({
-      overflowMode: params.overflowMode,
+      overflowMode: params.overflowMode ? 'ellipsis' : 'wrap',
     });
   },
 });
