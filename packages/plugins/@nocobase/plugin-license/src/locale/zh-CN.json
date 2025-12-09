@@ -45,5 +45,6 @@
   "You may continue using the related plugins, but updates are no longer available. Please renew or repurchase your license to restore update services.": "相关插件你可以继续使用，但无法继续更新。请续费或重新购买许可证以恢复更新服务。",
   "Please go to NocoBase Service to obtain a new license key.": "请前往 NocoBase Service 重新获取授权秘钥。",
   "Please check your license key, or generate a new one from NocoBase Service.": "请检查你的授权密钥，或在 NocoBase Service 重新生成新的授权密钥。",
-  "The license key is not found": "授权密钥未找到"
+  "The license key is not found": "授权密钥未找到",
+  "The current environment does not match the licensed environment. Please use the updated InstanceID to obtain a new license key.": "当前环境与授权环境不一致，请使用新的 InstanceID 获取新的授权密钥。"
 }
