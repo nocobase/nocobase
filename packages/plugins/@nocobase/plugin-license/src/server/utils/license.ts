@@ -12,6 +12,7 @@ import { getKey, parseKey, isDateExpired } from './key';
 import { isDomainMatch, isEnvMatch, getClientDomain } from './env';
 import { testPkgConnection, testPkgLogin, getNocoBasePkgUrl } from './pkg';
 import { KeyData } from './interface';
+import { getPlugins, getPluginsLicenseStatus, PluginData } from './plugin';
 
 export interface LicenseValidateResult {
   current: {
@@ -26,6 +27,8 @@ export interface LicenseValidateResult {
   keyData: KeyData;
   pkgUrl: string;
   licenseStatus: 'active' | 'invalid';
+  pluginsLicensed: boolean;
+  plugins: PluginData[];
 }
 
 export async function getLicenseValidate({ key, ctx }: { key?: string; ctx?: any }): Promise<LicenseValidateResult> {
@@ -38,6 +41,8 @@ export async function getLicenseValidate({ key, ctx }: { key?: string; ctx?: any
   const isPkgConnection = await testPkgConnection();
   const isPkgLogin = await testPkgLogin(keyData);
   const isExpired = isDateExpired(keyData?.upgradeExpirationDate);
+  const plugins = await getPlugins({ keyData, ctx });
+  const pluginsLicensed = getPluginsLicenseStatus({ plugins });
   return {
     current: {
       env: currentEnv,
@@ -46,10 +51,12 @@ export async function getLicenseValidate({ key, ctx }: { key?: string; ctx?: any
     keyData,
     envMatch: envMatch,
     domainMatch: domainMatch,
+    pluginsLicensed,
     isPkgConnection,
     isPkgLogin,
     isExpired,
     pkgUrl: getNocoBasePkgUrl(),
     licenseStatus: keyData?.licenseKey?.licenseStatus as any,
+    plugins,
   };
 }

@@ -12,3 +12,4 @@ export * from './env';
 export * from './interface';
 export * from './license';
 export * from './instance';
+export * from './plugin';
