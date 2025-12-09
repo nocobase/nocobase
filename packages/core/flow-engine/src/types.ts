@@ -9,8 +9,8 @@
 
 import { ISchema } from '@formily/json-schema';
 import { SubModelItem } from './components';
-import { FlowContext, FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
 import type { PropertyOptions } from './flowContext';
+import { FlowContext, FlowModelContext, FlowRuntimeContext, FlowSettingsContext } from './flowContext';
 import type { FlowEngine } from './flowEngine';
 import type { FlowModel } from './models';
 import { FilterGroupOptions } from './resources';
@@ -320,6 +320,18 @@ export type ParamObject = {
 export type RegisteredModelClassName = string;
 
 /**
+ * resolveUse 返回类型：可返回目标 use，或 { use, stop } 包含中断标志。
+ */
+export type ResolveUseResult =
+  | RegisteredModelClassName
+  | ModelConstructor
+  | {
+      use: RegisteredModelClassName | ModelConstructor;
+      /** 标记是否终止后续 resolveUse 链；默认 false（继续解析） */
+      stop?: boolean;
+    };
+
+/**
  * Options for creating a model instance
  */
 export interface CreateModelOptions {
@@ -461,7 +473,7 @@ export type FlowModelMeta =
      * 是否在菜单中隐藏该模型类
      * @default false
      */
-    hide?: boolean;
+    hide?: boolean | ((context: FlowModelContext) => boolean);
     eventList?: { label: string; value: string }[]; // 支持的事件列表
   };
 

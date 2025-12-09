@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
+import React, { createContext } from 'react';
 import { CloseOutlined } from '@ant-design/icons';
 
 import { css, cx } from '@nocobase/client';
@@ -16,6 +16,12 @@ import { AddButton } from './AddNodeContext';
 import { useGetAriaLabelOfAddButton } from './hooks/useGetAriaLabelOfAddButton';
 import { Node } from './nodes';
 import useStyles from './style';
+
+export const BranchIndexContext = createContext(null);
+
+export function useBranchIndex() {
+  return React.useContext(BranchIndexContext);
+}
 
 export function Branch({
   from = null,
@@ -40,20 +46,22 @@ export function Branch({
   }
 
   return (
-    <div className={cx('workflow-branch', styles.branchClass, className)}>
-      <div className="workflow-branch-lines" />
-      {controller}
-      <div className="workflow-node-list">
-        <AddButton aria-label={getAriaLabel()} upstream={from} branchIndex={branchIndex} />
-        {list.map((item) => (
-          <Node data={item} key={item.id} />
-        ))}
-      </div>
-      {end ? (
-        <div className="end-sign">
-          <CloseOutlined />
+    <BranchIndexContext.Provider value={branchIndex}>
+      <div className={cx('workflow-branch', styles.branchClass, className)}>
+        <div className="workflow-branch-lines" />
+        {controller ? <div className="workflow-branch-controller">{controller}</div> : null}
+        <div className="workflow-node-list">
+          <AddButton aria-label={getAriaLabel()} upstream={from} branchIndex={branchIndex} />
+          {list.map((item) => (
+            <Node data={item} key={item.id} />
+          ))}
         </div>
-      ) : null}
-    </div>
+        {end ? (
+          <div className="end-sign">
+            <CloseOutlined />
+          </div>
+        ) : null}
+      </div>
+    </BranchIndexContext.Provider>
   );
 }

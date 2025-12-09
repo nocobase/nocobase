@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { FilterableItemModel, useFlowContext, useFlowEngine } from '@nocobase/flow-engine';
 import { Select } from '@formily/antd-v5';
 
@@ -23,9 +23,14 @@ export function FieldModelSelect(props) {
     if (!binding) {
       return;
     }
-    onChange(binding.modelName);
     return binding.modelName;
   }, [source.join('.')]);
 
-  return <Select allowClear {...props} value={props.value || defaultValue} />;
+  useEffect(() => {
+    if (!props.value && defaultValue) {
+      onChange?.(defaultValue);
+    }
+  }, [defaultValue, onChange, props.value]);
+
+  return <Select allowClear {...props} value={props.value ?? defaultValue} />;
 }

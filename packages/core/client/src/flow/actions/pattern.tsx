@@ -9,6 +9,7 @@
 
 import { BindingOptions, defineAction, tExpr, DisplayItemModel } from '@nocobase/flow-engine';
 import { DetailsItemModel } from '../models/blocks/details/DetailsItemModel';
+import { rebuildFieldSubModel } from '../internal/utils/rebuildFieldSubModel';
 
 export const pattern = defineAction({
   name: 'pattern',
@@ -57,16 +58,28 @@ export const pattern = defineAction({
       ctx.model.subModels.field.props?.fieldNames?.label || ctx.model.props.titleField,
     );
     const { model } = ctx;
+    const resolveDefaultProps = (binding, field = ctx.collectionField) => {
+      if (!binding) return undefined;
+      return typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx, field) : binding.defaultProps;
+    };
     if (params.pattern === 'readPretty') {
       const binding = DetailsItemModel.getDefaultBindingByField(ctx, ctx.collectionField, {
         fallbackToTargetTitleField: true,
         targetCollectionTitleField,
       });
-      await rebuildFieldSubModel(ctx, model, binding);
+      await rebuildFieldSubModel({
+        parentModel: model,
+        targetUse: binding.modelName,
+        defaultProps: resolveDefaultProps(binding, targetCollectionTitleField || ctx.collectionField),
+      });
     } else {
       const binding = ctx.model.constructor.getDefaultBindingByField(ctx, ctx.collectionField);
       if (previousParams.pattern === 'readPretty') {
-        await rebuildFieldSubModel(ctx, model, binding);
+        await rebuildFieldSubModel({
+          parentModel: model,
+          targetUse: binding.modelName,
+          defaultProps: resolveDefaultProps(binding),
+        });
       }
     }
   },
@@ -101,28 +114,3 @@ export const pattern = defineAction({
     }
   },
 });
-
-async function rebuildFieldSubModel(ctx, model, binding: BindingOptions) {
-  if (!binding) return;
-
-  const fieldUid = model.subModels['field']?.['uid'];
-  if (fieldUid) {
-    await ctx.engine.destroyModel(fieldUid);
-  }
-
-  const defaultProps =
-    typeof binding.defaultProps === 'function' ? binding.defaultProps(ctx, {} as any) : binding.defaultProps;
-
-  const subModel = model.setSubModel('field', {
-    use: binding.modelName,
-    props: defaultProps || {},
-    stepParams: {
-      fieldSettings: {
-        init: model.getFieldSettingsInitParams(),
-      },
-    },
-  });
-
-  await subModel.dispatchEvent('beforeRender');
-  await model.save(); // 持久化
-}

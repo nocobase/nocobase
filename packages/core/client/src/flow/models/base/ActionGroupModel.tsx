@@ -88,7 +88,7 @@ export class ActionGroupModel extends FlowModel {
       if (r) {
         continue;
       }
-      const item = buildSubModelItem(M, ctx);
+      const item = await buildSubModelItem(M, ctx);
       if (item) {
         extra.push(item);
       }

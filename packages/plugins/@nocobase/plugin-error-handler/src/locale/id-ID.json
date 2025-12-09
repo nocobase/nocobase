@@ -1,0 +1,6 @@
+{
+  "Validation error": "Kesalahan validasi {{field}}",
+  "notNull Violation": "{{field}} tidak boleh kosong",
+  "notNull violation": "{{field}} tidak boleh kosong",
+  "unique violation": "{{field}} sudah ada"
+}

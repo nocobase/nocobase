@@ -14,6 +14,9 @@ import {
   ConsoleMetricExporter,
   MeterProvider,
   type MeterProviderOptions,
+  ViewOptions,
+  AggregationType,
+  AggregationTemporality,
 } from '@opentelemetry/sdk-metrics';
 import { Resource } from '@opentelemetry/resources';
 import opentelemetry from '@opentelemetry/api';
@@ -45,7 +48,9 @@ export class Metric {
       'console',
       () =>
         new PeriodicExportingMetricReader({
-          exporter: new ConsoleMetricExporter(),
+          exporter: new ConsoleMetricExporter({
+            temporalitySelector: () => AggregationTemporality.DELTA,
+          }),
         }),
     );
   }
@@ -65,6 +70,27 @@ export class Metric {
   start() {
     if (!this.resource) {
       throw new Error('Metric.init(resource) must be called before start()');
+    }
+
+    const metricNames = new Set(
+      (process.env.TELEMETRY_METRICS || '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    );
+
+    const views: ViewOptions[] = [];
+
+    if (metricNames.size > 0) {
+      for (const metricName of metricNames) {
+        views.push({
+          instrumentName: metricName,
+        });
+      }
+      views.push({
+        instrumentName: '*',
+        aggregation: { type: AggregationType.DROP },
+      });
     }
 
     let readerNames = this.readerName;
@@ -93,6 +119,9 @@ export class Metric {
       resource: this.resource,
       readers,
     };
+    if (views.length > 0) {
+      providerOptions.views = views;
+    }
 
     this.provider = new MeterProvider(providerOptions);
     opentelemetry.metrics.setGlobalMeterProvider(this.provider);

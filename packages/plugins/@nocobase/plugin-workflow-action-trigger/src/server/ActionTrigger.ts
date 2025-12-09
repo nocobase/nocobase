@@ -42,7 +42,7 @@ export default class extends Trigger {
 
     const self = this;
 
-    async function triggerWorkflowActionMiddleware(context: Context, next: Next) {
+    workflow.app.dataSourceManager.use(async function triggerWorkflowActionMiddleware(context: Context, next: Next) {
       await next();
 
       const { actionName } = context.action;
@@ -52,9 +52,7 @@ export default class extends Trigger {
       }
 
       return self.collectionTriggerAction(context);
-    }
-
-    workflow.app.dataSourceManager.use(triggerWorkflowActionMiddleware);
+    });
 
     workflow.app.pm.get(PluginErrorHandler).errorHandler.register(
       (err) => err instanceof RequestOnActionTriggerError || err.name === 'RequestOnActionTriggerError',
@@ -89,12 +87,14 @@ export default class extends Trigger {
     const dataSourceHeader = context.get('x-data-source') || 'main';
     const dataSource = context.app.dataSourceManager.dataSources.get(dataSourceHeader);
     if (!dataSource) {
+      context.logger.warn(`[Workflow post-action]: data source "${dataSourceHeader}" not found`);
       return;
     }
 
     const collection = dataSource.collectionManager.getCollection(resourceName);
 
     if (!collection) {
+      context.logger.warn(`[Workflow post-action]: collection "${resourceName}" not found`);
       return;
     }
 
@@ -170,9 +170,15 @@ export default class extends Trigger {
             if (collectionName !== model.collection.name) {
               continue;
             }
+            const filterByTk = model.collection.isMultiFilterTargetKey()
+              ? pick(
+                  payload.get(),
+                  model.collection.filterTargetKey.sort((a, b) => a.localeCompare(b)),
+                )
+              : payload.get(model.collection.filterTargetKey);
             if (appends.length) {
               payload = await model.collection.repository.findOne({
-                filterByTk: payload.get(model.collection.filterTargetKey),
+                filterByTk,
                 appends,
               });
             }
@@ -180,6 +186,9 @@ export default class extends Trigger {
           (workflow.sync ? syncGroup : asyncGroup).push([workflow, { data: toJSON(payload), ...userInfo }]);
         }
       } else {
+        context.logger.warn(
+          '[Workflow post-action]: post-action to trigger on workflow resource is deprecated, and will be removed in 2.0',
+        );
         const { filterTargetKey, repository } = (<Application>context.app).dataSourceManager.dataSources
           .get(dataSourceName)
           .collectionManager.getCollection(collectionName);

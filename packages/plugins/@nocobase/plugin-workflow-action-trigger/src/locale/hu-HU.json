@@ -1,0 +1,22 @@
+{
+  "Associations to use": "Használandó kapcsolatok",
+  "Collection": "Gyűjtemény",
+  "Create record action": "Rekord létrehozási művelet",
+  "Event triggers when submitted a workflow bound form action.": "Az esemény akkor aktiválódik, amikor egy munkafolyamathoz kötött űrlapműveletet küldenek be.",
+  "Form data model": "Űrlap adatmodell",
+  "Form event": "Űrlap esemény",
+  "Global mode, triggered after the completion of the following actions": "Globális mód, a következő műveletek befejezése után aktiválódik",
+  "Local mode, triggered after the completion of actions bound to this workflow": "Helyi mód, az ehhez a munkafolyamathoz kötött műveletek befejezése után aktiválódik",
+  "Post-action event": "Művelet utáni esemény",
+  "Role of user acted": "A cselekvő felhasználó szerepe",
+  "Role of user submitted form": "Az űrlapot beküldő felhasználó szerepe",
+  "Select actions": "Műveletek kiválasztása",
+  "The collection to which the triggered data belongs.": "A gyűjtemény, amelyhez az aktivált adat tartozik.",
+  "Trigger data": "Kiváltó adat",
+  "Trigger mode": "Kiváltási mód",
+  "Triggered after the completion of a request initiated through an action button or API, such as after adding or updating data. Suitable for data processing, sending notifications, etc., after actions are completed.": "Egy művelet gomb vagy API által kezdeményezett kérés befejezése után aktiválódik, például adatok hozzáadása vagy frissítése után. Alkalmas adatfeldolgozásra, értesítések küldésére stb. a műveletek befejezése után.",
+  "Update record action": "Rekord frissítési művelet",
+  "Use a collection to match form data.": "Használjon egy gyűjteményt az űrlapadatok egyeztetéséhez.",
+  "User acted": "A cselekvő felhasználó",
+  "User submitted form": "Az űrlapot beküldő felhasználó"
+}

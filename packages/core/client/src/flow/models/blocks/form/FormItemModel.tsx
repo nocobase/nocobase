@@ -111,7 +111,9 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     super.onInit(options);
     this.emitter.on('onSubModelAdded', (subModel: FieldModel) => {
       if (this.collectionField) {
-        subModel.setProps(this.collectionField.getComponentProps());
+        const componentProps = this.collectionField.getComponentProps();
+        subModel.setProps(componentProps);
+        this.setProps({ ...(_.pick(componentProps, 'rules') || {}) });
       }
     });
   }
@@ -134,15 +136,21 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
             fork.context.defineProperty('fieldKey', {
               get: () => fieldKey,
             });
+            if (this.context.pattern) {
+              fork.context.defineProperty('pattern', {
+                get: () => this.context.pattern,
+              });
+            }
             return fork;
           })()
         : fieldModel;
+    const mergedProps = this.context.pattern ? { ...this.props, pattern: this.context.pattern } : this.props;
     const fieldPath = buildDynamicName(this.props.name, idx);
     this.context.defineProperty('fieldPathArray', {
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
     return (
-      <FormItem {...this.props} name={fieldPath} validateFirst={true}>
+      <FormItem {...mergedProps} name={fieldPath} validateFirst={true}>
         <FieldModelRenderer model={modelForRender} name={fieldPath} />
       </FormItem>
     );
@@ -363,7 +371,6 @@ FormItemModel.registerFlow({
         }
       },
       async handler(ctx, params) {
-        console.log(params.titleField);
         ctx.model.setProps({ titleField: params?.titleField });
         // if (ctx.model.props.pattern === 'readPretty') {
         //   ctx.model.setProps({ titleField: params?.label });

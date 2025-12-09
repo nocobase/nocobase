@@ -53,7 +53,7 @@ const ResponsiveSpace = (props) => {
 };
 
 export class ActionPanelBlockModel extends BlockModel {
-  renderConfiguireActions() {
+  renderConfigureActions() {
     return (
       <AddSubModelButton
         key={'action-panel-add-actions'}
@@ -70,6 +70,7 @@ export class ActionPanelBlockModel extends BlockModel {
     const { layout, ellipsis } = this.props;
 
     const token = this.context.themeToken;
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
 
     return (
       <div id={`model-${this.uid}`} className="action-panel-block">
@@ -79,6 +80,9 @@ export class ActionPanelBlockModel extends BlockModel {
               {layout === WorkbenchLayout.Grid ? (
                 <ResponsiveSpace>
                   {this.mapSubModels('actions', (action: ActionModel) => {
+                    if (action.hidden && !isConfigMode) {
+                      return;
+                    }
                     const { icon, color = '#1677FF', title } = action.props;
                     action.enableEditDanger = false;
                     action.enableEditType = false;
@@ -257,7 +261,9 @@ export class ActionPanelBlockModel extends BlockModel {
             </div>
           </DndProvider>
         </ConfigProvider>
-        <div style={{ marginTop: '10px' }}>{this.renderConfiguireActions()}</div>
+        {this.flowEngine?.flowSettings?.enabled && (
+          <div style={{ marginTop: '10px' }}>{this.renderConfigureActions()}</div>
+        )}
       </div>
     );
   }

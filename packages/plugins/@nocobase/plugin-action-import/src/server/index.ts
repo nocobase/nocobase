@@ -17,7 +17,7 @@ export class PluginActionImportServer extends Plugin {
       if (!this.app.db.getRepository('roles')) {
         return;
       }
-      const roleNames = ['admin', 'member'];
+      const roleNames = ['admin'];
       const roles = await this.app.db.getRepository('roles').find({
         filter: {
           name: roleNames,
@@ -65,7 +65,7 @@ export class PluginActionImportServer extends Plugin {
         ctx.body = {
           errors: [
             {
-              message: ctx.i18n.t(err.code, {
+              message: ctx.i18n.t(err.message, {
                 ...err.params,
                 ns: 'action-import',
               }),
@@ -81,16 +81,17 @@ export class PluginActionImportServer extends Plugin {
         ctx.status = 400;
         const causeError = err.cause;
         errorHandlerPlugin.errorHandler.renderError(causeError, ctx);
-
+        const message = ctx.i18n.t('import-error', {
+          interpolation: { escapeValue: false },
+          ns: 'action-import',
+          rowData: JSON.stringify(err.rowData),
+          rowIndex: err.rowIndex,
+          causeMessage: ctx.body.errors[0].message,
+        });
         ctx.body = {
           errors: [
             {
-              message: ctx.i18n.t('import-error', {
-                ns: 'action-import',
-                rowData: err.rowData,
-                rowIndex: err.rowIndex,
-                causeMessage: ctx.body.errors[0].message,
-              }),
+              message,
             },
           ],
         };

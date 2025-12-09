@@ -10,6 +10,7 @@
 import { createCurrentRecordMetaFactory, FlowModel, useFlowModel } from '@nocobase/flow-engine';
 import type { SelectProps } from 'antd';
 import React from 'react';
+import { omit } from 'lodash';
 
 export interface AssociationFieldNames {
   label: string;
@@ -32,6 +33,10 @@ export interface LazySelectProps extends Omit<SelectProps<any>, 'mode' | 'option
   loading?: boolean;
   onCompositionStart?: (e: any) => void;
   onCompositionEnd?: (e: any, flag?: boolean) => void;
+  quickCreate?: 'none' | 'modalAdd' | 'quickAdd';
+  onModalAddClick?: (e: any) => void;
+  onDropdownAddClick?: (e: any) => void;
+  searchText?: string;
 }
 
 export interface LabelByFieldProps {
@@ -43,10 +48,14 @@ export function LabelByField(props: Readonly<LabelByFieldProps>) {
   const { option, fieldNames } = props;
   const currentModel = useFlowModel();
   const field: any = currentModel.subModels.field as FlowModel;
+  if (!field) {
+    return;
+  }
   const key = option[fieldNames.value];
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
     get: () => option,
+    cache: false,
     meta: createCurrentRecordMetaFactory(fieldModel.context, () => fieldModel.context.collection),
   });
   const labelValue = option?.[fieldNames.label] || option.label;
@@ -80,7 +89,9 @@ export function toSelectValue(
     if (!Array.isArray(record)) return [];
     return record.map(convert).filter(Boolean);
   }
-
+  if (Array.isArray(record) && !multiple) {
+    return convert(record[0]);
+  }
   return convert(record as AssociationOption);
 }
 
@@ -90,7 +101,9 @@ export function resolveOptions(
   isMultiple: boolean,
 ) {
   if (options?.length) {
-    return options;
+    return options.map((v) => {
+      return omit(v, 'disabled');
+    });
   }
 
   if (isMultiple) {

@@ -227,8 +227,15 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
     return this;
   }
 
+  jsonStringify(value: any): string {
+    if (value !== null && typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    return value;
+  }
+
   setFilterByTk(filterByTk: any) {
-    return this.addRequestParameter('filterByTk', filterByTk);
+    return this.addRequestParameter('filterByTk', this.jsonStringify(filterByTk));
   }
 
   getFilterByTk(): any {

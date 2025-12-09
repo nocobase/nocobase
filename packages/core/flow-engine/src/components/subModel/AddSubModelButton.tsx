@@ -208,9 +208,25 @@ const transformSubModelItems = async (
   const toggleItems: Array<{ item: SubModelItem; index: number }> = [];
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    if (item.toggleable && item.useModel) {
+
+    // 自动从 createModelOptions 中推断 useModel，避免遗漏导致 toggleable 失效
+    let resolvedUseModel = item.useModel;
+    if (!resolvedUseModel && item.toggleable) {
+      try {
+        const createOpts = await getCreateModelOptions(item, model.context);
+        resolvedUseModel = createOpts?.use;
+        if (resolvedUseModel) {
+          item.useModel = resolvedUseModel;
+        }
+      } catch (error) {
+        // ignore and fall back to existing useModel
+        console.error('[NocoBase]: Failed to resolve useModel for toggleable item:', error);
+      }
+    }
+
+    if (item.toggleable && resolvedUseModel) {
       item.toggleDetector = (ctx) => {
-        const C = ctx.engine.getModelClass(item.useModel); // 确保 use 是有效的模型类
+        const C = ctx.engine.getModelClass(resolvedUseModel); // 确保 use 是有效的模型类
         const r = ctx.model.findSubModel(subModelKey, (m) => {
           if (item.toggleable === true) {
             return m.constructor === C;
@@ -221,7 +237,7 @@ const transformSubModelItems = async (
         return !!r;
       };
       item.customRemove = async (ctx, item) => {
-        const C = ctx.engine.getModelClass(item.useModel); // 确保 use 是有效的模型类
+        const C = ctx.engine.getModelClass(resolvedUseModel); // 确保 use 是有效的模型类
         const r = ctx.model.findSubModel(subModelKey, (m) => {
           if (item.toggleable === true) {
             return m.constructor === C;

@@ -38,13 +38,13 @@ Markdown 区块无需绑定数据源使用，使用 Markdown 语法定义文本�
 
 ![20251029203400](https://static-docs.nocobase.com/20251029203400.png)
 
-## 本地化
+<!-- ## 本地化
 
 内置了`t` 过滤器，支持本地化翻译文案。
 
 > 注意：文案需要提前录入本地化表中，未来将优化为支持自定义生成本地化词条。
 
-![20251026223542](https://static-docs.nocobase.com/20251026223542.png)
+![20251026223542](https://static-docs.nocobase.com/20251026223542.png) -->
 
 ## 二维码
 

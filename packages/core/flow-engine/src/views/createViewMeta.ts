@@ -150,6 +150,8 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
           collection: res.collectionName,
           dataSourceKey: res.dataSourceKey || 'main',
           filterByTk: res.filterByTk,
+          associationName: res.associationName,
+          sourceId: res.sourceId,
         };
       }
     }
@@ -175,7 +177,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
       const parent = stack[idx];
       if (!parent?.viewUid) return undefined;
 
-      let model = useCtx.engine?.getModel?.(parent.viewUid) as PopupModelLike;
+      let model = useCtx.engine?.getModel(parent.viewUid, true) as PopupModelLike;
       if (!model) {
         try {
           model = (await useCtx.engine.loadModel({ uid: parent.viewUid })) as PopupModelLike;
@@ -188,7 +190,14 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
       const dataSourceKey = params?.dataSourceKey || 'main';
       const filterByTk = parent?.filterByTk ?? parent?.sourceId;
       if (!collection || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
-      return { collection, dataSourceKey, filterByTk };
+      const ref: RecordRef = {
+        collection,
+        dataSourceKey,
+        filterByTk,
+        sourceId: parent?.sourceId,
+        associationName: params?.associationName,
+      };
+      return ref;
     } catch (e) {
       (flowCtx?.logger || ctx.logger)?.warn?.({ err: e }, '[FlowEngine] popup.getParentRecordRef failed');
       return undefined;
@@ -245,6 +254,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
             properties: async () => ({
               dataSourceKey: { type: 'string', title: t('Data source key') },
               collectionName: { type: 'string', title: t('Collection name') },
+              associationName: { type: 'string', title: t('Association name') },
               filterByTk: { type: 'string', title: t('filterByTk') },
               sourceId: { type: 'string', title: t('sourceId') },
             }),
@@ -276,7 +286,16 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
           parent?: PopupVariableParams;
         };
         const params: PopupVariableParams = {};
-        if (ref) params.record = ref;
+        if (ref) {
+          const merged: RecordRef = { ...ref };
+          if (!merged.associationName && inputArgs?.associationName) {
+            merged.associationName = inputArgs.associationName;
+          }
+          if (typeof merged.sourceId === 'undefined' && typeof inputArgs?.sourceId !== 'undefined') {
+            merged.sourceId = inputArgs?.sourceId;
+          }
+          params.record = merged;
+        }
 
         // 构建 parent 链（用于服务端解析 ctx.popup.parent[.parent...].record.*）
         try {
@@ -348,7 +367,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
             const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
             const last = stack?.[stack.length - 1];
             if (last?.viewUid) {
-              let model = ctx?.engine?.getModel?.(last.viewUid) as PopupModelLike;
+              let model = ctx?.engine?.getModel(last.viewUid, true) as PopupModelLike;
               if (!model) {
                 model = (await ctx.engine.loadModel({ uid: last.viewUid })) as PopupModelLike;
               }
@@ -388,6 +407,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
           properties: async () => ({
             dataSourceKey: { type: 'string', title: t('Data source key') },
             collectionName: { type: 'string', title: t('Collection name') },
+            associationName: { type: 'string', title: t('Association name') },
             filterByTk: { type: 'string', title: t('filterByTk') },
             sourceId: { type: 'string', title: t('sourceId') },
           }),
@@ -415,6 +435,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
 interface PopupNodeResource {
   dataSourceKey: string;
   collectionName?: string;
+  associationName?: string;
   filterByTk?: any;
   sourceId?: any;
 }
@@ -431,7 +452,7 @@ export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promi
   const buildNode = async (idx: number): Promise<PopupNode | undefined> => {
     if (idx < 0 || !stack[idx]?.viewUid) return undefined;
     const viewUid = stack[idx].viewUid;
-    let model = ctx.engine?.getModel?.(viewUid) as PopupModelLike;
+    let model = ctx.engine?.getModel(viewUid, true) as PopupModelLike;
     if (!model) {
       model = (await ctx.engine?.loadModel({ uid: viewUid })) as PopupModelLike;
     }
@@ -443,6 +464,7 @@ export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promi
       resource: {
         dataSourceKey,
         collectionName,
+        associationName: p?.associationName,
         filterByTk: stack[idx]?.filterByTk,
         sourceId: stack[idx]?.sourceId,
       },

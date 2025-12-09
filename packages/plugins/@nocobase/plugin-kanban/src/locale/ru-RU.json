@@ -1,0 +1,10 @@
+{
+  "Convert the following integer fields to sorting fields": "Преобразовать следующие целочисленные поля в поля сортировки",
+  "Create sort field": "Создать поле сортировки",
+  "Enable drag and drop sorting": "Включить сортировку перетаскиванием",
+  "Global sorting": "Глобальная сортировка",
+  "Grouped sorting based on": "Групповая сортировка на основе",
+  "Set column width": "Установить ширину столбца",
+  "Sorting field": "Поле сортировки",
+  "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected": "Используется для сортировки карточек канбана, можно выбрать только поля сортировки, соответствующие полям группировки"
+}

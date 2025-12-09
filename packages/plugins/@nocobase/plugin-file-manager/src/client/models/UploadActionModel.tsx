@@ -7,15 +7,15 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { InboxOutlined, LoadingOutlined } from '@ant-design/icons';
+import { ActionModel, ActionSceneEnum, Icon, usePlugin, useRequest } from '@nocobase/client';
 import { escapeT, useFlowContext } from '@nocobase/flow-engine';
 import { Button, Upload } from 'antd';
-import { filesize } from 'filesize';
 import { UploadFile } from 'antd/es/upload/interface';
+import { filesize } from 'filesize';
 import match from 'mime-match';
-import { InboxOutlined, LoadingOutlined } from '@ant-design/icons';
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ActionSceneEnum, ActionModel, Icon, useRequest, usePlugin } from '@nocobase/client';
 import FileManagerPlugin from '../';
 
 const FILE_SIZE_LIMIT_DEFAULT = 1024 * 1024 * 20;
@@ -302,6 +302,9 @@ export class UploadActionModel extends ActionModel {
 
 UploadActionModel.define({
   label: escapeT('Upload'),
+  hide(ctx) {
+    return ctx.collection?.template !== 'file';
+  },
 });
 
 UploadActionModel.registerFlow({

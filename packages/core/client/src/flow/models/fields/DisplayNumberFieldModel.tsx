@@ -154,6 +154,9 @@ function formatNumber(props) {
     //科学计数显示
     result = scientificNotation(Number(unitData), countDecimalPlaces(step), separators?.[separator]?.['decimal']);
   }
+  if (result === 'NaN') {
+    result = value;
+  }
   return result;
 }
 
@@ -168,18 +171,26 @@ interface displayNumberProps {
    * @default '0.00'
    */
   separator?: '0,0.00' | '0.0,00' | '0 0,00' | '0.00';
-  step?: number;
+  numberStep?: number;
   value?: any;
   addonBefore?: React.ReactNode;
   addonAfter?: React.ReactNode;
 }
 
 export const DisplayNumber = (props: displayNumberProps) => {
-  const { step, formatStyle, value, addonBefore, addonAfter, unitConversion, unitConversionType, separator } = props;
+  const {
+    numberStep: step,
+    formatStyle,
+    value,
+    addonBefore,
+    addonAfter,
+    unitConversion,
+    unitConversionType,
+    separator,
+  } = props;
   const result = useMemo(() => {
     return formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });
   }, [step, formatStyle, value, unitConversion, unitConversionType, separator]);
-
   if (!result) {
     return null;
   }
@@ -279,7 +290,7 @@ DisplayNumberFieldModel.registerFlow({
             'x-component': 'Select',
             title: "{{t('Separator')}}",
           },
-          step: {
+          numberStep: {
             type: 'string',
             title: '{{t("Precision")}}',
             'x-component': 'Select',
@@ -312,27 +323,26 @@ DisplayNumberFieldModel.registerFlow({
       },
       defaultParams: (ctx) => {
         const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } =
-          ctx.model.props;
-        const { step: prescition } = ctx.model.getProps() || {};
+          ctx.collectionField.getComponentProps();
         return {
           formatStyle: formatStyle || 'normal',
           unitConversion,
           unitConversionType,
           separator: separator || '0,0.00',
-          step: step || prescition || '1',
+          numberStep: step || '1',
           addonBefore,
           addonAfter,
         };
       },
       handler(ctx, params) {
-        const { formatStyle, unitConversion, unitConversionType, separator, step, addonBefore, addonAfter } = params;
-        const { step: prescition } = ctx.model.getProps() || {};
+        const { formatStyle, unitConversion, unitConversionType, separator, numberStep, addonBefore, addonAfter } =
+          params;
         ctx.model.setProps({
-          formatStyle: formatStyle || 'normal',
+          formatStyle: formatStyle,
           unitConversion,
           unitConversionType,
-          separator: separator || '0,0.00',
-          step: step || prescition || '1',
+          separator: separator,
+          numberStep,
           addonBefore,
           addonAfter,
         });

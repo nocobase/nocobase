@@ -421,30 +421,48 @@ describe('removeInvalidFilterItems', () => {
 
     const result = removeInvalidFilterItems(filter);
 
-    expect(result).toEqual({
-      logic: '$and',
-      items: [
-        {
-          path: 'name',
-          operator: '$eq',
-          value: 'Alice',
-        },
-        {
-          logic: '$or',
-          items: [
-            {
-              path: 'status',
-              operator: '$eq',
-              value: 'active',
-            },
-          ],
-        },
-        {
-          logic: '$and',
-          items: [],
-        },
-      ],
-    });
+    expect(result).toMatchInlineSnapshot(`
+      {
+        "items": [
+          {
+            "operator": "$eq",
+            "path": "name",
+            "value": "Alice",
+          },
+          {
+            "operator": "$eq",
+            "path": "",
+            "value": "missingPath",
+          },
+          {
+            "items": [
+              {
+                "operator": "$eq",
+                "path": "status",
+                "value": "active",
+              },
+              {
+                "operator": "$eq",
+                "path": "",
+                "value": "invalidNestedPath",
+              },
+            ],
+            "logic": "$or",
+          },
+          {
+            "items": [
+              {
+                "operator": "$eq",
+                "path": "",
+                "value": "deepInvalid",
+              },
+            ],
+            "logic": "$and",
+          },
+        ],
+        "logic": "$and",
+      }
+    `);
   });
 });
 

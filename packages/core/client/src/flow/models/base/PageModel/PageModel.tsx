@@ -35,11 +35,10 @@ type PageModelStructure = {
 
 export class PageModel extends FlowModel<PageModelStructure> {
   tabBarExtraContent: { left?: ReactNode; right?: ReactNode } = {};
-  tabActiveKey: string;
 
   onMount(): void {
     super.onMount();
-    this.tabActiveKey = this.context.view.inputArgs?.tabUid;
+    this.setProps('tabActiveKey', this.context.view.inputArgs?.tabUid);
     if (this.context?.pageInfo) this.context.pageInfo.version = 'v2';
   }
 
@@ -117,7 +116,7 @@ export class PageModel extends FlowModel<PageModelStructure> {
     return (
       <DndProvider onDragEnd={this.handleDragEnd.bind(this)}>
         <Tabs
-          defaultActiveKey={this.context.view.inputArgs?.tabUid}
+          activeKey={this.props.tabActiveKey}
           tabBarStyle={this.props.tabBarStyle}
           items={this.mapTabs()}
           onChange={(activeKey) => {
@@ -126,11 +125,8 @@ export class PageModel extends FlowModel<PageModelStructure> {
             });
 
             this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
-            this.invokeTabModelLifecycleMethod(this.tabActiveKey, 'onInactive');
-            this.tabActiveKey = activeKey;
-            if (this.context.view.inputArgs?.tabUid) {
-              this.context.view.inputArgs.tabUid = activeKey;
-            }
+            this.invokeTabModelLifecycleMethod(this.props.tabActiveKey, 'onInactive');
+            this.setProps('tabActiveKey', activeKey);
           }}
           // destroyInactiveTabPane
           tabBarExtraContent={{
@@ -208,29 +204,29 @@ PageModel.registerFlow({
       },
       async handler(ctx, params) {
         ctx.model.setProps('displayTitle', params.displayTitle);
-        if (!ctx.model.context.closable) {
+        if (ctx.model.context.closable) {
+          ctx.model.setProps('title', params.title ? ctx.t(params.title) : null);
+        } else {
           const routeTitle = (ctx.model.context as any)?.currentRoute?.title;
           ctx.model.setProps('title', ctx.t(params.title || routeTitle));
-        } else {
-          ctx.model.setProps('title', params.title ? ctx.t(params.title) : null);
         }
         ctx.model.setProps('enableTabs', params.enableTabs);
 
-        if (ctx.view.type !== 'embed') {
+        if (ctx.view.type === 'embed') {
           ctx.model.setProps('headerStyle', {
-            backgroundColor: 'var(--colorBgLayout)',
+            backgroundColor: 'var(--colorBgContainer)',
           });
           ctx.model.setProps('tabBarStyle', {
-            backgroundColor: 'var(--colorBgLayout)',
+            backgroundColor: 'var(--colorBgContainer)',
             paddingInline: 16,
             marginBottom: 0,
           });
         } else {
           ctx.model.setProps('headerStyle', {
-            backgroundColor: 'var(--colorBgContainer)',
+            backgroundColor: 'var(--colorBgLayout)',
           });
           ctx.model.setProps('tabBarStyle', {
-            backgroundColor: 'var(--colorBgContainer)',
+            backgroundColor: 'var(--colorBgLayout)',
             paddingInline: 16,
             marginBottom: 0,
           });

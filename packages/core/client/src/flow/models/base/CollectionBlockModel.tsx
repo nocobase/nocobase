@@ -19,7 +19,7 @@ import {
   SingleRecordResource,
 } from '@nocobase/flow-engine';
 import _ from 'lodash';
-import { createDefaultCollectionBlockTitle } from '../../internal/utils/blockUtils';
+import { createDefaultCollectionBlockTitle } from '../../utils/blockUtils';
 import { FilterManager } from '../blocks/filter-manager/FilterManager';
 import { DataBlockModel } from './DataBlockModel';
 
@@ -160,11 +160,15 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
               if (!this.filterCollection(field.targetCollection)) {
                 return null;
               }
+              let sourceId = `{{ctx.popup.record.${field.sourceKey || field.collection.filterTargetKey}}}`;
+              if (field.sourceKey === field.collection.filterTargetKey) {
+                sourceId = '{{ctx.view.inputArgs.filterByTk}}'; // 此时可以直接通过弹窗url读取，减少后端解析
+              }
               const initOptions = {
                 dataSourceKey,
                 collectionName: field.target,
                 associationName: field.resourceName,
-                sourceId: '{{ctx.view.inputArgs.filterByTk}}',
+                sourceId,
               };
               return {
                 key: genKey(`associated-${field.name}`),
@@ -189,6 +193,10 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       },
     ];
     if (this._isScene('one')) {
+      const currentCollection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
+      if (!currentCollection || !this.filterCollection(currentCollection)) {
+        return items;
+      }
       const initOptions = {
         dataSourceKey,
         collectionName,
@@ -356,6 +364,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
 
       if (collectionField && collectionField.isAssociationField()) {
         (this.resource as BaseRecordResource).addAppends(fieldPath);
+        if (collectionField.targetCollection?.template === 'tree') {
+          (this.resource as BaseRecordResource).addAppends(`${fieldPath}.parent` + '(recursively=true)');
+        }
         if (refresh) {
           this.resource.refresh();
         }
@@ -369,6 +380,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
       }
       if (field.isAssociationField()) {
         (this.resource as BaseRecordResource).addAppends(field.name);
+        if (field.targetCollection?.template === 'tree') {
+          (this.resource as BaseRecordResource).addAppends(`${field.name}.parent` + '(recursively=true)');
+        }
         if (refresh) {
           this.resource.refresh();
         }

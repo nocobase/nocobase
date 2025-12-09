@@ -30,6 +30,8 @@ import type {
   ModelConstructor,
   PersistOptions,
   ResourceType,
+  RegisteredModelClassName,
+  ResolveUseResult,
 } from './types';
 import { isInheritedFrom } from './utils';
 
@@ -458,7 +460,12 @@ export class FlowEngine {
     extra?: { delegateToParent?: boolean; delegate?: FlowContext },
   ): T {
     const { parentId, uid, use: modelClassName, subModels } = options;
-    const ModelClass = typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName;
+    const parentModel = parentId ? (this._modelInstances.get(parentId) as FlowModel | undefined) : undefined;
+    const ModelClass = this._resolveModelClass(
+      typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName,
+      options,
+      parentModel,
+    );
 
     if (uid && this._modelInstances.has(uid)) {
       return this._modelInstances.get(uid) as T;
@@ -503,6 +510,67 @@ export class FlowEngine {
     modelInstance._createSubModels(options.subModels);
 
     return modelInstance as T;
+  }
+
+  /**
+   * 按类上的 resolveUse 链路解析最终用于实例化的模型类。
+   * 允许模型类根据上下文动态指定实际使用的类，支持多级 resolveUse。
+   */
+  private _resolveModelClass(
+    initial: ModelConstructor | undefined,
+    options: CreateModelOptions,
+    parent?: FlowModel,
+  ): ModelConstructor | undefined {
+    const normalize = (
+      resolved: ResolveUseResult | void,
+    ): { target?: RegisteredModelClassName | ModelConstructor; stop?: boolean } => {
+      if (!resolved) return {};
+      if (typeof resolved === 'object' && 'use' in resolved) {
+        return { target: resolved.use, stop: !!resolved.stop };
+      }
+      return { target: resolved as any, stop: false };
+    };
+
+    let current = initial;
+    const visited = new Set<ModelConstructor>();
+
+    while (current) {
+      if (visited.has(current)) {
+        console.warn(`FlowEngine: resolveUse circular reference detected on '${current.name}'.`);
+        break;
+      }
+      visited.add(current);
+
+      const resolver = (current as any)?.resolveUse as
+        | ((opts: CreateModelOptions, engine: FlowEngine, parent?: FlowModel) => ResolveUseResult | void)
+        | undefined;
+      if (typeof resolver !== 'function') {
+        break;
+      }
+
+      const { target, stop } = normalize(resolver(options, this, parent));
+      if (!target || target === current) {
+        break;
+      }
+
+      let next: ModelConstructor | undefined;
+      if (typeof target === 'string') {
+        next = this.getModelClass(target);
+        if (!next) {
+          console.warn(`FlowEngine: resolveUse returned '${target}' but no model is registered under that name.`);
+          return undefined;
+        }
+      } else {
+        next = target;
+      }
+
+      current = next;
+      if (stop) {
+        break;
+      }
+    }
+
+    return current;
   }
 
   /**
@@ -591,6 +659,8 @@ export class FlowEngine {
       return false;
     }
     const modelInstance = this._modelInstances.get(uid) as FlowModel;
+    // Ensure any cached beforeRender results tied to this uid are cleared before removal.
+    modelInstance.invalidateFlowCache(undefined, true);
     modelInstance.clearForks();
     // 从父模型中移除当前模型的引用
     if (modelInstance.parent?.subModels) {
@@ -629,6 +699,44 @@ export class FlowEngine {
       model: modelInstance,
     });
     return true;
+  }
+
+  /**
+   * Remove a local model instance and all its sub-models recursively.
+   * @param {string} uid UID of the model instance to destroy
+   * @returns {boolean} Returns true if successfully destroyed, false otherwise
+   */
+  public removeModelWithSubModels(uid: string): boolean {
+    const model = this.getModel(uid);
+    if (!model) {
+      return false;
+    }
+
+    const collectDescendants = (m: FlowModel, acc: FlowModel[]) => {
+      if (m.subModels) {
+        for (const key in m.subModels) {
+          const sub = m.subModels[key];
+          if (Array.isArray(sub)) {
+            [...sub].forEach((s) => collectDescendants(s, acc));
+          } else if (sub) {
+            collectDescendants(sub, acc);
+          }
+        }
+      }
+      acc.push(m);
+    };
+
+    const allModels: FlowModel[] = [];
+    collectDescendants(model, allModels);
+
+    let success = true;
+    for (const m of allModels) {
+      if (!this.removeModel(m.uid)) {
+        success = false;
+      }
+    }
+
+    return success;
   }
 
   /**

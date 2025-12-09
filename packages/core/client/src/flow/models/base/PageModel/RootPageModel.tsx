@@ -8,10 +8,10 @@
  */
 
 import { DragEndEvent } from '@dnd-kit/core';
+import { autorun, reaction } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import { NocoBaseDesktopRoute } from '../../../../route-switch/antd/admin-layout/convertRoutesToSchema';
 import { PageModel } from './PageModel';
-import { autorun } from '@nocobase/flow-engine';
 
 export class RootPageModel extends PageModel {
   mounted = false;
@@ -19,29 +19,29 @@ export class RootPageModel extends PageModel {
   onMount() {
     super.onMount();
 
-    autorun(() => {
-      if (this.context.pageActive.value && this.mounted) {
-        if (this.tabActiveKey) {
-          this.invokeTabModelLifecycleMethod(this.tabActiveKey, 'onActive');
-        } else {
+    reaction(
+      () => this.context.pageActive.value,
+      () => {
+        if (this.context.pageActive.value && this.mounted) {
           const firstTab = this.subModels.tabs?.[0];
           if (firstTab) {
+            this.setProps('tabActiveKey', firstTab.uid);
             this.invokeTabModelLifecycleMethod(firstTab.uid, 'onActive');
           }
         }
-      }
-      if (this.context.pageActive.value === false) {
-        if (this.tabActiveKey) {
-          this.invokeTabModelLifecycleMethod(this.tabActiveKey, 'onInactive');
-        } else {
-          const firstTab = this.subModels.tabs?.[0];
-          if (firstTab) {
-            this.invokeTabModelLifecycleMethod(firstTab.uid, 'onInactive');
+        if (this.context.pageActive.value === false) {
+          if (this.props.tabActiveKey) {
+            this.invokeTabModelLifecycleMethod(this.props.tabActiveKey, 'onInactive');
+          } else {
+            const firstTab = this.subModels.tabs?.[0];
+            if (firstTab) {
+              this.invokeTabModelLifecycleMethod(firstTab.uid, 'onInactive');
+            }
           }
         }
-      }
-      this.mounted = true;
-    });
+        this.mounted = true;
+      },
+    );
   }
 
   async saveStepParams() {
@@ -101,7 +101,7 @@ RootPageModel.registerFlow({
         });
         ctx.model.setProps('routeId', data?.data?.id);
         const routes: NocoBaseDesktopRoute[] = _.castArray(data?.data?.children);
-        for (const route of routes) {
+        for (const route of routes.sort((a, b) => a.sort - b.sort)) {
           // 过滤掉隐藏的路由
           if (route.hideInMenu) {
             continue;
@@ -113,6 +113,7 @@ RootPageModel.registerFlow({
             subKey: 'tabs',
             subType: 'array',
             use: 'RootPageTabModel',
+            sortIndex: route.sort,
             props: {
               route,
             },

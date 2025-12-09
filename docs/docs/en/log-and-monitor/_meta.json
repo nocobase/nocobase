@@ -1,0 +1,45 @@
+[
+  {
+    "type": "custom-link",
+    "label": "Logger",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Server logs",
+        "link": "/log-and-monitor/logger"
+      },
+      {
+        "type": "custom-link",
+        "label": "Server logs, Audit Logs, Record history",
+        "link": "/log-and-monitor/logger/overview"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "Telemetry",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Manual",
+        "link": "/log-and-monitor/telemetry"
+      },
+      {
+        "type": "custom-link",
+        "label": "Exporter",
+        "items": [
+          {
+            "type": "custom-link",
+            "label": "HTTP",
+            "link": "/log-and-monitor/telemetry/exporter-http"
+          },
+          {
+            "type": "custom-link",
+            "label": "Prometheus",
+            "link": "/log-and-monitor/telemetry/exporter-prometheus"
+          }
+        ]
+      }
+    ]
+  }
+]

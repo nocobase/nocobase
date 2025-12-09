@@ -110,11 +110,14 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     }
   }
 
-  async create(data: TDataItem, options?: AxiosRequestConfig): Promise<void> {
+  async create(data: TDataItem, options?: AxiosRequestConfig & { refresh?: boolean }): Promise<void> {
     const config = this.mergeRequestConfig({ data }, this.createActionOptions, options);
-    await this.runAction('create', config);
+    const res = await this.runAction('create', config);
     this.emit('saved', data);
-    await this.refresh();
+    if (options?.refresh !== false) {
+      await this.refresh();
+    }
+    return res;
   }
 
   async get(filterByTk: any): Promise<TDataItem | undefined> {
@@ -130,26 +133,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   }
 
   async update(filterByTk: string | number, data: Partial<TDataItem>, options?: AxiosRequestConfig): Promise<void> {
-    const collection = this.context.collection;
-    const filterTargetKey = collection?.filterTargetKey;
-    const tkData = collection?.getFilterByTK(this.context.record);
-    let result = data;
-
-    // 安全处理 filterTargetKey & tkData
-    if (collection && filterTargetKey) {
-      if (Array.isArray(filterTargetKey)) {
-        result = {
-          ...data,
-          ...(tkData || {}),
-        };
-      } else {
-        result = {
-          ...data,
-          [filterTargetKey]: tkData,
-        };
-      }
-    }
-
+    const result = data;
     const config = this.mergeRequestConfig(
       {
         params: {
@@ -174,15 +158,13 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
   }
 
   async destroy(
-    filterByTk: string | number | string[] | number[] | TDataItem | TDataItem[],
+    filterByTk: string | number | string[] | number[] | TDataItem | TDataItem[] | object,
     options?: AxiosRequestConfig,
   ): Promise<void> {
     const config = this.mergeRequestConfig(
       {
         params: {
-          filterByTk: _.castArray(filterByTk).map((item) => {
-            return typeof item === 'object' ? item['id'] : item; // TODO: ID 字段还需要根据实际情况更改
-          }),
+          filterByTk: this.jsonStringify(filterByTk),
         },
       },
       options,
@@ -191,7 +173,7 @@ export class MultiRecordResource<TDataItem = any> extends BaseRecordResource<TDa
     const currentPage = this.getPage();
     const lastPage = Math.ceil((this.getCount() - _.castArray(filterByTk).length) / this.getPageSize());
     if (currentPage > lastPage) {
-      this.setPage(lastPage);
+      this.setPage(lastPage || 1);
     }
     await this.refresh();
   }

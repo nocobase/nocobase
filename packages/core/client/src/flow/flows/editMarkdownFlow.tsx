@@ -7,9 +7,54 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineFlow, tExpr, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
-import React from 'react';
-import { Space } from 'antd';
+import { defineFlow, tExpr, FlowModel, useFlowContext } from '@nocobase/flow-engine';
+import React, { useEffect } from 'react';
+import _ from 'lodash';
+import { useTranslation } from 'react-i18next';
+import { Space, Button } from 'antd';
+
+const PreviewButton = ({ style }) => {
+  const { t } = useTranslation();
+  const ctx = useFlowContext();
+  useEffect(() => {
+    const initValues = ctx.getStepFormValues('markdownBlockSettings', 'editMarkdown');
+    ctx.model._previousStepParams = _.cloneDeep(initValues);
+  }, []);
+  return (
+    <Button
+      color="primary"
+      variant="outlined"
+      style={style}
+      onClick={() => {
+        const formValues = ctx.getStepFormValues('markdownBlockSettings', 'editMarkdown');
+        ctx.model.setStepParams('markdownBlockSettings', 'editMarkdown', formValues);
+      }}
+    >
+      {t('Preview')}
+    </Button>
+  );
+};
+
+const CancelButton = ({ style }) => {
+  const { t } = useTranslation();
+  const ctx = useFlowContext();
+  return (
+    <Button
+      type="default"
+      style={style}
+      onClick={() => {
+        // 回滚 未保存的 stepParams
+        if (ctx.model._previousStepParams) {
+          ctx.model.setStepParams('markdownBlockSettings', 'editMarkdown', ctx.model._previousStepParams);
+          ctx.model._previousStepParams = null;
+        }
+        ctx.view.close();
+      }}
+    >
+      {t('Cancel')}
+    </Button>
+  );
+};
 
 export const editMarkdownFlow = defineFlow<FlowModel>({
   key: 'markdownBlockSettings',
@@ -21,7 +66,7 @@ export const editMarkdownFlow = defineFlow<FlowModel>({
         const t = ctx.t;
         const descriptionContent = (
           <Space>
-            <span style={{ marginLeft: '.25em' }} className={'ant-formily-item-extra'}>
+            <span style={{ marginLeft: '10px' }} className={'ant-formily-item-extra'}>
               {t('References')}:
             </span>
             <a
@@ -42,6 +87,11 @@ export const editMarkdownFlow = defineFlow<FlowModel>({
               return ctx.markdown.edit({
                 ...props,
                 value: props.value || ctx.model.props.value,
+                mode: 'sv',
+                height: '82vh',
+                style: {
+                  padding: 10,
+                },
               });
             },
             description: descriptionContent,
@@ -56,6 +106,13 @@ export const editMarkdownFlow = defineFlow<FlowModel>({
               transform: 'translateX(0)',
             },
           },
+          footer: (originNode, { OkBtn }) => (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+              <CancelButton style={{ marginRight: 6 }} />
+              <PreviewButton style={{ marginRight: 6 }} />
+              <OkBtn />
+            </div>
+          ),
         },
       },
       useRawParams: true,

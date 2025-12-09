@@ -27,7 +27,7 @@ describe('actions', () => {
 
   beforeAll(async () => {
     app = await createMockServer({
-      plugins: ['field-sort', 'users', 'departments'],
+      plugins: ['error-handler', 'field-sort', 'users', 'departments'],
     });
     db = app.db;
     repo = db.getRepository('departments');
@@ -98,16 +98,15 @@ describe('actions', () => {
         },
       ],
     });
-    const deptUsers = db.getRepository('departmentsUsers');
-    await deptUsers.update({
-      filter: {
-        departmentId: depts[0].id,
-        userId: user.id,
-      },
+
+    const userRepo = db.getRepository('users');
+    await userRepo.update({
+      filterByTk: 1,
       values: {
-        isMain: true,
+        mainDepartmentId: depts[0].id,
       },
     });
+
     const res = await agent.resource('users').setMainDepartment({
       values: {
         userId: user.id,
@@ -115,14 +114,44 @@ describe('actions', () => {
       },
     });
     expect(res.status).toBe(200);
-    const records = await deptUsers.find({
-      filter: {
-        userId: user.id,
+
+    const user2 = await userRepo.findOne({
+      filterByTk: 1,
+      fields: ['id', 'mainDepartmentId'],
+    });
+    expect(user2.mainDepartmentId).toBe(depts[1].id);
+  });
+
+  it('should allow setting mainDepartmentId when submitting departments together (user had none before)', async () => {
+    const userRepo = db.getRepository('users');
+    const user = await userRepo.findOne();
+
+    const dept = await repo.create({
+      values: { title: 'Dept3' },
+    });
+
+    const resBefore = await db.getRepository('departmentsUsers').count({
+      filter: { userId: user.id },
+    });
+    expect(resBefore).toBe(0);
+
+    await userRepo.update({
+      filterByTk: user.id,
+      values: {
+        departments: [dept.id],
+        mainDepartmentId: dept.id,
       },
     });
-    const dept1 = records.find((record: any) => record.departmentId === depts[0].id);
-    const dept2 = records.find((record: any) => record.departmentId === depts[1].id);
-    expect(dept1.isMain).toBe(false);
-    expect(dept2.isMain).toBe(true);
+
+    const userReload = await userRepo.findOne({
+      filterByTk: user.id,
+      fields: ['id', 'mainDepartmentId'],
+    });
+    expect(userReload.mainDepartmentId).toBe(dept.id);
+
+    const membershipCount = await db.getRepository('departmentsUsers').count({
+      filter: { userId: user.id, departmentId: dept.id },
+    });
+    expect(membershipCount).toBe(1);
   });
 });

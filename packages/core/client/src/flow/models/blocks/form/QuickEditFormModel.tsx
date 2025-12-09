@@ -112,6 +112,7 @@ export class QuickEditFormModel extends FlowModel {
     const recordMeta: PropertyMetaFactory = createCurrentRecordMetaFactory(this.context, () => this.collection);
     this.context.defineProperty('record', {
       get: () => this.resource.getData(),
+      cache: false,
       resolveOnServer: createRecordResolveOnServerWithLocal(
         () => this.collection,
         () => this.resource.getData(),
@@ -150,7 +151,7 @@ export class QuickEditFormModel extends FlowModel {
               showLabel={false}
               name={this.fieldPath}
               key={field.uid}
-              initialValue={this.context.record[this.fieldPath]}
+              initialValue={this.context.record?.[this.fieldPath]}
               {...this.props}
             >
               <FieldModelRenderer model={field} fallback={<Skeleton.Input size="small" />} />
@@ -174,14 +175,11 @@ export class QuickEditFormModel extends FlowModel {
               const formValues = {
                 ...values,
               };
-              console.log(formValues);
               const originalValues = {
                 [this.fieldPath]: this.resource.getData()?.[this.fieldPath],
               };
               try {
-                this.resource.save(formValues, { refresh: false }).catch((error) => {
-                  console.log(error, 999);
-                });
+                await this.resource.save(formValues, { refresh: false });
                 this.__onSubmitSuccess?.(formValues);
                 this.viewContainer.close();
                 this.context.message.success(this.context.t('Saved successfully'));
@@ -213,6 +211,7 @@ QuickEditFormModel.registerFlow({
         ctx.model.fieldPath = fieldPath;
         ctx.model.collection = ctx.dataSourceManager.getCollection(dataSourceKey, collectionName);
         const resource = ctx.createResource(SingleRecordResource);
+        console.log(resource);
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(collectionName);
         ctx.model.resource = resource;

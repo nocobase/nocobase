@@ -100,3 +100,4 @@ export {
 
 export { FieldModelRenderer } from '@nocobase/flow-engine';
 export { transformFilter } from '@nocobase/utils/client';
+export * from './modules/menu';

@@ -6,37 +6,65 @@
   },
   {
     "type": "custom-link",
-    "label": "API 密钥",
-    "link": "/integration/api-keys/"
-  },
-  {
-    "type": "custom-link",
-    "label": "API 文档",
-    "link": "/integration/api-doc/"
-  },
-  {
-    "type": "custom-link",
-    "label": "嵌入",
-    "link": "/integration/embed/"
-  },
-  {
-    "type": "custom-link",
-    "label": "iframe",
-    "link": "/integration/block-iframe/"
+    "label": "API",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "API 密钥",
+        "link": "/integration/api-keys/"
+      },
+      {
+        "type": "custom-link",
+        "label": "API 文档",
+        "link": "/integration/api-doc/"
+      },
+      {
+        "type": "custom-link",
+        "label": "使用场景",
+        "link": "/integration/api-keys/usage"
+      }
+    ]
   },
   {
     "type": "custom-link",
     "label": "SSO",
-    "link": "/integration/"
+    "link": "/integration/sso/"
   },
   {
     "type": "custom-link",
-    "label": "工作流 Webhook",
-    "link": "/integration/"
+    "label": "工作流",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Webhook",
+        "link": "/integration/workflow-webhook/"
+      },
+      {
+        "type": "custom-link",
+        "label": "HTTP 请求",
+        "link": "/integration/workflow-http-request/"
+      }
+    ]
   },
   {
     "type": "custom-link",
-    "label": "工作流 HTTP request",
-    "link": "/integration/"
+    "label": "外部数据源",
+    "link": "/data-sources/"
+  },
+  {
+    "type": "custom-link",
+    "label": "嵌入式内容",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Iframe 区块",
+        "link": "/integration/block-iframe/"
+      },
+      {
+        "type": "custom-link",
+        "label": "嵌入",
+        "link": "/integration/embed/"
+      }
+    ]
   }
 ]

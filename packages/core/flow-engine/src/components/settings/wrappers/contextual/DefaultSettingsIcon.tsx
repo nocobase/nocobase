@@ -267,8 +267,10 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   const getModelConfigurableFlowsAndSteps = useCallback(
     async (targetModel: FlowModel, modelKey?: string): Promise<FlowInfo[]> => {
       try {
-        // 仅使用静态流（类级全局注册的 flows），排除实例动态流
-        const flows = (targetModel.constructor as typeof FlowModel).globalFlowRegistry.getFlows();
+        // 仅使用静态流（类级全局注册的 flows）
+        const flowsMap = new Map((targetModel.constructor as typeof FlowModel).globalFlowRegistry.getFlows());
+
+        const flows = flowsMap;
 
         const flowsArray = Array.from(flows.values());
 

@@ -143,6 +143,7 @@ const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
       ...mainApp.options.cacheManager,
       prefix: appName,
     },
+    logger: mainApp.options.logger,
   };
 };
 

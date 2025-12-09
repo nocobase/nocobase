@@ -236,6 +236,23 @@ export class ReferenceBlockModel extends BlockModel {
     return await super.destroy();
   }
 
+  /**
+   * 重写 serialize 方法，排除 target 子模型的序列化
+   * 这样在保存引用区块时不会连带保存目标区块，避免破坏目标区块的父子关系
+   */
+  serialize(): Record<string, any> {
+    const data = super.serialize();
+    // 从序列化结果中移除 target 子模型
+    if (data.subModels && 'target' in data.subModels) {
+      delete data.subModels.target;
+      // 如果 subModels 为空对象，也删除它
+      if (Object.keys(data.subModels).length === 0) {
+        delete data.subModels;
+      }
+    }
+    return data;
+  }
+
   renderComponent() {
     const target: FlowModel | undefined = (this.subModels as any)?.['target'];
     const configuredUid = this._getTargetUidFromParams();

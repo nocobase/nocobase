@@ -13,7 +13,7 @@ export class VditorFieldModel extends FieldModel {
   render() {
     const markdown = this.context.markdown;
 
-    return markdown.edit(this.props);
+    return markdown.edit({ ...this.props, enableContextSelect: false });
   }
 }
 EditableItemModel.bindModelToInterface('VditorFieldModel', ['vditor', 'markdown'], { isDefault: true });

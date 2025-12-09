@@ -233,6 +233,32 @@ describe('transformItems - toggleable items', () => {
     expect(((parent.subModels as any).items || []).length).toBe(0);
   });
 
+  it('infers useModel from createModelOptions when toggleable is enabled', async () => {
+    const engine = setupEngine();
+    const parent = engine.createModel<ToggleParent>({ use: 'ToggleParent', uid: 'toggle-parent-infer' });
+    const child = engine.createModel<ToggleChild>({ use: 'ToggleChild', uid: 'toggle-child-infer' });
+    parent.addSubModel('items', child);
+
+    const definition: SubModelItem[] = [
+      {
+        key: 'toggle-child',
+        label: 'Toggle Child',
+        toggleable: true,
+        // intentionally omit useModel to rely on createModelOptions.use
+        createModelOptions: { use: 'ToggleChild' },
+      },
+    ];
+
+    const factory = transformItems(definition, parent, 'items', 'array');
+    const resolved = await (typeof factory === 'function' ? factory() : Promise.resolve(factory));
+    const toggleItem = resolved[0];
+
+    expect(definition[0].useModel).toBe('ToggleChild');
+    expect(toggleItem.isToggled).toBe(true);
+    const { getByRole } = render(<>{toggleItem.label}</>);
+    expect(getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+  });
+
   it('keeps toggleable item off when sub model missing', async () => {
     const engine = setupEngine();
     const parent = engine.createModel<ToggleParent>({ use: 'ToggleParent', uid: 'toggle-parent-off' });

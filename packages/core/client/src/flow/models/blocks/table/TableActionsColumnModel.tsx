@@ -27,6 +27,7 @@ import { ActionModel } from '../../base';
 import { TableCustomColumnModel } from './TableCustomColumnModel';
 
 const Columns = observer<any>(({ record, model, index }) => {
+  const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
   return (
     <DndProvider>
       <Space
@@ -38,7 +39,10 @@ const Columns = observer<any>(({ record, model, index }) => {
         `}
       >
         {model.mapSubModels('actions', (action: ActionModel) => {
-          const fork = action.createFork({}, `${index}`);
+          const fork = action.createFork({}, `${record.__index || index}`);
+          if (fork.hidden && !isConfigMode) {
+            return;
+          }
           // TODO: reset fork 的状态, fork 复用存在旧状态污染问题
           fork.invalidateFlowCache('beforeRender');
           const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
@@ -56,6 +60,7 @@ const Columns = observer<any>(({ record, model, index }) => {
           );
           fork.context.defineProperty('record', {
             get: () => record,
+            cache: false,
             resolveOnServer: createRecordResolveOnServerWithLocal(
               () => (fork.context as any).collection,
               () => record,
@@ -166,12 +171,11 @@ export class TableActionsColumnModel extends TableCustomColumnModel {
     return (value, record, index) => (
       <div
         className={css`
-          width: ${this.props.width - 8}px;
+          max-width: ${this.props.width - 8}px;
           text-overflow: ellipsis;
           white-space: nowrap;
           overflow: hidden;
           transition: overflow 0.3s ease 0.8s; /* 加入延迟 */
-
           &:hover {
             overflow: ${this.flowEngine.flowSettings?.enabled ? 'visible' : 'hidden'}; /* 鼠标悬停时，内容可见 */
           }

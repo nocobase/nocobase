@@ -21,6 +21,8 @@ describe('workflow > action-trigger', () => {
   let agent;
   let PostRepo;
   let CategoryRepo;
+  let TagRepo;
+  let PostTagRepo;
   let WorkflowModel;
   let UserRepo;
   let root;
@@ -30,7 +32,7 @@ describe('workflow > action-trigger', () => {
 
   beforeEach(async () => {
     app = await getApp({
-      plugins: ['users', 'auth', 'acl', 'data-source-manager', 'system-settings', 'error-handler', Plugin],
+      plugins: ['error-handler', Plugin],
       acl: true,
     });
     await app.pm.get('auth').install();
@@ -39,6 +41,8 @@ describe('workflow > action-trigger', () => {
     WorkflowModel = db.getCollection('workflows').model;
     PostRepo = db.getCollection('posts').repository;
     CategoryRepo = db.getCollection('categories').repository;
+    TagRepo = db.getCollection('tags').repository;
+    PostTagRepo = db.getCollection('postsTags').repository;
     UserRepo = db.getCollection('users').repository;
 
     root = await UserRepo.findOne({});
@@ -46,12 +50,118 @@ describe('workflow > action-trigger', () => {
 
     users = await UserRepo.create({
       values: [
-        { id: 2, nickname: 'a', roles: [{ name: 'root' }] },
+        { id: 2, nickname: 'a' },
         { id: 3, nickname: 'b' },
       ],
     });
 
-    userAgents = await Promise.all(users.map((user) => app.agent().login(user)));
+    userAgents = await Promise.all(users.map((user) => app.agent().login(user, 'member')));
+
+    await rootAgent.resource('roles.dataSourceResources', 'member').create({
+      values: {
+        dataSourceKey: 'main',
+        name: 'posts',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['title', 'category'],
+          },
+          {
+            name: 'create',
+            fields: ['title', 'category'],
+          },
+          {
+            name: 'update',
+            fields: ['title', 'category'],
+          },
+        ],
+      },
+    });
+
+    await rootAgent.resource('roles.dataSourceResources', 'member').create({
+      values: {
+        dataSourceKey: 'main',
+        name: 'tags',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['title'],
+          },
+          {
+            name: 'create',
+            fields: ['title'],
+          },
+          {
+            name: 'update',
+            fields: ['title'],
+          },
+        ],
+      },
+    });
+
+    await rootAgent.resource('roles.dataSourceResources', 'member').create({
+      values: {
+        dataSourceKey: 'main',
+        name: 'postsTags',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['postId', 'tagId'],
+          },
+          {
+            name: 'create',
+            fields: ['postId', 'tagId'],
+          },
+          {
+            name: 'update',
+            fields: ['postId', 'tagId'],
+          },
+        ],
+      },
+    });
+
+    await rootAgent.resource('roles.dataSourceResources', 'member').create({
+      values: {
+        dataSourceKey: 'main',
+        name: 'comments',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['content', 'post'],
+          },
+          {
+            name: 'create',
+            fields: ['content', 'post'],
+          },
+          {
+            name: 'update',
+            fields: ['content', 'post'],
+          },
+        ],
+      },
+    });
+
+    await rootAgent.resource('roles.dataSourceResources', 'member').create({
+      values: {
+        dataSourceKey: 'another',
+        name: 'posts',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'view',
+            fields: ['title'],
+          },
+          {
+            name: 'create',
+            fields: ['title'],
+          },
+        ],
+      },
+    });
   });
 
   afterEach(() => app.destroy());
@@ -224,6 +334,34 @@ describe('workflow > action-trigger', () => {
       expect(e1.context.user).toBeDefined();
       expect(e1.context.user.id).toBe(users[0].id);
     });
+
+    it('multiple filterByTk', async () => {
+      const p1 = await PostRepo.create({
+        values: { title: 't1' },
+      });
+      const t1 = await TagRepo.create({
+        values: { name: 'tag1' },
+      });
+
+      const workflow = await WorkflowModel.create({
+        enabled: true,
+        type: 'action',
+        config: {
+          collection: 'postsTags',
+        },
+        sync: true,
+      });
+
+      const res1 = await userAgents[0].resource('postsTags').create({
+        values: { postId: p1.id, tagId: t1.id },
+        triggerWorkflows: `${workflow.key}`,
+      });
+      expect(res1.status).toBe(200);
+
+      const [e1] = await workflow.getExecutions();
+      expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
+      expect(e1.context.data).toMatchObject({ postId: p1.id, tagId: t1.id });
+    });
   });
 
   describe('update', () => {
@@ -261,7 +399,7 @@ describe('workflow > action-trigger', () => {
       expect(e2.context.data).toHaveProperty('createdBy');
     });
 
-    it('bulk update', async () => {
+    it('update multiple records', async () => {
       const workflow = await WorkflowModel.create({
         enabled: true,
         type: 'action',
@@ -296,6 +434,7 @@ describe('workflow > action-trigger', () => {
     });
   });
 
+  // NOTE: not implemented
   describe.skip('destroy', () => {
     it('trigger after destroyed', async () => {
       const workflow = await WorkflowModel.create({
@@ -476,7 +615,7 @@ describe('workflow > action-trigger', () => {
       expect(e1.status).toBe(EXECUTION_STATUS.RESOLVED);
       expect(e1.context.data).toMatchObject({ title: 't1' });
 
-      const res2 = await userAgents[0].resource('workflows').revision({
+      const res2 = await rootAgent.resource('workflows').revision({
         filterByTk: w1.id,
         filter: {
           key: w1.key,
@@ -779,11 +918,11 @@ describe('workflow > action-trigger', () => {
       //     values: { title: 't2' },
       //     triggerWorkflows: `${workflow.key}`,
       //   });
-      const res2 = await (
-        await agent.login(users[0])
-      )
-        .set('x-data-source', 'another')
+
+      const res2 = await userAgents[0]
         .post('/api/posts:create')
+        .set('x-data-source', 'another')
+        .set('x-role', 'member')
         .query({ triggerWorkflows: `${workflow.key}` })
         .send({ title: 't2' });
 

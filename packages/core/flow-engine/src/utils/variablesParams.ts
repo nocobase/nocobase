@@ -19,42 +19,15 @@ import { createAssociationSubpathResolver } from './associationObjectVariable';
 import type { JSONValue } from './params-resolvers';
 import _ from 'lodash';
 
-// Narrowest resource shape we rely on for inference
-type ResourceLike = {
-  getResourceName?: () => string;
-  getDataSourceKey?: () => string | undefined;
-  getFilterByTk?: () => unknown;
-  getSourceId?: () => unknown;
-};
-
-function isObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-function getResource(ctx: FlowContext): ResourceLike | undefined {
-  const r = (ctx as FlowContext)['resource'];
-  return isObject(r) ? (r as ResourceLike) : undefined;
-}
-
-type CollectionShape = { name?: string; dataSourceKey?: string };
-
-function getCollection(ctx: FlowContext): CollectionShape | undefined {
-  const c = (ctx as FlowContext)['collection'] as unknown;
-  if (isObject(c)) {
-    const mc = c as Partial<CollectionShape>;
-    return { name: mc.name, dataSourceKey: mc.dataSourceKey };
-  }
-  return undefined;
-}
-
 // 从 FlowContext 中推断当前记录的 context params 信息
 export function inferRecordRef(ctx: FlowContext): RecordRef | undefined {
-  const resource = getResource(ctx);
-  const collectionObj = getCollection(ctx);
+  const resource = ctx.resource;
+  const collectionObj = ctx.collection;
+  const recordValue = ctx.record;
 
   const resourceName = collectionObj?.name || resource?.getResourceName?.();
   const dataSourceKey = collectionObj?.dataSourceKey || resource?.getDataSourceKey?.();
-  const filterByTk = resource?.getFilterByTk?.();
+  const filterByTk = resource?.getFilterByTk?.() ?? collectionObj?.getFilterByTK?.(recordValue);
 
   if (!resourceName || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
   const parts = String(resourceName).split('.');
@@ -70,9 +43,10 @@ export function inferViewRecordRef(ctx: FlowContext): RecordRef | undefined {
   const collection = inputArgs?.collectionName || (view as any)?.record?.collection;
   const dataSourceKey = inputArgs?.dataSourceKey || (view as any)?.record?.dataSourceKey || 'main';
   const filterByTk = inputArgs?.filterByTk || (view as any)?.record?.filterByTk;
+  const associationName = inputArgs?.associationName;
   const sourceId = inputArgs?.sourceId;
   if (!collection || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
-  return { collection, dataSourceKey, filterByTk, sourceId };
+  return { collection, dataSourceKey, filterByTk, sourceId, associationName };
 }
 
 // 统一视图场景中“视图记录”的本地复用逻辑：
@@ -180,8 +154,8 @@ export function createRecordResolveOnServerWithLocal(
 }
 
 export function inferParentRecordRef(ctx: FlowContext): RecordRef | undefined {
-  const resource = getResource(ctx);
-  const dataSourceKey = getCollection(ctx)?.dataSourceKey || resource?.getDataSourceKey?.();
+  const resource = ctx.resource;
+  const dataSourceKey = ctx.collection?.dataSourceKey || resource?.getDataSourceKey?.();
   const resourceName = resource?.getResourceName?.();
   const sourceId = resource?.getSourceId?.();
   if (!resourceName || typeof sourceId === 'undefined' || sourceId === null) return undefined;
@@ -200,7 +174,7 @@ export async function buildRecordMeta(
   title?: string,
   paramsBuilder?: RecordParamsBuilder,
 ): Promise<PropertyMeta | null> {
-  const base = await createCollectionContextMeta(collectionAccessor, title)();
+  const base = await createCollectionContextMeta(collectionAccessor, title, true)();
   if (!base) return null;
   return {
     ...base,

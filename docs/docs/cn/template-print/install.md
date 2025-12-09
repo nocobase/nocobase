@@ -1,7 +1,7 @@
 
 ### 安装插件
 
-参考商业插件的安装与升级文档
+详细的安装与升级方式请参考：[商业插件激活指南](https://www.nocobase.com/cn/blog/nocobase-commercial-license-activation-guide)
 
 ### 安装 LibreOffice（可选）
 

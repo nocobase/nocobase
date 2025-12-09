@@ -1,11 +1,22 @@
 {
-  "The current user has no roles. Please try another account.": "Der aktuelle Benutzer hat keine Rollen. Bitte versuchen Sie es mit einem anderen Konto.",
-  "The user role does not exist. Please try signing in again": "Die Benutzerrolle existiert nicht. Bitte versuchen Sie, sich erneut anzumelden",
+  "Allow roles union": "Allow roles union",
+  "Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.": "Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.",
+  "Data sources": "Datenquellen",
+  "Desktop menu": "Desktop-Menü",
+  "Do not use role union. Users need to switch between their roles individually.": "Do not use role union. Users need to switch between their roles individually.",
+  "Force users to use only role union. They cannot switch between individual roles.": "Force users to use only role union. They cannot switch between individual roles.",
+  "Full permissions": "Full permissions",
+  "General": "Allgemein",
+  "Independent roles": "Independent roles",
   "New role": "Neue Rolle",
   "Permissions": "Berechtigungen",
-  "Roles & Permissions": "Rollen und Berechtigungen",
-  "General": "Allgemein",
-  "Desktop menu": "Desktop-Menü",
+  "Please select role mode": "Please select role mode",
   "Plugin settings": "Plugin-Einstellungen",
-  "Data sources": "Datenquellen"
+  "Role mode": "Role mode",
+  "Role mode doc": "https://docs.nocobase.com/handbook/acl/manual",
+  "Roles & Permissions": "Rollen und Berechtigungen",
+  "Roles union only": "Roles union only",
+  "Saved successfully": "Saved successfully",
+  "The current user has no roles. Please try another account.": "Der aktuelle Benutzer hat keine Rollen. Bitte versuchen Sie es mit einem anderen Konto.",
+  "The user role does not exist. Please try signing in again": "Die Benutzerrolle existiert nicht. Bitte versuchen Sie, sich erneut anzumelden"
 }

@@ -99,4 +99,7 @@ features:
       - title: Record History
         details: Tracks and stores the change history of collection records.
         link: /record-history/
+      - title: Calculation Engine
+        details: Calculation engines play a key role in formula fields, linkage rules, and workflows, providing general calculation tools.
+        link: /calculation-engine
 ---

@@ -56,6 +56,27 @@
   },
   {
     "type": "custom-link",
+    "label": "文件预览",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/file-manager/file-preview/index"
+      },
+      {
+        "type": "custom-link",
+        "label": "Office 文件预览",
+        "link": "/file-manager/file-preview/ms-office"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
+    "label": "HTTP API",
+    "link": "/file-manager/http-api"
+  },
+  {
+    "type": "custom-link",
     "label": "扩展开发",
     "link": "/file-manager/development/index"
   }

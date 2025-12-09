@@ -99,4 +99,7 @@ features:
       - title: 历史记录
         details: 追踪并保存数据表记录的变更历史。
         link: /record-history/
+      - title: 计算引擎
+        details: 计算引擎在公式字段、联动规则和工作流中发挥着关键作用，提供通用的计算工具。
+        link: /calculation-engine
 ---

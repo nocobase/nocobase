@@ -1,6 +1,7 @@
 {
+  "SMS": "SMS",
   "Sign in via SMS": "Anmeldung per SMS",
-  "User will be registered automatically if not exists.": "Benutzer wird automatisch registriert, wenn er nicht existiert.",
   "Sign up automatically when the user does not exist": "Automatische Registrierung, wenn der Benutzer nicht existiert",
-  "SMS": "SMS"
+  "User will be registered automatically if not exists.": "Benutzer wird automatisch registriert, wenn er nicht existiert.",
+  "Verifier": "Verifier"
 }

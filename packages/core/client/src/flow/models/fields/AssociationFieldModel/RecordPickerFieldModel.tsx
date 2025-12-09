@@ -24,7 +24,7 @@ import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { FieldModel } from '../../base';
 import { LabelByField } from './recordSelectShared';
 
-function RemoteModelRenderer({ options }) {
+function RemoteModelRenderer({ options, fieldModel }) {
   const ctx = useFlowViewContext();
   const { data, loading } = useRequest(
     async () => {
@@ -35,6 +35,14 @@ function RemoteModelRenderer({ options }) {
       refreshDeps: [ctx, options],
     },
   );
+  useEffect(() => {
+    if (!data) {
+      return;
+    }
+    if (fieldModel) {
+      fieldModel.selectBlockModel = data;
+    }
+  }, [data]);
   if (loading || !data?.uid) {
     return <SkeletonFallback style={{ margin: 16 }} />;
   }
@@ -67,12 +75,13 @@ export function RecordPickerContent({ model, toOne = false }) {
       <RemoteModelRenderer
         options={{
           parentId: ctx.view.inputArgs.parentId,
-          subKey: 'grid',
+          subKey: 'grid-block',
           async: true,
           delegateToParent: false,
           subType: 'object',
           use: 'BlockGridModel',
         }}
+        fieldModel={model}
       />
       {!toOne && (
         <Footer>
@@ -152,6 +161,7 @@ function RecordPickerField(props) {
 export class RecordPickerFieldModel extends FieldModel {
   selectedRows = observable.ref([]);
   _closeView;
+  selectBlockModel;
   get collectionField(): CollectionField {
     return this.context.collectionField;
   }
@@ -237,6 +247,7 @@ RecordPickerFieldModel.registerFlow({
         };
         const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
+        console.log(ctx.model);
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
@@ -256,14 +267,19 @@ RecordPickerFieldModel.registerFlow({
               renderCell: undefined,
               selectedRowKeys: undefined,
               onChange: (_, selectedRows) => {
+                const selectBlockModel = ctx.model.selectBlockModel;
+                const selectTable = selectBlockModel.findSubModel('items', (m) => {
+                  return m;
+                });
                 if (toOne) {
                   // 单选
                   ctx.model.selectedRows.value = selectedRows?.[0];
                   onChange(ctx.model.selectedRows.value);
                   ctx.model._closeView?.();
                 } else {
+                  selectTable.resource.setSelectedRows(selectedRows);
                   // 多选：追加
-                  const prev = ctx.model.selectedRows.value || [];
+                  const prev = ctx.model.props.value || [];
                   const merged = [...prev, ...selectedRows];
 
                   // 去重，防止同一个值重复

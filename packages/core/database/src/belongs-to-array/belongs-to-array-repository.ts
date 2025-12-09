@@ -15,7 +15,6 @@ import { FindOptions } from '../repository';
 import { MultipleRelationRepository } from '../relation-repository/multiple-relation-repository';
 import Database from '../database';
 import { Model } from '../model';
-import { UpdateAssociationOptions } from '../update-associations';
 
 const transaction = transactionWrapperBuilder(function () {
   return this.collection.model.sequelize.transaction();
@@ -69,21 +68,6 @@ export class BelongsToArrayAssociation {
     return {
       on: this.db.queryInterface.generateJoinOnForJSONArray(left, right),
     };
-  }
-
-  async update(instance: Model, value: any, options: UpdateAssociationOptions = {}) {
-    // @ts-ignore
-    await instance.update(
-      {
-        [this.as]: value,
-      },
-      {
-        values: {
-          [this.as]: value,
-        },
-        transaction: options?.transaction,
-      },
-    );
   }
 }
 

@@ -23,6 +23,7 @@ import { NAMESPACE } from './locale';
 import { Instruction } from './nodes';
 import CalculationInstruction from './nodes/calculation';
 import ConditionInstruction from './nodes/condition';
+import MultiConditionsInstruction from './nodes/multi-conditions';
 import CreateInstruction from './nodes/create';
 import DestroyInstruction from './nodes/destroy';
 import EndInstruction from './nodes/end';
@@ -36,6 +37,7 @@ import { getWorkflowDetailPath, getWorkflowExecutionsPath } from './utils';
 import { VariableOption } from './variable';
 import {
   MobileTabBarWorkflowTasksItem,
+  TasksCountsProvider,
   TasksProvider,
   tasksSchemaInitializerItem,
   TaskTypeOptions,
@@ -114,7 +116,7 @@ export default class PluginWorkflowClient extends Plugin {
   }
 
   registerTaskType(key: string, option: TaskTypeOptions) {
-    this.taskTypes.register(key, option);
+    this.taskTypes.register(key, { ...option, key });
   }
 
   async load() {
@@ -155,7 +157,7 @@ export default class PluginWorkflowClient extends Plugin {
 
     const mobileManager = this.pm.get(MobileManager);
     this.app.schemaInitializerManager.addItem('mobile:tab-bar', 'workflow-tasks', tasksSchemaInitializerItem);
-    this.app.addComponents({ MobileTabBarWorkflowTasksItem });
+    this.app.addComponents({ TasksCountsProvider, MobileTabBarWorkflowTasksItem });
     if (mobileManager.mobileRouter) {
       const MobileComponent = observer(WorkflowTasksMobile, { displayName: 'WorkflowTasksMobile' });
       // mobileManager.mobileRouter.add('mobile.page.workflow.tasks', {
@@ -188,6 +190,8 @@ export default class PluginWorkflowClient extends Plugin {
 
     this.registerInstruction('calculation', CalculationInstruction);
     this.registerInstruction('condition', ConditionInstruction);
+    this.registerInstruction('multi-conditions', MultiConditionsInstruction);
+
     this.registerInstruction('end', EndInstruction);
 
     this.registerInstruction('query', QueryInstruction);

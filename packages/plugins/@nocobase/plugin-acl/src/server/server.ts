@@ -421,7 +421,7 @@ export class PluginACLServer extends Plugin {
             name: 'member',
             title: '{{t("Member")}}',
             allowNewMenu: true,
-            strategy: { actions: ['view', 'update:own', 'destroy:own', 'create'] },
+            strategy: { actions: ['view:own'] },
             default: true,
             snippets: ['!ui.*', '!pm', '!pm.*'],
           },
@@ -628,8 +628,10 @@ export class PluginACLServer extends Plugin {
       { after: 'dataSource', group: 'with-acl-meta' },
     );
 
-    this.app.acl.use(checkAssociationOperate, {
-      before: 'core',
+    this.app.dataSourceManager.afterAddDataSource((dataSource) => {
+      dataSource.acl.use(checkAssociationOperate, {
+        before: 'core',
+      });
     });
 
     this.db.on('afterUpdateCollection', async (collection) => {

@@ -1,0 +1,10 @@
+{
+  "Convert the following integer fields to sorting fields": "A következő egész szám mezők konvertálása rendezési mezőkké",
+  "Create sort field": "Rendezési mező létrehozása",
+  "Enable drag and drop sorting": "Fogd és vidd rendezés engedélyezése",
+  "Global sorting": "Globális rendezés",
+  "Grouped sorting based on": "Csoportos rendezés alapja",
+  "Set column width": "Set column width",
+  "Sorting field": "Rendezési mező",
+  "Used for sorting kanban cards, only sorting fields corresponding to grouping fields can be selected": "Kanban kártyák rendezésére használatos, csak a csoportosítási mezőknek megfelelő rendezési mezők választhatók ki"
+}

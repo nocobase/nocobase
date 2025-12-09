@@ -8,7 +8,7 @@
  */
 
 import { DataSource, FlowEngine } from '@nocobase/flow-engine';
-import { createDefaultCollectionBlockTitle } from '../../../internal/utils/blockUtils';
+import { createDefaultCollectionBlockTitle } from '../../../utils/blockUtils';
 
 function normalizeTitle(s: string) {
   return (s || '').replace(/\s+/g, ' ').trim();

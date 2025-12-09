@@ -8,13 +8,32 @@
  */
 
 import { CollectionField, tExpr } from '@nocobase/flow-engine';
-import { Tag, Typography } from 'antd';
-import { castArray } from 'lodash';
-import { css } from '@emotion/css';
+import { Tag } from 'antd';
+import { castArray, get } from 'lodash';
 import React from 'react';
 import { openViewFlow } from '../../flows/openViewFlow';
 import { FieldModel } from '../base';
 import { EllipsisWithTooltip } from '../../components';
+
+export function transformNestedData(inputData) {
+  const resultArray = [];
+
+  function recursiveTransform(data) {
+    if (data?.parent) {
+      const { parent } = data;
+      recursiveTransform(parent);
+    }
+    const { parent, ...other } = data;
+    resultArray.push(other);
+  }
+  if (inputData) {
+    recursiveTransform(inputData);
+  }
+  return resultArray;
+}
+
+const hasAssociationPathName = (parent: unknown): parent is { associationPathName?: string } =>
+  !!parent && typeof parent === 'object' && 'associationPathName' in parent;
 
 export class ClickableFieldModel extends FieldModel {
   get collectionField(): CollectionField {
@@ -25,38 +44,83 @@ export class ClickableFieldModel extends FieldModel {
    * 点击打开行为
    */
   onClick(event, currentRecord) {
+    const associationPathName = hasAssociationPathName(this.parent) ? this.parent.associationPathName : undefined;
+
     if (this.collectionField.isAssociationField()) {
       const targetCollection = this.collectionField.targetCollection;
       const sourceCollection = this.context.blockModel.collection;
       const sourceKey = this.collectionField.sourceKey || sourceCollection.filterTargetKey;
       const targetKey = this.collectionField?.targetKey;
 
+      let filterByTk = currentRecord[targetKey];
+      if (this.collectionField.interface === 'm2m') {
+        // if use currentRecord[targetKey], details block in the popup will throw error
+        // also incorrect for v1
+        filterByTk = currentRecord[targetCollection.filterTargetKey];
+      }
+      const parentObj = associationPathName ? get(this.context.record, associationPathName) : this.context.record;
       this.dispatchEvent('click', {
         event,
-        filterByTk: currentRecord[targetKey],
-        collectionName: targetCollection.name,
-        associationName: `${sourceCollection.name}.${this.collectionField.name}`,
-        sourceId: this.context.record[sourceKey],
+        filterByTk,
+        collectionName: this.collectionField.collection.name,
+        associationName: `${sourceCollection.name}.${this.collectionField.name}`, // `${sourceCollection.name}.${this.collectionField.name}`,
+        sourceId: parentObj[sourceKey],
       });
-    } else {
-      this.dispatchEvent('click', {
-        event,
-        sourceId: this.context.resource?.getSourceId(),
-        filterByTk: this.context.collection.getFilterByTK(this.context.record),
-      });
+      return;
     }
+
+    if (associationPathName) {
+      // 关联字段的属性
+      const collection = this.context.collection;
+      const associationField = collection?.getFieldByPath?.(associationPathName);
+      if (associationField?.isAssociationField?.()) {
+        const targetCollection = associationField.targetCollection;
+        const sourceCollection = associationField.collection;
+        const sourceKey = associationField.sourceKey || sourceCollection?.filterTargetKey;
+        const targetKey = associationField?.targetKey || targetCollection?.filterTargetKey;
+        const associationRecord = currentRecord ?? get(this.context.record, associationPathName);
+        const associationParentField = associationPathName.includes('.')
+          ? collection.getFieldByPath(associationPathName.split('.')[0])
+          : null;
+        const foreignKey = associationParentField?.foreignKey;
+        const parentObj = associationPathName.includes('.')
+          ? get(this.context.record, associationPathName.split('.')[0])
+          : this.context.record;
+        let filterByTk = associationRecord?.[targetKey];
+        if (associationField.interface === 'm2m') {
+          // also incorrect for v1
+          filterByTk = associationRecord?.[targetCollection.filterTargetKey];
+        }
+
+        this.dispatchEvent('click', {
+          event,
+          filterByTk,
+          collectionName: this.collectionField.collection.name,
+          associationName: `${associationField.collection.name}.${this.collectionField.name}`,
+          // list api， 如果append了关系字段的某个属性，它并不会将关系字段对应的 filterByTk (sourceKey) 属性值返回， 但是会返回foriegnKey对应的值
+          sourceId: parentObj[sourceKey] || this.context.record[foreignKey],
+        });
+        return;
+      }
+    }
+
+    this.dispatchEvent('click', {
+      event,
+      sourceId: this.context.resource?.getSourceId(),
+      filterByTk: this.context.collection.getFilterByTK(this.context.record),
+    });
   }
 
-  renderComponent(value) {
+  renderComponent(value, wrap?) {
     return value;
   }
 
-  renderInDisplayStyle(value, record?, isToMany?) {
+  renderInDisplayStyle(value, record?, isToMany?, wrap?) {
     const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
     if (value && typeof value === 'object' && restProps.target) {
       return;
     }
-    const result = this.renderComponent(value);
+    const result = this.renderComponent(value, wrap);
     const display = record ? (value ? result : 'N/A') : result;
     const isTag = displayStyle === 'tag';
     const handleClick = (e) => {
@@ -108,8 +172,18 @@ export class ClickableFieldModel extends FieldModel {
         return <EllipsisWithTooltip ellipsis={ellipsis}>{result}</EllipsisWithTooltip>;
       } else {
         const result = castArray(value).flatMap((v, idx) => {
-          const node = this.renderInDisplayStyle(v?.[titleField], v, Array.isArray(value));
-          return idx === 0 ? [node] : [<span key={`sep-${idx}`}>, </span>, node];
+          if (this.collectionField.targetCollection?.template === 'tree') {
+            const label = transformNestedData(v).length
+              ? transformNestedData(v)
+                  .map((o) => o?.[titleField])
+                  .join(' / ')
+              : null;
+            const node = this.renderInDisplayStyle(label, v, Array.isArray(value));
+            return idx === 0 ? [node] : [<span key={`sep-${idx}`}>, </span>, node];
+          } else {
+            const node = this.renderInDisplayStyle(v?.[titleField], v, Array.isArray(value));
+            return idx === 0 ? [node] : [<span key={`sep-${idx}`}>, </span>, node];
+          }
         });
         return (
           <EllipsisWithTooltip ellipsis={ellipsis}>
@@ -119,7 +193,9 @@ export class ClickableFieldModel extends FieldModel {
       }
     } else {
       const textContent = (
-        <EllipsisWithTooltip ellipsis={ellipsis}>{this.renderInDisplayStyle(value)}</EllipsisWithTooltip>
+        <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={this.renderInDisplayStyle(value, null, null, true)}>
+          {this.renderInDisplayStyle(value)}
+        </EllipsisWithTooltip>
       );
       return textContent;
     }

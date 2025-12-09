@@ -265,22 +265,36 @@ export function JobButton() {
   const { jobs } = useNodeContext() ?? {};
   const { styles } = useStyles();
 
+  const onOpenJobInList = useCallback(
+    ({ key }) => {
+      if (!jobs?.length) {
+        return;
+      }
+      const job = jobs.find((item) => item.id == key);
+      setViewJob(job);
+    },
+    [jobs, setViewJob],
+  );
+
+  const onOpenOnlyJob = useCallback(() => {
+    const job = jobs?.[0];
+    if (!job) {
+      return;
+    }
+    setViewJob(job);
+  }, [jobs, setViewJob]);
+
   if (!execution) {
     return null;
   }
 
-  if (!jobs.length) {
+  if (!jobs?.length) {
     return <StatusButton className={styles.nodeJobButtonClass} disabled />;
-  }
-
-  function onOpenJob({ key }) {
-    const job = jobs.find((item) => item.id == key);
-    setViewJob(job);
   }
 
   return (
     <Tooltip title={lang('View result')}>
-      {jobs.length > 1 ? (
+      {jobs?.length > 1 ? (
         <Dropdown
           menu={{
             items: jobs.map((job) => {
@@ -294,7 +308,7 @@ export function JobButton() {
                 ),
               };
             }),
-            onClick: onOpenJob,
+            onClick: onOpenJobInList,
             className: styles.dropdownClass,
           }}
         >
@@ -307,8 +321,8 @@ export function JobButton() {
       ) : (
         <StatusButton
           statusMap={JobStatusOptionsMap}
-          status={jobs[0].status}
-          onClick={() => setViewJob(jobs[0])}
+          status={jobs?.[0].status}
+          onClick={onOpenOnlyJob}
           className={styles.nodeJobButtonClass}
         />
       )}
@@ -762,21 +776,6 @@ export function NodeDefaultView(props) {
                       fieldset: {
                         type: 'void',
                         'x-component': 'fieldset',
-                        'x-component-props': {
-                          className: css`
-                            .ant-input,
-                            .ant-select,
-                            .ant-cascader-picker,
-                            .ant-picker,
-                            .ant-input-number,
-                            .ant-input-affix-wrapper {
-                              &.auto-width {
-                                width: auto;
-                                min-width: 6em;
-                              }
-                            }
-                          `,
-                        },
                         properties: instruction.fieldset,
                       },
                       footer: executed

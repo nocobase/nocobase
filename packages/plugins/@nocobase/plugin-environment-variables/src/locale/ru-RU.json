@@ -1,0 +1,16 @@
+{
+  "Add variable": "Добавить переменную",
+  "Bulk import": "Массовый импорт",
+  "Delete variable": "Удалить переменную",
+  "Encrypted": "Зашифровано",
+  "Environment": "Окружение",
+  "Name": "Имя",
+  "Plain text": "Текст",
+  "Restart now": "Перезапустить сейчас",
+  "Secrets": "Секреты",
+  "Type": "Тип",
+  "Value": "Значение",
+  "Variables": "Переменные",
+  "Variables and secrets": "Переменные и секреты",
+  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "Переменные и секреты были обновлены. Для вступления изменений в силу необходим перезапуск."
+}
