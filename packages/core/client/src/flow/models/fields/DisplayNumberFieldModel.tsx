@@ -187,7 +187,7 @@ export const getDisplayNumber = (props: displayNumberProps) => {
 export class DisplayNumberFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
     const { addonBefore, addonAfter } = this.props;
-    const result = getDisplayNumber({ value, ...this.props });
+    const result = getDisplayNumber({ ...this.props, value });
     if (!result) {
       return null;
     }
