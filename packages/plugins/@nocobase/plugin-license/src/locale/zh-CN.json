@@ -15,7 +15,7 @@
   "The licensed domain does not match the current domain {{domain}}. Please go to NocoBase Service to obtain a new license key.": "授权秘钥与当前域名 {{domain}} 不匹配，请前往 NocoBase Service 重新获取授权秘钥。",
   "The current environment cannot connect to NocoBase Service, only manual installation of commercial plugins is supported.": "当前环境无法连接到 NocoBase Service，仅支持手动安装商业插件",
   "The current environment cannot connect to NocoBase Pkg. To install plugins, please refer to the NocoBase Service documentation and upload the plugin manually.": "当前环境无法连接到 NocoBase Pkg，如需安装插件请参考 NocoBase Service 文档手动上传插件",
-  "The current key cannot be used to log in to NocoBase Pkg. Please go to NocoBase Service to obtain a new license key.": "当前密钥无法登录到 NocoBase Pkg，请前往 NocoBase Service 重新获取授权秘钥。",
+  "The current key cannot be used to log in to NocoBase Pkg. To install plugins, please refer to the NocoBase Service documentation and upload the plugin manually.": "当前密钥无法登录到 NocoBase Pkg，如需安装插件请参考 NocoBase Service 文档手动上传插件",
   "The license key was saved successfully": "授权密钥保存成功",
   "The current environment does not match the licensed environment": "当前环境与授权环境不一致",
   "Environment mismatch": "环境不匹配",
