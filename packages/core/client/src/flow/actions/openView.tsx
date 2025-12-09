@@ -445,7 +445,8 @@ export const openView = defineAction({
       return false;
     }
 
-    return !ctx.model.getStepParams?.('displayFieldSettings', 'clickToOpen')?.clickToOpen;
+    const clickToOpen = ctx.model.getStepParams?.('displayFieldSettings', 'clickToOpen')?.clickToOpen;
+    return clickToOpen === false;
   },
   defaultParams: async (ctx) => {
     const tree = ctx.getPropertyMetaTree() || [];

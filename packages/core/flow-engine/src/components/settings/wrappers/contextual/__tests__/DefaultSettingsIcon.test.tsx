@@ -455,7 +455,7 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
           null,
           React.createElement(DefaultSettingsIcon as any, {
             model,
-            showCopyUidButton: false,
+            showCopyUidButton: true,
             showDeleteButton: false,
           }),
         ),
@@ -516,7 +516,7 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
             model: parent,
             menuLevels: 2,
             flattenSubMenus: true,
-            showCopyUidButton: false,
+            showCopyUidButton: true,
             showDeleteButton: false,
           }),
         ),
