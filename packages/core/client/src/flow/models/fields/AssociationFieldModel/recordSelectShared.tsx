@@ -10,6 +10,7 @@
 import { createCurrentRecordMetaFactory, FlowModel, useFlowModel } from '@nocobase/flow-engine';
 import type { SelectProps } from 'antd';
 import React from 'react';
+import { omit } from 'lodash';
 
 export interface AssociationFieldNames {
   label: string;
@@ -100,7 +101,9 @@ export function resolveOptions(
   isMultiple: boolean,
 ) {
   if (options?.length) {
-    return options;
+    return options.map((v) => {
+      return omit(v, 'disabled');
+    });
   }
 
   if (isMultiple) {

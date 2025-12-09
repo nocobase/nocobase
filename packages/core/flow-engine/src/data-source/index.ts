@@ -8,8 +8,8 @@
  */
 
 import { observable } from '@formily/reactive';
-import _ from 'lodash';
 import { CascaderProps } from 'antd';
+import _ from 'lodash';
 import { FlowEngine } from '../flowEngine';
 import { jioToJoiSchema } from './jioToJoiSchema';
 import { sortCollectionsByInherits } from './sortCollectionsByInherits';
@@ -467,6 +467,12 @@ export class Collection {
     this.setFields(options.fields || []);
   }
 
+  clone() {
+    const newCollection = new Collection(_.cloneDeep(this.options));
+    newCollection.setDataSource(this.dataSource);
+    return newCollection;
+  }
+
   getFilterByTK(record) {
     if (!record) {
       throw new Error('Record is required to get filterByTk');
@@ -803,7 +809,19 @@ export class CollectionField {
   }
 
   get enum(): any[] {
-    return this.options.uiSchema?.enum || [];
+    const options = this.options.uiSchema?.enum || [];
+    if (this.type === 'integer') {
+      return options.map((v) => {
+        if (typeof v !== 'object') {
+          return v;
+        }
+        return {
+          ...v,
+          value: Number(v.value),
+        };
+      });
+    }
+    return options;
   }
 
   get defaultValue() {
