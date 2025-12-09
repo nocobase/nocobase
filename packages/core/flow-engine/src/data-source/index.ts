@@ -810,7 +810,7 @@ export class CollectionField {
           return v;
         }
         return {
-          label: v.label,
+          ...v,
           value: Number(v.value),
         };
       });
