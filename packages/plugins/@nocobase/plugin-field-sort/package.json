@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-field-sort",
-  "version": "1.9.22",
+  "version": "1.9.23",
   "license": "AGPL-3.0",
   "displayName": "Collection field: Sort",
   "displayName.ru-RU": "Поле коллекции: Сортировка",
