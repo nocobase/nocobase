@@ -15,20 +15,20 @@ export class SnowflakeIdFieldInterface extends CollectionFieldInterface {
   type = 'object';
   group = 'advanced';
   order = 0;
-  title = '{{t("Snowflake ID")}}';
+  title = '{{t("Snowflake ID (53-bit)")}}';
   hidden = false;
   sortable = true;
   default = {
-    name: 'id',
     type: 'snowflakeId',
-    autoIncrement: false,
-    primaryKey: true,
-    allowNull: false,
     uiSchema: {
-      type: 'string',
-      title: '{{t("ID")}}',
-      'x-component': 'Input',
-      'x-read-pretty': true,
+      type: 'number',
+      'x-component': 'InputNumber',
+      'x-component-props': {
+        stringMode: true,
+        separator: '0.00',
+        step: '1',
+      },
+      'x-validator': 'integer',
     },
   };
   availableTypes = ['snowflakeId'];
@@ -55,6 +55,6 @@ export class SnowflakeIdFieldInterface extends CollectionFieldInterface {
   };
 
   description =
-    '{{t("NocoBase Snowflake ID, designed for safer use in JavaScript and MySQL. More detail: {{link}}", { link: "https://github.com/nocobase/nocobase/tree/main/packages/core/snowflake-id", interpolation: { escapeValue: false } }) }}';
+    '{{t("A 53-bit Snowflake ID designed to be compatible with JavaScript’s safe integer range, providing both time-ordering and uniqueness.") }}';
   titleUsable = true;
 }

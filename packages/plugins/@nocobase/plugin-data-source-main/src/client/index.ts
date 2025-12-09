@@ -44,10 +44,15 @@ class PluginDataSourceMainClient extends Plugin {
         primaryKey: true,
         allowNull: false,
         uiSchema: {
-          type: 'string',
+          type: 'number',
           title: '{{t("ID")}}',
-          'x-component': 'Input',
-          'x-read-pretty': true,
+          'x-component': 'InputNumber',
+          'x-component-props': {
+            stringMode: true,
+            separator: '0.00',
+            step: '1',
+          },
+          'x-validator': 'integer',
         },
         interface: 'snowflakeId',
       },
