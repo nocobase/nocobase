@@ -128,7 +128,7 @@ export default class PluginFieldSequenceServer extends Plugin {
           const [createAtField] = fields.filter((field) => field.options.interface === 'createdAt');
           if (!autoIncrementField && !createAtField) {
             app.log.warn(
-              `Collection [${collection}] does not have autoIncrement or createdAt fields. Skipping sequences refresh`,
+              `Collection [${collection.name}] does not have autoIncrement or createdAt fields. Skipping sequences refresh.`,
             );
             return;
           }
@@ -138,21 +138,32 @@ export default class PluginFieldSequenceServer extends Plugin {
             limit: 1,
           });
           if (!record) {
-            app.log.warn(`Collection [${collection}] has no records. Skipping sequences repair`);
+            app.log.warn(`Collection [${collection.name}] has no records. Skipping sequences repair.`);
             return;
           }
 
           const sequencesFieldSet = _.uniq<string>(sequencesList.map(({ field }) => field));
           for (const sequencesField of sequencesFieldSet) {
-            const field = fieldMap[sequencesField] as SequenceField;
+            const field = fieldMap[sequencesField];
+            app.log.info(
+              `Repair sequences: collection=${collection.name}, field=${sequencesField}, type=${field?.constructor?.name}`,
+            );
+
             if (!field) {
               app.log.warn(
-                `Collection [${collection}] field [${sequencesField}] definition not found. Skipping sequences repair`,
+                `Collection [${collection.name}] field [${sequencesField}] definition not found. Skipping sequences repair.`,
               );
               continue;
             }
 
-            await field.update(record, { overwrite: true });
+            if (!(field instanceof SequenceField)) {
+              app.log.warn(
+                `Collection [${collection.name}] field [${sequencesField}] is not a SequenceField. Skipping sequences repair.`,
+              );
+              continue;
+            }
+
+            await (field as SequenceField).update(record, { overwrite: true });
           }
         });
       }
