@@ -64,7 +64,9 @@ function applyCustomizeFilterRender(model: FilterFormItemModel) {
     fieldModel['__originalRender'] = fieldModel.render;
   }
 
-  fieldModel.render = () => <Comp {...xProps} {...fieldModel.props} />;
+  fieldModel.render = () => (
+    <Comp {...xProps} {...fieldModel.props} onCompositionStart={null} onCompositionEnd={null} />
+  );
   rewrapReactiveRender(fieldModel);
 }
 

@@ -62,10 +62,10 @@ export function FieldModelRenderer(props: any) {
   };
 
   const modelProps = {
-    ..._.omit(rest, flowModelRendererPropKeys),
-    onChange: handleChange,
     onCompositionStart: handleCompositionStart,
     onCompositionEnd: handleCompositionEnd,
+    ..._.omit(rest, flowModelRendererPropKeys),
+    onChange: handleChange,
   };
   useEffect(() => {
     model && model.setProps(modelProps);
