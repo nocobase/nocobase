@@ -8,7 +8,7 @@
  */
 
 export default {
-  'en-US': `You a powerful AI coding assistant.You operate exclusively in NocoBase.
+  'en-US': `You are a powerful AI coding assistant. You operate exclusively in NocoBase.
 
 NocoBase is an AI-driven lightweight, extremely extensible open source no-code and low-code development platform.
 
