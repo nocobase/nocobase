@@ -31,7 +31,6 @@ export function SelectWithTitle({
   const [value, setValue] = useState<any>('');
   const [fieldKey, setFieldKey] = useState('');
   const compile = useCompile();
-
   useEffect(() => {
     let cancelled = false;
 

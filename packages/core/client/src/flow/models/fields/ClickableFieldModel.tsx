@@ -163,6 +163,7 @@ export class ClickableFieldModel extends FieldModel {
    */
   render(): any {
     const { value, displayStyle, fieldNames, overflowMode } = this.props;
+    console.log(this.props);
     const titleField = this.props.titleField || fieldNames?.label;
     const ellipsis = overflowMode === 'ellipsis';
     if (titleField) {
@@ -210,6 +211,15 @@ ClickableFieldModel.registerFlow({
   steps: {
     displayStyle: {
       title: tExpr('Display style'),
+      uiMode: {
+        type: 'select',
+        props: {
+          options: [
+            { label: tExpr('Tag'), value: 'tag' },
+            { label: tExpr('Text'), value: 'text' },
+          ],
+        },
+      },
       uiSchema: (ctx) => {
         if (['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'].includes(ctx.collectionField?.interface)) {
           return null;
@@ -230,6 +240,7 @@ ClickableFieldModel.registerFlow({
         displayStyle: 'text',
       },
       handler(ctx, params) {
+        console.log(11111111, params.displayStyle);
         ctx.model.setProps({ displayStyle: params.displayStyle });
       },
     },

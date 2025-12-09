@@ -36,6 +36,16 @@ export function buildAssociationOptions(ctx: any, itemModel, titleField?: string
 export const displayFieldComponent = defineAction({
   name: 'displayFieldComponent',
   title: tExpr('Field component'),
+  uiMode: (ctx) => {
+    const { titleField } = ctx.model.props;
+    const options = buildAssociationOptions(ctx, ctx.model.constructor, titleField);
+    return {
+      type: 'select',
+      props: {
+        options,
+      },
+    };
+  },
   uiSchema: (ctx: any) => {
     const { titleField } = ctx.model.props;
     if (!ctx.collectionField) {

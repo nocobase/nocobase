@@ -13,8 +13,7 @@ import { App, Dropdown, Modal } from 'antd';
 import React, { startTransition, useCallback, useEffect, useMemo, useState, FC } from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition, StepUIMode } from '../../../../types';
-import { getT, resolveStepUiSchema, resolveDefaultParams } from '../../../../utils';
-import { openStepSettings } from './StepSettings';
+import { getT, resolveStepUiSchema, resolveDefaultParams, resolveUiMode } from '../../../../utils';
 import { useNiceDropdownMaxHeight } from '../../../../hooks';
 import { SwitchWithTitle } from '../component/SwitchWithTitle';
 import { SelectWithTitle } from '../component/SelectWithTitle';
@@ -92,14 +91,15 @@ const componentMap = {
   select: SelectWithTitle,
 };
 
-const getMenuLabelItem = (title, type, props) => {
-  const Component = componentMap[type];
+const MenuLabelItem = ({ title, uiMode, itemProps }) => {
+  const type = uiMode?.type || uiMode;
+  const Component = type ? componentMap[type] : null;
 
   if (!Component) {
-    return title;
+    return <>{title}</>;
   }
 
-  return <Component title={title} {...props} />;
+  return <Component title={title} {...itemProps} />;
 };
 
 /**
@@ -301,9 +301,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 if (actionStep.hideInSettings) {
                   return null;
                 }
-                const uiMode =
-                  typeof actionStep.uiMode === 'string' ? actionStep.uiMode : (actionStep as any).uiMode?.type;
-                const selectOrSwitchMode = ['select', 'switch'].includes(uiMode);
+                let uiMode: any = actionStep.uiMode;
                 // 检查是否有uiSchema（静态或动态）
                 const hasStepUiSchema = actionStep.uiSchema != null;
 
@@ -313,12 +311,14 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 if (actionStep.use) {
                   try {
                     const action = targetModel.getAction?.(actionStep.use);
+                    uiMode = await resolveUiMode(action?.uiMode || uiMode, (targetModel as any).context);
                     hasActionUiSchema = action && action.uiSchema != null;
                     stepTitle = stepTitle || action?.title;
                   } catch (error) {
                     console.warn(t('Failed to get action {{action}}', { action: actionStep.use }), ':', error);
                   }
                 }
+                const selectOrSwitchMode = ['select', 'switch'].includes(uiMode?.type || uiMode);
 
                 // 如果都没有uiSchema（静态或动态），返回null
                 if (!selectOrSwitchMode && !hasStepUiSchema && !hasActionUiSchema) {
@@ -342,13 +342,13 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   console.warn(t('Failed to resolve uiSchema for step {{stepKey}}', { stepKey }), ':', error);
                   return null;
                 }
-
                 return {
                   stepKey,
                   step: actionStep,
                   uiSchema: mergedUiSchema,
                   title: t(stepTitle) || stepKey,
                   modelKey, // 添加模型标识
+                  uiMode,
                 };
               }),
             ).then((steps) => steps.filter(Boolean));
@@ -497,33 +497,38 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               : `${flow.key}:${stepInfo.stepKey}`;
 
             const uniqueKey = generateUniqueKey(baseMenuKey);
-            const stepParams = model.getStepParams(flow.key, stepInfo.stepKey) || {};
-            const uiMode =
-              typeof stepInfo.step.uiMode === 'string' ? stepInfo.step.uiMode : (stepInfo.step as any).uiMode?.type;
+            const uiMode = stepInfo.uiMode;
+            const subModel: any = findSubModelByKey(model, stepInfo.modelKey);
+            const targetModel = subModel || model;
+            const stepParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || {};
 
             const itemProps = {
               getDefaultValue: async () => {
-                const defaultParams = await resolveDefaultParams(stepInfo.step.defaultParams, model.context);
+                let defaultParams = await resolveDefaultParams(stepInfo.step.defaultParams, targetModel.context);
+
+                if (stepInfo.step.use) {
+                  const action = targetModel.getAction?.(stepInfo.step.use);
+                  defaultParams = await resolveDefaultParams(action.defaultParams, targetModel.context);
+                }
                 return { ...defaultParams, ...stepParams };
               },
               onChange: async (val) => {
-                (model as any).setStepParams(flow.key, stepInfo.stepKey, val);
+                targetModel.setStepParams(flow.key, stepInfo.stepKey, val);
                 if (typeof stepInfo.step.beforeParamsSave === 'function') {
-                  await stepInfo.step.beforeParamsSave((model as any).context, val, stepParams);
+                  await stepInfo.step.beforeParamsSave(targetModel.context, val, stepParams);
                 }
-                await model.saveStepParams();
+                await targetModel.saveStepParams();
                 message?.success?.(t('Configuration saved'));
                 if (typeof stepInfo.step.afterParamsSave === 'function') {
-                  await stepInfo.step.afterParamsSave((model as any).context, val, stepParams);
+                  await stepInfo.step.afterParamsSave(targetModel.context, val, stepParams);
                 }
               },
-              ...((stepInfo.step.uiMode as any)?.props || {}),
+              ...((uiMode as any)?.props || {}),
             };
+            console.log(uiMode, stepInfo, itemProps);
             items.push({
               key: uniqueKey,
-              label: getMenuLabelItem(t(stepInfo.title), uiMode, {
-                ...itemProps,
-              }),
+              label: <MenuLabelItem title={t(stepInfo.title)} uiMode={uiMode} itemProps={itemProps} />,
             });
             // add per-step copy popup uid under each configurable step
             if (flow.key === 'popupSettings' && baseMenuKey.includes('openView')) {
@@ -578,7 +583,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 });
 
                 if (flow.key === 'popupSettings') {
-                  console.log(888);
                   const copyKey = generateUniqueKey(`copy-pop-uid:${flow.key}:${stepInfo.stepKey}`);
                   items.push({
                     key: copyKey,
@@ -603,7 +607,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 if (flow.key === 'popupSettings') {
                   const copyKey = generateUniqueKey(`copy-pop-uid:${modelKey}:${flow.key}:${stepInfo.stepKey}`);
-                  console.log(9999);
                   subMenuChildren.push({
                     key: copyKey,
                     label: t('Copy popup UID'),

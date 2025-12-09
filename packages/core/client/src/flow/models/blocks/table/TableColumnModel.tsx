@@ -351,6 +351,7 @@ TableColumnModel.registerFlow({
     },
     sorter: {
       title: tExpr('Sortable'),
+      uiMode: 'switch',
       uiSchema(ctx) {
         const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
           ctx.model.collectionField.interface,

@@ -16,6 +16,7 @@ export const openViewFlow = defineFlow<FlowModel>({
   steps: {
     clickToOpen: {
       title: tExpr('Enable click to open'),
+      uiMode: 'switch',
       uiSchema: (ctx: any) => {
         if (ctx.model.supportEnable) {
           return {
@@ -39,7 +40,6 @@ export const openViewFlow = defineFlow<FlowModel>({
     },
     openView: {
       use: 'openView',
-      hidden: true,
     },
   },
   // 基于上下文推导 openView 的默认参数：在模型实例化时写入（仅填充缺失项）
