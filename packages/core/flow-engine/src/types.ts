@@ -236,7 +236,7 @@ export type StepUIMode =
   | 'embed'
   // | 'switch'
   // | 'select'
-  | { type?: 'dialog' | 'drawer' | 'embed'; props?: Record<string, any> };
+  | { type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch'; props?: Record<string, any> };
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 

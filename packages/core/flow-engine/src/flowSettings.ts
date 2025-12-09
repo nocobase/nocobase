@@ -597,7 +597,9 @@ export class FlowSettings {
 
         // 解析合并后的 uiSchema（包含 action 的 schema）
         const mergedUiSchema = await resolveStepUiSchema(model, flow, step);
-        if (!mergedUiSchema || Object.keys(mergedUiSchema).length === 0) continue;
+        const ui_Mode = typeof step.uiMode === 'string' ? step.uiMode : (step as any).uiMode?.type;
+        const selectOrSwitchMode = ['select', 'switch'].includes(ui_Mode);
+        if ((!mergedUiSchema || Object.keys(mergedUiSchema).length === 0) && !selectOrSwitchMode) continue;
 
         // 计算标题与 hooks
         let stepTitle: string = step.title;
@@ -855,7 +857,6 @@ export class FlowSettings {
             // 逐步提交并保存
             // 顺序：submit -> setStepParams -> beforeParamsSave -> model.save -> afterParamsSave
             for (const e of entries) {
-              console.log(e, 222);
               const form = forms.get(keyOf(e));
               if (!form) continue;
               await form.submit();

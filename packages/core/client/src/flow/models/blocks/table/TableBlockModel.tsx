@@ -536,12 +536,7 @@ TableBlockModel.registerFlow({
   steps: {
     showRowNumbers: {
       title: tExpr('Show row numbers'),
-      uiSchema: {
-        showIndex: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-        },
-      },
+      uiMode: 'switch',
       defaultParams: {
         showIndex: true,
       },
@@ -567,11 +562,10 @@ TableBlockModel.registerFlow({
     },
     pageSize: {
       title: tExpr('Page size'),
-      uiSchema: {
-        pageSize: {
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [
+      uiMode: {
+        type: 'select',
+        props: {
+          options: [
             { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },

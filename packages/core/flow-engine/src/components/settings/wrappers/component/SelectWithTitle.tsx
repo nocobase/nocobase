@@ -8,11 +8,11 @@
  */
 
 import { Select } from 'antd';
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 
 export interface SelectWithTitleProps {
   title?: any;
-  defaultValue?: any;
+  getDefaultValue?: any;
   options?: any;
   fieldNames?: any;
   onChange?: (...args: any[]) => void;
@@ -20,14 +20,51 @@ export interface SelectWithTitleProps {
 
 export function SelectWithTitle({
   title,
-  defaultValue,
+  getDefaultValue,
   onChange,
   options,
   fieldNames,
   ...others
 }: SelectWithTitleProps) {
   const [open, setOpen] = useState(false);
+
+  const [value, setValue] = useState<any>('');
+  const [fieldKey, setFieldKey] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      if (!getDefaultValue) return;
+
+      try {
+        const val = await getDefaultValue();
+        if (cancelled || !val) return;
+
+        const entries = Object.entries(val);
+        if (!entries.length) return;
+
+        const [key, result] = entries[0];
+        setValue(result);
+        setFieldKey(key);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getDefaultValue]);
+
   const timerRef = useRef<any>(null);
+
+  const handleChange = (val: any) => {
+    setValue(val);
+    onChange?.({ [fieldKey]: val });
+  };
   return (
     <div
       style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}
@@ -45,11 +82,10 @@ export function SelectWithTitle({
       <Select
         {...others}
         open={open}
-        data-testid={`select-${title}`}
         popupMatchSelectWidth={false}
         bordered={false}
-        defaultValue={defaultValue}
-        onChange={onChange}
+        value={value}
+        onChange={handleChange}
         popupClassName={`select-popup-${title.replaceAll(' ', '-')}`}
         fieldNames={fieldNames}
         options={options}

@@ -13,7 +13,7 @@ import { App, Dropdown, Modal } from 'antd';
 import React, { startTransition, useCallback, useEffect, useMemo, useState, FC } from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition, StepUIMode } from '../../../../types';
-import { getT, resolveStepUiSchema } from '../../../../utils';
+import { getT, resolveStepUiSchema, resolveDefaultParams } from '../../../../utils';
 import { openStepSettings } from './StepSettings';
 import { useNiceDropdownMaxHeight } from '../../../../hooks';
 import { SwitchWithTitle } from '../component/SwitchWithTitle';
@@ -301,7 +301,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 if (actionStep.hideInSettings) {
                   return null;
                 }
-
+                const uiMode =
+                  typeof actionStep.uiMode === 'string' ? actionStep.uiMode : (actionStep as any).uiMode?.type;
+                const selectOrSwitchMode = ['select', 'switch'].includes(uiMode);
                 // 检查是否有uiSchema（静态或动态）
                 const hasStepUiSchema = actionStep.uiSchema != null;
 
@@ -319,7 +321,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 }
 
                 // 如果都没有uiSchema（静态或动态），返回null
-                if (!hasStepUiSchema && !hasActionUiSchema) {
+                if (!selectOrSwitchMode && !hasStepUiSchema && !hasActionUiSchema) {
                   return null;
                 }
 
@@ -331,7 +333,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   const resolvedSchema = await resolveStepUiSchema(targetModel, flow, actionStep);
 
                   // 如果解析后没有可配置的UI Schema，跳过此步骤
-                  if (!resolvedSchema) {
+                  if (!resolvedSchema && !selectOrSwitchMode) {
                     return null;
                   }
 
@@ -494,30 +496,33 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
             const uniqueKey = generateUniqueKey(baseMenuKey);
             const stepParams = model.getStepParams(flow.key, stepInfo.stepKey) || {};
-            const key = Object.keys(stepInfo.uiSchema)[0];
-            console.log(stepInfo, flow, stepParams[key]);
+            const uiMode =
+              typeof stepInfo.step.uiMode === 'string' ? stepInfo.step.uiMode : (stepInfo.step as any).uiMode?.type;
+
             const itemProps = {
-              defaultValue: stepParams[key],
+              getDefaultValue: async () => {
+                const defaultParams = await resolveDefaultParams(stepInfo.step.defaultParams, model.context);
+                return { ...defaultParams, ...stepParams };
+              },
               onChange: async (val) => {
                 console.log(val);
-                (model as any).setStepParams(flow.key, stepInfo.stepKey, { [key]: val });
+                (model as any).setStepParams(flow.key, stepInfo.stepKey, val);
 
                 if (typeof stepInfo.step.beforeParamsSave === 'function') {
-                  await stepInfo.step.beforeParamsSave((model as any).context, { [key]: val }, stepParams);
+                  await stepInfo.step.beforeParamsSave((model as any).context, val, stepParams);
                 }
                 await model.saveStepParams();
                 message?.success?.(t('Configuration saved'));
 
                 if (typeof stepInfo.step.afterParamsSave === 'function') {
-                  await stepInfo.step.afterParamsSave((model as any).context, { [key]: val }, stepParams);
+                  await stepInfo.step.afterParamsSave((model as any).context, val, stepParams);
                 }
               },
+              ...((stepInfo.step.uiMode as any)?.props || {}),
             };
-            console.log(stepParams);
-
             items.push({
               key: uniqueKey,
-              label: getMenuLabelItem(t(stepInfo.title), stepInfo.step.uiMode, {
+              label: getMenuLabelItem(t(stepInfo.title), uiMode, {
                 ...itemProps,
               }),
             });

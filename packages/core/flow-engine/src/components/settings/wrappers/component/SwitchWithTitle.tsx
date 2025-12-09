@@ -7,17 +7,58 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { App, Dropdown, Modal, Switch } from 'antd';
-import React, { FC } from 'react';
+import { Switch } from 'antd';
+import React, { FC, useState, useEffect } from 'react';
 import { observer } from '@formily/react';
 
 const ml32 = { marginLeft: 32 };
 
-export const SwitchWithTitle: FC = observer(({ title, defaultValue, onChange }: any) => {
+export const SwitchWithTitle: FC = observer(({ title, onChange, getDefaultValue }: any) => {
+  const [checked, setChecked] = useState<boolean>(false);
+  const [fieldKey, setFieldKey] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const run = async () => {
+      if (!getDefaultValue) return;
+
+      try {
+        const val = await getDefaultValue();
+        if (cancelled || !val) return;
+
+        const entries = Object.entries(val);
+        if (!entries.length) return;
+
+        const [key, value] = entries[0];
+        setChecked(!!value);
+        setFieldKey(key);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getDefaultValue]);
+
+  const handleChange = (val: boolean) => {
+    setChecked(val);
+    onChange?.({ [fieldKey]: val });
+  };
   return (
-    <div style={{ alignItems: 'center', display: 'flex', justifyContent: 'space-between' }}>
+    <div
+      style={{
+        alignItems: 'center',
+        display: 'flex',
+        justifyContent: 'space-between',
+      }}
+    >
       {title}
-      <Switch size={'small'} defaultChecked={defaultValue} style={ml32} onChange={onChange} />
+      <Switch size="small" checked={checked} style={ml32} onChange={handleChange} />
     </div>
   );
 });
