@@ -20,14 +20,12 @@ import {
 
 export const createPubSubManager = (app: Application, options: PubSubManagerOptions) => {
   const pubSubManager = new PubSubManager(app, options);
-  if (app.serving()) {
-    app.on('afterStart', async () => {
-      await pubSubManager.connect();
-    });
-    app.on('afterStop', async () => {
-      await pubSubManager.close();
-    });
-  }
+  app.on('afterStart', async () => {
+    await pubSubManager.connect();
+  });
+  app.on('afterStop', async () => {
+    await pubSubManager.close();
+  });
   return pubSubManager;
 };
 
@@ -61,10 +59,6 @@ export class PubSubManager {
 
   async connect() {
     if (!this.adapter) {
-      return;
-    }
-    if (!this.app.serving()) {
-      this.app.logger.warn('app is not serving, will not connect to event queue');
       return;
     }
     await this.adapter.connect();

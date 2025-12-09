@@ -27,7 +27,13 @@ const getModelFields = async (model: CollectionBlockModel) => {
   const fields = (await model?.getFilterFields?.()) || [];
   return fields
     .map((field: any) => {
-      const binding = FilterableItemModel.getDefaultBindingByField(model.context, field);
+      // 为筛选场景创建新的上下文实例，委托到原 context 并补充 flags
+      const ctxWithFlags = new FlowModelContext(model);
+      ctxWithFlags.addDelegate(model.context);
+      ctxWithFlags.defineProperty('flags', {
+        value: { ...model.context?.flags, isInFilterFormBlock: true },
+      });
+      const binding = FilterableItemModel.getDefaultBindingByField(ctxWithFlags, field);
       if (!binding) {
         return;
       }
@@ -49,9 +55,6 @@ const getModelFields = async (model: CollectionBlockModel) => {
               },
             },
             filterFormItemSettings: {
-              label: {
-                label: field.title,
-              },
               init: {
                 filterField: _.pick(field, ['name', 'title', 'interface', 'type']),
                 defaultTargetUid: model.uid,
