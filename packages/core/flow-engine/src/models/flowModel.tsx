@@ -679,6 +679,8 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         }
       }
     }
+    // 发起重建配置菜单事件
+    this.emitter.emit('onStepParamsChanged');
   }
 
   getStepParams(flowKey: string, stepKey: string): any | undefined;

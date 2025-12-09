@@ -294,6 +294,17 @@ describe('FlowModel', () => {
         model.setStepParams(null as any);
         expect(model.stepParams).toEqual(originalParams);
       });
+
+      test('should emit onStepParamsChanged when params updated', () => {
+        const listener = vi.fn();
+        model.emitter.on('onStepParamsChanged', listener);
+
+        model.setStepParams('flow1', 'step1', { foo: 'bar' });
+
+        expect(listener).toHaveBeenCalledTimes(1);
+
+        model.emitter.off('onStepParamsChanged', listener);
+      });
     });
   });
 
