@@ -55,7 +55,7 @@ export class AuthManager {
     this.options = options;
     const jwtOptions = options.jwt || ({} as JwtOptions);
     if (!jwtOptions.secret) {
-      jwtOptions.secret = this.getDefaultAPIKey();
+      jwtOptions.secret = this.getDefaultJWTSecret();
     }
     this.jwt = new JwtService(jwtOptions);
   }
@@ -151,11 +151,11 @@ export class AuthManager {
     };
   }
 
-  private getDefaultAPIKey(): Buffer | string {
-    const apiKeyPath = path.resolve(process.cwd(), 'storage', 'apps', 'main', 'api_key.dat');
-    const appKeyExists = fs.existsSync(apiKeyPath);
-    if (appKeyExists) {
-      const key = fs.readFileSync(apiKeyPath);
+  private getDefaultJWTSecret(): Buffer | string {
+    const jwtSecretPath = path.resolve(process.cwd(), 'storage', 'apps', 'main', 'jwt_secret.dat');
+    const jwtSecretExists = fs.existsSync(jwtSecretPath);
+    if (jwtSecretExists) {
+      const key = fs.readFileSync(jwtSecretPath);
       if (key.length !== 32) {
         throw new Error('Invalid api key length in file');
       }
@@ -166,8 +166,8 @@ export class AuthManager {
       return envKey;
     }
     const key = crypto.randomBytes(32);
-    fs.mkdirSync(path.dirname(apiKeyPath), { recursive: true });
-    fs.writeFileSync(apiKeyPath, key, { mode: 0o600 });
+    fs.mkdirSync(path.dirname(jwtSecretPath), { recursive: true });
+    fs.writeFileSync(jwtSecretPath, key, { mode: 0o600 });
     return key;
   }
 }
