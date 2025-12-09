@@ -13,7 +13,7 @@ const EXCLUDE_INTERFACES = [
   // 'attachment',
   // 'markdown',
   // 'richText',
-  'id',
+  // 'id',
   'createdAt',
   'createdBy',
   'updatedAt',
