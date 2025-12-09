@@ -87,7 +87,7 @@ function areValuesEqual(value1, value2) {
 const resolveFormulaUsageFlags = (form: any, ctx?: any) => {
   const flags = form?.props?.['x-flag'] || ctx?.flags || {};
   const hasFlags = !!flags && Object.keys(flags).length > 0;
-  const isFilterContext = !!(flags?.isInFilterFormBlock || flags?.isInFilterAction || !hasFlags);
+  const isFilterContext = !!(flags?.isInFilterFormBlock || flags?.isInFilterAction);
   const isDefaultValueDialog = !!flags?.isInSetDefaultValueDialog;
   return { flags, hasFlags, isFilterContext, isDefaultValueDialog };
 };
