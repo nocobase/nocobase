@@ -36,6 +36,7 @@ const hasAssociationPathName = (parent: unknown): parent is { associationPathNam
   !!parent && typeof parent === 'object' && 'associationPathName' in parent;
 
 export class ClickableFieldModel extends FieldModel {
+  supportEnable = true;
   get collectionField(): CollectionField {
     return this.context.collectionField;
   }
@@ -232,23 +233,7 @@ ClickableFieldModel.registerFlow({
         ctx.model.setProps({ displayStyle: params.displayStyle });
       },
     },
-    clickToOpen: {
-      title: tExpr('Enable click to open'),
-      uiSchema: {
-        clickToOpen: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-        },
-      },
-      defaultParams: (ctx) => {
-        return {
-          clickToOpen: ctx.collectionField.isAssociationField(),
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({ clickToOpen: params.clickToOpen, ...ctx.collectionField.getComponentProps() });
-      },
-    },
+
     overflowMode: {
       title: tExpr('Content overflow display mode'),
       use: 'overflowMode',

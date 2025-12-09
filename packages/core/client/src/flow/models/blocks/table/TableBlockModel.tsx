@@ -557,6 +557,7 @@ TableBlockModel.registerFlow({
           'x-decorator': 'FormItem',
         },
       },
+      uiMode: 'switch',
       defaultParams: {
         editable: false,
       },

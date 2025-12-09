@@ -330,6 +330,7 @@ TableColumnModel.registerFlow({
     },
     quickEdit: {
       title: tExpr('Enable quick edit'),
+      uiMode: 'switch',
       uiSchema: (ctx) => {
         if (!ctx.model.collectionField) {
           return;

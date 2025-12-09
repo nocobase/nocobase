@@ -14,8 +14,32 @@ export const openViewFlow = defineFlow<FlowModel>({
   title: tExpr('Popup settings'),
   on: 'click',
   steps: {
+    clickToOpen: {
+      title: tExpr('Enable click to open'),
+      uiSchema: (ctx: any) => {
+        if (ctx.model.supportEnable) {
+          return {
+            clickToOpen: {
+              'x-component': 'Switch',
+              'x-decorator': 'FormItem',
+            },
+          };
+        } else {
+          return;
+        }
+      },
+      defaultParams: (ctx) => {
+        return {
+          clickToOpen: ctx.collectionField.isAssociationField(),
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ clickToOpen: params.clickToOpen, ...ctx.collectionField.getComponentProps() });
+      },
+    },
     openView: {
       use: 'openView',
+      hidden: true,
     },
   },
   // 基于上下文推导 openView 的默认参数：在模型实例化时写入（仅填充缺失项）

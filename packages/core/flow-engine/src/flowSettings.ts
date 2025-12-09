@@ -51,11 +51,13 @@ export interface FlowSettingsOpenOptions {
   stepKey?: string;
   /** 弹窗展现形式（drawer 或 dialog） */
   uiMode?:
+    | 'select'
+    | 'switch'
     | 'dialog'
     | 'drawer'
     | 'embed'
     | {
-        type?: 'dialog' | 'drawer' | 'embed';
+        type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch';
         props?: {
           title?: string;
           width?: number;
@@ -662,6 +664,9 @@ export class FlowSettings {
     const resolvedUiMode =
       entries.length === 1 ? await resolveUiMode(entries[0].uiMode || uiMode, entries[0].ctx) : uiMode;
     const modeType = typeof resolvedUiMode === 'string' ? resolvedUiMode : resolvedUiMode.type || 'dialog';
+    if (['select', 'switch'].includes(modeType)) {
+      return;
+    }
     const openView = viewer[modeType || 'dialog'].bind(viewer);
     const flowEngine = (model as any).flowEngine as FlowEngine;
     const scopes = {
@@ -850,6 +855,7 @@ export class FlowSettings {
             // 逐步提交并保存
             // 顺序：submit -> setStepParams -> beforeParamsSave -> model.save -> afterParamsSave
             for (const e of entries) {
+              console.log(e, 222);
               const form = forms.get(keyOf(e));
               if (!form) continue;
               await form.submit();

@@ -10,13 +10,14 @@
 import { ExclamationCircleOutlined, MenuOutlined } from '@ant-design/icons';
 import type { DropdownProps, MenuProps } from 'antd';
 import { App, Dropdown, Modal } from 'antd';
-import React, { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { startTransition, useCallback, useEffect, useMemo, useState, FC } from 'react';
 import { FlowModel } from '../../../../models';
-import { StepDefinition } from '../../../../types';
+import { StepDefinition, StepUIMode } from '../../../../types';
 import { getT, resolveStepUiSchema } from '../../../../utils';
 import { openStepSettings } from './StepSettings';
 import { useNiceDropdownMaxHeight } from '../../../../hooks';
-
+import { SwitchWithTitle } from '../component/SwitchWithTitle';
+import { SelectWithTitle } from '../component/SelectWithTitle';
 // Type definitions for better type safety
 interface StepInfo {
   stepKey: string;
@@ -24,6 +25,7 @@ interface StepInfo {
   uiSchema: Record<string, any>;
   title: string;
   modelKey?: string;
+  uiMode?: StepUIMode;
 }
 
 interface FlowInfo {
@@ -83,6 +85,21 @@ const findSubModelByKey = (model: FlowModel, subModelKey: string): FlowModel | n
     }
     return subModel instanceof FlowModel ? subModel : null;
   }
+};
+
+const componentMap = {
+  switch: SwitchWithTitle,
+  select: SelectWithTitle,
+};
+
+const getMenuLabelItem = (title, type, props) => {
+  const Component = componentMap[type];
+
+  if (!Component) {
+    return title;
+  }
+
+  return <Component title={title} {...props} />;
 };
 
 /**
@@ -457,11 +474,15 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         // 平铺模式：只有流程分组，没有模型层级
         configurableFlowsAndSteps.forEach(({ flow, steps, modelKey }: FlowInfo) => {
           const groupKey = generateUniqueKey(`flow-group-${modelKey ? `${modelKey}-` : ''}${flow.key}`);
-
+          if (flow.options.divider === 'top') {
+            items.push({
+              type: 'divider',
+            });
+          }
           // 在平铺模式下始终按流程分组
           items.push({
             key: groupKey,
-            label: t(flow.title) || flow.key,
+            label: flow.enableTitle && (t(flow.title) || flow.key),
             type: 'group',
           });
 
@@ -472,14 +493,36 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               : `${flow.key}:${stepInfo.stepKey}`;
 
             const uniqueKey = generateUniqueKey(baseMenuKey);
+            const stepParams = model.getStepParams(flow.key, stepInfo.stepKey) || {};
+            const key = Object.keys(stepInfo.uiSchema)[0];
+            console.log(stepInfo, flow, stepParams[key]);
+            const itemProps = {
+              defaultValue: stepParams[key],
+              onChange: async (val) => {
+                console.log(val);
+                (model as any).setStepParams(flow.key, stepInfo.stepKey, { [key]: val });
+
+                if (typeof stepInfo.step.beforeParamsSave === 'function') {
+                  await stepInfo.step.beforeParamsSave((model as any).context, { [key]: val }, stepParams);
+                }
+                await model.saveStepParams();
+                message?.success?.(t('Configuration saved'));
+
+                if (typeof stepInfo.step.afterParamsSave === 'function') {
+                  await stepInfo.step.afterParamsSave((model as any).context, { [key]: val }, stepParams);
+                }
+              },
+            };
+            console.log(stepParams);
 
             items.push({
               key: uniqueKey,
-              label: t(stepInfo.title),
+              label: getMenuLabelItem(t(stepInfo.title), stepInfo.step.uiMode, {
+                ...itemProps,
+              }),
             });
-
             // add per-step copy popup uid under each configurable step
-            if (flow.key === 'popupSettings') {
+            if (flow.key === 'popupSettings' && baseMenuKey.includes('openView')) {
               const copyKey = generateUniqueKey(`copy-pop-uid:${baseMenuKey}`);
               items.push({
                 key: copyKey,
@@ -487,6 +530,11 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               });
             }
           });
+          if (flow.options.divider === 'bottom') {
+            items.push({
+              type: 'divider',
+            });
+          }
         });
       } else {
         // 层级模式：真正的子菜单结构
@@ -526,6 +574,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 });
 
                 if (flow.key === 'popupSettings') {
+                  console.log(888);
                   const copyKey = generateUniqueKey(`copy-pop-uid:${flow.key}:${stepInfo.stepKey}`);
                   items.push({
                     key: copyKey,
@@ -550,6 +599,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
                 if (flow.key === 'popupSettings') {
                   const copyKey = generateUniqueKey(`copy-pop-uid:${modelKey}:${flow.key}:${stepInfo.stepKey}`);
+                  console.log(9999);
                   subMenuChildren.push({
                     key: copyKey,
                     label: t('Copy popup UID'),
@@ -576,10 +626,13 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     const items = [...menuItems];
 
     if (showCopyUidButton || showDeleteButton) {
+      items.push({
+        type: 'divider',
+      });
       // 使用分组呈现常用操作（不再使用分割线）
       items.push({
         key: 'common-actions',
-        label: t('Common actions'),
+        // label: t('Common actions'),
         type: 'group' as const,
       });
 
