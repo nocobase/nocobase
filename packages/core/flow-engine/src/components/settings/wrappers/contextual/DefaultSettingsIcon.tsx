@@ -482,11 +482,13 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             });
           }
           // 在平铺模式下始终按流程分组
-          items.push({
-            key: groupKey,
-            label: flow.enableTitle && (t(flow.title) || flow.key),
-            type: 'group',
-          });
+          if (flow.enableTitle) {
+            items.push({
+              key: groupKey,
+              label: t(flow.title) || flow.key,
+              type: 'group',
+            });
+          }
 
           steps.forEach((stepInfo: StepInfo) => {
             // 构建菜单项key，为子模型包含modelKey
@@ -505,15 +507,12 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 return { ...defaultParams, ...stepParams };
               },
               onChange: async (val) => {
-                console.log(val);
                 (model as any).setStepParams(flow.key, stepInfo.stepKey, val);
-
                 if (typeof stepInfo.step.beforeParamsSave === 'function') {
                   await stepInfo.step.beforeParamsSave((model as any).context, val, stepParams);
                 }
                 await model.saveStepParams();
                 message?.success?.(t('Configuration saved'));
-
                 if (typeof stepInfo.step.afterParamsSave === 'function') {
                   await stepInfo.step.afterParamsSave((model as any).context, val, stepParams);
                 }

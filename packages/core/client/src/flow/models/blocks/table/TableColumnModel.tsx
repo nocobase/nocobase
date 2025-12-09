@@ -331,23 +331,6 @@ TableColumnModel.registerFlow({
     quickEdit: {
       title: tExpr('Enable quick edit'),
       uiMode: 'switch',
-      uiSchema: (ctx) => {
-        if (!ctx.model.collectionField) {
-          return;
-        }
-        const blockCollectionName = ctx.model.context.blockModel.collection.name;
-        const fieldCollectionName = ctx.model.collectionField.collectionName;
-        if (blockCollectionName !== fieldCollectionName) {
-          return;
-        }
-        return {
-          editable: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-            'x-disabled': ctx.model.collectionField.readonly || ctx.model.associationPathName,
-          },
-        };
-      },
       defaultParams(ctx) {
         if (ctx.model.collectionField.readonly || ctx.model.associationPathName) {
           return {

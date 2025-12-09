@@ -96,7 +96,6 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 BlockModel.registerFlow({
   key: 'cardSettings',
   title: tExpr('Card settings'),
-  divider: 'bottom',
   steps: {
     titleDescription: {
       title: tExpr('Title & description'),

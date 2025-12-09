@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { useCompile } from '@nocobase/client';
 import { Select } from 'antd';
 import React, { useRef, useState, useEffect } from 'react';
 
@@ -27,9 +28,9 @@ export function SelectWithTitle({
   ...others
 }: SelectWithTitleProps) {
   const [open, setOpen] = useState(false);
-
   const [value, setValue] = useState<any>('');
   const [fieldKey, setFieldKey] = useState('');
+  const compile = useCompile();
 
   useEffect(() => {
     let cancelled = false;
@@ -88,7 +89,7 @@ export function SelectWithTitle({
         onChange={handleChange}
         popupClassName={`select-popup-${title.replaceAll(' ', '-')}`}
         fieldNames={fieldNames}
-        options={options}
+        options={compile(options)}
         style={{ textAlign: 'right', minWidth: 100 }}
         onMouseEnter={() => {
           clearTimeout(timerRef.current);

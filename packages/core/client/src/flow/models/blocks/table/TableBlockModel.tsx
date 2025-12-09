@@ -637,11 +637,10 @@ TableBlockModel.registerFlow({
     },
     tableDensity: {
       title: tExpr('Table density'),
-      uiSchema: {
-        size: {
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [
+      uiMode: {
+        type: 'select',
+        props: {
+          options: [
             { label: tExpr('Large'), value: 'large' },
             { label: tExpr('Middle'), value: 'middle' },
             { label: tExpr('Small'), value: 'small' },
