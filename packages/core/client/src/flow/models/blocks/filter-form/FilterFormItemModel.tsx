@@ -55,9 +55,6 @@ const getModelFields = async (model: CollectionBlockModel) => {
               },
             },
             filterFormItemSettings: {
-              label: {
-                label: field.title,
-              },
               init: {
                 filterField: _.pick(field, ['name', 'title', 'interface', 'type']),
                 defaultTargetUid: model.uid,
