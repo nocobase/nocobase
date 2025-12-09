@@ -100,8 +100,6 @@ export const LicenseValidate = () => {
         message={t('Environment mismatch')}
         description={
           <>
-            {t('The current environment does not match the licensed environment.')}
-            <br />
             {t('Current environment')}
             <ul style={{ margin: 0 }}>
               <li>
@@ -117,7 +115,9 @@ export const LicenseValidate = () => {
                 </strong>
               </li>
             </ul>
-            {t('Please go to NocoBase Service to obtain a new license key.')}
+            {t(
+              'The current environment does not match the licensed environment. Please use the updated InstanceID to obtain a new license key.',
+            )}
           </>
         }
         type="error"
