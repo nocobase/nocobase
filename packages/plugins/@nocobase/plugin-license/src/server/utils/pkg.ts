@@ -54,6 +54,9 @@ export async function testPkgLogin(keyData: KeyData | Record<string, any>) {
   try {
     const NOCOBASE_PKG_URL = getNocoBasePkgUrl();
     const { accessKeyId, accessKeySecret } = keyData || {};
+    if (!accessKeyId || !accessKeySecret) {
+      return false;
+    }
     const credentials = { username: accessKeyId, password: accessKeySecret };
     const res1 = await axios.post(`${NOCOBASE_PKG_URL}-/verdaccio/sec/login`, credentials, {
       responseType: 'json',
@@ -66,4 +69,12 @@ export async function testPkgLogin(keyData: KeyData | Record<string, any>) {
   } catch (error) {
     return false;
   }
+}
+
+export async function testServiceConnection(keyData: KeyData) {
+  if (!keyData?.service?.domain) {
+    return false;
+  }
+  const res: any = await testDomain(keyData?.service?.domain);
+  return res.reachable;
 }

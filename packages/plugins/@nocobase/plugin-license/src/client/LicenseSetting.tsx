@@ -14,7 +14,6 @@ import { useAsyncEffect } from 'ahooks';
 import { useT } from './locale';
 import { CopyOutlined } from '@ant-design/icons';
 import { LicenseValidate } from './LicenseValidate';
-import { LICENSE_TIPS } from '../const';
 
 const copyTextToClipboard = ({
   text,
@@ -159,12 +158,22 @@ const useSubmitProps = () => {
       }
       if (licenseValidateResult.isPkgConnection === false) {
         message.success(t('The license key was saved successfully'), 5);
-        message.warning(t(LICENSE_TIPS.PKG_CONNECTION_ERROR), 5);
+        message.warning(
+          t(
+            'The current environment cannot connect to NocoBase Pkg. To install plugins, please refer to the NocoBase Service documentation and upload the plugin manually.',
+          ),
+          5,
+        );
         return;
       }
       if (licenseValidateResult.isPkgLogin === false) {
         message.success(t('The license key was saved successfully'), 5);
-        message.warning(t(LICENSE_TIPS.PKG_LOGIN_ERROR), 5);
+        message.warning(
+          t(
+            'The current key cannot be used to log in to NocoBase Pkg. Please go to NocoBase Service to obtain a new license key.',
+          ),
+          5,
+        );
         return;
       }
       message.success(
@@ -268,6 +277,9 @@ export default function LicenseSetting() {
                 'x-use-component-props': 'useSubmitProps',
                 'x-component-props': {
                   type: 'primary',
+                  style: {
+                    marginBottom: 16,
+                  },
                 },
               },
             },
@@ -289,7 +301,6 @@ export default function LicenseSetting() {
           },
         }}
       />
-      <br />
       <LicenseValidate />
     </Card>
   );
