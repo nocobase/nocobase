@@ -1,0 +1,13 @@
+{
+  "Video width": "Video width",
+  "Auto play": "Auto play",
+  "Muted": "Muted",
+  "Show video controls": "Show video controls",
+  "Loop playback": "Loop playback",
+  "Not set by default to 100% of the container.": "Not set by default to 100% of the container.",
+  "Player": "Player",
+  "Is live": "Is live",
+  "If the live stream is not enabled, it can still play normally, but it may affect the buffering strategy of the underlying player, it is recommended to enable this item when playing live streams.": "If the live stream is not enabled, it can still play normally, but it may affect the buffering strategy of the underlying player, it is recommended to enable this item when playing live streams.",
+  "Container height when URL is empty": "Container height when URL is empty",
+  "No video link": "No video link"
+}
