@@ -10,7 +10,6 @@
 import { Plugin } from '@nocobase/server';
 import { getInstanceId, saveLicenseKey, isLicenseKeyExists, getLicenseValidate, CACHE_KEY } from './utils';
 import { keyDecrypt } from '@nocobase/license-kit';
-import { LICENSE_TIPS } from '../const';
 import pick from 'lodash/pick';
 
 export class PluginLicenseServer extends Plugin {
@@ -31,7 +30,12 @@ export class PluginLicenseServer extends Plugin {
           try {
             keyDecrypt(licenseKey);
           } catch (e) {
-            return ctx.throw(500, ctx.t(LICENSE_TIPS.INVALID_LICENSE_KEY, { ns: '@nocobase/plugin-license' }));
+            return ctx.throw(
+              500,
+              ctx.t('Invalid license key, please go to NocoBase Service to obtain a new license key.', {
+                ns: '@nocobase/plugin-license',
+              }),
+            );
           }
 
           const licenseValidate = await getLicenseValidate({ key: licenseKey, ctx });

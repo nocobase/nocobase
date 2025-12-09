@@ -26,6 +26,7 @@ export const LicenseValidate = () => {
     };
     isPkgConnection: boolean;
     isPkgLogin: boolean;
+    isServiceConnection: boolean;
     pkgUrl: string;
     isExpired: boolean;
     licenseStatus?: string;
@@ -34,6 +35,8 @@ export const LicenseValidate = () => {
         docsUrl?: string;
       };
     };
+    pluginsLicensed: boolean;
+    keyStatus: string;
   }>(null);
 
   const { i18n } = useTranslation();
@@ -53,24 +56,42 @@ export const LicenseValidate = () => {
       });
   }, []);
 
-  const helps = (
-    <>
-      {t('You can visit the Service platform to view common issues and solutions')}
-      &nbsp;
-      {state?.keyData?.service?.docsUrl && (
-        <a href={state.keyData.service.docsUrl} target="_blank" rel="noreferrer">
-          {state.keyData.service.docsUrl}
-        </a>
-      )}
-    </>
-  );
+  if (state?.keyStatus === 'invalid') {
+    return (
+      <Alert
+        message={t('The license key is invalid')}
+        type="error"
+        description={
+          <>{t('Please check your license key format or generate a new license key from NocoBase Service.')}</>
+        }
+      />
+    );
+  }
 
   if (state?.licenseStatus && state?.licenseStatus !== 'active') {
-    return <Alert message={t('The license key is invalid')} type="error" description={helps} />;
+    return (
+      <Alert
+        message={t('The license key is invalid')}
+        type="error"
+        description={<>{t('Please check your license key, or generate a new one from NocoBase Service.')}</>}
+      />
+    );
   }
 
   if (state?.isExpired) {
-    return <Alert message={t('The license key has expired')} type="error" description={helps} />;
+    return (
+      <Alert
+        message={t('The license upgrade period has expired')}
+        type="error"
+        description={
+          <>
+            {t(
+              'You may continue using the related plugins, but updates are no longer available. Please renew or repurchase your license to restore update services.',
+            )}
+          </>
+        }
+      />
+    );
   }
 
   if (state?.envMatch === false) {
@@ -96,7 +117,7 @@ export const LicenseValidate = () => {
                 </strong>
               </li>
             </ul>
-            {helps}
+            {t('Please go to NocoBase Service to obtain a new license key.')}
           </>
         }
         type="error"
@@ -110,11 +131,13 @@ export const LicenseValidate = () => {
         message={t('Domain mismatch')}
         description={
           <>
-            {t('The current domain does not match the licensed domain.')}
-            <br />
-            {t('Current domain')}: <strong>{state?.current?.domain}</strong>
-            <br />
-            {helps}
+            {t(
+              'The licensed domain does not match the current domain {{domain}}. Please go to NocoBase Service to obtain a new license key.',
+              {
+                domain: state?.current?.domain,
+                interpolation: { escapeValue: false },
+              },
+            )}
           </>
         }
         type="error"
@@ -122,20 +145,51 @@ export const LicenseValidate = () => {
     );
   }
 
-  if (state?.isPkgConnection === false) {
+  if (state?.pluginsLicensed === false) {
+    return (
+      <Alert
+        message={t('The plugin is not licensed')}
+        description={
+          <>
+            {t(
+              'We detected that you are using an unlicensed plugin. Please visit NocoBase Service to purchase or activate your license.',
+            )}
+          </>
+        }
+        type="error"
+      />
+    );
+  }
+
+  if (state?.isServiceConnection === false && state?.isPkgLogin === false) {
     return (
       <Alert
         message={t('Network exception')}
         description={
           <>
             {t(
-              'The current environment cannot connect to NocoBase Service, only manual installation of commercial plugins is supported.',
+              'Due to network issues, the license key cannot be updated automatically. Please update it manually if needed.',
             )}
             <br />
-            {t('You can view operation guidelines: ')}
-            <a href="https://docs-en.nocobase.com/welcome/getting-started/plugin" target="_blank" rel="noreferrer">
-              https://docs-en.nocobase.com/welcome/getting-started/plugin
-            </a>
+            {t(
+              'The plugin cannot be updated automatically (it remains functional). To update the plugin, please check your network connection or refer to the NocoBase Service documentation to upload the plugin manually.',
+            )}
+          </>
+        }
+        type="warning"
+      />
+    );
+  }
+
+  if (state?.isServiceConnection === false) {
+    return (
+      <Alert
+        message={t('Network exception')}
+        description={
+          <>
+            {t(
+              'Due to network issues, the license key cannot be updated automatically. Please update it manually if needed.',
+            )}
           </>
         }
         type="warning"
@@ -150,20 +204,14 @@ export const LicenseValidate = () => {
         description={
           <>
             {t(
-              'The current key cannot log in to NocoBase Service, only manual installation of commercial plugins is supported.',
+              'Due to network issues, the plugin cannot be updated automatically (it remains functional). If you need to update the plugin, please check your network connection or follow the NocoBase Service documentation to upload it manually.',
             )}
-            <br />
-            NocoBase pkg url: {state?.pkgUrl}
-            <br />
-            {t('You can view operation guidelines: ')}
-            <a href="https://docs-cn.nocobase.com/welcome/getting-started/plugin" target="_blank" rel="noreferrer">
-              https://docs-cn.nocobase.com/welcome/getting-started/plugin
-            </a>
           </>
         }
         type="warning"
       />
     );
   }
+
   return null;
 };

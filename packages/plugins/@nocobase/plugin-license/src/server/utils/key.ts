@@ -88,19 +88,19 @@ export async function getKey(ctx?: Context): Promise<string> {
     try {
       key = (await fs.promises.readFile(keyFile, 'utf8')).trim();
     } catch (e) {
-      throw new Error('License key file not found or unreadable. Please configure the license key.');
+      throw new Error('notfound');
     }
   }
 
   if (!key) {
-    throw new Error('License key file not found or unreadable. Please configure the license key.');
+    throw new Error('notfound');
   }
 
   let keyData: KeyData;
   try {
     keyData = JSON.parse(keyDecrypt(key));
   } catch (e) {
-    throw new Error('The license key parsing failed, Please check and reconfigure it.');
+    throw new Error('invalid');
   }
 
   try {
@@ -131,7 +131,7 @@ export function parseKey(key: string): KeyData {
   try {
     return JSON.parse(keyDecrypt(key));
   } catch (e) {
-    throw new Error('The license key parsing failed, Please check and reconfigure it.');
+    throw new Error('invalid');
   }
 }
 
