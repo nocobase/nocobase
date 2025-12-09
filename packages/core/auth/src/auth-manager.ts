@@ -161,7 +161,7 @@ export class AuthManager {
       }
       return key;
     }
-    const envKey = process.env.API_KEY;
+    const envKey = process.env.APP_KEY;
     if (envKey && envKey !== 'your-secret-key' && envKey !== 'test-key') {
       return envKey;
     }
