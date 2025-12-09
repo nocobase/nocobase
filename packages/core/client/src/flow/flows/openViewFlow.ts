@@ -13,31 +13,8 @@ export const openViewFlow = defineFlow<FlowModel>({
   key: 'popupSettings',
   title: tExpr('Popup settings'),
   on: 'click',
+  sort: 300,
   steps: {
-    clickToOpen: {
-      title: tExpr('Enable click to open'),
-      uiMode: 'switch',
-      uiSchema: (ctx: any) => {
-        if (ctx.model.supportEnable) {
-          return {
-            clickToOpen: {
-              'x-component': 'Switch',
-              'x-decorator': 'FormItem',
-            },
-          };
-        } else {
-          return;
-        }
-      },
-      defaultParams: (ctx) => {
-        return {
-          clickToOpen: ctx.collectionField.isAssociationField(),
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({ clickToOpen: params.clickToOpen, ...ctx.collectionField.getComponentProps() });
-      },
-    },
     openView: {
       use: 'openView',
     },
