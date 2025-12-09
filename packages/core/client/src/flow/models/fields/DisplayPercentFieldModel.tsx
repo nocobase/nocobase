@@ -9,7 +9,7 @@
 
 import React from 'react';
 import * as math from 'mathjs';
-import { DisplayItemModel } from '@nocobase/flow-engine';
+import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
 import { isNum } from '@formily/shared';
 import { ClickableFieldModel } from './ClickableFieldModel';
 
@@ -35,6 +35,10 @@ export class DisplayPercentFieldModel extends ClickableFieldModel {
     );
   }
 }
+
+DisplayPercentFieldModel.define({
+  label: tExpr('Percent'),
+});
 
 DisplayItemModel.bindModelToInterface('DisplayPercentFieldModel', ['percent'], {
   isDefault: true,
