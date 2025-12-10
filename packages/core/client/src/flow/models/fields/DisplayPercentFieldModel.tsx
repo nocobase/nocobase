@@ -16,7 +16,7 @@ import { UnitConversion, getDisplayNumber } from './DisplayNumberFieldModel';
 
 export class DisplayPercentFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
-    const { addonBefore = '', addonAfter, numberStep } = this.props;
+    const { addonBefore = '', addonAfter = '%', numberStep } = this.props;
     const targetValue = math.round(value * 100, 9);
     const result = getDisplayNumber({ ...this.props, value: targetValue, numberStep: numberStep });
     if (!result) {
@@ -133,7 +133,7 @@ DisplayPercentFieldModel.registerFlow({
           separator: separator || '0,0.00',
           numberStep: step || '1',
           addonBefore,
-          addonAfter,
+          addonAfter: addonAfter || '%',
         };
       },
       handler(ctx, params) {

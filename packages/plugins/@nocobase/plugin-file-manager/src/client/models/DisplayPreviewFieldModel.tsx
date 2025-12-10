@@ -236,6 +236,7 @@ const Preview = (props) => {
   );
 };
 export class DisplayPreviewFieldModel extends FieldModel {
+  disableTitleField = true;
   render(): any {
     const { value, titleField, template, target } = this.props;
     if (titleField && template !== 'file' && target !== 'attachments') {

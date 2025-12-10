@@ -250,6 +250,7 @@ DetailsItemModel.registerFlow({
         if (params.label !== previousParams.label) {
           ctx.model.setProps({
             titleField: params.label,
+            ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
           });
 
           const targetCollection = ctx.collectionField.targetCollection;
@@ -267,7 +268,11 @@ DetailsItemModel.registerFlow({
           });
         }
       },
-      async handler(ctx, params) {
+      async handler(ctx: any, params) {
+        if (ctx.model.subModels.field.disableTitleField) {
+          return;
+        }
+        console.log('099999');
         ctx.model.setProps({
           titleField: params.label,
           ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
@@ -284,9 +289,11 @@ DetailsItemModel.registerFlow({
         }
       },
       hideInSettings: async (ctx: FlowModelContext) => {
-        const use = ctx.model.getStepParams?.(ctx.flowKey, 'displayFieldComponent')?.use;
-        console.log(use);
-        return !ctx.collectionField || !ctx.collectionField.isAssociationField();
+        return (
+          !ctx.collectionField ||
+          !ctx.collectionField.isAssociationField() ||
+          (ctx.model.subModels.field as any).disableTitleField
+        );
       },
     },
   },
