@@ -309,7 +309,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 if (await shouldHideStepInSettings(targetModel, flow, actionStep)) {
                   return null;
                 }
-                let uiMode: any = actionStep.uiMode;
+                let uiMode: any = await resolveUiMode(actionStep.uiMode, (targetModel as any).context);
                 // 检查是否有uiSchema（静态或动态）
                 const hasStepUiSchema = actionStep.uiSchema != null;
 
@@ -540,7 +540,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             const subModel: any = findSubModelByKey(model, stepInfo.modelKey);
             const targetModel = subModel || model;
             const stepParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || {};
-
+            console.log(uiMode, stepInfo);
             const itemProps = {
               getDefaultValue: async () => {
                 let defaultParams = await resolveDefaultParams(stepInfo.step.defaultParams, targetModel.context);

@@ -621,15 +621,18 @@ TableBlockModel.registerFlow({
     },
     tableDensity: {
       title: tExpr('Table density'),
-      uiMode: {
-        type: 'select',
-        props: {
-          options: [
-            { label: tExpr('Large'), value: 'large' },
-            { label: tExpr('Middle'), value: 'middle' },
-            { label: tExpr('Small'), value: 'small' },
-          ],
-        },
+      uiMode: (ctx) => {
+        const t = ctx.t;
+        return {
+          type: 'select',
+          props: {
+            options: [
+              { label: t('Large'), value: 'large' },
+              { label: t('Middle'), value: 'middle' },
+              { label: t('Small'), value: 'small' },
+            ],
+          },
+        };
       },
       defaultParams: {
         size: 'middle',

@@ -209,14 +209,17 @@ ClickableFieldModel.registerFlow({
   steps: {
     displayStyle: {
       title: tExpr('Display style'),
-      uiMode: {
-        type: 'select',
-        props: {
-          options: [
-            { label: tExpr('Tag'), value: 'tag' },
-            { label: tExpr('Text'), value: 'text' },
-          ],
-        },
+      uiMode: (ctx) => {
+        const t = ctx.t;
+        return {
+          type: 'select',
+          props: {
+            options: [
+              { label: t('Tag'), value: 'tag' },
+              { label: t('Text'), value: 'text' },
+            ],
+          },
+        };
       },
       hideInSettings: async (ctx) => {
         if (['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'].includes(ctx.collectionField?.interface)) {

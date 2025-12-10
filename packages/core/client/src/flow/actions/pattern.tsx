@@ -15,22 +15,23 @@ export const pattern = defineAction({
   name: 'pattern',
   title: tExpr('Display mode'),
   uiMode(ctx) {
+    const t = ctx.t;
     return {
       type: 'select',
       props: {
         options: [
           {
             value: 'editable',
-            label: tExpr('Editable'),
+            label: t('Editable'),
           },
           {
             value: 'disabled',
-            label: tExpr('Disabled'),
+            label: t('Disabled'),
           },
 
           {
             value: 'readPretty',
-            label: tExpr('Display only'),
+            label: t('Display only'),
           },
         ],
       },
