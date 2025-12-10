@@ -546,12 +546,6 @@ TableBlockModel.registerFlow({
     },
     quickEdit: {
       title: tExpr('Enable quick edit'),
-      uiSchema: {
-        editable: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-        },
-      },
       uiMode: 'switch',
       defaultParams: {
         editable: false,
@@ -594,16 +588,11 @@ TableBlockModel.registerFlow({
     },
     treeTable: {
       title: tExpr('Enable tree table'),
-      uiSchema: (ctx) => {
+      uiMode: 'switch',
+      hideInSettings(ctx) {
         if (ctx.model.collection.template !== 'tree') {
-          return;
+          return true;
         }
-        return {
-          treeTable: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-          },
-        };
       },
       defaultParams: {
         treeTable: false,
@@ -617,16 +606,11 @@ TableBlockModel.registerFlow({
     },
     defaultExpandAllRows: {
       title: tExpr('Expand all rows by default'),
-      uiSchema: (ctx) => {
+      uiMode: 'switch',
+      hideInSettings(ctx) {
         if (ctx.model.collection.template !== 'tree') {
-          return;
+          return true;
         }
-        return {
-          defaultExpandAllRows: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-          },
-        };
       },
       defaultParams: {
         defaultExpandAllRows: false,

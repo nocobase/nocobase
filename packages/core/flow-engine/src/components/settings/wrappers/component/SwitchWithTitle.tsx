@@ -49,13 +49,21 @@ export const SwitchWithTitle: FC = observer(({ title, onChange, getDefaultValue,
     setChecked(val);
     onChange?.({ [fieldKey]: val });
   };
+
+  // 点击整个容器时触发
+  const handleWrapperClick = () => {
+    if (disabled) return;
+    handleChange(!checked);
+  };
   return (
     <div
       style={{
         alignItems: 'center',
         display: 'flex',
         justifyContent: 'space-between',
+        cursor: disabled ? 'not-allowed' : 'pointer',
       }}
+      onClick={handleWrapperClick}
     >
       {title}
       <Switch size="small" {...others} checked={checked} style={ml32} onChange={handleChange} disabled={disabled} />

@@ -14,18 +14,6 @@ export const overflowMode = defineAction({
   name: 'overflowMode',
   title: tExpr('Content overflow ellipsis'),
   uiMode: 'switch',
-  // uiSchema(ctx) {
-  //   return {
-  //     overflowMode: {
-  //       'x-component': 'Select',
-  //       'x-decorator': 'FormItem',
-  //       enum: [
-  //         { label: tExpr('Ellipsis'), value: 'ellipsis' },
-  //         { label: tExpr('Wrap'), value: 'wrap' },
-  //       ],
-  //     },
-  //   };
-  // },
   defaultParams: (ctx) => {
     return { overflowMode: ctx.model.parent instanceof TableColumnModel ? true : false };
   },
