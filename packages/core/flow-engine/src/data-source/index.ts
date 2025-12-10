@@ -467,6 +467,12 @@ export class Collection {
     this.setFields(options.fields || []);
   }
 
+  clone() {
+    const newCollection = new Collection(_.cloneDeep(this.options));
+    newCollection.setDataSource(this.dataSource);
+    return newCollection;
+  }
+
   getFilterByTK(record) {
     if (!record) {
       throw new Error('Record is required to get filterByTk');
