@@ -208,7 +208,7 @@ ClickableFieldModel.registerFlow({
   sort: 200,
   steps: {
     displayStyle: {
-      title: tExpr('Display style'),
+      title: tExpr('Display mode'),
       uiMode: (ctx) => {
         const t = ctx.t;
         return {

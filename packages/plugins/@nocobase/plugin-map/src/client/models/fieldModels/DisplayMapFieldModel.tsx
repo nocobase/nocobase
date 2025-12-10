@@ -44,7 +44,7 @@ DisplayMapFieldModel.registerFlow({
   title: tExpr('Map field settings', { ns: NAMESPACE }),
   steps: {
     displayStyle: {
-      title: tExpr('Display style'),
+      title: tExpr('Display mode'),
       uiSchema: (ctx) => {
         if (ctx.model.parent instanceof TableColumnModel) {
           return null;

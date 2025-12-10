@@ -368,6 +368,10 @@ TableColumnModel.registerFlow({
         });
       },
     },
+    fixed: {
+      title: tExpr('Fixed'),
+      use: 'fixed',
+    },
     fieldNames: {
       use: 'titleField',
       title: tExpr('Label field'),
@@ -422,10 +426,6 @@ TableColumnModel.registerFlow({
           ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
         });
       },
-    },
-    fixed: {
-      title: tExpr('Fixed'),
-      use: 'fixed',
     },
   },
 });
