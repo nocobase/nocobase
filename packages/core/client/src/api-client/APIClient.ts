@@ -57,7 +57,21 @@ const errorCache = new Map();
 export class APIClient extends APIClientSDK {
   services: Record<string, Result<any, any>> = {};
   silence = false;
-  app: Application;
+  _app: Application;
+
+  set app(app: Application) {
+    const appName = app?.getName?.();
+    this._app = app;
+    if (appName) {
+      this.storagePrefix = `${appName}_${this.storagePrefix}`;
+      this.storage.storagePrefix = this.storagePrefix;
+    }
+  }
+
+  get app() {
+    return this._app;
+  }
+
   /** 该值会在 AntdAppProvider 中被重新赋值 */
   notification: any = notification;
 
