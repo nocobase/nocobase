@@ -433,6 +433,18 @@ export const openView = defineAction({
       },
     },
   },
+  /**
+   * 通用的设置菜单可见性控制：
+   * - 字段场景下，当未启用「点击打开」（clickToOpen=false）时，隐藏弹窗设置步骤；
+   * - 其他场景默认不隐藏，保持向后兼容。
+   */
+  hideInSettings: async (ctx: FlowModelContext) => {
+    const clickToOpen = ctx.model.getStepParams?.('displayFieldSettings', 'clickToOpen')?.clickToOpen;
+    if (clickToOpen === undefined) {
+      return !ctx.collectionField?.isAssociationField();
+    }
+    return clickToOpen === false;
+  },
   defaultParams: async (ctx) => {
     const tree = ctx.getPropertyMetaTree() || [];
     const hasRecord = Array.isArray(tree) && tree.some((n: any) => String(n?.name) === 'record');

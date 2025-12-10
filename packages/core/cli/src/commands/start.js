@@ -57,7 +57,6 @@ module.exports = (cli) => {
       }
 
       if (process.env.NO_WATCH_PLUGINS === true || process.env.NO_WATCH_PLUGINS === 'true') {
-
         const restart = _.debounce(async () => {
           console.log('restarting...');
           await run('yarn', ['nocobase', 'pm2-restart']);

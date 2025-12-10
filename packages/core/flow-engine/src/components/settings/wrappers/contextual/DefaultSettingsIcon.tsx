@@ -13,7 +13,7 @@ import { App, Dropdown, Modal } from 'antd';
 import React, { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
-import { getT, resolveStepUiSchema } from '../../../../utils';
+import { getT, resolveStepUiSchema, shouldHideStepInSettings } from '../../../../utils';
 import { openStepSettings } from './StepSettings';
 import { useNiceDropdownMaxHeight } from '../../../../hooks';
 
@@ -108,6 +108,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   const { message } = App.useApp();
   const t = getT(model);
   const [visible, setVisible] = useState(false);
+  // 当模型发生子模型替换/增删等变化时，强制刷新菜单数据
+  const [refreshTick, setRefreshTick] = useState(0);
   const handleOpenChange: DropdownProps['onOpenChange'] = useCallback((nextOpen: boolean, info) => {
     if (info.source === 'trigger' || nextOpen) {
       // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
@@ -280,8 +282,8 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               Object.entries(flow.steps).map(async ([stepKey, stepDefinition]) => {
                 const actionStep = stepDefinition;
 
-                // 如果步骤设置了 hideInSettings: true，则跳过此步骤
-                if (actionStep.hideInSettings) {
+                // 支持静态与动态 hideInSettings
+                if (await shouldHideStepInSettings(targetModel, flow, actionStep)) {
                   return null;
                 }
 
@@ -403,24 +405,54 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
   const [configurableFlowsAndSteps, setConfigurableFlowsAndSteps] = useState<FlowInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  // 当模型发生子模型替换/增删等变化时，强制刷新菜单数据
-  const [refreshTick, setRefreshTick] = useState(0);
 
   useEffect(() => {
-    const triggerRebuild = () => setRefreshTick((v) => v + 1);
-    if (model?.emitter) {
-      model.emitter.on('onSubModelAdded', triggerRebuild);
-      model.emitter.on('onSubModelRemoved', triggerRebuild);
-      model.emitter.on('onSubModelReplaced', triggerRebuild);
-    }
-    return () => {
-      if (model?.emitter) {
-        model.emitter.off('onSubModelAdded', triggerRebuild);
-        model.emitter.off('onSubModelRemoved', triggerRebuild);
-        model.emitter.off('onSubModelReplaced', triggerRebuild);
-      }
+    const triggerRebuild = () => {
+      setRefreshTick((v) => v + 1);
     };
-  }, [model]);
+
+    const visited = new Set<FlowModel>();
+    const cleanups: Array<() => void> = [];
+
+    const registerListeners = (targetModel?: FlowModel | null, depth = 1) => {
+      if (!targetModel || visited.has(targetModel) || depth > menuLevels) {
+        return;
+      }
+      visited.add(targetModel);
+
+      const eventNames = ['onStepParamsChanged'];
+      if (depth === 1) {
+        eventNames.push('onSubModelAdded', 'onSubModelRemoved', 'onSubModelReplaced');
+      }
+
+      eventNames.forEach((eventName) => {
+        targetModel.emitter?.on(eventName, triggerRebuild);
+        cleanups.push(() => targetModel.emitter?.off(eventName, triggerRebuild));
+      });
+
+      if (depth >= menuLevels) {
+        return;
+      }
+
+      Object.values(targetModel.subModels || {}).forEach((subModel) => {
+        if (Array.isArray(subModel)) {
+          subModel.forEach((item) => {
+            if (item instanceof FlowModel) {
+              registerListeners(item, depth + 1);
+            }
+          });
+        } else if (subModel instanceof FlowModel) {
+          registerListeners(subModel, depth + 1);
+        }
+      });
+    };
+
+    registerListeners(model);
+
+    return () => {
+      cleanups.forEach((dispose) => dispose());
+    };
+  }, [model, menuLevels, refreshTick]);
 
   useEffect(() => {
     const loadConfigurableFlowsAndSteps = async () => {

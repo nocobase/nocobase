@@ -33,6 +33,7 @@ import { get, omit } from 'lodash';
 import React, { useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { getRowKey } from './utils';
+import { getFieldBindingUse, rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 
 function FieldDeletePlaceholder() {
   const { t } = useTranslation();
@@ -398,32 +399,42 @@ TableColumnModel.registerFlow({
         if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
           return null;
         }
-        if (params.label !== previousParams.label) {
-          const targetCollection = ctx.collectionField.targetCollection;
-          const targetCollectionField = targetCollection.getField(params.label);
-          const binding = (ctx.model.constructor as typeof TableColumnModel).getDefaultBindingByField(
-            ctx,
-            targetCollectionField,
-          );
-          if (binding.modelName !== (ctx.model.subModels.field as any).use) {
-            const fieldUid = ctx.model.subModels['field']['uid'];
-            await ctx.engine.destroyModel(fieldUid);
-            const model = ctx.model.setSubModel('field', {
-              use: binding.modelName,
-              stepParams: {
-                fieldSettings: {
-                  init: {
-                    dataSourceKey: ctx.model.collectionField.dataSourceKey,
-                    collectionName: targetCollection.name,
-                    fieldPath: params.label,
-                  },
-                },
-              },
-            });
-            await model.save();
-          }
-          ctx.model.setProps(ctx.collectionField.targetCollection.getField(params.label).getComponentProps());
+        if (params.label === previousParams.label) {
+          return null;
         }
+        const targetCollection = ctx.collectionField.targetCollection;
+        const targetCollectionField = targetCollection.getField(params.label);
+        if (!targetCollectionField) {
+          return null;
+        }
+        const binding = (ctx.model.constructor as typeof TableColumnModel).getDefaultBindingByField(
+          ctx,
+          targetCollectionField,
+        );
+        const fieldModel: any = ctx.model.subModels.field;
+        const currentUse = getFieldBindingUse(fieldModel) || fieldModel?.use;
+        const targetUse = binding?.modelName || currentUse;
+        const fieldSettingsInit = {
+          dataSourceKey: ctx.model.collectionField.dataSourceKey,
+          collectionName: targetCollection.name,
+          fieldPath: params.label,
+        };
+        const defaultProps =
+          typeof binding?.defaultProps === 'function'
+            ? binding.defaultProps(ctx, targetCollectionField)
+            : binding?.defaultProps;
+        if (targetUse && targetUse !== currentUse) {
+          await rebuildFieldSubModel({
+            parentModel: ctx.model as any,
+            targetUse,
+            defaultProps,
+            fieldSettingsInit,
+          });
+        } else if (fieldModel) {
+          fieldModel.setStepParams('fieldSettings', 'init', fieldSettingsInit);
+          await fieldModel.dispatchEvent('beforeRender', undefined, { useCache: false });
+        }
+        ctx.model.setProps(targetCollectionField.getComponentProps());
       },
       handler(ctx, params) {
         if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
