@@ -85,7 +85,16 @@ export function CreateContent({ model, toOne = false }) {
 }
 
 export function LazySelect(props: Readonly<LazySelectProps>) {
-  const { fieldNames, value, multiple, allowMultiple, options, quickCreate, onChange, ...others } = props;
+  const {
+    fieldNames = { label: 'label', value: 'value' },
+    value,
+    multiple,
+    allowMultiple,
+    options,
+    quickCreate,
+    onChange,
+    ...others
+  } = props;
   const isMultiple = Boolean(multiple && allowMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
   const { t } = useTranslation();
