@@ -178,7 +178,6 @@ const ArrayNester = ({
           <>
             {fields.map((field, index) => {
               const { key, name: fieldName } = field;
-              console.log(value, value[index]);
               const fieldIndex = [...rowIndex, `${collectionName}:${index}`];
               // 每行只创建一次 fork
               if (!forksRef.current[key]) {
