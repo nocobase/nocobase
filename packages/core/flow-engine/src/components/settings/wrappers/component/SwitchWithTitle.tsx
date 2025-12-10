@@ -66,7 +66,7 @@ export const SwitchWithTitle: FC = observer(({ title, onChange, getDefaultValue,
       onClick={handleWrapperClick}
     >
       {title}
-      <Switch size="small" {...others} checked={checked} style={ml32} onChange={handleChange} disabled={disabled} />
+      <Switch size="small" {...others} checked={checked} style={ml32} disabled={disabled} />
     </div>
   );
 });
