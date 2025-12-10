@@ -162,7 +162,6 @@ export class ClickableFieldModel extends FieldModel {
    */
   render(): any {
     const { value, displayStyle, fieldNames, overflowMode } = this.props;
-    console.log(this.props);
     const titleField = this.props.titleField || fieldNames?.label;
     const ellipsis = overflowMode === 'ellipsis';
     if (titleField) {
@@ -239,13 +238,11 @@ ClickableFieldModel.registerFlow({
         displayStyle: 'text',
       },
       handler(ctx, params) {
-        console.log(11111111, params.displayStyle);
         ctx.model.setProps({ displayStyle: params.displayStyle });
       },
     },
 
     overflowMode: {
-      // title: tExpr('Content overflow display mode'),
       use: 'overflowMode',
     },
     clickToOpen: {

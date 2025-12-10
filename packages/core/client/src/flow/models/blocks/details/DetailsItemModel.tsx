@@ -19,6 +19,7 @@ import { get, castArray } from 'lodash';
 import React from 'react';
 import { FieldModel } from '../../base';
 import { DetailsGridModel } from './DetailsGridModel';
+import { rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
 
 /**
  * 从 record 中取值
@@ -242,44 +243,43 @@ DetailsItemModel.registerFlow({
     fieldNames: {
       use: 'titleField',
       title: tExpr('Label field'),
-
       beforeParamsSave: async (ctx, params, previousParams) => {
         if (!ctx.collectionField.isAssociationField()) {
           return null;
         }
         if (params.label !== previousParams.label) {
+          ctx.model.setProps({
+            titleField: params.label,
+          });
+
           const targetCollection = ctx.collectionField.targetCollection;
           const targetCollectionField = targetCollection.getField(params.label);
-          const binding = (ctx.model.constructor as typeof DetailsItemModel).getDefaultBindingByField(
-            ctx,
-            targetCollectionField,
-          );
-          const currentUse = ctx.model.subModels.field?.stepParams?.fieldBinding?.use || ctx.model.subModels.field?.use;
-          if (binding.modelName !== currentUse) {
-            const fieldUid = ctx.model.subModels['field']['uid'];
-            await ctx.engine.destroyModel(fieldUid);
-            const model = ctx.model.setSubModel('field', {
-              use: binding.modelName,
-              stepParams: {
-                fieldSettings: {
-                  init: {
-                    dataSourceKey: ctx.model.collectionField.dataSourceKey,
-                    collectionName: targetCollection.name,
-                    fieldPath: params.label,
-                  },
-                },
-              },
-            });
-            await model.save();
-          }
-          ctx.model.setProps(ctx.collectionField.targetCollection.getField(params.label).getComponentProps());
+          const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+          const use = binding.modelName;
+          await rebuildFieldSubModel({
+            parentModel: ctx.model,
+            targetUse: use,
+            defaultProps:
+              typeof binding?.defaultProps === 'function'
+                ? binding.defaultProps(ctx, ctx.collectionField)
+                : binding?.defaultProps,
+            pattern: ctx.model.getProps().pattern,
+          });
         }
       },
-      handler(ctx, params) {
+      async handler(ctx, params) {
         ctx.model.setProps({
           titleField: params.label,
           ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
         });
+        const targetCollection = ctx.collectionField.targetCollection;
+        const targetCollectionField = targetCollection.getField(params.label);
+        const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+        const use = binding.modelName;
+        const bindingUse = ctx.model.subModels.field.use;
+        if (use !== bindingUse) {
+          ctx.model.setStepParams(ctx.flowKey, 'model', { use: use });
+        }
       },
     },
   },

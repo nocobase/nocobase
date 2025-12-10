@@ -296,7 +296,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             const configurableSteps = await Promise.all(
               Object.entries(flow.steps).map(async ([stepKey, stepDefinition]) => {
                 const actionStep = stepDefinition;
-
+                let step = actionStep;
                 // 如果步骤设置了 hideInSettings: true，则跳过此步骤
                 if (actionStep.hideInSettings) {
                   return null;
@@ -311,6 +311,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 if (actionStep.use) {
                   try {
                     const action = targetModel.getAction?.(actionStep.use);
+                    step = { ...(action || {}), ...actionStep };
                     uiMode = await resolveUiMode(action?.uiMode || uiMode, (targetModel as any).context);
                     hasActionUiSchema = action && action.uiSchema != null;
                     stepTitle = stepTitle || action?.title;
@@ -344,7 +345,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 }
                 return {
                   stepKey,
-                  step: actionStep,
+                  step,
                   uiSchema: mergedUiSchema,
                   title: t(stepTitle) || stepKey,
                   modelKey, // 添加模型标识
@@ -525,7 +526,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               },
               ...((uiMode as any)?.props || {}),
             };
-            console.log(uiMode, stepInfo, itemProps);
             items.push({
               key: uniqueKey,
               label: <MenuLabelItem title={t(stepInfo.title)} uiMode={uiMode} itemProps={itemProps} />,

@@ -36,6 +36,23 @@ export const SelectOptions = (props) => {
 export const titleField = defineAction({
   name: 'titleField',
   title: tExpr('Label field'),
+  uiMode: (ctx) => {
+    const targetCollection = ctx.collectionField.targetCollection;
+    const dataSourceManager = ctx.app.dataSourceManager;
+    const targetFields = targetCollection?.getFields?.() ?? [];
+    const options = targetFields
+      .filter((field) => isTitleField(dataSourceManager, field.options))
+      .map((field) => ({
+        value: field.name,
+        label: ctx.t(field.options.uiSchema?.title) || field.name,
+      }));
+    return {
+      type: 'select',
+      props: {
+        options,
+      },
+    };
+  },
   uiSchema: (ctx) => {
     if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
       return null;

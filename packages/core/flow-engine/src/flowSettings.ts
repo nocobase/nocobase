@@ -602,7 +602,7 @@ export class FlowSettings {
         let beforeParamsSave = step.beforeParamsSave;
         let afterParamsSave = step.afterParamsSave;
         let actionDefaultParams: Record<string, any> = {};
-        let uiMode;
+        let uiMode = step.uiMode;
         if (step.use) {
           const action = model.getAction?.(step.use);
           if (action) {
@@ -634,9 +634,9 @@ export class FlowSettings {
         if (
           (!mergedUiSchema || Object.keys(mergedUiSchema).length === 0) &&
           !['select', 'switch'].includes(uiMode?.type || uiMode)
-        )
+        ) {
           continue;
-
+        }
         entries.push({
           flowKey: fk,
           flowTitle: t(flow.title) || fk,
