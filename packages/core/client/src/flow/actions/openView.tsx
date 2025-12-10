@@ -440,6 +440,9 @@ export const openView = defineAction({
    */
   hideInSettings: async (ctx: FlowModelContext) => {
     const clickToOpen = ctx.model.getStepParams?.('displayFieldSettings', 'clickToOpen')?.clickToOpen;
+    if (clickToOpen === undefined) {
+      return !ctx.collectionField?.isAssociationField();
+    }
     return clickToOpen === false;
   },
   defaultParams: async (ctx) => {
