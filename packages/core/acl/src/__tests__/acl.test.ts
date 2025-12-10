@@ -391,11 +391,8 @@ describe('acl', () => {
   it('should clone can result deeply', () => {
     vi.spyOn(acl, 'can').mockReturnValue({
       role: 'root',
-      resource: 'Test',
-      action: {
-        resourceName: 'test',
-        actionName: 'create',
-      },
+      resource: 'test',
+      action: 'create',
       params: {
         fields: [],
       },
