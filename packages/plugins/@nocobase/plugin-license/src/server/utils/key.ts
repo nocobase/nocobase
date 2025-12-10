@@ -127,6 +127,34 @@ export async function getKey(ctx?: Context): Promise<string> {
   return key;
 }
 
+export async function getLicenseStatus(keyData: KeyData): Promise<'active' | 'invalid'> {
+  if (!keyData) {
+    return 'invalid';
+  }
+  if (keyData?.licenseKey?.licenseStatus === 'invalid') {
+    return 'invalid';
+  }
+  try {
+    const { data } = await request({
+      url: `${keyData?.service?.domain}/api/license_keys:getKeyStatus`,
+      method: 'POST',
+      body: {
+        access_key_id: keyData?.accessKeyId,
+        access_key_secret: keyData?.accessKeySecret,
+      },
+      headers: keyData?.service?.headers || {},
+    });
+    console.log('data', data);
+    if (data?.status === 'active') {
+      return 'active';
+    } else {
+      return 'invalid';
+    }
+  } catch (e) {
+    return 'active';
+  }
+}
+
 export function parseKey(key: string): KeyData {
   try {
     return JSON.parse(keyDecrypt(key));

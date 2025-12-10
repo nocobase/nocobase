@@ -27,22 +27,11 @@ export class PluginLicenseServer extends Plugin {
         },
         'license-key': async (ctx, next) => {
           const { licenseKey } = ctx.request.body;
-          try {
-            keyDecrypt(licenseKey);
-          } catch (e) {
-            return ctx.throw(
-              500,
-              ctx.t('Invalid license key, please go to NocoBase Service to obtain a new license key.', {
-                ns: '@nocobase/plugin-license',
-              }),
-            );
-          }
-
           const licenseValidate = await getLicenseValidate({ key: licenseKey, ctx });
           ctx.body = {
             ...licenseValidate,
           };
-          if (licenseValidate.envMatch && licenseValidate.domainMatch) {
+          if (licenseValidate.envMatch && licenseValidate.domainMatch && licenseValidate.licenseStatus === 'active') {
             await saveLicenseKey(licenseKey, ctx);
           }
           await next();

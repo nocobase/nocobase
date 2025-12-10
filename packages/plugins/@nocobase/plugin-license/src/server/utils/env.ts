@@ -63,28 +63,37 @@ export function isDomainMatch(currentDomain: string, keyData: KeyData) {
 }
 
 export function isEnvMatch(env: Env, keyData: KeyData) {
-  if (!env || !keyData?.instanceData) return false;
+  return isDbMatch(env, keyData) && isSysMatch(env, keyData);
+}
 
-  if (!env.db || !keyData.instanceData.db) return false;
+export function isDbMatch(env: Env, keyData: KeyData) {
+  const a = env?.db;
+  const b = keyData?.instanceData?.db;
 
-  const envDbId = env?.db?.id;
-  const keyDbId = keyData?.instanceData?.db?.id;
-  const matchById = Boolean(envDbId && keyDbId);
+  if (!a || !b) return false;
 
-  const normalizeEnvData = (envItem: typeof env) => {
-    if (!envItem) return null;
+  // If both have id, compare by id only
+  if (a.id && b.id) return a.id === b.id;
 
-    const { sys, osVer, db } = envItem;
+  // Otherwise compare shallow equality excluding id
+  return isEqual(omit(a, ['id']), omit(b, ['id']));
+}
+
+export function isSysMatch(env: Env, keyData: KeyData) {
+  const instance = keyData?.instanceData;
+  if (!env || !instance) return false;
+
+  const normalize = (item: Env | null | undefined) => {
+    if (!item) return null;
 
     return {
-      sys,
-      osVer,
-      db: matchById ? { id: db?.id } : omit(db, ['id']),
+      sys: item.sys ?? null,
+      osVer: item.osVer ?? null,
     };
   };
 
-  const a = normalizeEnvData(env);
-  const b = normalizeEnvData(keyData.instanceData as Env);
+  const a = normalize(env);
+  const b = normalize(instance as Env);
 
   return isEqual(a, b);
 }

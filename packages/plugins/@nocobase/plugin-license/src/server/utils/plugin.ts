@@ -74,10 +74,17 @@ export async function getPlugins({ keyData, ctx }: { keyData: KeyData; ctx: any 
       installed: true,
     });
   }
-  const list = sortBy(plugins, (plugin) => {
-    const statuses = ['unlicensed', 'trial', 'expired', 'suspended', 'revoked', 'invalid', 'pending', 'licensed'];
-    return `${statuses[plugin.status]}-${plugin.enabled ? 1 : 2}-${plugin.name}`;
-  });
+  const statusOrder = {
+    unlicensed: 0,
+    trial: 1,
+    expired: 2,
+    suspended: 3,
+    revoked: 4,
+    invalid: 5,
+    pending: 6,
+    licensed: 7,
+  };
+  const list = sortBy(plugins, (plugin) => [statusOrder[plugin.status] ?? 999, plugin.enabled ? 0 : 1, plugin.name]);
   licensedPlugins.forEach((p) => {
     const plugin = plugins.find((plugin) => plugin.packageName === p.packageName);
     if (!plugin) {
