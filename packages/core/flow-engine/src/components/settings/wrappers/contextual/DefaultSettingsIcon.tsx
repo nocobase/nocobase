@@ -605,7 +605,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             // 直接添加当前模型的flows
             flows.forEach(({ flow, steps }: FlowInfo) => {
               const groupKey = generateUniqueKey(`flow-group-${flow.key}`);
-
               items.push({
                 key: groupKey,
                 label: t(flow.title) || flow.key,
@@ -675,11 +674,12 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         type: 'divider',
       });
       // 使用分组呈现常用操作（不再使用分割线）
-      items.push({
-        key: 'common-actions',
-        // label: t('Common actions'),
-        type: 'group' as const,
-      });
+
+      // items.push({
+      //   key: 'common-actions',
+      //   label: t('Common actions'),
+      //   type: 'group' as const,
+      // });
 
       // 添加复制uid按钮
       if (showCopyUidButton && model.uid) {
