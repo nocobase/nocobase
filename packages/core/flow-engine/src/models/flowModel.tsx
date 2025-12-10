@@ -679,7 +679,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
         }
       }
     }
-    // 发起重建配置菜单事件
+    // 发起配置修改事件
     this.emitter.emit('onStepParamsChanged');
   }
 

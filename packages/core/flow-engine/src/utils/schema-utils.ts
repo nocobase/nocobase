@@ -213,21 +213,11 @@ export async function shouldHideStepInSettings<TModel extends FlowModel = FlowMo
   if (!step) return true;
 
   // 优先使用 step.hideInSettings，其次回退到 action.hideInSettings
-  let hideInSettings = step.hideInSettings as
-    | boolean
-    | ((ctx: FlowRuntimeContext<TModel>) => boolean | Promise<boolean>)
-    | undefined;
+  let hideInSettings = step.hideInSettings;
 
   if (typeof hideInSettings === 'undefined' && step.use) {
-    try {
-      const action = model.getAction?.(step.use);
-      hideInSettings = action?.hideInSettings as
-        | boolean
-        | ((ctx: FlowRuntimeContext<TModel>) => boolean | Promise<boolean>)
-        | undefined;
-    } catch (error) {
-      console.warn(`Error resolving action '${step.use}' for hideInSettings:`, error);
-    }
+    const action = model.getAction?.(step.use);
+    hideInSettings = action?.hideInSettings;
   }
 
   if (typeof hideInSettings === 'function') {

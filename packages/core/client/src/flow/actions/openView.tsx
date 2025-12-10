@@ -16,7 +16,6 @@ import { onFieldValueChange } from '@formily/core';
 import { FlowPage } from '../FlowPage';
 import { VariableInput } from '@nocobase/flow-engine';
 import { RootPageModel } from '../models';
-import { FieldModel } from '../models/base/FieldModel';
 
 /**
  * 弹窗打开动作（openView）配置
@@ -440,11 +439,6 @@ export const openView = defineAction({
    * - 其他场景默认不隐藏，保持向后兼容。
    */
   hideInSettings: async (ctx: FlowModelContext) => {
-    // 仅对字段模型类（或其子类）应用 clickToOpen 关联逻辑
-    if (!ctx.model || !(ctx.model instanceof FieldModel)) {
-      return false;
-    }
-
     const clickToOpen = ctx.model.getStepParams?.('displayFieldSettings', 'clickToOpen')?.clickToOpen;
     return clickToOpen === false;
   },
