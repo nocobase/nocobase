@@ -262,6 +262,25 @@ DisplayPreviewFieldModel.registerFlow({
   steps: {
     size: {
       title: escapeT('Size'),
+      uiMode: {
+        type: 'select',
+        props: {
+          options: [
+            {
+              value: 300,
+              label: escapeT('Large'),
+            },
+            {
+              value: 100,
+              label: escapeT('Middle'),
+            },
+            {
+              value: 28,
+              label: escapeT('Small'),
+            },
+          ],
+        },
+      },
       uiSchema: (ctx) => {
         if (ctx.model.parent instanceof TableColumnModel) {
           return null;
@@ -298,6 +317,7 @@ DisplayPreviewFieldModel.registerFlow({
     },
     showFileName: {
       title: escapeT('Show file name'),
+      uiMode: 'switch',
       uiSchema: (ctx) => {
         if (ctx.model.parent instanceof TableColumnModel) {
           return null;
