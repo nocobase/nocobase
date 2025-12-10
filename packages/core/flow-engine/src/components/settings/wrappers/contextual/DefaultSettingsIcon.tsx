@@ -540,11 +540,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             const subModel: any = findSubModelByKey(model, stepInfo.modelKey);
             const targetModel = subModel || model;
             const stepParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || {};
-            console.log(uiMode, stepInfo);
             const itemProps = {
               getDefaultValue: async () => {
                 let defaultParams = await resolveDefaultParams(stepInfo.step.defaultParams, targetModel.context);
-
                 if (stepInfo.step.use) {
                   const action = targetModel.getAction?.(stepInfo.step.use);
                   defaultParams = await resolveDefaultParams(action.defaultParams, targetModel.context);
