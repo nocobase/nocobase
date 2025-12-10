@@ -72,6 +72,16 @@ export async function saveLicenseKey(licenseKey: string, ctx?: any) {
   }
 }
 
+export async function getLocalKeyData() {
+  const keyFile = path.resolve(process.cwd(), 'storage/.license/license-key');
+  try {
+    const key = (await fs.promises.readFile(keyFile, 'utf8')).trim();
+    return JSON.parse(keyDecrypt(key));
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function getKey(ctx?: Context): Promise<string> {
   let key: string | undefined;
   const keyFile = path.resolve(process.cwd(), 'storage/.license/license-key');
@@ -144,7 +154,6 @@ export async function getLicenseStatus(keyData: KeyData): Promise<'active' | 'in
       },
       headers: keyData?.service?.headers || {},
     });
-    console.log('data', data);
     if (data?.status === 'active') {
       return 'active';
     } else {
