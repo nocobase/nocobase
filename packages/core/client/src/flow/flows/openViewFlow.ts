@@ -19,6 +19,9 @@ export const openViewFlow = defineFlow<FlowModel>({
       use: 'openView',
       hideInSettings: async (ctx) => {
         const clickToOpen = ctx.model.getStepParams?.('displayFieldSettings', 'clickToOpen')?.clickToOpen;
+        if (!ctx.collectionField) {
+          return false;
+        }
         if (clickToOpen === undefined) {
           return !ctx.collectionField?.isAssociationField();
         }
