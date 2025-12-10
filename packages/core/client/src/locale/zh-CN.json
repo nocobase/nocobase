@@ -727,7 +727,7 @@
   "Italic": "斜体",
   "Junction collection": "中间表",
   "Kanban": "看板",
-  "Label": "标签",
+  "Label": "字段名称",
   "Label align": "字段标题对齐方式",
   "Label field": "标题字段",
   "Label width": "字段标题宽度",
@@ -1210,7 +1210,7 @@
   "Show date range": "显示日期范围",
   "Show file name": "显示文件名",
   "Show in menu": "在菜单中显示",
-  "Show label": "显示标签",
+  "Show label": "显示字段名称",
   "Show lunar": "展示农历",
   "Show message": "显示消息",
   "Show notification": "显示通知",
@@ -1360,7 +1360,7 @@
   "This year": "今年",
   "Through collection": "中间数据表",
   "Time": "时间",
-  "Time format": "时间格式",
+  "Time format": "时间显示格式",
   "Time scale": "时间缩放等级",
   "Timeout config": "超时配置",
   "Timestamp": "时间戳",
@@ -1543,5 +1543,6 @@
   "≥": "≥",
   "Sub-table settings": "子表格设置",
   "Sub-form settings": "子表单设置",
-  "Content overflow ellipsis": "内容超出省略"
+  "Content overflow ellipsis": "内容超出省略",
+  "Number format":"数字显示格式"
 }

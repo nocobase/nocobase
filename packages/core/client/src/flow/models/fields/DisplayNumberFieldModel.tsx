@@ -228,7 +228,7 @@ DisplayNumberFieldModel.registerFlow({
   title: tExpr('Number settings'),
   steps: {
     format: {
-      title: tExpr('Format'),
+      title: tExpr('Number format'),
       uiSchema: (ctx) => {
         return {
           formatStyle: {
