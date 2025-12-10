@@ -26,7 +26,7 @@ import {
 } from '@nocobase/client';
 import { str2moment } from '@nocobase/utils/client';
 
-import { DownOutlined, ExclamationCircleFilled, StopOutlined } from '@ant-design/icons';
+import { DownOutlined, ExclamationCircleFilled, StopOutlined, ReloadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import WorkflowPlugin from '.';
 import { CanvasContent } from './CanvasContent';
@@ -46,6 +46,9 @@ function attachJobs(nodes, jobs: any[] = []): void {
   });
   jobs.forEach((item) => {
     const node = nodesMap.get(item.nodeId);
+    if (!node) {
+      return;
+    }
     node.jobs.push(item);
     item.node = {
       id: node.id,
@@ -154,54 +157,67 @@ function ExecutionsDropdown(props) {
   const apiClient = useAPIClient();
   const navigate = useNavigate();
   const { styles } = useStyles();
+  const { refresh } = useResourceActionContext();
   const [executionsBefore, setExecutionsBefore] = useState([]);
   const [executionsAfter, setExecutionsAfter] = useState([]);
+  const [loadedBeforeById, setLoadedBeforeById] = useState(null);
+  const [loadedAfterById, setLoadedAfterById] = useState(null);
+  const [lastLoadedAt, setLastLoadedAt] = useState(null);
 
-  useEffect(() => {
-    if (!execution) {
-      return;
-    }
-    apiClient
-      .resource('executions')
-      .list({
-        filter: {
-          key: execution.key,
-          id: {
-            $lt: execution.id,
-          },
-        },
-        sort: '-createdAt',
-        pageSize: 10,
-        fields: ['id', 'status', 'createdAt'],
-      })
-      .then(({ data }) => {
-        setExecutionsBefore(data.data);
-      })
-      .catch(() => {});
-  }, [execution.id]);
+  const loadPrevAndNext = useCallback(
+    (visible) => {
+      if (!execution || !visible) {
+        return;
+      }
 
-  useEffect(() => {
-    if (!execution) {
-      return;
-    }
-    apiClient
-      .resource('executions')
-      .list({
-        filter: {
-          key: execution.key,
-          id: {
-            $gt: execution.id,
-          },
-        },
-        sort: 'createdAt',
-        pageSize: 10,
-        fields: ['id', 'status', 'createdAt'],
-      })
-      .then(({ data }) => {
-        setExecutionsAfter(data.data.reverse());
-      })
-      .catch(() => {});
-  }, [execution.id]);
+      if (loadedBeforeById !== execution.id) {
+        apiClient
+          .resource('executions')
+          .list({
+            filter: {
+              key: execution.key,
+              id: {
+                $lt: execution.id,
+              },
+            },
+            sort: '-id',
+            pageSize: 10,
+            fields: ['id', 'status', 'createdAt'],
+          })
+          .then(({ data }) => {
+            setLoadedBeforeById(execution.id);
+            setExecutionsBefore(data.data);
+          })
+          .catch(() => {});
+      }
+
+      if (
+        loadedAfterById !== execution.id ||
+        (lastLoadedAt && Date.now() - Number(lastLoadedAt) > 60_000 && executionsAfter.length < 10)
+      ) {
+        apiClient
+          .resource('executions')
+          .list({
+            filter: {
+              key: execution.key,
+              id: {
+                $gt: execution.id,
+              },
+            },
+            sort: 'id',
+            pageSize: 10,
+            fields: ['id', 'status', 'createdAt'],
+          })
+          .then(({ data }) => {
+            setLoadedAfterById(execution.id);
+            setLastLoadedAt(Date.now());
+            setExecutionsAfter(data.data.reverse());
+          })
+          .catch(() => {});
+      }
+    },
+    [execution, loadedBeforeById, loadedAfterById, lastLoadedAt, executionsAfter.length, apiClient],
+  );
 
   const onClick = useCallback(
     ({ key }) => {
@@ -209,38 +225,42 @@ function ExecutionsDropdown(props) {
         navigate(getWorkflowExecutionsPath(key));
       }
     },
-    [execution.id],
+    [execution.id, navigate],
   );
 
   return execution ? (
-    <Dropdown
-      menu={{
-        onClick,
-        defaultSelectedKeys: [`${execution.id}`],
-        className: cx(styles.dropdownClass, styles.executionsDropdownRowClass),
-        items: [...executionsAfter, execution, ...executionsBefore].map((item) => {
-          return {
-            key: item.id,
-            label: (
-              <>
-                <span className="id">{`#${item.id}`}</span>
-                <time>{str2moment(item.createdAt).format('YYYY-MM-DD HH:mm:ss')}</time>
-              </>
-            ),
-            icon: (
-              <span>
-                <StatusButton statusMap={ExecutionStatusOptionsMap} status={item.status} />
-              </span>
-            ),
-          };
-        }),
-      }}
-    >
-      <Space>
-        <strong>{`#${execution.id}`}</strong>
-        <DownOutlined />
-      </Space>
-    </Dropdown>
+    <Space>
+      <Dropdown
+        onOpenChange={loadPrevAndNext}
+        menu={{
+          onClick,
+          defaultSelectedKeys: [`${execution.id}`],
+          className: cx(styles.dropdownClass, styles.executionsDropdownRowClass),
+          items: [...executionsAfter, execution, ...executionsBefore].map((item) => {
+            return {
+              key: item.id,
+              label: (
+                <>
+                  <span className="id">{`#${item.id}`}</span>
+                  <time>{str2moment(item.createdAt).format('YYYY-MM-DD HH:mm:ss')}</time>
+                </>
+              ),
+              icon: (
+                <span>
+                  <StatusButton statusMap={ExecutionStatusOptionsMap} status={item.status} />
+                </span>
+              ),
+            };
+          }),
+        }}
+      >
+        <Space>
+          <strong>{`#${execution.id}`}</strong>
+          <DownOutlined />
+        </Space>
+      </Dropdown>
+      <Button type="link" size="small" icon={<ReloadOutlined />} onClick={refresh} />
+    </Space>
   ) : null;
 }
 

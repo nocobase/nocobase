@@ -8,7 +8,7 @@
  */
 
 import { EyeOutlined } from '@ant-design/icons';
-import { DetailsItemModel, FieldModel, TableColumnModel, matchMimetype } from '@nocobase/client';
+import { DetailsItemModel, FieldModel, TableColumnModel, matchMimetype, css } from '@nocobase/client';
 import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
 import {
@@ -95,18 +95,27 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
 
   const fallback = fallbackMap[ext] || fallbackMap.default;
   const imageNode = (
-    <Image
-      src={src}
-      fallback={fallback}
-      width={size}
-      height={size}
-      preview={{ mask: <EyeOutlined /> }}
-      style={{
-        borderRadius: 4,
-        objectFit: 'cover',
-        boxShadow: '0 0 0 2px #fff',
-      }}
-    />
+    <div
+      className={css`
+        .ant-image-img {
+          border: 1px solid #d9d9d9;
+          padding: 2px;
+        }
+      `}
+    >
+      <Image
+        src={src}
+        fallback={fallback}
+        width={size}
+        height={size}
+        preview={{ mask: <EyeOutlined /> }}
+        style={{
+          borderRadius: 4,
+          objectFit: 'cover',
+          boxShadow: '0 0 0 2px #fff',
+        }}
+      />
+    </div>
   );
   return (
     <div style={{ textAlign: 'center', width: size, wordBreak: 'break-all' }}>
@@ -135,7 +144,6 @@ const Preview = (props) => {
   const { value = [], size = 28, showFileName } = props;
   const [current, setCurrent] = React.useState(0);
   const { t } = useTranslation();
-
   const onDownload = () => {
     const url = value[current].url || value[current];
     const suffix = url.slice(url.lastIndexOf('.'));
@@ -178,7 +186,6 @@ const Preview = (props) => {
           </Space>
         ),
         onChange: (index) => {
-          console.log(index);
           setCurrent(index);
         },
         imageRender: (originalNode, info) => {
@@ -235,7 +242,7 @@ export class DisplayPreviewFieldModel extends FieldModel {
       return castArray(value).flatMap((v, idx) => {
         const result = v?.[titleField];
         const content = result ? (
-          <Preview key={idx} {...this.props} value={castArray(result)} />
+          <Preview key={idx} {...this.props} value={castArray(result).filter(Boolean)} />
         ) : (
           <span key={idx}>N/A</span>
         );
@@ -243,7 +250,7 @@ export class DisplayPreviewFieldModel extends FieldModel {
         return idx === 0 ? [content] : [<span key={`sep-${idx}`}>, </span>, content];
       });
     } else {
-      return <Preview {...this.props} value={castArray(value)} />;
+      return <Preview {...this.props} value={castArray(value).filter(Boolean)} />;
     }
   }
 }

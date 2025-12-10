@@ -86,8 +86,9 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
       get: () => index,
     });
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
     return (
-      <Card bordered={false} role="button" aria-label="grid-card-item">
+      <Card role="button">
         <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
           <FlowModelRenderer model={grid as any} showFlowSettings={false} />
         </FormComponent>
@@ -104,6 +105,9 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
               >
                 {this.mapSubModels('actions', (action) => {
                   const fork = action.createFork({}, `${index}`);
+                  if (fork.hidden && !isConfigMode) {
+                    return;
+                  }
                   const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
                     () => (fork.context as any).collection,
                     fork.context.t('Current record'),

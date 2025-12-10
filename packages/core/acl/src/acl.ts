@@ -16,9 +16,9 @@ import { ACLAvailableAction, AvailableActionOptions } from './acl-available-acti
 import { ACLAvailableStrategy, AvailableStrategyOptions, predicate } from './acl-available-strategy';
 import { ACLRole, ResourceActionsOptions, RoleActionParams } from './acl-role';
 import { AllowManager, ConditionFunc } from './allow-manager';
+import { NoPermissionError } from './errors/no-permission-error';
 import FixedParamsManager, { Merger } from './fixed-params-manager';
 import SnippetManager, { SnippetOptions } from './snippet-manager';
-import { NoPermissionError } from './errors/no-permission-error';
 import { mergeAclActionParams, removeEmptyParams } from './utils';
 
 interface CanResult {
@@ -336,6 +336,10 @@ export class ACL extends EventEmitter {
    * @deprecated
    */
   skip(resourceName: string, actionNames: string[] | string, condition?: string | ConditionFunc) {
+    if (!condition) {
+      condition = 'public';
+    }
+
     if (!Array.isArray(actionNames)) {
       actionNames = [actionNames];
     }

@@ -56,31 +56,33 @@ module.exports = (cli) => {
         await downloadPro();
       }
 
-      const watcher = chokidar.watch('./storage/plugins/**/*', {
-        cwd: process.cwd(),
-        ignoreInitial: true,
-        ignored: /(^|[\/\\])\../, // 忽略隐藏文件
-        persistent: true,
-        depth: 1, // 只监听第一层目录
-      });
+      if (process.env.NO_WATCH_PLUGINS === true || process.env.NO_WATCH_PLUGINS === 'true') {
+        const restart = _.debounce(async () => {
+          console.log('restarting...');
+          await run('yarn', ['nocobase', 'pm2-restart']);
+        }, 500);
 
-      const restart = _.debounce(async () => {
-        console.log('restarting...');
-        await run('yarn', ['nocobase', 'pm2-restart']);
-      }, 500);
-
-      watcher
-        .on('ready', () => {
-          isReady = true;
-        })
-        .on('addDir', async (pathname) => {
-          if (!isReady) return;
-          restart();
-        })
-        .on('unlinkDir', async (pathname) => {
-          if (!isReady) return;
-          restart();
+        const watcher = chokidar.watch('./storage/plugins/**/*', {
+          cwd: process.cwd(),
+          ignoreInitial: true,
+          ignored: /(^|[\/\\])\../, // 忽略隐藏文件
+          persistent: true,
+          depth: 1, // 只监听第一层目录
         });
+
+        watcher
+          .on('ready', () => {
+            isReady = true;
+          })
+          .on('addDir', async (pathname) => {
+            if (!isReady) return;
+            restart();
+          })
+          .on('unlinkDir', async (pathname) => {
+            if (!isReady) return;
+            restart();
+          });
+      }
 
       if (opts.port) {
         process.env.APP_PORT = opts.port;

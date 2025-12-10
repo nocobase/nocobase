@@ -12,10 +12,10 @@ import React from 'react';
 import { ClickableFieldModel } from './ClickableFieldModel';
 
 export class DisplayTextFieldModel extends ClickableFieldModel {
-  public renderComponent(value) {
+  public renderComponent(value, wrap) {
     const { prefix, suffix, overflowMode } = this.props;
     return (
-      <span style={{ whiteSpace: overflowMode === 'wrap' ? 'pre-line' : 'nowrap' }}>
+      <span style={{ whiteSpace: overflowMode === 'wrap' || wrap ? 'pre-line' : 'nowrap' }}>
         {prefix}
         {this.translate(value)}
         {suffix}

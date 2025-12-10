@@ -19,7 +19,7 @@ import { Empty } from 'antd';
 import _, { debounce } from 'lodash';
 import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
-import { getAllDataModels } from '../filter-manager/utils';
+import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
 
 const getModelFields = async (model: CollectionBlockModel) => {
@@ -27,7 +27,13 @@ const getModelFields = async (model: CollectionBlockModel) => {
   const fields = (await model?.getFilterFields?.()) || [];
   return fields
     .map((field: any) => {
-      const binding = FilterableItemModel.getDefaultBindingByField(model.context, field);
+      // 为筛选场景创建新的上下文实例，委托到原 context 并补充 flags
+      const ctxWithFlags = new FlowModelContext(model);
+      ctxWithFlags.addDelegate(model.context);
+      ctxWithFlags.defineProperty('flags', {
+        value: { ...model.context?.flags, isInFilterFormBlock: true },
+      });
+      const binding = FilterableItemModel.getDefaultBindingByField(ctxWithFlags, field);
       if (!binding) {
         return;
       }
@@ -49,9 +55,6 @@ const getModelFields = async (model: CollectionBlockModel) => {
               },
             },
             filterFormItemSettings: {
-              label: {
-                label: field.title,
-              },
               init: {
                 filterField: _.pick(field, ['name', 'title', 'interface', 'type']),
                 defaultTargetUid: model.uid,
@@ -148,6 +151,19 @@ export class FilterFormItemModel extends FilterableItemModel<{
     return this.getStepParams('filterFormItemSettings', 'init').defaultTargetUid;
   }
 
+  private getCurrentOperatorMeta() {
+    const operator = getDefaultOperator(this);
+    if (!operator) return null;
+
+    const operatorList = this.collectionField?.filterable?.operators;
+
+    if (!Array.isArray(operatorList)) {
+      return null;
+    }
+
+    return operatorList.find((op) => op.value === operator) || null;
+  }
+
   onInit(options) {
     super.onInit(options);
     // 创建防抖的 doFilter 方法，延迟 300ms
@@ -173,6 +189,11 @@ export class FilterFormItemModel extends FilterableItemModel<{
    * @returns
    */
   getFilterValue() {
+    const operatorMeta = this.getCurrentOperatorMeta();
+    if (operatorMeta?.noValue) {
+      return true;
+    }
+
     if (this.subModels.field.getFilterValue) {
       return this.subModels.field.getFilterValue();
     }
@@ -256,7 +277,11 @@ FilterFormItemModel.registerFlow({
       async handler(ctx, params) {
         const collectionField = ctx.model.collectionField;
         if (collectionField?.getComponentProps) {
-          ctx.model.setProps(collectionField.getComponentProps());
+          const componentProps = collectionField.getComponentProps();
+          const { rules, required, ...restProps } = componentProps || {};
+
+          // 筛选表单不继承字段的后端校验
+          ctx.model.setProps({ ...restProps, rules: undefined, required: undefined });
         }
         ctx.model.setProps({
           name: `${ctx.model.fieldPath}_${ctx.model.uid}`, // 确保每个字段的名称唯一
@@ -350,6 +375,12 @@ FilterFormItemModel.registerFlow({
     },
     defaultOperator: {
       use: 'defaultOperator',
+    },
+    operatorComponentProps: {
+      use: 'operatorComponentProps',
+    },
+    customizeFilterRender: {
+      use: 'customizeFilterRender',
     },
   },
 });

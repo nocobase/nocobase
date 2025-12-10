@@ -386,6 +386,24 @@ describe('FilterManager.bindToTarget', () => {
       expect(mockTargetModel.resource.addFilterGroup).not.toHaveBeenCalled();
     });
 
+    it('should call removeFilterGroup when filter value array only contains empty values', async () => {
+      mockFilterModel.getFilterValue.mockReturnValue(['', '']);
+
+      const filterConfig = {
+        filterId: 'filter-1',
+        targetId: 'target-model-uid',
+        filterPaths: ['range'],
+        operator: '$dateBetween',
+      };
+      await filterManager.addFilterConfig(filterConfig);
+
+      filterManager.bindToTarget('target-model-uid');
+
+      expect(mockFilterModel.getFilterValue).toHaveBeenCalled();
+      expect(mockTargetModel.resource.removeFilterGroup).toHaveBeenCalledWith('filter-1');
+      expect(mockTargetModel.resource.addFilterGroup).not.toHaveBeenCalled();
+    });
+
     it('should not call removeFilterGroup for non-empty object', async () => {
       mockFilterModel.getFilterValue.mockReturnValue({ key: 'value' });
 
