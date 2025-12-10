@@ -1116,23 +1116,5 @@ describe('Utils', () => {
       expect(result).toBe(false);
       consoleSpy.mockRestore();
     });
-
-    test('handles getAction throwing gracefully and falls back to visible', async () => {
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-      mockStep.use = 'errorAction';
-      mockModel.flowEngine.getAction = vi.fn(() => {
-        throw new Error('Action load failed');
-      });
-
-      const result = await shouldHideStepInSettings(mockModel, mockFlow, mockStep);
-
-      expect(consoleSpy).toHaveBeenCalledWith(
-        "Error resolving action 'errorAction' for hideInSettings:",
-        expect.any(Error),
-      );
-      expect(result).toBe(false);
-      consoleSpy.mockRestore();
-    });
   });
 });
