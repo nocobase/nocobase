@@ -14,6 +14,7 @@ import { useAsyncEffect } from 'ahooks';
 import { useT } from './locale';
 import { CopyOutlined } from '@ant-design/icons';
 import { LicenseValidate } from './LicenseValidate';
+import { useForm } from '@formily/react';
 
 const copyTextToClipboard = ({
   text,
@@ -100,6 +101,7 @@ const useSubmitProps = () => {
   const api = useAPIClient();
   const [loading, setLoading] = useState(false);
   const ctx = useFormBlockContext();
+  const form = useForm();
   const t = useT();
 
   const saveLicenseKey = async (licenseKey: string) => {
@@ -113,41 +115,63 @@ const useSubmitProps = () => {
         },
       });
       setLoading(false);
+
       const licenseValidateResult: any = res?.data?.data || {};
-      if (!licenseValidateResult.envMatch) {
+
+      if (licenseValidateResult.keyStatus === 'invalid') {
         Modal.error({
-          title: t('Environment mismatch'),
+          title: t('Invalid license key.'),
+          content: t('The license key is invalid. Please visit the NocoBase Service to obtain a new license key.'),
+        });
+        return;
+      }
+      if (licenseValidateResult.licenseStatus === 'invalid') {
+        Modal.error({
+          title: t('Invalid license key.'),
+          content: t(
+            'The current license key has been deprecated. Please visit the NocoBase Service to obtain a new license key.',
+          ),
+        });
+        return;
+      }
+
+      if (licenseValidateResult.envMatch === false) {
+        Modal.error({
+          title: t('Environment mismatch.'),
           content: (
             <>
-              {t(
-                'The licensed environment does not match the current environment. Please go to NocoBase Service to obtain a new license key.',
+              {licenseValidateResult.dbMatch === false && licenseValidateResult.sysMatch === false && (
+                <>
+                  {t(
+                    'The current system and database do not match the licensed environment. Please use the new InstanceID to request a new license key.',
+                  )}
+                </>
               )}
-              <br />
-              {t('Current environment')}:
-              <ul style={{ margin: 0 }}>
-                <li>
-                  {t('System')}:{' '}
-                  <strong>
-                    {licenseValidateResult?.current?.env?.sys} {licenseValidateResult?.current?.env?.osVer}
-                  </strong>
-                </li>
-                <li>
-                  {t('Database')}:{' '}
-                  <strong>
-                    {licenseValidateResult?.current?.env?.db?.type} ({licenseValidateResult?.current?.env?.db?.name})
-                  </strong>
-                </li>
-              </ul>
+              {licenseValidateResult.dbMatch === true && licenseValidateResult.sysMatch === false && (
+                <>
+                  {t(
+                    'The current system does not match the licensed system. Please use the new InstanceID to request a new license key.',
+                  )}
+                </>
+              )}
+              {licenseValidateResult.dbMatch === false && licenseValidateResult.sysMatch === true && (
+                <>
+                  {t(
+                    'The current database does not match the licensed database. Please use the new InstanceID to request a new license key.',
+                  )}
+                </>
+              )}
             </>
           ),
         });
         return;
       }
-      if (!licenseValidateResult.domainMatch) {
+
+      if (licenseValidateResult.domainMatch === false) {
         Modal.error({
-          title: t('Domain mismatch'),
+          title: t('Domain mismatch.'),
           content: t(
-            'The licensed domain does not match the current domain {{domain}}. Please go to NocoBase Service to obtain a new license key.',
+            'The current domain ({{domain}}) does not match the licensed domain. Please use the current domain to request a new license key.',
             {
               domain: licenseValidateResult.current.domain,
               interpolation: { escapeValue: false },
@@ -156,41 +180,30 @@ const useSubmitProps = () => {
         });
         return;
       }
-      if (licenseValidateResult.isServiceConnection === false) {
+
+      if (licenseValidateResult.isExpired === true) {
         message.success(t('The license key was saved successfully'), 5);
-        message.warning(
-          t(
-            'Due to network issues, the license key cannot be updated automatically. Please update it manually if needed.',
+        Modal.warning({
+          title: t('The license has exceeded the upgrade validity period.'),
+          content: t(
+            'Plugins bound to this license can still be used but cannot be upgraded. To upgrade, please renew or repurchase the license.',
           ),
-          5,
-        );
+        });
         return;
       }
-      if (licenseValidateResult.isPkgConnection === false) {
-        message.success(t('The license key was saved successfully'), 5);
-        message.warning(
-          t(
-            'The current environment cannot connect to NocoBase Pkg. To install plugins, please refer to the NocoBase Service documentation and upload the plugin manually.',
-          ),
-          5,
-        );
-        return;
-      }
+
       if (licenseValidateResult.isPkgLogin === false) {
         message.success(t('The license key was saved successfully'), 5);
-        message.warning(
-          t(
-            'The current key cannot be used to log in to NocoBase Pkg. To install plugins, please refer to the NocoBase Service documentation and upload the plugin manually.',
+        Modal.warning({
+          title: t('Network error.'),
+          content: t(
+            'Due to network issues, plugins cannot be updated automatically (they are still usable). To update plugins, please check your network connection or refer to the NocoBase Service documentation to upload plugins manually.',
           ),
-          5,
-        );
+        });
         return;
       }
-      message.success(
-        t(
-          'The license key was saved successfully. To install commercial plugins, please restart the NocoBase service.',
-        ),
-      );
+
+      message.success(t('License key saved successfully. Please retry the plugin installation.'));
     } catch (e) {
       setLoading(false);
     }
@@ -199,8 +212,8 @@ const useSubmitProps = () => {
   return {
     loading,
     onClick: async () => {
-      await ctx.form?.validate();
-      const licenseKey = ctx.form?.values?.licenseKey;
+      await form?.validate();
+      const licenseKey = form.values?.licenseKey;
       await saveLicenseKey(licenseKey);
     },
   };
@@ -210,6 +223,7 @@ const TextArea = (props) => {
   const [isExists, setIsExists] = useState(false);
   const api = useAPIClient();
   const ctx = useFormBlockContext();
+  const form = useForm();
   const t = useT();
   useAsyncEffect(async () => {
     const res = await api.request({
@@ -217,7 +231,7 @@ const TextArea = (props) => {
       method: 'GET',
     });
     if (res?.data?.data) {
-      ctx.form?.setFieldState('footer', (state) => {
+      form?.setFieldState('footer', (state) => {
         state.visible = false;
       });
     }
@@ -231,7 +245,7 @@ const TextArea = (props) => {
         <Button
           onClick={() => {
             setIsExists(false);
-            ctx.form?.setFieldState('footer', (state) => {
+            form?.setFieldState('footer', (state) => {
               state.visible = true;
             });
           }}
@@ -249,16 +263,10 @@ export default function LicenseSetting() {
 
   const createLabelSchema = {
     type: 'void',
-    'x-decorator': 'FormBlockProvider',
-    'x-decorator-props': {
-      dataSource: 'main',
-      collection: 'users',
-    },
+    'x-decorator': 'Form',
     properties: {
       form: {
         type: 'void',
-        'x-component': 'FormV2',
-        'x-use-component-props': 'useFormBlockProps',
         properties: {
           label: {
             type: 'string',
@@ -301,6 +309,7 @@ export default function LicenseSetting() {
 
   return (
     <Card bordered={false}>
+      <LicenseValidate />
       <SchemaComponent
         scope={{ useSubmitProps }}
         components={{ InstanceId, TextArea }}
@@ -311,7 +320,17 @@ export default function LicenseSetting() {
           },
         }}
       />
-      <LicenseValidate />
+      <SchemaComponent
+        schema={{
+          type: 'void',
+          properties: {
+            card: {
+              type: 'void',
+              'x-component': 'LicenseCard',
+            },
+          },
+        }}
+      />
     </Card>
   );
 }
