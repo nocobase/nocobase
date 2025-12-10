@@ -29,6 +29,10 @@ export class NodeValueModel extends BlockModel {
   }
 }
 
+NodeValueModel.define({
+  hide: true,
+});
+
 function Result({ dataSource, execution, defaultValue }) {
   if (!execution) {
     return defaultValue;
