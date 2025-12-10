@@ -18,8 +18,16 @@ export const overflowMode = defineAction({
     return { overflowMode: ctx.model.parent instanceof TableColumnModel ? true : false };
   },
   handler(ctx, params) {
+    let boolValue: boolean;
+
+    if (typeof params?.overflowMode === 'string') {
+      boolValue = params.overflowMode === 'ellipsis';
+    } else {
+      boolValue = !!params?.overflowMode;
+    }
+
     ctx.model.setProps({
-      overflowMode: params.overflowMode ? 'ellipsis' : 'wrap',
+      overflowMode: boolValue ? 'ellipsis' : 'wrap',
     });
   },
 });
