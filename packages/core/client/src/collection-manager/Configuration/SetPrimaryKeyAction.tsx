@@ -22,8 +22,6 @@ import * as components from './components';
 import { isPrimaryKeyCandidate, useFieldInterfaceOptions } from './interfaces';
 import { ItemType } from 'antd/es/menu/interface';
 
-export const ID_FIELD = 'id';
-
 const getSchema = (schema: CollectionFieldInterface, values, compile) => {
   if (!schema) {
     return;
@@ -31,13 +29,21 @@ const getSchema = (schema: CollectionFieldInterface, values, compile) => {
 
   const properties = schema.getConfigureFormProperties();
 
-  const defaults = cloneDeep(schema.default);
-  defaults.uiSchema.title = compile(values?.uiSchema?.title ?? 'ID');
-  defaults.description = compile(values?.description ?? '');
-  defaults.primaryKey = true;
+  const defaults = {
+    ...cloneDeep(schema.default),
+    ...cloneDeep(values),
+  };
+  if (defaults.uiSchema?.title) {
+    defaults.uiSchema.title = compile(defaults.uiSchema.title ?? 'ID');
+  }
+  if (defaults.description) {
+    defaults.description = compile(defaults.description ?? '');
+  }
+
   const initialValue: any = {
-    name: ID_FIELD,
+    name: values?.name ?? 'id',
     ...defaults,
+    primaryKey: true,
     interface: schema.name,
   };
 

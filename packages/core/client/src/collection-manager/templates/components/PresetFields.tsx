@@ -13,7 +13,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager_deprecated } from '../../';
 import { useCompile, useApp } from '../../../';
-import { SetPrimaryKeyAction, ID_FIELD } from '../../Configuration/SetPrimaryKeyAction';
+import { SetPrimaryKeyAction } from '../../Configuration/SetPrimaryKeyAction';
 import { DownOutlined, SettingOutlined } from '@ant-design/icons';
 
 const getDefaultCollectionFields = (presetFields, values, collectionPresetFields) => {
@@ -44,14 +44,13 @@ export const PresetFields = observer(
     const collectionPresetFields = mainDataSourcePlugin.getCollectionPresetFields();
 
     const [presetFieldsDataSource, setPresetFieldsDataSource] = useState(
-      collectionPresetFields.map((v) => {
-        return {
-          field: v.value.uiSchema.title,
-          interface: v.value.interface,
-          description: v.description,
-          name: v.value.name,
-        };
-      }),
+      collectionPresetFields.map(({ value, description }) => ({
+        field: value.uiSchema.title,
+        interface: value.interface,
+        description: description,
+        name: value.name,
+        primaryKey: value.primaryKey,
+      })),
     );
 
     const primaryKeyCandidateRef = useRef(null);
@@ -61,7 +60,8 @@ export const PresetFields = observer(
 
     const applyPrimaryKeyCandidate = () => {
       const primaryKeyCandidate = primaryKeyCandidateRef.current;
-      if (!selectedRowKeys.includes(ID_FIELD) || !primaryKeyCandidate) {
+      const [pk] = presetFieldsDataSource.filter((v) => v.primaryKey === true);
+      if (!pk || !selectedRowKeys.includes(pk.name) || !primaryKeyCandidate) {
         return;
       }
 
@@ -69,8 +69,8 @@ export const PresetFields = observer(
       if (!fields?.length) {
         return;
       }
-      const [idField] = fields.filter((x) => x.name === ID_FIELD);
-      const restFields = fields.filter((x) => x.name !== ID_FIELD);
+      const [idField] = fields.filter((x) => x.primaryKey === true);
+      const restFields = fields.filter((x) => !x.primaryKey);
       if (!idField) {
         return;
       }
@@ -80,7 +80,6 @@ export const PresetFields = observer(
         fields: [
           {
             ...primaryKeyCandidate,
-            name: ID_FIELD,
           },
           ...restFields,
         ],
@@ -90,9 +89,10 @@ export const PresetFields = observer(
 
     const onSetPrimaryKey = (values) => {
       primaryKeyCandidateRef.current = values;
+      console.log(values);
       applyPrimaryKeyCandidate();
       setPresetFieldsDataSource((prev) => {
-        const idFieldIndex = prev.findIndex((x) => x.name === ID_FIELD);
+        const idFieldIndex = prev.findIndex((x) => x.primaryKey === true);
         if (idFieldIndex === -1) {
           return prev;
         }
@@ -100,7 +100,8 @@ export const PresetFields = observer(
           field: values.uiSchema.title,
           interface: values.interface,
           description: values.description,
-          name: ID_FIELD,
+          name: values.name,
+          primaryKey: values.primaryKey,
         };
         return [...prev];
       });
@@ -118,7 +119,7 @@ export const PresetFields = observer(
         dataIndex: 'interface',
         key: 'interface',
         render: (value, record) =>
-          record.name === ID_FIELD ? (
+          record['primaryKey'] === true ? (
             <SetPrimaryKeyAction
               template={props.template}
               onSetPrimaryKey={onSetPrimaryKey}
