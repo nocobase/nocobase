@@ -325,20 +325,11 @@ SubFormListFieldModel.define({
 SubFormListFieldModel.registerFlow({
   key: 'subFormListSettings',
   title: tExpr('Sub-form settings'),
-  sort: 800,
+  sort: 200,
   steps: {
     allowAddNew: {
       title: tExpr('Allow add new data'),
-      uiSchema: {
-        allowAddNew: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
+      uiMode: 'switch',
       defaultParams: {
         allowAddNew: true,
       },
@@ -348,45 +339,27 @@ SubFormListFieldModel.registerFlow({
         });
       },
     },
-    allowSelectExistingRecord: {
-      title: tExpr('Allow selection of existing records'),
-      uiSchema: {
-        allowSelectExistingRecord: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
-      defaultParams: {
-        allowSelectExistingRecord: false,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          allowSelectExistingRecord: params.allowSelectExistingRecord,
-        });
-      },
-    },
     allowDisassociation: {
       title: tExpr('Allow disassociation'),
-      uiSchema: {
-        allowDisassociation: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
+      uiMode: 'switch',
       defaultParams: {
         allowDisassociation: true,
       },
       handler(ctx, params) {
         ctx.model.setProps({
           allowDisassociation: params.allowDisassociation,
+        });
+      },
+    },
+    allowSelectExistingRecord: {
+      title: tExpr('Allow selection of existing records'),
+      uiMode: 'switch',
+      defaultParams: {
+        allowSelectExistingRecord: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowSelectExistingRecord: params.allowSelectExistingRecord,
         });
       },
     },
@@ -399,13 +372,16 @@ SubFormListFieldModel.registerFlow({
   on: {
     eventName: 'openView',
   },
+  sort: 300,
   steps: {
     openView: {
       title: tExpr('Edit popup'),
+      hideInSettings(ctx) {
+        const allowSelectExistingRecord = ctx.model.getStepParams?.('subFormListSettings', 'allowSelectExistingRecord')
+          ?.allowSelectExistingRecord;
+        return !allowSelectExistingRecord;
+      },
       uiSchema(ctx) {
-        if (!ctx.model.props.allowSelectExistingRecord) {
-          return;
-        }
         return {
           mode: {
             type: 'string',
