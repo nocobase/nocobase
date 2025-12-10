@@ -337,7 +337,7 @@ function WorkflowMenu() {
               role: 'button',
               'aria-label': 'refresh',
               key: 'refresh',
-              label: lang('Refresh'),
+              label: t('Refresh'),
             },
             {
               role: 'button',
