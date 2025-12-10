@@ -9,7 +9,7 @@
 
 import { EyeOutlined } from '@ant-design/icons';
 import { DetailsItemModel, FieldModel, TableColumnModel, matchMimetype, css } from '@nocobase/client';
-import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
+import { tExpr, DisplayItemModel } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
 import {
   DownloadOutlined,
@@ -258,53 +258,34 @@ export class DisplayPreviewFieldModel extends FieldModel {
 DisplayPreviewFieldModel.registerFlow({
   key: 'previewReadPrettySetting',
   sort: 500,
-  title: escapeT('Preview Settings'),
+  title: tExpr('Preview Settings'),
   steps: {
     size: {
-      title: escapeT('Size'),
-      uiMode: {
-        type: 'select',
-        props: {
-          options: [
-            {
-              value: 300,
-              label: escapeT('Large'),
-            },
-            {
-              value: 100,
-              label: escapeT('Middle'),
-            },
-            {
-              value: 28,
-              label: escapeT('Small'),
-            },
-          ],
-        },
-      },
-      uiSchema: (ctx) => {
-        if (ctx.model.parent instanceof TableColumnModel) {
-          return null;
-        }
+      title: tExpr('Size'),
+      uiMode: (ctx) => {
+        const t = ctx.t;
         return {
-          size: {
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: [
+          type: 'select',
+          props: {
+            options: [
               {
                 value: 300,
-                label: escapeT('Large'),
+                label: t('Large'),
               },
               {
                 value: 100,
-                label: escapeT('Middle'),
+                label: t('Middle'),
               },
               {
                 value: 28,
-                label: escapeT('Small'),
+                label: t('Small'),
               },
             ],
           },
         };
+      },
+      hideInSettings(ctx) {
+        return ctx.model.parent instanceof TableColumnModel;
       },
       defaultParams: (ctx) => {
         return {
@@ -316,18 +297,10 @@ DisplayPreviewFieldModel.registerFlow({
       },
     },
     showFileName: {
-      title: escapeT('Show file name'),
+      title: tExpr('Show file name'),
       uiMode: 'switch',
-      uiSchema: (ctx) => {
-        if (ctx.model.parent instanceof TableColumnModel) {
-          return null;
-        }
-        return {
-          showFileName: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-          },
-        };
+      hideInSettings(ctx) {
+        return ctx.model.parent instanceof TableColumnModel;
       },
       defaultParams: {
         showFileName: false,
@@ -340,7 +313,7 @@ DisplayPreviewFieldModel.registerFlow({
 });
 
 DisplayPreviewFieldModel.define({
-  label: escapeT('Preview'),
+  label: tExpr('Preview'),
 });
 
 DisplayItemModel.bindModelToInterface(
