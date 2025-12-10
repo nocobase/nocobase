@@ -273,12 +273,14 @@ DetailsItemModel.registerFlow({
           ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
         });
         const targetCollection = ctx.collectionField.targetCollection;
-        const targetCollectionField = targetCollection.getField(params.label);
-        const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
-        const use = binding.modelName;
-        const bindingUse = ctx.model.subModels.field.use;
-        if (use !== bindingUse) {
-          ctx.model.setStepParams(ctx.flowKey, 'model', { use: use });
+        if (targetCollection) {
+          const targetCollectionField = targetCollection.getField(params.label);
+          const binding = DisplayItemModel.getDefaultBindingByField(ctx, targetCollectionField);
+          const use = binding.modelName;
+          const bindingUse = ctx.model.subModels.field.use;
+          if (use !== bindingUse) {
+            ctx.model.setStepParams(ctx.flowKey, 'model', { use: use });
+          }
         }
       },
     },
