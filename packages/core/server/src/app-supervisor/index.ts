@@ -94,7 +94,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private isProcessCapableAdapter(adapter: any): adapter is AppProcessAdapter {
     return (
       adapter &&
-      typeof adapter.bootStrapApp === 'function' &&
+      typeof adapter.bootstrapApp === 'function' &&
       typeof adapter.addApp === 'function' &&
       typeof adapter.startApp === 'function'
     );
@@ -251,10 +251,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     AppSupervisor.instance = null;
   }
 
-  async getApp(appName: string, options: GetAppOptions = {}) {
-    return this.discoveryAdapter.getApp(appName, options);
-  }
-
   async getAppStatus(appName: string, defaultStatus?: AppStatus) {
     return this.discoveryAdapter.getAppStatus(appName, defaultStatus);
   }
@@ -284,38 +280,23 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return app;
   }
 
+  async getApp(appName: string, options: GetAppOptions = {}) {
+    return this.processAdapter.getApp(appName, options);
+  }
+
   hasApp(appName: string) {
     return this.processAdapter.hasApp(appName);
   }
 
-  async getAppsNames() {
-    return this.discoveryAdapter.getAppsNames();
-  }
-
-  async startApp(appName: string, commandOptions: CommandOptions = {}) {
-    if (this.processAdapter.supportsRemoteCommands) {
-      await this.dispatchCommand('start', appName, commandOptions);
-      return;
-    }
-
+  async startApp(appName: string) {
     await this.processAdapter.startApp(appName);
   }
 
-  async stopApp(appName: string, commandOptions: CommandOptions = {}) {
-    if (this.processAdapter.supportsRemoteCommands) {
-      await this.dispatchCommand('stop', appName, commandOptions);
-      return;
-    }
-
+  async stopApp(appName: string) {
     await this.processAdapter.stopApp(appName);
   }
 
-  async removeApp(appName: string, commandOptions: CommandOptions = {}) {
-    if (this.processAdapter.supportsRemoteCommands) {
-      await this.dispatchCommand('remove', appName, commandOptions);
-      return;
-    }
-
+  async removeApp(appName: string) {
     await this.processAdapter.removeApp(appName);
   }
 
@@ -323,8 +304,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.processAdapter.subApps();
   }
 
-  async bootStrapApp(appName: string, options = {}) {
-    await this.processAdapter.bootStrapApp(appName, options);
+  async bootstrapApp(appName: string, options = {}) {
+    await this.processAdapter.bootstrapApp(appName, options);
   }
 
   async registerEnvironment(environment: EnvironmentInfo) {

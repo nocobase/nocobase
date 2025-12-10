@@ -13,7 +13,7 @@ import lodash from 'lodash';
 import path from 'path';
 import { ApplicationModel } from '../server';
 import { Meter } from '@nocobase/telemetry';
-import { LegacyMemoryAdapter } from './adapters/legacy-memory-adapter';
+import { LegacyAdapter } from './adapters/legacy-adapter';
 
 export type AppDbCreator = (
   app: Application,
@@ -215,11 +215,11 @@ export class PluginMultiAppManagerServer extends Plugin {
   }
 
   protected static registerLegacyAdapter() {
-    const factory = ({ supervisor }) => new LegacyMemoryAdapter(supervisor);
-    AppSupervisor.registerDiscoveryAdapter('legacy-memory', factory);
-    AppSupervisor.registerProcessAdapter('legacy-memory', factory);
-    AppSupervisor.setDefaultDiscoveryAdapter('legacy-memory');
-    AppSupervisor.setDefaultProcessAdapter('legacy-memory');
+    const factory = ({ supervisor }) => new LegacyAdapter(supervisor);
+    AppSupervisor.registerDiscoveryAdapter('legacy', factory);
+    AppSupervisor.registerProcessAdapter('legacy', factory);
+    AppSupervisor.setDefaultDiscoveryAdapter('legacy');
+    AppSupervisor.setDefaultProcessAdapter('legacy');
   }
 
   static staticImport() {

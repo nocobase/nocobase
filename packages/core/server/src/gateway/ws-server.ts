@@ -85,7 +85,7 @@ export class WSServer extends EventEmitter {
 
         client.tags.add(`app#${handleAppName}`);
 
-        AppSupervisor.getInstance().bootStrapApp(handleAppName);
+        AppSupervisor.getInstance().bootstrapApp(handleAppName);
       });
     });
 

@@ -22,12 +22,12 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
 
   async getApp(appName: string, options: GetAppOptions = {}) {
     if (!options.withOutBootStrap) {
-      await this.bootStrapApp();
+      await this.bootstrapApp();
     }
     return this.app;
   }
 
-  async bootStrapApp() {
+  async bootstrapApp() {
     const status = this.getAppStatus('main');
     if (this.hasApp() && status && status !== 'preparing') {
       return;

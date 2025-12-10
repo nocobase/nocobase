@@ -9,11 +9,11 @@
 
 import { E_ALREADY_LOCKED, Mutex, tryAcquire } from 'async-mutex';
 import PQueue from 'p-queue';
-import Application, { AppSupervisor, MaintainingCommandStatus, getErrorLevel } from '@nocobase/server';
+import Application, { AppSupervisor } from '@nocobase/server';
 import type { AppDiscoveryAdapter, AppProcessAdapter, AppStatus, GetAppOptions } from '@nocobase/server';
 
-export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
-  public readonly name = 'legacy-memory';
+export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
+  public readonly name = 'legacy';
   public apps: Record<string, Application> = {};
   public lastSeenAt: Map<string, number> = new Map();
   public appErrors: Record<string, Error> = {};
@@ -91,7 +91,7 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
     }
   }
 
-  async bootStrapApp(appName: string, options = {}) {
+  async bootstrapApp(appName: string, options = {}) {
     const mutex = this.getMutexOfApp(appName);
     try {
       await tryAcquire(mutex).runExclusive(async () => {
@@ -142,10 +142,6 @@ export class LegacyMemoryAdapter implements AppDiscoveryAdapter, AppProcessAdapt
       void this.setAppStatus(app.name, 'preparing');
     }
     return app;
-  }
-
-  async getAppsNames() {
-    return Object.values(this.apps).map((app) => app.name);
   }
 
   subApps() {
