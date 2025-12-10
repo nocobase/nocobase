@@ -439,6 +439,11 @@ export const openView = defineAction({
    * - 其他场景默认不隐藏，保持向后兼容。
    */
   hideInSettings: async (ctx: FlowModelContext) => {
+    const displayFieldSettingsFlow = ctx.model.getFlow('displayFieldSettings');
+    if (!displayFieldSettingsFlow) {
+      // 没有 displayFieldSettings 这个flow，就直接显示该配置
+      return false;
+    }
     const clickToOpen = ctx.model.getStepParams?.('displayFieldSettings', 'clickToOpen')?.clickToOpen;
     if (clickToOpen === undefined) {
       return !ctx.collectionField?.isAssociationField();
