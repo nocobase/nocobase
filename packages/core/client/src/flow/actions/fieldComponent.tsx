@@ -45,7 +45,7 @@ export const fieldComponent = defineAction({
           options: classes.map((model) => {
             const m = ctx.engine.getModelClass(model.modelName);
             return {
-              label: m.meta?.label || model.modelName,
+              label: ctx.t(m.meta?.label || model.modelName),
               value: model.modelName,
             };
           }),

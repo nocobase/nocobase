@@ -137,7 +137,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
 }
 
 SubTableFieldModel.registerFlow({
-  key: 'loadTableColumns',
+  key: 'subTableColumnSettings',
   title: tExpr('Sub-table settings'),
   sort: 300,
   steps: {
@@ -149,97 +149,12 @@ SubTableFieldModel.registerFlow({
         await ctx.model.applySubModelsBeforeRenderFlows('columns');
       },
     },
-    allowAddNew: {
-      title: tExpr('Allow add new data'),
-      uiSchema: {
-        allowAddNew: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
-      defaultParams: {
-        allowAddNew: true,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          allowAddNew: params.allowAddNew,
-        });
-      },
-    },
-    enableIndexColumn: {
-      title: tExpr('Enable index column'),
-      uiSchema: {
-        enableIndexColumn: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
-      defaultParams: {
-        enableIndexColumn: true,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          enableIndexColumn: params.enableIndexColumn,
-        });
-      },
-    },
-    allowSelectExistingRecord: {
-      title: tExpr('Allow selection of existing records'),
-      uiSchema: {
-        allowSelectExistingRecord: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
-      defaultParams: {
-        allowSelectExistingRecord: false,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          allowSelectExistingRecord: params.allowSelectExistingRecord,
-        });
-      },
-    },
-    allowDisassociation: {
-      title: tExpr('Allow disassociation'),
-      uiSchema: {
-        allowDisassociation: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
-      defaultParams: {
-        allowDisassociation: true,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          allowDisassociation: params.allowDisassociation,
-        });
-      },
-    },
     pageSize: {
       title: tExpr('Page size'),
-      uiSchema: {
-        pageSize: {
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [
+      uiMode: {
+        type: 'select',
+        props: {
+          options: [
             { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },
@@ -258,22 +173,76 @@ SubTableFieldModel.registerFlow({
         });
       },
     },
+    allowAddNew: {
+      title: tExpr('Allow add new data'),
+      uiMode: 'switch',
+      defaultParams: {
+        allowAddNew: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowAddNew: params.allowAddNew,
+        });
+      },
+    },
+    enableIndexColumn: {
+      title: tExpr('Enable index column'),
+      uiMode: 'switch',
+      defaultParams: {
+        enableIndexColumn: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          enableIndexColumn: params.enableIndexColumn,
+        });
+      },
+    },
+
+    allowDisassociation: {
+      title: tExpr('Allow disassociation'),
+      uiMode: 'switch',
+      defaultParams: {
+        allowDisassociation: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowDisassociation: params.allowDisassociation,
+        });
+      },
+    },
+    allowSelectExistingRecord: {
+      title: tExpr('Allow selection of existing records'),
+      uiMode: 'switch',
+      defaultParams: {
+        allowSelectExistingRecord: false,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          allowSelectExistingRecord: params.allowSelectExistingRecord,
+        });
+      },
+    },
   },
 });
 
 SubTableFieldModel.registerFlow({
   key: 'selectExitRecordSettings',
   title: tExpr('Selector setting'),
+  sort: 400,
   on: {
     eventName: 'openView',
   },
   steps: {
     openView: {
       title: tExpr('Edit popup'),
+      hideInSettings(ctx) {
+        const allowSelectExistingRecord = ctx.model.getStepParams?.(
+          'subTableColumnSettings',
+          'allowSelectExistingRecord',
+        )?.allowSelectExistingRecord;
+        return !allowSelectExistingRecord;
+      },
       uiSchema(ctx) {
-        if (!ctx.model.props.allowSelectExistingRecord) {
-          return;
-        }
         return {
           mode: {
             type: 'string',

@@ -496,26 +496,13 @@ RecordSelectFieldModel.registerFlow({
     fieldNames: {
       use: 'titleField',
     },
-    dataScope: {
-      use: 'dataScope',
-    },
-    sortingRule: {
-      use: 'sortingRule',
-    },
     allowMultiple: {
       title: tExpr('Allow multiple'),
-      uiSchema(ctx) {
-        if (ctx.collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)) {
-          return {
-            allowMultiple: {
-              'x-component': 'Switch',
-              type: 'boolean',
-              'x-decorator': 'FormItem',
-            },
-          };
-        } else {
-          return null;
-        }
+      uiMode: 'switch',
+      hideInSettings(ctx) {
+        return (
+          !ctx.collectionField || !['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)
+        );
       },
       defaultParams(ctx) {
         return {
@@ -532,22 +519,24 @@ RecordSelectFieldModel.registerFlow({
     },
     quickCreate: {
       title: tExpr('Quick create'),
-      uiSchema(ctx) {
+      uiMode(ctx) {
         const t = ctx.t;
-        if (ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter) {
-          return null;
-        }
         return {
-          quickCreate: {
-            enum: [
+          type: 'select',
+          props: {
+            options: [
               { label: t('None'), value: 'none' },
               { label: t('Dropdown'), value: 'quickAdd' },
               { label: t('Pop-up'), value: 'modalAdd' },
             ],
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
           },
         };
+      },
+      hideInSettings(ctx) {
+        if (ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter) {
+          return true;
+        }
+        return false;
       },
       defaultParams: {
         quickCreate: 'none',
@@ -557,6 +546,12 @@ RecordSelectFieldModel.registerFlow({
           quickCreate: params.quickCreate,
         });
       },
+    },
+    dataScope: {
+      use: 'dataScope',
+    },
+    sortingRule: {
+      use: 'sortingRule',
     },
   },
 });
