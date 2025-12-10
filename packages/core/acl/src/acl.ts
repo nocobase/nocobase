@@ -213,11 +213,7 @@ export class ACL extends EventEmitter {
     }
     if (options.roles?.length) {
       if (options.roles.includes('root')) {
-        return {
-          resource: options.resource,
-          action: options.action,
-          role: options.role,
-        };
+        options.roles = ['root'];
       }
       return lodash.cloneDeep(this.getCanByRoles(options));
     }
@@ -250,6 +246,14 @@ export class ACL extends EventEmitter {
 
     if (!aclRole) {
       return null;
+    }
+
+    if (role === 'root') {
+      return {
+        resource,
+        action,
+        role,
+      };
     }
 
     const actionPath = `${rawResourceName ? rawResourceName : resource}:${action}`;
