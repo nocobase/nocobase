@@ -46,25 +46,15 @@ export const displayFieldComponent = defineAction({
       },
     };
   },
-  uiSchema: (ctx: any) => {
+  hideInSettings: async (ctx: any) => {
     const { titleField } = ctx.model.props;
     if (!ctx.collectionField) {
-      return;
+      return true;
     }
     const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
-    if (classes.length === 1 && !titleField) return null;
-
-    const options = buildAssociationOptions(ctx, ctx.model.constructor, titleField);
-    return {
-      use: {
-        type: 'string',
-        'x-component': 'Select',
-        'x-decorator': 'FormItem',
-        enum: options,
-      },
-    };
+    if (classes.length === 1 && !titleField) return true;
+    return !ctx.collectionField || !ctx.collectionField.isAssociationField();
   },
-
   beforeParamsSave: async (ctx: any, params, previousParams) => {
     if (!ctx.collectionField) {
       return;

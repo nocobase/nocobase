@@ -218,21 +218,11 @@ ClickableFieldModel.registerFlow({
           ],
         },
       },
-      uiSchema: (ctx) => {
+      hideInSettings: async (ctx) => {
         if (['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'].includes(ctx.collectionField?.interface)) {
-          return null;
+          return true;
         }
-
-        return {
-          displayStyle: {
-            'x-component': 'Radio.Group',
-            'x-decorator': 'FormItem',
-            enum: [
-              { label: tExpr('Tag'), value: 'tag' },
-              { label: tExpr('Text'), value: 'text' },
-            ],
-          },
-        };
+        return false;
       },
       defaultParams: {
         displayStyle: 'text',

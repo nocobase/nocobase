@@ -283,6 +283,11 @@ DetailsItemModel.registerFlow({
           }
         }
       },
+      hideInSettings: async (ctx: FlowModelContext) => {
+        const use = ctx.model.getStepParams?.(ctx.flowKey, 'displayFieldComponent')?.use;
+        console.log(use);
+        return !ctx.collectionField || !ctx.collectionField.isAssociationField();
+      },
     },
   },
 });

@@ -17,6 +17,13 @@ export const openViewFlow = defineFlow<FlowModel>({
   steps: {
     openView: {
       use: 'openView',
+      hideInSettings: async (ctx) => {
+        const clickToOpen = ctx.model.getStepParams?.('displayFieldSettings', 'clickToOpen')?.clickToOpen;
+        if (clickToOpen === undefined) {
+          return !ctx.collectionField?.isAssociationField();
+        }
+        return clickToOpen === false;
+      },
     },
   },
   // 基于上下文推导 openView 的默认参数：在模型实例化时写入（仅填充缺失项）

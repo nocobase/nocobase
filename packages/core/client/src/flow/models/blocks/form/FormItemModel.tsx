@@ -18,7 +18,6 @@ import {
 } from '@nocobase/flow-engine';
 import { customAlphabet as Alphabet } from 'nanoid';
 import React from 'react';
-import { SelectOptions } from '../../../actions/titleField';
 import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../details/DetailsItemModel';
 import { EditFormModel } from './EditFormModel';
@@ -311,27 +310,21 @@ FormItemModel.registerFlow({
       title: tExpr('Field component'),
     },
     pattern: {
-      title: tExpr('Display mode'),
       use: 'pattern',
     },
 
     titleField: {
       use: 'titleField',
-      uiSchema: async (ctx) => {
-        if (!ctx.collectionField) {
-          return;
+      hideInSettings(ctx) {
+        if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
+          return true;
         }
         const isAssociationReadPretty =
           ctx.collectionField.isAssociationField() && ctx.model.getProps().pattern === 'readPretty';
         if (!isAssociationReadPretty) {
-          return null;
+          return true;
         }
-        return {
-          titleField: {
-            'x-component': SelectOptions,
-            'x-decorator': 'FormItem',
-          },
-        };
+        return false;
       },
       defaultParams: (ctx: any) => {
         const titleField =

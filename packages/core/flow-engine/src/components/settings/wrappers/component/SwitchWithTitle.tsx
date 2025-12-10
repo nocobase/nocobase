@@ -13,7 +13,7 @@ import { observer } from '@formily/react';
 
 const ml32 = { marginLeft: 32 };
 
-export const SwitchWithTitle: FC = observer(({ title, onChange, getDefaultValue }: any) => {
+export const SwitchWithTitle: FC = observer(({ title, onChange, getDefaultValue, disabled, ...others }: any) => {
   const [checked, setChecked] = useState<boolean>(false);
   const [fieldKey, setFieldKey] = useState('');
 
@@ -58,7 +58,7 @@ export const SwitchWithTitle: FC = observer(({ title, onChange, getDefaultValue 
       }}
     >
       {title}
-      <Switch size="small" checked={checked} style={ml32} onChange={handleChange} />
+      <Switch size="small" {...others} checked={checked} style={ml32} onChange={handleChange} disabled={disabled} />
     </div>
   );
 });

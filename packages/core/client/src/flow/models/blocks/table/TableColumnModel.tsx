@@ -353,19 +353,11 @@ TableColumnModel.registerFlow({
     sorter: {
       title: tExpr('Sortable'),
       uiMode: 'switch',
-      uiSchema(ctx) {
+      hideInSettings: async (ctx) => {
         const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
           ctx.model.collectionField.interface,
         );
-        if (!targetInterface.sortable) {
-          return;
-        }
-        return {
-          sorter: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-          },
-        };
+        return !targetInterface.sortable;
       },
       defaultParams: {
         sorter: false,
