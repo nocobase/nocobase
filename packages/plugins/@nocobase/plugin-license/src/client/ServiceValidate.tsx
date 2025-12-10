@@ -14,37 +14,22 @@ import { useT } from './locale';
 import { Env } from '@nocobase/license-kit';
 import { useTranslation } from 'react-i18next';
 
-export const LicenseValidate = () => {
+export const ServiceValidate = ({ refreshToken }: { refreshToken: number }) => {
   const api = useAPIClient();
   const [state, setState] = useState<{
-    keyNotExists: boolean;
-    envMatch: boolean;
-    domainMatch: boolean;
-    current: {
-      domain: string;
-      env: Env;
-    };
+    keyExist: boolean;
     isPkgConnection: boolean;
     isPkgLogin: boolean;
     isServiceConnection: boolean;
-    pkgUrl: string;
-    isExpired: boolean;
-    licenseStatus?: string;
-    keyData?: {
-      service?: {
-        docsUrl?: string;
-      };
-    };
-    pluginsLicensed: boolean;
-    keyStatus: string;
   }>(null);
 
   const t = useT();
 
   useEffect(() => {
+    setState(null);
     api
       .request({
-        url: '/license:license-validate',
+        url: '/license:service-validate',
         method: 'get',
       })
       .then((res) => {
@@ -53,7 +38,11 @@ export const LicenseValidate = () => {
       .catch((err) => {
         console.log(err);
       });
-  }, []);
+  }, [refreshToken]);
+
+  if (!state?.keyExist) {
+    return null;
+  }
 
   if (state?.isServiceConnection === false && state?.isPkgLogin === false) {
     return (

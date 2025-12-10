@@ -9,11 +9,10 @@
 
 import { getEnvAsync, Env } from '@nocobase/license-kit';
 import { getKey, parseKey, isDateExpired } from './key';
-import { isDomainMatch, isEnvMatch, getClientDomain, isDbMatch, isSysMatch } from './env';
-import { testPkgConnection, testPkgLogin, getNocoBasePkgUrl, testServiceConnection } from './pkg';
+import { isDomainMatch, getClientDomain, isDbMatch, isSysMatch } from './env';
+import { getNocoBasePkgUrl } from './pkg';
 import { KeyData } from './interface';
 import { getPlugins, getPluginsLicenseStatus, PluginData } from './plugin';
-import { getLicenseStatus } from './key';
 
 export interface LicenseValidateResult {
   current: {
@@ -24,9 +23,6 @@ export interface LicenseValidateResult {
   sysMatch: boolean;
   envMatch: boolean;
   domainMatch: boolean;
-  isPkgConnection: boolean;
-  isPkgLogin: boolean;
-  isServiceConnection: boolean;
   isExpired: boolean;
   keyData: KeyData;
   pkgUrl: string;
@@ -47,14 +43,11 @@ export async function getLicenseValidate({ key, ctx }: { key?: string; ctx?: any
   } catch (e) {
     keyStatus = e?.message;
   }
-  const licenseStatus = await getLicenseStatus(keyData);
+  // const licenseStatus = await getLicenseStatus(keyData);
   const domainMatch = isDomainMatch(currentDomain, keyData);
   const dbMatch = isDbMatch(currentEnv, keyData);
   const sysMatch = isSysMatch(currentEnv, keyData);
   const envMatch = dbMatch && sysMatch;
-  const isPkgConnection = await testPkgConnection();
-  const isPkgLogin = await testPkgLogin(keyData);
-  const isServiceConnection = await testServiceConnection(keyData);
   const isExpired = isDateExpired(keyData?.upgradeExpirationDate);
   const plugins = await getPlugins({ keyData, ctx });
   const pluginsLicensed = getPluginsLicenseStatus({ plugins });
@@ -69,14 +62,11 @@ export async function getLicenseValidate({ key, ctx }: { key?: string; ctx?: any
     sysMatch,
     envMatch,
     domainMatch,
-    isPkgConnection,
-    isPkgLogin,
-    isServiceConnection,
     isExpired,
     pkgUrl: getNocoBasePkgUrl(),
     plugins,
     pluginsLicensed,
     keyStatus,
-    licenseStatus: licenseStatus,
+    licenseStatus: keyData?.licenseKey?.licenseStatus,
   };
 }

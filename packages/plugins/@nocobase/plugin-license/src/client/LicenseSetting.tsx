@@ -13,8 +13,10 @@ import { Card, Typography, Spin, message, Input, Button, Alert, Modal } from 'an
 import { useAsyncEffect } from 'ahooks';
 import { useT } from './locale';
 import { CopyOutlined } from '@ant-design/icons';
-import { LicenseValidate } from './LicenseValidate';
+import { ServiceValidate } from './ServiceValidate';
 import { useForm } from '@formily/react';
+import { useSubmitProps } from './useSubmitProps';
+import { LicenseSettingContext } from './LicenseSettingContext';
 
 const copyTextToClipboard = ({
   text,
@@ -97,128 +99,6 @@ function InstanceId() {
   );
 }
 
-const useSubmitProps = () => {
-  const api = useAPIClient();
-  const [loading, setLoading] = useState(false);
-  const ctx = useFormBlockContext();
-  const form = useForm();
-  const t = useT();
-
-  const saveLicenseKey = async (licenseKey: string) => {
-    setLoading(true);
-    try {
-      const res: any = await api.request({
-        url: '/license:license-key',
-        method: 'POST',
-        data: {
-          licenseKey,
-        },
-      });
-      setLoading(false);
-
-      const licenseValidateResult: any = res?.data?.data || {};
-
-      if (licenseValidateResult.keyStatus === 'invalid') {
-        Modal.error({
-          title: t('Invalid license key.'),
-          content: t('The license key is invalid. Please visit the NocoBase Service to obtain a new license key.'),
-        });
-        return;
-      }
-      if (licenseValidateResult.licenseStatus === 'invalid') {
-        Modal.error({
-          title: t('Invalid license key.'),
-          content: t(
-            'The current license key has been deprecated. Please visit the NocoBase Service to obtain a new license key.',
-          ),
-        });
-        return;
-      }
-
-      if (licenseValidateResult.envMatch === false) {
-        Modal.error({
-          title: t('Environment mismatch.'),
-          content: (
-            <>
-              {licenseValidateResult.dbMatch === false && licenseValidateResult.sysMatch === false && (
-                <>
-                  {t(
-                    'The current system and database do not match the licensed environment. Please use the new InstanceID to request a new license key.',
-                  )}
-                </>
-              )}
-              {licenseValidateResult.dbMatch === true && licenseValidateResult.sysMatch === false && (
-                <>
-                  {t(
-                    'The current system does not match the licensed system. Please use the new InstanceID to request a new license key.',
-                  )}
-                </>
-              )}
-              {licenseValidateResult.dbMatch === false && licenseValidateResult.sysMatch === true && (
-                <>
-                  {t(
-                    'The current database does not match the licensed database. Please use the new InstanceID to request a new license key.',
-                  )}
-                </>
-              )}
-            </>
-          ),
-        });
-        return;
-      }
-
-      if (licenseValidateResult.domainMatch === false) {
-        Modal.error({
-          title: t('Domain mismatch.'),
-          content: t(
-            'The current domain ({{domain}}) does not match the licensed domain. Please use the current domain to request a new license key.',
-            {
-              domain: licenseValidateResult.current.domain,
-              interpolation: { escapeValue: false },
-            },
-          ),
-        });
-        return;
-      }
-
-      if (licenseValidateResult.isExpired === true) {
-        message.success(t('The license key was saved successfully'), 5);
-        Modal.warning({
-          title: t('The license has exceeded the upgrade validity period.'),
-          content: t(
-            'Plugins bound to this license can still be used but cannot be upgraded. To upgrade, please renew or repurchase the license.',
-          ),
-        });
-        return;
-      }
-
-      if (licenseValidateResult.isPkgLogin === false) {
-        message.success(t('The license key was saved successfully'), 5);
-        Modal.warning({
-          title: t('Network error.'),
-          content: t(
-            'Due to network issues, plugins cannot be updated automatically (they are still usable). To update plugins, please check your network connection or refer to the NocoBase Service documentation to upload plugins manually.',
-          ),
-        });
-        return;
-      }
-
-      message.success(t('License key saved successfully. Please retry the plugin installation.'));
-    } catch (e) {
-      setLoading(false);
-    }
-  };
-
-  return {
-    loading,
-    onClick: async () => {
-      await form?.validate();
-      const licenseKey = form.values?.licenseKey;
-      await saveLicenseKey(licenseKey);
-    },
-  };
-};
-
 const TextArea = (props) => {
   const [isExists, setIsExists] = useState(false);
   const api = useAPIClient();
@@ -260,6 +140,7 @@ const TextArea = (props) => {
 
 export default function LicenseSetting() {
   const t = useT();
+  const [renderKey, setRenderKey] = useState(0);
 
   const createLabelSchema = {
     type: 'void',
@@ -309,28 +190,40 @@ export default function LicenseSetting() {
 
   return (
     <Card bordered={false}>
-      <LicenseValidate />
-      <SchemaComponent
-        scope={{ useSubmitProps }}
-        components={{ InstanceId, TextArea }}
-        schema={{
-          type: 'void',
-          properties: {
-            form: createLabelSchema,
+      <LicenseSettingContext.Provider
+        value={{
+          onSaveSuccess: () => {
+            setRenderKey((k) => k + 1);
           },
         }}
-      />
-      <SchemaComponent
-        schema={{
-          type: 'void',
-          properties: {
-            card: {
-              type: 'void',
-              'x-component': 'LicenseCard',
+      >
+        <ServiceValidate refreshToken={renderKey} />
+        <SchemaComponent
+          scope={{ useSubmitProps }}
+          components={{ InstanceId, TextArea }}
+          schema={{
+            type: 'void',
+            properties: {
+              form: createLabelSchema,
             },
-          },
-        }}
-      />
+          }}
+        />
+        <SchemaComponent
+          key={renderKey}
+          schema={{
+            type: 'void',
+            properties: {
+              card: {
+                type: 'void',
+                'x-component': 'LicenseCard',
+                'x-component-props': {
+                  notShowIfKeyNotExist: true,
+                },
+              },
+            },
+          }}
+        />
+      </LicenseSettingContext.Provider>
     </Card>
   );
 }
