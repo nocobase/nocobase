@@ -496,6 +496,12 @@ RecordSelectFieldModel.registerFlow({
     fieldNames: {
       use: 'titleField',
     },
+    dataScope: {
+      use: 'dataScope',
+    },
+    sortingRule: {
+      use: 'sortingRule',
+    },
     allowMultiple: {
       title: tExpr('Allow multiple'),
       uiMode: 'switch',
@@ -546,12 +552,6 @@ RecordSelectFieldModel.registerFlow({
           quickCreate: params.quickCreate,
         });
       },
-    },
-    dataScope: {
-      use: 'dataScope',
-    },
-    sortingRule: {
-      use: 'sortingRule',
     },
   },
 });
