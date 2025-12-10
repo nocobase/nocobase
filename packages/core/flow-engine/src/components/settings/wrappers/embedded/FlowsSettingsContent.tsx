@@ -14,6 +14,7 @@ import { FlowModel } from '../../../../models';
 import { StepDefinition } from '../../../../types';
 import { shouldHideStepInSettings } from '../../../../utils';
 import { FlowSettings } from './FlowSettings';
+import { FlowDefinition } from '../../../../FlowDefinition';
 
 const { Panel } = Collapse;
 
@@ -27,12 +28,12 @@ interface FlowsSettingsContentProps {
 const FlowsSettingsContent: React.FC<FlowsSettingsContentProps> = observer(({ model, expandAll = false }) => {
   const flows = model.getFlows();
 
-  const [filterFlows, setFilterFlows] = useState<any[]>([]);
+  const [filterFlows, setFilterFlows] = useState<FlowDefinition[]>([]);
 
   useEffect(() => {
     let mounted = true;
     const buildFilterFlows = async () => {
-      const result: any[] = [];
+      const result: FlowDefinition[] = [];
       for (const flow of Array.from(flows.values())) {
         const configurableSteps = await Promise.all(
           Object.entries(flow.steps).map(async ([stepKey, actionStep]) => {
@@ -42,12 +43,12 @@ const FlowsSettingsContent: React.FC<FlowsSettingsContentProps> = observer(({ mo
             }
 
             // 从step获取uiSchema（如果存在）
-            const stepUiSchema = (actionStep as any).uiSchema || {};
+            const stepUiSchema = actionStep.uiSchema || {};
 
             // 如果step使用了action，也获取action的uiSchema
             let actionUiSchema = {};
-            if ((actionStep as any).use) {
-              const action = model.flowEngine?.getAction?.((actionStep as any).use);
+            if (actionStep.use) {
+              const action = model.flowEngine?.getAction?.(actionStep.use);
               if (action && action.uiSchema) {
                 actionUiSchema = action.uiSchema;
               }
