@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, cleanup, waitFor } from '@testing-library/react';
+import { render, cleanup, waitFor, act } from '@testing-library/react';
 import { App, ConfigProvider } from 'antd';
 
 import { FlowEngine } from '../../../../../flowEngine';
@@ -421,5 +421,123 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
 
     menu.onClick?.({ key: 'copy-pop-uid:items[0]:popupSettings:stage' });
     expect((navigator as any).clipboard.writeText).toHaveBeenCalledWith('child-2');
+  });
+
+  it('refreshes menu when current model step params change', async () => {
+    class TestFlowModel extends FlowModel {}
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({
+      uid: 'step-params-current',
+      flowEngine: engine,
+      stepParams: {
+        dynamicFlow: { dynamicStep: { hidden: true } },
+      },
+    });
+
+    TestFlowModel.registerFlow({
+      key: 'dynamicFlow',
+      title: 'Dynamic Flow',
+      steps: {
+        dynamicStep: {
+          title: 'Dynamic Step',
+          hideInSettings: (ctx) => !!ctx.getStepParams('dynamicStep')?.hidden,
+          uiSchema: { f: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(
+          App as any,
+          null,
+          React.createElement(DefaultSettingsIcon as any, {
+            model,
+            showCopyUidButton: true,
+            showDeleteButton: false,
+          }),
+        ),
+      ),
+    );
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      expect(menu).toBeTruthy();
+      const items = (menu?.items || []) as any[];
+      expect(items.some((it) => String(it.key || '') === 'dynamicFlow:dynamicStep')).toBe(false);
+    });
+
+    await act(async () => {
+      model.setStepParams('dynamicFlow', 'dynamicStep', { hidden: false });
+    });
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      expect(items.some((it) => String(it.key || '') === 'dynamicFlow:dynamicStep')).toBe(true);
+    });
+  });
+
+  it('refreshes submenu when child model step params change', async () => {
+    class ParentModel extends FlowModel {}
+    class ChildModel extends FlowModel {}
+    const engine = new FlowEngine();
+    const child = new ChildModel({
+      uid: 'child-step-params',
+      flowEngine: engine,
+      stepParams: { childFlow: { childStep: { hidden: true } } },
+    });
+    const parent = new ParentModel({ uid: 'parent-step-params', flowEngine: engine });
+
+    ChildModel.registerFlow({
+      key: 'childFlow',
+      title: 'Child Flow',
+      steps: {
+        childStep: {
+          title: 'Child Step',
+          hideInSettings: (ctx) => !!ctx.getStepParams('childStep')?.hidden,
+          uiSchema: { x: { type: 'string', 'x-component': 'Input' } },
+        },
+      },
+    });
+
+    parent.addSubModel('items', child);
+
+    render(
+      React.createElement(
+        ConfigProvider as any,
+        null,
+        React.createElement(
+          App as any,
+          null,
+          React.createElement(DefaultSettingsIcon as any, {
+            model: parent,
+            menuLevels: 2,
+            flattenSubMenus: true,
+            showCopyUidButton: true,
+            showDeleteButton: false,
+          }),
+        ),
+      ),
+    );
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      expect(menu).toBeTruthy();
+      const items = (menu?.items || []) as any[];
+      expect(items.some((it) => String(it.key || '').startsWith('items[0]:childFlow:childStep'))).toBe(false);
+    });
+
+    await act(async () => {
+      child.setStepParams('childFlow', 'childStep', { hidden: false });
+    });
+
+    await waitFor(() => {
+      const menu = (globalThis as any).__lastDropdownMenu;
+      const items = (menu?.items || []) as any[];
+      expect(items.some((it) => String(it.key || '').startsWith('items[0]:childFlow:childStep'))).toBe(true);
+    });
   });
 });

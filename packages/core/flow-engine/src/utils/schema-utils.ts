@@ -199,3 +199,39 @@ export async function resolveStepUiSchema<TModel extends FlowModel = FlowModel>(
 
   return resolvedStepUiSchema;
 }
+
+/**
+ * 判断步骤在设置菜单中是否应被隐藏。
+ * - 支持 StepDefinition.hideInSettings 与 ActionDefinition.hideInSettings（step 优先）。
+ * - hideInSettings 可为布尔值或函数（接收 FlowRuntimeContext）。
+ */
+export async function shouldHideStepInSettings<TModel extends FlowModel = FlowModel>(
+  model: TModel,
+  flow: any,
+  step: StepDefinition,
+): Promise<boolean> {
+  if (!step) return true;
+
+  // 优先使用 step.hideInSettings，其次回退到 action.hideInSettings
+  let hideInSettings = step.hideInSettings;
+
+  if (typeof hideInSettings === 'undefined' && step.use) {
+    const action = model.getAction?.(step.use);
+    hideInSettings = action?.hideInSettings;
+  }
+
+  if (typeof hideInSettings === 'function') {
+    try {
+      const ctx = new FlowRuntimeContext(model, flow.key, 'settings');
+      setupRuntimeContextSteps(ctx, flow.steps, model, flow.key);
+      ctx.defineProperty('currentStep', { value: step });
+      const result = await hideInSettings(ctx as any);
+      return !!result;
+    } catch (error) {
+      console.warn(`Error evaluating hideInSettings for step '${step.key || ''}' in flow '${flow.key}':`, error);
+      return false;
+    }
+  }
+
+  return !!hideInSettings;
+}
