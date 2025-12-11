@@ -84,6 +84,9 @@ export class CollectionModel extends MagicAttributeModel {
         lodash.set(collectionOptions, 'dumpRules.group', 'custom');
       }
 
+      const fieldRepo = this.db.getRepository('collections.fields', name);
+      const fieldModels = await fieldRepo.find({ transaction });
+      collectionOptions['fieldModels'] = fieldModels;
       collection = this.db.collection(collectionOptions);
     }
 

@@ -577,7 +577,7 @@ export class Database extends EventEmitter implements AsyncEmitter {
 
     this.collections.set(collection.name, collection);
 
-    this.emit('afterDefineCollection', collection);
+    this.emit('afterDefineCollection', collection, { fieldModels: options.fieldModels });
 
     return collection;
   }
