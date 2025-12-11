@@ -9,10 +9,19 @@
 
 import { Plugin } from '@nocobase/client';
 import { ReferenceBlockModel } from './models/ReferenceBlockModel';
+import { FlowModelTemplatesPage } from './components/FlowModelTemplatesPage';
+// @ts-ignore
+import pkg from '../../package.json';
 
 export class PluginBlockReferenceClient extends Plugin {
   async load() {
     this.flowEngine.registerModels({ ReferenceBlockModel });
+    this.app.pluginSettingsManager.add('flow-model-templates', {
+      title: `{{t("Block template", { ns: "${pkg.name}", nsMode: "fallback" })}}`,
+      icon: 'ProfileOutlined',
+      path: '/settings/flow-model-templates',
+      Component: FlowModelTemplatesPage,
+    });
   }
 }
 

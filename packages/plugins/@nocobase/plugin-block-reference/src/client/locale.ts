@@ -15,7 +15,8 @@ export const NAMESPACE = pkg.name;
 
 export function useT() {
   const app = useApp();
-  return (str: string) => app.i18n.t(str, { ns: [pkg.name, 'client'] });
+  return (str: string, options?: Record<string, any>) =>
+    app.i18n.t(str, { ns: [pkg.name, 'client'], ...(options || {}) });
 }
 
 export function tStr(key: string) {

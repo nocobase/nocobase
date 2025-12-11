@@ -9,7 +9,7 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { Result, Empty, Card } from 'antd';
+import { Result, Empty, Card, Popover } from 'antd';
 import {
   escapeT,
   FlowEngine,
@@ -23,6 +23,7 @@ import {
 } from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
+import debounce from 'lodash/debounce';
 
 // 桥接父视图上下文：
 // - 复用父级的 view/popup 等视图变量；
@@ -121,11 +122,12 @@ export class ReferenceBlockModel extends BlockModel {
   private _resolvedTargetUid?: string;
 
   get title() {
-    if (this._targetModel?.title) {
-      const refLabel = this.translate?.('Reference', { ns: [NAMESPACE, 'client'] }) || 'Reference';
-      return `${this._targetModel.title} (${refLabel})`;
-    }
-    return super.title;
+    const refLabel = this.translate?.('Template', { ns: [NAMESPACE, 'client'] }) || 'Template';
+    const tplName =
+      this.getStepParams('referenceSettings', 'useTemplate')?.templateName ||
+      this.getStepParams('referenceSettings', 'useTemplate')?.templateUid;
+    const baseTitle = this._targetModel?.title || super.title;
+    return `${baseTitle} (${tplName ? `${refLabel}: ${tplName}` : refLabel})`;
   }
 
   onInit(option) {
@@ -302,22 +304,262 @@ export class ReferenceBlockModel extends BlockModel {
 ReferenceBlockModel.registerFlow({
   key: 'referenceSettings',
   sort: -999,
-  title: tStr('Reference block'),
+  title: tStr('Select block template'),
   steps: {
+    useTemplate: {
+      preset: true,
+      sort: -10,
+      title: tStr('Select block template'),
+      uiSchema: (ctx) => {
+        const m = (ctx.model as any) || {};
+        const step = m.getStepParams?.('referenceSettings', 'useTemplate') || {};
+        const templateUid = (step?.templateUid || '').trim();
+        const isNew = !!m.isNew;
+        const disableSelect = !isNew && !!templateUid;
+        const api = (ctx as any)?.api;
+        const fetchOptions = async (keyword?: string) => {
+          try {
+            const res = await api?.resource?.('flowModelTemplates')?.list({
+              pageSize: 20,
+              search: keyword || undefined,
+            });
+            const body = res?.data || res;
+            const unwrap = (val: any) => (val && val.data ? val.data : val);
+            const candidate = unwrap(body);
+            const rows = Array.isArray(candidate?.rows) ? candidate.rows : Array.isArray(candidate) ? candidate : [];
+            const opts = rows.map((r) => {
+              const name = r.name || r.uid || '';
+              const desc = r.description;
+              return {
+                label: (
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      maxWidth: 480,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      verticalAlign: 'middle',
+                    }}
+                    title={name}
+                  >
+                    {name}
+                  </span>
+                ),
+                value: r.uid,
+                description: desc,
+                title: desc ? `${name} - ${desc}` : name,
+                rawName: name,
+              };
+            });
+            return opts;
+          } catch (e) {
+            console.error('fetch template options failed', e);
+            return [];
+          }
+        };
+        return {
+          templateUid: {
+            title: tStr('Template'),
+            'x-decorator': 'FormItem',
+            'x-component': 'Select',
+            'x-component-props': {
+              showSearch: true,
+              filterOption: false,
+              allowClear: true,
+              placeholder: tStr('Search templates'),
+              disabled: disableSelect,
+              optionLabelProp: 'label',
+              dropdownMatchSelectWidth: true,
+              dropdownStyle: { maxWidth: 560 },
+              getPopupContainer: () => document.body,
+              optionRender: (option) => {
+                const desc = option?.data?.description;
+                const content = (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      lineHeight: 1.4,
+                      maxWidth: 520,
+                      wordBreak: 'break-all',
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontWeight: 500,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                      title={option?.data?.rawName || ''}
+                    >
+                      {option?.data?.rawName || option.label}
+                    </span>
+                    {desc ? (
+                      <span
+                        style={{
+                          color: '#999',
+                          fontSize: 12,
+                          whiteSpace: 'normal',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {desc}
+                      </span>
+                    ) : null}
+                  </div>
+                );
+                return content;
+                // if (!desc) return content;
+                // return (
+                //   <Popover
+                //     placement="right"
+                //     content={<div style={{ maxWidth: 320, whiteSpace: 'normal' }}>{desc}</div>}
+                //     trigger={['hover']}
+                //     overlayStyle={{ pointerEvents: 'none' }}
+                //   >
+                //     {content}
+                //   </Popover>
+                // );
+              },
+            },
+            default: templateUid || undefined,
+            'x-validator': [
+              {
+                required: true,
+              },
+            ],
+            'x-reactions': [
+              (field) => {
+                const composingKey = '__templateComposing';
+                const setComposing = (v: boolean) => {
+                  try {
+                    field.data = { ...(field.data || {}), [composingKey]: v };
+                  } catch (e) {
+                    // ignore
+                  }
+                };
+                field.componentProps.onDropdownVisibleChange = async (open: boolean) => {
+                  if (!open) return;
+                  field.loading = true;
+                  const opts = await fetchOptions();
+                  field.dataSource = opts;
+                  field.loading = false;
+                };
+                const debouncedSearch = debounce(async (value: string) => {
+                  field.loading = true;
+                  const opts = await fetchOptions(value);
+                  field.dataSource = opts;
+                  field.loading = false;
+                }, 300);
+                field.componentProps.onSearch = (value: string) => {
+                  if (field.data?.[composingKey]) return;
+                  const v = typeof value === 'string' ? value.trim() : '';
+                  debouncedSearch(v);
+                };
+                field.componentProps.onCompositionStart = () => setComposing(true);
+                field.componentProps.onCompositionEnd = (e: any) => {
+                  setComposing(false);
+                  const v = e?.target?.value || '';
+                  debouncedSearch(typeof v === 'string' ? v.trim() : '');
+                };
+              },
+            ],
+          },
+          templateName: {
+            'x-hidden': true,
+            'x-component': 'Input',
+            default: step?.templateName,
+          },
+          templateDescription: {
+            'x-hidden': true,
+            'x-component': 'Input',
+            default: step?.templateDescription,
+          },
+          mode: {
+            title: tStr('Mode'),
+            'x-decorator': 'FormItem',
+            'x-component': 'Radio.Group',
+            enum: [
+              { label: tStr('Reference'), value: 'reference' },
+              { label: tStr('Copy'), value: 'copy' },
+            ],
+            default: step?.mode || 'reference',
+          },
+        };
+      },
+      async handler(ctx, params) {
+        const templateUid = (params?.templateUid || '').trim();
+        if (!templateUid) return;
+        const api = (ctx as any)?.api;
+        let tpl: any = null;
+        if (api?.resource) {
+          try {
+            const res = await api.resource('flowModelTemplates').get({
+              filterByTk: templateUid,
+            });
+            tpl = res?.data?.data || res;
+          } catch (e) {
+            console.warn('fetch template failed', e);
+          }
+        }
+
+        const templateName = tpl?.name || params?.templateName;
+        const templateDescription = tpl?.description || params?.templateDescription;
+        const targetUid = tpl?.targetUid;
+        const mode = params?.mode || 'reference';
+
+        const useTemplateParams = (ctx.model as FlowModel).getStepParams('referenceSettings', 'useTemplate') || {};
+        (ctx.model as FlowModel).setStepParams('referenceSettings', 'useTemplate', {
+          ...useTemplateParams,
+          templateUid,
+          templateName,
+          templateDescription,
+          mode,
+        });
+
+        if (targetUid) {
+          const targetParams = (ctx.model as FlowModel).getStepParams('referenceSettings', 'target') || {};
+          (ctx.model as FlowModel).setStepParams('referenceSettings', 'target', {
+            ...targetParams,
+            targetUid,
+            mode,
+          });
+        }
+
+        const resourceInit = (ctx.model as FlowModel).getStepParams('resourceSettings', 'init') || {};
+        const dataSourceKey = tpl?.dataSourceKey ?? resourceInit?.dataSourceKey;
+        const collectionName = tpl?.collectionName ?? resourceInit?.collectionName;
+        const filterByTk = tpl?.filterByTk ?? resourceInit?.filterByTk;
+        const sourceId = tpl?.sourceId ?? resourceInit?.sourceId;
+        if (dataSourceKey || collectionName || filterByTk || sourceId) {
+          (ctx.model as FlowModel).setStepParams('resourceSettings', 'init', {
+            ...resourceInit,
+            dataSourceKey,
+            collectionName,
+            filterByTk,
+            sourceId,
+          });
+        }
+      },
+    },
     target: {
       preset: true,
-      title: tStr('Reference settings'),
+      title: tStr('Template settings'),
       uiSchema: (ctx) => {
         const m = (ctx.model as any) || {};
         const step = m.getStepParams?.('referenceSettings', 'target') || {};
         const uid = (step?.targetUid || '').trim();
         const isNew = !!m.isNew;
         const hasConfigured = !!uid;
+        const templateStep = m.getStepParams?.('referenceSettings', 'useTemplate') || {};
+        const hasTemplate = !!templateStep?.templateUid;
         // 更精准的有效性判断：要求已解析的 _targetModel 存在且与当前 uid 匹配
         const resolvedUid = m._resolvedTargetUid;
         const resolvedModel = m._targetModel;
         const hasValidTarget = !!resolvedModel && resolvedUid === uid;
-        const disableUid = !isNew && hasConfigured && hasValidTarget;
+        const disableUid = (!isNew && hasConfigured && hasValidTarget) || hasTemplate;
         return {
           targetUid: {
             title: tStr('Block UID'),
@@ -337,9 +579,12 @@ ReferenceBlockModel.registerFlow({
             ],
           },
           mode: {
-            title: tStr('Reference mode'),
+            title: tStr('Mode'),
             'x-component': 'Radio.Group',
             'x-decorator': 'FormItem',
+            'x-component-props': {
+              disabled: hasTemplate,
+            },
             enum: [
               { label: tStr('Reference'), value: 'reference' },
               { label: tStr('Copy'), value: 'copy' },
@@ -508,7 +753,7 @@ ReferenceBlockModel.registerFlow({
 });
 
 ReferenceBlockModel.define({
-  label: tStr('Reference block'),
+  label: tStr('Block template'),
   group: escapeT('Other blocks'),
   createModelOptions: {
     use: 'ReferenceBlockModel',
