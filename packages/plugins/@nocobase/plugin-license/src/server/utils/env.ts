@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Env } from '@nocobase/license-kit';
+import { Env, getEnvAsync } from '@nocobase/license-kit';
 import { KeyData } from './interface';
 import omit from 'lodash/omit';
 import isEqual from 'lodash/isEqual';
@@ -96,4 +96,9 @@ export function isSysMatch(env: Env, keyData: KeyData) {
   const b = normalize(instance as Env);
 
   return isEqual(a, b);
+}
+
+let envPromise;
+export function getEnvOnce() {
+  return envPromise ?? (envPromise = getEnvAsync());
 }

@@ -99,32 +99,30 @@ function InstanceId() {
   );
 }
 
-const TextArea = (props) => {
-  const [isExists, setIsExists] = useState(false);
-  const api = useAPIClient();
-  const ctx = useFormBlockContext();
+const TextArea = ({ ...props }) => {
+  const [isEdit, setIsEdit] = useState(false);
   const form = useForm();
   const t = useT();
+  const { keyExist } = React.useContext(LicenseSettingContext);
   useAsyncEffect(async () => {
-    const res = await api.request({
-      url: '/license:is-exists',
-      method: 'GET',
-    });
-    if (res?.data?.data) {
+    if (keyExist === false) {
+      setIsEdit(true);
       form?.setFieldState('footer', (state) => {
-        state.visible = false;
+        state.visible = true;
       });
     }
-    setIsExists(res?.data?.data);
-  }, []);
+  }, [keyExist]);
 
-  if (isExists) {
+  if (isEdit) {
+    return <Input.TextArea rows={4} {...props} />;
+  }
+  if (keyExist) {
     return (
       <>
         {t('License key has been set')}&nbsp;
         <Button
           onClick={() => {
-            setIsExists(false);
+            setIsEdit(true);
             form?.setFieldState('footer', (state) => {
               state.visible = true;
             });
@@ -135,12 +133,43 @@ const TextArea = (props) => {
       </>
     );
   }
-  return <Input.TextArea rows={4} {...props} />;
+  return null;
+};
+
+const LicenseCardWarp = () => {
+  const { keyExist, refreshToken } = React.useContext(LicenseSettingContext);
+  if (!keyExist) {
+    return '-';
+  }
+  return (
+    <SchemaComponent
+      key={refreshToken}
+      schema={{
+        type: 'void',
+        properties: {
+          card: {
+            type: 'void',
+            'x-component': 'LicenseCard',
+          },
+        },
+      }}
+    />
+  );
 };
 
 export default function LicenseSetting() {
   const t = useT();
   const [renderKey, setRenderKey] = useState(0);
+  const [keyExist, setKeyExist] = useState(null);
+  const api = useAPIClient();
+
+  useAsyncEffect(async () => {
+    const res = await api.request({
+      url: '/license:is-exists',
+      method: 'GET',
+    });
+    setKeyExist(res?.data?.data);
+  }, []);
 
   const createLabelSchema = {
     type: 'void',
@@ -182,6 +211,13 @@ export default function LicenseSetting() {
                 },
               },
             },
+            'x-visible': false,
+          },
+          licenseInfo: {
+            type: 'void',
+            title: 'NocoBase ' + t('License information'),
+            'x-component': 'LicenseCardWarp',
+            'x-decorator': 'FormItem',
           },
         },
       },
@@ -194,32 +230,20 @@ export default function LicenseSetting() {
         value={{
           onSaveSuccess: () => {
             setRenderKey((k) => k + 1);
+            setKeyExist(true);
           },
+          keyExist,
+          refreshToken: renderKey,
         }}
       >
         <ServiceValidate refreshToken={renderKey} />
         <SchemaComponent
           scope={{ useSubmitProps }}
-          components={{ InstanceId, TextArea }}
+          components={{ InstanceId, TextArea, LicenseCardWarp }}
           schema={{
             type: 'void',
             properties: {
               form: createLabelSchema,
-            },
-          }}
-        />
-        <SchemaComponent
-          key={renderKey}
-          schema={{
-            type: 'void',
-            properties: {
-              card: {
-                type: 'void',
-                'x-component': 'LicenseCard',
-                'x-component-props': {
-                  notShowIfKeyNotExist: true,
-                },
-              },
             },
           }}
         />
