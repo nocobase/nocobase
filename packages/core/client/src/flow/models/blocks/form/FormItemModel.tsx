@@ -208,16 +208,7 @@ FormItemModel.registerFlow({
 
     showLabel: {
       title: tExpr('Show label'),
-      uiSchema: {
-        showLabel: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
+      uiMode: 'switch',
       defaultParams: {
         showLabel: true,
       },

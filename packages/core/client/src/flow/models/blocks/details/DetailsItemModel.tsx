@@ -195,16 +195,7 @@ DetailsItemModel.registerFlow({
     },
     showLabel: {
       title: tExpr('Show label'),
-      uiSchema: {
-        showLabel: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
+      uiMode: 'switch',
       defaultParams: {
         showLabel: true,
       },
@@ -272,7 +263,6 @@ DetailsItemModel.registerFlow({
         if (ctx.model.subModels.field.disableTitleField) {
           return;
         }
-        console.log('099999');
         ctx.model.setProps({
           titleField: params.label,
           ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
