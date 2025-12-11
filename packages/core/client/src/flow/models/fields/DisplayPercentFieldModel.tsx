@@ -18,6 +18,9 @@ export class DisplayPercentFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
     const { addonBefore = '', addonAfter = '%', numberStep } = this.props;
     const targetValue = math.round(value * 100, 9);
+    if (value === null || value === undefined) {
+      return;
+    }
     const result = getDisplayNumber({ ...this.props, value: targetValue, numberStep: numberStep });
     if (!result) {
       return null;

@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, DisplayItemModel, tExpr } from '@nocobase/flow-engine';
+import { defineAction, DisplayItemModel, tExpr, FlowModelContext } from '@nocobase/flow-engine';
 import { isTitleField } from '../../data-source';
 
 export const titleField = defineAction({
@@ -36,10 +36,12 @@ export const titleField = defineAction({
       label: ctx.model.parent?.props?.titleField || ctx.model.props.titleField || titleField,
     };
   },
-  hideInSettings(ctx) {
-    if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
-      return true;
-    }
+  hideInSettings: async (ctx: FlowModelContext) => {
+    return (
+      !ctx.collectionField ||
+      !ctx.collectionField.isAssociationField() ||
+      (ctx.model.subModels.field as any).disableTitleField
+    );
   },
   beforeParamsSave: async (ctx: any, params, previousParams) => {
     const target = ctx.model.collectionField.target;
