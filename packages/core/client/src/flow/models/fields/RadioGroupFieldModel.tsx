@@ -9,7 +9,7 @@
 
 import { Radio } from 'antd';
 import React from 'react';
-import { EditableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, tExpr } from '@nocobase/flow-engine';
 import { FieldModel } from '../base';
 
 export class RadioGroupFieldModel extends FieldModel {
@@ -18,6 +18,9 @@ export class RadioGroupFieldModel extends FieldModel {
   }
 }
 
+RadioGroupFieldModel.define({
+  label: tExpr('RadioGroup'),
+});
 EditableItemModel.bindModelToInterface('RadioGroupFieldModel', ['radioGroup'], {
   isDefault: true,
 });

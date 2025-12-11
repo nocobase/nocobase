@@ -1544,5 +1544,7 @@
   "Sub-table settings": "子表格设置",
   "Sub-form settings": "子表单设置",
   "Content overflow ellipsis": "内容超出省略",
-  "Number format": "数字显示格式"
+  "Number format": "数字显示格式",
+  "RadioGroup": "单选框",
+  "CheckboxGroup": "复选框"
 }
