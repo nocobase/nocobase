@@ -16,6 +16,7 @@ export class SnowflakeIdFieldInterface extends CollectionFieldInterface {
   group = 'advanced';
   order = 0;
   title = '{{t("Snowflake ID (53-bit)")}}';
+  primaryKeyDescription = '{{t("Primary key, distributed uniqueness, time-ordering")}}';
   hidden = false;
   sortable = true;
   default = {

@@ -47,7 +47,7 @@ export const PresetFields = observer(
       collectionPresetFields.map(({ value, description }) => ({
         field: value.uiSchema.title,
         interface: value.interface,
-        description: description,
+        description,
         name: value.name,
         primaryKey: value.primaryKey,
       })),
@@ -87,9 +87,8 @@ export const PresetFields = observer(
       });
     };
 
-    const onSetPrimaryKey = (values) => {
+    const onSetPrimaryKey = (fieldInterface, values) => {
       primaryKeyCandidateRef.current = values;
-      console.log(values);
       applyPrimaryKeyCandidate();
       setPresetFieldsDataSource((prev) => {
         const idFieldIndex = prev.findIndex((x) => x.primaryKey === true);
@@ -99,7 +98,7 @@ export const PresetFields = observer(
         prev[idFieldIndex] = {
           field: values.uiSchema.title,
           interface: values.interface,
-          description: values.description,
+          description: fieldInterface.primaryKeyDescription,
           name: values.name,
           primaryKey: values.primaryKey,
         };
@@ -123,12 +122,7 @@ export const PresetFields = observer(
             <SetPrimaryKeyAction
               template={props.template}
               onSetPrimaryKey={onSetPrimaryKey}
-              values={
-                primaryKeyCandidateRef.current ?? {
-                  uiSchema: { title: record['field'] },
-                  description: record['description'],
-                }
-              }
+              values={primaryKeyCandidateRef.current}
             >
               <Tag>
                 <Space>

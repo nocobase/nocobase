@@ -36,7 +36,7 @@ class PluginDataSourceMainClient extends Plugin {
   async load() {
     this.addCollectionPresetField({
       order: 100,
-      description: '{{t("Primary key, unique identifier, self growth") }}',
+      description: '{{t("Primary key, distributed uniqueness, time-ordering") }}',
       value: {
         name: 'id',
         type: 'snowflakeId',

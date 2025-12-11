@@ -35,7 +35,9 @@ const getSchema = (template: CollectionTemplate, schema: CollectionFieldInterfac
     ...cloneDeep(values),
   };
   if (defaults.uiSchema?.title) {
-    defaults.uiSchema.title = compile(defaults.uiSchema.title ?? 'ID');
+    defaults.uiSchema.title = compile(defaults.uiSchema.title);
+  } else {
+    defaults.uiSchema.title = compile('{{t("ID")}}');
   }
   if (defaults.description) {
     defaults.description = compile(defaults.description ?? '');
@@ -118,6 +120,7 @@ export const SetPrimaryKeyAction = (props) => {
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
+  const [interfaceName, setInterfaceName] = useState('');
 
   const dm = useDataSourceManager();
   const getInterface = useCallback(
@@ -153,7 +156,8 @@ export const SetPrimaryKeyAction = (props) => {
     const ctx = useActionContext();
     return {
       async run() {
-        onSetPrimaryKey(cloneDeep(form.values));
+        const fieldInterface = getInterface(interfaceName);
+        onSetPrimaryKey(fieldInterface, cloneDeep(form.values));
         ctx.setVisible(false);
       },
     };
@@ -204,6 +208,7 @@ export const SetPrimaryKeyAction = (props) => {
         overflow: 'auto',
       },
       onClick: (e) => {
+        setInterfaceName(e.key);
         const targetScope = targetScopeMap[e.key];
         targetScope && setTargetScope(targetScope);
         const schema = getSchema(collectionTemplate, getInterface(e.key), values, compile);
