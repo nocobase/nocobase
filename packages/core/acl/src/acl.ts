@@ -248,6 +248,14 @@ export class ACL extends EventEmitter {
       return null;
     }
 
+    if (role === 'root') {
+      return {
+        resource,
+        action,
+        role,
+      };
+    }
+
     const actionPath = `${rawResourceName ? rawResourceName : resource}:${action}`;
     const snippetAllowed = aclRole.snippetAllowed(actionPath);
 
