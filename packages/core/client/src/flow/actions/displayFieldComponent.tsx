@@ -53,7 +53,6 @@ export const displayFieldComponent = defineAction({
     }
     const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
     if (classes.length === 1 && !titleField) return true;
-    return !ctx.collectionField || !ctx.collectionField.isAssociationField();
   },
   beforeParamsSave: async (ctx: any, params, previousParams) => {
     if (!ctx.collectionField) {
