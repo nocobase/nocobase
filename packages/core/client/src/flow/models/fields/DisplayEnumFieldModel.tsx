@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Tag } from 'antd';
 import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
+import { Tag } from 'antd';
+import React from 'react';
 import { ClickableFieldModel } from './ClickableFieldModel';
 
 interface FieldNames {
@@ -42,11 +42,15 @@ const fieldNames = {
 };
 
 export class DisplayEnumFieldModel extends ClickableFieldModel {
+  isEmpty(value: any) {
+    return value === null || value === undefined || value === '';
+  }
+
   public renderComponent(value) {
     const { options = [] } = this.props;
     const currentOptions = getCurrentOptions(value, options, fieldNames);
 
-    if (!value || !currentOptions.length) {
+    if (this.isEmpty(value) || !currentOptions.length) {
       return null;
     }
 
