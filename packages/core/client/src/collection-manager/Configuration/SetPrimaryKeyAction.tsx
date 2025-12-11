@@ -14,7 +14,7 @@ import { Dropdown, MenuProps } from 'antd';
 import { cloneDeep } from 'lodash';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useRequest } from '../../api-client';
-import { CollectionFieldInterface, useDataSourceManager } from '../../data-source';
+import { CollectionFieldInterface, CollectionTemplate, useDataSourceManager } from '../../data-source';
 import { ActionContextProvider, SchemaComponent, useActionContext, useCompile } from '../../schema-component';
 import { useCancelAction } from '../action-hooks';
 import useDialect from '../hooks/useDialect';
@@ -22,12 +22,13 @@ import * as components from './components';
 import { isPrimaryKeyCandidate, useFieldInterfaceOptions } from './interfaces';
 import { ItemType } from 'antd/es/menu/interface';
 
-const getSchema = (schema: CollectionFieldInterface, values, compile) => {
+const getSchema = (template: CollectionTemplate, schema: CollectionFieldInterface, values, compile) => {
   if (!schema) {
     return;
   }
 
   const properties = schema.getConfigureFormProperties();
+  template.events?.initPrimaryKeyFiledInterface?.(properties);
 
   const defaults = {
     ...cloneDeep(schema.default),
@@ -114,17 +115,9 @@ const getSchema = (schema: CollectionFieldInterface, values, compile) => {
 
 export const SetPrimaryKeyAction = (props) => {
   const { template, onSetPrimaryKey, values, scope, getContainer, trigger, align, children } = props;
-
   const [visible, setVisible] = useState(false);
   const [targetScope, setTargetScope] = useState();
   const [schema, setSchema] = useState({});
-
-  const compile = useCompile();
-  const { isDialect } = useDialect();
-  const options = useFieldInterfaceOptions().map((option) => ({
-    ...option,
-    children: option.children.filter(isPrimaryKeyCandidate),
-  }));
 
   const dm = useDataSourceManager();
   const getInterface = useCallback(
@@ -140,7 +133,17 @@ export const SetPrimaryKeyAction = (props) => {
     [dm],
   );
 
-  const { availableFieldInterfaces } = getTemplate(template) || {};
+  const collectionTemplate = getTemplate(template);
+  const primaryKeyFilter = collectionTemplate?.events?.filterPrimaryKeyCandidate ?? (() => true);
+
+  const compile = useCompile();
+  const { isDialect } = useDialect();
+  const options = useFieldInterfaceOptions().map((option) => ({
+    ...option,
+    children: option.children.filter(isPrimaryKeyCandidate).filter(primaryKeyFilter),
+  }));
+
+  const { availableFieldInterfaces } = collectionTemplate ?? {};
   const targetScopeMap = Object.fromEntries(
     (availableFieldInterfaces?.include ?? []).filter((x) => x.targetScope).map((x) => [x.interface, x.targetScope]),
   );
@@ -203,7 +206,7 @@ export const SetPrimaryKeyAction = (props) => {
       onClick: (e) => {
         const targetScope = targetScopeMap[e.key];
         targetScope && setTargetScope(targetScope);
-        const schema = getSchema(getInterface(e.key), values, compile);
+        const schema = getSchema(collectionTemplate, getInterface(e.key), values, compile);
         if (schema) {
           setSchema(schema);
           setVisible(true);
@@ -211,7 +214,7 @@ export const SetPrimaryKeyAction = (props) => {
       },
       items,
     };
-  }, [targetScopeMap, getInterface, values, items, compile]);
+  }, [collectionTemplate, targetScopeMap, getInterface, values, items, compile]);
 
   return (
     template !== 'sql' && (

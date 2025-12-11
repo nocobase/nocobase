@@ -69,7 +69,7 @@ export const PresetFields = observer(
       if (!fields?.length) {
         return;
       }
-      const [idField] = fields.filter((x) => x.primaryKey === true);
+      const idField = fields.find((x) => x.primaryKey === true);
       const restFields = fields.filter((x) => !x.primaryKey);
       if (!idField) {
         return;
