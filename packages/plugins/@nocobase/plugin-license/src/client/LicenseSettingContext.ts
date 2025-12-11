@@ -11,6 +11,8 @@ import React from 'react';
 
 interface LicenseSettingContextType {
   onSaveSuccess: () => void;
+  keyExist: boolean;
+  refreshToken?: any;
 }
 
 export const LicenseSettingContext = React.createContext<LicenseSettingContextType | null>(null);
