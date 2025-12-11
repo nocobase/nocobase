@@ -391,11 +391,8 @@ describe('acl', () => {
   it('should clone can result deeply', () => {
     vi.spyOn(acl, 'can').mockReturnValue({
       role: 'root',
-      resource: 'Test',
-      action: {
-        resourceName: 'test',
-        actionName: 'create',
-      },
+      resource: 'test',
+      action: 'create',
       params: {
         fields: [],
       },
@@ -438,5 +435,17 @@ describe('acl', () => {
     acl.setStrategyResources(['posts', 'users']);
 
     expect(acl.can({ role: 'admin', resource: 'users', action: 'create' })).toBeTruthy();
+  });
+
+  it('should return without params when role is root', () => {
+    const root = acl.define({
+      role: 'root',
+    });
+    const member = acl.define({
+      role: 'member',
+    });
+    expect(acl.can({ role: 'root', resource: 'users', action: 'create' })).toBeTruthy();
+    expect(acl.can({ roles: ['root'], resource: 'users', action: 'create' })).toBeTruthy();
+    expect(acl.can({ roles: ['member', 'root'], resource: 'users', action: 'create' })).toBeTruthy();
   });
 });
