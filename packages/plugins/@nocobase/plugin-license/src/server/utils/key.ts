@@ -98,11 +98,13 @@ export async function getKey(ctx?: Context): Promise<string> {
     try {
       key = (await fs.promises.readFile(keyFile, 'utf8')).trim();
     } catch (e) {
+      logger.error('Failed to read license key file', e);
       throw new Error('notfound');
     }
   }
 
   if (!key) {
+    logger.error('License key not found');
     throw new Error('notfound');
   }
 
@@ -110,6 +112,7 @@ export async function getKey(ctx?: Context): Promise<string> {
   try {
     keyData = JSON.parse(keyDecrypt(key));
   } catch (e) {
+    logger.error('Failed to parse license key');
     throw new Error('invalid');
   }
 

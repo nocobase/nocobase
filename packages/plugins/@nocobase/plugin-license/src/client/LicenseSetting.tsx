@@ -215,9 +215,9 @@ export default function LicenseSetting() {
           },
           licenseInfo: {
             type: 'void',
-            title: 'NocoBase ' + t('License information'),
+            // title: 'NocoBase ' + t('License information'),
             'x-component': 'LicenseCardWarp',
-            'x-decorator': 'FormItem',
+            // 'x-decorator': 'FormItem',
           },
         },
       },
