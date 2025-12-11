@@ -35,7 +35,7 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
   onInit(options: any): void {
     super.onInit(options);
   }
-  renderConfiguireActions() {
+  renderConfigureAction() {
     return (
       <AddSubModelButton
         key="table-row-actions-add"
@@ -72,13 +72,21 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
     const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
 
     return (
-      <div key={this.context.index} style={{ width: '100%' }}>
+      <div
+        key={this.context.index}
+        style={{ width: '100%' }}
+        className={css`
+          .ant-form-item {
+            margin-bottom: 5px;
+          }
+        `}
+      >
         <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
           <FlowModelRenderer model={grid as any} showFlowSettings={false} />
         </FormComponent>
-        <div>
+        <div style={{ marginLeft: '-5px' }}>
           <DndProvider>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <Space
                 className={css`
                   button {
@@ -127,7 +135,7 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
                     </Droppable>
                   );
                 })}
-                {this.renderConfiguireActions()}
+                {this.renderConfigureAction()}
               </Space>
             </div>
           </DndProvider>
