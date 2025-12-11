@@ -1323,7 +1323,7 @@
   "Text input": "文本输入",
   "Text only": "纯文本",
   "The application is reloading, please do not close the page.": "应用正在重新加载，请勿关闭页面。",
-  "The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).": "当前按钮已被隐藏，你无法点击（该内容仅在激活 UI Editor 时显示）。",
+  "The button is hidden and only visible when the UI Editor is active": "当前按钮已被隐藏，仅配置状态下显示",
   "The current dependency version of the plugin does not match the version of the application and may not work properly. Are you sure you want to continue enabling the plugin?": "当前插件的依赖版本与应用的版本不一致，可能无法正常工作。您确定要继续激活插件吗？",
   "The current user only has the UI configuration permission, but don't have \"{{actionName}}\" permission for collection \"{{name}}\"": "当前用户只有 UI 配置权限，但没有数据表 \"{{name}}\"的 \"{{actionName}}\"权限。",
   "The current user only has the UI configuration permission, but don't have \"{{actionName}}\" permission for field \"{{name}}\"": "当前用户只有 UI 配置权限，但没有字段 \"{{name}}\"的 \"{{actionName}}\"权限。",

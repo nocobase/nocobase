@@ -114,13 +114,13 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
 
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
   renderHiddenInConfig(): React.ReactNode | undefined {
+    const props = this.props;
+    const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
     return (
-      <Tooltip
-        title={this.context.t(
-          'The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).',
-        )}
-      >
-        <Button type={this.props.type} disabled icon={<LockOutlined />} />
+      <Tooltip title={this.context.t('The button is hidden and only visible when the UI Editor is active')}>
+        <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
+          {props.children || this.getTitle()}
+        </Button>
       </Tooltip>
     );
   }
