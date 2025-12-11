@@ -16,6 +16,7 @@
   "peerDependencies": {
     "@nocobase/client": "2.x",
     "@nocobase/flow-engine": "2.x",
+    "@nocobase/plugin-flow-engine": "2.x",
     "@nocobase/server": "2.x",
     "@nocobase/test": "2.x"
   },
