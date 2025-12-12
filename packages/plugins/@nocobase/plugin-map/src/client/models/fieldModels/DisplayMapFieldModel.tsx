@@ -45,20 +45,23 @@ DisplayMapFieldModel.registerFlow({
   steps: {
     displayStyle: {
       title: tExpr('Display mode'),
-      uiSchema: (ctx) => {
-        if (ctx.model.parent instanceof TableColumnModel) {
-          return null;
-        }
+      uiMode(ctx) {
+        const t = ctx.t;
         return {
-          displayStyle: {
-            'x-component': 'Radio.Group',
-            'x-decorator': 'FormItem',
-            enum: [
-              { label: tExpr('Text'), value: 'text' },
-              { label: tExpr('Map'), value: 'map' },
+          type: 'select',
+          key: 'displayStyle',
+          props: {
+            options: [
+              { label: t('Text'), value: 'text' },
+              { label: t('Map'), value: 'map' },
             ],
           },
         };
+      },
+      hideInSettings(ctx) {
+        if (ctx.model.parent instanceof TableColumnModel) {
+          return true;
+        }
       },
       defaultParams: {
         displayStyle: 'text',
@@ -69,6 +72,10 @@ DisplayMapFieldModel.registerFlow({
     },
     zoom: {
       use: 'setDefaultZoomLevel',
+      hideInSettings(ctx) {
+        const displayStyle = ctx.model.getStepParams?.('mapFieldSetting', 'displayStyle')?.displayStyle;
+        return displayStyle === 'text';
+      },
     },
   },
 });
