@@ -214,12 +214,7 @@ async function processValues(
         }
       }
 
-      if (processed.length === 0 && !protectedKeys.includes(fieldName)) {
-        delete values[fieldName];
-      } else {
-        values[fieldName] = processed;
-      }
-
+      values[fieldName] = processed;
       continue;
     }
 
@@ -234,12 +229,7 @@ async function processValues(
       field.target,
       fieldPath,
     );
-
-    if (_.isEmpty(r) && !protectedKeys.includes(fieldName)) {
-      delete values[fieldName];
-    } else {
-      values[fieldName] = r;
-    }
+    values[fieldName] = r;
   }
 
   return values;
