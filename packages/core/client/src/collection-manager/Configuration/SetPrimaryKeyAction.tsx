@@ -30,10 +30,23 @@ const getSchema = (template: CollectionTemplate, schema: CollectionFieldInterfac
   const properties = schema.getConfigureFormProperties();
   template.events?.initPrimaryKeyFiledInterface?.(properties);
 
-  const defaults = {
-    ...cloneDeep(schema.default),
-    ...cloneDeep(values),
-  };
+  const defaults =
+    schema.name === values?.interface
+      ? { ...cloneDeep(schema.default), ...cloneDeep(values) }
+      : cloneDeep(schema.default);
+  if (!defaults.uiSchema) {
+    defaults.uiSchema = {};
+  }
+  if (values?.uiSchema?.title) {
+    defaults.uiSchema.title = values.uiSchema.title;
+  }
+  if (values?.field) {
+    defaults.field = values.field;
+  }
+  if (values?.description) {
+    defaults.description = values.description;
+  }
+
   if (defaults.uiSchema?.title) {
     defaults.uiSchema.title = compile(defaults.uiSchema.title);
   } else {
