@@ -17,11 +17,12 @@ import { useFlowModel } from '../hooks';
 import { DefaultStructure } from '../types';
 import { escapeT } from '../utils';
 import { FlowModel } from './flowModel';
+import { FormItem } from '../components/FormItem';
 
-export function FieldPlaceholder() {
+export function FieldPlaceholder({ title }) {
   const { t } = useTranslation();
   return (
-    <Form.Item>
+    <FormItem label={title} showLabel={true}>
       <Card
         size="small"
         styles={{
@@ -34,7 +35,7 @@ export function FieldPlaceholder() {
           'This field has been hidden and you cannot view it (this content is only visible when the UI Editor is activated).',
         )}
       </Card>
-    </Form.Item>
+    </FormItem>
   );
 }
 
@@ -90,7 +91,7 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     if (this.fieldDeleted) {
       return <FieldDeletePlaceholder />;
     }
-    return <FieldPlaceholder />;
+    return <FieldPlaceholder title={this.collectionField.title} />;
   }
 
   get title() {

@@ -273,9 +273,7 @@ TableColumnModel.registerFlow({
         });
       },
     },
-    aclCheck: {
-      use: 'aclCheck',
-    },
+
     title: {
       title: tExpr('Column title'),
       uiSchema: (ctx) => {
@@ -302,6 +300,7 @@ TableColumnModel.registerFlow({
         ctx.model.setProps('title', title);
       },
     },
+
     tooltip: {
       title: tExpr('Tooltip'),
       uiSchema: {
@@ -328,6 +327,9 @@ TableColumnModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps('width', params.width);
       },
+    },
+    aclCheck: {
+      use: 'aclCheck',
     },
     quickEdit: {
       title: tExpr('Enable quick edit'),
