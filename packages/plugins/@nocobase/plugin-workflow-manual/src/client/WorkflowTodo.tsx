@@ -503,7 +503,7 @@ function Decorator(props) {
   const blockProps = {
     collection: 'workflowManualTasks',
     resource: 'workflowManualTasks',
-    action: 'list',
+    action: 'listMine',
     params: {
       pageSize: 20,
       sort: ['-createdAt'],
