@@ -10,7 +10,7 @@
 import { getEnvAsync, Env } from '@nocobase/license-kit';
 import { getKey, parseKey, isDateExpired } from './key';
 import { isDomainMatch, getClientDomain, isDbMatch, isSysMatch, getEnvOnce } from './env';
-import { getNocoBasePkgUrl, testPkgLogin } from './pkg';
+import { getNocoBasePkgUrl, testPkgLogin, testServiceConnection } from './pkg';
 import { KeyData } from './interface';
 import { getPlugins, getPluginsLicenseStatus, PluginData } from './plugin';
 
@@ -24,6 +24,7 @@ export interface LicenseValidateResult {
   envMatch: boolean;
   domainMatch: boolean;
   isExpired: boolean;
+  isServiceConnection: boolean;
   isPkgLogin: boolean;
   keyData: KeyData;
   pkgUrl: string;
@@ -53,6 +54,7 @@ export async function getLicenseValidate({ key, ctx }: { key?: string; ctx?: any
   const plugins = await getPlugins({ keyData, ctx });
   const pluginsLicensed = getPluginsLicenseStatus({ plugins });
   const isPkgLogin = await testPkgLogin(keyData);
+  const isServiceConnection = await testServiceConnection(keyData);
 
   return {
     current: {
@@ -66,6 +68,7 @@ export async function getLicenseValidate({ key, ctx }: { key?: string; ctx?: any
     domainMatch,
     isExpired,
     isPkgLogin,
+    isServiceConnection,
     pkgUrl: getNocoBasePkgUrl(),
     plugins,
     pluginsLicensed,

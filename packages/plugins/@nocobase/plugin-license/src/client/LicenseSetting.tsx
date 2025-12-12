@@ -139,7 +139,7 @@ const TextArea = ({ ...props }) => {
 const LicenseCardWarp = () => {
   const { keyExist, refreshToken } = React.useContext(LicenseSettingContext);
   if (!keyExist) {
-    return '-';
+    return null;
   }
   return (
     <SchemaComponent

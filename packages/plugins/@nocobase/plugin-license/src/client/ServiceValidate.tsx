@@ -17,7 +17,8 @@ import { useTranslation } from 'react-i18next';
 export const ServiceValidate = ({ refreshToken }: { refreshToken: number }) => {
   const api = useAPIClient();
   const [state, setState] = useState<{
-    keyExist: boolean;
+    keyStatus: string;
+    licenseStatus: string;
     isPkgConnection: boolean;
     isPkgLogin: boolean;
     isServiceConnection: boolean;
@@ -29,7 +30,7 @@ export const ServiceValidate = ({ refreshToken }: { refreshToken: number }) => {
     setState(null);
     api
       .request({
-        url: '/license:service-validate',
+        url: '/license:license-validate',
         method: 'get',
       })
       .then((res) => {
@@ -40,7 +41,7 @@ export const ServiceValidate = ({ refreshToken }: { refreshToken: number }) => {
       });
   }, [refreshToken]);
 
-  if (!state?.keyExist) {
+  if (!state?.licenseStatus || state?.licenseStatus !== 'active') {
     return null;
   }
 
@@ -51,7 +52,11 @@ export const ServiceValidate = ({ refreshToken }: { refreshToken: number }) => {
         description={
           <>
             {t(
-              'Due to network issues, the license key cannot be updated automatically. Please update it manually if necessary. Plugins also cannot be updated automatically (they are still usable). To update plugins, please check your network connection or refer to the NocoBase Service documentation to upload plugins manually.',
+              'Due to network issues, the license key cannot be updated automatically. Please update it manually if necessary.',
+            )}
+            <br />
+            {t(
+              'Plugins also cannot be updated automatically (they are still usable). To update plugins, please check your network connection or refer to the NocoBase Service documentation to upload plugins manually.',
             )}
           </>
         }
