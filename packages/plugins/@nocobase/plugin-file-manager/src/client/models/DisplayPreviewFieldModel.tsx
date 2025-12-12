@@ -144,7 +144,7 @@ const Preview = (props) => {
   const { value = [], size = 28, showFileName } = props;
   const [current, setCurrent] = React.useState(0);
   const { t } = useTranslation();
-  const onDownload = () => {
+  const onDownload = (props) => {
     const url = value[current].url || value[current];
     const suffix = url.slice(url.lastIndexOf('.'));
     const filename = Date.now() + suffix;
@@ -189,6 +189,7 @@ const Preview = (props) => {
           setCurrent(index);
         },
         imageRender: (originalNode, info) => {
+          setCurrent(info.current);
           const file: any = info.image;
           // 根据文件类型决定如何渲染预览
           if (matchMimetype(file, 'application/pdf')) {
