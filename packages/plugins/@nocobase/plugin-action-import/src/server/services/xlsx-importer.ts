@@ -374,7 +374,7 @@ export class XlsxImporter extends EventEmitter {
       if (insertOptions.hooks !== false) {
         await this.loggerService.measureExecutedTime(
           async () => {
-            await db.emit(`${this.repository.collection.name}.afterCreate`, instance, {
+            await db.emitAsync(`${this.repository.collection.name}.afterCreate`, instance, {
               transaction,
             });
             await db.emitAsync(`${this.repository.collection.name}.afterSave`, instance, {
