@@ -26,7 +26,7 @@
   "Network error.": "网络异常",
   "Due to network issues, the license key cannot be updated automatically. Please update it manually if necessary.": "由于网络问题，授权密钥无法自动更新，如有需要请手动更新。",
   "Due to network issues, plugins cannot be updated automatically (they are still usable). To update plugins, please check your network connection or refer to the NocoBase Service documentation to upload plugins manually.": "由于网络问题，插件无法自动更新（可正常使用），如需要更新插件，请检查网络连接，或参考 NocoBase Service 文档手动上传插件。",
-  "Due to network issues, the license key cannot be updated automatically. Please update it manually if necessary. Plugins also cannot be updated automatically (they are still usable). To update plugins, please check your network connection or refer to the NocoBase Service documentation to upload plugins manually.": "由于网络问题，授权密钥无法自动更新，如有需要请手动更新。插件也无法自动更新（可正常使用），如需要更新插件，请检查网络连接，或参考 NocoBase Service 文档手动上传插件。",
+  "Plugins also cannot be updated automatically (they are still usable). To update plugins, please check your network connection or refer to the NocoBase Service documentation to upload plugins manually.": "插件也无法自动更新（可正常使用），如需要更新插件，请检查网络连接，或参考 NocoBase Service 文档手动上传插件。",
   "License key saved successfully. Please retry the plugin installation.": "授权密钥保存成功，请重新执行插件安装操作。",
   "The license key was saved successfully": "授权密钥保存成功",
   "License key not found.": "授权密钥未找到",

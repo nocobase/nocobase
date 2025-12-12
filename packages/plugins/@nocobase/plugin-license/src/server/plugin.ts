@@ -53,17 +53,17 @@ export class PluginLicenseServer extends Plugin {
           await next();
         },
         'license-validate': async (ctx, next) => {
-          const isExists = await isLicenseKeyExists();
-          if (!isExists) {
+          const isExist = await isLicenseKeyExists();
+          if (!isExist) {
             ctx.body = {
-              keyNotExists: true,
+              keyExist: false,
             };
             await next();
             return;
           }
           const licenseValidate = await getLicenseValidate({ ctx });
           ctx.body = {
-            keyNotExists: false,
+            keyExist: true,
             ...licenseValidate,
             keyData: pick(licenseValidate.keyData, ['service']),
           };
