@@ -190,7 +190,7 @@ export class ActionPanelBlockModel extends BlockModel {
                         <Tooltip
                           title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
                         >
-                          <Button style={{ opacity: '0.3' }}>
+                          <Button style={{ opacity: '0.3' }} onClick={action.onClick.bind(action)}>
                             <List.Item
                               prefix={
                                 (
