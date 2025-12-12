@@ -357,7 +357,7 @@ export default {
         await aiEmployee.processMessages(messages, editingMessageId);
       } catch (err) {
         ctx.log.error(err);
-        sendErrorResponse(ctx, 'Chat error warning');
+        sendErrorResponse(ctx, err.message || 'Chat error warning');
       }
 
       await next();
