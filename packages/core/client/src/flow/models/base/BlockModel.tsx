@@ -11,6 +11,7 @@ import { Observer } from '@formily/reactive-react';
 import { DefaultStructure, tExpr, FlowModel } from '@nocobase/flow-engine';
 import _ from 'lodash';
 import React from 'react';
+import { Tooltip } from 'antd';
 import { BlockItemCard } from '../../components';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
 import { BlockPlaceholder } from '../../components/placeholders/BlockPlaceholder';
@@ -51,7 +52,17 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 
   // 设置态隐藏时的占位渲染
   protected renderHiddenInConfig(): React.ReactNode | undefined {
-    return <BlockPlaceholder />;
+    return (
+      <Tooltip title={this.context.t('The block is hidden and only visible when the UI Editor is active')}>
+        <BlockItemCard ref={this.context.ref} {...this.decoratorProps} style={{ opacity: '0.3' }}>
+          <Observer>
+            {() => {
+              return this.renderComponent();
+            }}
+          </Observer>
+        </BlockItemCard>
+      </Tooltip>
+    );
   }
 
   onInit(options: any): void {
