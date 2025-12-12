@@ -105,6 +105,39 @@ export const FormItem: any = withDynamicSchemaProps(
       return null;
     }
 
+    // 处理 tooltip 内容（修复后）
+    const tooltip = useMemo(() => {
+      const tooltipContent = field.decoratorProps?.tooltip || schema['x-decorator-props']?.tooltip;
+      if (typeof tooltipContent === 'string') {
+        // 检查是否包含 HTML 标签
+        if (/<[^>]+>/.test(tooltipContent)) {
+          // 如果包含 HTML 标签，直接使用原始内容（不转义）
+          return (
+            <div
+              dangerouslySetInnerHTML={{
+                __html: tooltipContent
+                  .split('\n')
+                  .join('<br/>'),
+              }}
+            />
+          );
+        }
+      }
+      return tooltipContent;
+    }, [field.decoratorProps?.tooltip, schema['x-decorator-props']?.tooltip]);
+
+    // 修改传递给 Item 组件的属性
+    const itemProps = {
+      ...props,
+      extra,
+      wrapperStyle: {
+        ...(wrapperStyle.backgroundColor ? { paddingLeft: '5px', paddingRight: '5px' } : {}),
+        ...wrapperStyle,
+      },
+      // 使用处理后的 tooltip
+      ...(tooltip && { tooltip }),
+    };
+
     return (
       <VariableScope scopeId={schema?.['x-uid']} type="formItem">
         <CollectionFieldProvider allowNull={true}>
@@ -123,12 +156,7 @@ export const FormItem: any = withDynamicSchemaProps(
             <ACLCollectionFieldProvider>
               <Item
                 className={className}
-                {...props}
-                extra={extra}
-                wrapperStyle={{
-                  ...(wrapperStyle.backgroundColor ? { paddingLeft: '5px', paddingRight: '5px' } : {}),
-                  ...wrapperStyle,
-                }}
+                {...itemProps}
               />
             </ACLCollectionFieldProvider>
           </BlockItem>
