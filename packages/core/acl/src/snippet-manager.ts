@@ -37,7 +37,12 @@ class SnippetManager {
       throw new Error(`Invalid snippet name: ${snippet.name}, name should not include * or end with dot.`);
     }
 
-    this.snippets.set(snippet.name, snippet);
+    const existed = this.snippets.get(snippet.name);
+    if (existed) {
+      existed.actions = Array.from(new Set([...existed.actions, ...snippet.actions]));
+    } else {
+      this.snippets.set(snippet.name, snippet);
+    }
   }
 
   allow(actionPath: string, snippetName: string) {
