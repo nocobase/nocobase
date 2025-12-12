@@ -16,6 +16,7 @@ export interface SelectWithTitleProps {
   getDefaultValue?: any;
   options?: any;
   fieldNames?: any;
+  itemKey?: string;
   onChange?: (...args: any[]) => void;
 }
 
@@ -25,11 +26,11 @@ export function SelectWithTitle({
   onChange,
   options,
   fieldNames,
+  itemKey,
   ...others
 }: SelectWithTitleProps) {
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState<any>('');
-  const [fieldKey, setFieldKey] = useState('');
   const ctx = useFlowEngineContext();
   useEffect(() => {
     let cancelled = false;
@@ -46,7 +47,6 @@ export function SelectWithTitle({
 
         const [key, result] = entries[0];
         setValue(result);
-        setFieldKey(key);
       } catch (e) {
         console.error(e);
       }
@@ -63,7 +63,7 @@ export function SelectWithTitle({
 
   const handleChange = (val: any) => {
     setValue(val);
-    onChange?.({ [fieldKey]: val });
+    onChange?.({ [itemKey]: val });
   };
   return (
     <div

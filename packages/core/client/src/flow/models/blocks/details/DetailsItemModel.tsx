@@ -195,7 +195,7 @@ DetailsItemModel.registerFlow({
     },
     showLabel: {
       title: tExpr('Show label'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'showLabel' },
       defaultParams: {
         showLabel: true,
       },

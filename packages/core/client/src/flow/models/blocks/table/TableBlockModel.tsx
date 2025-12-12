@@ -536,7 +536,7 @@ TableBlockModel.registerFlow({
   steps: {
     showRowNumbers: {
       title: tExpr('Show row numbers'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'showIndex' },
       defaultParams: {
         showIndex: true,
       },
@@ -546,7 +546,7 @@ TableBlockModel.registerFlow({
     },
     quickEdit: {
       title: tExpr('Enable quick edit'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'editable' },
       defaultParams: {
         editable: false,
       },
@@ -558,6 +558,7 @@ TableBlockModel.registerFlow({
       title: tExpr('Page size'),
       uiMode: {
         type: 'select',
+        key: 'pageSize',
         props: {
           options: [
             { label: '5', value: 5 },
@@ -588,7 +589,7 @@ TableBlockModel.registerFlow({
     },
     treeTable: {
       title: tExpr('Enable tree table'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'treeTable' },
       hideInSettings(ctx) {
         if (ctx.model.collection.template !== 'tree') {
           return true;
@@ -606,7 +607,7 @@ TableBlockModel.registerFlow({
     },
     defaultExpandAllRows: {
       title: tExpr('Expand all rows by default'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'defaultExpandAllRows' },
       hideInSettings(ctx) {
         if (ctx.model.collection.template !== 'tree') {
           return true;
@@ -625,6 +626,7 @@ TableBlockModel.registerFlow({
         const t = ctx.t;
         return {
           type: 'select',
+          key: 'size',
           props: {
             options: [
               { label: t('Large'), value: 'large' },

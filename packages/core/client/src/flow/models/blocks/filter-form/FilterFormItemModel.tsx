@@ -294,7 +294,7 @@ FilterFormItemModel.registerFlow({
 
     showLabel: {
       title: tExpr('Show label'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'showLabel' },
       defaultParams: {
         showLabel: true,
       },
@@ -348,6 +348,7 @@ FilterFormItemModel.registerFlow({
         const t = ctx.t;
         return {
           type: 'select',
+          key: 'use',
           props: {
             options: classes.map((model) => ({
               label: t(model.modelName),

@@ -17,6 +17,7 @@ export const renderMode = defineAction({
     const t = ctx.t;
     return {
       type: 'select',
+      key: 'textOnly',
       props: {
         options: [
           { label: t('Text only'), value: true },

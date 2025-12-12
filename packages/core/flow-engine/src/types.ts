@@ -239,14 +239,12 @@ export type EventDefinition<
 > = ActionDefinition<TModel, TCtx>;
 
 export type StepUIMode =
-  | 'select'
-  | 'switch'
   | 'dialog'
   | 'drawer'
   | 'embed'
   // | 'switch'
   // | 'select'
-  | { type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch'; props?: Record<string, any> };
+  | { type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch'; props?: Record<string, any>; key?: string };
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 

@@ -16,9 +16,9 @@ export const defaultOperator = defineAction<FilterFormFieldModel>({
   title: tExpr('Default operator'),
   uiMode(ctx) {
     const operatorOptions = getOperatorOptions(ctx.model);
-
     return {
       type: 'select',
+      key: 'value',
       props: {
         options: operatorOptions,
       },

@@ -18,6 +18,7 @@ export const pattern = defineAction({
     const t = ctx.t;
     return {
       type: 'select',
+      key: 'pattern',
       props: {
         options: [
           {

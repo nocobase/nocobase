@@ -513,7 +513,7 @@ RecordSelectFieldModel.registerFlow({
     },
     allowMultiple: {
       title: tExpr('Allow multiple'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'allowMultiple' },
       hideInSettings(ctx) {
         return (
           !ctx.collectionField || !['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)
@@ -538,6 +538,7 @@ RecordSelectFieldModel.registerFlow({
         const t = ctx.t;
         return {
           type: 'select',
+          key: 'quickCreate',
           props: {
             options: [
               { label: t('None'), value: 'none' },

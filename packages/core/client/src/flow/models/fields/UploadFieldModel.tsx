@@ -304,7 +304,7 @@ UploadFieldModel.registerFlow({
   steps: {
     quickUpload: {
       title: tExpr('Quick upload'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'quickUpload' },
       hideInSettings(ctx) {
         return !ctx.collectionField.isAssociationField() || !ctx.collectionField.targetCollection;
       },
@@ -320,7 +320,7 @@ UploadFieldModel.registerFlow({
 
     allowMultiple: {
       title: tExpr('Allow multiple'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'multiple' },
       hideInSettings(ctx) {
         return (
           !ctx.collectionField || !['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)
@@ -343,7 +343,7 @@ UploadFieldModel.registerFlow({
     },
     showFileName: {
       title: tExpr('Show file name'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'showFileName' },
       defaultParams: {
         showFileName: false,
       },
@@ -353,7 +353,7 @@ UploadFieldModel.registerFlow({
     },
     allowSelectExistingRecord: {
       title: tExpr('Allow selection of existing file'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'allowSelectExistingRecord' },
       hideInSettings(ctx) {
         return !ctx.collectionField.isAssociationField() || !ctx.collectionField.targetCollection;
       },

@@ -41,6 +41,7 @@ export const displayFieldComponent = defineAction({
     const options = buildAssociationOptions(ctx, ctx.model.constructor, titleField);
     return {
       type: 'select',
+      key: 'use',
       props: {
         options,
       },

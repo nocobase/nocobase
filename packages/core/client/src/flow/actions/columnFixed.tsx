@@ -16,6 +16,7 @@ export const fixed = defineAction({
     const t = ctx.t;
     return {
       type: 'select',
+      key: 'fixed',
       props: {
         options: [
           { label: t('Not fixed'), value: 'none' },

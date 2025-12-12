@@ -213,6 +213,7 @@ ClickableFieldModel.registerFlow({
         const t = ctx.t;
         return {
           type: 'select',
+          key: 'displayStyle',
           props: {
             options: [
               { label: t('Tag'), value: 'tag' },
@@ -240,7 +241,7 @@ ClickableFieldModel.registerFlow({
     },
     clickToOpen: {
       title: tExpr('Enable click to open'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'clickToOpen' },
       defaultParams: (ctx) => {
         return {
           clickToOpen: ctx.collectionField.isAssociationField(),

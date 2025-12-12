@@ -13,7 +13,10 @@ import { TableColumnModel } from '../models/blocks/table';
 export const overflowMode = defineAction({
   name: 'overflowMode',
   title: tExpr('Content overflow ellipsis'),
-  uiMode: 'switch',
+  uiMode: {
+    type: 'switch',
+    key: 'overflowMode',
+  },
   defaultParams: (ctx) => {
     return { overflowMode: ctx.model.parent instanceof TableColumnModel ? true : false };
   },

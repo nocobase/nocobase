@@ -29,6 +29,7 @@ export const fieldComponent = defineAction({
       );
       return {
         type: 'select',
+        key: 'use',
         props: {
           options,
         },

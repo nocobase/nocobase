@@ -25,7 +25,7 @@ PasswordFieldModel.registerFlow({
   steps: {
     checkStrength: {
       title: tExpr('Check strength'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'checkStrength' },
       handler(ctx, params) {
         ctx.model.setProps({ checkStrength: params.checkStrength || false });
       },

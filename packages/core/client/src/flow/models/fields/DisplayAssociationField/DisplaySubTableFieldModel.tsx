@@ -226,6 +226,7 @@ DisplaySubTableFieldModel.registerFlow({
       title: tExpr('Page size'),
       uiMode: {
         type: 'select',
+        key: 'pageSize',
         props: {
           options: [
             { label: '5', value: 5 },

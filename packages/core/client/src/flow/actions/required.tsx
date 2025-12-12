@@ -19,6 +19,7 @@ export const required = defineAction({
     const hasRequiredInCollection = joiRules.concat(rules).some((rule) => rule.name === 'required');
     return {
       type: 'switch',
+      key: 'required',
       props: {
         disabled: hasRequiredInCollection,
       },

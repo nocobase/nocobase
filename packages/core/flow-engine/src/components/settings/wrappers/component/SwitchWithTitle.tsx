@@ -14,69 +14,69 @@ import { useFlowEngineContext } from '../../../../provider';
 
 const ml32 = { marginLeft: 32 };
 
-export const SwitchWithTitle: FC = observer(({ title, onChange, getDefaultValue, disabled, ...others }: any) => {
-  const [checked, setChecked] = useState<boolean>(false);
-  const [fieldKey, setFieldKey] = useState('');
-  const ctx = useFlowEngineContext();
+export const SwitchWithTitle: FC = observer(
+  ({ title, onChange, getDefaultValue, disabled, itemKey, ...others }: any) => {
+    const [checked, setChecked] = useState<boolean>(false);
+    const ctx = useFlowEngineContext();
 
-  useEffect(() => {
-    let cancelled = false;
+    useEffect(() => {
+      let cancelled = false;
 
-    const run = async () => {
-      if (!getDefaultValue) return;
+      const run = async () => {
+        if (!getDefaultValue) return;
 
-      try {
-        const val = await getDefaultValue();
-        if (cancelled || !val) return;
+        try {
+          const val = await getDefaultValue();
+          if (cancelled || !val) return;
 
-        const entries = Object.entries(val);
-        if (!entries.length) return;
+          const entries = Object.entries(val);
+          if (!entries.length) return;
 
-        const [key, value] = entries[0];
-        setChecked(!!value);
-        setFieldKey(key);
-      } catch (e) {
-        console.error(e);
-      }
+          const [key, value] = entries[0];
+          setChecked(!!value);
+        } catch (e) {
+          console.error(e);
+        }
+      };
+
+      run();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [getDefaultValue]);
+
+    const handleChange = (val: boolean) => {
+      setChecked(val);
+      onChange?.({ [itemKey]: val });
     };
 
-    run();
-
-    return () => {
-      cancelled = true;
+    // 点击整个容器时触发
+    const handleWrapperClick = () => {
+      if (disabled) return;
+      handleChange(!checked);
     };
-  }, [getDefaultValue]);
-
-  const handleChange = (val: boolean) => {
-    setChecked(val);
-    onChange?.({ [fieldKey]: val });
-  };
-
-  // 点击整个容器时触发
-  const handleWrapperClick = () => {
-    if (disabled) return;
-    handleChange(!checked);
-  };
-  return (
-    <div
-      style={{
-        alignItems: 'center',
-        display: 'flex',
-        justifyContent: 'space-between',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-      }}
-      onClick={handleWrapperClick}
-    >
-      {title}
-      <Switch
-        size="small"
-        {...others}
-        checkedChildren={others.checkedChildren ? ctx.t(others.checkedChildren) : undefined}
-        unCheckedChildren={others.unCheckedChildren ? ctx.t(others.unCheckedChildren) : undefined}
-        checked={checked}
-        style={ml32}
-        disabled={disabled}
-      />
-    </div>
-  );
-});
+    return (
+      <div
+        style={{
+          alignItems: 'center',
+          display: 'flex',
+          justifyContent: 'space-between',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+        }}
+        onClick={handleWrapperClick}
+      >
+        {title}
+        <Switch
+          size="small"
+          {...others}
+          checkedChildren={others.checkedChildren ? ctx.t(others.checkedChildren) : undefined}
+          unCheckedChildren={others.unCheckedChildren ? ctx.t(others.unCheckedChildren) : undefined}
+          checked={checked}
+          style={ml32}
+          disabled={disabled}
+        />
+      </div>
+    );
+  },
+);

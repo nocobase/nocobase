@@ -268,6 +268,7 @@ DisplayPreviewFieldModel.registerFlow({
         const t = ctx.t;
         return {
           type: 'select',
+          key: 'size',
           props: {
             options: [
               {
@@ -300,7 +301,7 @@ DisplayPreviewFieldModel.registerFlow({
     },
     showFileName: {
       title: tExpr('Show file name'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'showFileName' },
       hideInSettings(ctx) {
         return ctx.model.parent instanceof TableColumnModel;
       },

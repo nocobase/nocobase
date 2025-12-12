@@ -331,7 +331,7 @@ TableColumnModel.registerFlow({
     },
     quickEdit: {
       title: tExpr('Enable quick edit'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'editable' },
       defaultParams(ctx) {
         if (ctx.model.collectionField.readonly || ctx.model.associationPathName) {
           return {
@@ -352,7 +352,7 @@ TableColumnModel.registerFlow({
     },
     sorter: {
       title: tExpr('Sortable'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'sorter' },
       hideInSettings: async (ctx) => {
         const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
           ctx.model.collectionField.interface,

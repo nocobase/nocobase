@@ -153,6 +153,7 @@ SubTableFieldModel.registerFlow({
       title: tExpr('Page size'),
       uiMode: {
         type: 'select',
+        key: 'pageSize',
         props: {
           options: [
             { label: '5', value: 5 },
@@ -175,7 +176,7 @@ SubTableFieldModel.registerFlow({
     },
     allowAddNew: {
       title: tExpr('Allow add new data'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'allowAddNew' },
       defaultParams: {
         allowAddNew: true,
       },
@@ -187,7 +188,7 @@ SubTableFieldModel.registerFlow({
     },
     enableIndexColumn: {
       title: tExpr('Enable index column'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'enableIndexColumn' },
       defaultParams: {
         enableIndexColumn: true,
       },
@@ -200,7 +201,7 @@ SubTableFieldModel.registerFlow({
 
     allowDisassociation: {
       title: tExpr('Allow disassociation'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'allowDisassociation' },
       defaultParams: {
         allowDisassociation: true,
       },
@@ -212,7 +213,7 @@ SubTableFieldModel.registerFlow({
     },
     allowSelectExistingRecord: {
       title: tExpr('Allow selection of existing records'),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'allowSelectExistingRecord' },
       defaultParams: {
         allowSelectExistingRecord: false,
       },

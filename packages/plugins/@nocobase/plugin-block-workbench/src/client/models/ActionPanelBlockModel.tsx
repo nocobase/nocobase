@@ -285,9 +285,9 @@ ActionPanelBlockModel.registerFlow({
       title: tExpr('Layout', { ns: 'block-workbench' }),
       uiMode(ctx) {
         const t = ctx.t;
-
         return {
           type: 'select',
+          key: 'layout',
           props: {
             options: [
               { label: t('Grid', { ns: 'block-workbench' }), value: WorkbenchLayout.Grid },
@@ -307,7 +307,7 @@ ActionPanelBlockModel.registerFlow({
     },
     ellipsis: {
       title: tExpr('Ellipsis action title', { ns: 'block-workbench' }),
-      uiMode: 'switch',
+      uiMode: { type: 'switch', key: 'ellipsis' },
       defaultParams: {
         ellipsis: true,
       },

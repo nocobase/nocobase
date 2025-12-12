@@ -561,6 +561,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 }
               },
               ...((uiMode as any)?.props || {}),
+              itemKey: (uiMode as any)?.key,
             };
             items.push({
               key: uniqueKey,

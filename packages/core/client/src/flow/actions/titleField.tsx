@@ -25,6 +25,7 @@ export const titleField = defineAction({
       }));
     return {
       type: 'select',
+      key: 'label',
       props: {
         options,
       },
