@@ -18,24 +18,24 @@ const buttonSettings = defineFlow({
       title: tExpr('Switch Configuration 1'),
       uiMode: {
         type: 'switch',
-        // key: 'enabled',
+        key: 'enabled',
       },
       defaultParams: {
-        switch1: true,
+        enabled: true,
       },
     },
     switch2: {
       title: tExpr('Switch Configuration 2'),
       uiMode: {
         type: 'switch',
-        // key: 'enabled',
+        key: 'enabled',
         props: {
           checkedChildren: tExpr('启用'),
           unCheckedChildren: tExpr('禁用'),
         },
       },
       defaultParams: {
-        switch2: true,
+        enabled: true,
       },
     },
   },

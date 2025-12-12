@@ -19,6 +19,7 @@ const buttonSettings = defineFlow({
       title: '{{t("Select Example")}}',
       uiMode: {
         type: 'select',
+        key: 'icon',
         props: {
           options: [
             { label: tExpr('选项一'), value: 'one' },
@@ -28,7 +29,7 @@ const buttonSettings = defineFlow({
         }
       },
       defaultParams: {
-        general: 'two',
+        icon: 'two',
       },
       handler(ctx, params) {
       },
