@@ -8,7 +8,8 @@
  */
 
 import { Select } from 'antd';
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useFlowEngineContext } from '../../../../provider';
 
 export interface SelectWithTitleProps {
   title?: any;
@@ -29,6 +30,7 @@ export function SelectWithTitle({
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState<any>('');
   const [fieldKey, setFieldKey] = useState('');
+  const ctx = useFlowEngineContext();
   useEffect(() => {
     let cancelled = false;
 
@@ -87,6 +89,8 @@ export function SelectWithTitle({
         popupClassName={`select-popup-${title.replaceAll(' ', '-')}`}
         fieldNames={fieldNames}
         options={options}
+        labelRender={(props) => ctx.t(props.label)}
+        optionRender={(o) => ctx.t(o.label)}
         style={{ textAlign: 'right', minWidth: 100 }}
         onMouseEnter={() => {
           clearTimeout(timerRef.current);

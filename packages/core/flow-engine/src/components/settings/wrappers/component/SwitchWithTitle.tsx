@@ -7,15 +7,17 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Switch } from 'antd';
-import React, { FC, useState, useEffect } from 'react';
 import { observer } from '@formily/react';
+import { Switch } from 'antd';
+import React, { FC, useEffect, useState } from 'react';
+import { useFlowEngineContext } from '../../../../provider';
 
 const ml32 = { marginLeft: 32 };
 
 export const SwitchWithTitle: FC = observer(({ title, onChange, getDefaultValue, disabled, ...others }: any) => {
   const [checked, setChecked] = useState<boolean>(false);
   const [fieldKey, setFieldKey] = useState('');
+  const ctx = useFlowEngineContext();
 
   useEffect(() => {
     let cancelled = false;
@@ -66,7 +68,15 @@ export const SwitchWithTitle: FC = observer(({ title, onChange, getDefaultValue,
       onClick={handleWrapperClick}
     >
       {title}
-      <Switch size="small" {...others} checked={checked} style={ml32} disabled={disabled} />
+      <Switch
+        size="small"
+        {...others}
+        checkedChildren={others.checkedChildren ? ctx.t(others.checkedChildren) : undefined}
+        unCheckedChildren={others.unCheckedChildren ? ctx.t(others.unCheckedChildren) : undefined}
+        checked={checked}
+        style={ml32}
+        disabled={disabled}
+      />
     </div>
   );
 });

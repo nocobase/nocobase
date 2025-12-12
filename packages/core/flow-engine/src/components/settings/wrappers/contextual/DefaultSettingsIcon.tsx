@@ -521,7 +521,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             });
           }
           // 在平铺模式下始终按流程分组
-          if (flow.enableTitle) {
+          if (flow.options.enableTitle) {
             items.push({
               key: groupKey,
               label: t(flow.title) || flow.key,
