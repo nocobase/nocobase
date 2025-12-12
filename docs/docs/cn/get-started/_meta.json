@@ -5,6 +5,11 @@
     "link": "/get-started/how-nocobase-works"
   },
   {
+    "type": "custom-link",
+    "label": "系统要求",
+    "link": "/get-started/system-requirements"
+  },
+  {
     "type": "file",
     "name": "quickstart"
   },
@@ -12,11 +17,6 @@
     "type": "custom-link",
     "label": "安装 NocoBase",
     "items": [
-      {
-        "type": "custom-link",
-        "label": "系统要求",
-        "link": "/get-started/installation/system-requirements"
-      },
       {
         "type": "custom-link",
         "label": "Docker 安装",
