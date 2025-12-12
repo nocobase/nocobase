@@ -19,6 +19,9 @@ function normalizeAssociationValue(
   value: any,
   recordKey: string,
 ): Record<string, any> | Record<string, any>[] | undefined {
+  if (!value) {
+    return value;
+  }
   if (Array.isArray(value)) {
     const result = value.map((v) => v[recordKey]).filter((v) => !_.isEmpty(v));
     return result.length > 0 ? result : undefined;
@@ -47,22 +50,24 @@ async function processAssociationChild(
       return value[recordKey];
     } else {
       try {
-        const filteredParams = ctx.acl.filterParams(ctx, target, updateParams.params);
-        const parsedParams = await ctx.acl.parseJsonTemplate(filteredParams, ctx);
-        if (parsedParams.filter) {
-          // permission scope exists, verify the record exists under the scope
-          const repo = ctx.db.getRepository(target);
-          if (!repo) {
-            return value[recordKey];
-          }
-          const record = await repo.findOne({
-            filter: {
-              ...parsedParams.filter,
-              [recordKey]: value[recordKey],
-            },
-          });
-          if (!record) {
-            return value[recordKey];
+        if (updateParams.params) {
+          const filteredParams = ctx.acl.filterParams(ctx, target, updateParams.params);
+          const parsedParams = await ctx.acl.parseJsonTemplate(filteredParams, ctx);
+          if (parsedParams.filter) {
+            // permission scope exists, verify the record exists under the scope
+            const repo = ctx.db.getRepository(target);
+            if (!repo) {
+              return value[recordKey];
+            }
+            const record = await repo.findOne({
+              filter: {
+                ...parsedParams.filter,
+                [recordKey]: value[recordKey],
+              },
+            });
+            if (!record) {
+              return value[recordKey];
+            }
           }
         }
         return await processValues(ctx, value, updateAssociationValues, updateParams.params, target, fieldPath);
