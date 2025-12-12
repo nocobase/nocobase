@@ -785,7 +785,7 @@ export class AIEmployee {
       return true;
     } catch (err) {
       this.ctx.log.error(err);
-      this.sendErrorResponse('Chat error warning');
+      this.sendErrorResponse(err.message || 'Chat error warning');
       return false;
     }
   }

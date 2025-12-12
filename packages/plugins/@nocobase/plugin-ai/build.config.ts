@@ -161,5 +161,19 @@ export default defineConfig({
         },
       );
     }
+
+    log('copying markdown files from src/server to dist/server');
+    await fs.copy(
+      path.resolve(__dirname, 'src/server/ai-employees'),
+      path.resolve(__dirname, 'dist/server/ai-employees'),
+      {
+        overwrite: true,
+        filter: (src) => {
+          // Keep directory structure and only copy .md files
+          if (fs.lstatSync(src).isDirectory()) return true;
+          return src.endsWith('.md');
+        },
+      },
+    );
   },
 });
