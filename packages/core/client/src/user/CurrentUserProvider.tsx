@@ -22,7 +22,7 @@ export const useCurrentUserContext = () => {
   const flowEngine = useFlowEngine();
   const contextValue = useContext(CurrentUserContext);
 
-  if (!contextValue) {
+  if (!contextValue && flowEngine) {
     return {
       data: {
         data: flowEngine.context.user,
