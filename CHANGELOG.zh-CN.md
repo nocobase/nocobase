@@ -5,6 +5,49 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.25](https://github.com/nocobase/nocobase/compare/v1.9.24...v1.9.25) - 2025-12-12
+
+### 🚀 优化
+
+- **[工作流]**
+  - 为执行器的准备阶段增加容错逻辑，避免数据缺失造成的流程挂起 ([#8156](https://github.com/nocobase/nocobase/pull/8156)) by @mytharcher
+
+  - 对工作流画布的关系数据使用懒加载，以提升性能 ([#8142](https://github.com/nocobase/nocobase/pull/8142)) by @mytharcher
+
+### 🐛 修复
+
+- **[acl]** 修复 `acl.can` API 当角色是 `root` 是返回 `null` 的问题 ([#8150](https://github.com/nocobase/nocobase/pull/8150)) by @mytharcher
+
+- **[工作流：人工处理节点]** 修复人工待办列表使用了错误的列表 API 的问题 ([#8144](https://github.com/nocobase/nocobase/pull/8144)) by @mytharcher
+
+- **[HTTP 请求加密]** 统一 qs 数组解析格式为 brackets by @chenos
+
+- **[工作流：审批]** 修复工作流删除后取消执行计划时报错的问题 by @mytharcher
+
+- **[迁移管理]** 修复迁移时数据中的换行符丢失问题 by @cgyrock
+
+## [v1.9.24](https://github.com/nocobase/nocobase/compare/v1.9.23...v1.9.24) - 2025-12-09
+
+### 🐛 修复
+
+- **[client]** 修复 `RemoteSelect` 组件当值为空时错误的加载选项记录的问题 ([#8137](https://github.com/nocobase/nocobase/pull/8137)) by @mytharcher
+
+- **[数据表字段：自动编码]** 提升sequence字段插件处理repair命令时的健壮性 ([#8139](https://github.com/nocobase/nocobase/pull/8139)) by @cgyrock
+
+- **[通知：电子邮件]** 修复邮件通知连接限制 ([#8119](https://github.com/nocobase/nocobase/pull/8119)) by @jiannx
+
+## [v1.9.23](https://github.com/nocobase/nocobase/compare/v1.9.21...v1.9.23) - 2025-12-09
+
+### 🚀 优化
+
+- **[auth]** 修复 [CVE-2025-13877](https://www.cve.org/CVERecord?id=CVE-2025-13877) ([#8128](https://github.com/nocobase/nocobase/pull/8128)) by @2013xile
+
+- **[操作：导入记录]** 支持导入字段支持选择 ID ([#8132](https://github.com/nocobase/nocobase/pull/8132)) by @katherinehhh
+
+### 🐛 修复
+
+- **[server]** 修复了导入数据后已触发的工作流未添加到处理队列的问题，确保工作流在导入后能够正常运行 ([#8121](https://github.com/nocobase/nocobase/pull/8121)) by @mytharcher
+
 ## [v1.9.21](https://github.com/nocobase/nocobase/compare/v1.9.20...v1.9.21) - 2025-12-06
 
 ### 🚀 优化

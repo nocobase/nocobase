@@ -124,7 +124,7 @@ export class MockServer extends Application {
   agent(callback?): ExtendedAgent {
     const agent = supertest.agent(callback || this.callback());
     const prefix = this.resourcer.options.prefix;
-    const authManager = this.authManager;
+    const authManager = this.authManager as any;
     const proxy = new Proxy(agent, {
       get(target, method: string, receiver) {
         if (['login', 'loginUsingId'].includes(method)) {
@@ -142,7 +142,7 @@ export class MockServer extends Application {
                     roleName,
                     signInTime: Date.now(),
                   },
-                  process.env.APP_KEY,
+                  authManager.jwt.secret(),
                   {
                     jwtid: tokenInfo.jti,
                     expiresIn,

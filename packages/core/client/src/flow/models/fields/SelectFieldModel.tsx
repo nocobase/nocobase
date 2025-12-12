@@ -7,9 +7,9 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Select, Tooltip, Tag } from 'antd';
-import React from 'react';
 import { EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
+import { Select, Tag, Tooltip } from 'antd';
+import React from 'react';
 import { FieldModel } from '../base';
 import { MobileSelect } from './mobile-components/MobileSelect';
 
@@ -84,6 +84,16 @@ EditableItemModel.bindModelToInterface('SelectFieldModel', ['select', 'multipleS
   isDefault: true,
   defaultProps: {
     allowClear: true,
+  },
+});
+
+EditableItemModel.bindModelToInterface('SelectFieldModel', ['radioGroup'], {});
+
+EditableItemModel.bindModelToInterface('SelectFieldModel', ['checkboxGroup'], {
+  isDefault: true,
+  defaultProps: {
+    allowClear: true,
+    mode: 'tags',
   },
 });
 

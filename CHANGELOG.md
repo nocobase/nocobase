@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.25](https://github.com/nocobase/nocobase/compare/v1.9.24...v1.9.25) - 2025-12-12
+
+### 🚀 Improvements
+
+- **[Workflow]**
+  - Add fault-tolerant logic for data missing in the processor preparation, to avoid execution hang ([#8156](https://github.com/nocobase/nocobase/pull/8156)) by @mytharcher
+
+  - Use lazy load for association data on workflow canvas to improve performance ([#8142](https://github.com/nocobase/nocobase/pull/8142)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[acl]** Fix the issue where the API `acl.can` return `null` when role is `root` ([#8150](https://github.com/nocobase/nocobase/pull/8150)) by @mytharcher
+
+- **[Workflow: Manual node]** Fix the issue manual todo list is using incorrect API ([#8144](https://github.com/nocobase/nocobase/pull/8144)) by @mytharcher
+
+- **[HTTP request encryption]** Use brackets for array format in qs parsing by @chenos
+
+- **[Workflow: Approval]** Fix the issue where error thrown when cancel a execution when its workflow is deleted by @mytharcher
+
+- **[Migration manager]** Fix an issue where line breaks in data were lost during migration. by @cgyrock
+
+## [v1.9.24](https://github.com/nocobase/nocobase/compare/v1.9.23...v1.9.24) - 2025-12-09
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where `RemoteSelect` component incorrectly loading record when value is null ([#8137](https://github.com/nocobase/nocobase/pull/8137)) by @mytharcher
+
+- **[Collection field: Sequence]** Improve the robustness of the plugin-field-sequence when handling the repair command ([#8139](https://github.com/nocobase/nocobase/pull/8139)) by @cgyrock
+
+- **[Notification: Email]** fix email notification connection limitation ([#8119](https://github.com/nocobase/nocobase/pull/8119)) by @jiannx
+
+## [v1.9.23](https://github.com/nocobase/nocobase/compare/v1.9.21...v1.9.23) - 2025-12-09
+
+### 🚀 Improvements
+
+- **[auth]** Fix [CVE-2025-13877](https://www.cve.org/CVERecord?id=CVE-2025-13877) ([#8128](https://github.com/nocobase/nocobase/pull/8128)) by @2013xile
+
+- **[Action: Import records]** allow selecting ID for import fields ([#8132](https://github.com/nocobase/nocobase/pull/8132)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[server]** Fixed an issue where triggered workflows were not added to the processing queue after importing data, ensuring that workflows run as expected immediately post-import ([#8121](https://github.com/nocobase/nocobase/pull/8121)) by @mytharcher
+
 ## [v1.9.21](https://github.com/nocobase/nocobase/compare/v1.9.20...v1.9.21) - 2025-12-06
 
 ### 🚀 Improvements
