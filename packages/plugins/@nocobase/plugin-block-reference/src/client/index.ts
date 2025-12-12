@@ -12,6 +12,7 @@ import { ReferenceBlockModel } from './models/ReferenceBlockModel';
 import { FlowModelTemplatesPage } from './components/FlowModelTemplatesPage';
 // @ts-ignore
 import pkg from '../../package.json';
+import { registerMenuExtensions } from './menuExtensions';
 
 export class PluginBlockReferenceClient extends Plugin {
   async load() {
@@ -22,6 +23,7 @@ export class PluginBlockReferenceClient extends Plugin {
       path: '/settings/flow-model-templates',
       Component: FlowModelTemplatesPage,
     });
+    registerMenuExtensions();
   }
 }
 

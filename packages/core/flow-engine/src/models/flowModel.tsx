@@ -70,8 +70,9 @@ const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 const modelGlobalRegistries = new WeakMap<typeof FlowModel, GlobalFlowRegistry>();
 
 type BaseMenuItem = NonNullable<MenuProps['items']>[number];
+type MenuLeafItem = Exclude<BaseMenuItem, { children: MenuProps['items'] }>;
 
-export type FlowModelExtraMenuItem = Omit<BaseMenuItem, 'key'> & {
+export type FlowModelExtraMenuItem = Omit<MenuLeafItem, 'key'> & {
   key: React.Key;
   group?: string;
   sort?: number;
