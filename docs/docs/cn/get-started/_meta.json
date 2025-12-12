@@ -14,6 +14,11 @@
     "items": [
       {
         "type": "custom-link",
+        "label": "系统要求",
+        "link": "/get-started/installation/system-requirements"
+      },
+      {
+        "type": "custom-link",
         "label": "Docker 安装",
         "link": "/get-started/installation/docker"
       },
