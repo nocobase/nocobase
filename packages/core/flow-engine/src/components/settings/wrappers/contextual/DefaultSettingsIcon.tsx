@@ -12,9 +12,9 @@ import type { DropdownProps, MenuProps } from 'antd';
 import { App, Dropdown, Modal } from 'antd';
 import React, { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
 import { FlowModel } from '../../../../models';
+import type { FlowModelExtraMenuItem } from '../../../../models';
 import { StepDefinition } from '../../../../types';
 import { getT, resolveStepUiSchema, shouldHideStepInSettings } from '../../../../utils';
-import { openStepSettings } from './StepSettings';
 import { useNiceDropdownMaxHeight } from '../../../../hooks';
 
 // Type definitions for better type safety
@@ -105,11 +105,12 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   menuLevels = 1, // 默认一级菜单
   flattenSubMenus = true,
 }) => {
-  const { message } = App.useApp();
-  const t = getT(model);
+  const { message, modal } = App.useApp();
+  const t = useMemo(() => getT(model), [model]);
   const [visible, setVisible] = useState(false);
   // 当模型发生子模型替换/增删等变化时，强制刷新菜单数据
   const [refreshTick, setRefreshTick] = useState(0);
+  const [extraMenuItems, setExtraMenuItems] = useState<FlowModelExtraMenuItem[]>([]);
   const handleOpenChange: DropdownProps['onOpenChange'] = useCallback((nextOpen: boolean, info) => {
     if (info.source === 'trigger' || nextOpen) {
       // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
@@ -119,6 +120,31 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     }
   }, []);
   const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
+  useEffect(() => {
+    let mounted = true;
+    const loadExtras = async () => {
+      const Cls = model?.constructor as typeof FlowModel | undefined;
+      if (typeof Cls?.getExtraMenuItems !== 'function') {
+        if (mounted) setExtraMenuItems([]);
+        return;
+      }
+      try {
+        const extras = await Cls.getExtraMenuItems(model, t);
+        if (mounted) {
+          setExtraMenuItems(extras || []);
+        }
+      } catch (e) {
+        console.error('load extra menu items failed', e);
+      }
+    };
+    // 避免 effect 触发 setState 导致循环：仅在 visible 打开时加载一次，关闭后仍保留结果
+    if (visible) {
+      loadExtras();
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [model, t, refreshTick, visible, message]);
 
   // 统一的复制 UID 方法
   const copyUidToClipboard = useCallback(
@@ -176,7 +202,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   );
 
   const handleDelete = useCallback(() => {
-    Modal.confirm({
+    modal.confirm({
       title: t('Confirm delete'),
       icon: <ExclamationCircleOutlined />,
       content: t('Are you sure you want to delete this item? This action cannot be undone.'),
@@ -242,11 +268,18 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
   const handleMenuClick = useCallback(
     ({ key }: { key: string }) => {
+      const originalKey = key;
       // Handle duplicate key suffixes (e.g., "key-1" -> "key")
       const cleanKey = key.includes('-') && /^(.+)-\d+$/.test(key) ? key.replace(/-\d+$/, '') : key;
 
       if (cleanKey.startsWith('copy-pop-uid:')) {
         handleCopyPopupUid(cleanKey);
+        return;
+      }
+
+      const extra = extraMenuItems.find((it) => it?.key === originalKey || it?.key === cleanKey);
+      if (extra?.onClick) {
+        extra.onClick();
         return;
       }
 
@@ -262,7 +295,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
           break;
       }
     },
-    [handleCopyUid, handleDelete, handleStepConfiguration, handleCopyPopupUid],
+    [handleCopyUid, handleDelete, handleStepConfiguration, handleCopyPopupUid, extraMenuItems],
   );
 
   // 获取单个模型的可配置flows和steps
@@ -607,13 +640,21 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   const finalMenuItems = useMemo((): NonNullable<MenuProps['items']> => {
     const items = [...menuItems];
 
-    if (showCopyUidButton || showDeleteButton) {
+    const commonExtras = extraMenuItems
+      .filter((it) => it.group === 'common-actions')
+      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+
+    if (showCopyUidButton || showDeleteButton || commonExtras.length > 0) {
       // 使用分组呈现常用操作（不再使用分割线）
       items.push({
         key: 'common-actions',
         label: t('Common actions'),
         type: 'group' as const,
       });
+
+      if (commonExtras.length > 0) {
+        items.push(...commonExtras);
+      }
 
       // 添加复制uid按钮
       if (showCopyUidButton && model.uid) {
@@ -633,10 +674,12 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     }
 
     return items;
-  }, [menuItems, showCopyUidButton, showDeleteButton, model.uid, model.destroy, t]);
+  }, [menuItems, showCopyUidButton, showDeleteButton, model.uid, model.destroy, t, extraMenuItems]);
 
   // 如果正在加载或没有可配置的flows且不显示删除按钮和复制UID按钮，不显示菜单
-  if (isLoading || (configurableFlowsAndSteps.length === 0 && !showDeleteButton && !showCopyUidButton)) {
+  const hasExtras = extraMenuItems.some((it) => it.group === 'common-actions');
+
+  if (isLoading || (configurableFlowsAndSteps.length === 0 && !showDeleteButton && !showCopyUidButton && !hasExtras)) {
     return null;
   }
 

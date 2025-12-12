@@ -55,6 +55,7 @@ import { FlowSettingsOpenOptions } from '../flowSettings';
 import type { ScheduleOptions } from '../scheduler/ModelOperationScheduler';
 import type { DispatchEventOptions, EventDefinition, FlowEvent } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
+import type { MenuProps } from 'antd';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
@@ -67,6 +68,32 @@ const modelMetas = new WeakMap<typeof FlowModel, FlowModelMeta>();
 
 // 使用WeakMap存储每个类的 GlobalFlowRegistry
 const modelGlobalRegistries = new WeakMap<typeof FlowModel, GlobalFlowRegistry>();
+
+type BaseMenuItem = NonNullable<MenuProps['items']>[number];
+
+export type FlowModelExtraMenuItem = Omit<BaseMenuItem, 'key'> & {
+  key: React.Key;
+  group?: string;
+  sort?: number;
+  onClick?: () => void;
+};
+
+type FlowModelExtraMenuItemInput = Omit<FlowModelExtraMenuItem, 'key'> & { key?: React.Key };
+
+type ExtraMenuItemEntry = {
+  group?: string;
+  sort?: number;
+  matcher?: (model: FlowModel) => boolean;
+  keyPrefix?: string;
+  items:
+    | FlowModelExtraMenuItemInput[]
+    | ((
+        model: FlowModel,
+        t: (k: string, opt?: any) => string,
+      ) => FlowModelExtraMenuItemInput[] | Promise<FlowModelExtraMenuItemInput[]>);
+};
+
+const classMenuExtensions = new WeakMap<typeof FlowModel, Set<ExtraMenuItemEntry>>();
 
 export enum ModelRenderMode {
   ReactElement = 'reactElement',
@@ -1410,6 +1437,72 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       model: this,
       ...options,
     });
+  }
+
+  /** 注册设置菜单的额外项（静态，按类缓存，可继承合并） */
+  static registerExtraMenuItems(
+    opts:
+      | ExtraMenuItemEntry
+      | ((
+          model: FlowModel,
+          t: (k: string, opt?: any) => string,
+        ) => FlowModelExtraMenuItemInput[] | Promise<FlowModelExtraMenuItemInput[]>),
+  ): () => void {
+    const ModelClass = this as typeof FlowModel;
+    const registry = classMenuExtensions.get(ModelClass) || new Set<ExtraMenuItemEntry>();
+    let entry: ExtraMenuItemEntry;
+    if (typeof opts === 'function') {
+      entry = { items: opts };
+    } else {
+      entry = opts;
+    }
+    registry.add(entry);
+    classMenuExtensions.set(ModelClass, registry);
+    return () => {
+      const reg = classMenuExtensions.get(ModelClass);
+      reg?.delete(entry);
+    };
+  }
+
+  static async getExtraMenuItems(
+    model: FlowModel,
+    t: (k: string, opt?: any) => string,
+  ): Promise<FlowModelExtraMenuItem[]> {
+    const ModelClass = this as typeof FlowModel;
+    const collected: FlowModelExtraMenuItem[] = [];
+    const seen = new Set<typeof FlowModel>();
+    const walk = async (Cls: typeof FlowModel) => {
+      if (!Cls || seen.has(Cls)) return;
+      seen.add(Cls);
+      const reg = classMenuExtensions.get(Cls);
+      if (reg) {
+        for (const entry of reg) {
+          if (entry.matcher && !entry.matcher(model)) continue;
+          const items =
+            typeof entry.items === 'function' ? await entry.items(model, t) : await Promise.resolve(entry.items || []);
+          const group = entry.group || 'common-actions';
+          const sort = entry.sort ?? 0;
+          const prefix = entry.keyPrefix || Cls.name || 'extra';
+          (items || []).forEach((it, idx: number) => {
+            if (!it) return;
+            const key = it.key ?? `${prefix}-${group}-${idx}-${Math.random().toString(36).slice(2, 6)}`;
+            collected.push({
+              ...it,
+              key,
+              group: it.group || group,
+              sort: typeof it.sort === 'number' ? it.sort : sort,
+            });
+          });
+        }
+      }
+      const ParentClass = Object.getPrototypeOf(Cls) as typeof FlowModel;
+      const isFlowModelCtor = ParentClass === FlowModel || ParentClass?.prototype instanceof FlowModel;
+      if (isFlowModelCtor) {
+        await walk(ParentClass);
+      }
+    };
+    await walk(ModelClass);
+    return collected;
   }
 
   // =============================
