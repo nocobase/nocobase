@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { cloneDeep } from 'lodash';
 import { CollectionTemplate } from '../../data-source/collection-template/CollectionTemplate';
 import { getConfigurableProperties } from './properties';
 
@@ -81,6 +82,18 @@ export class TreeCollectionTemplate extends CollectionTemplate {
             f.target = values.name;
           }
         });
+      }
+
+      // keep parentId`s type same as pk`s type
+      const pk = (values?.fields ?? []).find((x) => x.primaryKey === true);
+      const parentId = (values?.fields ?? []).find((x) => x.name === 'parentId' && x.isForeignKey === true);
+      if (pk && parentId) {
+        parentId.interface = pk.interface;
+        parentId.type = pk.type;
+        const parentIdTitle = parentId.uiSchema.title;
+        parentId.uiSchema = cloneDeep(pk.uiSchema);
+        parentId.uiSchema.title = parentIdTitle;
+        parentId.autoFill = false;
       }
     },
   };

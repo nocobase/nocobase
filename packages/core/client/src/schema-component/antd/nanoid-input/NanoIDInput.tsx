@@ -21,7 +21,7 @@ export const NanoIDInput = Object.assign(
   connect(
     AntdInput,
     mapProps((props: any, field: any) => {
-      const { size, customAlphabet } = useCollectionField() || { size: 21 };
+      const { size, customAlphabet, autoFill } = useCollectionField() || { size: 21 };
       const { t } = useTranslation();
       const form = useForm();
       const { isInFilterFormBlock } = useFlag();
@@ -38,7 +38,7 @@ export const NanoIDInput = Object.assign(
       }
 
       useEffect(() => {
-        if (!field?.initialValue && customAlphabet && !isInFilterFormBlock) {
+        if (!field?.initialValue && customAlphabet && !isInFilterFormBlock && autoFill !== false) {
           field?.setInitialValue(Alphabet(customAlphabet, size)());
         }
         form?.setFieldState(field?.props?.name, (state) => {

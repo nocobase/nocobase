@@ -15,6 +15,7 @@ export class NanoidFieldInterface extends CollectionFieldInterface {
   group = 'advanced';
   order = 0;
   title = '{{t("Nano ID")}}';
+  primaryKeyDescription = '{{t("Primary key, unique identifier")}}';
   hidden = false;
   sortable = true;
   default = {

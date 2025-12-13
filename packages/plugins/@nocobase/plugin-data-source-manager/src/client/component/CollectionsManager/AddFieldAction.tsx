@@ -349,6 +349,7 @@ const AddFieldAction = (props) => {
               isDialect,
               disabledJSONB: false,
               createMainOnly: true,
+              primaryKeyOnly: false,
               ...scope,
             }}
           />

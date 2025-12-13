@@ -342,6 +342,6 @@ DisplayNumberFieldModel.registerFlow({
   },
 });
 
-DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['number', 'integer', 'id'], {
+DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['number', 'integer', 'id', 'snowflakeId'], {
   isDefault: true,
 });
