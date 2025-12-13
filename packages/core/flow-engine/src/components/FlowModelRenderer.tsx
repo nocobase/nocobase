@@ -360,6 +360,10 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
       return null;
     }
 
+    if (model?.context?.pageActive?.value === false) {
+      return null;
+    }
+
     // 构建渲染内容：统一在渲染前触发 beforeRender 事件（带缓存）
     const content = (
       <FlowModelRendererWithAutoFlows
@@ -375,7 +379,6 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
         fallback={fallback}
       />
     );
-
     // 当需要错误回退时，将整体包裹在 ErrorBoundary 和 FlowModelProvider 中
     // 这样既能捕获 useApplyAutoFlows 中抛出的错误，也能在回退组件中获取 model 上下文
     if (showErrorFallback) {
@@ -385,7 +388,6 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
         </FlowModelProvider>
       );
     }
-
     return content;
   },
 );
