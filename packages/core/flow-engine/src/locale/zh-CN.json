@@ -44,7 +44,7 @@
   "Invalid subModelKey format": "无效的 subModelKey 格式: {{subModelKey}}",
   "Model with ID {{uid}} not found": "未找到 ID 为 {{uid}} 的模型",
   "Name": "名称",
-  "Convert to template": "转换为模版",
+  "Save as template": "保存为模版",
   "Convert to copy": "转换为复制",
   "Convert to copy is unavailable": "无法执行转换为复制",
   "Parent not found, cannot replace block": "未找到父级，无法替换区块",

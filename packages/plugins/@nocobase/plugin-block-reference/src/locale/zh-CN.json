@@ -21,6 +21,7 @@
   "Target UID": "Target UID",
   "Target block is invalid": "目标区块无效",
   "Template": "模版",
+  "Cannot resolve template parameter {{param}}": "无法解析模板参数 {{param}}",
   "Template description": "模版描述",
   "Template name": "模版名称",
   "Template name is required": "模版名称必填",

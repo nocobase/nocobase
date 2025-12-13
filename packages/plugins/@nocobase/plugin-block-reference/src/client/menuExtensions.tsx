@@ -82,6 +82,16 @@ async function handleConvertToTemplate(model: FlowModel, t: (k: string, opt?: an
       : undefined) ||
     viewArgs?.[key];
 
+  const getRawInitVal = (key: string) => {
+    const val = resourceInit?.[key];
+    if (val === undefined || val === null) return undefined;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      return trimmed ? trimmed : undefined;
+    }
+    return val;
+  };
+
   const release = () => openConvertDialogs.delete(model);
 
   const TemplateDialogContent: React.FC<{ currentDialog: any }> = ({ currentDialog }) => {
@@ -111,8 +121,8 @@ async function handleConvertToTemplate(model: FlowModel, t: (k: string, opt?: an
         dataSourceKey: getResourceVal('dataSourceKey') || getResourceVal('dataSource') || resourceInit?.dataSourceKey,
         collectionName: getResourceVal('collectionName') || resourceInit?.collectionName,
         associationName: getResourceVal('associationName') || resourceInit?.associationName,
-        filterByTk: getResourceVal('filterByTk') || resourceInit?.filterByTk,
-        sourceId: getResourceVal('sourceId') || resourceInit?.sourceId,
+        filterByTk: getRawInitVal('filterByTk') ?? getResourceVal('filterByTk'),
+        sourceId: getRawInitVal('sourceId') ?? getResourceVal('sourceId'),
         detachParent: !!values.replace,
       };
       const res = await api.resource('flowModelTemplates').create({
@@ -264,7 +274,7 @@ async function handleConvertToTemplate(model: FlowModel, t: (k: string, opt?: an
   };
 
   const dialog = viewer.dialog({
-    title: t('Convert to template'),
+    title: t('Save as template'),
     width: 600,
     destroyOnClose: true,
     content: (currentDialog: any) => <TemplateDialogContent currentDialog={currentDialog} />,
@@ -478,7 +488,7 @@ export function registerMenuExtensions() {
       } else {
         items.push({
           key: 'block-reference:convert-to-template',
-          label: t('Convert to template'),
+          label: t('Save as template'),
           onClick: () => handleConvertToTemplate(model, t),
           sort: -10,
           group: 'common-actions',

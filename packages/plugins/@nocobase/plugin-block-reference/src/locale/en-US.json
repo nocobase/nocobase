@@ -20,6 +20,7 @@
   "Target UID": "Target UID",
   "Target block is invalid": "Target block is invalid",
   "Template": "Template",
+  "Cannot resolve template parameter {{param}}": "Cannot resolve template parameter {{param}}",
   "Template description": "Template description",
   "Template name": "Template name",
   "Template name is required": "Template name is required",

@@ -316,6 +316,62 @@ ReferenceBlockModel.registerFlow({
         const isNew = !!m.isNew;
         const disableSelect = !isNew && !!templateUid;
         const api = (ctx as any)?.api;
+
+        const t = (key: string, options?: Record<string, any>) => {
+          const fn = (ctx as any)?.t;
+          if (typeof fn !== 'function') return key;
+          return fn(key, { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...(options || {}) });
+        };
+
+        const hasExpr = (val: string) => /\{\{.*?\}\}/.test(val);
+        const isResolvedValue = (val: any) => {
+          if (val === undefined || val === null) return false;
+          if (typeof val === 'string') {
+            const s = val.trim();
+            if (!s) return false;
+            if (hasExpr(s)) return false;
+            return true;
+          }
+          try {
+            const s = String(val);
+            if (hasExpr(s)) return false;
+          } catch (_) {
+            // ignore
+          }
+          return true;
+        };
+
+        const getRuntimeParamDisabledReason = async (tpl: Record<string, any>): Promise<string | undefined> => {
+          const rawFilterByTk = typeof tpl?.filterByTk === 'string' ? tpl.filterByTk.trim() : '';
+          const rawSourceId = typeof tpl?.sourceId === 'string' ? tpl.sourceId.trim() : '';
+          const needCheck: Array<{ key: 'filterByTk' | 'sourceId'; raw: string }> = [];
+          if (rawFilterByTk) needCheck.push({ key: 'filterByTk', raw: rawFilterByTk });
+          if (rawSourceId) needCheck.push({ key: 'sourceId', raw: rawSourceId });
+          if (!needCheck.length) return undefined;
+
+          const resolver = (ctx as any)?.resolveJsonTemplate;
+          if (typeof resolver !== 'function') {
+            return t('Cannot resolve template parameter {{param}}', { param: needCheck.map((i) => i.key).join(', ') });
+          }
+
+          const results = await Promise.all(
+            needCheck.map(async ({ key, raw }) => {
+              if (!hasExpr(raw)) {
+                return { key, ok: true };
+              }
+              try {
+                const resolved = await resolver(raw);
+                return { key, ok: isResolvedValue(resolved) };
+              } catch (_) {
+                return { key, ok: false };
+              }
+            }),
+          );
+          const missing = results.filter((r) => !r.ok).map((r) => r.key);
+          if (!missing.length) return undefined;
+          return t('Cannot resolve template parameter {{param}}', { param: missing.join(', ') });
+        };
+
         const fetchOptions = async (keyword?: string) => {
           try {
             const res = await api?.resource?.('flowModelTemplates')?.list({
@@ -326,32 +382,46 @@ ReferenceBlockModel.registerFlow({
             const unwrap = (val: any) => (val && val.data ? val.data : val);
             const candidate = unwrap(body);
             const rows = Array.isArray(candidate?.rows) ? candidate.rows : Array.isArray(candidate) ? candidate : [];
-            const opts = rows.map((r) => {
-              const name = r.name || r.uid || '';
-              const desc = r.description;
-              return {
-                label: (
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      maxWidth: 480,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      verticalAlign: 'middle',
-                    }}
-                    title={name}
-                  >
-                    {name}
-                  </span>
-                ),
-                value: r.uid,
-                description: desc,
-                title: desc ? `${name} - ${desc}` : name,
-                rawName: name,
-              };
-            });
-            return opts;
+            const optsWithIndex = await Promise.all(
+              rows.map(async (r, idx) => {
+                const name = r.name || r.uid || '';
+                const desc = r.description;
+                const disabledReason = await getRuntimeParamDisabledReason(r || {});
+                return {
+                  __idx: idx,
+                  label: (
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        maxWidth: 480,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        verticalAlign: 'middle',
+                      }}
+                      title={name}
+                    >
+                      {name}
+                    </span>
+                  ),
+                  value: r.uid,
+                  description: desc,
+                  disabled: !!disabledReason,
+                  disabledReason,
+                  title: desc ? `${name} - ${desc}` : name,
+                  rawName: name,
+                };
+              }),
+            );
+            return optsWithIndex
+              .slice()
+              .sort((a, b) => {
+                const da = a.disabled ? 1 : 0;
+                const db = b.disabled ? 1 : 0;
+                if (da !== db) return da - db;
+                return (a.__idx || 0) - (b.__idx || 0);
+              })
+              .map(({ __idx, ...rest }) => rest);
           } catch (e) {
             console.error('fetch template options failed', e);
             return [];
@@ -374,6 +444,7 @@ ReferenceBlockModel.registerFlow({
               getPopupContainer: () => document.body,
               optionRender: (option) => {
                 const desc = option?.data?.description;
+                const disabledReason = option?.data?.disabledReason;
                 const content = (
                   <div
                     style={{
@@ -405,6 +476,18 @@ ReferenceBlockModel.registerFlow({
                         }}
                       >
                         {desc}
+                      </span>
+                    ) : null}
+                    {disabledReason ? (
+                      <span
+                        style={{
+                          color: '#999',
+                          fontSize: 12,
+                          whiteSpace: 'normal',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {disabledReason}
                       </span>
                     ) : null}
                   </div>
