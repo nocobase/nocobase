@@ -62,7 +62,7 @@ export class BuiltInManager {
     aiEmployee.position = position;
     aiEmployee.bio = bio;
     aiEmployee.greeting = greeting;
-    aiEmployee.about = about;
+    aiEmployee.about = aiEmployee.about ?? about;
 
     const builtInSkills = builtInEmployeeInfo.skillSettings?.skills ?? [];
     const skillSettings: { skills?: { name: string; autoCall?: boolean }[] } = aiEmployee.skillSettings ?? {};

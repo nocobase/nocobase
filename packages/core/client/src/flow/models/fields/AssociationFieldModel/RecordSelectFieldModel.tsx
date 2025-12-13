@@ -465,7 +465,8 @@ RecordSelectFieldModel.registerFlow({
         resource.setPageSize(paginationState.pageSize);
         const isFilterScene = ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter;
         const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
-        const sourceValue = ctx.record?.[collectionField?.sourceKey];
+        const record = ctx.currentObject || ctx.record;
+        const sourceValue = record?.[collectionField?.sourceKey];
         // 构建 $or 条件数组
         const orFilters: Record<string, any>[] = [];
         if (!isFilterScene && sourceValue != null && isOToAny) {
