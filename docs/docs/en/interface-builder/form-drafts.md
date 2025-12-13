@@ -8,7 +8,7 @@ When form drafts are enabled, the content being filled in is automatically saved
 
 ![20251213093717](https://static-docs.nocobase.com/20251213093717.png)
 
-When a draft exists, a notification will be displayed at the top of the form. If the draft is no longer needed, it can be manually deleted at any time.
+When a draft exists, a notification will be displayed at the top of the form. The draft will be automatically deleted after successful submission; if it is no longer needed, it can also be manually deleted at any time.
 
 ![20251213092734](https://static-docs.nocobase.com/20251213092734.png)
 

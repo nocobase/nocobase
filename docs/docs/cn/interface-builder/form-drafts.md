@@ -8,7 +8,7 @@ pkg: "@nocobase/plugin-form-drafts"
 
 ![20251213093717](https://static-docs.nocobase.com/20251213093717.png)
 
-当存在草稿时，表单顶部会显示提示信息。若不再需要该草稿，可随时手动删除。
+当存在草稿时，表单顶部将显示提示信息。提交成功后，草稿会自动删除；如不再需要，也可随时手动删除。
 
 ![20251213092734](https://static-docs.nocobase.com/20251213092734.png)
 
