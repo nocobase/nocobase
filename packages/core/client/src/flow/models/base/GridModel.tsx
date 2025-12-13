@@ -113,6 +113,13 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     return this._memoItemFlowSettings;
   }
 
+  get enableUIConfiguration() {
+    if (typeof this.context.enableUIConfiguration === 'boolean') {
+      return this.context.enableUIConfiguration;
+    }
+    return this.flowEngine.flowSettings.enabled;
+  }
+
   onMount(): void {
     super.onMount();
     this.emitter.on('onSubModelAdded', (model: FlowModel) => {
@@ -641,7 +648,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                         model={item}
                         key={`${item.uid}:${fieldKey}:${(item as any)?.use || (item as any)?.constructor?.name || 'm'}`}
                         fallback={baseItem.skeleton || this.itemFallback}
-                        showFlowSettings={this.flowEngine.flowSettings.enabled ? this.getItemFlowSettings() : false}
+                        showFlowSettings={this.enableUIConfiguration ? this.getItemFlowSettings() : false}
                         showErrorFallback
                         settingsMenuLevel={(item as any)?.settingsMenuLevel ?? this.itemSettingsMenuLevel}
                         showTitle
@@ -654,9 +661,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
             </DndProvider>
           </Space>
         )}
-        {this.flowEngine.flowSettings.enabled && (
-          <div style={{ marginBottom: 16 }}>{this.renderAddSubModelButton()}</div>
-        )}
+        {this.enableUIConfiguration && <div style={{ marginBottom: 16 }}>{this.renderAddSubModelButton()}</div>}
       </>
     );
   }

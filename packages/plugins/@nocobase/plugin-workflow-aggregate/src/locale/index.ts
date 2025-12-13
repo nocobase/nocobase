@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { i18n } from '@nocobase/client';
 import { useTranslation } from 'react-i18next';
 
 export const NAMESPACE = 'workflow-aggregate';
@@ -18,4 +19,8 @@ export function useLang(key: string, options = {}) {
 
 export function usePluginTranslation(options) {
   return useTranslation(NAMESPACE, options);
+}
+
+export function lang(key: string, options = {}) {
+  return i18n.t(key, { ...options, ns: NAMESPACE });
 }

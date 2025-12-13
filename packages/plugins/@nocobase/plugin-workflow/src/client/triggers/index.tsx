@@ -391,5 +391,10 @@ export const TriggerConfig = () => {
 export function useTrigger() {
   const workflowPlugin = usePlugin(WorkflowPlugin);
   const { workflow } = useFlowContext();
+
+  if (!workflow?.type) {
+    return null;
+  }
+
   return workflowPlugin.triggers.get(workflow.type);
 }

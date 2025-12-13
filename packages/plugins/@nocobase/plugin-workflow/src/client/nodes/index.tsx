@@ -43,6 +43,7 @@ import { lang } from '../locale';
 import useStyles from '../style';
 import { UseVariableOptions, VariableOption, WorkflowVariableInput } from '../variable';
 import { useRemoveNodeContext } from '../RemoveNodeContext';
+import { SubModelItem } from '@nocobase/flow-engine';
 
 export type NodeAvailableContext = {
   engine: WorkflowPlugin;
@@ -97,6 +98,10 @@ export abstract class Instruction {
   isAvailable?(ctx: NodeAvailableContext): boolean;
   end?: boolean | ((node) => boolean);
   testable?: boolean;
+  /**
+   * 2.0
+   */
+  getCreateModelMenuItem?({ node, workflow }): SubModelItem | null;
 }
 
 function useUpdateAction() {
@@ -113,11 +118,10 @@ function useUpdateAction() {
         return;
       }
       await form.submit();
-      await api.resource('flow_nodes').update?.({
-        filterByTk: data.id,
-        values: {
-          config: form.values,
-        },
+      await updateNodeConfig({
+        api,
+        nodeId: data.id,
+        config: form.values,
       });
       form.setInitialValues(toJS(form.values));
       ctx.setFormValueChanged(false);
@@ -125,6 +129,15 @@ function useUpdateAction() {
       refresh();
     },
   };
+}
+
+export async function updateNodeConfig({ api, nodeId, config, resourceName = 'flow_nodes' }) {
+  await api.resource(resourceName).update?.({
+    filterByTk: nodeId,
+    values: {
+      config,
+    },
+  });
 }
 
 export const NodeContext = React.createContext<any>({});

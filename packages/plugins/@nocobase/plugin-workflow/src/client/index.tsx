@@ -45,6 +45,14 @@ import {
   WorkflowTasksMobile,
 } from './WorkflowTasks';
 import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
+import { NodeDetailsModel, NodeValueModel } from './models';
+import { Collection } from '@nocobase/flow-engine';
+import workflows from '../common/collections/workflows';
+import flow_nodes from '../common/collections/flow_nodes';
+import executions from '../common/collections/executions';
+import workflowCategories from '../common/collections/workflowCategories';
+import workflowStats from '../common/collections/workflowStats';
+import workflowVersionStats from '../common/collections/workflowVersionStats';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -117,6 +125,14 @@ export default class PluginWorkflowClient extends Plugin {
 
   registerTaskType(key: string, option: TaskTypeOptions) {
     this.taskTypes.register(key, { ...option, key });
+  }
+
+  registerCollectionsToDataSource(collectionOptions: any[]) {
+    collectionOptions.forEach((option) => {
+      this.flowEngine.dataSourceManager
+        .getDataSource('main')
+        .addCollection(new Collection({ ...option, hidden: true }));
+    });
   }
 
   async load() {
@@ -204,6 +220,20 @@ export default class PluginWorkflowClient extends Plugin {
       label: `{{t("System time", { ns: "${NAMESPACE}" })}}`,
       value: 'now',
     });
+
+    this.flowEngine.registerModels({
+      NodeDetailsModel,
+      NodeValueModel,
+    });
+
+    this.registerCollectionsToDataSource([
+      workflows,
+      flow_nodes,
+      executions,
+      workflowCategories,
+      workflowStats,
+      workflowVersionStats,
+    ]);
   }
 }
 
@@ -221,3 +251,4 @@ export * from './utils';
 export * from './variable';
 export { usePopupRecordContext, useTasksCountsContext } from './WorkflowTasks';
 export { createTriggerWorkflowsSchema } from './flows/triggerWorkflows';
+export * from './models';

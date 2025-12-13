@@ -358,6 +358,11 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         return;
       }
       const targetCollectionName = associationField.target;
+
+      if (!targetCollectionName) {
+        return;
+      }
+
       const collectionField = this.context.dataSourceManager.getCollectionField(
         `${this.collection.dataSourceKey}.${targetCollectionName}.${field2}`,
       ) as CollectionField;
@@ -428,7 +433,7 @@ CollectionBlockModel.registerFlow({
     refresh: {
       async handler(ctx) {
         const filterManager: FilterManager = ctx.model.context.filterManager;
-        filterManager.bindToTarget(ctx.model.uid);
+        filterManager?.bindToTarget(ctx.model.uid);
         if (ctx.model.isManualRefresh) {
           ctx.model.resource.loading = false;
         } else {

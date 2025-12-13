@@ -104,6 +104,10 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
       useSetAriaLabelForModal(visible);
     }
 
+    const container = React.useMemo(() => {
+      return document.querySelector('#nocobase-app-container') as HTMLElement;
+    }, []);
+
     const zIndex = getZIndex('modal', _zIndex || parentZIndex, props.level || 0);
     const ready = useDelayedVisible(visible, delay); // 200ms 与 Modal 动画时间一致
 
@@ -112,6 +116,7 @@ export const InternalActionModal: React.FC<ActionDrawerProps<ModalProps>> = obse
         <zIndexContext.Provider value={zIndex}>
           <TabsContextProvider {...tabContext} tabBarExtraContent={null}>
             <Modal
+              getContainer={container}
               zIndex={hidden ? -1 : zIndex}
               width={actualWidth}
               title={field.title}

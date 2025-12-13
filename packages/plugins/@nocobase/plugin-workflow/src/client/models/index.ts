@@ -7,5 +7,5 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default } from './plugin';
-export { FlowModelRepository } from './repository';
+export { NodeDetailsModel } from './NodeDetailsModel';
+export { NodeValueModel } from './NodeValueModel';
