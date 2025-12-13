@@ -481,7 +481,15 @@ async function originalHandler(ctx, params) {
     const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
       targetLabelField.options.interface,
     );
-    const operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
+
+    // Determine the appropriate operator based on field type
+    let operator = targetInterface?.filterable?.operators?.[0]?.value || '$includes';
+
+    // For formula fields with string dataType, use $includes for better search experience
+    // This allows searching by partial matches (e.g., typing "3" to find "3 Jackson Hughes")
+    if (targetLabelField.options.interface === 'formula' && targetLabelField.options.dataType === 'string') {
+      operator = '$includes';
+    }
 
     const searchText = ctx.inputArgs.searchText?.trim();
     const resource = ctx.model.resource;
