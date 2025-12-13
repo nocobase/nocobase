@@ -16,7 +16,7 @@ import { getFieldBindingUse, rebuildFieldSubModel } from '../internal/utils/rebu
 export const fieldComponent = defineAction({
   title: tExpr('Field component'),
   name: 'fieldComponent',
-  uiSchema: (ctx: FlowEngineContext) => {
+  uiMode: (ctx: any) => {
     if (ctx.model.getProps().pattern === 'readPretty') {
       const { titleField } = ctx.model.props;
       const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
@@ -28,32 +28,42 @@ export const fieldComponent = defineAction({
         titleField || ctx.model.subModels.field.props?.fieldNames?.label,
       );
       return {
-        use: {
-          type: 'string',
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: options,
+        type: 'select',
+        key: 'use',
+        props: {
+          options,
         },
       };
     } else {
       const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
+
       if (!classes || classes.length === 1) {
         return null;
       }
       return {
-        use: {
-          type: 'string',
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: classes.map((model) => {
+        type: 'select',
+        key: 'use',
+        props: {
+          options: classes.map((model) => {
             const m = ctx.engine.getModelClass(model.modelName);
             return {
-              label: m.meta?.label || model.modelName,
+              label: ctx.t(m.meta?.label || model.modelName),
               value: model.modelName,
             };
           }),
         },
       };
+    }
+  },
+  hideInSettings(ctx) {
+    const { titleField } = ctx.model.props;
+    const classes = ctx.model.constructor.getBindingsByField(ctx, ctx.collectionField);
+    if (ctx.model.getProps().pattern === 'readPretty') {
+      if (!classes || (classes.length === 1 && !titleField)) return true;
+    } else {
+      if (!classes || classes.length === 1) {
+        return true;
+      }
     }
   },
   beforeParamsSave: async (ctx: any, params, previousParams) => {

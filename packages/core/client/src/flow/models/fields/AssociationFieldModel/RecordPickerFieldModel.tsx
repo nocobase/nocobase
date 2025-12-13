@@ -199,6 +199,7 @@ RecordPickerFieldModel.registerFlow({
   on: {
     eventName: 'openView',
   },
+  sort: 300,
   steps: {
     openView: {
       title: tExpr('Edit popup'),

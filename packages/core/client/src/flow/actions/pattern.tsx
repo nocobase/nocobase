@@ -14,32 +14,35 @@ import { rebuildFieldSubModel } from '../internal/utils/rebuildFieldSubModel';
 export const pattern = defineAction({
   name: 'pattern',
   title: tExpr('Display mode'),
-  uiSchema: (ctx) => {
-    if (!ctx.model.collectionField) {
-      return;
-    }
+  uiMode(ctx) {
+    const t = ctx.t;
     return {
-      pattern: {
-        'x-component': 'Select',
-        'x-decorator': 'FormItem',
-        enum: [
+      type: 'select',
+      key: 'pattern',
+      props: {
+        options: [
           {
             value: 'editable',
-            label: tExpr('Editable'),
+            label: t('Editable'),
           },
           {
             value: 'disabled',
-            label: tExpr('Disabled'),
+            label: t('Disabled'),
           },
 
           {
             value: 'readPretty',
-            label: tExpr('Display only'),
+            label: t('Display only'),
           },
         ],
-        'x-disabled': ctx.model.collectionField.inputable === false,
       },
     };
+  },
+  hideInSettings(ctx) {
+    if (!ctx.model.collectionField) {
+      return true;
+    }
+    return ctx.model.collectionField.inputable === false;
   },
   defaultParams: (ctx) => {
     return {

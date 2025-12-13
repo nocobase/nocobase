@@ -490,7 +490,6 @@ SubTableColumnModel.registerFlow({
       title: tExpr('Field component'),
     },
     pattern: {
-      title: tExpr('Display mode'),
       use: 'pattern',
     },
     fixed: {

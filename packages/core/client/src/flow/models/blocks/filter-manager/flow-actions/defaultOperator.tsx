@@ -14,15 +14,13 @@ import { FilterFormFieldModel } from '../../filter-form/fields';
 export const defaultOperator = defineAction<FilterFormFieldModel>({
   name: 'defaultOperator',
   title: tExpr('Default operator'),
-  uiSchema(ctx: FlowContext) {
+  uiMode(ctx) {
     const operatorOptions = getOperatorOptions(ctx.model);
-
     return {
-      value: {
-        type: 'string',
-        'x-decorator': 'FormItem',
-        'x-component': 'Select',
-        enum: operatorOptions,
+      type: 'select',
+      key: 'value',
+      props: {
+        options: operatorOptions,
       },
     };
   },

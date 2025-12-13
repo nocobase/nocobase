@@ -294,16 +294,7 @@ FilterFormItemModel.registerFlow({
 
     showLabel: {
       title: tExpr('Show label'),
-      uiSchema: {
-        showLabel: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
+      uiMode: { type: 'switch', key: 'showLabel' },
       defaultParams: {
         showLabel: true,
       },
@@ -352,22 +343,25 @@ FilterFormItemModel.registerFlow({
     model: {
       use: 'fieldComponent',
       title: tExpr('Field component'),
-      uiSchema: (ctx) => {
+      uiMode(ctx) {
         const classes = FilterableItemModel.getBindingsByField(ctx, ctx.collectionField);
-        if (classes.length === 1) {
-          return null;
-        }
+        const t = ctx.t;
         return {
-          use: {
-            type: 'string',
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: classes.map((model) => ({
-              label: model.modelName,
+          type: 'select',
+          key: 'use',
+          props: {
+            options: classes.map((model) => ({
+              label: t(model.modelName),
               value: model.modelName,
             })),
           },
         };
+      },
+      hideInSettings(ctx) {
+        const classes = FilterableItemModel.getBindingsByField(ctx, ctx.collectionField);
+        if (classes.length === 1) {
+          return true;
+        }
       },
     },
     connectFields: {

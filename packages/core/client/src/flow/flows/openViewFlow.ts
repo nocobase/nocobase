@@ -13,9 +13,20 @@ export const openViewFlow = defineFlow<FlowModel>({
   key: 'popupSettings',
   title: tExpr('Popup settings'),
   on: 'click',
+  sort: 300,
   steps: {
     openView: {
       use: 'openView',
+      hideInSettings: async (ctx) => {
+        const clickToOpen = ctx.model.getStepParams?.('displayFieldSettings', 'clickToOpen')?.clickToOpen;
+        if (!ctx.collectionField) {
+          return false;
+        }
+        if (clickToOpen === undefined) {
+          return !ctx.collectionField?.isAssociationField();
+        }
+        return clickToOpen === false;
+      },
     },
   },
   // 基于上下文推导 openView 的默认参数：在模型实例化时写入（仅填充缺失项）

@@ -110,6 +110,8 @@ export interface FlowDefinitionOptions<TModel extends FlowModel = FlowModel> {
    * 仅填补缺失，不覆盖已有。固定返回形状：{ [stepKey]: params }
    */
   defaultParams?: Record<string, any> | ((ctx: FlowModelContext) => StepParam | Promise<StepParam>);
+  enableTitle?: boolean;
+  divider?: 'top' | 'bottom';
 }
 
 export interface IModelComponentProps {
@@ -242,7 +244,7 @@ export type StepUIMode =
   | 'embed'
   // | 'switch'
   // | 'select'
-  | { type?: 'dialog' | 'drawer' | 'embed'; props?: Record<string, any> };
+  | { type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch'; props?: Record<string, any>; key?: string };
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 

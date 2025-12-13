@@ -71,7 +71,6 @@ DisplayTitleFieldModel.registerFlow({
   sort: 200,
   steps: {
     overflowMode: {
-      title: tExpr('Content overflow display mode'),
       use: 'overflowMode',
     },
   },

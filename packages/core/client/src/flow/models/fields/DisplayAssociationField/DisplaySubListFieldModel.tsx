@@ -72,6 +72,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
 };
 
 export class DisplaySubListFieldModel extends FieldModel {
+  disableTitleField = true;
   subModelBaseClasses = {
     action: 'RecordActionGroupModel' as any,
     field: ['DetailsItemModel'] as any,

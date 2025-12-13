@@ -536,12 +536,7 @@ TableBlockModel.registerFlow({
   steps: {
     showRowNumbers: {
       title: tExpr('Show row numbers'),
-      uiSchema: {
-        showIndex: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-        },
-      },
+      uiMode: { type: 'switch', key: 'showIndex' },
       defaultParams: {
         showIndex: true,
       },
@@ -551,12 +546,7 @@ TableBlockModel.registerFlow({
     },
     quickEdit: {
       title: tExpr('Enable quick edit'),
-      uiSchema: {
-        editable: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-        },
-      },
+      uiMode: { type: 'switch', key: 'editable' },
       defaultParams: {
         editable: false,
       },
@@ -566,11 +556,11 @@ TableBlockModel.registerFlow({
     },
     pageSize: {
       title: tExpr('Page size'),
-      uiSchema: {
-        pageSize: {
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [
+      uiMode: {
+        type: 'select',
+        key: 'pageSize',
+        props: {
+          options: [
             { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },
@@ -599,16 +589,11 @@ TableBlockModel.registerFlow({
     },
     treeTable: {
       title: tExpr('Enable tree table'),
-      uiSchema: (ctx) => {
+      uiMode: { type: 'switch', key: 'treeTable' },
+      hideInSettings(ctx) {
         if (ctx.model.collection.template !== 'tree') {
-          return;
+          return true;
         }
-        return {
-          treeTable: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-          },
-        };
       },
       defaultParams: {
         treeTable: false,
@@ -622,16 +607,11 @@ TableBlockModel.registerFlow({
     },
     defaultExpandAllRows: {
       title: tExpr('Expand all rows by default'),
-      uiSchema: (ctx) => {
+      uiMode: { type: 'switch', key: 'defaultExpandAllRows' },
+      hideInSettings(ctx) {
         if (ctx.model.collection.template !== 'tree') {
-          return;
+          return true;
         }
-        return {
-          defaultExpandAllRows: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-          },
-        };
       },
       defaultParams: {
         defaultExpandAllRows: false,
@@ -642,16 +622,19 @@ TableBlockModel.registerFlow({
     },
     tableDensity: {
       title: tExpr('Table density'),
-      uiSchema: {
-        size: {
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [
-            { label: tExpr('Large'), value: 'large' },
-            { label: tExpr('Middle'), value: 'middle' },
-            { label: tExpr('Small'), value: 'small' },
-          ],
-        },
+      uiMode: (ctx) => {
+        const t = ctx.t;
+        return {
+          type: 'select',
+          key: 'size',
+          props: {
+            options: [
+              { label: t('Large'), value: 'large' },
+              { label: t('Middle'), value: 'middle' },
+              { label: t('Small'), value: 'small' },
+            ],
+          },
+        };
       },
       defaultParams: {
         size: 'middle',
