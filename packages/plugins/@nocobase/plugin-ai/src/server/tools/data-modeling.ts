@@ -230,7 +230,7 @@ export const defineCollections: ToolOptions = {
   }),
   invoke: async (ctx: Context) => {
     const {
-      args: { collections },
+      args: { collections = [] },
     } = ctx.action.params.values || {};
     if (!collections || !Array.isArray(collections)) {
       return {
