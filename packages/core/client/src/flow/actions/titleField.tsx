@@ -12,7 +12,7 @@ import { isTitleField } from '../../data-source';
 
 export const titleField = defineAction({
   name: 'titleField',
-  title: tExpr('Label field'),
+  title: tExpr('Title field'),
   uiMode: (ctx) => {
     const targetCollection = ctx.collectionField.targetCollection;
     const dataSourceManager = ctx.app.dataSourceManager;

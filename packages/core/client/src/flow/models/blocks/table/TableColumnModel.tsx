@@ -374,7 +374,7 @@ TableColumnModel.registerFlow({
     },
     fieldNames: {
       use: 'titleField',
-      title: tExpr('Label field'),
+      title: tExpr('Title field'),
 
       beforeParamsSave: async (ctx, params, previousParams) => {
         if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
