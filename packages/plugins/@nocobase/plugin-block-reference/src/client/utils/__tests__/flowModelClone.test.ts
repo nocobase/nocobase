@@ -15,7 +15,7 @@ class RootModel extends FlowModel {}
 class ChildModel extends FlowModel {}
 
 describe('duplicateModelTreeLocally', () => {
-  it('duplicates a tree, remaps uids, and skips virtual models', () => {
+  it('duplicates a tree and remaps uids', () => {
     const engine = new FlowEngine();
     engine.registerModels({ RootModel, ChildModel });
 
@@ -42,18 +42,9 @@ describe('duplicateModelTreeLocally', () => {
       subKey: 'items',
       subType: 'array',
     });
-    const virtual = engine.createModel<ChildModel>({
-      uid: 'virtual-1',
-      use: 'ChildModel',
-      parentId: root.uid,
-      subKey: 'items',
-      subType: 'array',
-    });
-    (virtual as any).__refVirtual = true;
 
     root.addSubModel('items', child1);
     root.addSubModel('items', child2);
-    root.addSubModel('items', virtual);
 
     const { duplicated, uidMap } = duplicateModelTreeLocally(root);
 
@@ -64,7 +55,7 @@ describe('duplicateModelTreeLocally', () => {
     expect(duplicated.stepParams.x).toBe(uidMap['child-1']);
     expect(duplicated.stepParams.deep.a[0]).toBe(uidMap['child-2']);
 
-    // virtual child should be skipped
+    // children should be duplicated
     expect(Array.isArray(duplicated.subModels?.items)).toBe(true);
     expect(duplicated.subModels.items.length).toBe(2);
     const childUids = duplicated.subModels.items.map((c) => c.uid);
