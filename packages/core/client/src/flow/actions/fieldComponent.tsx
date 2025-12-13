@@ -42,6 +42,7 @@ export const fieldComponent = defineAction({
       }
       return {
         type: 'select',
+        key: 'use',
         props: {
           options: classes.map((model) => {
             const m = ctx.engine.getModelClass(model.modelName);
