@@ -236,6 +236,62 @@ describe('transformItems - hide/hidden', () => {
     expect(Array.isArray(group.children)).toBe(true);
     expect(group.children.map((i: any) => i.key)).toEqual(['g-keep']);
   });
+
+  it('supports async hide/hidden functions and disables cache', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-async-hide' });
+
+    let shouldHide = true;
+    const definition: SubModelItem[] = [
+      {
+        key: 'async-hide',
+        label: 'AsyncHide',
+        hide: async () => shouldHide,
+        createModelOptions: { use: 'Parent' },
+      },
+    ];
+
+    const factory = transformItems(definition, parent, 'items', 'array');
+
+    const first = await (factory as () => Promise<any[]>)();
+    expect(first).toHaveLength(0);
+
+    shouldHide = false;
+    const second = await (factory as () => Promise<any[]>)();
+    expect(second.map((i: any) => i.key)).toEqual(['async-hide']);
+    expect(second).not.toBe(first);
+  });
+
+  it('shows items when hide function throws (conservative fallback)', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-hide-throws' });
+
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const definition: SubModelItem[] = [
+        {
+          key: 'throw',
+          label: 'Throw',
+          hide: async () => {
+            throw new Error('boom');
+          },
+          createModelOptions: { use: 'Parent' },
+        },
+      ];
+
+      const factory = transformItems(definition, parent, 'items', 'array');
+      const resolved = await (factory as () => Promise<any[]>)();
+      expect(resolved.map((i: any) => i.key)).toEqual(['throw']);
+    } finally {
+      consoleSpy.mockRestore();
+    }
+  });
 });
 
 describe('transformItems - toggleable items', () => {

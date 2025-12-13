@@ -19,14 +19,28 @@ import { DefaultSettingsIcon } from '../DefaultSettingsIcon';
 // ---- Mock antd to capture Dropdown menu props ----
 const dropdownMenus: any[] = [];
 vi.mock('antd', async (importOriginal) => {
+  const messageApi = {
+    success: vi.fn(),
+    error: vi.fn(),
+    info: vi.fn(),
+  };
+  const modalApi = {
+    confirm: (opts: any) => {
+      if (opts && typeof opts.onOk === 'function') return opts.onOk();
+    },
+    error: vi.fn(),
+  };
+  const appApi = { message: messageApi, modal: modalApi };
+
   const Dropdown = (props: any) => {
     (globalThis as any).__lastDropdownMenu = props.menu;
+    (globalThis as any).__lastDropdownOnOpenChange = props.onOpenChange;
     dropdownMenus.push(props.menu);
     return React.createElement('span', { 'data-testid': 'dropdown' }, props.children);
   };
 
   const App = Object.assign(({ children }: any) => React.createElement(React.Fragment, null, children), {
-    useApp: () => ({ message: { success: () => {}, error: () => {}, info: () => {} } }),
+    useApp: () => appApi,
   });
 
   const ConfigProvider = ({ children }: any) => React.createElement(React.Fragment, null, children);
@@ -83,6 +97,7 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
   beforeEach(() => {
     dropdownMenus.length = 0;
     (globalThis as any).__lastDropdownMenu = undefined;
+    (globalThis as any).__lastDropdownOnOpenChange = undefined;
   });
 
   afterEach(() => {
@@ -539,5 +554,78 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       const items = (menu?.items || []) as any[];
       expect(items.some((it) => String(it.key || '').startsWith('items[0]:childFlow:childStep'))).toBe(true);
     });
+  });
+});
+
+describe('DefaultSettingsIcon - extra menu items', () => {
+  beforeEach(() => {
+    dropdownMenus.length = 0;
+    (globalThis as any).__lastDropdownMenu = undefined;
+    (globalThis as any).__lastDropdownOnOpenChange = undefined;
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it('renders and triggers extra menu items registered on FlowModel class', async () => {
+    const onClick = vi.fn();
+
+    class TestFlowModel extends FlowModel {}
+    const dispose = TestFlowModel.registerExtraMenuItems({
+      group: 'common-actions',
+      sort: 10,
+      items: [{ key: 'extra-action', label: 'Extra Action', onClick }],
+    });
+
+    const engine = new FlowEngine();
+    const model = new TestFlowModel({ uid: 'm-extra', flowEngine: engine });
+
+    TestFlowModel.registerFlow({
+      key: 'flow',
+      title: 'Flow',
+      steps: { s: { title: 'S', uiSchema: { f: { type: 'string', 'x-component': 'Input' } } } },
+    });
+
+    try {
+      render(
+        React.createElement(
+          ConfigProvider as any,
+          null,
+          React.createElement(
+            App as any,
+            null,
+            React.createElement(DefaultSettingsIcon as any, {
+              model,
+              showCopyUidButton: false,
+              showDeleteButton: false,
+            }),
+          ),
+        ),
+      );
+
+      await waitFor(() => {
+        expect((globalThis as any).__lastDropdownMenu).toBeTruthy();
+        expect((globalThis as any).__lastDropdownOnOpenChange).toBeTruthy();
+      });
+
+      // extra menu items are loaded when dropdown becomes visible
+      await act(async () => {
+        (globalThis as any).__lastDropdownOnOpenChange?.(true, { source: 'trigger' });
+      });
+
+      await waitFor(() => {
+        const menu = (globalThis as any).__lastDropdownMenu;
+        const items = (menu?.items || []) as any[];
+        expect(items.some((it) => String(it.key || '') === 'extra-action')).toBe(true);
+      });
+
+      const menu = (globalThis as any).__lastDropdownMenu;
+      menu.onClick?.({ key: 'extra-action' });
+      expect(onClick).toHaveBeenCalled();
+    } finally {
+      dispose?.();
+    }
   });
 });
