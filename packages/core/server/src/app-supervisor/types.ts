@@ -7,6 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import { Model, Transactionable } from '@nocobase/database';
 import type Application from '../application';
 import { ApplicationOptions } from '../application';
 import type { AppSupervisor } from './index';
@@ -61,6 +62,7 @@ export type EnvironmentInfo = {
  */
 export interface AppDiscoveryAdapter {
   readonly name: string;
+  readonly environmentName?: string;
   readonly appStatus?: Record<string, AppStatus>;
   readonly lastSeenAt?: Map<string, number>;
 
@@ -79,6 +81,12 @@ export interface AppDiscoveryAdapter {
    */
   setAppStatus(appName: string, status: AppStatus, options?: Record<string, any>): void | Promise<void>;
 
+  getAppOptions?(appName: string): Promise<
+    ApplicationOptions & {
+      [key: string]: any;
+    }
+  >;
+  getAppNames?(environmentName: string): Promise<string[]>;
   registerEnvironment?(environment: EnvironmentInfo): Promise<void>;
   unregisterEnvironment?(environmentName: string): Promise<void>;
   listEnvironments?(): Promise<EnvironmentInfo[]>;
@@ -101,28 +109,15 @@ export interface AppProcessAdapter {
    * Return all currently managed sub-application instances.
    */
   subApps?(): Application[];
-  bootstrapApp?(appName: string, options?: Record<string, any>): Promise<void>;
   startApp?(appName: string): Promise<void>;
   stopApp?(appName: string): Promise<void>;
   removeApp?(appName: string): Promise<void>;
+  upgradeApp?(appName: string): Promise<void>;
   reset?(): Promise<void>;
 
   setAppError?(appName: string, error: Error): void;
   hasAppError?(appName: string): boolean;
   clearAppError?(appName: string): void;
-
-  /**
-   * Allow the adapter to expose a remote control surface (e.g. HTTP routes, message queues).
-   */
-  registerCommandHandler?(app: Application): Promise<void>;
-  /**
-   * Send a lifecycle command to a remote worker/environment. Returns true if the command was handled remotely.
-   */
-  dispatchCommand?(command: ProcessCommand): Promise<boolean>;
-  /**
-   * Whether this adapter expects lifecycle changes to be dispatched remotely instead of executed locally.
-   */
-  supportsRemoteCommands?: boolean;
 }
 
 export type ProcessCommand = {
@@ -133,6 +128,10 @@ export type ProcessCommand = {
   requestId?: string;
 };
 
-export type AppDbCreator = (app: Application, options?: Record<string, any>) => Promise<void>;
+export type AppDbCreatorOptions = Transactionable & {
+  app: Application;
+  appModel: Model;
+  context?: any;
+};
+export type AppDbCreator = (options: AppDbCreatorOptions) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
-export type SubAppUpgradeHandler = (mainApp: Application) => Promise<void>;

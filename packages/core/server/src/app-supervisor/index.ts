@@ -7,12 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
+import lodash from 'lodash';
 import { applyMixins, AsyncEmitter } from '@nocobase/utils';
 import { EventEmitter } from 'events';
 import Application, { ApplicationOptions, MaintainingCommandStatus } from '../application';
 import { MainOnlyAdapter } from './main-only-adapter';
 import type {
-  AppBootstrapper,
   AppDiscoveryAdapter,
   AppProcessAdapter,
   AppStatus,
@@ -21,9 +21,21 @@ import type {
   ProcessCommand,
   AppDbCreator,
   AppOptionsFactory,
-  SubAppUpgradeHandler,
+  AppDbCreatorOptions,
 } from './types';
 import { getErrorLevel } from '../errors/handler';
+import { ConditionalRegistry, Predicate } from './condition-registry';
+import {
+  createConnection,
+  createConnectionCondition,
+  createDatabase,
+  createDatabaseCondition,
+  createSchema,
+  createSchemaCondition,
+} from './db-creator';
+import { appOptionsFactory } from './app-options-factory';
+import { PubSubManagerPublishOptions } from '../pub-sub-manager';
+import { Transactionable } from '@nocobase/database';
 
 export type AppDiscoveryAdapterFactory = (context: { supervisor: AppSupervisor }) => AppDiscoveryAdapter;
 export type AppProcessAdapterFactory = (context: { supervisor: AppSupervisor }) => AppProcessAdapter;
@@ -45,10 +57,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private processAdapter: AppProcessAdapter;
   private discoveryAdapterName: string;
   private processAdapterName: string;
-  private appBootstrapper: AppBootstrapper = async () => {};
-  private appDbCreator: AppDbCreator = async () => {};
-  private appOptionsFactory: AppOptionsFactory = () => ({}) as any;
-  private subAppUpgradeHandler: SubAppUpgradeHandler = async () => {};
+  private appDbCreator = new ConditionalRegistry<AppDbCreatorOptions, void>();
+  private appOptionsFactory: AppOptionsFactory = appOptionsFactory;
 
   private constructor() {
     super();
@@ -62,6 +72,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     this.processAdapterName = this.resolveProcessAdapterName();
     this.discoveryAdapter = this.createDiscoveryAdapter();
     this.processAdapter = this.createProcessAdapter();
+
+    this.registerAppDbCreator(createDatabaseCondition, createDatabase);
+    this.registerAppDbCreator(createConnectionCondition, createConnection);
+    this.registerAppDbCreator(createSchemaCondition, createSchema);
   }
 
   private resolveDiscoveryAdapterName() {
@@ -92,12 +106,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   private isProcessCapableAdapter(adapter: any): adapter is AppProcessAdapter {
-    return (
-      adapter &&
-      typeof adapter.bootstrapApp === 'function' &&
-      typeof adapter.addApp === 'function' &&
-      typeof adapter.startApp === 'function'
-    );
+    return adapter && typeof adapter.addApp === 'function' && typeof adapter.startApp === 'function';
   }
 
   private createProcessAdapter(): AppProcessAdapter {
@@ -125,20 +134,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
 
     return factory({ supervisor: this });
-  }
-
-  private async dispatchCommand(action: string, appName: string, options: CommandOptions = {}) {
-    if (!this.processAdapter.supportsRemoteCommands || typeof this.processAdapter.dispatchCommand !== 'function') {
-      return false;
-    }
-
-    await this.processAdapter.dispatchCommand({
-      action,
-      appName,
-      ...options,
-    });
-
-    return true;
   }
 
   public static registerDiscoveryAdapter(name: string, factory: AppDiscoveryAdapterFactory) {
@@ -170,7 +165,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   get appStatus(): Record<string, AppStatus> {
-    return this.processAdapter.appStatus ?? Object.create(null);
+    return this.discoveryAdapter.appStatus ?? Object.create(null);
   }
 
   get appErrors(): Record<string, Error> {
@@ -178,7 +173,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   get lastSeenAt(): Map<string, number> {
-    return this.processAdapter.lastSeenAt ?? new Map<string, number>();
+    return this.discoveryAdapter.lastSeenAt ?? new Map<string, number>();
   }
 
   get lastMaintainingMessage(): Record<string, string> {
@@ -197,12 +192,12 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter;
   }
 
-  setAppDbCreator(creator: AppDbCreator) {
-    this.appDbCreator = creator ?? (async () => {});
+  registerAppDbCreator(condition: Predicate<AppDbCreatorOptions>, creator: AppDbCreator) {
+    this.appDbCreator.register(condition, creator);
   }
 
-  getAppDbCreator() {
-    return this.appDbCreator;
+  async createDatabase(options: AppDbCreatorOptions) {
+    return this.appDbCreator.run(options);
   }
 
   setAppOptionsFactory(factory: AppOptionsFactory) {
@@ -213,20 +208,31 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.appOptionsFactory;
   }
 
-  setSubAppUpgradeHandler(handler: SubAppUpgradeHandler) {
-    this.subAppUpgradeHandler = handler ?? (async () => {});
-  }
+  async bootstrapApp({ appName, options }: { appName: string; options?: { upgrading?: boolean } }) {
+    const loadButNotStart = options?.upgrading;
 
-  getSubAppUpgradeHandler() {
-    return this.subAppUpgradeHandler;
-  }
+    if (this.hasApp(appName)) {
+      return;
+    }
 
-  setAppBootstrapper(appBootstrapper: AppBootstrapper) {
-    this.appBootstrapper = appBootstrapper ?? (async () => {});
-  }
+    const mainApp = await this.getApp('main');
+    if (!mainApp) {
+      return;
+    }
+    const appOptions = await this.getAppOptions(appName);
+    if (!appOptions) {
+      return;
+    }
+    if (appOptions?.standaloneDeployment && this.runningMode !== 'single') {
+      return;
+    }
 
-  getAppBootstrapper() {
-    return this.appBootstrapper;
+    const app = this.registerApp(appName, appOptions, mainApp);
+
+    // must skip load on upgrade
+    if (!loadButNotStart) {
+      await app.runCommand('start', '--quickstart');
+    }
   }
 
   setAppError(appName: string, error: Error) {
@@ -259,9 +265,63 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.setAppStatus(appName, status, options);
   }
 
+  registerApp(appName: string, appOptions: ApplicationOptions, mainApp: Application) {
+    const defaultAppOptions = this.appOptionsFactory(appName, mainApp);
+    const options = {
+      ...lodash.merge({}, defaultAppOptions, appOptions),
+      name: appName,
+    };
+
+    const app = new Application(options);
+
+    app.on('afterStart', async () => {
+      mainApp.emit('subAppStarted', app);
+      await this.sendSyncMessage(mainApp, {
+        type: 'app:started',
+        appName,
+      });
+    });
+
+    app.on('afterStop', async () => {
+      await this.sendSyncMessage(mainApp, {
+        type: 'app:stopped',
+        appName,
+      });
+    });
+
+    return app;
+  }
+
   bootMainApp(options: ApplicationOptions) {
     const app = new Application(options);
-    void this.registerCommandHandler(app);
+    app.on('afterLoad', async (app: Application) => {
+      await app.syncMessageManager.subscribe('app-supervisor', async (message: { type: string; appName: string }) => {
+        const { type } = message;
+
+        if (type === 'app:started') {
+          const { appName } = message;
+          if (this.hasApp(appName)) {
+            return;
+          }
+          const appOptions = await this.getAppOptions(appName);
+          if (!appOptions) {
+            return;
+          }
+          const newApp = this.registerApp(appName, appOptions, app);
+          newApp.runCommand('start', '--quickstart');
+        }
+
+        if (type === 'app:stopped') {
+          const { appName } = message;
+          await this.stopApp(appName);
+        }
+
+        if (type === 'app:removed') {
+          const { appName } = message;
+          await this.removeApp(appName);
+        }
+      });
+    });
     return app;
   }
 
@@ -269,14 +329,20 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.touchApp(appName);
   }
 
-  addApp(app: Application, commandOptions: CommandOptions = {}) {
-    if (this.processAdapter.supportsRemoteCommands) {
-      this.dispatchCommand('add', app.name, commandOptions);
-      return;
-    }
+  async getAppOptions(appName: string) {
+    return this.discoveryAdapter.getAppOptions(appName);
+  }
+
+  async getAppNames(environmentName: string) {
+    return this.discoveryAdapter.getAppNames(environmentName);
+  }
+
+  addApp(app: Application | ApplicationOptions) {
     this.processAdapter.addApp(app);
-    this.bindAppEvents(app);
-    this.emit('afterAppAdded', app);
+    if (app instanceof Application) {
+      this.bindAppEvents(app);
+      this.emit('afterAppAdded', app);
+    }
     return app;
   }
 
@@ -300,12 +366,12 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     await this.processAdapter.removeApp(appName);
   }
 
-  subApps() {
-    return this.processAdapter.subApps();
+  async upgradeApp(appName: string) {
+    await this.processAdapter.upgradeApp(appName);
   }
 
-  async bootstrapApp(appName: string, options = {}) {
-    await this.processAdapter.bootstrapApp(appName, options);
+  subApps() {
+    return this.processAdapter.subApps();
   }
 
   async registerEnvironment(environment: EnvironmentInfo) {
@@ -342,10 +408,12 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
   }
 
-  async registerCommandHandler(app: Application) {
-    if (typeof this.processAdapter.registerCommandHandler === 'function') {
-      await this.processAdapter.registerCommandHandler(app);
-    }
+  async sendSyncMessage(
+    mainApp: Application,
+    message: { type: string; appName: string },
+    options?: PubSubManagerPublishOptions & Transactionable,
+  ) {
+    await mainApp.syncMessageManager.publish('app-supervisor', message, options);
   }
 
   override on(eventName: string | symbol, listener: (...args: any[]) => void): this {
@@ -463,7 +531,6 @@ AppSupervisor.registerDiscoveryAdapter('main-only', ({ supervisor }) => new Main
 AppSupervisor.registerProcessAdapter('main-only', ({ supervisor }) => new MainOnlyAdapter(supervisor));
 
 export type {
-  AppBootstrapper,
   AppDiscoveryAdapter,
   AppProcessAdapter,
   AppStatus,
@@ -472,5 +539,4 @@ export type {
   GetAppOptions,
   AppDbCreator,
   AppOptionsFactory,
-  SubAppUpgradeHandler,
 } from './types';

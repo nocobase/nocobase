@@ -74,11 +74,7 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
 
   private async _bootStrapApp(appName: string, options = {}) {
     await this.setAppStatus(appName, 'initializing');
-
-    const bootstrapper = this.supervisor.getAppBootstrapper?.();
-    if (bootstrapper) {
-      await bootstrapper({ appSupervisor: this.supervisor, appName, options });
-    }
+    await this.supervisor.bootstrapApp({ appName, options });
 
     if (!this.hasApp(appName)) {
       await this.setAppStatus(appName, 'not_found');
@@ -116,7 +112,7 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
 
   async getApp(appName: string, options: GetAppOptions = {}) {
     if (!options.withOutBootStrap) {
-      await this.bootStrapApp(appName, options);
+      await this.bootstrapApp(appName, options);
     }
 
     return this.apps[appName];
@@ -177,5 +173,21 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
       return defaultStatus;
     }
     return status ?? null;
+  }
+
+  async getAppOptions(appName: string) {
+    const mainApp = await this.getApp('main');
+    if (!mainApp) {
+      return null;
+    }
+    const applicationModel = await mainApp.db.getRepository('applications').find({
+      filter: {
+        name: appName,
+      },
+    });
+    if (!applicationModel) {
+      return null;
+    }
+    return applicationModel.get('options');
   }
 }

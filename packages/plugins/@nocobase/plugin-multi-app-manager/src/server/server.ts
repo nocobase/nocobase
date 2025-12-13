@@ -68,150 +68,12 @@ const defaultSubAppUpgradeHandle: SubAppUpgradeHandler = async (mainApp: Applica
   }
 };
 
-const defaultDbCreator = async (app: Application) => {
-  const databaseOptions = app.options.database as any;
-  const { host, port, username, password, dialect, database, schema } = databaseOptions;
-
-  if (dialect === 'mysql') {
-    const mysql = require('mysql2/promise');
-    const connection = await mysql.createConnection({ host, port, user: username, password });
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
-    await connection.close();
-  }
-
-  if (dialect === 'mariadb') {
-    const mariadb = require('mariadb');
-    const connection = await mariadb.createConnection({ host, port, user: username, password });
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${database}\`;`);
-    await connection.end();
-  }
-
-  if (['postgres', 'kingbase'].includes(dialect)) {
-    const { Client } = require('pg');
-
-    const client = new Client({
-      host,
-      port,
-      user: username,
-      password,
-      database: dialect,
-    });
-
-    await client.connect();
-
-    try {
-      if (process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true') {
-        await client.query(`CREATE SCHEMA IF NOT EXISTS ${schema}`);
-      } else {
-        await client.query(`CREATE DATABASE "${database}"`);
-      }
-    } catch (e) {
-      console.log(e);
-    }
-
-    await client.end();
-  }
-};
-
-const defaultAppOptionsFactory = (appName: string, mainApp: Application) => {
-  const rawDatabaseOptions = PluginMultiAppManagerServer.getDatabaseConfig(mainApp);
-
-  if (rawDatabaseOptions.dialect === 'sqlite') {
-    const mainAppStorage = rawDatabaseOptions.storage;
-    if (mainAppStorage !== ':memory:') {
-      const mainStorageDir = path.dirname(mainAppStorage);
-      rawDatabaseOptions.storage = path.join(mainStorageDir, `${appName}.sqlite`);
-    }
-  } else if (
-    process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true' &&
-    ['postgres', 'kingbase'].includes(rawDatabaseOptions.dialect)
-  ) {
-    rawDatabaseOptions.schema = appName;
-  } else {
-    rawDatabaseOptions.database = appName;
-  }
-
-  return {
-    database: {
-      ...rawDatabaseOptions,
-      tablePrefix: '',
-    },
-    plugins: ['nocobase'],
-    resourcer: {
-      prefix: process.env.API_BASE_PATH,
-    },
-    cacheManager: {
-      ...mainApp.options.cacheManager,
-      prefix: appName,
-    },
-    logger: mainApp.options.logger,
-  };
-};
-
 export class PluginMultiAppManagerServer extends Plugin {
+  subAppUpgradeHandler: SubAppUpgradeHandler = defaultSubAppUpgradeHandle;
   meter: Meter;
 
-  static getDatabaseConfig(app: Application): IDatabaseOptions {
-    let oldConfig =
-      app.options.database instanceof Database
-        ? (app.options.database as Database).options
-        : (app.options.database as IDatabaseOptions);
-
-    if (!oldConfig && app.db) {
-      oldConfig = app.db.options;
-    }
-
-    return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
-  }
-
-  async handleSyncMessage(message) {
-    const { type } = message;
-
-    if (type === 'subAppStarted') {
-      const { appName } = message;
-      const model = await this.app.db.getRepository('applications').findOne({
-        filter: {
-          name: appName,
-        },
-      });
-
-      if (!model) {
-        return;
-      }
-
-      if (AppSupervisor.getInstance().hasApp(appName)) {
-        return;
-      }
-
-      const subApp = model.registerToSupervisor(this.app, {
-        appOptionsFactory: (name: string, mainApp: Application) =>
-          AppSupervisor.getInstance().getAppOptionsFactory()(name, mainApp),
-      });
-
-      subApp.runCommand('start', '--quickstart');
-    }
-
-    if (type === 'subAppStopped') {
-      const { appName } = message;
-      await AppSupervisor.getInstance().stopApp(appName);
-    }
-
-    if (type === 'removeApp') {
-      const { appName } = message;
-      await AppSupervisor.getInstance().removeApp(appName);
-    }
-  }
-
   setSubAppUpgradeHandler(handler: SubAppUpgradeHandler) {
-    AppSupervisor.getInstance().setSubAppUpgradeHandler(handler);
-  }
-
-  setAppOptionsFactory(factory: AppOptionsFactory) {
-    AppSupervisor.getInstance().setAppOptionsFactory(factory as any);
-  }
-
-  setAppDbCreator(appDbCreator: AppDbCreator) {
-    AppSupervisor.getInstance().setAppDbCreator(appDbCreator);
+    this.subAppUpgradeHandler = handler;
   }
 
   protected static registerLegacyAdapter() {
@@ -280,9 +142,6 @@ export class PluginMultiAppManagerServer extends Plugin {
 
   async load() {
     const supervisor = AppSupervisor.getInstance();
-    supervisor.setAppDbCreator(defaultDbCreator);
-    supervisor.setAppOptionsFactory((appName, mainApp) => defaultAppOptionsFactory(appName, mainApp));
-    supervisor.setSubAppUpgradeHandler(defaultSubAppUpgradeHandle);
     this.setMetrics();
 
     // after application created
@@ -297,40 +156,24 @@ export class PluginMultiAppManagerServer extends Plugin {
           throw new Error('Application name "main" is reserved');
         }
 
-        const subApp = model.registerToSupervisor(this.app, {
-          appOptionsFactory: (name: string, mainAppInstance: Application) =>
-            AppSupervisor.getInstance().getAppOptionsFactory()(name, mainAppInstance),
-        });
-
-        subApp.on('afterStart', async () => {
-          this.sendSyncMessage({
-            type: 'subAppStarted',
-            appName: name,
-          });
-        });
-
-        subApp.on('afterStop', async () => {
-          this.sendSyncMessage({
-            type: 'subAppStopped',
-            appName: name,
-          });
-        });
+        const subApp = supervisor.registerApp(model.get('name'), model.get('options') || {}, this.app);
 
         const quickstart = async () => {
           // create database
           try {
-            await AppSupervisor.getInstance().getAppDbCreator()(subApp, {
+            await supervisor.createDatabase({
+              app: subApp,
               transaction,
-              applicationModel: model,
+              appModel: model,
               context: options.context,
             });
           } catch (error) {
             this.log.error(error, { method: 'appDbCreator' });
-            await AppSupervisor.getInstance().setAppStatus(subApp.name, 'error');
+            await supervisor.setAppStatus(subApp.name, 'error');
             return;
           }
 
-          await AppSupervisor.getInstance().getApp(subApp.name);
+          await supervisor.getApp(subApp.name);
         };
 
         if (options?.context?.waitSubAppInstall) {
@@ -345,11 +188,12 @@ export class PluginMultiAppManagerServer extends Plugin {
     );
 
     this.db.on('applications.afterDestroy', async (model: ApplicationModel, options) => {
-      await AppSupervisor.getInstance().removeApp(model.get('name') as string);
+      await supervisor.removeApp(model.get('name') as string);
 
-      this.sendSyncMessage(
+      await supervisor.sendSyncMessage(
+        this.app,
         {
-          type: 'removeApp',
+          type: 'app:removed',
           appName: model.get('name'),
         },
         {
@@ -357,71 +201,6 @@ export class PluginMultiAppManagerServer extends Plugin {
         },
       );
     });
-
-    const self = this;
-
-    async function LazyLoadApplication({
-      appSupervisor,
-      appName,
-      options,
-    }: {
-      appSupervisor: AppSupervisor;
-      appName: string;
-      options: any;
-    }) {
-      const loadButNotStart = options?.upgrading;
-
-      const name = appName;
-      if (appSupervisor.hasApp(name)) {
-        return;
-      }
-
-      const mainApp = await appSupervisor.getApp('main');
-      if (!mainApp) {
-        return;
-      }
-      const applicationRecord = (await mainApp.db.getRepository('applications').findOne({
-        filter: {
-          name,
-        },
-      })) as ApplicationModel | null;
-
-      if (!applicationRecord) {
-        return;
-      }
-
-      const instanceOptions = applicationRecord.get('options');
-
-      if (instanceOptions?.standaloneDeployment && appSupervisor.runningMode !== 'single') {
-        return;
-      }
-
-      const subApp = applicationRecord.registerToSupervisor(mainApp, {
-        appOptionsFactory: (name: string, appInstance: Application) =>
-          AppSupervisor.getInstance().getAppOptionsFactory()(name, appInstance),
-      });
-
-      subApp.on('afterStart', async () => {
-        this.sendSyncMessage({
-          type: 'subAppStarted',
-          appName: name,
-        });
-      });
-
-      subApp.on('afterStop', async () => {
-        this.sendSyncMessage({
-          type: 'subAppStopped',
-          appName: name,
-        });
-      });
-
-      // must skip load on upgrade
-      if (!loadButNotStart) {
-        await subApp.runCommand('start', '--quickstart');
-      }
-    }
-
-    AppSupervisor.getInstance().setAppBootstrapper(LazyLoadApplication.bind(this));
 
     Gateway.getInstance().addAppSelectorMiddleware(async (ctx, next) => {
       const { req } = ctx;
@@ -449,7 +228,7 @@ export class PluginMultiAppManagerServer extends Plugin {
 
     this.app.on('afterStart', async (app) => {
       const repository = this.db.getRepository('applications');
-      const appSupervisor = AppSupervisor.getInstance();
+      const appSupervisor = supervisor;
 
       this.app.setMaintainingMessage('starting sub applications...');
 
@@ -458,7 +237,7 @@ export class PluginMultiAppManagerServer extends Plugin {
 
         // If the sub application is running in single mode, register the application automatically
         try {
-          await AppSupervisor.getInstance().getApp(appSupervisor.singleAppName);
+          await supervisor.getApp(appSupervisor.singleAppName);
         } catch (err) {
           console.error('Auto register sub application in single mode failed: ', appSupervisor.singleAppName, err);
         }
@@ -473,7 +252,7 @@ export class PluginMultiAppManagerServer extends Plugin {
         });
 
         for (const subAppInstance of subApps) {
-          AppSupervisor.getInstance().getApp(subAppInstance.name);
+          supervisor.getApp(subAppInstance.name);
         }
       } catch (err) {
         this.log.error('Auto register sub applications failed: ', err);
@@ -481,7 +260,7 @@ export class PluginMultiAppManagerServer extends Plugin {
     });
 
     this.app.on('afterUpgrade', async (app, options) => {
-      await AppSupervisor.getInstance().getSubAppUpgradeHandler()(app);
+      await this.subAppUpgradeHandler(app);
     });
 
     this.app.resourcer.registerActionHandlers({
@@ -499,7 +278,7 @@ export class PluginMultiAppManagerServer extends Plugin {
     this.app.resourcer.registerActionHandlers({
       'applications:stop': async (ctx, next) => {
         const { filterByTk } = ctx.action.params;
-        AppSupervisor.getInstance().stopApp(filterByTk);
+        supervisor.stopApp(filterByTk);
         ctx.body = 'ok';
         await next();
       },
@@ -508,7 +287,7 @@ export class PluginMultiAppManagerServer extends Plugin {
     this.app.resourcer.registerActionHandlers({
       'applications:start': async (ctx, next) => {
         const { filterByTk } = ctx.action.params;
-        AppSupervisor.getInstance().startApp(filterByTk);
+        supervisor.startApp(filterByTk);
         ctx.body = 'ok';
         await next();
       },
@@ -534,7 +313,7 @@ export class PluginMultiAppManagerServer extends Plugin {
       if (actionName === 'list' && resourceName === 'applications') {
         const applications = ctx.body.rows;
         for (const application of applications) {
-          const appStatus = await AppSupervisor.getInstance().getAppStatus(application.name, 'stopped');
+          const appStatus = await supervisor.getAppStatus(application.name, 'stopped');
           application.status = appStatus;
         }
       }

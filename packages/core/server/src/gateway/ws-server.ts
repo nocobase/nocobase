@@ -276,7 +276,7 @@ export class WSServer extends EventEmitter {
     const hasApp = AppSupervisor.getInstance().hasApp(handleAppName);
 
     if (!hasApp) {
-      AppSupervisor.getInstance().bootStrapApp(handleAppName);
+      AppSupervisor.getInstance().bootstrapApp(handleAppName);
     }
   }
 
