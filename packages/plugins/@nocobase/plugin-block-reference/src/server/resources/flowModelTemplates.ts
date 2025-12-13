@@ -207,7 +207,7 @@ export default {
         const rowsWithCount = await withUsageCounts(ctx, rows);
         const normalizedRow = Array.isArray(rawData) ? rowsWithCount : rowsWithCount?.[0];
         ctx.body = ctx.body?.data ? { ...ctx.body, data: normalizedRow } : normalizedRow;
-        const templateRow = Array.isArray(rowsWithCount) ? rowsWithCount[0] : rowsWithCount;
+        const templateRow = (Array.isArray(rowsWithCount) ? rowsWithCount[0] : rowsWithCount) as PlainRow;
         const templateUid = resolveTemplateUid(ctx) || templateRow?.uid;
         await syncTemplateMetaToReferenceBlocks(ctx, {
           uid: templateUid,

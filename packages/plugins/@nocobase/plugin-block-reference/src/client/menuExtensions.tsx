@@ -376,7 +376,7 @@ async function handleConvertFieldsToCopy(model: FlowModel, t: (k: string, opt?: 
         ...duplicated,
         parentId: model.uid,
         subKey: 'grid',
-        subType: 'object',
+        subType: 'object' as const,
       };
       const newGrid = model.flowEngine.createModel<FlowModel>(newOptions);
       newGrid.isNew = true;

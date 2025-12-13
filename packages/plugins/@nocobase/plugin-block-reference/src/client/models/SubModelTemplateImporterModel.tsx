@@ -77,7 +77,7 @@ export class SubModelTemplateImporterModel extends FlowModel {
     return { dataSourceKey: targetDataSourceKey, collectionName: targetCollectionName };
   }
 
-  private resolveExpectedResourceInfo(
+  public resolveExpectedResourceInfo(
     ctx?: FlowContext,
     start?: FlowModel,
   ): { dataSourceKey?: string; collectionName?: string } {
@@ -97,7 +97,7 @@ export class SubModelTemplateImporterModel extends FlowModel {
 
       // 次优先：读取模型运行时 collection（部分模型会直接暴露）
       try {
-        const c = cur?.collection;
+        const c = (cur as any)?.collection;
         const dataSourceKey = typeof c?.dataSourceKey === 'string' ? c.dataSourceKey.trim() : '';
         const collectionName = typeof c?.name === 'string' ? c.name.trim() : '';
         if (dataSourceKey && collectionName) {
@@ -200,11 +200,12 @@ export class SubModelTemplateImporterModel extends FlowModel {
 
       const { duplicated } = duplicateModelTreeLocally(gridModel);
       await mountTarget.flowEngine.replaceModel(existingGrid.uid, () => {
+        const use = typeof duplicated.use === 'string' ? duplicated.use : (duplicated.use as any)?.name || 'unknown';
         return {
-          use: duplicated.use,
+          use,
           props: duplicated.props,
           stepParams: duplicated.stepParams,
-          subModels: duplicated.subModels,
+          subModels: duplicated.subModels as any,
         };
       });
 
@@ -221,7 +222,7 @@ export class SubModelTemplateImporterModel extends FlowModel {
       return;
     }
 
-    await mountTarget.flowEngine.replaceModel(existingGrid.uid, (old: FlowModel) => {
+    await mountTarget.flowEngine.replaceModel(existingGrid.uid, (old) => {
       const oldStepParams: Record<string, any> =
         old?.stepParams && typeof old.stepParams === 'object' ? (old.stepParams as Record<string, any>) : {};
       const prevRefSettings =
@@ -258,7 +259,7 @@ export class SubModelTemplateImporterModel extends FlowModel {
     return null;
   }
 
-  private getTemplateDisabledReason(
+  public getTemplateDisabledReason(
     ctx: FlowContext,
     tpl: Record<string, any>,
     expected?: { dataSourceKey?: string; collectionName?: string },
@@ -297,7 +298,7 @@ export class SubModelTemplateImporterModel extends FlowModel {
     return `${title}: ${expectedDataSourceKey}/${expectedCollectionName} ← ${tplDataSourceKey}/${tplCollectionName}`;
   }
 
-  private async fetchTemplateOptions(ctx: FlowContext, keyword?: string) {
+  public async fetchTemplateOptions(ctx: FlowContext, keyword?: string) {
     const api = ctx.api;
     if (!api?.resource) return [];
     try {
@@ -554,7 +555,7 @@ SubModelTemplateImporterModel.registerFlow({
             ) || '当前区块已引用字段模板，请先将引用字段转换为复制';
           const messageApi = (ctx as FlowContext).message || mountTarget.context.message || importer.context.message;
           messageApi?.warning?.(msg);
-          throw new FlowExitException();
+          throw new FlowExitException(FLOW_KEY, importer.uid, msg);
         }
 
         // mountTarget 兜底：如果按层级拿不到目标 subModel，则继续向上查找
@@ -695,7 +696,7 @@ SubModelTemplateImporterModel.registerFlow({
                   })
                 : window.confirm('使用引用字段会将当前已经添加的字段移除，是否继续？');
             if (!confirmed) {
-              throw new FlowExitException();
+              throw new FlowExitException(FLOW_KEY, importer.uid, 'User cancelled template import');
             }
           }
 

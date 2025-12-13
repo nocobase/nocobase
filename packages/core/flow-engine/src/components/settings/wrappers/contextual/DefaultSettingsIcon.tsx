@@ -653,7 +653,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       });
 
       if (commonExtras.length > 0) {
-        items.push(...commonExtras);
+        items.push(...(commonExtras as MenuProps['items']));
       }
 
       // 添加复制uid按钮
