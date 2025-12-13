@@ -64,7 +64,6 @@ export class ReferenceBlockModel extends BlockModel {
     // - 支持写入：未知属性写入目标模型（若存在对应键）；否则写回自身。
     const proxy = new Proxy(this as any, {
       get(target, prop: string | symbol, receiver) {
-        if (prop === '__isReferenceProxy') return true;
         if (prop in target) {
           // 自身已有（含原型链）则直接返回；若为函数需绑定到 target，避免 private field 访问报错
           const val = Reflect.get(target, prop, target);
