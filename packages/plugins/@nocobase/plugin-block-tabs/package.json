@@ -1,0 +1,16 @@
+{
+  "name": "@nocobase/plugin-block-tabs",
+  "version": "1.0.0",
+  "main": "dist/server/index.js",
+  "displayName": "Block Tabs",
+  "displayName.zh-CN": "区块标签页",
+  "description": "Organize blocks into tabbed interface to reduce page scrolling.",
+  "description.zh-CN": "将区块组织到标签页界面中，减少页面滚动。",
+  "license": "AGPL-3.0",
+  "dependencies": {},
+  "peerDependencies": {
+    "@nocobase/client": "2.x",
+    "@nocobase/server": "2.x",
+    "@nocobase/test": "2.x"
+  }
+}
