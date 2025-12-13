@@ -50,6 +50,18 @@ export const flowModelTemplatesCollection = {
     },
     {
       type: 'string',
+      name: 'rootUse',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        title: 'rootUse',
+        'x-component': 'Input',
+        'x-disabled': true,
+        'x-hidden': true,
+      },
+    },
+    {
+      type: 'string',
       name: 'dataSourceKey',
       interface: 'input',
       uiSchema: {
@@ -68,6 +80,18 @@ export const flowModelTemplatesCollection = {
         title: 'collectionName',
         'x-component': 'Input',
         'x-disabled': true,
+      },
+    },
+    {
+      type: 'string',
+      name: 'associationName',
+      interface: 'input',
+      uiSchema: {
+        type: 'string',
+        title: 'associationName',
+        'x-component': 'Input',
+        'x-disabled': true,
+        'x-hidden': true,
       },
     },
     {

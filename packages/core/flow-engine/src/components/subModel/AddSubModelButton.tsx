@@ -27,11 +27,23 @@ type CreateModelOptionsFn = (
   extra?: any,
 ) => CreateModelOptionsStringUse | Promise<CreateModelOptionsStringUse>;
 
+type HideOrFactory = boolean | ((ctx: FlowModelContext) => boolean | Promise<boolean>);
+
 export interface SubModelItem {
   key?: string;
   label?: string | React.ReactNode;
   type?: 'group' | 'divider';
   disabled?: boolean;
+  /**
+   * 动态隐藏菜单项（支持异步）。与模型 meta.hide 语义一致。
+   * - `true` 表示隐藏
+   * - function(ctx) 返回 true 表示隐藏
+   */
+  hide?: HideOrFactory;
+  /**
+   * `hide` 的别名，兼容更直观的命名。
+   */
+  hidden?: HideOrFactory;
   icon?: React.ReactNode;
   children?: false | SubModelItemsType;
   createModelOptions?: CreateModelOptionsStringUse | CreateModelOptionsFn;
@@ -181,6 +193,9 @@ const hasToggleItems = (items: SubModelItem[]): boolean => {
   const walk = (nodes: SubModelItem[]): boolean => {
     for (const node of nodes) {
       if (!node) continue;
+      const hide = node.hide ?? node.hidden;
+      // hide 为函数时菜单可见性依赖运行时上下文，应禁用缓存
+      if (typeof hide === 'function') return true;
       if (!node.children && (node.toggleDetector || node.toggleable)) return true;
       if (Array.isArray(node.children)) {
         if (walk(node.children)) return true;
@@ -191,6 +206,15 @@ const hasToggleItems = (items: SubModelItem[]): boolean => {
     return false;
   };
   return walk(items);
+};
+
+const isHidden = async (item: SubModelItem, ctx: FlowModelContext): Promise<boolean> => {
+  const hide = item.hide ?? item.hidden;
+  if (!hide) return false;
+  if (typeof hide === 'function') {
+    return !!(await hide(ctx));
+  }
+  return !!hide;
 };
 
 /**
@@ -204,10 +228,26 @@ const transformSubModelItems = async (
 ): Promise<Item[]> => {
   if (items.length === 0) return [];
 
+  // 动态隐藏：按当前 FlowModelContext 过滤（支持异步）
+  const hidden = await Promise.all(
+    items.map(async (item) => {
+      if (!item) return true;
+      try {
+        return await isHidden(item, model.context);
+      } catch (e) {
+        console.error('[NocoBase]: Failed to resolve item.hide/hidden:', e);
+        return false; // 出错时保守显示
+      }
+    }),
+  );
+  const visibleItems = items.filter((item, idx) => !!item && !hidden[idx]);
+
+  if (visibleItems.length === 0) return [];
+
   // 批量收集需要异步检测的可切换项
   const toggleItems: Array<{ item: SubModelItem; index: number }> = [];
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
+  for (let i = 0; i < visibleItems.length; i++) {
+    const item = visibleItems[i];
 
     // 自动从 createModelOptions 中推断 useModel，避免遗漏导致 toggleable 失效
     let resolvedUseModel = item.useModel;
@@ -267,7 +307,7 @@ const transformSubModelItems = async (
   });
 
   // 并发转换所有项目
-  const transformPromises = items.map(async (item, index) => {
+  const transformPromises = visibleItems.map(async (item, index): Promise<Item | null> => {
     const transformedItem: Item = {
       key: item.key,
       label: item.label,
@@ -301,6 +341,13 @@ const transformSubModelItems = async (
       }
     }
 
+    // group/submenu 若最终无子项，则不展示该分组，避免空分组残留
+    if (Array.isArray(transformedItem.children) && transformedItem.children.length === 0) {
+      if (item.type === 'group' || !item.createModelOptions) {
+        return null;
+      }
+    }
+
     // 处理开关式菜单项
     if (item.toggleDetector && !item.children) {
       const isToggled = toggleMap.get(index) || false;
@@ -315,7 +362,8 @@ const transformSubModelItems = async (
     return transformedItem;
   });
 
-  return Promise.all(transformPromises);
+  const transformed = await Promise.all(transformPromises);
+  return transformed.filter((item): item is Item => !!item);
 };
 
 /**

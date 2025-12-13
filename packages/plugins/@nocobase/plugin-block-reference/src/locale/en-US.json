@@ -26,5 +26,13 @@
   "Template settings": "Template settings",
   "This template is in use and cannot be deleted ({{count}} references)": "This template is in use and cannot be deleted ({{count}} references)",
   "Usage count": "Usage count",
-  "Deleted": "Deleted"
+  "Deleted": "Deleted",
+  "From template": "From template",
+  "Using reference fields will remove existing fields": "Using reference fields will remove existing fields.",
+  "This block already references field template, please convert fields to copy first": "This block already references a field template. Please convert fields to copy first.",
+  "Convert fields to copy": "Convert fields to copy",
+  "Field template": "Field template",
+  "Are you sure to convert referenced fields to copy mode?": "Are you sure to convert referenced fields to copy mode?",
+  "Template data source/collection mismatch": "Template data source/collection mismatch",
+  "Template missing data source/collection info": "Template missing data source/collection info"
 }

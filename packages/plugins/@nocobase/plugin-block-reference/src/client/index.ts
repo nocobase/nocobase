@@ -9,14 +9,24 @@
 
 import { Plugin } from '@nocobase/client';
 import { ReferenceBlockModel } from './models/ReferenceBlockModel';
+import { ReferenceFormGridModel } from './models/ReferenceFormGridModel';
+import { SubModelTemplateImporterModel } from './models/SubModelTemplateImporterModel';
 import { FlowModelTemplatesPage } from './components/FlowModelTemplatesPage';
 // @ts-ignore
 import pkg from '../../package.json';
 import { registerMenuExtensions } from './menuExtensions';
+import { registerSubModelMenuExtensions } from './subModelMenuExtensions';
+import { patchFormBlockTitleForFieldTemplateReference } from './utils/patchFormBlockTitle';
 
 export class PluginBlockReferenceClient extends Plugin {
   async load() {
-    this.flowEngine.registerModels({ ReferenceBlockModel });
+    this.flowEngine.registerModels({
+      ReferenceBlockModel,
+      ReferenceFormGridModel,
+      SubModelTemplateImporterModel,
+    });
+    patchFormBlockTitleForFieldTemplateReference();
+    registerSubModelMenuExtensions(this.flowEngine);
     this.app.pluginSettingsManager.add('flow-model-templates', {
       title: `{{t("Block template", { ns: "${pkg.name}", nsMode: "fallback" })}}`,
       icon: 'ProfileOutlined',

@@ -37,11 +37,19 @@ export default {
     },
     {
       type: 'string',
+      name: 'rootUse',
+    },
+    {
+      type: 'string',
       name: 'dataSourceKey',
     },
     {
       type: 'string',
       name: 'collectionName',
+    },
+    {
+      type: 'string',
+      name: 'associationName',
     },
     {
       type: 'string',

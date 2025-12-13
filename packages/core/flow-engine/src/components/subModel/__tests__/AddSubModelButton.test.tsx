@@ -190,6 +190,54 @@ describe('transformItems - searchable flags', () => {
   });
 });
 
+describe('transformItems - hide/hidden', () => {
+  it('filters items by hide flag/function recursively', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-hide' });
+
+    const definition: SubModelItem[] = [
+      {
+        key: 'keep',
+        label: 'Keep',
+        createModelOptions: { use: 'Parent' },
+      },
+      {
+        key: 'hide-true',
+        label: 'Hidden',
+        hide: true,
+        createModelOptions: { use: 'Parent' },
+      },
+      {
+        key: 'hide-fn',
+        label: 'HiddenFn',
+        hide: (ctx: FlowModelContext) => ctx.model.uid === 'p-hide',
+        createModelOptions: { use: 'Parent' },
+      },
+      {
+        key: 'group',
+        type: 'group',
+        label: 'Group',
+        children: [
+          { key: 'g-hide', label: 'GHide', hidden: true, createModelOptions: { use: 'Parent' } },
+          { key: 'g-keep', label: 'GKeep', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    const factory = transformItems(definition, parent, 'items', 'array');
+    const resolved = await (typeof factory === 'function' ? factory() : factory);
+
+    expect(resolved.map((i: any) => i.key)).toEqual(['keep', 'group']);
+    const group = resolved.find((i: any) => i.key === 'group') as any;
+    expect(group).toBeTruthy();
+    expect(Array.isArray(group.children)).toBe(true);
+    expect(group.children.map((i: any) => i.key)).toEqual(['g-keep']);
+  });
+});
+
 describe('transformItems - toggleable items', () => {
   class ToggleParent extends FlowModel {}
   class ToggleChild extends FlowModel {}

@@ -12,6 +12,7 @@ import _ from 'lodash';
 import flowModelTemplates from './resources/flowModelTemplates';
 import flowModelTemplateUsages from './resources/flowModelTemplateUsages';
 import { FlowModelRepository } from '@nocobase/plugin-flow-engine';
+import { uid } from '@nocobase/utils';
 export class PluginBlockReferenceServer extends Plugin {
   async load() {
     this.app.resourceManager.define(flowModelTemplates);
@@ -32,83 +33,138 @@ export class PluginBlockReferenceServer extends Plugin {
       'flowModelTemplateUsages:destroy',
     ]);
 
+    const parseOptions = (value: any) => FlowModelRepository.optionsToJson(value || {});
+    const extractTemplateUids = (options: any) => {
+      const stepParams = options?.stepParams || {};
+      const uids = new Set<string>();
+
+      // ReferenceBlockModel 模板引用
+      if (options?.use === 'ReferenceBlockModel') {
+        const mode = _.get(stepParams, ['referenceSettings', 'target', 'mode']) || 'reference';
+        const tplUid = _.get(stepParams, ['referenceSettings', 'useTemplate', 'templateUid']);
+        if (tplUid && mode !== 'copy') {
+          uids.add(String(tplUid));
+        }
+      }
+
+      // ReferenceFormGridModel（字段模板引用）
+      if (options?.use === 'ReferenceFormGridModel') {
+        const tplUid = _.get(stepParams, ['referenceFormGridSettings', 'target', 'templateUid']);
+        if (tplUid) {
+          uids.add(String(tplUid));
+        }
+      }
+
+      // 兼容：subModelReferenceSettings.refs 中的 templateUid（历史/实验实现）
+      const normalizeRefs = (val: any) => {
+        if (!val) return [];
+        if (Array.isArray(val)) return val;
+        if (Array.isArray(val?.refs)) return val.refs;
+        if (typeof val === 'object') {
+          return Object.values(val).filter((r: any) => r && typeof r === 'object');
+        }
+        return [];
+      };
+      const refsRaw = _.get(stepParams, ['subModelReferenceSettings', 'refs']);
+      const refs = normalizeRefs(refsRaw);
+      for (const r of refs) {
+        const tplUid = r?.templateUid;
+        const mode = r?.mode || 'reference';
+        if (tplUid && mode !== 'copy') {
+          uids.add(String(tplUid));
+        }
+      }
+
+      return Array.from(uids);
+    };
+
+    const resolveUsageOwnerUid = (instanceUid: string, options: any): string => {
+      // ReferenceFormGridModel 作为表单块的子模型，usage 归属到父级 blockUid
+      if (options?.use === 'ReferenceFormGridModel') {
+        const parentId = options?.parentId;
+        if (parentId && typeof parentId === 'string') return parentId;
+      }
+      return instanceUid;
+    };
+
     // 区块删除时自动清理 usage 记录，避免垃圾数据
     this.db.on('flowModels.afterDestroy', async (instance: any, { transaction }: any = {}) => {
       const usageRepo = this.db.getRepository('flowModelTemplateUsages');
-      await usageRepo.destroy({
-        filter: {
-          blockUid: instance?.get?.('uid') || instance?.uid,
-        },
-        transaction,
-      });
+      const instanceUid = instance?.get?.('uid') || instance?.uid;
+      if (!instanceUid) return;
+      const options = parseOptions(instance?.get?.('options') || instance?.options);
+      const ownerUid = resolveUsageOwnerUid(instanceUid, options);
+
+      // 对于 ReferenceFormGridModel，只清理本次引用的 templateUid，避免误伤同一 blockUid 下的其它 usage
+      if (options?.use === 'ReferenceFormGridModel') {
+        const templateUids = extractTemplateUids(options);
+        for (const templateUid of templateUids) {
+          await usageRepo.destroy({
+            filter: { blockUid: ownerUid, templateUid },
+            transaction,
+          });
+        }
+        return;
+      }
+
+      await usageRepo.destroy({ filter: { blockUid: ownerUid }, transaction });
     });
 
-    // 区块保存时维护 usage：仅 ReferenceBlockModel + useTemplate + mode!==copy 时保留
+    // 区块保存时维护 usage：
+    // - ReferenceBlockModel.useTemplate + mode!==copy
+    // - ReferenceFormGridModel.referenceFormGridSettings.target.templateUid
+    // - subModelReferenceSettings.refs 中的 templateUid + mode!==copy（兼容历史/实验实现）
     const handleFlowModelSave = async (instance: any, { transaction }: any = {}) => {
       const usageRepo = this.db.getRepository('flowModelTemplateUsages');
-      const blockUid = instance?.get?.('uid') || instance?.uid;
-      const parseOptions = (value: any) => {
-        try {
-          return FlowModelRepository.optionsToJson(value || {});
-        } catch {
-          return {};
-        }
-      };
-      const extractState = (options: any) => {
-        const stepParams = options?.stepParams || {};
-        const mode = _.get(stepParams, ['referenceSettings', 'target', 'mode']) || 'reference';
-        const useTemplate = _.get(stepParams, ['referenceSettings', 'useTemplate']);
-        return {
-          isReference: options?.use === 'ReferenceBlockModel',
-          mode,
-          useTemplate,
-          templateUid: useTemplate?.templateUid,
-        };
-      };
+      const instanceUid = instance?.get?.('uid') || instance?.uid;
+      if (!instanceUid) return;
 
       const options = parseOptions(instance?.get?.('options') || instance?.options);
       const previousOptions = parseOptions(instance?.previous?.('options') ?? instance?._previousDataValues?.options);
-      if (!blockUid) return;
-      const current = extractState(options);
-      const previous = extractState(previousOptions);
-      if (
-        current.isReference === previous.isReference &&
-        current.templateUid === previous.templateUid &&
-        current.mode === previous.mode
-      ) {
+
+      const currentOwnerUid = resolveUsageOwnerUid(instanceUid, options);
+      const previousOwnerUid = resolveUsageOwnerUid(instanceUid, previousOptions);
+      const currentUids = new Set(extractTemplateUids(options).map(String));
+      const previousUids = new Set(extractTemplateUids(previousOptions).map(String));
+
+      // owner 变更：需要从旧 owner 清理，再写入新 owner
+      if (currentOwnerUid !== previousOwnerUid) {
+        for (const templateUid of previousUids) {
+          await usageRepo.destroy({
+            filter: { blockUid: previousOwnerUid, templateUid },
+            transaction,
+          });
+        }
+        for (const templateUid of currentUids) {
+          await usageRepo.updateOrCreate({
+            filterKeys: ['templateUid', 'blockUid'],
+            values: { uid: uid(), templateUid, blockUid: currentOwnerUid },
+            transaction,
+            context: { disableAfterDestroy: true },
+          });
+        }
         return;
       }
 
-      const { isReference, templateUid, mode, useTemplate } = current;
+      // owner 未变更：按差异增删，避免误伤同 blockUid 的其它 usage
+      const removed = Array.from(previousUids).filter((x) => !currentUids.has(x));
+      const added = Array.from(currentUids).filter((x) => !previousUids.has(x));
+      if (removed.length === 0 && added.length === 0) return;
 
-      if (!isReference || !templateUid || mode === 'copy') {
+      for (const templateUid of removed) {
         await usageRepo.destroy({
-          filter: { blockUid },
+          filter: { blockUid: currentOwnerUid, templateUid },
           transaction,
         });
-        return;
       }
-
-      await usageRepo.destroy({
-        filter: {
-          blockUid,
-          templateUid: {
-            $ne: templateUid,
-          },
-        },
-        transaction,
-      });
-
-      await usageRepo.updateOrCreate({
-        filterKeys: ['templateUid', 'blockUid'],
-        values: {
-          uid: useTemplate?.uid,
-          templateUid,
-          blockUid,
-        },
-        transaction,
-        context: { disableAfterDestroy: true },
-      });
+      for (const templateUid of added) {
+        await usageRepo.updateOrCreate({
+          filterKeys: ['templateUid', 'blockUid'],
+          values: { uid: uid(), templateUid, blockUid: currentOwnerUid },
+          transaction,
+          context: { disableAfterDestroy: true },
+        });
+      }
     };
 
     this.db.on('flowModels.afterSaveWithAssociations', handleFlowModelSave);

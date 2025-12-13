@@ -26,5 +26,13 @@
   "Template name is required": "模版名称必填",
   "Template settings": "模版配置",
   "This template is in use and cannot be deleted ({{count}} references)": "该模版被引用（{{count}} 处），不可删除",
-  "Usage count": "引用数量"
+  "Usage count": "引用数量",
+  "From template": "从模版引入",
+  "Using reference fields will remove existing fields": "使用引用字段会将当前已经添加的字段移除",
+  "This block already references field template, please convert fields to copy first": "当前区块已引用字段模版，请先将引用字段转换为复制",
+  "Convert fields to copy": "将引用字段转换为复制",
+  "Field template": "字段模版",
+  "Are you sure to convert referenced fields to copy mode?": "确定将引用字段转换为复制模式吗？",
+  "Template data source/collection mismatch": "数据源/数据表不匹配",
+  "Template missing data source/collection info": "模板缺少数据源/数据表信息"
 }

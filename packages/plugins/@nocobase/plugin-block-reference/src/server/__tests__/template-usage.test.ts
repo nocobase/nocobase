@@ -41,45 +41,25 @@ describe('block-reference templates and usages', () => {
   };
 
   const createReferenceBlock = async (uid: string, templateUid: string) => {
-    const record = await flowRepo.create({
+    return await flowRepo.create({
       values: {
         uid,
         options: buildOptions(templateUid),
       },
     });
-    await usageRepo.updateOrCreate({
-      filterKeys: ['templateUid', 'blockUid'],
-      values: {
-        templateUid,
-        blockUid: uid,
-      },
-    });
-    return record;
   };
 
   const updateReferenceBlockOptions = (uid: string, templateUid: string) => {
-    return flowRepo
-      .update({
-        filter: { uid },
-        values: { options: buildOptions(templateUid) },
-      })
-      .then(async () => {
-        await usageRepo.destroy({ filter: { blockUid: uid } });
-        await usageRepo.updateOrCreate({
-          filterKeys: ['templateUid', 'blockUid'],
-          values: { templateUid, blockUid: uid },
-        });
-      });
+    return flowRepo.update({
+      filter: { uid },
+      values: { options: buildOptions(templateUid) },
+    });
   };
 
   const destroyBlock = (uid: string) => {
-    return flowRepo
-      .destroy({
-        filter: { uid },
-      })
-      .then(async () => {
-        await usageRepo.destroy({ filter: { blockUid: uid } });
-      });
+    return flowRepo.destroy({
+      filter: { uid },
+    });
   };
 
   const getBlockOptions = async (uid: string) => {
@@ -202,5 +182,89 @@ describe('block-reference templates and usages', () => {
     expect(useTemplate?.templateUid).toBe('tpl-sync');
     expect(useTemplate?.templateName).toBe('Template New');
     expect(useTemplate?.templateDescription).toBe('Desc New');
+  });
+
+  it('should persist associationName in flowModelTemplates', async () => {
+    const agent = app.agent();
+    const tplResp = await agent.resource('flowModelTemplates').create({
+      values: {
+        uid: 'tpl-assoc',
+        name: 'Template Assoc',
+        targetUid: 'target-block',
+        dataSourceKey: 'main',
+        collectionName: 'bad',
+        associationName: 'users.roles',
+      },
+    });
+    expect(tplResp.status).toBe(200);
+    const createdTpl = tplResp.body?.data || tplResp.body;
+    expect(createdTpl?.associationName).toBe('users.roles');
+
+    const getResp = await agent.resource('flowModelTemplates').get({
+      filterByTk: 'tpl-assoc',
+    });
+    expect(getResp.status).toBe(200);
+    const gotTpl = getResp.body?.data || getResp.body;
+    expect(gotTpl?.associationName).toBe('users.roles');
+  });
+
+  it('should create usage for ReferenceFormGridModel', async () => {
+    const agent = app.agent();
+    await agent.resource('flowModelTemplates').create({
+      values: {
+        uid: 'tpl-sub',
+        name: 'Template Sub',
+        targetUid: 'target-block',
+      },
+    });
+
+    await flowRepo.create({
+      values: {
+        uid: 'block-sub',
+        options: {
+          use: 'FormBlockModel',
+          stepParams: {},
+        },
+      },
+    });
+
+    await flowRepo.create({
+      values: {
+        uid: 'grid-sub',
+        options: {
+          use: 'ReferenceFormGridModel',
+          parentId: 'block-sub',
+          subKey: 'grid',
+          subType: 'object',
+          stepParams: {
+            referenceFormGridSettings: {
+              target: {
+                templateUid: 'tpl-sub',
+                templateName: 'Template Sub',
+                targetUid: 'target-block',
+                sourcePath: 'subModels.grid',
+              },
+            },
+          },
+        },
+      },
+    });
+
+    expect(await countUsage({ templateUid: 'tpl-sub', blockUid: 'block-sub' })).toBe(1);
+
+    await flowRepo.update({
+      filter: { uid: 'grid-sub' },
+      values: {
+        options: {
+          use: 'ReferenceFormGridModel',
+          parentId: 'block-sub',
+          subKey: 'grid',
+          subType: 'object',
+          stepParams: {},
+        },
+      },
+    });
+
+    expect(await countUsage({ blockUid: 'block-sub' })).toBe(0);
   });
 });

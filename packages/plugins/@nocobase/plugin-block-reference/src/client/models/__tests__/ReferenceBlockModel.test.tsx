@@ -368,7 +368,7 @@ describe('ReferenceBlockModel', () => {
         // 验证引用区块的标题包含 "(Reference)"
         const title = referenceBlockModel.title;
         expect(title).toContain('Test Form Block');
-        expect(title).toContain('Reference');
+        expect(title).toMatch(/Template|模版/);
       },
       TEST_TIMEOUT,
     );
