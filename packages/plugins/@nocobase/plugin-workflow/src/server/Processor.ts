@@ -484,12 +484,17 @@ export default class Processor {
       }
     }
 
-    return {
+    const scopes = {
       $context: this.execution.context,
       $jobsMapByNodeKey: this.jobResultsMapByNodeKey,
       $system: systemFns,
       $scopes,
       $env: this.options.plugin.app.environment.getVariables(),
+    };
+
+    return {
+      ...scopes,
+      ctx: scopes, // 2.0
     };
   }
 
