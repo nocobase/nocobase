@@ -231,42 +231,6 @@ export const createFlowModelTemplatesSchema = (filter?: Record<string, any>): IS
             },
           },
         },
-        filterByTk: {
-          type: 'void',
-          title: 'filterByTk',
-          'x-component': 'TableV2.Column',
-          'x-component-props': {
-            width: 140,
-          },
-          properties: {
-            filterByTk: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-              'x-component-props': {
-                ellipsis: true,
-              },
-            },
-          },
-        },
-        sourceId: {
-          type: 'void',
-          title: 'sourceId',
-          'x-component': 'TableV2.Column',
-          'x-component-props': {
-            width: 140,
-          },
-          properties: {
-            sourceId: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-              'x-component-props': {
-                ellipsis: true,
-              },
-            },
-          },
-        },
         usageCount: {
           type: 'void',
           title: tStr('Usage count'),

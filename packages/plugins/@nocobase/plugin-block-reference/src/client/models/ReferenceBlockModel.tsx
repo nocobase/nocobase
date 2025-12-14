@@ -377,6 +377,13 @@ ReferenceBlockModel.registerFlow({
             const res = await api?.resource?.('flowModelTemplates')?.list({
               pageSize: 20,
               search: keyword || undefined,
+              filter: {
+                $and: [
+                  {
+                    $or: [{ type: { $notIn: ['popup'] } }, { type: null }, { type: '' }],
+                  },
+                ],
+              },
             });
             const body = res?.data || res;
             const unwrap = (val: any) => (val && val.data ? val.data : val);

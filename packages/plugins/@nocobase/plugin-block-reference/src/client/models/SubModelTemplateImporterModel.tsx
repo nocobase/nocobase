@@ -335,10 +335,15 @@ export class SubModelTemplateImporterModel extends FlowModel {
               $or: [{ rootUse: { $in: expects } }, { rootUse: null }, { rootUse: '' }],
             }
           : undefined;
+      // 排除弹窗模板（popup templates），避免污染区块/字段模板列表（兼容老数据：type 为空时用 rootUse 兜底排除）
+      const nonPopupFilter = {
+        $and: [{ $or: [{ type: { $notIn: ['popup'] } }, { type: null }, { type: '' }] }],
+      };
+      const mergedFilter = rootUseFilter ? { $and: [rootUseFilter, ...nonPopupFilter.$and] } : nonPopupFilter;
       const res = await api.resource('flowModelTemplates').list({
         pageSize: 20,
         search: keyword || undefined,
-        filter: rootUseFilter,
+        filter: mergedFilter,
       });
       const body = res?.data || res;
       const unwrap = (val: any) => (val && val.data ? val.data : val);

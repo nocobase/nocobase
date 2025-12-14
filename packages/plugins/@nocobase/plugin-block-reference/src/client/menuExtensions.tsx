@@ -11,9 +11,10 @@ import React, { useState } from 'react';
 import { Button, Form, Input, Space, Switch, Typography } from 'antd';
 import _ from 'lodash';
 import { FlowModel, createBlockScopedEngine } from '@nocobase/flow-engine';
-import { BlockModel } from '@nocobase/client';
+import { BlockModel, PopupActionModel } from '@nocobase/client';
 import { ReferenceBlockModel } from './models/ReferenceBlockModel';
 import { duplicateModelTreeLocally } from './utils/flowModelClone';
+import { NAMESPACE } from './locale';
 
 type MenuItem = {
   key: string;
@@ -33,6 +34,8 @@ const normalizeTitle = (val?: string) => {
 const openConvertDialogs = new WeakSet<FlowModel>();
 const openCopyDialogs = new WeakSet<FlowModel>();
 const openFieldsCopyDialogs = new WeakSet<FlowModel>();
+const openSavePopupTemplateDialogs = new Set<string>();
+const openConvertPopupTemplateDialogs = new Set<string>();
 
 const GRID_REF_FLOW_KEY = 'referenceFormGridSettings';
 const GRID_REF_STEP_KEY = 'target';
@@ -118,6 +121,7 @@ async function handleConvertToTemplate(model: FlowModel, t: (k: string, opt?: an
         description: values.description,
         targetUid,
         rootUse: model.use,
+        type: 'block',
         dataSourceKey: getResourceVal('dataSourceKey') || getResourceVal('dataSource') || resourceInit?.dataSourceKey,
         collectionName: getResourceVal('collectionName') || resourceInit?.collectionName,
         associationName: getResourceVal('associationName') || resourceInit?.associationName,
@@ -469,6 +473,327 @@ async function handleConvertFieldsToCopy(model: FlowModel, t: (k: string, opt?: 
   });
 }
 
+async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: any) => string) {
+  const api = model.context.api;
+  const viewer = model.context.viewer;
+  const tNs = (key: string, opt?: Record<string, any>) => {
+    const tt = (model.context as any)?.t;
+    if (typeof tt !== 'function') return key;
+    return tt(key, { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...(opt || {}) });
+  };
+  const tClient = (key: string, opt?: Record<string, any>) => {
+    const tt = (model.context as any)?.t;
+    if (typeof tt !== 'function') return key;
+    return tt(key, { ns: ['client'], nsMode: 'fallback', ...(opt || {}) });
+  };
+
+  const dialogKey = model?.uid || '';
+  if (dialogKey && openSavePopupTemplateDialogs.has(dialogKey)) {
+    return;
+  }
+  if (dialogKey) {
+    openSavePopupTemplateDialogs.add(dialogKey);
+  }
+  const release = () => {
+    if (dialogKey) {
+      openSavePopupTemplateDialogs.delete(dialogKey);
+    }
+  };
+
+  if (!api?.resource) {
+    model.context.message?.error?.('[block-reference] api is unavailable.');
+    release();
+    return;
+  }
+  const popupFlow = model.getFlow?.('popupSettings');
+  if (!popupFlow) {
+    model.context.message?.error?.(tNs('Only Popup can be saved as popup template'));
+    release();
+    return;
+  }
+
+  const defaultName =
+    normalizeTitle((model as any)?.getTitle?.()) || normalizeTitle((model as any)?.title) || normalizeTitle(model.uid);
+  const resolveOpenViewStepKey = (flow: any): string | undefined => {
+    const steps = flow?.steps || {};
+    if (steps?.openView) return 'openView';
+    const found = Object.entries(steps).find(([, def]) => (def as any)?.use === 'openView');
+    return found?.[0];
+  };
+  const openViewStepKey =
+    (model.getStepParams('popupSettings', 'openView') !== undefined && 'openView') ||
+    resolveOpenViewStepKey(popupFlow) ||
+    'openView';
+  const openViewParams = model.getStepParams('popupSettings', openViewStepKey) || {};
+
+  const toNonEmptyString = (val: any): string | undefined => {
+    if (val === undefined || val === null) return undefined;
+    const s = String(val).trim();
+    return s ? s : undefined;
+  };
+  const getDefaultFilterByTkExpr = (): string | undefined => {
+    // 与 openView 默认行为对齐：尽量落表达式而非具体值
+    const recordKeyPath = model.context?.collection?.filterTargetKey || 'id';
+    return `{{ ctx.record.${recordKeyPath} }}`;
+  };
+  const getDefaultSourceIdExpr = (): string | undefined => {
+    try {
+      const sid = model.context?.resource?.getSourceId?.();
+      if (sid !== undefined && sid !== null && String(sid) !== '') {
+        return `{{ ctx.resource.sourceId }}`;
+      }
+    } catch (e) {
+      // ignore
+    }
+    return undefined;
+  };
+  const templateFilterByTk = toNonEmptyString(openViewParams?.filterByTk) || getDefaultFilterByTkExpr();
+  const templateSourceId = toNonEmptyString(openViewParams?.sourceId) || getDefaultSourceIdExpr();
+
+  const doCreate = async (values: { name: string; description?: string }) => {
+    const payload = {
+      name: values.name,
+      description: values.description,
+      targetUid: model.uid,
+      rootUse: model.use,
+      type: 'popup',
+      dataSourceKey: openViewParams?.dataSourceKey,
+      collectionName: openViewParams?.collectionName,
+      associationName: openViewParams?.associationName,
+      filterByTk: templateFilterByTk,
+      sourceId: templateSourceId,
+    };
+    const res = await api.resource('flowModelTemplates').create({ values: payload });
+    return unwrapData(res);
+  };
+
+  if (!viewer || typeof viewer.dialog !== 'function') {
+    try {
+      const name = window.prompt(tNs('Template name'), defaultName || '') || '';
+      const trimmed = normalizeTitle(name);
+      if (!trimmed) return;
+      await doCreate({ name: trimmed });
+      model.context.message?.success?.(tNs('Saved'));
+    } catch (err) {
+      console.error(err);
+      model.context.message?.error?.(err instanceof Error ? err.message : String(err));
+    } finally {
+      release();
+    }
+    return;
+  }
+
+  viewer.dialog({
+    title: tNs('Save as popup template'),
+    width: 520,
+    destroyOnClose: true,
+    content: (currentDialog: any) => {
+      const TemplateDialogContent: React.FC = () => {
+        const [form] = Form.useForm();
+        const [submitting, setSubmitting] = useState(false);
+
+        const handleSubmit = async () => {
+          const values = await form.validateFields();
+          const name = normalizeTitle(values?.name);
+          if (!name) {
+            model.context.message?.error?.(tNs('Template name is required'));
+            return;
+          }
+          setSubmitting(true);
+          try {
+            await doCreate({ name, description: normalizeTitle(values?.description) || undefined });
+            model.context.message?.success?.(tNs('Saved'));
+            currentDialog.close();
+          } catch (err) {
+            console.error(err);
+            model.context.message?.error?.(err instanceof Error ? err.message : String(err));
+          } finally {
+            setSubmitting(false);
+          }
+        };
+
+        return (
+          <>
+            <Form
+              form={form}
+              layout="vertical"
+              initialValues={{
+                name: defaultName,
+                description: '',
+              }}
+            >
+              <Form.Item
+                name="name"
+                label={tNs('Template name')}
+                rules={[{ required: true, message: tNs('Template name is required') }]}
+              >
+                <Input autoFocus />
+              </Form.Item>
+              <Form.Item name="description" label={tNs('Template description')}>
+                <Input.TextArea rows={3} />
+              </Form.Item>
+            </Form>
+            <currentDialog.Footer>
+              <Space align="end">
+                <Button
+                  onClick={() => {
+                    currentDialog.close();
+                  }}
+                >
+                  {tClient('Cancel')}
+                </Button>
+                <Button type="primary" loading={submitting} onClick={handleSubmit}>
+                  {tClient('Confirm')}
+                </Button>
+              </Space>
+            </currentDialog.Footer>
+          </>
+        );
+      };
+
+      return <TemplateDialogContent />;
+    },
+    onClose: release,
+  });
+}
+
+async function handleConvertPopupTemplateToCopy(model: FlowModel, t: (k: string, opt?: any) => string) {
+  const api = model.context.api;
+  const viewer = model.context.viewer;
+  const tNs = (key: string, opt?: Record<string, any>) => {
+    const tt = (model.context as any)?.t;
+    if (typeof tt !== 'function') return key;
+    return tt(key, { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...(opt || {}) });
+  };
+  const tClient = (key: string, opt?: Record<string, any>) => {
+    const tt = (model.context as any)?.t;
+    if (typeof tt !== 'function') return key;
+    return tt(key, { ns: ['client'], nsMode: 'fallback', ...(opt || {}) });
+  };
+
+  const dialogKey = model?.uid || '';
+  if (dialogKey && openConvertPopupTemplateDialogs.has(dialogKey)) {
+    return;
+  }
+  if (dialogKey) {
+    openConvertPopupTemplateDialogs.add(dialogKey);
+  }
+  const release = () => {
+    if (dialogKey) {
+      openConvertPopupTemplateDialogs.delete(dialogKey);
+    }
+  };
+
+  const popupFlow = model.getFlow?.('popupSettings');
+  if (!popupFlow) {
+    model.context.message?.error?.(tNs('Only Popup can be saved as popup template'));
+    release();
+    return;
+  }
+  const resolveOpenViewStepKey = (flow: any): string | undefined => {
+    const steps = flow?.steps || {};
+    if (steps?.openView) return 'openView';
+    const found = Object.entries(steps).find(([, def]) => (def as any)?.use === 'openView');
+    return found?.[0];
+  };
+  const openViewStepKey =
+    (model.getStepParams('popupSettings', 'openView') !== undefined && 'openView') ||
+    resolveOpenViewStepKey(popupFlow) ||
+    'openView';
+  const openViewParams = model.getStepParams('popupSettings', openViewStepKey) || {};
+  const templateUid =
+    typeof openViewParams?.popupTemplateUid === 'string' ? openViewParams.popupTemplateUid.trim() : '';
+  if (!templateUid) {
+    model.context.message?.error?.(tNs('This pop-up is not using a popup template'));
+    release();
+    return;
+  }
+
+  const unwrap = (val: any) => val?.data?.data ?? val?.data ?? val;
+  const resolveTemplateTargetUid = async (): Promise<string> => {
+    if (!api?.resource) {
+      const v = openViewParams?.uid;
+      if (typeof v === 'string' && v.trim()) return v.trim();
+      throw new Error(tNs('Popup template not found'));
+    }
+    const res = await api.resource('flowModelTemplates').get({ filterByTk: templateUid });
+    const row = unwrap(res);
+    const targetUid = row?.targetUid;
+    if (typeof targetUid === 'string' && targetUid.trim()) return targetUid.trim();
+    // fallback: use current uid
+    const v = openViewParams?.uid;
+    if (typeof v === 'string' && v.trim()) return v.trim();
+    throw new Error(tNs('Popup template not found'));
+  };
+
+  const doConvert = async () => {
+    const targetUid = await resolveTemplateTargetUid();
+    const duplicated = await model.flowEngine.duplicateModel(targetUid);
+    const newUid = duplicated?.uid || duplicated?.data?.uid || duplicated?.data?.data?.uid;
+    if (!newUid) {
+      throw new Error(tNs('Failed to copy popup from template'));
+    }
+    const nextOpenView = { ...(openViewParams || {}), uid: newUid };
+    delete (nextOpenView as any).popupTemplateUid;
+    delete (nextOpenView as any).popupTemplateMode;
+    model.setStepParams('popupSettings', { [openViewStepKey]: nextOpenView });
+    await model.saveStepParams();
+    model.context.message?.success?.(tNs('Converted'));
+  };
+
+  if (!viewer || typeof viewer.dialog !== 'function') {
+    const ok = window.confirm(tNs('Are you sure to convert this pop-up to copy mode?'));
+    if (ok) {
+      try {
+        await doConvert();
+      } catch (e) {
+        console.error(e);
+        model.context.message?.error?.(e instanceof Error ? e.message : String(e));
+      }
+    }
+    release();
+    return;
+  }
+
+  viewer.dialog({
+    title: tNs('Convert pop-up to copy'),
+    width: 520,
+    destroyOnClose: true,
+    onClose: release,
+    content: (currentDialog: any) => (
+      <>
+        <div style={{ marginBottom: 16 }}>{tNs('Are you sure to convert this pop-up to copy mode?')}</div>
+        <currentDialog.Footer>
+          <Space align="end">
+            <Button
+              onClick={() => {
+                release();
+                currentDialog.close();
+              }}
+            >
+              {tClient('Cancel')}
+            </Button>
+            <Button
+              type="primary"
+              onClick={async () => {
+                try {
+                  await doConvert();
+                  currentDialog.close();
+                } catch (e) {
+                  console.error(e);
+                  model.context.message?.error?.(e instanceof Error ? e.message : String(e));
+                }
+              }}
+            >
+              {tClient('Confirm')}
+            </Button>
+          </Space>
+        </currentDialog.Footer>
+      </>
+    ),
+  });
+}
+
 export function registerMenuExtensions() {
   BlockModel.registerExtraMenuItems({
     group: 'common-actions',
@@ -516,6 +841,44 @@ export function registerMenuExtensions() {
         });
       }
       return items;
+    },
+  });
+
+  PopupActionModel.registerExtraMenuItems({
+    group: 'common-actions',
+    sort: -8,
+    matcher: () => true,
+    items: async (model: FlowModel, t) => {
+      const openViewParams = model.getStepParams('popupSettings', 'openView') || {};
+      const templateUid =
+        typeof (openViewParams as any)?.popupTemplateUid === 'string'
+          ? (openViewParams as any).popupTemplateUid.trim()
+          : '';
+      const hasTemplate = !!templateUid;
+      if (hasTemplate) {
+        return [
+          {
+            key: 'block-reference:convert-popup-template-to-copy',
+            label:
+              typeof (model.context as any)?.t === 'function'
+                ? (model.context as any).t('Convert pop-up to copy', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' })
+                : 'Convert pop-up to copy',
+            onClick: () => handleConvertPopupTemplateToCopy(model, t),
+            sort: -8,
+          },
+        ];
+      }
+      return [
+        {
+          key: 'block-reference:save-popup-as-template',
+          label:
+            typeof (model.context as any)?.t === 'function'
+              ? (model.context as any).t('Save as popup template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' })
+              : 'Save as popup template',
+          onClick: () => handleSavePopupAsTemplate(model, t),
+          sort: -8,
+        },
+      ];
     },
   });
 }

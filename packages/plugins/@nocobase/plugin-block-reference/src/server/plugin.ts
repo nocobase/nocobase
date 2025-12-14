@@ -36,14 +36,24 @@ export class PluginBlockReferenceServer extends Plugin {
     const parseOptions = (value: any) => FlowModelRepository.optionsToJson(value || {});
     const omitSubModels = (value: any) => {
       if (!value || typeof value !== 'object') return value;
-      const { subModels, ...rest } = value as any;
+      const { subModels, ...rest } = value;
       return rest;
     };
     const collectFlowModelsFromTree = (value: any) => {
       const result: Array<any> = [];
+      const ensureNodeUid = (node: any): string => {
+        const existing = node?.uid;
+        if (typeof existing === 'string' && existing) return existing;
+        if (typeof existing === 'undefined' || existing === null || existing === '') {
+          const next = uid();
+          node.uid = next;
+          return next;
+        }
+        throw new Error('[block-reference] flowModels uid must be a non-empty string');
+      };
       const walk = (node: any, inheritedParentId?: string) => {
         if (!node || typeof node !== 'object') return;
-        const nodeUid = node?.uid;
+        const nodeUid = ensureNodeUid(node);
         const nextNode = omitSubModels(node);
         if (inheritedParentId && nextNode && typeof nextNode === 'object' && !nextNode.parentId) {
           nextNode.parentId = inheritedParentId;
@@ -85,10 +95,19 @@ export class PluginBlockReferenceServer extends Plugin {
       }
 
       // openView（弹窗模板引用）
-      const openViewTplUid = _.get(stepParams, ['popupSettings', 'openView', 'popupTemplateUid']);
-      const openViewTplMode = _.get(stepParams, ['popupSettings', 'openView', 'popupTemplateMode']) || 'reference';
-      if (openViewTplUid && openViewTplMode !== 'copy') {
-        uids.add(String(openViewTplUid));
+      // 兼容：openView step key 可能不是 "openView"，这里扫描 popupSettings 下所有 stepParams
+      const popupSettings = _.get(stepParams, ['popupSettings']);
+      if (popupSettings && typeof popupSettings === 'object') {
+        for (const val of Object.values(popupSettings)) {
+          if (!val || typeof val !== 'object') continue;
+          const step = val as Record<string, unknown>;
+          const tplUidRaw = step['popupTemplateUid'];
+          const modeRaw = step['popupTemplateMode'];
+          const mode = typeof modeRaw === 'string' && modeRaw ? modeRaw : 'reference';
+          if (tplUidRaw !== null && typeof tplUidRaw !== 'undefined' && String(tplUidRaw) && mode !== 'copy') {
+            uids.add(String(tplUidRaw));
+          }
+        }
       }
 
       // 兼容：subModelReferenceSettings.refs 中的 templateUid（历史/实验实现）
@@ -234,6 +253,12 @@ export class PluginBlockReferenceServer extends Plugin {
 
       if (actionName === 'save') {
         const values = ctx?.action?.params?.values;
+        if (!values || typeof values !== 'object') {
+          ctx.throw(400, {
+            code: 'INVALID_PAYLOAD',
+            message: 'values is required',
+          });
+        }
         const nodes = collectFlowModelsFromTree(values);
         const uids = _.uniq(nodes.map((n) => n?.uid).filter(Boolean));
 
@@ -246,7 +271,7 @@ export class PluginBlockReferenceServer extends Plugin {
             raw: true,
             transaction: ctx.transaction,
           });
-          for (const row of rows as any[]) {
+          for (const row of rows) {
             previousOptionsByUid.set(row.uid, parseOptions(row.options));
           }
         }
@@ -272,14 +297,21 @@ export class PluginBlockReferenceServer extends Plugin {
 
       if (actionName === 'destroy') {
         const rootUid = ctx?.action?.params?.filterByTk;
+        if (!rootUid || typeof rootUid !== 'string') {
+          ctx.throw(400, {
+            code: 'INVALID_PAYLOAD',
+            message: 'filterByTk is required',
+          });
+        }
         const flowRepo = ctx.db.getRepository('flowModels') as FlowModelRepository;
-        const nodes = rootUid
-          ? await flowRepo.findNodesById(rootUid, { includeAsyncNode: true, transaction: ctx.transaction })
-          : [];
+        const nodes = (await flowRepo.findNodesById(rootUid, {
+          includeAsyncNode: true,
+          transaction: ctx.transaction,
+        })) as Array<{ uid?: string; options?: unknown; parent?: string | null }>;
 
         await next();
 
-        for (const node of nodes as any[]) {
+        for (const node of nodes) {
           const instanceUid = node?.uid;
           if (!instanceUid) continue;
           const options = parseOptions(node?.options || {});

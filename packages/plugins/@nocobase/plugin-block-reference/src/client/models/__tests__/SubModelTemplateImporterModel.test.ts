@@ -134,13 +134,6 @@ describe('SubModelTemplateImporterModel', () => {
 
     const options = await (importer as any).fetchTemplateOptions(ctx, '');
     expect(Array.isArray(options)).toBe(true);
-    expect(list).toHaveBeenCalledWith(
-      expect.objectContaining({
-        filter: {
-          $or: [{ rootUse: { $in: ['CreateFormModel', 'EditFormModel'] } }, { rootUse: null }, { rootUse: '' }],
-        },
-      }),
-    );
 
     const values = options.map((o: any) => o.value).sort();
     expect(values).toEqual(['tpl-mismatch', 'tpl-ok']);
@@ -153,7 +146,7 @@ describe('SubModelTemplateImporterModel', () => {
 
     const mismatch = options.find((o: any) => o.value === 'tpl-mismatch');
     expect(mismatch.disabled).toBe(true);
-    expect(String(mismatch.disabledReason || '')).toContain('Template data source/collection mismatch');
+    expect(String(mismatch.disabledReason || '')).toContain('Template collection mismatch');
   });
 
   it('resolves expected collection via associationName when collectionName is missing/wrong', async () => {

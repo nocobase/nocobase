@@ -175,6 +175,7 @@ export default {
           'description',
           'targetUid',
           'rootUse',
+          'type',
           'dataSourceKey',
           'collectionName',
           'associationName',

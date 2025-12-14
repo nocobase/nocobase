@@ -41,6 +41,10 @@ export default {
     },
     {
       type: 'string',
+      name: 'type',
+    },
+    {
+      type: 'string',
       name: 'dataSourceKey',
     },
     {

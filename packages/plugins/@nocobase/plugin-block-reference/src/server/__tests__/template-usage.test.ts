@@ -297,8 +297,8 @@ describe('block-reference templates and usages', () => {
     const listResp = await agent.resource('flowModelTemplates').list();
     expect(listResp.status).toBe(200);
     const listData = listResp.body?.data ?? listResp.body;
-    const rows = Array.isArray(listData) ? listData : listData?.rows;
-    const row = rows?.find?.((r: any) => r?.uid === 'tpl-save');
+    const rows = Array.isArray(listData) ? listData : Array.isArray(listData?.rows) ? listData.rows : [];
+    const row = (rows as Array<{ uid?: string; usageCount?: number }>).find((r) => r?.uid === 'tpl-save');
     expect(row?.usageCount).toBe(1);
 
     const saveResp2 = await agent.resource('flowModels').save({
@@ -311,8 +311,45 @@ describe('block-reference templates and usages', () => {
     expect(await countUsage({ templateUid: 'tpl-save', blockUid: 'ref-save' })).toBe(0);
     expect(await countUsage({ templateUid: 'tpl-save-2', blockUid: 'ref-save' })).toBe(1);
 
+    // uid 省略时后端应补齐，并能正确维护 usages
+    const saveResp3 = await agent.resource('flowModels').save({
+      values: {
+        ...buildOptions('tpl-save'),
+      },
+    });
+    expect(saveResp3.status).toBe(200);
+    const createdUid = saveResp3.body?.data ?? saveResp3.body;
+    expect(typeof createdUid).toBe('string');
+    expect(await countUsage({ templateUid: 'tpl-save', blockUid: createdUid })).toBe(1);
+
+    // openView 的 step key 不一定是 "openView"，应能扫描 popupSettings 下所有 stepParams
+    const saveResp4 = await agent.resource('flowModels').save({
+      values: {
+        uid: 'popup-save',
+        use: 'PopupActionModel',
+        stepParams: {
+          popupSettings: {
+            openViewX: {
+              popupTemplateUid: 'tpl-save',
+              popupTemplateMode: 'reference',
+            },
+          },
+        },
+      },
+    });
+    expect(saveResp4.status).toBe(200);
+    expect(await countUsage({ templateUid: 'tpl-save', blockUid: 'popup-save' })).toBe(1);
+
     const destroyResp = await agent.resource('flowModels').destroy({ filterByTk: 'ref-save' });
     expect(destroyResp.status).toBe(200);
     expect(await countUsage({ blockUid: 'ref-save' })).toBe(0);
+
+    const destroyResp2 = await agent.resource('flowModels').destroy({ filterByTk: createdUid });
+    expect(destroyResp2.status).toBe(200);
+    expect(await countUsage({ blockUid: createdUid })).toBe(0);
+
+    const destroyResp3 = await agent.resource('flowModels').destroy({ filterByTk: 'popup-save' });
+    expect(destroyResp3.status).toBe(200);
+    expect(await countUsage({ blockUid: 'popup-save' })).toBe(0);
   });
 });
