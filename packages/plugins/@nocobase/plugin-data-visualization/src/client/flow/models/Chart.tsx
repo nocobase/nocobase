@@ -9,7 +9,7 @@
 
 import React, { forwardRef, useEffect, useState } from 'react';
 import ECharts from './ECharts';
-import { Empty, Result, Typography } from 'antd';
+import { Empty, Result, Typography, Spin } from 'antd';
 import { EChartsOption, EChartsType } from 'echarts';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useT } from '../../locale';
@@ -19,6 +19,7 @@ export interface ChartOptions {
   option: EChartsOption;
   dataSource: any;
   onRefReady?: (chart: EChartsType) => void;
+  loading?: boolean;
 }
 
 const ErrorFallback = ({ error }) => {
@@ -37,8 +38,17 @@ const ErrorFallback = ({ error }) => {
   );
 };
 
-export const Chart = forwardRef<EChartsType, ChartOptions>(({ option, dataSource, onRefReady }, ref) => {
+export const Chart = forwardRef<EChartsType, ChartOptions>(({ option, dataSource, onRefReady, loading }, ref) => {
   const [errorKey, setErrorKey] = useState(0);
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', width: '100%', height: 400 }}>
+        <Spin />
+      </div>
+    );
+  }
+
   if (!option || !dataSource) {
     return <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={'Please configure chart'} />;
   }

@@ -56,6 +56,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     const oldResource = this.resource;
     if (oldResource instanceof ChartResource || oldResource instanceof SQLResource) {
       oldResource.off('refresh', this.__onResourceRefresh);
+      oldResource.off('loading', this.__onResourceRefresh);
     }
 
     // 2) 重定义 resource，创建并缓存新实例
@@ -80,8 +81,8 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     // 3) 绑定新实例监听，确保仅绑定一次
     const newResource = this.resource;
     if (newResource instanceof ChartResource || newResource instanceof SQLResource) {
-      newResource.off('refresh', this.__onResourceRefresh);
       newResource.on('refresh', this.__onResourceRefresh);
+      newResource.on('loading', this.__onResourceRefresh);
     }
   }
 
@@ -132,7 +133,14 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   renderComponent() {
     // TODO onRefReady 的逻辑理清，内部的 onRefReady props是否已经没必要？
-    return <Chart {...this.props.chart} dataSource={this.resource.getData()} ref={this.context.chartRef as any} />;
+    return (
+      <Chart
+        {...this.props.chart}
+        dataSource={this.resource.getData()}
+        loading={this.resource.loading}
+        ref={this.context.chartRef}
+      />
+    );
   }
 
   // 给外部筛选表单调用，获取图表可筛选字段
