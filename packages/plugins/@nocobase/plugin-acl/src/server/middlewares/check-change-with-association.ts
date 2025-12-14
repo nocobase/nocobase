@@ -23,7 +23,7 @@ function normalizeAssociationValue(
     return value;
   }
   if (Array.isArray(value)) {
-    const result = value.map((v) => v[recordKey]).filter((v) => !_.isEmpty(v));
+    const result = value.map((v) => v[recordKey]).filter((v) => v !== null && v !== undefined);
     return result.length > 0 ? result : undefined;
   } else {
     return value[recordKey];
@@ -47,6 +47,7 @@ async function processAssociationChild(
   if (value[recordKey]) {
     if (!updateParams) {
       // No update permission, skip
+      ctx.log.debug(`No permission to update association`, { fieldPath, value, updateParams });
       return value[recordKey];
     } else {
       try {
@@ -66,6 +67,7 @@ async function processAssociationChild(
               },
             });
             if (!record) {
+              ctx.log.debug(`No permission to update association due to scope`, { fieldPath, value, updateParams });
               return value[recordKey];
             }
           }
@@ -86,6 +88,7 @@ async function processAssociationChild(
   }
 
   // Case 3: Neither create nor update is allowed
+  ctx.log.debug(`No permission to create association`, { fieldPath, value, createParams });
   return null;
 }
 
@@ -122,7 +125,7 @@ async function processValues(
         protectedKeys,
       );
 
-      if (!_.isEmpty(processed)) {
+      if (processed !== null && processed !== undefined) {
         result.push(processed);
       }
     }
@@ -178,6 +181,13 @@ async function processValues(
         values[fieldName] = normalized;
       }
 
+      ctx.log.debug(`Not allow to update association, only keep keys`, {
+        fieldPath,
+        fieldValue,
+        updateAssociationValues,
+        recordKey,
+        normalizedValue: values[fieldName],
+      });
       continue;
     }
 
@@ -209,7 +219,7 @@ async function processValues(
           field.target,
           fieldPath,
         );
-        if (!_.isEmpty(r)) {
+        if (r !== null && r !== undefined) {
           processed.push(r);
         }
       }
