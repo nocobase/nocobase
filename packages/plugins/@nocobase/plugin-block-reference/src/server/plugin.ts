@@ -102,9 +102,7 @@ export class PluginBlockReferenceServer extends Plugin {
           if (!val || typeof val !== 'object') continue;
           const step = val as Record<string, unknown>;
           const tplUidRaw = step['popupTemplateUid'];
-          const modeRaw = step['popupTemplateMode'];
-          const mode = typeof modeRaw === 'string' && modeRaw ? modeRaw : 'reference';
-          if (tplUidRaw !== null && typeof tplUidRaw !== 'undefined' && String(tplUidRaw) && mode !== 'copy') {
+          if (tplUidRaw !== null && typeof tplUidRaw !== 'undefined' && String(tplUidRaw)) {
             uids.add(String(tplUidRaw));
           }
         }

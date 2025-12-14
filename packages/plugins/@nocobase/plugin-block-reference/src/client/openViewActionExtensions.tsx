@@ -189,7 +189,6 @@ const stripTemplateParams = (params: any) => {
   if (!params || typeof params !== 'object') return params;
   const next = { ...params };
   delete next.popupTemplateUid;
-  delete next.popupTemplateMode;
   // Avoid overriding runtime defaults with null/empty values.
   const isEmptyValue = (v: any) => {
     if (v === null || typeof v === 'undefined') return true;
@@ -347,8 +346,6 @@ function PopupTemplateSelect(props: any) {
       const next = typeof nextUid === 'string' ? nextUid.trim() : '';
       if (!next) {
         onChange?.(undefined);
-        // keep uid as-is; only reset template mode
-        setOpenViewValue('popupTemplateMode', 'reference');
         return;
       }
       onChange?.(next);
@@ -386,10 +383,6 @@ function PopupTemplateSelect(props: any) {
           } catch (_) {
             // ignore
           }
-        }
-        // default template mode
-        if (!form.values?.popupTemplateMode) {
-          setOpenViewValue('popupTemplateMode', 'reference');
         }
       } catch (e) {
         console.error('load popup template failed', e);
@@ -481,7 +474,6 @@ function PopupTemplateSelect(props: any) {
 const resolveTemplateToUid = async (ctx: FlowSettingsContext, params: any): Promise<void> => {
   const templateUid = typeof params?.popupTemplateUid === 'string' ? params.popupTemplateUid.trim() : '';
   if (!templateUid) return;
-  const templateMode = params?.popupTemplateMode || 'reference';
   const tpl = await fetchTemplateByUid(ctx as any, templateUid);
   if (!tpl?.targetUid) {
     throw new Error(tWithNs(ctx, 'Popup template not found'));
@@ -493,18 +485,6 @@ const resolveTemplateToUid = async (ctx: FlowSettingsContext, params: any): Prom
     throw new Error(disabledReason);
   }
 
-  if (templateMode === 'copy') {
-    const duplicated = await (ctx as any)?.engine?.duplicateModel?.(tpl.targetUid);
-    const newUid = duplicated?.uid;
-    if (!newUid) {
-      throw new Error(tWithNs(ctx, 'Failed to copy popup from template'));
-    }
-    params.uid = newUid;
-    // copy means detach from template; clear to avoid accidental usage counting
-    params.popupTemplateUid = undefined;
-    params.popupTemplateMode = undefined;
-    return;
-  }
   params.uid = tpl.targetUid;
 };
 
@@ -525,25 +505,6 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
         title: `{{t("Popup template", { ns: ['${NAMESPACE}', 'client'], nsMode: 'fallback' })}}`,
         'x-decorator': 'FormItem',
         'x-component': PopupTemplateSelect,
-      },
-      popupTemplateMode: {
-        type: 'string',
-        title: `{{t("Template mode", { ns: ['${NAMESPACE}', 'client'], nsMode: 'fallback' })}}`,
-        default: 'reference',
-        enum: [
-          { label: `{{t("Reference", { ns: ['${NAMESPACE}', 'client'], nsMode: 'fallback' })}}`, value: 'reference' },
-          { label: `{{t("Copy", { ns: ['${NAMESPACE}', 'client'], nsMode: 'fallback' })}}`, value: 'copy' },
-        ],
-        'x-decorator': 'FormItem',
-        'x-component': 'Radio.Group',
-        'x-reactions': {
-          dependencies: ['popupTemplateUid'],
-          fulfill: {
-            state: {
-              hidden: '{{$deps[0] ? false : true}}',
-            },
-          },
-        },
       },
       ...(uid ? { uid } : {}),
       ...rest,

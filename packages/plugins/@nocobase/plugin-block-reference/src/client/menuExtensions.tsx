@@ -633,7 +633,6 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
               const nextOpenView: any = { ...(openViewParams || {}) };
               nextOpenView.uid = targetUid;
               nextOpenView.popupTemplateUid = tplUid;
-              nextOpenView.popupTemplateMode = 'reference';
               if (!toNonEmptyString(nextOpenView.filterByTk) && templateFilterByTk) {
                 nextOpenView.filterByTk = templateFilterByTk;
               }
@@ -789,7 +788,6 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, t: (k: string,
     }
     const nextOpenView = { ...(openViewParams || {}), uid: newUid };
     delete (nextOpenView as any).popupTemplateUid;
-    delete (nextOpenView as any).popupTemplateMode;
     model.setStepParams('popupSettings', { [openViewStepKey]: nextOpenView });
     await model.saveStepParams();
     model.context.message?.success?.(tNs('Converted'));
