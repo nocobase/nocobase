@@ -267,4 +267,52 @@ describe('block-reference templates and usages', () => {
 
     expect(await countUsage({ blockUid: 'block-sub' })).toBe(0);
   });
+
+  it('should maintain usages via flowModels:save/destroy actions', async () => {
+    const agent = app.agent();
+    await agent.resource('flowModelTemplates').create({
+      values: {
+        uid: 'tpl-save',
+        name: 'Template Save',
+        targetUid: 'target-block',
+      },
+    });
+    await agent.resource('flowModelTemplates').create({
+      values: {
+        uid: 'tpl-save-2',
+        name: 'Template Save 2',
+        targetUid: 'target-block',
+      },
+    });
+
+    const saveResp = await agent.resource('flowModels').save({
+      values: {
+        uid: 'ref-save',
+        ...buildOptions('tpl-save'),
+      },
+    });
+    expect(saveResp.status).toBe(200);
+    expect(await countUsage({ templateUid: 'tpl-save', blockUid: 'ref-save' })).toBe(1);
+
+    const listResp = await agent.resource('flowModelTemplates').list();
+    expect(listResp.status).toBe(200);
+    const listData = listResp.body?.data ?? listResp.body;
+    const rows = Array.isArray(listData) ? listData : listData?.rows;
+    const row = rows?.find?.((r: any) => r?.uid === 'tpl-save');
+    expect(row?.usageCount).toBe(1);
+
+    const saveResp2 = await agent.resource('flowModels').save({
+      values: {
+        uid: 'ref-save',
+        ...buildOptions('tpl-save-2'),
+      },
+    });
+    expect(saveResp2.status).toBe(200);
+    expect(await countUsage({ templateUid: 'tpl-save', blockUid: 'ref-save' })).toBe(0);
+    expect(await countUsage({ templateUid: 'tpl-save-2', blockUid: 'ref-save' })).toBe(1);
+
+    const destroyResp = await agent.resource('flowModels').destroy({ filterByTk: 'ref-save' });
+    expect(destroyResp.status).toBe(200);
+    expect(await countUsage({ blockUid: 'ref-save' })).toBe(0);
+  });
 });
