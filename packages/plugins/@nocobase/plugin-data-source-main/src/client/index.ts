@@ -49,7 +49,7 @@ class PluginDataSourceMainClient extends Plugin {
           'x-component': 'InputNumber',
           'x-read-pretty': true,
         },
-        interface: 'id',
+        interface: 'integer',
       },
     });
     this.addCollectionPresetField({
