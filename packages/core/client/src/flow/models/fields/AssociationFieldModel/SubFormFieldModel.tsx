@@ -328,7 +328,7 @@ SubFormListFieldModel.registerFlow({
   sort: 200,
   steps: {
     allowAddNew: {
-      title: tExpr('Allow add new data'),
+      title: tExpr('Enable add new action'),
       uiMode: { type: 'switch', key: 'allowAddNew' },
       defaultParams: {
         allowAddNew: true,
@@ -340,7 +340,7 @@ SubFormListFieldModel.registerFlow({
       },
     },
     allowDisassociation: {
-      title: tExpr('Allow disassociation'),
+      title: tExpr('Enable remove action'),
       uiMode: { type: 'switch', key: 'allowDisassociation' },
       defaultParams: {
         allowDisassociation: true,
@@ -352,7 +352,7 @@ SubFormListFieldModel.registerFlow({
       },
     },
     allowSelectExistingRecord: {
-      title: tExpr('Allow selection of existing records'),
+      title: tExpr('Enable select action'),
       uiMode: { type: 'switch', key: 'allowSelectExistingRecord' },
       defaultParams: {
         allowSelectExistingRecord: false,

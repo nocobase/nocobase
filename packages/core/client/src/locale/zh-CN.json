@@ -1546,5 +1546,8 @@
   "Ellipsis on text overflow": "文本超出省略",
   "Number format": "数字显示格式",
   "RadioGroup": "单选框",
-  "CheckboxGroup": "复选框"
+  "CheckboxGroup": "复选框",
+  "Enable add new action": "启用添加操作",
+  "Enable select action": "启用选择操作",
+  "Enable remove action": "启用移除操作"
 }

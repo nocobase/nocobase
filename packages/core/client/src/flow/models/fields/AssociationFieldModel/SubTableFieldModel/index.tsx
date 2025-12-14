@@ -175,7 +175,7 @@ SubTableFieldModel.registerFlow({
       },
     },
     allowAddNew: {
-      title: tExpr('Allow add new data'),
+      title: tExpr('Enable add new action'),
       uiMode: { type: 'switch', key: 'allowAddNew' },
       defaultParams: {
         allowAddNew: true,
@@ -186,21 +186,9 @@ SubTableFieldModel.registerFlow({
         });
       },
     },
-    enableIndexColumn: {
-      title: tExpr('Enable index column'),
-      uiMode: { type: 'switch', key: 'enableIndexColumn' },
-      defaultParams: {
-        enableIndexColumn: true,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          enableIndexColumn: params.enableIndexColumn,
-        });
-      },
-    },
 
     allowDisassociation: {
-      title: tExpr('Allow disassociation'),
+      title: tExpr('Enable remove action'),
       uiMode: { type: 'switch', key: 'allowDisassociation' },
       defaultParams: {
         allowDisassociation: true,
@@ -212,7 +200,7 @@ SubTableFieldModel.registerFlow({
       },
     },
     allowSelectExistingRecord: {
-      title: tExpr('Allow selection of existing records'),
+      title: tExpr('Enable select action'),
       uiMode: { type: 'switch', key: 'allowSelectExistingRecord' },
       defaultParams: {
         allowSelectExistingRecord: false,
@@ -220,6 +208,18 @@ SubTableFieldModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps({
           allowSelectExistingRecord: params.allowSelectExistingRecord,
+        });
+      },
+    },
+    enableIndexColumn: {
+      title: tExpr('Show row numbers'),
+      uiMode: { type: 'switch', key: 'enableIndexColumn' },
+      defaultParams: {
+        enableIndexColumn: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          enableIndexColumn: params.enableIndexColumn,
         });
       },
     },
