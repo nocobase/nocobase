@@ -311,7 +311,7 @@ export class Gateway extends EventEmitter {
     const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
 
     if (!hasApp) {
-      void AppSupervisor.getInstance().bootStrapApp(handleApp);
+      void AppSupervisor.getInstance().bootstrapApp({ appName: handleApp });
     }
 
     let appStatus = await AppSupervisor.getInstance().getAppStatus(handleApp, 'preparing');

@@ -145,7 +145,7 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   }
 
   async startApp(appName: string) {
-    const appInstance = await this.getApp(appName, { withOutBootStrap: true });
+    const appInstance = await this.getApp(appName);
     await appInstance?.runCommand('start', '--quickstart');
   }
 
@@ -180,7 +180,11 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     if (!mainApp) {
       return null;
     }
-    const applicationModel = await mainApp.db.getRepository('applications').find({
+    const repo = mainApp.db.getRepository('applications');
+    if (!repo) {
+      return null;
+    }
+    const applicationModel = await repo.findOne({
       filter: {
         name: appName,
       },

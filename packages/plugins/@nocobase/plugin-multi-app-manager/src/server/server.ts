@@ -187,19 +187,8 @@ export class PluginMultiAppManagerServer extends Plugin {
       },
     );
 
-    this.db.on('applications.afterDestroy', async (model: ApplicationModel, options) => {
+    this.db.on('applications.afterDestroy', async (model: ApplicationModel) => {
       await supervisor.removeApp(model.get('name') as string);
-
-      await supervisor.sendSyncMessage(
-        this.app,
-        {
-          type: 'app:removed',
-          appName: model.get('name'),
-        },
-        {
-          transaction: options.transaction,
-        },
-      );
     });
 
     Gateway.getInstance().addAppSelectorMiddleware(async (ctx, next) => {

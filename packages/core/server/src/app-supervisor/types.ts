@@ -52,8 +52,8 @@ export type AppStatus =
  */
 export type EnvironmentInfo = {
   name: string;
-  label?: string;
-  metadata?: Record<string, any>;
+  available: boolean;
+  appVersion?: string;
   lastHeartbeatAt?: number;
 };
 
@@ -81,12 +81,16 @@ export interface AppDiscoveryAdapter {
    */
   setAppStatus(appName: string, status: AppStatus, options?: Record<string, any>): void | Promise<void>;
 
+  listApps?(environmentName: string): Promise<
+    (ApplicationOptions & {
+      [key: string]: any;
+    })[]
+  >;
   getAppOptions?(appName: string): Promise<
     ApplicationOptions & {
       [key: string]: any;
     }
   >;
-  getAppNames?(environmentName: string): Promise<string[]>;
   registerEnvironment?(environment: EnvironmentInfo): Promise<void>;
   unregisterEnvironment?(environmentName: string): Promise<void>;
   listEnvironments?(): Promise<EnvironmentInfo[]>;

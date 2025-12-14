@@ -211,10 +211,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   async bootstrapApp({ appName, options }: { appName: string; options?: { upgrading?: boolean } }) {
     const loadButNotStart = options?.upgrading;
 
-    if (this.hasApp(appName)) {
-      return;
-    }
-
     const mainApp = await this.getApp('main');
     if (!mainApp) {
       return;
@@ -227,6 +223,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       return;
     }
 
+    if (this.hasApp(appName)) {
+      return;
+    }
     const app = this.registerApp(appName, appOptions, mainApp);
 
     // must skip load on upgrade
@@ -285,6 +284,13 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     app.on('afterStop', async () => {
       await this.sendSyncMessage(mainApp, {
         type: 'app:stopped',
+        appName,
+      });
+    });
+
+    app.on('afterDestroy', async () => {
+      await this.sendSyncMessage(mainApp, {
+        type: 'app:removed',
         appName,
       });
     });
