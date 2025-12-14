@@ -19,6 +19,7 @@ export default defineCollection({
   title: '{{t("Users")}}',
   sortable: 'sort',
   model: 'UserModel',
+  titleField: 'nickname',
   createdBy: true,
   updatedBy: true,
   logging: true,

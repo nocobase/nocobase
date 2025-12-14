@@ -12,11 +12,13 @@ import { AddSubModelButton, FlowSettingsButton, DragOverlayConfig } from '@nocob
 import React from 'react';
 import { FieldModel, GridModel } from '../../base';
 import { DetailsBlockModel } from './DetailsBlockModel';
+import { Skeleton } from 'antd';
 
 export class DetailsGridModel extends GridModel<{
   parent: DetailsBlockModel;
   subModels: { items: FieldModel[] };
 }> {
+  itemFallback = (<Skeleton.Input block size="small" style={{ marginBottom: '0.5rem' }} />);
   itemSettingsMenuLevel = 2;
   itemFlowSettings = {
     showBackground: true,
