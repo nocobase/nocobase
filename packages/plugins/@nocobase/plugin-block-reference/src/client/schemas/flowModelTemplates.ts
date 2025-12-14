@@ -69,7 +69,7 @@ export const flowModelTemplateEditActionSchema: ISchema = {
   },
 };
 
-export const flowModelTemplatesSchema: ISchema = {
+export const createFlowModelTemplatesSchema = (filter?: Record<string, any>): ISchema => ({
   type: 'void',
   name: uid(),
   'x-component': 'CardItem',
@@ -80,6 +80,7 @@ export const flowModelTemplatesSchema: ISchema = {
     params: {
       sort: '-createdAt',
       pageSize: 50,
+      ...(filter ? { filter } : {}),
     },
     showIndex: true,
     rowKey: flowModelTemplatesCollection.filterTargetKey,
@@ -314,4 +315,4 @@ export const flowModelTemplatesSchema: ISchema = {
       },
     },
   },
-};
+});

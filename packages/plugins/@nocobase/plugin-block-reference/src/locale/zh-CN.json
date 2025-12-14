@@ -38,5 +38,13 @@
   "Template missing data source/collection info": "模板缺少数据源/数据表信息",
   "Template collection mismatch": "数据表不匹配：当前为 \"{{expected}}\"，模板适用于 \"{{actual}}\"",
   "Template data source mismatch": "数据源不匹配：当前为 \"{{expected}}\"，模板适用于 \"{{actual}}\"",
-  "Unavailable": "不可用"
+  "Unavailable": "不可用",
+  "Popup template": "弹窗模版",
+  "Popup templates": "弹窗模版",
+  "Select popup template": "选择弹窗模版",
+  "Save as popup template": "保存为弹窗模版",
+  "Template mode": "模版模式",
+  "Only Popup can be saved as popup template": "仅支持将“弹窗”保存为弹窗模版",
+  "Popup template not found": "弹窗模版不存在",
+  "Failed to copy popup from template": "从弹窗模版复制失败"
 }

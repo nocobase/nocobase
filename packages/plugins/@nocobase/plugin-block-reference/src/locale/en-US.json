@@ -38,5 +38,13 @@
   "Template missing data source/collection info": "Template missing data source/collection info",
   "Template collection mismatch": "Collection mismatch: requires \"{{expected}}\", but template is for \"{{actual}}\"",
   "Template data source mismatch": "Data source mismatch: requires \"{{expected}}\", but template is for \"{{actual}}\"",
-  "Unavailable": "Unavailable"
+  "Unavailable": "Unavailable",
+  "Popup template": "Popup template",
+  "Popup templates": "Popup templates",
+  "Select popup template": "Select popup template",
+  "Save as popup template": "Save as popup template",
+  "Template mode": "Template mode",
+  "Only Popup can be saved as popup template": "Only Popup can be saved as popup template",
+  "Popup template not found": "Popup template not found",
+  "Failed to copy popup from template": "Failed to copy popup from template"
 }
