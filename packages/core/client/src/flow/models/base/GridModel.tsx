@@ -96,7 +96,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   // 拖拽高亮区域的配置，子类可以覆盖此属性来自定义偏移
   dragOverlayConfig?: DragOverlayConfig;
   // 通过稳定引用减少子项不必要的重渲染
-  private readonly itemFallback = (<SkeletonFallback />);
+  itemFallback = (<SkeletonFallback />);
   private readonly itemExtraToolbarItems = [
     {
       key: 'drag-handler',
