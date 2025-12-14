@@ -528,7 +528,7 @@
   "Enable Scan": "启用扫码录入",
   "Enable actions": "启用操作",
   "Enable child collections": "启用子表",
-  "Enable click to open": "启用点击打开",
+  "Enable click-to-open": "启用点击打开",
   "Enable drag and drop sorting": "启用拖拽排序",
   "Enable form data template": "启用表单数据模板",
   "Enable index column": "启用序号列",
@@ -1543,7 +1543,7 @@
   "≥": "≥",
   "Sub-table settings": "子表格设置",
   "Sub-form settings": "子表单设置",
-  "Content overflow ellipsis": "内容超出省略",
+  "Ellipsis on text overflow": "文本超出省略",
   "Number format": "数字显示格式",
   "RadioGroup": "单选框",
   "CheckboxGroup": "复选框"

@@ -240,7 +240,7 @@ ClickableFieldModel.registerFlow({
       use: 'overflowMode',
     },
     clickToOpen: {
-      title: tExpr('Enable click to open'),
+      title: tExpr('Enable click-to-open'),
       uiMode: { type: 'switch', key: 'clickToOpen' },
       defaultParams: (ctx) => {
         return {

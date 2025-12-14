@@ -12,7 +12,7 @@ import { TableColumnModel } from '../models/blocks/table';
 
 export const overflowMode = defineAction({
   name: 'overflowMode',
-  title: tExpr('Content overflow ellipsis'),
+  title: tExpr('Ellipsis on text overflow'),
   uiMode: {
     type: 'switch',
     key: 'overflowMode',
