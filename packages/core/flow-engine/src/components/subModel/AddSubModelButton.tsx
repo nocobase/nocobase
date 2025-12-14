@@ -40,10 +40,6 @@ export interface SubModelItem {
    * - function(ctx) 返回 true 表示隐藏
    */
   hide?: HideOrFactory;
-  /**
-   * `hide` 的别名，兼容更直观的命名。
-   */
-  hidden?: HideOrFactory;
   icon?: React.ReactNode;
   children?: false | SubModelItemsType;
   createModelOptions?: CreateModelOptionsStringUse | CreateModelOptionsFn;
@@ -193,9 +189,8 @@ const hasToggleItems = (items: SubModelItem[]): boolean => {
   const walk = (nodes: SubModelItem[]): boolean => {
     for (const node of nodes) {
       if (!node) continue;
-      const hide = node.hide ?? node.hidden;
       // hide 为函数时菜单可见性依赖运行时上下文，应禁用缓存
-      if (typeof hide === 'function') return true;
+      if (typeof node.hide === 'function') return true;
       if (!node.children && (node.toggleDetector || node.toggleable)) return true;
       if (Array.isArray(node.children)) {
         if (walk(node.children)) return true;
@@ -209,12 +204,41 @@ const hasToggleItems = (items: SubModelItem[]): boolean => {
 };
 
 const isHidden = async (item: SubModelItem, ctx: FlowModelContext): Promise<boolean> => {
-  const hide = item.hide ?? item.hidden;
+  const hide = item.hide;
   if (!hide) return false;
   if (typeof hide === 'function') {
     return !!(await hide(ctx));
   }
   return !!hide;
+};
+
+const hasVisibleSubModelItems = async (items: SubModelItem[], ctx: FlowModelContext): Promise<boolean> => {
+  for (const item of items) {
+    if (!item) continue;
+    try {
+      if (await isHidden(item, ctx)) continue;
+    } catch (e) {
+      console.error('[NocoBase]: Failed to resolve item.hide:', e);
+    }
+
+    if (Array.isArray(item.children)) {
+      const hasVisibleChildren = await hasVisibleSubModelItems(item.children, ctx);
+      if (hasVisibleChildren) return true;
+
+      if (item.type === 'group' || !item.createModelOptions) {
+        continue;
+      }
+      return true;
+    }
+
+    if (typeof item.children === 'function') {
+      return true;
+    }
+
+    return true;
+  }
+
+  return false;
 };
 
 /**
@@ -235,7 +259,7 @@ const transformSubModelItems = async (
       try {
         return await isHidden(item, model.context);
       } catch (e) {
-        console.error('[NocoBase]: Failed to resolve item.hide/hidden:', e);
+        console.error('[NocoBase]: Failed to resolve item.hide:', e);
         return false; // 出错时保守显示
       }
     }),
@@ -333,8 +357,15 @@ const transformSubModelItems = async (
         // 仅当子树包含 toggleable/动态函数时，才转为惰性函数；否则保留为静态数组，兼容现有测试与用法
         const childHasToggle = hasToggleItems(staticChildren);
         if (childHasToggle) {
-          transformedItem.children = async () =>
-            transformSubModelItems(staticChildren, model, subModelKey, subModelType);
+          const hasVisibleChildren = await hasVisibleSubModelItems(staticChildren, model.context);
+          if (!hasVisibleChildren) {
+            if (item.type === 'group' || !item.createModelOptions) {
+              return null;
+            }
+          } else {
+            transformedItem.children = async () =>
+              transformSubModelItems(staticChildren, model, subModelKey, subModelType);
+          }
         } else {
           transformedItem.children = await transformSubModelItems(staticChildren, model, subModelKey, subModelType);
         }

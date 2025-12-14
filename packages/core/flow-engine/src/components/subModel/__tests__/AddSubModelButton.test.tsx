@@ -190,7 +190,7 @@ describe('transformItems - searchable flags', () => {
   });
 });
 
-describe('transformItems - hide/hidden', () => {
+describe('transformItems - hide', () => {
   it('filters items by hide flag/function recursively', async () => {
     const engine = new FlowEngine();
     engine.flowSettings.forceEnable();
@@ -221,7 +221,7 @@ describe('transformItems - hide/hidden', () => {
         type: 'group',
         label: 'Group',
         children: [
-          { key: 'g-hide', label: 'GHide', hidden: true, createModelOptions: { use: 'Parent' } },
+          { key: 'g-hide', label: 'GHide', hide: true, createModelOptions: { use: 'Parent' } },
           { key: 'g-keep', label: 'GKeep', createModelOptions: { use: 'Parent' } },
         ],
       },
@@ -237,7 +237,40 @@ describe('transformItems - hide/hidden', () => {
     expect(group.children.map((i: any) => i.key)).toEqual(['g-keep']);
   });
 
-  it('supports async hide/hidden functions and disables cache', async () => {
+  it('removes group when all children are hidden (even with async hide)', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-empty-group' });
+
+    let show = false;
+    const definition: SubModelItem[] = [
+      {
+        key: 'group',
+        type: 'group',
+        label: 'Group',
+        children: [
+          {
+            key: 'child',
+            label: 'Child',
+            hide: async () => !show,
+            createModelOptions: { use: 'Parent' },
+          },
+        ],
+      },
+    ];
+
+    const factory = transformItems(definition, parent, 'items', 'array');
+    const first = await (factory as () => Promise<any[]>)();
+    expect(first).toHaveLength(0);
+
+    show = true;
+    const second = await (factory as () => Promise<any[]>)();
+    expect(second.map((i: any) => i.key)).toEqual(['group']);
+  });
+
+  it('supports async hide functions and disables cache', async () => {
     const engine = new FlowEngine();
     engine.flowSettings.forceEnable();
     class Parent extends FlowModel {}

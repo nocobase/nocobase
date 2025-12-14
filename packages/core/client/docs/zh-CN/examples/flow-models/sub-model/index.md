@@ -46,6 +46,7 @@ interface SubModelItem {
   label?: string;
   type?: 'group' | 'divider';
   disabled?: boolean;
+  hide?: boolean | ((ctx: FlowModelContext) => boolean | Promise<boolean>);
   icon?: React.ReactNode;
   children?: SubModelItemsType;
   useModel?: string;
@@ -63,6 +64,7 @@ interface SubModelItem {
 | `label`              | `string`                 | 显示文本。                      |
 | `type`               | `'group'` \| `'divider'` | 分组或分隔符。省略时为普通项或子菜单。        |
 | `disabled`           | `boolean`                | 是否禁用当前项。                   |
+| `hide`               | `boolean` \| `(ctx) => boolean \| Promise<boolean>` | 动态隐藏（返回 `true` 表示隐藏）。 |
 | `icon`               | `React.ReactNode`        | 图标内容。                      |
 | `children`           | `SubModelItemsType`      | 子菜单项，用于嵌套分组或子菜单。           |
 | `useModel`           | `string`                 | 指定使用的 Model 类型（注册名）。       |
@@ -106,6 +108,13 @@ interface SubModelItem {
 - 也可以从 `ctx.dataSourceManager` 提供的 API 里获取必要的数据；
 - 也可以是自定义的上下文属性或方法；
 - items 和 children 都支持 async 调用。
+
+### 动态隐藏菜单项（hide）
+
+<code src="./demos/add-sub-model-hide.tsx"></code>
+
+- `hide` 支持 `boolean` 或函数（支持 async）；返回 `true` 表示隐藏
+- 会递归作用于 group 与 children
 
 ### 使用分组、子菜单和分隔符
 
