@@ -513,7 +513,7 @@ RecordSelectFieldModel.registerFlow({
       use: 'sortingRule',
     },
     allowMultiple: {
-      title: tExpr('Allow multiple'),
+      title: tExpr('Multiple'),
       uiMode: { type: 'switch', key: 'allowMultiple' },
       hideInSettings(ctx) {
         return (

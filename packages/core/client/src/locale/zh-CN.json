@@ -829,7 +829,6 @@
   "Move to": "移动到",
   "Move up": "上移",
   "Move {{title}} to": "将 {{title}} 移动到",
-  "Multiple": "整倍数",
   "Multiple select": "下拉菜单（多选）",
   "Multiply by": "乘以",
   "Must be 1-50 characters in length (excluding @.<>\"'/)": "长度为1到50个字符（不能包含@.<>\"'/）",
@@ -1549,5 +1548,6 @@
   "CheckboxGroup": "复选框",
   "Enable add new action": "启用添加操作",
   "Enable select action": "启用选择操作",
-  "Enable remove action": "启用移除操作"
+  "Enable remove action": "启用移除操作",
+  "Multiple": "多选"
 }

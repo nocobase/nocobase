@@ -78,7 +78,14 @@ export function SelectWithTitle({
         }, 200);
       }}
     >
-      {title}
+      <span
+        style={{
+          whiteSpace: 'nowrap', // 不换行
+          flexShrink: 0, // 不被挤压
+        }}
+      >
+        {title}
+      </span>
       <Select
         {...others}
         open={open}
