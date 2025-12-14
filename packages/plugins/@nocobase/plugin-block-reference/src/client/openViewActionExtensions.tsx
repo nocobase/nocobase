@@ -11,7 +11,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ActionDefinition, FlowEngine, FlowSettingsContext } from '@nocobase/flow-engine';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { useField, useForm } from '@formily/react';
-import { Select, Typography } from 'antd';
+import { Select, Tooltip, Typography } from 'antd';
 import debounce from 'lodash/debounce';
 import { NAMESPACE } from './locale';
 
@@ -29,6 +29,8 @@ type TemplateRow = {
   sourceId?: string;
 };
 
+type ExpectedResourceInfo = { dataSourceKey?: string; collectionName?: string; associationName?: string };
+
 const unwrapData = (val: any) => {
   let cur = val;
   // axios response: { data: { data: ... } }
@@ -41,6 +43,146 @@ const unwrapData = (val: any) => {
 const tWithNs = (ctx: any, key: string, options?: Record<string, any>) => {
   const opt = { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...(options || {}) };
   return ctx?.t ? ctx.t(key, opt) : key;
+};
+
+const resolveTargetResourceByAssociation = (
+  ctx: any,
+  init: { dataSourceKey?: unknown; collectionName?: unknown; associationName?: unknown },
+): { dataSourceKey: string; collectionName: string } | undefined => {
+  const dataSourceKey = typeof init?.dataSourceKey === 'string' ? init.dataSourceKey.trim() : '';
+  const collectionName = typeof init?.collectionName === 'string' ? init.collectionName.trim() : '';
+  const associationName = typeof init?.associationName === 'string' ? init.associationName.trim() : '';
+  if (!dataSourceKey || !associationName) return undefined;
+
+  const parts = associationName.split('.').filter(Boolean);
+  const inferredBaseCollectionName = parts.length > 1 ? parts[0] : '';
+  const baseCollectionName = inferredBaseCollectionName || collectionName;
+  const fieldPath = parts.length > 1 ? parts.slice(1).join('.') : associationName;
+  if (!baseCollectionName || !fieldPath) return undefined;
+
+  const dsManager = ctx?.dataSourceManager || ctx?.model?.context?.dataSourceManager;
+  const baseCollection = dsManager?.getCollection?.(dataSourceKey, baseCollectionName);
+  const field = baseCollection?.getFieldByPath?.(fieldPath) || baseCollection?.getField?.(fieldPath);
+  const targetCollection = field?.targetCollection;
+  const targetDataSourceKey =
+    typeof targetCollection?.dataSourceKey === 'string' ? targetCollection.dataSourceKey.trim() : '';
+  const targetCollectionName = typeof targetCollection?.name === 'string' ? targetCollection.name.trim() : '';
+  if (!targetDataSourceKey || !targetCollectionName) return undefined;
+  return { dataSourceKey: targetDataSourceKey, collectionName: targetCollectionName };
+};
+
+const resolveExpectedResourceInfo = (ctx: any): ExpectedResourceInfo => {
+  let cur: any = ctx?.model;
+  let depth = 0;
+  while (cur && depth < 8) {
+    const init = cur?.getStepParams?.('resourceSettings', 'init') || {};
+    const expectedAssociationName = typeof init?.associationName === 'string' ? init.associationName.trim() : '';
+    // 若存在 associationName，优先解析其目标集合（collectionName 可能缺失/不准）
+    const assocResolved = resolveTargetResourceByAssociation(ctx, init);
+    if (assocResolved) {
+      return { ...assocResolved, ...(expectedAssociationName ? { associationName: expectedAssociationName } : {}) };
+    }
+
+    // 次优先：读取运行时注入的 collection（更贴近“当前上下文集合”）
+    try {
+      const c = (cur as any)?.collection || (ctx as any)?.collection;
+      const dataSourceKey = typeof c?.dataSourceKey === 'string' ? c.dataSourceKey.trim() : '';
+      const collectionName = typeof c?.name === 'string' ? c.name.trim() : '';
+      if (dataSourceKey && collectionName) {
+        return {
+          dataSourceKey,
+          collectionName,
+          ...(expectedAssociationName ? { associationName: expectedAssociationName } : {}),
+        };
+      }
+    } catch {
+      // ignore
+    }
+
+    const dataSourceKey = typeof init?.dataSourceKey === 'string' ? init.dataSourceKey.trim() : '';
+    const collectionName = typeof init?.collectionName === 'string' ? init.collectionName.trim() : '';
+    if (dataSourceKey && collectionName) {
+      return {
+        dataSourceKey,
+        collectionName,
+        ...(expectedAssociationName ? { associationName: expectedAssociationName } : {}),
+      };
+    }
+    cur = cur?.parent;
+    depth++;
+  }
+  return {};
+};
+
+const getPopupTemplateDisabledReason = (
+  ctx: any,
+  tpl: TemplateRow,
+  expected: ExpectedResourceInfo,
+): string | undefined => {
+  /**
+   * 弹窗模版的兼容性判断说明：
+   *
+   * openView 弹窗通常在某个「当前记录/资源」上下文中触发（ctx.record / ctx.resource）。
+   * 弹窗模版在创建时会把 dataSourceKey/collectionName（以及 associationName）固化到模板记录，
+   * 模板内部的区块/变量表达式也往往默认依赖这些信息（例如默认 filterByTk 会引用 ctx.record.<pk>，
+   * sourceId 可能引用 ctx.resource.sourceId）。
+   *
+   * 如果在另一个 dataSourceKey/collectionName 的上下文里引用该弹窗模版：
+   * - 弹窗里获取数据会落到错误的数据源/数据表，或由于上下文不一致导致变量无法解析；
+   * - 即使 openView 参数被“回填”为模板侧的 dataSourceKey/collectionName，也会让当前触发点
+   *   的 ctx.record 与弹窗目标集合不一致，从而形成「配置上看似可用、运行时必坏」的问题。
+   *
+   * 因此这里将 dataSourceKey/collectionName 不匹配视为“模板不兼容”，在选择器里禁用并给出原因，
+   * 同时在 beforeParamsSave 做硬校验防止绕过 UI。
+   *
+   * 额外：collectionName 有时并不可靠（例如资源是由 associationName 推导而来），所以会优先
+   * 尝试根据 associationName 解析真实 targetCollection 再比较（best-effort，解析失败则回退）。
+   */
+  const expectedDataSourceKey = String(expected?.dataSourceKey || '').trim();
+  const expectedCollectionName = String(expected?.collectionName || '').trim();
+  const expectedAssociationName = String(expected?.associationName || '').trim();
+  if (!expectedDataSourceKey || !expectedCollectionName) return undefined;
+
+  const baseTplDataSourceKey = String(tpl?.dataSourceKey || '').trim();
+  const baseTplCollectionName = String(tpl?.collectionName || '').trim();
+  const tplAssociationName = String(tpl?.associationName || '').trim();
+  const tplResolved = tplAssociationName
+    ? resolveTargetResourceByAssociation(ctx, {
+        dataSourceKey: baseTplDataSourceKey,
+        collectionName: baseTplCollectionName,
+        associationName: tplAssociationName,
+      })
+    : undefined;
+  const tplDataSourceKey = tplResolved?.dataSourceKey || baseTplDataSourceKey;
+  const tplCollectionName = tplResolved?.collectionName || baseTplCollectionName;
+
+  if (!tplDataSourceKey || !tplCollectionName) {
+    return tWithNs(ctx, 'Template missing data source/collection info');
+  }
+
+  if (tplDataSourceKey === expectedDataSourceKey && tplCollectionName === expectedCollectionName) {
+    // 同数据源/数据表时，再校验 associationName（即使 targetCollection 一致，不同 association 也可能导致资源上下文错误）
+    const hasAnyAssociation = !!expectedAssociationName || !!tplAssociationName;
+    if (!hasAnyAssociation) return undefined;
+    if (expectedAssociationName === tplAssociationName) return undefined;
+    const none = tWithNs(ctx, 'No association');
+    return tWithNs(ctx, 'Template association mismatch', {
+      expected: expectedAssociationName || none,
+      actual: tplAssociationName || none,
+    });
+  }
+
+  const isSameDataSource = tplDataSourceKey === expectedDataSourceKey;
+  if (isSameDataSource) {
+    return tWithNs(ctx, 'Template collection mismatch', {
+      expected: expectedCollectionName,
+      actual: tplCollectionName,
+    });
+  }
+  return tWithNs(ctx, 'Template data source mismatch', {
+    expected: `${expectedDataSourceKey}/${expectedCollectionName}`,
+    actual: `${tplDataSourceKey}/${tplCollectionName}`,
+  });
 };
 
 const stripTemplateParams = (params: any) => {
@@ -94,41 +236,67 @@ function PopupTemplateSelect(props: any) {
   const ctx = useFlowSettingsContext();
   const field: any = useField();
   const form = useForm();
-  const [options, setOptions] = useState<Array<{ label: React.ReactNode; value: string; raw?: TemplateRow }>>([]);
+  const expectedResource = useMemo(() => resolveExpectedResourceInfo(ctx as any), [ctx]);
+  const [options, setOptions] = useState<
+    Array<{
+      label: React.ReactNode;
+      value: string;
+      raw?: TemplateRow;
+      description?: string;
+      disabled?: boolean;
+      disabledReason?: string;
+      rawName?: string;
+    }>
+  >([]);
   const [loading, setLoading] = useState(false);
 
   const t = useCallback((key: string, opt?: Record<string, any>) => tWithNs(ctx, key, opt), [ctx]);
 
-  const toOption = useCallback((tpl: TemplateRow) => {
-    const name = tpl?.name || tpl?.uid || '';
-    const desc = tpl?.description;
-    return {
-      label: (
-        <span
-          style={{
-            display: 'inline-block',
-            maxWidth: 480,
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            verticalAlign: 'middle',
-          }}
-          title={desc ? `${name} - ${desc}` : name}
-        >
-          {name}
-        </span>
-      ),
-      value: tpl.uid,
-      raw: tpl,
-    };
-  }, []);
+  const toOption = useCallback(
+    (tpl: TemplateRow) => {
+      const name = tpl?.name || tpl?.uid || '';
+      const desc = tpl?.description;
+      const disabledReason = getPopupTemplateDisabledReason(ctx as any, tpl, expectedResource);
+      return {
+        label: (
+          <span
+            style={{
+              display: 'inline-block',
+              maxWidth: 480,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              verticalAlign: 'middle',
+            }}
+            title={desc ? `${name} - ${desc}` : name}
+          >
+            {name}
+          </span>
+        ),
+        value: tpl.uid,
+        raw: tpl,
+        description: desc,
+        disabled: !!disabledReason,
+        disabledReason,
+        rawName: name,
+      };
+    },
+    [ctx, expectedResource],
+  );
 
   const loadOptions = useCallback(
     async (keyword?: string) => {
       setLoading(true);
       try {
         const rows = await fetchPopupTemplates(ctx, keyword);
-        setOptions(rows.map(toOption));
+        const withIndex = rows.map((r, idx) => ({ ...toOption(r), __idx: idx }));
+        withIndex.sort((a: any, b: any) => {
+          const da = a.disabled ? 1 : 0;
+          const db = b.disabled ? 1 : 0;
+          if (da !== db) return da - db;
+          return (a.__idx as number) - (b.__idx as number);
+        });
+        setOptions(withIndex.map(({ __idx, ...rest }) => rest));
       } catch (e) {
         console.error('fetch popup template options failed', e);
         setOptions([]);
@@ -264,10 +432,21 @@ function PopupTemplateSelect(props: any) {
       getPopupContainer={() => document.body}
       optionRender={(option) => {
         const tpl = option?.data?.raw as TemplateRow | undefined;
-        const name = tpl?.name || tpl?.uid || option.label;
-        const desc = tpl?.description;
-        return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '4px 0', maxWidth: 520 }}>
+        const name = option?.data?.rawName || tpl?.name || tpl?.uid || option.label;
+        const desc = option?.data?.description || tpl?.description;
+        const disabledReason = option?.data?.disabledReason;
+        const isDisabled = !!disabledReason;
+        const content = (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4,
+              padding: '4px 0',
+              maxWidth: 520,
+              opacity: isDisabled ? 0.5 : 1,
+            }}
+          >
             <Typography.Text
               strong
               style={{
@@ -290,6 +469,10 @@ function PopupTemplateSelect(props: any) {
             )}
           </div>
         );
+        if (isDisabled && disabledReason) {
+          return <Tooltip title={disabledReason}>{content}</Tooltip>;
+        }
+        return content;
       }}
     />
   );
@@ -303,6 +486,13 @@ const resolveTemplateToUid = async (ctx: FlowSettingsContext, params: any): Prom
   if (!tpl?.targetUid) {
     throw new Error(tWithNs(ctx, 'Popup template not found'));
   }
+
+  const expected = resolveExpectedResourceInfo(ctx as any);
+  const disabledReason = getPopupTemplateDisabledReason(ctx as any, tpl, expected);
+  if (disabledReason) {
+    throw new Error(disabledReason);
+  }
+
   if (templateMode === 'copy') {
     const duplicated = await (ctx as any)?.engine?.duplicateModel?.(tpl.targetUid);
     const newUid = duplicated?.uid;

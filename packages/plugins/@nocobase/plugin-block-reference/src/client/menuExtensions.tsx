@@ -601,7 +601,26 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
           }
           setSubmitting(true);
           try {
-            await doCreate({ name, description: normalizeTitle(values?.description) || undefined });
+            const tpl = await doCreate({ name, description: normalizeTitle(values?.description) || undefined });
+            const tplUid = normalizeTitle(
+              (tpl as any)?.uid || (tpl as any)?.data?.uid || (tpl as any)?.data?.data?.uid,
+            );
+
+            if (values?.replace && tplUid) {
+              const nextOpenView: any = { ...(openViewParams || {}) };
+              nextOpenView.uid = model.uid;
+              nextOpenView.popupTemplateUid = tplUid;
+              nextOpenView.popupTemplateMode = 'reference';
+              if (!toNonEmptyString(nextOpenView.filterByTk) && templateFilterByTk) {
+                nextOpenView.filterByTk = templateFilterByTk;
+              }
+              if (!toNonEmptyString(nextOpenView.sourceId) && templateSourceId) {
+                nextOpenView.sourceId = templateSourceId;
+              }
+              model.setStepParams('popupSettings', { [openViewStepKey]: nextOpenView });
+              await model.saveStepParams();
+            }
+
             model.context.message?.success?.(tNs('Saved'));
             currentDialog.close();
           } catch (err) {
@@ -620,6 +639,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
               initialValues={{
                 name: defaultName,
                 description: '',
+                replace: false,
               }}
             >
               <Form.Item
@@ -631,6 +651,17 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
               </Form.Item>
               <Form.Item name="description" label={tNs('Template description')}>
                 <Input.TextArea rows={3} />
+              </Form.Item>
+              <Form.Item
+                name="replace"
+                label={
+                  <Typography.Text strong style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    {tNs('Replace with template')}
+                  </Typography.Text>
+                }
+                valuePropName="checked"
+              >
+                <Switch />
               </Form.Item>
             </Form>
             <currentDialog.Footer>
@@ -849,7 +880,18 @@ export function registerMenuExtensions() {
     sort: -8,
     matcher: () => true,
     items: async (model: FlowModel, t) => {
-      const openViewParams = model.getStepParams('popupSettings', 'openView') || {};
+      const popupFlow = model.getFlow?.('popupSettings');
+      const resolveOpenViewStepKey = (flow: any): string | undefined => {
+        const steps = flow?.steps || {};
+        if (steps?.openView) return 'openView';
+        const found = Object.entries(steps).find(([, def]) => (def as any)?.use === 'openView');
+        return found?.[0];
+      };
+      const openViewStepKey =
+        (model.getStepParams('popupSettings', 'openView') !== undefined && 'openView') ||
+        resolveOpenViewStepKey(popupFlow) ||
+        'openView';
+      const openViewParams = model.getStepParams('popupSettings', openViewStepKey) || {};
       const templateUid =
         typeof (openViewParams as any)?.popupTemplateUid === 'string'
           ? (openViewParams as any).popupTemplateUid.trim()

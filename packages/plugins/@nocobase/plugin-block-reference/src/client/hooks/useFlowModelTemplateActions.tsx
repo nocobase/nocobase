@@ -116,23 +116,16 @@ export const useFlowModelTemplateDeleteActionProps = (): ActionProps => {
   return {
     danger: true,
     disabled: inUse,
+    tooltip: inUse ? t('Template is in use and cannot be deleted') : undefined,
     confirm: inUse
-      ? {
-          title: t('Delete template'),
-          content: t('This template is in use and cannot be deleted ({{count}} references)', {
-            count: record?.usageCount,
-          }),
-        }
+      ? undefined
       : {
           title: t('Delete template'),
           content: t('Are you sure you want to delete this item? This action cannot be undone.'),
         },
     async onClick() {
       if (inUse) {
-        message.warning(
-          t('This template is in use and cannot be deleted ({{count}} references)', { count: record?.usageCount }),
-        );
-        return Promise.reject();
+        return;
       }
       await resource.destroy({
         filterByTk: record?.[collection.filterTargetKey],

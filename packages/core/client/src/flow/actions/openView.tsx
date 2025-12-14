@@ -68,370 +68,370 @@ export const openView = defineAction({
         },
       },
     },
-    uid: {
-      type: 'string',
-      title: tExpr('Popup uid'),
-      required: true,
-      'x-decorator': 'FormItem',
-      'x-component': function UidInput(props) {
-        const { value, onChange } = props as { value?: string; onChange?: (v: string) => void };
-        const ctx = useFlowSettingsContext();
-        const field: any = useField();
-        const form = useForm();
+    // uid: {
+    //   type: 'string',
+    //   title: tExpr('Popup uid'),
+    //   required: true,
+    //   'x-decorator': 'FormItem',
+    //   'x-component': function UidInput(props) {
+    //     const { value, onChange } = props as { value?: string; onChange?: (v: string) => void };
+    //     const ctx = useFlowSettingsContext();
+    //     const field: any = useField();
+    //     const form = useForm();
 
-        const setFieldDisabled = useCallback(
-          (name: string, disabled: boolean) => {
-            form.setFieldState(name, (state: any) => {
-              state.disabled = disabled;
-            });
-          },
-          [form],
-        );
+    //     const setFieldDisabled = useCallback(
+    //       (name: string, disabled: boolean) => {
+    //         form.setFieldState(name, (state: any) => {
+    //           state.disabled = disabled;
+    //         });
+    //       },
+    //       [form],
+    //     );
 
-        const updateParamsAndDisable = useCallback(
-          (params: Record<string, any> | null, shouldDisable: boolean) => {
-            const keys = ['dataSourceKey', 'collectionName', 'associationName', 'sourceId', 'filterByTk'] as const;
-            // clear / enable all when null
-            if (!params) {
-              keys.forEach((k) => setFieldDisabled(k, false));
-              setFieldDisabled('tabUid', false);
-              return;
-            }
-            const readParam = (k: string) => params[k];
-            keys.forEach((k) => {
-              const v = readParam(k as string);
-              if (v !== undefined) {
-                form.setValuesIn(k, v);
-                // dataSourceKey & collectionName are always read-only
-                if (k === 'dataSourceKey' || k === 'collectionName') {
-                  setFieldDisabled(k, true);
-                } else {
-                  setFieldDisabled(k, !!shouldDisable);
-                }
-              } else {
-                setFieldDisabled(k, false);
-              }
-            });
-            const tab = readParam('tabUid');
-            if (tab !== undefined) {
-              form.setValuesIn('tabUid', tab);
-              setFieldDisabled('tabUid', !!shouldDisable);
-            } else {
-              setFieldDisabled('tabUid', false);
-            }
-          },
-          [form, setFieldDisabled],
-        );
+    //     const updateParamsAndDisable = useCallback(
+    //       (params: Record<string, any> | null, shouldDisable: boolean) => {
+    //         const keys = ['dataSourceKey', 'collectionName', 'associationName', 'sourceId', 'filterByTk'] as const;
+    //         // clear / enable all when null
+    //         if (!params) {
+    //           keys.forEach((k) => setFieldDisabled(k, false));
+    //           setFieldDisabled('tabUid', false);
+    //           return;
+    //         }
+    //         const readParam = (k: string) => params[k];
+    //         keys.forEach((k) => {
+    //           const v = readParam(k as string);
+    //           if (v !== undefined) {
+    //             form.setValuesIn(k, v);
+    //             // dataSourceKey & collectionName are always read-only
+    //             if (k === 'dataSourceKey' || k === 'collectionName') {
+    //               setFieldDisabled(k, true);
+    //             } else {
+    //               setFieldDisabled(k, !!shouldDisable);
+    //             }
+    //           } else {
+    //             setFieldDisabled(k, false);
+    //           }
+    //         });
+    //         const tab = readParam('tabUid');
+    //         if (tab !== undefined) {
+    //           form.setValuesIn('tabUid', tab);
+    //           setFieldDisabled('tabUid', !!shouldDisable);
+    //         } else {
+    //           setFieldDisabled('tabUid', false);
+    //         }
+    //       },
+    //       [form, setFieldDisabled],
+    //     );
 
-        useEffect(() => {
-          let alive = true;
-          const run = async () => {
-            // uid 是必填的且有默认值，不处理空值分支
-            form.setFieldState(field.props?.name, (state: any) => {
-              state.loading = true;
-            });
-            try {
-              const engine = ctx.engine;
-              let model = engine.getModel(value);
-              if (!model) {
-                model = await engine.loadModel({ uid: value });
-              }
-              if (!alive) return;
-              if (!model) {
-                field.setFeedback({ type: 'error', code: 'NotFound', messages: [ctx.t('Popup UID not exists')] });
-                updateParamsAndDisable(null, false);
-                return;
-              }
-              field.setFeedback({});
-              const params = model.getStepParams('popupSettings', 'openView') || {};
-              const isSelf = model.uid === ctx.model.uid;
-              updateParamsAndDisable(params || null, !isSelf);
-            } catch (err) {
-              if (!alive) return;
-              field.setFeedback({
-                type: 'error',
-                code: 'LoadFailed',
-                messages: [ctx.t('Failed to load popup by UID')],
-              });
-              updateParamsAndDisable(null, false);
-            } finally {
-              if (alive) {
-                form.setFieldState(field.props?.name, (state: any) => {
-                  state.loading = false;
-                });
-              }
-            }
-          };
-          run();
-          return () => {
-            alive = false;
-          };
-        }, [value, ctx, field, form, updateParamsAndDisable]);
+    //     useEffect(() => {
+    //       let alive = true;
+    //       const run = async () => {
+    //         // uid 是必填的且有默认值，不处理空值分支
+    //         form.setFieldState(field.props?.name, (state: any) => {
+    //           state.loading = true;
+    //         });
+    //         try {
+    //           const engine = ctx.engine;
+    //           let model = engine.getModel(value);
+    //           if (!model) {
+    //             model = await engine.loadModel({ uid: value });
+    //           }
+    //           if (!alive) return;
+    //           if (!model) {
+    //             field.setFeedback({ type: 'error', code: 'NotFound', messages: [ctx.t('Popup UID not exists')] });
+    //             updateParamsAndDisable(null, false);
+    //             return;
+    //           }
+    //           field.setFeedback({});
+    //           const params = model.getStepParams('popupSettings', 'openView') || {};
+    //           const isSelf = model.uid === ctx.model.uid;
+    //           updateParamsAndDisable(params || null, !isSelf);
+    //         } catch (err) {
+    //           if (!alive) return;
+    //           field.setFeedback({
+    //             type: 'error',
+    //             code: 'LoadFailed',
+    //             messages: [ctx.t('Failed to load popup by UID')],
+    //           });
+    //           updateParamsAndDisable(null, false);
+    //         } finally {
+    //           if (alive) {
+    //             form.setFieldState(field.props?.name, (state: any) => {
+    //               state.loading = false;
+    //             });
+    //           }
+    //         }
+    //       };
+    //       run();
+    //       return () => {
+    //         alive = false;
+    //       };
+    //     }, [value, ctx, field, form, updateParamsAndDisable]);
 
-        return (
-          <Input
-            value={value}
-            onChange={(e) => onChange?.(e?.target?.value)}
-            suffix={<span>{field?.loading || field.validating ? <LoadingOutlined /> : null}</span>}
-          />
-        );
-      },
-    },
-    dataSourceKey: {
-      type: 'string',
-      title: tExpr('Data source key'),
-      'x-decorator': 'FormItem',
-      'x-component': function DSKeySelect(props) {
-        const { value, onChange, disabled, placeholder } = props;
-        const ctx = useFlowSettingsContext();
-        const form = useForm();
-        const options = useMemo(() => {
-          const dsList = ctx?.dataSourceManager?.getDataSources?.() || [];
-          return dsList.map((ds) => ({ label: ds.displayName, value: ds.key }));
-        }, [ctx]);
-        const handleChange = useCallback(
-          (val) => {
-            // 切换数据源时清空 collectionName 与 associationName
-            if (val !== value) {
-              form.setValuesIn('collectionName', undefined);
-              form.setValuesIn('associationName', undefined);
-            }
-            onChange?.(val);
-          },
-          [onChange, form, value],
-        );
-        return (
-          <Select
-            showSearch
-            allowClear
-            options={options}
-            value={value}
-            onChange={handleChange}
-            disabled={disabled}
-            placeholder={placeholder}
-            optionFilterProp="label"
-            style={{ width: '100%' }}
-          />
-        );
-      },
-      'x-reactions': {
-        fulfill: {
-          state: { hidden: true },
-        },
-      },
-    },
-    collectionName: {
-      type: 'string',
-      title: tExpr('Collection name'),
-      'x-decorator': 'FormItem',
-      'x-component': function CollNameSelect(props) {
-        const { value, onChange, disabled, placeholder } = props;
-        const ctx = useFlowSettingsContext();
-        const form = useForm();
-        const [dsKey, setDsKey] = useState(() => form?.values?.dataSourceKey);
-        useFormEffects(() => {
-          onFieldValueChange('dataSourceKey', (f) => setDsKey(f.value));
-        });
-        useEffect(() => {
-          setDsKey(form?.values?.dataSourceKey);
-        }, [form]);
+    //     return (
+    //       <Input
+    //         value={value}
+    //         onChange={(e) => onChange?.(e?.target?.value)}
+    //         suffix={<span>{field?.loading || field.validating ? <LoadingOutlined /> : null}</span>}
+    //       />
+    //     );
+    //   },
+    // },
+    // dataSourceKey: {
+    //   type: 'string',
+    //   title: tExpr('Data source key'),
+    //   'x-decorator': 'FormItem',
+    //   'x-component': function DSKeySelect(props) {
+    //     const { value, onChange, disabled, placeholder } = props;
+    //     const ctx = useFlowSettingsContext();
+    //     const form = useForm();
+    //     const options = useMemo(() => {
+    //       const dsList = ctx?.dataSourceManager?.getDataSources?.() || [];
+    //       return dsList.map((ds) => ({ label: ds.displayName, value: ds.key }));
+    //     }, [ctx]);
+    //     const handleChange = useCallback(
+    //       (val) => {
+    //         // 切换数据源时清空 collectionName 与 associationName
+    //         if (val !== value) {
+    //           form.setValuesIn('collectionName', undefined);
+    //           form.setValuesIn('associationName', undefined);
+    //         }
+    //         onChange?.(val);
+    //       },
+    //       [onChange, form, value],
+    //     );
+    //     return (
+    //       <Select
+    //         showSearch
+    //         allowClear
+    //         options={options}
+    //         value={value}
+    //         onChange={handleChange}
+    //         disabled={disabled}
+    //         placeholder={placeholder}
+    //         optionFilterProp="label"
+    //         style={{ width: '100%' }}
+    //       />
+    //     );
+    //   },
+    //   'x-reactions': {
+    //     fulfill: {
+    //       state: { hidden: true },
+    //     },
+    //   },
+    // },
+    // collectionName: {
+    //   type: 'string',
+    //   title: tExpr('Collection name'),
+    //   'x-decorator': 'FormItem',
+    //   'x-component': function CollNameSelect(props) {
+    //     const { value, onChange, disabled, placeholder } = props;
+    //     const ctx = useFlowSettingsContext();
+    //     const form = useForm();
+    //     const [dsKey, setDsKey] = useState(() => form?.values?.dataSourceKey);
+    //     useFormEffects(() => {
+    //       onFieldValueChange('dataSourceKey', (f) => setDsKey(f.value));
+    //     });
+    //     useEffect(() => {
+    //       setDsKey(form?.values?.dataSourceKey);
+    //     }, [form]);
 
-        const options = useMemo(() => {
-          if (!dsKey) return [];
-          const ds = ctx?.dataSourceManager?.getDataSource?.(dsKey);
-          const cols = ds?.getCollections?.() || [];
-          return cols.map((c) => ({ label: c.title, value: c.name }));
-        }, [ctx, dsKey]);
-        return (
-          <Select
-            showSearch
-            allowClear
-            options={options}
-            value={value}
-            onChange={(v) => {
-              // 切换集合时清空 associationName
-              if (v !== value) {
-                form.setValuesIn('associationName', undefined);
-              }
-              onChange?.(v);
-            }}
-            disabled={disabled || !dsKey}
-            placeholder={placeholder || (!dsKey ? ctx.t('Please select data source first') : undefined)}
-            optionFilterProp="label"
-            style={{ width: '100%' }}
-          />
-        );
-      },
-      'x-reactions': {
-        fulfill: {
-          state: { hidden: true },
-        },
-      },
-    },
-    associationName: {
-      type: 'string',
-      title: tExpr('Association name'),
-      'x-decorator': 'FormItem',
-      'x-component': function AssociationSelect(props) {
-        const { value, onChange, disabled, placeholder } = props;
-        const ctx = useFlowSettingsContext();
-        const form = useForm();
-        const [dsKey, setDsKey] = useState(() => form?.values?.dataSourceKey);
-        const [collName, setCollName] = useState(() => form?.values?.collectionName);
-        useFormEffects(() => {
-          onFieldValueChange('dataSourceKey', (f) => setDsKey(f.value));
-          onFieldValueChange('collectionName', (f) => setCollName(f.value));
-        });
-        useEffect(() => {
-          setDsKey(form?.values?.dataSourceKey);
-          setCollName(form?.values?.collectionName);
-        }, [form]);
+    //     const options = useMemo(() => {
+    //       if (!dsKey) return [];
+    //       const ds = ctx?.dataSourceManager?.getDataSource?.(dsKey);
+    //       const cols = ds?.getCollections?.() || [];
+    //       return cols.map((c) => ({ label: c.title, value: c.name }));
+    //     }, [ctx, dsKey]);
+    //     return (
+    //       <Select
+    //         showSearch
+    //         allowClear
+    //         options={options}
+    //         value={value}
+    //         onChange={(v) => {
+    //           // 切换集合时清空 associationName
+    //           if (v !== value) {
+    //             form.setValuesIn('associationName', undefined);
+    //           }
+    //           onChange?.(v);
+    //         }}
+    //         disabled={disabled || !dsKey}
+    //         placeholder={placeholder || (!dsKey ? ctx.t('Please select data source first') : undefined)}
+    //         optionFilterProp="label"
+    //         style={{ width: '100%' }}
+    //       />
+    //     );
+    //   },
+    //   'x-reactions': {
+    //     fulfill: {
+    //       state: { hidden: true },
+    //     },
+    //   },
+    // },
+    // associationName: {
+    //   type: 'string',
+    //   title: tExpr('Association name'),
+    //   'x-decorator': 'FormItem',
+    //   'x-component': function AssociationSelect(props) {
+    //     const { value, onChange, disabled, placeholder } = props;
+    //     const ctx = useFlowSettingsContext();
+    //     const form = useForm();
+    //     const [dsKey, setDsKey] = useState(() => form?.values?.dataSourceKey);
+    //     const [collName, setCollName] = useState(() => form?.values?.collectionName);
+    //     useFormEffects(() => {
+    //       onFieldValueChange('dataSourceKey', (f) => setDsKey(f.value));
+    //       onFieldValueChange('collectionName', (f) => setCollName(f.value));
+    //     });
+    //     useEffect(() => {
+    //       setDsKey(form?.values?.dataSourceKey);
+    //       setCollName(form?.values?.collectionName);
+    //     }, [form]);
 
-        const options = useMemo(() => {
-          if (!dsKey || !collName) return [];
-          const ds = ctx?.dataSourceManager?.getDataSource?.(dsKey);
-          const collection = ds?.getCollection?.(collName);
-          if (!collection) return [];
-          const assocFields = collection.getAssociationFields?.(['many', 'one']) || [];
-          const items = [
-            { label: collection.title, value: collection.name },
-            ...assocFields.map((f) => ({
-              label: `${collection.title}.${f.title || f.name}`,
-              value: `${collection.name}.${f.name}`,
-            })),
-          ];
-          return items;
-        }, [ctx, dsKey, collName]);
+    //     const options = useMemo(() => {
+    //       if (!dsKey || !collName) return [];
+    //       const ds = ctx?.dataSourceManager?.getDataSource?.(dsKey);
+    //       const collection = ds?.getCollection?.(collName);
+    //       if (!collection) return [];
+    //       const assocFields = collection.getAssociationFields?.(['many', 'one']) || [];
+    //       const items = [
+    //         { label: collection.title, value: collection.name },
+    //         ...assocFields.map((f) => ({
+    //           label: `${collection.title}.${f.title || f.name}`,
+    //           value: `${collection.name}.${f.name}`,
+    //         })),
+    //       ];
+    //       return items;
+    //     }, [ctx, dsKey, collName]);
 
-        return (
-          <Select
-            showSearch
-            allowClear
-            options={options}
-            value={value}
-            onChange={onChange}
-            disabled={disabled || !dsKey || !collName}
-            placeholder={
-              placeholder ||
-              (!dsKey
-                ? ctx.t('Please select data source first')
-                : !collName
-                  ? ctx.t('Please select collection first')
-                  : undefined)
-            }
-            optionFilterProp="label"
-            style={{ width: '100%' }}
-          />
-        );
-      },
-      'x-reactions': {
-        fulfill: {
-          state: {
-            // 没有值则隐藏；有默认值（initialValue）则禁用
-            hidden: '{{!$self.value}}',
-            disabled: '{{ $self.initialValue != null && $self.initialValue !== "" }}',
-          },
-        },
-      },
-    },
-    tabUid: {
-      type: 'string',
-      title: tExpr('Tab uid'),
-      'x-decorator': 'FormItem',
-      'x-component': 'Input',
-      'x-reactions': {
-        fulfill: {
-          state: {
-            hidden: true,
-          },
-        },
-      },
-    },
-    sourceId: {
-      type: 'string',
-      title: tExpr('Source ID'),
-      'x-decorator': 'FormItem',
-      'x-component': function SourceIdVariable(props) {
-        const ctx = useFlowSettingsContext();
-        const metaTree = useMemo(() => {
-          try {
-            const full = ctx.getPropertyMetaTree();
-            const nodes = (full || []).filter((n: any) => ['record', 'resource'].includes(String(n?.name)));
-            const hasResourceNode = nodes.some((n: any) => String(n?.name) === 'resource');
-            let hasSourceIdValue = false;
-            try {
-              const sid = ctx?.resource?.getSourceId?.();
-              hasSourceIdValue = sid !== undefined && sid !== null && String(sid) !== '';
-            } catch (_) {
-              // ignore
-            }
-            // 仅当存在实际的 sourceId 值且树中没有 resource 时，注入 Resource -> Source ID
-            if (!hasResourceNode && hasSourceIdValue) {
-              nodes.push({
-                name: 'resource',
-                title: ctx.t('Resource'),
-                type: 'object',
-                paths: ['resource'],
-                children: [
-                  {
-                    name: 'sourceId',
-                    title: ctx.t('Source ID'),
-                    type: 'string',
-                    paths: ['resource', 'sourceId'],
-                  },
-                ],
-              });
-            }
-            return nodes.filter((n: any) => String(n?.name) === 'record' || String(n?.name) === 'resource');
-          } catch (e) {
-            return ctx.getPropertyMetaTree();
-          }
-        }, [ctx]);
-        return (
-          <VariableInput
-            value={props.value}
-            onChange={props.onChange}
-            disabled={props.disabled}
-            placeholder={props.placeholder}
-            metaTree={() => metaTree}
-          />
-        );
-      },
-      'x-reactions': {
-        dependencies: ['associationName'],
-        fulfill: {
-          state: {
-            hidden: '{{!$deps[0]}}',
-          },
-        },
-      },
-    },
-    filterByTk: {
-      type: 'string',
-      title: tExpr('Filter by TK'),
-      'x-decorator': 'FormItem',
-      'x-component': function FilterByTkVariable(props) {
-        const ctx = useFlowSettingsContext();
-        const metaTree = useMemo(() => {
-          try {
-            const full = ctx.getPropertyMetaTree();
-            // 仅保留 record，隐藏 Resource 相关变量
-            return (full || []).filter((n: any) => String(n?.name) === 'record');
-          } catch (e) {
-            return ctx.getPropertyMetaTree();
-          }
-        }, [ctx]);
-        return (
-          <VariableInput
-            value={props.value}
-            onChange={props.onChange}
-            disabled={props.disabled}
-            placeholder={props.placeholder}
-            metaTree={() => metaTree}
-          />
-        );
-      },
-    },
+    //     return (
+    //       <Select
+    //         showSearch
+    //         allowClear
+    //         options={options}
+    //         value={value}
+    //         onChange={onChange}
+    //         disabled={disabled || !dsKey || !collName}
+    //         placeholder={
+    //           placeholder ||
+    //           (!dsKey
+    //             ? ctx.t('Please select data source first')
+    //             : !collName
+    //               ? ctx.t('Please select collection first')
+    //               : undefined)
+    //         }
+    //         optionFilterProp="label"
+    //         style={{ width: '100%' }}
+    //       />
+    //     );
+    //   },
+    //   'x-reactions': {
+    //     fulfill: {
+    //       state: {
+    //         // 没有值则隐藏；有默认值（initialValue）则禁用
+    //         hidden: '{{!$self.value}}',
+    //         disabled: '{{ $self.initialValue != null && $self.initialValue !== "" }}',
+    //       },
+    //     },
+    //   },
+    // },
+    // tabUid: {
+    //   type: 'string',
+    //   title: tExpr('Tab uid'),
+    //   'x-decorator': 'FormItem',
+    //   'x-component': 'Input',
+    //   'x-reactions': {
+    //     fulfill: {
+    //       state: {
+    //         hidden: true,
+    //       },
+    //     },
+    //   },
+    // },
+    // sourceId: {
+    //   type: 'string',
+    //   title: tExpr('Source ID'),
+    //   'x-decorator': 'FormItem',
+    //   'x-component': function SourceIdVariable(props) {
+    //     const ctx = useFlowSettingsContext();
+    //     const metaTree = useMemo(() => {
+    //       try {
+    //         const full = ctx.getPropertyMetaTree();
+    //         const nodes = (full || []).filter((n: any) => ['record', 'resource'].includes(String(n?.name)));
+    //         const hasResourceNode = nodes.some((n: any) => String(n?.name) === 'resource');
+    //         let hasSourceIdValue = false;
+    //         try {
+    //           const sid = ctx?.resource?.getSourceId?.();
+    //           hasSourceIdValue = sid !== undefined && sid !== null && String(sid) !== '';
+    //         } catch (_) {
+    //           // ignore
+    //         }
+    //         // 仅当存在实际的 sourceId 值且树中没有 resource 时，注入 Resource -> Source ID
+    //         if (!hasResourceNode && hasSourceIdValue) {
+    //           nodes.push({
+    //             name: 'resource',
+    //             title: ctx.t('Resource'),
+    //             type: 'object',
+    //             paths: ['resource'],
+    //             children: [
+    //               {
+    //                 name: 'sourceId',
+    //                 title: ctx.t('Source ID'),
+    //                 type: 'string',
+    //                 paths: ['resource', 'sourceId'],
+    //               },
+    //             ],
+    //           });
+    //         }
+    //         return nodes.filter((n: any) => String(n?.name) === 'record' || String(n?.name) === 'resource');
+    //       } catch (e) {
+    //         return ctx.getPropertyMetaTree();
+    //       }
+    //     }, [ctx]);
+    //     return (
+    //       <VariableInput
+    //         value={props.value}
+    //         onChange={props.onChange}
+    //         disabled={props.disabled}
+    //         placeholder={props.placeholder}
+    //         metaTree={() => metaTree}
+    //       />
+    //     );
+    //   },
+    //   'x-reactions': {
+    //     dependencies: ['associationName'],
+    //     fulfill: {
+    //       state: {
+    //         hidden: '{{!$deps[0]}}',
+    //       },
+    //     },
+    //   },
+    // },
+    // filterByTk: {
+    //   type: 'string',
+    //   title: tExpr('Filter by TK'),
+    //   'x-decorator': 'FormItem',
+    //   'x-component': function FilterByTkVariable(props) {
+    //     const ctx = useFlowSettingsContext();
+    //     const metaTree = useMemo(() => {
+    //       try {
+    //         const full = ctx.getPropertyMetaTree();
+    //         // 仅保留 record，隐藏 Resource 相关变量
+    //         return (full || []).filter((n: any) => String(n?.name) === 'record');
+    //       } catch (e) {
+    //         return ctx.getPropertyMetaTree();
+    //       }
+    //     }, [ctx]);
+    //     return (
+    //       <VariableInput
+    //         value={props.value}
+    //         onChange={props.onChange}
+    //         disabled={props.disabled}
+    //         placeholder={props.placeholder}
+    //         metaTree={() => metaTree}
+    //       />
+    //     );
+    //   },
+    // },
   },
   /**
    * 通用的设置菜单可见性控制：
@@ -521,33 +521,6 @@ export const openView = defineAction({
     const mergedTabUid = typeof inputArgs.tabUid !== 'undefined' ? inputArgs.tabUid : params.tabUid;
     // 移动端中只需要显示子页面
     const openMode = ctx.inputArgs?.isMobileLayout ? 'embed' : ctx.inputArgs?.mode || params.mode || 'drawer';
-    if (params?.uid && params.uid !== ctx.model.uid) {
-      // 外部弹窗时应该以弹窗发起者为高优先级
-      await ctx.openView(params.uid, {
-        ...params,
-        target: ctx.inputArgs.target || ctx.layoutContentElement,
-        dataSourceKey:
-          typeof inputArgs.dataSourceKey !== 'undefined'
-            ? inputArgs.dataSourceKey
-            : params.dataSourceKey ?? actionDefaults.dataSourceKey,
-        collectionName:
-          typeof inputArgs.collectionName !== 'undefined'
-            ? inputArgs.collectionName
-            : params.collectionName ?? actionDefaults.collectionName,
-        associationName:
-          typeof inputArgs.associationName !== 'undefined'
-            ? inputArgs.associationName
-            : params.associationName ?? actionDefaults.associationName,
-        filterByTk: mergedFilterByTk,
-        sourceId: mergedSourceId,
-        tabUid: mergedTabUid,
-        // 关键：把自定义上下文一并传递给 ctx.openView
-        ...(defineProperties ? { defineProperties } : {}),
-        ...(defineMethods ? { defineMethods } : {}),
-      });
-      return;
-    }
-
     let navigation = typeof inputArgs.navigation !== 'undefined' ? inputArgs.navigation : params.navigation;
 
     // 传递了上下文就必须禁用路由，否则下次路由打开会缺少上下文
@@ -587,6 +560,37 @@ export const openView = defineAction({
         ctx.view.navigation.navigateTo(nextView);
         return;
       }
+    }
+
+    if (params?.uid && params.uid !== ctx.model.uid) {
+      // 外部弹窗（uid 指向其它 PopupActionModel）：
+      // - 路由模式下，URL 的 viewId 应以“发起该弹窗的按钮/动作模型 uid”为准，保证刷新后可还原原始触发上下文；
+      // - 由 FlowRoute 第二阶段（带 inputArgs.navigation）重新打开时，需要把 closeRef/updateRef/onOpen 等透传给目标弹窗，否则无法正确维护视图栈。
+      await ctx.openView(params.uid, {
+        ...inputArgs,
+        ...params,
+        navigation,
+        target: ctx.inputArgs.target || ctx.layoutContentElement,
+        dataSourceKey:
+          typeof inputArgs.dataSourceKey !== 'undefined'
+            ? inputArgs.dataSourceKey
+            : params.dataSourceKey ?? actionDefaults.dataSourceKey,
+        collectionName:
+          typeof inputArgs.collectionName !== 'undefined'
+            ? inputArgs.collectionName
+            : params.collectionName ?? actionDefaults.collectionName,
+        associationName:
+          typeof inputArgs.associationName !== 'undefined'
+            ? inputArgs.associationName
+            : params.associationName ?? actionDefaults.associationName,
+        filterByTk: mergedFilterByTk,
+        sourceId: mergedSourceId,
+        tabUid: mergedTabUid,
+        // 关键：把自定义上下文一并传递给 ctx.openView
+        ...(defineProperties ? { defineProperties } : {}),
+        ...(defineMethods ? { defineMethods } : {}),
+      });
+      return;
     }
 
     const sizeToWidthMap: Record<string, Record<string, string | undefined>> = {
