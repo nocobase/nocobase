@@ -9,7 +9,7 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { Result, Empty, Card, Popover } from 'antd';
+import { Result, Empty, Card, Typography } from 'antd';
 import {
   escapeT,
   FlowEngine,
@@ -445,65 +445,45 @@ ReferenceBlockModel.registerFlow({
               optionRender: (option) => {
                 const desc = option?.data?.description;
                 const disabledReason = option?.data?.disabledReason;
-                const content = (
+                const isDisabled = !!disabledReason;
+                return (
                   <div
                     style={{
                       display: 'flex',
                       flexDirection: 'column',
-                      lineHeight: 1.4,
+                      gap: 4,
+                      padding: '4px 0',
                       maxWidth: 520,
-                      wordBreak: 'break-all',
+                      opacity: isDisabled ? 0.5 : 1,
                     }}
+                    title={isDisabled ? disabledReason : undefined}
                   >
-                    <span
+                    <Typography.Text
+                      strong
                       style={{
-                        fontWeight: 500,
+                        maxWidth: 480,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                       }}
-                      title={option?.data?.rawName || ''}
                     >
                       {option?.data?.rawName || option.label}
-                    </span>
-                    {desc ? (
-                      <span
+                    </Typography.Text>
+                    {desc && (
+                      <Typography.Text
+                        type="secondary"
                         style={{
-                          color: '#999',
                           fontSize: 12,
+                          lineHeight: 1.4,
                           whiteSpace: 'normal',
                           wordBreak: 'break-word',
                         }}
                       >
                         {desc}
-                      </span>
-                    ) : null}
-                    {disabledReason ? (
-                      <span
-                        style={{
-                          color: '#999',
-                          fontSize: 12,
-                          whiteSpace: 'normal',
-                          wordBreak: 'break-word',
-                        }}
-                      >
-                        {disabledReason}
-                      </span>
-                    ) : null}
+                      </Typography.Text>
+                    )}
                   </div>
                 );
-                return content;
-                // if (!desc) return content;
-                // return (
-                //   <Popover
-                //     placement="right"
-                //     content={<div style={{ maxWidth: 320, whiteSpace: 'normal' }}>{desc}</div>}
-                //     trigger={['hover']}
-                //     overlayStyle={{ pointerEvents: 'none' }}
-                //   >
-                //     {content}
-                //   </Popover>
-                // );
               },
             },
             default: templateUid || undefined,

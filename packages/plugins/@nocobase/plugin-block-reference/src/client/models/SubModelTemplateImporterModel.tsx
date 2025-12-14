@@ -10,7 +10,7 @@
 import React from 'react';
 import debounce from 'lodash/debounce';
 import _ from 'lodash';
-import { Button, Space, Tooltip } from 'antd';
+import { Button, Space, Typography } from 'antd';
 import {
   FlowModel,
   FlowContext,
@@ -292,10 +292,30 @@ export class SubModelTemplateImporterModel extends FlowModel {
       return undefined;
     }
 
-    const title =
-      ctx.t?.('Template data source/collection mismatch', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }) ||
-      'Template data source/collection mismatch';
-    return `${title}: ${expectedDataSourceKey}/${expectedCollectionName} ← ${tplDataSourceKey}/${tplCollectionName}`;
+    // 格式化更友好的提示信息
+    const isSameDataSource = tplDataSourceKey === expectedDataSourceKey;
+    if (isSameDataSource) {
+      // 仅数据表不同
+      return (
+        ctx.t?.('Template collection mismatch', {
+          ns: [NAMESPACE, 'client'],
+          nsMode: 'fallback',
+          expected: expectedCollectionName,
+          actual: tplCollectionName,
+        }) || `Collection mismatch: expected "${expectedCollectionName}", but template is for "${tplCollectionName}"`
+      );
+    } else {
+      // 数据源也不同
+      return (
+        ctx.t?.('Template data source mismatch', {
+          ns: [NAMESPACE, 'client'],
+          nsMode: 'fallback',
+          expected: `${expectedDataSourceKey}/${expectedCollectionName}`,
+          actual: `${tplDataSourceKey}/${tplCollectionName}`,
+        }) ||
+        `Data source mismatch: expected "${expectedDataSourceKey}/${expectedCollectionName}", but template is for "${tplDataSourceKey}/${tplCollectionName}"`
+      );
+    }
   }
 
   public async fetchTemplateOptions(ctx: FlowContext, keyword?: string) {
@@ -416,28 +436,44 @@ SubModelTemplateImporterModel.registerFlow({
               optionRender: (option) => {
                 const desc = option?.data?.description;
                 const disabledReason = option?.data?.disabledReason;
-                const content = (
-                  <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.4 }}>
-                    <span style={{ fontWeight: 500 }} title={option?.data?.rawName || ''}>
+                const isDisabled = !!disabledReason;
+                return (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                      padding: '4px 0',
+                      opacity: isDisabled ? 0.5 : 1,
+                    }}
+                    title={isDisabled ? disabledReason : undefined}
+                  >
+                    <Typography.Text
+                      strong
+                      style={{
+                        maxWidth: 480,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
                       {option?.data?.rawName || option.label}
-                    </span>
-                    {desc ? <span style={{ color: '#999', fontSize: 12, whiteSpace: 'normal' }}>{desc}</span> : null}
-                    {disabledReason ? (
-                      <span style={{ color: '#999', fontSize: 12, whiteSpace: 'normal' }} title={disabledReason}>
-                        {disabledReason}
-                      </span>
-                    ) : null}
+                    </Typography.Text>
+                    {desc && (
+                      <Typography.Text
+                        type="secondary"
+                        style={{
+                          fontSize: 12,
+                          lineHeight: 1.4,
+                          whiteSpace: 'normal',
+                          wordBreak: 'break-word',
+                        }}
+                      >
+                        {desc}
+                      </Typography.Text>
+                    )}
                   </div>
                 );
-                if (disabledReason) {
-                  return (
-                    <Tooltip title={disabledReason} placement="right">
-                      {/* disabled option 可能存在 hover 事件限制，这里提供双展示：tooltip + inline */}
-                      <div>{content}</div>
-                    </Tooltip>
-                  );
-                }
-                return content;
               },
             },
             default: templateUid || undefined,

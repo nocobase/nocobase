@@ -35,5 +35,8 @@
   "Field template": "Field template",
   "Are you sure to convert referenced fields to copy mode?": "Are you sure to convert referenced fields to copy mode?",
   "Template data source/collection mismatch": "Template data source/collection mismatch",
-  "Template missing data source/collection info": "Template missing data source/collection info"
+  "Template missing data source/collection info": "Template missing data source/collection info",
+  "Template collection mismatch": "Collection mismatch: requires \"{{expected}}\", but template is for \"{{actual}}\"",
+  "Template data source mismatch": "Data source mismatch: requires \"{{expected}}\", but template is for \"{{actual}}\"",
+  "Unavailable": "Unavailable"
 }

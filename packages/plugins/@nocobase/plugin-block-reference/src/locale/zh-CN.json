@@ -35,5 +35,8 @@
   "Field template": "字段模版",
   "Are you sure to convert referenced fields to copy mode?": "确定将引用字段转换为复制模式吗？",
   "Template data source/collection mismatch": "数据源/数据表不匹配",
-  "Template missing data source/collection info": "模板缺少数据源/数据表信息"
+  "Template missing data source/collection info": "模板缺少数据源/数据表信息",
+  "Template collection mismatch": "数据表不匹配：当前为 \"{{expected}}\"，模板适用于 \"{{actual}}\"",
+  "Template data source mismatch": "数据源不匹配：当前为 \"{{expected}}\"，模板适用于 \"{{actual}}\"",
+  "Unavailable": "不可用"
 }
