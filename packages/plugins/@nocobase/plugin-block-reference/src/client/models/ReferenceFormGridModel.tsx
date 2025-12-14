@@ -194,7 +194,7 @@ export class ReferenceFormGridModel extends FormGridModel {
     }
 
     const engine = this._ensureScopedEngine();
-    const root = await engine.loadModel<FlowModel>({ uid: settings.targetUid, includeAsyncNode: true });
+    const root = await engine.loadModel<FlowModel>({ uid: settings.targetUid });
     if (!root) {
       this._targetGrid = undefined;
       this._resolvedTargetUid = undefined;

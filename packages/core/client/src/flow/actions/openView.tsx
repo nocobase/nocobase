@@ -636,12 +636,21 @@ export const openView = defineAction({
       ? (inputArgs.openerUids as string[] | undefined) || parentOpenerUids
       : [...parentOpenerUids, (ctx.model.context?.inputArgs?.viewUid as string) || ctx.model.uid];
 
+    const runtimeDataSourceKey =
+      typeof inputArgs.dataSourceKey !== 'undefined' ? inputArgs.dataSourceKey : params.dataSourceKey;
+    const runtimeCollectionName =
+      typeof inputArgs.collectionName !== 'undefined' ? inputArgs.collectionName : params.collectionName;
+    const runtimeAssociationName =
+      typeof inputArgs.associationName !== 'undefined' ? inputArgs.associationName : params.associationName;
+    const runtimePreventClose =
+      typeof inputArgs.preventClose !== 'undefined' ? !!inputArgs.preventClose : !!params.preventClose;
+
     const finalInputArgs: Record<string, unknown> = {
       ...ctx.inputArgs,
       ...inputArgs,
-      dataSourceKey: params.dataSourceKey,
-      collectionName: params.collectionName,
-      associationName: params.associationName,
+      dataSourceKey: runtimeDataSourceKey,
+      collectionName: runtimeCollectionName,
+      associationName: runtimeAssociationName,
       tabUid: mergedTabUid,
       openerUids,
     };
@@ -651,7 +660,7 @@ export const openView = defineAction({
     await ctx.viewer.open({
       type: openMode,
       inputArgs: finalInputArgs,
-      preventClose: !!params.preventClose,
+      preventClose: runtimePreventClose,
       destroyOnClose: true,
       inheritContext: false,
       target: ctx.inputArgs.target || ctx.layoutContentElement,

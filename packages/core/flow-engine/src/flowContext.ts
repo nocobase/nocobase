@@ -1410,12 +1410,22 @@ export class FlowModelContext extends BaseFlowModelContext {
     });
     this.defineMethod('openView', async function (uid: string, options) {
       const opts = { ...options };
-      if (opts.defineProperties || opts.defineMethod) {
+      // NOTE: when custom context is passed, route navigation must be disabled to avoid losing it after refresh.
+      if (opts.defineProperties || opts.defineMethod || opts.defineMethods) {
         opts.navigation = false; // 强制不使用路由导航, 避免刷新页面时丢失上下文
       }
       let model: FlowModel | null = null;
       model = await this.engine.loadModel({ uid });
       if (!model) {
+        const pickDefined = (src: Record<string, any>, keys: string[]) => {
+          const res: Record<string, any> = {};
+          for (const k of keys) {
+            if (typeof src?.[k] !== 'undefined') {
+              res[k] = src[k];
+            }
+          }
+          return res;
+        };
         model = this.engine.createModel({
           uid, // 注意： 新建的 model 应该使用 ${parentModel.uid}-xxx 形式的 uid
           use: 'PopupActionModel',
@@ -1425,24 +1435,13 @@ export class FlowModelContext extends BaseFlowModelContext {
           stepParams: {
             popupSettings: {
               openView: {
-                // 持久化首次传入的关键展示/数据参数，供后续路由与再次打开复用
-                ..._.pick(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
+                // 仅在创建时持久化一份默认配置；运行时以本次 opts 为准，避免多个 opener 互相覆盖。
+                ...pickDefined(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
               },
             },
           },
         });
         await model.save();
-      }
-      // 若已存在 openView 配置，则按需合并更新（仅覆盖本次显式传入的字段）
-      if (model.getStepParams('popupSettings')?.openView) {
-        const prevOpenView = model.getStepParams('popupSettings')?.openView || {};
-        const incoming = _.pick(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']);
-        const nextOpenView = { ...prevOpenView, ...incoming };
-        // 仅当有变更时才保存，避免不必要的写入
-        if (!_.isEqual(prevOpenView, nextOpenView)) {
-          model.setStepParams('popupSettings', { openView: nextOpenView });
-          await model.save();
-        }
       }
 
       // 路由层级的 viewUid：优先使用 routeViewUid（仅用于路由展示）；

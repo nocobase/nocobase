@@ -13,7 +13,6 @@ import _ from 'lodash';
 import { FlowModel, createBlockScopedEngine } from '@nocobase/flow-engine';
 import { BlockModel, PopupActionModel } from '@nocobase/client';
 import { ReferenceBlockModel } from './models/ReferenceBlockModel';
-import { duplicateModelTreeLocally } from './utils/flowModelClone';
 import { NAMESPACE } from './locale';
 
 type MenuItem = {
@@ -351,7 +350,7 @@ async function handleConvertFieldsToCopy(model: FlowModel, t: (k: string, opt?: 
   if (!resolved) {
     return;
   }
-  const { settings } = resolved;
+  const { grid: currentGrid, settings } = resolved;
   const viewer = model.context.viewer;
   if (openFieldsCopyDialogs.has(model)) return;
   openFieldsCopyDialogs.add(model);
@@ -375,29 +374,25 @@ async function handleConvertFieldsToCopy(model: FlowModel, t: (k: string, opt?: 
         throw new Error(`[block-reference] Only 'subModels.grid' is supported (got '${sourcePath}').`);
       }
       const scoped = createBlockScopedEngine(model.flowEngine);
-      const root = await scoped.loadModel<FlowModel>({ uid: targetUid, includeAsyncNode: true });
-      const fragment = _.get(root as any, sourcePath);
-      const gridModel =
-        fragment instanceof FlowModel ? fragment : _.castArray(fragment).find((m) => m instanceof FlowModel);
+      const root = await scoped.loadModel<FlowModel>({ uid: targetUid });
+      const gridModel = _.get(root, sourcePath) as FlowModel;
       if (!gridModel) {
         throw new Error(t('Target block is invalid'));
       }
 
-      // 注意：不要使用 flowModels:duplicate（会先落库为 root，save 不会重建 treePath）
-      const { duplicated } = duplicateModelTreeLocally(gridModel);
+      const duplicated = await model.flowEngine.duplicateModel(gridModel.uid);
 
-      const newOptions = {
-        ...duplicated,
+      // 将复制出的 grid（默认脱离父级）移动到当前表单 grid 位置，避免再走 save 重建整棵树
+      await model.flowEngine.modelRepository.move(duplicated.uid, currentGrid.uid, 'after');
+
+      const newGrid = model.flowEngine.createModel<FlowModel>({
+        ...(duplicated as any),
         parentId: model.uid,
         subKey: 'grid',
-        subType: 'object' as const,
-      };
-      const newGrid = model.flowEngine.createModel<FlowModel>(newOptions);
-      newGrid.isNew = true;
+        subType: 'object',
+      });
       model.setSubModel('grid', newGrid);
       await newGrid.afterAddAsSubModel();
-      await newGrid.save();
-      newGrid.isNew = false;
 
       // 引用已清理，回退临时标题（移除“字段模板”标记）
       const clearTemplateTitle = (m: FlowModel) => {
@@ -550,11 +545,35 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
   const templateFilterByTk = toNonEmptyString(openViewParams?.filterByTk) || getDefaultFilterByTkExpr();
   const templateSourceId = toNonEmptyString(openViewParams?.sourceId) || getDefaultSourceIdExpr();
 
-  const doCreate = async (values: { name: string; description?: string }) => {
+  const getUidFromAny = (obj: any): string | undefined => {
+    const candidates = [
+      obj?.uid,
+      obj?.data?.uid,
+      obj?.data?.data?.uid,
+      obj?.data?.data?.data?.uid,
+      obj?.data?.data?.data?.data?.uid,
+    ];
+    for (const c of candidates) {
+      const v = toNonEmptyString(c);
+      if (v) return v;
+    }
+    return undefined;
+  };
+
+  const duplicatePopupTarget = async (): Promise<string> => {
+    const duplicated = await model.flowEngine?.duplicateModel?.(model.uid);
+    const newUid = getUidFromAny(duplicated);
+    if (!newUid) {
+      throw new Error(tNs('Failed to duplicate pop-up'));
+    }
+    return newUid;
+  };
+
+  const doCreate = async (values: { name: string; description?: string; targetUid: string }) => {
     const payload = {
       name: values.name,
       description: values.description,
-      targetUid: model.uid,
+      targetUid: values.targetUid,
       rootUse: model.use,
       type: 'popup',
       dataSourceKey: openViewParams?.dataSourceKey,
@@ -572,7 +591,8 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
       const name = window.prompt(tNs('Template name'), defaultName || '') || '';
       const trimmed = normalizeTitle(name);
       if (!trimmed) return;
-      await doCreate({ name: trimmed });
+      const targetUid = await duplicatePopupTarget();
+      await doCreate({ name: trimmed, targetUid });
       model.context.message?.success?.(tNs('Saved'));
     } catch (err) {
       console.error(err);
@@ -601,14 +621,17 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
           }
           setSubmitting(true);
           try {
-            const tpl = await doCreate({ name, description: normalizeTitle(values?.description) || undefined });
-            const tplUid = normalizeTitle(
-              (tpl as any)?.uid || (tpl as any)?.data?.uid || (tpl as any)?.data?.data?.uid,
-            );
+            const targetUid = values?.replace ? model.uid : await duplicatePopupTarget();
+            const tpl = await doCreate({
+              name,
+              description: normalizeTitle(values?.description) || undefined,
+              targetUid,
+            });
+            const tplUid = getUidFromAny(tpl);
 
             if (values?.replace && tplUid) {
               const nextOpenView: any = { ...(openViewParams || {}) };
-              nextOpenView.uid = model.uid;
+              nextOpenView.uid = targetUid;
               nextOpenView.popupTemplateUid = tplUid;
               nextOpenView.popupTemplateMode = 'reference';
               if (!toNonEmptyString(nextOpenView.filterByTk) && templateFilterByTk) {
@@ -787,7 +810,7 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, t: (k: string,
   }
 
   viewer.dialog({
-    title: tNs('Convert pop-up to copy'),
+    title: tNs('Convert popup to copy'),
     width: 520,
     destroyOnClose: true,
     onClose: release,
@@ -901,10 +924,7 @@ export function registerMenuExtensions() {
         return [
           {
             key: 'block-reference:convert-popup-template-to-copy',
-            label:
-              typeof (model.context as any)?.t === 'function'
-                ? (model.context as any).t('Convert pop-up to copy', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' })
-                : 'Convert pop-up to copy',
+            label: model.context.t('Convert popup to copy', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }),
             onClick: () => handleConvertPopupTemplateToCopy(model, t),
             sort: -8,
           },

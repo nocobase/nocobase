@@ -47,12 +47,13 @@
   "Select popup template": "Select popup template",
   "Save as popup template": "Save as popup template",
   "Replace with template": "Replace with template",
-  "Convert pop-up to copy": "Convert pop-up to copy",
+  "Convert popup to copy": "Convert popup to copy",
   "Are you sure to convert this pop-up to copy mode?": "Are you sure to convert this pop-up to copy mode?",
   "This pop-up is not using a popup template": "This pop-up is not using a popup template",
   "Converted": "Converted",
   "Template mode": "Template mode",
   "Only Popup can be saved as popup template": "Only Popup can be saved as popup template",
   "Popup template not found": "Popup template not found",
+  "Failed to duplicate pop-up": "Failed to duplicate pop-up",
   "Failed to copy popup from template": "Failed to copy popup from template"
 }

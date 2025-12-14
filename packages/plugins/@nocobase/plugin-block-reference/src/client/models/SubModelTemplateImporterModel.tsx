@@ -21,7 +21,6 @@ import {
   tExpr,
 } from '@nocobase/flow-engine';
 import { NAMESPACE, tStr } from '../locale';
-import { duplicateModelTreeLocally } from '../utils/flowModelClone';
 
 type ImporterProps = {
   /** 默认从模板根取片段的路径 */
@@ -184,13 +183,7 @@ export class SubModelTemplateImporterModel extends FlowModel {
 
     if (mode === 'copy') {
       const scoped = createBlockScopedEngine(mountTarget.flowEngine);
-      const root = await scoped.loadModel<FlowModel>({ uid: targetUid, includeAsyncNode: true });
-      if (!root) {
-        throw new Error(
-          this.translate?.('Target block is invalid', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }) ||
-            'Target block is invalid',
-        );
-      }
+      const root = await scoped.loadModel<FlowModel>({ uid: targetUid });
       const fragment = _.get(root as any, sourcePath);
       const gridModel =
         fragment instanceof FlowModel ? fragment : _.castArray(fragment).find((m) => m instanceof FlowModel);
@@ -198,16 +191,19 @@ export class SubModelTemplateImporterModel extends FlowModel {
         throw new Error(`[block-reference] Template fragment is invalid: ${sourcePath}`);
       }
 
-      const { duplicated } = duplicateModelTreeLocally(gridModel);
-      await mountTarget.flowEngine.replaceModel(existingGrid.uid, () => {
-        const use = typeof duplicated.use === 'string' ? duplicated.use : (duplicated.use as any)?.name || 'unknown';
-        return {
-          use,
-          props: duplicated.props,
-          stepParams: duplicated.stepParams,
-          subModels: duplicated.subModels as any,
-        };
+      const duplicated = await mountTarget.flowEngine.duplicateModel(gridModel.uid);
+      // 将复制出的 grid（默认脱离父级）移动到当前表单 grid 位置，避免再走 replaceModel/save 重建整棵树
+      await mountTarget.flowEngine.modelRepository.move(duplicated.uid, existingGrid.uid, 'after');
+
+      const newGrid = mountTarget.flowEngine.createModel<FlowModel>({
+        ...(duplicated as any),
+        parentId: mountTarget.uid,
+        subKey: 'grid',
+        subType: 'object',
       });
+      mountTarget.setSubModel('grid', newGrid);
+      await newGrid.afterAddAsSubModel();
+      await mountTarget.flowEngine.destroyModel(existingGrid.uid);
 
       await mountTarget.rerender();
       return;
@@ -222,24 +218,39 @@ export class SubModelTemplateImporterModel extends FlowModel {
       return;
     }
 
-    await mountTarget.flowEngine.replaceModel(existingGrid.uid, (old) => {
-      const oldStepParams: Record<string, any> =
-        old?.stepParams && typeof old.stepParams === 'object' ? (old.stepParams as Record<string, any>) : {};
-      const prevRefSettings =
-        oldStepParams[GRID_REF_FLOW_KEY] && typeof oldStepParams[GRID_REF_FLOW_KEY] === 'object'
-          ? (oldStepParams[GRID_REF_FLOW_KEY] as Record<string, any>)
-          : {};
-      return {
-        use: 'ReferenceFormGridModel',
-        stepParams: {
-          ...oldStepParams,
-          [GRID_REF_FLOW_KEY]: {
-            ...prevRefSettings,
-            [GRID_REF_STEP_KEY]: nextSettings,
-          },
-        },
-      };
+    const uidToReplace = existingGrid.uid;
+    const oldStepParams: Record<string, any> =
+      existingGrid.stepParams && typeof existingGrid.stepParams === 'object'
+        ? (existingGrid.stepParams as Record<string, any>)
+        : {};
+    const prevRefSettings =
+      oldStepParams[GRID_REF_FLOW_KEY] && typeof oldStepParams[GRID_REF_FLOW_KEY] === 'object'
+        ? (oldStepParams[GRID_REF_FLOW_KEY] as Record<string, any>)
+        : {};
+    const nextStepParams = {
+      ...oldStepParams,
+      [GRID_REF_FLOW_KEY]: {
+        ...prevRefSettings,
+        [GRID_REF_STEP_KEY]: nextSettings,
+      },
+    };
+
+    // 需要清理旧 grid 子树（否则旧字段会残留并被 serialize 落库）
+    await mountTarget.flowEngine.destroyModel(uidToReplace);
+
+    const newGrid = mountTarget.flowEngine.createModel<FlowModel>({
+      uid: uidToReplace,
+      use: 'ReferenceFormGridModel',
+      props: existingGrid.props,
+      sortIndex: existingGrid.sortIndex,
+      parentId: mountTarget.uid,
+      subKey: 'grid',
+      subType: 'object',
+      stepParams: nextStepParams,
     });
+    mountTarget.setSubModel('grid', newGrid);
+    await newGrid.afterAddAsSubModel();
+    await newGrid.save();
 
     await mountTarget.rerender();
   }
