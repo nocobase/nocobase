@@ -12,6 +12,7 @@ import { AddSubModelButton, FlowSettingsButton, DragOverlayConfig } from '@nocob
 import React from 'react';
 import { FieldModel, GridModel } from '../../base';
 import { FormBlockModel } from './FormBlockModel';
+import { Skeleton } from 'antd';
 
 export type DefaultFormGridStructure = {
   parent: FormBlockModel;
@@ -19,6 +20,7 @@ export type DefaultFormGridStructure = {
 };
 
 export class FormGridModel<T extends DefaultFormGridStructure = DefaultFormGridStructure> extends GridModel<T> {
+  itemFallback = (<Skeleton.Input block size="small" style={{ marginBottom: '0.5rem' }} />);
   itemSettingsMenuLevel = 2;
   itemFlowSettings = {
     showBackground: true,

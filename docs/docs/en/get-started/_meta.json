@@ -5,6 +5,11 @@
     "link": "/get-started/how-nocobase-works"
   },
   {
+    "type": "custom-link",
+    "label": "System Requirements",
+    "link": "/get-started/system-requirements"
+  },
+  {
     "type": "file",
     "name": "quickstart"
   },
