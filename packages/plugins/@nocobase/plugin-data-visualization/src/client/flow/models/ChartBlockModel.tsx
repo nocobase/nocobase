@@ -269,7 +269,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     this.setStepParams('chartSettings', 'configure', values);
 
     if (needQueryData) {
-      this.checkResource(values.query); // 检查资源是否匹配查询模式
+      this.applyQuery(values.query);
       const isSQL = values?.query?.mode === 'sql';
       // 预览场景：SQL 模式开启 debug（调用 run）
       if (isSQL) {
