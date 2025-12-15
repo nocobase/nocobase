@@ -1544,5 +1544,6 @@
   "≥": "≥",
   "Sub-table settings": "子表格设置",
   "Sub-form settings": "子表单设置",
-  "The block is hidden and only visible when the UI Editor is active": "当前区块已被隐藏,仅配置状态下显示"
+  "The block is hidden and only visible when the UI Editor is active": "当前区块已被隐藏,仅配置状态下显示",
+  "The field is hidden and only visible when the UI Editor is active": "当前字段已被隐藏,仅配置状态下显示"
 }

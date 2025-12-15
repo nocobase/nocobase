@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Card, Form } from 'antd';
+import { Card, Form, Tooltip } from 'antd';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -91,7 +91,11 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     if (this.fieldDeleted) {
       return <FieldDeletePlaceholder />;
     }
-    return <FieldPlaceholder title={this.collectionField.title} />;
+    return (
+      <Tooltip title={this.context.t('The field is hidden and only visible when the UI Editor is active')}>
+        <div style={{ opacity: 0.3 }}>{this.renderOriginal.call(this)}</div>
+      </Tooltip>
+    );
   }
 
   get title() {

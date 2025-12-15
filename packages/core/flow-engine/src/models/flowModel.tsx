@@ -118,6 +118,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    */
   private _originalRender: (() => any) | null = null;
 
+  protected renderOriginal(): React.ReactNode {
+    return this._originalRender();
+  }
+
   /**
    * 缓存的响应式包装器组件（每个实例一个）
    */
