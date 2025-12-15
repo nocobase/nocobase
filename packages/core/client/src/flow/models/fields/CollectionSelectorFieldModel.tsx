@@ -9,6 +9,7 @@
 
 import React, { useCallback } from 'react';
 import { Select } from 'antd';
+import { castArray } from 'lodash';
 import { EditableItemModel } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
 import { FieldModel } from '../base';
@@ -52,12 +53,14 @@ CollectionSelectorFieldModel.registerFlow({
           const childCollections = ctx.dataSourceManager
             .getDataSource('main')
             .collectionManager.getChildrenCollections(ctx.collectionField.collectionName);
-          const options = ctx.collectionField.collection.concat(childCollections).map((item) => {
-            return {
-              label: ctx.t(item.title) || item.name,
-              value: item.name || item.value,
-            };
-          });
+          const options = castArray(ctx.collectionField.collection)
+            .concat(childCollections)
+            .map((item) => {
+              return {
+                label: ctx.t(item.title) || item.name,
+                value: item.name || item.value,
+              };
+            });
           ctx.model.setProps({
             options: options,
           });

@@ -73,6 +73,6 @@ export async function getLicenseValidate({ key, ctx }: { key?: string; ctx?: any
     plugins,
     pluginsLicensed,
     keyStatus,
-    licenseStatus: keyData?.licenseKey?.licenseStatus,
+    licenseStatus: keyData?.licenseKey?.licenseStatus || 'active',
   };
 }

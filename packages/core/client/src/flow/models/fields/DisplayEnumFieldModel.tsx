@@ -48,13 +48,12 @@ export class DisplayEnumFieldModel extends ClickableFieldModel {
   }
 
   public renderComponent(value) {
-    const { options = [] } = this.props;
-    const currentOptions = getCurrentOptions(value, options, fieldNames);
+    const { options = [], dataSource } = this.props;
+    const currentOptions = getCurrentOptions(value, dataSource || options, fieldNames);
 
     if (this.isEmpty(value) || !currentOptions.length) {
       return null;
     }
-    console.log(this.props);
     return currentOptions.map((option) => (
       <Tag key={option[fieldNames.value]} color={option[fieldNames.color]}>
         {this.translate(option[fieldNames.label])}
@@ -105,7 +104,7 @@ DisplayEnumFieldModel.registerFlow({
                 color: item.category?.color,
               }));
             ctx.model.setProps({
-              options: options,
+              dataSource: options,
             });
           }
         }
