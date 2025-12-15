@@ -417,6 +417,12 @@ TableColumnModel.registerFlow({
         }
         ctx.model.setProps(targetCollectionField.getComponentProps());
       },
+      defaultParams: (ctx: any) => {
+        const titleField = ctx.model.context.collectionField.targetCollectionTitleFieldName;
+        return {
+          label: ctx.model.props.titleField || titleField,
+        };
+      },
       handler(ctx, params) {
         if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
           return null;
