@@ -136,7 +136,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
         this.setProps('sizes', newSizes);
       }
     });
-    this.emitter.on('onSubModelRemoved', (model: FlowModel) => {
+    this.emitter.on('onSubModelDestroyed', (model: FlowModel) => {
       const modelUid = model.uid;
 
       // 1. 获取当前 modelUid 所在的位置
