@@ -902,7 +902,13 @@ export class FlowEngine {
     if (this.ensureModelRepository()) {
       await this._modelRepository.destroy(uid);
     }
-    return this.removeModel(uid);
+
+    const modelInstance = this._modelInstances.get(uid) as FlowModel;
+    const parent = modelInstance?.parent;
+    const result = this.removeModel(uid);
+    parent && parent.emitter.emit('onSubModelDestroyed', modelInstance);
+
+    return result;
   }
 
   /**
