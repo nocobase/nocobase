@@ -59,28 +59,44 @@ function FieldDeletePlaceholder() {
   );
 }
 
+function FieldWithoutPermissionPlaceholder() {
+  const { t } = useTranslation();
+  const model: any = useFlowModel();
+  const blockModel = model.context.blockModel;
+  const dataSource = blockModel.collection.dataSource;
+  const collection = blockModel.collection;
+  const name = model.fieldPath;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}${name}`;
+  }, []);
+  const content = t(`The current user does not have view permission for the {{type}} "{{name}}"`, {
+    type: t('Field'),
+    name: nameValue,
+  }).replaceAll('&gt;', '>');
+
+  return (
+    <Tooltip title={content}>
+      <LockOutlined style={{ opacity: '0.3' }} />
+    </Tooltip>
+  );
+}
+
 export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
-  renderHiddenInConfig() {
-    if (this.fieldDeleted) {
-      return <FieldDeletePlaceholder />;
-    }
-    return (
-      <Tooltip
-        title={this.context.t(
-          'This field has been hidden and you cannot view it (this content is only visible when the UI Editor is activated).',
-        )}
-      >
-        <LockOutlined style={{ opacity: '0.45' }} />
-      </Tooltip>
-    );
-  }
-
   async afterAddAsSubModel() {
     await super.afterAddAsSubModel();
     await this.dispatchEvent('beforeRender');
+  }
+  renderHiddenInConfig(): React.ReactNode | undefined {
+    if (this.fieldDeleted) {
+      return <FieldDeletePlaceholder />;
+    }
+
+    return this.renderOriginal.call(this);
   }
 
   static defineChildren(ctx: FlowModelContext) {
@@ -187,6 +203,18 @@ export class TableColumnModel extends DisplayItemModel {
               {(() => {
                 const err = this['__autoFlowError'];
                 if (err) throw err;
+                if (this.hidden && this.flowEngine.flowSettings?.enabled) {
+                  if (this.forbidden) {
+                    return <FieldWithoutPermissionPlaceholder />;
+                  }
+                  return (
+                    <Tooltip
+                      title={this.context.t('The field is hidden and only visible when the UI Editor is active')}
+                    >
+                      <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record.__index || index)}</div>
+                    </Tooltip>
+                  );
+                }
                 return cellRenderer(value, record, record.__index || index);
               })()}
             </ErrorBoundary>

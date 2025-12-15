@@ -67,6 +67,38 @@ export function FieldDeletePlaceholder() {
     </Form.Item>
   );
 }
+
+function FieldWithoutPermissionPlaceholder() {
+  const { t } = useTranslation();
+  const model: any = useFlowModel();
+  const blockModel = model.context.blockModel;
+  const dataSource = blockModel.collection.dataSource;
+  const collection = blockModel.collection;
+  const name = model.fieldPath;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}${name}`;
+  }, []);
+  const content = t(`The current user does not have {{actionName}} permission for the {{type}} "{{name}}"`, {
+    type: t('Field'),
+    name: nameValue,
+    actionName: model.forbidden.actionName || 'view',
+  }).replaceAll('&gt;', '>');
+
+  return (
+    <Card
+      size="small"
+      styles={{
+        body: {
+          color: 'rgba(0,0,0,0.45)',
+        },
+      }}
+    >
+      {content}
+    </Card>
+  );
+}
 export interface FieldSettingsInitParams {
   dataSourceKey: string;
   collectionName: string;
@@ -86,10 +118,14 @@ const defaultWhen = () => true;
 export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   private static _bindings = new Map();
   fieldDeleted = false;
+  forbidden = false;
 
   renderHiddenInConfig(): React.ReactNode | undefined {
     if (this.fieldDeleted) {
       return <FieldDeletePlaceholder />;
+    }
+    if (this.forbidden) {
+      return <FieldWithoutPermissionPlaceholder />;
     }
     return (
       <Tooltip title={this.context.t('The field is hidden and only visible when the UI Editor is active')}>
