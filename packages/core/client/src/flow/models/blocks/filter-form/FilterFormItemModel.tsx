@@ -189,16 +189,20 @@ export class FilterFormItemModel extends FilterableItemModel<{
    * @returns
    */
   getFilterValue() {
+    const rawValue = this.subModels.field.getFilterValue
+      ? this.subModels.field.getFilterValue()
+      : this.context.form?.getFieldValue(this.props.name);
+
     const operatorMeta = this.getCurrentOperatorMeta();
     if (operatorMeta?.noValue) {
+      const options = operatorMeta?.schema?.['x-component-props']?.options;
+      if (Array.isArray(options)) {
+        return rawValue;
+      }
       return true;
     }
 
-    if (this.subModels.field.getFilterValue) {
-      return this.subModels.field.getFilterValue();
-    }
-
-    return this.context.form?.getFieldValue(this.props.name);
+    return rawValue;
   }
 
   /**
