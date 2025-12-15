@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { EditableItemModel, FilterableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, FilterableItemModel, tExpr } from '@nocobase/flow-engine';
 import { Select, Tag, Tooltip } from 'antd';
 import React from 'react';
 import { FieldModel } from '../base';
@@ -80,6 +80,9 @@ export class SelectFieldModel extends FieldModel {
   }
 }
 
+SelectFieldModel.define({
+  label: tExpr('Select'),
+});
 EditableItemModel.bindModelToInterface('SelectFieldModel', ['select', 'multipleSelect'], {
   isDefault: true,
   defaultProps: {

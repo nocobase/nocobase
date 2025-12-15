@@ -23,6 +23,13 @@ PasswordFieldModel.registerFlow({
   sort: 1000,
   title: tExpr('Password settings'),
   steps: {
+    checkStrength: {
+      title: tExpr('Check strength'),
+      uiMode: { type: 'switch', key: 'checkStrength' },
+      handler(ctx, params) {
+        ctx.model.setProps({ checkStrength: params.checkStrength || false });
+      },
+    },
     placeholder: {
       title: tExpr('Placeholder'),
       uiSchema: {
@@ -36,22 +43,6 @@ PasswordFieldModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps({ placeholder: params.placeholder });
-      },
-    },
-    checkStrength: {
-      title: tExpr('Check strength'),
-      uiSchema: {
-        checkStrength: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({ checkStrength: params.checkStrength || false });
       },
     },
   },

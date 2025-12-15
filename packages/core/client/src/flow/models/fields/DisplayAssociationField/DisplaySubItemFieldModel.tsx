@@ -15,6 +15,7 @@ import { FieldModel } from '../../base';
 import { DetailsItemModel } from '../../blocks/details/DetailsItemModel';
 
 export class DisplaySubItemFieldModel extends FieldModel {
+  disableTitleField = true;
   subModelBaseClasses = {
     action: 'RecordActionGroupModel' as any,
     field: ['DetailsItemModel'] as any,

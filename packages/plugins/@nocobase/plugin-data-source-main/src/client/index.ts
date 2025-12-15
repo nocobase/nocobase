@@ -36,20 +36,25 @@ class PluginDataSourceMainClient extends Plugin {
   async load() {
     this.addCollectionPresetField({
       order: 100,
-      description: '{{t("Primary key, unique identifier, self growth") }}',
+      description: '{{t("Primary key, distributed uniqueness, time-ordering") }}',
       value: {
         name: 'id',
-        type: 'bigInt',
-        autoIncrement: true,
+        type: 'snowflakeId',
+        autoIncrement: false,
         primaryKey: true,
         allowNull: false,
         uiSchema: {
           type: 'number',
           title: '{{t("ID")}}',
           'x-component': 'InputNumber',
-          'x-read-pretty': true,
+          'x-component-props': {
+            stringMode: true,
+            separator: '0.00',
+            step: '1',
+          },
+          'x-validator': 'integer',
         },
-        interface: 'integer',
+        interface: 'snowflakeId',
       },
     });
     this.addCollectionPresetField({

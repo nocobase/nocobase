@@ -16,6 +16,7 @@ export class UUIDFieldInterface extends CollectionFieldInterface {
   group = 'advanced';
   order = 0;
   title = '{{t("UUID")}}';
+  primaryKeyDescription = '{{t("Primary key, unique identifier")}}';
   hidden = false;
   sortable = true;
   default = {

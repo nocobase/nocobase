@@ -117,6 +117,7 @@ RootPageModel.registerFlow({
             props: {
               route,
             },
+            flowRegistry: route.options?.flowRegistry,
             stepParams: {
               pageTabSettings: {
                 tab: {
