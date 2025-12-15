@@ -136,6 +136,11 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
             fork.context.defineProperty('fieldKey', {
               get: () => fieldKey,
             });
+            if (this.context.currentObject) {
+              fork.context.defineProperty('currentObject', {
+                get: () => this.context.currentObject,
+              });
+            }
             if (this.context.pattern) {
               fork.context.defineProperty('pattern', {
                 get: () => this.context.pattern,

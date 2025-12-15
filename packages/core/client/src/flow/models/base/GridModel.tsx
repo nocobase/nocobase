@@ -96,7 +96,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   // 拖拽高亮区域的配置，子类可以覆盖此属性来自定义偏移
   dragOverlayConfig?: DragOverlayConfig;
   // 通过稳定引用减少子项不必要的重渲染
-  private readonly itemFallback = (<SkeletonFallback />);
+  itemFallback = (<SkeletonFallback />);
   private readonly itemExtraToolbarItems = [
     {
       key: 'drag-handler',
@@ -612,6 +612,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                   const fieldKey = this.context.fieldKey;
                   const rowIndex = this.context.fieldIndex;
                   const record = this.context.record;
+                  const currentObject = this.context.currentObject;
                   // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
                   const item =
                     rowIndex == null
@@ -626,6 +627,10 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                           });
                           fork.context.defineProperty('record', {
                             get: () => record,
+                            cache: false,
+                          });
+                          fork.context.defineProperty('currentObject', {
+                            get: () => currentObject,
                             cache: false,
                           });
                           return fork;
