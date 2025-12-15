@@ -30,6 +30,61 @@ function normalizeAssociationValue(
   }
 }
 
+async function resolveScopeFilter(ctx: Context, target: string, params?: any) {
+  if (!params) {
+    return {};
+  }
+
+  const filteredParams = ctx.acl.filterParams(ctx, target, params);
+  const parsedParams = await ctx.acl.parseJsonTemplate(filteredParams, ctx);
+  return parsedParams.filter || {};
+}
+
+async function collectAllowedRecordKeys(
+  ctx: Context,
+  items: any[],
+  recordKey: string,
+  updateParams: any,
+  target: string,
+): Promise<Set<any> | undefined> {
+  const repo = ctx.db.getRepository(target);
+  if (!repo) {
+    return undefined;
+  }
+
+  const keys = items
+    .map((item) => (_.isPlainObject(item) ? item[recordKey] : undefined))
+    .filter((key) => key !== undefined && key !== null);
+
+  if (!keys.length) {
+    return undefined;
+  }
+
+  try {
+    const scopedFilter = await resolveScopeFilter(ctx, target, updateParams?.params);
+    const records = await repo.find({
+      filter: {
+        ...scopedFilter,
+        [`${recordKey}.$in`]: keys,
+      },
+    });
+
+    const allowedKeys = new Set<any>();
+    for (const record of records) {
+      const key = typeof record.get === 'function' ? record.get(recordKey) : record[recordKey];
+      if (key !== undefined && key !== null) {
+        allowedKeys.add(key);
+      }
+    }
+    return allowedKeys;
+  } catch (e) {
+    if (e instanceof NoPermissionError) {
+      return new Set();
+    }
+    throw e;
+  }
+}
+
 /**
  * Process nested association values recursively if creation is allowed.
  */
@@ -42,6 +97,7 @@ async function processAssociationChild(
   updateParams: any,
   target: string,
   fieldPath: string,
+  allowedRecordKeys?: Set<any>,
 ): Promise<Record<string, any> | string | number | null> {
   // Case 1: Existing record → potential update
   if (value[recordKey]) {
@@ -55,23 +111,23 @@ async function processAssociationChild(
         return value[recordKey];
       }
       try {
-        let filter = {};
-        if (updateParams.params) {
-          const filteredParams = ctx.acl.filterParams(ctx, target, updateParams.params);
-          const parsedParams = await ctx.acl.parseJsonTemplate(filteredParams, ctx);
-          if (parsedParams.filter) {
-            filter = parsedParams.filter;
+        if (allowedRecordKeys) {
+          if (!allowedRecordKeys.has(value[recordKey])) {
+            ctx.log.debug(`No permission to update association due to scope`, { fieldPath, value, updateParams });
+            return value[recordKey];
           }
-        }
-        const record = await repo.findOne({
-          filter: {
-            ...filter,
-            [recordKey]: value[recordKey],
-          },
-        });
-        if (!record) {
-          ctx.log.debug(`No permission to update association due to scope`, { fieldPath, value, updateParams });
-          return value[recordKey];
+        } else {
+          const filter = await resolveScopeFilter(ctx, target, updateParams.params);
+          const record = await repo.findOne({
+            filter: {
+              ...filter,
+              [recordKey]: value[recordKey],
+            },
+          });
+          if (!record) {
+            ctx.log.debug(`No permission to update association due to scope`, { fieldPath, value, updateParams });
+            return value[recordKey];
+          }
         }
         return await processValues(ctx, value, updateAssociationValues, updateParams.params, target, fieldPath);
       } catch (e) {
@@ -208,6 +264,11 @@ async function processValues(
     // Multi
     if (Array.isArray(fieldValue)) {
       const processed = [];
+      let allowedRecordKeys: Set<any> | undefined;
+
+      if (updateParams) {
+        allowedRecordKeys = await collectAllowedRecordKeys(ctx, fieldValue, recordKey, updateParams, field.target);
+      }
 
       for (const item of fieldValue) {
         const r = await processAssociationChild(
@@ -219,6 +280,7 @@ async function processValues(
           updateParams,
           field.target,
           fieldPath,
+          allowedRecordKeys,
         );
         if (r !== null && r !== undefined) {
           processed.push(r);
