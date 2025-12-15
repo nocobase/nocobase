@@ -156,7 +156,11 @@ export class PluginMultiAppManagerServer extends Plugin {
           throw new Error('Application name "main" is reserved');
         }
 
-        const subApp = supervisor.registerApp(model.get('name'), model.get('options') || {}, this.app);
+        const subApp = supervisor.registerApp({
+          appName: model.get('name'),
+          appOptions: model.get('options') || {},
+          mainApp: this.app,
+        });
 
         const quickstart = async () => {
           // create database
@@ -164,8 +168,7 @@ export class PluginMultiAppManagerServer extends Plugin {
             await supervisor.createDatabase({
               app: subApp,
               transaction,
-              appModel: model,
-              context: options.context,
+              appOptions: model.get('options') || {},
             });
           } catch (error) {
             this.log.error(error, { method: 'appDbCreator' });

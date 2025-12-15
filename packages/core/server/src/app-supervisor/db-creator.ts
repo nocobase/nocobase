@@ -59,14 +59,14 @@ async function withPgClient(
   }
 }
 
-export const createDatabaseCondition: Predicate<AppDbCreatorOptions> = ({ appModel }) =>
-  !appModel.options?.dbConnType || appModel.options.dbConnType === 'new_database';
+export const createDatabaseCondition: Predicate<AppDbCreatorOptions> = ({ appOptions }) =>
+  !appOptions?.dbConnType || appOptions.dbConnType === 'new_database';
 
-export const createConnectionCondition: Predicate<AppDbCreatorOptions> = ({ appModel }) =>
-  appModel.options?.dbConnType === 'new_connection';
+export const createConnectionCondition: Predicate<AppDbCreatorOptions> = ({ appOptions }) =>
+  appOptions?.dbConnType === 'new_connection';
 
-export const createSchemaCondition: Predicate<AppDbCreatorOptions> = ({ appModel }) =>
-  process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true' || appModel.options.dbConnType === 'new_schema';
+export const createSchemaCondition: Predicate<AppDbCreatorOptions> = ({ appOptions }) =>
+  process.env.USE_DB_SCHEMA_IN_SUBAPP === 'true' || appOptions.dbConnType === 'new_schema';
 
 export const createDatabase: AppDbCreator = async ({ app }) => {
   const { host, port, username, password, dialect, database } = app.options.database as any;

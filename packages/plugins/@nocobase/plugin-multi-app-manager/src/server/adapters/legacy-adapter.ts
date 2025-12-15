@@ -37,7 +37,7 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     });
   }
 
-  async reset() {
+  async removeAllApps() {
     const appNames = Object.keys(this.apps);
     for (const appName of appNames) {
       await this.removeApp(appName);
@@ -140,7 +140,7 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     return app;
   }
 
-  subApps() {
+  getApps() {
     return Object.values(this.apps).filter((app) => app && app.name !== 'main');
   }
 

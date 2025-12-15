@@ -47,7 +47,7 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     return app;
   }
 
-  subApps() {
+  getApps() {
     return [this.app];
   }
 
@@ -68,7 +68,7 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     await this.app.runCommand('destroy');
   }
 
-  reset() {
+  async removeAllApps() {
     return this.removeApp('main');
   }
 

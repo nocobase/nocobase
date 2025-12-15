@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Transactionable } from '@nocobase/database';
+import { Model, Transaction, Transactionable } from '@nocobase/database';
 import type Application from '../application';
 import { ApplicationOptions } from '../application';
 import type { AppSupervisor } from './index';
@@ -81,11 +81,7 @@ export interface AppDiscoveryAdapter {
    */
   setAppStatus(appName: string, status: AppStatus, options?: Record<string, any>): void | Promise<void>;
 
-  listApps?(environmentName: string): Promise<
-    (ApplicationOptions & {
-      [key: string]: any;
-    })[]
-  >;
+  getAutoStartApps?(environmentName: string): Promise<string[]>;
   getAppOptions?(appName: string): Promise<
     ApplicationOptions & {
       [key: string]: any;
@@ -106,18 +102,27 @@ export interface AppProcessAdapter {
   readonly lastMaintainingMessage?: Record<string, string>;
   readonly statusBeforeCommanding?: Record<string, AppStatus>;
 
+  // Add app instance to supervisor
   addApp(app: Application | ApplicationOptions): void;
+  // Get app instance from supervisor
   getApp(appName: string, options?: GetAppOptions): Promise<Application>;
+  // Check whether app instance exists in supervisor
   hasApp(appName: string): boolean;
-  /**
-   * Return all currently managed sub-application instances.
-   */
-  subApps?(): Application[];
+  // Return all currently managed application instances.
+  getApps?(): Application[];
+  // Create a new app, perparing database, install app
+  createApp?(options: {
+    appName: string;
+    appOptions: ApplicationOptions;
+    mainApp?: Application;
+    transaction?: Transaction;
+  }): Promise<void>;
   startApp?(appName: string): Promise<void>;
   stopApp?(appName: string): Promise<void>;
   removeApp?(appName: string): Promise<void>;
   upgradeApp?(appName: string): Promise<void>;
-  reset?(): Promise<void>;
+  // remove all apps in supervisor
+  removeAllApps?(): Promise<void>;
 
   setAppError?(appName: string, error: Error): void;
   hasAppError?(appName: string): boolean;
@@ -134,8 +139,9 @@ export type ProcessCommand = {
 
 export type AppDbCreatorOptions = Transactionable & {
   app: Application;
-  appModel: Model;
-  context?: any;
+  appOptions: ApplicationOptions & {
+    dbConnType?: 'new_database' | 'new_connection' | 'new_schema';
+  };
 };
 export type AppDbCreator = (options: AppDbCreatorOptions) => Promise<void>;
 export type AppOptionsFactory = (appName: string, mainApp: Application) => any;

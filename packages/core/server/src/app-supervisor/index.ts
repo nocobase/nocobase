@@ -35,7 +35,7 @@ import {
 } from './db-creator';
 import { appOptionsFactory } from './app-options-factory';
 import { PubSubManagerPublishOptions } from '../pub-sub-manager';
-import { Transactionable } from '@nocobase/database';
+import { Transaction, Transactionable } from '@nocobase/database';
 
 export type AppDiscoveryAdapterFactory = (context: { supervisor: AppSupervisor }) => AppDiscoveryAdapter;
 export type AppProcessAdapterFactory = (context: { supervisor: AppSupervisor }) => AppProcessAdapter;
@@ -226,7 +226,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     if (this.hasApp(appName)) {
       return;
     }
-    const app = this.registerApp(appName, appOptions, mainApp);
+    const app = this.registerApp({ appName, appOptions, mainApp });
 
     // must skip load on upgrade
     if (!loadButNotStart) {
@@ -247,7 +247,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async reset() {
-    await this.processAdapter.reset();
+    await this.processAdapter.removeAllApps();
     this.removeAllListeners();
   }
 
@@ -264,36 +264,51 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.setAppStatus(appName, status, options);
   }
 
-  registerApp(appName: string, appOptions: ApplicationOptions, mainApp: Application) {
-    const defaultAppOptions = this.appOptionsFactory(appName, mainApp);
-    const options = {
-      ...lodash.merge({}, defaultAppOptions, appOptions),
-      name: appName,
-    };
+  registerApp({
+    appName,
+    appOptions,
+    mainApp,
+    hook,
+  }: {
+    appName: string;
+    appOptions: ApplicationOptions;
+    mainApp?: Application;
+    hook?: boolean;
+  }) {
+    let options = appOptions;
+    if (mainApp) {
+      const defaultAppOptions = this.appOptionsFactory(appName, mainApp);
+      options = {
+        ...lodash.merge({}, defaultAppOptions, appOptions),
+        name: appName,
+      };
+    }
 
     const app = new Application(options);
 
-    app.on('afterStart', async () => {
-      mainApp.emit('subAppStarted', app);
-      await this.sendSyncMessage(mainApp, {
-        type: 'app:started',
-        appName,
+    if (hook !== false) {
+      app.on('afterStart', async () => {
+        mainApp.emit('subAppStarted', app);
+        await this.sendSyncMessage(mainApp, {
+          type: 'app:started',
+          appName,
+        });
       });
-    });
 
-    app.on('afterStop', async () => {
-      await this.sendSyncMessage(mainApp, {
-        type: 'app:stopped',
-        appName,
+      app.on('afterStop', async () => {
+        await this.sendSyncMessage(mainApp, {
+          type: 'app:stopped',
+          appName,
+        });
       });
-    });
 
-    app.on('afterDestroy', async () => {
-      await this.sendSyncMessage(mainApp, {
-        type: 'app:removed',
-        appName,
+      app.on('afterDestroy', async () => {
+        await this.sendSyncMessage(mainApp, {
+          type: 'app:removed',
+          appName,
+        });
       });
-    });
+    }
 
     return app;
   }
@@ -313,7 +328,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
           if (!appOptions) {
             return;
           }
-          const newApp = this.registerApp(appName, appOptions, app);
+          const newApp = this.registerApp({ appName, appOptions, mainApp: app });
           newApp.runCommand('start', '--quickstart');
         }
 
@@ -339,8 +354,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.getAppOptions(appName);
   }
 
-  async getAppNames(environmentName: string) {
-    return this.discoveryAdapter.getAppNames(environmentName);
+  async getAutoStartApps(environmentName?: string) {
+    if (typeof this.discoveryAdapter.getAutoStartApps === 'function') {
+      return this.discoveryAdapter.getAutoStartApps(environmentName);
+    }
+    return [];
   }
 
   addApp(app: Application | ApplicationOptions) {
@@ -360,6 +378,15 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.processAdapter.hasApp(appName);
   }
 
+  async createApp(options: {
+    appName: string;
+    appOptions: ApplicationOptions;
+    mainApp?: Application;
+    transaction?: Transaction;
+  }) {
+    await this.processAdapter.createApp(options);
+  }
+
   async startApp(appName: string) {
     await this.processAdapter.startApp(appName);
   }
@@ -376,8 +403,16 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     await this.processAdapter.upgradeApp(appName);
   }
 
+  /**
+   * @deprecated
+   * use {#getApps} instead
+   */
   subApps() {
-    return this.processAdapter.subApps();
+    return this.processAdapter.getApps();
+  }
+
+  getApps() {
+    return this.processAdapter.getApps();
   }
 
   async registerEnvironment(environment: EnvironmentInfo) {
