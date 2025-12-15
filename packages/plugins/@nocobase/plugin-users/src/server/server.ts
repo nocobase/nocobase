@@ -228,6 +228,17 @@ export default class PluginUsersServer extends Plugin {
       await this.app.emitAsync('cache:del:roles', { userId: model.get('id') });
       await this.app.emitAsync('cache:del:auth', { userId: model.get('id') });
     });
+
+    this.app.on('afterLoad', async (app) => {
+      app.db.on('rolesUsers.beforeSave', async (model: Model) => {
+        if (!model._changed.has('roleName')) {
+          return;
+        }
+        if (model.roleName === 'root') {
+          throw new Error('No permissions');
+        }
+      });
+    });
   }
 
   getInstallingData(options: any = {}) {
