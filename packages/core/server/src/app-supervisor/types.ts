@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Model, Transaction, Transactionable } from '@nocobase/database';
+import { IDatabaseOptions, Model, Transaction, Transactionable } from '@nocobase/database';
 import type Application from '../application';
 import { ApplicationOptions } from '../application';
 import type { AppSupervisor } from './index';
@@ -139,8 +139,10 @@ export type ProcessCommand = {
 
 export type AppDbCreatorOptions = Transactionable & {
   app: Application;
-  appOptions: ApplicationOptions & {
+  appOptions: {
     dbConnType?: 'new_database' | 'new_connection' | 'new_schema';
+    database?: IDatabaseOptions;
+    [key: string]: any;
   };
 };
 export type AppDbCreator = (options: AppDbCreatorOptions) => Promise<void>;
