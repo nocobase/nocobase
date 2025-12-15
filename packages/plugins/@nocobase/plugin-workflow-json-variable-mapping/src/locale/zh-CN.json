@@ -1,14 +1,14 @@
 {
-  "JSON variable mapping": "JSON 变量映射",
-  "Used for mapping any JSON data to structured variables for usage in subsequent nodes.": "用于将任意 JSON 数据映射为结构化的变量，以供后续节点使用。",
-  "Please update other node references to the key after clicking the parse button.": "请在点击 parse 按钮后更新其它节点对 key 的引用",
-  "JSON data source": "JSON 输入源",
-  "Input example": "输入样例",
-  "Please input JSON example like { \"key1\": \"item1\", \"key2\": \"item2\" }": "请输入 JSON 样例，例如 { \"key1\": \"item1\", \"key2\": \"item2\" }",
-  "Include array index in path": "包含数组索引",
-  "If the JSON object contains array items, parse them. eg: { \"arrayKey\": [ \"item1\", \"item2\" ] will be parsed as \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\", if set to false, only \"arrayKey\" will be parsed.": "如果样例包含数组，例如: { \"arrayKey\": [ \"item1\", \"item2\" ]， 则会解析成 \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\", 如果不勾选，则只解析成 \"arrayKey\"。",
-  "Parse": "解析",
-  "Clear below items": "清空下列选项",
   "Alias": "别名",
-  "Key path": "键名"
+  "Clear below items": "清空下列选项",
+  "If the JSON object contains array items, parse them. eg: { \"arrayKey\": [ \"item1\", \"item2\" ] will be parsed as \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\", if set to false, only \"arrayKey\" will be parsed.": "如果样例包含数组，例如: { \"arrayKey\": [ \"item1\", \"item2\" ]， 则会解析成 \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\", 如果不勾选，则只解析成 \"arrayKey\"。",
+  "Include array index in path": "包含数组索引",
+  "Input example": "输入样例",
+  "JSON data source": "JSON 输入源",
+  "JSON variable mapping": "JSON 变量映射",
+  "Key path": "键名",
+  "Parse": "解析",
+  "Please input JSON example like { \"key1\": \"item1\", \"key2\": \"item2\" }": "请输入 JSON 样例，例如 { \"key1\": \"item1\", \"key2\": \"item2\" }",
+  "Please update other node references to the key after clicking the parse button.": "请在点击 parse 按钮后更新其它节点对 key 的引用",
+  "Used for mapping any JSON data to structured variables for usage in subsequent nodes.": "用于将任意 JSON 数据映射为结构化的变量，以供后续节点使用。"
 }

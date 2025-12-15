@@ -13,6 +13,10 @@ import { Auth, AuthExtend } from './auth';
 import { JwtOptions, JwtService } from './base/jwt-service';
 import { ITokenBlacklistService } from './base/token-blacklist-service';
 import { ITokenControlService } from './base/token-control-service';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
+
 export interface Authenticator {
   authType: string;
   options: Record<string, any>;
@@ -49,7 +53,11 @@ export class AuthManager {
 
   constructor(options: AuthManagerOptions) {
     this.options = options;
-    this.jwt = new JwtService(options.jwt);
+    const jwtOptions = options.jwt || ({} as JwtOptions);
+    if (!jwtOptions.secret) {
+      jwtOptions.secret = this.getDefaultJWTSecret();
+    }
+    this.jwt = new JwtService(jwtOptions);
   }
 
   setStorer(storer: Storer) {
@@ -141,5 +149,25 @@ export class AuthManager {
       }
       await next();
     };
+  }
+
+  private getDefaultJWTSecret(): Buffer | string {
+    const jwtSecretPath = path.resolve(process.cwd(), 'storage', 'apps', 'main', 'jwt_secret.dat');
+    const jwtSecretExists = fs.existsSync(jwtSecretPath);
+    if (jwtSecretExists) {
+      const key = fs.readFileSync(jwtSecretPath);
+      if (key.length !== 32) {
+        throw new Error('Invalid api key length in file');
+      }
+      return key;
+    }
+    const envKey = process.env.APP_KEY;
+    if (envKey && envKey !== 'your-secret-key' && envKey !== 'test-key') {
+      return envKey;
+    }
+    const key = crypto.randomBytes(32);
+    fs.mkdirSync(path.dirname(jwtSecretPath), { recursive: true });
+    fs.writeFileSync(jwtSecretPath, key, { mode: 0o600 });
+    return key;
   }
 }

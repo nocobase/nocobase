@@ -1,7 +1,7 @@
 {
-  "SQL action": "SQL 操作",
   "Execute a SQL statement in database.": "在数据库中执行一个 SQL 语句",
-  "Select a data source to execute SQL.": "选择一个数据源来执行 SQL",
+  "Include meta information of this query in result": "在结果中包含此查询的元信息",
+  "SQL action": "SQL 操作",
   "SQL query result could be used through <1>JSON query node</1> (Commercial plugin).": "SQL 执行的结果可在 <1>JSON 解析节点</1> 中使用（商业插件）。",
-  "Include meta information of this query in result": "在结果中包含此查询的元信息"
+  "Select a data source to execute SQL.": "选择一个数据源来执行 SQL"
 }

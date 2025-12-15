@@ -1,0 +1,16 @@
+{
+  "Add variable": "変数の追加",
+  "Bulk import": "一括インポート",
+  "Delete variable": "変数の削除",
+  "Encrypted": "暗号化済み",
+  "Environment": "環境",
+  "Name": "名称",
+  "Plain text": "プレーンテキスト",
+  "Restart now": "今すぐ再起動",
+  "Secrets": "シークレット",
+  "Type": "タイプ",
+  "Value": "値",
+  "Variables": "変数",
+  "Variables and secrets": "変数とシークレット",
+  "Variables and secrets have been updated. A restart is required for the changes to take effect.": "Variables and secrets have been updated. A restart is required for the changes to take effect."
+}

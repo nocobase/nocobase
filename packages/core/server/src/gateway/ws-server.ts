@@ -253,6 +253,9 @@ export class WSServer extends EventEmitter {
 
   removeClientTag(clientId: string, tagKey: string) {
     const client = this.webSocketClients.get(clientId);
+    if (!client) {
+      return;
+    }
     // remove all tags with the given tagKey
     client.tags.forEach((tag) => {
       if (tag.startsWith(`${tagKey}#`)) {

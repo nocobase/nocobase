@@ -1,5 +1,22 @@
 {
+  "Allow roles union": "Allow roles union",
+  "Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.": "Allow users to use role union, which means they can use permissions from all their roles simultaneously, or switch between individual roles.",
+  "Data sources": "데이터 소스",
+  "Desktop menu": "데스크탑 메뉴",
+  "Do not use role union. Users need to switch between their roles individually.": "Do not use role union. Users need to switch between their roles individually.",
+  "Force users to use only role union. They cannot switch between individual roles.": "Force users to use only role union. They cannot switch between individual roles.",
+  "Full permissions": "Full permissions",
+  "General": "일반",
+  "Independent roles": "Independent roles",
+  "New role": "새 역할",
+  "Permissions": "권한",
+  "Please select role mode": "Please select role mode",
+  "Plugin settings": "플러그인 설정",
+  "Role mode": "Role mode",
+  "Role mode doc": "https://docs.nocobase.com/handbook/acl/manual",
+  "Roles & Permissions": "역할 & 권한",
+  "Roles union only": "Roles union only",
+  "Saved successfully": "Saved successfully",
   "The current user has no roles. Please try another account.": "현재 사용자에게 역할이 없습니다. 다른 계정을 시도해주세요.",
-  "The user role does not exist. Please try signing in again": "사용자 역할이 존재하지 않습니다. 다시 로그인을 시도해주세요.",
-  "Desktop menu": "데스크톱 메뉴"
+  "The user role does not exist. Please try signing in again": "사용자 역할이 존재하지 않습니다. 다시 로그인을 시도해주세요."
 }

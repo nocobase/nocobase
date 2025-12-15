@@ -1,0 +1,18 @@
+{
+  "# Submitted successfully!\nThis is a demo text, **supports Markdown syntax**.": "# Submitted successfully!\nThis is a demo text, **supports Markdown syntax**.",
+  "Add New": "新規追加",
+  "After successful submission": "送信成功後",
+  "Copy link": "リンクをコピー",
+  "Enable form": "フォームを有効化",
+  "Enable password": "パスワードを有効化",
+  "Form": "標準フォーム",
+  "Link copied successfully": "リンクのコピーに成功しました",
+  "Open form": "公開フォームを表示",
+  "Prompt after successful submission": "送信成功後のメッセージ",
+  "Public forms": "公開フォーム",
+  "QR code": "QRコード",
+  "Set password": "パスワードを設定",
+  "The form is not enabled and cannot be accessed": "このフォームは有効化されていないため、アクセスできません",
+  "The form is not found": "フォームが見つかりません",
+  "Type": "タイプ"
+}

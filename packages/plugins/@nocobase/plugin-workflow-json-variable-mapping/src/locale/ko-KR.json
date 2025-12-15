@@ -1,0 +1,14 @@
+{
+  "Alias": "별칭",
+  "Clear below items": "아래 항목 지우기",
+  "If the JSON object contains array items, parse them. eg: { \"arrayKey\": [ \"item1\", \"item2\" ] will be parsed as \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\", if set to false, only \"arrayKey\" will be parsed.": "If the JSON object contains array items, parse them. eg: { \"arrayKey\": [ \"item1\", \"item2\" ] will be parsed as \"arrayKey\", \"arrayKey.0\", \"arrayKey.1\", if set to false, only \"arrayKey\" will be parsed.",
+  "Include array index in path": "경로에 배열 인덱스 포함",
+  "Input example": "입력 예시",
+  "JSON data source": "JSON 데이터 소스",
+  "JSON variable mapping": "JSON 변수 매핑",
+  "Key path": "키 경로",
+  "Parse": "파싱",
+  "Please input JSON example like { \"key1\": \"item1\", \"key2\": \"item2\" }": "{ \"key1\": \"item1\", \"key2\": \"item2\" }와 같은 JSON 예시를 입력하세요",
+  "Please update other node references to the key after clicking the parse button.": "Please update other node references to the key after clicking the parse button.",
+  "Used for mapping any JSON data to structured variables for usage in subsequent nodes.": "Used for mapping any JSON data to structured variables for usage in subsequent nodes."
+}

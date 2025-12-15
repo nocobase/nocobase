@@ -1,8 +1,9 @@
 {
-  "Formula": "수식",
   "Calculation engine": "계산 엔진",
+  "Compute a value based on the other fields": "다른 필드를 기반으로 값 계산",
+  "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.": "Configure and store the results of calculations between multiple field values in the same record, supporting both Math.js and Excel formula functions.",
   "Expression": "표현식",
   "Expression syntax error": "표현식 구문 오류",
-  "Syntax references": "구문 참조",
-  "Compute a value based on the other fields": "다른 필드를 기반으로 값 계산"  
+  "Formula": "수식",
+  "Syntax references": "구문 참조"
 }

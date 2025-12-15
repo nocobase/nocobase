@@ -248,6 +248,14 @@ export class ACL extends EventEmitter {
       return null;
     }
 
+    if (role === 'root') {
+      return {
+        resource,
+        action,
+        role,
+      };
+    }
+
     const actionPath = `${rawResourceName ? rawResourceName : resource}:${action}`;
     const snippetAllowed = aclRole.snippetAllowed(actionPath);
 
@@ -571,8 +579,10 @@ export class ACL extends EventEmitter {
 }
 
 function getUser(ctx) {
+  const dataSource = ctx.app.dataSourceManager.dataSources.get('main');
+  const db = dataSource.collectionManager.db;
   return async ({ fields }) => {
-    const userFields = fields.filter((f) => f && ctx.db.getFieldByPath('users.' + f));
+    const userFields = fields.filter((f) => f && db.getFieldByPath('users.' + f));
     ctx.logger?.info('filter-parse: ', { userFields });
     if (!ctx.state.currentUser) {
       return;
@@ -580,7 +590,7 @@ function getUser(ctx) {
     if (!userFields.length) {
       return;
     }
-    const user = await ctx.db.getRepository('users').findOne({
+    const user = await db.getRepository('users').findOne({
       filterByTk: ctx.state.currentUser.id,
       fields: userFields,
     });

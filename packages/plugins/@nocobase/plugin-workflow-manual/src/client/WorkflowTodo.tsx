@@ -361,7 +361,7 @@ function FlowContextProvider(props) {
 
   const upstreams = useAvailableUpstreams(flowContext?.nodes.find((item) => item.id === node.id));
   const nodeComponents = upstreams.reduce(
-    (components, { type }) => Object.assign(components, workflowPlugin.instructions.get(type).components),
+    (components, { type }) => Object.assign(components, workflowPlugin.instructions.get(type)?.components),
     {},
   );
 
@@ -503,7 +503,7 @@ function Decorator(props) {
   const blockProps = {
     collection: 'workflowManualTasks',
     resource: 'workflowManualTasks',
-    action: 'list',
+    action: 'listMine',
     params: {
       pageSize: 20,
       sort: ['-createdAt'],

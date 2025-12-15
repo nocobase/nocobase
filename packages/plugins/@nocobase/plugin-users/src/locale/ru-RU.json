@@ -1,9 +1,12 @@
 {
-  "Users & Permissions": "Пользователи и разрешения",
-  "Add users": "Добавить пользователей",
   "Add user": "Добавить пользователя",
-  "Remove user": "Удалить пользователя",
+  "Add users": "Добавить пользователей",
+  "Allow change password": "Разрешить изменение пароля",
+  "Allow edit profile": "Разрешить редактирование профиля",
   "Are you sure you want to remove it?": "Вы уверены, что хотите удалить это?",
   "Random password": "Случайный пароль",
-  "User profile is not allowed to be edited": "Профиль пользователя нельзя редактировать"
+  "Remove user": "Удалить пользователя",
+  "User profile is not allowed to be edited": "Редактирование профиля пользователя запрещено",
+  "Users & Permissions": "Пользователи и права",
+  "Users manager": "Управление пользователями"
 }
