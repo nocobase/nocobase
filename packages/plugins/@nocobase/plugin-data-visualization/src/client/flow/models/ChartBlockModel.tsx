@@ -22,6 +22,8 @@ import { genRawByBuilder } from './ChartOptionsBuilder.service';
 import { configStore } from './config-store';
 import { useChatBoxStore, useChatMessagesStore } from '@nocobase/plugin-ai/client';
 
+const NO_PREVIEW_SNAPSHOT = Symbol('NO_PREVIEW_SNAPSHOT');
+
 type ChartBlockModelStructure = {
   subModels: {
     page: ChildPageModel;
@@ -37,7 +39,7 @@ type ChartProps = {
 export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   declare props: ChartProps;
 
-  _previousStepParams: any; // 上一次持久化的 stepParams，用于 preview 时回滚
+  _previousStepParams: any = NO_PREVIEW_SNAPSHOT; // 上一次持久化的 stepParams，用于 preview 时回滚
 
   get resource(): ChartResource<any> | SQLResource<any> {
     return this.context.resource as ChartResource<any> | SQLResource<any>;
@@ -270,7 +272,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     if (!values) return;
 
     // 仅在首次预览时记录，以便 cancelPreview 回滚
-    if (!this._previousStepParams) {
+    if (this._previousStepParams === NO_PREVIEW_SNAPSHOT) {
       this._previousStepParams = _.cloneDeep(this.getResourceSettingsInitParams());
     }
     // 应用最新 stepParams，随后触发 flow handler
@@ -299,9 +301,11 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   // 取消预览，回滚stepParams，并刷新图表
   async cancelPreview() {
-    if (this._previousStepParams) {
-      this.setStepParams('chartSettings', 'configure', this._previousStepParams);
-      this._previousStepParams = null;
+    if (this._previousStepParams !== NO_PREVIEW_SNAPSHOT) {
+      const previous = this._previousStepParams;
+      this.setStepParams('chartSettings', { configure: previous });
+      this._previousStepParams = NO_PREVIEW_SNAPSHOT;
+
       // 等待确保 stepParams 已更新
       await sleep(100);
       // 重新请求数据，并刷新图表
@@ -403,7 +407,7 @@ ChartBlockModel.registerFlow({
         }
       },
       async afterParamsSave(ctx, params) {
-        ctx.model._previousStepParams = null;
+        ctx.model._previousStepParams = NO_PREVIEW_SNAPSHOT;
       },
       defaultParams(ctx) {
         // 数据查询默认 builder 模式；图表配置默认 basic 模式
