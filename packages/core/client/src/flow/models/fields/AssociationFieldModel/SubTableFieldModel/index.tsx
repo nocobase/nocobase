@@ -149,6 +149,18 @@ SubTableFieldModel.registerFlow({
         await ctx.model.applySubModelsBeforeRenderFlows('columns');
       },
     },
+    enableIndexColumn: {
+      title: tExpr('Show row numbers'),
+      uiMode: { type: 'switch', key: 'enableIndexColumn' },
+      defaultParams: {
+        enableIndexColumn: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({
+          enableIndexColumn: params.enableIndexColumn,
+        });
+      },
+    },
     pageSize: {
       title: tExpr('Page size'),
       uiMode: {
@@ -208,18 +220,6 @@ SubTableFieldModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps({
           allowSelectExistingRecord: params.allowSelectExistingRecord,
-        });
-      },
-    },
-    enableIndexColumn: {
-      title: tExpr('Show row numbers'),
-      uiMode: { type: 'switch', key: 'enableIndexColumn' },
-      defaultParams: {
-        enableIndexColumn: true,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({
-          enableIndexColumn: params.enableIndexColumn,
         });
       },
     },

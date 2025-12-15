@@ -534,16 +534,6 @@ TableBlockModel.registerFlow({
   sort: 500,
   title: tExpr('Table settings'),
   steps: {
-    showRowNumbers: {
-      title: tExpr('Show row numbers'),
-      uiMode: { type: 'switch', key: 'showIndex' },
-      defaultParams: {
-        showIndex: true,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps('showIndex', params.showIndex);
-      },
-    },
     quickEdit: {
       title: tExpr('Enable quick edit'),
       uiMode: { type: 'switch', key: 'editable' },
@@ -552,6 +542,16 @@ TableBlockModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps('editable', params.editable);
+      },
+    },
+    showRowNumbers: {
+      title: tExpr('Show row numbers'),
+      uiMode: { type: 'switch', key: 'showIndex' },
+      defaultParams: {
+        showIndex: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps('showIndex', params.showIndex);
       },
     },
     pageSize: {
