@@ -44,10 +44,17 @@ export const PLUGINS_DIR = ['plugins', 'samples', 'pro-plugins']
   .map((name) => path.join(PACKAGES_PATH, name));
 export const PRESETS_DIR = path.join(PACKAGES_PATH, 'presets');
 export const PLUGIN_COMMERCIAL = '@nocobase/plugin-commercial';
+export const PLUGIN_LICENSE = '@nocobase/plugin-license';
 export const getPluginPackages = (packages: Package[]) =>
-  packages.filter((item) => PLUGINS_DIR.some((pluginDir) => item.location.startsWith(pluginDir))).sort((a, b) => {
-    return a.name === PLUGIN_COMMERCIAL ? -1 : 1;
-  });
+  packages
+    .filter((item) => PLUGINS_DIR.some((pluginDir) => item.location.startsWith(pluginDir)))
+    .sort((a, b) => {
+      const priority = {
+        [PLUGIN_LICENSE]: 0,
+        [PLUGIN_COMMERCIAL]: 1,
+      };
+      return (priority[a.name] ?? 99) - (priority[b.name] ?? 99);
+    });
 export const getPresetsPackages = (packages: Package[]) =>
   packages.filter((item) => item.location.startsWith(PRESETS_DIR));
 export const CORE_APP = path.join(PACKAGES_PATH, 'core/app');
