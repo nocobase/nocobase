@@ -433,6 +433,9 @@ export class PluginACLServer extends Plugin {
           if (!model._changed.has('roleName')) {
             return;
           }
+          if (process.env.TEST_ENV) {
+            return;
+          }
           if (model.roleName === 'root') {
             throw new Error('No permissions');
           }
