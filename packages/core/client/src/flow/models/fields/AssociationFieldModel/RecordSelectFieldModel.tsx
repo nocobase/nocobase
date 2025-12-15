@@ -85,7 +85,16 @@ export function CreateContent({ model, toOne = false }) {
 }
 
 export function LazySelect(props: Readonly<LazySelectProps>) {
-  const { fieldNames, value, multiple, allowMultiple, options, quickCreate, onChange, ...others } = props;
+  const {
+    fieldNames = { label: 'label', value: 'value' },
+    value,
+    multiple,
+    allowMultiple,
+    options,
+    quickCreate,
+    onChange,
+    ...others
+  } = props;
   const isMultiple = Boolean(multiple && allowMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
   const { t } = useTranslation();
@@ -504,19 +513,12 @@ RecordSelectFieldModel.registerFlow({
       use: 'sortingRule',
     },
     allowMultiple: {
-      title: tExpr('Allow multiple'),
-      uiSchema(ctx) {
-        if (ctx.collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)) {
-          return {
-            allowMultiple: {
-              'x-component': 'Switch',
-              type: 'boolean',
-              'x-decorator': 'FormItem',
-            },
-          };
-        } else {
-          return null;
-        }
+      title: tExpr('Multiple'),
+      uiMode: { type: 'switch', key: 'allowMultiple' },
+      hideInSettings(ctx) {
+        return (
+          !ctx.collectionField || !['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)
+        );
       },
       defaultParams(ctx) {
         return {
@@ -533,22 +535,25 @@ RecordSelectFieldModel.registerFlow({
     },
     quickCreate: {
       title: tExpr('Quick create'),
-      uiSchema(ctx) {
+      uiMode(ctx) {
         const t = ctx.t;
-        if (ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter) {
-          return null;
-        }
         return {
-          quickCreate: {
-            enum: [
+          type: 'select',
+          key: 'quickCreate',
+          props: {
+            options: [
               { label: t('None'), value: 'none' },
               { label: t('Dropdown'), value: 'quickAdd' },
               { label: t('Pop-up'), value: 'modalAdd' },
             ],
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
           },
         };
+      },
+      hideInSettings(ctx) {
+        if (ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter) {
+          return true;
+        }
+        return false;
       },
       defaultParams: {
         quickCreate: 'none',

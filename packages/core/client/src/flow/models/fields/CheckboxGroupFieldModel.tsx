@@ -9,7 +9,7 @@
 
 import { Checkbox } from 'antd';
 import React from 'react';
-import { EditableItemModel } from '@nocobase/flow-engine';
+import { EditableItemModel, tExpr } from '@nocobase/flow-engine';
 import { FieldModel } from '../base';
 
 export class CheckboxGroupFieldModel extends FieldModel {
@@ -17,7 +17,9 @@ export class CheckboxGroupFieldModel extends FieldModel {
     return <Checkbox.Group {...this.props} />;
   }
 }
-
+CheckboxGroupFieldModel.define({
+  label: tExpr('CheckboxGroup'),
+});
 EditableItemModel.bindModelToInterface('CheckboxGroupFieldModel', ['checkboxGroup'], {
   isDefault: true,
 });

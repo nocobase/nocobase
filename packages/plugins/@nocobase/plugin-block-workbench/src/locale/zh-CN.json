@@ -6,7 +6,7 @@
   "Add popup": "添加弹窗",
   "Album": "相册",
   "At least 1, up to 6": "最多6个，最少一个",
-  "Ellipsis action title": "省略超出长度的操作标题",
+  "Ellipsis on text overflow": "文本超出省略",
   "General settings": "通用设置",
   "Grid": "栅格",
   "Items per row": "每行显示个数",

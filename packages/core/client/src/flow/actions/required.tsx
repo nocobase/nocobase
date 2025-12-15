@@ -12,6 +12,19 @@ import { defineAction, tExpr } from '@nocobase/flow-engine';
 export const required = defineAction({
   title: tExpr('Required'),
   name: 'required',
+  uiMode: (ctx) => {
+    const joiRules: any[] = (ctx.model as any).collectionField?.validation?.rules || [];
+    const rules = ctx.model.props.validation?.rules || [];
+    // 检查 validation 是否已有 required
+    const hasRequiredInCollection = joiRules.concat(rules).some((rule) => rule.name === 'required');
+    return {
+      type: 'switch',
+      key: 'required',
+      props: {
+        disabled: hasRequiredInCollection,
+      },
+    };
+  },
   uiSchema: async (ctx) => {
     const joiRules: any[] = (ctx.model as any).collectionField?.validation?.rules || [];
     const rules = ctx.model.props.validation?.rules || [];

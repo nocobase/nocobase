@@ -12,13 +12,13 @@ import { defineAction, tExpr } from '@nocobase/flow-engine';
 export const fixed = defineAction({
   title: tExpr('Fixed'),
   name: 'fixed',
-  uiSchema: (ctx) => {
+  uiMode: (ctx) => {
     const t = ctx.t;
     return {
-      fixed: {
-        'x-component': 'Select',
-        'x-decorator': 'FormItem',
-        enum: [
+      type: 'select',
+      key: 'fixed',
+      props: {
+        options: [
           { label: t('Not fixed'), value: 'none' },
           { label: t('Left fixed'), value: 'left' },
           { label: t('Right fixed'), value: 'right' },
