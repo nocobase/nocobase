@@ -116,7 +116,6 @@ export const useFlowModelTemplateDeleteActionProps = (): ActionProps => {
   return {
     danger: true,
     disabled: inUse,
-    tooltip: inUse ? t('Template is in use and cannot be deleted') : undefined,
     confirm: inUse
       ? undefined
       : {
@@ -125,6 +124,7 @@ export const useFlowModelTemplateDeleteActionProps = (): ActionProps => {
         },
     async onClick() {
       if (inUse) {
+        message.warning(t('Template is in use and cannot be deleted'));
         return;
       }
       await resource.destroy({
