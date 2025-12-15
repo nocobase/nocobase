@@ -76,31 +76,33 @@ export class PageModel extends FlowModel<PageModelStructure> {
 
   mapTabs() {
     return this.mapSubModels('tabs', (model) => {
-      return {
-        key: model.uid,
-        label: (
-          <Droppable model={model}>
-            <FlowModelRenderer
-              model={model}
-              showFlowSettings={{
-                showBackground: true,
-                showBorder: false,
-                toolbarPosition: 'above',
-                style: { transform: 'translateY(8px)' },
-              }}
-              extraToolbarItems={[
-                {
-                  key: 'drag-handler',
-                  component: DragHandler,
-                  sort: 1,
-                },
-              ]}
-            />
-          </Droppable>
-        ),
-        children: model.renderChildren(),
-      };
-    });
+      return !this.context.flowSettingsEnabled && model.hidden
+        ? null
+        : {
+            key: model.uid,
+            label: (
+              <Droppable model={model}>
+                <FlowModelRenderer
+                  model={model}
+                  showFlowSettings={{
+                    showBackground: true,
+                    showBorder: false,
+                    toolbarPosition: 'above',
+                    style: { transform: 'translateY(8px)' },
+                  }}
+                  extraToolbarItems={[
+                    {
+                      key: 'drag-handler',
+                      component: DragHandler,
+                      sort: 1,
+                    },
+                  ]}
+                />
+              </Droppable>
+            ),
+            children: model.renderChildren(),
+          };
+    }).filter(Boolean);
   }
 
   renderFirstTab() {
