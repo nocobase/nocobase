@@ -243,7 +243,7 @@ async function handleConvertToTemplate(model: FlowModel, t: (k: string, opt?: an
           initialValues={{
             name: normalizeTitle(model.title),
             description: '',
-            replace: false,
+            replace: true,
           }}
         >
           <Form.Item
@@ -258,7 +258,7 @@ async function handleConvertToTemplate(model: FlowModel, t: (k: string, opt?: an
           </Form.Item>
           <Form.Item
             name="replace"
-            label={<Typography.Text strong>{t('Replace current block with template?')}</Typography.Text>}
+            label={<Typography.Text strong>{t('Replace current block with template reference')}</Typography.Text>}
             valuePropName="checked"
           >
             <Switch />
@@ -661,7 +661,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
               initialValues={{
                 name: defaultName,
                 description: '',
-                replace: false,
+                replace: true,
               }}
             >
               <Form.Item
@@ -678,7 +678,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
                 name="replace"
                 label={
                   <Typography.Text strong style={{ display: 'inline-flex', alignItems: 'center' }}>
-                    {tNs('Replace with template')}
+                    {tNs('Replace current popup with template reference')}
                   </Typography.Text>
                 }
                 valuePropName="checked"
