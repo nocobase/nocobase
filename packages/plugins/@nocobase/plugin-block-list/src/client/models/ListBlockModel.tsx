@@ -215,7 +215,7 @@ ListBlockModel.registerFlow({
 });
 
 ListBlockModel.registerFlow({
-  key: 'listettings',
+  key: 'listSettings',
   sort: 500,
   title: tExpr('List settings', { ns: 'block-list' }),
   steps: {
