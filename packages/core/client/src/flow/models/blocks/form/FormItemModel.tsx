@@ -272,7 +272,7 @@ FormItemModel.registerFlow({
       defaultParams: (ctx) => {
         const collectionField = ctx.model.collectionField;
 
-        if (collectionField.interface === 'nanoid') {
+        if (collectionField.interface === 'nanoid' && collectionField.options.autoFill !== false) {
           const { size, customAlphabet } = collectionField.options || { size: 21 };
           return {
             defaultValue: Alphabet(customAlphabet, size)(),

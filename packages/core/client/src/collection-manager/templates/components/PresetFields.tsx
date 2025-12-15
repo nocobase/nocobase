@@ -8,11 +8,13 @@
  */
 
 import { observer, useForm } from '@formily/react';
-import { Table, Tag } from 'antd';
-import React, { useEffect, useMemo, useState } from 'react';
+import { Space, Table, Tag } from 'antd';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useCollectionManager_deprecated } from '../../';
 import { useCompile, useApp } from '../../../';
+import { SetPrimaryKeyAction } from '../../Configuration/SetPrimaryKeyAction';
+import { DownOutlined, SettingOutlined } from '@ant-design/icons';
 
 const getDefaultCollectionFields = (presetFields, values, collectionPresetFields) => {
   if (values?.template === 'view' || values?.template === 'sql') {
@@ -41,16 +43,69 @@ export const PresetFields = observer(
     const mainDataSourcePlugin: any = app.pm.get('data-source-main');
     const collectionPresetFields = mainDataSourcePlugin.getCollectionPresetFields();
 
-    const presetFieldsDataSource = useMemo(() => {
-      return collectionPresetFields.map((v) => {
-        return {
-          field: v.value.uiSchema.title,
-          interface: v.value.interface,
-          description: v.description,
-          name: v.value.name,
-        };
-      });
+    const [presetFieldsDataSource, setPresetFieldsDataSource] = useState(
+      collectionPresetFields.map(({ value, description }) => ({
+        field: value.uiSchema.title,
+        interface: value.interface,
+        description,
+        name: value.name,
+        primaryKey: value.primaryKey,
+      })),
+    );
+
+    const primaryKeyCandidateRef = useRef(null);
+    useEffect(() => {
+      primaryKeyCandidateRef.current = null;
     }, []);
+
+    const applyPrimaryKeyCandidate = () => {
+      const primaryKeyCandidate = primaryKeyCandidateRef.current;
+      const [pk] = presetFieldsDataSource.filter((v) => v.primaryKey === true);
+      if (!pk || !selectedRowKeys.includes(pk.name) || !primaryKeyCandidate) {
+        return;
+      }
+
+      const fields = getDefaultCollectionFields(selectedRowKeys, form.values, collectionPresetFields);
+      if (!fields?.length) {
+        return;
+      }
+      const idField = fields.find((x) => x.primaryKey === true);
+      const restFields = fields.filter((x) => !x.primaryKey);
+      if (!idField) {
+        return;
+      }
+
+      form.setValues({
+        ...form.values,
+        fields: [
+          {
+            ...primaryKeyCandidate,
+          },
+          ...restFields,
+        ],
+        autoGenId: false,
+      });
+    };
+
+    const onSetPrimaryKey = (fieldInterface, values) => {
+      primaryKeyCandidateRef.current = values;
+      applyPrimaryKeyCandidate();
+      setPresetFieldsDataSource((prev) => {
+        const idFieldIndex = prev.findIndex((x) => x.primaryKey === true);
+        if (idFieldIndex === -1) {
+          return prev;
+        }
+        prev[idFieldIndex] = {
+          field: values.uiSchema.title,
+          interface: values.interface,
+          description: fieldInterface.primaryKeyDescription,
+          name: values.name,
+          primaryKey: values.primaryKey,
+        };
+        return [...prev];
+      });
+    };
+
     const column = [
       {
         title: t('Field'),
@@ -62,7 +117,24 @@ export const PresetFields = observer(
         title: t('Interface'),
         dataIndex: 'interface',
         key: 'interface',
-        render: (value) => <Tag>{compile(getInterface(value)?.title)}</Tag>,
+        render: (value, record) =>
+          record['primaryKey'] === true ? (
+            <SetPrimaryKeyAction
+              template={props.template}
+              onSetPrimaryKey={onSetPrimaryKey}
+              values={primaryKeyCandidateRef.current}
+            >
+              <Tag>
+                <Space>
+                  <SettingOutlined />
+                  <span>{compile(getInterface(value)?.title)}</span>
+                  <DownOutlined />
+                </Space>
+              </Tag>
+            </SetPrimaryKeyAction>
+          ) : (
+            <Tag>{compile(getInterface(value)?.title)}</Tag>
+          ),
       },
       {
         title: t('Description'),
@@ -83,6 +155,7 @@ export const PresetFields = observer(
         collectionPresetFields,
       );
       form.setValuesIn('fields', fields);
+      applyPrimaryKeyCandidate();
     }, [selectedRowKeys]);
     return (
       <Table

@@ -30,6 +30,7 @@ export abstract class CollectionFieldInterface {
   group: string;
   title?: string;
   description?: string;
+  primaryKeyDescription?: string;
   order?: number;
   default?: {
     type: string;
