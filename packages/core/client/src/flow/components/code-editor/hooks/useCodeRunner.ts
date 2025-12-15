@@ -75,9 +75,6 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         const flowKey = availableKey || 'jsSettings';
         const compiledForPreview = await compileRunJs(code);
 
-        // 将预览中的（已编译）代码写入对应 flow 的 stepParams，确保 handler 能拿到最新代码
-        runtimeModel.setStepParams?.(flowKey, 'runJs', { code: compiledForPreview, version });
-
         // Monkey-patch JSRunner.run to inject captureConsole into globals for all runjs calls during preview
         type JSRunnerPrototype = { run: JSRunner['run'] };
         const proto = JSRunner.prototype as unknown as JSRunnerPrototype;
@@ -86,6 +83,7 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
         let resolveDeferred: (res: any) => void = () => {};
         const deferred = new Promise<any>((resolve) => (resolveDeferred = resolve));
         proto.run = async function patchedRun(this: any, jsCode: string) {
+          const isPreviewCode = jsCode === compiledForPreview;
           const prevConsole = this?.globals?.console;
           try {
             if (!this.globals) this.globals = {};
@@ -95,7 +93,11 @@ export function useCodeRunner(hostCtx: FlowModelContext, version = 'v1') {
           }
           try {
             const res = await originalRun.call(this, jsCode);
-            lastResult = res;
+            // 预览过程中会触发 params-resolvers 等内部 ctx.runjs 调用（例如 resolveJsonTemplate 解析 {{ }}）。
+            // 这些内部调用失败不应影响“预览代码本身”的执行结果，否则会出现预览成功但提示失败的误判。
+            if (isPreviewCode) {
+              lastResult = res;
+            }
             return res;
           } finally {
             try {

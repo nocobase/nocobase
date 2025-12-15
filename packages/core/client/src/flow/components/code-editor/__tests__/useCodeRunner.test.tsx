@@ -213,8 +213,15 @@ ctx.render(<JsReadonlyField />);
 `;
 
     await act(async () => {
+      // Simulate settings form: step params store user's original source (JSX)
+      model.setStepParams('jsSettings', 'runJs', { code: jsxCode, version: 'v1' });
       await result.current.run(jsxCode);
     });
+
+    // Should not rewrite user's source code into compiled output (e.g. ctx.React.createElement)
+    const saved = model.getStepParams('jsSettings', 'runJs')?.code;
+    expect(saved).toContain('<Input');
+    expect(saved).not.toContain('ctx.React.createElement');
 
     // Should succeed and render antd input into the model container
     expect(result.current.logs.some((l) => l.msg?.includes('Execution succeeded'))).toBe(true);

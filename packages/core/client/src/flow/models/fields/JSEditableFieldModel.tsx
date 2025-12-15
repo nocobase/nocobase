@@ -19,6 +19,7 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Input } from 'antd';
 import { FieldModel } from '../base/FieldModel';
 import { CodeEditor } from '../../components/code-editor';
+import { resolveRunJsParams } from '../utils/resolveRunJsParams';
 
 const DEFAULT_CODE = `
 // Render an editable antd Input via JSX and keep it in sync with form value.
@@ -178,7 +179,7 @@ JSEditableFieldModel.registerFlow({
         };
       },
       async handler(ctx, params) {
-        const { code = '' } = params || {};
+        const { code, version } = resolveRunJsParams(ctx, params);
         ctx.onRefReady(ctx.ref, async (element) => {
           // 暴露容器与读写能力（使用动态 getter 绑定 ref.current，避免容器变更失效）
           ctx.defineProperty('element', {
@@ -209,11 +210,15 @@ JSEditableFieldModel.registerFlow({
           ctx.defineProperty('readOnly', { get: () => !!ctx.model.props?.readOnly, cache: false });
           const navigator = createSafeNavigator();
           const compiled = await compileRunJs(code);
-          await ctx.runjs(compiled, {
-            window: createSafeWindow({ navigator }),
-            document: createSafeDocument(),
-            navigator,
-          });
+          await ctx.runjs(
+            compiled,
+            {
+              window: createSafeWindow({ navigator }),
+              document: createSafeDocument(),
+              navigator,
+            },
+            { version },
+          );
         });
       },
     },
