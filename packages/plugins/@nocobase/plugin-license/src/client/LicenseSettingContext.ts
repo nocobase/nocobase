@@ -7,5 +7,12 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export { default } from './plugin';
-export * from './utils';
+import React from 'react';
+
+interface LicenseSettingContextType {
+  onSaveSuccess: () => void;
+  keyExist: boolean;
+  refreshToken?: any;
+}
+
+export const LicenseSettingContext = React.createContext<LicenseSettingContextType | null>(null);
