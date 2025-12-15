@@ -182,12 +182,14 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this.subModels = {};
     this.sortIndex = options.sortIndex || 0;
     this._options = options;
+    this._title = '';
 
-    define(this, {
+    define(this as any, {
       hidden: observable,
       props: observable,
       subModels: observable.shallow,
       stepParams: observable,
+      _title: observable,
       // setProps: action,
       setProps: batch,
       // setStepParams: action,

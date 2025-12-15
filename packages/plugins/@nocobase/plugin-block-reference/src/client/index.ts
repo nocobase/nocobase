@@ -16,7 +16,6 @@ import { BlockTemplatesPage, PopupTemplatesPage } from './components/FlowModelTe
 import pkg from '../../package.json';
 import { registerMenuExtensions } from './menuExtensions';
 import { registerSubModelMenuExtensions } from './subModelMenuExtensions';
-import { patchFormBlockTitleForFieldTemplateReference } from './utils/patchFormBlockTitle';
 import { registerOpenViewPopupTemplateAction } from './openViewActionExtensions';
 
 const NAMESPACE = 'flow-model-templates';
@@ -28,7 +27,6 @@ export class PluginBlockReferenceClient extends Plugin {
       ReferenceFormGridModel,
       SubModelTemplateImporterModel,
     });
-    patchFormBlockTitleForFieldTemplateReference();
     registerSubModelMenuExtensions(this.flowEngine);
     registerOpenViewPopupTemplateAction(this.flowEngine);
 

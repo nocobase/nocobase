@@ -13,7 +13,7 @@ import _ from 'lodash';
 import { FlowModel, createBlockScopedEngine } from '@nocobase/flow-engine';
 import { BlockModel, PopupActionModel } from '@nocobase/client';
 import { ReferenceBlockModel } from './models/ReferenceBlockModel';
-import { NAMESPACE } from './locale';
+import { NAMESPACE, tStr } from './locale';
 
 type MenuItem = {
   key: string;
@@ -398,6 +398,7 @@ async function handleConvertFieldsToCopy(model: FlowModel, t: (k: string, opt?: 
       const clearTemplateTitle = (m: FlowModel) => {
         const curTitle = m.title || '';
         const labelCandidates = [t('Field template'), 'Field template', '字段模板', '字段模版']
+          .concat(tStr('Field template'))
           .map((s) => (s ? String(s) : ''))
           .filter(Boolean);
         const union = labelCandidates.map((s) => _.escapeRegExp(s)).join('|');
