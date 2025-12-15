@@ -265,6 +265,7 @@ ReferenceBlockModel.registerFlow({
   steps: {
     useTemplate: {
       preset: true,
+      hideInSettings: true,
       sort: -10,
       title: tStr('Select block template'),
       uiSchema: (ctx) => {
@@ -281,53 +282,53 @@ ReferenceBlockModel.registerFlow({
           return fn(key, { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...(options || {}) });
         };
 
-        const hasExpr = (val: string) => /\{\{.*?\}\}/.test(val);
-        const isResolvedValue = (val: any) => {
-          if (val === undefined || val === null) return false;
-          if (typeof val === 'string') {
-            const s = val.trim();
-            if (!s) return false;
-            if (hasExpr(s)) return false;
-            return true;
-          }
+        const normalizeStr = (v: any) => (typeof v === 'string' ? v.trim() : '');
+        const resolveExpectedAssociationName = (): string => {
           try {
-            const s = String(val);
-            if (hasExpr(s)) return false;
+            const init = m.getStepParams?.('resourceSettings', 'init') || {};
+            const fromInit = normalizeStr(init?.associationName);
+            if (fromInit) return fromInit;
+
+            const assocName = normalizeStr((m as any)?.context?.association?.resourceName);
+            if (assocName) return assocName;
+
+            const resourceCtx = (m as any)?.context?.resource;
+            if (resourceCtx) {
+              const fromResourceAssoc =
+                typeof resourceCtx.getAssociationName === 'function'
+                  ? normalizeStr(resourceCtx.getAssociationName())
+                  : '';
+              if (fromResourceAssoc) return fromResourceAssoc;
+              // resourceName 在关联资源场景通常形如 `users.profile`
+              const fromResourceName =
+                typeof resourceCtx.getResourceName === 'function' ? normalizeStr(resourceCtx.getResourceName()) : '';
+              if (fromResourceName) return fromResourceName;
+            }
+
+            const viewArgs = (m as any)?.context?.view?.inputArgs || {};
+            const fromView = normalizeStr(viewArgs?.associationName);
+            if (fromView) return fromView;
           } catch (_) {
             // ignore
           }
-          return true;
+          return '';
         };
-
-        const getRuntimeParamDisabledReason = async (tpl: Record<string, any>): Promise<string | undefined> => {
-          const rawFilterByTk = typeof tpl?.filterByTk === 'string' ? tpl.filterByTk.trim() : '';
-          const rawSourceId = typeof tpl?.sourceId === 'string' ? tpl.sourceId.trim() : '';
-          const needCheck: Array<{ key: 'filterByTk' | 'sourceId'; raw: string }> = [];
-          if (rawFilterByTk) needCheck.push({ key: 'filterByTk', raw: rawFilterByTk });
-          if (rawSourceId) needCheck.push({ key: 'sourceId', raw: rawSourceId });
-          if (!needCheck.length) return undefined;
-
-          const resolver = (ctx as any)?.resolveJsonTemplate;
-          if (typeof resolver !== 'function') {
-            return t('Cannot resolve template parameter {{param}}', { param: needCheck.map((i) => i.key).join(', ') });
-          }
-
-          const results = await Promise.all(
-            needCheck.map(async ({ key, raw }) => {
-              if (!hasExpr(raw)) {
-                return { key, ok: true };
-              }
-              try {
-                const resolved = await resolver(raw);
-                return { key, ok: isResolvedValue(resolved) };
-              } catch (_) {
-                return { key, ok: false };
-              }
-            }),
-          );
-          const missing = results.filter((r) => !r.ok).map((r) => r.key);
-          if (!missing.length) return undefined;
-          return t('Cannot resolve template parameter {{param}}', { param: missing.join(', ') });
+        const expectedAssociationName = resolveExpectedAssociationName();
+        const getTemplateDisabledReason = (tpl: Record<string, any>): string | undefined => {
+          const tplAssociationName = normalizeStr(tpl?.associationName);
+          const isAssociationResource = (v: string) => !!v && v.includes('.');
+          const expectedAssociationResource = isAssociationResource(expectedAssociationName)
+            ? expectedAssociationName
+            : '';
+          const tplAssociationResource = isAssociationResource(tplAssociationName) ? tplAssociationName : '';
+          // 仅对“关联资源模板”（associationName 形如 `users.profile`）做限制：必须在同一关联上下文使用
+          if (!tplAssociationResource) return undefined;
+          if (tplAssociationResource === expectedAssociationResource) return undefined;
+          const none = t('No association');
+          return t('Template association mismatch', {
+            expected: expectedAssociationResource || none,
+            actual: tplAssociationResource || none,
+          });
         };
 
         const fetchOptions = async (keyword?: string) => {
@@ -347,35 +348,33 @@ ReferenceBlockModel.registerFlow({
             const unwrap = (val: any) => (val && val.data ? val.data : val);
             const candidate = unwrap(body);
             const rows = Array.isArray(candidate?.rows) ? candidate.rows : Array.isArray(candidate) ? candidate : [];
-            const optsWithIndex = await Promise.all(
-              rows.map(async (r, idx) => {
-                const name = r.name || r.uid || '';
-                const desc = r.description;
-                const disabledReason = await getRuntimeParamDisabledReason(r || {});
-                return {
-                  __idx: idx,
-                  label: (
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        maxWidth: 480,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        verticalAlign: 'middle',
-                      }}
-                    >
-                      {name}
-                    </span>
-                  ),
-                  value: r.uid,
-                  description: desc,
-                  disabled: !!disabledReason,
-                  disabledReason,
-                  rawName: name,
-                };
-              }),
-            );
+            const optsWithIndex = rows.map((r, idx) => {
+              const name = r.name || r.uid || '';
+              const desc = r.description;
+              const disabledReason = getTemplateDisabledReason(r || {});
+              return {
+                __idx: idx,
+                label: (
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      maxWidth: 480,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      verticalAlign: 'middle',
+                    }}
+                  >
+                    {name}
+                  </span>
+                ),
+                value: r.uid,
+                description: desc,
+                disabled: !!disabledReason,
+                disabledReason,
+                rawName: name,
+              };
+            });
             return optsWithIndex
               .slice()
               .sort((a, b) => {
@@ -574,13 +573,15 @@ ReferenceBlockModel.registerFlow({
         const resourceInit = (ctx.model as FlowModel).getStepParams('resourceSettings', 'init') || {};
         const dataSourceKey = tpl?.dataSourceKey ?? resourceInit?.dataSourceKey;
         const collectionName = tpl?.collectionName ?? resourceInit?.collectionName;
+        const associationName = tpl?.associationName ?? resourceInit?.associationName;
         const filterByTk = tpl?.filterByTk ?? resourceInit?.filterByTk;
         const sourceId = tpl?.sourceId ?? resourceInit?.sourceId;
-        if (dataSourceKey || collectionName || filterByTk || sourceId) {
+        if (dataSourceKey || collectionName || associationName || filterByTk || sourceId) {
           (ctx.model as FlowModel).setStepParams('resourceSettings', 'init', {
             ...resourceInit,
             dataSourceKey,
             collectionName,
+            associationName,
             filterByTk,
             sourceId,
           });

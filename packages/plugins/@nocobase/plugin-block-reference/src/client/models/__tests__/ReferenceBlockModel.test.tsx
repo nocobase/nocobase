@@ -258,6 +258,112 @@ describe('ReferenceBlockModel', () => {
     );
   });
 
+  describe('Template option disabled rules', () => {
+    it('disables template when associationName mismatches in association context', async () => {
+      referenceBlockModel = engine.createModel({
+        uid: 'reference-block-uid',
+        use: 'ReferenceBlockModel',
+        parentId: 'grid-uid',
+        subKey: 'items',
+        subType: 'array',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              associationName: 'users.profile',
+            },
+          },
+        },
+      }) as ReferenceBlockModel;
+
+      const list = vi.fn(async () => ({
+        data: {
+          rows: [
+            { uid: 'tpl-ok', name: 'OK', associationName: 'users.profile' },
+            { uid: 'tpl-mismatch', name: 'Mismatch', associationName: 'users.posts' },
+          ],
+        },
+      }));
+
+      const ctx: any = {
+        model: referenceBlockModel,
+        api: {
+          resource: (name: string) => {
+            if (name !== 'flowModelTemplates') throw new Error('unexpected resource');
+            return { list };
+          },
+        },
+        t: (k: string) => k,
+      };
+
+      const flow: any = referenceBlockModel.getFlow('referenceSettings');
+      const step: any = flow?.getStep?.('useTemplate');
+      expect(typeof step?.uiSchema).toBe('function');
+      const schema: any = step.uiSchema(ctx);
+      const reactions = schema?.templateUid?.['x-reactions'] || [];
+      expect(Array.isArray(reactions)).toBe(true);
+      expect(typeof reactions[0]).toBe('function');
+
+      const field: any = { componentProps: {}, data: {} };
+      reactions[0](field);
+      await field.componentProps.onDropdownVisibleChange(true);
+
+      const opts = field.dataSource;
+      expect(Array.isArray(opts)).toBe(true);
+      expect(opts[0].value).toBe('tpl-ok');
+      expect(opts[0].disabled).toBe(false);
+      expect(opts[1].value).toBe('tpl-mismatch');
+      expect(opts[1].disabled).toBe(true);
+      expect(String(opts[1].disabledReason || '')).toContain('Template association mismatch');
+    });
+
+    it('disables association templates when current context is not an association resource', async () => {
+      referenceBlockModel = engine.createModel({
+        uid: 'reference-block-uid',
+        use: 'ReferenceBlockModel',
+        parentId: 'grid-uid',
+        subKey: 'items',
+        subType: 'array',
+        stepParams: {
+          resourceSettings: {
+            init: {
+              associationName: 'users',
+            },
+          },
+        },
+      }) as ReferenceBlockModel;
+
+      const list = vi.fn(async () => ({
+        data: {
+          rows: [{ uid: 'tpl-assoc', name: 'Assoc', associationName: 'users.profile' }],
+        },
+      }));
+
+      const ctx: any = {
+        model: referenceBlockModel,
+        api: {
+          resource: (name: string) => {
+            if (name !== 'flowModelTemplates') throw new Error('unexpected resource');
+            return { list };
+          },
+        },
+        t: (k: string) => k,
+      };
+
+      const flow: any = referenceBlockModel.getFlow('referenceSettings');
+      const step: any = flow?.getStep?.('useTemplate');
+      const schema: any = step.uiSchema(ctx);
+      const reactions = schema?.templateUid?.['x-reactions'] || [];
+      const field: any = { componentProps: {}, data: {} };
+      reactions[0](field);
+      await field.componentProps.onDropdownVisibleChange(true);
+
+      const opts = field.dataSource;
+      expect(opts[0].value).toBe('tpl-assoc');
+      expect(opts[0].disabled).toBe(true);
+      expect(String(opts[0].disabledReason || '')).toContain('Template association mismatch');
+    });
+  });
+
   describe('Reference block basics', () => {
     it(
       'should resolve the target block correctly',
