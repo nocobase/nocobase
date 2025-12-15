@@ -53,7 +53,7 @@ describe('openViewActionExtensions (popup template)', () => {
 
     const out = await enhanced.handler(ctx, { uid: 'x', popupTemplateUid: 'tpl-1' });
     expect(baseHandler).toHaveBeenCalledTimes(1);
-    expect(out).toEqual({ uid: 'x' });
+    expect(out).toEqual({ uid: 'popup-1' });
   });
 
   it('rejects popup template when dataSourceKey/collectionName mismatches current context', async () => {
@@ -154,6 +154,63 @@ describe('openViewActionExtensions (popup template)', () => {
     const params: any = { popupTemplateUid: 'tpl-1', uid: 'old' };
 
     await expect(enhanced.beforeParamsSave(ctx, params, {})).rejects.toThrow('Template association mismatch');
+    expect(baseBefore).toHaveBeenCalledTimes(0);
+  });
+
+  it('rejects popup template when template runtime params cannot be resolved', async () => {
+    const engine = new FlowEngine();
+    const baseBefore = vi.fn(async () => {});
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: {
+        uid: { type: 'string' },
+      },
+      beforeParamsSave: baseBefore as any,
+      handler: vi.fn(async () => undefined) as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    const api = {
+      resource: (name: string) => {
+        if (name !== 'flowModelTemplates') throw new Error('unexpected resource');
+        return {
+          get: vi.fn(async () => ({
+            data: {
+              data: {
+                uid: 'tpl-1',
+                targetUid: 'popup-1',
+                dataSourceKey: 'main',
+                collectionName: 'users',
+                sourceId: '{{ ctx.resource.sourceId }}',
+              },
+            },
+          })),
+        };
+      },
+    };
+    const model: any = {
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'resourceSettings' && stepKey === 'init') {
+          return { dataSourceKey: 'main', collectionName: 'users' };
+        }
+        return {};
+      }),
+      parent: null,
+    };
+    const ctx: any = {
+      engine,
+      api,
+      model,
+      resolveJsonTemplate: vi.fn(async () => undefined),
+      t: (k: string) => k,
+    };
+    const params: any = { popupTemplateUid: 'tpl-1', uid: 'old' };
+
+    await expect(enhanced.beforeParamsSave(ctx, params, {})).rejects.toThrow('Cannot resolve template parameter');
     expect(baseBefore).toHaveBeenCalledTimes(0);
   });
 });

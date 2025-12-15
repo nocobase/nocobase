@@ -31,6 +31,24 @@ type TemplateRow = {
 
 type ExpectedResourceInfo = { dataSourceKey?: string; collectionName?: string; associationName?: string };
 
+const hasExpr = (val: string) => /\{\{.*?\}\}/.test(val);
+const isResolvedValue = (val: any) => {
+  if (val === undefined || val === null) return false;
+  if (typeof val === 'string') {
+    const s = val.trim();
+    if (!s) return false;
+    if (hasExpr(s)) return false;
+    return true;
+  }
+  try {
+    const s = String(val);
+    if (hasExpr(s)) return false;
+  } catch (_) {
+    // ignore
+  }
+  return true;
+};
+
 const unwrapData = (val: any) => {
   let cur = val;
   // axios response: { data: { data: ... } }
@@ -114,11 +132,41 @@ const resolveExpectedResourceInfo = (ctx: any): ExpectedResourceInfo => {
   return {};
 };
 
-const getPopupTemplateDisabledReason = (
+const getPopupTemplateRuntimeParamDisabledReason = async (ctx: any, tpl: TemplateRow): Promise<string | undefined> => {
+  const rawFilterByTk = typeof tpl?.filterByTk === 'string' ? tpl.filterByTk.trim() : '';
+  const rawSourceId = typeof tpl?.sourceId === 'string' ? tpl.sourceId.trim() : '';
+  const needCheck: Array<{ key: 'filterByTk' | 'sourceId'; raw: string }> = [];
+  if (rawFilterByTk && hasExpr(rawFilterByTk)) needCheck.push({ key: 'filterByTk', raw: rawFilterByTk });
+  if (rawSourceId && hasExpr(rawSourceId)) needCheck.push({ key: 'sourceId', raw: rawSourceId });
+  if (!needCheck.length) return undefined;
+
+  const resolver = (ctx as any)?.resolveJsonTemplate;
+  if (typeof resolver !== 'function') {
+    return tWithNs(ctx, 'Cannot resolve template parameter {{param}}', {
+      param: needCheck.map((i) => i.key).join(', '),
+    });
+  }
+
+  const results = await Promise.all(
+    needCheck.map(async ({ key, raw }) => {
+      try {
+        const resolved = await resolver(raw);
+        return { key, ok: isResolvedValue(resolved) };
+      } catch (_) {
+        return { key, ok: false };
+      }
+    }),
+  );
+  const missing = results.filter((r) => !r.ok).map((r) => r.key);
+  if (!missing.length) return undefined;
+  return tWithNs(ctx, 'Cannot resolve template parameter {{param}}', { param: missing.join(', ') });
+};
+
+const getPopupTemplateDisabledReason = async (
   ctx: any,
   tpl: TemplateRow,
   expected: ExpectedResourceInfo,
-): string | undefined => {
+): Promise<string | undefined> => {
   /**
    * 弹窗模版的兼容性判断说明：
    *
@@ -163,13 +211,18 @@ const getPopupTemplateDisabledReason = (
   if (tplDataSourceKey === expectedDataSourceKey && tplCollectionName === expectedCollectionName) {
     // 同数据源/数据表时，再校验 associationName（即使 targetCollection 一致，不同 association 也可能导致资源上下文错误）
     const hasAnyAssociation = !!expectedAssociationName || !!tplAssociationName;
-    if (!hasAnyAssociation) return undefined;
-    if (expectedAssociationName === tplAssociationName) return undefined;
-    const none = tWithNs(ctx, 'No association');
-    return tWithNs(ctx, 'Template association mismatch', {
-      expected: expectedAssociationName || none,
-      actual: tplAssociationName || none,
-    });
+    if (hasAnyAssociation) {
+      if (expectedAssociationName !== tplAssociationName) {
+        const none = tWithNs(ctx, 'No association');
+        return tWithNs(ctx, 'Template association mismatch', {
+          expected: expectedAssociationName || none,
+          actual: tplAssociationName || none,
+        });
+      }
+    }
+
+    // 运行时参数兼容性（例如 sourceId/filterByTk 解析失败会导致“能选但打开炸”）
+    return await getPopupTemplateRuntimeParamDisabledReason(ctx, tpl);
   }
 
   const isSameDataSource = tplDataSourceKey === expectedDataSourceKey;
@@ -252,10 +305,10 @@ function PopupTemplateSelect(props: any) {
   const t = useCallback((key: string, opt?: Record<string, any>) => tWithNs(ctx, key, opt), [ctx]);
 
   const toOption = useCallback(
-    (tpl: TemplateRow) => {
+    async (tpl: TemplateRow) => {
       const name = tpl?.name || tpl?.uid || '';
       const desc = tpl?.description;
-      const disabledReason = getPopupTemplateDisabledReason(ctx as any, tpl, expectedResource);
+      const disabledReason = await getPopupTemplateDisabledReason(ctx as any, tpl, expectedResource);
       return {
         label: (
           <span
@@ -287,7 +340,7 @@ function PopupTemplateSelect(props: any) {
       setLoading(true);
       try {
         const rows = await fetchPopupTemplates(ctx, keyword);
-        const withIndex = rows.map((r, idx) => ({ ...toOption(r), __idx: idx }));
+        const withIndex = await Promise.all(rows.map(async (r, idx) => ({ ...(await toOption(r)), __idx: idx })));
         withIndex.sort((a: any, b: any) => {
           const da = a.disabled ? 1 : 0;
           const db = b.disabled ? 1 : 0;
@@ -315,8 +368,9 @@ function PopupTemplateSelect(props: any) {
       try {
         const tpl = await fetchTemplateByUid(ctx, v);
         if (!alive || !tpl?.uid) return;
+        const opt = await toOption(tpl);
         setOptions((prev) =>
-          [toOption(tpl), ...prev].filter((it, idx, arr) => arr.findIndex((x) => x.value === it.value) === idx),
+          [opt, ...prev].filter((it, idx, arr) => arr.findIndex((x) => x.value === it.value) === idx),
         );
       } catch (e) {
         // ignore
@@ -490,7 +544,7 @@ const resolveTemplateToUid = async (ctx: FlowSettingsContext, params: any): Prom
   }
 
   const expected = resolveExpectedResourceInfo(ctx as any);
-  const disabledReason = getPopupTemplateDisabledReason(ctx as any, tpl, expected);
+  const disabledReason = await getPopupTemplateDisabledReason(ctx as any, tpl, expected);
   if (disabledReason) {
     throw new Error(disabledReason);
   }
@@ -531,7 +585,26 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
     },
 
     async handler(ctx: any, params: any) {
-      // runtime should never see template params, but be defensive
+      // runtime should never see template params, but be defensive; also validate template runtime params to avoid "selectable but runtime crash"
+      const templateUid = typeof params?.popupTemplateUid === 'string' ? params.popupTemplateUid.trim() : '';
+      if (templateUid) {
+        try {
+          const tpl = await fetchTemplateByUid(ctx as any, templateUid);
+          if (tpl?.uid) {
+            const expected = resolveExpectedResourceInfo(ctx as any);
+            const disabledReason = await getPopupTemplateDisabledReason(ctx as any, tpl, expected);
+            if (disabledReason) {
+              throw new Error(disabledReason);
+            }
+            if (tpl?.targetUid && typeof tpl.targetUid === 'string' && tpl.targetUid.trim()) {
+              params.uid = tpl.targetUid.trim();
+            }
+          }
+        } catch (e) {
+          throw e instanceof Error ? e : new Error(String(e));
+        }
+      }
+
       const nextParams = stripTemplateParams(params);
       const baseHandler = (base as any).handler;
       if (typeof baseHandler === 'function') {
