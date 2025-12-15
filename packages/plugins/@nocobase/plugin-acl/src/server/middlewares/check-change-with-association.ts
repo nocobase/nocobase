@@ -50,27 +50,28 @@ async function processAssociationChild(
       ctx.log.debug(`No permission to update association`, { fieldPath, value, updateParams });
       return value[recordKey];
     } else {
+      const repo = ctx.db.getRepository(target);
+      if (!repo) {
+        return value[recordKey];
+      }
       try {
+        let filter = {};
         if (updateParams.params) {
           const filteredParams = ctx.acl.filterParams(ctx, target, updateParams.params);
           const parsedParams = await ctx.acl.parseJsonTemplate(filteredParams, ctx);
           if (parsedParams.filter) {
-            // permission scope exists, verify the record exists under the scope
-            const repo = ctx.db.getRepository(target);
-            if (!repo) {
-              return value[recordKey];
-            }
-            const record = await repo.findOne({
-              filter: {
-                ...parsedParams.filter,
-                [recordKey]: value[recordKey],
-              },
-            });
-            if (!record) {
-              ctx.log.debug(`No permission to update association due to scope`, { fieldPath, value, updateParams });
-              return value[recordKey];
-            }
+            filter = parsedParams.filter;
           }
+        }
+        const record = await repo.findOne({
+          filter: {
+            ...filter,
+            [recordKey]: value[recordKey],
+          },
+        });
+        if (!record) {
+          ctx.log.debug(`No permission to update association due to scope`, { fieldPath, value, updateParams });
+          return value[recordKey];
         }
         return await processValues(ctx, value, updateAssociationValues, updateParams.params, target, fieldPath);
       } catch (e) {
@@ -282,6 +283,7 @@ export const checkChangesWithAssociation = async (ctx: Context, next: Next) => {
     '',
     protectedKeys,
   );
+  console.log(processed);
   ctx.action.params.values = processed;
   await next();
 };

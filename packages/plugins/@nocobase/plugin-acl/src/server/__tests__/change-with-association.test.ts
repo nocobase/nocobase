@@ -136,10 +136,16 @@ describe('Change with association', async () => {
   });
 
   afterEach(async () => {
+    await db.getRepository('test').destroy({
+      truncate: true,
+    });
     await db.getRepository('assoc1').destroy({
       truncate: true,
     });
     await db.getRepository('assoc2').destroy({
+      truncate: true,
+    });
+    await db.getRepository('assoc3').destroy({
       truncate: true,
     });
     await db.clean({ drop: true });
@@ -169,6 +175,7 @@ describe('Change with association', async () => {
     const ctx: any = app.context;
     ctx.database = db;
     ctx.app = app;
+    ctx.log = app.log;
     ctx.state = {
       currentUser: user,
       currentRoles: ['test-role'],
@@ -193,7 +200,7 @@ describe('Change with association', async () => {
     });
   });
 
-  test('associate only', async () => {
+  test('associate only, create', async () => {
     await adminAgent.resource('roles.resources', 'test-role').create({
       values: {
         usingActionsConfig: true,
@@ -215,6 +222,7 @@ describe('Change with association', async () => {
 
     const ctx = app.context;
     ctx.app = app;
+    ctx.log = app.log;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -223,6 +231,56 @@ describe('Change with association', async () => {
     ctx.action = {
       resourceName: 'test',
       actionName: 'create',
+      params: {
+        values: {
+          name: 'test-1',
+          assoc1: [
+            {
+              name: 'assoc1-1',
+              title: 'assoc1 title',
+            },
+          ],
+        },
+      },
+    };
+    await compose([app.acl.middleware(), checkChangesWithAssociation])(ctx, async () => {});
+    expect(ctx.action.params.values).toMatchObject({
+      name: 'test-1',
+      assoc1: ['assoc1-1'],
+    });
+  });
+
+  test('associate only, update, with record key', async () => {
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: {
+        usingActionsConfig: true,
+        name: 'test',
+        actions: [
+          {
+            name: 'update',
+            fields: ['name', 'assoc1'],
+          },
+        ],
+      },
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+
+    const ctx = app.context;
+    ctx.app = app;
+    ctx.log = app.log;
+    ctx.database = db;
+    ctx.state = {
+      currentUser: user,
+      currentRoles: ['test-role'],
+    };
+    ctx.action = {
+      resourceName: 'test',
+      actionName: 'update',
       params: {
         values: {
           name: 'test-1',
@@ -276,6 +334,7 @@ describe('Change with association', async () => {
 
     const ctx = app.context;
     ctx.app = app;
+    ctx.log = app.log;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -344,8 +403,15 @@ describe('Change with association', async () => {
       },
     });
 
+    await db.getRepository('assoc1').create({
+      values: {
+        name: 'assoc1-1',
+      },
+    });
+
     const ctx = app.context;
     ctx.app = app;
+    ctx.log = app.log;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -432,6 +498,7 @@ describe('Change with association', async () => {
 
     const ctx = app.context;
     ctx.app = app;
+    ctx.log = app.log;
     ctx.get = () => '';
     ctx.database = db;
     ctx.state = {
@@ -514,6 +581,8 @@ describe('Change with association', async () => {
 
     const ctx = app.context;
     ctx.app = app;
+    ctx.log = app.log;
+
     ctx.get = () => '';
     ctx.database = db;
     ctx.state = {
@@ -585,8 +654,15 @@ describe('Change with association', async () => {
       },
     });
 
+    await db.getRepository('assoc1').create({
+      values: {
+        name: 'assoc1-1',
+      },
+    });
+
     const ctx = app.context;
     ctx.app = app;
+    ctx.log = app.log;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -669,8 +745,15 @@ describe('Change with association', async () => {
       },
     });
 
+    await db.getRepository('assoc1').create({
+      values: {
+        name: 'assoc1-1',
+      },
+    });
+
     const ctx = app.context;
     ctx.app = app;
+    ctx.log = app.log;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -763,7 +846,11 @@ describe('Change with association', async () => {
         roles: ['test-role'],
       },
     });
-
+    await db.getRepository('assoc1').create({
+      values: {
+        name: 'assoc1-1',
+      },
+    });
     await db.getRepository('assoc2').create({
       values: {
         name: 'assoc2-1',
@@ -772,6 +859,7 @@ describe('Change with association', async () => {
 
     const ctx = app.context;
     ctx.app = app;
+    ctx.log = app.log;
     ctx.get = () => '';
     ctx.database = db;
     ctx.state = {
@@ -862,7 +950,11 @@ describe('Change with association', async () => {
         roles: ['test-role'],
       },
     });
-
+    await db.getRepository('assoc1').create({
+      values: {
+        name: 'assoc1-1',
+      },
+    });
     await db.getRepository('assoc2').create({
       values: {
         name: 'assoc2-1',
@@ -871,6 +963,7 @@ describe('Change with association', async () => {
 
     const ctx = app.context;
     ctx.app = app;
+    ctx.log = app.log;
     ctx.get = () => '';
     ctx.database = db;
     ctx.state = {
@@ -939,6 +1032,8 @@ describe('Change with association', async () => {
 
     const ctx = app.context;
     ctx.app = app;
+    ctx.log = app.log;
+
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -994,9 +1089,15 @@ describe('Change with association', async () => {
         roles: ['test-role'],
       },
     });
+    await db.getRepository('assoc3').create({
+      values: {
+        assoc3_name: 'assoc3-1',
+      },
+    });
 
     const ctx = app.context;
     ctx.app = app;
+    ctx.log = app.log;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -1050,6 +1151,7 @@ describe('Change with association', async () => {
 
     const ctx = app.context;
     ctx.app = app;
+    ctx.log = app.log;
     ctx.database = db;
     ctx.state = {
       currentUser: user,
@@ -1085,6 +1187,10 @@ describe('Change with association', async () => {
             name: 'create',
             fields: ['name', 'assoc1'],
           },
+          {
+            name: 'update',
+            fields: ['name', 'assoc1'],
+          },
         ],
       },
     });
@@ -1096,6 +1202,7 @@ describe('Change with association', async () => {
     });
     const userAgent = await agent.login(user);
     await userAgent.resource('test').create({
+      updateAssociationValues: ['assoc1'],
       values: {
         name: 'test-1',
         assoc1: [
@@ -1111,5 +1218,85 @@ describe('Change with association', async () => {
     expect(testRecord.name).toBe('test-1');
     const assoc1 = await db.getRepository('assoc1').findOne();
     expect(assoc1).toBeFalsy();
+
+    await userAgent.resource('test').update({
+      filterByTk: testRecord.id,
+      updateAssociationValues: ['assoc1'],
+      values: {
+        assoc1: [
+          {
+            name: 'assoc1-1',
+            title: 'assoc1 title',
+          },
+        ],
+      },
+    });
+    const assoc12 = await db.getRepository('assoc1').findOne();
+    expect(assoc12).toBeFalsy();
+  });
+
+  test('associate, can not create associate record', async () => {
+    await adminAgent.resource('roles.resources', 'test-role').create({
+      values: [
+        {
+          usingActionsConfig: true,
+          name: 'test',
+          actions: [
+            {
+              name: 'create',
+              fields: ['name', 'assoc3'],
+            },
+            {
+              name: 'update',
+              fields: ['name', 'assoc3'],
+            },
+          ],
+        },
+        {
+          usingActionsConfig: true,
+          name: 'assoc3',
+          actions: [
+            {
+              name: 'update',
+            },
+          ],
+        },
+      ],
+    });
+
+    const user = await db.getRepository('users').create({
+      values: {
+        roles: ['test-role'],
+      },
+    });
+    const userAgent = await agent.login(user);
+    await userAgent.resource('test').create({
+      updateAssociationValues: ['assoc3'],
+      values: {
+        name: 'test-1',
+        assoc3: {
+          assoc3_name: 'assoc3-1',
+          title: 'assoc1 title',
+        },
+      },
+    });
+    const testRecord = await db.getRepository('test').findOne();
+    expect(testRecord).toBeDefined();
+    expect(testRecord.name).toBe('test-1');
+    const assoc3 = await db.getRepository('assoc3').findOne();
+    expect(assoc3).toBeFalsy();
+
+    await userAgent.resource('test').update({
+      filterByTk: testRecord.id,
+      updateAssociationValues: ['assoc3'],
+      values: {
+        assoc3: {
+          assoc3_name: 'assoc3-1',
+          title: 'assoc3 title',
+        },
+      },
+    });
+    const assoc32 = await db.getRepository('assoc3').findOne();
+    expect(assoc32).toBeFalsy();
   });
 });
