@@ -288,6 +288,7 @@ SubTableFieldModel.registerFlow({
         };
         const openMode = ctx.isMobileLayout ? 'embed' : ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
+        ctx.model.selectedRows.value = ctx.model.props.value || [];
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],
