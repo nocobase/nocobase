@@ -177,27 +177,9 @@ export const createFlowModelTemplatesSchema = (filter?: Record<string, any>): IS
             },
           },
         },
-        targetUid: {
-          type: 'void',
-          title: 'targetUid',
-          'x-component': 'TableV2.Column',
-          'x-component-props': {
-            width: 200,
-          },
-          properties: {
-            targetUid: {
-              type: 'string',
-              'x-component': 'CollectionField',
-              'x-pattern': 'readPretty',
-              'x-component-props': {
-                ellipsis: true,
-              },
-            },
-          },
-        },
         dataSourceKey: {
           type: 'void',
-          title: 'dataSourceKey',
+          title: 'Data source',
           'x-component': 'TableV2.Column',
           'x-component-props': {
             width: 140,
@@ -215,7 +197,7 @@ export const createFlowModelTemplatesSchema = (filter?: Record<string, any>): IS
         },
         collectionName: {
           type: 'void',
-          title: 'collectionName',
+          title: 'Collection',
           'x-component': 'TableV2.Column',
           'x-component-props': {
             width: 160,

@@ -12,7 +12,7 @@ import _ from 'lodash';
 import { type CreateModelOptions, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { FormGridModel } from '@nocobase/client';
 import { REF_HOST_CTX_KEY } from '../constants';
-import { NAMESPACE, tStr } from '../locale';
+import { NAMESPACE } from '../locale';
 import {
   ensureBlockScopedEngine,
   ReferenceScopedRenderer,
@@ -22,7 +22,6 @@ import {
 
 const SETTINGS_FLOW_KEY = 'referenceFormGridSettings';
 const SETTINGS_STEP_KEY = 'target';
-const HOST_BASE_TITLE_KEY = '__pluginBlockReference_fieldTemplateBaseTitle';
 
 export { REF_HOST_CTX_KEY };
 
@@ -130,62 +129,27 @@ export class ReferenceFormGridModel extends FormGridModel {
     return { templateUid, templateName, targetUid, sourcePath };
   }
 
-  private _syncHostTitle(settings?: ReferenceFormGridTargetSettings) {
+  private _syncHostExtraTitle(settings?: ReferenceFormGridTargetSettings) {
     const host = this.parent as FlowModel | undefined;
     if (!host) return;
 
-    const label =
-      host.translate?.('Field template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }) || 'Field template';
-    const labelCandidates = [label, 'Field template', '字段模板', '字段模版', tStr('Field template')]
-      .map((s) => (s ? String(s) : ''))
-      .filter(Boolean);
-    const union = labelCandidates.map((s) => _.escapeRegExp(s)).join('|');
-    const stripReg = new RegExp(`\\s*\\((${union})[：:]?[^)]*\\)\\s*$`);
-    const stripSuffix = (title: string) =>
-      String(title || '')
-        .replace(stripReg, '')
-        .trim();
-
-    const applyTo = (m: FlowModel) => {
-      const currentTitle = typeof (m as any)?.title === 'string' ? ((m as any).title as string) : '';
-      const lastApplied =
-        typeof (m as any).__pluginBlockReference_fieldTemplateLastTitle === 'string'
-          ? String((m as any).__pluginBlockReference_fieldTemplateLastTitle)
-          : undefined;
-
-      let baseTitle =
-        typeof (m as any)[HOST_BASE_TITLE_KEY] === 'string' ? String((m as any)[HOST_BASE_TITLE_KEY] || '') : '';
-
-      // 1) 首次进入：记录 base title（并尝试剥离历史/旧实现的后缀）
-      // 2) 若用户手动改过标题（currentTitle !== lastApplied），更新 base title（同样先剥离后缀）
-      if (!baseTitle || (lastApplied && currentTitle !== lastApplied)) {
-        baseTitle = stripSuffix(currentTitle) || currentTitle || '';
-        (m as any)[HOST_BASE_TITLE_KEY] = baseTitle;
-      }
-
-      if (!settings) {
-        const restore =
-          typeof (m as any)[HOST_BASE_TITLE_KEY] === 'string'
-            ? String((m as any)[HOST_BASE_TITLE_KEY] || '')
-            : stripSuffix(currentTitle);
-        delete (m as any)[HOST_BASE_TITLE_KEY];
-        delete (m as any).__pluginBlockReference_fieldTemplateLastTitle;
-        m.setTitle(restore || '');
-        return;
-      }
-
-      const name = settings.templateName?.trim() || settings.templateUid?.trim() || '';
-      const suffix = name ? `(${label}: ${name})` : `(${label})`;
-      const next = `${baseTitle}${suffix}`;
-      if (currentTitle === next) return;
-      m.setTitle(next);
-      (m as any).__pluginBlockReference_fieldTemplateLastTitle = next;
-    };
-
     const master: any = (host as any)?.isFork ? (host as any).master || host : host;
-    applyTo(host);
-    if (master && master !== host) applyTo(master);
-    master?.forks?.forEach?.((f: any) => f instanceof FlowModel && applyTo(f));
+    const targets: FlowModel[] = [host];
+    if (master && master !== host && master instanceof FlowModel) targets.push(master);
+    master?.forks?.forEach?.((f: any) => f instanceof FlowModel && targets.push(f));
+
+    // 未配置时清空 extraTitle，回退为原有 title（不修改用户 title）
+    if (!settings) {
+      targets.forEach((m) => m.setExtraTitle(''));
+      return;
+    }
+
+    const label = host.context.t('Reference template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' });
+    const fieldsOnly = host.context.t('(Fields only)', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' });
+    const name = settings.templateName?.trim() || settings.templateUid?.trim() || '';
+    const extra = name ? `${label}: ${name} ${fieldsOnly}` : `${label} ${fieldsOnly}`;
+
+    targets.forEach((m) => m.setExtraTitle(extra.trim()));
   }
 
   addSubModel<T extends FlowModel>(subKey: string, options: CreateModelOptions | T) {
@@ -207,13 +171,13 @@ export class ReferenceFormGridModel extends FormGridModel {
 
     const settings = this._getTargetSettings();
     if (!settings) {
-      this._syncHostTitle(undefined);
+      this._syncHostExtraTitle(undefined);
       this._targetGrid = undefined;
       this._resolvedTargetUid = undefined;
       return;
     }
 
-    this._syncHostTitle(settings);
+    this._syncHostExtraTitle(settings);
 
     const sourcePath = settings.sourcePath?.trim() || 'subModels.grid';
     if (sourcePath !== 'subModels.grid') {

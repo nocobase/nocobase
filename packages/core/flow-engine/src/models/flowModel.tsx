@@ -119,6 +119,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   public subModels: Structure['subModels'];
   private _options: FlowModelOptions<Structure>;
   protected _title: string;
+  protected _extraTitle: string;
   public isNew = false; // 标记是否为新建状态
   public skeleton = null;
 
@@ -183,6 +184,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     this.sortIndex = options.sortIndex || 0;
     this._options = options;
     this._title = '';
+    this._extraTitle = '';
 
     define(this as any, {
       hidden: observable,
@@ -190,6 +192,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       subModels: observable.shallow,
       stepParams: observable,
       _title: observable,
+      _extraTitle: observable,
       // setProps: action,
       setProps: batch,
       // setStepParams: action,
@@ -399,8 +402,16 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
     return this.translate(this._title) || this.translate(this.constructor['meta']?.label);
   }
 
+  get extraTitle() {
+    return this._extraTitle ? this.translate(this._extraTitle) : '';
+  }
+
   setTitle(value: string) {
     this._title = value;
+  }
+
+  setExtraTitle(value: string) {
+    this._extraTitle = value || '';
   }
 
   setHidden(value: boolean) {

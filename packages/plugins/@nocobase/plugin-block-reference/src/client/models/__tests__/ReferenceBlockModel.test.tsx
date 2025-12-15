@@ -365,10 +365,10 @@ describe('ReferenceBlockModel', () => {
 
         await referenceBlockModel.onDispatchEventStart('beforeRender');
 
-        // 验证引用区块的标题包含 "(Reference)"
+        // title 展示目标标题；模板信息放在 extraTitle
         const title = referenceBlockModel.title;
         expect(title).toContain('Test Form Block');
-        expect(title).toMatch(/Template|模版/);
+        expect((referenceBlockModel as any).extraTitle).toMatch(/Reference template|引用模板/);
       },
       TEST_TIMEOUT,
     );

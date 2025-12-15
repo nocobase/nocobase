@@ -93,7 +93,11 @@ describe('ReferenceFormGridModel', () => {
     expect(serialized.subModels).toBeUndefined();
   });
 
-  it('syncs host form title with field template suffix', async () => {
+  it('syncs host extraTitle with reference template info', async () => {
+    MockFormBlockModel.define({
+      label: '默认block title',
+    });
+
     const engine = new FlowEngine();
     const store: Record<string, any> = {
       'tpl-root': {
@@ -135,7 +139,6 @@ describe('ReferenceFormGridModel', () => {
       uid: 'host-form',
       use: 'FormBlockModel',
     });
-    form.setTitle('默认block title');
 
     const refGrid = engine.createModel({
       uid: 'host-grid',
@@ -157,12 +160,14 @@ describe('ReferenceFormGridModel', () => {
     form.setSubModel('grid', refGrid);
 
     await refGrid.dispatchEvent('beforeRender', undefined, { useCache: false });
-    expect(form.title).toBe('默认block title(Field template: 模版名称)');
+    expect(form.title).toBe('默认block title');
+    expect((form as any).extraTitle).toBe('Reference template: 模版名称 (Fields only)');
 
     // clear settings should restore base title
     (refGrid as any).stepParams.referenceFormGridSettings.target.templateUid = '';
     (refGrid as any).stepParams.referenceFormGridSettings.target.targetUid = '';
     await refGrid.dispatchEvent('beforeRender', undefined, { useCache: false });
     expect(form.title).toBe('默认block title');
+    expect((form as any).extraTitle).toBe('');
   });
 });

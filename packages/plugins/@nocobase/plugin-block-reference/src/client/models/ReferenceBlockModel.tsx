@@ -27,7 +27,7 @@ import {
  * - 在 BlockScoped 引擎中实例化目标区块，隔离模型实例与事件缓存；
  * - 与目标区块建立父子关系（目标仅作为 Reference 的子模型用于设置菜单聚合，不做持久化）；
  * - 当目标缺失/非法/循环时，渲染占位提示；
- * - 标题为：目标标题 + (Reference)。
+ * - title 仅展示目标标题；模板信息通过 extraTitle 展示（配置态双标签）。
  */
 export class ReferenceBlockModel extends BlockModel {
   constructor(options: any) {
@@ -95,12 +95,7 @@ export class ReferenceBlockModel extends BlockModel {
   private _resolvedTargetUid?: string;
 
   get title() {
-    const refLabel = this.translate?.('Template', { ns: [NAMESPACE, 'client'] }) || 'Template';
-    const tplName =
-      this.getStepParams('referenceSettings', 'useTemplate')?.templateName ||
-      this.getStepParams('referenceSettings', 'useTemplate')?.templateUid;
-    const baseTitle = this._targetModel?.title || super.title;
-    return `${baseTitle} (${tplName ? `${refLabel}: ${tplName}` : refLabel})`;
+    return this._targetModel?.title || super.title;
   }
 
   onInit(option) {
@@ -114,6 +109,18 @@ export class ReferenceBlockModel extends BlockModel {
   private _getTargetUidFromParams(): string | undefined {
     const p = this.getStepParams('referenceSettings', 'target') || {};
     return (p?.targetUid || '').trim() || undefined;
+  }
+
+  private _syncExtraTitle(configured: boolean) {
+    if (!configured) {
+      this.setExtraTitle('');
+      return;
+    }
+
+    const label = this.context.t('Reference template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' });
+    const step = this.getStepParams('referenceSettings', 'useTemplate') || {};
+    const tplName = step?.templateName || step?.templateUid;
+    this.setExtraTitle(tplName ? `${label}: ${tplName}` : label);
   }
 
   private _ensureScopedEngine(): FlowEngine {
@@ -160,6 +167,7 @@ export class ReferenceBlockModel extends BlockModel {
     const stepParams = (this.getStepParams as any)?.('referenceSettings', 'target') || {};
     const targetUid = (stepParams?.targetUid || '').trim() || undefined;
     if (!targetUid) {
+      this._syncExtraTitle(false);
       const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
       if (oldTarget) {
         (this as any).emitter?.emit?.('onSubModelRemoved', oldTarget);
@@ -170,6 +178,8 @@ export class ReferenceBlockModel extends BlockModel {
       (this.subModels as any)['target'] = undefined;
       return;
     }
+
+    this._syncExtraTitle(true);
     if (this._resolvedTargetUid === targetUid && this._targetModel) {
       return;
     }
