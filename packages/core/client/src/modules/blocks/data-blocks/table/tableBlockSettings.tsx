@@ -38,7 +38,7 @@ const enabledIndexColumn: SchemaSettingsItemType = {
     const { t } = useTranslation();
     const { dn } = useDesignable();
     return {
-      title: t('Show row numbers'),
+      title: t('Enable index column'),
       checked: field.decoratorProps.enableIndexColumn !== false,
       onChange: async (enableIndexColumn) => {
         field.decoratorProps = field.decoratorProps || {};
