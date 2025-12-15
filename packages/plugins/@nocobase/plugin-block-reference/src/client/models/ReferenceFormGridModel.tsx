@@ -9,22 +9,15 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { Card, Empty, Result } from 'antd';
-import {
-  type CreateModelOptions,
-  FlowContext,
-  FlowEngine,
-  FlowEngineProvider,
-  FlowModel,
-  FlowModelRenderer,
-  FlowViewContextProvider,
-  createBlockScopedEngine,
-  useFlowViewContext,
-} from '@nocobase/flow-engine';
+import { type CreateModelOptions, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { FormGridModel } from '@nocobase/client';
-import { NAMESPACE } from '../locale';
-
-export const REF_HOST_CTX_KEY = '__subModelReferenceHost';
+import { REF_HOST_CTX_KEY } from '../constants';
+import {
+  ensureBlockScopedEngine,
+  ReferenceScopedRenderer,
+  renderReferenceTargetPlaceholder,
+  unlinkScopedEngine,
+} from './referenceShared';
 
 const SETTINGS_FLOW_KEY = 'referenceFormGridSettings';
 const SETTINGS_STEP_KEY = 'target';
@@ -51,29 +44,6 @@ type ReferenceHostInfo = {
     mountSubKey: 'grid';
     mode: 'reference';
   };
-};
-
-// 桥接父视图上下文：
-// - ctx.engine 指向 scoped engine；
-// - 同时继承父级 view/popup 等变量。
-const RefViewBridge: React.FC<{ engine: FlowEngine; model: FlowModel }> = ({ engine, model }) => {
-  const parentViewCtx = useFlowViewContext();
-  const viewCtx = React.useMemo(() => {
-    const c = new FlowContext();
-    c.defineProperty('engine', { value: engine });
-    c.addDelegate(engine.context);
-    if (parentViewCtx && parentViewCtx instanceof FlowContext) {
-      c.addDelegate(parentViewCtx);
-    }
-    return c;
-  }, [engine, parentViewCtx]);
-
-  return (
-    <FlowViewContextProvider context={viewCtx}>
-      {/* 引用模式下不展示 grid 自身的 settings/delete，避免误删模板 grid；字段项仍会正常显示设置菜单 */}
-      <FlowModelRenderer model={model} showFlowSettings={false} showErrorFallback />
-    </FlowViewContextProvider>
-  );
 };
 
 export class ReferenceFormGridModel extends FormGridModel {
@@ -141,9 +111,7 @@ export class ReferenceFormGridModel extends FormGridModel {
   }
 
   private _ensureScopedEngine(): FlowEngine {
-    if (!this._scopedEngine) {
-      this._scopedEngine = createBlockScopedEngine(this.flowEngine);
-    }
+    this._scopedEngine = ensureBlockScopedEngine(this.flowEngine, this._scopedEngine);
     return this._scopedEngine;
   }
 
@@ -231,7 +199,7 @@ export class ReferenceFormGridModel extends FormGridModel {
 
   clearForks() {
     try {
-      this._scopedEngine?.unlinkFromStack?.();
+      unlinkScopedEngine(this._scopedEngine);
     } finally {
       this._scopedEngine = undefined;
     }
@@ -240,7 +208,7 @@ export class ReferenceFormGridModel extends FormGridModel {
 
   async destroy(): Promise<boolean> {
     try {
-      this._scopedEngine?.unlinkFromStack?.();
+      unlinkScopedEngine(this._scopedEngine);
     } finally {
       this._scopedEngine = undefined;
     }
@@ -250,43 +218,16 @@ export class ReferenceFormGridModel extends FormGridModel {
   render() {
     const settings = this._getTargetSettings();
     if (!settings) {
-      return (
-        <Card>
-          <div style={{ padding: 24 }}>
-            <Empty
-              image={Empty.PRESENTED_IMAGE_SIMPLE}
-              description={
-                this.translate?.('Please configure target block', { ns: [NAMESPACE, 'client'] }) ||
-                'Please configure target block'
-              }
-            />
-          </div>
-        </Card>
-      );
+      return renderReferenceTargetPlaceholder(this as any, 'unconfigured');
     }
 
     const target = this._targetGrid;
     if (!target) {
-      return (
-        <Card>
-          <div style={{ padding: 24 }}>
-            <Result
-              status="error"
-              subTitle={
-                this.translate?.('Target block is invalid', { ns: [NAMESPACE, 'client'] }) || 'Target block is invalid'
-              }
-            />
-          </div>
-        </Card>
-      );
+      return renderReferenceTargetPlaceholder(this as any, 'invalid');
     }
 
     const engine = this._ensureScopedEngine();
-    return (
-      <FlowEngineProvider engine={engine}>
-        <RefViewBridge engine={engine} model={target} />
-      </FlowEngineProvider>
-    );
+    return <ReferenceScopedRenderer engine={engine} model={target} />;
   }
 }
 

@@ -9,8 +9,7 @@
 
 import type { FlowEngine, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
 import { NAMESPACE } from './locale';
-
-const REF_HOST_CTX_KEY = '__subModelReferenceHost';
+import { REF_HOST_CTX_KEY } from './constants';
 
 function findFormModel(model: FlowModel): FlowModel | undefined {
   let cur: FlowModel | undefined = model;

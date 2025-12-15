@@ -10,7 +10,7 @@
 import React from 'react';
 import debounce from 'lodash/debounce';
 import _ from 'lodash';
-import { Button, Space, Typography } from 'antd';
+import { Button, Space, Typography, Tooltip } from 'antd';
 import {
   FlowModel,
   FlowContext,
@@ -21,6 +21,7 @@ import {
   tExpr,
 } from '@nocobase/flow-engine';
 import { NAMESPACE, tStr } from '../locale';
+import { REF_HOST_CTX_KEY } from '../constants';
 
 type ImporterProps = {
   /** 默认从模板根取片段的路径 */
@@ -43,7 +44,6 @@ type ImporterProps = {
 };
 
 const FLOW_KEY = 'subModelTemplateImportSettings';
-const REF_HOST_CTX_KEY = '__subModelReferenceHost';
 const GRID_REF_FLOW_KEY = 'referenceFormGridSettings';
 const GRID_REF_STEP_KEY = 'target';
 
@@ -382,14 +382,12 @@ export class SubModelTemplateImporterModel extends FlowModel {
                 whiteSpace: 'nowrap',
                 verticalAlign: 'middle',
               }}
-              title={name}
             >
               {name}
             </span>
           ),
           value: r.uid,
           description: desc,
-          title: desc ? `${name} - ${desc}` : name,
           rawName: name,
           targetUid: r.targetUid,
           disabled: !!disabledReason,
@@ -453,7 +451,7 @@ SubModelTemplateImporterModel.registerFlow({
                 const desc = option?.data?.description;
                 const disabledReason = option?.data?.disabledReason;
                 const isDisabled = !!disabledReason;
-                return (
+                const content = (
                   <div
                     style={{
                       display: 'flex',
@@ -461,8 +459,9 @@ SubModelTemplateImporterModel.registerFlow({
                       gap: 4,
                       padding: '4px 0',
                       opacity: isDisabled ? 0.5 : 1,
+                      width: '100%',
+                      cursor: isDisabled ? 'not-allowed' : 'pointer',
                     }}
-                    title={isDisabled ? disabledReason : undefined}
                   >
                     <Typography.Text
                       strong
@@ -490,6 +489,23 @@ SubModelTemplateImporterModel.registerFlow({
                     )}
                   </div>
                 );
+
+                // 如果禁用且有原因，用 Tooltip 包裹整个选项以确保整个区域都能触发 tooltip
+                if (isDisabled && disabledReason) {
+                  return (
+                    <Tooltip
+                      title={disabledReason}
+                      placement="right"
+                      zIndex={9999}
+                      overlayStyle={{ maxWidth: 400 }}
+                      mouseEnterDelay={0.1}
+                    >
+                      <div style={{ width: '100%' }}>{content}</div>
+                    </Tooltip>
+                  );
+                }
+
+                return content;
               },
             },
             default: templateUid || undefined,

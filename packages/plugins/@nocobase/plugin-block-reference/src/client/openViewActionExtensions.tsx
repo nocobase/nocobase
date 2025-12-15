@@ -267,7 +267,6 @@ function PopupTemplateSelect(props: any) {
               whiteSpace: 'nowrap',
               verticalAlign: 'middle',
             }}
-            title={desc ? `${name} - ${desc}` : name}
           >
             {name}
           </span>
@@ -438,6 +437,8 @@ function PopupTemplateSelect(props: any) {
               padding: '4px 0',
               maxWidth: 520,
               opacity: isDisabled ? 0.5 : 1,
+              width: '100%',
+              cursor: isDisabled ? 'not-allowed' : 'pointer',
             }}
           >
             <Typography.Text
@@ -448,7 +449,6 @@ function PopupTemplateSelect(props: any) {
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}
-              title={typeof name === 'string' ? name : undefined}
             >
               {name}
             </Typography.Text>
@@ -463,7 +463,17 @@ function PopupTemplateSelect(props: any) {
           </div>
         );
         if (isDisabled && disabledReason) {
-          return <Tooltip title={disabledReason}>{content}</Tooltip>;
+          return (
+            <Tooltip
+              title={disabledReason}
+              placement="right"
+              zIndex={9999}
+              overlayStyle={{ maxWidth: 400 }}
+              mouseEnterDelay={0.1}
+            >
+              <div style={{ width: '100%' }}>{content}</div>
+            </Tooltip>
+          );
         }
         return content;
       }}

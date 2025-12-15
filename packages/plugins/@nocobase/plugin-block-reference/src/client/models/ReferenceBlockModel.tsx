@@ -9,43 +9,17 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { Result, Empty, Card, Typography } from 'antd';
-import {
-  escapeT,
-  FlowEngine,
-  FlowModel,
-  FlowModelRenderer,
-  createBlockScopedEngine,
-  FlowEngineProvider,
-  FlowViewContextProvider,
-  FlowContext,
-  useFlowViewContext,
-} from '@nocobase/flow-engine';
+import { Typography, Tooltip } from 'antd';
+import { escapeT, type FlowEngine, type FlowModel } from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
 import debounce from 'lodash/debounce';
-
-// 桥接父视图上下文：
-// - 复用父级的 view/popup 等视图变量；
-// - 同时将 ctx.engine 指向 block 作用域引擎，保证实例/缓存隔离。
-const RefViewBridge: React.FC<{ engine: FlowEngine; model: FlowModel }> = ({ engine, model }) => {
-  const parentViewCtx = useFlowViewContext();
-  const viewCtx = React.useMemo(() => {
-    const c = new FlowContext();
-    c.defineProperty('engine', { value: engine });
-    c.addDelegate(engine.context);
-    // 继承父级视图上下文（若存在），获取 ctx.view / ctx.popup 等变量与元信息
-    if (parentViewCtx && parentViewCtx instanceof FlowContext) {
-      c.addDelegate(parentViewCtx);
-    }
-    return c;
-  }, [engine, parentViewCtx]);
-  return (
-    <FlowViewContextProvider context={viewCtx}>
-      <FlowModelRenderer key={model.uid} model={model} showFlowSettings={false} showErrorFallback />
-    </FlowViewContextProvider>
-  );
-};
+import {
+  ensureBlockScopedEngine,
+  ReferenceScopedRenderer,
+  renderReferenceTargetPlaceholder,
+  unlinkScopedEngine,
+} from './referenceShared';
 
 /**
  * ReferenceBlockModel（插件版）
@@ -143,9 +117,7 @@ export class ReferenceBlockModel extends BlockModel {
   }
 
   private _ensureScopedEngine(): FlowEngine {
-    if (!this._scopedEngine) {
-      this._scopedEngine = createBlockScopedEngine(this.flowEngine);
-    }
+    this._scopedEngine = ensureBlockScopedEngine(this.flowEngine, this._scopedEngine);
     return this._scopedEngine;
   }
 
@@ -232,8 +204,11 @@ export class ReferenceBlockModel extends BlockModel {
   }
 
   async destroy(): Promise<boolean> {
-    this._scopedEngine?.unlinkFromStack?.();
-    this._scopedEngine = undefined;
+    try {
+      unlinkScopedEngine(this._scopedEngine);
+    } finally {
+      this._scopedEngine = undefined;
+    }
     return await super.destroy();
   }
 
@@ -259,40 +234,13 @@ export class ReferenceBlockModel extends BlockModel {
     const configuredUid = this._getTargetUidFromParams();
     if (!target) {
       if (!configuredUid) {
-        return (
-          <Card>
-            <div style={{ padding: 24 }}>
-              <Empty
-                image={Empty.PRESENTED_IMAGE_SIMPLE}
-                description={
-                  this.translate?.('Please configure target block', { ns: [NAMESPACE, 'client'] }) ||
-                  'Please configure target block'
-                }
-              />
-            </div>
-          </Card>
-        );
+        return renderReferenceTargetPlaceholder(this as any, 'unconfigured');
       }
-      return (
-        <Card>
-          <div style={{ padding: 24 }}>
-            <Result
-              status="error"
-              subTitle={
-                this.translate?.('Target block is invalid', { ns: [NAMESPACE, 'client'] }) || 'Target block is invalid'
-              }
-            />
-          </div>
-        </Card>
-      );
+      return renderReferenceTargetPlaceholder(this as any, 'invalid');
     }
     // 使用 BlockScoped 引擎包裹渲染，确保拖拽/移动等操作拿到正确的 engine
     const engine = this._ensureScopedEngine();
-    return (
-      <FlowEngineProvider engine={engine}>
-        <RefViewBridge engine={engine} model={target} />
-      </FlowEngineProvider>
-    );
+    return <ReferenceScopedRenderer engine={engine} model={target} />;
   }
 
   public render(): any {
@@ -406,7 +354,6 @@ ReferenceBlockModel.registerFlow({
                         whiteSpace: 'nowrap',
                         verticalAlign: 'middle',
                       }}
-                      title={name}
                     >
                       {name}
                     </span>
@@ -415,7 +362,6 @@ ReferenceBlockModel.registerFlow({
                   description: desc,
                   disabled: !!disabledReason,
                   disabledReason,
-                  title: desc ? `${name} - ${desc}` : name,
                   rawName: name,
                 };
               }),
@@ -453,7 +399,7 @@ ReferenceBlockModel.registerFlow({
                 const desc = option?.data?.description;
                 const disabledReason = option?.data?.disabledReason;
                 const isDisabled = !!disabledReason;
-                return (
+                const content = (
                   <div
                     style={{
                       display: 'flex',
@@ -462,8 +408,9 @@ ReferenceBlockModel.registerFlow({
                       padding: '4px 0',
                       maxWidth: 520,
                       opacity: isDisabled ? 0.5 : 1,
+                      width: '100%',
+                      cursor: isDisabled ? 'not-allowed' : 'pointer',
                     }}
-                    title={isDisabled ? disabledReason : undefined}
                   >
                     <Typography.Text
                       strong
@@ -491,6 +438,23 @@ ReferenceBlockModel.registerFlow({
                     )}
                   </div>
                 );
+
+                // 如果禁用且有原因，用 Tooltip 包裹整个选项以确保整个区域都能触发 tooltip
+                if (isDisabled && disabledReason) {
+                  return (
+                    <Tooltip
+                      title={disabledReason}
+                      placement="right"
+                      zIndex={9999}
+                      overlayStyle={{ maxWidth: 400 }}
+                      mouseEnterDelay={0.1}
+                    >
+                      <div style={{ width: '100%' }}>{content}</div>
+                    </Tooltip>
+                  );
+                }
+
+                return content;
               },
             },
             default: templateUid || undefined,

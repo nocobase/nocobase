@@ -20,7 +20,7 @@
   "Some configurations using uid may need to be reconfigured": "部分使用uid的配置可能需要重新配置",
   "Target block is invalid": "目标区块无效",
   "Template": "模版",
-  "Cannot resolve template parameter {{param}}": "无法解析模板参数 {{param}}",
+  "Cannot resolve template parameter {{param}}": "缺少 {{param}}，无法使用",
   "Template description": "模版描述",
   "Template name": "模版名称",
   "Template name is required": "模版名称必填",
