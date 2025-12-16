@@ -21,14 +21,15 @@ export function TriggerCollectionRecordSelect(props) {
   const [dataSourceName, collectionName] = parseCollectionName(workflow.config.collection);
   const { collectionManager } = app.dataSourceManager.getDataSource(dataSourceName);
   const collection = collectionManager.getCollection(collectionName);
+  const id = collection.filterTargetKey;
   const render = (p) =>
     collection ? (
       <RemoteSelect
         objectValue
         dataSource={dataSourceName}
         fieldNames={{
-          label: collection.titleField || 'id',
-          value: 'id',
+          label: collection.titleField || id,
+          value: id,
         }}
         service={{
           resource: collectionName,
