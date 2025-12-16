@@ -152,9 +152,12 @@ export const useDeleteActionProps = () => {
   const { onClick } = useDestroyActionProps();
   const isBuiltIn = record?.builtIn;
   const { message } = App.useApp();
+  const api = useAPIClient();
+  const isSuperUser = api.auth.role === 'root';
+
   return {
     async onClick(e?, callBack?) {
-      if (isBuiltIn) {
+      if (isBuiltIn && !isSuperUser) {
         message.warning(t('Cannot delete built-in ai employees'));
         return;
       }
