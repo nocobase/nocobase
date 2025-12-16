@@ -40,7 +40,7 @@ The email message block will display emails that meet the filter conditions.
 
 ### Filter Data by Email Domain
 
-Create a field in the business table to store the email domain, which will be used later for filtering email messages.
+Create a field in the business table to store the email domain (Field type is JSON), which will be used later for filtering email messages.
 
 ![](https://static-docs.nocobase.com/email-manager/data-source-manager-main-NocoBase-12-02-2025_04_36_PM.png)
 

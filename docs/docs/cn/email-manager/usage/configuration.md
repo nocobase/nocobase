@@ -36,7 +36,7 @@ pkg: "@nocobase/plugin-email-manager"
 
 ### 基于邮箱后缀进行数据筛选
 
-在业务表中创建用于存储邮箱后缀的字段，以便在后续对邮件消息进行筛选。
+在业务表中创建用于存储邮箱后缀的字段（类型为JSON），以便在后续对邮件消息进行筛选。
 
 ![](https://static-docs.nocobase.com/email-manager/data-source-manager-main-NocoBase-12-02-2025_04_36_PM.png)
 
