@@ -1559,7 +1559,6 @@
     "Copy failed": "复制失败",
     "Copy failed under HTTP. Clipboard API is unavailable on non-HTTPS pages. Please copy [{{uid}}] manually.": "HTTP 环境下复制失败。非 HTTPS 页面不支持剪贴板 API，请手动复制 [{{uid}}]。",
     "Copy failed, please copy [{{uid}}] manually.": "复制失败，请手动复制 [{{uid}}]。",
-    "Copy popup UID": "复制弹窗 UID",
     "Data blocks": "数据区块",
     "Delete": "删除",
     "Delete failed": "删除失败",
