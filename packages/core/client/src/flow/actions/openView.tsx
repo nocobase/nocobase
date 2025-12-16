@@ -126,6 +126,9 @@ export const openView = defineAction({
   async handler(ctx: FlowModelContext, params) {
     // If uid differs from current model, delegate to ctx.openView to open that popup
     const inputArgs = ctx.inputArgs || {};
+    const isResourceFromPopupTemplate = !!(params as any)?.__resourceFromPopupTemplate;
+    const paramsForSpread = { ...(params || {}) } as any;
+    delete paramsForSpread.__resourceFromPopupTemplate;
     const defineProperties = inputArgs.defineProperties ?? ctx.model.context?.inputArgs?.defineProperties ?? undefined;
     const defineMethods = inputArgs.defineMethods ?? ctx.model.context?.inputArgs?.defineMethods ?? undefined;
     const actionDefaults = (ctx.model as any)?.getInputArgs?.() || {};
@@ -140,8 +143,36 @@ export const openView = defineAction({
       if (hasInput) return inputArgs[key];
       return actionDefaults?.[key];
     };
-    const mergedFilterByTk = pickWithDefault('filterByTk');
     const mergedSourceId = pickWithDefault('sourceId');
+    const tplAssociationName = (params as any)?.associationName;
+    const tplHasAssociation =
+      typeof tplAssociationName === 'string' ? tplAssociationName.trim() !== '' : tplAssociationName != null;
+    const isAssociationTrigger =
+      !!ctx.collectionField?.isAssociationField?.() || typeof (inputArgs as any)?.associationName !== 'undefined';
+    const shouldUseSourceIdAsFilterByTk =
+      isResourceFromPopupTemplate &&
+      !tplHasAssociation &&
+      isAssociationTrigger &&
+      typeof (inputArgs as any)?.sourceId !== 'undefined';
+    const mergedFilterByTk = shouldUseSourceIdAsFilterByTk
+      ? (inputArgs as any).sourceId
+      : pickWithDefault('filterByTk');
+
+    const runtimeDataSourceKey = isResourceFromPopupTemplate
+      ? (params as any)?.dataSourceKey ?? (inputArgs as any)?.dataSourceKey
+      : typeof (inputArgs as any)?.dataSourceKey !== 'undefined'
+        ? (inputArgs as any).dataSourceKey
+        : (params as any)?.dataSourceKey;
+    const runtimeCollectionName = isResourceFromPopupTemplate
+      ? (params as any)?.collectionName ?? (inputArgs as any)?.collectionName
+      : typeof (inputArgs as any)?.collectionName !== 'undefined'
+        ? (inputArgs as any).collectionName
+        : (params as any)?.collectionName;
+    const runtimeAssociationName = isResourceFromPopupTemplate
+      ? (params as any)?.associationName
+      : typeof (inputArgs as any)?.associationName !== 'undefined'
+        ? (inputArgs as any).associationName
+        : (params as any)?.associationName;
     const mergedTabUid = typeof inputArgs.tabUid !== 'undefined' ? inputArgs.tabUid : params.tabUid;
     // 移动端中只需要显示子页面
     const openMode = ctx.inputArgs?.isMobileLayout ? 'embed' : ctx.inputArgs?.mode || params.mode || 'drawer';
@@ -158,9 +189,9 @@ export const openView = defineAction({
         const pendingType = openMode;
         const pendingInputArgs = {
           ...ctx.inputArgs,
-          dataSourceKey: inputArgs.dataSourceKey ?? params.dataSourceKey ?? ctx.inputArgs.dataSourceKey,
-          collectionName: inputArgs.collectionName ?? params.collectionName ?? ctx.inputArgs.collectionName,
-          associationName: inputArgs.associationName ?? params.associationName ?? ctx.inputArgs.associationName,
+          dataSourceKey: runtimeDataSourceKey,
+          collectionName: runtimeCollectionName,
+          associationName: runtimeAssociationName,
           filterByTk: mergedFilterByTk,
           sourceId: mergedSourceId,
           tabUid: mergedTabUid,
@@ -192,21 +223,12 @@ export const openView = defineAction({
       // - 由 FlowRoute 第二阶段（带 inputArgs.navigation）重新打开时，需要把 closeRef/updateRef/onOpen 等透传给目标弹窗，否则无法正确维护视图栈。
       await ctx.openView(params.uid, {
         ...inputArgs,
-        ...params,
+        ...paramsForSpread,
         navigation,
         target: ctx.inputArgs.target || ctx.layoutContentElement,
-        dataSourceKey:
-          typeof inputArgs.dataSourceKey !== 'undefined'
-            ? inputArgs.dataSourceKey
-            : params.dataSourceKey ?? actionDefaults.dataSourceKey,
-        collectionName:
-          typeof inputArgs.collectionName !== 'undefined'
-            ? inputArgs.collectionName
-            : params.collectionName ?? actionDefaults.collectionName,
-        associationName:
-          typeof inputArgs.associationName !== 'undefined'
-            ? inputArgs.associationName
-            : params.associationName ?? actionDefaults.associationName,
+        dataSourceKey: runtimeDataSourceKey ?? actionDefaults.dataSourceKey,
+        collectionName: runtimeCollectionName ?? actionDefaults.collectionName,
+        associationName: runtimeAssociationName ?? actionDefaults.associationName,
         filterByTk: mergedFilterByTk,
         sourceId: mergedSourceId,
         tabUid: mergedTabUid,
@@ -259,13 +281,6 @@ export const openView = defineAction({
     const openerUids: string[] = isRouteManaged
       ? (inputArgs.openerUids as string[] | undefined) || parentOpenerUids
       : [...parentOpenerUids, (ctx.model.context?.inputArgs?.viewUid as string) || ctx.model.uid];
-
-    const runtimeDataSourceKey =
-      typeof inputArgs.dataSourceKey !== 'undefined' ? inputArgs.dataSourceKey : params.dataSourceKey;
-    const runtimeCollectionName =
-      typeof inputArgs.collectionName !== 'undefined' ? inputArgs.collectionName : params.collectionName;
-    const runtimeAssociationName =
-      typeof inputArgs.associationName !== 'undefined' ? inputArgs.associationName : params.associationName;
     const runtimePreventClose =
       typeof inputArgs.preventClose !== 'undefined' ? !!inputArgs.preventClose : !!params.preventClose;
 

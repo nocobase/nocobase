@@ -40,11 +40,6 @@ interface FlowInfo {
   modelKey?: string;
 }
 
-interface MenuConfig {
-  maxDepth?: number;
-  enablePerformanceOptimization?: boolean;
-}
-
 /**
  * Find sub-model by key with validation
  * Supports formats: subKey or subKey[index]
@@ -129,7 +124,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   menuLevels = 1, // 默认一级菜单
   flattenSubMenus = true,
 }) => {
-  const { message, modal } = App.useApp();
+  const { message } = App.useApp();
   const t = useMemo(() => getT(model), [model]);
   const [visible, setVisible] = useState(false);
   // 当模型发生子模型替换/增删等变化时，强制刷新菜单数据
@@ -282,7 +277,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   );
 
   const handleDelete = useCallback(() => {
-    modal.confirm({
+    Modal.confirm({
       title: t('Confirm delete'),
       icon: <ExclamationCircleOutlined />,
       content: t('Are you sure you want to delete this item? This action cannot be undone.'),

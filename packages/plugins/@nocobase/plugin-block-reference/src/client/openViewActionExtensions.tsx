@@ -204,9 +204,10 @@ const getPopupTemplateDisabledReason = async (
   }
 
   if (tplDataSourceKey === expectedDataSourceKey && tplCollectionName === expectedCollectionName) {
-    // 同数据源/数据表时，再校验 associationName（即使 targetCollection 一致，不同 association 也可能导致资源上下文错误）
-    const hasAnyAssociation = !!expectedAssociationName || !!tplAssociationName;
-    if (hasAnyAssociation) {
+    // associationName 的兼容规则：
+    // - 模板为「非关系弹窗」（tpl.associationName 为空）时，只要 collection 一致即可复用；
+    // - 模板为「关系弹窗」（tpl.associationName 非空）时，必须与当前上下文 associationName 一致。
+    if (tplAssociationName) {
       if (expectedAssociationName !== tplAssociationName) {
         const none = tWithNs(ctx, 'No association');
         return tWithNs(ctx, 'Template association mismatch', {
@@ -385,7 +386,6 @@ function PopupTemplateSelect(props: any) {
 
   const setOpenViewValue = useCallback(
     (k: string, v: any) => {
-      if (typeof v === 'undefined') return;
       try {
         form.setValuesIn(k, v);
       } catch (e) {
@@ -417,12 +417,20 @@ function PopupTemplateSelect(props: any) {
           if (typeof v === 'string') return v.trim() !== '';
           return true;
         };
-        (['dataSourceKey', 'collectionName', 'associationName', 'filterByTk', 'sourceId'] as const).forEach((k) => {
+        (['dataSourceKey', 'collectionName', 'filterByTk', 'sourceId'] as const).forEach((k) => {
           const tv = (tpl as any)?.[k];
           if (shouldApplyTemplateField(tv)) {
             setOpenViewValue(k, tv);
           }
         });
+        // associationName 允许被“清空”，以支持关系字段复用非关系弹窗模板
+        const tplAssociationName =
+          typeof (tpl as any)?.associationName === 'string' ? String((tpl as any).associationName) : '';
+        if (shouldApplyTemplateField(tplAssociationName)) {
+          setOpenViewValue('associationName', tplAssociationName);
+        } else {
+          setOpenViewValue('associationName', undefined);
+        }
 
         // Backfill defaults for important runtime params when template record doesn't carry them.
         if (!shouldApplyTemplateField((tpl as any)?.filterByTk) && !shouldApplyTemplateField(form.values?.filterByTk)) {
@@ -552,6 +560,18 @@ const resolveTemplateToUid = async (ctx: FlowSettingsContext, params: any): Prom
   }
 
   params.uid = tpl.targetUid;
+  // collectionName / associationName / dataSourceKey 以模板为准（associationName 允许为空表示“非关系弹窗”）
+  if (typeof tpl?.dataSourceKey === 'string' && tpl.dataSourceKey.trim()) {
+    params.dataSourceKey = tpl.dataSourceKey.trim();
+  }
+  if (typeof tpl?.collectionName === 'string' && tpl.collectionName.trim()) {
+    params.collectionName = tpl.collectionName.trim();
+  }
+  if (typeof tpl?.associationName === 'string' && tpl.associationName.trim()) {
+    params.associationName = tpl.associationName.trim();
+  } else if (params && typeof params === 'object' && 'associationName' in params) {
+    delete params.associationName;
+  }
 };
 
 export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
@@ -587,27 +607,15 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
     },
 
     async handler(ctx: any, params: any) {
-      // runtime should never see template params, but be defensive; also validate template runtime params to avoid "selectable but runtime crash"
+      // 模板信息（uid、dataSourceKey、collectionName、associationName）在配置保存时已填充到 params，
+      // 运行时直接使用即可，无需再次请求模板 API。
       const templateUid = typeof params?.popupTemplateUid === 'string' ? params.popupTemplateUid.trim() : '';
-      if (templateUid) {
-        try {
-          const tpl = await fetchTemplateByUid(ctx as any, templateUid);
-          if (tpl?.uid) {
-            const expected = resolveExpectedResourceInfo(ctx as any, params);
-            const disabledReason = await getPopupTemplateDisabledReason(ctx as any, tpl, expected);
-            if (disabledReason) {
-              throw new Error(disabledReason);
-            }
-            if (tpl?.targetUid && typeof tpl.targetUid === 'string' && tpl.targetUid.trim()) {
-              params.uid = tpl.targetUid.trim();
-            }
-          }
-        } catch (e) {
-          throw e instanceof Error ? e : new Error(String(e));
-        }
-      }
 
-      const nextParams = stripTemplateParams(params);
+      const nextParams = stripTemplateParams({
+        ...params,
+        // 内部标记：用于 openView 运行时按"模板资源优先"合并参数
+        ...(templateUid ? { __resourceFromPopupTemplate: true } : {}),
+      });
       const baseHandler = (base as any).handler;
       if (typeof baseHandler === 'function') {
         return baseHandler(ctx, nextParams);

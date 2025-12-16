@@ -622,7 +622,9 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
           }
           setSubmitting(true);
           try {
-            const targetUid = values?.replace ? model.uid : await duplicatePopupTarget();
+            // 无论是否选择 replace，都需要先复制弹窗作为模板的 target
+            // 这样可以保证模板和原弹窗是独立的
+            const targetUid = await duplicatePopupTarget();
             const tpl = await doCreate({
               name,
               description: normalizeTitle(values?.description) || undefined,
@@ -631,6 +633,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
             const tplUid = getUidFromAny(tpl);
 
             if (values?.replace && tplUid) {
+              // 选择替换时，当前弹窗改为引用新创建的模板
               const nextOpenView: any = { ...(openViewParams || {}) };
               nextOpenView.uid = targetUid;
               nextOpenView.popupTemplateUid = tplUid;
@@ -905,7 +908,27 @@ export function registerMenuExtensions() {
     matcher: (model) => {
       // Check if model has popupSettings flow
       const popupFlow = model.getFlow?.('popupSettings');
-      return !!popupFlow;
+      if (!popupFlow) return false;
+
+      // 对于字段，检查是否启用了 click-to-open
+      // 如果是字段但没有启用 click-to-open，不显示弹窗相关菜单
+      const displayFieldSettingsFlow = model.getFlow?.('displayFieldSettings');
+      if (displayFieldSettingsFlow) {
+        const clickToOpen = model.getStepParams?.('displayFieldSettings', 'clickToOpen')?.clickToOpen;
+        // 如果显式设置了 clickToOpen 为 false，不显示菜单
+        if (clickToOpen === false) {
+          return false;
+        }
+        // 如果未设置 clickToOpen，对于非关联字段默认不显示
+        if (clickToOpen === undefined) {
+          const collectionField = (model.context as any)?.collectionField;
+          if (collectionField && !collectionField?.isAssociationField?.()) {
+            return false;
+          }
+        }
+      }
+
+      return true;
     },
     items: async (model: FlowModel, t) => {
       const popupFlow = model.getFlow?.('popupSettings');

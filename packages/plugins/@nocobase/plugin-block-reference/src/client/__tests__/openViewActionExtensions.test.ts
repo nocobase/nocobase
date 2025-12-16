@@ -53,7 +53,7 @@ describe('openViewActionExtensions (popup template)', () => {
 
     const out = await enhanced.handler(ctx, { uid: 'x', popupTemplateUid: 'tpl-1' });
     expect(baseHandler).toHaveBeenCalledTimes(1);
-    expect(out).toEqual({ uid: 'popup-1' });
+    expect(out?.uid).toEqual('popup-1');
   });
 
   it('rejects popup template when dataSourceKey/collectionName mismatches current context', async () => {
@@ -155,6 +155,58 @@ describe('openViewActionExtensions (popup template)', () => {
 
     await expect(enhanced.beforeParamsSave(ctx, params, {})).rejects.toThrow('Template association mismatch');
     expect(baseBefore).toHaveBeenCalledTimes(0);
+  });
+
+  it('allows non-relation popup template when collection matches (relation field)', async () => {
+    const engine = new FlowEngine();
+    const baseBefore = vi.fn(async () => {});
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: {
+        uid: { type: 'string' },
+      },
+      beforeParamsSave: baseBefore as any,
+      handler: vi.fn(async () => undefined) as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    const api = {
+      resource: (name: string) => {
+        if (name !== 'flowModelTemplates') throw new Error('unexpected resource');
+        return {
+          get: vi.fn(async () => ({
+            data: {
+              data: {
+                uid: 'tpl-1',
+                targetUid: 'popup-1',
+                dataSourceKey: 'main',
+                collectionName: 'users',
+                // non-relation template: no associationName
+              },
+            },
+          })),
+        };
+      },
+    };
+    const model: any = {
+      getStepParams: vi.fn((flowKey: string, stepKey: string) => {
+        if (flowKey === 'resourceSettings' && stepKey === 'init') {
+          return { dataSourceKey: 'main', collectionName: 'users', associationName: 'users.roles' };
+        }
+        return {};
+      }),
+      parent: null,
+    };
+    const ctx: any = { engine, api, model, t: (k: string) => k };
+    const params: any = { popupTemplateUid: 'tpl-1', uid: 'old', associationName: 'users.roles' };
+
+    await expect(enhanced.beforeParamsSave(ctx, params, {})).resolves.toBeUndefined();
+    expect(params.uid).toBe('popup-1');
+    expect('associationName' in params).toBe(false);
   });
 
   it('uses action params to resolve target collection for relation popups', async () => {
