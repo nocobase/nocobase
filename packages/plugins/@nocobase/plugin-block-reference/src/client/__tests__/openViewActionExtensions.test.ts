@@ -157,7 +157,7 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(baseBefore).toHaveBeenCalledTimes(0);
   });
 
-  it('rejects popup template when template runtime params cannot be resolved', async () => {
+  it('uses action params to resolve target collection for relation popups', async () => {
     const engine = new FlowEngine();
     const baseBefore = vi.fn(async () => {});
     const baseOpenView: ActionDefinition = {
@@ -184,33 +184,50 @@ describe('openViewActionExtensions (popup template)', () => {
                 uid: 'tpl-1',
                 targetUid: 'popup-1',
                 dataSourceKey: 'main',
-                collectionName: 'users',
-                sourceId: '{{ ctx.resource.sourceId }}',
+                collectionName: 'posts',
+                associationName: 'comments',
               },
             },
           })),
         };
       },
     };
+    const dataSourceManager = {
+      getCollection: vi.fn((_ds: string, name: string) => {
+        if (name !== 'posts') return undefined;
+        return {
+          getFieldByPath: vi.fn((path: string) => {
+            if (path !== 'comments') return undefined;
+            return { targetCollection: { dataSourceKey: 'main', name: 'comments' } };
+          }),
+          getField: vi.fn((path: string) => {
+            if (path !== 'comments') return undefined;
+            return { targetCollection: { dataSourceKey: 'main', name: 'comments' } };
+          }),
+        };
+      }),
+    };
     const model: any = {
       getStepParams: vi.fn((flowKey: string, stepKey: string) => {
         if (flowKey === 'resourceSettings' && stepKey === 'init') {
-          return { dataSourceKey: 'main', collectionName: 'users' };
+          // 当前触发上下文是源集合（如表单：posts），并不会携带 associationName
+          return { dataSourceKey: 'main', collectionName: 'posts' };
         }
         return {};
       }),
       parent: null,
     };
-    const ctx: any = {
-      engine,
-      api,
-      model,
-      resolveJsonTemplate: vi.fn(async () => undefined),
-      t: (k: string) => k,
+    const ctx: any = { engine, api, model, dataSourceManager, t: (k: string) => k };
+    const params: any = {
+      popupTemplateUid: 'tpl-1',
+      uid: 'old',
+      dataSourceKey: 'main',
+      collectionName: 'posts',
+      associationName: 'comments',
     };
-    const params: any = { popupTemplateUid: 'tpl-1', uid: 'old' };
 
-    await expect(enhanced.beforeParamsSave(ctx, params, {})).rejects.toThrow('Cannot resolve template parameter');
-    expect(baseBefore).toHaveBeenCalledTimes(0);
+    await expect(enhanced.beforeParamsSave(ctx, params, {})).resolves.toBeUndefined();
+    expect(params.uid).toBe('popup-1');
+    expect(baseBefore).toHaveBeenCalledTimes(1);
   });
 });

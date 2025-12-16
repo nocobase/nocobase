@@ -71,7 +71,50 @@ const resolveTargetResourceByAssociation = (
   return { dataSourceKey: targetDataSourceKey, collectionName: targetCollectionName };
 };
 
-const resolveExpectedResourceInfo = (ctx: any): ExpectedResourceInfo => {
+const resolveExpectedResourceInfoFromActionParams = (ctx: any, params: any): ExpectedResourceInfo | undefined => {
+  if (!params || typeof params !== 'object') return undefined;
+  const rawDataSourceKey = typeof params?.dataSourceKey === 'string' ? params.dataSourceKey.trim() : '';
+  const rawCollectionName = typeof params?.collectionName === 'string' ? params.collectionName.trim() : '';
+  const rawAssociationName = typeof params?.associationName === 'string' ? params.associationName.trim() : '';
+
+  if (!rawDataSourceKey && !rawCollectionName && !rawAssociationName) return undefined;
+
+  let fallbackDataSourceKey = '';
+  let fallbackCollectionName = '';
+  try {
+    const ctxCollection = (ctx as any)?.collection;
+    fallbackDataSourceKey = typeof ctxCollection?.dataSourceKey === 'string' ? ctxCollection.dataSourceKey.trim() : '';
+    fallbackCollectionName = typeof ctxCollection?.name === 'string' ? ctxCollection.name.trim() : '';
+  } catch {
+    // ignore
+  }
+
+  const init = {
+    dataSourceKey: rawDataSourceKey || fallbackDataSourceKey,
+    collectionName: rawCollectionName || fallbackCollectionName,
+    associationName: rawAssociationName,
+  };
+
+  const assocResolved = resolveTargetResourceByAssociation(ctx, init);
+  if (assocResolved) {
+    return { ...assocResolved, ...(rawAssociationName ? { associationName: rawAssociationName } : {}) };
+  }
+
+  if (init.dataSourceKey && init.collectionName) {
+    return {
+      dataSourceKey: init.dataSourceKey,
+      collectionName: init.collectionName,
+      ...(rawAssociationName ? { associationName: rawAssociationName } : {}),
+    };
+  }
+
+  return undefined;
+};
+
+const resolveExpectedResourceInfo = (ctx: any, actionParams?: any): ExpectedResourceInfo => {
+  const fromParams = resolveExpectedResourceInfoFromActionParams(ctx, actionParams);
+  if (fromParams) return fromParams;
+
   let cur: any = ctx?.model;
   let depth = 0;
   while (cur && depth < 8) {
@@ -238,7 +281,15 @@ function PopupTemplateSelect(props: any) {
   const ctx = useFlowSettingsContext();
   const field: any = useField();
   const form = useForm();
-  const expectedResource = useMemo(() => resolveExpectedResourceInfo(ctx as any), [ctx]);
+  const expectedResource = useMemo(
+    () => resolveExpectedResourceInfo(ctx as any, form?.values),
+    [
+      ctx,
+      (form as any)?.values?.dataSourceKey,
+      (form as any)?.values?.collectionName,
+      (form as any)?.values?.associationName,
+    ],
+  );
   const [options, setOptions] = useState<
     Array<{
       label: React.ReactNode;
@@ -494,7 +545,7 @@ const resolveTemplateToUid = async (ctx: FlowSettingsContext, params: any): Prom
     throw new Error(tWithNs(ctx, 'Popup template not found'));
   }
 
-  const expected = resolveExpectedResourceInfo(ctx as any);
+  const expected = resolveExpectedResourceInfo(ctx as any, params);
   const disabledReason = await getPopupTemplateDisabledReason(ctx as any, tpl, expected);
   if (disabledReason) {
     throw new Error(disabledReason);
@@ -542,7 +593,7 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
         try {
           const tpl = await fetchTemplateByUid(ctx as any, templateUid);
           if (tpl?.uid) {
-            const expected = resolveExpectedResourceInfo(ctx as any);
+            const expected = resolveExpectedResourceInfo(ctx as any, params);
             const disabledReason = await getPopupTemplateDisabledReason(ctx as any, tpl, expected);
             if (disabledReason) {
               throw new Error(disabledReason);
