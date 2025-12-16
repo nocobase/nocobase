@@ -49,6 +49,7 @@ export class InputFieldInterface extends CollectionFieldInterface {
   group = 'basic';
   order = 1;
   title = '{{t("Single line text")}}';
+  primaryKeyDescription = '{{t("Primary key, unique identifier")}}';
   sortable = true;
   default = {
     interface: 'input',

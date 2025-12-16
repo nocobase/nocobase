@@ -199,9 +199,6 @@ FormBlockModel.registerFlow({
       use: 'layout',
       title: tExpr('Layout'),
     },
-    dataScope: {
-      use: 'dataScope',
-    },
   },
 });
 

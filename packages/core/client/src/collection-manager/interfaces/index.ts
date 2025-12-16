@@ -34,6 +34,7 @@ export * from './phone';
 export * from './radioGroup';
 export * from './richText';
 export * from './select';
+export * from './snowflake-id';
 export * from './subTable';
 export * from './tableoid';
 export * from './textarea';

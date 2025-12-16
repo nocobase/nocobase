@@ -331,23 +331,7 @@ TableColumnModel.registerFlow({
     },
     quickEdit: {
       title: tExpr('Enable quick edit'),
-      uiSchema: (ctx) => {
-        if (!ctx.model.collectionField) {
-          return;
-        }
-        const blockCollectionName = ctx.model.context.blockModel.collection.name;
-        const fieldCollectionName = ctx.model.collectionField.collectionName;
-        if (blockCollectionName !== fieldCollectionName) {
-          return;
-        }
-        return {
-          editable: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-            'x-disabled': ctx.model.collectionField.readonly || ctx.model.associationPathName,
-          },
-        };
-      },
+      uiMode: { type: 'switch', key: 'editable' },
       defaultParams(ctx) {
         if (ctx.model.collectionField.readonly || ctx.model.associationPathName) {
           return {
@@ -368,19 +352,12 @@ TableColumnModel.registerFlow({
     },
     sorter: {
       title: tExpr('Sortable'),
-      uiSchema(ctx) {
+      uiMode: { type: 'switch', key: 'sorter' },
+      hideInSettings: async (ctx) => {
         const targetInterface = ctx.app.dataSourceManager.collectionFieldInterfaceManager.getFieldInterface(
           ctx.model.collectionField.interface,
         );
-        if (!targetInterface.sortable) {
-          return;
-        }
-        return {
-          sorter: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-          },
-        };
+        return !targetInterface.sortable;
       },
       defaultParams: {
         sorter: false,
@@ -391,9 +368,13 @@ TableColumnModel.registerFlow({
         });
       },
     },
+    fixed: {
+      title: tExpr('Fixed'),
+      use: 'fixed',
+    },
     fieldNames: {
       use: 'titleField',
-      title: tExpr('Label field'),
+      title: tExpr('Title field'),
 
       beforeParamsSave: async (ctx, params, previousParams) => {
         if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
@@ -436,6 +417,12 @@ TableColumnModel.registerFlow({
         }
         ctx.model.setProps(targetCollectionField.getComponentProps());
       },
+      defaultParams: (ctx: any) => {
+        const titleField = ctx.model.context.collectionField.targetCollectionTitleFieldName;
+        return {
+          label: ctx.model.props.titleField || titleField,
+        };
+      },
       handler(ctx, params) {
         if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
           return null;
@@ -445,10 +432,6 @@ TableColumnModel.registerFlow({
           ...ctx.collectionField.targetCollection?.getField(params.label)?.getComponentProps(),
         });
       },
-    },
-    fixed: {
-      title: tExpr('Fixed'),
-      use: 'fixed',
     },
   },
 });

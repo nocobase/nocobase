@@ -53,11 +53,13 @@ export interface FlowSettingsOpenOptions {
   stepKey?: string;
   /** 弹窗展现形式（drawer 或 dialog） */
   uiMode?:
+    | 'select'
+    | 'switch'
     | 'dialog'
     | 'drawer'
     | 'embed'
     | {
-        type?: 'dialog' | 'drawer' | 'embed';
+        type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch';
         props?: {
           title?: string;
           width?: number;
@@ -597,14 +599,12 @@ export class FlowSettings {
 
         // 解析合并后的 uiSchema（包含 action 的 schema）
         const mergedUiSchema = await resolveStepUiSchema(model, flow, step);
-        if (!mergedUiSchema || Object.keys(mergedUiSchema).length === 0) continue;
-
         // 计算标题与 hooks
         let stepTitle: string = step.title;
         let beforeParamsSave = step.beforeParamsSave;
         let afterParamsSave = step.afterParamsSave;
         let actionDefaultParams: Record<string, any> = {};
-        let uiMode;
+        let uiMode = step.uiMode;
         if (step.use) {
           const action = model.getAction?.(step.use);
           if (action) {
@@ -633,7 +633,12 @@ export class FlowSettings {
           ...(resolvedDefaultParams || {}),
           ...modelStepParams,
         };
-
+        if (
+          (!mergedUiSchema || Object.keys(mergedUiSchema).length === 0) &&
+          !['select', 'switch'].includes(uiMode?.type || uiMode)
+        ) {
+          continue;
+        }
         entries.push({
           flowKey: fk,
           flowTitle: t(flow.title) || fk,
@@ -664,6 +669,9 @@ export class FlowSettings {
     const resolvedUiMode =
       entries.length === 1 ? await resolveUiMode(entries[0].uiMode || uiMode, entries[0].ctx) : uiMode;
     const modeType = typeof resolvedUiMode === 'string' ? resolvedUiMode : resolvedUiMode.type || 'dialog';
+    if (['select', 'switch'].includes(modeType)) {
+      return;
+    }
     const openView = viewer[modeType || 'dialog'].bind(viewer);
     const flowEngine = (model as any).flowEngine as FlowEngine;
     const scopes = {
