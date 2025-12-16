@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import type { ActionDefinition, FlowEngine, FlowSettingsContext } from '@nocobase/flow-engine';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { useField, useForm } from '@formily/react';
@@ -350,6 +350,8 @@ function PopupTemplateSelect(props: any) {
     }>
   >([]);
   const [loading, setLoading] = useState(false);
+  const selectRef = useRef<any>(null);
+  const isComposingRef = useRef(false);
 
   const t = useCallback((key: string, opt?: Record<string, any>) => tWithNs(ctx, key, opt), [ctx]);
 
@@ -511,8 +513,51 @@ function PopupTemplateSelect(props: any) {
     };
   }, [debouncedSearch]);
 
+  // 使用 useEffect 来绑定 composition 事件
+  useEffect(() => {
+    if (!selectRef.current) return;
+
+    // 获取 Select 组件内部的输入框元素
+    const timer = setTimeout(() => {
+      const selectElement = selectRef.current?.nativeElement || selectRef.current;
+      if (!selectElement) return;
+
+      // Ant Design Select 的输入框通常在这个位置
+      const inputElement = selectElement.querySelector('input.ant-select-selection-search-input') as HTMLInputElement;
+
+      if (inputElement) {
+        const handleCompositionStart = () => {
+          isComposingRef.current = true;
+        };
+
+        const handleCompositionEnd = () => {
+          isComposingRef.current = false;
+          // 中文输入完成后，获取输入框的值并触发搜索
+          setTimeout(() => {
+            const value = inputElement.value;
+            const kw = typeof value === 'string' ? value.trim() : '';
+            if (kw) {
+              debouncedSearch(kw);
+            }
+          }, 0);
+        };
+
+        inputElement.addEventListener('compositionstart', handleCompositionStart);
+        inputElement.addEventListener('compositionend', handleCompositionEnd);
+
+        return () => {
+          inputElement.removeEventListener('compositionstart', handleCompositionStart);
+          inputElement.removeEventListener('compositionend', handleCompositionEnd);
+        };
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [debouncedSearch]);
+
   return (
     <Select
+      ref={selectRef}
       showSearch
       allowClear
       filterOption={false}
@@ -527,6 +572,8 @@ function PopupTemplateSelect(props: any) {
         loadOptions();
       }}
       onSearch={(v) => {
+        // 如果正在使用中文输入法，不触发搜索
+        if (isComposingRef.current) return;
         const kw = typeof v === 'string' ? v.trim() : '';
         debouncedSearch(kw);
       }}
