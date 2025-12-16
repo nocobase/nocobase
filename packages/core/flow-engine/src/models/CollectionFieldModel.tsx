@@ -80,7 +80,7 @@ function FieldWithoutPermissionPlaceholder() {
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
   }, []);
-  const content = t(`The current user does not have {{actionName}} permission for the {{type}} "{{name}}"`, {
+  const content = t(`The current user don't have {{actionName}} permission for the {{type}} "{{name}}"`, {
     type: t('Field'),
     name: nameValue,
     actionName: model.forbidden.actionName || 'view',

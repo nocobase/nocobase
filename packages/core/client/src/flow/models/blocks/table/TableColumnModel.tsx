@@ -71,7 +71,7 @@ function FieldWithoutPermissionPlaceholder() {
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
   }, []);
-  const content = t(`The current user does not have view permission for the {{type}} "{{name}}"`, {
+  const content = t(`The current user don't have view permission for the {{type}} "{{name}}"`, {
     type: t('Field'),
     name: nameValue,
   }).replaceAll('&gt;', '>');
