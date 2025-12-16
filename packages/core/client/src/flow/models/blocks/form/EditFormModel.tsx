@@ -159,6 +159,9 @@ EditFormModel.registerFlow({
         });
       },
     },
+    dataScope: {
+      use: 'dataScope',
+    },
     refresh: {
       async handler(ctx) {
         if (!ctx.resource) {

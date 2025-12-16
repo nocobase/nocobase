@@ -240,7 +240,7 @@ GridCardBlockModel.registerFlow({
 });
 
 GridCardBlockModel.registerFlow({
-  key: 'listettings',
+  key: 'GridCardSettings',
   sort: 500,
   title: tExpr('Grid card block settings', { ns: 'block-grid-card' }),
   steps: {

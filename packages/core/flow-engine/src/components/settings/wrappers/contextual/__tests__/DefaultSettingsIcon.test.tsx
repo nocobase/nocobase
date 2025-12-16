@@ -140,22 +140,18 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
       ),
     );
 
-    // 等待菜单内出现静态流分组，确保异步加载完成
+    // 等待菜单渲染完成，并且只包含静态流的步骤
     await waitFor(() => {
       const menu = (globalThis as any).__lastDropdownMenu;
       expect(menu).toBeTruthy();
       const items = (menu?.items || []) as any[];
-      const groupLabels = items.filter((it) => it.type === 'group').map((it) => String(it.label));
-      expect(groupLabels).toContain('Static Flow');
+      const keys = items.map((it) => String(it.key || ''));
+      expect(keys.some((k) => k.startsWith('static1:'))).toBe(true);
+      expect(keys.some((k) => k.startsWith('dyn1:'))).toBe(false);
     });
 
     const menu = (globalThis as any).__lastDropdownMenu;
     const items = (menu?.items || []) as any[];
-
-    // groups for flows are labeled with flow.title; ensure static group exists, dynamic group不存在
-    const groupLabels = items.filter((it) => it.type === 'group').map((it) => String(it.label));
-    expect(groupLabels).toContain('Static Flow');
-    expect(groupLabels).not.toContain('Dynamic Flow');
 
     // 静态流的 step 存在（key: `${flowKey}:${stepKey}`），动态流 step 不存在
     expect(items.some((it) => String(it.key || '').startsWith('static1:'))).toBe(true);
@@ -361,7 +357,7 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     });
   });
 
-  it('adds "Copy popup UID" for popupSettings flow (current model and sub-model)', async () => {
+  it('adds "Copy popup UID" for popupSettings openView step (current model and sub-model)', async () => {
     class Parent extends FlowModel {}
     class Child extends FlowModel {}
     const engine = new FlowEngine();
@@ -372,13 +368,13 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     Parent.registerFlow({
       key: 'popupSettings',
       title: 'Popup',
-      steps: { stage: { title: 'Stage', uiSchema: { a: { type: 'string', 'x-component': 'Input' } } } },
+      steps: { openView: { title: 'Open view', uiSchema: { a: { type: 'string', 'x-component': 'Input' } } } },
     });
     // sub model popupSettings
     Child.registerFlow({
       key: 'popupSettings',
       title: 'Popup Child',
-      steps: { stage: { title: 'Stage', uiSchema: { a: { type: 'string', 'x-component': 'Input' } } } },
+      steps: { openView: { title: 'Open view', uiSchema: { a: { type: 'string', 'x-component': 'Input' } } } },
     });
     parent.addSubModel('items', child);
 
@@ -408,18 +404,18 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     await waitFor(() => {
       const m = (globalThis as any).__lastDropdownMenu;
       const is = (m?.items || []) as any[];
-      const current = is.find((it) => String(it.key) === 'copy-pop-uid:popupSettings:stage');
-      const sub = is.find((it) => String(it.key).startsWith('copy-pop-uid:items[0]:popupSettings:stage'));
+      const current = is.find((it) => String(it.key) === 'copy-pop-uid:popupSettings:openView');
+      const sub = is.find((it) => String(it.key).startsWith('copy-pop-uid:items[0]:popupSettings:openView'));
       expect(current).toBeTruthy();
       expect(sub).toBeTruthy();
     });
 
     // click and verify clipboard（直接使用最新的 menu）
     const menu = (globalThis as any).__lastDropdownMenu;
-    menu.onClick?.({ key: 'copy-pop-uid:popupSettings:stage' });
+    menu.onClick?.({ key: 'copy-pop-uid:popupSettings:openView' });
     expect((navigator as any).clipboard.writeText).toHaveBeenCalledWith('parent-2');
 
-    menu.onClick?.({ key: 'copy-pop-uid:items[0]:popupSettings:stage' });
+    menu.onClick?.({ key: 'copy-pop-uid:items[0]:popupSettings:openView' });
     expect((navigator as any).clipboard.writeText).toHaveBeenCalledWith('child-2');
   });
 

@@ -274,6 +274,7 @@ const EditFieldAction = (props) => {
             createOnly: false,
             createMainOnly: false,
             editMainOnly: true,
+            primaryKeyOnly: false,
           }}
         />
       </ActionContextProvider>
