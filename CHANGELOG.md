@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.25](https://github.com/nocobase/nocobase/compare/v1.9.24...v1.9.25) - 2025-12-12
+
+### 🚀 Improvements
+
+- **[Workflow]**
+  - Add fault-tolerant logic for data missing in the processor preparation, to avoid execution hang ([#8156](https://github.com/nocobase/nocobase/pull/8156)) by @mytharcher
+
+  - Use lazy load for association data on workflow canvas to improve performance ([#8142](https://github.com/nocobase/nocobase/pull/8142)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[acl]** Fix the issue where the API `acl.can` return `null` when role is `root` ([#8150](https://github.com/nocobase/nocobase/pull/8150)) by @mytharcher
+
+- **[Workflow: Manual node]** Fix the issue manual todo list is using incorrect API ([#8144](https://github.com/nocobase/nocobase/pull/8144)) by @mytharcher
+
+- **[HTTP request encryption]** Use brackets for array format in qs parsing by @chenos
+
+- **[Workflow: Approval]** Fix the issue where error thrown when cancel a execution when its workflow is deleted by @mytharcher
+
+- **[Migration manager]** Fix an issue where line breaks in data were lost during migration. by @cgyrock
+
 ## [v1.9.24](https://github.com/nocobase/nocobase/compare/v1.9.23...v1.9.24) - 2025-12-09
 
 ### 🐛 Bug Fixes

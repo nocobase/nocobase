@@ -112,9 +112,9 @@ describe('data source with acl', () => {
       await next();
     });
 
-    const adminUser = await app.db.getRepository('users').create({
-      values: {
-        roles: ['root'],
+    const adminUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
       },
     });
 
@@ -125,9 +125,9 @@ describe('data source with acl', () => {
   });
 
   it.skipIf(os.platform() === 'win32')('should allow root user', async () => {
-    const adminUser = await app.db.getRepository('users').create({
-      values: {
-        roles: ['root'],
+    const adminUser = await app.db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
       },
     });
 
@@ -139,7 +139,7 @@ describe('data source with acl', () => {
   it('should update roles resources', async () => {
     const adminUser = await app.db.getRepository('users').create({
       values: {
-        roles: ['root'],
+        roles: ['admin'],
       },
     });
 
@@ -166,7 +166,7 @@ describe('data source with acl', () => {
   it('should set main data source strategy', async () => {
     const adminUser = await app.db.getRepository('users').create({
       values: {
-        roles: ['root'],
+        roles: ['admin'],
       },
     });
 
@@ -235,7 +235,7 @@ describe('data source with acl', () => {
   it('should create strategy', async () => {
     const adminUser = await app.db.getRepository('users').create({
       values: {
-        roles: ['root'],
+        roles: ['admin'],
       },
     });
 
@@ -297,7 +297,7 @@ describe('data source with acl', () => {
   it('should create resources', async () => {
     const adminUser = await app.db.getRepository('users').create({
       values: {
-        roles: ['root'],
+        roles: ['admin'],
       },
     });
 
@@ -414,7 +414,7 @@ describe('data source with acl', () => {
   it('should update roles strategy', async () => {
     const adminUser = await app.db.getRepository('users').create({
       values: {
-        roles: ['root'],
+        roles: ['admin'],
       },
     });
 
@@ -456,7 +456,7 @@ describe('data source with acl', () => {
   it(`should list response meta include new data sources`, async () => {
     const adminUser = await app.db.getRepository('users').create({
       values: {
-        roles: ['root'],
+        roles: ['admin'],
       },
     });
 
@@ -522,7 +522,7 @@ describe('data source with acl', () => {
   it(`should update data sources`, async () => {
     const adminUser = await app.db.getRepository('users').create({
       values: {
-        roles: ['root'],
+        roles: ['admin'],
       },
     });
 
