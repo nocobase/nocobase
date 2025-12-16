@@ -60,7 +60,7 @@ const AIEmployeeForm: React.FC<{
         },
         {
           key: 'persona',
-          label: t('Characterization'),
+          label: t('Role setting'),
           children: <SystemPrompt />,
           forceRender: true,
         },
