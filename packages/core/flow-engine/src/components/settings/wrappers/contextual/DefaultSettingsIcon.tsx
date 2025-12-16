@@ -147,18 +147,74 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   useEffect(() => {
     let mounted = true;
     const loadExtras = async () => {
-      const Cls = model?.constructor as typeof FlowModel | undefined;
-      if (typeof Cls?.getExtraMenuItems !== 'function') {
-        if (mounted) setExtraMenuItems([]);
-        return;
-      }
-      try {
-        const extras = await Cls.getExtraMenuItems(model, t);
-        if (mounted) {
-          setExtraMenuItems(extras || []);
+      const allExtras: FlowModelExtraMenuItem[] = [];
+      const processedModels = new Set<string>();
+
+      const processModel = async (targetModel: FlowModel, depth: number, modelKeyPrefix?: string) => {
+        // Limit recursion depth to menuLevels
+        if (depth > menuLevels) {
+          return;
         }
-      } catch (e) {
-        console.error('load extra menu items failed', e);
+
+        // Prevent circular references
+        const modelId = targetModel.uid || `temp-${Date.now()}`;
+        if (processedModels.has(modelId)) {
+          return;
+        }
+        processedModels.add(modelId);
+
+        try {
+          const Cls = targetModel?.constructor as typeof FlowModel | undefined;
+          if (typeof Cls?.getExtraMenuItems === 'function') {
+            const extras = await Cls.getExtraMenuItems(targetModel, t);
+            if (extras && extras.length > 0) {
+              // Add modelKey prefix to distinguish items from sub-models
+              const prefixedExtras = extras.map((item) => ({
+                ...item,
+                key: modelKeyPrefix ? `${modelKeyPrefix}:${item.key}` : item.key,
+                // Store reference to target model for onClick handler
+                _targetModel: targetModel,
+              }));
+              allExtras.push(...prefixedExtras);
+            }
+          }
+
+          // Process sub-models if needed
+          if (depth < menuLevels && targetModel.subModels) {
+            await Promise.all(
+              Object.entries(targetModel.subModels).map(async ([subKey, subModelValue]) => {
+                if (Array.isArray(subModelValue)) {
+                  await Promise.all(
+                    subModelValue.map(async (subModel, index) => {
+                      if (subModel instanceof FlowModel && index < 50) {
+                        // Reasonable limit
+                        await processModel(subModel, depth + 1, `${subKey}[${index}]`);
+                      }
+                    }),
+                  );
+                } else if (subModelValue instanceof FlowModel) {
+                  await processModel(subModelValue, depth + 1, subKey);
+                }
+              }),
+            );
+          }
+        } finally {
+          processedModels.delete(modelId);
+        }
+      };
+
+      await processModel(model, 1);
+
+      if (mounted) {
+        const seen = new Set<string>();
+        const dedupedExtras = allExtras.filter((item) => {
+          if (seen.has(`${item.key}`)) {
+            return false;
+          }
+          seen.add(`${item.key}`);
+          return true;
+        });
+        setExtraMenuItems(dedupedExtras);
       }
     };
     // 避免 effect 触发 setState 导致循环：仅在 visible 打开时加载一次，关闭后仍保留结果
@@ -168,7 +224,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     return () => {
       mounted = false;
     };
-  }, [model, t, refreshTick, visible, message]);
+  }, [model, menuLevels, t, refreshTick, visible, message]);
 
   // 统一的复制 UID 方法
   const copyUidToClipboard = useCallback(

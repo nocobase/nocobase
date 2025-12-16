@@ -1411,7 +1411,7 @@ export class FlowModelContext extends BaseFlowModelContext {
     this.defineMethod('openView', async function (uid: string, options) {
       const opts = { ...options };
       // NOTE: when custom context is passed, route navigation must be disabled to avoid losing it after refresh.
-      if (opts.defineProperties || opts.defineMethod || opts.defineMethods) {
+      if (opts.defineProperties || opts.defineMethods) {
         opts.navigation = false; // 强制不使用路由导航, 避免刷新页面时丢失上下文
       }
       let model: FlowModel | null = null;

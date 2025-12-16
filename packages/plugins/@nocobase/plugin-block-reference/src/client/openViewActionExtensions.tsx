@@ -172,6 +172,7 @@ const getPopupTemplateDisabledReason = async (
         });
       }
     }
+    return;
   }
 
   const isSameDataSource = tplDataSourceKey === expectedDataSourceKey;

@@ -11,7 +11,7 @@ import React, { useState } from 'react';
 import { Button, Form, Input, Space, Switch, Typography } from 'antd';
 import _ from 'lodash';
 import { FlowModel, createBlockScopedEngine } from '@nocobase/flow-engine';
-import { BlockModel, PopupActionModel } from '@nocobase/client';
+import { BlockModel } from '@nocobase/client';
 import { ReferenceBlockModel } from './models/ReferenceBlockModel';
 import { NAMESPACE, tStr } from './locale';
 
@@ -897,10 +897,16 @@ export function registerMenuExtensions() {
     },
   });
 
-  PopupActionModel.registerExtraMenuItems({
+  // Register popup template menu items on FlowModel base class with matcher
+  // This ensures any model with popupSettings flow (not just PopupActionModel) gets these menu items
+  FlowModel.registerExtraMenuItems({
     group: 'common-actions',
     sort: -8,
-    matcher: () => true,
+    matcher: (model) => {
+      // Check if model has popupSettings flow
+      const popupFlow = model.getFlow?.('popupSettings');
+      return !!popupFlow;
+    },
     items: async (model: FlowModel, t) => {
       const popupFlow = model.getFlow?.('popupSettings');
       const resolveOpenViewStepKey = (flow: any): string | undefined => {
