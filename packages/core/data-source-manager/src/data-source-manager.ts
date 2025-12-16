@@ -11,6 +11,7 @@ import { createConsoleLogger, createLogger, Logger, LoggerOptions } from '@nocob
 import { ToposortOptions } from '@nocobase/utils';
 import { DataSource } from './data-source';
 import { DataSourceFactory } from './data-source-factory';
+import { SequelizeCollectionManager } from './sequelize-collection-manager';
 
 type DataSourceHook = (dataSource: DataSource) => void;
 
@@ -95,6 +96,7 @@ export class DataSourceManager {
 
       const ds = self.dataSources.get(name);
       ctx.dataSource = ds;
+      ctx.database = (ds.collectionManager as SequelizeCollectionManager).db;
 
       const composedFn = ds.middleware(self.middlewares);
       return composedFn(ctx, next);
