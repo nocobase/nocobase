@@ -372,68 +372,6 @@ describe('DefaultSettingsIcon - only static flows are shown', () => {
     });
   });
 
-  it('adds "Copy popup UID" for popupSettings openView step (current model and sub-model)', async () => {
-    class Parent extends FlowModel {}
-    class Child extends FlowModel {}
-    const engine = new FlowEngine();
-    const parent = new Parent({ uid: 'parent-2', flowEngine: engine });
-    const child = new Child({ uid: 'child-2', flowEngine: engine });
-
-    // current model popupSettings
-    Parent.registerFlow({
-      key: 'popupSettings',
-      title: 'Popup',
-      steps: { openView: { title: 'Open view', uiSchema: { a: { type: 'string', 'x-component': 'Input' } } } },
-    });
-    // sub model popupSettings
-    Child.registerFlow({
-      key: 'popupSettings',
-      title: 'Popup Child',
-      steps: { openView: { title: 'Open view', uiSchema: { a: { type: 'string', 'x-component': 'Input' } } } },
-    });
-    parent.addSubModel('items', child);
-
-    // mock clipboard
-    Object.defineProperty(window.navigator, 'clipboard', {
-      value: { writeText: vi.fn().mockResolvedValue(undefined) },
-      configurable: true,
-    });
-
-    render(
-      React.createElement(
-        ConfigProvider as any,
-        null,
-        React.createElement(
-          App as any,
-          null,
-          React.createElement(DefaultSettingsIcon as any, {
-            model: parent,
-            menuLevels: 2,
-            flattenSubMenus: true,
-          }),
-        ),
-      ),
-    );
-
-    // 等待“Copy popup UID”对应的菜单项出现，避免异步时序导致的偶发失败
-    await waitFor(() => {
-      const m = (globalThis as any).__lastDropdownMenu;
-      const is = (m?.items || []) as any[];
-      const current = is.find((it) => String(it.key) === 'copy-pop-uid:popupSettings:openView');
-      const sub = is.find((it) => String(it.key).startsWith('copy-pop-uid:items[0]:popupSettings:openView'));
-      expect(current).toBeTruthy();
-      expect(sub).toBeTruthy();
-    });
-
-    // click and verify clipboard（直接使用最新的 menu）
-    const menu = (globalThis as any).__lastDropdownMenu;
-    menu.onClick?.({ key: 'copy-pop-uid:popupSettings:openView' });
-    expect((navigator as any).clipboard.writeText).toHaveBeenCalledWith('parent-2');
-
-    menu.onClick?.({ key: 'copy-pop-uid:items[0]:popupSettings:openView' });
-    expect((navigator as any).clipboard.writeText).toHaveBeenCalledWith('child-2');
-  });
-
   it('refreshes menu when current model step params change', async () => {
     class TestFlowModel extends FlowModel {}
     const engine = new FlowEngine();

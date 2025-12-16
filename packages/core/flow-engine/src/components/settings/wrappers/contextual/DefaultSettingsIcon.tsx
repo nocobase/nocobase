@@ -601,14 +601,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               key: uniqueKey,
               label: <MenuLabelItem title={t(stepInfo.title)} uiMode={uiMode} itemProps={itemProps} />,
             });
-            // add per-step copy popup uid under each configurable step
-            if (flow.key === 'popupSettings' && baseMenuKey.includes('openView')) {
-              const copyKey = generateUniqueKey(`copy-pop-uid:${baseMenuKey}`);
-              items.push({
-                key: copyKey,
-                label: t('Copy popup UID'),
-              });
-            }
           });
           if (flow.options.divider === 'bottom') {
             items.push({
@@ -651,14 +643,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   key: uniqueKey,
                   label: t(stepInfo.title),
                 });
-
-                if (flow.key === 'popupSettings') {
-                  const copyKey = generateUniqueKey(`copy-pop-uid:${flow.key}:${stepInfo.stepKey}`);
-                  items.push({
-                    key: copyKey,
-                    label: t('Copy popup UID'),
-                  });
-                }
               });
             });
           } else {
@@ -674,14 +658,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   key: uniqueKey,
                   label: t(stepInfo.title),
                 });
-
-                if (flow.key === 'popupSettings') {
-                  const copyKey = generateUniqueKey(`copy-pop-uid:${modelKey}:${flow.key}:${stepInfo.stepKey}`);
-                  subMenuChildren.push({
-                    key: copyKey,
-                    label: t('Copy popup UID'),
-                  });
-                }
               });
             });
 
