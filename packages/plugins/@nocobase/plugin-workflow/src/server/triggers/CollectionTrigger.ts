@@ -15,6 +15,7 @@ import {
   parseCollectionName,
   SequelizeCollectionManager,
   SequelizeDataSource,
+  DataSource,
 } from '@nocobase/data-source-manager';
 
 import Trigger from '.';
@@ -183,6 +184,20 @@ export default class CollectionTrigger extends Trigger {
           const listener = (<typeof CollectionTrigger>this.constructor).handler.bind(this, workflow.id, type);
           this.events.set(name, listener);
           db.on(event, listener);
+
+          this.onDataSourceReload(dataSourceName, (newDataSource) => {
+            if (!this.events.has(name)) {
+              return;
+            }
+            const { db: newDB } = newDataSource.collectionManager as SequelizeCollectionManager;
+            if (!newDB || !newDB.getCollection(collectionName)) {
+              this.workflow
+                .getLogger()
+                .warn(`[CollectionTrigger] after data source reload collection not exists: ${dataSourceName}`);
+              return;
+            }
+            newDB.on(event, listener);
+          });
         }
       } else {
         const listener = this.events.get(name);
@@ -264,5 +279,14 @@ export default class CollectionTrigger extends Trigger {
     }
 
     return null;
+  }
+
+  private onDataSourceReload(name: string, handler: (newDataSource: DataSource, oldDataSource: DataSource) => void) {
+    this.workflow.app.dataSourceManager.afterAddDataSource((newDataSource, oldDataSource) => {
+      if (!oldDataSource || newDataSource.name !== name) {
+        return;
+      }
+      handler(newDataSource, oldDataSource);
+    }, false);
   }
 }

@@ -12,7 +12,7 @@ import { ToposortOptions } from '@nocobase/utils';
 import { DataSource } from './data-source';
 import { DataSourceFactory } from './data-source-factory';
 
-type DataSourceHook = (dataSource: DataSource) => void;
+type DataSourceHook = (dataSource: DataSource, oldDataSource?: DataSource) => void;
 
 type DataSourceManagerOptions = {
   logger?: LoggerOptions | Logger;
@@ -75,7 +75,7 @@ export class DataSourceManager {
     this.dataSources.set(dataSource.name, dataSource);
 
     for (const hook of this.onceHooks) {
-      hook(dataSource);
+      hook(dataSource, oldDataSource);
     }
   }
 
@@ -120,12 +120,11 @@ export class DataSourceManager {
     }
   }
 
-  afterAddDataSource(hook: DataSourceHook) {
-    this.addHookAndRun(hook);
-  }
-
-  private addHookAndRun(hook: DataSourceHook) {
+  afterAddDataSource(hook: DataSourceHook, runImmediately?: boolean) {
     this.onceHooks.push(hook);
+    if (runImmediately === false) {
+      return;
+    }
     for (const dataSource of this.dataSources.values()) {
       hook(dataSource);
     }
