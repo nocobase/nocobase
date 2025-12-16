@@ -22,6 +22,10 @@ import {
 } from '@nocobase/flow-engine';
 import { NAMESPACE, tStr } from '../locale';
 import { REF_HOST_CTX_KEY } from '../constants';
+import {
+  getTemplateAvailabilityDisabledReason,
+  resolveExpectedResourceInfoByModelChain,
+} from '../utils/templateCompatibility';
 
 type ImporterProps = {
   /** 默认从模板根取片段的路径 */
@@ -50,32 +54,6 @@ const GRID_REF_STEP_KEY = 'target';
 export class SubModelTemplateImporterModel extends FlowModel {
   declare props: ImporterProps;
 
-  private resolveTargetResourceByAssociation(
-    ctx: FlowContext | undefined,
-    init: { dataSourceKey?: unknown; collectionName?: unknown; associationName?: unknown },
-  ): { dataSourceKey: string; collectionName: string } | undefined {
-    const dataSourceKey = typeof init?.dataSourceKey === 'string' ? init.dataSourceKey.trim() : '';
-    const collectionName = typeof init?.collectionName === 'string' ? init.collectionName.trim() : '';
-    const associationName = typeof init?.associationName === 'string' ? init.associationName.trim() : '';
-    if (!dataSourceKey || !associationName) return undefined;
-
-    const parts = associationName.split('.').filter(Boolean);
-    const inferredBaseCollectionName = parts.length > 1 ? parts[0] : '';
-    const baseCollectionName = inferredBaseCollectionName || collectionName;
-    const fieldPath = parts.length > 1 ? parts.slice(1).join('.') : associationName;
-    if (!baseCollectionName || !fieldPath) return undefined;
-
-    const dsManager = ctx?.dataSourceManager || this.context.dataSourceManager;
-    const baseCollection = dsManager?.getCollection?.(dataSourceKey, baseCollectionName);
-    const field = baseCollection?.getFieldByPath?.(fieldPath) || baseCollection?.getField?.(fieldPath);
-    const targetCollection = field?.targetCollection;
-    const targetDataSourceKey =
-      typeof targetCollection?.dataSourceKey === 'string' ? targetCollection.dataSourceKey.trim() : '';
-    const targetCollectionName = typeof targetCollection?.name === 'string' ? targetCollection.name.trim() : '';
-    if (!targetDataSourceKey || !targetCollectionName) return undefined;
-    return { dataSourceKey: targetDataSourceKey, collectionName: targetCollectionName };
-  }
-
   public resolveExpectedResourceInfo(
     ctx?: FlowContext,
     start?: FlowModel,
@@ -85,39 +63,12 @@ export class SubModelTemplateImporterModel extends FlowModel {
     if (fromPropsDataSourceKey && fromPropsCollectionName) {
       return { dataSourceKey: fromPropsDataSourceKey, collectionName: fromPropsCollectionName };
     }
-
-    let cur: FlowModel | undefined = start || this.parent;
-    let depth = 0;
-    while (cur && depth < 8) {
-      const init = cur?.getStepParams?.('resourceSettings', 'init') || {};
-      // 若存在 associationName，优先解析其目标集合（collectionName 可能缺失/不准）
-      const assocResolved = this.resolveTargetResourceByAssociation(ctx, init);
-      if (assocResolved) return assocResolved;
-
-      // 次优先：读取模型运行时 collection（部分模型会直接暴露）
-      try {
-        const c = (cur as any)?.collection;
-        const dataSourceKey = typeof c?.dataSourceKey === 'string' ? c.dataSourceKey.trim() : '';
-        const collectionName = typeof c?.name === 'string' ? c.name.trim() : '';
-        if (dataSourceKey && collectionName) {
-          return { dataSourceKey, collectionName };
-        }
-      } catch {
-        // ignore
-      }
-
-      const dataSourceKey = typeof init?.dataSourceKey === 'string' ? init.dataSourceKey.trim() : '';
-      const collectionName = typeof init?.collectionName === 'string' ? init.collectionName.trim() : '';
-      if (dataSourceKey && collectionName) {
-        return { dataSourceKey, collectionName };
-      }
-      cur = cur?.parent;
-      depth++;
-    }
-
+    const resolved = resolveExpectedResourceInfoByModelChain(ctx, start || this.parent, {
+      dataSourceManager: this.context.dataSourceManager,
+    });
     return {
-      dataSourceKey: fromPropsDataSourceKey || undefined,
-      collectionName: fromPropsCollectionName || undefined,
+      dataSourceKey: String(resolved?.dataSourceKey || fromPropsDataSourceKey || '').trim() || undefined,
+      collectionName: String(resolved?.collectionName || fromPropsCollectionName || '').trim() || undefined,
     };
   }
 
@@ -278,55 +229,12 @@ export class SubModelTemplateImporterModel extends FlowModel {
     const expectedDataSourceKey = String(expected?.dataSourceKey || this.props?.expectedDataSourceKey || '').trim();
     const expectedCollectionName = String(expected?.collectionName || this.props?.expectedCollectionName || '').trim();
     if (!expectedDataSourceKey || !expectedCollectionName) return undefined;
-
-    const baseTplDataSourceKey = String(tpl?.dataSourceKey || '').trim();
-    const baseTplCollectionName = String(tpl?.collectionName || '').trim();
-    const tplAssociationName = String(tpl?.associationName || '').trim();
-    const tplResolved = tplAssociationName
-      ? this.resolveTargetResourceByAssociation(ctx, {
-          dataSourceKey: baseTplDataSourceKey,
-          collectionName: baseTplCollectionName,
-          associationName: tplAssociationName,
-        })
-      : undefined;
-    const tplDataSourceKey = tplResolved?.dataSourceKey || baseTplDataSourceKey;
-    const tplCollectionName = tplResolved?.collectionName || baseTplCollectionName;
-
-    if (!tplDataSourceKey || !tplCollectionName) {
-      return (
-        ctx.t?.('Template missing data source/collection info', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }) ||
-        'Template missing data source/collection info'
-      );
-    }
-
-    if (tplDataSourceKey === expectedDataSourceKey && tplCollectionName === expectedCollectionName) {
-      return undefined;
-    }
-
-    // 格式化更友好的提示信息
-    const isSameDataSource = tplDataSourceKey === expectedDataSourceKey;
-    if (isSameDataSource) {
-      // 仅数据表不同
-      return (
-        ctx.t?.('Template collection mismatch', {
-          ns: [NAMESPACE, 'client'],
-          nsMode: 'fallback',
-          expected: expectedCollectionName,
-          actual: tplCollectionName,
-        }) || `Collection mismatch: expected "${expectedCollectionName}", but template is for "${tplCollectionName}"`
-      );
-    } else {
-      // 数据源也不同
-      return (
-        ctx.t?.('Template data source mismatch', {
-          ns: [NAMESPACE, 'client'],
-          nsMode: 'fallback',
-          expected: `${expectedDataSourceKey}/${expectedCollectionName}`,
-          actual: `${tplDataSourceKey}/${tplCollectionName}`,
-        }) ||
-        `Data source mismatch: expected "${expectedDataSourceKey}/${expectedCollectionName}", but template is for "${tplDataSourceKey}/${tplCollectionName}"`
-      );
-    }
+    return getTemplateAvailabilityDisabledReason(
+      ctx,
+      tpl,
+      { dataSourceKey: expectedDataSourceKey, collectionName: expectedCollectionName },
+      { dataSourceManager: this.context.dataSourceManager },
+    );
   }
 
   public async fetchTemplateOptions(ctx: FlowContext, keyword?: string) {

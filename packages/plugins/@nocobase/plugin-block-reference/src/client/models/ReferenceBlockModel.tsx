@@ -14,6 +14,7 @@ import { escapeT, type FlowEngine, type FlowModel } from '@nocobase/flow-engine'
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
 import debounce from 'lodash/debounce';
+import { getTemplateAvailabilityDisabledReason, normalizeStr } from '../utils/templateCompatibility';
 import {
   ensureBlockScopedEngine,
   ReferenceScopedRenderer,
@@ -93,6 +94,7 @@ export class ReferenceBlockModel extends BlockModel {
   private _scopedEngine?: FlowEngine;
   private _targetModel?: FlowModel;
   private _resolvedTargetUid?: string;
+  private _invalidTargetUid?: string;
 
   get title() {
     return this._targetModel?.title || super.title;
@@ -175,15 +177,29 @@ export class ReferenceBlockModel extends BlockModel {
       }
       this._targetModel = undefined;
       this._resolvedTargetUid = undefined;
+      this._invalidTargetUid = undefined;
       (this.subModels as any)['target'] = undefined;
       return;
     }
 
     this._syncExtraTitle(true);
     if (this._resolvedTargetUid === targetUid && this._targetModel) {
+      this._invalidTargetUid = undefined;
       return;
     }
-    const target = await this._resolveFinalTarget(targetUid);
+    // 进入解析流程：先清理 invalid 标记，避免渲染层误判为 invalid
+    this._invalidTargetUid = undefined;
+    let target = await this._resolveFinalTarget(targetUid);
+    if (!target) {
+      // 与 ReferenceFormGridModel 保持一致：中间态下可能首次解析失败，做一次轻量重试避免闪错
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const latestStepParams = (this.getStepParams as any)?.('referenceSettings', 'target') || {};
+      const latestTargetUid = (latestStepParams?.targetUid || '').trim() || undefined;
+      if (latestTargetUid !== targetUid) {
+        return;
+      }
+      target = await this._resolveFinalTarget(targetUid);
+    }
     if (!target) {
       const oldTarget: FlowModel | undefined = (this.subModels as any)['target'];
       if (oldTarget) {
@@ -192,7 +208,9 @@ export class ReferenceBlockModel extends BlockModel {
       }
       this._targetModel = undefined;
       this._resolvedTargetUid = undefined;
+      this._invalidTargetUid = targetUid;
       (this.subModels as any)['target'] = undefined;
+      this.rerender();
       return;
     }
 
@@ -210,6 +228,7 @@ export class ReferenceBlockModel extends BlockModel {
 
     this._targetModel = target;
     this._resolvedTargetUid = targetUid;
+    this._invalidTargetUid = undefined;
     this.rerender();
   }
 
@@ -246,7 +265,11 @@ export class ReferenceBlockModel extends BlockModel {
       if (!configuredUid) {
         return renderReferenceTargetPlaceholder(this as any, 'unconfigured');
       }
-      return renderReferenceTargetPlaceholder(this as any, 'invalid');
+      if (this._invalidTargetUid === configuredUid) {
+        return renderReferenceTargetPlaceholder(this as any, 'invalid');
+      }
+      // 目标尚未解析完成：展示 resolving，占位避免闪现 invalid
+      return renderReferenceTargetPlaceholder(this as any, 'resolving');
     }
     // 使用 BlockScoped 引擎包裹渲染，确保拖拽/移动等操作拿到正确的 engine
     const engine = this._ensureScopedEngine();
@@ -275,14 +298,6 @@ ReferenceBlockModel.registerFlow({
         const isNew = !!m.isNew;
         const disableSelect = !isNew && !!templateUid;
         const api = (ctx as any)?.api;
-
-        const t = (key: string, options?: Record<string, any>) => {
-          const fn = (ctx as any)?.t;
-          if (typeof fn !== 'function') return key;
-          return fn(key, { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...(options || {}) });
-        };
-
-        const normalizeStr = (v: any) => (typeof v === 'string' ? v.trim() : '');
         const resolveExpectedAssociationName = (): string => {
           try {
             const init = m.getStepParams?.('resourceSettings', 'init') || {};
@@ -315,20 +330,12 @@ ReferenceBlockModel.registerFlow({
         };
         const expectedAssociationName = resolveExpectedAssociationName();
         const getTemplateDisabledReason = (tpl: Record<string, any>): string | undefined => {
-          const tplAssociationName = normalizeStr(tpl?.associationName);
-          const isAssociationResource = (v: string) => !!v && v.includes('.');
-          const expectedAssociationResource = isAssociationResource(expectedAssociationName)
-            ? expectedAssociationName
-            : '';
-          const tplAssociationResource = isAssociationResource(tplAssociationName) ? tplAssociationName : '';
-          // 仅对“关联资源模板”（associationName 形如 `users.profile`）做限制：必须在同一关联上下文使用
-          if (!tplAssociationResource) return undefined;
-          if (tplAssociationResource === expectedAssociationResource) return undefined;
-          const none = t('No association');
-          return t('Template association mismatch', {
-            expected: expectedAssociationResource || none,
-            actual: tplAssociationResource || none,
-          });
+          return getTemplateAvailabilityDisabledReason(
+            ctx,
+            tpl,
+            { associationName: expectedAssociationName },
+            { checkResource: false, associationMatch: 'associationResourceOnly' },
+          );
         };
 
         const fetchOptions = async (keyword?: string) => {
@@ -590,6 +597,7 @@ ReferenceBlockModel.registerFlow({
     },
     target: {
       preset: true,
+      hideInSettings: true,
       title: tStr('Template settings'),
       uiSchema: (ctx) => {
         const m = (ctx.model as any) || {};

@@ -14,6 +14,12 @@ import { useField, useForm } from '@formily/react';
 import { Select, Tooltip, Typography } from 'antd';
 import debounce from 'lodash/debounce';
 import { NAMESPACE } from './locale';
+import {
+  getTemplateAvailabilityDisabledReason,
+  resolveExpectedResourceInfoByModelChain,
+  resolveTargetResourceByAssociation,
+  tWithNs,
+} from './utils/templateCompatibility';
 
 type TemplateRow = {
   uid: string;
@@ -30,37 +36,6 @@ type TemplateRow = {
 };
 
 type ExpectedResourceInfo = { dataSourceKey?: string; collectionName?: string; associationName?: string };
-
-const tWithNs = (ctx: any, key: string, options?: Record<string, any>) => {
-  const opt = { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...(options || {}) };
-  return ctx?.t ? ctx.t(key, opt) : key;
-};
-
-const resolveTargetResourceByAssociation = (
-  ctx: any,
-  init: { dataSourceKey?: unknown; collectionName?: unknown; associationName?: unknown },
-): { dataSourceKey: string; collectionName: string } | undefined => {
-  const dataSourceKey = typeof init?.dataSourceKey === 'string' ? init.dataSourceKey.trim() : '';
-  const collectionName = typeof init?.collectionName === 'string' ? init.collectionName.trim() : '';
-  const associationName = typeof init?.associationName === 'string' ? init.associationName.trim() : '';
-  if (!dataSourceKey || !associationName) return undefined;
-
-  const parts = associationName.split('.').filter(Boolean);
-  const inferredBaseCollectionName = parts.length > 1 ? parts[0] : '';
-  const baseCollectionName = inferredBaseCollectionName || collectionName;
-  const fieldPath = parts.length > 1 ? parts.slice(1).join('.') : associationName;
-  if (!baseCollectionName || !fieldPath) return undefined;
-
-  const dsManager = ctx?.dataSourceManager || ctx?.model?.context?.dataSourceManager;
-  const baseCollection = dsManager?.getCollection?.(dataSourceKey, baseCollectionName);
-  const field = baseCollection?.getFieldByPath?.(fieldPath) || baseCollection?.getField?.(fieldPath);
-  const targetCollection = field?.targetCollection;
-  const targetDataSourceKey =
-    typeof targetCollection?.dataSourceKey === 'string' ? targetCollection.dataSourceKey.trim() : '';
-  const targetCollectionName = typeof targetCollection?.name === 'string' ? targetCollection.name.trim() : '';
-  if (!targetDataSourceKey || !targetCollectionName) return undefined;
-  return { dataSourceKey: targetDataSourceKey, collectionName: targetCollectionName };
-};
 
 const resolveExpectedResourceInfoFromActionParams = (ctx: any, params: any): ExpectedResourceInfo | undefined => {
   if (!params || typeof params !== 'object') return undefined;
@@ -105,47 +80,10 @@ const resolveExpectedResourceInfoFromActionParams = (ctx: any, params: any): Exp
 const resolveExpectedResourceInfo = (ctx: any, actionParams?: any): ExpectedResourceInfo => {
   const fromParams = resolveExpectedResourceInfoFromActionParams(ctx, actionParams);
   if (fromParams) return fromParams;
-
-  let cur: any = ctx?.model;
-  let depth = 0;
-  while (cur && depth < 8) {
-    const init = cur?.getStepParams?.('resourceSettings', 'init') || {};
-    const expectedAssociationName = typeof init?.associationName === 'string' ? init.associationName.trim() : '';
-    // 若存在 associationName，优先解析其目标集合（collectionName 可能缺失/不准）
-    const assocResolved = resolveTargetResourceByAssociation(ctx, init);
-    if (assocResolved) {
-      return { ...assocResolved, ...(expectedAssociationName ? { associationName: expectedAssociationName } : {}) };
-    }
-
-    // 次优先：读取运行时注入的 collection（更贴近“当前上下文集合”）
-    try {
-      const c = (cur as any)?.collection || (ctx as any)?.collection;
-      const dataSourceKey = typeof c?.dataSourceKey === 'string' ? c.dataSourceKey.trim() : '';
-      const collectionName = typeof c?.name === 'string' ? c.name.trim() : '';
-      if (dataSourceKey && collectionName) {
-        return {
-          dataSourceKey,
-          collectionName,
-          ...(expectedAssociationName ? { associationName: expectedAssociationName } : {}),
-        };
-      }
-    } catch {
-      // ignore
-    }
-
-    const dataSourceKey = typeof init?.dataSourceKey === 'string' ? init.dataSourceKey.trim() : '';
-    const collectionName = typeof init?.collectionName === 'string' ? init.collectionName.trim() : '';
-    if (dataSourceKey && collectionName) {
-      return {
-        dataSourceKey,
-        collectionName,
-        ...(expectedAssociationName ? { associationName: expectedAssociationName } : {}),
-      };
-    }
-    cur = cur?.parent;
-    depth++;
-  }
-  return {};
+  return resolveExpectedResourceInfoByModelChain(ctx, ctx?.model, {
+    includeAssociationName: true,
+    fallbackCollectionFromCtx: true,
+  });
 };
 
 const getPopupTemplateDisabledReason = async (
@@ -172,54 +110,8 @@ const getPopupTemplateDisabledReason = async (
    * 额外：collectionName 有时并不可靠（例如资源是由 associationName 推导而来），所以会优先
    * 尝试根据 associationName 解析真实 targetCollection 再比较（best-effort，解析失败则回退）。
    */
-  const expectedDataSourceKey = String(expected?.dataSourceKey || '').trim();
-  const expectedCollectionName = String(expected?.collectionName || '').trim();
-  const expectedAssociationName = String(expected?.associationName || '').trim();
-  if (!expectedDataSourceKey || !expectedCollectionName) return undefined;
-
-  const baseTplDataSourceKey = String(tpl?.dataSourceKey || '').trim();
-  const baseTplCollectionName = String(tpl?.collectionName || '').trim();
-  const tplAssociationName = String(tpl?.associationName || '').trim();
-  const tplResolved = tplAssociationName
-    ? resolveTargetResourceByAssociation(ctx, {
-        dataSourceKey: baseTplDataSourceKey,
-        collectionName: baseTplCollectionName,
-        associationName: tplAssociationName,
-      })
-    : undefined;
-  const tplDataSourceKey = tplResolved?.dataSourceKey || baseTplDataSourceKey;
-  const tplCollectionName = tplResolved?.collectionName || baseTplCollectionName;
-
-  if (!tplDataSourceKey || !tplCollectionName) {
-    return tWithNs(ctx, 'Template missing data source/collection info');
-  }
-
-  if (tplDataSourceKey === expectedDataSourceKey && tplCollectionName === expectedCollectionName) {
-    // associationName 的兼容规则：
-    // - 模板为「非关系弹窗」（tpl.associationName 为空）时，只要 collection 一致即可复用；
-    // - 模板为「关系弹窗」（tpl.associationName 非空）时，必须与当前上下文 associationName 一致。
-    if (tplAssociationName) {
-      if (expectedAssociationName !== tplAssociationName) {
-        const none = tWithNs(ctx, 'No association');
-        return tWithNs(ctx, 'Template association mismatch', {
-          expected: expectedAssociationName || none,
-          actual: tplAssociationName || none,
-        });
-      }
-    }
-    return;
-  }
-
-  const isSameDataSource = tplDataSourceKey === expectedDataSourceKey;
-  if (isSameDataSource) {
-    return tWithNs(ctx, 'Template collection mismatch', {
-      expected: expectedCollectionName,
-      actual: tplCollectionName,
-    });
-  }
-  return tWithNs(ctx, 'Template data source mismatch', {
-    expected: `${expectedDataSourceKey}/${expectedCollectionName}`,
-    actual: `${tplDataSourceKey}/${tplCollectionName}`,
+  return getTemplateAvailabilityDisabledReason(ctx, tpl, expected, {
+    associationMatch: 'exactIfTemplateHasAssociationName',
   });
 };
 

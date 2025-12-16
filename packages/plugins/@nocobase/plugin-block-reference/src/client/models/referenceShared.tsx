@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { Card, Empty, Result } from 'antd';
+import { Card, Empty, Result, Skeleton } from 'antd';
 import {
   FlowContext,
   type FlowEngine,
@@ -37,13 +37,23 @@ function tClient(model: { translate?: (key: string, options?: any) => string }, 
 
 export function renderReferenceTargetPlaceholder(
   model: { translate?: (key: string, options?: any) => string },
-  state: 'unconfigured' | 'invalid',
+  state: 'unconfigured' | 'invalid' | 'resolving',
 ) {
   if (state === 'unconfigured') {
     return (
       <Card>
         <div style={{ padding: 24 }}>
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={tClient(model, 'Please configure target block')} />
+        </div>
+      </Card>
+    );
+  }
+
+  if (state === 'resolving') {
+    return (
+      <Card>
+        <div style={{ padding: 24 }}>
+          <Skeleton active title={false} paragraph={{ rows: 3 }} />
         </div>
       </Card>
     );

@@ -850,11 +850,27 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, t: (k: string,
   });
 }
 
+/**
+ * Check if the model is used as a reference target (either is a ReferenceBlockModel
+ * or its parent is a ReferenceBlockModel)
+ */
+function isReferenceTarget(model: FlowModel): boolean {
+  if (model instanceof ReferenceBlockModel) {
+    return true;
+  }
+  // Check if model's parent is a ReferenceBlockModel (model is the target sub-model)
+  const parent = model.parent;
+  if (parent instanceof ReferenceBlockModel) {
+    return true;
+  }
+  return false;
+}
+
 export function registerMenuExtensions() {
   BlockModel.registerExtraMenuItems({
     group: 'common-actions',
     sort: -10,
-    matcher: (model) => !(model instanceof ReferenceBlockModel),
+    matcher: (model) => !isReferenceTarget(model),
     items: async (model: FlowModel, t) => {
       const items: MenuItem[] = [];
       const hasReferenceFields = !!getReferenceFormGridSettings(model);

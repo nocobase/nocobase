@@ -53,6 +53,7 @@ export class ReferenceFormGridModel extends FormGridModel {
   private _scopedEngine?: FlowEngine;
   private _targetGrid?: FlowModel;
   private _resolvedTargetUid?: string;
+  private _invalidTargetUid?: string;
 
   constructor(options: any) {
     super(options);
@@ -174,6 +175,7 @@ export class ReferenceFormGridModel extends FormGridModel {
       this._syncHostExtraTitle(undefined);
       this._targetGrid = undefined;
       this._resolvedTargetUid = undefined;
+      this._invalidTargetUid = undefined;
       return;
     }
 
@@ -187,43 +189,73 @@ export class ReferenceFormGridModel extends FormGridModel {
     }
 
     if (this._resolvedTargetUid === settings.targetUid && this._targetGrid) {
+      // 已成功解析，清理 invalid 标记
+      this._invalidTargetUid = undefined;
       return;
     }
 
     const engine = this._ensureScopedEngine();
-    const root = await engine.loadModel<FlowModel>({ uid: settings.targetUid });
-    if (!root) {
-      this._targetGrid = undefined;
-      this._resolvedTargetUid = undefined;
-      return;
+    const targetUid = settings.targetUid;
+    const prevTargetGrid = this._targetGrid;
+    const prevResolvedTargetUid = this._resolvedTargetUid;
+    const prevInvalidTargetUid = this._invalidTargetUid;
+    // 进入解析流程时，先认为是“resolving”，避免渲染层误判为 invalid
+    this._invalidTargetUid = undefined;
+
+    // 在“模板引用”切换的中间态（例如模型树刚替换、上下文尚未稳定）下，
+    // 可能出现首次解析不到目标（短暂返回 null/undefined）。这里做一次轻量重试，
+    // 避免界面闪现 “Target block is invalid” 占位。
+    const tryResolveTargetGrid = async (): Promise<FlowModel | undefined> => {
+      const root = await engine.loadModel<FlowModel>({ uid: targetUid });
+      if (!root) return undefined;
+
+      const host = this.parent as FlowModel | undefined;
+      const hostInfo: ReferenceHostInfo = {
+        hostUid: host?.uid,
+        hostUse: host?.use,
+        ref: {
+          templateUid: settings.templateUid,
+          templateName: settings.templateName,
+          targetUid,
+          sourcePath,
+          mountSubKey: 'grid',
+          mode: 'reference',
+        },
+      };
+      root.context.defineProperty(REF_HOST_CTX_KEY, { value: hostInfo });
+
+      const fragment = _.get(root as any, sourcePath);
+      const gridModel =
+        fragment instanceof FlowModel ? fragment : _.castArray(fragment).find((m) => m instanceof FlowModel);
+      return gridModel || undefined;
+    };
+
+    let gridModel = await tryResolveTargetGrid();
+    if (!gridModel) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const latest = this._getTargetSettings();
+      if (latest?.targetUid !== targetUid) {
+        return;
+      }
+      gridModel = await tryResolveTargetGrid();
     }
 
-    const host = this.parent as FlowModel | undefined;
-    const hostInfo: ReferenceHostInfo = {
-      hostUid: host?.uid,
-      hostUse: host?.use,
-      ref: {
-        templateUid: settings.templateUid,
-        templateName: settings.templateName,
-        targetUid: settings.targetUid,
-        sourcePath,
-        mountSubKey: 'grid',
-        mode: 'reference',
-      },
-    };
-    root.context.defineProperty(REF_HOST_CTX_KEY, { value: hostInfo });
-
-    const fragment = _.get(root as any, sourcePath);
-    const gridModel =
-      fragment instanceof FlowModel ? fragment : _.castArray(fragment).find((m) => m instanceof FlowModel);
     if (!gridModel) {
       this._targetGrid = undefined;
       this._resolvedTargetUid = undefined;
+      this._invalidTargetUid = targetUid;
+      if (prevTargetGrid || prevResolvedTargetUid || prevInvalidTargetUid !== targetUid) {
+        this.rerender();
+      }
       return;
     }
 
     this._targetGrid = gridModel;
-    this._resolvedTargetUid = settings.targetUid;
+    this._resolvedTargetUid = targetUid;
+    this._invalidTargetUid = undefined;
+    if (prevTargetGrid !== gridModel || prevResolvedTargetUid !== targetUid || prevInvalidTargetUid) {
+      this.rerender();
+    }
   }
 
   clearForks() {
@@ -252,7 +284,11 @@ export class ReferenceFormGridModel extends FormGridModel {
 
     const target = this._targetGrid;
     if (!target) {
-      return renderReferenceTargetPlaceholder(this as any, 'invalid');
+      if (this._invalidTargetUid === settings.targetUid) {
+        return renderReferenceTargetPlaceholder(this as any, 'invalid');
+      }
+      // 目标尚未解析完成：展示 resolving，占位避免闪现 invalid
+      return renderReferenceTargetPlaceholder(this as any, 'resolving');
     }
 
     const engine = this._ensureScopedEngine();
