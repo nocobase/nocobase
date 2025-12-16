@@ -30,7 +30,7 @@ export const BlockSceneEnum = {
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
   static scene: BlockSceneType;
-
+  forbidden = null;
   _defaultCustomModelClasses = {} as any;
   customModelClasses = {} as any;
 
@@ -52,6 +52,9 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
 
   // 设置态隐藏时的占位渲染
   protected renderHiddenInConfig(): React.ReactNode | undefined {
+    if (this.forbidden) {
+      return <BlockPlaceholder />;
+    }
     return (
       <Tooltip title={this.context.t('The block is hidden and only visible when the UI Editor is active')}>
         <BlockItemCard ref={this.context.ref} {...this.decoratorProps} style={{ opacity: '0.3' }}>
