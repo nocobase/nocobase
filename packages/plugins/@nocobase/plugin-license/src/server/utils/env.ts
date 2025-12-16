@@ -66,14 +66,14 @@ export function isEnvMatch(env: Env, keyData: KeyData) {
   return isDbMatch(env, keyData) && isSysMatch(env, keyData);
 }
 
-export function isDbMatch(env: Env, keyData: KeyData) {
+export function isDbMatch(env: any, keyData: any) {
   const a = env?.db;
   const b = keyData?.instanceData?.db;
 
   if (!a || !b) return false;
 
   // If both have id, compare by id only
-  if (a.id && b.id) return a.id === b.id;
+  if (a?.id && b?.id) return a.id === b.id;
 
   // Otherwise compare shallow equality excluding id
   return isEqual(omit(a, ['id']), omit(b, ['id']));
