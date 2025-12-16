@@ -24,6 +24,7 @@ import {
 import { useNiceDropdownMaxHeight } from '../../../../hooks';
 import { SwitchWithTitle } from '../component/SwitchWithTitle';
 import { SelectWithTitle } from '../component/SelectWithTitle';
+import { FlowSettingsContext } from 'packages/core/flow-engine/src/flowContext';
 // Type definitions for better type safety
 interface StepInfo {
   stepKey: string;
@@ -622,7 +623,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
             const uniqueKey = generateUniqueKey(baseMenuKey);
             const uiMode = stepInfo.uiMode;
-            const subModel: any = findSubModelByKey(model, stepInfo.modelKey);
+            const subModel = stepInfo.modelKey ? findSubModelByKey(model, stepInfo.modelKey) : null;
             const targetModel = subModel || model;
             const stepParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || {};
             const itemProps = {
@@ -637,12 +638,12 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               onChange: async (val) => {
                 targetModel.setStepParams(flow.key, stepInfo.stepKey, val);
                 if (typeof stepInfo.step.beforeParamsSave === 'function') {
-                  await stepInfo.step.beforeParamsSave(targetModel.context, val, stepParams);
+                  await stepInfo.step.beforeParamsSave(targetModel.context as FlowSettingsContext, val, stepParams);
                 }
                 await targetModel.saveStepParams();
                 message?.success?.(t('Configuration saved'));
                 if (typeof stepInfo.step.afterParamsSave === 'function') {
-                  await stepInfo.step.afterParamsSave(targetModel.context, val, stepParams);
+                  await stepInfo.step.afterParamsSave(targetModel.context as FlowSettingsContext, val, stepParams);
                 }
               },
               ...((uiMode as any)?.props || {}),
