@@ -51,9 +51,82 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(baseBefore).toHaveBeenCalledTimes(1);
     expect(baseBefore.mock.calls[0][1]).toEqual({ uid: 'popup-1' });
 
-    const out = await enhanced.handler(ctx, { uid: 'x', popupTemplateUid: 'tpl-1' });
+    // runtime 依赖“保存时已回填”的 uid，因此这里直接传入已解析的 uid
+    const out = await enhanced.handler(ctx, { uid: 'popup-1', popupTemplateUid: 'tpl-1' });
     expect(baseHandler).toHaveBeenCalledTimes(1);
     expect(out?.uid).toEqual('popup-1');
+  });
+
+  it('runtime overrides resource keys via shadow ctx (non-relation template in relation trigger)', async () => {
+    const engine = new FlowEngine();
+    let capturedCtx: any;
+    let capturedParams: any;
+    const baseHandler = vi.fn(async (ctxArg: any, paramsArg: any) => {
+      capturedCtx = ctxArg;
+      capturedParams = paramsArg;
+      return undefined;
+    });
+
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: {
+        uid: { type: 'string' },
+      },
+      handler: baseHandler as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    const baseInputArgs: any = {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      associationName: 'users.roles',
+      filterByTk: 'role-1',
+      sourceId: 'user-1',
+      defaultInputKeys: ['filterByTk', 'sourceId'],
+    };
+    const ctx: any = {
+      engine,
+      t: (k: string) => k,
+      collectionField: {
+        isAssociationField: () => true,
+      },
+    };
+    // 模拟 FlowRuntimeContext：inputArgs 只有 getter（不可直接赋值）
+    Object.defineProperty(ctx, 'inputArgs', {
+      get: () => baseInputArgs,
+      configurable: true,
+      enumerable: true,
+    });
+
+    await enhanced.handler(ctx, {
+      popupTemplateUid: 'tpl-1',
+      uid: 'popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      // non-relation template: no associationName
+      filterByTk: 'tpl-filter',
+    });
+
+    expect(baseHandler).toHaveBeenCalledTimes(1);
+    expect(capturedParams?.popupTemplateUid).toBeUndefined();
+    expect(capturedParams?.uid).toBe('popup-1');
+
+    // should not mutate original ctx.inputArgs
+    expect(ctx.inputArgs.collectionName).toBe('users');
+    expect(ctx.inputArgs.associationName).toBe('users.roles');
+    expect(ctx.inputArgs.filterByTk).toBe('role-1');
+
+    // shadow ctx should override resource keys and map filterByTk -> sourceId
+    expect(capturedCtx).not.toBe(ctx);
+    expect(capturedCtx?.inputArgs?.dataSourceKey).toBe('main');
+    expect(capturedCtx?.inputArgs?.collectionName).toBe('roles');
+    expect('associationName' in (capturedCtx?.inputArgs || {})).toBe(false);
+    expect(capturedCtx?.inputArgs?.filterByTk).toBe('user-1');
+    expect(capturedCtx?.inputArgs?.defaultInputKeys).not.toContain('filterByTk');
   });
 
   it('rejects popup template when dataSourceKey/collectionName mismatches current context', async () => {

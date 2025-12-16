@@ -249,6 +249,53 @@ const stripTemplateParams = (params: any) => {
   return next;
 };
 
+const buildPopupTemplateShadowCtx = (ctx: any, params: any) => {
+  const rawInputArgs = (ctx as any)?.inputArgs;
+  const baseInputArgs = rawInputArgs && typeof rawInputArgs === 'object' ? rawInputArgs : {};
+  const nextInputArgs: Record<string, any> = { ...(baseInputArgs as any) };
+
+  // 资源三元组（dataSourceKey/collectionName/associationName）以模板为准：通过覆盖 ctx.inputArgs，让 base openView 按原规则生效。
+  if (typeof params?.dataSourceKey !== 'undefined') {
+    nextInputArgs.dataSourceKey =
+      typeof params.dataSourceKey === 'string' ? params.dataSourceKey.trim() : params.dataSourceKey;
+  }
+  if (typeof params?.collectionName !== 'undefined') {
+    nextInputArgs.collectionName =
+      typeof params.collectionName === 'string' ? params.collectionName.trim() : params.collectionName;
+  }
+  const tplAssociationName = typeof params?.associationName === 'string' ? params.associationName.trim() : '';
+  if (tplAssociationName) {
+    nextInputArgs.associationName = tplAssociationName;
+  } else {
+    delete nextInputArgs.associationName;
+  }
+
+  // 非关系模板（无 associationName）在关系字段触发时：用 sourceId 覆盖 filterByTk，指向“源记录”。
+  const isAssociationTrigger =
+    !!(ctx as any)?.collectionField?.isAssociationField?.() ||
+    typeof (baseInputArgs as any)?.associationName !== 'undefined';
+  const shouldUseSourceIdAsFilterByTk =
+    !tplAssociationName && isAssociationTrigger && typeof (baseInputArgs as any)?.sourceId !== 'undefined';
+  if (shouldUseSourceIdAsFilterByTk) {
+    nextInputArgs.filterByTk = (baseInputArgs as any).sourceId;
+    if (Array.isArray(nextInputArgs.defaultInputKeys)) {
+      nextInputArgs.defaultInputKeys = nextInputArgs.defaultInputKeys.filter((k: any) => k !== 'filterByTk');
+      if (nextInputArgs.defaultInputKeys.length === 0) {
+        delete nextInputArgs.defaultInputKeys;
+      }
+    }
+  }
+
+  const shadowCtx = Object.create(ctx);
+  // FlowRuntimeContext.inputArgs 通常只有 getter（不可直接赋值），这里通过定义同名自有属性覆盖即可。
+  Object.defineProperty(shadowCtx, 'inputArgs', {
+    value: nextInputArgs,
+    configurable: true,
+    enumerable: true,
+  });
+  return shadowCtx;
+};
+
 const fetchPopupTemplates = async (ctx: any, keyword?: string): Promise<TemplateRow[]> => {
   const api = ctx?.api;
   if (!api?.resource) return [];
@@ -611,14 +658,11 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
       // 运行时直接使用即可，无需再次请求模板 API。
       const templateUid = typeof params?.popupTemplateUid === 'string' ? params.popupTemplateUid.trim() : '';
 
-      const nextParams = stripTemplateParams({
-        ...params,
-        // 内部标记：用于 openView 运行时按"模板资源优先"合并参数
-        ...(templateUid ? { __resourceFromPopupTemplate: true } : {}),
-      });
+      const nextParams = stripTemplateParams(params);
       const baseHandler = (base as any).handler;
       if (typeof baseHandler === 'function') {
-        return baseHandler(ctx, nextParams);
+        const runtimeCtx = templateUid ? buildPopupTemplateShadowCtx(ctx, params) : ctx;
+        return baseHandler(runtimeCtx, nextParams);
       }
     },
   };
