@@ -35,7 +35,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   isManualRefresh = false;
 
   onActive() {
-    this.resource?.refresh();
+    if (!this.hidden) {
+      this.resource?.refresh();
+    }
   }
 
   /**
