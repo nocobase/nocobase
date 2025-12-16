@@ -49,8 +49,10 @@ describe('desktopRoutes:listAccessible', () => {
   });
 
   it('should return all routes for root role', async () => {
-    const rootUser = await db.getRepository('users').create({
-      values: { roles: ['root'] },
+    const rootUser = await db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
     });
     const agent = await app.agent().login(rootUser);
 
@@ -82,8 +84,10 @@ describe('desktopRoutes:listAccessible', () => {
 
   it('should return filtered routes with children', async () => {
     // 使用 root 角色配置 member 的可访问路由
-    const rootUser = await db.getRepository('users').create({
-      values: { roles: ['root'] },
+    const rootUser = await db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
     });
     const rootAgent = await app.agent().login(rootUser);
 
@@ -111,8 +115,10 @@ describe('desktopRoutes:listAccessible', () => {
 
   it('should return an empty response when there are no accessible routes', async () => {
     // 使用 root 角色配置 member 的可访问路由
-    const rootUser = await db.getRepository('users').create({
-      values: { roles: ['root'] },
+    const rootUser = await db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
     });
     const rootAgent = await app.agent().login(rootUser);
 
@@ -151,8 +157,10 @@ describe('desktopRoutes:listAccessible', () => {
 
     // 配置 member 角色只能访问 page4
     const routes = await db.getRepository('desktopRoutes').find({ limit: 6 });
-    const rootUser = await db.getRepository('users').create({
-      values: { roles: ['root'] },
+    const rootUser = await db.getRepository('users').findOne({
+      filter: {
+        'roles.name': 'root',
+      },
     });
     const rootAgent = await app.agent().login(rootUser);
     await rootAgent.resource('roles.desktopRoutes', 'member').remove({

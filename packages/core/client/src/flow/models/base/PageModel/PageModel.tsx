@@ -129,6 +129,9 @@ export class PageModel extends FlowModel<PageModelStructure> {
             this.invokeTabModelLifecycleMethod(activeKey, 'onActive');
             this.invokeTabModelLifecycleMethod(this.props.tabActiveKey, 'onInactive');
             this.setProps('tabActiveKey', activeKey);
+            if (this.context.view.inputArgs) {
+              this.context.view.inputArgs.tabUid = activeKey;
+            }
           }}
           // destroyInactiveTabPane
           tabBarExtraContent={{
