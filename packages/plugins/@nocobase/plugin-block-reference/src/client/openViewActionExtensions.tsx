@@ -31,15 +31,6 @@ type TemplateRow = {
 
 type ExpectedResourceInfo = { dataSourceKey?: string; collectionName?: string; associationName?: string };
 
-const unwrapData = (val: any) => {
-  let cur = val;
-  // axios response: { data: { data: ... } }
-  while (cur && typeof cur === 'object' && 'data' in cur) {
-    cur = (cur as any).data;
-  }
-  return cur;
-};
-
 const tWithNs = (ctx: any, key: string, options?: Record<string, any>) => {
   const opt = { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...(options || {}) };
   return ctx?.t ? ctx.t(key, opt) : key;
@@ -249,9 +240,8 @@ const stripTemplateParams = (params: any) => {
   return next;
 };
 
-const buildPopupTemplateShadowCtx = (ctx: any, params: any) => {
-  const rawInputArgs = (ctx as any)?.inputArgs;
-  const baseInputArgs = rawInputArgs && typeof rawInputArgs === 'object' ? rawInputArgs : {};
+const buildPopupTemplateShadowCtx = (ctx, params) => {
+  const baseInputArgs = ctx.inputArgs || {};
   const nextInputArgs: Record<string, any> = { ...(baseInputArgs as any) };
 
   // 资源三元组（dataSourceKey/collectionName/associationName）以模板为准：通过覆盖 ctx.inputArgs，让 base openView 按原规则生效。
@@ -310,7 +300,7 @@ const fetchPopupTemplates = async (ctx: any, keyword?: string): Promise<Template
       ],
     },
   });
-  const body = unwrapData(res);
+  const body = res.data?.data;
   const rows = Array.isArray(body?.rows) ? body.rows : Array.isArray(body) ? body : [];
   return rows as TemplateRow[];
 };
@@ -319,7 +309,7 @@ const fetchTemplateByUid = async (ctx: any, templateUid: string): Promise<Templa
   const api = ctx?.api;
   if (!api?.resource) return null;
   const res = await api.resource('flowModelTemplates').get({ filterByTk: templateUid });
-  const body = unwrapData(res);
+  const body = res.data?.data;
   if (!body) return null;
   return body as TemplateRow;
 };
@@ -694,23 +684,15 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
       // 1) resolve template -> uid (in-place mutation so it will be persisted)
       await resolveTemplateToUid(ctx, params);
       // 2) delegate to original beforeParamsSave (strip template params to avoid leaking)
-      const baseBefore = (base as any).beforeParamsSave;
-      if (typeof baseBefore === 'function') {
-        await baseBefore(ctx, stripTemplateParams(params), previousParams);
-      }
+      await base.beforeParamsSave(ctx, stripTemplateParams(params), previousParams);
     },
 
-    async handler(ctx: any, params: any) {
+    async handler(ctx, params) {
       // 模板信息（uid、dataSourceKey、collectionName、associationName）在配置保存时已填充到 params，
-      // 运行时直接使用即可，无需再次请求模板 API。
-      const templateUid = typeof params?.popupTemplateUid === 'string' ? params.popupTemplateUid.trim() : '';
-
+      const templateUid = params.popupTemplateUid;
       const nextParams = stripTemplateParams(params);
-      const baseHandler = (base as any).handler;
-      if (typeof baseHandler === 'function') {
-        const runtimeCtx = templateUid ? buildPopupTemplateShadowCtx(ctx, params) : ctx;
-        return baseHandler(runtimeCtx, nextParams);
-      }
+      const runtimeCtx = templateUid ? buildPopupTemplateShadowCtx(ctx, params) : ctx;
+      return base.handler(runtimeCtx, nextParams);
     },
   };
 
