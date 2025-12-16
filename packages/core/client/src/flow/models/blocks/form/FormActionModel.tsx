@@ -32,6 +32,9 @@ export class FormSubmitActionModel extends FormActionModel {
       requestConfig,
     });
   }
+  getAclActionName() {
+    return this.context.resource instanceof SingleRecordResource ? 'create' : 'update';
+  }
 }
 
 FormSubmitActionModel.define({
