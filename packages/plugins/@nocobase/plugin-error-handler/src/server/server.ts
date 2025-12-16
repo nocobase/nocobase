@@ -64,6 +64,35 @@ export class PluginErrorHandlerServer extends Plugin {
         ctx.status = 400;
       },
     );
+
+    this.errorHandler.register(
+      (err) => {
+        const e = err?.original || err;
+
+        // MySQL / MariaDB
+        if (e?.errno === 1064) return true;
+
+        // PostgreSQL
+        if (e?.code === '42601') return true;
+
+        // SQLite
+        if (e?.code === 'SQLITE_ERROR' && /syntax error/i.test(e?.message)) {
+          return true;
+        }
+
+        return false;
+      },
+      (err, ctx) => {
+        ctx.body = {
+          errors: [
+            {
+              message: 'Invalid SQL syntax',
+            },
+          ],
+        };
+        ctx.status = 500;
+      },
+    );
   }
 
   async load() {
