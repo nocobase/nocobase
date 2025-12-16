@@ -31,24 +31,6 @@ type TemplateRow = {
 
 type ExpectedResourceInfo = { dataSourceKey?: string; collectionName?: string; associationName?: string };
 
-const hasExpr = (val: string) => /\{\{.*?\}\}/.test(val);
-const isResolvedValue = (val: any) => {
-  if (val === undefined || val === null) return false;
-  if (typeof val === 'string') {
-    const s = val.trim();
-    if (!s) return false;
-    if (hasExpr(s)) return false;
-    return true;
-  }
-  try {
-    const s = String(val);
-    if (hasExpr(s)) return false;
-  } catch (_) {
-    // ignore
-  }
-  return true;
-};
-
 const unwrapData = (val: any) => {
   let cur = val;
   // axios response: { data: { data: ... } }
@@ -132,36 +114,6 @@ const resolveExpectedResourceInfo = (ctx: any): ExpectedResourceInfo => {
   return {};
 };
 
-const getPopupTemplateRuntimeParamDisabledReason = async (ctx: any, tpl: TemplateRow): Promise<string | undefined> => {
-  const rawFilterByTk = typeof tpl?.filterByTk === 'string' ? tpl.filterByTk.trim() : '';
-  const rawSourceId = typeof tpl?.sourceId === 'string' ? tpl.sourceId.trim() : '';
-  const needCheck: Array<{ key: 'filterByTk' | 'sourceId'; raw: string }> = [];
-  if (rawFilterByTk && hasExpr(rawFilterByTk)) needCheck.push({ key: 'filterByTk', raw: rawFilterByTk });
-  if (rawSourceId && hasExpr(rawSourceId)) needCheck.push({ key: 'sourceId', raw: rawSourceId });
-  if (!needCheck.length) return undefined;
-
-  const resolver = (ctx as any)?.resolveJsonTemplate;
-  if (typeof resolver !== 'function') {
-    return tWithNs(ctx, 'Cannot resolve template parameter {{param}}', {
-      param: needCheck.map((i) => i.key).join(', '),
-    });
-  }
-
-  const results = await Promise.all(
-    needCheck.map(async ({ key, raw }) => {
-      try {
-        const resolved = await resolver(raw);
-        return { key, ok: isResolvedValue(resolved) };
-      } catch (_) {
-        return { key, ok: false };
-      }
-    }),
-  );
-  const missing = results.filter((r) => !r.ok).map((r) => r.key);
-  if (!missing.length) return undefined;
-  return tWithNs(ctx, 'Cannot resolve template parameter {{param}}', { param: missing.join(', ') });
-};
-
 const getPopupTemplateDisabledReason = async (
   ctx: any,
   tpl: TemplateRow,
@@ -220,9 +172,6 @@ const getPopupTemplateDisabledReason = async (
         });
       }
     }
-
-    // 运行时参数兼容性（例如 sourceId/filterByTk 解析失败会导致“能选但打开炸”）
-    return await getPopupTemplateRuntimeParamDisabledReason(ctx, tpl);
   }
 
   const isSameDataSource = tplDataSourceKey === expectedDataSourceKey;
@@ -387,7 +336,8 @@ function PopupTemplateSelect(props: any) {
       if (typeof v === 'undefined') return;
       try {
         form.setValuesIn(k, v);
-      } catch (_) {
+      } catch (e) {
+        console.error(e);
         // ignore
       }
     },
