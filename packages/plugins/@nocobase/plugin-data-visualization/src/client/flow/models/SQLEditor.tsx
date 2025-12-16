@@ -8,14 +8,14 @@
  */
 
 import React, { useRef } from 'react';
-import { connect, mapProps, useForm } from '@formily/react';
+import { connect, mapProps, useForm, observer } from '@formily/react';
 import { Select, Form } from 'antd';
 import { CodeEditor, CodeEditorHandle } from '../components/CodeEditor';
 import { FlowContextSelector, useFlowContext } from '@nocobase/flow-engine';
 import { useDataSourceManager, useCompile, DEFAULT_DATA_SOURCE_KEY } from '@nocobase/client';
 import { useT } from '../../locale';
 
-const SQLEditorBase: React.FC<any> = (props) => {
+const SQLEditorBase: React.FC<any> = observer((props) => {
   const { value, onChange } = props;
   const editorRef = useRef<CodeEditorHandle>(null);
   const ctx = useFlowContext();
@@ -70,7 +70,7 @@ const SQLEditorBase: React.FC<any> = (props) => {
       />
     </div>
   );
-};
+});
 
 export const SQLEditor = connect(
   SQLEditorBase,
