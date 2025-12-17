@@ -193,7 +193,7 @@ DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['formula'], {
   isDefault: true,
   when(ctx, fieldInstance) {
     if (fieldInstance.type === 'formula') {
-      return ['double', 'bigint', 'integer'].includes(fieldInstance.dataType);
+      return ['double', 'bigInt', 'integer'].includes(fieldInstance.dataType);
     }
     return true;
   },
