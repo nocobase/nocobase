@@ -82,6 +82,19 @@ describe('workflow > action-trigger', () => {
     await rootAgent.resource('roles.dataSourceResources', 'member').create({
       values: {
         dataSourceKey: 'main',
+        name: 'categories',
+        usingActionsConfig: true,
+        actions: [
+          {
+            name: 'create',
+          },
+        ],
+      },
+    });
+
+    await rootAgent.resource('roles.dataSourceResources', 'member').create({
+      values: {
+        dataSourceKey: 'main',
         name: 'tags',
         usingActionsConfig: true,
         actions: [
@@ -485,6 +498,7 @@ describe('workflow > action-trigger', () => {
       });
 
       const res1 = await userAgents[0].resource('posts').create({
+        updateAssociationValues: ['category'],
         values: { title: 't1', category: { title: 'c1' } },
         triggerWorkflows: `${workflow.key}!category`,
       });
@@ -507,6 +521,7 @@ describe('workflow > action-trigger', () => {
       });
 
       const res1 = await userAgents[0].resource('comments').create({
+        updateAssociationValues: ['post', 'post.category'],
         values: { content: 'comment1', post: { category: { title: 'c1' } } },
         triggerWorkflows: `${workflow.key}!post.category`,
       });
