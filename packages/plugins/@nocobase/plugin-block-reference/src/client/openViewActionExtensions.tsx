@@ -16,9 +16,14 @@ import debounce from 'lodash/debounce';
 import { NAMESPACE } from './locale';
 import {
   getTemplateAvailabilityDisabledReason,
+  inferPopupTemplateContextFlags,
+  normalizeStr,
+  resolveActionScene,
+  resolveBaseResourceByAssociation,
   resolveExpectedResourceInfoByModelChain,
   resolveTargetResourceByAssociation,
   tWithNs,
+  type PopupTemplateContextFlags,
 } from './utils/templateCompatibility';
 
 type TemplateRow = {
@@ -37,11 +42,69 @@ type TemplateRow = {
 
 type ExpectedResourceInfo = { dataSourceKey?: string; collectionName?: string; associationName?: string };
 
-const resolveExpectedResourceInfoFromActionParams = (ctx: any, params: any): ExpectedResourceInfo | undefined => {
+const isAssociationField = (field: any): boolean => !!field?.isAssociationField?.();
+
+const inferPopupTemplateMeta = (ctx: any, tpl: TemplateRow): PopupTemplateContextFlags => {
+  const engine = (ctx as any)?.engine;
+  const getModelClass = engine?.getModelClass?.bind(engine);
+  const scene = resolveActionScene(getModelClass, tpl?.rootUse);
+  return inferPopupTemplateContextFlags(scene, tpl?.filterByTk, tpl?.sourceId);
+};
+
+const resolveAssociationFieldFromCtx = (ctx: any): any | undefined => {
+  const field = (ctx as any)?.collectionField;
+  const associationPathName = (ctx as any)?.model?.parent?.['associationPathName'];
+  const blockModel = (ctx as any)?.blockModel;
+  const fieldCollection = (ctx as any)?.collection || blockModel?.collection;
+  const associationField =
+    !isAssociationField(field) && associationPathName && typeof fieldCollection?.getFieldByPath === 'function'
+      ? fieldCollection.getFieldByPath(associationPathName)
+      : undefined;
+  const assocField = isAssociationField(field) ? field : associationField;
+  return isAssociationField(assocField) ? assocField : undefined;
+};
+
+const buildAssociationName = (collectionName: string, fieldName: string): string =>
+  collectionName && fieldName ? `${collectionName}.${fieldName}` : '';
+
+type AssociationInfoType = 'target' | 'source';
+
+const resolveExpectedAssociationInfoFromCtx = (
+  ctx: any,
+  type: AssociationInfoType,
+): ExpectedResourceInfo | undefined => {
+  const assocField = resolveAssociationFieldFromCtx(ctx);
+  if (!assocField) return undefined;
+
+  const collection =
+    type === 'target'
+      ? assocField?.targetCollection
+      : assocField?.collection || (ctx as any)?.blockModel?.collection || (ctx as any)?.collection;
+
+  const dataSourceKey = normalizeStr(collection?.dataSourceKey);
+  const collectionName = normalizeStr(collection?.name);
+  if (!dataSourceKey || !collectionName) return undefined;
+
+  const associationName =
+    normalizeStr(assocField?.resourceName) ||
+    buildAssociationName(
+      normalizeStr(type === 'target' ? assocField?.collection?.name : collection?.name),
+      normalizeStr(assocField?.name),
+    );
+  return associationName ? { dataSourceKey, collectionName, associationName } : { dataSourceKey, collectionName };
+};
+
+type AssociationResolveMode = 'target' | 'base';
+
+const resolveResourceInfoFromActionParams = (
+  ctx: any,
+  params: any,
+  mode: AssociationResolveMode,
+): ExpectedResourceInfo | undefined => {
   if (!params || typeof params !== 'object') return undefined;
-  const rawDataSourceKey = typeof params?.dataSourceKey === 'string' ? params.dataSourceKey.trim() : '';
-  const rawCollectionName = typeof params?.collectionName === 'string' ? params.collectionName.trim() : '';
-  const rawAssociationName = typeof params?.associationName === 'string' ? params.associationName.trim() : '';
+  const rawDataSourceKey = normalizeStr(params?.dataSourceKey);
+  const rawCollectionName = normalizeStr(params?.collectionName);
+  const rawAssociationName = normalizeStr(params?.associationName);
 
   if (!rawDataSourceKey && !rawCollectionName && !rawAssociationName) return undefined;
 
@@ -49,8 +112,8 @@ const resolveExpectedResourceInfoFromActionParams = (ctx: any, params: any): Exp
   let fallbackCollectionName = '';
   try {
     const ctxCollection = (ctx as any)?.collection;
-    fallbackDataSourceKey = typeof ctxCollection?.dataSourceKey === 'string' ? ctxCollection.dataSourceKey.trim() : '';
-    fallbackCollectionName = typeof ctxCollection?.name === 'string' ? ctxCollection.name.trim() : '';
+    fallbackDataSourceKey = normalizeStr(ctxCollection?.dataSourceKey);
+    fallbackCollectionName = normalizeStr(ctxCollection?.name);
   } catch {
     // ignore
   }
@@ -61,9 +124,14 @@ const resolveExpectedResourceInfoFromActionParams = (ctx: any, params: any): Exp
     associationName: rawAssociationName,
   };
 
-  const assocResolved = resolveTargetResourceByAssociation(ctx, init);
-  if (assocResolved) {
-    return { ...assocResolved, ...(rawAssociationName ? { associationName: rawAssociationName } : {}) };
+  const resolved =
+    mode === 'target'
+      ? resolveTargetResourceByAssociation(ctx, init)
+      : rawAssociationName
+        ? resolveBaseResourceByAssociation(init)
+        : undefined;
+  if (resolved) {
+    return { ...resolved, ...(rawAssociationName ? { associationName: rawAssociationName } : {}) };
   }
 
   if (init.dataSourceKey && init.collectionName) {
@@ -78,18 +146,70 @@ const resolveExpectedResourceInfoFromActionParams = (ctx: any, params: any): Exp
 };
 
 const resolveExpectedResourceInfo = (ctx: any, actionParams?: any): ExpectedResourceInfo => {
-  const fromParams = resolveExpectedResourceInfoFromActionParams(ctx, actionParams);
-  if (fromParams) return fromParams;
-  return resolveExpectedResourceInfoByModelChain(ctx, ctx?.model, {
+  const rawAssociationName =
+    actionParams && typeof actionParams === 'object' ? normalizeStr((actionParams as any)?.associationName) : '';
+  const fromParams = resolveResourceInfoFromActionParams(ctx, actionParams, 'target');
+  if (rawAssociationName && fromParams) return fromParams;
+
+  const fromCtxAssociation = resolveExpectedAssociationInfoFromCtx(ctx, 'target');
+  if (fromCtxAssociation?.associationName) return fromCtxAssociation;
+
+  const fromModelChain = resolveExpectedResourceInfoByModelChain(ctx, ctx?.model, {
     includeAssociationName: true,
     fallbackCollectionFromCtx: true,
   });
+  if (fromModelChain?.associationName) return fromModelChain;
+  return fromParams || fromModelChain || {};
+};
+
+const resolveExpectedSourceResourceInfo = (ctx: any, actionParams?: any): ExpectedResourceInfo => {
+  const rawAssociationName =
+    actionParams && typeof actionParams === 'object' ? normalizeStr((actionParams as any)?.associationName) : '';
+  const fromParams = resolveResourceInfoFromActionParams(ctx, actionParams, 'base');
+  if (rawAssociationName && fromParams) return fromParams;
+
+  const fromCtxAssociation = resolveExpectedAssociationInfoFromCtx(ctx, 'source');
+  if (fromCtxAssociation) return fromCtxAssociation;
+  if (fromParams) return fromParams;
+
+  let cur: any = ctx?.model;
+  let depth = 0;
+  while (cur && depth < 8) {
+    const init = cur?.getStepParams?.('resourceSettings', 'init') || {};
+    const associationName = normalizeStr(init?.associationName);
+
+    let dataSourceKey = normalizeStr(init?.dataSourceKey);
+    let collectionName = normalizeStr(init?.collectionName);
+
+    // 次优先：读取运行时注入的 collection（更贴近“当前上下文集合”）
+    try {
+      const c = (cur as any)?.collection || (ctx as any)?.collection;
+      dataSourceKey = dataSourceKey || normalizeStr(c?.dataSourceKey);
+      collectionName = collectionName || normalizeStr(c?.name);
+    } catch {
+      // ignore
+    }
+
+    if (associationName && dataSourceKey) {
+      const baseResolved = resolveBaseResourceByAssociation({ dataSourceKey, collectionName, associationName });
+      if (baseResolved) return { ...baseResolved, associationName };
+    }
+
+    if (dataSourceKey && collectionName) {
+      return { dataSourceKey, collectionName, ...(associationName ? { associationName } : {}) };
+    }
+
+    cur = cur?.parent;
+    depth++;
+  }
+  return {};
 };
 
 const getPopupTemplateDisabledReason = async (
   ctx: any,
   tpl: TemplateRow,
   expected: ExpectedResourceInfo,
+  expectedSource: ExpectedResourceInfo,
 ): Promise<string | undefined> => {
   /**
    * 弹窗模版的兼容性判断说明：
@@ -110,15 +230,32 @@ const getPopupTemplateDisabledReason = async (
    * 额外：collectionName 有时并不可靠（例如资源是由 associationName 推导而来），所以会优先
    * 尝试根据 associationName 解析真实 targetCollection 再比较（best-effort，解析失败则回退）。
    */
+  const expectedAssociationName = normalizeStr(expected?.associationName);
+  const tplAssociationName = normalizeStr(tpl?.associationName);
+
+  // 关联上下文里：非关系弹窗模板按“源集合”校验（支持在关联字段中打开源记录弹窗）。
+  if (expectedAssociationName && !tplAssociationName) {
+    const baseDS = normalizeStr(expectedSource?.dataSourceKey);
+    const baseCol = normalizeStr(expectedSource?.collectionName);
+    if (!baseDS || !baseCol) return undefined;
+    return getTemplateAvailabilityDisabledReason(ctx, tpl, expectedSource);
+  }
+
   return getTemplateAvailabilityDisabledReason(ctx, tpl, expected, {
     associationMatch: 'exactIfTemplateHasAssociationName',
   });
 };
 
+/** 预览/配置态下无法获取真实 record 时使用的占位符 */
+const POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER = '__popupTemplateFilterByTk__';
+
 const stripTemplateParams = (params: any) => {
   if (!params || typeof params !== 'object') return params;
   const next = { ...params };
   delete next.popupTemplateUid;
+  delete (next as any).popupTemplateContext;
+  delete (next as any).popupTemplateHasFilterByTk;
+  delete (next as any).popupTemplateHasSourceId;
   // Avoid overriding runtime defaults with null/empty values.
   const isEmptyValue = (v: any) => {
     if (v === null || typeof v === 'undefined') return true;
@@ -132,7 +269,7 @@ const stripTemplateParams = (params: any) => {
   return next;
 };
 
-const buildPopupTemplateShadowCtx = (ctx, params) => {
+const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
   const baseInputArgs = ctx.inputArgs || {};
   const nextInputArgs: Record<string, any> = { ...(baseInputArgs as any) };
 
@@ -152,19 +289,63 @@ const buildPopupTemplateShadowCtx = (ctx, params) => {
     delete nextInputArgs.associationName;
   }
 
-  // 非关系模板（无 associationName）在关系字段触发时：用 sourceId 覆盖 filterByTk，指向“源记录”。
-  const isAssociationTrigger =
-    !!(ctx as any)?.collectionField?.isAssociationField?.() ||
-    typeof (baseInputArgs as any)?.associationName !== 'undefined';
+  // 模板是否显式携带 filterByTk/sourceId：用于避免从 actionDefaults "透传"到模板弹窗（尤其是 Record action 复用 Collection 模板）。
+  // 注意：运行时 params 可能已被解析（缺少 ctx.record 时会解析为空/undefined），因此优先使用保存时写入的布尔标记兜底。
+  const hasTemplateFilterByTk =
+    typeof params.popupTemplateHasFilterByTk === 'boolean'
+      ? params.popupTemplateHasFilterByTk
+      : normalizeStr(params.filterByTk) !== '';
+  const hasTemplateSourceId =
+    typeof params.popupTemplateHasSourceId === 'boolean'
+      ? params.popupTemplateHasSourceId
+      : normalizeStr(params.sourceId) !== '';
+
+  // 非关系模板（无 associationName）在“关系字段”触发时：仅当模板本身需要 filterByTk，才用 sourceId 覆盖 filterByTk，指向“源记录”。
+  const isAssociationFieldTrigger = !!resolveAssociationFieldFromCtx(ctx);
   const shouldUseSourceIdAsFilterByTk =
-    !tplAssociationName && isAssociationTrigger && typeof (baseInputArgs as any)?.sourceId !== 'undefined';
+    !tplAssociationName &&
+    isAssociationFieldTrigger &&
+    hasTemplateFilterByTk &&
+    typeof (baseInputArgs as any)?.sourceId !== 'undefined';
+  let didOverrideFilterByTk = false;
+  let didOverrideSourceId = false;
   if (shouldUseSourceIdAsFilterByTk) {
     nextInputArgs.filterByTk = (baseInputArgs as any).sourceId;
-    if (Array.isArray(nextInputArgs.defaultInputKeys)) {
-      nextInputArgs.defaultInputKeys = nextInputArgs.defaultInputKeys.filter((k: any) => k !== 'filterByTk');
-      if (nextInputArgs.defaultInputKeys.length === 0) {
-        delete nextInputArgs.defaultInputKeys;
-      }
+    didOverrideFilterByTk = true;
+  } else if (!tplAssociationName && !hasTemplateFilterByTk) {
+    // 防止 openView 回落到 actionDefaults.filterByTk（如 Record action 默认 {{ctx.record.id}}）
+    nextInputArgs.filterByTk = null;
+    didOverrideFilterByTk = true;
+  }
+
+  // 预览/配置态下可能拿不到真实 record，导致 filterByTk 被解析为 undefined；但模板若明确需要 record 上下文，
+  // 仍需提供一个 truthy 值以保证区块菜单按 record 场景展示（否则只能添加 new 场景区块）。
+  if (!tplAssociationName && hasTemplateFilterByTk && !didOverrideFilterByTk) {
+    const existing = (nextInputArgs as any).filterByTk;
+    if (!normalizeStr(existing)) {
+      nextInputArgs.filterByTk =
+        normalizeStr((ctx as any)?.view?.inputArgs?.filterByTk) || POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER;
+      didOverrideFilterByTk = true;
+    }
+  }
+
+  if (!tplAssociationName && !hasTemplateSourceId) {
+    // 同上：避免 actionDefaults/source 上下文污染到“纯 collection 弹窗模板”
+    nextInputArgs.sourceId = null;
+    didOverrideSourceId = true;
+  }
+
+  // 覆盖 filterByTk/sourceId 时，确保它们不再被视作 defaultInputKeys（否则可能被误判为“默认值”透传）。
+  if (Array.isArray(nextInputArgs.defaultInputKeys) && (didOverrideFilterByTk || didOverrideSourceId)) {
+    const remove = new Set<string>([
+      ...(didOverrideFilterByTk ? ['filterByTk'] : []),
+      ...(didOverrideSourceId ? ['sourceId'] : []),
+    ]);
+    const nextKeys = nextInputArgs.defaultInputKeys.filter((k: any) => !remove.has(String(k)));
+    if (nextKeys.length > 0) {
+      nextInputArgs.defaultInputKeys = nextKeys;
+    } else {
+      delete nextInputArgs.defaultInputKeys;
     }
   }
 
@@ -206,6 +387,43 @@ const fetchTemplateByUid = async (ctx: any, templateUid: string): Promise<Templa
   return body as TemplateRow;
 };
 
+type PopupTemplateMeta = PopupTemplateContextFlags;
+
+const popupTemplateMetaCacheByEngine = new WeakMap<object, Map<string, Promise<PopupTemplateMeta | null>>>();
+const popupTemplateMetaCacheFallback = new Map<string, Promise<PopupTemplateMeta | null>>();
+
+const getPopupTemplateMetaCache = (ctx: any): Map<string, Promise<PopupTemplateMeta | null>> => {
+  const engine = (ctx as any)?.engine;
+  if (engine && typeof engine === 'object') {
+    let cache = popupTemplateMetaCacheByEngine.get(engine);
+    if (!cache) {
+      cache = new Map<string, Promise<PopupTemplateMeta | null>>();
+      popupTemplateMetaCacheByEngine.set(engine, cache);
+    }
+    return cache;
+  }
+  return popupTemplateMetaCacheFallback;
+};
+
+const getPopupTemplateMeta = async (ctx: any, templateUid: string): Promise<PopupTemplateMeta | null> => {
+  const uid = typeof templateUid === 'string' ? templateUid.trim() : '';
+  if (!uid) return null;
+  const cache = getPopupTemplateMetaCache(ctx);
+  if (cache.has(uid)) return cache.get(uid)!;
+  const p = (async () => {
+    try {
+      const tpl = await fetchTemplateByUid(ctx, uid);
+      if (!tpl) return null;
+      return inferPopupTemplateMeta(ctx, tpl);
+    } catch (e) {
+      console.error('[block-reference] getPopupTemplateMeta failed:', e);
+      return null;
+    }
+  })();
+  cache.set(uid, p);
+  return p;
+};
+
 function PopupTemplateSelect(props: any) {
   const { value, onChange } = props as { value?: string; onChange?: (v: string | undefined) => void };
   const ctx = useFlowSettingsContext();
@@ -213,6 +431,15 @@ function PopupTemplateSelect(props: any) {
   const form = useForm();
   const expectedResource = useMemo(
     () => resolveExpectedResourceInfo(ctx as any, form?.values),
+    [
+      ctx,
+      (form as any)?.values?.dataSourceKey,
+      (form as any)?.values?.collectionName,
+      (form as any)?.values?.associationName,
+    ],
+  );
+  const expectedSourceResource = useMemo(
+    () => resolveExpectedSourceResourceInfo(ctx as any, form?.values),
     [
       ctx,
       (form as any)?.values?.dataSourceKey,
@@ -241,7 +468,12 @@ function PopupTemplateSelect(props: any) {
     async (tpl: TemplateRow) => {
       const name = tpl?.name || tpl?.uid || '';
       const desc = tpl?.description;
-      const disabledReason = await getPopupTemplateDisabledReason(ctx as any, tpl, expectedResource);
+      const disabledReason = await getPopupTemplateDisabledReason(
+        ctx as any,
+        tpl,
+        expectedResource,
+        expectedSourceResource,
+      );
       return {
         label: (
           <span
@@ -265,7 +497,7 @@ function PopupTemplateSelect(props: any) {
         rawName: name,
       };
     },
-    [ctx, expectedResource],
+    [ctx, expectedResource, expectedSourceResource],
   );
 
   const loadOptions = useCallback(
@@ -445,7 +677,7 @@ function PopupTemplateSelect(props: any) {
       filterOption={false}
       optionLabelProp="label"
       placeholder={t('Select popup template')}
-      loading={loading || field?.loading || field?.validating}
+      loading={loading || field?.loading}
       options={options}
       value={value}
       onChange={handleSelect}
@@ -530,24 +762,47 @@ const resolveTemplateToUid = async (ctx: FlowSettingsContext, params: any): Prom
   }
 
   const expected = resolveExpectedResourceInfo(ctx as any, params);
-  const disabledReason = await getPopupTemplateDisabledReason(ctx as any, tpl, expected);
+  const expectedSource = resolveExpectedSourceResourceInfo(ctx as any, params);
+  const disabledReason = await getPopupTemplateDisabledReason(ctx as any, tpl, expected, expectedSource);
   if (disabledReason) {
     throw new Error(disabledReason);
   }
 
   params.uid = tpl.targetUid;
-  // collectionName / associationName / dataSourceKey 以模板为准（associationName 允许为空表示“非关系弹窗”）
-  if (typeof tpl?.dataSourceKey === 'string' && tpl.dataSourceKey.trim()) {
-    params.dataSourceKey = tpl.dataSourceKey.trim();
+  // collectionName / associationName / dataSourceKey 以模板为准（associationName 允许为空表示"非关系弹窗"）
+  const tplDataSourceKey = normalizeStr(tpl?.dataSourceKey);
+  const tplCollectionName = normalizeStr(tpl?.collectionName);
+  const tplAssociationName = normalizeStr(tpl?.associationName);
+  if (tplDataSourceKey) {
+    params.dataSourceKey = tplDataSourceKey;
   }
-  if (typeof tpl?.collectionName === 'string' && tpl.collectionName.trim()) {
-    params.collectionName = tpl.collectionName.trim();
+  if (tplCollectionName) {
+    params.collectionName = tplCollectionName;
   }
-  if (typeof tpl?.associationName === 'string' && tpl.associationName.trim()) {
-    params.associationName = tpl.associationName.trim();
+  if (tplAssociationName) {
+    params.associationName = tplAssociationName;
   } else if (params && typeof params === 'object' && 'associationName' in params) {
     delete params.associationName;
   }
+
+  // filterByTk/sourceId 也以模板为准：模板未提供时需要清理，避免从 Record action 默认值透传到 Collection 模板。
+  const inferred = inferPopupTemplateMeta(ctx as any, tpl);
+  (params as any).popupTemplateHasFilterByTk = inferred.hasFilterByTk;
+  (params as any).popupTemplateHasSourceId = inferred.hasSourceId;
+  const applyTemplateParam = (key: 'filterByTk' | 'sourceId', hasInTemplate: boolean) => {
+    if (!hasInTemplate) {
+      if (params && typeof params === 'object' && key in params) {
+        delete (params as any)[key];
+      }
+      return;
+    }
+    const tvStr = normalizeStr((tpl as any)?.[key]);
+    if (tvStr) {
+      (params as any)[key] = tvStr;
+    }
+  };
+  applyTemplateParam('filterByTk', inferred.hasFilterByTk);
+  applyTemplateParam('sourceId', inferred.hasSourceId);
 };
 
 export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
@@ -582,8 +837,26 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
     async handler(ctx, params) {
       // 模板信息（uid、dataSourceKey、collectionName、associationName）在配置保存时已填充到 params，
       const templateUid = params.popupTemplateUid;
-      const nextParams = stripTemplateParams(params);
-      const runtimeCtx = templateUid ? buildPopupTemplateShadowCtx(ctx, params) : ctx;
+      const hydratedMeta =
+        typeof templateUid === 'string' && templateUid.trim()
+          ? await getPopupTemplateMeta(ctx as any, templateUid.trim())
+          : null;
+
+      // 根据模板元数据补充运行时标志
+      const runtimeParams = { ...params };
+      if (hydratedMeta) {
+        if (hydratedMeta.confidentFilterByTk) {
+          runtimeParams.popupTemplateHasFilterByTk = hydratedMeta.hasFilterByTk;
+        }
+        if (hydratedMeta.confidentSourceId) {
+          runtimeParams.popupTemplateHasSourceId = hydratedMeta.hasSourceId;
+        }
+      }
+
+      const shouldUseTemplateCtx =
+        (typeof templateUid === 'string' && templateUid.trim()) || !!(runtimeParams as any)?.popupTemplateContext;
+      const nextParams = stripTemplateParams(runtimeParams);
+      const runtimeCtx = shouldUseTemplateCtx ? buildPopupTemplateShadowCtx(ctx, runtimeParams) : ctx;
       return base.handler(runtimeCtx, nextParams);
     },
   };

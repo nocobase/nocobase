@@ -55,6 +55,23 @@ export function resolveTargetResourceByAssociation(
   return { dataSourceKey: targetDataSourceKey, collectionName: targetCollectionName };
 }
 
+export function resolveBaseResourceByAssociation(init: {
+  dataSourceKey?: unknown;
+  collectionName?: unknown;
+  associationName?: unknown;
+}): { dataSourceKey: string; collectionName: string } | undefined {
+  const dataSourceKey = normalizeStr(init?.dataSourceKey);
+  const collectionName = normalizeStr(init?.collectionName);
+  const associationName = normalizeStr(init?.associationName);
+  if (!dataSourceKey || !associationName) return undefined;
+
+  const parts = associationName.split('.').filter(Boolean);
+  const inferredBaseCollectionName = parts.length > 1 ? parts[0] : '';
+  const baseCollectionName = inferredBaseCollectionName || collectionName;
+  if (!baseCollectionName) return undefined;
+  return { dataSourceKey, collectionName: baseCollectionName };
+}
+
 export function resolveExpectedResourceInfoByModelChain(
   ctx: any,
   startModel?: any,
@@ -117,6 +134,119 @@ export function resolveExpectedResourceInfoByModelChain(
 }
 
 export type TemplateAssociationMatchStrategy = 'none' | 'exactIfTemplateHasAssociationName' | 'associationResourceOnly';
+
+/**
+ * 推断弹窗模板是否需要 record/source 上下文。
+ * 用于避免 Collection 模板被误判为 Record 模板（尤其是默认值里带 `{{ ctx.record.* }}` 的情况）。
+ */
+export type PopupTemplateContextFlags = {
+  hasFilterByTk: boolean;
+  hasSourceId: boolean;
+  /** 是否有足够信息确定 hasFilterByTk（用于运行时决定是否覆盖） */
+  confidentFilterByTk: boolean;
+  /** 是否有足够信息确定 hasSourceId */
+  confidentSourceId: boolean;
+};
+
+export type ActionSceneType = 'record' | 'collection' | 'both' | undefined;
+
+/**
+ * 根据 Model 类的 _isScene 方法推断 action 场景类型
+ */
+export function resolveActionScene(
+  getModelClass: ((use: string) => any) | undefined,
+  rootUse?: unknown,
+): ActionSceneType {
+  const useKey = normalizeStr(rootUse);
+  if (!useKey || !getModelClass) return undefined;
+  const ModelClass = getModelClass(useKey);
+  if (!ModelClass) return undefined;
+  const isScene = ModelClass?._isScene;
+  if (typeof isScene !== 'function') return undefined;
+  const isRecord = !!isScene.call(ModelClass, 'record');
+  const isCollection = !!isScene.call(ModelClass, 'collection');
+  if (isRecord && isCollection) return 'both';
+  if (isRecord) return 'record';
+  if (isCollection) return 'collection';
+  return undefined;
+}
+
+const includesRecordVar = (expr: string): boolean => expr.includes('ctx.record');
+const includesResourceVar = (expr: string): boolean => expr.includes('ctx.resource');
+
+/**
+ * 推断弹窗模板的 filterByTk/sourceId 上下文需求
+ */
+export function inferPopupTemplateContextFlags(
+  scene: ActionSceneType,
+  filterByTkExpr?: string,
+  sourceIdExpr?: string,
+): PopupTemplateContextFlags {
+  const filterByTkStr = normalizeStr(filterByTkExpr);
+  const sourceIdStr = normalizeStr(sourceIdExpr);
+
+  const isCollectionOnly = scene === 'collection';
+  const isRecordOnly = scene === 'record';
+
+  let hasFilterByTk = false;
+  let confidentFilterByTk = false;
+
+  if (filterByTkStr) {
+    // Collection-only 模板里出现 `{{ ctx.record.* }}` 通常来自默认值，不应视为"模板需要 record 场景"
+    if (isCollectionOnly && includesRecordVar(filterByTkStr)) {
+      hasFilterByTk = false;
+      confidentFilterByTk = true;
+    } else {
+      hasFilterByTk = true;
+      confidentFilterByTk = true;
+    }
+  } else if (isRecordOnly) {
+    // 兼容旧数据：record 场景弹窗模板可能未落 filterByTk，但仍应按 record 场景处理
+    hasFilterByTk = true;
+    confidentFilterByTk = true;
+  } else if (isCollectionOnly) {
+    hasFilterByTk = false;
+    confidentFilterByTk = true;
+  } else {
+    hasFilterByTk = false;
+    confidentFilterByTk = false;
+  }
+
+  let hasSourceId = false;
+  let confidentSourceId = false;
+
+  if (sourceIdStr) {
+    // Collection-only 模板里出现 `{{ ctx.resource.* }}` 大多无意义，避免把 Record/关联上下文的 sourceId 透传到纯 collection 模板
+    if (isCollectionOnly && includesResourceVar(sourceIdStr)) {
+      hasSourceId = false;
+      confidentSourceId = true;
+    } else {
+      hasSourceId = true;
+      confidentSourceId = true;
+    }
+  } else {
+    hasSourceId = false;
+    // sourceId 没有强推断规则：仅在显式存在时才认为模板需要
+    confidentSourceId = false;
+  }
+
+  return { hasFilterByTk, hasSourceId, confidentFilterByTk, confidentSourceId };
+}
+
+/**
+ * 从已保存的 openView params 中提取 PopupTemplateContextFlags（用于 copy 模式或无法获取模板记录时的兜底）
+ */
+export function extractPopupTemplateContextFlagsFromParams(params: {
+  popupTemplateHasFilterByTk?: boolean;
+  popupTemplateHasSourceId?: boolean;
+}): PopupTemplateContextFlags {
+  return {
+    hasFilterByTk: typeof params?.popupTemplateHasFilterByTk === 'boolean' ? params.popupTemplateHasFilterByTk : false,
+    hasSourceId: typeof params?.popupTemplateHasSourceId === 'boolean' ? params.popupTemplateHasSourceId : false,
+    confidentFilterByTk: false,
+    confidentSourceId: false,
+  };
+}
 
 export function getTemplateAvailabilityDisabledReason(
   ctx: any,

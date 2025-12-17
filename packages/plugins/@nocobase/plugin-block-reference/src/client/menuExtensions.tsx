@@ -14,6 +14,13 @@ import { FlowModel, createBlockScopedEngine } from '@nocobase/flow-engine';
 import { BlockModel } from '@nocobase/client';
 import { ReferenceBlockModel } from './models/ReferenceBlockModel';
 import { NAMESPACE, tStr } from './locale';
+import {
+  extractPopupTemplateContextFlagsFromParams,
+  inferPopupTemplateContextFlags,
+  normalizeStr,
+  resolveActionScene,
+  type PopupTemplateContextFlags,
+} from './utils/templateCompatibility';
 
 type MenuItem = {
   key: string;
@@ -508,8 +515,14 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
     return;
   }
 
+  // Try to get field title for field popup templates
+  const collectionField = (model.context as any)?.collectionField;
+  const fieldTitle = collectionField?.title ? normalizeTitle(collectionField.title) : '';
   const defaultName =
-    normalizeTitle((model as any)?.getTitle?.()) || normalizeTitle((model as any)?.title) || normalizeTitle(model.uid);
+    fieldTitle ||
+    normalizeTitle((model as any)?.getTitle?.()) ||
+    normalizeTitle((model as any)?.title) ||
+    normalizeTitle(model.uid);
   const resolveOpenViewStepKey = (flow: any): string | undefined => {
     const steps = flow?.steps || {};
     if (steps?.openView) return 'openView';
@@ -637,12 +650,37 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
               const nextOpenView: any = { ...(openViewParams || {}) };
               nextOpenView.uid = targetUid;
               nextOpenView.popupTemplateUid = tplUid;
-              if (!toNonEmptyString(nextOpenView.filterByTk) && templateFilterByTk) {
-                nextOpenView.filterByTk = templateFilterByTk;
+              delete nextOpenView.popupTemplateContext;
+              // 推断模板"是否需要 record/source 上下文"，避免 collection 模板被误判为 record 模板（尤其是默认值里带 `{{ ctx.record.* }}` 的情况）。
+              // 注：这里使用 model.constructor.name 推断 scene（当前正在配置的 action 类型），
+              // 而 inferFromTemplateRow 使用 tplRow.rootUse（模板保存时的 action 类型）。两者语义相同：都是获取触发弹窗的 action 场景。
+              const ctor: any = (model as any)?.constructor;
+              const scene = resolveActionScene((use: string) => model.flowEngine?.getModelClass?.(use), ctor?.name);
+              const inferred = inferPopupTemplateContextFlags(
+                scene,
+                openViewParams?.filterByTk,
+                openViewParams?.sourceId,
+              );
+
+              if (inferred.hasFilterByTk) {
+                if (!toNonEmptyString(nextOpenView.filterByTk) && templateFilterByTk) {
+                  nextOpenView.filterByTk = templateFilterByTk;
+                }
+              } else if ('filterByTk' in nextOpenView) {
+                delete nextOpenView.filterByTk;
               }
-              if (!toNonEmptyString(nextOpenView.sourceId) && templateSourceId) {
-                nextOpenView.sourceId = templateSourceId;
+
+              if (inferred.hasSourceId) {
+                if (!toNonEmptyString(nextOpenView.sourceId) && templateSourceId) {
+                  nextOpenView.sourceId = templateSourceId;
+                }
+              } else if ('sourceId' in nextOpenView) {
+                delete nextOpenView.sourceId;
               }
+
+              // 保存模板侧的 filterByTk/sourceId 可用性：运行时可能解析为空/undefined，需用布尔标记避免误判为"模板未提供"
+              nextOpenView.popupTemplateHasFilterByTk = inferred.hasFilterByTk;
+              nextOpenView.popupTemplateHasSourceId = inferred.hasSourceId;
               model.setStepParams('popupSettings', { [openViewStepKey]: nextOpenView });
               await model.saveStepParams();
             }
@@ -767,31 +805,49 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, t: (k: string,
   }
 
   const unwrap = (val: any) => val?.data?.data ?? val?.data ?? val;
-  const resolveTemplateTargetUid = async (): Promise<string> => {
+  const fetchTemplateRow = async (): Promise<Record<string, any> | null> => {
     if (!api?.resource) {
-      const v = openViewParams?.uid;
-      if (typeof v === 'string' && v.trim()) return v.trim();
-      throw new Error(tNs('Popup template not found'));
+      return null;
     }
     const res = await api.resource('flowModelTemplates').get({ filterByTk: templateUid });
     const row = unwrap(res);
-    const targetUid = row?.targetUid;
-    if (typeof targetUid === 'string' && targetUid.trim()) return targetUid.trim();
-    // fallback: use current uid
-    const v = openViewParams?.uid;
-    if (typeof v === 'string' && v.trim()) return v.trim();
-    throw new Error(tNs('Popup template not found'));
+    return row && typeof row === 'object' ? (row as Record<string, any>) : null;
+  };
+
+  const inferFromTemplateRow = (tplRow: Record<string, any>): PopupTemplateContextFlags => {
+    const scene = resolveActionScene((use: string) => model.flowEngine?.getModelClass?.(use), tplRow?.rootUse);
+    return inferPopupTemplateContextFlags(scene, tplRow?.filterByTk, tplRow?.sourceId);
   };
 
   const doConvert = async () => {
-    const targetUid = await resolveTemplateTargetUid();
+    const tplRow = await fetchTemplateRow();
+    const targetUid = normalizeStr(tplRow?.targetUid) || normalizeStr(openViewParams?.uid);
+    if (!targetUid) {
+      throw new Error(tNs('Popup template not found'));
+    }
     const duplicated = await model.flowEngine.duplicateModel(targetUid);
     const newUid = duplicated?.uid || duplicated?.data?.uid || duplicated?.data?.data?.uid;
     if (!newUid) {
       throw new Error(tNs('Failed to copy popup from template'));
     }
-    const nextOpenView = { ...(openViewParams || {}), uid: newUid };
+    const inferred: PopupTemplateContextFlags = tplRow
+      ? inferFromTemplateRow(tplRow)
+      : extractPopupTemplateContextFlagsFromParams(openViewParams);
+
+    const nextOpenView: any = { ...(openViewParams || {}), uid: newUid };
     delete (nextOpenView as any).popupTemplateUid;
+    // 保持与"模板引用"一致的运行时上下文覆写逻辑（特别是关联字段复用非关系弹窗时 filterByTk<-sourceId）
+    (nextOpenView as any).popupTemplateContext = true;
+    // 关键：copy 模式下不再有 popupTemplateUid 可用于运行时推断，因此这里要把"模板是否需要 record/source 上下文"固化下来。
+    nextOpenView.popupTemplateHasFilterByTk = inferred.hasFilterByTk;
+    nextOpenView.popupTemplateHasSourceId = inferred.hasSourceId;
+    // 同步清理 params 侧的 filterByTk/sourceId，避免 record action 复用 collection 弹窗时泄漏 filterByTk
+    if (!inferred.hasFilterByTk && 'filterByTk' in nextOpenView) {
+      delete nextOpenView.filterByTk;
+    }
+    if (!inferred.hasSourceId && 'sourceId' in nextOpenView) {
+      delete nextOpenView.sourceId;
+    }
     model.setStepParams('popupSettings', { [openViewStepKey]: nextOpenView });
     await model.saveStepParams();
     model.context.message?.success?.(tNs('Converted'));
