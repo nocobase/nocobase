@@ -251,7 +251,7 @@ function ExecuteActionButton() {
 }
 
 function WorkflowMenu() {
-  const { workflow, revisions } = useFlowContext();
+  const { workflow, revisions = [] } = useFlowContext();
   const [historyVisible, setHistoryVisible] = useState(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
@@ -291,11 +291,30 @@ function WorkflowMenu() {
         });
         message.success(t('Operation succeeded'));
 
-        navigate(
-          workflow.current
-            ? app.pluginSettingsManager.getRoutePath('workflow')
-            : getWorkflowDetailPath(revisions.find((item) => item.current)?.id),
-        );
+        const workflowHomepage = app.pluginSettingsManager.getRoutePath('workflow');
+        if (workflow.current) {
+          return navigate(workflowHomepage);
+        }
+
+        if (revisions.length) {
+          navigate(getWorkflowDetailPath(revisions.find((item) => item.current)?.id));
+        }
+        const res = await resource.list({
+          filter: {
+            key: workflow.key,
+            current: true,
+          },
+          fields: ['id'],
+          pageSize: 1,
+        });
+        if (res.status !== 200) {
+          return;
+        }
+        const [current] = res.data.data;
+        if (!current) {
+          return navigate(workflowHomepage);
+        }
+        return navigate(getWorkflowDetailPath(current.id));
       },
     });
   }, [workflow, modal, t, resource, message, navigate, app.pluginSettingsManager, revisions]);
