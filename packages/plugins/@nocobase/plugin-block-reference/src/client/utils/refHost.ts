@@ -29,8 +29,11 @@ export function findRefHostInfoFromAncestors(
   while (cur && depth < maxDepth) {
     try {
       const ctx = cur.context as unknown as Record<string, unknown>;
-      const v = ctx?.[REF_HOST_CTX_KEY] as RefHostInfo | undefined;
-      if (v) return v;
+      // 只读取自身 context 上定义的 host 信息，避免从 delegate 链“误捡到”其他 view/弹窗的标记
+      if (ctx && Object.prototype.hasOwnProperty.call(ctx, REF_HOST_CTX_KEY)) {
+        const v = ctx[REF_HOST_CTX_KEY] as RefHostInfo | undefined;
+        if (v) return v;
+      }
     } catch {
       // ignore
     }
