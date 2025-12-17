@@ -146,6 +146,7 @@ export const AMapBlock = (props) => {
       .filter(Boolean);
 
     mapRef.current?.map?.setFitView(overlays);
+    mapRef.current?.map?.setZoom(zoom);
 
     const events = overlays.map((o: AMap.Marker) => {
       const onClick = (e) => {
