@@ -103,7 +103,8 @@ export class DataSourceModel extends Model {
 
     try {
       const oldDataSource = app.dataSourceManager.get(dataSourceKey);
-      const { db: database } = reuseDB === true ? (oldDataSource?.collectionManager as SequelizeCollectionManager) : {};
+      const { db: databaseInstance } =
+        reuseDB === true ? (oldDataSource?.collectionManager as SequelizeCollectionManager) : {};
       const dataSource = app.dataSourceManager.factory.create(type, {
         ...createOptions,
         name: dataSourceKey,
@@ -111,7 +112,7 @@ export class DataSourceModel extends Model {
         sqlLogger: app.sqlLogger.child({ dataSourceKey }),
         cache: app.cache,
         storagePath: path.join(process.cwd(), 'storage', 'cache', 'apps', app.name),
-        database,
+        databaseInstance,
       });
 
       dataSource.on('loadingProgress', (progress) => {
