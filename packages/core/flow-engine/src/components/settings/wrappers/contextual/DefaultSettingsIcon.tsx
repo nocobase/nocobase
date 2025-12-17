@@ -41,6 +41,59 @@ interface FlowInfo {
   modelKey?: string;
 }
 
+const walkSubModels = (rootModel, options, cb) => {
+  const maxDepth = options.maxDepth;
+  const arrayLimit = typeof options.arrayLimit === 'number' ? options.arrayLimit : Number.POSITIVE_INFINITY;
+  const mode = options.mode ?? 'stack';
+
+  const visited = new Set();
+  const stackIds = new Set();
+
+  const walk = (model, depth, modelKey?) => {
+    if (!model || depth > maxDepth) return;
+
+    const run = () => {
+      cb(model, { depth, modelKey });
+      if (depth >= maxDepth) return;
+
+      Object.entries(model.subModels || {}).forEach(([subKey, subModelValue]) => {
+        if (Array.isArray(subModelValue)) {
+          const limit = Number.isFinite(arrayLimit) ? Math.min(subModelValue.length, arrayLimit) : subModelValue.length;
+          for (let index = 0; index < limit; index++) {
+            const subModel = subModelValue[index];
+            if (subModel instanceof FlowModel) {
+              walk(subModel, depth + 1, `${subKey}[${index}]`);
+            }
+          }
+          return;
+        }
+
+        if (subModelValue instanceof FlowModel) {
+          walk(subModelValue, depth + 1, subKey);
+        }
+      });
+    };
+
+    if (mode === 'visited') {
+      if (visited.has(model)) return;
+      visited.add(model);
+      run();
+      return;
+    }
+
+    const modelId = model.uid || `temp-${Date.now()}`;
+    if (stackIds.has(modelId)) return;
+    stackIds.add(modelId);
+    try {
+      run();
+    } finally {
+      stackIds.delete(modelId);
+    }
+  };
+
+  walk(rootModel, 1);
+};
+
 /**
  * Find sub-model by key with validation
  * Supports formats: subKey or subKey[index]
@@ -144,62 +197,23 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     let mounted = true;
     const loadExtras = async () => {
       const allExtras: FlowModelExtraMenuItem[] = [];
-      const processedModels = new Set<string>();
+      const modelsToProcess: Array<{ model: FlowModel; modelKey?: string }> = [];
+      walkSubModels(model, { maxDepth: menuLevels, arrayLimit: 50, mode: 'stack' }, (targetModel, { modelKey }) => {
+        modelsToProcess.push({ model: targetModel, modelKey });
+      });
 
-      const processModel = async (targetModel: FlowModel, depth: number, modelKeyPrefix?: string) => {
-        // Limit recursion depth to menuLevels
-        if (depth > menuLevels) {
-          return;
+      for (const { model: targetModel, modelKey } of modelsToProcess) {
+        const Cls = targetModel.constructor as typeof FlowModel;
+        const extras = await Cls.getExtraMenuItems?.(targetModel, t);
+        if (extras?.length) {
+          allExtras.push(
+            ...extras.map((item) => ({
+              ...item,
+              key: modelKey ? `${modelKey}:${item.key}` : item.key,
+            })),
+          );
         }
-
-        // Prevent circular references
-        const modelId = targetModel.uid || `temp-${Date.now()}`;
-        if (processedModels.has(modelId)) {
-          return;
-        }
-        processedModels.add(modelId);
-
-        try {
-          const Cls = targetModel?.constructor as typeof FlowModel | undefined;
-          if (typeof Cls?.getExtraMenuItems === 'function') {
-            const extras = await Cls.getExtraMenuItems(targetModel, t);
-            if (extras && extras.length > 0) {
-              // Add modelKey prefix to distinguish items from sub-models
-              const prefixedExtras = extras.map((item) => ({
-                ...item,
-                key: modelKeyPrefix ? `${modelKeyPrefix}:${item.key}` : item.key,
-                // Store reference to target model for onClick handler
-                _targetModel: targetModel,
-              }));
-              allExtras.push(...prefixedExtras);
-            }
-          }
-
-          // Process sub-models if needed
-          if (depth < menuLevels && targetModel.subModels) {
-            await Promise.all(
-              Object.entries(targetModel.subModels).map(async ([subKey, subModelValue]) => {
-                if (Array.isArray(subModelValue)) {
-                  await Promise.all(
-                    subModelValue.map(async (subModel, index) => {
-                      if (subModel instanceof FlowModel && index < 50) {
-                        // Reasonable limit
-                        await processModel(subModel, depth + 1, `${subKey}[${index}]`);
-                      }
-                    }),
-                  );
-                } else if (subModelValue instanceof FlowModel) {
-                  await processModel(subModelValue, depth + 1, subKey);
-                }
-              }),
-            );
-          }
-        } finally {
-          processedModels.delete(modelId);
-        }
-      };
-
-      await processModel(model, 1);
+      }
 
       if (mounted) {
         const seen = new Set<string>();
@@ -468,50 +482,15 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   // 获取可配置的flows和steps
   const getConfigurableFlowsAndSteps = useCallback(async (): Promise<FlowInfo[]> => {
     const result: FlowInfo[] = [];
-    const processedModels = new Set<string>(); // 防止循环引用
+    const modelsToProcess: Array<{ model: FlowModel; modelKey?: string }> = [];
+    walkSubModels(model, { maxDepth: menuLevels, arrayLimit: 50, mode: 'stack' }, (targetModel, { modelKey }) => {
+      modelsToProcess.push({ model: targetModel, modelKey });
+    });
 
-    const processModel = async (targetModel: FlowModel, depth: number, modelKey?: string) => {
-      // 限制递归深度为menuLevels
-      if (depth > menuLevels) {
-        return;
-      }
-
-      // 防止循环引用
-      const modelId = targetModel.uid || `temp-${Date.now()}`;
-      if (processedModels.has(modelId)) {
-        return;
-      }
-      processedModels.add(modelId);
-
-      try {
-        const modelFlows = await getModelConfigurableFlowsAndSteps(targetModel, modelKey);
-        result.push(...modelFlows);
-
-        // 如果需要，处理子模型
-        if (depth < menuLevels && targetModel.subModels) {
-          await Promise.all(
-            Object.entries(targetModel.subModels).map(async ([subKey, subModelValue]) => {
-              if (Array.isArray(subModelValue)) {
-                await Promise.all(
-                  subModelValue.map(async (subModel, index) => {
-                    if (subModel instanceof FlowModel && index < 50) {
-                      // 合理的限制
-                      await processModel(subModel, depth + 1, `${subKey}[${index}]`);
-                    }
-                  }),
-                );
-              } else if (subModelValue instanceof FlowModel) {
-                await processModel(subModelValue, depth + 1, subKey);
-              }
-            }),
-          );
-        }
-      } finally {
-        processedModels.delete(modelId);
-      }
-    };
-
-    await processModel(model, 1);
+    for (const { model: targetModel, modelKey } of modelsToProcess) {
+      const modelFlows = await getModelConfigurableFlowsAndSteps(targetModel, modelKey);
+      result.push(...modelFlows);
+    }
     return result;
   }, [model, menuLevels, getModelConfigurableFlowsAndSteps]);
 
@@ -523,15 +502,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       setRefreshTick((v) => v + 1);
     };
 
-    const visited = new Set<FlowModel>();
     const cleanups: Array<() => void> = [];
 
-    const registerListeners = (targetModel?: FlowModel | null, depth = 1) => {
-      if (!targetModel || visited.has(targetModel) || depth > menuLevels) {
-        return;
-      }
-      visited.add(targetModel);
-
+    walkSubModels(model, { maxDepth: menuLevels, mode: 'visited' }, (targetModel, { depth }) => {
       const eventNames = ['onStepParamsChanged'];
       if (depth === 1) {
         eventNames.push('onSubModelAdded', 'onSubModelRemoved', 'onSubModelReplaced');
@@ -541,25 +514,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         targetModel.emitter?.on(eventName, triggerRebuild);
         cleanups.push(() => targetModel.emitter?.off(eventName, triggerRebuild));
       });
-
-      if (depth >= menuLevels) {
-        return;
-      }
-
-      Object.values(targetModel.subModels || {}).forEach((subModel) => {
-        if (Array.isArray(subModel)) {
-          subModel.forEach((item) => {
-            if (item instanceof FlowModel) {
-              registerListeners(item, depth + 1);
-            }
-          });
-        } else if (subModel instanceof FlowModel) {
-          registerListeners(subModel, depth + 1);
-        }
-      });
-    };
-
-    registerListeners(model);
+    });
 
     return () => {
       cleanups.forEach((dispose) => dispose());

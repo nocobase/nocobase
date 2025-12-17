@@ -11,14 +11,18 @@ import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react'
 import type { ActionDefinition, FlowEngine, FlowSettingsContext } from '@nocobase/flow-engine';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { useForm } from '@formily/react';
-import { Select, Tooltip, Typography } from 'antd';
+import { Select } from 'antd';
 import type { BaseSelectRef } from 'rc-select';
 import debounce from 'lodash/debounce';
 import { NAMESPACE } from './locale';
+import { renderTemplateSelectLabel, renderTemplateSelectOption } from './components/TemplateSelectOption';
 import {
+  TEMPLATE_LIST_PAGE_SIZE,
+  calcHasMore,
   getTemplateAvailabilityDisabledReason,
   inferPopupTemplateContextFlags,
   normalizeStr,
+  parseResourceListResponse,
   resolveActionScene,
   resolveBaseResourceByAssociation,
   resolveExpectedResourceInfoByModelChain,
@@ -26,6 +30,7 @@ import {
   tWithNs,
   type PopupTemplateContextFlags,
 } from './utils/templateCompatibility';
+import { mergeSelectOptions } from './utils/infiniteSelect';
 
 type TemplateRow = {
   uid: string;
@@ -360,11 +365,18 @@ const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
   return shadowCtx;
 };
 
-const fetchPopupTemplates = async (ctx: any, keyword?: string): Promise<TemplateRow[]> => {
+const fetchPopupTemplates = async (
+  ctx: any,
+  keyword?: string,
+  pagination?: { page?: number; pageSize?: number },
+): Promise<{ rows: TemplateRow[]; count?: number }> => {
   const api = ctx?.api;
-  if (!api?.resource) return [];
+  if (!api?.resource) return { rows: [] };
+  const page = Math.max(1, Number(pagination?.page || 1));
+  const pageSize = Math.max(1, Number(pagination?.pageSize || TEMPLATE_LIST_PAGE_SIZE));
   const res = await api.resource('flowModelTemplates').list({
-    pageSize: 20,
+    page,
+    pageSize,
     search: keyword || undefined,
     filter: {
       $or: [
@@ -374,9 +386,8 @@ const fetchPopupTemplates = async (ctx: any, keyword?: string): Promise<Template
       ],
     },
   });
-  const body = res.data?.data;
-  const rows = Array.isArray(body?.rows) ? body.rows : Array.isArray(body) ? body : [];
-  return rows as TemplateRow[];
+  const parsed = parseResourceListResponse<TemplateRow>(res);
+  return { rows: parsed.rows, count: parsed.count };
 };
 
 const fetchTemplateByUid = async (ctx: any, templateUid: string): Promise<TemplateRow | null> => {
@@ -460,8 +471,13 @@ function PopupTemplateSelect(props: any) {
   >([]);
   const [loading, setLoading] = useState(false);
   const [selectLoading, setSelectLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [keyword, setKeyword] = useState('');
+  const [hasMore, setHasMore] = useState(true);
   const selectRef = useRef<BaseSelectRef | null>(null);
   const isComposingRef = useRef(false);
+  const listVersionRef = useRef(0);
+  const loadingMoreRef = useRef(false);
 
   const t = useCallback((key: string, opt?: Record<string, any>) => tWithNs(ctx, key, opt), [ctx]);
 
@@ -476,20 +492,7 @@ function PopupTemplateSelect(props: any) {
         expectedSourceResource,
       );
       return {
-        label: (
-          <span
-            style={{
-              display: 'inline-block',
-              maxWidth: 480,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              verticalAlign: 'middle',
-            }}
-          >
-            {name}
-          </span>
-        ),
+        label: renderTemplateSelectLabel(name),
         value: tpl.uid,
         raw: tpl,
         description: desc,
@@ -501,28 +504,69 @@ function PopupTemplateSelect(props: any) {
     [ctx, expectedResource, expectedSourceResource],
   );
 
-  const loadOptions = useCallback(
-    async (keyword?: string) => {
+  const resetAndLoad = useCallback(
+    async (nextKeyword?: string) => {
+      const v = (typeof nextKeyword === 'string' ? nextKeyword : '').trim();
+      const nextVersion = listVersionRef.current + 1;
+      listVersionRef.current = nextVersion;
+      loadingMoreRef.current = false;
+      setKeyword(v);
+      setPage(0);
+      setHasMore(true);
       setLoading(true);
       try {
-        const rows = await fetchPopupTemplates(ctx, keyword);
+        const { rows, count } = await fetchPopupTemplates(ctx, v, { page: 1, pageSize: TEMPLATE_LIST_PAGE_SIZE });
+        const rawLength = rows.length;
         const withIndex = await Promise.all(rows.map(async (r, idx) => ({ ...(await toOption(r)), __idx: idx })));
-        withIndex.sort((a: any, b: any) => {
-          const da = a.disabled ? 1 : 0;
-          const db = b.disabled ? 1 : 0;
-          if (da !== db) return da - db;
-          return (a.__idx as number) - (b.__idx as number);
-        });
-        setOptions(withIndex.map(({ __idx, ...rest }) => rest));
+        if (listVersionRef.current !== nextVersion) return;
+        setOptions(mergeSelectOptions([], withIndex));
+        setPage(1);
+        setHasMore(calcHasMore({ page: 1, pageSize: TEMPLATE_LIST_PAGE_SIZE, rowsLength: rawLength, count }));
       } catch (e) {
         console.error('fetch popup template options failed', e);
+        if (listVersionRef.current !== nextVersion) return;
         setOptions([]);
+        setPage(1);
+        setHasMore(false);
       } finally {
-        setLoading(false);
+        if (listVersionRef.current === nextVersion) {
+          setLoading(false);
+        }
       }
     },
     [ctx, toOption],
   );
+
+  const loadMore = useCallback(async () => {
+    if (loadingMoreRef.current || loading || !hasMore) return;
+    const version = listVersionRef.current;
+    const nextPage = Math.max(1, page || 1) + 1;
+    loadingMoreRef.current = true;
+    setLoading(true);
+    try {
+      const { rows, count } = await fetchPopupTemplates(ctx, keyword, {
+        page: nextPage,
+        pageSize: TEMPLATE_LIST_PAGE_SIZE,
+      });
+      const rawLength = rows.length;
+      const withIndex = await Promise.all(
+        rows.map(async (r, idx) => ({ ...(await toOption(r)), __idx: (nextPage - 1) * TEMPLATE_LIST_PAGE_SIZE + idx })),
+      );
+      if (listVersionRef.current !== version) return;
+      setOptions((prev) => mergeSelectOptions(prev || [], withIndex));
+      setPage(nextPage);
+      setHasMore(calcHasMore({ page: nextPage, pageSize: TEMPLATE_LIST_PAGE_SIZE, rowsLength: rawLength, count }));
+    } catch (e) {
+      console.error('fetch more popup templates failed', e);
+      if (listVersionRef.current !== version) return;
+      setHasMore(false);
+    } finally {
+      loadingMoreRef.current = false;
+      if (listVersionRef.current === version) {
+        setLoading(false);
+      }
+    }
+  }, [ctx, hasMore, keyword, loading, page, toOption]);
 
   useEffect(() => {
     let alive = true;
@@ -535,9 +579,7 @@ function PopupTemplateSelect(props: any) {
         const tpl = await fetchTemplateByUid(ctx, v);
         if (!alive || !tpl?.uid) return;
         const opt = await toOption(tpl);
-        setOptions((prev) =>
-          [opt, ...prev].filter((it, idx, arr) => arr.findIndex((x) => x.value === it.value) === idx),
-        );
+        setOptions((prev) => mergeSelectOptions(prev || [], [{ ...(opt as any), __idx: -1 }]));
       } catch (e) {
         // ignore
       }
@@ -620,7 +662,7 @@ function PopupTemplateSelect(props: any) {
     [ctx, form.values, onChange, setOpenViewValue],
   );
 
-  const debouncedSearch = useMemo(() => debounce((kw: string) => loadOptions(kw), 300), [loadOptions]);
+  const debouncedSearch = useMemo(() => debounce((kw: string) => resetAndLoad(kw), 300), [resetAndLoad]);
 
   useEffect(() => {
     return () => {
@@ -677,7 +719,7 @@ function PopupTemplateSelect(props: any) {
       onChange={handleSelect}
       onDropdownVisibleChange={(open) => {
         if (!open) return;
-        loadOptions();
+        resetAndLoad('');
       }}
       onSearch={(v) => {
         // 如果正在使用中文输入法，不触发搜索
@@ -685,64 +727,16 @@ function PopupTemplateSelect(props: any) {
         const kw = typeof v === 'string' ? v.trim() : '';
         debouncedSearch(kw);
       }}
+      onPopupScroll={(e) => {
+        const target = e?.target as HTMLElement | undefined;
+        if (!target) return;
+        if (target.scrollTop + target.clientHeight < target.scrollHeight - 24) return;
+        loadMore();
+      }}
       dropdownMatchSelectWidth
       dropdownStyle={{ maxWidth: 560 }}
       getPopupContainer={() => document.body}
-      optionRender={(option) => {
-        const tpl = option?.data?.raw as TemplateRow | undefined;
-        const name = option?.data?.rawName || tpl?.name || tpl?.uid || option.label;
-        const desc = option?.data?.description || tpl?.description;
-        const disabledReason = option?.data?.disabledReason;
-        const isDisabled = !!disabledReason;
-        const content = (
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 4,
-              padding: '4px 0',
-              maxWidth: 520,
-              opacity: isDisabled ? 0.5 : 1,
-              width: '100%',
-              cursor: isDisabled ? 'not-allowed' : 'pointer',
-            }}
-          >
-            <Typography.Text
-              strong
-              style={{
-                maxWidth: 480,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {name}
-            </Typography.Text>
-            {desc && (
-              <Typography.Text
-                type="secondary"
-                style={{ fontSize: 12, lineHeight: 1.4, whiteSpace: 'normal', wordBreak: 'break-word' }}
-              >
-                {desc}
-              </Typography.Text>
-            )}
-          </div>
-        );
-        if (isDisabled && disabledReason) {
-          return (
-            <Tooltip
-              title={disabledReason}
-              placement="right"
-              zIndex={9999}
-              overlayStyle={{ maxWidth: 400 }}
-              mouseEnterDelay={0.1}
-            >
-              <div style={{ width: '100%' }}>{content}</div>
-            </Tooltip>
-          );
-        }
-        return content;
-      }}
+      optionRender={renderTemplateSelectOption}
     />
   );
 }

@@ -9,7 +9,7 @@
 
 import type { FlowEngine, FlowModel, FlowModelContext } from '@nocobase/flow-engine';
 import { NAMESPACE } from './locale';
-import { REF_HOST_CTX_KEY } from './constants';
+import { findRefHostInfoFromAncestors } from './utils/refHost';
 
 function findFormModel(model: FlowModel): FlowModel | undefined {
   let cur: FlowModel | undefined = model;
@@ -30,24 +30,6 @@ function isFormInsideReferenceBlock(formModel: FlowModel | undefined): boolean {
   return parent?.use === 'ReferenceBlockModel';
 }
 
-function findHostInfoFromAncestors(model: FlowModel) {
-  let cur: FlowModel | undefined = model;
-  let depth = 0;
-  while (cur && depth < 8) {
-    const c = cur?.context;
-    // 优先直接读取（FlowContext Proxy 会自动沿 delegate 链查找），避免依赖 has() 的“仅自身 _props”语义
-    try {
-      const v = c && (c as any)?.[REF_HOST_CTX_KEY];
-      if (v) return v;
-    } catch {
-      // ignore
-    }
-    cur = cur?.parent as FlowModel | undefined;
-    depth++;
-  }
-  return undefined;
-}
-
 export function registerSubModelMenuExtensions(engine: FlowEngine) {
   type ModelClass = typeof FlowModel & {
     __subModelTemplateMenuPatched?: boolean;
@@ -65,7 +47,7 @@ export function registerSubModelMenuExtensions(engine: FlowEngine) {
 
     const label = ctx.t?.('From template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }) || 'From template';
     const formModel = findFormModel(ctx.model);
-    const parentUse = (formModel as any)?.use || (ctx.model as any)?.parent?.use;
+    const parentUse = formModel?.use || ctx.model.parent?.use;
     const expectedRootUse =
       parentUse === 'CreateFormModel' || parentUse === 'EditFormModel'
         ? ['CreateFormModel', 'EditFormModel']
@@ -82,7 +64,7 @@ export function registerSubModelMenuExtensions(engine: FlowEngine) {
       sort: -999,
       hide: async (innerCtx: FlowModelContext) => {
         // 1) 若处于"字段模板引用"内部（当前正在渲染模板 grid），直接隐藏，避免误清空模板侧字段
-        const hostInfo = findHostInfoFromAncestors(innerCtx.model);
+        const hostInfo = findRefHostInfoFromAncestors(innerCtx.model);
         const hostRef = hostInfo?.ref;
         if (hostRef && hostRef.mountSubKey === 'grid' && hostRef.mode !== 'copy') {
           return true;
@@ -96,7 +78,7 @@ export function registerSubModelMenuExtensions(engine: FlowEngine) {
         }
 
         // 3) 常规：当前表单区块已经使用引用 grid（字段模板），隐藏 "From template"
-        const mountTarget = fm || (innerCtx.model as any)?.parent;
+        const mountTarget = fm || (innerCtx.model.parent as FlowModel | undefined);
         if (!mountTarget) return false;
         const grid = (mountTarget?.subModels as any)?.grid;
         const isReferenceGrid = !!grid && String(grid?.use || '') === 'ReferenceFormGridModel';

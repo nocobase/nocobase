@@ -9,12 +9,18 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { Typography, Tooltip } from 'antd';
 import { escapeT, type FlowEngine, type FlowModel } from '@nocobase/flow-engine';
 import { tStr, NAMESPACE } from '../locale';
 import { BlockModel } from '@nocobase/client';
-import debounce from 'lodash/debounce';
-import { getTemplateAvailabilityDisabledReason, normalizeStr } from '../utils/templateCompatibility';
+import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
+import {
+  TEMPLATE_LIST_PAGE_SIZE,
+  calcHasMore,
+  getTemplateAvailabilityDisabledReason,
+  normalizeStr,
+  parseResourceListResponse,
+} from '../utils/templateCompatibility';
+import { bindInfiniteScrollToFormilySelect, defaultSelectOptionComparator } from '../utils/infiniteSelect';
 import {
   ensureBlockScopedEngine,
   ReferenceScopedRenderer,
@@ -338,10 +344,16 @@ ReferenceBlockModel.registerFlow({
           );
         };
 
-        const fetchOptions = async (keyword?: string) => {
+        const fetchOptions = async (
+          keyword?: string,
+          pagination?: { page?: number; pageSize?: number },
+        ): Promise<{ options: any[]; hasMore: boolean }> => {
+          const page = Math.max(1, Number(pagination?.page || 1));
+          const pageSize = Math.max(1, Number(pagination?.pageSize || TEMPLATE_LIST_PAGE_SIZE));
           try {
             const res = await api?.resource?.('flowModelTemplates')?.list({
-              pageSize: 20,
+              page,
+              pageSize,
               search: keyword || undefined,
               filter: {
                 $and: [
@@ -351,30 +363,15 @@ ReferenceBlockModel.registerFlow({
                 ],
               },
             });
-            const body = res?.data || res;
-            const unwrap = (val: any) => (val && val.data ? val.data : val);
-            const candidate = unwrap(body);
-            const rows = Array.isArray(candidate?.rows) ? candidate.rows : Array.isArray(candidate) ? candidate : [];
+            const { rows, count } = parseResourceListResponse<any>(res);
+            const rawLength = rows.length;
             const optsWithIndex = rows.map((r, idx) => {
               const name = r.name || r.uid || '';
               const desc = r.description;
               const disabledReason = getTemplateDisabledReason(r || {});
               return {
-                __idx: idx,
-                label: (
-                  <span
-                    style={{
-                      display: 'inline-block',
-                      maxWidth: 480,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      verticalAlign: 'middle',
-                    }}
-                  >
-                    {name}
-                  </span>
-                ),
+                __idx: (page - 1) * pageSize + idx,
+                label: renderTemplateSelectLabel(name),
                 value: r.uid,
                 description: desc,
                 disabled: !!disabledReason,
@@ -382,18 +379,13 @@ ReferenceBlockModel.registerFlow({
                 rawName: name,
               };
             });
-            return optsWithIndex
-              .slice()
-              .sort((a, b) => {
-                const da = a.disabled ? 1 : 0;
-                const db = b.disabled ? 1 : 0;
-                if (da !== db) return da - db;
-                return (a.__idx || 0) - (b.__idx || 0);
-              })
-              .map(({ __idx, ...rest }) => rest);
+            return {
+              options: optsWithIndex.slice().sort(defaultSelectOptionComparator),
+              hasMore: calcHasMore({ page, pageSize, rowsLength: rawLength, count }),
+            };
           } catch (e) {
             console.error('fetch template options failed', e);
-            return [];
+            return { options: [], hasMore: false };
           }
         };
         return {
@@ -411,67 +403,7 @@ ReferenceBlockModel.registerFlow({
               dropdownMatchSelectWidth: true,
               dropdownStyle: { maxWidth: 560 },
               getPopupContainer: () => document.body,
-              optionRender: (option) => {
-                const desc = option?.data?.description;
-                const disabledReason = option?.data?.disabledReason;
-                const isDisabled = !!disabledReason;
-                const content = (
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 4,
-                      padding: '4px 0',
-                      maxWidth: 520,
-                      opacity: isDisabled ? 0.5 : 1,
-                      width: '100%',
-                      cursor: isDisabled ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    <Typography.Text
-                      strong
-                      style={{
-                        maxWidth: 480,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {option?.data?.rawName || option.label}
-                    </Typography.Text>
-                    {desc && (
-                      <Typography.Text
-                        type="secondary"
-                        style={{
-                          fontSize: 12,
-                          lineHeight: 1.4,
-                          whiteSpace: 'normal',
-                          wordBreak: 'break-word',
-                        }}
-                      >
-                        {desc}
-                      </Typography.Text>
-                    )}
-                  </div>
-                );
-
-                // 如果禁用且有原因，用 Tooltip 包裹整个选项以确保整个区域都能触发 tooltip
-                if (isDisabled && disabledReason) {
-                  return (
-                    <Tooltip
-                      title={disabledReason}
-                      placement="right"
-                      zIndex={9999}
-                      overlayStyle={{ maxWidth: 400 }}
-                      mouseEnterDelay={0.1}
-                    >
-                      <div style={{ width: '100%' }}>{content}</div>
-                    </Tooltip>
-                  );
-                }
-
-                return content;
-              },
+              optionRender: renderTemplateSelectOption,
             },
             default: templateUid || undefined,
             'x-validator': [
@@ -481,38 +413,13 @@ ReferenceBlockModel.registerFlow({
             ],
             'x-reactions': [
               (field) => {
-                const composingKey = '__templateComposing';
-                const setComposing = (v: boolean) => {
-                  try {
-                    field.data = { ...(field.data || {}), [composingKey]: v };
-                  } catch (e) {
-                    // ignore
-                  }
-                };
-                field.componentProps.onDropdownVisibleChange = async (open: boolean) => {
-                  if (!open) return;
-                  field.loading = true;
-                  const opts = await fetchOptions();
-                  field.dataSource = opts;
-                  field.loading = false;
-                };
-                const debouncedSearch = debounce(async (value: string) => {
-                  field.loading = true;
-                  const opts = await fetchOptions(value);
-                  field.dataSource = opts;
-                  field.loading = false;
-                }, 300);
-                field.componentProps.onSearch = (value: string) => {
-                  if (field.data?.[composingKey]) return;
-                  const v = typeof value === 'string' ? value.trim() : '';
-                  debouncedSearch(v);
-                };
-                field.componentProps.onCompositionStart = () => setComposing(true);
-                field.componentProps.onCompositionEnd = (e: any) => {
-                  setComposing(false);
-                  const v = e?.target?.value || '';
-                  debouncedSearch(typeof v === 'string' ? v.trim() : '');
-                };
+                bindInfiniteScrollToFormilySelect(
+                  field,
+                  async (keyword: string, page: number, pageSize: number) => {
+                    return fetchOptions(keyword, { page, pageSize });
+                  },
+                  { pageSize: TEMPLATE_LIST_PAGE_SIZE, composingKey: '__templateComposing' },
+                );
               },
             ],
           },

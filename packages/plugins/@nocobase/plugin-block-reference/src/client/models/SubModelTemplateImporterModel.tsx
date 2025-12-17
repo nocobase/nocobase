@@ -8,9 +8,8 @@
  */
 
 import React from 'react';
-import debounce from 'lodash/debounce';
 import _ from 'lodash';
-import { Button, Space, Typography, Tooltip } from 'antd';
+import { Button, Space } from 'antd';
 import {
   FlowModel,
   FlowContext,
@@ -21,11 +20,16 @@ import {
   tExpr,
 } from '@nocobase/flow-engine';
 import { NAMESPACE, tStr } from '../locale';
-import { REF_HOST_CTX_KEY } from '../constants';
+import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
+import { findRefHostInfoFromAncestors } from '../utils/refHost';
 import {
+  TEMPLATE_LIST_PAGE_SIZE,
+  calcHasMore,
   getTemplateAvailabilityDisabledReason,
+  parseResourceListResponse,
   resolveExpectedResourceInfoByModelChain,
 } from '../utils/templateCompatibility';
+import { bindInfiniteScrollToFormilySelect, defaultSelectOptionComparator } from '../utils/infiniteSelect';
 
 type ImporterProps = {
   /** 默认从模板根取片段的路径 */
@@ -237,9 +241,15 @@ export class SubModelTemplateImporterModel extends FlowModel {
     );
   }
 
-  public async fetchTemplateOptions(ctx: FlowContext, keyword?: string) {
+  public async fetchTemplateOptions(
+    ctx: FlowContext,
+    keyword?: string,
+    pagination?: { page?: number; pageSize?: number },
+  ): Promise<{ options: any[]; hasMore: boolean }> {
     const api = ctx.api;
-    if (!api?.resource) return [];
+    if (!api?.resource) return { options: [], hasMore: false };
+    const page = Math.max(1, Number(pagination?.page || 1));
+    const pageSize = Math.max(1, Number(pagination?.pageSize || TEMPLATE_LIST_PAGE_SIZE));
     try {
       const expectedRootUse = this.props?.expectedRootUse;
       const expects = expectedRootUse
@@ -260,62 +270,47 @@ export class SubModelTemplateImporterModel extends FlowModel {
       };
       const mergedFilter = rootUseFilter ? { $and: [rootUseFilter, ...nonPopupFilter.$and] } : nonPopupFilter;
       const res = await api.resource('flowModelTemplates').list({
-        pageSize: 20,
+        page,
+        pageSize,
         search: keyword || undefined,
         filter: mergedFilter,
       });
-      const body = res?.data || res;
-      const unwrap = (val: any) => (val && val.data ? val.data : val);
-      const candidate = unwrap(body);
-      let rows = Array.isArray(candidate?.rows) ? candidate.rows : Array.isArray(candidate) ? candidate : [];
-      if (expects.length > 0) {
-        // 双保险：即使服务端未应用 filter，也保持严格过滤（兼容 rootUse 为空）
-        rows = rows.filter((r) => !r.rootUse || expects.includes(String(r.rootUse)));
-      }
+      const { rows: rawRows, count } = parseResourceListResponse<any>(res);
+      const rawLength = rawRows.length;
 
       const expectedResource = this.resolveExpectedResourceInfo(ctx);
-      const withIndex = rows.map((r, idx) => {
-        const name = r.name || r.uid || '';
-        const desc = r.description;
+      const withIndex = rawRows.flatMap((r, idx) => {
+        if (expects.length > 0 && r?.rootUse && !expects.includes(String(r.rootUse))) {
+          return [];
+        }
+        const name = r?.name || r?.uid || '';
+        const desc = r?.description;
         const disabledReason = this.getTemplateDisabledReason(ctx, r, expectedResource);
-        return {
-          __idx: idx,
-          label: (
-            <span
-              style={{
-                display: 'inline-block',
-                maxWidth: 480,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                verticalAlign: 'middle',
-              }}
-            >
-              {name}
-            </span>
-          ),
-          value: r.uid,
-          description: desc,
-          rawName: name,
-          targetUid: r.targetUid,
-          disabled: !!disabledReason,
-          disabledReason,
-          dataSourceKey: r.dataSourceKey,
-          collectionName: r.collectionName,
-          rootUse: r.rootUse,
-        };
+        return [
+          {
+            __idx: (page - 1) * pageSize + idx,
+            label: renderTemplateSelectLabel(name),
+            value: r?.uid,
+            description: desc,
+            rawName: name,
+            targetUid: r?.targetUid,
+            disabled: !!disabledReason,
+            disabledReason,
+            dataSourceKey: r?.dataSourceKey,
+            collectionName: r?.collectionName,
+            rootUse: r?.rootUse,
+          },
+        ];
       });
       // enabled 模版放在最前面，其余保持原有顺序（稳定排序）
-      withIndex.sort((a: any, b: any) => {
-        const da = a.disabled ? 1 : 0;
-        const db = b.disabled ? 1 : 0;
-        if (da !== db) return da - db;
-        return (a.__idx as number) - (b.__idx as number);
-      });
-      return withIndex.map(({ __idx, ...rest }) => rest);
+      withIndex.sort(defaultSelectOptionComparator);
+      return {
+        options: withIndex,
+        hasMore: calcHasMore({ page, pageSize, rowsLength: rawLength, count }),
+      };
     } catch (e) {
       console.error('fetch template options failed', e);
-      return [];
+      return { options: [], hasMore: false };
     }
   }
 }
@@ -339,7 +334,8 @@ SubModelTemplateImporterModel.registerFlow({
         const templateUid = (step?.templateUid || '').trim();
         const isNew = !!m.isNew;
         const disableSelect = !isNew && !!templateUid;
-        const fetchOptions = (keyword?: string) => m.fetchTemplateOptions(ctx as FlowContext, keyword);
+        const fetchOptions = (keyword?: string, pagination?: { page?: number; pageSize?: number }) =>
+          m.fetchTemplateOptions(ctx as FlowContext, keyword, pagination);
         return {
           templateUid: {
             title: tStr('Template'),
@@ -355,100 +351,19 @@ SubModelTemplateImporterModel.registerFlow({
               dropdownMatchSelectWidth: true,
               dropdownStyle: { maxWidth: 560 },
               getPopupContainer: () => document.body,
-              optionRender: (option) => {
-                const desc = option?.data?.description;
-                const disabledReason = option?.data?.disabledReason;
-                const isDisabled = !!disabledReason;
-                const content = (
-                  <div
-                    style={{
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: 4,
-                      padding: '4px 0',
-                      opacity: isDisabled ? 0.5 : 1,
-                      width: '100%',
-                      cursor: isDisabled ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    <Typography.Text
-                      strong
-                      style={{
-                        maxWidth: 480,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {option?.data?.rawName || option.label}
-                    </Typography.Text>
-                    {desc && (
-                      <Typography.Text
-                        type="secondary"
-                        style={{
-                          fontSize: 12,
-                          lineHeight: 1.4,
-                          whiteSpace: 'normal',
-                          wordBreak: 'break-word',
-                        }}
-                      >
-                        {desc}
-                      </Typography.Text>
-                    )}
-                  </div>
-                );
-
-                // 如果禁用且有原因，用 Tooltip 包裹整个选项以确保整个区域都能触发 tooltip
-                if (isDisabled && disabledReason) {
-                  return (
-                    <Tooltip
-                      title={disabledReason}
-                      placement="right"
-                      zIndex={9999}
-                      overlayStyle={{ maxWidth: 400 }}
-                      mouseEnterDelay={0.1}
-                    >
-                      <div style={{ width: '100%' }}>{content}</div>
-                    </Tooltip>
-                  );
-                }
-
-                return content;
-              },
+              optionRender: renderTemplateSelectOption,
             },
             default: templateUid || undefined,
             'x-validator': [{ required: true }],
             'x-reactions': [
               (field) => {
-                const composingKey = '__templateComposing';
-                const setComposing = (v: boolean) => {
-                  try {
-                    field.data = { ...(field.data || {}), [composingKey]: v };
-                  } catch {
-                    // ignore
-                  }
-                };
-                field.componentProps.onDropdownVisibleChange = async (open: boolean) => {
-                  if (!open) return;
-                  field.loading = true;
-                  field.dataSource = await fetchOptions();
-                  field.loading = false;
-                };
-                const debouncedSearch = debounce(async (value: string) => {
-                  field.loading = true;
-                  field.dataSource = await fetchOptions(value);
-                  field.loading = false;
-                }, 300);
-                field.componentProps.onSearch = (value: string) => {
-                  if (field.data?.[composingKey]) return;
-                  debouncedSearch(typeof value === 'string' ? value.trim() : '');
-                };
-                field.componentProps.onCompositionStart = () => setComposing(true);
-                field.componentProps.onCompositionEnd = (e: any) => {
-                  setComposing(false);
-                  const v = e?.target?.value || '';
-                  debouncedSearch(typeof v === 'string' ? v.trim() : '');
-                };
+                bindInfiniteScrollToFormilySelect(
+                  field,
+                  async (keyword: string, page: number, pageSize: number) => {
+                    return fetchOptions(keyword, { page, pageSize });
+                  },
+                  { pageSize: TEMPLATE_LIST_PAGE_SIZE, composingKey: '__templateComposing' },
+                );
               },
             ],
           },
@@ -502,23 +417,7 @@ SubModelTemplateImporterModel.registerFlow({
         }
 
         // 若当前位于“引用片段”内部，则禁止再次 From template，避免误清空模板侧字段
-        const findHostInfoFromAncestors = (m: any) => {
-          let cur = m;
-          let depth = 0;
-          while (cur && depth < 8) {
-            const c = cur?.context;
-            try {
-              const v = c && (c as any)?.[REF_HOST_CTX_KEY];
-              if (v) return v;
-            } catch {
-              // ignore
-            }
-            cur = cur?.parent;
-            depth++;
-          }
-          return undefined;
-        };
-        const hostInfo = findHostInfoFromAncestors(importer);
+        const hostInfo = findRefHostInfoFromAncestors(importer);
         const hostRef = hostInfo?.ref;
         if (hostRef && hostRef.mountSubKey === 'grid' && hostRef.mode !== 'copy') {
           const msg =

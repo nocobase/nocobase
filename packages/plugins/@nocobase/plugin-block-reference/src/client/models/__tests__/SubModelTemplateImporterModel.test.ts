@@ -132,7 +132,7 @@ describe('SubModelTemplateImporterModel', () => {
       t: (k: string) => k,
     };
 
-    const options = await (importer as any).fetchTemplateOptions(ctx, '');
+    const { options } = await (importer as any).fetchTemplateOptions(ctx, '');
     expect(Array.isArray(options)).toBe(true);
 
     const values = options.map((o: any) => o.value).sort();
@@ -203,7 +203,7 @@ describe('SubModelTemplateImporterModel', () => {
       dataSourceManager: dsManager,
     };
 
-    const options = await (importer as any).fetchTemplateOptions(ctx, '');
+    const { options } = await (importer as any).fetchTemplateOptions(ctx, '');
     expect(options[0].value).toBe('tpl-roles');
     expect(options[0].disabled).toBe(false);
     expect(options[1].value).toBe('tpl-users');
@@ -254,7 +254,7 @@ describe('SubModelTemplateImporterModel', () => {
       dataSourceManager: dsManager,
     };
 
-    const options = await (importer as any).fetchTemplateOptions(ctx, '');
+    const { options } = await (importer as any).fetchTemplateOptions(ctx, '');
     expect(options[0].value).toBe('tpl-bad-collection');
     expect(options[0].disabled).toBe(false);
     expect(options[1].value).toBe('tpl-users');

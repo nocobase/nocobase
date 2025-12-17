@@ -9,10 +9,53 @@
 
 import { NAMESPACE } from '../locale';
 
+export const TEMPLATE_LIST_PAGE_SIZE = 20;
+
 export function normalizeStr(value: unknown): string {
   if (typeof value === 'string') return value.trim();
   if (typeof value === 'number' || typeof value === 'boolean') return String(value).trim();
   return '';
+}
+
+const toFiniteNumber = (value: unknown): number | undefined => {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : undefined;
+  if (typeof value === 'string') {
+    const v = value.trim();
+    if (!v) return undefined;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : undefined;
+  }
+  return undefined;
+};
+
+export function parseResourceListResponse<T = any>(res: any): { rows: T[]; count?: number } {
+  let cur = res;
+  if (cur && typeof cur === 'object' && 'data' in cur) {
+    cur = (cur as any).data;
+  }
+
+  // unwrap nested `data` layers (axios/rc-request differences)
+  for (let i = 0; i < 4; i++) {
+    if (Array.isArray(cur)) break;
+    if (cur && typeof cur === 'object' && Array.isArray((cur as any).rows)) break;
+    if (cur && typeof cur === 'object' && 'data' in cur) {
+      cur = (cur as any).data;
+      continue;
+    }
+    break;
+  }
+
+  const rows = Array.isArray(cur?.rows) ? cur.rows : Array.isArray(cur) ? cur : [];
+  const count = toFiniteNumber((cur as any)?.count ?? (cur as any)?.total ?? (cur as any)?.totalCount);
+  return { rows, count };
+}
+
+export function calcHasMore(args: { page: number; pageSize: number; rowsLength: number; count?: number }): boolean {
+  const count = args.count;
+  if (typeof count === 'number') {
+    return args.page * args.pageSize < count;
+  }
+  return args.rowsLength >= args.pageSize;
 }
 
 export function tWithNs(ctx: any, key: string, options?: Record<string, any>): string {
