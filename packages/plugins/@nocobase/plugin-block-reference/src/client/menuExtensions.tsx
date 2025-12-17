@@ -13,7 +13,7 @@ import _ from 'lodash';
 import { FlowModel, createBlockScopedEngine } from '@nocobase/flow-engine';
 import { BlockModel } from '@nocobase/client';
 import { ReferenceBlockModel } from './models/ReferenceBlockModel';
-import { NAMESPACE, tStr } from './locale';
+import { NAMESPACE, tStr, getPluginT } from './locale';
 import {
   extractPopupTemplateContextFlagsFromParams,
   inferPopupTemplateContextFlags,
@@ -69,7 +69,8 @@ function getReferenceFormGridSettings(
   return { grid, settings: { templateUid, templateName, targetUid, sourcePath } };
 }
 
-async function handleConvertToTemplate(model: FlowModel, t: (k: string, opt?: any) => string) {
+async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: any) => string) {
+  const t = getPluginT(model);
   const api = model.context.api;
   const viewer = model.context.viewer;
   if (!api?.resource || !viewer?.dialog) {
@@ -294,7 +295,8 @@ async function handleConvertToTemplate(model: FlowModel, t: (k: string, opt?: an
   return dialog;
 }
 
-async function handleConvertToCopy(model: FlowModel, t: (k: string, opt?: any) => string) {
+async function handleConvertToCopy(model: FlowModel, _t: (k: string, opt?: any) => string) {
+  const t = getPluginT(model);
   const flow = (model.constructor as typeof FlowModel).globalFlowRegistry.getFlow('referenceSettings');
   const stepDef = flow?.steps?.target as any;
   if (!stepDef?.beforeParamsSave) {
@@ -352,7 +354,8 @@ async function handleConvertToCopy(model: FlowModel, t: (k: string, opt?: any) =
   });
 }
 
-async function handleConvertFieldsToCopy(model: FlowModel, t: (k: string, opt?: any) => string) {
+async function handleConvertFieldsToCopy(model: FlowModel, _t: (k: string, opt?: any) => string) {
+  const t = getPluginT(model);
   const resolved = getReferenceFormGridSettings(model);
   if (!resolved) {
     return;
@@ -478,17 +481,18 @@ async function handleConvertFieldsToCopy(model: FlowModel, t: (k: string, opt?: 
   });
 }
 
-async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: any) => string) {
+async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?: any) => string) {
   const api = model.context.api;
   const viewer = model.context.viewer;
+  const pluginT = getPluginT(model);
   const tNs = (key: string, opt?: Record<string, any>) => {
     const tt = (model.context as any)?.t;
-    if (typeof tt !== 'function') return key;
+    if (typeof tt !== 'function') return pluginT(key, opt);
     return tt(key, { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...(opt || {}) });
   };
   const tClient = (key: string, opt?: Record<string, any>) => {
     const tt = (model.context as any)?.t;
-    if (typeof tt !== 'function') return key;
+    if (typeof tt !== 'function') return pluginT(key, opt);
     return tt(key, { ns: ['client'], nsMode: 'fallback', ...(opt || {}) });
   };
 
@@ -754,17 +758,18 @@ async function handleSavePopupAsTemplate(model: FlowModel, t: (k: string, opt?: 
   });
 }
 
-async function handleConvertPopupTemplateToCopy(model: FlowModel, t: (k: string, opt?: any) => string) {
+async function handleConvertPopupTemplateToCopy(model: FlowModel, _t: (k: string, opt?: any) => string) {
   const api = model.context.api;
   const viewer = model.context.viewer;
+  const pluginT = getPluginT(model);
   const tNs = (key: string, opt?: Record<string, any>) => {
     const tt = (model.context as any)?.t;
-    if (typeof tt !== 'function') return key;
+    if (typeof tt !== 'function') return pluginT(key, opt);
     return tt(key, { ns: [NAMESPACE, 'client'], nsMode: 'fallback', ...(opt || {}) });
   };
   const tClient = (key: string, opt?: Record<string, any>) => {
     const tt = (model.context as any)?.t;
-    if (typeof tt !== 'function') return key;
+    if (typeof tt !== 'function') return pluginT(key, opt);
     return tt(key, { ns: ['client'], nsMode: 'fallback', ...(opt || {}) });
   };
 
@@ -930,12 +935,13 @@ export function registerMenuExtensions() {
     sort: -10,
     matcher: (model) => !isReferenceTarget(model),
     items: async (model: FlowModel, t) => {
+      const pluginT = getPluginT(model);
       const items: MenuItem[] = [];
       const hasReferenceFields = !!getReferenceFormGridSettings(model);
       if (hasReferenceFields) {
         items.push({
           key: 'block-reference:convert-fields-to-copy',
-          label: t('Convert reference fields to duplicate'),
+          label: pluginT('Convert reference fields to duplicate'),
           onClick: () => handleConvertFieldsToCopy(model, t),
           sort: -6,
           group: 'common-actions',
@@ -943,7 +949,7 @@ export function registerMenuExtensions() {
       } else {
         items.push({
           key: 'block-reference:convert-to-template',
-          label: t('Save as template'),
+          label: pluginT('Save as template'),
           onClick: () => handleConvertToTemplate(model, t),
           sort: -10,
           group: 'common-actions',
@@ -958,13 +964,14 @@ export function registerMenuExtensions() {
     sort: -5,
     matcher: () => true,
     items: async (model: FlowModel, t) => {
+      const pluginT = getPluginT(model);
       const items: MenuItem[] = [];
       const tpl = model.getStepParams('referenceSettings', 'useTemplate') || {};
       const hasTpl = !!tpl?.templateUid;
       if (hasTpl) {
         items.push({
           key: 'block-reference:convert-to-copy',
-          label: t('Convert reference to duplicate'),
+          label: pluginT('Convert reference to duplicate'),
           onClick: () => handleConvertToCopy(model, t),
           sort: -5,
           group: 'common-actions',
@@ -1022,14 +1029,12 @@ export function registerMenuExtensions() {
           ? (openViewParams as any).popupTemplateUid.trim()
           : '';
       const hasTemplate = !!templateUid;
+      const pluginT = getPluginT(model);
       if (hasTemplate) {
         return [
           {
             key: 'block-reference:convert-popup-template-to-copy',
-            label: model.context.t('Convert reference popup to duplicate', {
-              ns: [NAMESPACE, 'client'],
-              nsMode: 'fallback',
-            }),
+            label: pluginT('Convert reference popup to duplicate'),
             onClick: () => handleConvertPopupTemplateToCopy(model, t),
             sort: -8,
           },
@@ -1038,10 +1043,7 @@ export function registerMenuExtensions() {
       return [
         {
           key: 'block-reference:save-popup-as-template',
-          label:
-            typeof (model.context as any)?.t === 'function'
-              ? (model.context as any).t('Save as popup template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' })
-              : 'Save as popup template',
+          label: pluginT('Save as popup template'),
           onClick: () => handleSavePopupAsTemplate(model, t),
           sort: -8,
         },
