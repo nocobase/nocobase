@@ -1556,6 +1556,7 @@
   "Enable select action": "启用选择操作",
   "Enable remove action": "启用移除操作",
   "Multiple": "多选",
+  "Custom column width": "自定义列宽度",
   "The block is hidden and only visible when the UI Editor is active": "当前区块已被隐藏,仅配置状态下显示",
   "The field is hidden and only visible when the UI Editor is active": "当前字段已被隐藏,仅配置状态下显示"
 }

@@ -113,7 +113,7 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
           <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
             <FlowModelRenderer model={grid as any} showFlowSettings={false} />
           </FormComponent>
-          <div style={{ marginLeft: '-5px' }}>
+          <div>
             <DndProvider>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Space
@@ -124,7 +124,7 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
                   `}
                   wrap
                 >
-                  {this.mapSubModels('actions', (action) => {
+                  {this.mapSubModels('actions', (action, i) => {
                     const fork = action.createFork({}, `${index}`);
                     if (fork.hidden && !isConfigMode) {
                       return;
@@ -151,17 +151,26 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
 
                     return (
                       <Droppable model={fork} key={fork.uid}>
-                        <FlowModelRenderer
-                          model={fork}
-                          showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                          extraToolbarItems={[
-                            {
-                              key: 'drag-handler',
-                              component: DragHandler,
-                              sort: 1,
-                            },
-                          ]}
-                        />
+                        <div
+                          className={css`
+                            button {
+                              padding: 5px;
+                              padding-left: ${i === 0 ? '0px' : null};
+                            }
+                          `}
+                        >
+                          <FlowModelRenderer
+                            model={fork}
+                            showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                            extraToolbarItems={[
+                              {
+                                key: 'drag-handler',
+                                component: DragHandler,
+                                sort: 1,
+                              },
+                            ]}
+                          />
+                        </div>
                       </Droppable>
                     );
                   })}
