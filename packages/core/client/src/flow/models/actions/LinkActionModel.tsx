@@ -12,7 +12,7 @@ import { isURL } from '@nocobase/utils/client';
 import { css } from '@emotion/css';
 import type { ButtonProps } from 'antd/es/button';
 import { TextAreaWithContextSelector } from '../../components/TextAreaWithContextSelector';
-import { ActionModel, ActionSceneEnum, CollectionActionGroupModel } from '../base';
+import { ActionModel, ActionSceneEnum } from '../base';
 
 // 补全 URL
 function completeURL(url: string, origin = window.location.origin) {
@@ -63,7 +63,7 @@ export function joinUrlSearch(url: string, params: { name: string; value: any }[
 }
 
 export class LinkActionModel extends ActionModel {
-  static scene = ActionSceneEnum.record;
+  static scene = ActionSceneEnum.all;
 
   defaultProps: ButtonProps = {
     title: tExpr('Link'),
@@ -234,8 +234,4 @@ LinkActionModel.registerFlow({
       },
     },
   },
-});
-
-CollectionActionGroupModel.registerActionModels({
-  LinkActionModel,
 });
