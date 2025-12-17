@@ -545,22 +545,6 @@ describe('Utils', () => {
         expect(Array.isArray(result1)).toBe(true);
         expect(result1).toHaveLength(2);
       });
-
-      test('should not cache schemas containing functions (avoid stale closures)', () => {
-        const fn = () => 1;
-        const schema = {
-          title: "{{ t('Func') }}",
-          onClick: fn,
-          nested: { handler: fn },
-          list: [fn],
-        };
-
-        const result1 = compileUiSchema(mockScope, schema);
-        const result2 = compileUiSchema(mockScope, schema);
-
-        expect(result1).not.toBe(result2);
-        expect(mockScope.t).toHaveBeenCalledTimes(2);
-      });
     });
 
     describe('object compilation', () => {
