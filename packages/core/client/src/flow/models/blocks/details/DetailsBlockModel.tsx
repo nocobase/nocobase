@@ -126,7 +126,13 @@ export class DetailsBlockModel extends CollectionBlockModel<{
     return (
       <>
         <DndProvider>
-          <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
+          <div
+            style={{
+              textAlign: 'right',
+              lineHeight: '0px',
+              padding: isConfigMode && this.context.themeToken.padding,
+            }}
+          >
             <Space>
               {this.mapSubModels('actions', (action) => {
                 if (action.hidden && !isConfigMode) {
