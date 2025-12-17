@@ -84,7 +84,7 @@ export function registerSubModelMenuExtensions(engine: FlowEngine) {
         // 1) 若处于"字段模板引用"内部（当前正在渲染模板 grid），直接隐藏，避免误清空模板侧字段
         const hostInfo = findHostInfoFromAncestors(innerCtx.model);
         const hostRef = hostInfo?.ref;
-        if (hostRef && hostRef.mountSubKey === 'grid' && hostRef.mode !== 'duplicate') {
+        if (hostRef && hostRef.mountSubKey === 'grid' && hostRef.mode !== 'copy') {
           return true;
         }
 

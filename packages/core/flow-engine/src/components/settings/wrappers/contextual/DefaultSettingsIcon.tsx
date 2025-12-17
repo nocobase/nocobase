@@ -24,7 +24,7 @@ import {
 import { useNiceDropdownMaxHeight } from '../../../../hooks';
 import { SwitchWithTitle } from '../component/SwitchWithTitle';
 import { SelectWithTitle } from '../component/SelectWithTitle';
-import { FlowSettingsContext } from 'packages/core/flow-engine/src/flowContext';
+import type { FlowSettingsContext } from '../../../../flowContext';
 // Type definitions for better type safety
 interface StepInfo {
   stepKey: string;

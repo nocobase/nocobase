@@ -12,6 +12,7 @@ import type { ActionDefinition, FlowEngine, FlowSettingsContext } from '@nocobas
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
 import { useForm } from '@formily/react';
 import { Select, Tooltip, Typography } from 'antd';
+import type { BaseSelectRef } from 'rc-select';
 import debounce from 'lodash/debounce';
 import { NAMESPACE } from './locale';
 import {
@@ -459,7 +460,7 @@ function PopupTemplateSelect(props: any) {
   >([]);
   const [loading, setLoading] = useState(false);
   const [selectLoading, setSelectLoading] = useState(false);
-  const selectRef = useRef<any>(null);
+  const selectRef = useRef<BaseSelectRef | null>(null);
   const isComposingRef = useRef(false);
 
   const t = useCallback((key: string, opt?: Record<string, any>) => tWithNs(ctx, key, opt), [ctx]);
@@ -629,44 +630,37 @@ function PopupTemplateSelect(props: any) {
 
   // 使用 useEffect 来绑定 composition 事件
   useEffect(() => {
-    if (!selectRef.current) return;
+    let inputNode: HTMLInputElement | null = null;
+    const handleCompositionStart = () => {
+      isComposingRef.current = true;
+    };
+    const handleCompositionEnd = () => {
+      isComposingRef.current = false;
+      setTimeout(() => {
+        const value = inputNode?.value;
+        const kw = typeof value === 'string' ? value.trim() : '';
+        if (kw) {
+          debouncedSearch(kw);
+        }
+      }, 0);
+    };
 
-    // 获取 Select 组件内部的输入框元素
     const timer = setTimeout(() => {
-      const selectElement = selectRef.current?.nativeElement || selectRef.current;
-      if (!selectElement) return;
+      const root = selectRef.current?.nativeElement;
+      const node = root?.querySelector?.('input.ant-select-selection-search-input');
+      if (!(node instanceof HTMLInputElement)) return;
+      inputNode = node;
 
-      // Ant Design Select 的输入框通常在这个位置
-      const inputElement = selectElement.querySelector('input.ant-select-selection-search-input') as HTMLInputElement;
-
-      if (inputElement) {
-        const handleCompositionStart = () => {
-          isComposingRef.current = true;
-        };
-
-        const handleCompositionEnd = () => {
-          isComposingRef.current = false;
-          // 中文输入完成后，获取输入框的值并触发搜索
-          setTimeout(() => {
-            const value = inputElement.value;
-            const kw = typeof value === 'string' ? value.trim() : '';
-            if (kw) {
-              debouncedSearch(kw);
-            }
-          }, 0);
-        };
-
-        inputElement.addEventListener('compositionstart', handleCompositionStart);
-        inputElement.addEventListener('compositionend', handleCompositionEnd);
-
-        return () => {
-          inputElement.removeEventListener('compositionstart', handleCompositionStart);
-          inputElement.removeEventListener('compositionend', handleCompositionEnd);
-        };
-      }
+      inputNode.addEventListener('compositionstart', handleCompositionStart);
+      inputNode.addEventListener('compositionend', handleCompositionEnd);
     }, 100);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      if (!inputNode) return;
+      inputNode.removeEventListener('compositionstart', handleCompositionStart);
+      inputNode.removeEventListener('compositionend', handleCompositionEnd);
+    };
   }, [debouncedSearch]);
 
   return (
