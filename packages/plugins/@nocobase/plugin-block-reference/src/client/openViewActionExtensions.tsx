@@ -10,7 +10,7 @@
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import type { ActionDefinition, FlowEngine, FlowSettingsContext } from '@nocobase/flow-engine';
 import { useFlowSettingsContext } from '@nocobase/flow-engine';
-import { useField, useForm } from '@formily/react';
+import { useForm } from '@formily/react';
 import { Select, Tooltip, Typography } from 'antd';
 import debounce from 'lodash/debounce';
 import { NAMESPACE } from './locale';
@@ -427,7 +427,6 @@ const getPopupTemplateMeta = async (ctx: any, templateUid: string): Promise<Popu
 function PopupTemplateSelect(props: any) {
   const { value, onChange } = props as { value?: string; onChange?: (v: string | undefined) => void };
   const ctx = useFlowSettingsContext();
-  const field: any = useField();
   const form = useForm();
   const expectedResource = useMemo(
     () => resolveExpectedResourceInfo(ctx as any, form?.values),
@@ -459,6 +458,7 @@ function PopupTemplateSelect(props: any) {
     }>
   >([]);
   const [loading, setLoading] = useState(false);
+  const [selectLoading, setSelectLoading] = useState(false);
   const selectRef = useRef<any>(null);
   const isComposingRef = useRef(false);
 
@@ -568,7 +568,7 @@ function PopupTemplateSelect(props: any) {
       }
       onChange?.(next);
       try {
-        field.loading = true;
+        setSelectLoading(true);
         const tpl = await fetchTemplateByUid(ctx, next);
         const targetUid = tpl?.targetUid;
         if (targetUid) {
@@ -586,7 +586,7 @@ function PopupTemplateSelect(props: any) {
             setOpenViewValue(k, tv);
           }
         });
-        // associationName 允许被“清空”，以支持关系字段复用非关系弹窗模板
+        // associationName 允许被"清空"，以支持关系字段复用非关系弹窗模板
         const tplAssociationName =
           typeof (tpl as any)?.associationName === 'string' ? String((tpl as any).associationName) : '';
         if (shouldApplyTemplateField(tplAssociationName)) {
@@ -613,10 +613,10 @@ function PopupTemplateSelect(props: any) {
       } catch (e) {
         console.error('load popup template failed', e);
       } finally {
-        field.loading = false;
+        setSelectLoading(false);
       }
     },
-    [ctx, field, form.values, onChange, setOpenViewValue],
+    [ctx, form.values, onChange, setOpenViewValue],
   );
 
   const debouncedSearch = useMemo(() => debounce((kw: string) => loadOptions(kw), 300), [loadOptions]);
@@ -677,7 +677,7 @@ function PopupTemplateSelect(props: any) {
       filterOption={false}
       optionLabelProp="label"
       placeholder={t('Select popup template')}
-      loading={loading || field?.loading}
+      loading={loading || selectLoading}
       options={options}
       value={value}
       onChange={handleSelect}
