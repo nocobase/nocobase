@@ -22,17 +22,43 @@ Click the **Fields** button of the block to select the fields to be displayed. F
 ![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_37_PM.png)
 
 
-### Data Filter Configuration
+### Filter Data by Email Address
 
-Click the configuration icon on the right side of the table and select **Data scope** to set the data range for filtering emails.
+Click the configuration button on the right side of the email message block, then select **Data Scope** to set the range used for filtering emails.  
 
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_32_PM.png)
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_39_PM.png)
+Configure the filter conditions by selecting the email address field you want to filter on, then click **OK** to save.
 
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_26_PM.png)
 
-You can filter emails with the same suffix through variables:
+The email message block will display emails that meet the filter conditions.
 
-![](https://static-docs.nocobase.com/email-manager/Email-10-31-2025_04_41_PM.png)
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_29_PM.png)
+
+> Filtering by email address is case-insensitive.
+
+### Filter Data by Email Domain
+
+Create a field in the business table to store the email domain (Field type is JSON), which will be used later for filtering email messages.
+
+![](https://static-docs.nocobase.com/email-manager/data-source-manager-main-NocoBase-12-02-2025_04_36_PM.png)
+
+Maintain the email domain information.
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_38_PM.png)
+
+Click the configuration button on the right side of the email message block, then select **Data Scope** to set the range for filtering emails.  
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_32_PM.png)
+
+Configure the filter conditions by selecting the email domain field you want to filter on, then click **OK** to save.
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_41_PM.png)
+
+The email message table will display the emails that match the filter criteria.
+
+![](https://static-docs.nocobase.com/email-manager/Emails-12-02-2025_04_48_PM.png)
 
 
 ## Email Details Block
