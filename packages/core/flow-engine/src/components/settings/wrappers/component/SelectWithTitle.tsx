@@ -18,6 +18,7 @@ export interface SelectWithTitleProps {
   fieldNames?: any;
   itemKey?: string;
   onChange?: (...args: any[]) => void;
+  dropdownRender?: any;
 }
 
 export function SelectWithTitle({
@@ -102,6 +103,7 @@ export function SelectWithTitle({
         onMouseEnter={() => {
           clearTimeout(timerRef.current);
         }}
+        dropdownRender={(menu) => (others.dropdownRender ? others.dropdownRender(menu, setOpen, handleChange) : menu)}
       />
     </div>
   );
