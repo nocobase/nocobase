@@ -9,6 +9,7 @@
 
 import * as workflows from './workflows';
 import * as nodes from './nodes';
+import * as jobs from './jobs';
 import * as executions from './executions';
 import * as userWorkflowTasks from './userWorkflowTasks';
 
@@ -34,6 +35,7 @@ export default function ({ app }) {
       destroyBranch: nodes.destroyBranch,
       test: nodes.test,
     }),
+    ...make('jobs', jobs),
     ...make('executions', executions),
     ...make('userWorkflowTasks', userWorkflowTasks),
   });
