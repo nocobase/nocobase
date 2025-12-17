@@ -532,7 +532,7 @@ ReferenceBlockModel.registerFlow({
             'x-component': 'Radio.Group',
             enum: [
               { label: tStr('Reference'), value: 'reference' },
-              { label: tStr('Copy'), value: 'copy' },
+              { label: tStr('Duplicate'), value: 'copy' },
             ],
             default: step?.mode || 'reference',
           },
@@ -639,7 +639,7 @@ ReferenceBlockModel.registerFlow({
             },
             enum: [
               { label: tStr('Reference'), value: 'reference' },
-              { label: tStr('Copy'), value: 'copy' },
+              { label: tStr('Duplicate'), value: 'copy' },
             ],
           },
           copyNotice: {

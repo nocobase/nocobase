@@ -298,7 +298,7 @@ async function handleConvertToCopy(model: FlowModel, t: (k: string, opt?: any) =
   const flow = (model.constructor as typeof FlowModel).globalFlowRegistry.getFlow('referenceSettings');
   const stepDef = flow?.steps?.target as any;
   if (!stepDef?.beforeParamsSave) {
-    model.context.message?.error?.(t('Convert to copy is unavailable'));
+    model.context.message?.error?.(t('Convert reference to duplicate is unavailable'));
     return;
   }
   const viewer = model.context.viewer;
@@ -312,7 +312,7 @@ async function handleConvertToCopy(model: FlowModel, t: (k: string, opt?: any) =
   openCopyDialogs.add(model);
   const release = () => openCopyDialogs.delete(model);
   viewer.dialog({
-    title: t('Convert to copy'),
+    title: t('Convert reference to duplicate'),
     width: 520,
     destroyOnClose: true,
     onClose: release,
@@ -429,7 +429,9 @@ async function handleConvertFieldsToCopy(model: FlowModel, t: (k: string, opt?: 
       model.context.message?.success?.(t('Saved'));
     } catch (e) {
       console.error(e);
-      model.context.message?.error?.(e instanceof Error ? e.message : t('Convert to copy is unavailable'));
+      model.context.message?.error?.(
+        e instanceof Error ? e.message : t('Convert reference to duplicate is unavailable'),
+      );
     } finally {
       release();
     }
@@ -443,7 +445,7 @@ async function handleConvertFieldsToCopy(model: FlowModel, t: (k: string, opt?: 
   }
 
   viewer.dialog({
-    title: t('Convert fields to copy'),
+    title: t('Convert reference fields to duplicate'),
     width: 520,
     destroyOnClose: true,
     content: (currentDialog: any) => (
@@ -868,7 +870,7 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, t: (k: string,
   }
 
   viewer.dialog({
-    title: tNs('Convert popup to copy'),
+    title: tNs('Convert reference popup to duplicate'),
     width: 520,
     destroyOnClose: true,
     onClose: release,
@@ -933,7 +935,7 @@ export function registerMenuExtensions() {
       if (hasReferenceFields) {
         items.push({
           key: 'block-reference:convert-fields-to-copy',
-          label: t('Convert fields to copy'),
+          label: t('Convert reference fields to duplicate'),
           onClick: () => handleConvertFieldsToCopy(model, t),
           sort: -6,
           group: 'common-actions',
@@ -962,7 +964,7 @@ export function registerMenuExtensions() {
       if (hasTpl) {
         items.push({
           key: 'block-reference:convert-to-copy',
-          label: t('Convert to copy'),
+          label: t('Convert reference to duplicate'),
           onClick: () => handleConvertToCopy(model, t),
           sort: -5,
           group: 'common-actions',
@@ -1024,7 +1026,10 @@ export function registerMenuExtensions() {
         return [
           {
             key: 'block-reference:convert-popup-template-to-copy',
-            label: model.context.t('Convert popup to copy', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }),
+            label: model.context.t('Convert reference popup to duplicate', {
+              ns: [NAMESPACE, 'client'],
+              nsMode: 'fallback',
+            }),
             onClick: () => handleConvertPopupTemplateToCopy(model, t),
             sort: -8,
           },

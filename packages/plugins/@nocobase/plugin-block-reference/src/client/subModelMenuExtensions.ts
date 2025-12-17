@@ -23,6 +23,13 @@ function findFormModel(model: FlowModel): FlowModel | undefined {
   return undefined;
 }
 
+function isFormInsideReferenceBlock(formModel: FlowModel | undefined): boolean {
+  if (!formModel) return false;
+  // 检查表单的 parent 是否是 ReferenceBlockModel
+  const parent = formModel?.parent as FlowModel | undefined;
+  return parent?.use === 'ReferenceBlockModel';
+}
+
 function findHostInfoFromAncestors(model: FlowModel) {
   let cur: FlowModel | undefined = model;
   let depth = 0;
@@ -74,15 +81,21 @@ export function registerSubModelMenuExtensions(engine: FlowEngine) {
       label,
       sort: -999,
       hide: async (innerCtx: FlowModelContext) => {
-        // 1) 若处于“字段模板引用”内部（当前正在渲染模板 grid），直接隐藏，避免误清空模板侧字段
+        // 1) 若处于"字段模板引用"内部（当前正在渲染模板 grid），直接隐藏，避免误清空模板侧字段
         const hostInfo = findHostInfoFromAncestors(innerCtx.model);
         const hostRef = hostInfo?.ref;
-        if (hostRef && hostRef.mountSubKey === 'grid' && hostRef.mode !== 'copy') {
+        if (hostRef && hostRef.mountSubKey === 'grid' && hostRef.mode !== 'duplicate') {
           return true;
         }
 
-        // 2) 常规：当前表单区块已经使用引用 grid（字段模板），隐藏 “From template”
+        // 2) 若当前表单是 ReferenceBlockModel 渲染的 target，隐藏 "From template"
+        // 因为在 ReferenceBlockModel 内部编辑字段会直接影响被引用的模板
         const fm = findFormModel(innerCtx.model);
+        if (isFormInsideReferenceBlock(fm)) {
+          return true;
+        }
+
+        // 3) 常规：当前表单区块已经使用引用 grid（字段模板），隐藏 "From template"
         const mountTarget = fm || (innerCtx.model as any)?.parent;
         if (!mountTarget) return false;
         const grid = (mountTarget?.subModels as any)?.grid;
