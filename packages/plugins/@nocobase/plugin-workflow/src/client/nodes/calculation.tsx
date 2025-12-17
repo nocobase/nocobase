@@ -121,7 +121,7 @@ export default class extends Instruction {
           },
           cardSettings: {
             titleDescription: {
-              title: `{{t("Create record", { ns: "${NAMESPACE}" })}}`,
+              title: `{{t("Calculation", { ns: "${NAMESPACE}" })}}`,
             },
           },
         },
