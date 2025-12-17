@@ -22,6 +22,7 @@ import type {
   AppDbCreator,
   AppOptionsFactory,
   AppDbCreatorOptions,
+  AppModelOptions,
 } from './types';
 import { getErrorLevel } from '../errors/handler';
 import { ConditionalRegistry, Predicate } from './condition-registry';
@@ -58,7 +59,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private discoveryAdapterName: string;
   private processAdapterName: string;
   private appDbCreator = new ConditionalRegistry<AppDbCreatorOptions, void>();
-  private appOptionsFactory: AppOptionsFactory = appOptionsFactory;
+  public appOptionsFactory: AppOptionsFactory = appOptionsFactory;
 
   private constructor() {
     super();
@@ -201,11 +202,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   setAppOptionsFactory(factory: AppOptionsFactory) {
-    this.appOptionsFactory = factory ?? (() => ({}));
-  }
-
-  getAppOptionsFactory() {
-    return this.appOptionsFactory;
+    this.appOptionsFactory = factory ?? appOptionsFactory;
   }
 
   async bootstrapApp({ appName, options }: { appName: string; options?: { upgrading?: boolean } }) {
@@ -264,6 +261,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.setAppStatus(appName, status, options);
   }
 
+  async getAllAppStatuses() {
+    return this.discoveryAdapter.getAllAppStatuses();
+  }
+
   registerApp({
     appName,
     appOptions,
@@ -271,13 +272,15 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     hook,
   }: {
     appName: string;
-    appOptions: ApplicationOptions;
+    appOptions: AppModelOptions;
     mainApp?: Application;
     hook?: boolean;
   }) {
     let options = appOptions;
     if (mainApp) {
       const defaultAppOptions = this.appOptionsFactory(appName, mainApp);
+      // Some legacy app options factories do not accept options parameter
+      // Thus, we need to merge manually here
       options = {
         ...lodash.merge({}, defaultAppOptions, appOptions),
         name: appName,
@@ -380,7 +383,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   async createApp(options: {
     appName: string;
-    appOptions: ApplicationOptions;
+    appOptions: AppModelOptions;
+    environmentName: string;
     mainApp?: Application;
     transaction?: Transaction;
   }) {
@@ -580,4 +584,5 @@ export type {
   GetAppOptions,
   AppDbCreator,
   AppOptionsFactory,
+  AppModelOptions,
 } from './types';

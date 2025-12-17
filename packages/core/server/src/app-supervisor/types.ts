@@ -57,6 +57,12 @@ export type EnvironmentInfo = {
   lastHeartbeatAt?: number;
 };
 
+export type AppModelOptions = {
+  dbConnType?: 'new_database' | 'new_connection' | 'new_schema';
+  database?: IDatabaseOptions;
+  [key: string]: any;
+};
+
 /**
  * Abstraction for discovering applications across deployment environments.
  */
@@ -80,13 +86,14 @@ export interface AppDiscoveryAdapter {
    * Persist an application's lifecycle status back to the discovery backend.
    */
   setAppStatus(appName: string, status: AppStatus, options?: Record<string, any>): void | Promise<void>;
+  getAllAppStatuses?():
+    | Promise<{
+        [app: string]: AppStatus | null;
+      }>
+    | { [app: string]: AppStatus | null };
 
   getAutoStartApps?(environmentName: string): Promise<string[]>;
-  getAppOptions?(appName: string): Promise<
-    ApplicationOptions & {
-      [key: string]: any;
-    }
-  >;
+  getAppOptions?(appName: string): Promise<AppModelOptions>;
   registerEnvironment?(environment: EnvironmentInfo): Promise<void>;
   unregisterEnvironment?(environmentName: string): Promise<void>;
   listEnvironments?(): Promise<EnvironmentInfo[]>;
@@ -113,7 +120,8 @@ export interface AppProcessAdapter {
   // Create a new app, perparing database, install app
   createApp?(options: {
     appName: string;
-    appOptions: ApplicationOptions;
+    appOptions: AppModelOptions;
+    environmentName: string;
     mainApp?: Application;
     transaction?: Transaction;
   }): Promise<void>;
@@ -139,11 +147,7 @@ export type ProcessCommand = {
 
 export type AppDbCreatorOptions = Transactionable & {
   app: Application;
-  appOptions: {
-    dbConnType?: 'new_database' | 'new_connection' | 'new_schema';
-    database?: IDatabaseOptions;
-    [key: string]: any;
-  };
+  appOptions: AppModelOptions;
 };
 export type AppDbCreator = (options: AppDbCreatorOptions) => Promise<void>;
-export type AppOptionsFactory = (appName: string, mainApp: Application) => any;
+export type AppOptionsFactory = (appName: string, mainApp: Application, options?: AppModelOptions) => any;

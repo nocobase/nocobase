@@ -97,6 +97,10 @@ export class PluginMultiAppManagerServer extends Plugin {
     return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
   }
 
+  setAppOptionsFactory(appOptionsFactory: AppOptionsFactory) {
+    AppSupervisor.getInstance().setAppOptionsFactory(appOptionsFactory);
+  }
+
   static staticImport() {
     this.registerLegacyAdapter();
   }

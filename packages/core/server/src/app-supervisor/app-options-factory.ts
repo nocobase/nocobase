@@ -11,6 +11,8 @@ import { Database, IDatabaseOptions } from '@nocobase/database';
 import Application from '../application';
 import lodash from 'lodash';
 import path from 'path';
+import { AppModelOptions } from './types';
+import _ from 'lodash';
 
 function getDatabaseConfig(app: Application): IDatabaseOptions {
   let oldConfig =
@@ -25,7 +27,7 @@ function getDatabaseConfig(app: Application): IDatabaseOptions {
   return lodash.cloneDeep(lodash.omit(oldConfig, ['migrator']));
 }
 
-export const appOptionsFactory = (appName: string, mainApp: Application) => {
+export const appOptionsFactory = (appName: string, mainApp: Application, options: AppModelOptions) => {
   const rawDatabaseOptions = getDatabaseConfig(mainApp);
 
   if (rawDatabaseOptions.dialect === 'sqlite') {
@@ -43,7 +45,7 @@ export const appOptionsFactory = (appName: string, mainApp: Application) => {
     rawDatabaseOptions.database = appName;
   }
 
-  return {
+  const defaultOptions = {
     database: {
       ...rawDatabaseOptions,
       tablePrefix: '',
@@ -58,4 +60,6 @@ export const appOptionsFactory = (appName: string, mainApp: Application) => {
     },
     logger: mainApp.options.logger,
   };
+
+  return _.merge({}, defaultOptions, { ...options, name: appName });
 };
