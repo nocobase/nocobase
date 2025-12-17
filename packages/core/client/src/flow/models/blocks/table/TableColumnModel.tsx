@@ -75,9 +75,18 @@ function FieldWithoutPermissionPlaceholder() {
     type: t('Field'),
     name: nameValue,
   }).replaceAll('&gt;', '>');
-
+  const { actionName } = model.forbidden;
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
+      {
+        name: nameValue,
+        actionName,
+      },
+    ).replaceAll('&gt;', '>');
+  }, [nameValue, t]);
   return (
-    <Tooltip title={content}>
+    <Tooltip title={messageValue}>
       <LockOutlined style={{ opacity: '0.3' }} />
     </Tooltip>
   );

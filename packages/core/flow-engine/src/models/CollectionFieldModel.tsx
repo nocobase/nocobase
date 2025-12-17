@@ -80,23 +80,30 @@ function FieldWithoutPermissionPlaceholder() {
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
   }, []);
-  const content = t(`The current user don't have {{actionName}} permission for the {{type}} "{{name}}"`, {
-    type: t('Field'),
-    name: nameValue,
-    actionName: model.forbidden.actionName || 'view',
-  }).replaceAll('&gt;', '>');
+  const { actionName } = model.forbidden;
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
+      {
+        name: nameValue,
+        actionName,
+      },
+    ).replaceAll('&gt;', '>');
+  }, [nameValue, t]);
 
   return (
-    <Card
-      size="small"
-      styles={{
-        body: {
-          color: 'rgba(0,0,0,0.45)',
-        },
-      }}
-    >
-      {content}
-    </Card>
+    <FormItem showLabel={false}>
+      <Card
+        size="small"
+        styles={{
+          body: {
+            color: 'rgba(0,0,0,0.45)',
+          },
+        }}
+      >
+        {messageValue}
+      </Card>
+    </FormItem>
   );
 }
 export interface FieldSettingsInitParams {
@@ -118,7 +125,7 @@ const defaultWhen = () => true;
 export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   private static _bindings = new Map();
   fieldDeleted = false;
-  forbidden = false;
+  forbidden = null;
 
   renderHiddenInConfig(): React.ReactNode | undefined {
     if (this.fieldDeleted) {
