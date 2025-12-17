@@ -103,8 +103,8 @@ export class ACL {
 
     if (!this.getIgnoreScope(options)) {
       const r = this.verifyScope(actionName, recordPkValue, allowedActions);
-      if (r !== null) {
-        return r ? {} : null;
+      if (!r) {
+        return null;
       }
     }
 
