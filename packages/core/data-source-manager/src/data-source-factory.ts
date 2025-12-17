@@ -29,9 +29,9 @@ export class DataSourceFactory {
       throw new Error(`Data source type "${type}" not found`);
     }
     const environment = this.dataSourceManager.options.app?.environment;
-    const { logger, sqlLogger, ...others } = options;
+    const { logger, sqlLogger, database, ...others } = options;
 
-    const opts = { logger, sqlLogger, ...others };
+    const opts = { logger, sqlLogger, database, ...others };
 
     if (environment) {
       Object.assign(opts, environment.renderJsonTemplate(others));

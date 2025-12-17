@@ -9,11 +9,13 @@
 
 import { ACL, AvailableActionOptions } from '@nocobase/acl';
 import { Model, Transaction } from '@nocobase/database';
+import { SequelizeCollectionManager } from '@nocobase/data-source-manager';
 import { setCurrentRole } from '@nocobase/plugin-acl';
 import { Application } from '@nocobase/server';
 import path from 'path';
 import PluginDataSourceManagerServer from '../plugin';
 import { DataSourcesRolesModel } from './data-sources-roles-model';
+import boolean from 'packages/core/database/src/operators/boolean';
 
 const availableActions: {
   [key: string]: AvailableActionOptions;
@@ -82,8 +84,9 @@ export class DataSourceModel extends Model {
     transaction?: Transaction;
     loadAtAfterStart?: boolean;
     refresh?: boolean;
+    reuseDB?: boolean;
   }) {
-    const { app, loadAtAfterStart, refresh } = options;
+    const { app, loadAtAfterStart, refresh, reuseDB } = options;
 
     const dataSourceKey = this.get('key');
 
@@ -99,6 +102,8 @@ export class DataSourceModel extends Model {
     const createOptions = this.get('options');
 
     try {
+      const oldDataSource = app.dataSourceManager.get(dataSourceKey);
+      const { db: database } = reuseDB === true ? (oldDataSource?.collectionManager as SequelizeCollectionManager) : {};
       const dataSource = app.dataSourceManager.factory.create(type, {
         ...createOptions,
         name: dataSourceKey,
@@ -106,6 +111,7 @@ export class DataSourceModel extends Model {
         sqlLogger: app.sqlLogger.child({ dataSourceKey }),
         cache: app.cache,
         storagePath: path.join(process.cwd(), 'storage', 'cache', 'apps', app.name),
+        database,
       });
 
       dataSource.on('loadingProgress', (progress) => {
@@ -135,6 +141,7 @@ export class DataSourceModel extends Model {
       await app.dataSourceManager.add(dataSource, {
         localData: await this.loadLocalData(),
         refresh,
+        reuseDB,
       });
     } catch (e) {
       app.logger.error(`load data source failed`, { cause: e });
