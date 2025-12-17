@@ -17,6 +17,8 @@ export const aclCheck = defineAction({
       resourceName: ctx.collectionField?.collectionName || ctx.resourceName,
       actionName: ctx.actionName,
       fields: ctx?.collectionField && [ctx.collectionField.name],
+      allowedActions: ctx.resource?.getMeta('allowedActions'),
+      recordPkValue: ctx?.record && ctx.collection?.getFilterByTK?.(ctx?.record),
     });
     if (ctx.fieldPath && !ctx.collectionField) {
       ctx.model.fieldDeleted = true;
