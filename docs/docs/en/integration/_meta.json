@@ -53,6 +53,22 @@
   },
   {
     "type": "custom-link",
+    "label": "Foreign Data Tables (FDW)",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "Overview",
+        "link": "/integration/fdw/"
+      },
+      {
+        "type": "custom-link",
+        "label": "Enable MySQL Federated",
+        "link": "/integration/fdw/enable-federated"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "Embedded Content",
     "items": [
       {

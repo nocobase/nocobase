@@ -63,7 +63,7 @@ export function joinUrlSearch(url: string, params: { name: string; value: any }[
 }
 
 export class LinkActionModel extends ActionModel {
-  static scene = ActionSceneEnum.record;
+  static scene = ActionSceneEnum.all;
 
   defaultProps: ButtonProps = {
     title: tExpr('Link'),
