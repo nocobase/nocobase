@@ -225,21 +225,6 @@ const getPopupTemplateDisabledReason = async (
   const scene = resolveActionScene(getModelClass, useKey);
   const meta = inferPopupTemplateMeta(ctx, tpl);
 
-  console.log('[PopupTemplate DEBUG] getPopupTemplateDisabledReason called:', {
-    templateUid: tpl?.uid,
-    templateName: tpl?.name,
-    templateUseModel: tpl?.useModel,
-    templateFilterByTk: tpl?.filterByTk,
-    expected,
-    expectedAssociationName: normalizeStr(expected?.associationName),
-    meta,
-    useKey,
-    scene,
-    actionParams,
-    defaultInputKeys: actionParams?.defaultInputKeys,
-    ctxInputArgs: (ctx as any)?.inputArgs,
-  });
-
   /**
    * 弹窗模版的兼容性判断说明：
    *
@@ -288,9 +273,13 @@ const getPopupTemplateDisabledReason = async (
   const defaultKeys = Array.isArray(actionParams?.defaultInputKeys) ? actionParams.defaultInputKeys : [];
   if (defaultKeys.some((k: any) => String(k) === 'filterByTk')) return undefined;
 
-  const runtimeFilterByTk =
-    normalizeStr((ctx as any)?.inputArgs?.filterByTk) || normalizeStr((ctx as any)?.view?.inputArgs?.filterByTk);
-  if (runtimeFilterByTk) return undefined;
+  let hasRuntimeFilterByTk = !!(ctx.inputArgs?.filterByTk || ctx.view?.inputArgs?.filterByTk);
+  if (ctx.model.forks?.size > 0) {
+    const firstModel = [...ctx.model.forks][0];
+    hasRuntimeFilterByTk = !!firstModel.context.record;
+  }
+
+  if (hasRuntimeFilterByTk) return undefined;
 
   return tWithNs(ctx, 'Cannot resolve template parameter {{param}}', { param: 'filterByTk' });
 };
