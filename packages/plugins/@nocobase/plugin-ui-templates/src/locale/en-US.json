@@ -57,5 +57,7 @@
   "Only Popup can be saved as popup template": "Only Popup can be saved as popup template",
   "Popup template not found": "Popup template not found",
   "Failed to duplicate pop-up": "Failed to duplicate pop-up",
-  "Failed to copy popup from template": "Failed to duplicate popup from template"
+  "Failed to copy popup from template": "Failed to duplicate popup from template",
+  "Reference mode description": "Modifying the block will update all places that reference this template.",
+  "Duplicate mode description": "Generates new content based on the template. All UIDs (including child node UIDs) will be regenerated. Cross-block UID references will no longer work after duplication."
 }

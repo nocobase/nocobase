@@ -379,6 +379,38 @@ SubModelTemplateImporterModel.registerFlow({
             ],
             default: step?.mode || 'reference',
           },
+          modeDescriptionReference: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-decorator-props': { colon: false },
+            'x-component': 'Alert',
+            'x-component-props': {
+              type: 'info',
+              showIcon: false,
+              message: tStr('Reference mode description'),
+              style: { marginTop: -8 },
+            },
+            'x-reactions': {
+              dependencies: ['mode'],
+              fulfill: { state: { hidden: '{{$deps[0] === "copy"}}' } },
+            },
+          },
+          modeDescriptionDuplicate: {
+            type: 'void',
+            'x-decorator': 'FormItem',
+            'x-decorator-props': { colon: false },
+            'x-component': 'Alert',
+            'x-component-props': {
+              type: 'info',
+              showIcon: false,
+              message: tStr('Duplicate mode description'),
+              style: { marginTop: -8 },
+            },
+            'x-reactions': {
+              dependencies: ['mode'],
+              fulfill: { state: { hidden: '{{$deps[0] !== "copy"}}' } },
+            },
+          },
         };
       },
       async beforeParamsSave(ctx, params) {
