@@ -62,9 +62,15 @@ export class SubTableFieldModel extends AssociationFieldModel {
     return this.context.collection;
   }
 
+  get enableUIConfiguration() {
+    if (typeof this.context.enableUIConfiguration === 'boolean') {
+      return this.context.enableUIConfiguration;
+    }
+    return this.flowEngine.flowSettings.enabled;
+  }
+
   getColumns() {
     const { enableIndexColumn } = this.props;
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
 
     const baseColumns = this.mapSubModels('columns', (column: SubTableColumnModel) => column.getColumnProps()).filter(
       Boolean,
@@ -84,7 +90,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
         ...baseColumns.concat({
           key: '_empty',
         }),
-        isConfigMode && {
+        this.enableUIConfiguration && {
           key: 'addColumn',
           fixed: 'right',
           width: 100,

@@ -86,8 +86,6 @@ const DisplayTable = (props) => {
   }, [currentPage, currentPageSize, value]);
 
   const getColumns = () => {
-    const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
-
     const cols = adjustColumnOrder(
       [
         enableIndexColumn && {
@@ -105,7 +103,7 @@ const DisplayTable = (props) => {
         }),
       ].filter(Boolean),
     ) as any;
-    if (isConfigMode) {
+    if (model.enableUIConfiguration) {
       cols.push({
         key: 'addColumn',
         fixed: 'right',
@@ -206,6 +204,14 @@ export class DisplaySubTableFieldModel extends FieldModel {
 
     return baseColumns;
   }
+
+  get enableUIConfiguration() {
+    if (typeof this.context.enableUIConfiguration === 'boolean') {
+      return this.context.enableUIConfiguration;
+    }
+    return this.flowEngine.flowSettings.enabled;
+  }
+
   public render() {
     return (
       <DisplayTable {...this.props} collection={this.collection} baseColumns={this.getBaseColumns()} model={this} />
