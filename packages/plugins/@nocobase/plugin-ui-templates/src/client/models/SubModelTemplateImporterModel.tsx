@@ -341,6 +341,7 @@ SubModelTemplateImporterModel.registerFlow({
         return {
           templateUid: {
             title: tStr('Template'),
+            description: tStr('Template field section description'),
             'x-decorator': 'FormItem',
             'x-component': 'Select',
             'x-component-props': {

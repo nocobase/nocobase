@@ -58,6 +58,7 @@
   "Popup template not found": "Popup template not found",
   "Failed to duplicate pop-up": "Failed to duplicate pop-up",
   "Failed to copy popup from template": "Failed to duplicate popup from template",
+  "Template field section description": "The field section of the specified block template will be used",
   "Reference mode description": "Modifying the block will update all places that reference this template.",
   "Duplicate mode description": "Generates new content based on the template. All UIDs (including child node UIDs) will be regenerated. Cross-block UID references will no longer work after duplication."
 }
