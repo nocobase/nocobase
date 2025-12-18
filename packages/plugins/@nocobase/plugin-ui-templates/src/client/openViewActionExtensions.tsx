@@ -357,8 +357,8 @@ const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
     }
   }
 
-  if (!tplAssociationName && !hasTemplateSourceId) {
-    // 同上：避免 actionDefaults/source 上下文污染到“纯 collection 弹窗模板”
+  if (!hasTemplateSourceId) {
+    // 模板不需要 sourceId，清除来自关系字段上下文的 sourceId
     nextInputArgs.sourceId = null;
     didOverrideSourceId = true;
   }
@@ -854,7 +854,8 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
         if (hydratedMeta.confidentFilterByTk) {
           runtimeParams.popupTemplateHasFilterByTk = hydratedMeta.hasFilterByTk;
         }
-        if (hydratedMeta.confidentSourceId) {
+        // 始终设置 hasSourceId，用于判断模板是否需要 sourceId
+        if (typeof hydratedMeta.hasSourceId === 'boolean') {
           runtimeParams.popupTemplateHasSourceId = hydratedMeta.hasSourceId;
         }
       }
@@ -862,6 +863,14 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
       const shouldUseTemplateCtx =
         (typeof templateUid === 'string' && templateUid.trim()) || !!(runtimeParams as any)?.popupTemplateContext;
       const nextParams = stripTemplateParams(runtimeParams);
+
+      // 如果模板不需要 sourceId，从 nextParams 中删除 sourceId
+      // 避免关系字段上下文的 sourceId 被传递到不需要它的弹窗
+      const templateNeedsSourceId = hydratedMeta?.hasSourceId === true;
+      if (!templateNeedsSourceId && nextParams && typeof nextParams === 'object') {
+        delete (nextParams as any).sourceId;
+      }
+
       const runtimeCtx = shouldUseTemplateCtx ? buildPopupTemplateShadowCtx(ctx, runtimeParams) : ctx;
       return base.handler(runtimeCtx, nextParams);
     },
