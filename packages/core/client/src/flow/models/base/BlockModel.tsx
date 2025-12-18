@@ -14,7 +14,7 @@ import React from 'react';
 import { Tooltip } from 'antd';
 import { BlockItemCard } from '../../components';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
-import { BlockPlaceholder } from '../../components/placeholders/BlockPlaceholder';
+import { BlockPlaceholder, BlockDeletePlaceholder } from '../../components/placeholders/BlockPlaceholder';
 
 export type BlockSceneType = 'new' | 'filter' | 'one' | 'many' | 'select' | BlockSceneType[];
 
@@ -54,6 +54,10 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
     if (this.forbidden) {
       return <BlockPlaceholder />;
     }
+    if (!this.context.collection) {
+      return <BlockDeletePlaceholder />;
+    }
+
     return (
       <Tooltip title={this.context.t('The block is hidden and only visible when the UI Editor is active')}>
         <BlockItemCard ref={this.context.ref} {...this.decoratorProps} style={{ opacity: '0.3' }}>

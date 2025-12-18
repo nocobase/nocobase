@@ -43,3 +43,26 @@ export const BlockPlaceholder = () => {
     </BlockItemCard>
   );
 };
+
+export function BlockDeletePlaceholder() {
+  const { t } = useTranslation();
+  const model: any = useFlowModel();
+  const dataSource = model.dataSource;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = model.resource.resourceName;
+    return `${dataSourcePrefix}${collectionPrefix}`;
+  }, []);
+  const messageValue = useMemo(() => {
+    return t(`The {{type}} "{{name}}" may have been deleted. Please remove this {{blockType}}.`, {
+      type: t('Collection'),
+      name: nameValue,
+      blockType: t('Block'),
+    }).replaceAll('&gt;', '>');
+  }, [nameValue, t]);
+  return (
+    <BlockItemCard>
+      <Result status="404" subTitle={messageValue}></Result>
+    </BlockItemCard>
+  );
+}

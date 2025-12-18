@@ -374,6 +374,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         }
       }
     } else {
+      if (!this.collection) {
+        return;
+      }
       const field = this.context.dataSourceManager.getCollectionField(
         `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
       ) as CollectionField;

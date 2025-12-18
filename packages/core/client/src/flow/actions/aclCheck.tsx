@@ -25,6 +25,11 @@ export const aclCheck = defineAction({
       ctx.model.hidden = true;
       ctx.exitAll();
     }
+    if (!ctx.collection) {
+      ctx.model.hidden = true;
+      ctx.exitAll();
+    }
+
     if (!result) {
       ctx.model.hidden = true;
       ctx.model.forbidden = {

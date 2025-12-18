@@ -54,7 +54,7 @@ function FieldDeletePlaceholder() {
   }).replaceAll('&gt;', '>');
   return (
     <Tooltip title={content}>
-      <ExclamationCircleOutlined style={{ opacity: '0.45' }} />
+      <ExclamationCircleOutlined style={{ opacity: '0.3' }} />
     </Tooltip>
   );
 }
@@ -241,13 +241,15 @@ export class TableColumnModel extends DisplayItemModel {
                   if (this.forbidden) {
                     return <FieldWithoutPermissionPlaceholder />;
                   }
-                  return (
-                    <Tooltip
-                      title={this.context.t('The field is hidden and only visible when the UI Editor is active')}
-                    >
-                      <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record.__index || index)}</div>
-                    </Tooltip>
-                  );
+                  if (!this.fieldDeleted) {
+                    return (
+                      <Tooltip
+                        title={this.context.t('The field is hidden and only visible when the UI Editor is active')}
+                      >
+                        <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record.__index || index)}</div>
+                      </Tooltip>
+                    );
+                  }
                 }
                 return cellRenderer(value, record, record.__index || index);
               })()}
@@ -359,7 +361,7 @@ TableColumnModel.registerFlow({
       }),
       handler(ctx, params) {
         const title = ctx.t(params.title || ctx.model.collectionField?.title);
-        ctx.model.setProps('title', title);
+        ctx.model.setProps('title', title || ctx.fieldPath);
       },
     },
 
