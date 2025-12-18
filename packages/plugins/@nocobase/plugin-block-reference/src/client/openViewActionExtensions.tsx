@@ -215,7 +215,7 @@ const getPopupTemplateDisabledReason = async (
   ctx: any,
   tpl: TemplateRow,
   expected: ExpectedResourceInfo,
-  expectedSource: ExpectedResourceInfo,
+  _expectedSource: ExpectedResourceInfo,
 ): Promise<string | undefined> => {
   /**
    * 弹窗模版的兼容性判断说明：
@@ -236,17 +236,6 @@ const getPopupTemplateDisabledReason = async (
    * 额外：collectionName 有时并不可靠（例如资源是由 associationName 推导而来），所以会优先
    * 尝试根据 associationName 解析真实 targetCollection 再比较（best-effort，解析失败则回退）。
    */
-  const expectedAssociationName = normalizeStr(expected?.associationName);
-  const tplAssociationName = normalizeStr(tpl?.associationName);
-
-  // 关联上下文里：非关系弹窗模板按“源集合”校验（支持在关联字段中打开源记录弹窗）。
-  if (expectedAssociationName && !tplAssociationName) {
-    const baseDS = normalizeStr(expectedSource?.dataSourceKey);
-    const baseCol = normalizeStr(expectedSource?.collectionName);
-    if (!baseDS || !baseCol) return undefined;
-    return getTemplateAvailabilityDisabledReason(ctx, tpl, expectedSource);
-  }
-
   return getTemplateAvailabilityDisabledReason(ctx, tpl, expected, {
     associationMatch: 'exactIfTemplateHasAssociationName',
   });
@@ -306,19 +295,9 @@ const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
       ? params.popupTemplateHasSourceId
       : normalizeStr(params.sourceId) !== '';
 
-  // 非关系模板（无 associationName）在“关系字段”触发时：仅当模板本身需要 filterByTk，才用 sourceId 覆盖 filterByTk，指向“源记录”。
-  const isAssociationFieldTrigger = !!resolveAssociationFieldFromCtx(ctx);
-  const shouldUseSourceIdAsFilterByTk =
-    !tplAssociationName &&
-    isAssociationFieldTrigger &&
-    hasTemplateFilterByTk &&
-    typeof (baseInputArgs as any)?.sourceId !== 'undefined';
   let didOverrideFilterByTk = false;
   let didOverrideSourceId = false;
-  if (shouldUseSourceIdAsFilterByTk) {
-    nextInputArgs.filterByTk = (baseInputArgs as any).sourceId;
-    didOverrideFilterByTk = true;
-  } else if (!tplAssociationName && !hasTemplateFilterByTk) {
+  if (!tplAssociationName && !hasTemplateFilterByTk) {
     // 防止 openView 回落到 actionDefaults.filterByTk（如 Record action 默认 {{ctx.record.id}}）
     nextInputArgs.filterByTk = null;
     didOverrideFilterByTk = true;

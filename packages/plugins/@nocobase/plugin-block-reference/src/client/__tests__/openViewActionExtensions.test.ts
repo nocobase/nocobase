@@ -257,14 +257,14 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(ctx.inputArgs.associationName).toBe('users.roles');
     expect(ctx.inputArgs.filterByTk).toBe('role-1');
 
-    // shadow ctx should override resource keys and map filterByTk -> sourceId
+    // shadow ctx should override resource keys (keep runtime record context from inputArgs)
     expect(capturedCtx).not.toBe(ctx);
     expect(capturedCtx?.inputArgs?.dataSourceKey).toBe('main');
     expect(capturedCtx?.inputArgs?.collectionName).toBe('roles');
     expect('associationName' in (capturedCtx?.inputArgs || {})).toBe(false);
-    expect(capturedCtx?.inputArgs?.filterByTk).toBe('user-1');
+    expect(capturedCtx?.inputArgs?.filterByTk).toBe('role-1');
     expect(capturedCtx?.inputArgs?.sourceId).toBe(null);
-    expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('filterByTk');
+    expect(capturedCtx?.inputArgs?.defaultInputKeys || []).toContain('filterByTk');
     expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('sourceId');
   });
 
@@ -635,14 +635,14 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(ctx.inputArgs.associationName).toBe('users.roles');
     expect(ctx.inputArgs.filterByTk).toBe('role-1');
 
-    // shadow ctx should override resource keys and map filterByTk -> sourceId
+    // shadow ctx should override resource keys (keep runtime record context from inputArgs)
     expect(capturedCtx).not.toBe(ctx);
     expect(capturedCtx?.inputArgs?.dataSourceKey).toBe('main');
     expect(capturedCtx?.inputArgs?.collectionName).toBe('roles');
     expect('associationName' in (capturedCtx?.inputArgs || {})).toBe(false);
-    expect(capturedCtx?.inputArgs?.filterByTk).toBe('user-1');
+    expect(capturedCtx?.inputArgs?.filterByTk).toBe('role-1');
     expect(capturedCtx?.inputArgs?.sourceId).toBe(null);
-    expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('filterByTk');
+    expect(capturedCtx?.inputArgs?.defaultInputKeys || []).toContain('filterByTk');
     expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('sourceId');
   });
 
@@ -747,7 +747,7 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(baseBefore).toHaveBeenCalledTimes(0);
   });
 
-  it('allows non-relation popup template when collection matches (relation field)', async () => {
+  it('allows non-relation popup template when target collection matches (relation field)', async () => {
     const engine = new FlowEngine();
     const baseBefore = vi.fn(async () => {});
     const baseOpenView: ActionDefinition = {
@@ -774,7 +774,7 @@ describe('openViewActionExtensions (popup template)', () => {
                 uid: 'tpl-1',
                 targetUid: 'popup-1',
                 dataSourceKey: 'main',
-                collectionName: 'users',
+                collectionName: 'roles',
                 // non-relation template: no associationName
               },
             },
