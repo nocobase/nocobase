@@ -218,6 +218,28 @@ const getPopupTemplateDisabledReason = async (
   _expectedSource: ExpectedResourceInfo,
   actionParams?: any,
 ): Promise<string | undefined> => {
+  // DEBUG: 在函数开头打印所有输入信息
+  const engine = (ctx as any)?.engine;
+  const getModelClass = engine?.getModelClass?.bind(engine);
+  const useKey = normalizeStr((ctx as any)?.model?.use) || normalizeStr((ctx as any)?.model?.constructor?.name);
+  const scene = resolveActionScene(getModelClass, useKey);
+  const meta = inferPopupTemplateMeta(ctx, tpl);
+
+  console.log('[PopupTemplate DEBUG] getPopupTemplateDisabledReason called:', {
+    templateUid: tpl?.uid,
+    templateName: tpl?.name,
+    templateUseModel: tpl?.useModel,
+    templateFilterByTk: tpl?.filterByTk,
+    expected,
+    expectedAssociationName: normalizeStr(expected?.associationName),
+    meta,
+    useKey,
+    scene,
+    actionParams,
+    defaultInputKeys: actionParams?.defaultInputKeys,
+    ctxInputArgs: (ctx as any)?.inputArgs,
+  });
+
   /**
    * 弹窗模版的兼容性判断说明：
    *
@@ -228,10 +250,10 @@ const getPopupTemplateDisabledReason = async (
    *
    * 如果在另一个 dataSourceKey/collectionName 的上下文里引用该弹窗模版：
    * - 弹窗里获取数据会落到错误的数据源/数据表，或由于上下文不一致导致变量无法解析；
-   * - 即使 openView 参数被“回填”为模板侧的 dataSourceKey/collectionName，也会让当前触发点
+   * - 即使 openView 参数被"回填"为模板侧的 dataSourceKey/collectionName，也会让当前触发点
    *   的 ctx.record 与弹窗目标集合不一致，从而形成「配置上看似可用、运行时必坏」的问题。
    *
-   * 因此这里将 dataSourceKey/collectionName 不匹配视为“模板不兼容”，在选择器里禁用并给出原因，
+   * 因此这里将 dataSourceKey/collectionName 不匹配视为"模板不兼容"，在选择器里禁用并给出原因，
    * 同时在 beforeParamsSave 做硬校验防止绕过 UI。
    *
    * 额外：collectionName 有时并不可靠（例如资源是由 associationName 推导而来），所以会优先
@@ -242,14 +264,24 @@ const getPopupTemplateDisabledReason = async (
   });
   if (resourceReason) return resourceReason;
 
-  // 关系字段（association）触发：
-  // 如果当前上下文无法提供 filterByTk，则禁止选择“需要 record 上下文”的模板（通常是编辑记录弹窗）。
-  const expectedAssociationName = normalizeStr(expected?.associationName);
-  if (!expectedAssociationName) return undefined;
-
-  const meta = inferPopupTemplateMeta(ctx, tpl);
+  // 如果模板不需要 filterByTk，直接允许
   if (!meta?.hasFilterByTk) return undefined;
 
+  // 如果当前 scene 是 collection（如添加按钮），且模板需要 filterByTk，应该禁止选择
+  // 因为 collection 场景无法提供 filterByTk
+  if (scene === 'collection') {
+    return tWithNs(ctx, 'Cannot resolve template parameter {{param}}', { param: 'filterByTk' });
+  }
+
+  // record/both 场景默认应能从 ctx.record 推断出 filterByTk
+  if (scene === 'record' || scene === 'both') return undefined;
+
+  // 以下检查用于 scene 为 undefined 的情况（如 FieldModel）
+  const expectedAssociationName = normalizeStr(expected?.associationName);
+  // 非关系字段场景，且 scene 未知时，默认允许
+  if (!expectedAssociationName) return undefined;
+
+  // 关系字段场景：检查是否能提供 filterByTk
   const explicitFilterByTk = normalizeStr(actionParams?.filterByTk);
   if (explicitFilterByTk) return undefined;
 
@@ -259,25 +291,6 @@ const getPopupTemplateDisabledReason = async (
   const runtimeFilterByTk =
     normalizeStr((ctx as any)?.inputArgs?.filterByTk) || normalizeStr((ctx as any)?.view?.inputArgs?.filterByTk);
   if (runtimeFilterByTk) return undefined;
-
-  // record/both 场景默认应能从 ctx.record 推断出 filterByTk（best-effort）
-  const engine = (ctx as any)?.engine;
-  const getModelClass = engine?.getModelClass?.bind(engine);
-  const useKey = normalizeStr((ctx as any)?.model?.use) || normalizeStr((ctx as any)?.model?.constructor?.name);
-  const scene = resolveActionScene(getModelClass, useKey);
-  if (scene === 'record' || scene === 'both') return undefined;
-
-  // 如果当前 model 没有 _isScene 方法（如 FieldModel），需要检查上下文是否有 record 信息
-  // 关系字段点击打开弹窗时，ctx.model 是字段模型而非 Action 模型，但它在 record 上下文中工作
-  if (scene === undefined) {
-    // 检查是否有 ctx.record 或 collectionField（表示在记录上下文中）
-    const hasRecordContext =
-      !!(ctx as any)?.record ||
-      !!(ctx as any)?.collectionField ||
-      !!(ctx as any)?.model?.context?.record ||
-      !!(ctx as any)?.model?.context?.collectionField;
-    if (hasRecordContext) return undefined;
-  }
 
   return tWithNs(ctx, 'Cannot resolve template parameter {{param}}', { param: 'filterByTk' });
 };
