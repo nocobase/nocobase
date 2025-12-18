@@ -122,6 +122,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   protected _extraTitle: string;
   public isNew = false; // 标记是否为新建状态
   public skeleton = null;
+  public forbidden = null;
 
   /**
    * 所有 fork 实例的引用集合。
@@ -146,6 +147,10 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
    * 原始 render 方法的引用
    */
   private _originalRender: (() => any) | null = null;
+
+  protected renderOriginal(): React.ReactNode {
+    return this._originalRender();
+  }
 
   /**
    * 缓存的响应式包装器组件（每个实例一个）
