@@ -81,7 +81,9 @@ export const CardUpload = (props) => {
   };
   const onDownload = () => {
     const url = previewImage;
-    const suffix = url.slice(url.lastIndexOf('.'));
+    const cleanUrl = url.split('?')[0].split('#')[0];
+    const nameFromUrl = cleanUrl ? cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1) : url;
+    const suffix = nameFromUrl.slice(nameFromUrl.lastIndexOf('.'));
     const filename = Date.now() + suffix;
     // eslint-disable-next-line promise/catch-or-return
     fetch(url)
