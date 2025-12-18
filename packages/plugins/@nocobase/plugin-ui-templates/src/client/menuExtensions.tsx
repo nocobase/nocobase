@@ -626,7 +626,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
   }
 
   viewer.dialog({
-    title: tNs('Save as popup template'),
+    title: tNs('Save as template'),
     width: 520,
     destroyOnClose: true,
     content: (currentDialog: any) => {
@@ -877,7 +877,7 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, _t: (k: string
   }
 
   viewer.dialog({
-    title: tNs('Convert reference popup to duplicate'),
+    title: tNs('Convert reference to duplicate'),
     width: 520,
     destroyOnClose: true,
     onClose: release,
@@ -1036,7 +1036,7 @@ export function registerMenuExtensions() {
         return [
           {
             key: 'block-reference:convert-popup-template-to-copy',
-            label: pluginT('Convert reference popup to duplicate'),
+            label: pluginT('Convert reference to duplicate'),
             onClick: () => handleConvertPopupTemplateToCopy(model, t),
             sort: -8,
           },
@@ -1045,7 +1045,7 @@ export function registerMenuExtensions() {
       return [
         {
           key: 'block-reference:save-popup-as-template',
-          label: pluginT('Save as popup template'),
+          label: pluginT('Save as template'),
           onClick: () => handleSavePopupAsTemplate(model, t),
           sort: -8,
         },
