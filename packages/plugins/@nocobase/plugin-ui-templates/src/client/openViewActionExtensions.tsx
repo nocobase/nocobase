@@ -263,9 +263,21 @@ const getPopupTemplateDisabledReason = async (
   // record/both 场景默认应能从 ctx.record 推断出 filterByTk（best-effort）
   const engine = (ctx as any)?.engine;
   const getModelClass = engine?.getModelClass?.bind(engine);
-  const ctorName = (ctx as any)?.model?.constructor?.name;
-  const scene = resolveActionScene(getModelClass, ctorName);
+  const useKey = normalizeStr((ctx as any)?.model?.use) || normalizeStr((ctx as any)?.model?.constructor?.name);
+  const scene = resolveActionScene(getModelClass, useKey);
   if (scene === 'record' || scene === 'both') return undefined;
+
+  // 如果当前 model 没有 _isScene 方法（如 FieldModel），需要检查上下文是否有 record 信息
+  // 关系字段点击打开弹窗时，ctx.model 是字段模型而非 Action 模型，但它在 record 上下文中工作
+  if (scene === undefined) {
+    // 检查是否有 ctx.record 或 collectionField（表示在记录上下文中）
+    const hasRecordContext =
+      !!(ctx as any)?.record ||
+      !!(ctx as any)?.collectionField ||
+      !!(ctx as any)?.model?.context?.record ||
+      !!(ctx as any)?.model?.context?.collectionField;
+    if (hasRecordContext) return undefined;
+  }
 
   return tWithNs(ctx, 'Cannot resolve template parameter {{param}}', { param: 'filterByTk' });
 };
@@ -326,7 +338,7 @@ const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
 
   let didOverrideFilterByTk = false;
   let didOverrideSourceId = false;
-  if (!tplAssociationName && !hasTemplateFilterByTk) {
+  if (!hasTemplateFilterByTk) {
     // 防止 openView 回落到 actionDefaults.filterByTk（如 Record action 默认 {{ctx.record.id}}）
     nextInputArgs.filterByTk = null;
     didOverrideFilterByTk = true;
@@ -334,7 +346,7 @@ const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
 
   // 预览/配置态下可能拿不到真实 record，导致 filterByTk 被解析为 undefined；但模板若明确需要 record 上下文，
   // 仍需提供一个 truthy 值以保证区块菜单按 record 场景展示（否则只能添加 new 场景区块）。
-  if (!tplAssociationName && hasTemplateFilterByTk && !didOverrideFilterByTk) {
+  if (hasTemplateFilterByTk && !didOverrideFilterByTk) {
     const existing = (nextInputArgs as any).filterByTk;
     if (!normalizeStr(existing)) {
       nextInputArgs.filterByTk =

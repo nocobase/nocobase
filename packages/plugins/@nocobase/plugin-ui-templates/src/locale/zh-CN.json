@@ -57,6 +57,7 @@
   "Popup template not found": "弹窗模版不存在",
   "Failed to duplicate pop-up": "复制弹窗失败",
   "Failed to copy popup from template": "从弹窗模版复制失败",
+  "Template field section description": "将使用指定区块模版的字段部分",
   "Reference mode description": "修改区块所有引用该模版的地方都会被修改。",
   "Duplicate mode description": "基于模板生成新内容，所有 UID（包括子节点的 UID）都会重新生成。涉及跨区块的 UID 引用在复制后将不再生效。"
 }

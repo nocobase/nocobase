@@ -325,6 +325,72 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(capturedCtx?.inputArgs?.defaultInputKeys).toBeUndefined();
   });
 
+  it('runtime clears filterByTk in shadow ctx for association template when template does not need record context', async () => {
+    const engine = new FlowEngine();
+    let capturedCtx: any;
+    const baseHandler = vi.fn(async (ctxArg: any) => {
+      capturedCtx = ctxArg;
+      return undefined;
+    });
+
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: {
+        uid: { type: 'string' },
+      },
+      handler: baseHandler as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    const baseInputArgs: any = {
+      dataSourceKey: 'main',
+      collectionName: 'users',
+      associationName: 'users.roles',
+      filterByTk: 'role-1',
+      sourceId: 'user-1',
+      defaultInputKeys: ['filterByTk', 'sourceId'],
+    };
+    const ctx: any = {
+      engine,
+      t: (k: string) => k,
+      collectionField: {
+        isAssociationField: () => true,
+      },
+    };
+    Object.defineProperty(ctx, 'inputArgs', {
+      get: () => baseInputArgs,
+      configurable: true,
+      enumerable: true,
+    });
+
+    await enhanced.handler(ctx, {
+      popupTemplateUid: 'tpl-1',
+      uid: 'popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'roles',
+      // association template (keeps association context), but collection-scene (no filterByTk)
+      associationName: 'users.roles',
+      popupTemplateHasFilterByTk: false,
+    });
+
+    expect(baseHandler).toHaveBeenCalledTimes(1);
+    // should not mutate original ctx.inputArgs
+    expect(ctx.inputArgs.filterByTk).toBe('role-1');
+
+    // shadow ctx should clear filterByTk (avoid leaking record context into "add" template)
+    expect(capturedCtx).not.toBe(ctx);
+    expect(capturedCtx?.inputArgs?.collectionName).toBe('roles');
+    expect(capturedCtx?.inputArgs?.associationName).toBe('users.roles');
+    expect(capturedCtx?.inputArgs?.filterByTk).toBe(null);
+    expect(capturedCtx?.inputArgs?.sourceId).toBe('user-1');
+    expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('filterByTk');
+    expect(capturedCtx?.inputArgs?.defaultInputKeys || []).toContain('sourceId');
+  });
+
   it('injects placeholder filterByTk when template expects record context but record is unavailable', async () => {
     const engine = new FlowEngine();
     let capturedCtx: any;
