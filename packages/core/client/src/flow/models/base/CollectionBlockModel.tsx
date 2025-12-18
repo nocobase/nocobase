@@ -35,7 +35,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
   isManualRefresh = false;
 
   onActive() {
-    this.resource?.refresh();
+    if (!this.hidden) {
+      this.resource?.refresh();
+    }
   }
 
   /**
@@ -377,6 +379,9 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
         }
       }
     } else {
+      if (!this.collection) {
+        return;
+      }
       const field = this.context.dataSourceManager.getCollectionField(
         `${this.collection.dataSourceKey}.${this.collection.name}.${fieldPath}`,
       ) as CollectionField;
