@@ -77,21 +77,14 @@ export class PluginBlockReferenceServer extends Plugin {
       const stepParams = options?.stepParams || {};
       const uids = new Set<string>();
 
-      // ReferenceBlockModel 模板引用
-      if (options?.use === 'ReferenceBlockModel') {
-        const mode = _.get(stepParams, ['referenceSettings', 'target', 'mode']) || 'reference';
-        const tplUid = _.get(stepParams, ['referenceSettings', 'useTemplate', 'templateUid']);
-        if (tplUid && mode !== 'copy') {
-          uids.add(String(tplUid));
-        }
-      }
-
-      // ReferenceFormGridModel（字段模板引用）
-      if (options?.use === 'ReferenceFormGridModel') {
-        const tplUid = _.get(stepParams, ['referenceFormGridSettings', 'target', 'templateUid']);
-        if (tplUid) {
-          uids.add(String(tplUid));
-        }
+      // 模板引用（不限定 use；后续其它模型也可复用 referenceSettings.useTemplate ）
+      const mode =
+        _.get(stepParams, ['referenceSettings', 'useTemplate', 'mode']) ||
+        _.get(stepParams, ['referenceSettings', 'target', 'mode']) ||
+        'reference';
+      const tplUid = _.get(stepParams, ['referenceSettings', 'useTemplate', 'templateUid']);
+      if (tplUid && mode !== 'copy') {
+        uids.add(String(tplUid));
       }
 
       // openView（弹窗模板引用）
@@ -224,8 +217,7 @@ export class PluginBlockReferenceServer extends Plugin {
     });
 
     // 区块保存时维护 usage：
-    // - ReferenceBlockModel.useTemplate + mode!==copy
-    // - ReferenceFormGridModel.referenceFormGridSettings.target.templateUid
+    // - ReferenceBlockModel / ReferenceFormGridModel.referenceSettings.useTemplate + mode!==copy
     // - popupSettings.openView.popupTemplateUid + popupTemplateMode!==copy
     // - subModelReferenceSettings.refs 中的 templateUid + mode!==copy（兼容历史/实验实现）
     const handleFlowModelSave = async (instance: any, { transaction }: any = {}) => {

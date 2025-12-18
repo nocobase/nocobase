@@ -43,8 +43,8 @@ const openFieldsCopyDialogs = new WeakSet<FlowModel>();
 const openSavePopupTemplateDialogs = new Set<string>();
 const openConvertPopupTemplateDialogs = new Set<string>();
 
-const GRID_REF_FLOW_KEY = 'referenceFormGridSettings';
-const GRID_REF_STEP_KEY = 'target';
+const GRID_REF_FLOW_KEY = 'referenceSettings';
+const GRID_REF_STEP_KEY = 'useTemplate';
 
 type ReferenceFormGridTargetSettings = {
   templateUid: string;
@@ -166,6 +166,8 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
             templateUid: tplUid,
             templateName: tpl?.name || tpl?.data?.name || values.name,
             templateDescription: tpl?.description || tpl?.data?.description || values.description,
+            targetUid,
+            mode: 'reference',
           });
 
           if (subType === 'array') {

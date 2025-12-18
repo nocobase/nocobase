@@ -52,8 +52,8 @@ type ImporterProps = {
 };
 
 const FLOW_KEY = 'subModelTemplateImportSettings';
-const GRID_REF_FLOW_KEY = 'referenceFormGridSettings';
-const GRID_REF_STEP_KEY = 'target';
+const GRID_REF_FLOW_KEY = 'referenceSettings';
+const GRID_REF_STEP_KEY = 'useTemplate';
 
 export class SubModelTemplateImporterModel extends FlowModel {
   declare props: ImporterProps;
@@ -113,6 +113,7 @@ export class SubModelTemplateImporterModel extends FlowModel {
     const templateUid = String(step.templateUid || '').trim();
     const targetUid = String(step.targetUid || '').trim();
     const templateName = String(step.templateName || '').trim() || undefined;
+    const templateDescription = String(step.templateDescription || '').trim() || undefined;
     const mode = String(step.mode || 'reference');
     const sourcePath = String(step.sourcePath || 'subModels.grid').trim() || 'subModels.grid';
     const mountSubKey = String(step.mountSubKey || 'grid').trim() || 'grid';
@@ -164,7 +165,7 @@ export class SubModelTemplateImporterModel extends FlowModel {
       return;
     }
 
-    const nextSettings = { templateUid, templateName, targetUid, sourcePath };
+    const nextSettings = { templateUid, templateName, templateDescription, targetUid, sourcePath, mode };
     const isReferenceGrid = existingGrid.use === 'ReferenceFormGridModel';
     if (isReferenceGrid) {
       existingGrid.setStepParams(GRID_REF_FLOW_KEY, GRID_REF_STEP_KEY, nextSettings);
@@ -183,7 +184,6 @@ export class SubModelTemplateImporterModel extends FlowModel {
         ? (oldStepParams[GRID_REF_FLOW_KEY] as Record<string, any>)
         : {};
     const nextStepParams = {
-      ...oldStepParams,
       [GRID_REF_FLOW_KEY]: {
         ...prevRefSettings,
         [GRID_REF_STEP_KEY]: nextSettings,
@@ -406,6 +406,7 @@ SubModelTemplateImporterModel.registerFlow({
           throw new Error(`[block-reference] Template '${templateUid}' has no targetUid.`);
         }
         const templateName = (tpl?.name || params?.templateName || '').trim();
+        const templateDescription = (tpl?.description || params?.templateDescription || '').trim();
         const mode = params?.mode || 'reference';
         const sourcePath = (importer.props?.defaultSourcePath || 'subModels.grid').trim();
         const mountSubKey = (importer.props?.defaultMountSubKey || importer.subKey || 'grid').trim();
@@ -474,10 +475,13 @@ SubModelTemplateImporterModel.registerFlow({
             if (isSame) {
               // 仍需写入当前 stepParams，避免 afterAddAsSubModel 无法读取 targetUid 等
               importer.setStepParams(FLOW_KEY, 'selectTemplate', {
+                templateUid,
                 targetUid,
                 templateName,
+                templateDescription,
                 sourcePath,
                 mountSubKey,
+                mode,
               });
               return;
             }
@@ -583,10 +587,13 @@ SubModelTemplateImporterModel.registerFlow({
         // 将解析后的信息写回 stepParams（afterAddAsSubModel 依赖这些值）
         // 注意：FlowModel.setStepParams 内部会 clone params，因此不能只改入参对象。
         importer.setStepParams(FLOW_KEY, 'selectTemplate', {
+          templateUid,
           targetUid,
           templateName,
+          templateDescription,
           sourcePath,
           mountSubKey,
+          mode,
         });
       },
     },

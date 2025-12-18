@@ -472,6 +472,7 @@ ReferenceBlockModel.registerFlow({
           templateUid,
           templateName,
           templateDescription,
+          targetUid: targetUid || useTemplateParams?.targetUid,
           mode,
         });
 

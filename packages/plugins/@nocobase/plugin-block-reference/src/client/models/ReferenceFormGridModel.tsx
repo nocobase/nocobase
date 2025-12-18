@@ -20,8 +20,8 @@ import {
   unlinkScopedEngine,
 } from './referenceShared';
 
-const SETTINGS_FLOW_KEY = 'referenceFormGridSettings';
-const SETTINGS_STEP_KEY = 'target';
+const SETTINGS_FLOW_KEY = 'referenceSettings';
+const SETTINGS_STEP_KEY = 'useTemplate';
 
 export { REF_HOST_CTX_KEY };
 
@@ -49,7 +49,7 @@ type ReferenceHostInfo = {
   };
 };
 
-export class ReferenceFormGridModel extends FormGridModel {
+export class ReferenceFormGridModel extends FlowModel {
   private _scopedEngine?: FlowEngine;
   private _targetGrid?: FlowModel;
   private _resolvedTargetUid?: string;

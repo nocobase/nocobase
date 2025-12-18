@@ -237,12 +237,13 @@ describe('block-reference templates and usages', () => {
           subKey: 'grid',
           subType: 'object',
           stepParams: {
-            referenceFormGridSettings: {
-              target: {
+            referenceSettings: {
+              useTemplate: {
                 templateUid: 'tpl-sub',
                 templateName: 'Template Sub',
                 targetUid: 'target-block',
                 sourcePath: 'subModels.grid',
+                mode: 'reference',
               },
             },
           },
