@@ -2685,7 +2685,7 @@
     "The last step cannot be deleted": "最后一个步骤不可以删除",
     "Whether to delete this step": "是否删除这个步骤？"
   },
-  "@nocobase/plugin-block-reference": {
+  "@nocobase/plugin-ui-templates": {
     "Block UID": "区块 UID",
     "Block UID is already set and cannot be modified": "当前已经指定区块UID，不允许修改",
     "Copy": "复制",

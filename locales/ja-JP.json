@@ -2732,7 +2732,7 @@
     "The last step cannot be deleted": "最終ステップは削除できません",
     "Whether to delete this step": "このステップを削除しますか？"
   },
-  "@nocobase/plugin-block-reference": {
+  "@nocobase/plugin-ui-templates": {
     "Block UID": "Block UID",
     "Block UID is already set and cannot be modified": "Block UID is already set and cannot be modified",
     "Copy": "Copy",

@@ -2727,7 +2727,7 @@
     "The last step cannot be deleted": "The last step cannot be deleted",
     "Whether to delete this step": "Whether to delete this step?"
   },
-  "@nocobase/plugin-block-reference": {
+  "@nocobase/plugin-ui-templates": {
     "Block UID": "Block UID",
     "Block UID is already set and cannot be modified": "Block UID is already set and cannot be modified",
     "Copy": "Copy",
