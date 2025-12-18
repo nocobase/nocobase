@@ -323,13 +323,13 @@ SubModelTemplateImporterModel.define({
 
 SubModelTemplateImporterModel.registerFlow({
   key: FLOW_KEY,
-  title: tExpr('From template'),
+  title: tExpr('Field template'),
   manual: true,
   sort: -999,
   steps: {
     selectTemplate: {
       preset: true,
-      title: tStr('From template'),
+      title: tStr('Field template'),
       uiSchema: (ctx) => {
         const m = ctx.model as SubModelTemplateImporterModel;
         const step = m.getStepParams(FLOW_KEY, 'selectTemplate') || {};
@@ -540,8 +540,8 @@ SubModelTemplateImporterModel.registerFlow({
                     };
                     viewer.dialog({
                       title:
-                        (ctx as FlowContext).t?.('From template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }) ||
-                        'From template',
+                        (ctx as FlowContext).t?.('Field template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }) ||
+                        'Field template',
                       width: 520,
                       destroyOnClose: true,
                       content: (currentDialog: any) => (

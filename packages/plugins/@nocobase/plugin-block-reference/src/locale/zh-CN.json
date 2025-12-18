@@ -30,7 +30,6 @@
   "Template settings": "模版配置",
   "Template is in use and cannot be deleted": "当前模版正在被使用中，无法删除",
   "Usage count": "引用数量",
-  "From template": "从模版引入",
   "Using reference fields will remove existing fields": "使用引用字段会将当前已经添加的字段移除",
   "This block already references field template, please convert fields to copy first": "当前区块已引用字段模版，请先将引用字段转换为复制",
   "Convert reference to duplicate": "将引用转换为复制",

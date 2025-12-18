@@ -45,7 +45,7 @@ export function registerSubModelMenuExtensions(engine: FlowEngine) {
     const raw = originalDefineChildren ? await originalDefineChildren.call(this, ctx) : [];
     const children = Array.isArray(raw) ? raw : [];
 
-    const label = ctx.t?.('From template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }) || 'From template';
+    const label = ctx.t?.('Field template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }) || 'Field template';
     const formModel = findFormModel(ctx.model);
     const parentUse = formModel?.use || ctx.model.parent?.use;
     const expectedRootUse =

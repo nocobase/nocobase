@@ -31,7 +31,6 @@
   "Template is in use and cannot be deleted": "Template is in use and cannot be deleted",
   "Usage count": "Usage count",
   "Deleted": "Deleted",
-  "From template": "From template",
   "Using reference fields will remove existing fields": "Using reference fields will remove existing fields.",
   "This block already references field template, please convert fields to copy first": "This block already references a field template. Please convert fields to duplicate first.",
   "Convert reference to duplicate": "Convert reference to duplicate",
