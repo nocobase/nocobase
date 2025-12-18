@@ -9,6 +9,7 @@
 
 import { useFlowModel } from '@nocobase/flow-engine';
 import { Result } from 'antd';
+import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BlockItemCard } from '../BlockItemCard';
@@ -32,7 +33,7 @@ export const BlockPlaceholder = () => {
       `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for collection "{{name}}"`,
       {
         name: nameValue,
-        actionName,
+        actionName: t(_.capitalize(actionName)),
       },
     ).replaceAll('&gt;', '>');
   }, [actionName, nameValue, t]);
