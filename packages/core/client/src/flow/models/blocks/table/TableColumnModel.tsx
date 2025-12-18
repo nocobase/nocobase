@@ -200,6 +200,7 @@ export class TableColumnModel extends DisplayItemModel {
               text-overflow: ellipsis;
               white-space: nowrap;
               width: calc(${this.props.width}px - 16px);
+              opacity: ${this.hidden ? '0.3' : '1'};
             `}
           >
             {this.props.title}
