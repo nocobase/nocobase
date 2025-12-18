@@ -120,6 +120,22 @@ export class DetailsBlockModel extends CollectionBlockModel<{
     );
   }
 
+  renderConfigureActions() {
+    return (
+      <AddSubModelButton
+        key="details-actions-add"
+        model={this}
+        subModelKey="actions"
+        subModelBaseClass={this.getModelClassName('RecordActionGroupModel')}
+        afterSubModelInit={async (actionModel) => {
+          actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
+        }}
+      >
+        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+      </AddSubModelButton>
+    );
+  }
+
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
@@ -154,18 +170,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
                   </Droppable>
                 );
               })}
-
-              <AddSubModelButton
-                key="details-actions-add"
-                model={this}
-                subModelKey="actions"
-                subModelBaseClass={this.getModelClassName('RecordActionGroupModel')}
-                afterSubModelInit={async (actionModel) => {
-                  actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
-                }}
-              >
-                <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
-              </AddSubModelButton>
+              {this.renderConfigureActions()}
             </Space>
           </div>
         </DndProvider>
