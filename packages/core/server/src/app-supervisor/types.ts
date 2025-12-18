@@ -107,7 +107,7 @@ export interface AppDiscoveryAdapter {
    */
   setAppStatus(appName: string, status: AppStatus, options?: Record<string, any>): void | Promise<void>;
 
-  loadAppData?(mainApp: Application): Promise<void>;
+  loadAppModels?(mainApp: Application): Promise<void>;
   getAppsStatuses?(appNames?: string[]):
     | Promise<{
         [app: string]: AppStatus | null;

@@ -424,6 +424,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
         },
       );
       await this.registerEnvironment(app);
+      if (process.env.APP_MODE === 'supervisor') {
+        this.logger.info('Loading app models...');
+        this.discoveryAdapter.loadAppModels?.(app);
+      }
     });
     app.on('afterStop', async (app: Application) => {
       await this.unregisterEnvironment();
@@ -441,13 +445,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   async getAppModel(appName: string) {
     return this.discoveryAdapter.getAppModel(appName);
-  }
-
-  async loadAppData(mainApp: Application) {
-    if (typeof this.discoveryAdapter.loadAppData !== 'function') {
-      return;
-    }
-    return this.discoveryAdapter.loadAppData(mainApp);
   }
 
   async addAutoStartApps(environmentName: string, appName: string[]) {
