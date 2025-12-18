@@ -274,7 +274,14 @@ export const CardUpload = (props) => {
                   return (
                     <Alert
                       type="warning"
-                      description={t('File type is not supported for previewing, please download it to preview.')}
+                      description={
+                        <span>
+                          {t('File type is not supported for previewing,')}
+                          <a onClick={onDownload} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
+                            {t('download it to preview')}
+                          </a>
+                        </span>
+                      }
                       showIcon
                     />
                   );

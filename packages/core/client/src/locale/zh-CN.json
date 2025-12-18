@@ -1560,5 +1560,7 @@
   "The block is hidden and only visible when the UI Editor is active": "当前区块已被隐藏,仅配置状态下显示",
   "The field is hidden and only visible when the UI Editor is active": "当前字段已被隐藏,仅配置状态下显示",
   "Destroy": "删除",
-  "The current storage \"{{storageName}}\" does not support file uploads.": "当前存储 \"{{storageName}}\" 不支持上传文件。"
+  "The current storage \"{{storageName}}\" does not support file uploads.": "当前存储 \"{{storageName}}\" 不支持上传文件。",
+  "File type is not supported for previewing,": "文件类型不支持预览，",
+  "download it to preview": "请下载后预览"
 }
