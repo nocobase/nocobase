@@ -74,7 +74,7 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
 
   private async _bootStrapApp(appName: string, options = {}) {
     await this.setAppStatus(appName, 'initializing');
-    await this.supervisor.bootstrapApp({ appName, options });
+    await this.supervisor.initApp({ appName, options });
 
     if (!this.hasApp(appName)) {
       await this.setAppStatus(appName, 'not_found');

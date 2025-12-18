@@ -7,7 +7,13 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
+import {
+  createSystemLogger,
+  getLoggerFilePath,
+  getLoggerLevel,
+  getLoggerTransport,
+  SystemLogger,
+} from '@nocobase/logger';
 import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
@@ -215,6 +221,8 @@ export class Gateway extends EventEmitter {
     }
     logger = createSystemLogger({
       dirname: getLoggerFilePath(appName),
+      transports: getLoggerTransport(),
+      level: getLoggerLevel(),
       filename: 'system',
       defaultMeta: {
         app: appName,
@@ -311,7 +319,7 @@ export class Gateway extends EventEmitter {
     const hasApp = AppSupervisor.getInstance().hasApp(handleApp);
 
     if (!hasApp) {
-      void AppSupervisor.getInstance().bootstrapApp({ appName: handleApp });
+      void AppSupervisor.getInstance().bootstrapApp(handleApp);
     }
 
     let appStatus = await AppSupervisor.getInstance().getAppStatus(handleApp, 'preparing');

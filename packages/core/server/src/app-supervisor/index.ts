@@ -38,7 +38,13 @@ import {
 import { appOptionsFactory } from './app-options-factory';
 import { PubSubManagerPublishOptions } from '../pub-sub-manager';
 import { Transaction, Transactionable } from '@nocobase/database';
-import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
+import {
+  createSystemLogger,
+  getLoggerFilePath,
+  getLoggerLevel,
+  getLoggerTransport,
+  SystemLogger,
+} from '@nocobase/logger';
 
 export type AppDiscoveryAdapterFactory = (context: { supervisor: AppSupervisor }) => AppDiscoveryAdapter;
 export type AppProcessAdapterFactory = (context: { supervisor: AppSupervisor }) => AppProcessAdapter;
@@ -81,6 +87,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     this.logger = createSystemLogger({
       dirname: getLoggerFilePath('main'),
+      transports: getLoggerTransport(),
+      level: getLoggerLevel(),
       filename: 'system',
       seperateError: true,
       defaultMeta: {
@@ -262,7 +270,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     this.appOptionsFactory = factory ?? appOptionsFactory;
   }
 
-  async bootstrapApp({ appName, options }: { appName: string; options?: { upgrading?: boolean } }) {
+  async bootstrapApp(appName: string) {
+    return this.processAdapter.bootstrapApp(appName);
+  }
+
+  async initApp({ appName, options }: { appName: string; options?: { upgrading?: boolean } }) {
     const loadButNotStart = options?.upgrading;
 
     const mainApp = await this.getApp('main');
@@ -270,8 +282,13 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       return;
     }
     const appModel = await this.getAppModel(appName);
-    const appOptions = appModel?.options;
+    if (!appModel) {
+      this.logger.error(`App model ${appName} not found`);
+      return;
+    }
+    const appOptions = appModel.options;
     if (!appOptions) {
+      this.logger.error(`App options ${appName} not found`);
       return;
     }
     if (appOptions?.standaloneDeployment && this.runningMode !== 'single') {
@@ -326,7 +343,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async getAppsStatuses(appNames?: string[]) {
-    return this.discoveryAdapter.getAppsStatuses(appNames);
+    return this.discoveryAdapter.getAppsStatuses?.(appNames) ?? {};
   }
 
   registerApp({ appModel, mainApp, hook }: { appModel: AppModel; mainApp?: Application; hook?: boolean }) {
@@ -516,7 +533,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async unregisterEnvironment() {
-    if (!this.environmentName || typeof this.discoveryAdapter.unregisterEnvironment === 'function') {
+    if (this.environmentName && typeof this.discoveryAdapter.unregisterEnvironment === 'function') {
       await this.discoveryAdapter.unregisterEnvironment();
     }
     if (this.environmentHeartbeatTimer) {
@@ -524,12 +541,28 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
   }
 
+  private normalizeEnvInfo(environment: EnvironmentInfo): EnvironmentInfo {
+    const lastHeartbeatAt = environment.lastHeartbeatAt;
+    if (!Number.isFinite(lastHeartbeatAt) || lastHeartbeatAt <= 0) {
+      return {
+        ...environment,
+        available: false,
+      };
+    }
+    const available = Math.floor(Date.now() / 1000) - lastHeartbeatAt <= this.environmentHeartbeatInterval;
+    return {
+      ...environment,
+      available,
+    };
+  }
+
   async listEnvironments() {
-    if (typeof this.discoveryAdapter.listEnvironments === 'function') {
-      return this.discoveryAdapter.listEnvironments();
+    if (typeof this.discoveryAdapter.listEnvironments !== 'function') {
+      return [] as EnvironmentInfo[];
     }
 
-    return [] as EnvironmentInfo[];
+    const environments = await this.discoveryAdapter.listEnvironments();
+    return environments.map((env) => this.normalizeEnvInfo(env));
   }
 
   async getEnvironment(environmentName: string) {
@@ -541,17 +574,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     if (!environment) {
       return null;
     }
-    const lastHeartbeatAt = environment.lastHeartbeatAt;
-    if (!Number.isFinite(lastHeartbeatAt) || lastHeartbeatAt <= 0) {
-      return {
-        ...environment,
-        available: false,
-      };
-    }
-    return {
-      ...environment,
-      available: Date.now() - lastHeartbeatAt <= this.environmentHeartbeatInterval,
-    };
+    return this.normalizeEnvInfo(environment);
   }
 
   async heartbeatEnvironment() {
