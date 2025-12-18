@@ -251,7 +251,7 @@ describe('block-reference templates and usages', () => {
       },
     });
 
-    expect(await countUsage({ templateUid: 'tpl-sub', modelUid: 'block-sub' })).toBe(1);
+    expect(await countUsage({ templateUid: 'tpl-sub', modelUid: 'grid-sub' })).toBe(1);
 
     await flowRepo.update({
       filter: { uid: 'grid-sub' },
@@ -266,7 +266,7 @@ describe('block-reference templates and usages', () => {
       },
     });
 
-    expect(await countUsage({ modelUid: 'block-sub' })).toBe(0);
+    expect(await countUsage({ modelUid: 'grid-sub' })).toBe(0);
   });
 
   it('should maintain usages via flowModels:save/destroy actions', async () => {

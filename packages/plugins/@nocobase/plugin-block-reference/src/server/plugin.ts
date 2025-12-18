@@ -78,10 +78,7 @@ export class PluginBlockReferenceServer extends Plugin {
       const uids = new Set<string>();
 
       // 模板引用（不限定 use；后续其它模型也可复用 referenceSettings.useTemplate ）
-      const mode =
-        _.get(stepParams, ['referenceSettings', 'useTemplate', 'mode']) ||
-        _.get(stepParams, ['referenceSettings', 'target', 'mode']) ||
-        'reference';
+      const mode = _.get(stepParams, ['referenceSettings', 'useTemplate', 'mode']) || 'reference';
       const tplUid = _.get(stepParams, ['referenceSettings', 'useTemplate', 'templateUid']);
       if (tplUid && mode !== 'copy') {
         uids.add(String(tplUid));
@@ -95,42 +92,14 @@ export class PluginBlockReferenceServer extends Plugin {
           if (!val || typeof val !== 'object') continue;
           const step = val as Record<string, unknown>;
           const tplUidRaw = step['popupTemplateUid'];
-          if (tplUidRaw !== null && typeof tplUidRaw !== 'undefined' && String(tplUidRaw)) {
+          const tplMode = String(step['popupTemplateMode'] || '') || 'reference';
+          if (tplUidRaw !== null && typeof tplUidRaw !== 'undefined' && String(tplUidRaw) && tplMode !== 'copy') {
             uids.add(String(tplUidRaw));
           }
         }
       }
 
-      // 兼容：subModelReferenceSettings.refs 中的 templateUid（历史/实验实现）
-      const normalizeRefs = (val: any) => {
-        if (!val) return [];
-        if (Array.isArray(val)) return val;
-        if (Array.isArray(val?.refs)) return val.refs;
-        if (typeof val === 'object') {
-          return Object.values(val).filter((r: any) => r && typeof r === 'object');
-        }
-        return [];
-      };
-      const refsRaw = _.get(stepParams, ['subModelReferenceSettings', 'refs']);
-      const refs = normalizeRefs(refsRaw);
-      for (const r of refs) {
-        const tplUid = r?.templateUid;
-        const mode = r?.mode || 'reference';
-        if (tplUid && mode !== 'copy') {
-          uids.add(String(tplUid));
-        }
-      }
-
       return Array.from(uids);
-    };
-
-    const resolveUsageOwnerUid = (instanceUid: string, options: any): string => {
-      // ReferenceFormGridModel 作为表单块的子模型，usage 归属到父级 modelUid
-      if (options?.use === 'ReferenceFormGridModel') {
-        const parentId = options?.parentId;
-        if (parentId && typeof parentId === 'string') return parentId;
-      }
-      return instanceUid;
     };
 
     const syncUsages = async (
@@ -140,45 +109,23 @@ export class PluginBlockReferenceServer extends Plugin {
       { transaction }: { transaction?: any } = {},
     ) => {
       const usageRepo = this.db.getRepository('flowModelTemplateUsages');
-      const currentOwnerUid = resolveUsageOwnerUid(instanceUid, options);
-      const previousOwnerUid = resolveUsageOwnerUid(instanceUid, previousOptions);
       const currentUids = new Set(extractTemplateUids(options).map(String));
       const previousUids = new Set(extractTemplateUids(previousOptions).map(String));
 
-      // owner 变更：需要从旧 owner 清理，再写入新 owner
-      if (currentOwnerUid !== previousOwnerUid) {
-        for (const templateUid of previousUids) {
-          await usageRepo.destroy({
-            filter: { modelUid: previousOwnerUid, templateUid },
-            transaction,
-          });
-        }
-        for (const templateUid of currentUids) {
-          await usageRepo.updateOrCreate({
-            filterKeys: ['templateUid', 'modelUid'],
-            values: { uid: uid(), templateUid, modelUid: currentOwnerUid },
-            transaction,
-            context: { disableAfterDestroy: true },
-          });
-        }
-        return;
-      }
-
-      // owner 未变更：按差异增删，避免误伤同 modelUid 的其它 usage
       const removed = Array.from(previousUids).filter((x) => !currentUids.has(x));
       const added = Array.from(currentUids).filter((x) => !previousUids.has(x));
       if (removed.length === 0 && added.length === 0) return;
 
       for (const templateUid of removed) {
         await usageRepo.destroy({
-          filter: { modelUid: currentOwnerUid, templateUid },
+          filter: { modelUid: instanceUid, templateUid },
           transaction,
         });
       }
       for (const templateUid of added) {
         await usageRepo.updateOrCreate({
           filterKeys: ['templateUid', 'modelUid'],
-          values: { uid: uid(), templateUid, modelUid: currentOwnerUid },
+          values: { uid: uid(), templateUid, modelUid: instanceUid },
           transaction,
           context: { disableAfterDestroy: true },
         });
@@ -187,25 +134,11 @@ export class PluginBlockReferenceServer extends Plugin {
 
     const removeUsagesByInstance = async (
       instanceUid: string,
-      options: any,
+      _options: any,
       { transaction }: { transaction?: any } = {},
     ) => {
       const usageRepo = this.db.getRepository('flowModelTemplateUsages');
-      const ownerUid = resolveUsageOwnerUid(instanceUid, options);
-
-      // 对于 ReferenceFormGridModel，只清理本次引用的 templateUid，避免误伤同一 modelUid 下的其它 usage
-      if (options?.use === 'ReferenceFormGridModel') {
-        const templateUids = extractTemplateUids(options);
-        for (const templateUid of templateUids) {
-          await usageRepo.destroy({
-            filter: { modelUid: ownerUid, templateUid },
-            transaction,
-          });
-        }
-        return;
-      }
-
-      await usageRepo.destroy({ filter: { modelUid: ownerUid }, transaction });
+      await usageRepo.destroy({ filter: { modelUid: instanceUid }, transaction });
     };
 
     // 区块删除时自动清理 usage 记录，避免垃圾数据
@@ -217,15 +150,14 @@ export class PluginBlockReferenceServer extends Plugin {
     });
 
     // 区块保存时维护 usage：
-    // - ReferenceBlockModel / ReferenceFormGridModel.referenceSettings.useTemplate + mode!==copy
+    // - referenceSettings.useTemplate.templateUid（且 mode!==copy）
     // - popupSettings.openView.popupTemplateUid + popupTemplateMode!==copy
-    // - subModelReferenceSettings.refs 中的 templateUid + mode!==copy（兼容历史/实验实现）
     const handleFlowModelSave = async (instance: any, { transaction }: any = {}) => {
       const instanceUid = instance?.get?.('uid') || instance?.uid;
       if (!instanceUid) return;
 
       const options = parseOptions(instance?.get?.('options') || instance?.options);
-      const previousOptions = parseOptions(instance?.previous?.('options') ?? instance?._previousDataValues?.options);
+      const previousOptions = parseOptions(instance?.previous?.('options'));
       await syncUsages(instanceUid, options, previousOptions, { transaction });
     };
 
@@ -273,13 +205,6 @@ export class PluginBlockReferenceServer extends Plugin {
           if (!instanceUid) continue;
           const currentOptions = parseOptions(node);
           const previousOptions = previousOptionsByUid.get(instanceUid) || {};
-          if (
-            currentOptions?.use === 'ReferenceFormGridModel' &&
-            !previousOptions?.parentId &&
-            currentOptions?.parentId
-          ) {
-            previousOptions.parentId = currentOptions.parentId;
-          }
           await syncUsages(instanceUid, currentOptions, previousOptions, { transaction: ctx.transaction });
         }
         return;
