@@ -153,6 +153,12 @@ export const CardUpload = (props) => {
         className={css`
           .ant-upload-list-picture-card {
             margin-bottom: 10px;
+            .ant-upload-list-item-container {
+              margin: ${showFileName ? '5px 0px' : '0px'};
+            }
+          }
+          .ant-upload-select {
+            margin: ${showFileName ? '5px 0px' : '0px'};
           }
         `}
       >
@@ -251,7 +257,7 @@ export const CardUpload = (props) => {
                   return (
                     <audio controls>
                       <source src={file.url || file.preview} type={file.type} />
-                      您的浏览器不支持音频标签。
+                      {t('Your browser does not support the audio tag.')}
                     </audio>
                   );
                 } else if (matchMimetype(file, 'video/*')) {
@@ -259,7 +265,7 @@ export const CardUpload = (props) => {
                   return (
                     <video controls width="100%">
                       <source src={file.url || file.preview} type={file.type} />
-                      您的浏览器不支持视频标签。
+                      {t('Your browser does not support the video tag.')}
                     </video>
                   );
                 } else if (matchMimetype(file, 'text/plain')) {
