@@ -18,7 +18,7 @@ import { registerMenuExtensions } from './menuExtensions';
 import { registerSubModelMenuExtensions } from './subModelMenuExtensions';
 import { registerOpenViewPopupTemplateAction } from './openViewActionExtensions';
 
-const NAMESPACE = 'flow-model-templates';
+const NAMESPACE = 'ui-templates';
 
 export class PluginBlockReferenceClient extends Plugin {
   async load() {
@@ -32,19 +32,19 @@ export class PluginBlockReferenceClient extends Plugin {
 
     // 父级菜单（只有标题，无组件）
     this.app.pluginSettingsManager.add(NAMESPACE, {
-      title: `{{t("Block templates", { ns: "${pkg.name}", nsMode: "fallback" })}}`,
+      title: `{{t("UI templates", { ns: "${pkg.name}", nsMode: "fallback" })}}`,
       icon: 'ProfileOutlined',
     });
 
-    // 子级：区块模板
+    // 子级：区块模板 (v2)
     this.app.pluginSettingsManager.add(`${NAMESPACE}.block`, {
-      title: `{{t("Block templates", { ns: "${pkg.name}", nsMode: "fallback" })}}`,
+      title: `{{t("Block templates (v2)", { ns: "${pkg.name}", nsMode: "fallback" })}}`,
       Component: BlockTemplatesPage,
     });
 
-    // 子级：弹窗模板
+    // 子级：弹窗模板 (v2)
     this.app.pluginSettingsManager.add(`${NAMESPACE}.popup`, {
-      title: `{{t("Popup templates", { ns: "${pkg.name}", nsMode: "fallback" })}}`,
+      title: `{{t("Popup templates (v2)", { ns: "${pkg.name}", nsMode: "fallback" })}}`,
       Component: PopupTemplatesPage,
     });
     registerMenuExtensions();

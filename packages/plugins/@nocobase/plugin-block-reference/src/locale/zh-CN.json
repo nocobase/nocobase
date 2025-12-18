@@ -1,4 +1,7 @@
 {
+  "UI templates": "界面模版",
+  "Block templates (v2)": "区块模版 (v2)",
+  "Popup templates (v2)": "弹窗模版 (v2)",
   "Actions": "操作",
   "Are you sure you want to delete this item? This action cannot be undone.": "确定要删除此项吗？此操作不可撤销。",
   "Block UID": "区块 UID",

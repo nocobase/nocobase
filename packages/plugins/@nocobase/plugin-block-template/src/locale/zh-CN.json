@@ -1,11 +1,12 @@
 {
+  "Reference template (v1)": "引用模版 (v1)",
+  "Inherited template (v1)": "继承模版 (v1)",
   "Add new": "新增",
   "Are you sure you want to convert this template block to a normal block?": "您确定要将此模板区块转换为普通区块吗？",
   "Are you sure you want to delete it?": "您确定要删除吗？",
   "Are you sure you want to revert all changes from the template?": "您确定要恢复所有对模板的更改吗？",
   "Associate record": "关联记录",
   "Block template": "区块模板",
-  "Block templates (deprecated)": "区块模板（已废弃）",
   "Cancel": "取消",
   "Configure": "配置",
   "Convert to normal block": "转换成普通区块",
