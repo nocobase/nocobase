@@ -75,12 +75,14 @@ export class RedisConnectionManager {
   }
 
   async getConnectionSync(key = 'default', config?: RedisConfig): Promise<Redis> {
+    const conn = this.getClient(key, config);
+    if (!conn) {
+      throw new Error('Redis connect string is missing');
+    }
+    if (conn.status === 'ready') {
+      return conn;
+    }
     return new Promise((resolve, reject) => {
-      const conn = this.getClient(key, config);
-      if (!conn) {
-        return reject(new Error('Redis connect string is missing'));
-      }
-
       conn.once('connect', () => resolve(conn));
       conn.once('error', reject);
     });

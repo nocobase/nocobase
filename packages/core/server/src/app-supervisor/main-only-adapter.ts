@@ -13,12 +13,14 @@ import type { AppSupervisor } from './index';
 
 /** Minimal single-process adapter only for booting the main application. */
 export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
-  readonly name = 'main-only';
+  readonly name: string;
   app: Application;
   status: AppStatus;
   appError: Error;
 
-  constructor(private readonly supervisor: AppSupervisor) {}
+  constructor(protected readonly supervisor: AppSupervisor) {
+    this.name = 'main-only';
+  }
 
   async getApp(appName: string, options: GetAppOptions = {}) {
     if (!options.withOutBootStrap) {
@@ -97,5 +99,5 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     this.appError = null;
   }
 
-  touchApp() {}
+  setAppLastSeenAt() {}
 }

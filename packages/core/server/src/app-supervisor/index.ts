@@ -22,7 +22,8 @@ import type {
   AppDbCreator,
   AppOptionsFactory,
   AppDbCreatorOptions,
-  AppModelOptions,
+  AppCommandAdapter,
+  AppModel,
 } from './types';
 import { getErrorLevel } from '../errors/handler';
 import { ConditionalRegistry, Predicate } from './condition-registry';
@@ -37,29 +38,38 @@ import {
 import { appOptionsFactory } from './app-options-factory';
 import { PubSubManagerPublishOptions } from '../pub-sub-manager';
 import { Transaction, Transactionable } from '@nocobase/database';
+import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
 
 export type AppDiscoveryAdapterFactory = (context: { supervisor: AppSupervisor }) => AppDiscoveryAdapter;
 export type AppProcessAdapterFactory = (context: { supervisor: AppSupervisor }) => AppProcessAdapter;
-type CommandOptions = Partial<Omit<ProcessCommand, 'appName' | 'action'>>;
+export type AppCommandAdapterFactory = (context: { supervisor: AppSupervisor }) => AppCommandAdapter;
 
 export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   private static instance: AppSupervisor;
   private static discoveryAdapterFactories: Map<string, AppDiscoveryAdapterFactory> = new Map();
   private static processAdapterFactories: Map<string, AppProcessAdapterFactory> = new Map();
+  private static commandAdapterFactories: Map<string, AppCommandAdapterFactory> = new Map();
   private static defaultDiscoveryAdapterName: string | null = 'main-only';
   private static defaultProcessAdapterName: string | null = 'main-only';
+  private static defaultCommandAdapterName: string;
 
   public runningMode: 'single' | 'multiple' = 'multiple';
   public singleAppName: string | null = null;
+  public logger: SystemLogger;
 
   declare emitAsync: (event: string | symbol, ...args: any[]) => Promise<boolean>;
 
   private discoveryAdapter: AppDiscoveryAdapter;
   private processAdapter: AppProcessAdapter;
+  private commandAdapter: AppCommandAdapter;
   private discoveryAdapterName: string;
   private processAdapterName: string;
+  private commandAdapterName: string;
   private appDbCreator = new ConditionalRegistry<AppDbCreatorOptions, void>();
   public appOptionsFactory: AppOptionsFactory = appOptionsFactory;
+
+  private environmentHeartbeatInterval = 2 * 60 * 1000;
+  private environmentHeartbeatTimer = null;
 
   private constructor() {
     super();
@@ -69,10 +79,22 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       this.singleAppName = process.env.STARTUP_SUBAPP;
     }
 
+    this.logger = createSystemLogger({
+      dirname: getLoggerFilePath('main'),
+      filename: 'system',
+      seperateError: true,
+      defaultMeta: {
+        app: 'main',
+        module: 'app-supervisor',
+      },
+    });
+
     this.discoveryAdapterName = this.resolveDiscoveryAdapterName();
     this.processAdapterName = this.resolveProcessAdapterName();
+    this.commandAdapterName = this.resolveCommandAdapterName();
     this.discoveryAdapter = this.createDiscoveryAdapter();
     this.processAdapter = this.createProcessAdapter();
+    this.commandAdapter = this.createCommandAdapter();
 
     this.registerAppDbCreator(createDatabaseCondition, createDatabase);
     this.registerAppDbCreator(createConnectionCondition, createConnection);
@@ -85,6 +107,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   private resolveProcessAdapterName() {
     return process.env.APP_PROCESS_ADAPTER || AppSupervisor.defaultProcessAdapterName;
+  }
+
+  private resolveCommandAdapterName() {
+    return process.env.APP_COMMAND_ADAPTER || AppSupervisor.defaultCommandAdapterName;
   }
 
   private createDiscoveryAdapter(): AppDiscoveryAdapter {
@@ -137,6 +163,25 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return factory({ supervisor: this });
   }
 
+  private createCommandAdapter(): AppCommandAdapter {
+    const adapterName = this.commandAdapterName;
+    let factory = adapterName ? AppSupervisor.commandAdapterFactories.get(adapterName) : null;
+
+    if (
+      !factory &&
+      AppSupervisor.defaultCommandAdapterName &&
+      adapterName !== AppSupervisor.defaultCommandAdapterName
+    ) {
+      factory = AppSupervisor.commandAdapterFactories.get(AppSupervisor.defaultCommandAdapterName);
+    }
+
+    if (!factory) {
+      return;
+    }
+
+    return factory({ supervisor: this });
+  }
+
   public static registerDiscoveryAdapter(name: string, factory: AppDiscoveryAdapterFactory) {
     AppSupervisor.discoveryAdapterFactories.set(name, factory);
   }
@@ -145,12 +190,20 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     AppSupervisor.processAdapterFactories.set(name, factory);
   }
 
+  public static registerCommandAdapter(name: string, factory: AppCommandAdapterFactory) {
+    AppSupervisor.commandAdapterFactories.set(name, factory);
+  }
+
   public static setDefaultDiscoveryAdapter(name: string) {
     AppSupervisor.defaultDiscoveryAdapterName = name;
   }
 
   public static setDefaultProcessAdapter(name: string) {
     AppSupervisor.defaultProcessAdapterName = name;
+  }
+
+  public static setDefaultCommandAdapter(name: string) {
+    AppSupervisor.defaultCommandAdapterName = name;
   }
 
   public static getInstance() {
@@ -185,6 +238,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.processAdapter.statusBeforeCommanding ?? Object.create(null);
   }
 
+  get environmentName() {
+    return this.discoveryAdapter.environmentName;
+  }
+
   getProcessAdapter() {
     return this.processAdapter;
   }
@@ -212,7 +269,8 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     if (!mainApp) {
       return;
     }
-    const appOptions = await this.getAppOptions(appName);
+    const appModel = await this.getAppModel(appName);
+    const appOptions = appModel?.options;
     if (!appOptions) {
       return;
     }
@@ -223,7 +281,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     if (this.hasApp(appName)) {
       return;
     }
-    const app = this.registerApp({ appName, appOptions, mainApp });
+    const app = this.registerApp({ appModel, mainApp });
 
     // must skip load on upgrade
     if (!loadButNotStart) {
@@ -245,7 +303,13 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   async reset() {
     await this.processAdapter.removeAllApps();
+    await this.discoveryAdapter.dispose?.();
+    await this.commandAdapter?.dispose?.();
+    if (this.environmentHeartbeatTimer) {
+      this.environmentHeartbeatTimer = null;
+    }
     this.removeAllListeners();
+    this.logger.close();
   }
 
   async destroy() {
@@ -261,21 +325,13 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.setAppStatus(appName, status, options);
   }
 
-  async getAllAppStatuses() {
-    return this.discoveryAdapter.getAllAppStatuses();
+  async getAppsStatuses(appNames?: string[]) {
+    return this.discoveryAdapter.getAppsStatuses(appNames);
   }
 
-  registerApp({
-    appName,
-    appOptions,
-    mainApp,
-    hook,
-  }: {
-    appName: string;
-    appOptions: AppModelOptions;
-    mainApp?: Application;
-    hook?: boolean;
-  }) {
+  registerApp({ appModel, mainApp, hook }: { appModel: AppModel; mainApp?: Application; hook?: boolean }) {
+    const appName = appModel.name;
+    const appOptions = appModel.options || {};
     let options = appOptions;
     if (mainApp) {
       const defaultAppOptions = this.appOptionsFactory(appName, mainApp);
@@ -318,43 +374,70 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   bootMainApp(options: ApplicationOptions) {
     const app = new Application(options);
-    app.on('afterLoad', async (app: Application) => {
-      await app.syncMessageManager.subscribe('app-supervisor', async (message: { type: string; appName: string }) => {
-        const { type } = message;
+    this.registerCommandHandler(app);
+    app.on('afterStart', async (app: Application) => {
+      await app.syncMessageManager.subscribe(
+        'app_supervisor:sync',
+        async (message: { type: string; appName: string }) => {
+          const { type } = message;
 
-        if (type === 'app:started') {
-          const { appName } = message;
-          if (this.hasApp(appName)) {
-            return;
+          if (type === 'app:started') {
+            const { appName } = message;
+            if (this.hasApp(appName)) {
+              return;
+            }
+            const appModel = await this.getAppModel(appName);
+            const appOptions = appModel?.options;
+            if (!appOptions) {
+              return;
+            }
+            const newApp = this.registerApp({ appModel, mainApp: app });
+            newApp.runCommand('start', '--quickstart');
           }
-          const appOptions = await this.getAppOptions(appName);
-          if (!appOptions) {
-            return;
+
+          if (type === 'app:stopped') {
+            const { appName } = message;
+            await this.stopApp(appName);
           }
-          const newApp = this.registerApp({ appName, appOptions, mainApp: app });
-          newApp.runCommand('start', '--quickstart');
-        }
 
-        if (type === 'app:stopped') {
-          const { appName } = message;
-          await this.stopApp(appName);
-        }
-
-        if (type === 'app:removed') {
-          const { appName } = message;
-          await this.removeApp(appName);
-        }
-      });
+          if (type === 'app:removed') {
+            const { appName } = message;
+            await this.removeApp(appName);
+          }
+        },
+      );
+      await this.registerEnvironment(app);
+    });
+    app.on('afterStop', async (app: Application) => {
+      await this.unregisterEnvironment();
     });
     return app;
   }
 
-  async touchApp(appName: string) {
-    return this.discoveryAdapter.touchApp(appName);
+  async setAppLastSeenAt(appName: string) {
+    return this.discoveryAdapter.setAppLastSeenAt(appName);
   }
 
-  async getAppOptions(appName: string) {
-    return this.discoveryAdapter.getAppOptions(appName);
+  async addAppModel(appModel: AppModel) {
+    return this.discoveryAdapter.addAppModel(appModel);
+  }
+
+  async getAppModel(appName: string) {
+    return this.discoveryAdapter.getAppModel(appName);
+  }
+
+  async loadAppData(mainApp: Application) {
+    if (typeof this.discoveryAdapter.loadAppData !== 'function') {
+      return;
+    }
+    return this.discoveryAdapter.loadAppData(mainApp);
+  }
+
+  async addAutoStartApps(environmentName: string, appName: string[]) {
+    if (typeof this.discoveryAdapter.addAutoStartApps !== 'function') {
+      return;
+    }
+    return this.discoveryAdapter.addAutoStartApps(environmentName, appName);
   }
 
   async getAutoStartApps(environmentName?: string) {
@@ -364,12 +447,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return [];
   }
 
-  addApp(app: Application | ApplicationOptions) {
+  addApp(app: Application) {
     this.processAdapter.addApp(app);
-    if (app instanceof Application) {
-      this.bindAppEvents(app);
-      this.emit('afterAppAdded', app);
-    }
+    this.bindAppEvents(app);
+    this.emit('afterAppAdded', app);
     return app;
   }
 
@@ -381,30 +462,31 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.processAdapter.hasApp(appName);
   }
 
-  async createApp(options: {
-    appName: string;
-    appOptions: AppModelOptions;
-    environmentName: string;
-    mainApp?: Application;
-    transaction?: Transaction;
-  }) {
-    await this.processAdapter.createApp(options);
+  async createApp(
+    options: {
+      appModel: AppModel;
+      mainApp?: Application;
+      transaction?: Transaction;
+    },
+    context?: { requestId: string },
+  ) {
+    await this.processAdapter.createApp(options, context);
   }
 
-  async startApp(appName: string) {
-    await this.processAdapter.startApp(appName);
+  async startApp(appName: string, context?: { requestId: string }) {
+    await this.processAdapter.startApp(appName, context);
   }
 
-  async stopApp(appName: string) {
-    await this.processAdapter.stopApp(appName);
+  async stopApp(appName: string, context?: { requestId: string }) {
+    await this.processAdapter.stopApp(appName, context);
   }
 
-  async removeApp(appName: string) {
-    await this.processAdapter.removeApp(appName);
+  async removeApp(appName: string, context?: { requestId: string }) {
+    await this.processAdapter.removeApp(appName, context);
   }
 
-  async upgradeApp(appName: string) {
-    await this.processAdapter.upgradeApp(appName);
+  async upgradeApp(appName: string, context?: { requestId: string }) {
+    await this.processAdapter.upgradeApp(appName, context);
   }
 
   /**
@@ -419,15 +501,26 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.processAdapter.getApps();
   }
 
-  async registerEnvironment(environment: EnvironmentInfo) {
-    if (typeof this.discoveryAdapter.registerEnvironment === 'function') {
-      await this.discoveryAdapter.registerEnvironment(environment);
+  async registerEnvironment(mainApp: Application) {
+    if (!this.environmentName || typeof this.discoveryAdapter.registerEnvironment !== 'function') {
+      return;
+    }
+    const registered = await this.discoveryAdapter.registerEnvironment({
+      name: this.environmentName,
+      appVersion: mainApp.getPackageVersion(),
+      lastHeartbeatAt: Math.floor(Date.now() / 1000),
+    });
+    if (registered) {
+      this.heartbeatEnvironment();
     }
   }
 
-  async unregisterEnvironment(environmentName: string) {
-    if (typeof this.discoveryAdapter.unregisterEnvironment === 'function') {
-      await this.discoveryAdapter.unregisterEnvironment(environmentName);
+  async unregisterEnvironment() {
+    if (!this.environmentName || typeof this.discoveryAdapter.unregisterEnvironment === 'function') {
+      await this.discoveryAdapter.unregisterEnvironment();
+    }
+    if (this.environmentHeartbeatTimer) {
+      this.environmentHeartbeatTimer = null;
     }
   }
 
@@ -440,17 +533,46 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async getEnvironment(environmentName: string) {
-    if (typeof this.discoveryAdapter.getEnvironment === 'function') {
-      return this.discoveryAdapter.getEnvironment(environmentName);
+    if (typeof this.discoveryAdapter.getEnvironment !== 'function') {
+      return null;
     }
 
-    return null;
+    const environment = await this.discoveryAdapter.getEnvironment(environmentName);
+    if (!environment) {
+      return null;
+    }
+    const lastHeartbeatAt = environment.lastHeartbeatAt;
+    if (!Number.isFinite(lastHeartbeatAt) || lastHeartbeatAt <= 0) {
+      return {
+        ...environment,
+        available: false,
+      };
+    }
+    return {
+      ...environment,
+      available: Date.now() - lastHeartbeatAt <= this.environmentHeartbeatInterval,
+    };
   }
 
-  async heartbeatEnvironment(environmentName: string, payload?: Record<string, any>) {
-    if (typeof this.discoveryAdapter.heartbeatEnvironment === 'function') {
-      await this.discoveryAdapter.heartbeatEnvironment(environmentName, payload);
+  async heartbeatEnvironment() {
+    if (typeof this.discoveryAdapter.heartbeatEnvironment !== 'function') {
+      return;
     }
+    if (this.environmentHeartbeatTimer) {
+      return;
+    }
+    this.environmentHeartbeatTimer = setInterval(
+      () => this.discoveryAdapter.heartbeatEnvironment(),
+      this.environmentHeartbeatInterval,
+    );
+  }
+
+  async dispatchCommand(command: ProcessCommand) {
+    return this.commandAdapter?.dispatchCommand(command);
+  }
+
+  registerCommandHandler(mainApp: Application) {
+    this.commandAdapter?.registerCommandHandler(mainApp);
   }
 
   async sendSyncMessage(
@@ -458,7 +580,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     message: { type: string; appName: string },
     options?: PubSubManagerPublishOptions & Transactionable,
   ) {
-    await mainApp.syncMessageManager.publish('app-supervisor', message, options);
+    await mainApp.syncMessageManager.publish('app_supervisor:sync', message, options);
   }
 
   override on(eventName: string | symbol, listener: (...args: any[]) => void): this {
@@ -578,11 +700,14 @@ AppSupervisor.registerProcessAdapter('main-only', ({ supervisor }) => new MainOn
 export type {
   AppDiscoveryAdapter,
   AppProcessAdapter,
+  AppCommandAdapter,
   AppStatus,
   ProcessCommand,
   EnvironmentInfo,
   GetAppOptions,
   AppDbCreator,
   AppOptionsFactory,
+  AppModel,
   AppModelOptions,
 } from './types';
+export { MainOnlyAdapter } from './main-only-adapter';

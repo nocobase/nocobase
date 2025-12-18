@@ -351,7 +351,7 @@ export class Gateway extends EventEmitter {
     }
 
     if (handleApp !== 'main') {
-      await AppSupervisor.getInstance().touchApp(handleApp);
+      await AppSupervisor.getInstance().setAppLastSeenAt(handleApp);
     }
 
     const ctx: GatewayRequestContext = { req, res, appName: handleApp };

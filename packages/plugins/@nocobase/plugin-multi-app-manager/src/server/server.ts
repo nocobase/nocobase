@@ -174,8 +174,7 @@ export class PluginMultiAppManagerServer extends Plugin {
         }
 
         const subApp = supervisor.registerApp({
-          appName: model.get('name'),
-          appOptions: model.get('options') || {},
+          appModel: model as any,
           mainApp: this.app,
         });
 

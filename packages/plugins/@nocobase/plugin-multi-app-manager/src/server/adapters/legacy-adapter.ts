@@ -122,7 +122,7 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     return !!this.apps[appName];
   }
 
-  touchApp(appName: string) {
+  setAppLastSeenAt(appName: string) {
     if (!this.hasApp(appName)) {
       return;
     }
@@ -175,7 +175,7 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     return status ?? null;
   }
 
-  async getAppOptions(appName: string) {
+  async getAppModel(appName: string) {
     const mainApp = await this.getApp('main');
     if (!mainApp) {
       return null;
@@ -192,6 +192,6 @@ export class LegacyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     if (!applicationModel) {
       return null;
     }
-    return applicationModel.get('options');
+    return applicationModel;
   }
 }

@@ -52,7 +52,7 @@ export type AppStatus =
  */
 export type EnvironmentInfo = {
   name: string;
-  available: boolean;
+  available?: boolean;
   appVersion?: string;
   lastHeartbeatAt?: number;
 };
@@ -62,6 +62,27 @@ export type AppModelOptions = {
   database?: IDatabaseOptions;
   [key: string]: any;
 };
+
+export type AppModel = {
+  name: string;
+  environments?: string[];
+  options: AppModelOptions;
+};
+
+export type ProcessCommand = {
+  requestId: string;
+  appName: string;
+  action: 'create' | 'start' | 'stop' | 'remove' | string;
+  environments: string[];
+  payload?: Record<string, any>;
+};
+
+export type AppDbCreatorOptions = Transactionable & {
+  app: Application;
+  appOptions: AppModelOptions;
+};
+export type AppDbCreator = (options: AppDbCreatorOptions) => Promise<void>;
+export type AppOptionsFactory = (appName: string, mainApp: Application, options?: AppModelOptions) => any;
 
 /**
  * Abstraction for discovering applications across deployment environments.
@@ -73,9 +94,9 @@ export interface AppDiscoveryAdapter {
   readonly lastSeenAt?: Map<string, number>;
 
   /**
-   * Update the "last seen" timestamp for an application.
+   * Update the "last seen at" timestamp for an application.
    */
-  touchApp(appName: string): void | Promise<void>;
+  setAppLastSeenAt(appName: string): void | Promise<void>;
 
   /**
    * Read the cached lifecycle status for a given application.
@@ -86,19 +107,25 @@ export interface AppDiscoveryAdapter {
    * Persist an application's lifecycle status back to the discovery backend.
    */
   setAppStatus(appName: string, status: AppStatus, options?: Record<string, any>): void | Promise<void>;
-  getAllAppStatuses?():
+
+  loadAppData?(mainApp: Application): Promise<void>;
+  getAppsStatuses?(appNames?: string[]):
     | Promise<{
         [app: string]: AppStatus | null;
       }>
     | { [app: string]: AppStatus | null };
 
+  addAutoStartApps?(environmentName: string, appName: string[]): Promise<void>;
   getAutoStartApps?(environmentName: string): Promise<string[]>;
-  getAppOptions?(appName: string): Promise<AppModelOptions>;
-  registerEnvironment?(environment: EnvironmentInfo): Promise<void>;
-  unregisterEnvironment?(environmentName: string): Promise<void>;
+  addAppModel?(appModel: AppModel): Promise<void>;
+  getAppModel?(appName: string): Promise<AppModel>;
+  registerEnvironment?(environment: EnvironmentInfo): Promise<boolean>;
+  unregisterEnvironment?(): Promise<void>;
   listEnvironments?(): Promise<EnvironmentInfo[]>;
   getEnvironment?(environmentName: string): Promise<EnvironmentInfo | null>;
-  heartbeatEnvironment?(environmentName: string, payload?: Record<string, any>): Promise<void>;
+  heartbeatEnvironment?(): Promise<void>;
+
+  dispose?(): Promise<void>;
 }
 
 export interface AppProcessAdapter {
@@ -110,7 +137,7 @@ export interface AppProcessAdapter {
   readonly statusBeforeCommanding?: Record<string, AppStatus>;
 
   // Add app instance to supervisor
-  addApp(app: Application | ApplicationOptions): void;
+  addApp(app: Application): void;
   // Get app instance from supervisor
   getApp(appName: string, options?: GetAppOptions): Promise<Application>;
   // Check whether app instance exists in supervisor
@@ -118,17 +145,18 @@ export interface AppProcessAdapter {
   // Return all currently managed application instances.
   getApps?(): Application[];
   // Create a new app, perparing database, install app
-  createApp?(options: {
-    appName: string;
-    appOptions: AppModelOptions;
-    environmentName: string;
-    mainApp?: Application;
-    transaction?: Transaction;
-  }): Promise<void>;
-  startApp?(appName: string): Promise<void>;
-  stopApp?(appName: string): Promise<void>;
-  removeApp?(appName: string): Promise<void>;
-  upgradeApp?(appName: string): Promise<void>;
+  createApp?(
+    options: {
+      appModel: AppModel;
+      mainApp?: Application;
+      transaction?: Transaction;
+    },
+    context?: { requestId: string },
+  ): Promise<void>;
+  startApp?(appName: string, context?: { requestId: string }): Promise<void>;
+  stopApp?(appName: string, context?: { requestId: string }): Promise<void>;
+  removeApp?(appName: string, context?: { requestId: string }): Promise<void>;
+  upgradeApp?(appName: string, context?: { requestId: string }): Promise<void>;
   // remove all apps in supervisor
   removeAllApps?(): Promise<void>;
 
@@ -137,17 +165,8 @@ export interface AppProcessAdapter {
   clearAppError?(appName: string): void;
 }
 
-export type ProcessCommand = {
-  appName: string;
-  action: 'add' | 'start' | 'stop' | 'remove' | string;
-  environment?: string;
-  payload?: Record<string, any>;
-  requestId?: string;
-};
-
-export type AppDbCreatorOptions = Transactionable & {
-  app: Application;
-  appOptions: AppModelOptions;
-};
-export type AppDbCreator = (options: AppDbCreatorOptions) => Promise<void>;
-export type AppOptionsFactory = (appName: string, mainApp: Application, options?: AppModelOptions) => any;
+export interface AppCommandAdapter {
+  dispatchCommand(command: ProcessCommand): Promise<void>;
+  registerCommandHandler(mainApp: Application): void;
+  dispose?(): Promise<void>;
+}
