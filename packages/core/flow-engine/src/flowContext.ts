@@ -1472,8 +1472,6 @@ export class FlowModelContext extends BaseFlowModelContext {
         // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
         ...opts,
       });
-      // 清理 pending view，避免污染子模型 context（例如后续直接点击该模型按钮时被遗留 viewUid 干扰）
-      model.context.defineProperty('view', { value: undefined });
     });
     this.defineMethod('getEvents', function (this: BaseFlowModelContext) {
       return this.model.getEvents();
