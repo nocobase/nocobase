@@ -477,9 +477,46 @@ ReferenceBlockModel.registerFlow({
           },
         };
       },
+      async beforeParamsSave(ctx, params) {
+        const templateUid = (params?.templateUid || '').trim();
+        if (!templateUid) return;
+
+        const api = (ctx as any)?.api;
+        let tpl: any = null;
+        if (api?.resource) {
+          try {
+            const res = await api.resource('flowModelTemplates').get({
+              filterByTk: templateUid,
+            });
+            tpl = res?.data?.data || res;
+          } catch (e) {
+            console.warn('fetch template failed', e);
+          }
+        }
+
+        const targetUid = tpl?.targetUid;
+        const mode = params?.mode || 'reference';
+
+        // 复制模式：调用 target step 的 beforeParamsSave
+        if (mode === 'copy' && targetUid) {
+          const flow = (ctx.model.constructor as typeof FlowModel).globalFlowRegistry.getFlow('referenceSettings');
+          const targetStepDef = flow?.steps?.target as any;
+          if (targetStepDef?.beforeParamsSave) {
+            await targetStepDef.beforeParamsSave(ctx, { targetUid, mode: 'copy' });
+          }
+          return;
+        }
+
+        // 引用模式：不需要特殊处理，handler 会处理
+      },
       async handler(ctx, params) {
         const templateUid = (params?.templateUid || '').trim();
         if (!templateUid) return;
+
+        const mode = params?.mode || 'reference';
+        // 复制模式已在 beforeParamsSave 中处理完毕
+        if (mode === 'copy') return;
+
         const api = (ctx as any)?.api;
         let tpl: any = null;
         if (api?.resource) {
@@ -496,8 +533,8 @@ ReferenceBlockModel.registerFlow({
         const templateName = tpl?.name || params?.templateName;
         const templateDescription = tpl?.description || params?.templateDescription;
         const targetUid = tpl?.targetUid;
-        const mode = params?.mode || 'reference';
 
+        // 引用模式：保存参数，ReferenceBlockModel 会在 beforeRender 中加载目标
         const useTemplateParams = (ctx.model as FlowModel).getStepParams('referenceSettings', 'useTemplate') || {};
         (ctx.model as FlowModel).setStepParams('referenceSettings', 'useTemplate', {
           ...useTemplateParams,
@@ -639,44 +676,46 @@ ReferenceBlockModel.registerFlow({
           parentId: parent.uid,
           subKey,
           subType,
+          sortIndex: insertIndex >= 0 ? insertIndex : 0,
         } as any;
         const newModel = engine.createModel<FlowModel>(newOptions);
-        // 标记为新建，触发如 GridModel 等父容器在 onSubModelAdded 中进行布局/rows 初始化
-        (newModel as any).isNew = true;
         newModel.setParent(parent);
+        newModel.sortIndex = insertIndex >= 0 ? insertIndex : 0;
 
         const isPresetOrNew = !!(oldModel as any).isNew;
-        // 4) 预设/新建 与 已持久化 分支分别处理（仅非 replace 分支改动，replace 分支沿用原位替换逻辑）
+        // 4) 预设/新建 与 已持久化 分支分别处理
         if (isPresetOrNew) {
-          // 非 replace：通过 addSubModel 触发 onSubModelAdded，让 Grid 追加到最后一行
+          // 新建场景：直接替换临时的 ReferenceBlockModel
           if (subType === 'array') {
-            parent.addSubModel(subKey, newModel);
-            await (newModel as any).afterAddAsSubModel?.();
+            let arr = (parent.subModels as any)[subKey] as FlowModel[] | undefined;
+            if (!Array.isArray(arr)) {
+              (parent.subModels as any)[subKey] = [];
+              arr = (parent.subModels as any)[subKey] as FlowModel[];
+            }
+            // 找到旧模型的位置并替换
+            const oldIndex = arr.findIndex((m) => m?.uid === oldModel.uid);
+            if (oldIndex >= 0) {
+              arr.splice(oldIndex, 1, newModel);
+            } else {
+              arr.push(newModel);
+            }
+            arr.forEach((m, idx) => (m.sortIndex = idx));
           } else {
             parent.setSubModel(subKey, newModel);
-            await (newModel as any).afterAddAsSubModel?.();
           }
-          // 4.1 确保父模型已存在
-          const parentExists = await (engine.modelRepository as any)?.findOne?.({ uid: parent.uid });
-          if (!parentExists) {
-            await parent.save();
-          }
-          // 4.2 确保旧实例作为锚点已持久化
-          const oldExists = await (engine.modelRepository as any)?.findOne?.({ uid: oldModel.uid });
-          if (!oldExists) {
-            await (oldModel as any).save?.();
-          }
-          // 4.3 保存新实例
+
+          engine.removeModel(oldModel.uid);
+
+          (newModel as any).isNew = true;
+          (parent as any).emitter?.emit?.('onSubModelAdded', newModel);
+          await (newModel as any).afterAddAsSubModel?.();
+
+          await engine.modelRepository.destroy(newModel.uid);
           await newModel.save();
+
           (newModel as any).isNew = false;
-          // 4.4 在后端以旧实例为锚点移动新实例到目标位置，从而建立父子与排序
-          if (subType === 'array' && (engine.modelRepository as any)?.move) {
-            await (engine.modelRepository as any).move(newModel.uid, oldModel.uid, 'before');
-          }
-          // 4.5 销毁旧实例（持久化）
-          await engine.destroyModel(oldModel.uid);
-          // 4.6 保存父模型的布局
           await parent.saveStepParams();
+          parent.rerender();
         } else {
           // replace：保持当前位置不变——手动插入到与旧实例相同的索引，并更新 rows 将旧 uid 替换为新 uid
           if (subType === 'array') {
