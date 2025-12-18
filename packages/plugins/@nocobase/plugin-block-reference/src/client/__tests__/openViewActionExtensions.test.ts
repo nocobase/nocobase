@@ -156,7 +156,7 @@ describe('openViewActionExtensions (popup template)', () => {
               data: {
                 uid: 'tpl-collection',
                 targetUid: 'popup-1',
-                rootUse: 'AddNewActionModel',
+                useModel: 'AddNewActionModel',
                 dataSourceKey: 'main',
                 collectionName: 'users',
                 filterByTk: '{{ ctx.record.id }}',
@@ -411,7 +411,7 @@ describe('openViewActionExtensions (popup template)', () => {
               data: {
                 uid: 'tpl-record',
                 targetUid: 'popup-1',
-                rootUse: 'EditActionModel',
+                useModel: 'EditActionModel',
                 dataSourceKey: 'main',
                 collectionName: 'users',
                 // old template: filterByTk missing
@@ -484,7 +484,7 @@ describe('openViewActionExtensions (popup template)', () => {
               data: {
                 uid: 'tpl-collection',
                 targetUid: 'popup-1',
-                rootUse: 'AddNewActionModel',
+                useModel: 'AddNewActionModel',
                 dataSourceKey: 'main',
                 collectionName: 'users',
                 filterByTk: '{{ ctx.record.id }}',

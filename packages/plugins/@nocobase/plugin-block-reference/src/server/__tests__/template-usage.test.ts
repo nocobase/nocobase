@@ -97,18 +97,18 @@ describe('block-reference templates and usages', () => {
 
   it('should create usage and switch template updates usage records', async () => {
     const block = await createReferenceBlock('ref-1', 'tpl-1');
-    expect(await countUsage({ templateUid: 'tpl-1', blockUid: 'ref-1' })).toBe(1);
+    expect(await countUsage({ templateUid: 'tpl-1', modelUid: 'ref-1' })).toBe(1);
 
     await updateReferenceBlockOptions(block.get('uid'), 'tpl-2');
-    expect(await countUsage({ templateUid: 'tpl-1', blockUid: 'ref-1' })).toBe(0);
-    expect(await countUsage({ templateUid: 'tpl-2', blockUid: 'ref-1' })).toBe(1);
+    expect(await countUsage({ templateUid: 'tpl-1', modelUid: 'ref-1' })).toBe(0);
+    expect(await countUsage({ templateUid: 'tpl-2', modelUid: 'ref-1' })).toBe(1);
   });
 
   it('should remove usages when reference block is destroyed', async () => {
     const block = await createReferenceBlock('ref-3', 'tpl-destroy');
-    expect(await countUsage({ blockUid: 'ref-3' })).toBe(1);
+    expect(await countUsage({ modelUid: 'ref-3' })).toBe(1);
     await destroyBlock(block.get('uid'));
-    expect(await countUsage({ blockUid: 'ref-3' })).toBe(0);
+    expect(await countUsage({ modelUid: 'ref-3' })).toBe(0);
   });
 
   it('should return usageCount and block deletion guard via resources', async () => {
@@ -126,7 +126,7 @@ describe('block-reference templates and usages', () => {
 
     const block = await createReferenceBlock('ref-4', 'tpl-resource');
     expect(block).toBeTruthy();
-    expect(await countUsage({ templateUid: 'tpl-resource', blockUid: 'ref-4' })).toBe(1);
+    expect(await countUsage({ templateUid: 'tpl-resource', modelUid: 'ref-4' })).toBe(1);
 
     const getResp = await agent.resource('flowModelTemplates').get({
       filterByTk: 'tpl-resource',
@@ -147,7 +147,7 @@ describe('block-reference templates and usages', () => {
     expect(blockedTplData?.usageCount).toBe(1);
 
     await destroyBlock(block.get('uid'));
-    expect(await countUsage({ templateUid: 'tpl-resource', blockUid: 'ref-4' })).toBe(0);
+    expect(await countUsage({ templateUid: 'tpl-resource', modelUid: 'ref-4' })).toBe(0);
 
     const destroyResp2 = await agent.resource('flowModelTemplates').destroy({
       filterByTk: 'tpl-resource',
@@ -250,7 +250,7 @@ describe('block-reference templates and usages', () => {
       },
     });
 
-    expect(await countUsage({ templateUid: 'tpl-sub', blockUid: 'block-sub' })).toBe(1);
+    expect(await countUsage({ templateUid: 'tpl-sub', modelUid: 'block-sub' })).toBe(1);
 
     await flowRepo.update({
       filter: { uid: 'grid-sub' },
@@ -265,7 +265,7 @@ describe('block-reference templates and usages', () => {
       },
     });
 
-    expect(await countUsage({ blockUid: 'block-sub' })).toBe(0);
+    expect(await countUsage({ modelUid: 'block-sub' })).toBe(0);
   });
 
   it('should maintain usages via flowModels:save/destroy actions', async () => {
@@ -292,7 +292,7 @@ describe('block-reference templates and usages', () => {
       },
     });
     expect(saveResp.status).toBe(200);
-    expect(await countUsage({ templateUid: 'tpl-save', blockUid: 'ref-save' })).toBe(1);
+    expect(await countUsage({ templateUid: 'tpl-save', modelUid: 'ref-save' })).toBe(1);
 
     const listResp = await agent.resource('flowModelTemplates').list();
     expect(listResp.status).toBe(200);
@@ -308,8 +308,8 @@ describe('block-reference templates and usages', () => {
       },
     });
     expect(saveResp2.status).toBe(200);
-    expect(await countUsage({ templateUid: 'tpl-save', blockUid: 'ref-save' })).toBe(0);
-    expect(await countUsage({ templateUid: 'tpl-save-2', blockUid: 'ref-save' })).toBe(1);
+    expect(await countUsage({ templateUid: 'tpl-save', modelUid: 'ref-save' })).toBe(0);
+    expect(await countUsage({ templateUid: 'tpl-save-2', modelUid: 'ref-save' })).toBe(1);
 
     // uid 省略时后端应补齐，并能正确维护 usages
     const saveResp3 = await agent.resource('flowModels').save({
@@ -320,7 +320,7 @@ describe('block-reference templates and usages', () => {
     expect(saveResp3.status).toBe(200);
     const createdUid = saveResp3.body?.data ?? saveResp3.body;
     expect(typeof createdUid).toBe('string');
-    expect(await countUsage({ templateUid: 'tpl-save', blockUid: createdUid })).toBe(1);
+    expect(await countUsage({ templateUid: 'tpl-save', modelUid: createdUid })).toBe(1);
 
     // openView 的 step key 不一定是 "openView"，应能扫描 popupSettings 下所有 stepParams
     const saveResp4 = await agent.resource('flowModels').save({
@@ -338,18 +338,18 @@ describe('block-reference templates and usages', () => {
       },
     });
     expect(saveResp4.status).toBe(200);
-    expect(await countUsage({ templateUid: 'tpl-save', blockUid: 'popup-save' })).toBe(1);
+    expect(await countUsage({ templateUid: 'tpl-save', modelUid: 'popup-save' })).toBe(1);
 
     const destroyResp = await agent.resource('flowModels').destroy({ filterByTk: 'ref-save' });
     expect(destroyResp.status).toBe(200);
-    expect(await countUsage({ blockUid: 'ref-save' })).toBe(0);
+    expect(await countUsage({ modelUid: 'ref-save' })).toBe(0);
 
     const destroyResp2 = await agent.resource('flowModels').destroy({ filterByTk: createdUid });
     expect(destroyResp2.status).toBe(200);
-    expect(await countUsage({ blockUid: createdUid })).toBe(0);
+    expect(await countUsage({ modelUid: createdUid })).toBe(0);
 
     const destroyResp3 = await agent.resource('flowModels').destroy({ filterByTk: 'popup-save' });
     expect(destroyResp3.status).toBe(200);
-    expect(await countUsage({ blockUid: 'popup-save' })).toBe(0);
+    expect(await countUsage({ modelUid: 'popup-save' })).toBe(0);
   });
 });

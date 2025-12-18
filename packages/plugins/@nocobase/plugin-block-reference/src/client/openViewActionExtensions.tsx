@@ -37,7 +37,7 @@ type TemplateRow = {
   name?: string;
   description?: string;
   targetUid?: string;
-  rootUse?: string;
+  useModel?: string;
   type?: string;
   dataSourceKey?: string;
   collectionName?: string;
@@ -53,7 +53,7 @@ const isAssociationField = (field: any): boolean => !!field?.isAssociationField?
 const inferPopupTemplateMeta = (ctx: any, tpl: TemplateRow): PopupTemplateContextFlags => {
   const engine = (ctx as any)?.engine;
   const getModelClass = engine?.getModelClass?.bind(engine);
-  const scene = resolveActionScene(getModelClass, tpl?.rootUse);
+  const scene = resolveActionScene(getModelClass, tpl?.useModel);
   return inferPopupTemplateContextFlags(scene, tpl?.filterByTk, tpl?.sourceId);
 };
 
@@ -379,11 +379,7 @@ const fetchPopupTemplates = async (
     pageSize,
     search: keyword || undefined,
     filter: {
-      $or: [
-        { type: 'popup' },
-        { $and: [{ type: null }, { rootUse: 'PopupActionModel' }] },
-        { $and: [{ type: '' }, { rootUse: 'PopupActionModel' }] },
-      ],
+      type: 'popup',
     },
   });
   const parsed = parseResourceListResponse<TemplateRow>(res);

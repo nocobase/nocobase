@@ -132,7 +132,7 @@ export class PluginBlockReferenceServer extends Plugin {
     };
 
     const resolveUsageOwnerUid = (instanceUid: string, options: any): string => {
-      // ReferenceFormGridModel 作为表单块的子模型，usage 归属到父级 blockUid
+      // ReferenceFormGridModel 作为表单块的子模型，usage 归属到父级 modelUid
       if (options?.use === 'ReferenceFormGridModel') {
         const parentId = options?.parentId;
         if (parentId && typeof parentId === 'string') return parentId;
@@ -156,14 +156,14 @@ export class PluginBlockReferenceServer extends Plugin {
       if (currentOwnerUid !== previousOwnerUid) {
         for (const templateUid of previousUids) {
           await usageRepo.destroy({
-            filter: { blockUid: previousOwnerUid, templateUid },
+            filter: { modelUid: previousOwnerUid, templateUid },
             transaction,
           });
         }
         for (const templateUid of currentUids) {
           await usageRepo.updateOrCreate({
-            filterKeys: ['templateUid', 'blockUid'],
-            values: { uid: uid(), templateUid, blockUid: currentOwnerUid },
+            filterKeys: ['templateUid', 'modelUid'],
+            values: { uid: uid(), templateUid, modelUid: currentOwnerUid },
             transaction,
             context: { disableAfterDestroy: true },
           });
@@ -171,21 +171,21 @@ export class PluginBlockReferenceServer extends Plugin {
         return;
       }
 
-      // owner 未变更：按差异增删，避免误伤同 blockUid 的其它 usage
+      // owner 未变更：按差异增删，避免误伤同 modelUid 的其它 usage
       const removed = Array.from(previousUids).filter((x) => !currentUids.has(x));
       const added = Array.from(currentUids).filter((x) => !previousUids.has(x));
       if (removed.length === 0 && added.length === 0) return;
 
       for (const templateUid of removed) {
         await usageRepo.destroy({
-          filter: { blockUid: currentOwnerUid, templateUid },
+          filter: { modelUid: currentOwnerUid, templateUid },
           transaction,
         });
       }
       for (const templateUid of added) {
         await usageRepo.updateOrCreate({
-          filterKeys: ['templateUid', 'blockUid'],
-          values: { uid: uid(), templateUid, blockUid: currentOwnerUid },
+          filterKeys: ['templateUid', 'modelUid'],
+          values: { uid: uid(), templateUid, modelUid: currentOwnerUid },
           transaction,
           context: { disableAfterDestroy: true },
         });
@@ -200,19 +200,19 @@ export class PluginBlockReferenceServer extends Plugin {
       const usageRepo = this.db.getRepository('flowModelTemplateUsages');
       const ownerUid = resolveUsageOwnerUid(instanceUid, options);
 
-      // 对于 ReferenceFormGridModel，只清理本次引用的 templateUid，避免误伤同一 blockUid 下的其它 usage
+      // 对于 ReferenceFormGridModel，只清理本次引用的 templateUid，避免误伤同一 modelUid 下的其它 usage
       if (options?.use === 'ReferenceFormGridModel') {
         const templateUids = extractTemplateUids(options);
         for (const templateUid of templateUids) {
           await usageRepo.destroy({
-            filter: { blockUid: ownerUid, templateUid },
+            filter: { modelUid: ownerUid, templateUid },
             transaction,
           });
         }
         return;
       }
 
-      await usageRepo.destroy({ filter: { blockUid: ownerUid }, transaction });
+      await usageRepo.destroy({ filter: { modelUid: ownerUid }, transaction });
     };
 
     // 区块删除时自动清理 usage 记录，避免垃圾数据

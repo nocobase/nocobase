@@ -127,7 +127,7 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
         name: values.name,
         description: values.description,
         targetUid,
-        rootUse: model.use,
+        useModel: model.use,
         type: 'block',
         dataSourceKey: getResourceVal('dataSourceKey') || getResourceVal('dataSource') || resourceInit?.dataSourceKey,
         collectionName: getResourceVal('collectionName') || resourceInit?.collectionName,
@@ -594,7 +594,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
       name: values.name,
       description: values.description,
       targetUid: values.targetUid,
-      rootUse: model.use,
+      useModel: model.use,
       type: 'popup',
       dataSourceKey: openViewParams?.dataSourceKey,
       collectionName: openViewParams?.collectionName,
@@ -659,7 +659,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
               delete nextOpenView.popupTemplateContext;
               // 推断模板"是否需要 record/source 上下文"，避免 collection 模板被误判为 record 模板（尤其是默认值里带 `{{ ctx.record.* }}` 的情况）。
               // 注：这里使用 model.constructor.name 推断 scene（当前正在配置的 action 类型），
-              // 而 inferFromTemplateRow 使用 tplRow.rootUse（模板保存时的 action 类型）。两者语义相同：都是获取触发弹窗的 action 场景。
+              // 而 inferFromTemplateRow 使用 tplRow.useModel（模板保存时的 action 类型）。两者语义相同：都是获取触发弹窗的 action 场景。
               const ctor: any = (model as any)?.constructor;
               const scene = resolveActionScene((use: string) => model.flowEngine?.getModelClass?.(use), ctor?.name);
               const inferred = inferPopupTemplateContextFlags(
@@ -822,7 +822,7 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, _t: (k: string
   };
 
   const inferFromTemplateRow = (tplRow: Record<string, any>): PopupTemplateContextFlags => {
-    const scene = resolveActionScene((use: string) => model.flowEngine?.getModelClass?.(use), tplRow?.rootUse);
+    const scene = resolveActionScene((use: string) => model.flowEngine?.getModelClass?.(use), tplRow?.useModel);
     return inferPopupTemplateContextFlags(scene, tplRow?.filterByTk, tplRow?.sourceId);
   };
 

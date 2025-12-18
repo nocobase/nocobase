@@ -257,18 +257,18 @@ export class SubModelTemplateImporterModel extends FlowModel {
           ? expectedRootUse.map((u) => String(u))
           : [String(expectedRootUse)]
         : [];
-      // rootUse 不匹配直接不显示；兼容老数据：rootUse 为空时仍展示
-      const rootUseFilter =
+      // useModel 不匹配直接不显示
+      const useModelFilter =
         expects.length > 0
           ? {
-              $or: [{ rootUse: { $in: expects } }, { rootUse: null }, { rootUse: '' }],
+              $or: [{ useModel: { $in: expects } }, { useModel: null }, { useModel: '' }],
             }
           : undefined;
-      // 排除弹窗模板（popup templates），避免污染区块/字段模板列表（兼容老数据：type 为空时用 rootUse 兜底排除）
+      // 排除弹窗模板（popup templates），避免污染区块/字段模板列表
       const nonPopupFilter = {
         $and: [{ $or: [{ type: { $notIn: ['popup'] } }, { type: null }, { type: '' }] }],
       };
-      const mergedFilter = rootUseFilter ? { $and: [rootUseFilter, ...nonPopupFilter.$and] } : nonPopupFilter;
+      const mergedFilter = useModelFilter ? { $and: [useModelFilter, ...nonPopupFilter.$and] } : nonPopupFilter;
       const res = await api.resource('flowModelTemplates').list({
         page,
         pageSize,
@@ -280,8 +280,10 @@ export class SubModelTemplateImporterModel extends FlowModel {
 
       const expectedResource = this.resolveExpectedResourceInfo(ctx);
       const withIndex = rawRows.flatMap((r, idx) => {
-        if (expects.length > 0 && r?.rootUse && !expects.includes(String(r.rootUse))) {
-          return [];
+        const useModel = r?.useModel;
+        if (expects.length > 0) {
+          if (!useModel) return [];
+          if (!expects.includes(String(useModel))) return [];
         }
         const name = r?.name || r?.uid || '';
         const desc = r?.description;
@@ -298,7 +300,7 @@ export class SubModelTemplateImporterModel extends FlowModel {
             disabledReason,
             dataSourceKey: r?.dataSourceKey,
             collectionName: r?.collectionName,
-            rootUse: r?.rootUse,
+            useModel,
           },
         ];
       });

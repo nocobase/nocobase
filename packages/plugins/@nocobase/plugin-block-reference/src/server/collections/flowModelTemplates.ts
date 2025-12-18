@@ -37,7 +37,7 @@ export default {
     },
     {
       type: 'string',
-      name: 'rootUse',
+      name: 'useModel',
     },
     {
       type: 'string',

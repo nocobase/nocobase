@@ -28,7 +28,7 @@ export default {
     },
     {
       type: 'string',
-      name: 'blockUid',
+      name: 'modelUid',
       allowNull: false,
     },
   ],
@@ -38,14 +38,14 @@ export default {
       unique: true,
     },
     {
-      fields: ['templateUid', 'blockUid'],
+      fields: ['templateUid', 'modelUid'],
       unique: true,
     },
     {
       fields: ['templateUid'],
     },
     {
-      fields: ['blockUid'],
+      fields: ['modelUid'],
     },
   ],
 } as CollectionOptions;

@@ -24,17 +24,17 @@ export default {
     async create(ctx: Context, next) {
       const values = ctx.action.params?.values || {};
       const templateUid = values.templateUid;
-      const blockUid = values.blockUid;
-      if (!templateUid || !blockUid) {
-        return ctx.throw(400, 'templateUid and blockUid are required');
+      const modelUid = values.modelUid;
+      if (!templateUid || !modelUid) {
+        return ctx.throw(400, 'templateUid and modelUid are required');
       }
       const usageRepo = ctx.db.getRepository('flowModelTemplateUsages');
       const record = await usageRepo.updateOrCreate({
-        filterKeys: ['templateUid', 'blockUid'],
+        filterKeys: ['templateUid', 'modelUid'],
         values: {
           uid: values.uid || uid(),
           templateUid,
-          blockUid,
+          modelUid,
         },
         context: ctx,
       });
@@ -45,11 +45,13 @@ export default {
     async destroy(ctx: Context, next) {
       const params = ctx.action?.params || {};
       const { filterByTk, values = {}, filter } = params;
-      if (!filterByTk && values.templateUid && values.blockUid && !filter) {
+      const templateUid = values.templateUid;
+      const modelUid = values.modelUid;
+      if (!filterByTk && templateUid && modelUid && !filter) {
         ctx.action.mergeParams({
           filter: {
-            templateUid: values.templateUid,
-            blockUid: values.blockUid,
+            templateUid,
+            modelUid,
           },
         });
       }

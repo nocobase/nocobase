@@ -50,11 +50,11 @@ export const flowModelTemplatesCollection = {
     },
     {
       type: 'string',
-      name: 'rootUse',
+      name: 'useModel',
       interface: 'input',
       uiSchema: {
         type: 'string',
-        title: 'rootUse',
+        title: 'useModel',
         'x-component': 'Input',
         'x-disabled': true,
         'x-hidden': true,

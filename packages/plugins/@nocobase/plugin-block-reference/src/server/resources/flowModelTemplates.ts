@@ -86,19 +86,19 @@ const syncTemplateMetaToReferenceBlocks = async (
   const usageRepo = ctx.db.getRepository('flowModelTemplateUsages');
   const usages = await usageRepo.find({
     filter: { templateUid: template.uid },
-    fields: ['blockUid'],
+    fields: ['modelUid'],
     transaction: ctx.transaction,
     context: ctx,
   });
   if (!Array.isArray(usages) || usages.length === 0) return;
-  const blockUids = _.uniq(usages.map((u: any) => u?.blockUid).filter(Boolean));
-  if (!blockUids.length) return;
+  const modelUids = _.uniq(usages.map((u: any) => u?.modelUid).filter(Boolean));
+  if (!modelUids.length) return;
 
   const flowRepo = ctx.db.getRepository('flowModels') as FlowModelRepository;
 
-  for (const blockUid of blockUids) {
+  for (const modelUid of modelUids) {
     const record = await flowRepo.findOne({
-      filter: { uid: blockUid },
+      filter: { uid: modelUid },
       transaction: ctx.transaction,
     });
     if (!record) continue;
@@ -120,7 +120,7 @@ const syncTemplateMetaToReferenceBlocks = async (
       }
     }
     await flowRepo.update({
-      filter: { uid: blockUid },
+      filter: { uid: modelUid },
       values: {
         options: nextOptions,
       },
@@ -174,7 +174,7 @@ export default {
           'name',
           'description',
           'targetUid',
-          'rootUse',
+          'useModel',
           'type',
           'dataSourceKey',
           'collectionName',

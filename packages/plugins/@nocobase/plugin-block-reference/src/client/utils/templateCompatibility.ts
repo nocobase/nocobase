@@ -198,9 +198,9 @@ export type ActionSceneType = 'record' | 'collection' | 'both' | undefined;
  */
 export function resolveActionScene(
   getModelClass: ((use: string) => any) | undefined,
-  rootUse?: unknown,
+  useModel?: unknown,
 ): ActionSceneType {
-  const useKey = normalizeStr(rootUse);
+  const useKey = normalizeStr(useModel);
   if (!useKey || !getModelClass) return undefined;
   const ModelClass = getModelClass(useKey);
   if (!ModelClass) return undefined;
@@ -244,7 +244,7 @@ export function inferPopupTemplateContextFlags(
       confidentFilterByTk = true;
     }
   } else if (isRecordOnly) {
-    // 兼容旧数据：record 场景弹窗模板可能未落 filterByTk，但仍应按 record 场景处理
+    // record 场景模板未配置 filterByTk 时，仍按 record 场景处理
     hasFilterByTk = true;
     confidentFilterByTk = true;
   } else if (isCollectionOnly) {

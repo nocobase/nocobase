@@ -100,7 +100,7 @@ describe('SubModelTemplateImporterModel', () => {
           {
             uid: 'tpl-mismatch',
             name: 'Mismatch',
-            rootUse: 'EditFormModel',
+            useModel: 'EditFormModel',
             dataSourceKey: 'main',
             collectionName: 'customers',
             targetUid: 'root-mis',
@@ -108,7 +108,7 @@ describe('SubModelTemplateImporterModel', () => {
           {
             uid: 'tpl-ok',
             name: 'OK',
-            rootUse: 'CreateFormModel',
+            useModel: 'CreateFormModel',
             dataSourceKey: 'main',
             collectionName: 'orders',
             targetUid: 'root-ok',
@@ -116,7 +116,7 @@ describe('SubModelTemplateImporterModel', () => {
           {
             uid: 'tpl-other',
             name: 'Other',
-            rootUse: 'TableBlockModel',
+            useModel: 'TableBlockModel',
             dataSourceKey: 'main',
             collectionName: 'orders',
             targetUid: 'root-other',
