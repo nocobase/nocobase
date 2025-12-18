@@ -397,6 +397,7 @@ UploadFieldModel.registerFlow({
         const fileManagerPlugin: any = ctx.app.pm.get('@nocobase/plugin-file-manager');
         const fileCollection = ctx.model.props.target;
         const collectionField = ctx.collectionField;
+
         if (!fileManagerPlugin) {
           return onSuccess(file);
         }
@@ -407,7 +408,12 @@ UploadFieldModel.registerFlow({
           });
 
           if (!checkData?.data?.isSupportToUploadFiles) {
-            onError?.(new Error(`当前存储 ${checkData.data.storage?.title} 不支持上传`));
+            const messageValue = ctx
+              .t(`The current storage "{{storageName}}" does not support file uploads.`, {
+                storageName: checkData.data.storage?.title,
+              })
+              .replaceAll('&gt;', '>');
+            onError?.(new Error(messageValue));
             return;
           }
 
