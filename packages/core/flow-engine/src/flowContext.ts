@@ -1444,6 +1444,7 @@ export class FlowModelContext extends BaseFlowModelContext {
         await model.save();
       }
 
+      model.setParent(this.model);
       // 路由层级的 viewUid：优先使用 routeViewUid（仅用于路由展示）；
       // 否则回退到 opts.viewUid；再否则沿用原有规则（若子模型具备弹窗配置则使用子模型 uid，否则使用发起者 uid）。
       const viewUid =

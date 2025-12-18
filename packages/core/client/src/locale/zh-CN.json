@@ -1555,5 +1555,6 @@
   "Enable add new action": "启用添加操作",
   "Enable select action": "启用选择操作",
   "Enable remove action": "启用移除操作",
-  "Multiple": "多选"
+  "Multiple": "多选",
+  "Custom column width": "自定义列宽度"
 }

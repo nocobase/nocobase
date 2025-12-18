@@ -157,11 +157,12 @@ export class ChartResource<TData = any> extends BaseRecordResource<TData> {
         try {
           this.clearError();
           this.loading = true;
+          this.emit('loading');
           const res = await this.run();
           const { data, meta } = res;
           this.setData(data).setMeta(meta);
-          this.emit('refresh');
           this.loading = false;
+          this.emit('refresh');
           resolve();
         } catch (error) {
           this.setError(error);

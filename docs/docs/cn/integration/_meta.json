@@ -53,6 +53,22 @@
   },
   {
     "type": "custom-link",
+    "label": "外部数据表 (FDW)",
+    "items": [
+      {
+        "type": "custom-link",
+        "label": "概述",
+        "link": "/integration/fdw/"
+      },
+      {
+        "type": "custom-link",
+        "label": "启用 MySQL Federated",
+        "link": "/integration/fdw/enable-federated"
+      }
+    ]
+  },
+  {
+    "type": "custom-link",
     "label": "嵌入式内容",
     "items": [
       {

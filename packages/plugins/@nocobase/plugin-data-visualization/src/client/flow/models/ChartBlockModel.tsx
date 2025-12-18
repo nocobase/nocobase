@@ -22,6 +22,8 @@ import { genRawByBuilder } from './ChartOptionsBuilder.service';
 import { configStore } from './config-store';
 import { useChatBoxStore, useChatMessagesStore } from '@nocobase/plugin-ai/client';
 
+const NO_PREVIEW_SNAPSHOT = Symbol('NO_PREVIEW_SNAPSHOT');
+
 type ChartBlockModelStructure = {
   subModels: {
     page: ChildPageModel;
@@ -37,7 +39,7 @@ type ChartProps = {
 export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
   declare props: ChartProps;
 
-  _previousStepParams: any; // 上一次持久化的 stepParams，用于 preview 时回滚
+  _previousStepParams: any = NO_PREVIEW_SNAPSHOT; // 上一次持久化的 stepParams，用于 preview 时回滚
 
   get resource(): ChartResource<any> | SQLResource<any> {
     return this.context.resource as ChartResource<any> | SQLResource<any>;
@@ -56,6 +58,7 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     const oldResource = this.resource;
     if (oldResource instanceof ChartResource || oldResource instanceof SQLResource) {
       oldResource.off('refresh', this.__onResourceRefresh);
+      oldResource.off('loading', this.__onResourceRefresh);
     }
 
     // 2) 重定义 resource，创建并缓存新实例
@@ -80,8 +83,8 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     // 3) 绑定新实例监听，确保仅绑定一次
     const newResource = this.resource;
     if (newResource instanceof ChartResource || newResource instanceof SQLResource) {
-      newResource.off('refresh', this.__onResourceRefresh);
       newResource.on('refresh', this.__onResourceRefresh);
+      newResource.on('loading', this.__onResourceRefresh);
     }
   }
 
@@ -132,7 +135,14 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   renderComponent() {
     // TODO onRefReady 的逻辑理清，内部的 onRefReady props是否已经没必要？
-    return <Chart {...this.props.chart} dataSource={this.resource.getData()} ref={this.context.chartRef as any} />;
+    return (
+      <Chart
+        {...this.props.chart}
+        dataSource={this.resource.getData()}
+        loading={this.resource.loading}
+        ref={this.context.chartRef}
+      />
+    );
   }
 
   // 给外部筛选表单调用，获取图表可筛选字段
@@ -262,14 +272,14 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
     if (!values) return;
 
     // 仅在首次预览时记录，以便 cancelPreview 回滚
-    if (!this._previousStepParams) {
+    if (this._previousStepParams === NO_PREVIEW_SNAPSHOT) {
       this._previousStepParams = _.cloneDeep(this.getResourceSettingsInitParams());
     }
     // 应用最新 stepParams，随后触发 flow handler
     this.setStepParams('chartSettings', 'configure', values);
 
     if (needQueryData) {
-      this.checkResource(values.query); // 检查资源是否匹配查询模式
+      this.applyQuery(values.query);
       const isSQL = values?.query?.mode === 'sql';
       // 预览场景：SQL 模式开启 debug（调用 run）
       if (isSQL) {
@@ -291,9 +301,11 @@ export class ChartBlockModel extends DataBlockModel<ChartBlockModelStructure> {
 
   // 取消预览，回滚stepParams，并刷新图表
   async cancelPreview() {
-    if (this._previousStepParams) {
-      this.setStepParams('chartSettings', 'configure', this._previousStepParams);
-      this._previousStepParams = null;
+    if (this._previousStepParams !== NO_PREVIEW_SNAPSHOT) {
+      const previous = this._previousStepParams;
+      this.setStepParams('chartSettings', { configure: previous });
+      this._previousStepParams = NO_PREVIEW_SNAPSHOT;
+
       // 等待确保 stepParams 已更新
       await sleep(100);
       // 重新请求数据，并刷新图表
@@ -395,7 +407,7 @@ ChartBlockModel.registerFlow({
         }
       },
       async afterParamsSave(ctx, params) {
-        ctx.model._previousStepParams = null;
+        ctx.model._previousStepParams = NO_PREVIEW_SNAPSHOT;
       },
       defaultParams(ctx) {
         // 数据查询默认 builder 模式；图表配置默认 basic 模式
