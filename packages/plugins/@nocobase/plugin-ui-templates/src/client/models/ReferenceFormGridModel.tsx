@@ -33,7 +33,7 @@ export type ReferenceFormGridTargetSettings = {
   /** 模板根区块 uid（flowModels.uid） */
   targetUid: string;
   /** 从模板根上取片段的路径，当前仅支持 'subModels.grid' */
-  sourcePath?: string;
+  targetPath?: string;
 };
 
 type ReferenceHostInfo = {
@@ -43,7 +43,7 @@ type ReferenceHostInfo = {
     templateUid: string;
     templateName?: string;
     targetUid: string;
-    sourcePath: string;
+    targetPath: string;
     mountSubKey: 'grid';
     mode: 'reference';
   };
@@ -126,8 +126,8 @@ export class ReferenceFormGridModel extends FlowModel {
     const targetUid = String((raw as any).targetUid || '').trim();
     if (!templateUid || !targetUid) return undefined;
     const templateName = String((raw as any).templateName || '').trim() || undefined;
-    const sourcePath = String((raw as any).sourcePath || '').trim() || undefined;
-    return { templateUid, templateName, targetUid, sourcePath };
+    const targetPath = String((raw as any).targetPath || '').trim() || undefined;
+    return { templateUid, templateName, targetUid, targetPath };
   }
 
   private _syncHostExtraTitle(settings?: ReferenceFormGridTargetSettings) {
@@ -181,10 +181,10 @@ export class ReferenceFormGridModel extends FlowModel {
 
     this._syncHostExtraTitle(settings);
 
-    const sourcePath = settings.sourcePath?.trim() || 'subModels.grid';
-    if (sourcePath !== 'subModels.grid') {
+    const targetPath = settings.targetPath?.trim() || 'subModels.grid';
+    if (targetPath !== 'subModels.grid') {
       throw new Error(
-        `[block-reference] Only 'subModels.grid' is supported for ReferenceFormGridModel (got '${sourcePath}').`,
+        `[block-reference] Only 'subModels.grid' is supported for ReferenceFormGridModel (got '${targetPath}').`,
       );
     }
 
@@ -217,14 +217,14 @@ export class ReferenceFormGridModel extends FlowModel {
           templateUid: settings.templateUid,
           templateName: settings.templateName,
           targetUid,
-          sourcePath,
+          targetPath,
           mountSubKey: 'grid',
           mode: 'reference',
         },
       };
       root.context.defineProperty(REF_HOST_CTX_KEY, { value: hostInfo });
 
-      const fragment = _.get(root as any, sourcePath);
+      const fragment = _.get(root as any, targetPath);
       const gridModel =
         fragment instanceof FlowModel ? fragment : _.castArray(fragment).find((m) => m instanceof FlowModel);
       return gridModel || undefined;

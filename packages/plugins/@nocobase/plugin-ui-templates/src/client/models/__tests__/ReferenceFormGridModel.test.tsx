@@ -75,7 +75,7 @@ describe('ReferenceFormGridModel', () => {
           useTemplate: {
             templateUid: 'tpl-1',
             targetUid: 'tpl-root',
-            sourcePath: 'subModels.grid',
+            targetPath: 'subModels.grid',
             mode: 'reference',
           },
         },
@@ -153,7 +153,7 @@ describe('ReferenceFormGridModel', () => {
             templateUid: 'tpl-1',
             templateName: '模版名称',
             targetUid: 'tpl-root',
-            sourcePath: 'subModels.grid',
+            targetPath: 'subModels.grid',
             mode: 'reference',
           },
         },

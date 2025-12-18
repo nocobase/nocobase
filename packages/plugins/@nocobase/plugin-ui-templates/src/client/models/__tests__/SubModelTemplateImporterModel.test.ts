@@ -76,7 +76,7 @@ describe('SubModelTemplateImporterModel', () => {
     expect(saved.mode).toBe('reference');
     expect(saved.targetUid).toBe('tpl-root');
     expect(saved.templateName).toBe('Template 1');
-    expect(saved.sourcePath).toBe('subModels.grid');
+    expect(saved.targetPath).toBe('subModels.grid');
     expect(saved.mountSubKey).toBe('grid');
   });
 
@@ -423,7 +423,7 @@ describe('SubModelTemplateImporterModel', () => {
             targetUid: 'tpl-root',
             templateName: 'Template 1',
             mode: 'reference',
-            sourcePath: 'subModels.grid',
+            targetPath: 'subModels.grid',
             mountSubKey: 'grid',
           },
         },

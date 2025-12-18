@@ -242,7 +242,7 @@ describe('block-reference templates and usages', () => {
                 templateUid: 'tpl-sub',
                 templateName: 'Template Sub',
                 targetUid: 'target-block',
-                sourcePath: 'subModels.grid',
+                targetPath: 'subModels.grid',
                 mode: 'reference',
               },
             },

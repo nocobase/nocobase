@@ -115,15 +115,15 @@ export class SubModelTemplateImporterModel extends FlowModel {
     const templateName = String(step.templateName || '').trim() || undefined;
     const templateDescription = String(step.templateDescription || '').trim() || undefined;
     const mode = String(step.mode || 'reference');
-    const sourcePath = String(step.sourcePath || 'subModels.grid').trim() || 'subModels.grid';
+    const targetPath = String(step.targetPath || 'subModels.grid').trim() || 'subModels.grid';
     const mountSubKey = String(step.mountSubKey || 'grid').trim() || 'grid';
 
     // 仅支持表单 fields（grid）引用
     if (mountSubKey !== 'grid') {
       throw new Error(`[block-reference] Only 'grid' mountSubKey is supported (got '${mountSubKey}').`);
     }
-    if (sourcePath !== 'subModels.grid') {
-      throw new Error(`[block-reference] Only 'subModels.grid' sourcePath is supported (got '${sourcePath}').`);
+    if (targetPath !== 'subModels.grid') {
+      throw new Error(`[block-reference] Only 'subModels.grid' targetPath is supported (got '${targetPath}').`);
     }
     if (!templateUid) return;
     if (!targetUid) {
@@ -140,11 +140,11 @@ export class SubModelTemplateImporterModel extends FlowModel {
     if (mode === 'copy') {
       const scoped = createBlockScopedEngine(mountTarget.flowEngine);
       const root = await scoped.loadModel<FlowModel>({ uid: targetUid });
-      const fragment = _.get(root as any, sourcePath);
+      const fragment = _.get(root as any, targetPath);
       const gridModel =
         fragment instanceof FlowModel ? fragment : _.castArray(fragment).find((m) => m instanceof FlowModel);
       if (!gridModel) {
-        throw new Error(`[block-reference] Template fragment is invalid: ${sourcePath}`);
+        throw new Error(`[block-reference] Template fragment is invalid: ${targetPath}`);
       }
 
       const duplicated = await mountTarget.flowEngine.duplicateModel(gridModel.uid);
@@ -165,7 +165,7 @@ export class SubModelTemplateImporterModel extends FlowModel {
       return;
     }
 
-    const nextSettings = { templateUid, templateName, templateDescription, targetUid, sourcePath, mode };
+    const nextSettings = { templateUid, templateName, templateDescription, targetUid, targetPath, mode };
     const isReferenceGrid = existingGrid.use === 'ReferenceFormGridModel';
     if (isReferenceGrid) {
       existingGrid.setStepParams(GRID_REF_FLOW_KEY, GRID_REF_STEP_KEY, nextSettings);
@@ -441,15 +441,15 @@ SubModelTemplateImporterModel.registerFlow({
         const templateName = (tpl?.name || params?.templateName || '').trim();
         const templateDescription = (tpl?.description || params?.templateDescription || '').trim();
         const mode = params?.mode || 'reference';
-        const sourcePath = (importer.props?.defaultSourcePath || 'subModels.grid').trim();
+        const targetPath = (importer.props?.defaultSourcePath || 'subModels.grid').trim();
         const mountSubKey = (importer.props?.defaultMountSubKey || importer.subKey || 'grid').trim();
 
         // 当前仅支持表单 fields（grid）引用
         if (mountSubKey !== 'grid') {
           throw new Error(`[block-reference] Only 'grid' mountSubKey is supported (got '${mountSubKey}').`);
         }
-        if (sourcePath !== 'subModels.grid') {
-          throw new Error(`[block-reference] Only 'subModels.grid' sourcePath is supported (got '${sourcePath}').`);
+        if (targetPath !== 'subModels.grid') {
+          throw new Error(`[block-reference] Only 'subModels.grid' targetPath is supported (got '${targetPath}').`);
         }
 
         // 若当前位于“引用片段”内部，则禁止再次 From template，避免误清空模板侧字段
@@ -512,7 +512,7 @@ SubModelTemplateImporterModel.registerFlow({
                 targetUid,
                 templateName,
                 templateDescription,
-                sourcePath,
+                targetPath,
                 mountSubKey,
                 mode,
               });
@@ -624,7 +624,7 @@ SubModelTemplateImporterModel.registerFlow({
           targetUid,
           templateName,
           templateDescription,
-          sourcePath,
+          targetPath,
           mountSubKey,
           mode,
         });

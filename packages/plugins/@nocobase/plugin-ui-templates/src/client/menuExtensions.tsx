@@ -50,7 +50,7 @@ type ReferenceFormGridTargetSettings = {
   templateUid: string;
   templateName?: string;
   targetUid: string;
-  sourcePath?: string;
+  targetPath?: string;
 };
 
 function getReferenceFormGridSettings(
@@ -65,8 +65,8 @@ function getReferenceFormGridSettings(
   const targetUid = String((raw as any).targetUid || '').trim();
   if (!templateUid || !targetUid) return null;
   const templateName = String((raw as any).templateName || '').trim() || undefined;
-  const sourcePath = String((raw as any).sourcePath || '').trim() || undefined;
-  return { grid, settings: { templateUid, templateName, targetUid, sourcePath } };
+  const targetPath = String((raw as any).targetPath || '').trim() || undefined;
+  return { grid, settings: { templateUid, templateName, targetUid, targetPath } };
 }
 
 async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: any) => string) {
@@ -381,13 +381,13 @@ async function handleConvertFieldsToCopy(model: FlowModel, _t: (k: string, opt?:
       });
 
       const targetUid = settings.targetUid;
-      const sourcePath = settings.sourcePath?.trim() || 'subModels.grid';
-      if (sourcePath !== 'subModels.grid') {
-        throw new Error(`[block-reference] Only 'subModels.grid' is supported (got '${sourcePath}').`);
+      const targetPath = settings.targetPath?.trim() || 'subModels.grid';
+      if (targetPath !== 'subModels.grid') {
+        throw new Error(`[block-reference] Only 'subModels.grid' is supported (got '${targetPath}').`);
       }
       const scoped = createBlockScopedEngine(model.flowEngine);
       const root = await scoped.loadModel<FlowModel>({ uid: targetUid });
-      const gridModel = _.get(root, sourcePath) as FlowModel;
+      const gridModel = _.get(root, targetPath) as FlowModel;
       if (!gridModel) {
         throw new Error(t('Target block is invalid'));
       }
