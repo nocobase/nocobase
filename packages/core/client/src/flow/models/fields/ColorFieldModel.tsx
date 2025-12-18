@@ -9,21 +9,26 @@
 
 import React from 'react';
 import { ColorPicker as AntdColorPicker } from 'antd';
-import { EditableItemModel, tExpr } from '@nocobase/flow-engine';
+import { EditableItemModel, tExpr, useFlowEngineContext } from '@nocobase/flow-engine';
 import { FieldModel } from '../base';
 
 export const NBColorPicker = (props) => {
+  const ctx = useFlowEngineContext();
   const componentProps = {
     ...props,
     trigger: 'hover',
     style: { maWidth: 30 },
     destroyTooltipOnHide: true,
     onChange: (color) => {
-      props.onChange(color.toHexString());
+      if (color?.cleared) {
+        props.onChange(null);
+      } else {
+        props.onChange(color.toHexString());
+      }
     },
     presets: [
       {
-        label: tExpr('Recommended'),
+        label: ctx.t('Recommended'),
         colors: [
           '#8BBB11',
           '#52C41A',
@@ -42,7 +47,7 @@ export const NBColorPicker = (props) => {
       },
     ],
   };
-  return <AntdColorPicker {...componentProps} />;
+  return <AntdColorPicker allowClear {...componentProps} />;
 };
 
 export class ColorFieldModel extends FieldModel {

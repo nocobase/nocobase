@@ -603,7 +603,12 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
               <span className="title-tag">{model.title}</span>
             </div>
           )}
-          <div className="nb-toolbar-container-icons">
+          <div
+            className="nb-toolbar-container-icons"
+            onClick={(e) => e.stopPropagation()}
+            onMouseDown={(e) => e.stopPropagation()}
+            onMouseMove={(e) => e.stopPropagation()}
+          >
             <Space size={3} align="center">
               {renderToolbarItems(
                 model,

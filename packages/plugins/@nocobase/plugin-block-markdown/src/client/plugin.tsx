@@ -18,7 +18,10 @@ export class PluginBlockMarkdownClient extends Plugin {
   }
 
   getCDN() {
-    return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor';
+    if (process.env.NODE_ENV === 'production') {
+      return this.app.getPublicPath() + 'static/plugins/@nocobase/plugin-block-markdown/dist/client/vditor';
+    }
+    return `https://cdn.jsdelivr.net/npm/vditor@3.11.2`;
   }
 
   initVditorDependency() {

@@ -35,7 +35,7 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
   onInit(options: any): void {
     super.onInit(options);
   }
-  renderConfiguireActions() {
+  renderConfigureAction() {
     return (
       <AddSubModelButton
         key="table-row-actions-add"
@@ -88,66 +88,97 @@ export class GridCardItemModel extends FlowModel<GridItemModelStructure> {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
     const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
     return (
-      <Card role="button">
-        <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
-          <FlowModelRenderer model={grid as any} showFlowSettings={false} />
-        </FormComponent>
-        <div>
-          <DndProvider>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Space
-                className={css`
-                  button {
-                    padding: 5px;
-                  }
-                `}
-                wrap
-              >
-                {this.mapSubModels('actions', (action) => {
-                  const fork = action.createFork({}, `${index}`);
-                  if (fork.hidden && !isConfigMode) {
-                    return;
-                  }
-                  const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
-                    () => (fork.context as any).collection,
-                    fork.context.t('Current record'),
-                    (ctx) => {
-                      const coll = ctx.collection;
-                      const rec = ctx.record;
-                      const name = coll?.name;
-                      const dataSourceKey = coll?.dataSourceKey;
-                      const filterByTk = coll?.getFilterByTK?.(rec);
-                      if (!name || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
-                      return { collection: name, dataSourceKey, filterByTk };
-                    },
-                  );
-                  fork.context.defineProperty('record', {
-                    get: () => this.context.record,
-                    resolveOnServer: true,
-                    meta: recordMeta,
-                    cache: false,
-                  });
+      <Card
+        role="button"
+        className={css`
+          height: 100%;
+          .ant-card-body {
+            height: 100%;
+          }
+          .ant-form-item {
+            margin-bottom: 5px;
+          }
+        `}
+      >
+        <div
+          style={{
+            display: 'flex',
+            width: '100%',
+            height: '100%',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            gap: '0px',
+          }}
+        >
+          <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
+            <FlowModelRenderer model={grid as any} showFlowSettings={false} />
+          </FormComponent>
+          <div>
+            <DndProvider>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Space
+                  className={css`
+                    button {
+                      padding: 5px;
+                    }
+                  `}
+                  wrap
+                >
+                  {this.mapSubModels('actions', (action, i) => {
+                    const fork = action.createFork({}, `${index}`);
+                    if (fork.hidden && !isConfigMode) {
+                      return;
+                    }
+                    const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
+                      () => (fork.context as any).collection,
+                      fork.context.t('Current record'),
+                      (ctx) => {
+                        const coll = ctx.collection;
+                        const rec = ctx.record;
+                        const name = coll?.name;
+                        const dataSourceKey = coll?.dataSourceKey;
+                        const filterByTk = coll?.getFilterByTK?.(rec);
+                        if (!name || typeof filterByTk === 'undefined' || filterByTk === null) return undefined;
+                        return { collection: name, dataSourceKey, filterByTk };
+                      },
+                    );
+                    fork.context.defineProperty('record', {
+                      get: () => this.context.record,
+                      resolveOnServer: true,
+                      meta: recordMeta,
+                      cache: false,
+                    });
 
-                  return (
-                    <Droppable model={fork} key={fork.uid}>
-                      <FlowModelRenderer
-                        model={fork}
-                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                        extraToolbarItems={[
-                          {
-                            key: 'drag-handler',
-                            component: DragHandler,
-                            sort: 1,
-                          },
-                        ]}
-                      />
-                    </Droppable>
-                  );
-                })}
-                {this.renderConfiguireActions()}
-              </Space>
-            </div>
-          </DndProvider>
+                    return (
+                      <Droppable model={fork} key={fork.uid}>
+                        <div
+                          className={css`
+                            button {
+                              padding: 5px;
+                              padding-left: ${i === 0 ? '0px' : null};
+                            }
+                          `}
+                        >
+                          <FlowModelRenderer
+                            model={fork}
+                            showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                            extraToolbarItems={[
+                              {
+                                key: 'drag-handler',
+                                component: DragHandler,
+                                sort: 1,
+                              },
+                            ]}
+                          />
+                        </div>
+                      </Droppable>
+                    );
+                  })}
+                  {this.renderConfigureAction()}
+                </Space>
+              </div>
+            </DndProvider>
+          </div>
         </div>
       </Card>
     );

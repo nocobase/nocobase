@@ -291,6 +291,16 @@ AssignFormItemModel.registerFlow({
   sort: 300,
   title: tExpr('Form item settings'),
   steps: {
+    showLabel: {
+      title: tExpr('Show label'),
+      uiMode: { type: 'switch', key: 'showLabel' },
+      defaultParams: {
+        showLabel: true,
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ showLabel: params.showLabel });
+      },
+    },
     label: {
       title: tExpr('Label'),
       uiSchema: (ctx) => {
@@ -331,25 +341,7 @@ AssignFormItemModel.registerFlow({
         });
       },
     },
-    showLabel: {
-      title: tExpr('Show label'),
-      uiSchema: {
-        showLabel: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-          'x-component-props': {
-            checkedChildren: tExpr('Yes'),
-            unCheckedChildren: tExpr('No'),
-          },
-        },
-      },
-      defaultParams: {
-        showLabel: true,
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({ showLabel: params.showLabel });
-      },
-    },
+
     tooltip: {
       title: tExpr('Tooltip'),
       uiSchema: {

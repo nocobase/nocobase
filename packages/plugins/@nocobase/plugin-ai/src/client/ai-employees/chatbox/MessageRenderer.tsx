@@ -278,7 +278,18 @@ export const UserMessage: React.FC<{
           ))}
         </div>
       ) : null}
-      {_.isEmpty(msg.content) ? <></> : <Bubble content={msg.content} />}
+      {_.isEmpty(msg.content) ? (
+        <></>
+      ) : (
+        <Bubble
+          content={msg.content}
+          styles={{
+            content: {
+              whiteSpace: 'pre-wrap',
+            },
+          }}
+        />
+      )}
     </MessageWrapper>
   );
 });

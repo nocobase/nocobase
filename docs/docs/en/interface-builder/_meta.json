@@ -133,6 +133,11 @@
             "type": "custom-link",
             "label": "Block Title",
             "link": "/interface-builder/blocks/block-settings/block-title"
+          },
+          {
+            "type": "custom-link",
+            "label": "Form Drafts",
+            "link": "/interface-builder/form-drafts"
           }
         ]
       }

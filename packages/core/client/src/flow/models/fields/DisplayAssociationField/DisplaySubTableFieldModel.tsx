@@ -170,6 +170,7 @@ const DisplayTable = (props) => {
   );
 };
 export class DisplaySubTableFieldModel extends FieldModel {
+  disableTitleField = true;
   defaultOverflowMode = 'ellipsis';
   get collection() {
     return this.context.collection;
@@ -223,11 +224,11 @@ DisplaySubTableFieldModel.registerFlow({
     },
     pageSize: {
       title: tExpr('Page size'),
-      uiSchema: {
-        pageSize: {
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [
+      uiMode: {
+        type: 'select',
+        key: 'pageSize',
+        props: {
+          options: [
             { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },

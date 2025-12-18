@@ -332,6 +332,11 @@
         "items": [
           {
             "type": "custom-link",
+            "label": "Snowflake ID (53-bit)",
+            "link": "/data-sources/data-modeling/collection-fields/advanced/snowflake-id"
+          },
+          {
+            "type": "custom-link",
             "label": "UUID",
             "link": "/data-sources/data-modeling/collection-fields/advanced/uuid"
           },

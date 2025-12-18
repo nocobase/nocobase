@@ -96,7 +96,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
   // 拖拽高亮区域的配置，子类可以覆盖此属性来自定义偏移
   dragOverlayConfig?: DragOverlayConfig;
   // 通过稳定引用减少子项不必要的重渲染
-  private readonly itemFallback = (<SkeletonFallback />);
+  itemFallback = (<SkeletonFallback />);
   private readonly itemExtraToolbarItems = [
     {
       key: 'drag-handler',
@@ -136,7 +136,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
         this.setProps('sizes', newSizes);
       }
     });
-    this.emitter.on('onSubModelRemoved', (model: FlowModel) => {
+    this.emitter.on('onSubModelDestroyed', (model: FlowModel) => {
       const modelUid = model.uid;
 
       // 1. 获取当前 modelUid 所在的位置
@@ -612,6 +612,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                   const fieldKey = this.context.fieldKey;
                   const rowIndex = this.context.fieldIndex;
                   const record = this.context.record;
+                  const currentObject = this.context.currentObject;
                   // 在数组子表单场景下，为每个子项创建行内 fork，并透传当前行索引
                   const item =
                     rowIndex == null
@@ -626,6 +627,10 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                           });
                           fork.context.defineProperty('record', {
                             get: () => record,
+                            cache: false,
+                          });
+                          fork.context.defineProperty('currentObject', {
+                            get: () => currentObject,
                             cache: false,
                           });
                           return fork;
@@ -722,7 +727,7 @@ export function transformRowsToSingleColumn(
   return singleColumnRows;
 }
 
-function recalculateGridSizes({
+export function recalculateGridSizes({
   position,
   direction,
   resizeDistance,
@@ -756,7 +761,7 @@ function recalculateGridSizes({
   const totalGutter = gutter * (currentRowSizes.length - 1);
 
   // 当前移动的距离占总宽度的多少份
-  const currentMoveDistance = Math.floor((resizeDistance / (gridContainerWidth - totalGutter)) * columnCount);
+  let currentMoveDistance = Math.floor((resizeDistance / (gridContainerWidth - totalGutter)) * columnCount);
 
   if (currentMoveDistance === prevMoveDistance) {
     return { newRows, newSizes, moveDistance: currentMoveDistance };
@@ -764,11 +769,31 @@ function recalculateGridSizes({
 
   newSizes[position.rowId] ??= [columnCount];
 
-  newSizes[position.rowId][position.columnIndex] += currentMoveDistance - prevMoveDistance;
+  const rowSizes = newSizes[position.rowId];
+  let delta = currentMoveDistance - prevMoveDistance;
+  const hasLeftNeighbor = direction === 'left' && position.columnIndex > 0;
+  const hasRightNeighbor = direction === 'right' && position.columnIndex < rowSizes.length - 1;
+
+  // 如果拖动会让总宽度增加，则限制最大增量不超过 columnCount
+  if (!hasLeftNeighbor && !hasRightNeighbor && delta > 0) {
+    const currentTotal = rowSizes.reduce((a, b) => a + b, 0);
+    const maxDelta = columnCount - currentTotal;
+
+    if (maxDelta <= 0) {
+      return { newRows, newSizes, moveDistance: prevMoveDistance };
+    }
+
+    if (delta > maxDelta) {
+      currentMoveDistance = prevMoveDistance + maxDelta;
+      delta = maxDelta;
+    }
+  }
+
+  newSizes[position.rowId][position.columnIndex] += delta;
 
   if (direction === 'left' && position.columnIndex > 0) {
     // 如果是左侧拖动，左侧的列宽度需要相应的减少或增加
-    newSizes[position.rowId][position.columnIndex - 1] -= currentMoveDistance - prevMoveDistance;
+    newSizes[position.rowId][position.columnIndex - 1] -= delta;
 
     // 如果左侧列的宽度为 0，且是一个空白列，则需要删除该列
     if (newSizes[position.rowId][position.columnIndex - 1] === 0) {
@@ -798,7 +823,7 @@ function recalculateGridSizes({
 
   if (direction === 'right' && position.columnIndex < newSizes[position.rowId].length - 1) {
     // 如果是右侧拖动，右侧的列宽度需要相应的减少或增加
-    newSizes[position.rowId][position.columnIndex + 1] -= currentMoveDistance - prevMoveDistance;
+    newSizes[position.rowId][position.columnIndex + 1] -= delta;
 
     // 如果右侧列的宽度为 0，且是一个空白列，则需要删除该列
     if (newSizes[position.rowId][position.columnIndex + 1] === 0) {

@@ -18,7 +18,7 @@ import {
   useFlowViewContext,
 } from '@nocobase/flow-engine';
 import { useRequest } from 'ahooks';
-import { Button, Select } from 'antd';
+import { Button, Select, Tooltip, Tag } from 'antd';
 import React, { useEffect } from 'react';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { FieldModel } from '../../base';
@@ -154,6 +154,50 @@ function RecordPickerField(props) {
         ctx.model.change();
       }}
       showSearch={false}
+      maxTagCount="responsive"
+      maxTagPlaceholder={(omittedValues) => (
+        <Tooltip
+          title={
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 6,
+                maxWidth: '100%',
+              }}
+            >
+              {omittedValues.map((item) => (
+                <Tag
+                  key={item.value}
+                  style={{
+                    margin: 0,
+                    background: '#fafafa',
+                    border: '1px solid #d9d9d9',
+                    whiteSpace: 'normal',
+                    wordBreak: 'break-word',
+                    maxWidth: '100%',
+                  }}
+                >
+                  {item.label}
+                </Tag>
+              ))}
+            </div>
+          }
+          overlayInnerStyle={{
+            background: '#fff',
+            color: '#000',
+            padding: 8,
+            maxWidth: '100%',
+          }}
+          color="#fff"
+          overlayStyle={{
+            pointerEvents: 'auto',
+            maxWidth: 300,
+          }}
+        >
+          +{omittedValues.length}...
+        </Tooltip>
+      )}
     />
   );
 }
@@ -199,6 +243,7 @@ RecordPickerFieldModel.registerFlow({
   on: {
     eventName: 'openView',
   },
+  sort: 300,
   steps: {
     openView: {
       title: tExpr('Edit popup'),
@@ -247,7 +292,6 @@ RecordPickerFieldModel.registerFlow({
         };
         const openMode = ctx.inputArgs.mode || params.mode || 'drawer';
         const size = ctx.inputArgs.size || params.size || 'medium';
-        console.log(ctx.model);
         ctx.viewer.open({
           type: openMode,
           width: sizeToWidthMap[openMode][size],

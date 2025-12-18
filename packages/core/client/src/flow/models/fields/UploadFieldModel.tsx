@@ -304,20 +304,9 @@ UploadFieldModel.registerFlow({
   steps: {
     quickUpload: {
       title: tExpr('Quick upload'),
-      uiSchema(ctx) {
-        if (!ctx.collectionField.isAssociationField() || !ctx.collectionField.targetCollection) {
-          return null;
-        }
-        return {
-          quickUpload: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              checkedChildren: tExpr('Yes'),
-              unCheckedChildren: tExpr('No'),
-            },
-          },
-        };
+      uiMode: { type: 'switch', key: 'quickUpload' },
+      hideInSettings(ctx) {
+        return !ctx.collectionField.isAssociationField() || !ctx.collectionField.targetCollection;
       },
       defaultParams(ctx) {
         return {
@@ -328,47 +317,16 @@ UploadFieldModel.registerFlow({
         ctx.model.setProps({ quickUpload: params.quickUpload });
       },
     },
-    allowSelectExistingRecord: {
-      title: tExpr('Allow selection of existing file'),
-      uiSchema(ctx) {
-        if (!ctx.collectionField.isAssociationField() || !ctx.collectionField.targetCollection) {
-          return null;
-        }
-        return {
-          allowSelectExistingRecord: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              checkedChildren: tExpr('Yes'),
-              unCheckedChildren: tExpr('No'),
-            },
-          },
-        };
-      },
-      defaultParams(ctx) {
-        return {
-          allowSelectExistingRecord: ctx.collectionField.targetCollection && ctx.collectionField.isAssociationField(),
-        };
-      },
-      handler(ctx, params) {
-        ctx.model.setProps({ allowSelectExistingRecord: params.allowSelectExistingRecord });
-      },
-    },
+
     allowMultiple: {
       title: tExpr('Allow multiple'),
-      uiSchema(ctx) {
-        if (ctx.collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)) {
-          return {
-            multiple: {
-              'x-component': 'Switch',
-              type: 'boolean',
-              'x-decorator': 'FormItem',
-            },
-          };
-        } else {
-          return null;
-        }
+      uiMode: { type: 'switch', key: 'multiple' },
+      hideInSettings(ctx) {
+        return (
+          !ctx.collectionField || !['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)
+        );
       },
+
       defaultParams(ctx) {
         return {
           multiple:
@@ -385,19 +343,27 @@ UploadFieldModel.registerFlow({
     },
     showFileName: {
       title: tExpr('Show file name'),
-      uiSchema: (ctx) => {
-        return {
-          showFileName: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-          },
-        };
-      },
+      uiMode: { type: 'switch', key: 'showFileName' },
       defaultParams: {
         showFileName: false,
       },
       handler(ctx, params) {
         ctx.model.setProps('showFileName', params.showFileName);
+      },
+    },
+    allowSelectExistingRecord: {
+      title: tExpr('Allow selection of existing file'),
+      uiMode: { type: 'switch', key: 'allowSelectExistingRecord' },
+      hideInSettings(ctx) {
+        return !ctx.collectionField.isAssociationField() || !ctx.collectionField.targetCollection;
+      },
+      defaultParams(ctx) {
+        return {
+          allowSelectExistingRecord: ctx.collectionField.targetCollection && ctx.collectionField.isAssociationField(),
+        };
+      },
+      handler(ctx, params) {
+        ctx.model.setProps({ allowSelectExistingRecord: params.allowSelectExistingRecord });
       },
     },
   },
@@ -488,10 +454,12 @@ UploadFieldModel.registerFlow({
   steps: {
     openView: {
       title: tExpr('Edit popup'),
+      hideInSettings(ctx) {
+        const allowSelectExistingRecord = ctx.model.getStepParams?.('uploadSettings', 'allowSelectExistingRecord')
+          ?.allowSelectExistingRecord;
+        return allowSelectExistingRecord === false;
+      },
       uiSchema(ctx) {
-        if (!ctx.model.props.allowSelectExistingRecord) {
-          return;
-        }
         return {
           mode: {
             type: 'string',

@@ -460,7 +460,9 @@ export class FlowEngine {
     extra?: { delegateToParent?: boolean; delegate?: FlowContext },
   ): T {
     const { parentId, uid, use: modelClassName, subModels } = options;
-    const parentModel = parentId ? (this._modelInstances.get(parentId) as FlowModel | undefined) : undefined;
+    const parentModel = parentId
+      ? ((this.getModel(parentId) || this.previousEngine?.getModel(parentId)) as FlowModel | undefined)
+      : undefined;
     const ModelClass = this._resolveModelClass(
       typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName,
       options,
@@ -484,8 +486,8 @@ export class FlowEngine {
       modelInstance.context.addDelegate(extra.delegate);
     }
 
-    if (parentId && this._modelInstances.has(parentId)) {
-      modelInstance.setParent(this._modelInstances.get(parentId));
+    if (parentModel) {
+      modelInstance.setParent(parentModel);
       if (extra?.delegateToParent === false) {
         modelInstance.removeParentDelegate();
       }
@@ -902,7 +904,13 @@ export class FlowEngine {
     if (this.ensureModelRepository()) {
       await this._modelRepository.destroy(uid);
     }
-    return this.removeModel(uid);
+
+    const modelInstance = this._modelInstances.get(uid) as FlowModel;
+    const parent = modelInstance?.parent;
+    const result = this.removeModel(uid);
+    parent && parent.emitter.emit('onSubModelDestroyed', modelInstance);
+
+    return result;
   }
 
   /**

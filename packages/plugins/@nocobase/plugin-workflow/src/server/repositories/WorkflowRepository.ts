@@ -44,13 +44,14 @@ export default class WorkflowRepository extends Repository {
           ...revisionData,
           sync: origin.sync,
           type: origin.type,
-          config:
-            typeof trigger.duplicateConfig === 'function'
-              ? await trigger.duplicateConfig(origin, { transaction })
-              : origin.config,
+          config: origin.config,
         },
         transaction,
       });
+      if (trigger && typeof trigger.duplicateConfig === 'function') {
+        const newConfig = await trigger.duplicateConfig(instance, { transaction });
+        await instance.update({ config: newConfig }, { transaction });
+      }
 
       const originalNodesMap = new Map();
       origin.nodes.forEach((node) => {

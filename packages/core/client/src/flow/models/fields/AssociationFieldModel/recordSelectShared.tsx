@@ -75,7 +75,7 @@ export function toSelectValue(
 ) {
   if (!record) return multiple ? [] : undefined;
 
-  const { value: valueKey } = fieldNames;
+  const { value: valueKey } = fieldNames || {};
 
   const convert = (item: AssociationOption) => {
     if (typeof item !== 'object' || item === null || item === undefined) return undefined;
@@ -102,7 +102,7 @@ export function resolveOptions(
 ) {
   if (options?.length) {
     return options.map((v) => {
-      return omit(v, 'disabled');
+      return omit(v, 'disabled', 'options');
     });
   }
 

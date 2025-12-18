@@ -7,9 +7,10 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import React from 'react';
-import { Tag } from 'antd';
 import { DisplayItemModel, tExpr } from '@nocobase/flow-engine';
+import { Tag } from 'antd';
+import React from 'react';
+import { castArray } from 'lodash';
 import { ClickableFieldModel } from './ClickableFieldModel';
 
 interface FieldNames {
@@ -42,14 +43,17 @@ const fieldNames = {
 };
 
 export class DisplayEnumFieldModel extends ClickableFieldModel {
-  public renderComponent(value) {
-    const { options = [] } = this.props;
-    const currentOptions = getCurrentOptions(value, options, fieldNames);
+  isEmpty(value: any) {
+    return value === null || value === undefined || value === '';
+  }
 
-    if (!value || !currentOptions.length) {
+  public renderComponent(value) {
+    const { options = [], dataSource } = this.props;
+    const currentOptions = getCurrentOptions(value, dataSource || options, fieldNames);
+
+    if (this.isEmpty(value) || !currentOptions.length) {
       return null;
     }
-
     return currentOptions.map((option) => (
       <Tag key={option[fieldNames.value]} color={option[fieldNames.color]}>
         {this.translate(option[fieldNames.label])}
@@ -60,6 +64,55 @@ export class DisplayEnumFieldModel extends ClickableFieldModel {
 DisplayEnumFieldModel.define({
   label: tExpr('Select'),
 });
+
+DisplayEnumFieldModel.registerFlow({
+  key: 'displayCollectionSelectSettings',
+  sort: 6000,
+  steps: {
+    init: {
+      handler(ctx) {
+        if (['collection', 'tableoid'].includes(ctx.collectionField.interface)) {
+          if (ctx.model.props.isTableOid) {
+            const childCollections = ctx.dataSourceManager
+              .getDataSource('main')
+              .collectionManager.getChildrenCollections(ctx.collectionField.collectionName);
+            const options = castArray(ctx.collectionField.collection)
+              .concat(childCollections)
+              .map((item) => {
+                return {
+                  label: ctx.t(item.title) || item.name,
+                  value: item.name || item.value,
+                };
+              });
+            ctx.model.setProps({
+              options: options,
+            });
+          } else {
+            const collections = ctx.dataSourceManager.getDataSource('main').getCollections();
+            const defaultOptions = ctx.model.context.collectionField.uiSchema.enum || [];
+            const options = collections
+              .filter((item: any) => !item.options.hidden)
+              .filter((v) => {
+                if (defaultOptions.length) {
+                  return defaultOptions.find((c) => c.value === v.name);
+                }
+                return true;
+              })
+              .map((item: any) => ({
+                label: ctx.t(item.title) || item.name,
+                value: item.name || item.value,
+                color: item.category?.color,
+              }));
+            ctx.model.setProps({
+              dataSource: options,
+            });
+          }
+        }
+      },
+    },
+  },
+});
+
 DisplayItemModel.bindModelToInterface(
   'DisplayEnumFieldModel',
   ['select', 'multipleSelect', 'radioGroup', 'checkboxGroup', 'collection', 'tableoid'],

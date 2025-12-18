@@ -148,3 +148,11 @@ footer: (originNode, { OkBtn, CancelBtn }) => (
 ### embed 效果
 
 <code src="./embed.tsx"></code>
+
+### switch
+
+<code src="./switch.tsx"></code>
+
+### select
+
+<code src="./select.tsx"></code>

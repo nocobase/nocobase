@@ -21,7 +21,7 @@ import {
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, ActionModel } from '@nocobase/client';
 import React from 'react';
-import { List, Space, Slider, Grid, InputNumber } from 'antd';
+import { List, Space, Slider, Grid, InputNumber, Col } from 'antd';
 import { css } from '@emotion/css';
 import { GridCardItemModel } from './GridCardItemModel';
 import { screenSizeTitleMaps, gridSizes, columnCountMarks, screenSizeMaps } from './utils';
@@ -216,9 +216,16 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
               resolveOnServer: true,
             });
             return (
-              <List.Item key={index}>
+              <Col
+                className={css`
+                  height: 100%;
+                  > div {
+                    height: 100%;
+                  }
+                `}
+              >
                 <FlowModelRenderer model={model} />
-              </List.Item>
+              </Col>
             );
           }}
         />
@@ -233,7 +240,7 @@ GridCardBlockModel.registerFlow({
 });
 
 GridCardBlockModel.registerFlow({
-  key: 'listettings',
+  key: 'GridCardSettings',
   sort: 500,
   title: tExpr('Grid card block settings', { ns: 'block-grid-card' }),
   steps: {

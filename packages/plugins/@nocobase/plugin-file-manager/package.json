@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-file-manager",
-  "version": "2.0.0-alpha.52",
+  "version": "2.0.0-alpha.55",
   "displayName": "File manager",
   "displayName.ru-RU": "Менеджер файлов",
   "displayName.zh-CN": "文件管理器",
@@ -22,6 +22,7 @@
     "@types/koa-multer": "^1.0.4",
     "@types/mime-types": "^3.0.1",
     "@types/multer": "^1.4.5",
+    "ali-oss": "^6.1.0",
     "antd": "5.x",
     "axios": "^1.7.0",
     "cos-nodejs-sdk-v5": "^2.11.14",
@@ -30,7 +31,6 @@
     "mime-types": "^3.0.1",
     "mkdirp": "~0.5.4",
     "multer": "^1.4.5-lts.2",
-    "multer-aliyun-oss": "2.1.3",
     "multer-cos": "^1.0.3",
     "multer-s3": "^3.0.1",
     "multistream": "^4.1.0",

@@ -10,13 +10,19 @@
 import { ExclamationCircleOutlined, MenuOutlined } from '@ant-design/icons';
 import type { DropdownProps, MenuProps } from 'antd';
 import { App, Dropdown, Modal } from 'antd';
-import React, { startTransition, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { startTransition, useCallback, useEffect, useMemo, useState, FC } from 'react';
 import { FlowModel } from '../../../../models';
-import { StepDefinition } from '../../../../types';
-import { getT, resolveStepUiSchema, shouldHideStepInSettings } from '../../../../utils';
-import { openStepSettings } from './StepSettings';
+import { StepDefinition, StepUIMode } from '../../../../types';
+import {
+  getT,
+  resolveStepUiSchema,
+  shouldHideStepInSettings,
+  resolveDefaultParams,
+  resolveUiMode,
+} from '../../../../utils';
 import { useNiceDropdownMaxHeight } from '../../../../hooks';
-
+import { SwitchWithTitle } from '../component/SwitchWithTitle';
+import { SelectWithTitle } from '../component/SelectWithTitle';
 // Type definitions for better type safety
 interface StepInfo {
   stepKey: string;
@@ -24,6 +30,7 @@ interface StepInfo {
   uiSchema: Record<string, any>;
   title: string;
   modelKey?: string;
+  uiMode?: StepUIMode;
 }
 
 interface FlowInfo {
@@ -83,6 +90,22 @@ const findSubModelByKey = (model: FlowModel, subModelKey: string): FlowModel | n
     }
     return subModel instanceof FlowModel ? subModel : null;
   }
+};
+
+const componentMap = {
+  switch: SwitchWithTitle,
+  select: SelectWithTitle,
+};
+
+const MenuLabelItem = ({ title, uiMode, itemProps }) => {
+  const type = uiMode?.type || uiMode;
+  const Component = type ? componentMap[type] : null;
+
+  if (!Component) {
+    return <>{title}</>;
+  }
+
+  return <Component title={title} {...itemProps} />;
 };
 
 /**
@@ -281,12 +304,12 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             const configurableSteps = await Promise.all(
               Object.entries(flow.steps).map(async ([stepKey, stepDefinition]) => {
                 const actionStep = stepDefinition;
-
+                let step = actionStep;
                 // 支持静态与动态 hideInSettings
                 if (await shouldHideStepInSettings(targetModel, flow, actionStep)) {
                   return null;
                 }
-
+                let uiMode: any = await resolveUiMode(actionStep.uiMode, (targetModel as any).context);
                 // 检查是否有uiSchema（静态或动态）
                 const hasStepUiSchema = actionStep.uiSchema != null;
 
@@ -296,15 +319,18 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                 if (actionStep.use) {
                   try {
                     const action = targetModel.getAction?.(actionStep.use);
+                    step = { ...(action || {}), ...actionStep };
+                    uiMode = await resolveUiMode(action?.uiMode || uiMode, (targetModel as any).context);
                     hasActionUiSchema = action && action.uiSchema != null;
                     stepTitle = stepTitle || action?.title;
                   } catch (error) {
                     console.warn(t('Failed to get action {{action}}', { action: actionStep.use }), ':', error);
                   }
                 }
+                const selectOrSwitchMode = ['select', 'switch'].includes(uiMode?.type || uiMode);
 
                 // 如果都没有uiSchema（静态或动态），返回null
-                if (!hasStepUiSchema && !hasActionUiSchema) {
+                if (!selectOrSwitchMode && !hasStepUiSchema && !hasActionUiSchema) {
                   return null;
                 }
 
@@ -316,7 +342,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   const resolvedSchema = await resolveStepUiSchema(targetModel, flow, actionStep);
 
                   // 如果解析后没有可配置的UI Schema，跳过此步骤
-                  if (!resolvedSchema) {
+                  if (!resolvedSchema && !selectOrSwitchMode) {
                     return null;
                   }
 
@@ -325,13 +351,13 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   console.warn(t('Failed to resolve uiSchema for step {{stepKey}}', { stepKey }), ':', error);
                   return null;
                 }
-
                 return {
                   stepKey,
-                  step: actionStep,
+                  step,
                   uiSchema: mergedUiSchema,
                   title: t(stepTitle) || stepKey,
                   modelKey, // 添加模型标识
+                  uiMode,
                 };
               }),
             ).then((steps) => steps.filter(Boolean));
@@ -489,13 +515,19 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         // 平铺模式：只有流程分组，没有模型层级
         configurableFlowsAndSteps.forEach(({ flow, steps, modelKey }: FlowInfo) => {
           const groupKey = generateUniqueKey(`flow-group-${modelKey ? `${modelKey}-` : ''}${flow.key}`);
-
+          if (flow.options.divider === 'top') {
+            items.push({
+              type: 'divider',
+            });
+          }
           // 在平铺模式下始终按流程分组
-          items.push({
-            key: groupKey,
-            label: t(flow.title) || flow.key,
-            type: 'group',
-          });
+          if (flow.options.enableTitle) {
+            items.push({
+              key: groupKey,
+              label: t(flow.title) || flow.key,
+              type: 'group',
+            });
+          }
 
           steps.forEach((stepInfo: StepInfo) => {
             // 构建菜单项key，为子模型包含modelKey
@@ -504,14 +536,39 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               : `${flow.key}:${stepInfo.stepKey}`;
 
             const uniqueKey = generateUniqueKey(baseMenuKey);
-
+            const uiMode = stepInfo.uiMode;
+            const subModel: any = findSubModelByKey(model, stepInfo.modelKey);
+            const targetModel = subModel || model;
+            const stepParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || {};
+            const itemProps = {
+              getDefaultValue: async () => {
+                let defaultParams = await resolveDefaultParams(stepInfo.step.defaultParams, targetModel.context);
+                if (stepInfo.step.use) {
+                  const action = targetModel.getAction?.(stepInfo.step.use);
+                  defaultParams = await resolveDefaultParams(action.defaultParams, targetModel.context);
+                }
+                return { ...defaultParams, ...stepParams };
+              },
+              onChange: async (val) => {
+                targetModel.setStepParams(flow.key, stepInfo.stepKey, val);
+                if (typeof stepInfo.step.beforeParamsSave === 'function') {
+                  await stepInfo.step.beforeParamsSave(targetModel.context, val, stepParams);
+                }
+                await targetModel.saveStepParams();
+                message?.success?.(t('Configuration saved'));
+                if (typeof stepInfo.step.afterParamsSave === 'function') {
+                  await stepInfo.step.afterParamsSave(targetModel.context, val, stepParams);
+                }
+              },
+              ...((uiMode as any)?.props || {}),
+              itemKey: (uiMode as any)?.key,
+            };
             items.push({
               key: uniqueKey,
-              label: t(stepInfo.title),
+              label: <MenuLabelItem title={t(stepInfo.title)} uiMode={uiMode} itemProps={itemProps} />,
             });
-
             // add per-step copy popup uid under each configurable step
-            if (flow.key === 'popupSettings') {
+            if (flow.key === 'popupSettings' && baseMenuKey.includes('openView')) {
               const copyKey = generateUniqueKey(`copy-pop-uid:${baseMenuKey}`);
               items.push({
                 key: copyKey,
@@ -519,6 +576,11 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               });
             }
           });
+          if (flow.options.divider === 'bottom') {
+            items.push({
+              type: 'divider',
+            });
+          }
         });
       } else {
         // 层级模式：真正的子菜单结构
@@ -542,7 +604,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
             // 直接添加当前模型的flows
             flows.forEach(({ flow, steps }: FlowInfo) => {
               const groupKey = generateUniqueKey(`flow-group-${flow.key}`);
-
               items.push({
                 key: groupKey,
                 label: t(flow.title) || flow.key,
@@ -608,12 +669,16 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     const items = [...menuItems];
 
     if (showCopyUidButton || showDeleteButton) {
-      // 使用分组呈现常用操作（不再使用分割线）
       items.push({
-        key: 'common-actions',
-        label: t('Common actions'),
-        type: 'group' as const,
+        type: 'divider',
       });
+      // 使用分组呈现常用操作（不再使用分割线）
+
+      // items.push({
+      //   key: 'common-actions',
+      //   label: t('Common actions'),
+      //   type: 'group' as const,
+      // });
 
       // 添加复制uid按钮
       if (showCopyUidButton && model.uid) {

@@ -9,7 +9,7 @@
 
 import {
   FlowSettingsButton,
-  escapeT,
+  tExpr,
   Droppable,
   AddSubModelButton,
   DragHandler,
@@ -84,6 +84,7 @@ export class ActionPanelBlockModel extends BlockModel {
                       return;
                     }
                     const { icon, color = '#1677FF', title } = action.props;
+
                     action.enableEditDanger = false;
                     action.enableEditType = false;
                     action.renderHiddenInConfig = () => {
@@ -270,7 +271,7 @@ export class ActionPanelBlockModel extends BlockModel {
 }
 
 ActionPanelBlockModel.define({
-  label: escapeT('Action panel'),
+  label: tExpr('Action panel'),
   createModelOptions: {
     use: 'ActionPanelBlockModel',
   },
@@ -278,17 +279,17 @@ ActionPanelBlockModel.define({
 
 ActionPanelBlockModel.registerFlow({
   key: 'actionPanelBlockSetting',
-  title: escapeT('Action panel settings', { ns: 'block-workbench' }),
+  title: tExpr('Action panel settings', { ns: 'block-workbench' }),
   steps: {
     layout: {
-      title: escapeT('Layout', { ns: 'block-workbench' }),
-      uiSchema(ctx) {
+      title: tExpr('Layout', { ns: 'block-workbench' }),
+      uiMode(ctx) {
         const t = ctx.t;
         return {
-          layout: {
-            'x-component': 'Radio.Group',
-            'x-decorator': 'FormItem',
-            enum: [
+          type: 'select',
+          key: 'layout',
+          props: {
+            options: [
               { label: t('Grid', { ns: 'block-workbench' }), value: WorkbenchLayout.Grid },
               { label: t('List', { ns: 'block-workbench' }), value: WorkbenchLayout.List },
             ],
@@ -305,19 +306,8 @@ ActionPanelBlockModel.registerFlow({
       },
     },
     ellipsis: {
-      title: escapeT('Ellipsis action title', { ns: 'block-workbench' }),
-      uiSchema(ctx) {
-        return {
-          ellipsis: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-            'x-component-props': {
-              checkedChildren: escapeT('Yes'),
-              unCheckedChildren: escapeT('No'),
-            },
-          },
-        };
-      },
+      title: tExpr('Ellipsis action title', { ns: 'block-workbench' }),
+      uiMode: { type: 'switch', key: 'ellipsis' },
       defaultParams: {
         ellipsis: true,
       },

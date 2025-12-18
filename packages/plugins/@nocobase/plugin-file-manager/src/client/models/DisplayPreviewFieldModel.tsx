@@ -9,7 +9,7 @@
 
 import { EyeOutlined } from '@ant-design/icons';
 import { DetailsItemModel, FieldModel, TableColumnModel, matchMimetype, css } from '@nocobase/client';
-import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
+import { tExpr, DisplayItemModel } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
 import {
   DownloadOutlined,
@@ -144,7 +144,7 @@ const Preview = (props) => {
   const { value = [], size = 28, showFileName } = props;
   const [current, setCurrent] = React.useState(0);
   const { t } = useTranslation();
-  const onDownload = () => {
+  const onDownload = (props) => {
     const url = value[current].url || value[current];
     const suffix = url.slice(url.lastIndexOf('.'));
     const filename = Date.now() + suffix;
@@ -189,6 +189,7 @@ const Preview = (props) => {
           setCurrent(index);
         },
         imageRender: (originalNode, info) => {
+          setCurrent(info.current);
           const file: any = info.image;
           // 根据文件类型决定如何渲染预览
           if (matchMimetype(file, 'application/pdf')) {
@@ -236,6 +237,7 @@ const Preview = (props) => {
   );
 };
 export class DisplayPreviewFieldModel extends FieldModel {
+  disableTitleField = true;
   render(): any {
     const { value, titleField, template, target } = this.props;
     if (titleField && template !== 'file' && target !== 'attachments') {
@@ -258,34 +260,35 @@ export class DisplayPreviewFieldModel extends FieldModel {
 DisplayPreviewFieldModel.registerFlow({
   key: 'previewReadPrettySetting',
   sort: 500,
-  title: escapeT('Preview Settings'),
+  title: tExpr('Preview Settings'),
   steps: {
     size: {
-      title: escapeT('Size'),
-      uiSchema: (ctx) => {
-        if (ctx.model.parent instanceof TableColumnModel) {
-          return null;
-        }
+      title: tExpr('Size'),
+      uiMode: (ctx) => {
+        const t = ctx.t;
         return {
-          size: {
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: [
+          type: 'select',
+          key: 'size',
+          props: {
+            options: [
               {
                 value: 300,
-                label: escapeT('Large'),
+                label: t('Large'),
               },
               {
                 value: 100,
-                label: escapeT('Middle'),
+                label: t('Middle'),
               },
               {
                 value: 28,
-                label: escapeT('Small'),
+                label: t('Small'),
               },
             ],
           },
         };
+      },
+      hideInSettings(ctx) {
+        return ctx.model.parent instanceof TableColumnModel;
       },
       defaultParams: (ctx) => {
         return {
@@ -297,17 +300,10 @@ DisplayPreviewFieldModel.registerFlow({
       },
     },
     showFileName: {
-      title: escapeT('Show file name'),
-      uiSchema: (ctx) => {
-        if (ctx.model.parent instanceof TableColumnModel) {
-          return null;
-        }
-        return {
-          showFileName: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-          },
-        };
+      title: tExpr('Show file name'),
+      uiMode: { type: 'switch', key: 'showFileName' },
+      hideInSettings(ctx) {
+        return ctx.model.parent instanceof TableColumnModel;
       },
       defaultParams: {
         showFileName: false,
@@ -320,7 +316,7 @@ DisplayPreviewFieldModel.registerFlow({
 });
 
 DisplayPreviewFieldModel.define({
-  label: escapeT('Preview'),
+  label: tExpr('Preview'),
 });
 
 DisplayItemModel.bindModelToInterface(
