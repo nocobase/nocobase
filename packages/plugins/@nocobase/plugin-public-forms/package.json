@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-public-forms",
-  "version": "1.9.28",
+  "version": "1.9.29",
   "main": "dist/server/index.js",
   "displayName": "Public forms",
   "displayName.ru-RU": "Публичные формы",

@@ -1,6 +1,6 @@
 {
   "name": "@nocobase/plugin-notifications",
-  "version": "1.9.28",
+  "version": "1.9.29",
   "description": "",
   "displayName.ru-RU": "Уведомления",
   "description.ru-RU": "Пакет плагинов для отправки и тестирования уведомлений.",
