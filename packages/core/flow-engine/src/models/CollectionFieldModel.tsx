@@ -119,7 +119,6 @@ const defaultWhen = () => true;
 export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   private static _bindings = new Map();
   fieldDeleted = false;
-  forbidden = null;
 
   renderHiddenInConfig(): React.ReactNode | undefined {
     if (this.fieldDeleted) {

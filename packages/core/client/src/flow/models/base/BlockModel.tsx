@@ -30,7 +30,6 @@ export const BlockSceneEnum = {
 export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   decoratorProps: Record<string, any> = observable({});
   static scene: BlockSceneType;
-  forbidden = null;
   _defaultCustomModelClasses = {} as any;
   customModelClasses = {} as any;
 

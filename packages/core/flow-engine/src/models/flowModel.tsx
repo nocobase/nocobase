@@ -93,6 +93,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   protected _title: string;
   public isNew = false; // 标记是否为新建状态
   public skeleton = null;
+  public forbidden = null;
 
   /**
    * 所有 fork 实例的引用集合。
