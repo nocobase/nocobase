@@ -102,27 +102,16 @@ export class PluginBlockReferenceServer extends Plugin {
       return Array.from(uids);
     };
 
-    const syncUsages = async (
-      instanceUid: string,
-      options: any,
-      previousOptions: any,
-      { transaction }: { transaction?: any } = {},
-    ) => {
+    const syncUsages = async (instanceUid: string, options: any, { transaction }: { transaction?: any } = {}) => {
       const usageRepo = this.db.getRepository('flowModelTemplateUsages');
-      const currentUids = new Set(extractTemplateUids(options).map(String));
-      const previousUids = new Set(extractTemplateUids(previousOptions).map(String));
+      const currentUids = _.uniq(extractTemplateUids(options).map(String));
 
-      const removed = Array.from(previousUids).filter((x) => !currentUids.has(x));
-      const added = Array.from(currentUids).filter((x) => !previousUids.has(x));
-      if (removed.length === 0 && added.length === 0) return;
+      await usageRepo.destroy({
+        filter: { modelUid: instanceUid },
+        transaction,
+      });
 
-      for (const templateUid of removed) {
-        await usageRepo.destroy({
-          filter: { modelUid: instanceUid, templateUid },
-          transaction,
-        });
-      }
-      for (const templateUid of added) {
+      for (const templateUid of currentUids) {
         await usageRepo.updateOrCreate({
           filterKeys: ['templateUid', 'modelUid'],
           values: { uid: uid(), templateUid, modelUid: instanceUid },
@@ -157,8 +146,7 @@ export class PluginBlockReferenceServer extends Plugin {
       if (!instanceUid) return;
 
       const options = parseOptions(instance?.get?.('options') || instance?.options);
-      const previousOptions = parseOptions(instance?.previous?.('options'));
-      await syncUsages(instanceUid, options, previousOptions, { transaction });
+      await syncUsages(instanceUid, options, { transaction });
     };
 
     this.db.on('flowModels.afterSaveWithAssociations', handleFlowModelSave);
@@ -182,21 +170,6 @@ export class PluginBlockReferenceServer extends Plugin {
           });
         }
         const nodes = collectFlowModelsFromTree(values);
-        const uids = _.uniq(nodes.map((n) => n?.uid).filter(Boolean));
-
-        const previousOptionsByUid = new Map<string, any>();
-        if (uids.length) {
-          const FlowModel = ctx.db.getModel('flowModels');
-          const rows = await FlowModel.findAll({
-            attributes: ['uid', 'options'],
-            where: { uid: uids },
-            raw: true,
-            transaction: ctx.transaction,
-          });
-          for (const row of rows) {
-            previousOptionsByUid.set(row.uid, parseOptions(row.options));
-          }
-        }
 
         await next();
 
@@ -204,8 +177,7 @@ export class PluginBlockReferenceServer extends Plugin {
           const instanceUid = node?.uid;
           if (!instanceUid) continue;
           const currentOptions = parseOptions(node);
-          const previousOptions = previousOptionsByUid.get(instanceUid) || {};
-          await syncUsages(instanceUid, currentOptions, previousOptions, { transaction: ctx.transaction });
+          await syncUsages(instanceUid, currentOptions, { transaction: ctx.transaction });
         }
         return;
       }
@@ -246,7 +218,7 @@ export class PluginBlockReferenceServer extends Plugin {
           const instanceUid = node?.uid;
           if (!instanceUid) continue;
           const currentOptions = parseOptions(node);
-          await syncUsages(instanceUid, currentOptions, {}, { transaction: ctx.transaction });
+          await syncUsages(instanceUid, currentOptions, { transaction: ctx.transaction });
         }
         return;
       }
