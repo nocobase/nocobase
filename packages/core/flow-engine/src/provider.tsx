@@ -14,7 +14,6 @@ import { FlowContextProvider } from './FlowContextProvider';
 import { FlowEngine } from './flowEngine';
 import { useDialog, useDrawer, usePage, usePopover } from './views';
 import { FlowViewer } from './views/FlowView';
-import { observer } from '@formily/reactive-react';
 
 interface FlowEngineProviderProps {
   engine: FlowEngine;
