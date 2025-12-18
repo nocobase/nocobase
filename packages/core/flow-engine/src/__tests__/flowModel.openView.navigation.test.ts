@@ -25,6 +25,7 @@ describe('FlowModelContext.openView - navigation enforcement', () => {
       },
       getStepParams: vi.fn(() => undefined),
       setStepParams: vi.fn(),
+      setParent: vi.fn(),
       save: vi.fn(async () => undefined),
       dispatchEvent: vi.fn(async (_event: string, _params?: any) => undefined),
     };
