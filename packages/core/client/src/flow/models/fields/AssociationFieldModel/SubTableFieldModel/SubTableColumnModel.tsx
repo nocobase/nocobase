@@ -268,7 +268,7 @@ export class SubTableColumnModel<
   }
   render(): any {
     return (props) => {
-      const { value, id, rowIdx } = props;
+      const { value, id, rowIdx } = props || {};
       return (
         <div
           style={{
