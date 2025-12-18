@@ -8,6 +8,7 @@
  */
 
 import { Card, Form, Tooltip } from 'antd';
+import { LockOutlined } from '@ant-design/icons';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -86,24 +87,17 @@ function FieldWithoutPermissionPlaceholder() {
       `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
       {
         name: nameValue,
-        actionName,
+        actionName: t(_.capitalize(actionName)),
       },
     ).replaceAll('&gt;', '>');
   }, [nameValue, t]);
 
   return (
-    <FormItem showLabel={false}>
-      <Card
-        size="small"
-        styles={{
-          body: {
-            color: 'rgba(0,0,0,0.45)',
-          },
-        }}
-      >
-        {messageValue}
-      </Card>
-    </FormItem>
+    <Tooltip title={messageValue}>
+      <FormItem showLabel={true} label={model.context.collectionField.title || name} style={{ opacity: '0.4' }}>
+        <LockOutlined />
+      </FormItem>
+    </Tooltip>
   );
 }
 export interface FieldSettingsInitParams {

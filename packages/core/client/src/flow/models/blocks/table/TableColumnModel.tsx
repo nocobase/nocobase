@@ -29,7 +29,7 @@ import {
 } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
 import { TableColumnProps, Tooltip, Space, InputNumber, Button, Divider } from 'antd';
-import { get, omit } from 'lodash';
+import { get, omit, capitalize } from 'lodash';
 import React, { useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { getRowKey } from './utils';
@@ -71,17 +71,13 @@ function FieldWithoutPermissionPlaceholder() {
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
   }, []);
-  const content = t(`The current user don't have view permission for the {{type}} "{{name}}"`, {
-    type: t('Field'),
-    name: nameValue,
-  }).replaceAll('&gt;', '>');
   const { actionName } = model.forbidden;
   const messageValue = useMemo(() => {
     return t(
       `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
       {
         name: nameValue,
-        actionName,
+        actionName: t(capitalize(actionName)),
       },
     ).replaceAll('&gt;', '>');
   }, [nameValue, t]);
