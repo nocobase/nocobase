@@ -14,7 +14,7 @@ import type PluginDataSourceManagerServer from '../plugin';
 const EXTERNAL_DS = 'externalDS';
 const CONTENTS = 'contents';
 
-describe('Database event should effect after data source reload', () => {
+describe('Reuse database instance after reload data source', () => {
   let app: MockServer;
 
   beforeEach(async () => {
@@ -22,18 +22,6 @@ describe('Database event should effect after data source reload', () => {
       acl: false,
       plugins: ['nocobase', 'data-source-external-postgres'],
     });
-    app.db.collection({
-      name: CONTENTS,
-      fields: [
-        {
-          name: 'id',
-          type: 'bigInt',
-          autoIncrement: true,
-          primaryKey: true,
-        },
-      ],
-    });
-    await app.db.sync();
 
     await app
       .agent()
@@ -56,9 +44,26 @@ describe('Database event should effect after data source reload', () => {
       });
 
     await waitDataSourceLoad(app);
+    expect(getDatasourceStatus(app)).eq('loaded');
+
+    const databaseInstance = await getDatabaseInstance(app);
+    databaseInstance.collection({
+      name: CONTENTS,
+      fields: [
+        {
+          name: 'id',
+          type: 'bigInt',
+          autoIncrement: true,
+          primaryKey: true,
+        },
+      ],
+    });
+    await databaseInstance.sync();
   });
 
   afterEach(async () => {
+    const databaseInstance = await getDatabaseInstance(app);
+    databaseInstance.clean({ drop: true });
     await app.db.clean({ drop: true });
     await app.destroy();
   });
