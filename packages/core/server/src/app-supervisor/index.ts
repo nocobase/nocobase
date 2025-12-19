@@ -447,6 +447,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.getAppModel(appName);
   }
 
+  async removeAppModel(appName: string) {
+    return this.discoveryAdapter.removeAppModel(appName);
+  }
+
   async addAutoStartApps(environmentName: string, appName: string[]) {
     if (typeof this.discoveryAdapter.addAutoStartApps !== 'function') {
       return;
