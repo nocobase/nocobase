@@ -7,15 +7,39 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { LockOutlined } from '@ant-design/icons';
-import { DefaultStructure, FlowModel, tExpr } from '@nocobase/flow-engine';
+import { DefaultStructure, FlowModel, tExpr, useFlowModel } from '@nocobase/flow-engine';
 import { Button, Tooltip } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
+import { useTranslation } from 'react-i18next';
 import _ from 'lodash';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Icon } from '../../../icon/Icon';
 import { ColorPicker } from '../../../schema-component/antd/color-picker';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
+
+function ActionWithoutPermission(props) {
+  const { t } = useTranslation();
+  const model: any = useFlowModel();
+  const blockModel = model.context.blockModel;
+  const dataSource = blockModel.collection.dataSource;
+  const collection = blockModel.collection;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}`;
+  }, []);
+  const { actionName } = model.forbidden;
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for collection "{{name}}"`,
+      {
+        name: nameValue,
+        actionName: t(_.capitalize(actionName)),
+      },
+    ).replaceAll('&gt;', '>');
+  }, [actionName, nameValue, t]);
+  return <Tooltip title={messageValue}>{props.children}</Tooltip>;
+}
 
 export type ActionSceneType = 'collection' | 'record' | ActionSceneType[];
 
@@ -51,7 +75,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   }
 
   getAclActionName() {
-    return 'view';
+    return null;
   }
 
   onInit(options: any): void {
@@ -114,13 +138,22 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
 
   // 设置态隐藏时的占位渲染（与真实按钮外观一致，去除 onClick 并降低透明度）
   renderHiddenInConfig(): React.ReactNode | undefined {
+    const props = this.props;
+    const icon = this.getIcon() ? <Icon type={this.getIcon() as any} /> : undefined;
+    if (this.forbidden) {
+      return (
+        <ActionWithoutPermission>
+          <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
+            {props.children || this.getTitle()}
+          </Button>
+        </ActionWithoutPermission>
+      );
+    }
     return (
-      <Tooltip
-        title={this.context.t(
-          'The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).',
-        )}
-      >
-        <Button type={this.props.type} disabled icon={<LockOutlined />} />
+      <Tooltip title={this.context.t('The button is hidden and only visible when the UI Editor is active')}>
+        <Button {...props} onClick={this.onClick.bind(this)} icon={icon} style={{ opacity: '0.3' }}>
+          {props.children || this.getTitle()}
+        </Button>
       </Tooltip>
     );
   }

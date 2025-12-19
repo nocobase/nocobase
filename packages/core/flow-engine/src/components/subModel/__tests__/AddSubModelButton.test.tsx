@@ -190,6 +190,143 @@ describe('transformItems - searchable flags', () => {
   });
 });
 
+describe('transformItems - hide', () => {
+  it('filters items by hide flag/function recursively', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-hide' });
+
+    const definition: SubModelItem[] = [
+      {
+        key: 'keep',
+        label: 'Keep',
+        createModelOptions: { use: 'Parent' },
+      },
+      {
+        key: 'hide-true',
+        label: 'Hidden',
+        hide: true,
+        createModelOptions: { use: 'Parent' },
+      },
+      {
+        key: 'hide-fn',
+        label: 'HiddenFn',
+        hide: (ctx: FlowModelContext) => ctx.model.uid === 'p-hide',
+        createModelOptions: { use: 'Parent' },
+      },
+      {
+        key: 'group',
+        type: 'group',
+        label: 'Group',
+        children: [
+          { key: 'g-hide', label: 'GHide', hide: true, createModelOptions: { use: 'Parent' } },
+          { key: 'g-keep', label: 'GKeep', createModelOptions: { use: 'Parent' } },
+        ],
+      },
+    ];
+
+    const factory = transformItems(definition, parent, 'items', 'array');
+    const resolved = await (typeof factory === 'function' ? factory() : factory);
+
+    expect(resolved.map((i: any) => i.key)).toEqual(['keep', 'group']);
+    const group = resolved.find((i: any) => i.key === 'group') as any;
+    expect(group).toBeTruthy();
+    expect(Array.isArray(group.children)).toBe(true);
+    expect(group.children.map((i: any) => i.key)).toEqual(['g-keep']);
+  });
+
+  it('removes group when all children are hidden (even with async hide)', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-empty-group' });
+
+    let show = false;
+    const definition: SubModelItem[] = [
+      {
+        key: 'group',
+        type: 'group',
+        label: 'Group',
+        children: [
+          {
+            key: 'child',
+            label: 'Child',
+            hide: async () => !show,
+            createModelOptions: { use: 'Parent' },
+          },
+        ],
+      },
+    ];
+
+    const factory = transformItems(definition, parent, 'items', 'array');
+    const first = await (factory as () => Promise<any[]>)();
+    expect(first).toHaveLength(0);
+
+    show = true;
+    const second = await (factory as () => Promise<any[]>)();
+    expect(second.map((i: any) => i.key)).toEqual(['group']);
+  });
+
+  it('supports async hide functions and disables cache', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-async-hide' });
+
+    let shouldHide = true;
+    const definition: SubModelItem[] = [
+      {
+        key: 'async-hide',
+        label: 'AsyncHide',
+        hide: async () => shouldHide,
+        createModelOptions: { use: 'Parent' },
+      },
+    ];
+
+    const factory = transformItems(definition, parent, 'items', 'array');
+
+    const first = await (factory as () => Promise<any[]>)();
+    expect(first).toHaveLength(0);
+
+    shouldHide = false;
+    const second = await (factory as () => Promise<any[]>)();
+    expect(second.map((i: any) => i.key)).toEqual(['async-hide']);
+    expect(second).not.toBe(first);
+  });
+
+  it('shows items when hide function throws (conservative fallback)', async () => {
+    const engine = new FlowEngine();
+    engine.flowSettings.forceEnable();
+    class Parent extends FlowModel {}
+    engine.registerModels({ Parent });
+    const parent = engine.createModel<FlowModel>({ use: 'Parent', uid: 'p-hide-throws' });
+
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const definition: SubModelItem[] = [
+        {
+          key: 'throw',
+          label: 'Throw',
+          hide: async () => {
+            throw new Error('boom');
+          },
+          createModelOptions: { use: 'Parent' },
+        },
+      ];
+
+      const factory = transformItems(definition, parent, 'items', 'array');
+      const resolved = await (factory as () => Promise<any[]>)();
+      expect(resolved.map((i: any) => i.key)).toEqual(['throw']);
+    } finally {
+      consoleSpy.mockRestore();
+    }
+  });
+});
+
 describe('transformItems - toggleable items', () => {
   class ToggleParent extends FlowModel {}
   class ToggleChild extends FlowModel {}

@@ -27,11 +27,19 @@ type CreateModelOptionsFn = (
   extra?: any,
 ) => CreateModelOptionsStringUse | Promise<CreateModelOptionsStringUse>;
 
+type HideOrFactory = boolean | ((ctx: FlowModelContext) => boolean | Promise<boolean>);
+
 export interface SubModelItem {
   key?: string;
   label?: string | React.ReactNode;
   type?: 'group' | 'divider';
   disabled?: boolean;
+  /**
+   * 动态隐藏菜单项（支持异步）。与模型 meta.hide 语义一致。
+   * - `true` 表示隐藏
+   * - function(ctx) 返回 true 表示隐藏
+   */
+  hide?: HideOrFactory;
   icon?: React.ReactNode;
   children?: false | SubModelItemsType;
   createModelOptions?: CreateModelOptionsStringUse | CreateModelOptionsFn;
@@ -181,6 +189,8 @@ const hasToggleItems = (items: SubModelItem[]): boolean => {
   const walk = (nodes: SubModelItem[]): boolean => {
     for (const node of nodes) {
       if (!node) continue;
+      // hide 为函数时菜单可见性依赖运行时上下文，应禁用缓存
+      if (typeof node.hide === 'function') return true;
       if (!node.children && (node.toggleDetector || node.toggleable)) return true;
       if (Array.isArray(node.children)) {
         if (walk(node.children)) return true;
@@ -191,6 +201,44 @@ const hasToggleItems = (items: SubModelItem[]): boolean => {
     return false;
   };
   return walk(items);
+};
+
+const isHidden = async (item: SubModelItem, ctx: FlowModelContext): Promise<boolean> => {
+  const hide = item.hide;
+  if (!hide) return false;
+  if (typeof hide === 'function') {
+    return !!(await hide(ctx));
+  }
+  return !!hide;
+};
+
+const hasVisibleSubModelItems = async (items: SubModelItem[], ctx: FlowModelContext): Promise<boolean> => {
+  for (const item of items) {
+    if (!item) continue;
+    try {
+      if (await isHidden(item, ctx)) continue;
+    } catch (e) {
+      console.error('[NocoBase]: Failed to resolve item.hide:', e);
+    }
+
+    if (Array.isArray(item.children)) {
+      const hasVisibleChildren = await hasVisibleSubModelItems(item.children, ctx);
+      if (hasVisibleChildren) return true;
+
+      if (item.type === 'group' || !item.createModelOptions) {
+        continue;
+      }
+      return true;
+    }
+
+    if (typeof item.children === 'function') {
+      return true;
+    }
+
+    return true;
+  }
+
+  return false;
 };
 
 /**
@@ -204,10 +252,26 @@ const transformSubModelItems = async (
 ): Promise<Item[]> => {
   if (items.length === 0) return [];
 
+  // 动态隐藏：按当前 FlowModelContext 过滤（支持异步）
+  const hidden = await Promise.all(
+    items.map(async (item) => {
+      if (!item) return true;
+      try {
+        return await isHidden(item, model.context);
+      } catch (e) {
+        console.error('[NocoBase]: Failed to resolve item.hide:', e);
+        return false; // 出错时保守显示
+      }
+    }),
+  );
+  const visibleItems = items.filter((item, idx) => !!item && !hidden[idx]);
+
+  if (visibleItems.length === 0) return [];
+
   // 批量收集需要异步检测的可切换项
   const toggleItems: Array<{ item: SubModelItem; index: number }> = [];
-  for (let i = 0; i < items.length; i++) {
-    const item = items[i];
+  for (let i = 0; i < visibleItems.length; i++) {
+    const item = visibleItems[i];
 
     // 自动从 createModelOptions 中推断 useModel，避免遗漏导致 toggleable 失效
     let resolvedUseModel = item.useModel;
@@ -267,7 +331,7 @@ const transformSubModelItems = async (
   });
 
   // 并发转换所有项目
-  const transformPromises = items.map(async (item, index) => {
+  const transformPromises = visibleItems.map(async (item, index): Promise<Item | null> => {
     const transformedItem: Item = {
       key: item.key,
       label: item.label,
@@ -293,11 +357,25 @@ const transformSubModelItems = async (
         // 仅当子树包含 toggleable/动态函数时，才转为惰性函数；否则保留为静态数组，兼容现有测试与用法
         const childHasToggle = hasToggleItems(staticChildren);
         if (childHasToggle) {
-          transformedItem.children = async () =>
-            transformSubModelItems(staticChildren, model, subModelKey, subModelType);
+          const hasVisibleChildren = await hasVisibleSubModelItems(staticChildren, model.context);
+          if (!hasVisibleChildren) {
+            if (item.type === 'group' || !item.createModelOptions) {
+              return null;
+            }
+          } else {
+            transformedItem.children = async () =>
+              transformSubModelItems(staticChildren, model, subModelKey, subModelType);
+          }
         } else {
           transformedItem.children = await transformSubModelItems(staticChildren, model, subModelKey, subModelType);
         }
+      }
+    }
+
+    // group/submenu 若最终无子项，则不展示该分组，避免空分组残留
+    if (Array.isArray(transformedItem.children) && transformedItem.children.length === 0) {
+      if (item.type === 'group' || !item.createModelOptions) {
+        return null;
       }
     }
 
@@ -315,7 +393,8 @@ const transformSubModelItems = async (
     return transformedItem;
   });
 
-  return Promise.all(transformPromises);
+  const transformed = await Promise.all(transformPromises);
+  return transformed.filter((item): item is Item => !!item);
 };
 
 /**

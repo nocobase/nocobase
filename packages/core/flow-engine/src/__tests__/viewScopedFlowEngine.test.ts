@@ -59,6 +59,18 @@ describe('ViewScopedFlowEngine', () => {
     expect(child.getModel(uid)).toBe(cm);
   });
 
+  it('mounts parent model from previous engine when creating models in scoped engine', () => {
+    const parent = new FlowEngine();
+    const scoped = createViewScopedEngine(parent);
+
+    const parentModel = parent.createModel({ use: 'FlowModel', uid: 'parent-uid' });
+
+    const childModel = scoped.createModel({ use: 'FlowModel', uid: 'child-uid', parentId: parentModel.uid });
+
+    expect(childModel.parent).toBe(parentModel);
+    expect(childModel.parent?.uid).toBe('parent-uid');
+  });
+
   it('isolates beforeRender event cache across engines with identical model uid', async () => {
     const parent = new FlowEngine();
     const child = createViewScopedEngine(parent);

@@ -135,6 +135,27 @@ describe('ViewNavigation', () => {
       viewNavigation.back();
 
       expect(mockCtx.router.navigate).toHaveBeenCalledWith(-1);
+      expect(viewNavigation.viewStack).toEqual([]);
+    });
+
+    it('should not mutate viewStack when pathname does not match', () => {
+      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }]);
+      window.history.pushState({}, '', '/admin/other-path');
+
+      viewNavigation.back();
+
+      expect(mockCtx.router.navigate).not.toHaveBeenCalled();
+      expect(viewNavigation.viewStack).toEqual([{ viewUid: 'view1' }]);
+    });
+
+    it('should pop last entry when multi-tier pathname matches', () => {
+      viewNavigation = new ViewNavigation(mockCtx, [{ viewUid: 'view1' }, { viewUid: 'view2' }]);
+      window.history.pushState({}, '', '/admin/view1/view/view2');
+
+      viewNavigation.back();
+
+      expect(mockCtx.router.navigate).toHaveBeenCalledWith(-1);
+      expect(viewNavigation.viewStack).toEqual([{ viewUid: 'view1' }]);
     });
   });
 });

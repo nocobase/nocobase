@@ -28,9 +28,9 @@ import {
   useFlowModel,
 } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
-import { TableColumnProps, Tooltip } from 'antd';
-import { get, omit } from 'lodash';
-import React, { useMemo } from 'react';
+import { TableColumnProps, Tooltip, Space, InputNumber, Button, Divider } from 'antd';
+import { get, omit, capitalize } from 'lodash';
+import React, { useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { getRowKey } from './utils';
 import { getFieldBindingUse, rebuildFieldSubModel } from '../../../internal/utils/rebuildFieldSubModel';
@@ -54,33 +54,82 @@ function FieldDeletePlaceholder() {
   }).replaceAll('&gt;', '>');
   return (
     <Tooltip title={content}>
-      <ExclamationCircleOutlined style={{ opacity: '0.45' }} />
+      <ExclamationCircleOutlined style={{ opacity: '0.3' }} />
     </Tooltip>
   );
 }
 
+function FieldWithoutPermissionPlaceholder() {
+  const { t } = useTranslation();
+  const model: any = useFlowModel();
+  const blockModel = model.context.blockModel;
+  const dataSource = blockModel.collection.dataSource;
+  const collection = blockModel.collection;
+  const name = model.fieldPath;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}${name}`;
+  }, []);
+  const { actionName } = model.forbidden;
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
+      {
+        name: nameValue,
+        actionName: t(capitalize(actionName)),
+      },
+    ).replaceAll('&gt;', '>');
+  }, [nameValue, t]);
+  return (
+    <Tooltip title={messageValue}>
+      <LockOutlined style={{ opacity: '0.3' }} />
+    </Tooltip>
+  );
+}
+
+export const CustomWidth = ({ setOpen, t, handleChange, defaultValue }) => {
+  const [customWidth, setCustomWidth] = useState(defaultValue);
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        setOpen(true);
+      }}
+      onMouseLeave={() => {
+        setOpen(true);
+      }}
+    >
+      <Space.Compact block>
+        <InputNumber
+          placeholder={t('Custom column width')}
+          value={customWidth}
+          onChange={(val) => {
+            setCustomWidth(val);
+          }}
+          style={{ width: '100%', minWidth: 200 }}
+        />
+        <Button type="primary" onClick={() => handleChange(customWidth)}>
+          OK
+        </Button>
+      </Space.Compact>
+    </div>
+  );
+};
 export class TableColumnModel extends DisplayItemModel {
   // 标记：该类的 render 返回函数， 避免错误的reactive封装
   static renderMode: ModelRenderMode = ModelRenderMode.RenderFunction;
 
-  renderHiddenInConfig() {
-    if (this.fieldDeleted) {
-      return <FieldDeletePlaceholder />;
-    }
-    return (
-      <Tooltip
-        title={this.context.t(
-          'This field has been hidden and you cannot view it (this content is only visible when the UI Editor is activated).',
-        )}
-      >
-        <LockOutlined style={{ opacity: '0.45' }} />
-      </Tooltip>
-    );
-  }
-
   async afterAddAsSubModel() {
     await super.afterAddAsSubModel();
     await this.dispatchEvent('beforeRender');
+  }
+  renderHiddenInConfig(): React.ReactNode | undefined {
+    if (this.fieldDeleted) {
+      return <FieldDeletePlaceholder />;
+    }
+
+    return this.renderOriginal.call(this);
   }
 
   static defineChildren(ctx: FlowModelContext) {
@@ -147,6 +196,7 @@ export class TableColumnModel extends DisplayItemModel {
               text-overflow: ellipsis;
               white-space: nowrap;
               width: calc(${this.props.width}px - 16px);
+              opacity: ${this.hidden ? '0.3' : '1'};
             `}
           >
             {this.props.title}
@@ -187,6 +237,20 @@ export class TableColumnModel extends DisplayItemModel {
               {(() => {
                 const err = this['__autoFlowError'];
                 if (err) throw err;
+                if (this.hidden && this.flowEngine.flowSettings?.enabled) {
+                  if (this.forbidden) {
+                    return <FieldWithoutPermissionPlaceholder />;
+                  }
+                  if (!this.fieldDeleted) {
+                    return (
+                      <Tooltip
+                        title={this.context.t('The field is hidden and only visible when the UI Editor is active')}
+                      >
+                        <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record.__index || index)}</div>
+                      </Tooltip>
+                    );
+                  }
+                }
                 return cellRenderer(value, record, record.__index || index);
               })()}
             </ErrorBoundary>
@@ -273,9 +337,7 @@ TableColumnModel.registerFlow({
         });
       },
     },
-    aclCheck: {
-      use: 'aclCheck',
-    },
+
     title: {
       title: tExpr('Column title'),
       uiSchema: (ctx) => {
@@ -299,9 +361,10 @@ TableColumnModel.registerFlow({
       }),
       handler(ctx, params) {
         const title = ctx.t(params.title || ctx.model.collectionField?.title);
-        ctx.model.setProps('title', title);
+        ctx.model.setProps('title', title || ctx.fieldPath);
       },
     },
+
     tooltip: {
       title: tExpr('Tooltip'),
       uiSchema: {
@@ -317,6 +380,7 @@ TableColumnModel.registerFlow({
     width: {
       title: tExpr('Column width'),
       uiMode(ctx) {
+        const columnWidth = ctx.model.props.width;
         return {
           type: 'select',
           key: 'width',
@@ -333,6 +397,22 @@ TableColumnModel.registerFlow({
               { label: 450, value: 450 },
               { label: 500, value: 500 },
             ],
+            dropdownRender: (menu, setOpen, handleChange) => {
+              return (
+                <>
+                  {menu}
+                  <Divider style={{ margin: '4px 0' }} />
+                  <CustomWidth
+                    setOpen={setOpen}
+                    handleChange={handleChange}
+                    t={ctx.t}
+                    defaultValue={
+                      [50, 100, 150, 200, 250, 300, 350, 400, 450, 500].includes(columnWidth) ? null : columnWidth
+                    }
+                  />
+                </>
+              );
+            },
           },
         };
       },
@@ -342,6 +422,9 @@ TableColumnModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps('width', params.width);
       },
+    },
+    aclCheck: {
+      use: 'aclCheck',
     },
     quickEdit: {
       title: tExpr('Enable quick edit'),

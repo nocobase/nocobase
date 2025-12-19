@@ -167,7 +167,7 @@ export class DataSource {
     const fieldName = otherKeys.join('.');
     const collection = this.getCollection(collectionName);
     if (!collection) {
-      throw new Error(`Collection ${collectionName} not found in data source ${this.key}`);
+      return;
     }
     const field = collection.getFieldByPath(fieldName);
     if (!field) {
