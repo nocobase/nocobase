@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.29](https://github.com/nocobase/nocobase/compare/v1.9.28...v1.9.29) - 2025-12-18
+
+### 🐛 Bug Fixes
+
+- **[Workflow]** Fix the issue where error thrown when delete workflow version which is not current ([#8203](https://github.com/nocobase/nocobase/pull/8203)) by @mytharcher
+
+- **[Migration manager]** Fix missing migration description and set the current time as the default by @cgyrock
+
 ## [v1.9.27](https://github.com/nocobase/nocobase/compare/v1.9.26...v1.9.27) - 2025-12-17
 
 ### 🚀 Improvements

@@ -202,6 +202,7 @@ class PackageManager {
         responseType: 'json',
       });
       this.token = res1.data.token;
+      logger.info('Login success');
     } catch (error) {
       if (error?.response?.data?.error === 'license not valid') {
         showLicenseInfo(LicenseKeyError.notValid);
@@ -260,9 +261,11 @@ class PackageManager {
         await this.removePackage(pkg);
       }
     }
+    logger.info(`Download plugins...`);
     for (const pkg of licensed_plugins) {
       await this.getPackage(pkg).download({ version });
     }
+    logger.info('Download plugins done');
   }
 }
 
