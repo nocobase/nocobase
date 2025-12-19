@@ -409,7 +409,7 @@ async function handleConvertFieldsToCopy(model: FlowModel, _t: (k: string, opt?:
       // 引用已清理，回退临时标题（移除“字段模板”标记）
       const clearTemplateTitle = (m: FlowModel) => {
         const curTitle = m.title || '';
-        const labelCandidates = [t('Field template'), 'Field template', '字段模板', '字段模版']
+        const labelCandidates = [t('Field template'), 'Field template', '字段模板', '字段模板']
           .concat(tStr('Field template'))
           .map((s) => (s ? String(s) : ''))
           .filter(Boolean);

@@ -226,14 +226,14 @@ const getPopupTemplateDisabledReason = async (
   const meta = inferPopupTemplateMeta(ctx, tpl);
 
   /**
-   * 弹窗模版的兼容性判断说明：
+   * 弹窗模板的兼容性判断说明：
    *
    * openView 弹窗通常在某个「当前记录/资源」上下文中触发（ctx.record / ctx.resource）。
-   * 弹窗模版在创建时会把 dataSourceKey/collectionName（以及 associationName）固化到模板记录，
+   * 弹窗模板在创建时会把 dataSourceKey/collectionName（以及 associationName）固化到模板记录，
    * 模板内部的区块/变量表达式也往往默认依赖这些信息（例如默认 filterByTk 会引用 ctx.record.<pk>，
    * sourceId 可能引用 ctx.resource.sourceId）。
    *
-   * 如果在另一个 dataSourceKey/collectionName 的上下文里引用该弹窗模版：
+   * 如果在另一个 dataSourceKey/collectionName 的上下文里引用该弹窗模板：
    * - 弹窗里获取数据会落到错误的数据源/数据表，或由于上下文不一致导致变量无法解析；
    * - 即使 openView 参数被"回填"为模板侧的 dataSourceKey/collectionName，也会让当前触发点
    *   的 ctx.record 与弹窗目标集合不一致，从而形成「配置上看似可用、运行时必坏」的问题。
@@ -337,10 +337,8 @@ const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
     typeof params.popupTemplateHasSourceId === 'boolean'
       ? params.popupTemplateHasSourceId
       : normalizeStr(params.sourceId) !== '';
-  // 如果模板有 associationName 且需要 filterByTk（record-scene），说明是关系资源弹窗需要访问特定记录，应保留 sourceId
-  // 如果是 collection-scene（如"添加新记录"），即使有 associationName 也不需要保留 sourceId
-  const templateHasAssociationName = !!tplAssociationName;
-  const shouldKeepSourceId = hasTemplateSourceId || (templateHasAssociationName && hasTemplateFilterByTk);
+  // sourceId 是否需要保留完全由模板的 popupTemplateHasSourceId 或 sourceId 表达式决定
+  const shouldKeepSourceId = hasTemplateSourceId;
 
   let didOverrideFilterByTk = false;
   let didOverrideSourceId = false;

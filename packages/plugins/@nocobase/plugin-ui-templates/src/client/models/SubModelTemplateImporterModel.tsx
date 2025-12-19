@@ -304,7 +304,7 @@ export class SubModelTemplateImporterModel extends FlowModel {
           },
         ];
       });
-      // enabled 模版放在最前面，其余保持原有顺序（稳定排序）
+      // enabled 模板放在最前面，其余保持原有顺序（稳定排序）
       withIndex.sort(defaultSelectOptionComparator);
       return {
         options: withIndex,

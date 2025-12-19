@@ -1,9 +1,9 @@
 {
   "name": "@nocobase/plugin-ui-templates",
   "displayName": "UI templates",
-  "displayName.zh-CN": "界面模版",
+  "displayName.zh-CN": "界面模板",
   "description": "Provides block templates and popup templates for UI reuse.",
-  "description.zh-CN": "提供区块模版和弹窗模版复用的能力。",
+  "description.zh-CN": "提供区块模板和弹窗模板复用的能力。",
   "version": "2.0.0-alpha.56",
   "license": "AGPL-3.0",
   "main": "./dist/server/index.js",

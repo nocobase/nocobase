@@ -151,7 +151,7 @@ describe('ReferenceFormGridModel', () => {
         referenceSettings: {
           useTemplate: {
             templateUid: 'tpl-1',
-            templateName: '模版名称',
+            templateName: '模板名称',
             targetUid: 'tpl-root',
             targetPath: 'subModels.grid',
             mode: 'reference',
@@ -163,7 +163,7 @@ describe('ReferenceFormGridModel', () => {
 
     await refGrid.dispatchEvent('beforeRender', undefined, { useCache: false });
     expect(form.title).toBe('默认block title');
-    expect((form as any).extraTitle).toBe('Reference template: 模版名称 (Fields only)');
+    expect((form as any).extraTitle).toBe('Reference template: 模板名称 (Fields only)');
 
     // clear settings should restore base title
     (refGrid as any).stepParams.referenceSettings.useTemplate.templateUid = '';
