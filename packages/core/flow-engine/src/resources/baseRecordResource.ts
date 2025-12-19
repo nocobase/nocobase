@@ -95,6 +95,7 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
   }
 
   async runAction<TData = any, TMeta = any>(action: string, options: any) {
+    const { rawResponse, ...rest } = options;
     const config = this.mergeRequestConfig(
       _.omit(this.request, ['params', 'data', 'method']),
       {
@@ -102,14 +103,18 @@ export abstract class BaseRecordResource<TData = any> extends APIResource<TData>
         url: this.buildURL(action),
       },
       this.runActionOptions?.[action],
-      options,
+      rest,
     );
     if (['create', 'update', 'firstOrCreate', 'updateOrCreate'].includes(action)) {
       config.params = config.params || {};
       config.params.updateAssociationValues = this.getUpdateAssociationValues();
     }
     try {
-      const { data } = await this.api.request(config);
+      const response = await this.api.request(config);
+      if (rawResponse) {
+        return response;
+      }
+      const { data } = response;
       if (!data?.data) {
         return data;
       }
