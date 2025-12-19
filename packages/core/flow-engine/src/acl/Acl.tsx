@@ -89,12 +89,12 @@ export class ACL {
   }
 
   getIgnoreScope = (options: any = {}) => {
-    const { recordPkValue } = options;
+    const { recordPkValue, allowedActions } = options;
     let ignoreScope = false;
     if (options.ignoreScope) {
       ignoreScope = true;
     }
-    if (!recordPkValue) {
+    if (!recordPkValue || !allowedActions) {
       ignoreScope = true;
     }
     return ignoreScope;
