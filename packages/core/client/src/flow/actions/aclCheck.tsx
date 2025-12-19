@@ -32,6 +32,7 @@ export const aclCheck = defineAction({
       allowedActions: ctx.resource?.getMeta('allowedActions'),
       recordPkValue: getRecordPkValue(ctx?.record && ctx.collection?.getFilterByTK?.(ctx?.record)),
     });
+
     if (ctx.fieldPath && !ctx.collectionField) {
       ctx.model.fieldDeleted = true;
       ctx.model.hidden = true;
@@ -41,7 +42,9 @@ export const aclCheck = defineAction({
       ctx.model.hidden = true;
       ctx.exitAll();
     }
-
+    if (!ctx.actionName) {
+      return;
+    }
     if (!result) {
       ctx.model.hidden = true;
       ctx.model.forbidden = {
