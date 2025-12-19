@@ -154,11 +154,11 @@ export const CardUpload = (props) => {
           .ant-upload-list-picture-card {
             margin-bottom: 10px;
             .ant-upload-list-item-container {
-              margin: ${showFileName ? '5px 0px' : '0px'};
+              margin: ${showFileName ? '8px 0px' : '0px'};
             }
           }
           .ant-upload-select {
-            margin: ${showFileName ? '5px 0px' : '0px'};
+            margin: ${showFileName ? '8px 0px' : '0px'};
           }
         `}
       >
