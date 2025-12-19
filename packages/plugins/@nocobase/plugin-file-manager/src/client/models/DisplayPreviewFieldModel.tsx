@@ -154,7 +154,9 @@ const Preview = (props) => {
   const { t } = useTranslation();
   const onDownload = (props) => {
     const url = value[current].url || value[current];
-    const suffix = url.slice(url.lastIndexOf('.'));
+    const cleanUrl = url.split('?')[0].split('#')[0];
+    const nameFromUrl = cleanUrl ? cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1) : url;
+    const suffix = nameFromUrl.slice(nameFromUrl.lastIndexOf('.'));
     const filename = `${Date.now()}_${value[current]?.filename}${suffix}`;
     // eslint-disable-next-line promise/catch-or-return
     fetch(url)
