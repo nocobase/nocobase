@@ -12,7 +12,7 @@ import { vi } from 'vitest';
 import FlowModelRepository from '../../../../plugin-flow-engine/src/server/repository';
 import { uid } from '@nocobase/utils';
 
-describe('block-reference templates and usages', () => {
+describe('ui templates and usages', () => {
   let app: MockServer | null;
   let flowRepo: FlowModelRepository;
   let usageRepo: any;
@@ -73,14 +73,14 @@ describe('block-reference templates and usages', () => {
 
   beforeEach(async () => {
     app = await createMockServer({
-      plugins: ['flow-engine', 'block-reference'],
+      plugins: ['flow-engine', 'ui-templates'],
       registerActions: true,
       name: `app_${uid()}`,
       database: {
         schema: `schema_${uid()}`,
       },
     });
-    expect(app.pm.get('block-reference')).toBeTruthy();
+    expect(app.pm.get('ui-templates')).toBeTruthy();
     flowRepo = app.db.getRepository('flowModels') as FlowModelRepository;
     usageRepo = app.db.getRepository('flowModelTemplateUsages');
     await flowRepo.create({ values: { uid: 'target-block', options: { use: 'TargetBlock' } } });
