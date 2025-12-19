@@ -18,9 +18,10 @@ const { pick } = require('lodash');
 exports.getAccessKeyPair = async function () {
   const keyFile = resolve(process.cwd(), 'storage/.license/license-key');
   if (!fs.existsSync(keyFile)) {
+    logger.error('License key not found');
     return {};
   }
-
+  logger.info('License key found');
   let keyData = {};
   try {
     const str = fs.readFileSync(keyFile, 'utf-8');
