@@ -209,7 +209,7 @@ export function createContextVariablesScope(ctx) {
         .filter((p) => !p.startsWith('$') && !isNumeric(p))
         .join('.');
       const { resourceName } = ctx.action;
-      return ctx.db.getFieldByPath(`${resourceName}.${fieldPath}`);
+      return ctx.database.getFieldByPath(`${resourceName}.${fieldPath}`);
     },
     vars: {
       ctx: {
