@@ -202,7 +202,7 @@
   "Triggered according to preset time conditions. Suitable for one-time or periodic tasks, such as sending notifications and cleaning data on a schedule.": "按预设的时间条件定时触发。适用于一次性或周期性的任务，如定时发送通知、清理数据等。",
   "Triggered at": "触发时间",
   "Triggered but still waiting in queue to execute.": "已触发但仍在队列中等待执行。",
-  "Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.": "只有被选中的某个字段发生变动时才会触发。如果不选择，则表示任何字段变动时都会触发。新增或删除数据时，任意字段都被认为发生变动。",
+  "Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added, any field is considered to have been changed.": "只有被选中的某个字段发生变动时才会触发。如果不选择，则表示任何字段变动时都会触发。新增数据时，任意字段都被认为发生变动。",
   "Triggered when data changes in the collection, such as after adding, updating, or deleting a record. Unlike \"Post-action event\", Collection event listens for data changes rather than HTTP requests. Unless you understand the exact meaning, it is recommended to use \"Post-action event\".": "当数据表中的数据发生变化时触发，比如新增、更新或删除一条数据后。与“操作后事件”不同，数据表事件监听数据变动而不是 HTTP 请求，除非你明白确切含义，否则推荐使用“操作后事件”。",
   "True": "真",
   "Unassigned fields will be set to default values, and those without default values will be set to null.": "未被赋值的字段将被设置为默认值，没有默认值的设置为空值。",
