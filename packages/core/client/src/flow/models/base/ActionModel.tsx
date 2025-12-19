@@ -75,7 +75,7 @@ export class ActionModel<T extends DefaultStructure = DefaultStructure> extends 
   }
 
   getAclActionName() {
-    return 'view';
+    return null;
   }
 
   onInit(options: any): void {
