@@ -15,7 +15,6 @@ import { Application } from '@nocobase/server';
 import path from 'path';
 import PluginDataSourceManagerServer from '../plugin';
 import { DataSourcesRolesModel } from './data-sources-roles-model';
-import boolean from 'packages/core/database/src/operators/boolean';
 
 const availableActions: {
   [key: string]: AvailableActionOptions;
@@ -103,7 +102,7 @@ export class DataSourceModel extends Model {
 
     try {
       const oldDataSource = app.dataSourceManager.get(dataSourceKey);
-      const { db: databaseInstance } =
+      const { db: databaseInstance = undefined } =
         reuseDB === true ? (oldDataSource?.collectionManager as SequelizeCollectionManager) : {};
       const dataSource = app.dataSourceManager.factory.create(type, {
         ...createOptions,

@@ -22,7 +22,6 @@ import { toJSON } from '../utils';
 import type { WorkflowModel } from '../types';
 import type { EventOptions } from '../Dispatcher';
 import PluginWorkflowServer from '../Plugin';
-import { DatabaseDataSource } from 'external-db-data-source';
 
 export interface CollectionChangeTriggerConfig {
   collection: string;
@@ -60,9 +59,6 @@ export default class CollectionTrigger extends Trigger {
   constructor(public readonly workflow: PluginWorkflowServer) {
     super(workflow);
     this.workflow.app.dataSourceManager.afterAddDataSource((dataSource) => {
-      if (!(dataSource instanceof DatabaseDataSource) && !(dataSource instanceof SequelizeDataSource)) {
-        return;
-      }
       for (const item of this.workflow.enabledCache.values()) {
         if (item.type !== 'collection' || !item.config.collection) {
           continue;
