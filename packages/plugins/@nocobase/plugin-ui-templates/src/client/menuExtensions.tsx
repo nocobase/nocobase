@@ -8,7 +8,8 @@
  */
 
 import React, { useState } from 'react';
-import { Button, Form, Input, Space, Switch, Typography } from 'antd';
+import { Button, Form, Input, Modal, Radio, Space, Tooltip, Typography } from 'antd';
+import { ExclamationCircleFilled, QuestionCircleOutlined } from '@ant-design/icons';
 import _ from 'lodash';
 import { FlowModel, createBlockScopedEngine } from '@nocobase/flow-engine';
 import { BlockModel } from '@nocobase/client';
@@ -111,8 +112,9 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
 
     const handleSubmit = async () => {
       const values = await form.validateFields();
+      const isConvertMode = values.saveMode === 'convert';
       let targetUid = model.uid;
-      if (!values.replace) {
+      if (!isConvertMode) {
         const duplicated = await api.resource('flowModels').duplicate({ uid: model.uid });
         const dupBody = unwrapData(duplicated);
         const duplicatedUid =
@@ -134,7 +136,7 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
         associationName: getResourceVal('associationName') || resourceInit?.associationName,
         filterByTk: getRawInitVal('filterByTk') ?? getResourceVal('filterByTk'),
         sourceId: getRawInitVal('sourceId') ?? getResourceVal('sourceId'),
-        detachParent: !!values.replace,
+        detachParent: isConvertMode,
       };
       const res = await api.resource('flowModelTemplates').create({
         values: payload,
@@ -143,7 +145,7 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
       const tplUid = tpl?.uid || tpl?.data?.uid || tpl?.data?.data?.uid || targetUid;
       model.context.message?.success?.(t('Template created'));
 
-      if (values.replace) {
+      if (isConvertMode) {
         const parent = model.parent as FlowModel | undefined;
         const subKey = model.subKey;
         const subType = model.subType;
@@ -253,7 +255,7 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
           initialValues={{
             name: normalizeTitle(model.title),
             description: '',
-            replace: true,
+            saveMode: 'convert',
           }}
         >
           <Form.Item
@@ -266,12 +268,23 @@ async function handleConvertToTemplate(model: FlowModel, _t: (k: string, opt?: a
           <Form.Item name="description" label={<Typography.Text strong>{t('Template description')}</Typography.Text>}>
             <Input.TextArea rows={3} />
           </Form.Item>
-          <Form.Item
-            name="replace"
-            label={<Typography.Text strong>{t('Replace current block with reference template')}</Typography.Text>}
-            valuePropName="checked"
-          >
-            <Switch />
+          <Form.Item name="saveMode" label={<Typography.Text strong>{t('Save mode')}</Typography.Text>}>
+            <Radio.Group>
+              <Space direction="vertical">
+                <Radio value="convert">
+                  {t('Convert current block to template')}
+                  <Tooltip title={t('Convert current block to template description')}>
+                    <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                  </Tooltip>
+                </Radio>
+                <Radio value="duplicate">
+                  {t('Duplicate current block as template')}
+                  <Tooltip title={t('Duplicate current block as template description')}>
+                    <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                  </Tooltip>
+                </Radio>
+              </Space>
+            </Radio.Group>
           </Form.Item>
         </Form>
         <currentDialog.Footer>
@@ -315,44 +328,27 @@ async function handleConvertToCopy(model: FlowModel, _t: (k: string, opt?: any) 
   }
   openCopyDialogs.add(model);
   const release = () => openCopyDialogs.delete(model);
-  viewer.dialog({
-    title: t('Convert reference to duplicate'),
-    width: 520,
-    destroyOnClose: true,
-    onClose: release,
-    content: (currentDialog: any) => (
-      <>
-        <div style={{ marginBottom: 16 }}>{t('Are you sure to convert this template block to copy mode?')}</div>
-        <currentDialog.Footer>
-          <Space align="end">
-            <Button
-              onClick={() => {
-                release();
-                currentDialog.close();
-              }}
-            >
-              {t('Cancel')}
-            </Button>
-            <Button
-              type="primary"
-              onClick={async () => {
-                try {
-                  const targetStep = model.getStepParams('referenceSettings', 'target') || {};
-                  const params = { ...targetStep, mode: 'copy' };
-                  await stepDef.beforeParamsSave({ engine: model.flowEngine, model, exit: () => {} } as any, params);
-                  currentDialog.close();
-                } catch (e) {
-                  console.error(e);
-                  model.context.message?.error?.(e instanceof Error ? e.message : String(e));
-                }
-              }}
-            >
-              {t('Confirm')}
-            </Button>
-          </Space>
-        </currentDialog.Footer>
-      </>
-    ),
+
+  Modal.confirm({
+    title: t('Are you sure to convert this template block to copy mode?'),
+    icon: <ExclamationCircleFilled />,
+    content: t('Duplicate mode description'),
+    okText: t('Confirm'),
+    cancelText: t('Cancel'),
+    onOk: async () => {
+      try {
+        const targetStep = model.getStepParams('referenceSettings', 'target') || {};
+        const params = { ...targetStep, mode: 'copy' };
+        await stepDef.beforeParamsSave({ engine: model.flowEngine, model, exit: () => {} } as any, params);
+      } catch (e) {
+        console.error(e);
+        model.context.message?.error?.(e instanceof Error ? e.message : String(e));
+        throw e;
+      } finally {
+        release();
+      }
+    },
+    onCancel: release,
   });
 }
 
@@ -554,6 +550,10 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
     return `{{ ctx.record.${recordKeyPath} }}`;
   };
   const getDefaultSourceIdExpr = (): string | undefined => {
+    // 如果有 associationName，说明是关系资源弹窗，默认需要 sourceId
+    if (toNonEmptyString(openViewParams?.associationName)) {
+      return `{{ ctx.resource.sourceId }}`;
+    }
     try {
       const sid = model.context?.resource?.getSourceId?.();
       if (sid !== undefined && sid !== null && String(sid) !== '') {
@@ -653,7 +653,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
             });
             const tplUid = getUidFromAny(tpl);
 
-            if (values?.replace && tplUid) {
+            if (values?.saveMode === 'convert' && tplUid) {
               // 选择替换时，当前弹窗改为引用新创建的模板
               const nextOpenView: any = { ...(openViewParams || {}) };
               nextOpenView.uid = targetUid;
@@ -678,10 +678,8 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
                 delete nextOpenView.filterByTk;
               }
 
-              // 如果模板有 associationName 且需要 filterByTk（record-scene），说明是关系资源弹窗需要访问特定记录，应保留 sourceId
-              const templateAssociationName = toNonEmptyString(openViewParams?.associationName);
-              const shouldKeepSourceId = inferred.hasSourceId || (!!templateAssociationName && inferred.hasFilterByTk);
-              if (shouldKeepSourceId) {
+              // sourceId 是否需要完全由 inferred.hasSourceId 决定
+              if (inferred.hasSourceId) {
                 if (!toNonEmptyString(nextOpenView.sourceId) && templateSourceId) {
                   nextOpenView.sourceId = templateSourceId;
                 }
@@ -691,7 +689,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
 
               // 保存模板侧的 filterByTk/sourceId 可用性：运行时可能解析为空/undefined，需用布尔标记避免误判为"模板未提供"
               nextOpenView.popupTemplateHasFilterByTk = inferred.hasFilterByTk;
-              nextOpenView.popupTemplateHasSourceId = shouldKeepSourceId;
+              nextOpenView.popupTemplateHasSourceId = inferred.hasSourceId;
               model.setStepParams('popupSettings', { [openViewStepKey]: nextOpenView });
               await model.saveStepParams();
             }
@@ -714,7 +712,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
               initialValues={{
                 name: defaultName,
                 description: '',
-                replace: true,
+                saveMode: 'convert',
               }}
             >
               <Form.Item
@@ -727,16 +725,23 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
               <Form.Item name="description" label={tNs('Template description')}>
                 <Input.TextArea rows={3} />
               </Form.Item>
-              <Form.Item
-                name="replace"
-                label={
-                  <Typography.Text strong style={{ display: 'inline-flex', alignItems: 'center' }}>
-                    {tNs('Replace current popup with reference template')}
-                  </Typography.Text>
-                }
-                valuePropName="checked"
-              >
-                <Switch />
+              <Form.Item name="saveMode" label={<Typography.Text strong>{tNs('Save mode')}</Typography.Text>}>
+                <Radio.Group>
+                  <Space direction="vertical">
+                    <Radio value="convert">
+                      {tNs('Convert current popup to template')}
+                      <Tooltip title={tNs('Convert current popup to template description')}>
+                        <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                      </Tooltip>
+                    </Radio>
+                    <Radio value="duplicate">
+                      {tNs('Duplicate current popup as template')}
+                      <Tooltip title={tNs('Duplicate current popup as template description')}>
+                        <QuestionCircleOutlined style={{ marginLeft: 4, color: '#999' }} />
+                      </Tooltip>
+                    </Radio>
+                  </Space>
+                </Radio.Group>
               </Form.Item>
             </Form>
             <currentDialog.Footer>
@@ -850,18 +855,15 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, _t: (k: string
     delete (nextOpenView as any).popupTemplateUid;
     // 保持与"模板引用"一致的运行时上下文覆写逻辑（特别是关联字段复用非关系弹窗时 filterByTk<-sourceId）
     (nextOpenView as any).popupTemplateContext = true;
-    // 如果模板有 associationName 且需要 filterByTk（record-scene），说明是关系资源弹窗需要访问特定记录，应保留 sourceId
-    const templateAssociationName =
-      normalizeStr(tplRow?.associationName) || normalizeStr(openViewParams?.associationName);
-    const shouldKeepSourceId = inferred.hasSourceId || (!!templateAssociationName && inferred.hasFilterByTk);
+    // sourceId 是否需要完全由 inferred.hasSourceId 决定
     // 关键：copy 模式下不再有 popupTemplateUid 可用于运行时推断，因此这里要把"模板是否需要 record/source 上下文"固化下来。
     nextOpenView.popupTemplateHasFilterByTk = inferred.hasFilterByTk;
-    nextOpenView.popupTemplateHasSourceId = shouldKeepSourceId;
+    nextOpenView.popupTemplateHasSourceId = inferred.hasSourceId;
     // 同步清理 params 侧的 filterByTk/sourceId，避免 record action 复用 collection 弹窗时泄漏 filterByTk
     if (!inferred.hasFilterByTk && 'filterByTk' in nextOpenView) {
       delete nextOpenView.filterByTk;
     }
-    if (!shouldKeepSourceId && 'sourceId' in nextOpenView) {
+    if (!inferred.hasSourceId && 'sourceId' in nextOpenView) {
       delete nextOpenView.sourceId;
     }
     model.setStepParams('popupSettings', { [openViewStepKey]: nextOpenView });
@@ -883,42 +885,24 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, _t: (k: string
     return;
   }
 
-  viewer.dialog({
-    title: tNs('Convert reference to duplicate'),
-    width: 520,
-    destroyOnClose: true,
-    onClose: release,
-    content: (currentDialog: any) => (
-      <>
-        <div style={{ marginBottom: 16 }}>{tNs('Are you sure to convert this pop-up to copy mode?')}</div>
-        <currentDialog.Footer>
-          <Space align="end">
-            <Button
-              onClick={() => {
-                release();
-                currentDialog.close();
-              }}
-            >
-              {tClient('Cancel')}
-            </Button>
-            <Button
-              type="primary"
-              onClick={async () => {
-                try {
-                  await doConvert();
-                  currentDialog.close();
-                } catch (e) {
-                  console.error(e);
-                  model.context.message?.error?.(e instanceof Error ? e.message : String(e));
-                }
-              }}
-            >
-              {tClient('Confirm')}
-            </Button>
-          </Space>
-        </currentDialog.Footer>
-      </>
-    ),
+  Modal.confirm({
+    title: tNs('Are you sure to convert this pop-up to copy mode?'),
+    icon: <ExclamationCircleFilled />,
+    content: tNs('Duplicate mode description'),
+    okText: tClient('Confirm'),
+    cancelText: tClient('Cancel'),
+    onOk: async () => {
+      try {
+        await doConvert();
+      } catch (e) {
+        console.error(e);
+        model.context.message?.error?.(e instanceof Error ? e.message : String(e));
+        throw e;
+      } finally {
+        release();
+      }
+    },
+    onCancel: release,
   });
 }
 

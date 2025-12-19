@@ -794,11 +794,10 @@ const resolveTemplateToUid = async (ctx: FlowSettingsContext, params: any): Prom
   }
 
   // filterByTk/sourceId 也以模板为准：模板未提供时需要清理，避免从 Record action 默认值透传到 Collection 模板。
-  // 但如果模板有 associationName 且需要 filterByTk（record-scene），说明是关系资源弹窗需要访问特定记录，应保留 sourceId
+  // sourceId 是否需要完全由模板的 hasSourceId 决定
   const inferred = inferPopupTemplateMeta(ctx as any, tpl);
-  const shouldKeepSourceId = inferred.hasSourceId || (!!tplAssociationName && inferred.hasFilterByTk);
   (params as any).popupTemplateHasFilterByTk = inferred.hasFilterByTk;
-  (params as any).popupTemplateHasSourceId = shouldKeepSourceId;
+  (params as any).popupTemplateHasSourceId = inferred.hasSourceId;
   const applyTemplateParam = (key: 'filterByTk' | 'sourceId', hasInTemplate: boolean) => {
     if (!hasInTemplate) {
       if (params && typeof params === 'object' && key in params) {
@@ -812,7 +811,7 @@ const resolveTemplateToUid = async (ctx: FlowSettingsContext, params: any): Prom
     }
   };
   applyTemplateParam('filterByTk', inferred.hasFilterByTk);
-  applyTemplateParam('sourceId', shouldKeepSourceId);
+  applyTemplateParam('sourceId', inferred.hasSourceId);
 };
 
 export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
@@ -870,12 +869,9 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
 
       // 如果模板不需要 sourceId，从 nextParams 中删除 sourceId
       // 避免关系字段上下文的 sourceId 被传递到不需要它的弹窗
-      // 但如果模板有 associationName 且需要 filterByTk（record-scene），说明是关系资源弹窗需要访问特定记录，应保留 sourceId
-      const templateHasAssociationName = !!normalizeStr((runtimeParams as any)?.associationName);
-      const templateNeedsFilterByTk =
-        hydratedMeta?.hasFilterByTk === true || !!(runtimeParams as any)?.popupTemplateHasFilterByTk;
+      // sourceId 是否需要保留完全由模板的 popupTemplateHasSourceId 决定
       const templateNeedsSourceId =
-        hydratedMeta?.hasSourceId === true || (templateHasAssociationName && templateNeedsFilterByTk);
+        hydratedMeta?.hasSourceId === true || !!(runtimeParams as any)?.popupTemplateHasSourceId;
       if (!templateNeedsSourceId && nextParams && typeof nextParams === 'object') {
         delete (nextParams as any).sourceId;
       }

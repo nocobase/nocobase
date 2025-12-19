@@ -59,5 +59,14 @@
   "Failed to copy popup from template": "Failed to duplicate popup from template",
   "Template field section description": "The field section of the specified block template will be used",
   "Reference mode description": "Modifying the block will update all places that reference this template.",
-  "Duplicate mode description": "Generates new content based on the template. All UIDs (including child node UIDs) will be regenerated. Cross-block UID references will no longer work after duplication."
+  "Duplicate mode description": "Generates new content based on the template. All UIDs (including child node UIDs) will be regenerated. Cross-block UID references will no longer work after duplication.",
+  "Save mode": "Save mode",
+  "Convert current block to template": "Convert current block to template",
+  "Convert current block to template description": "The current block itself will become a template reference",
+  "Duplicate current block as template": "Duplicate current block as template",
+  "Duplicate current block as template description": "Keep original block, create a copy as template",
+  "Convert current popup to template": "Convert current popup to template",
+  "Convert current popup to template description": "The current popup itself will become a template reference",
+  "Duplicate current popup as template": "Duplicate current popup as template",
+  "Duplicate current popup as template description": "Keep original popup, create a copy as template"
 }

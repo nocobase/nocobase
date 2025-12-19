@@ -58,5 +58,14 @@
   "Failed to copy popup from template": "从弹窗模板复制失败",
   "Template field section description": "将使用指定区块模板的字段部分",
   "Reference mode description": "修改区块所有引用该模板的地方都会被修改。",
-  "Duplicate mode description": "基于模板生成新内容，所有 UID（包括子节点的 UID）都会重新生成。涉及跨区块的 UID 引用在复制后将不再生效。"
+  "Duplicate mode description": "基于模板生成新内容，所有 UID（包括子节点的 UID）都会重新生成。涉及跨区块的 UID 引用在复制后将不再生效。",
+  "Save mode": "保存模式",
+  "Convert current block to template": "将当前区块转为模板",
+  "Convert current block to template description": "当前区块本身会变成模板引用",
+  "Duplicate current block as template": "复制当前区块为模板",
+  "Duplicate current block as template description": "保留原区块，复制一份作为模板",
+  "Convert current popup to template": "将当前弹窗转为模板",
+  "Convert current popup to template description": "当前弹窗本身会变成模板引用",
+  "Duplicate current popup as template": "复制当前弹窗为模板",
+  "Duplicate current popup as template description": "保留原弹窗，复制一份作为模板"
 }
