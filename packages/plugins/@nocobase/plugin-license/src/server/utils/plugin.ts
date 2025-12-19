@@ -87,11 +87,12 @@ export async function getPlugins({ keyData, ctx }: { keyData: KeyData; ctx: any 
   const list = sortBy(plugins, (plugin) => [statusOrder[plugin.status] ?? 999, plugin.enabled ? 0 : 1, plugin.name]);
   licensedPlugins.forEach((p) => {
     const plugin = plugins.find((plugin) => plugin.packageName === p.packageName);
-    if (!plugin) {
+    if (p.updateExpirationDate && !plugin) {
+      const isExpired = isDateExpired(p.updateExpirationDate);
       list.push({
         name: p.displayName || p.packageName,
         packageName: p.packageName,
-        status: 'licensed',
+        status: isExpired ? 'expired' : 'licensed',
         expirationDate: p.updateExpirationDate,
         enabled: false,
         installed: false,
