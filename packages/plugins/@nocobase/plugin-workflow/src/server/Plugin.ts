@@ -327,7 +327,7 @@ export default class PluginWorkflowServer extends Plugin {
     this.initTriggers(options.triggers);
     this.initInstructions(options.instructions);
     initFunctions(this, options.functions);
-    this.functions.register('workerId', () => this.app.instanceId);
+    this.functions.register('instanceId', () => this.app.instanceId);
     this.functions.register('epoch', () => 1605024000);
     this.functions.register('genSnowflakeId', () => this.app.snowflakeIdGenerator.generate());
 

@@ -142,7 +142,7 @@ describe('workflow > functions > system variable', () => {
   afterEach(() => app.destroy());
 
   describe('basic', () => {
-    it('workerId', async () => {
+    it('instanceId', async () => {
       workflow = await WorkflowModel.create({
         type: 'syncTrigger',
         enabled: true,
@@ -150,7 +150,7 @@ describe('workflow > functions > system variable', () => {
       const n1 = await workflow.createNode({
         type: 'echoVariable',
         config: {
-          variable: '{{$system.workerId}}',
+          variable: '{{$system.instanceId}}',
         },
       });
       const { execution } = (await plugin.trigger(workflow, {})) as Processor;

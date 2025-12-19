@@ -203,7 +203,7 @@ export default class PluginWorkflowClient extends Plugin {
       value: 'now',
     });
     this.registerSystemVariable({
-      key: 'workerId',
+      key: 'instanceId',
       label: (
         <>
           <span style={{ marginRight: '0.5em' }}>{lang('Instance ID')}</span>
@@ -212,7 +212,7 @@ export default class PluginWorkflowClient extends Plugin {
           </Tooltip>
         </>
       ),
-      value: 'workerId',
+      value: 'instanceId',
     });
     this.registerSystemVariable({
       key: 'genSnowflakeId',
