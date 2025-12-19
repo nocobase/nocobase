@@ -10,7 +10,7 @@
 import { defineAction } from '@nocobase/flow-engine';
 
 const getRecordPkValue = (value: any) => {
-  if (value == null) return undefined;
+  if (!value) return undefined;
 
   // 如果是对象，取第一个 value
   if (typeof value === 'object') {
