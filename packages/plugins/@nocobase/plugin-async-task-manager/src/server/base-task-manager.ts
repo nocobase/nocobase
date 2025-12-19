@@ -135,37 +135,46 @@ export class BaseTaskManager implements AsyncTasksManager {
   private cleanup = async () => {
     this.logger.debug('Running cleanup for completed tasks...');
     const TaskRepo = this.app.db.getRepository('asyncTasks');
-    const tasksToCleanup = await TaskRepo.find({
-      fields: ['id'],
-      filter: {
-        $or: [
-          {
-            status: [TASK_STATUS.SUCCEEDED, TASK_STATUS.FAILED],
-            doneAt: {
-              $lt: new Date(Date.now() - this.cleanupDelay),
-            },
-          },
-          {
-            status: TASK_STATUS.CANCELED,
-          },
-        ],
-      },
-    });
-
-    this.logger.debug(`Found ${tasksToCleanup.length} tasks to cleanup`);
-
-    for (const task of tasksToCleanup) {
-      this.tasks.delete(task.id);
-      this.progressThrottles.delete(task.id);
-    }
-
     try {
-      await TaskRepo.destroy({
-        filterByTk: tasksToCleanup.map((task) => task.id),
-        individualHooks: true,
+      const tasksToCleanup = await TaskRepo.find({
+        fields: ['id'],
+        filter: {
+          $or: [
+            {
+              status: [TASK_STATUS.SUCCEEDED, TASK_STATUS.FAILED],
+              doneAt: {
+                $lt: new Date(Date.now() - this.cleanupDelay),
+              },
+            },
+            {
+              status: TASK_STATUS.CANCELED,
+            },
+          ],
+        },
       });
+
+      this.logger.debug(`Found ${tasksToCleanup.length} tasks to cleanup`);
+
+      if (tasksToCleanup.length) {
+        for (const task of tasksToCleanup) {
+          this.tasks.delete(task.id);
+          this.progressThrottles.delete(task.id);
+        }
+
+        await TaskRepo.destroy({
+          filterByTk: tasksToCleanup.map((task) => task.id),
+          individualHooks: true,
+        });
+      }
     } catch (error) {
-      this.logger.error('Error during cleanup:', { error });
+      this.logger.error(`DB error during cleanup: ${error.message}. Will stop cleanup timer.`, { error });
+
+      if (error.name === 'SequelizeConnectionAcquireTimeoutError') {
+        if (this.cleanupTimer) {
+          clearInterval(this.cleanupTimer);
+          this.cleanupTimer = null;
+        }
+      }
     }
   };
 
