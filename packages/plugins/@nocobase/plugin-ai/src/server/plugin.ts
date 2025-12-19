@@ -29,6 +29,7 @@ import {
   formFiller,
   getCollectionMetadata,
   getCollectionNames,
+  getDataSources,
   getWorkflowCallers,
   chartGenerator,
 } from './tools';
@@ -141,6 +142,10 @@ export class PluginAIServer extends Plugin {
       {
         groupName: dataModelingGroupName,
         tool: dataModelingIntentRouter,
+      },
+      {
+        groupName: dataModelingGroupName,
+        tool: getDataSources,
       },
       {
         groupName: dataModelingGroupName,

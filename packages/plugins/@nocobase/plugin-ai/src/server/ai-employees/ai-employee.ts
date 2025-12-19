@@ -276,7 +276,8 @@ export class AIEmployee {
     return result;
   }
 
-  getDataSources() {
+  // Notice: employee.dataSourceSettings is not used in the current version.
+  getEmployeeDataSourceContext() {
     const dataSourceSettings: {
       collections?: {
         collection: string;
@@ -335,7 +336,7 @@ export class AIEmployee {
     });
 
     let systemMessage = await parseVariables(this.ctx, this.employee.about);
-    const dataSourceMessage = this.getDataSources();
+    const dataSourceMessage = this.getEmployeeDataSourceContext();
     if (dataSourceMessage) {
       systemMessage = `${systemMessage}\n${dataSourceMessage}`;
     }
