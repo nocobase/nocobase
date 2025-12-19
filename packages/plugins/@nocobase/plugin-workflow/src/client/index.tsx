@@ -18,7 +18,7 @@ const { ExecutionPage } = lazy(() => import('./ExecutionPage'), 'ExecutionPage')
 const { WorkflowPage } = lazy(() => import('./WorkflowPage'), 'WorkflowPage');
 const { WorkflowPane } = lazy(() => import('./WorkflowPane'), 'WorkflowPane');
 
-import { NAMESPACE } from './locale';
+import { lang, NAMESPACE } from './locale';
 import { Instruction } from './nodes';
 import CalculationInstruction from './nodes/calculation';
 import ConditionInstruction from './nodes/condition';
@@ -44,6 +44,9 @@ import {
 } from './WorkflowTasks';
 import { WorkflowCollectionsProvider } from './WorkflowCollectionsProvider';
 import { observer } from '@formily/react';
+import { Tooltip } from 'antd';
+import React from 'react';
+import { QuestionCircleOutlined } from '@ant-design/icons';
 
 const workflowConfigSettings = {
   Component: BindWorkflowConfig,
@@ -198,6 +201,23 @@ export default class PluginWorkflowClient extends Plugin {
       key: 'now',
       label: `{{t("System time", { ns: "${NAMESPACE}" })}}`,
       value: 'now',
+    });
+    this.registerSystemVariable({
+      key: 'workerId',
+      label: (
+        <>
+          <span style={{ marginRight: '0.5em' }}>{lang('Instance ID')}</span>
+          <Tooltip title={lang('The ID of current server instance')}>
+            <QuestionCircleOutlined />
+          </Tooltip>
+        </>
+      ),
+      value: 'workerId',
+    });
+    this.registerSystemVariable({
+      key: 'genSnowflakeId',
+      label: `{{t('Generate snowflake ID', { ns: "${NAMESPACE}" })}}`,
+      value: 'genSnowflakeId',
     });
   }
 }
