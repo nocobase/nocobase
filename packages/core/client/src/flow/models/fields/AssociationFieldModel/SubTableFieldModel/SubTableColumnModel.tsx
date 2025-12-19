@@ -205,6 +205,13 @@ export class SubTableColumnModel<
     await this.dispatchEvent('beforeRender');
   }
 
+  get enableUIConfiguration() {
+    if (typeof this.context.enableUIConfiguration === 'boolean') {
+      return this.context.enableUIConfiguration;
+    }
+    return this.flowEngine.flowSettings.enabled;
+  }
+
   getColumnProps(): TableColumnProps {
     const titleContent = (
       <Droppable model={this}>
@@ -220,6 +227,7 @@ export class SubTableColumnModel<
               sort: 1,
             },
           ]}
+          enabled={this.enableUIConfiguration}
         >
           <div
             className={css`
