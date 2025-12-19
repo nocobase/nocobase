@@ -168,7 +168,7 @@ export const CardUpload = (props) => {
           listType="picture-card"
           fileList={fileList}
           onChange={(newFileList) => {
-            setFileList(newFileList);
+            setFileList(normalizedFileList(newFileList));
             const doneFiles = newFileList.filter((f: any) => f.status === 'done' || f.id);
             if (newFileList.every((f: any) => f.status === 'done' || f.id)) {
               if (props.maxCount === 1) {
