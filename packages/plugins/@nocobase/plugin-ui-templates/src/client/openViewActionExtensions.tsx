@@ -337,6 +337,10 @@ const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
     typeof params.popupTemplateHasSourceId === 'boolean'
       ? params.popupTemplateHasSourceId
       : normalizeStr(params.sourceId) !== '';
+  // 如果模板有 associationName 且需要 filterByTk（record-scene），说明是关系资源弹窗需要访问特定记录，应保留 sourceId
+  // 如果是 collection-scene（如"添加新记录"），即使有 associationName 也不需要保留 sourceId
+  const templateHasAssociationName = !!tplAssociationName;
+  const shouldKeepSourceId = hasTemplateSourceId || (templateHasAssociationName && hasTemplateFilterByTk);
 
   let didOverrideFilterByTk = false;
   let didOverrideSourceId = false;
@@ -357,8 +361,8 @@ const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
     }
   }
 
-  if (!hasTemplateSourceId) {
-    // 模板不需要 sourceId，清除来自关系字段上下文的 sourceId
+  if (!shouldKeepSourceId) {
+    // 模板不需要 sourceId（且不是关系资源弹窗），清除来自关系字段上下文的 sourceId
     nextInputArgs.sourceId = null;
     didOverrideSourceId = true;
   }
@@ -792,9 +796,11 @@ const resolveTemplateToUid = async (ctx: FlowSettingsContext, params: any): Prom
   }
 
   // filterByTk/sourceId 也以模板为准：模板未提供时需要清理，避免从 Record action 默认值透传到 Collection 模板。
+  // 但如果模板有 associationName 且需要 filterByTk（record-scene），说明是关系资源弹窗需要访问特定记录，应保留 sourceId
   const inferred = inferPopupTemplateMeta(ctx as any, tpl);
+  const shouldKeepSourceId = inferred.hasSourceId || (!!tplAssociationName && inferred.hasFilterByTk);
   (params as any).popupTemplateHasFilterByTk = inferred.hasFilterByTk;
-  (params as any).popupTemplateHasSourceId = inferred.hasSourceId;
+  (params as any).popupTemplateHasSourceId = shouldKeepSourceId;
   const applyTemplateParam = (key: 'filterByTk' | 'sourceId', hasInTemplate: boolean) => {
     if (!hasInTemplate) {
       if (params && typeof params === 'object' && key in params) {
@@ -808,7 +814,7 @@ const resolveTemplateToUid = async (ctx: FlowSettingsContext, params: any): Prom
     }
   };
   applyTemplateParam('filterByTk', inferred.hasFilterByTk);
-  applyTemplateParam('sourceId', inferred.hasSourceId);
+  applyTemplateParam('sourceId', shouldKeepSourceId);
 };
 
 export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
@@ -866,7 +872,12 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
 
       // 如果模板不需要 sourceId，从 nextParams 中删除 sourceId
       // 避免关系字段上下文的 sourceId 被传递到不需要它的弹窗
-      const templateNeedsSourceId = hydratedMeta?.hasSourceId === true;
+      // 但如果模板有 associationName 且需要 filterByTk（record-scene），说明是关系资源弹窗需要访问特定记录，应保留 sourceId
+      const templateHasAssociationName = !!normalizeStr((runtimeParams as any)?.associationName);
+      const templateNeedsFilterByTk =
+        hydratedMeta?.hasFilterByTk === true || !!(runtimeParams as any)?.popupTemplateHasFilterByTk;
+      const templateNeedsSourceId =
+        hydratedMeta?.hasSourceId === true || (templateHasAssociationName && templateNeedsFilterByTk);
       if (!templateNeedsSourceId && nextParams && typeof nextParams === 'object') {
         delete (nextParams as any).sourceId;
       }

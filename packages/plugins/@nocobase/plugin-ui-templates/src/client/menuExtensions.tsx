@@ -678,7 +678,10 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
                 delete nextOpenView.filterByTk;
               }
 
-              if (inferred.hasSourceId) {
+              // 如果模板有 associationName 且需要 filterByTk（record-scene），说明是关系资源弹窗需要访问特定记录，应保留 sourceId
+              const templateAssociationName = toNonEmptyString(openViewParams?.associationName);
+              const shouldKeepSourceId = inferred.hasSourceId || (!!templateAssociationName && inferred.hasFilterByTk);
+              if (shouldKeepSourceId) {
                 if (!toNonEmptyString(nextOpenView.sourceId) && templateSourceId) {
                   nextOpenView.sourceId = templateSourceId;
                 }
@@ -688,7 +691,7 @@ async function handleSavePopupAsTemplate(model: FlowModel, _t: (k: string, opt?:
 
               // 保存模板侧的 filterByTk/sourceId 可用性：运行时可能解析为空/undefined，需用布尔标记避免误判为"模板未提供"
               nextOpenView.popupTemplateHasFilterByTk = inferred.hasFilterByTk;
-              nextOpenView.popupTemplateHasSourceId = inferred.hasSourceId;
+              nextOpenView.popupTemplateHasSourceId = shouldKeepSourceId;
               model.setStepParams('popupSettings', { [openViewStepKey]: nextOpenView });
               await model.saveStepParams();
             }
@@ -847,14 +850,18 @@ async function handleConvertPopupTemplateToCopy(model: FlowModel, _t: (k: string
     delete (nextOpenView as any).popupTemplateUid;
     // 保持与"模板引用"一致的运行时上下文覆写逻辑（特别是关联字段复用非关系弹窗时 filterByTk<-sourceId）
     (nextOpenView as any).popupTemplateContext = true;
+    // 如果模板有 associationName 且需要 filterByTk（record-scene），说明是关系资源弹窗需要访问特定记录，应保留 sourceId
+    const templateAssociationName =
+      normalizeStr(tplRow?.associationName) || normalizeStr(openViewParams?.associationName);
+    const shouldKeepSourceId = inferred.hasSourceId || (!!templateAssociationName && inferred.hasFilterByTk);
     // 关键：copy 模式下不再有 popupTemplateUid 可用于运行时推断，因此这里要把"模板是否需要 record/source 上下文"固化下来。
     nextOpenView.popupTemplateHasFilterByTk = inferred.hasFilterByTk;
-    nextOpenView.popupTemplateHasSourceId = inferred.hasSourceId;
+    nextOpenView.popupTemplateHasSourceId = shouldKeepSourceId;
     // 同步清理 params 侧的 filterByTk/sourceId，避免 record action 复用 collection 弹窗时泄漏 filterByTk
     if (!inferred.hasFilterByTk && 'filterByTk' in nextOpenView) {
       delete nextOpenView.filterByTk;
     }
-    if (!inferred.hasSourceId && 'sourceId' in nextOpenView) {
+    if (!shouldKeepSourceId && 'sourceId' in nextOpenView) {
       delete nextOpenView.sourceId;
     }
     model.setStepParams('popupSettings', { [openViewStepKey]: nextOpenView });
