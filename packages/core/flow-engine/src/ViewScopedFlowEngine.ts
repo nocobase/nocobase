@@ -56,6 +56,8 @@ export function createViewScopedEngine(parent: FlowEngine): FlowEngine {
     'linkAfter',
     '_previousEngine',
     '_nextEngine',
+    // getModel 需要在本地执行以确保全局查找时正确遍历整个引擎栈
+    'getModel',
   ]);
 
   const handler: ProxyHandler<FlowEngine> = {
