@@ -159,10 +159,14 @@ export class BaseTaskManager implements AsyncTasksManager {
       this.progressThrottles.delete(task.id);
     }
 
-    await TaskRepo.destroy({
-      filterByTk: tasksToCleanup.map((task) => task.id),
-      individualHooks: true,
-    });
+    try {
+      await TaskRepo.destroy({
+        filterByTk: tasksToCleanup.map((task) => task.id),
+        individualHooks: true,
+      });
+    } catch (error) {
+      this.logger.error('Error during cleanup:', { error });
+    }
   };
 
   private getThrottledProgressEmitter(taskId: string, userId: number) {
