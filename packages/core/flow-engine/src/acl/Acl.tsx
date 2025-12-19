@@ -6,7 +6,7 @@
  * This project is dual-licensed under AGPL-3.0 and NocoBase Commercial License.
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
-
+import { omit } from 'lodash';
 import { FlowEngine } from '../flowEngine';
 import { FlowModel } from '../models/flowModel';
 
@@ -21,6 +21,7 @@ interface CheckOptions {
 
 export class ACL {
   private data: Record<string, any> = {};
+  private meta: Record<string, any> = {};
   private loaded = false;
   private loadingPromise: Promise<void> | null = null;
   // 用于识别当前鉴权状态（例如切换登录用户后应重新加载）
@@ -33,6 +34,10 @@ export class ACL {
     this.data = data;
   }
 
+  setMeta(data: Record<string, any>) {
+    this.meta = data;
+  }
+
   async load() {
     // 基于 token 识别登录态是否发生变化
     const currentToken = this.flowEngine?.context?.api?.auth?.token || '';
@@ -42,12 +47,14 @@ export class ACL {
       this.loaded = false;
       this.loadingPromise = null;
       this.data = {};
+      this.meta = {};
     }
 
     const { data } = await this.flowEngine.context.api.request({
       url: 'roles:check',
     });
     this.data = data?.data || {};
+    this.meta = data?.meta || {};
     this.loaded = true;
     this.lastToken = currentToken;
 
@@ -58,17 +65,23 @@ export class ACL {
     return this.data.actionAlias?.[actionName] || actionName;
   }
 
-  inResources(resourceName: string) {
-    return this.data.resources?.includes?.(resourceName);
+  inResources(resourceName: string, dataSourceName) {
+    const { dataSources: dataSourcesAcl } = this?.meta || {};
+    const data = { ...this.data, ...omit(dataSourcesAcl?.[dataSourceName], 'snippets') };
+    return data.resources?.includes?.(resourceName);
   }
-  getResourceActionParams(resourceName, actionName) {
+  getResourceActionParams(resourceName, actionName, dataSourceName) {
     const actionAlias = this.getActionAlias(actionName);
-    return this.data.actions?.[`${resourceName}:${actionAlias}`] || this.data.actions?.[actionName];
+    const { dataSources: dataSourcesAcl } = this?.meta || {};
+    const data = { ...this.data, ...omit(dataSourcesAcl?.[dataSourceName], 'snippets') };
+    return data.actions?.[`${resourceName}:${actionAlias}`] || this.data.actions?.[actionName];
   }
 
-  getStrategyActionParams(actionName: string) {
+  getStrategyActionParams(actionName: string, dataSourceName) {
     const actionAlias = this.getActionAlias(actionName);
-    const strategyAction = this.data?.strategy?.actions?.find((action) => {
+    const { dataSources: dataSourcesAcl } = this?.meta || {};
+    const data = { ...this.data, ...omit(dataSourcesAcl?.[dataSourceName], 'snippets') };
+    const strategyAction = data?.strategy?.actions?.find((action) => {
       const [value] = action.split(':');
       return value === actionAlias;
     });
@@ -88,10 +101,13 @@ export class ACL {
   };
   verifyScope = (actionName: string, recordPkValue: any, allowedActions) => {
     const actionAlias = this.getActionAlias(actionName);
-    if (!Array.isArray(allowedActions?.[actionAlias])) {
+    const scopeValues = allowedActions?.[actionAlias];
+
+    if (!Array.isArray(scopeValues)) {
       return null;
     }
-    return allowedActions[actionAlias].includes(recordPkValue);
+
+    return scopeValues.map((v) => String(v)).includes(String(recordPkValue));
   };
   parseAction(options: CheckOptions) {
     const { resourceName, actionName, dataSourceKey = 'main', recordPkValue, allowedActions } = options;
@@ -100,7 +116,6 @@ export class ACL {
       this.flowEngine.context.dataSourceManager
         .getDataSource(dataSourceKey)
         .collectionManager.getAssociation(resourceName)?.target;
-
     if (!this.getIgnoreScope(options)) {
       const r = this.verifyScope(actionName, recordPkValue, allowedActions);
       if (!r) {
@@ -108,13 +123,13 @@ export class ACL {
       }
     }
 
-    if (this.inResources(targetResource)) {
-      return this.getResourceActionParams(targetResource, actionName);
+    if (this.inResources(targetResource, dataSourceKey)) {
+      return this.getResourceActionParams(targetResource, actionName, dataSourceKey);
     }
-    if (this.inResources(resourceName)) {
-      return this.getResourceActionParams(resourceName, actionName);
+    if (this.inResources(resourceName, dataSourceKey)) {
+      return this.getResourceActionParams(resourceName, actionName, dataSourceKey);
     }
-    return this.getStrategyActionParams(actionName);
+    return this.getStrategyActionParams(actionName, dataSourceKey);
   }
 
   parseField(options: CheckOptions) {
