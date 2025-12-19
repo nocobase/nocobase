@@ -1,5 +1,5 @@
 {
-  "version": "1.9.29",
+  "version": "1.9.30",
   "npmClient": "yarn",
   "useWorkspaces": true,
   "npmClientArgs": ["--ignore-engines"],
