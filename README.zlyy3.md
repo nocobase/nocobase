@@ -45,3 +45,6 @@
 > pg_dump -U nocobase -F c -b --quote-all-identifiers -f ./backup/nocobase-xxxx nocobase  
 > pg_restore -U nocobase -d nocobase --clean --if-exists --no-owner ./backup/nocobase-xxxx
 
+## 制作镜像
+> 制作镜像前要先 yarn release:force  --registry="http://192.168.123.123:4873/" 将内容发布到私服  
+> 再执行 docker build -t zlyy3:test .
