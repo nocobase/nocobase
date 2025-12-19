@@ -439,43 +439,30 @@ async function handleConvertFieldsToCopy(model: FlowModel, _t: (k: string, opt?:
   };
 
   if (!viewer || typeof viewer.dialog !== 'function') {
-    const ok = window.confirm('确定将引用字段转换为复制模式吗？');
+    const ok = window.confirm(t('Are you sure to convert referenced fields to copy mode?'));
     if (ok) await doConvert();
     release();
     return;
   }
 
-  viewer.dialog({
-    title: t('Convert reference fields to duplicate'),
-    width: 520,
-    destroyOnClose: true,
-    content: (currentDialog: any) => (
-      <>
-        <div style={{ marginBottom: 16 }}>{t('Are you sure to convert referenced fields to copy mode?')}</div>
-        <currentDialog.Footer>
-          <Space align="end">
-            <Button
-              onClick={() => {
-                currentDialog.close();
-                release();
-              }}
-            >
-              {t('Cancel')}
-            </Button>
-            <Button
-              type="primary"
-              onClick={async () => {
-                await doConvert();
-                currentDialog.close();
-              }}
-            >
-              {t('Confirm')}
-            </Button>
-          </Space>
-        </currentDialog.Footer>
-      </>
-    ),
-    onClose: release,
+  Modal.confirm({
+    title: t('Are you sure to convert referenced fields to copy mode?'),
+    icon: <ExclamationCircleFilled />,
+    content: t('Duplicate mode description'),
+    okText: t('Confirm'),
+    cancelText: t('Cancel'),
+    onOk: async () => {
+      try {
+        await doConvert();
+      } catch (e) {
+        console.error(e);
+        model.context.message?.error?.(e instanceof Error ? e.message : String(e));
+        throw e;
+      } finally {
+        release();
+      }
+    },
+    onCancel: release,
   });
 }
 
