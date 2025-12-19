@@ -215,6 +215,10 @@ export default defineConfig({
               link: '/examples/flow-definition/hide-in-settings',
             },
             {
+              title: '扩展设置菜单（Common actions）',
+              link: '/examples/flow-definition/settings-menu-extra-items',
+            },
+            {
               title: 'uiMode - 步骤设置的 UI 模式',
               link: '/examples/flow-definition/ui-mode',
             },

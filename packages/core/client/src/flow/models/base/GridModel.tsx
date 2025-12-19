@@ -616,6 +616,9 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                 dragOverlayRect={this.props.dragOverlayRect}
                 renderItem={(uid) => {
                   const baseItem = this.flowEngine.getModel(uid);
+                  if (!baseItem) {
+                    return this.itemFallback;
+                  }
                   const fieldKey = this.context.fieldKey;
                   const rowIndex = this.context.fieldIndex;
                   const record = this.context.record;

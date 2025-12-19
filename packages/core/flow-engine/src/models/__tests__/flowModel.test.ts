@@ -1989,6 +1989,22 @@ describe('FlowModel', () => {
         expect(model.title).toBe('Custom Title');
       });
 
+      test('should be reactive when title changes', () => {
+        const seen: string[] = [];
+        const dispose = reaction(
+          () => model.title,
+          (next) => {
+            if (typeof next === 'string') seen.push(next);
+          },
+        );
+
+        model.setTitle('First Title');
+        model.setTitle('Second Title');
+
+        dispose();
+        expect(seen).toEqual(['First Title', 'Second Title']);
+      });
+
       test('should update title when called multiple times', () => {
         model.setTitle('First Title');
         expect(model.title).toBe('First Title');

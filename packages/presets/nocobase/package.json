@@ -24,7 +24,7 @@
     "@nocobase/plugin-block-iframe": "2.0.0-alpha.56",
     "@nocobase/plugin-block-list": "2.0.0-alpha.56",
     "@nocobase/plugin-block-markdown": "2.0.0-alpha.56",
-    "@nocobase/plugin-block-reference": "2.0.0-alpha.56",
+    "@nocobase/plugin-ui-templates": "2.0.0-alpha.56",
     "@nocobase/plugin-block-template": "2.0.0-alpha.56",
     "@nocobase/plugin-block-workbench": "2.0.0-alpha.56",
     "@nocobase/plugin-calendar": "2.0.0-alpha.56",
@@ -151,6 +151,7 @@
     "@nocobase/plugin-workflow-notification",
     "@nocobase/plugin-theme-editor",
     "@nocobase/plugin-block-template",
+    "@nocobase/plugin-ui-templates",
     "@nocobase/plugin-license"
   ],
   "repository": {
