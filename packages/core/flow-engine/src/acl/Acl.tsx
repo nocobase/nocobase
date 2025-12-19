@@ -15,6 +15,8 @@ interface CheckOptions {
   resourceName: string;
   actionName: string;
   fields?: string[];
+  recordPkValue?: string | number;
+  allowedActions: any[];
 }
 
 export class ACL {
@@ -73,13 +75,38 @@ export class ACL {
     return strategyAction ? {} : null;
   }
 
+  getIgnoreScope = (options: any = {}) => {
+    const { recordPkValue } = options;
+    let ignoreScope = false;
+    if (options.ignoreScope) {
+      ignoreScope = true;
+    }
+    if (!recordPkValue) {
+      ignoreScope = true;
+    }
+    return ignoreScope;
+  };
+  verifyScope = (actionName: string, recordPkValue: any, allowedActions) => {
+    const actionAlias = this.getActionAlias(actionName);
+    if (!Array.isArray(allowedActions?.[actionAlias])) {
+      return null;
+    }
+    return allowedActions[actionAlias].includes(recordPkValue);
+  };
   parseAction(options: CheckOptions) {
-    const { resourceName, actionName, dataSourceKey = 'main' } = options;
+    const { resourceName, actionName, dataSourceKey = 'main', recordPkValue, allowedActions } = options;
     const targetResource =
       resourceName?.includes('.') &&
       this.flowEngine.context.dataSourceManager
         .getDataSource(dataSourceKey)
         .collectionManager.getAssociation(resourceName)?.target;
+
+    if (!this.getIgnoreScope(options)) {
+      const r = this.verifyScope(actionName, recordPkValue, allowedActions);
+      if (!r) {
+        return null;
+      }
+    }
 
     if (this.inResources(targetResource)) {
       return this.getResourceActionParams(targetResource, actionName);

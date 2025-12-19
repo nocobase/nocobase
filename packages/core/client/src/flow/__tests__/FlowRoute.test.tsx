@@ -12,6 +12,9 @@ import { describe, it, expect, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { render, waitFor } from '@testing-library/react';
 import { FlowEngine, FlowEngineProvider } from '@nocobase/flow-engine';
+import { resolveViewParamsToViewList } from '../resolveViewParamsToViewList';
+import { getViewDiffAndUpdateHidden } from '../getViewDiffAndUpdateHidden';
+import { getOpenViewStepParams } from '../flows/openViewFlow';
 
 // 被测组件
 import { FlowRoute } from '../FlowPage';
@@ -25,7 +28,33 @@ vi.mock('../../route-switch', () => ({
   useAllAccessDesktopRoutes: () => ({ refresh: vi.fn() }),
 }));
 
+vi.mock('../resolveViewParamsToViewList', () => ({
+  resolveViewParamsToViewList: vi.fn(),
+}));
+
+vi.mock('../getViewDiffAndUpdateHidden', () => ({
+  getViewDiffAndUpdateHidden: vi.fn(),
+}));
+
+vi.mock('../flows/openViewFlow', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...(actual as any),
+    getOpenViewStepParams: vi.fn(),
+  };
+});
+
+const mockResolveViewParamsToViewList = vi.mocked(resolveViewParamsToViewList);
+const mockGetViewDiffAndUpdateHidden = vi.mocked(getViewDiffAndUpdateHidden);
+const mockGetOpenViewStepParams = vi.mocked(getOpenViewStepParams);
+
 describe('FlowRoute', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockResolveViewParamsToViewList.mockResolvedValue([]);
+    mockGetViewDiffAndUpdateHidden.mockReturnValue({ viewsToClose: [], viewsToOpen: [] });
+    mockGetOpenViewStepParams.mockReturnValue({} as any);
+  });
   it('should define isMobileLayout on model context', async () => {
     // 使用真实的 FlowEngine 与 FlowModel，不再 mock
     const engine = new FlowEngine();
@@ -47,5 +76,56 @@ describe('FlowRoute', () => {
       const model = engine.getModel('test');
       expect(model.context.isMobileLayout).toBe(true);
     });
+  });
+
+  it('cleans up with removeModelWithSubModels for open views', async () => {
+    const engine = new FlowEngine();
+    engine.registerModels({ RouteModel });
+    const routeName = 'test-route';
+    engine.context.defineProperty('route', {
+      value: {
+        params: { name: routeName },
+        pathname: '/admin/test-view',
+      },
+    });
+
+    const removeSpy = vi.spyOn(engine, 'removeModelWithSubModels');
+
+    mockResolveViewParamsToViewList.mockImplementation(async (_engine, viewParams) => {
+      return viewParams.map((params, index) => ({
+        params,
+        model: { dispatchEvent: vi.fn(() => Promise.resolve()) } as any,
+        hidden: { value: false },
+        index,
+      }));
+    });
+    mockGetViewDiffAndUpdateHidden.mockImplementation((_prev, current) => ({
+      viewsToClose: [],
+      viewsToOpen: current,
+    }));
+    mockGetOpenViewStepParams.mockReturnValue({} as any);
+
+    const { unmount } = render(
+      <FlowEngineProvider engine={engine}>
+        <MemoryRouter initialEntries={[`/flow/${routeName}`]}>
+          <Routes>
+            <Route path="/flow/:name" element={<FlowRoute />} />
+          </Routes>
+        </MemoryRouter>
+      </FlowEngineProvider>,
+    );
+
+    await waitFor(() => {
+      expect(mockResolveViewParamsToViewList).toHaveBeenCalled();
+    });
+
+    unmount();
+
+    await waitFor(() => {
+      expect(removeSpy).toHaveBeenCalledTimes(1);
+    });
+
+    const viewParams = mockResolveViewParamsToViewList.mock.calls[0][1];
+    expect(removeSpy).toHaveBeenCalledWith(viewParams[0].viewUid);
   });
 });

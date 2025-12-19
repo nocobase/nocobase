@@ -1,7 +1,7 @@
 {
   "name": "@nocobase-example/plugin-acl-middleware",
   "private": true,
-  "version": "2.0.0-alpha.55",
+  "version": "2.0.0-alpha.56",
   "main": "dist/server/index.js",
   "peerDependencies": {
     "@nocobase/client": "2.x",
