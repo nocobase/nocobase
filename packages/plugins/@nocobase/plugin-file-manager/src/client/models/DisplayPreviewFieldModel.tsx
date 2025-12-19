@@ -155,7 +155,7 @@ const Preview = (props) => {
   const onDownload = (props) => {
     const url = value[current].url || value[current];
     const suffix = url.slice(url.lastIndexOf('.'));
-    const filename = Date.now() + suffix;
+    const filename = `${Date.now()}_${value[current]?.filename}${suffix}`;
     // eslint-disable-next-line promise/catch-or-return
     fetch(url)
       .then((response) => response.blob())
@@ -208,7 +208,7 @@ const Preview = (props) => {
             return (
               <audio controls>
                 <source src={file.url || file.preview} type={file.type} />
-                您的浏览器不支持音频标签。
+                {t('Your browser does not support the audio tag.')}
               </audio>
             );
           } else if (matchMimetype(file, 'video/*')) {
@@ -216,7 +216,7 @@ const Preview = (props) => {
             return (
               <video controls width="100%">
                 <source src={file.url || file.preview} type={file.type} />
-                您的浏览器不支持视频标签。
+                {t('Your browser does not support the video tag.')}
               </video>
             );
           } else if (matchMimetype(file, 'text/plain')) {
@@ -229,7 +229,14 @@ const Preview = (props) => {
             return (
               <Alert
                 type="warning"
-                description={t('File type is not supported for previewing, please download it to preview.')}
+                description={
+                  <span>
+                    {t('File type is not supported for previewing,')}
+                    <a onClick={onDownload} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
+                      {t('download it to preview')}
+                    </a>
+                  </span>
+                }
                 showIcon
               />
             );
