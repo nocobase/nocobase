@@ -88,7 +88,7 @@ function FieldWithoutPermissionPlaceholder() {
   );
 }
 
-const CustomWidth = ({ setOpen, t, handleChange, defaultValue }) => {
+export const CustomWidth = ({ setOpen, t, handleChange, defaultValue }) => {
   const [customWidth, setCustomWidth] = useState(defaultValue);
   return (
     <div

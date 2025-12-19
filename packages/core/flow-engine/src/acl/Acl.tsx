@@ -74,7 +74,7 @@ export class ACL {
     const actionAlias = this.getActionAlias(actionName);
     const { dataSources: dataSourcesAcl } = this?.meta || {};
     const data = { ...this.data, ...omit(dataSourcesAcl?.[dataSourceName], 'snippets') };
-    return data.actions?.[`${resourceName}:${actionAlias}`] || this.data.actions?.[actionName];
+    return data.actions?.[`${resourceName}:${actionAlias}`] || data.actions?.[actionName];
   }
 
   getStrategyActionParams(actionName: string, dataSourceName) {
