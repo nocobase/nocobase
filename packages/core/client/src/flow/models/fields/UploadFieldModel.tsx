@@ -32,6 +32,35 @@ import { FieldModel } from '../base';
 import { RecordPickerContent } from './AssociationFieldModel/RecordPickerFieldModel';
 import { matchMimetype } from '../../../schema-component/antd/upload/shared';
 
+const extname = (url = '') => {
+  const temp = url.split('/');
+  const filename = temp[temp.length - 1];
+  const filenameWithoutSuffix = filename.split(/#|\?/)[0];
+  return (/\.[^./\\]*$/.exec(filenameWithoutSuffix) || [''])[0];
+};
+
+const isImageFileType = (type: string): boolean => type.indexOf('image/') === 0;
+
+const isImageUrl = (file): boolean => {
+  if (file.type && !file.thumbUrl) {
+    return isImageFileType(file.type);
+  }
+  const url = file.thumbUrl || file.url || '';
+  const extension = extname(url);
+  if (/^data:image\//.test(url) || /(webp|svg|png|gif|jpg|jpeg|jfif|bmp|dpg|ico|heic|heif)$/i.test(extension)) {
+    return true;
+  }
+  if (/^data:/.test(url)) {
+    // other file types of base64
+    return false;
+  }
+  if (extension) {
+    // other file types which have extension
+    return false;
+  }
+  return true;
+};
+
 export const CardUpload = (props) => {
   const {
     allowSelectExistingRecord,
@@ -44,11 +73,11 @@ export const CardUpload = (props) => {
   } = props;
   const [fileList, setFileList] = useState(castArray(value || []));
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewImage, setPreviewImage] = useState('');
+  const [previewImage, setPreviewImage] = useState(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // 用来跟踪当前预览的图片索引
   const { t } = useTranslation();
   useEffect(() => {
-    setFileList(castArray(value || []));
+    setFileList(normalizedFileList(castArray(value || [])));
   }, [value]);
 
   const getBase64 = (file): Promise<string> =>
@@ -63,7 +92,7 @@ export const CardUpload = (props) => {
     if (!file.url && !file.preview) {
       file.preview = await getBase64(file.originFileObj);
     }
-    setPreviewImage(file.url || (file.preview as string));
+    setPreviewImage(file);
     setCurrentImageIndex(index);
     setPreviewOpen(true);
   };
@@ -71,18 +100,20 @@ export const CardUpload = (props) => {
   const goToPreviousImage = () => {
     setCurrentImageIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : fileList.length - 1));
     const file = fileList[currentImageIndex - 1];
-    setPreviewImage(file.url || (file.preview as string));
+    setPreviewImage(file);
   };
 
   const goToNextImage = () => {
     setCurrentImageIndex((prevIndex) => (prevIndex < fileList.length - 1 ? prevIndex + 1 : 0));
     const file = fileList[currentImageIndex + 1];
-    setPreviewImage(file.url || (file.preview as string));
+    setPreviewImage(file);
   };
   const onDownload = () => {
-    const url = previewImage;
-    const suffix = url.slice(url.lastIndexOf('.'));
-    const filename = Date.now() + suffix;
+    const url = previewImage.url || previewImage.preview;
+    const cleanUrl = url.split('?')[0].split('#')[0];
+    const nameFromUrl = cleanUrl ? cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1) : url;
+    const suffix = nameFromUrl.slice(nameFromUrl.lastIndexOf('.'));
+    const filename = `${Date.now()}_${previewImage.filename}${suffix}`;
     // eslint-disable-next-line promise/catch-or-return
     fetch(url)
       .then((response) => response.blob())
@@ -97,6 +128,21 @@ export const CardUpload = (props) => {
         link.remove();
       });
   };
+
+  const normalizedFileList = (data: Array<any>) => {
+    return data.map((file) => {
+      const rawUrl = file.url || file.preview || '';
+      const cleanUrl = rawUrl.split('?')[0].split('#')[0];
+      const nameFromUrl = cleanUrl ? cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1) : file.name || file.filename;
+      if (file.thumbUrl) {
+        return file;
+      }
+      return {
+        ...file,
+        thumbUrl: isImageUrl(file) ? file.url : nameFromUrl, // 保留原逻辑：url 也是纯文件名
+      };
+    });
+  };
   return (
     <FieldContext.Provider
       value={
@@ -110,6 +156,12 @@ export const CardUpload = (props) => {
         className={css`
           .ant-upload-list-picture-card {
             margin-bottom: 10px;
+            .ant-upload-list-item-container {
+              margin: ${showFileName ? '8px 0px' : '0px'};
+            }
+          }
+          .ant-upload-select {
+            margin: ${showFileName ? '8px 0px' : '0px'};
           }
         `}
       >
@@ -160,7 +212,7 @@ export const CardUpload = (props) => {
             preview={{
               visible: previewOpen,
               onVisibleChange: (visible) => setPreviewOpen(visible),
-              afterOpenChange: (visible) => !visible && setPreviewImage(''),
+              afterOpenChange: (visible) => !visible && setPreviewImage(null),
               toolbarRender: (
                 _,
                 {
@@ -208,7 +260,7 @@ export const CardUpload = (props) => {
                   return (
                     <audio controls>
                       <source src={file.url || file.preview} type={file.type} />
-                      您的浏览器不支持音频标签。
+                      {t('Your browser does not support the audio tag.')}
                     </audio>
                   );
                 } else if (matchMimetype(file, 'video/*')) {
@@ -216,7 +268,7 @@ export const CardUpload = (props) => {
                   return (
                     <video controls width="100%">
                       <source src={file.url || file.preview} type={file.type} />
-                      您的浏览器不支持视频标签。
+                      {t('Your browser does not support the video tag.')}
                     </video>
                   );
                 } else if (matchMimetype(file, 'text/plain')) {
@@ -231,14 +283,21 @@ export const CardUpload = (props) => {
                   return (
                     <Alert
                       type="warning"
-                      description={t('File type is not supported for previewing, please download it to preview.')}
+                      description={
+                        <span>
+                          {t('File type is not supported for previewing,')}
+                          <a onClick={onDownload} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
+                            {t('download it to preview')}
+                          </a>
+                        </span>
+                      }
                       showIcon
                     />
                   );
                 }
               },
             }}
-            src={previewImage}
+            src={previewImage.url || previewImage.preview}
           />
         )}
         {allowSelectExistingRecord ? (
@@ -397,6 +456,7 @@ UploadFieldModel.registerFlow({
         const fileManagerPlugin: any = ctx.app.pm.get('@nocobase/plugin-file-manager');
         const fileCollection = ctx.model.props.target;
         const collectionField = ctx.collectionField;
+
         if (!fileManagerPlugin) {
           return onSuccess(file);
         }
@@ -407,7 +467,12 @@ UploadFieldModel.registerFlow({
           });
 
           if (!checkData?.data?.isSupportToUploadFiles) {
-            onError?.(new Error(`当前存储 ${checkData.data.storage?.title} 不支持上传`));
+            const messageValue = ctx
+              .t(`The current storage "{{storageName}}" does not support file uploads.`, {
+                storageName: checkData.data.storage?.title,
+              })
+              .replaceAll('&gt;', '>');
+            onError?.(new Error(messageValue));
             return;
           }
 

@@ -74,7 +74,7 @@ export class ACL {
     const actionAlias = this.getActionAlias(actionName);
     const { dataSources: dataSourcesAcl } = this?.meta || {};
     const data = { ...this.data, ...omit(dataSourcesAcl?.[dataSourceName], 'snippets') };
-    return data.actions?.[`${resourceName}:${actionAlias}`] || this.data.actions?.[actionName];
+    return data.actions?.[`${resourceName}:${actionAlias}`] || data.actions?.[actionName];
   }
 
   getStrategyActionParams(actionName: string, dataSourceName) {
@@ -89,12 +89,12 @@ export class ACL {
   }
 
   getIgnoreScope = (options: any = {}) => {
-    const { recordPkValue } = options;
+    const { recordPkValue, allowedActions } = options;
     let ignoreScope = false;
     if (options.ignoreScope) {
       ignoreScope = true;
     }
-    if (!recordPkValue) {
+    if (!recordPkValue || !allowedActions) {
       ignoreScope = true;
     }
     return ignoreScope;
