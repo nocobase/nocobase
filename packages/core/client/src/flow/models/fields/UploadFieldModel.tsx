@@ -134,6 +134,9 @@ export const CardUpload = (props) => {
       const rawUrl = file.url || file.preview || '';
       const cleanUrl = rawUrl.split('?')[0].split('#')[0];
       const nameFromUrl = cleanUrl ? cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1) : file.name || file.filename;
+      if (file.thumbUrl) {
+        return file;
+      }
       return {
         ...file,
         thumbUrl: isImageUrl(file) ? file.url : nameFromUrl, // 保留原逻辑：url 也是纯文件名
@@ -168,7 +171,7 @@ export const CardUpload = (props) => {
           listType="picture-card"
           fileList={fileList}
           onChange={(newFileList) => {
-            setFileList(normalizedFileList(newFileList));
+            setFileList(newFileList);
             const doneFiles = newFileList.filter((f: any) => f.status === 'done' || f.id);
             if (newFileList.every((f: any) => f.status === 'done' || f.id)) {
               if (props.maxCount === 1) {
