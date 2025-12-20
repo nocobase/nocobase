@@ -32,7 +32,7 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   static scene: BlockSceneType;
   _defaultCustomModelClasses = {} as any;
   customModelClasses = {} as any;
-
+  collectionRequired = false;
   static _getScene() {
     return _.castArray(this['scene'] || []);
   }
@@ -53,9 +53,6 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   protected renderHiddenInConfig(): React.ReactNode | undefined {
     if (this.forbidden) {
       return <BlockPlaceholder />;
-    }
-    if (!this.context.collection) {
-      return <BlockDeletePlaceholder />;
     }
 
     return (
@@ -98,6 +95,9 @@ export class BlockModel<T = DefaultStructure> extends FlowModel<T> {
   }
 
   render() {
+    if (this.collectionRequired && !this.context.collection) {
+      return <BlockDeletePlaceholder />;
+    }
     return (
       <BlockItemCard ref={this.context.ref} {...this.decoratorProps}>
         <Observer>
