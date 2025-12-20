@@ -35,7 +35,7 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
   onInit(options: any): void {
     super.onInit(options);
   }
-  renderConfiguireActions() {
+  renderConfigureAction() {
     return (
       <AddSubModelButton
         key="table-row-actions-add"
@@ -69,23 +69,30 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
       get: () => index,
     });
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+
     return (
-      <div key={this.context.index} style={{ width: '100%' }}>
+      <div
+        key={this.context.index}
+        style={{ width: '100%' }}
+        className={css`
+          .ant-form-item {
+            margin-bottom: 5px;
+          }
+        `}
+      >
         <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
           <FlowModelRenderer model={grid as any} showFlowSettings={false} />
         </FormComponent>
         <div>
           <DndProvider>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Space
-                className={css`
-                  button {
-                    padding: 5px;
-                  }
-                `}
-              >
-                {this.mapSubModels('actions', (action) => {
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Space>
+                {this.mapSubModels('actions', (action, i) => {
                   const fork = action.createFork({}, `${index}`);
+                  if (fork.hidden && !isConfigMode) {
+                    return;
+                  }
                   const recordMeta: PropertyMetaFactory = createRecordMetaFactory(
                     () => (fork.context as any).collection,
                     fork.context.t('Current record'),
@@ -103,25 +110,34 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
                     get: () => this.context.record,
                     resolveOnServer: true,
                     meta: recordMeta,
+                    cache: false,
                   });
-
                   return (
                     <Droppable model={fork} key={fork.uid}>
-                      <FlowModelRenderer
-                        model={fork}
-                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                        extraToolbarItems={[
-                          {
-                            key: 'drag-handler',
-                            component: DragHandler,
-                            sort: 1,
-                          },
-                        ]}
-                      />
+                      <div
+                        className={css`
+                          button {
+                            padding: 5px;
+                            padding-left: ${i === 0 ? '0px' : null};
+                          }
+                        `}
+                      >
+                        <FlowModelRenderer
+                          model={fork}
+                          showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                          extraToolbarItems={[
+                            {
+                              key: 'drag-handler',
+                              component: DragHandler,
+                              sort: 1,
+                            },
+                          ]}
+                        />
+                      </div>
                     </Droppable>
                   );
                 })}
-                {this.renderConfiguireActions()}
+                {this.renderConfigureAction()}
               </Space>
             </div>
           </DndProvider>

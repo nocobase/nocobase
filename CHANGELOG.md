@@ -5,6 +5,181 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.30](https://github.com/nocobase/nocobase/compare/v1.9.29...v1.9.30) - 2025-12-19
+
+### 🚀 Improvements
+
+- **[Workflow]** Improve description of `changed` field in collection event ([#8216](https://github.com/nocobase/nocobase/pull/8216)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[cli]** license-kit is compatible with the case where DB_PASSWORD is empty ([#8220](https://github.com/nocobase/nocobase/pull/8220)) by @jiannx
+
+- **[database]** Fix date field query inconsistency between main and external data sources ([#8181](https://github.com/nocobase/nocobase/pull/8181)) by @cgyrock
+
+- **[License settings]** Fix the abnormal display of the licensed plugin ([#8214](https://github.com/nocobase/nocobase/pull/8214)) by @jiannx
+
+- **[Workflow: Approval]**
+  - Fix the issue where approving makes association to creating new record by @mytharcher
+
+  - Fix the issue where approving makes to-many association to creating new records by @mytharcher
+
+## [v1.9.29](https://github.com/nocobase/nocobase/compare/v1.9.28...v1.9.29) - 2025-12-18
+
+### 🐛 Bug Fixes
+
+- **[Workflow]** Fix the issue where error thrown when delete workflow version which is not current ([#8203](https://github.com/nocobase/nocobase/pull/8203)) by @mytharcher
+
+- **[Migration manager]** Fix missing migration description and set the current time as the default by @cgyrock
+
+## [v1.9.27](https://github.com/nocobase/nocobase/compare/v1.9.26...v1.9.27) - 2025-12-17
+
+### 🚀 Improvements
+
+- **[server]** Add fault tolerance when missing app instances cause errors while fetching app maintaining messages ([#8196](https://github.com/nocobase/nocobase/pull/8196)) by @2013xile
+
+- **[Error handler]** Do not expose raw database error messages on SQL syntax errors, to avoid revealing the database type ([#8195](https://github.com/nocobase/nocobase/pull/8195)) by @2013xile
+
+- **[Workflow]** Support to use legacy config to create new in duplicated workflow ([#8165](https://github.com/nocobase/nocobase/pull/8165)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[Workflow]** Fix the issue where the only one record show in record list to be manually execute ([#8187](https://github.com/nocobase/nocobase/pull/8187)) by @mytharcher
+
+- **[Collection: Connect to foreign data (FDW)]** Fix trigger errors when connecting to tables with uppercase names by @2013xile
+
+- **[Workflow: Approval]** Fix the issue where status of unrelated approval records are incorrectly changed to `UNPROCESSED` by approve action by @mytharcher
+
+## [v1.9.26](https://github.com/nocobase/nocobase/compare/v1.9.25...v1.9.26) - 2025-12-16
+
+### 🚀 Improvements
+
+- **[acl]** Support `acl.registerSnippet` API to merge snippet configuration ([#8155](https://github.com/nocobase/nocobase/pull/8155)) by @mytharcher
+
+- **[Access control]** Disallow assigning the root role to users ([#8180](https://github.com/nocobase/nocobase/pull/8180)) by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[License settings]**
+  - fix plugin-license ts build exception ([#8183](https://github.com/nocobase/nocobase/pull/8183)) by @jiannx
+
+  - license optimization and addition of prompt information ([#7993](https://github.com/nocobase/nocobase/pull/7993)) by @jiannx
+
+- **[File manager]** Fix the issue where previewing `.txt` file on OSS got wrong charset ([#8161](https://github.com/nocobase/nocobase/pull/8161)) by @mytharcher
+
+- **[Action: Import records]** Synchronously wait for the `afterCreate` events triggered by the import to finish. ([#8158](https://github.com/nocobase/nocobase/pull/8158)) by @2013xile
+
+- **[Collection: Connect to foreign data (FDW)]** Fix issue where loading fails for tables with uppercase names by @2013xile
+
+- **[Data source: External SQL Server]** Fix issues where the `encrypt` and `trustServerCertificate` options are not available by @2013xile
+
+## [v1.9.25](https://github.com/nocobase/nocobase/compare/v1.9.24...v1.9.25) - 2025-12-12
+
+### 🚀 Improvements
+
+- **[Workflow]**
+  - Add fault-tolerant logic for data missing in the processor preparation, to avoid execution hang ([#8156](https://github.com/nocobase/nocobase/pull/8156)) by @mytharcher
+
+  - Use lazy load for association data on workflow canvas to improve performance ([#8142](https://github.com/nocobase/nocobase/pull/8142)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[acl]** Fix the issue where the API `acl.can` return `null` when role is `root` ([#8150](https://github.com/nocobase/nocobase/pull/8150)) by @mytharcher
+
+- **[Workflow: Manual node]** Fix the issue manual todo list is using incorrect API ([#8144](https://github.com/nocobase/nocobase/pull/8144)) by @mytharcher
+
+- **[HTTP request encryption]** Use brackets for array format in qs parsing by @chenos
+
+- **[Workflow: Approval]** Fix the issue where error thrown when cancel a execution when its workflow is deleted by @mytharcher
+
+- **[Migration manager]** Fix an issue where line breaks in data were lost during migration. by @cgyrock
+
+## [v1.9.24](https://github.com/nocobase/nocobase/compare/v1.9.23...v1.9.24) - 2025-12-09
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the issue where `RemoteSelect` component incorrectly loading record when value is null ([#8137](https://github.com/nocobase/nocobase/pull/8137)) by @mytharcher
+
+- **[Collection field: Sequence]** Improve the robustness of the plugin-field-sequence when handling the repair command ([#8139](https://github.com/nocobase/nocobase/pull/8139)) by @cgyrock
+
+- **[Notification: Email]** fix email notification connection limitation ([#8119](https://github.com/nocobase/nocobase/pull/8119)) by @jiannx
+
+## [v1.9.23](https://github.com/nocobase/nocobase/compare/v1.9.21...v1.9.23) - 2025-12-09
+
+### 🚀 Improvements
+
+- **[auth]** Fix [CVE-2025-13877](https://www.cve.org/CVERecord?id=CVE-2025-13877) ([#8128](https://github.com/nocobase/nocobase/pull/8128)) by @2013xile
+
+- **[Action: Import records]** allow selecting ID for import fields ([#8132](https://github.com/nocobase/nocobase/pull/8132)) by @katherinehhh
+
+### 🐛 Bug Fixes
+
+- **[server]** Fixed an issue where triggered workflows were not added to the processing queue after importing data, ensuring that workflows run as expected immediately post-import ([#8121](https://github.com/nocobase/nocobase/pull/8121)) by @mytharcher
+
+## [v1.9.21](https://github.com/nocobase/nocobase/compare/v1.9.20...v1.9.21) - 2025-12-06
+
+### 🚀 Improvements
+
+- **[Audit logs]** Update the unique identifier field to `text` to prevent identifier length overflow during bulk edits by @2013xile
+
+### 🐛 Bug Fixes
+
+- **[Workflow: Approval]** Fix the issue where no data when loading related approvals with ACL scope variables by @mytharcher
+
+## [v1.9.20](https://github.com/nocobase/nocobase/compare/v1.9.19...v1.9.20) - 2025-12-05
+
+### 🎉 New Features
+
+- **[Collection field: Sequence]** Automatically update sequence fields after data migration ([#8063](https://github.com/nocobase/nocobase/pull/8063)) by @cgyrock
+
+### 🚀 Improvements
+
+- **[Migration manager]** Automatically update sequence fields after data migration by @cgyrock
+
+### 🐛 Bug Fixes
+
+- **[Workflow]** Fix the issue where error thrown in execution canvas when node is deleted ([#8090](https://github.com/nocobase/nocobase/pull/8090)) by @mytharcher
+
+- **[Workflow: Approval]** Fix the issue where error thrown when load related approval in union only role mode by @mytharcher
+
+## [v1.9.19](https://github.com/nocobase/nocobase/compare/v1.9.18...v1.9.19) - 2025-12-04
+
+### 🐛 Bug Fixes
+
+- **[Workflow: Approval]**
+  - Fix the issue when list approvals OOM happens by @mytharcher
+
+  - Fix the issue where the approver pop-up window does not display a title by @zhangzhonghe
+
+## [v1.9.18](https://github.com/nocobase/nocobase/compare/v1.9.17...v1.9.18) - 2025-12-03
+
+### 🐛 Bug Fixes
+
+- **[Action: Import records]** Imported fields do not match the fields set in ACLsettings ([#8075](https://github.com/nocobase/nocobase/pull/8075)) by @2013xile
+
+- **[Workflow]** Fix the issue where execution page throw error when jobs on node is undefined ([#8066](https://github.com/nocobase/nocobase/pull/8066)) by @mytharcher
+
+- **[Access control]** Add middleware for permission checks on association operations for external data source ([#8062](https://github.com/nocobase/nocobase/pull/8062)) by @2013xile
+
+- **[Workflow: Approval]**
+  - Fix the issue of permission error thrown when load record related approvals on detail drawer by @mytharcher
+
+  - Fix the issue where approval records are not included in job result in return branch by @mytharcher
+
+  - Fix the issue where process is incorrect when branching with order and countersign by @mytharcher
+
+## [v1.9.17](https://github.com/nocobase/nocobase/compare/v1.9.16...v1.9.17) - 2025-12-02
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix the flickering issue of the linkage rule dropdown select box ([#8018](https://github.com/nocobase/nocobase/pull/8018)) by @zhangzhonghe
+
+- **[acl]** Fix an issue where ACL meta info is incorrect when external data-source permission scopes use current-user related variables ([#8013](https://github.com/nocobase/nocobase/pull/8013)) by @2013xile
+
+- **[Theme editor]** Enable theme switcher on mobile devices ([#8046](https://github.com/nocobase/nocobase/pull/8046)) by @zhangzhonghe
+
+- **[Multi-app manager]** Log level settings not applied to sub applications ([#8045](https://github.com/nocobase/nocobase/pull/8045)) by @2013xile
+
 ## [v1.9.16](https://github.com/nocobase/nocobase/compare/v1.9.15...v1.9.16) - 2025-12-01
 
 ### 🎉 New Features

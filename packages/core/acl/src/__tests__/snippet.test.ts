@@ -171,6 +171,27 @@ describe('acl snippet', () => {
     expect(acl.can({ role: 'admin', resource: 'fields', action: 'list' })).toBeTruthy();
     expect(acl.can({ role: 'admin', resource: 'users', action: 'list' })).toBeNull();
   });
+
+  it('could merge more on same name', () => {
+    acl.registerSnippet({
+      name: 'n1',
+      actions: ['a:*', 'b:*'],
+    });
+
+    acl.registerSnippet({
+      name: 'n1',
+      actions: ['a:*', 'c:*'],
+    });
+
+    const adminRole = acl.define({
+      role: 'admin',
+    });
+
+    adminRole.snippets.add('n1');
+    expect(acl.can({ role: 'admin', resource: 'a', action: 'list' })).toBeTruthy();
+    expect(acl.can({ role: 'admin', resource: 'b', action: 'list' })).toBeTruthy();
+    expect(acl.can({ role: 'admin', resource: 'c', action: 'list' })).toBeTruthy();
+  });
 });
 
 describe('snippet manager', () => {

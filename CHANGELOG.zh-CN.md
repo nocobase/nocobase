@@ -5,6 +5,181 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.30](https://github.com/nocobase/nocobase/compare/v1.9.29...v1.9.30) - 2025-12-19
+
+### 🚀 优化
+
+- **[工作流]** 优化数据表事件“发生变动的字段”配置项的描述，以避免误解 ([#8216](https://github.com/nocobase/nocobase/pull/8216)) by @mytharcher
+
+### 🐛 修复
+
+- **[cli]** license-kit 适配 DB_PASSWORD 为空的情况 ([#8220](https://github.com/nocobase/nocobase/pull/8220)) by @jiannx
+
+- **[database]** 修复主数据源与外部数据源之间日期字段查询结果不一致的问题 ([#8181](https://github.com/nocobase/nocobase/pull/8181)) by @cgyrock
+
+- **[授权设置]** 修复授权插件显示异常 ([#8214](https://github.com/nocobase/nocobase/pull/8214)) by @jiannx
+
+- **[工作流：审批]**
+  - 修复审批通过时对关系字段创建了新数据的问题 by @mytharcher
+
+  - 修复审批通过时对对多关系字段创建了新数据的问题 by @mytharcher
+
+## [v1.9.29](https://github.com/nocobase/nocobase/compare/v1.9.28...v1.9.29) - 2025-12-18
+
+### 🐛 修复
+
+- **[工作流]** 修复删除工作流版本（非主版本）时的报错 ([#8203](https://github.com/nocobase/nocobase/pull/8203)) by @mytharcher
+
+- **[迁移管理]** 修复用户输入的迁移描述丢失问题，并使用当前时间作为默认迁移描述 by @cgyrock
+
+## [v1.9.27](https://github.com/nocobase/nocobase/compare/v1.9.26...v1.9.27) - 2025-12-17
+
+### 🚀 优化
+
+- **[server]** 优化因应用实例不存在导致获取应用维护状态消息异常的容错机制 ([#8196](https://github.com/nocobase/nocobase/pull/8196)) by @2013xile
+
+- **[错误处理器]** SQL 语法错误时，不对外暴露数据库原始提示，避免暴露数据库类型 ([#8195](https://github.com/nocobase/nocobase/pull/8195)) by @2013xile
+
+- **[工作流]** 支持在工作流的复制（版本）过程中，使用已复制的工作流中使用旧的配置信息来生成新的配置 ([#8165](https://github.com/nocobase/nocobase/pull/8165)) by @mytharcher
+
+### 🐛 修复
+
+- **[工作流]** 修复手动执行时，选择数据组件的加载列表展示不全的问题 ([#8187](https://github.com/nocobase/nocobase/pull/8187)) by @mytharcher
+
+- **[数据表：连接外部数据（FDW）]** 修复连接大写表名表时的触发器报错 by @2013xile
+
+- **[工作流：审批]** 修复无关的审批待办任务被错误的修改状态为“未处理”的问题 by @mytharcher
+
+## [v1.9.26](https://github.com/nocobase/nocobase/compare/v1.9.25...v1.9.26) - 2025-12-16
+
+### 🚀 优化
+
+- **[acl]** 支持 `acl.registerSnippet` 接口合并权限片段的配置 ([#8155](https://github.com/nocobase/nocobase/pull/8155)) by @mytharcher
+
+- **[权限控制]** 不允许给用户设置 root 角色 ([#8180](https://github.com/nocobase/nocobase/pull/8180)) by @2013xile
+
+### 🐛 修复
+
+- **[授权设置]**
+  - 修复 plugin-license ts构建异常 ([#8183](https://github.com/nocobase/nocobase/pull/8183)) by @jiannx
+
+  - 授权优化，添加提示信息 ([#7993](https://github.com/nocobase/nocobase/pull/7993)) by @jiannx
+
+- **[文件管理器]** 修复预览 OSS 中的 `.txt` 文件时，中文内容显示为乱码的问题 ([#8161](https://github.com/nocobase/nocobase/pull/8161)) by @mytharcher
+
+- **[操作：导入记录]** 同步等待导入后触发的 `afterCreate` 事件完成 ([#8158](https://github.com/nocobase/nocobase/pull/8158)) by @2013xile
+
+- **[数据表：连接外部数据（FDW）]** 修复大写表名表加载失败的问题 by @2013xile
+
+- **[数据源：外部 SQL Server]** 修复 `encrypt` 和 `trustServerCertificate` 选项不可用的问题 by @2013xile
+
+## [v1.9.25](https://github.com/nocobase/nocobase/compare/v1.9.24...v1.9.25) - 2025-12-12
+
+### 🚀 优化
+
+- **[工作流]**
+  - 为执行器的准备阶段增加容错逻辑，避免数据缺失造成的流程挂起 ([#8156](https://github.com/nocobase/nocobase/pull/8156)) by @mytharcher
+
+  - 对工作流画布的关系数据使用懒加载，以提升性能 ([#8142](https://github.com/nocobase/nocobase/pull/8142)) by @mytharcher
+
+### 🐛 修复
+
+- **[acl]** 修复 `acl.can` API 当角色是 `root` 是返回 `null` 的问题 ([#8150](https://github.com/nocobase/nocobase/pull/8150)) by @mytharcher
+
+- **[工作流：人工处理节点]** 修复人工待办列表使用了错误的列表 API 的问题 ([#8144](https://github.com/nocobase/nocobase/pull/8144)) by @mytharcher
+
+- **[HTTP 请求加密]** 统一 qs 数组解析格式为 brackets by @chenos
+
+- **[工作流：审批]** 修复工作流删除后取消执行计划时报错的问题 by @mytharcher
+
+- **[迁移管理]** 修复迁移时数据中的换行符丢失问题 by @cgyrock
+
+## [v1.9.24](https://github.com/nocobase/nocobase/compare/v1.9.23...v1.9.24) - 2025-12-09
+
+### 🐛 修复
+
+- **[client]** 修复 `RemoteSelect` 组件当值为空时错误的加载选项记录的问题 ([#8137](https://github.com/nocobase/nocobase/pull/8137)) by @mytharcher
+
+- **[数据表字段：自动编码]** 提升sequence字段插件处理repair命令时的健壮性 ([#8139](https://github.com/nocobase/nocobase/pull/8139)) by @cgyrock
+
+- **[通知：电子邮件]** 修复邮件通知连接限制 ([#8119](https://github.com/nocobase/nocobase/pull/8119)) by @jiannx
+
+## [v1.9.23](https://github.com/nocobase/nocobase/compare/v1.9.21...v1.9.23) - 2025-12-09
+
+### 🚀 优化
+
+- **[auth]** 修复 [CVE-2025-13877](https://www.cve.org/CVERecord?id=CVE-2025-13877) ([#8128](https://github.com/nocobase/nocobase/pull/8128)) by @2013xile
+
+- **[操作：导入记录]** 支持导入字段支持选择 ID ([#8132](https://github.com/nocobase/nocobase/pull/8132)) by @katherinehhh
+
+### 🐛 修复
+
+- **[server]** 修复了导入数据后已触发的工作流未添加到处理队列的问题，确保工作流在导入后能够正常运行 ([#8121](https://github.com/nocobase/nocobase/pull/8121)) by @mytharcher
+
+## [v1.9.21](https://github.com/nocobase/nocobase/compare/v1.9.20...v1.9.21) - 2025-12-06
+
+### 🚀 优化
+
+- **[审计日志]** 更新唯一标识字段为 `text` 类型，避免批量编辑时记录标识长度超出的问题 by @2013xile
+
+### 🐛 修复
+
+- **[工作流：审批]** 修复权限范围中包含变量时加载相关审批无数据的问题 by @mytharcher
+
+## [v1.9.20](https://github.com/nocobase/nocobase/compare/v1.9.19...v1.9.20) - 2025-12-05
+
+### 🎉 新特性
+
+- **[数据表字段：自动编码]** 数据迁移后自动更新'自动编码'字段 ([#8063](https://github.com/nocobase/nocobase/pull/8063)) by @cgyrock
+
+### 🚀 优化
+
+- **[迁移管理]** 数据迁移后自动更新'自动编码'字段 by @cgyrock
+
+### 🐛 修复
+
+- **[工作流]** 修复执行记录画布中节点被删除后导致的报错 ([#8090](https://github.com/nocobase/nocobase/pull/8090)) by @mytharcher
+
+- **[工作流：审批]** 修复在仅角色并集模式下加载相关审批报错和无数据的问题 by @mytharcher
+
+## [v1.9.19](https://github.com/nocobase/nocobase/compare/v1.9.18...v1.9.19) - 2025-12-04
+
+### 🐛 修复
+
+- **[工作流：审批]**
+  - 修复加载审批列表时内存溢出的问题 by @mytharcher
+
+  - 修复审批人弹窗不显示标题的问题 by @zhangzhonghe
+
+## [v1.9.18](https://github.com/nocobase/nocobase/compare/v1.9.17...v1.9.18) - 2025-12-03
+
+### 🐛 修复
+
+- **[操作：导入记录]** 导入的字段和导入权限设置的字段不匹配 ([#8075](https://github.com/nocobase/nocobase/pull/8075)) by @2013xile
+
+- **[工作流]** 修复执行历史页面中当节点上的执行记录不存在时的报错 ([#8066](https://github.com/nocobase/nocobase/pull/8066)) by @mytharcher
+
+- **[权限控制]** 给外部数据源添加数据表关联操作的权限判断中间件 ([#8062](https://github.com/nocobase/nocobase/pull/8062)) by @2013xile
+
+- **[工作流：审批]**
+  - 修复在数据详情弹窗中加载相关审批时的权限报错 by @mytharcher
+
+  - 修复退回分支中无法使用审批节点结果中的审批记录数据的问题 by @mytharcher
+
+  - 修复分支模式和顺序会签时流程处理错误的问题 by @mytharcher
+
+## [v1.9.17](https://github.com/nocobase/nocobase/compare/v1.9.16...v1.9.17) - 2025-12-02
+
+### 🐛 修复
+
+- **[client]** 修复联动规则下拉选择框闪烁的问题 ([#8018](https://github.com/nocobase/nocobase/pull/8018)) by @zhangzhonghe
+
+- **[acl]** 修复外部数据源的权限数据范围使用了当前用户相关变量时， acl meta 信息获取不正确的问题 ([#8013](https://github.com/nocobase/nocobase/pull/8013)) by @2013xile
+
+- **[主题编辑器]** 移动端支持切换主题 ([#8046](https://github.com/nocobase/nocobase/pull/8046)) by @zhangzhonghe
+
+- **[多应用管理器]** 设置日志级别，子应用不生效 ([#8045](https://github.com/nocobase/nocobase/pull/8045)) by @2013xile
+
 ## [v1.9.16](https://github.com/nocobase/nocobase/compare/v1.9.15...v1.9.16) - 2025-12-01
 
 ### 🎉 新特性

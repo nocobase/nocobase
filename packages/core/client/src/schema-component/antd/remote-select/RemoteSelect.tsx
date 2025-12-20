@@ -98,7 +98,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
           return initialOperator;
         }
         return '$includes';
-      }, [targetField]);
+      }, [getInterface, targetField?.dataType, targetField?.interface, targetField?.type]);
       const compile = useCompile();
 
       const mapOptionsToTags = useCallback(
@@ -164,7 +164,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
             return options;
           }
         },
-        [targetField?.uiSchema, fieldNames],
+        [fieldNames.value, fieldNames.label, compile, targetField?.uiSchema.enum, targetField?.type, mapOptions],
       );
       // 列表请求
       const { data, run, loading } = useRequest(
@@ -221,24 +221,27 @@ const InternalRemoteSelect = withDynamicSchemaProps(
           );
         }
         return null;
-      }, [searchData.current]);
+      }, [CustomDropdownRender]);
 
       useEffect(() => {
         // Lazy load
         if (firstRun.current) {
           run();
         }
-      }, [runDep]);
+      }, [run, runDep]);
 
       useEffect(() => {
         if (!objectValue && data?.data) {
-          if (!data?.data.some((v) => v[fieldNames.value] === value)) {
+          if (
+            (Array.isArray(value) ? value.length : value != null) &&
+            !data?.data.some((v) => v[fieldNames.value] === value)
+          ) {
             runRecord({
               filterByTk: value,
             });
           }
         }
-      }, [value, data?.data]);
+      }, [value, data?.data, objectValue, fieldNames.value, runRecord]);
 
       const onSearch = async (search) => {
         run({
@@ -269,7 +272,7 @@ const InternalRemoteSelect = withDynamicSchemaProps(
           [];
         const filtered = typeof optionFilter === 'function' ? data.data.filter(optionFilter) : data.data;
         return uniqBy(filtered.concat(valueOptions ?? []), fieldNames.value);
-      }, [value, defaultValue, data?.data, fieldNames.value, optionFilter, record?.data]);
+      }, [objectValue, value, defaultValue, record?.data, data?.data, fieldNames.value, optionFilter]);
 
       const onDropdownVisibleChange = (visible) => {
         searchData.current = null;
@@ -278,6 +281,11 @@ const InternalRemoteSelect = withDynamicSchemaProps(
         }
         firstRun.current = true;
       };
+
+      const mappedOptions = useMemo(
+        () => toOptionsItem(mapOptionsToTags(options)),
+        [mapOptionsToTags, options, toOptionsItem],
+      );
 
       return (
         <Select
@@ -292,8 +300,8 @@ const InternalRemoteSelect = withDynamicSchemaProps(
           value={value}
           defaultValue={defaultValue}
           {...others}
-          loading={data! ? loading : true}
-          options={toOptionsItem(mapOptionsToTags(options))}
+          loading={data ? loading : true}
+          options={mappedOptions}
           rawOptions={options}
           dropdownRender={(menu) => {
             const isFullMatch = options.some((v) => v[fieldNames.label] === searchData.current);

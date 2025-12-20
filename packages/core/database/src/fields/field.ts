@@ -179,6 +179,13 @@ export abstract class Field {
     if (this.options.index) {
       this.context.collection.addIndex([this.name]);
     }
+
+    // setting field to be autoIncrement, should also update model`s autoIncrementAttribute
+    // @ts-ignore
+    if (this.options?.autoIncrement === true && !model.autoIncrementAttribute) {
+      // @ts-ignore
+      model._findAutoIncrementAttribute();
+    }
   }
 
   unbind() {

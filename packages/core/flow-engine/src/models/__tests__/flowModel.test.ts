@@ -294,6 +294,17 @@ describe('FlowModel', () => {
         model.setStepParams(null as any);
         expect(model.stepParams).toEqual(originalParams);
       });
+
+      test('should emit onStepParamsChanged when params updated', () => {
+        const listener = vi.fn();
+        model.emitter.on('onStepParamsChanged', listener);
+
+        model.setStepParams('flow1', 'step1', { foo: 'bar' });
+
+        expect(listener).toHaveBeenCalledTimes(1);
+
+        model.emitter.off('onStepParamsChanged', listener);
+      });
     });
   });
 
@@ -1976,6 +1987,22 @@ describe('FlowModel', () => {
       test('should set instance title correctly', () => {
         model.setTitle('Custom Title');
         expect(model.title).toBe('Custom Title');
+      });
+
+      test('should be reactive when title changes', () => {
+        const seen: string[] = [];
+        const dispose = reaction(
+          () => model.title,
+          (next) => {
+            if (typeof next === 'string') seen.push(next);
+          },
+        );
+
+        model.setTitle('First Title');
+        model.setTitle('Second Title');
+
+        dispose();
+        expect(seen).toEqual(['First Title', 'Second Title']);
       });
 
       test('should update title when called multiple times', () => {

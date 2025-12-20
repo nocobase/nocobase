@@ -120,14 +120,40 @@ export class DetailsBlockModel extends CollectionBlockModel<{
     );
   }
 
+  renderConfigureActions() {
+    return (
+      <AddSubModelButton
+        key="details-actions-add"
+        model={this}
+        subModelKey="actions"
+        subModelBaseClass={this.getModelClassName('RecordActionGroupModel')}
+        afterSubModelInit={async (actionModel) => {
+          actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
+        }}
+      >
+        <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
+      </AddSubModelButton>
+    );
+  }
+
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
     return (
       <>
         <DndProvider>
-          <div style={{ padding: this.context.themeToken.padding, textAlign: 'right' }}>
+          <div
+            style={{
+              textAlign: 'right',
+              lineHeight: '0px',
+              padding: isConfigMode && this.context.themeToken.padding,
+            }}
+          >
             <Space>
               {this.mapSubModels('actions', (action) => {
+                if (action.hidden && !isConfigMode) {
+                  return;
+                }
                 return (
                   <Droppable model={action} key={action.uid}>
                     <FlowModelRenderer
@@ -144,18 +170,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
                   </Droppable>
                 );
               })}
-
-              <AddSubModelButton
-                key="details-actions-add"
-                model={this}
-                subModelKey="actions"
-                subModelBaseClass={this.getModelClassName('RecordActionGroupModel')}
-                afterSubModelInit={async (actionModel) => {
-                  actionModel.setStepParams('buttonSettings', 'general', { type: 'default' });
-                }}
-              >
-                <FlowSettingsButton icon={<SettingOutlined />}>{this.translate('Actions')}</FlowSettingsButton>
-              </AddSubModelButton>
+              {this.renderConfigureActions()}
             </Space>
           </div>
         </DndProvider>
@@ -188,6 +203,10 @@ DetailsBlockModel.registerFlow({
     },
     dataScope: {
       use: 'dataScope',
+    },
+    defaultSorting: {
+      use: 'sortingRule',
+      title: tExpr('Default sorting'),
     },
     linkageRules: {
       use: 'detailsFieldLinkageRules',

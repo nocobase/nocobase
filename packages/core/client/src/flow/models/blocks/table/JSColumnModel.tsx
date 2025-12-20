@@ -128,6 +128,7 @@ export class JSColumnModel extends TableCustomColumnModel {
         );
         fork.context.defineProperty('record', {
           get: () => record,
+          cache: false,
           resolveOnServer: createRecordResolveOnServerWithLocal(
             () => fork.context.collection,
             () => record,

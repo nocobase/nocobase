@@ -625,16 +625,10 @@ describe('workflow > instructions > request', () => {
     it('request db resource', async () => {
       const user = await db.getRepository('users').create({});
 
-      const token = jwt.sign(
-        {
-          userId: user.id,
-          signInTime: Date.now(),
-        },
-        process.env.APP_KEY,
-        {
-          expiresIn: '1d',
-        },
-      );
+      const token = app.authManager.jwt.sign({
+        userId: user.id,
+        signInTime: Date.now(),
+      });
 
       const server = app.listen(0, () => {});
 

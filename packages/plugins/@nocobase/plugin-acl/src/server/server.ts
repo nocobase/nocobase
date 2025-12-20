@@ -9,7 +9,7 @@
 
 import { Context, utils as actionUtils } from '@nocobase/actions';
 import { Cache } from '@nocobase/cache';
-import { Collection, RelationField, Transaction } from '@nocobase/database';
+import { Collection, Model, RelationField, Transaction } from '@nocobase/database';
 import { Plugin } from '@nocobase/server';
 import lodash from 'lodash';
 import { resolve } from 'path';
@@ -428,6 +428,17 @@ export class PluginACLServer extends Plugin {
         ],
       });
 
+      this.app.on('afterLoad', async (app) => {
+        app.db.on('rolesUsers.beforeSave', async (model: Model) => {
+          if (!model._changed.has('roleName')) {
+            return;
+          }
+          if (model.roleName === 'root') {
+            throw new Error('No permissions');
+          }
+        });
+      });
+
       const rolesResourcesScopes = this.app.db.getRepository('dataSourcesRolesResourcesScopes');
       await rolesResourcesScopes.createMany({
         records: [
@@ -628,8 +639,10 @@ export class PluginACLServer extends Plugin {
       { after: 'dataSource', group: 'with-acl-meta' },
     );
 
-    this.app.acl.use(checkAssociationOperate, {
-      before: 'core',
+    this.app.dataSourceManager.afterAddDataSource((dataSource) => {
+      dataSource.acl.use(checkAssociationOperate, {
+        before: 'core',
+      });
     });
 
     this.db.on('afterUpdateCollection', async (collection) => {

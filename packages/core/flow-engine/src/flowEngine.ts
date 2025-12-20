@@ -460,7 +460,9 @@ export class FlowEngine {
     extra?: { delegateToParent?: boolean; delegate?: FlowContext },
   ): T {
     const { parentId, uid, use: modelClassName, subModels } = options;
-    const parentModel = parentId ? (this._modelInstances.get(parentId) as FlowModel | undefined) : undefined;
+    const parentModel = parentId
+      ? ((this.getModel(parentId) || this.previousEngine?.getModel(parentId)) as FlowModel | undefined)
+      : undefined;
     const ModelClass = this._resolveModelClass(
       typeof modelClassName === 'string' ? this.getModelClass(modelClassName) : modelClassName,
       options,
@@ -484,8 +486,8 @@ export class FlowEngine {
       modelInstance.context.addDelegate(extra.delegate);
     }
 
-    if (parentId && this._modelInstances.has(parentId)) {
-      modelInstance.setParent(this._modelInstances.get(parentId));
+    if (parentModel) {
+      modelInstance.setParent(parentModel);
       if (extra?.delegateToParent === false) {
         modelInstance.removeParentDelegate();
       }
@@ -702,6 +704,44 @@ export class FlowEngine {
   }
 
   /**
+   * Remove a local model instance and all its sub-models recursively.
+   * @param {string} uid UID of the model instance to destroy
+   * @returns {boolean} Returns true if successfully destroyed, false otherwise
+   */
+  public removeModelWithSubModels(uid: string): boolean {
+    const model = this.getModel(uid);
+    if (!model) {
+      return false;
+    }
+
+    const collectDescendants = (m: FlowModel, acc: FlowModel[]) => {
+      if (m.subModels) {
+        for (const key in m.subModels) {
+          const sub = m.subModels[key];
+          if (Array.isArray(sub)) {
+            [...sub].forEach((s) => collectDescendants(s, acc));
+          } else if (sub) {
+            collectDescendants(sub, acc);
+          }
+        }
+      }
+      acc.push(m);
+    };
+
+    const allModels: FlowModel[] = [];
+    collectDescendants(model, allModels);
+
+    let success = true;
+    for (const m of allModels) {
+      if (!this.removeModel(m.uid)) {
+        success = false;
+      }
+    }
+
+    return success;
+  }
+
+  /**
    * Check if the model repository is set.
    * @returns {boolean} Returns true if set, false otherwise.
    * @private
@@ -864,7 +904,13 @@ export class FlowEngine {
     if (this.ensureModelRepository()) {
       await this._modelRepository.destroy(uid);
     }
-    return this.removeModel(uid);
+
+    const modelInstance = this._modelInstances.get(uid) as FlowModel;
+    const parent = modelInstance?.parent;
+    const result = this.removeModel(uid);
+    parent && parent.emitter.emit('onSubModelDestroyed', modelInstance);
+
+    return result;
   }
 
   /**
@@ -1012,8 +1058,8 @@ export class FlowEngine {
         model.sortIndex = index;
       });
 
-      // 更新父模型的subModels引用
-      sourceModel.parent.subModels[sourceModel.subKey] = subModelsCopy;
+      // 更新父模型的 subModels 引用，确保拖拽后仍为可观察数组
+      subModels.splice(0, subModels.length, ...subModelsCopy);
 
       return true;
     };

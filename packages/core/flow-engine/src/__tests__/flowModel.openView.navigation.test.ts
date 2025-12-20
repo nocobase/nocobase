@@ -25,6 +25,7 @@ describe('FlowModelContext.openView - navigation enforcement', () => {
       },
       getStepParams: vi.fn(() => undefined),
       setStepParams: vi.fn(),
+      setParent: vi.fn(),
       save: vi.fn(async () => undefined),
       dispatchEvent: vi.fn(async (_event: string, _params?: any) => undefined),
     };
@@ -58,12 +59,12 @@ describe('FlowModelContext.openView - navigation enforcement', () => {
     expect(dispatchedParams.navigation).toBe(false);
   });
 
-  it('forces options.navigation=false when options.defineMethod exists', async () => {
+  it('forces options.navigation=false when options.defineMethods exists', async () => {
     const { parent, child } = setup();
 
     await (parent.context as any).openView('child-uid', {
       navigation: true,
-      defineMethod: {
+      defineMethods: {
         test: vi.fn(),
       },
     });

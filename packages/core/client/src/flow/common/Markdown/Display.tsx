@@ -160,7 +160,7 @@ export const Display = (props) => {
         }}
         overlayStyle={{ maxWidth: 600 }}
         content={
-          <div style={{ maxHeight: 500, overflow: 'auto' }}>
+          <div style={{ maxHeight: 400, overflow: 'auto' }}>
             <DisplayInner value={value} loadImages={imagesLoaded} />
           </div>
         }

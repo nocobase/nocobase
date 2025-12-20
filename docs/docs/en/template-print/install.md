@@ -1,6 +1,6 @@
 ### Install Plugins
 
-Refer to the Installing and Upgrading Commercial Plugins documentation
+For detailed installation and upgrade instructions, please refer to: [Commercial Plugin Activation Guide](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)
 
 ### Install LibreOffice (Optional)
 

@@ -10,10 +10,7 @@ Use an external PostgreSQL database as a data source. Currently supported versio
 
 ## Installation
 
-This plugin is a commercial plugin, which needs to be uploaded and activated through the plugin manager.
-
-
-![20240323162741](https://static-docs.nocobase.com/20240323162741.png)
+This is a commercial plugin. For detailed activation instructions, please refer to: [Commercial Plugin Activation Guide](https://www.nocobase.com/en/blog/nocobase-commercial-license-activation-guide)
 
 
 ## Usage Instructions

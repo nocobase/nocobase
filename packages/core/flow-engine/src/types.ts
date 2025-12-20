@@ -110,6 +110,8 @@ export interface FlowDefinitionOptions<TModel extends FlowModel = FlowModel> {
    * 仅填补缺失，不覆盖已有。固定返回形状：{ [stepKey]: params }
    */
   defaultParams?: Record<string, any> | ((ctx: FlowModelContext) => StepParam | Promise<StepParam>);
+  enableTitle?: boolean;
+  divider?: 'top' | 'bottom';
 }
 
 export interface IModelComponentProps {
@@ -160,6 +162,16 @@ export interface ActionDefinition<TModel extends FlowModel = FlowModel, TCtx ext
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
   scene?: ActionScene | ActionScene[];
   sort?: number;
+  /**
+   * Whether the step/action requires params to be configured before use.
+   */
+  paramsRequired?: boolean;
+  /**
+   * Whether to hide this step/action from settings menus.
+   * - Supports static boolean and dynamic decision based on runtime context.
+   * - StepDefinition.hideInSettings can override the ActionDefinition value.
+   */
+  hideInSettings?: boolean | ((ctx: TCtx) => boolean | Promise<boolean>);
   /**
    * 在执行 Action 前为 ctx 定义临时属性。
    * - 仅支持 PropertyOptions 形态（例如：{ foo: { value: 5 } }）；
@@ -232,7 +244,7 @@ export type StepUIMode =
   | 'embed'
   // | 'switch'
   // | 'select'
-  | { type?: 'dialog' | 'drawer' | 'embed'; props?: Record<string, any> };
+  | { type?: 'dialog' | 'drawer' | 'embed' | 'select' | 'switch'; props?: Record<string, any>; key?: string };
 // | { type: 'switch'; props?: Record<string, any> }
 // | { type: 'select'; props?: Record<string, any> }
 
@@ -251,8 +263,6 @@ export interface StepDefinition<TModel extends FlowModel = FlowModel>
   // Step configuration
   // `preset: true` 的 step params 需要在创建时填写，没有标记的可以创建模型后再填写。
   preset?: boolean;
-  paramsRequired?: boolean; // Optional: whether the step params are required, will open the config dialog before adding the model
-  hideInSettings?: boolean; // Optional: whether to hide the step in the settings menu
   uiMode?: StepUIMode | ((ctx: FlowRuntimeContext<TModel>) => StepUIMode | Promise<StepUIMode>);
 }
 

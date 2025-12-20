@@ -190,6 +190,21 @@ describe('multi filter target key', () => {
       },
     });
 
+    const count = await Student.repository.count({
+      filterByTk: [
+        {
+          name: 's1',
+          classId: 1,
+        },
+        {
+          name: 's2',
+          classId: 1,
+        },
+      ],
+    });
+
+    expect(count).toBe(2);
+
     await Student.repository.destroy({
       filterByTk: [
         {

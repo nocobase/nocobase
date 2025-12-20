@@ -54,6 +54,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
             });
             fork.context.defineProperty('record', {
               get: () => record,
+              cache: false,
             });
             forksRef.current[key] = fork;
           }
@@ -71,6 +72,7 @@ const ArrayNester = ({ name, value = [] }: any) => {
 };
 
 export class DisplaySubListFieldModel extends FieldModel {
+  disableTitleField = true;
   subModelBaseClasses = {
     action: 'RecordActionGroupModel' as any,
     field: ['DetailsItemModel'] as any,

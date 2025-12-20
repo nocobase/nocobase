@@ -46,9 +46,7 @@ export async function getBasicInfo(context, next) {
 }
 
 export async function check(context, next) {
-  console.log(1111111111, context.db);
   const { fileCollectionName } = context.action.params;
-  console.log(fileCollectionName);
   let storage;
 
   const fileCollection = context.db.getCollection(fileCollectionName || 'attachments');
@@ -71,8 +69,7 @@ export async function check(context, next) {
     context.throw(400, context.t('Storage configuration not found. Please configure a storage provider first.'));
   }
 
-  const isSupportToUploadFiles =
-    storage.type !== 's3-compatible' || (storage.options?.baseUrl && storage.options?.public);
+  const isSupportToUploadFiles = !!fileCollection;
 
   const storageInfo = {
     id: storage.id,

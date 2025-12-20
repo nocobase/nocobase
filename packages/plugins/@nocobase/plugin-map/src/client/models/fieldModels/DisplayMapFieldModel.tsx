@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { FieldModel, TableColumnModel } from '@nocobase/client';
+import { DisplayTitleFieldModel, TableColumnModel } from '@nocobase/client';
 import { tExpr } from '@nocobase/flow-engine';
 import { MapComponent } from '../MapComponent';
 import { NAMESPACE } from '../../locale';
@@ -21,13 +21,12 @@ export const PointReadPretty = (props) => {
   }
   return <MapComponent readonly disabled mapType={mapType} {...props} type={type}></MapComponent>;
 };
-export class DisplayMapFieldModel extends FieldModel {
+export class DisplayMapFieldModel extends DisplayTitleFieldModel {
   getMapFieldType() {
     return null;
   }
 
-  public render() {
-    const { value } = this.props;
+  public renderComponent(value) {
     return (
       <PointReadPretty
         {...this.props}
@@ -44,21 +43,24 @@ DisplayMapFieldModel.registerFlow({
   title: tExpr('Map field settings', { ns: NAMESPACE }),
   steps: {
     displayStyle: {
-      title: tExpr('Display style'),
-      uiSchema: (ctx) => {
-        if (ctx.model.parent instanceof TableColumnModel) {
-          return null;
-        }
+      title: tExpr('Display mode'),
+      uiMode(ctx) {
+        const t = ctx.t;
         return {
-          displayStyle: {
-            'x-component': 'Radio.Group',
-            'x-decorator': 'FormItem',
-            enum: [
-              { label: tExpr('Text'), value: 'text' },
-              { label: tExpr('Map'), value: 'map' },
+          type: 'select',
+          key: 'displayStyle',
+          props: {
+            options: [
+              { label: t('Text'), value: 'text' },
+              { label: t('Map'), value: 'map' },
             ],
           },
         };
+      },
+      hideInSettings(ctx) {
+        if (ctx.model.parent instanceof TableColumnModel) {
+          return true;
+        }
       },
       defaultParams: {
         displayStyle: 'text',
@@ -67,8 +69,28 @@ DisplayMapFieldModel.registerFlow({
         ctx.model.setProps({ displayStyle: params.displayStyle });
       },
     },
+
     zoom: {
       use: 'setDefaultZoomLevel',
+      hideInSettings(ctx) {
+        const displayStyle = ctx.model.getStepParams?.('mapFieldSetting', 'displayStyle')?.displayStyle;
+        return displayStyle === 'text';
+      },
+    },
+  },
+});
+
+DisplayMapFieldModel.registerFlow({
+  key: 'displayFieldSettings',
+  title: tExpr('Display Field settings'),
+  sort: 200,
+  steps: {
+    overflowMode: {
+      use: 'overflowMode',
+      hideInSettings(ctx) {
+        const displayStyle = ctx.model.getStepParams?.('mapFieldSetting', 'displayStyle')?.displayStyle;
+        return displayStyle === 'map';
+      },
     },
   },
 });

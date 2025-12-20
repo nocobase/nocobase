@@ -111,16 +111,16 @@ export class ClickableFieldModel extends FieldModel {
     });
   }
 
-  renderComponent(value) {
+  renderComponent(value, wrap?) {
     return value;
   }
 
-  renderInDisplayStyle(value, record?, isToMany?) {
+  renderInDisplayStyle(value, record?, isToMany?, wrap?) {
     const { clickToOpen = false, displayStyle, titleField, overflowMode, ...restProps } = this.props;
     if (value && typeof value === 'object' && restProps.target) {
       return;
     }
-    const result = this.renderComponent(value);
+    const result = this.renderComponent(value, wrap);
     const display = record ? (value ? result : 'N/A') : result;
     const isTag = displayStyle === 'tag';
     const handleClick = (e) => {
@@ -193,7 +193,9 @@ export class ClickableFieldModel extends FieldModel {
       }
     } else {
       const textContent = (
-        <EllipsisWithTooltip ellipsis={ellipsis}>{this.renderInDisplayStyle(value)}</EllipsisWithTooltip>
+        <EllipsisWithTooltip ellipsis={ellipsis} popoverContent={this.renderInDisplayStyle(value, null, null, true)}>
+          {this.renderInDisplayStyle(value)}
+        </EllipsisWithTooltip>
       );
       return textContent;
     }
@@ -206,22 +208,25 @@ ClickableFieldModel.registerFlow({
   sort: 200,
   steps: {
     displayStyle: {
-      title: tExpr('Display style'),
-      uiSchema: (ctx) => {
-        if (['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'].includes(ctx.collectionField?.interface)) {
-          return null;
-        }
-
+      title: tExpr('Display mode'),
+      uiMode: (ctx) => {
+        const t = ctx.t;
         return {
-          displayStyle: {
-            'x-component': 'Radio.Group',
-            'x-decorator': 'FormItem',
-            enum: [
-              { label: tExpr('Tag'), value: 'tag' },
-              { label: tExpr('Text'), value: 'text' },
+          type: 'select',
+          key: 'displayStyle',
+          props: {
+            options: [
+              { label: t('Tag'), value: 'tag' },
+              { label: t('Text'), value: 'text' },
             ],
           },
         };
+      },
+      hideInSettings: async (ctx) => {
+        if (['select', 'multipleSelect', 'radioGroup', 'checkboxGroup'].includes(ctx.collectionField?.interface)) {
+          return true;
+        }
+        return false;
       },
       defaultParams: {
         displayStyle: 'text',
@@ -230,14 +235,13 @@ ClickableFieldModel.registerFlow({
         ctx.model.setProps({ displayStyle: params.displayStyle });
       },
     },
+
+    overflowMode: {
+      use: 'overflowMode',
+    },
     clickToOpen: {
-      title: tExpr('Enable click to open'),
-      uiSchema: {
-        clickToOpen: {
-          'x-component': 'Switch',
-          'x-decorator': 'FormItem',
-        },
-      },
+      title: tExpr('Enable click-to-open'),
+      uiMode: { type: 'switch', key: 'clickToOpen' },
       defaultParams: (ctx) => {
         return {
           clickToOpen: ctx.collectionField.isAssociationField(),
@@ -246,10 +250,6 @@ ClickableFieldModel.registerFlow({
       handler(ctx, params) {
         ctx.model.setProps({ clickToOpen: params.clickToOpen, ...ctx.collectionField.getComponentProps() });
       },
-    },
-    overflowMode: {
-      title: tExpr('Content overflow display mode'),
-      use: 'overflowMode',
     },
   },
 });

@@ -9,14 +9,7 @@
 
 import React, { PropsWithChildren, useEffect, useState } from 'react';
 import { Button, Flex, Form, Space, Tabs } from 'antd';
-import {
-  Collection,
-  createCollectionContextMeta,
-  FlowModelContext,
-  MultiRecordResource,
-  observable,
-  useFlowContext,
-} from '@nocobase/flow-engine';
+import { Collection, FlowModelContext, MultiRecordResource, observable, useFlowContext } from '@nocobase/flow-engine';
 import { FilterGroupType } from '@nocobase/utils/client';
 import { CollectionSetting, FieldsSetting, FilterSetting, Preview, SortSetting } from './form-steps';
 import { CollectionContext, CurrentCollection } from '../context';

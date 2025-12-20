@@ -38,9 +38,20 @@ export function isFilterValueEmpty(value: any): boolean {
     return true;
   }
 
-  // 空数组视为空
-  if (Array.isArray(value) && value.length === 0) {
-    return true;
+  // 空数组或仅包含空值的数组视为空
+  if (Array.isArray(value)) {
+    const nonEmptyItems = value.filter((item) => {
+      if (item === null || item === undefined) {
+        return false;
+      }
+      if (typeof item === 'string' && item.trim() === '') {
+        return false;
+      }
+      return true;
+    });
+    if (nonEmptyItems.length === 0) {
+      return true;
+    }
   }
 
   // 空对象视为空（但不包括 Date、RegExp 等特殊对象）

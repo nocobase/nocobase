@@ -1,6 +1,6 @@
 import { Application, Plugin } from '@nocobase/client';
 import { AddSubModelButton, FlowModel, FlowModelRenderer } from '@nocobase/flow-engine';
-import { Button, Card, Space } from 'antd';
+import { Button, Card, Input, Space } from 'antd';
 import React from 'react';
 
 class HelloModel extends FlowModel {
@@ -35,9 +35,14 @@ class HelloModel extends FlowModel {
 
 class HelloSubModel extends FlowModel {
   render() {
+    const displayParams = this.getStepParams?.('helloSubModelSettings', 'display') || {};
+    const extraParams = this.getStepParams?.('helloSubModelSettings', 'extra') || {};
+
     return (
       <Card title={`Hello SubModel - ${this.props.name}`}>
         <p>This is a sub-model rendered by HelloSubModel.</p>
+        <p>额外配置开关：{displayParams.enableExtra ? '已开启' : '未开启'}</p>
+        {displayParams.enableExtra ? <p>额外提示：{extraParams.tip || '（未填写）'}</p> : null}
       </Card>
     );
   }
@@ -61,6 +66,42 @@ HelloSubModel.registerFlow({
       },
       handler(ctx, params) {
         ctx.model.setProps({ name: params.name });
+      },
+    },
+    display: {
+      title: '显示选项',
+      hideInSettings: false,
+      defaultParams: {
+        enableExtra: false,
+      },
+      uiSchema: {
+        enableExtra: {
+          type: 'boolean',
+          title: '开启额外配置',
+          'x-decorator': 'FormItem',
+          'x-component': 'Switch',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setStepParams?.('helloSubModelSettings', 'display', params);
+      },
+    },
+    extra: {
+      title: '额外配置',
+      hideInSettings: (ctx) => !ctx.getStepParams('display')?.enableExtra,
+      defaultParams: {
+        tip: '只有在开启“显示选项”后才会看到本配置项',
+      },
+      uiSchema: {
+        tip: {
+          type: 'string',
+          title: '提示文案',
+          'x-decorator': 'FormItem',
+          'x-component': 'Input.TextArea',
+        },
+      },
+      handler(ctx, params) {
+        ctx.model.setStepParams?.('helloSubModelSettings', 'extra', params);
       },
     },
   },

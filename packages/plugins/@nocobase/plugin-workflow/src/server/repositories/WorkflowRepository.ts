@@ -44,13 +44,14 @@ export default class WorkflowRepository extends Repository {
           ...revisionData,
           sync: origin.sync,
           type: origin.type,
-          config:
-            typeof trigger.duplicateConfig === 'function'
-              ? await trigger.duplicateConfig(origin, { transaction })
-              : origin.config,
+          config: origin.config,
         },
         transaction,
       });
+      if (trigger && typeof trigger.duplicateConfig === 'function') {
+        const newConfig = await trigger.duplicateConfig(instance, { origin, transaction });
+        await instance.update({ config: newConfig }, { transaction });
+      }
 
       const originalNodesMap = new Map();
       origin.nodes.forEach((node) => {
@@ -65,15 +66,15 @@ export default class WorkflowRepository extends Repository {
           {
             type: node.type,
             key: node.key,
-            config:
-              typeof instruction.duplicateConfig === 'function'
-                ? await instruction.duplicateConfig(node, { transaction })
-                : node.config,
+            config: node.config,
             title: node.title,
             branchIndex: node.branchIndex,
           },
           { transaction },
         );
+        if (typeof instruction.duplicateConfig === 'function') {
+          await instruction.duplicateConfig(newNode, { origin: node, transaction });
+        }
         // NOTE: keep original node references for later replacement
         oldToNew.set(node.id, newNode);
         newToOld.set(newNode.id, node);

@@ -11,7 +11,7 @@ import {
   DndProvider,
   MultiRecordResource,
   FlowModelRenderer,
-  escapeT,
+  tExpr,
   Droppable,
   DragHandler,
   AddSubModelButton,
@@ -121,6 +121,8 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
   }
 
   renderComponent() {
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+
     return (
       <>
         <DndProvider>
@@ -145,6 +147,9 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
             </Space>
             <Space wrap>
               {this.mapSubModels('actions', (action) => {
+                if (action.hidden && !isConfigMode) {
+                  return;
+                }
                 // @ts-ignore
                 if (action.props.position !== 'left') {
                   return (
@@ -210,17 +215,17 @@ ListBlockModel.registerFlow({
 });
 
 ListBlockModel.registerFlow({
-  key: 'listettings',
+  key: 'listSettings',
   sort: 500,
-  title: escapeT('List settings', { ns: 'block-list' }),
+  title: tExpr('List settings', { ns: 'block-list' }),
   steps: {
     pageSize: {
-      title: escapeT('Page size'),
-      uiSchema: {
-        pageSize: {
-          'x-component': 'Select',
-          'x-decorator': 'FormItem',
-          enum: [
+      title: tExpr('Page size'),
+      uiMode: {
+        type: 'select',
+        key: 'pageSize',
+        props: {
+          options: [
             { label: '5', value: 5 },
             { label: '10', value: 10 },
             { label: '20', value: 20 },
@@ -241,15 +246,15 @@ ListBlockModel.registerFlow({
     },
     dataScope: {
       use: 'dataScope',
-      title: escapeT('Data scope'),
+      title: tExpr('Data scope'),
     },
     defaultSorting: {
       use: 'sortingRule',
-      title: escapeT('Default sorting'),
+      title: tExpr('Default sorting'),
     },
     layout: {
       use: 'layout',
-      title: escapeT('Layout'),
+      title: tExpr('Layout'),
       handler(ctx, params) {
         ctx.model.setProps({ ...params, labelWidth: params.layout === 'vertical' ? null : params.labelWidth });
         const item = ctx.model.subModels.item as FlowModel;
@@ -261,7 +266,7 @@ ListBlockModel.registerFlow({
       },
     },
     refreshData: {
-      title: escapeT('Refresh data'),
+      title: tExpr('Refresh data'),
       async handler(ctx, params) {
         // await Promise.all(
         //   // ctx.model.mapSubModels('item', async (item: ListItemModel) => {
@@ -279,10 +284,10 @@ ListBlockModel.registerFlow({
 });
 
 ListBlockModel.define({
-  label: escapeT('List'),
-  group: escapeT('Content'),
+  label: tExpr('List'),
+  group: tExpr('Content'),
   searchable: true,
-  searchPlaceholder: escapeT('Search'),
+  searchPlaceholder: tExpr('Search'),
   createModelOptions: {
     use: 'ListBlockModel',
     subModels: {

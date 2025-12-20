@@ -137,7 +137,7 @@ function scientificNotation(number, decimalPlaces, separator = '.') {
   return result;
 }
 
-function formatNumber(props) {
+export function formatNumber(props) {
   const { step, formatStyle = 'normal', value, unitConversion, unitConversionType, separator = '0,0.00' } = props;
 
   if (!isValid(value)) {
@@ -177,43 +177,34 @@ interface displayNumberProps {
   addonAfter?: React.ReactNode;
 }
 
-export const DisplayNumber = (props: displayNumberProps) => {
-  const {
-    numberStep: step,
-    formatStyle,
-    value,
-    addonBefore,
-    addonAfter,
-    unitConversion,
-    unitConversionType,
-    separator,
-  } = props;
-  const result = useMemo(() => {
-    return formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });
-  }, [step, formatStyle, value, unitConversion, unitConversionType, separator]);
-  if (!result) {
-    return null;
-  }
+export const getDisplayNumber = (props: displayNumberProps) => {
+  const { numberStep: step, formatStyle, value, unitConversion, unitConversionType, separator } = props;
+  const result = formatNumber({ step, formatStyle, value, unitConversion, unitConversionType, separator });
 
-  return (
-    <span>
-      {addonBefore}
-      <span dangerouslySetInnerHTML={{ __html: result }} />
-      {addonAfter}
-    </span>
-  );
+  return result;
 };
 
 export class DisplayNumberFieldModel extends ClickableFieldModel {
   public renderComponent(value) {
-    return <DisplayNumber {...this.props} value={value} />;
+    const { addonBefore, addonAfter } = this.props;
+    const result = getDisplayNumber({ ...this.props, value });
+    if (!result) {
+      return null;
+    }
+    return (
+      <span>
+        {addonBefore}
+        <span dangerouslySetInnerHTML={{ __html: result }} />
+        {addonAfter}
+      </span>
+    );
   }
 }
 DisplayNumberFieldModel.define({
   label: tExpr('Number'),
 });
 
-const UnitConversion = () => {
+export const UnitConversion = () => {
   const form = useForm();
   const { unitConversionType } = form.values;
   const { t } = useTranslation();
@@ -233,11 +224,11 @@ const UnitConversion = () => {
 
 DisplayNumberFieldModel.registerFlow({
   key: 'numberSettings',
-  sort: 100,
+  sort: 500,
   title: tExpr('Number settings'),
   steps: {
     format: {
-      title: tExpr('Format'),
+      title: tExpr('Number format'),
       uiSchema: (ctx) => {
         return {
           formatStyle: {
@@ -351,6 +342,6 @@ DisplayNumberFieldModel.registerFlow({
   },
 });
 
-DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['number', 'integer', 'id'], {
+DisplayItemModel.bindModelToInterface('DisplayNumberFieldModel', ['number', 'integer', 'id', 'snowflakeId'], {
   isDefault: true,
 });

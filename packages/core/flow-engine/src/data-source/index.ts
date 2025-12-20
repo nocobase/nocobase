@@ -8,8 +8,8 @@
  */
 
 import { observable } from '@formily/reactive';
-import _ from 'lodash';
 import { CascaderProps } from 'antd';
+import _ from 'lodash';
 import { FlowEngine } from '../flowEngine';
 import { jioToJoiSchema } from './jioToJoiSchema';
 import { sortCollectionsByInherits } from './sortCollectionsByInherits';
@@ -167,7 +167,7 @@ export class DataSource {
     const fieldName = otherKeys.join('.');
     const collection = this.getCollection(collectionName);
     if (!collection) {
-      throw new Error(`Collection ${collectionName} not found in data source ${this.key}`);
+      return;
     }
     const field = collection.getFieldByPath(fieldName);
     if (!field) {
@@ -465,6 +465,12 @@ export class Collection {
     this.fields = observable.shallow<Map<string, CollectionField>>(new Map());
     this.inherits = observable.shallow<Map<string, Collection>>(new Map());
     this.setFields(options.fields || []);
+  }
+
+  clone() {
+    const newCollection = new Collection(_.cloneDeep(this.options));
+    newCollection.setDataSource(this.dataSource);
+    return newCollection;
   }
 
   getFilterByTK(record) {
@@ -803,7 +809,19 @@ export class CollectionField {
   }
 
   get enum(): any[] {
-    return this.options.uiSchema?.enum || [];
+    const options = this.options.uiSchema?.enum || [];
+    if (this.type === 'integer') {
+      return options.map((v) => {
+        if (typeof v !== 'object') {
+          return v;
+        }
+        return {
+          ...v,
+          value: Number(v.value),
+        };
+      });
+    }
+    return options;
   }
 
   get defaultValue() {

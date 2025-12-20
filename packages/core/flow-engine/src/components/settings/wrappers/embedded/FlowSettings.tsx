@@ -8,13 +8,18 @@
  */
 
 import { Alert, Form, Input, InputNumber, Select, Switch } from 'antd';
-import React, { useCallback, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 // TODO: ISchema may need to be imported from a different package or refactored.
 import { observer } from '@formily/react';
 import { FlowRuntimeContext } from '../../../../flowContext';
 import { useFlowModelById } from '../../../../hooks';
 import { FlowModel } from '../../../../models';
-import { resolveDefaultParams, setupRuntimeContextSteps } from '../../../../utils';
+import {
+  resolveDefaultParams,
+  setupRuntimeContextSteps,
+  shouldHideStepInSettings,
+  createEphemeralContext,
+} from '../../../../utils';
 
 const { Item: FormItem } = Form;
 
@@ -89,46 +94,59 @@ const FlowSettingsContent: React.FC<FlowSettingsContentProps> = observer(({ mode
   const flows = model.getFlows();
   const flow = flows.get(flowKey);
 
-  // 获取可配置的步骤
-  const configurableSteps = Object.entries(flow?.steps || {})
-    .map(([stepKey, actionStep]) => {
-      // 如果步骤设置了 hideInSettings: true，则跳过此步骤
-      if (actionStep.hideInSettings) {
-        return null;
-      }
+  const [configurableSteps, setConfigurableSteps] = useState<{ stepKey: string; step: any; uiSchema: any }[]>([]);
 
-      // 从step获取uiSchema（如果存在）
-      const stepUiSchema = actionStep.uiSchema || {};
-
-      // 如果step使用了action，也获取action的uiSchema
-      let actionUiSchema = {};
-      if (actionStep.use) {
-        const action = model.flowEngine?.getAction?.(actionStep.use);
-        if (action && action.uiSchema) {
-          actionUiSchema = action.uiSchema;
+  // 获取可配置的步骤（支持动态 hideInSettings）
+  useEffect(() => {
+    let mounted = true;
+    const buildConfigurableSteps = async () => {
+      const steps: { stepKey: string; step: any; uiSchema: any }[] = [];
+      for (const [stepKey, actionStep] of Object.entries(flow?.steps || {})) {
+        if (await shouldHideStepInSettings(model, flow, actionStep as any)) {
+          continue;
         }
-      }
 
-      // 合并uiSchema，确保step的uiSchema优先级更高
-      const mergedUiSchema = { ...actionUiSchema };
+        // 从step获取uiSchema（如果存在）
+        const stepUiSchema = actionStep.uiSchema || {};
 
-      // 将stepUiSchema中的字段合并到mergedUiSchema
-      Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
-        if (mergedUiSchema[fieldKey]) {
-          mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
-        } else {
-          mergedUiSchema[fieldKey] = schema;
+        // 如果step使用了action，也获取action的uiSchema
+        let actionUiSchema = {};
+        if (actionStep.use) {
+          const action = model.flowEngine?.getAction?.(actionStep.use);
+          if (action && action.uiSchema) {
+            actionUiSchema = action.uiSchema;
+          }
         }
-      });
 
-      // 如果没有可配置的UI Schema，返回null
-      if (Object.keys(mergedUiSchema).length === 0) {
-        return null;
+        // 合并uiSchema，确保step的uiSchema优先级更高
+        const mergedUiSchema = { ...actionUiSchema };
+
+        // 将stepUiSchema中的字段合并到mergedUiSchema
+        Object.entries(stepUiSchema).forEach(([fieldKey, schema]) => {
+          if (mergedUiSchema[fieldKey]) {
+            mergedUiSchema[fieldKey] = { ...mergedUiSchema[fieldKey], ...schema };
+          } else {
+            mergedUiSchema[fieldKey] = schema;
+          }
+        });
+
+        // 如果没有可配置的UI Schema，跳过
+        if (Object.keys(mergedUiSchema).length === 0) {
+          continue;
+        }
+
+        steps.push({ stepKey, step: actionStep, uiSchema: mergedUiSchema });
       }
+      if (mounted) {
+        setConfigurableSteps(steps);
+      }
+    };
 
-      return { stepKey, step: actionStep, uiSchema: mergedUiSchema };
-    })
-    .filter(Boolean);
+    buildConfigurableSteps();
+    return () => {
+      mounted = false;
+    };
+  }, [model, flow]);
 
   // 获取当前流程的参数 - 从model中获取实际参数
   const getCurrentParams = useCallback(async () => {

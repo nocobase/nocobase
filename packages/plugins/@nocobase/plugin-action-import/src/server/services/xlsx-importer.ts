@@ -235,9 +235,9 @@ export class XlsxImporter extends EventEmitter {
     return (this.repository instanceof RelationRepository ? this.repository.targetModel : this.repository.model) as any;
   }
 
-  async handleRowValuesWithColumns(row: any, rowValues: any, options: RunOptions) {
-    for (let index = 0; index < this.options.columns.length; index++) {
-      const column = this.options.columns[index];
+  async handleRowValuesWithColumns(row: any, rowValues: any, options: RunOptions, columns: ImportColumn[]) {
+    for (let index = 0; index < columns.length; index++) {
+      const column = columns[index];
       const field = this.options.collection.getField(column.dataIndex[0]);
       if (!field) {
         throw new ImportValidationError('Import validation. Field not found', {
@@ -301,11 +301,11 @@ export class XlsxImporter extends EventEmitter {
   ) {
     let { handingRowIndex = 1 } = options;
     const { transaction } = runOptions;
+    const columns = this.getColumnsByPermission(options?.context);
     const rows = [];
     for (const row of chunkRows) {
       const rowValues = {};
-      await this.handleRowValuesWithColumns(row, rowValues, runOptions);
-
+      await this.handleRowValuesWithColumns(row, rowValues, runOptions, columns);
       rows.push({
         ...(this.options.rowDefaultValues || {}),
         ...rowValues,
@@ -374,7 +374,7 @@ export class XlsxImporter extends EventEmitter {
       if (insertOptions.hooks !== false) {
         await this.loggerService.measureExecutedTime(
           async () => {
-            await db.emit(`${this.repository.collection.name}.afterCreate`, instance, {
+            await db.emitAsync(`${this.repository.collection.name}.afterCreate`, instance, {
               transaction,
             });
             await db.emitAsync(`${this.repository.collection.name}.afterSave`, instance, {
@@ -477,7 +477,7 @@ export class XlsxImporter extends EventEmitter {
         headers: expectedHeaders.join(', '),
       });
     }
-    data = this.alignWithHeaders({ data, expectedHeaders, headers });
+    data = this.alignWithHeaders({ data, expectedHeaders, headerRowIndex });
     // Extract data rows
     const rows = data.slice(headerRowIndex + 1);
 
@@ -489,9 +489,20 @@ export class XlsxImporter extends EventEmitter {
     return [headers, ...rows];
   }
 
-  private alignWithHeaders(params: { headers: string[]; expectedHeaders: string[]; data: string[][] }): string[][] {
-    const { expectedHeaders, headers, data } = params;
-    const keepCols = headers.map((x, i) => (expectedHeaders.includes(x) ? i : -1)).filter((i) => i > -1);
+  private alignWithHeaders(params: {
+    data: string[][];
+    expectedHeaders: string[];
+    headerRowIndex: number;
+  }): string[][] {
+    const { data, expectedHeaders, headerRowIndex } = params;
+    const headerRow = data[headerRowIndex];
+    const keepCols = expectedHeaders.map((header) => headerRow.indexOf(header));
+
+    if (keepCols.some((index) => index < 0)) {
+      throw new ImportValidationError('Headers not found. Expected headers: {{headers}}', {
+        headers: expectedHeaders.join(', '),
+      });
+    }
 
     return data.map((row) => keepCols.map((i) => row[i]));
   }

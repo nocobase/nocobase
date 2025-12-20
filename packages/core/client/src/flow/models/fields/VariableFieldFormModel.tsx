@@ -39,6 +39,7 @@ export class VariableFieldFormModel extends FlowModel {
     });
     this.context.defineProperty('record', {
       get: () => {},
+      cache: false,
     });
   }
 

@@ -44,7 +44,7 @@
 
 import { observer } from '@formily/reactive-react';
 import _ from 'lodash';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { FlowModelProvider, useApplyAutoFlows } from '../hooks';
 import { getAutoFlowError, setAutoFlowError } from '../utils';
@@ -97,6 +97,8 @@ export interface FlowModelRendererProps {
 
   /** 额外的工具栏项目，仅应用于此实例 */
   extraToolbarItems?: ToolbarItemConfig[];
+
+  useCache?: boolean;
 }
 
 /**
@@ -139,7 +141,10 @@ const FlowModelRendererWithAutoFlows: React.FC<{
   }) => {
     // hidden 占位由模型自身处理；无需在此注入
 
-    const { loading: pending, error: autoFlowsError } = useApplyAutoFlows(model, inputArgs, { throwOnError: false });
+    const { loading: pending, error: autoFlowsError } = useApplyAutoFlows(model, inputArgs, {
+      throwOnError: false,
+      useCache: model.context.useCache,
+    });
     // 将错误下沉到 model 实例上，供内容层读取（类型安全的 WeakMap 存储）
     setAutoFlowError(model, autoFlowsError || null);
 
@@ -339,7 +344,16 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     showErrorFallback = true,
     settingsMenuLevel,
     extraToolbarItems,
+    useCache,
   }) => {
+    useEffect(() => {
+      if (model?.context) {
+        model.context.defineProperty('useCache', {
+          value: typeof useCache === 'boolean' ? useCache : model.context.useCache,
+        });
+      }
+    }, [model?.context, useCache]);
+
     if (!model || typeof model.render !== 'function') {
       // 可以选择渲染 null 或者一个错误/提示信息
       console.warn('FlowModelRenderer: Invalid model or render method not found.', model);

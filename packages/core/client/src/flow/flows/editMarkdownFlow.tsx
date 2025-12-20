@@ -7,11 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineFlow, tExpr, FlowModel, useFlowContext } from '@nocobase/flow-engine';
-import React, { useEffect } from 'react';
+import { defineFlow, FlowModel, tExpr, useFlowContext } from '@nocobase/flow-engine';
+import { Button, Space } from 'antd';
 import _ from 'lodash';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Space, Button } from 'antd';
 
 const PreviewButton = ({ style }) => {
   const { t } = useTranslation();
@@ -70,7 +70,7 @@ export const editMarkdownFlow = defineFlow<FlowModel>({
               {t('References')}:
             </span>
             <a
-              href={`https://v2.docs.nocobase.com/cn/interface-builder/blocks/other-blocks/markdown`}
+              href={`https://v2.docs.nocobase.com/interface-builder/blocks/other-blocks/markdown`}
               target="_blank"
               rel="noreferrer"
             >
@@ -116,15 +116,17 @@ export const editMarkdownFlow = defineFlow<FlowModel>({
         },
       },
       useRawParams: true,
-      defaultParams: {
-        content: '{{t("This is a demo text, **supports Markdown syntax**.")}}',
+      defaultParams: (ctx) => {
+        return {
+          content: ctx.t('{{t("This is a demo text, **supports Markdown syntax**.")}}'),
+        };
       },
       async handler(ctx, params) {
         const content = params.content;
         try {
-          const result = await ctx.liquid.renderWithFullContext(ctx.t(content), ctx);
+          const result = await ctx.liquid.renderWithFullContext(content, ctx);
           // 解析 Markdown
-          const mdContent = ctx.markdown.render(ctx.t(result), { textOnly: false });
+          const mdContent = ctx.markdown.render(result, { textOnly: false });
           ctx.model.setProps({
             content: mdContent,
             value: content,

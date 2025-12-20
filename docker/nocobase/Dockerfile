@@ -6,7 +6,7 @@ WORKDIR /app
 
 RUN cd /app \
   && yarn config set network-timeout 600000 -g \
-  && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --skip-dev-dependencies -a -e APP_ENV=production \
+  && npx -y create-nocobase-app@${CNA_VERSION} my-nocobase-app --empty-key --skip-dev-dependencies -a -e APP_ENV=production \
   && cd /app/my-nocobase-app \
   && yarn install --production \
   && rm -rf yarn.lock \

@@ -11,7 +11,7 @@ import { DisplayItemModel, escapeT } from '@nocobase/flow-engine';
 import { DisplayTitleFieldModel, tval } from '@nocobase/client';
 import React, { useState, useEffect } from 'react';
 
-const Display = ({ value, markdown, liquid, t, textOnly, ctx, overflowMode }) => {
+const Display = ({ value, markdown, liquid, t, textOnly, ctx, overflowMode, parseLiquid = false }) => {
   const [content, setContent] = useState(null);
 
   useEffect(() => {
@@ -19,7 +19,7 @@ const Display = ({ value, markdown, liquid, t, textOnly, ctx, overflowMode }) =>
 
     (async () => {
       try {
-        const result = await liquid.renderWithFullContext(value, ctx);
+        const result = parseLiquid ? await liquid.renderWithFullContext(value, ctx) : value;
         const html = markdown.render(t(result), { ellipsis: overflowMode === 'ellipsis', textOnly });
         setContent(html);
       } catch (err) {

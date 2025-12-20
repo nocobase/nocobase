@@ -11,7 +11,7 @@ import {
   DndProvider,
   MultiRecordResource,
   FlowModelRenderer,
-  escapeT,
+  tExpr,
   Droppable,
   DragHandler,
   AddSubModelButton,
@@ -21,7 +21,7 @@ import {
 import { SettingOutlined } from '@ant-design/icons';
 import { CollectionBlockModel, BlockSceneEnum, ActionModel } from '@nocobase/client';
 import React from 'react';
-import { List, Space, Slider } from 'antd';
+import { List, Space, Slider, Grid, InputNumber, Col } from 'antd';
 import { css } from '@emotion/css';
 import { GridCardItemModel } from './GridCardItemModel';
 import { screenSizeTitleMaps, gridSizes, columnCountMarks, screenSizeMaps } from './utils';
@@ -35,7 +35,7 @@ type GridBlockModelStructure = {
 
 export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStructure> {
   static scene = BlockSceneEnum.many;
-
+  _screens;
   _defaultCustomModelClasses = {
     CollectionActionGroupModel: 'CollectionActionGroupModel',
     RecordActionGroupModel: 'RecordActionGroupModel',
@@ -46,6 +46,13 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
 
   get resource() {
     return super.resource as MultiRecordResource;
+  }
+
+  useHooksBeforeRender() {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    const screens = Grid.useBreakpoint();
+    const order = ['xxl', 'lg', 'md', 'xs'];
+    this._screens = order.find((bp) => screens[bp]) || 'lg';
   }
 
   createResource(ctx, params) {
@@ -69,12 +76,19 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
     const hasNext = this.resource.getMeta('hasNext');
     const current = this.resource.getPage();
     const data = this.resource.getData();
+    const columns = this.props.columnCount?.[this._screens] || 1;
+    const rowCount = this.props.rowCount || 1;
+
+    const multiples = [1, 2, 3, 5, 10];
+
+    const pageSizeOptions = multiples.map((m) => columns * rowCount * m);
+
     if (totalCount) {
       return {
         current,
         pageSize,
         total: totalCount,
-        pageSizeOptions: [3, 6, 9, 15, 30, 60, 72],
+        pageSizeOptions: pageSizeOptions,
         showTotal: (total) => {
           return this.translate('Total {{count}} items', { count: total });
         },
@@ -125,6 +139,7 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
   renderComponent() {
     const { columnCount } = this.props;
     const token = this.context.themeToken;
+    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
     return (
       <>
         <DndProvider>
@@ -149,6 +164,9 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
             </Space>
             <Space wrap>
               {this.mapSubModels('actions', (action) => {
+                if (action.hidden && !isConfigMode) {
+                  return;
+                }
                 // @ts-ignore
                 if (action.props.position !== 'left') {
                   return (
@@ -198,9 +216,16 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
               resolveOnServer: true,
             });
             return (
-              <List.Item key={index}>
+              <Col
+                className={css`
+                  height: 100%;
+                  > div {
+                    height: 100%;
+                  }
+                `}
+              >
                 <FlowModelRenderer model={model} />
-              </List.Item>
+              </Col>
             );
           }}
         />
@@ -215,12 +240,12 @@ GridCardBlockModel.registerFlow({
 });
 
 GridCardBlockModel.registerFlow({
-  key: 'listettings',
+  key: 'GridCardSettings',
   sort: 500,
-  title: escapeT('Grid card block settings', { ns: 'block-grid-card' }),
+  title: tExpr('Grid card block settings', { ns: 'block-grid-card' }),
   steps: {
     columnCount: {
-      title: escapeT('Set the count of columns displayed in a row'),
+      title: tExpr('Set the count of columns displayed in a row'),
       uiSchema(ctx) {
         const t = ctx.t;
         const columnCountSchema = {
@@ -267,42 +292,38 @@ GridCardBlockModel.registerFlow({
         });
       },
     },
-    pageSize: {
-      title: escapeT('Page size'),
+    rowCount: {
+      title: tExpr('Number of Rows', { ns: 'block-grid-card' }),
       uiSchema: {
-        pageSize: {
-          'x-component': 'Select',
+        rowCount: {
+          'x-component': InputNumber,
           'x-decorator': 'FormItem',
-          enum: [
-            { label: '3', value: 3 },
-            { label: '6', value: 6 },
-            { label: '9', value: 9 },
-            { label: '15', value: 15 },
-            { label: '30', value: 30 },
-            { label: '60', value: 60 },
-          ],
         },
       },
       defaultParams: {
-        pageSize: 15,
+        rowCount: 3,
       },
       handler(ctx, params) {
         ctx.model.resource.loading = true;
         ctx.model.resource.setPage(1);
-        ctx.model.resource.setPageSize(params.pageSize);
+        const pageSize = params.rowCount * ctx.model.props.columnCount[ctx.model._screens];
+        const currentPageSize = ctx.model.resource.getPageSize();
+        if (currentPageSize !== pageSize) {
+          ctx.model.resource.setPageSize(pageSize);
+        }
       },
     },
     dataScope: {
       use: 'dataScope',
-      title: escapeT('Data scope'),
+      title: tExpr('Data scope'),
     },
     defaultSorting: {
       use: 'sortingRule',
-      title: escapeT('Default sorting'),
+      title: tExpr('Default sorting'),
     },
     layout: {
       use: 'layout',
-      title: escapeT('Layout'),
+      title: tExpr('Layout'),
       handler(ctx, params) {
         ctx.model.setProps({ ...params, labelWidth: params.layout === 'vertical' ? null : params.labelWidth });
         const item = ctx.model.subModels.item as FlowModel;
@@ -313,29 +334,14 @@ GridCardBlockModel.registerFlow({
         });
       },
     },
-    refreshData: {
-      title: escapeT('Refresh data'),
-      async handler(ctx, params) {
-        // await Promise.all(
-        //   ctx.model.mapSubModels('item', async (item) => {
-        //     try {
-        //       await item.applyAutoFlows();
-        //     } catch (err) {
-        //       item['__autoFlowError'] = err;
-        //       // 列级错误不再向上抛，避免拖垮整表；在单元格层用 ErrorBoundary 展示
-        //     }
-        //   }),
-        // );
-      },
-    },
   },
 });
 
 GridCardBlockModel.define({
-  label: escapeT('Grid Card'),
-  group: escapeT('Content'),
+  label: tExpr('Grid Card'),
+  group: tExpr('Content'),
   searchable: true,
-  searchPlaceholder: escapeT('Search'),
+  searchPlaceholder: tExpr('Search'),
   createModelOptions: {
     use: 'GridCardBlockModel',
     subModels: {

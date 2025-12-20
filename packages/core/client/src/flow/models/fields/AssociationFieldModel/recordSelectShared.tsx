@@ -10,6 +10,7 @@
 import { createCurrentRecordMetaFactory, FlowModel, useFlowModel } from '@nocobase/flow-engine';
 import type { SelectProps } from 'antd';
 import React from 'react';
+import { omit } from 'lodash';
 
 export interface AssociationFieldNames {
   label: string;
@@ -54,6 +55,7 @@ export function LabelByField(props: Readonly<LabelByFieldProps>) {
   const fieldModel = field.createFork({}, key);
   fieldModel.context.defineProperty('record', {
     get: () => option,
+    cache: false,
     meta: createCurrentRecordMetaFactory(fieldModel.context, () => fieldModel.context.collection),
   });
   const labelValue = option?.[fieldNames.label] || option.label;
@@ -73,7 +75,7 @@ export function toSelectValue(
 ) {
   if (!record) return multiple ? [] : undefined;
 
-  const { value: valueKey } = fieldNames;
+  const { value: valueKey } = fieldNames || {};
 
   const convert = (item: AssociationOption) => {
     if (typeof item !== 'object' || item === null || item === undefined) return undefined;
@@ -99,7 +101,9 @@ export function resolveOptions(
   isMultiple: boolean,
 ) {
   if (options?.length) {
-    return options;
+    return options.map((v) => {
+      return omit(v, 'disabled', 'options');
+    });
   }
 
   if (isMultiple) {

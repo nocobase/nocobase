@@ -114,14 +114,11 @@ export const TextAreaWithContextSelector: React.FC<TextAreaWithContextSelectorPr
           lineHeight: 0,
         }}
       >
-        {/* 参考 1.0：小号按钮 + 非 hover 去掉右/上边框，背景透明，贴合右上角 */}
         <FlowContextSelector metaTree={metaTree} onChange={(val) => handleVariableSelected(val)}>
           <Button
             type="default"
+            style={{ fontStyle: 'italic', fontFamily: 'New York, Times New Roman, Times, serif' }}
             className={css`
-              font-style: italic;
-              font-family: 'New York, Times New Roman, Times, serif';
-              line-height: 1;
               &:not(:hover) {
                 border-right-color: transparent;
                 border-top-color: transparent;

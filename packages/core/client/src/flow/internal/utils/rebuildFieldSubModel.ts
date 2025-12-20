@@ -36,6 +36,7 @@ type RebuildOptions = {
   targetUse: string;
   defaultProps?: Record<string, unknown>;
   pattern?: string;
+  fieldSettingsInit?: unknown;
 };
 
 export function getFieldBindingUse(fieldModel?: FieldModel): string | undefined {
@@ -43,17 +44,23 @@ export function getFieldBindingUse(fieldModel?: FieldModel): string | undefined 
   return typeof bindingUse === 'string' ? bindingUse : undefined;
 }
 
-export async function rebuildFieldSubModel({ parentModel, targetUse, defaultProps, pattern }: RebuildOptions) {
+export async function rebuildFieldSubModel({
+  parentModel,
+  targetUse,
+  defaultProps,
+  pattern,
+  fieldSettingsInit,
+}: RebuildOptions) {
   const fieldModel = parentModel.subModels['field'];
   const fieldUid = fieldModel?.uid;
   const prevStepParams: FieldStepParams = (fieldModel?.stepParams as FieldStepParams) || {};
-  const prevBindingUse = prevStepParams.fieldBinding?.use;
+  const nextFieldSettingsInit = fieldSettingsInit ?? parentModel.getFieldSettingsInitParams?.();
 
   const nextStepParams: FieldStepParams = {
     ...prevStepParams,
     fieldBinding: { ...prevStepParams.fieldBinding, use: targetUse },
     fieldSettings: {
-      init: parentModel.getFieldSettingsInitParams?.(),
+      init: nextFieldSettingsInit,
     },
   };
 

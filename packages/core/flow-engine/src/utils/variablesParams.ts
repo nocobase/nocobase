@@ -174,7 +174,7 @@ export async function buildRecordMeta(
   title?: string,
   paramsBuilder?: RecordParamsBuilder,
 ): Promise<PropertyMeta | null> {
-  const base = await createCollectionContextMeta(collectionAccessor, title)();
+  const base = await createCollectionContextMeta(collectionAccessor, title, true)();
   if (!base) return null;
   return {
     ...base,

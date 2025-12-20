@@ -19,7 +19,7 @@ export const FilterDatePicker = (props: any) => {
   const value = Array.isArray(props.value) ? props.value[0] : props.value;
   const initPicker = value ? inferPickerType(value, picker) : picker;
   const [targetPicker, setTargetPicker] = useState(initPicker);
-  const targetDateFormat = getPickerFormat(initPicker) || format;
+  const targetDateFormat = format || getPickerFormat(initPicker);
   const t = ctx.model.translate.bind(ctx.model);
   const newProps = {
     utc: true,
@@ -60,8 +60,8 @@ export const FilterDatePicker = (props: any) => {
         ]}
         onChange={(value) => {
           setTargetPicker(value);
-          const format = getPickerFormat(value);
-          const dateTimeFormat = getDateTimeFormat(value, format, showTime, timeFormat);
+          const nextDateFormat = format || getPickerFormat(value);
+          const dateTimeFormat = getDateTimeFormat(value, nextDateFormat, showTime, timeFormat);
           newProps.picker = value;
           newProps.format = dateTimeFormat;
           setStateProps(newProps);

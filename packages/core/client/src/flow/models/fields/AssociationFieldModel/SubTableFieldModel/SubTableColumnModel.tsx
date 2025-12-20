@@ -24,11 +24,10 @@ import {
   ModelRenderMode,
   useFlowEngine,
 } from '@nocobase/flow-engine';
-import { TableColumnProps, Tooltip } from 'antd';
-import React, { useRef } from 'react';
+import { TableColumnProps, Tooltip, Input } from 'antd';
+import React, { useRef, useMemo } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base';
-import { FormComponent, FormItemModel } from '../../../blocks';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
@@ -63,31 +62,59 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
           },
         },
         content: (popover) => {
-          return (
-            <FormComponent model={model}>
-              <FormItem name={fieldPath} showLabel={false} initialValue={defaultValue}>
-                <FieldModelRendererCom model={model} {...others} />
-              </FormItem>
-            </FormComponent>
-          );
+          return <FieldModelRendererCom model={model} value={defaultValue} {...others} />;
         },
       });
     } catch (error) {
       console.log(error);
     }
   };
+  const collectionField = model.context.collectionField;
+  const content = useMemo(() => {
+    if (['textarea', 'richText', 'json', 'markdown', 'vditor'].includes(collectionField.interface)) {
+      const inputValue =
+        collectionField.interface === 'json' && defaultValue
+          ? JSON.stringify(defaultValue, null, 2)
+          : defaultValue ?? '';
+
+      return <Input value={inputValue} />;
+    } else {
+      return <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />;
+    }
+  }, [collectionField.interface, defaultValue, fieldModel]);
   return (
     <div
       ref={ref}
-      style={{ display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', minHeight: 25, width: '100%' }}
       onClick={handleClick}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        whiteSpace: 'nowrap',
+        minHeight: 25,
+        width: '100%',
+        maxHeight: 300,
+        overflowY: 'auto',
+        cursor: 'pointer',
+      }}
     >
-      <span>{<FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />}</span>
+      <span
+        style={{ pointerEvents: 'none' }} // 不拦截点击
+      >
+        {/* {<FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />} */}
+        {content}
+      </span>
     </div>
   );
 });
 
-export interface SubTableColumnModelStructor {
+const handleModelName = (modelName) => {
+  if (['RadioGroupFieldModel', 'CheckboxGroupFieldModel'].includes(modelName)) {
+    return 'SelectFieldModel';
+  }
+  return modelName;
+};
+
+export interface SubTableColumnModelStructure {
   parent: SubTableFieldModel;
   subModels: {
     field: FieldModel;
@@ -95,7 +122,7 @@ export interface SubTableColumnModelStructor {
 }
 
 export class SubTableColumnModel<
-  T extends SubTableColumnModelStructor = SubTableColumnModelStructor,
+  T extends SubTableColumnModelStructure = SubTableColumnModelStructure,
 > extends EditableItemModel<T> {
   static renderMode = ModelRenderMode.RenderFunction;
 
@@ -121,7 +148,7 @@ export class SubTableColumnModel<
         }
         const binding = this.getDefaultBindingByField(ctx, field, { fallbackToTargetTitleField: true });
         if (!binding) return null;
-        const fieldModel = binding.modelName;
+        const fieldModel = handleModelName(binding.modelName);
         const fullName = ctx.fieldPath ? `${ctx.fieldPath}.${field.name}` : field.name;
 
         return {
@@ -251,6 +278,11 @@ export class SubTableColumnModel<
             textOverflow: 'ellipsis',
           }}
           title={value}
+          className={css`
+            .ant-form-item-explain-error {
+              white-space: break-spaces;
+            }
+          `}
         >
           {this.mapSubModels('field', (action: FieldModel) => {
             const namePath = action.context.fieldPath.split('.').pop();
@@ -269,6 +301,7 @@ export class SubTableColumnModel<
                   name={[(this.parent as FieldModel).context.fieldPath, rowIdx, namePath]}
                   style={{ marginBottom: 0 }}
                   showLabel={false}
+                  initialValue={value}
                 >
                   {fork.constructor.isLargeField ? (
                     <LargeFieldEdit
@@ -448,12 +481,15 @@ SubTableColumnModel.registerFlow({
       title: tExpr('Required'),
       use: 'required',
     },
+    validation: {
+      title: tExpr('Validation'),
+      use: 'validation',
+    },
     model: {
       use: 'fieldComponent',
       title: tExpr('Field component'),
     },
     pattern: {
-      title: tExpr('Display mode'),
       use: 'pattern',
     },
     fixed: {

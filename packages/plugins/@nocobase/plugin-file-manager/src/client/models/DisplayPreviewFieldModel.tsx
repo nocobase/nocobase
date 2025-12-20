@@ -8,8 +8,8 @@
  */
 
 import { EyeOutlined } from '@ant-design/icons';
-import { DetailsItemModel, FieldModel, TableColumnModel, matchMimetype } from '@nocobase/client';
-import { escapeT, DisplayItemModel } from '@nocobase/flow-engine';
+import { DetailsItemModel, FieldModel, TableColumnModel, matchMimetype, css } from '@nocobase/client';
+import { tExpr, DisplayItemModel } from '@nocobase/flow-engine';
 import { useTranslation } from 'react-i18next';
 import {
   DownloadOutlined,
@@ -25,43 +25,50 @@ import {
 import { Image, Space, Tooltip, Alert } from 'antd';
 import { castArray } from 'lodash';
 import React from 'react';
-function getFileType(file: any): 'image' | 'video' | 'audio' | 'pdf' | 'excel' | 'file' | 'unknown' {
+type FileType = 'image' | 'video' | 'audio' | 'pdf' | 'excel' | 'word' | 'ppt' | 'file' | 'unknown';
+
+function getFileType(file: any): FileType {
   let mimetype = '';
   let ext = '';
 
+  const extractExtFromUrl = (url: string) => {
+    const clean = url.split('?')[0].split('#')[0];
+    const i = clean.lastIndexOf('.');
+    return i !== -1 ? clean.slice(i).toLowerCase() : '';
+  };
+
   if (typeof file === 'string') {
-    const cleanUrl = file.split('?')[0].split('#')[0];
-    const lastDotIndex = cleanUrl.lastIndexOf('.');
-    if (lastDotIndex !== -1) {
-      ext = cleanUrl.substring(lastDotIndex).toLowerCase();
-    }
-  } else if (typeof file === 'object' && file !== null) {
+    ext = extractExtFromUrl(file);
+  } else if (file && typeof file === 'object') {
     mimetype = file.mimetype || '';
     ext = (file.extname || '').toLowerCase();
     if (!ext && file.url) {
-      const cleanUrl = file.url.split('?')[0].split('#')[0];
-      const lastDotIndex = cleanUrl.lastIndexOf('.');
-      if (lastDotIndex !== -1) {
-        ext = cleanUrl.substring(lastDotIndex).toLowerCase();
-      }
+      ext = extractExtFromUrl(file.url);
     }
   }
 
-  // 判断 mimetype
+  // 1️⃣ MIME 优先
   if (mimetype) {
     if (mimetype.startsWith('image/')) return 'image';
     if (mimetype.startsWith('video/')) return 'video';
     if (mimetype.startsWith('audio/')) return 'audio';
     if (mimetype === 'application/pdf') return 'pdf';
-    if (mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') return 'excel';
+    if (mimetype.includes('spreadsheet')) return 'excel';
+    if (mimetype.includes('word')) return 'word';
+    if (mimetype.includes('presentation')) return 'ppt';
   }
 
-  // 判断扩展名
+  // 2️⃣ 扩展名兜底
   if (['.png', '.jpg', '.jpeg', '.webp', '.gif', '.bmp'].includes(ext)) return 'image';
   if (['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv'].includes(ext)) return 'video';
   if (['.mp3', '.wav', '.aac', '.ogg'].includes(ext)) return 'audio';
   if (['.pdf'].includes(ext)) return 'pdf';
-  if (['.xlsx'].includes(ext)) return 'excel';
+  if (['.xls', '.xlsx', '.csv'].includes(ext)) return 'excel';
+  if (['.doc', '.docx'].includes(ext)) return 'word';
+  if (['.ppt', '.pptx'].includes(ext)) return 'ppt';
+
+  // 3️⃣ 有文件但识别不了
+  if (ext) return 'file';
 
   return 'unknown';
 }
@@ -80,6 +87,7 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
     mov: '/file-placeholder/video-200-200.png',
     doc: '/file-placeholder/docx-200-200.png',
     docx: '/file-placeholder/docx-200-200.png',
+    word: '/file-placeholder/docx-200-200.png',
     xls: '/file-placeholder/xlsx-200-200.png',
     xlsx: '/file-placeholder/xlsx-200-200.png',
     ppt: '/file-placeholder/ppt-200-200.png',
@@ -93,20 +101,29 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
 
   const type = getFileType(file);
 
-  const fallback = fallbackMap[ext] || fallbackMap.default;
+  const fallback = fallbackMap[type] || fallbackMap.default;
   const imageNode = (
-    <Image
-      src={src}
-      fallback={fallback}
-      width={size}
-      height={size}
-      preview={{ mask: <EyeOutlined /> }}
-      style={{
-        borderRadius: 4,
-        objectFit: 'cover',
-        boxShadow: '0 0 0 2px #fff',
-      }}
-    />
+    <div
+      className={css`
+        .ant-image-img {
+          border: 1px solid #d9d9d9;
+          padding: 2px;
+        }
+      `}
+    >
+      <Image
+        src={src}
+        fallback={fallback}
+        width={size}
+        height={size}
+        preview={{ mask: <EyeOutlined /> }}
+        style={{
+          borderRadius: 4,
+          objectFit: 'cover',
+          boxShadow: '0 0 0 2px #fff',
+        }}
+      />
+    </div>
   );
   return (
     <div style={{ textAlign: 'center', width: size, wordBreak: 'break-all' }}>
@@ -135,11 +152,12 @@ const Preview = (props) => {
   const { value = [], size = 28, showFileName } = props;
   const [current, setCurrent] = React.useState(0);
   const { t } = useTranslation();
-
-  const onDownload = () => {
+  const onDownload = (props) => {
     const url = value[current].url || value[current];
-    const suffix = url.slice(url.lastIndexOf('.'));
-    const filename = Date.now() + suffix;
+    const cleanUrl = url.split('?')[0].split('#')[0];
+    const nameFromUrl = cleanUrl ? cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1) : url;
+    const suffix = nameFromUrl.slice(nameFromUrl.lastIndexOf('.'));
+    const filename = `${Date.now()}_${value[current]?.filename}${suffix}`;
     // eslint-disable-next-line promise/catch-or-return
     fetch(url)
       .then((response) => response.blob())
@@ -178,10 +196,10 @@ const Preview = (props) => {
           </Space>
         ),
         onChange: (index) => {
-          console.log(index);
           setCurrent(index);
         },
         imageRender: (originalNode, info) => {
+          setCurrent(info.current);
           const file: any = info.image;
           // 根据文件类型决定如何渲染预览
           if (matchMimetype(file, 'application/pdf')) {
@@ -192,7 +210,7 @@ const Preview = (props) => {
             return (
               <audio controls>
                 <source src={file.url || file.preview} type={file.type} />
-                您的浏览器不支持音频标签。
+                {t('Your browser does not support the audio tag.')}
               </audio>
             );
           } else if (matchMimetype(file, 'video/*')) {
@@ -200,7 +218,7 @@ const Preview = (props) => {
             return (
               <video controls width="100%">
                 <source src={file.url || file.preview} type={file.type} />
-                您的浏览器不支持视频标签。
+                {t('Your browser does not support the video tag.')}
               </video>
             );
           } else if (matchMimetype(file, 'text/plain')) {
@@ -213,7 +231,14 @@ const Preview = (props) => {
             return (
               <Alert
                 type="warning"
-                description={t('File type is not supported for previewing, please download it to preview.')}
+                description={
+                  <span>
+                    {t('File type is not supported for previewing,')}
+                    <a onClick={onDownload} style={{ textDecoration: 'underline', cursor: 'pointer' }}>
+                      {t('download it to preview')}
+                    </a>
+                  </span>
+                }
                 showIcon
               />
             );
@@ -229,13 +254,14 @@ const Preview = (props) => {
   );
 };
 export class DisplayPreviewFieldModel extends FieldModel {
+  disableTitleField = true;
   render(): any {
-    const { value, titleField, template } = this.props;
-    if (titleField && template !== 'file') {
+    const { value, titleField, template, target } = this.props;
+    if (titleField && template !== 'file' && target !== 'attachments') {
       return castArray(value).flatMap((v, idx) => {
         const result = v?.[titleField];
         const content = result ? (
-          <Preview key={idx} {...this.props} value={castArray(result)} />
+          <Preview key={idx} {...this.props} value={castArray(result).filter(Boolean)} />
         ) : (
           <span key={idx}>N/A</span>
         );
@@ -243,7 +269,7 @@ export class DisplayPreviewFieldModel extends FieldModel {
         return idx === 0 ? [content] : [<span key={`sep-${idx}`}>, </span>, content];
       });
     } else {
-      return <Preview {...this.props} value={castArray(value)} />;
+      return <Preview {...this.props} value={castArray(value).filter(Boolean)} />;
     }
   }
 }
@@ -251,34 +277,35 @@ export class DisplayPreviewFieldModel extends FieldModel {
 DisplayPreviewFieldModel.registerFlow({
   key: 'previewReadPrettySetting',
   sort: 500,
-  title: escapeT('Preview Settings'),
+  title: tExpr('Preview Settings'),
   steps: {
     size: {
-      title: escapeT('Size'),
-      uiSchema: (ctx) => {
-        if (ctx.model.parent instanceof TableColumnModel) {
-          return null;
-        }
+      title: tExpr('Size'),
+      uiMode: (ctx) => {
+        const t = ctx.t;
         return {
-          size: {
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
-            enum: [
+          type: 'select',
+          key: 'size',
+          props: {
+            options: [
               {
                 value: 300,
-                label: escapeT('Large'),
+                label: t('Large'),
               },
               {
                 value: 100,
-                label: escapeT('Middle'),
+                label: t('Middle'),
               },
               {
                 value: 28,
-                label: escapeT('Small'),
+                label: t('Small'),
               },
             ],
           },
         };
+      },
+      hideInSettings(ctx) {
+        return ctx.model.parent instanceof TableColumnModel;
       },
       defaultParams: (ctx) => {
         return {
@@ -290,17 +317,10 @@ DisplayPreviewFieldModel.registerFlow({
       },
     },
     showFileName: {
-      title: escapeT('Show file name'),
-      uiSchema: (ctx) => {
-        if (ctx.model.parent instanceof TableColumnModel) {
-          return null;
-        }
-        return {
-          showFileName: {
-            'x-component': 'Switch',
-            'x-decorator': 'FormItem',
-          },
-        };
+      title: tExpr('Show file name'),
+      uiMode: { type: 'switch', key: 'showFileName' },
+      hideInSettings(ctx) {
+        return ctx.model.parent instanceof TableColumnModel;
       },
       defaultParams: {
         showFileName: false,
@@ -313,7 +333,7 @@ DisplayPreviewFieldModel.registerFlow({
 });
 
 DisplayPreviewFieldModel.define({
-  label: escapeT('Preview'),
+  label: tExpr('Preview'),
 });
 
 DisplayItemModel.bindModelToInterface(

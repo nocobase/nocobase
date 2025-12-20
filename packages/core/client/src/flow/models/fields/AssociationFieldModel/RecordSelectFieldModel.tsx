@@ -28,6 +28,7 @@ import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { LabelByField, resolveOptions, toSelectValue, type LazySelectProps } from './recordSelectShared';
 import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
+import { BlockSceneEnum } from '../../base';
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
@@ -84,7 +85,16 @@ export function CreateContent({ model, toOne = false }) {
 }
 
 export function LazySelect(props: Readonly<LazySelectProps>) {
-  const { fieldNames, value, multiple, allowMultiple, options, quickCreate, onChange, ...others } = props;
+  const {
+    fieldNames = { label: 'label', value: 'value' },
+    value,
+    multiple,
+    allowMultiple,
+    options,
+    quickCreate,
+    onChange,
+    ...others
+  } = props;
   const isMultiple = Boolean(multiple && allowMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
   const { t } = useTranslation();
@@ -462,16 +472,18 @@ RecordSelectFieldModel.registerFlow({
         resource.setDataSourceKey(dataSourceKey);
         resource.setResourceName(target);
         resource.setPageSize(paginationState.pageSize);
+        const isFilterScene = ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter;
         const isOToAny = ['oho', 'o2m'].includes(collectionField.interface);
-        const sourceValue = ctx.record?.[collectionField?.sourceKey];
+        const record = ctx.currentObject || ctx.record;
+        const sourceValue = record?.[collectionField?.sourceKey];
         // 构建 $or 条件数组
         const orFilters: Record<string, any>[] = [];
-        if (sourceValue != null && isOToAny) {
+        if (!isFilterScene && sourceValue != null && isOToAny) {
           const eqKey = `${foreignKey}.$eq`;
           orFilters.push({ [eqKey]: sourceValue });
         }
 
-        if (isOToAny) {
+        if (!isFilterScene && isOToAny) {
           const isKey = `${foreignKey}.$is`;
           orFilters.push({ [isKey]: null });
         }
@@ -501,19 +513,12 @@ RecordSelectFieldModel.registerFlow({
       use: 'sortingRule',
     },
     allowMultiple: {
-      title: tExpr('Allow multiple'),
-      uiSchema(ctx) {
-        if (ctx.collectionField && ['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)) {
-          return {
-            allowMultiple: {
-              'x-component': 'Switch',
-              type: 'boolean',
-              'x-decorator': 'FormItem',
-            },
-          };
-        } else {
-          return null;
-        }
+      title: tExpr('Multiple'),
+      uiMode: { type: 'switch', key: 'allowMultiple' },
+      hideInSettings(ctx) {
+        return (
+          !ctx.collectionField || !['belongsToMany', 'hasMany', 'belongsToArray'].includes(ctx.collectionField.type)
+        );
       },
       defaultParams(ctx) {
         return {
@@ -530,19 +535,25 @@ RecordSelectFieldModel.registerFlow({
     },
     quickCreate: {
       title: tExpr('Quick create'),
-      uiSchema(ctx) {
+      uiMode(ctx) {
         const t = ctx.t;
         return {
-          quickCreate: {
-            enum: [
+          type: 'select',
+          key: 'quickCreate',
+          props: {
+            options: [
               { label: t('None'), value: 'none' },
               { label: t('Dropdown'), value: 'quickAdd' },
               { label: t('Pop-up'), value: 'modalAdd' },
             ],
-            'x-component': 'Select',
-            'x-decorator': 'FormItem',
           },
         };
+      },
+      hideInSettings(ctx) {
+        if (ctx?.blockModel?.constructor?.scene === BlockSceneEnum.filter) {
+          return true;
+        }
+        return false;
       },
       defaultParams: {
         quickCreate: 'none',
@@ -577,7 +588,7 @@ RecordSelectFieldModel.registerFlow({
           { refresh: false },
         );
         if (data) {
-          if (['m2m', 'o2m'].includes(ctx.collectionField?.interface) && ctx.model.props.multiple !== false) {
+          if (['m2m', 'o2m'].includes(ctx.collectionField?.interface) && ctx.model.props.allowMultiple !== false) {
             const prev = ctx.model.props.value || [];
             const merged = [...prev, data.data];
 
@@ -673,9 +684,9 @@ RecordSelectFieldModel.registerFlow({
             collectionName: ctx.collectionField?.target,
             collectionField: ctx.collectionField,
             onChange: (e) => {
-              if (toOne) {
+              if (toOne || !ctx.model.props.allowMultiple) {
                 onChange(e);
-                const data = ctx.model.getDataSource();
+                const data = ctx.model.getDataSource() || [];
                 data.push(e);
                 ctx.model.setDataSource(data);
               } else {
@@ -689,7 +700,7 @@ RecordSelectFieldModel.registerFlow({
                     self.findIndex((r) => r[ctx.collection.filterTargetKey] === row[ctx.collection.filterTargetKey]),
                 );
                 onChange(unique);
-                const data = ctx.model.getDataSource();
+                const data = ctx.model.getDataSource() || [];
                 ctx.model.setDataSource(data.concat(unique));
               }
             },

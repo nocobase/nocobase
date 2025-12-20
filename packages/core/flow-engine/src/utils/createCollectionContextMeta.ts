@@ -17,7 +17,7 @@ const NUMERIC_FIELD_TYPES = ['integer', 'float', 'double', 'decimal'] as const;
 /**
  * 创建字段的完整元数据（统一处理关联和非关联字段）
  */
-function createFieldMetadata(field: CollectionField) {
+function createFieldMetadata(field: CollectionField, includeNonFilterable?: boolean) {
   const baseProperties = createMetaBaseProperties(field);
 
   if (field.isAssociationField()) {
@@ -36,7 +36,9 @@ function createFieldMetadata(field: CollectionField) {
       properties: async () => {
         const subProperties: Record<string, any> = {};
         targetCollection.fields.forEach((subField) => {
-          subProperties[subField.name] = createFieldMetadata(subField);
+          if (includeNonFilterable || subField.filterable) {
+            subProperties[subField.name] = createFieldMetadata(subField, includeNonFilterable);
+          }
         });
         return subProperties;
       },
@@ -93,6 +95,7 @@ function createMetaBaseProperties(field: CollectionField) {
 export function createCollectionContextMeta(
   collectionOrFactory: Collection | (() => Collection | null),
   title?: string,
+  includeNonFilterable?: boolean,
 ): PropertyMetaFactory {
   const metaFn: PropertyMetaFactory = async () => {
     const collection = typeof collectionOrFactory === 'function' ? collectionOrFactory() : collectionOrFactory;
@@ -110,8 +113,8 @@ export function createCollectionContextMeta(
 
         // 添加所有字段
         collection.fields.forEach((field) => {
-          if (field.filterable) {
-            properties[field.name] = createFieldMetadata(field);
+          if (includeNonFilterable || field.filterable) {
+            properties[field.name] = createFieldMetadata(field, includeNonFilterable);
           }
         });
 

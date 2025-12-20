@@ -7,43 +7,27 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { defineAction, DisplayItemModel, tExpr, useFlowSettingsContext } from '@nocobase/flow-engine';
-import { Select } from 'antd';
-import React from 'react';
+import { defineAction, DisplayItemModel, tExpr, FlowModelContext } from '@nocobase/flow-engine';
 import { isTitleField } from '../../data-source';
-import { useCompile } from '../../schema-component';
-import { FieldModel } from '../models/base/FieldModel';
-
-export const SelectOptions = (props) => {
-  const flowContext = useFlowSettingsContext<FieldModel>();
-  const compile = useCompile();
-  const collectionField = flowContext.model.context.collectionField;
-  const app = flowContext.app;
-  const dataSourceManager = app.dataSourceManager;
-  const target = collectionField?.target;
-  if (!target) return;
-  const targetCollection = collectionField.targetCollection;
-  const targetFields = targetCollection?.getFields?.() ?? [];
-  const options = targetFields
-    .filter((field) => isTitleField(dataSourceManager, field.options))
-    .map((field) => ({
-      value: field.name,
-      label: compile(field.options.uiSchema?.title) || field.name,
-    }));
-  return (<Select {...props} options={options} />) as any;
-};
 
 export const titleField = defineAction({
   name: 'titleField',
-  title: tExpr('Label field'),
-  uiSchema: (ctx) => {
-    if (!ctx.collectionField || !ctx.collectionField.isAssociationField()) {
-      return null;
-    }
+  title: tExpr('Title field'),
+  uiMode: (ctx) => {
+    const targetCollection = ctx.collectionField.targetCollection;
+    const dataSourceManager = ctx.app.dataSourceManager;
+    const targetFields = targetCollection?.getFields?.() ?? [];
+    const options = targetFields
+      .filter((field) => isTitleField(dataSourceManager, field.options))
+      .map((field) => ({
+        value: field.name,
+        label: ctx.t(field.options.uiSchema?.title) || field.name,
+      }));
     return {
-      label: {
-        'x-component': SelectOptions,
-        'x-decorator': 'FormItem',
+      type: 'select',
+      key: 'label',
+      props: {
+        options,
       },
     };
   },
@@ -52,6 +36,13 @@ export const titleField = defineAction({
     return {
       label: ctx.model.parent?.props?.titleField || ctx.model.props.titleField || titleField,
     };
+  },
+  hideInSettings: async (ctx: FlowModelContext) => {
+    return (
+      !ctx.collectionField ||
+      !ctx.collectionField.isAssociationField() ||
+      (ctx.model.subModels.field as any).disableTitleField
+    );
   },
   beforeParamsSave: async (ctx: any, params, previousParams) => {
     const target = ctx.model.collectionField.target;

@@ -10,7 +10,6 @@
 import Database, { BelongsToManyRepository } from '@nocobase/database';
 import UsersPlugin from '@nocobase/plugin-users';
 import { createMockServer, MockServer } from '@nocobase/test';
-import jwt from 'jsonwebtoken';
 import { SystemRoleMode } from '../enum';
 import { UNION_ROLE_KEY } from '../constants';
 
@@ -146,7 +145,7 @@ describe('role', () => {
     await userRolesRepo.add('test1');
     await userRolesRepo.add('test2');
 
-    const userToken = jwt.sign({ userId: user.get('id') }, 'test-key');
+    const userToken = api.authManager.jwt.sign({ userId: user.get('id') });
     const response = await api
       .agent()
       .post('/users:setDefaultRole')
@@ -188,7 +187,7 @@ describe('role', () => {
         roleMode: SystemRoleMode.allowUseUnion,
       },
     });
-    const userToken = jwt.sign({ userId: user.get('id') }, 'test-key');
+    const userToken = api.authManager.jwt.sign({ userId: user.get('id') });
     const response = await api
       .agent()
       .post('/users:setDefaultRole')

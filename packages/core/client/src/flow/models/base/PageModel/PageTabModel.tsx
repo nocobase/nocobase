@@ -50,6 +50,15 @@ export class BasePageTabModel extends FlowModel<{
     return null;
   }
 
+  renderHiddenInConfig() {
+    return (
+      <span style={{ opacity: 0.5 }}>
+        <Icon style={{ marginRight: 8 }} type={this.getTabIcon()} />
+        {this.getTabTitle()}
+      </span>
+    );
+  }
+
   render() {
     return (
       <>
@@ -109,6 +118,7 @@ export class RootPageTabModel extends BasePageTabModel {
   }
 
   async save() {
+    const json = this.serialize();
     await this.context.api.request({
       method: 'post',
       url: 'desktopRoutes:updateOrCreate',
@@ -119,6 +129,9 @@ export class RootPageTabModel extends BasePageTabModel {
         ...this.props.route,
         title: this.getTabTitle(''),
         icon: this.getTabIcon(),
+        options: {
+          flowRegistry: json.flowRegistry,
+        },
       },
     });
   }
