@@ -19,7 +19,10 @@ export abstract class Trigger {
   validateEvent(workflow: WorkflowModel, context: any, options: Transactionable): boolean | Promise<boolean> {
     return true;
   }
-  duplicateConfig?(workflow: WorkflowModel, options: Transactionable): object | Promise<object>;
+  duplicateConfig?(
+    workflow: WorkflowModel,
+    options: Transactionable & { origin?: WorkflowModel },
+  ): object | Promise<object>;
   validateContext?(values: any, workflow: WorkflowModel): null | void | { [key: string]: string };
   sync?: boolean;
   execute?(
