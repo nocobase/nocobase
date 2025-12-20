@@ -44,11 +44,11 @@ export function FieldDeletePlaceholder() {
   const { t } = useTranslation();
   const model: any = useFlowModel();
   const blockModel = model.context.blockModel;
-  const dataSource = blockModel.collection.dataSource;
+  const dataSource = blockModel.collection?.dataSource;
   const collection = blockModel.collection;
   const name = model.fieldPath;
   const nameValue = useMemo(() => {
-    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const dataSourcePrefix = dataSource ? `${t(dataSource.displayName || dataSource.key)} > ` : '';
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
   }, []);
@@ -118,12 +118,8 @@ const defaultWhen = () => true;
 
 export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   private static _bindings = new Map();
-  fieldDeleted = false;
 
   renderHiddenInConfig(): React.ReactNode | undefined {
-    if (this.fieldDeleted) {
-      return <FieldDeletePlaceholder />;
-    }
     if (this.forbidden) {
       return <FieldWithoutPermissionPlaceholder />;
     }
@@ -337,6 +333,24 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     }
 
     return allBindings;
+  }
+
+  constructor(options) {
+    super(options);
+    this.wrapRender();
+  }
+
+  private wrapRender() {
+    const originalRender = this.render;
+
+    this.render = (...args: any[]) => {
+      if (!this.collectionField) {
+        return <FieldDeletePlaceholder />;
+      }
+      console.log(88888);
+      // 调用子类原本 render
+      return originalRender.apply(this, args);
+    };
   }
 }
 
