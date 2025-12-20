@@ -241,6 +241,7 @@ describe('FlowContext properties and methods', () => {
         parentTitles: undefined,
         disabled: false,
         disabledReason: undefined,
+        hidden: false,
         children: undefined,
       },
       {
@@ -253,6 +254,7 @@ describe('FlowContext properties and methods', () => {
         parentTitles: undefined,
         disabled: false,
         disabledReason: undefined,
+        hidden: false,
         children: [
           {
             name: 'baz',
@@ -264,6 +266,7 @@ describe('FlowContext properties and methods', () => {
             parentTitles: ['Bar'],
             disabled: false,
             disabledReason: undefined,
+            hidden: false,
             children: undefined,
           },
           {
@@ -276,6 +279,7 @@ describe('FlowContext properties and methods', () => {
             parentTitles: ['Bar'],
             disabled: false,
             disabledReason: undefined,
+            hidden: false,
             children: undefined,
           },
         ],
@@ -316,6 +320,7 @@ describe('FlowContext properties and methods', () => {
         parentTitles: undefined,
         disabled: false,
         disabledReason: undefined,
+        hidden: false,
         children: undefined,
       },
       {
@@ -328,6 +333,7 @@ describe('FlowContext properties and methods', () => {
         parentTitles: undefined,
         disabled: false,
         disabledReason: undefined,
+        hidden: false,
         children: [
           {
             name: 'x',
@@ -339,6 +345,7 @@ describe('FlowContext properties and methods', () => {
             parentTitles: ['Local Bar'],
             disabled: false,
             disabledReason: undefined,
+            hidden: false,
             children: undefined,
           },
         ],
@@ -390,6 +397,7 @@ describe('FlowContext properties and methods', () => {
       parentTitles: undefined,
       disabled: false,
       disabledReason: undefined,
+      hidden: false,
       children: [
         {
           name: 'field1',
@@ -401,6 +409,7 @@ describe('FlowContext properties and methods', () => {
           parentTitles: ['Sync Property'],
           disabled: false,
           disabledReason: undefined,
+          hidden: false,
           children: undefined,
         },
         {
@@ -413,6 +422,7 @@ describe('FlowContext properties and methods', () => {
           parentTitles: ['Sync Property'],
           disabled: false,
           disabledReason: undefined,
+          hidden: false,
           children: undefined,
         },
       ],
@@ -436,6 +446,7 @@ describe('FlowContext properties and methods', () => {
         parentTitles: ['Async Property'],
         disabled: false,
         disabledReason: undefined,
+        hidden: false,
         children: undefined,
       },
       {
@@ -448,6 +459,7 @@ describe('FlowContext properties and methods', () => {
         parentTitles: ['Async Property'],
         disabled: false,
         disabledReason: undefined,
+        hidden: false,
         children: undefined,
       },
     ]);
@@ -997,6 +1009,7 @@ describe('FlowContext delayed meta loading', () => {
       parentTitles: ['Delayed User'],
       disabled: false,
       disabledReason: undefined,
+      hidden: false,
       children: undefined,
     });
     expect(children[1]).toEqual({
@@ -1009,6 +1022,7 @@ describe('FlowContext delayed meta loading', () => {
       parentTitles: ['Delayed User'],
       disabled: false,
       disabledReason: undefined,
+      hidden: false,
       children: undefined,
     });
   });
@@ -1421,6 +1435,7 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       parentTitles: undefined,
       disabled: false,
       disabledReason: undefined,
+      hidden: false,
       children: undefined,
     });
     expect(subTree[1]).toEqual({
@@ -1433,6 +1448,7 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       parentTitles: undefined,
       disabled: false,
       disabledReason: undefined,
+      hidden: false,
       children: undefined,
     });
   });
@@ -1618,6 +1634,7 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       parentTitles: ['User', 'User Profile'],
       disabled: false,
       disabledReason: undefined,
+      hidden: false,
       children: undefined,
     });
     expect(profileSubTree[1]).toEqual({
@@ -1630,6 +1647,7 @@ describe('FlowContext getPropertyMetaTree with value parameter', () => {
       parentTitles: ['User', 'User Profile'],
       disabled: false,
       disabledReason: undefined,
+      hidden: false,
       children: undefined,
     });
   });
