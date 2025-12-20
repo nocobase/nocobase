@@ -1033,7 +1033,8 @@ export class FlowEngine {
         return false;
       }
 
-      const findIndex = (model: FlowModel) => subModels.findIndex((item) => item.uid === model.uid);
+      const subModelsCopy = [...subModels];
+      const findIndex = (model: FlowModel) => subModelsCopy.findIndex((item) => item.uid === model.uid);
 
       const currentIndex = findIndex(sourceModel);
       const targetIndex = findIndex(targetModel);
@@ -1049,15 +1050,16 @@ export class FlowEngine {
       }
 
       // 使用splice直接移动数组元素（O(n)比排序O(n log n)更快）
-      const [movedModel] = subModels.splice(currentIndex, 1);
-      subModels.splice(targetIndex, 0, movedModel);
+      const [movedModel] = subModelsCopy.splice(currentIndex, 1);
+      subModelsCopy.splice(targetIndex, 0, movedModel);
 
       // 重新分配连续的sortIndex
-      subModels.forEach((model, index) => {
+      subModelsCopy.forEach((model, index) => {
         model.sortIndex = index;
       });
 
-      // 保持原数组引用，避免破坏 subModels 的响应式
+      // 更新父模型的 subModels 引用，确保拖拽后仍为可观察数组
+      sourceModel.parent.subModels[sourceModel.subKey] = observable.shallow(subModelsCopy);
 
       return true;
     };
