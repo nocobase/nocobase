@@ -57,7 +57,7 @@ export type EnvironmentInfo = {
 };
 
 export type AppModelOptions = {
-  dbConnType?: 'new_database' | 'new_connection' | 'new_schema';
+  dbConnType?: 'new_database' | 'new_connection' | 'new_schema' | string;
   database?: IDatabaseOptions;
   [key: string]: any;
 };

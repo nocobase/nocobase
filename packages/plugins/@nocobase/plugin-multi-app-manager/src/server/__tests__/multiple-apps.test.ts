@@ -60,29 +60,18 @@ describe('multiple apps', () => {
     const fn = vi.fn();
 
     AppSupervisor.getInstance().registerAppDbCreator(
-      ({ appOptions }) => appOptions.test,
+      ({ appOptions }) => appOptions.dbConnType === 'test',
       async (app) => {
         fn();
       },
     );
 
-    const name = `td_${uid()}`;
-
-    await db.getRepository('applications').create({
-      values: {
-        name,
-        options: {
-          dbConnType: 'test',
-          plugins: [],
-          test: true,
-        },
-      },
-      context: {
-        waitSubAppInstall: true,
+    await AppSupervisor.getInstance().createDatabase({
+      app: {} as any,
+      appOptions: {
+        dbConnType: 'test',
       },
     });
-
-    await AppSupervisor.getInstance().removeApp(name);
 
     expect(fn).toBeCalled();
   });
@@ -398,7 +387,7 @@ describe('multiple apps', () => {
     await app.start();
     await sleep(10000);
     expect(AppSupervisor.getInstance().hasApp(subAppName)).toBeTruthy();
-    const appStatus = AppSupervisor.getInstance().getAppStatus(subAppName);
+    const appStatus = await AppSupervisor.getInstance().getAppStatus(subAppName);
     expect(appStatus).toEqual('running');
   });
 

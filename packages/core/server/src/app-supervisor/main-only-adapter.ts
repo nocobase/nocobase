@@ -8,7 +8,7 @@
  */
 
 import Application from '../application';
-import type { AppBootstrapper, AppDiscoveryAdapter, AppProcessAdapter, AppStatus, GetAppOptions } from './types';
+import type { AppDiscoveryAdapter, AppProcessAdapter, AppStatus, GetAppOptions } from './types';
 import type { AppSupervisor } from './index';
 
 /** Minimal single-process adapter only for booting the main application. */
@@ -16,7 +16,7 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   readonly name: string;
   app: Application;
   status: AppStatus;
-  appError: Error;
+  appErrors: Record<string, Error> = {};
 
   constructor(protected readonly supervisor: AppSupervisor) {
     this.name = 'main-only';
@@ -34,7 +34,7 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   }
 
   async bootstrapApp(appName: string) {
-    if (appName !== 'main') {
+    if (appName !== 'main' || !this.app) {
       await this.supervisor.setAppStatus(appName, 'not_found');
       return;
     }
@@ -94,6 +94,9 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
       this.supervisor.logger.warn(`only main app is supported`, { method: 'removeApp' });
       return;
     }
+    if (!this.app) {
+      return;
+    }
     await this.app.runCommand('destroy');
   }
 
@@ -113,17 +116,17 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
     return this.status ?? defaultStatus ?? null;
   }
 
-  hasAppError() {
-    return !!this.appError;
+  hasAppError(appName: string) {
+    return !!this.appErrors[appName];
   }
 
   setAppError(appName: string, error: Error) {
-    this.appError = error;
+    this.appErrors[appName] = error;
     this.supervisor.emit('appError', { appName, error });
   }
 
-  clearAppError() {
-    this.appError = null;
+  clearAppError(appName: string) {
+    this.appErrors[appName] = null;
   }
 
   setAppLastSeenAt() {}
