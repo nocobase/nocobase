@@ -1059,7 +1059,7 @@ export class FlowEngine {
       });
 
       // 更新父模型的 subModels 引用，确保拖拽后仍为可观察数组
-      sourceModel.parent.subModels[sourceModel.subKey] = observable.shallow(subModelsCopy);
+      subModels.splice(0, subModels.length, ...subModelsCopy);
 
       return true;
     };
