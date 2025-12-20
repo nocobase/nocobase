@@ -1058,8 +1058,8 @@ export class FlowEngine {
         model.sortIndex = index;
       });
 
-      // 更新父模型的subModels引用
-      sourceModel.parent.subModels[sourceModel.subKey] = subModelsCopy;
+      // 更新父模型的 subModels 引用，确保拖拽后仍为可观察数组
+      subModels.splice(0, subModels.length, ...subModelsCopy);
 
       return true;
     };

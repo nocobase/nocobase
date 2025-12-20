@@ -144,7 +144,7 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
       <>
         <DndProvider>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-            <Space>
+            <Space wrap>
               {this.mapSubModels('actions', (action) => {
                 // @ts-ignore
                 if (action.props.position === 'left') {

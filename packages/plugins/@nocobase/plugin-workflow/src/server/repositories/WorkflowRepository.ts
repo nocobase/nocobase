@@ -49,7 +49,7 @@ export default class WorkflowRepository extends Repository {
         transaction,
       });
       if (trigger && typeof trigger.duplicateConfig === 'function') {
-        const newConfig = await trigger.duplicateConfig(instance, { transaction });
+        const newConfig = await trigger.duplicateConfig(instance, { origin, transaction });
         await instance.update({ config: newConfig }, { transaction });
       }
 

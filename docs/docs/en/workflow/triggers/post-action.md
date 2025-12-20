@@ -199,7 +199,7 @@ If the event is configured in global mode, you do not need to use the URL parame
 As shown in the figure below:
 
 
-![Action Execution Order](https://static-docs.nocobase.com/7c901be2282067d785205b70391332b7.png)
+![Action Execution Order](https://static-docs.nocobase.com/20251219234806.png)
 
 
 ### Difference from Collection Event

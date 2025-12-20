@@ -33,6 +33,7 @@ export interface ResourceSettingsInitParams {
 
 export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T> {
   isManualRefresh = false;
+  collectionRequired = true;
 
   onActive() {
     if (!this.hidden) {
@@ -405,6 +406,13 @@ CollectionBlockModel.registerFlow({
   key: 'resourceSettings',
   sort: -999, //置顶，
   steps: {
+    collectionCheck: {
+      handler(ctx) {
+        if (!ctx.collection) {
+          ctx.exitAll();
+        }
+      },
+    },
     aclCheck: {
       use: 'aclCheck',
     },
