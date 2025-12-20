@@ -87,7 +87,7 @@ export class ListItemModel extends FlowModel<ListItemModelStructure> {
         <div>
           <DndProvider>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Space>
+              <Space wrap>
                 {this.mapSubModels('actions', (action, i) => {
                   const fork = action.createFork({}, `${index}`);
                   if (fork.hidden && !isConfigMode) {

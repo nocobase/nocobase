@@ -31,6 +31,7 @@ const Columns = observer<any>(({ record, model, index }) => {
   return (
     <DndProvider>
       <Space
+        wrap
         size={'middle'}
         className={css`
           button {
