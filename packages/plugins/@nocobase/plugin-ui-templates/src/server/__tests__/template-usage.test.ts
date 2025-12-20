@@ -10,7 +10,6 @@
 import { createMockServer, MockServer } from '@nocobase/test';
 import { vi } from 'vitest';
 import FlowModelRepository from '../../../../plugin-flow-engine/src/server/repository';
-import { uid } from '@nocobase/utils';
 
 describe('ui templates and usages', () => {
   let app: MockServer | null;
@@ -75,10 +74,6 @@ describe('ui templates and usages', () => {
     app = await createMockServer({
       plugins: ['flow-engine', 'ui-templates'],
       registerActions: true,
-      name: `app_${uid()}`,
-      database: {
-        schema: `schema_${uid()}`,
-      },
     });
     expect(app.pm.get('ui-templates')).toBeTruthy();
     flowRepo = app.db.getRepository('flowModels') as FlowModelRepository;
