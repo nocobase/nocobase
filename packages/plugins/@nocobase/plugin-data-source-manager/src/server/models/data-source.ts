@@ -103,7 +103,7 @@ export class DataSourceModel extends Model {
     try {
       const oldDataSource = app.dataSourceManager.get(dataSourceKey);
       const { db: databaseInstance = undefined } =
-        reuseDB === true ? (oldDataSource?.collectionManager as SequelizeCollectionManager) : {};
+        reuseDB === true ? (oldDataSource?.collectionManager as SequelizeCollectionManager) ?? {} : {};
       const dataSource = app.dataSourceManager.factory.create(type, {
         ...createOptions,
         name: dataSourceKey,

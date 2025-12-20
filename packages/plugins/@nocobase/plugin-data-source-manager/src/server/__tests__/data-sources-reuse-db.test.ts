@@ -23,25 +23,22 @@ describe('Reuse database instance after reload data source', () => {
       plugins: ['nocobase', 'data-source-external-postgres'],
     });
 
-    await app
-      .agent()
-      .resource('dataSources')
-      .create({
-        values: {
-          key: EXTERNAL_DS,
-          type: 'postgres',
-          displayName: 'Postgres',
-          enabled: true,
-          options: {
-            addAllCollections: true,
-            host: process.env.REMOTE_POSTGRES_HOST,
-            port: parseInt(process.env.REMOTE_POSTGRES_PORT),
-            username: process.env.REMOTE_POSTGRES_USER,
-            password: process.env.REMOTE_POSTGRES_PASSWORD,
-            database: process.env.REMOTE_POSTGRES_DB,
-          },
+    await app.db.getRepository('dataSources').create({
+      values: {
+        key: EXTERNAL_DS,
+        type: 'postgres',
+        displayName: 'Postgres',
+        enabled: true,
+        options: {
+          addAllCollections: true,
+          host: process.env.REMOTE_POSTGRES_HOST,
+          port: parseInt(process.env.REMOTE_POSTGRES_PORT),
+          username: process.env.REMOTE_POSTGRES_USER,
+          password: process.env.REMOTE_POSTGRES_PASSWORD,
+          database: process.env.REMOTE_POSTGRES_DB,
         },
-      });
+      },
+    });
 
     await waitDataSourceLoad(app);
     expect(getDatasourceStatus(app)).eq('loaded');
@@ -63,7 +60,7 @@ describe('Reuse database instance after reload data source', () => {
 
   afterEach(async () => {
     const databaseInstance = await getDatabaseInstance(app);
-    databaseInstance.clean({ drop: true });
+    databaseInstance?.clean({ drop: true });
     await app.db.clean({ drop: true });
     await app.destroy();
   });
@@ -179,7 +176,7 @@ const reloadDataSource = async (app: MockServer, { reuseDB }: { reuseDB?: boolea
 
 const getDatabaseInstance = (app: MockServer) => {
   const ds = app.dataSourceManager.get(EXTERNAL_DS);
-  return (ds.collectionManager as any).db;
+  return (ds?.collectionManager as any)?.db;
 };
 
 const getDatasourceStatus = (app: MockServer) => {
