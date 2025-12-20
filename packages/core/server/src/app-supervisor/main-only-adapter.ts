@@ -47,6 +47,10 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
   }
 
   addApp(app: Application) {
+    if (app.name !== 'main') {
+      this.supervisor.logger.warn(`only main app is supported`, { method: 'addApp' });
+      return;
+    }
     if (this.app) {
       throw new Error(`app ${app.name} already exists`);
     }

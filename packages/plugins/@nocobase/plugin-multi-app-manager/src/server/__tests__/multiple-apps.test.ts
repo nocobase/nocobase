@@ -21,6 +21,8 @@ describe('multiple apps', () => {
   let db: Database;
 
   beforeEach(async () => {
+    PluginMultiAppManagerServer.staticImport();
+
     app = await createMockServer({
       plugins: ['nocobase', 'field-sort', 'multi-app-manager'],
     });
@@ -57,13 +59,12 @@ describe('multiple apps', () => {
   it('should register db creator', async () => {
     const fn = vi.fn();
 
-    const appPlugin = app.getPlugin<PluginMultiAppManagerServer>(PluginMultiAppManagerServer);
-    const defaultDbCreator = appPlugin.appDbCreator;
-
-    appPlugin.setAppDbCreator(async (app) => {
-      fn();
-      await defaultDbCreator(app);
-    });
+    AppSupervisor.getInstance().registerAppDbCreator(
+      ({ appOptions }) => appOptions.test,
+      async (app) => {
+        fn();
+      },
+    );
 
     const name = `td_${uid()}`;
 
@@ -71,7 +72,9 @@ describe('multiple apps', () => {
       values: {
         name,
         options: {
+          dbConnType: 'test',
           plugins: [],
+          test: true,
         },
       },
       context: {
@@ -99,7 +102,7 @@ describe('multiple apps', () => {
       },
     });
 
-    const subAppStatus = AppSupervisor.getInstance().getAppStatus(name);
+    const subAppStatus = await AppSupervisor.getInstance().getAppStatus(name);
     expect(subAppStatus).toEqual('running');
   });
 

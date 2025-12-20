@@ -364,7 +364,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     if (hook !== false) {
       app.on('afterStart', async () => {
-        mainApp.emit('subAppStarted', app);
         await this.sendSyncMessage(mainApp, {
           type: 'app:started',
           appName,
