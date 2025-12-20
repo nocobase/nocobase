@@ -142,7 +142,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
   const isPopupView = (view?: FlowView): boolean => {
     if (!view) return false;
     const stack = Array.isArray(view.navigation?.viewStack) ? view.navigation.viewStack : [];
-    if (stack.length >= 2) return true;
+    return stack.length >= 2;
   };
 
   const hasPopupNow = (): boolean => isPopupView(anchorView ?? ctx.view);
@@ -287,7 +287,6 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
       type: 'object',
       title: t('Current popup'),
       disabled: () => !hasPopupNow(),
-      disabledReason: () => (!hasPopupNow() ? t('No parent popup') : undefined),
       hidden: () => !hasPopupNow(),
       buildVariablesParams: async (c) => {
         if (!hasPopupNow()) return undefined;
@@ -463,7 +462,7 @@ export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promi
   const nav = view?.navigation;
   const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
 
-  const openerUids = (view as any)?.inputArgs?.openerUids;
+  const openerUids = view?.inputArgs?.openerUids;
   const hasOpener = Array.isArray(openerUids) && openerUids.length > 0;
   const hasStackPopup = stack.length >= 2;
   const isPopup = hasStackPopup || hasOpener;
@@ -473,8 +472,7 @@ export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promi
   if (!stack.length) {
     const args = view?.inputArgs || {};
     const hasAny =
-      args &&
-      (args.collectionName || args.filterByTk != null || args.sourceId != null || args.associationName || args.viewUid);
+      args.collectionName || args.filterByTk != null || args.sourceId != null || args.associationName || args.viewUid;
     if (!hasAny) return undefined;
     return {
       uid: args.viewUid,

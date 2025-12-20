@@ -37,6 +37,9 @@ describe('createViewMeta - popup variables', () => {
       navigation: {
         viewStack: [
           {
+            viewUid: 'base-page-uid',
+          },
+          {
             viewUid: 'popup-uid',
             filterByTk: 111,
             sourceId: 42,
@@ -115,7 +118,7 @@ describe('createViewMeta - popup variables', () => {
       Footer: null,
       close: () => void 0,
       update: () => void 0,
-      navigation: { viewStack: [{ viewUid: 'popup-uid', filterByTk: 1 }] } as any,
+      navigation: { viewStack: [{ viewUid: 'base-page-uid' }, { viewUid: 'popup-uid', filterByTk: 1 }] } as any,
     } as any;
     const popupModel = {
       getStepParams: vi.fn((_fk: string, sk: string) =>

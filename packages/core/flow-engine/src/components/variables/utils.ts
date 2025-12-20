@@ -114,13 +114,15 @@ export const buildContextSelectorItems = (metaTree: MetaTreeNode[]): ContextSele
     };
 
     if (Array.isArray(node.children) && node.children.length > 0) {
-      option.children = node.children.map((child) => convertNode(child)).filter(Boolean) as ContextSelectorItem[];
+      option.children = node.children
+        .map((child) => convertNode(child))
+        .filter((item): item is ContextSelectorItem => item !== null);
     }
 
     return option;
   };
 
-  return metaTree.map((node) => convertNode(node)).filter(Boolean) as ContextSelectorItem[];
+  return metaTree.map((node) => convertNode(node)).filter((item): item is ContextSelectorItem => item !== null);
 };
 
 /**
