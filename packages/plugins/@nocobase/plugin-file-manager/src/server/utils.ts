@@ -8,6 +8,7 @@
  */
 
 import { uid } from '@nocobase/utils';
+import crypto from 'crypto';
 import path from 'path';
 import urlJoin from 'url-join';
 
@@ -19,6 +20,17 @@ export function getFilename(req, file, cb) {
 }
 
 export const cloudFilenameGetter = (storage) => (req, file, cb) => {
+  const renameMode = storage.options?.renameMode;
+  if (renameMode === 'md5') {
+    crypto.pseudoRandomBytes(16, function (err, raw) {
+      if (err) {
+        return cb(err);
+      }
+      const filename = `${raw.toString('hex')}${path.extname(file.originalname)}`;
+      cb(null, `${storage.path ? `${storage.path.replace(/\/+$/, '')}/` : ''}${filename}`);
+    });
+    return;
+  }
   getFilename(req, file, (err, filename) => {
     if (err) {
       return cb(err);
