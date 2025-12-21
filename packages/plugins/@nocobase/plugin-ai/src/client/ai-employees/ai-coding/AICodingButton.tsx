@@ -15,11 +15,12 @@ import { Avatar, Popover, Tooltip } from 'antd';
 import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
 import { ProfileCard } from '../ProfileCard';
 import { avatars } from '../avatars';
-import { EditorRef } from '@nocobase/client';
+import { EditorRef, useLocalVariables } from '@nocobase/client';
 import { isEngineer } from '../built-in/utils';
 import { Task } from '../types';
 import { useT } from '../../locale';
 import prompts from './prompts';
+import _ from 'lodash';
 
 export interface AICodingButtonProps {
   uid: string;
@@ -38,6 +39,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
   const addContextItems = useChatMessagesStore.use.addContextItems();
   const setEditorRef = useChatMessagesStore.use.setEditorRef();
   const setCurrentEditorRefUid = useChatMessagesStore.use.setCurrentEditorRefUid();
+  const localVariables = useLocalVariables();
 
   const aiEmployee = aiEmployees.filter((e) => isEngineer(e))[0];
 
@@ -72,6 +74,16 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
 
   const TaskTemplate = (prototype: Partial<Task>) => {
     const { message, ...rest } = prototype;
+    const variablesDesc = localVariables
+      .filter((v) => {
+        // Filter out variables with empty context
+        if (_.isNil(v.ctx)) return false;
+        if (_.isArray(v.ctx) && _.isEmpty(v.ctx)) return false;
+        if (_.isPlainObject(v.ctx) && _.isEmpty(v.ctx)) return false;
+        return true;
+      })
+      .map((v) => `- ${v.name} ${v.collectionName ? `(Collection: ${v.collectionName})` : ''}`)
+      .join('\n');
     return {
       message: {
         workContext: [
@@ -85,7 +97,15 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
               code: editorRef?.read(),
             },
           },
-        ],
+          variablesDesc
+            ? {
+                type: 'text',
+                uid: 'available-variables',
+                title: 'Available Variables',
+                content: `You can access the following variables via context:\n${variablesDesc}`,
+              }
+            : null,
+        ].filter(Boolean),
         ...(message ?? {}),
       },
       autoSend: false,
@@ -139,6 +159,18 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
             }
 
             setCurrentEditorRefUid(uid);
+
+            const variablesDesc = localVariables
+              .filter((v) => {
+                // Filter out variables with empty context
+                if (_.isNil(v.ctx)) return false;
+                if (_.isArray(v.ctx) && _.isEmpty(v.ctx)) return false;
+                if (_.isPlainObject(v.ctx) && _.isEmpty(v.ctx)) return false;
+                return true;
+              })
+              .map((v) => `- ${v.name} ${v.collectionName ? `(Collection: ${v.collectionName})` : ''}`)
+              .join('\n');
+
             addContextItems({
               type: 'code-editor',
               uid,
@@ -149,6 +181,15 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
                 code: editorRef?.read(),
               },
             });
+
+            if (variablesDesc) {
+              addContextItems({
+                type: 'text',
+                uid: 'available-variables',
+                title: 'Available Variables',
+                content: `You can access the following variables via context:\n${variablesDesc}`,
+              });
+            }
           }}
         />
       </Popover>
