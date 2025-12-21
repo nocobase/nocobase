@@ -202,9 +202,7 @@ UpdateRecordActionModel.registerFlow({
           ctx.message.error(ctx.t('Record is required to perform this action'));
           return;
         }
-        await ctx.api
-          .resource(collection)
-          .update({ filterByTk, values: assignedValues, ...params.requestConfig?.params });
+        await ctx.resource.update(filterByTk, assignedValues, params.requestConfig);
         // 刷新与提示
         ctx.blockModel?.resource?.refresh?.();
         ctx.message.success(ctx.t('Saved successfully'));
