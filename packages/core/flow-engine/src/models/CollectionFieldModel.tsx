@@ -347,7 +347,6 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
       if (!this.collectionField) {
         return <FieldDeletePlaceholder />;
       }
-      console.log(88888);
       // 调用子类原本 render
       return originalRender.apply(this, args);
     };
