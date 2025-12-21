@@ -193,9 +193,11 @@ export class FilterFormItemModel extends FilterableItemModel<{
    * @returns
    */
   getFilterValue() {
-    const rawValue = this.subModels.field.getFilterValue
+    const defaultValue = this.getStepParams('filterFormItemSettings', 'initialValue').defaultValue;
+    const fieldValue = this.subModels.field.getFilterValue
       ? this.subModels.field.getFilterValue()
       : this.context.form?.getFieldValue(this.props.name);
+    const rawValue = _.isEmpty(fieldValue) ? defaultValue : fieldValue;
 
     const operatorMeta = this.getCurrentOperatorMeta();
     if (operatorMeta?.noValue) {
