@@ -15,12 +15,12 @@ import { Avatar, Popover, Tooltip } from 'antd';
 import { useChatMessagesStore } from '../chatbox/stores/chat-messages';
 import { ProfileCard } from '../ProfileCard';
 import { avatars } from '../avatars';
-import { EditorRef, useLocalVariables } from '@nocobase/client';
+import { EditorRef, useCompile } from '@nocobase/client';
+import { useFlowContext } from '@nocobase/flow-engine';
 import { isEngineer } from '../built-in/utils';
 import { Task } from '../types';
 import { useT } from '../../locale';
 import prompts from './prompts';
-import _ from 'lodash';
 
 export interface AICodingButtonProps {
   uid: string;
@@ -32,6 +32,7 @@ export interface AICodingButtonProps {
 
 export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, language, editorRef, setActive }) => {
   const t = useT();
+  const compile = useCompile();
   const { aiEmployees } = useAIEmployeesData();
   const open = useChatBoxStore.use.open();
   const currentEmployee = useChatBoxStore.use.currentEmployee();
@@ -39,7 +40,24 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
   const addContextItems = useChatMessagesStore.use.addContextItems();
   const setEditorRef = useChatMessagesStore.use.setEditorRef();
   const setCurrentEditorRefUid = useChatMessagesStore.use.setCurrentEditorRefUid();
-  const localVariables = useLocalVariables();
+  const ctx = useFlowContext();
+
+  const buildCtxVariablesDesc = () => {
+    const metaTree = ctx?.getPropertyMetaTree?.() || [];
+    return metaTree
+      .filter((node) => {
+        const disabled = typeof node.disabled === 'function' ? node.disabled() : node.disabled;
+        return !disabled;
+      })
+      .map((node) => {
+        const paths = node.paths?.length ? node.paths : [node.name].filter(Boolean);
+        const fullPath = ['ctx', ...paths].join('.');
+        const nodeTitle = compile(node.title, { t });
+        const title = nodeTitle && nodeTitle !== node.name ? ` (${nodeTitle})` : '';
+        return `- {{${fullPath}}}${title}`;
+      })
+      .join('\n');
+  };
 
   const aiEmployee = aiEmployees.filter((e) => isEngineer(e))[0];
 
@@ -74,16 +92,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
 
   const TaskTemplate = (prototype: Partial<Task>) => {
     const { message, ...rest } = prototype;
-    const variablesDesc = localVariables
-      .filter((v) => {
-        // Filter out variables with empty context
-        if (_.isNil(v.ctx)) return false;
-        if (_.isArray(v.ctx) && _.isEmpty(v.ctx)) return false;
-        if (_.isPlainObject(v.ctx) && _.isEmpty(v.ctx)) return false;
-        return true;
-      })
-      .map((v) => `- ${v.name} ${v.collectionName ? `(Collection: ${v.collectionName})` : ''}`)
-      .join('\n');
+    const variablesDesc = buildCtxVariablesDesc();
     return {
       message: {
         workContext: [
@@ -160,16 +169,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
 
             setCurrentEditorRefUid(uid);
 
-            const variablesDesc = localVariables
-              .filter((v) => {
-                // Filter out variables with empty context
-                if (_.isNil(v.ctx)) return false;
-                if (_.isArray(v.ctx) && _.isEmpty(v.ctx)) return false;
-                if (_.isPlainObject(v.ctx) && _.isEmpty(v.ctx)) return false;
-                return true;
-              })
-              .map((v) => `- ${v.name} ${v.collectionName ? `(Collection: ${v.collectionName})` : ''}`)
-              .join('\n');
+            const variablesDesc = buildCtxVariablesDesc();
 
             addContextItems({
               type: 'code-editor',
