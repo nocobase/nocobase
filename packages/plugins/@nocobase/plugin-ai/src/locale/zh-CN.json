@@ -93,6 +93,8 @@
   "Get code snippet list": "获取代码片段列表",
   "Get collection metadata": "获取数据表元数据",
   "Get collection names": "获取数据表名称",
+  "Get data sources": "获取数据源",
+  "Retrieve list of all available data sources": "获取所有可用数据源列表",
   "Get models list failed, you can enter a model name manually.": "获取模型列表失败，你可以手动输入模型名称。",
   "Greeting message": "问候语",
   "Greeting message placeholder": "开启新对话时发送给用户的开场白",
