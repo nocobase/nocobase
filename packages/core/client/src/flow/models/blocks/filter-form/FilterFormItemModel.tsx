@@ -21,6 +21,7 @@ import React from 'react';
 import { CollectionBlockModel, FieldModel } from '../../base';
 import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
+import { FilterManager } from '../filter-manager';
 
 const getModelFields = async (model: CollectionBlockModel) => {
   // model.collection 是普通区块，model.context.collection 是图表区块 / 代理区块（如 ReferenceBlockModel）, 为啥不统一？
@@ -178,11 +179,13 @@ export class FilterFormItemModel extends FilterableItemModel<{
   }
 
   doFilter() {
-    this.context.filterManager.refreshTargetsByFilter(this.uid);
+    const filterManager: FilterManager = this.context.filterManager;
+    filterManager.refreshTargetsByFilter(this.uid);
   }
 
   doReset() {
-    this.context.filterManager.refreshTargetsByFilter(this.uid);
+    const filterManager: FilterManager = this.context.filterManager;
+    filterManager.refreshTargetsByFilter(this.uid);
   }
 
   /**
