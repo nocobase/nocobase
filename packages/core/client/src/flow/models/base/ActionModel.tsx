@@ -16,6 +16,7 @@ import React, { useMemo } from 'react';
 import { Icon } from '../../../icon/Icon';
 import { ColorPicker } from '../../../schema-component/antd/color-picker';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
+import { clickEvent } from '../../events/clickEvent';
 
 function ActionWithoutPermission(props) {
   const { t } = useTranslation();
@@ -233,17 +234,5 @@ ActionModel.registerFlow({
 });
 
 ActionModel.registerEvents({
-  click: {
-    title: tExpr('Click'),
-    name: 'click',
-    uiSchema: {
-      condition: {
-        type: 'object',
-        title: tExpr('Trigger condition'),
-        'x-decorator': 'FormItem',
-        'x-component': ConditionBuilder,
-      },
-    },
-    handler: commonConditionHandler,
-  },
+  click: clickEvent,
 });
