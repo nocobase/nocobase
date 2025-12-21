@@ -9,7 +9,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import type { ActionDefinition, FlowEngine, FlowSettingsContext } from '@nocobase/flow-engine';
-import { useFlowSettingsContext } from '@nocobase/flow-engine';
+import { createEphemeralContext, useFlowSettingsContext } from '@nocobase/flow-engine';
 import { useForm } from '@formily/react';
 import { Select } from 'antd';
 import type { BaseSelectRef } from 'rc-select';
@@ -218,7 +218,6 @@ const getPopupTemplateDisabledReason = async (
   _expectedSource: ExpectedResourceInfo,
   actionParams?: any,
 ): Promise<string | undefined> => {
-  // DEBUG: 在函数开头打印所有输入信息
   const engine = (ctx as any)?.engine;
   const getModelClass = engine?.getModelClass?.bind(engine);
   const useKey = normalizeStr((ctx as any)?.model?.use) || normalizeStr((ctx as any)?.model?.constructor?.name);
@@ -287,6 +286,85 @@ const getPopupTemplateDisabledReason = async (
 /** 预览/配置态下无法获取真实 record 时使用的占位符 */
 const POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER = '__popupTemplateFilterByTk__';
 
+const isUsableKeyValue = (value: any): boolean => {
+  if (value === null || typeof value === 'undefined') return false;
+  if (value === POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER) return false;
+  if (typeof value === 'string') return value.trim() !== '';
+  if (Array.isArray(value)) return value.length > 0;
+  return true;
+};
+
+const resolveAssociationReferenceValues = (
+  ctx: any,
+  assocField: any,
+): {
+  targetFilterKey: string;
+  associationTargetKey: string;
+  filterTargetKeyValue?: any;
+  associationTargetKeyValue?: any;
+} | null => {
+  if (!assocField) return null;
+
+  const targetFilterKey = normalizeStr(assocField?.targetCollection?.filterTargetKey) || 'id';
+  const associationTargetKey = normalizeStr(assocField?.targetKey);
+  const assocName = normalizeStr(assocField?.name);
+  const foreignKey = normalizeStr(assocField?.foreignKey);
+  const record = (ctx as any)?.record || (ctx as any)?.inputArgs?.record || (ctx as any)?.view?.inputArgs?.record;
+
+  let filterTargetKeyValue: any | undefined;
+  let associationTargetKeyValue: any | undefined;
+
+  if (record && typeof record === 'object') {
+    if (assocName) {
+      const assocValue = (record as any)?.[assocName];
+      if (assocValue !== null && typeof assocValue !== 'undefined') {
+        if (typeof assocValue === 'object') {
+          const filterKeyValue = (assocValue as any)?.[targetFilterKey];
+          if (isUsableKeyValue(filterKeyValue)) {
+            filterTargetKeyValue = filterKeyValue;
+          }
+          if (associationTargetKey) {
+            const targetKeyValue = (assocValue as any)?.[associationTargetKey];
+            if (isUsableKeyValue(targetKeyValue)) {
+              associationTargetKeyValue = targetKeyValue;
+            }
+          }
+        } else if (isUsableKeyValue(assocValue)) {
+          const foreignKeyValue = foreignKey ? (record as any)?.[foreignKey] : undefined;
+          const shouldTreatAsFilterKey =
+            associationTargetKey &&
+            associationTargetKey !== targetFilterKey &&
+            foreignKey &&
+            isUsableKeyValue(foreignKeyValue) &&
+            assocValue !== foreignKeyValue;
+          if (shouldTreatAsFilterKey) {
+            if (!isUsableKeyValue(filterTargetKeyValue)) {
+              filterTargetKeyValue = assocValue;
+            }
+          } else {
+            associationTargetKeyValue = assocValue;
+          }
+        }
+      }
+    }
+
+    if (!associationTargetKeyValue && foreignKey) {
+      const foreignKeyValue = (record as any)?.[foreignKey];
+      if (isUsableKeyValue(foreignKeyValue)) {
+        associationTargetKeyValue = foreignKeyValue;
+      }
+    }
+  }
+
+  // 路由二阶段/record 缺失时：ctx.inputArgs.filterByTk 往往就是 associationTargetKey 的值
+  const inputFilterByTk = (ctx as any)?.inputArgs?.filterByTk;
+  if (!associationTargetKeyValue && isUsableKeyValue(inputFilterByTk)) {
+    associationTargetKeyValue = inputFilterByTk;
+  }
+
+  return { targetFilterKey, associationTargetKey, filterTargetKeyValue, associationTargetKeyValue };
+};
+
 const stripTemplateParams = (params: any) => {
   if (!params || typeof params !== 'object') return params;
   const next = { ...params };
@@ -294,6 +372,7 @@ const stripTemplateParams = (params: any) => {
   delete (next as any).popupTemplateContext;
   delete (next as any).popupTemplateHasFilterByTk;
   delete (next as any).popupTemplateHasSourceId;
+  delete (next as any).popupTemplateForceInputArgsFilterByTk;
   // Avoid overriding runtime defaults with null/empty values.
   const isEmptyValue = (v: any) => {
     if (v === null || typeof v === 'undefined') return true;
@@ -307,7 +386,7 @@ const stripTemplateParams = (params: any) => {
   return next;
 };
 
-const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
+const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>) => {
   const baseInputArgs = ctx.inputArgs || {};
   const nextInputArgs: Record<string, any> = { ...(baseInputArgs as any) };
 
@@ -326,6 +405,7 @@ const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
   } else {
     delete nextInputArgs.associationName;
   }
+  const isNonRelationTemplate = !tplAssociationName;
 
   // 模板是否显式携带 filterByTk/sourceId：用于避免从 actionDefaults "透传"到模板弹窗（尤其是 Record action 复用 Collection 模板）。
   // 注意：运行时 params 可能已被解析（缺少 ctx.record 时会解析为空/undefined），因此优先使用保存时写入的布尔标记兜底。
@@ -339,6 +419,15 @@ const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
       : normalizeStr(params.sourceId) !== '';
   // sourceId 是否需要保留完全由模板的 popupTemplateHasSourceId 或 sourceId 表达式决定
   const shouldKeepSourceId = hasTemplateSourceId;
+  const forceInputArgsFilterByTk = !!(params as any)?.popupTemplateForceInputArgsFilterByTk;
+  const assocField = resolveAssociationFieldFromCtx(ctx);
+  const assocTargetCollectionName = normalizeStr(assocField?.targetCollection?.name);
+  const tplCollectionName = normalizeStr(params?.collectionName);
+  const shouldInferFilterByTkFromAssociation =
+    isNonRelationTemplate &&
+    !!assocTargetCollectionName &&
+    !!tplCollectionName &&
+    assocTargetCollectionName === tplCollectionName;
 
   let didOverrideFilterByTk = false;
   let didOverrideSourceId = false;
@@ -346,6 +435,35 @@ const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
     // 防止 openView 回落到 actionDefaults.filterByTk（如 Record action 默认 {{ctx.record.id}}）
     nextInputArgs.filterByTk = null;
     didOverrideFilterByTk = true;
+  }
+
+  // 强制覆盖：把 params.filterByTk 写入 shadow ctx.inputArgs，避免被"关系字段上下文"的 inputArgs.filterByTk 抢占优先级
+  if (hasTemplateFilterByTk && forceInputArgsFilterByTk) {
+    const raw = (params as any)?.filterByTk;
+    if (isUsableKeyValue(raw)) {
+      nextInputArgs.filterByTk = raw;
+    } else {
+      nextInputArgs.filterByTk =
+        normalizeStr((ctx as any)?.view?.inputArgs?.filterByTk) || POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER;
+    }
+    didOverrideFilterByTk = true;
+  }
+
+  // 自动推断：关系字段上下文复用“目标集合（非关系）弹窗模板”时，确保 filterByTk 使用目标集合的 filterTargetKey
+  if (hasTemplateFilterByTk && !didOverrideFilterByTk && shouldInferFilterByTkFromAssociation) {
+    const info = resolveAssociationReferenceValues(ctx, assocField);
+
+    // 1) 优先：如果 record/关联对象里已经有目标集合 filterTargetKey（如 id），直接使用
+    if (info && isUsableKeyValue(info.filterTargetKeyValue)) {
+      nextInputArgs.filterByTk = info.filterTargetKeyValue;
+      didOverrideFilterByTk = true;
+    }
+
+    // 2) 退化：targetKey == filterTargetKey 或无法识别差异时，直接使用可用的 key 值
+    if (info && !didOverrideFilterByTk && isUsableKeyValue(info.associationTargetKeyValue)) {
+      nextInputArgs.filterByTk = info.associationTargetKeyValue;
+      didOverrideFilterByTk = true;
+    }
   }
 
   // 预览/配置态下可能拿不到真实 record，导致 filterByTk 被解析为 undefined；但模板若明确需要 record 上下文，
@@ -379,14 +497,12 @@ const buildPopupTemplateShadowCtx = (ctx: any, params: Record<string, any>) => {
     }
   }
 
-  const shadowCtx = Object.create(ctx);
-  // FlowRuntimeContext.inputArgs 通常只有 getter（不可直接赋值），这里通过定义同名自有属性覆盖即可。
-  Object.defineProperty(shadowCtx, 'inputArgs', {
-    value: nextInputArgs,
-    configurable: true,
-    enumerable: true,
+  const flowCtx = await createEphemeralContext(ctx as any, {
+    defineProperties: {
+      inputArgs: { value: nextInputArgs },
+    },
   });
-  return shadowCtx;
+  return flowCtx;
 };
 
 const fetchPopupTemplates = async (
@@ -419,7 +535,7 @@ const fetchTemplateByUid = async (ctx: any, templateUid: string): Promise<Templa
   return body as TemplateRow;
 };
 
-type PopupTemplateMeta = PopupTemplateContextFlags;
+type PopupTemplateMeta = PopupTemplateContextFlags & { tpl: TemplateRow };
 
 const popupTemplateMetaCacheByEngine = new WeakMap<object, Map<string, Promise<PopupTemplateMeta | null>>>();
 const popupTemplateMetaCacheFallback = new Map<string, Promise<PopupTemplateMeta | null>>();
@@ -446,7 +562,7 @@ const getPopupTemplateMeta = async (ctx: any, templateUid: string): Promise<Popu
     try {
       const tpl = await fetchTemplateByUid(ctx, uid);
       if (!tpl) return null;
-      return inferPopupTemplateMeta(ctx, tpl);
+      return { ...inferPopupTemplateMeta(ctx, tpl), tpl } as PopupTemplateMeta;
     } catch (e) {
       console.error('[block-reference] getPopupTemplateMeta failed:', e);
       return null;
@@ -861,6 +977,16 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
         if (typeof hydratedMeta.hasSourceId === 'boolean') {
           runtimeParams.popupTemplateHasSourceId = hydratedMeta.hasSourceId;
         }
+
+        // 运行时兜底：即使触发点/默认参数注入了 associationName，也以模板记录里的 associationName 为准
+        // - 非关系模板（associationName 为空）：必须清除 associationName，避免把关系资源语义带入目标集合模板
+        // - 关系模板：覆盖为模板侧的 associationName
+        const tplAssociationName = normalizeStr((hydratedMeta as any)?.tpl?.associationName);
+        if (tplAssociationName) {
+          runtimeParams.associationName = tplAssociationName;
+        } else if (runtimeParams && typeof runtimeParams === 'object' && 'associationName' in runtimeParams) {
+          delete (runtimeParams as any).associationName;
+        }
       }
 
       const shouldUseTemplateCtx =
@@ -876,7 +1002,7 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
         delete (nextParams as any).sourceId;
       }
 
-      const runtimeCtx = shouldUseTemplateCtx ? buildPopupTemplateShadowCtx(ctx, runtimeParams) : ctx;
+      const runtimeCtx = shouldUseTemplateCtx ? await buildPopupTemplateShadowCtx(ctx, runtimeParams) : ctx;
       return base.handler(runtimeCtx, nextParams);
     },
   };
