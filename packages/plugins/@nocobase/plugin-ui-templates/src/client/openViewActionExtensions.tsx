@@ -978,13 +978,14 @@ export function registerOpenViewPopupTemplateAction(flowEngine: FlowEngine) {
           runtimeParams.popupTemplateHasSourceId = hydratedMeta.hasSourceId;
         }
 
-        // 运行时兜底：即使触发点/默认参数注入了 associationName，也以模板记录里的 associationName 为准
-        // - 非关系模板（associationName 为空）：必须清除 associationName，避免把关系资源语义带入目标集合模板
-        // - 关系模板：覆盖为模板侧的 associationName
+        // 运行时兜底：非关系模板必须清除 associationName，避免把关系资源语义带入目标集合模板
         const tplAssociationName = normalizeStr((hydratedMeta as any)?.tpl?.associationName);
-        if (tplAssociationName) {
-          runtimeParams.associationName = tplAssociationName;
-        } else if (runtimeParams && typeof runtimeParams === 'object' && 'associationName' in runtimeParams) {
+        if (
+          !tplAssociationName &&
+          runtimeParams &&
+          typeof runtimeParams === 'object' &&
+          'associationName' in runtimeParams
+        ) {
           delete (runtimeParams as any).associationName;
         }
       }
