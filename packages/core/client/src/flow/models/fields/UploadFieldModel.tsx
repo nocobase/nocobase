@@ -435,23 +435,24 @@ UploadFieldModel.registerFlow({
           const storageType = fileManagerPlugin.getStorageType(checkData?.data?.storage?.type);
 
           const storage = checkData?.data?.storage;
-          const customRequest = storageType.createUploadCustomRequest({
-            ...ctx.model.props,
-            api: ctx.api,
-            action: `${fileCollection}:create`,
-            storage,
-          });
-
-          if (typeof customRequest === 'function') {
-            await customRequest({
-              file,
-              onProgress,
-              onSuccess,
-              onError,
+          if (storageType.createUploadCustomRequest) {
+            const customRequest = storageType.createUploadCustomRequest({
+              ...ctx.model.props,
+              api: ctx.api,
+              action: `${fileCollection}:create`,
+              storage,
             });
-            return;
-          }
 
+            if (typeof customRequest === 'function') {
+              await customRequest({
+                file,
+                onProgress,
+                onSuccess,
+                onError,
+              });
+              return;
+            }
+          }
           // 开始上传
           const { data, errorMessage } = await fileManagerPlugin.uploadFile({
             file,
