@@ -8,4 +8,4 @@
  */
 
 export * from '@formily/reactive';
-export { observer } from '@formily/reactive-react';
+export { observer } from './observer';
