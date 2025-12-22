@@ -42,7 +42,6 @@
  * />
  */
 
-import { observer } from '@formily/reactive-react';
 import _ from 'lodash';
 import React, { useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -53,6 +52,7 @@ import { ToolbarItemConfig } from '../types';
 import { FlowErrorFallback } from './FlowErrorFallback';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
+import { observer } from '../reactive/observer';
 
 export interface FlowModelRendererProps {
   model?: FlowModel;

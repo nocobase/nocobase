@@ -8,8 +8,8 @@
  */
 
 import React from 'react';
-import { observer } from '@formily/reactive-react';
 import { useFlowEngine } from '../../provider';
+import { observer } from '../..';
 
 /**
  * 高阶组件：仅在设计模式启用时渲染子组件
