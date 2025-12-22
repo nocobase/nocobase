@@ -430,6 +430,7 @@ UploadFieldModel.registerFlow({
           // 上传前检查存储策略
           const { data: checkData } = await ctx.api.resource('storages').check({
             fileCollectionName: fileCollection,
+            storageName: collectionField.options.storage,
           });
 
           if (!checkData?.data?.isSupportToUploadFiles) {
