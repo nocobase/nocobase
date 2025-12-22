@@ -8,7 +8,7 @@
  */
 
 import { CloseOutlined, ZoomInOutlined } from '@ant-design/icons';
-import { Table, Form, Space } from 'antd';
+import { Table, Form, Space, Button } from 'antd';
 import { css } from '@emotion/css';
 import { useTranslation } from 'react-i18next';
 import { PlusOutlined } from '@ant-design/icons';
@@ -27,7 +27,9 @@ export function SubTableField(props) {
     onSelectExitRecordClick,
     allowDisassociation,
     pageSize,
+    allowCreate, //acl
   } = props;
+  console.log(allowCreate);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
   useEffect(() => {
@@ -58,12 +60,14 @@ export function SubTableField(props) {
 
   // 新增一行
   const handleAdd = () => {
-    const newRow = { isNew: true };
-    columns.forEach((col) => (newRow[col.dataIndex] = undefined));
-    const newValue = [...(value || []), newRow];
-    const lastPage = Math.ceil(newValue.length / currentPageSize);
-    setCurrentPage(lastPage);
-    onChange?.([...(value || []), newRow]);
+    if (allowCreate !== false) {
+      const newRow = { isNew: true };
+      columns.forEach((col) => (newRow[col.dataIndex] = undefined));
+      const newValue = [...(value || []), newRow];
+      const lastPage = Math.ceil(newValue.length / currentPageSize);
+      setCurrentPage(lastPage);
+      onChange?.([...(value || []), newRow]);
+    }
   };
 
   // 删除行
@@ -158,14 +162,14 @@ export function SubTableField(props) {
           >
             <Space size={'middle'}>
               {!disabled && allowAddNew !== false && (
-                <a onClick={handleAdd} style={{ marginTop: 8 }}>
+                <Button type="link" onClick={handleAdd} disabled={!allowCreate}>
                   <PlusOutlined /> {t('Add new')}
-                </a>
+                </Button>
               )}
               {!disabled && allowSelectExistingRecord && (
-                <a onClick={() => onSelectExitRecordClick(setCurrentPage, currentPageSize)} style={{ marginTop: 8 }}>
+                <Button type="link" onClick={() => onSelectExitRecordClick(setCurrentPage, currentPageSize)}>
                   <ZoomInOutlined /> {t('Select record')}
-                </a>
+                </Button>
               )}
             </Space>
           </div>

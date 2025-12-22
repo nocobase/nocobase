@@ -502,7 +502,10 @@ RecordSelectFieldModel.registerFlow({
           resource.addFilterGroup(foreignKey, { $or: orFilters });
         }
         ctx.model.resource = resource;
-
+      },
+    },
+    allowCreateCheck: {
+      async handler(ctx) {
         const aclCreate = await ctx.aclCheck({
           dataSourceKey: ctx.collectionField.dataSourceKey,
           resourceName: ctx.collectionField?.target,
