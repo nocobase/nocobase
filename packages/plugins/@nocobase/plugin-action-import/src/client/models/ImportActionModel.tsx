@@ -14,7 +14,7 @@ import { createForm } from '@formily/core';
 import { createSchemaField, FormProvider } from '@formily/react';
 import { observable } from '@formily/reactive';
 import { observer } from '@formily/reactive-react';
-import { Cascader, ActionModel, ActionSceneEnum } from '@nocobase/client';
+import { Cascader, ActionModel, ActionSceneEnum, beforeAction, afterAction } from '@nocobase/client';
 import { escapeT } from '@nocobase/flow-engine';
 import { Button, Space, Spin, Upload } from 'antd';
 import type { ButtonProps } from 'antd/es/button';
@@ -430,3 +430,6 @@ ImportActionModel.registerFlow({
     },
   },
 });
+
+ImportActionModel.registerEvent(beforeAction);
+ImportActionModel.registerEvent(afterAction);

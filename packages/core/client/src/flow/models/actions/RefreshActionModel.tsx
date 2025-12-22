@@ -10,6 +10,8 @@
 import { tExpr } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionModel, ActionSceneEnum } from '../base';
+import { beforeAction } from '../../events/beforeAction';
+import { afterAction } from '../../events/afterAction';
 
 export class RefreshActionModel extends ActionModel {
   static scene = ActionSceneEnum.collection;
@@ -42,3 +44,6 @@ RefreshActionModel.registerFlow({
     },
   },
 });
+
+RefreshActionModel.registerEvent(beforeAction);
+RefreshActionModel.registerEvent(afterAction);

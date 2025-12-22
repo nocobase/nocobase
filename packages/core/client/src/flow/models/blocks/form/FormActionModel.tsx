@@ -13,6 +13,8 @@ import { AxiosRequestConfig } from 'axios';
 import { ActionModel } from '../../base';
 import { EditFormModel } from './EditFormModel';
 import { FormBlockModel } from './FormBlockModel';
+import { beforeAction } from '../../../events/beforeAction';
+import { afterAction } from '../../../events/afterAction';
 
 export class FormActionModel extends ActionModel {}
 
@@ -134,3 +136,6 @@ FormSubmitActionModel.registerFlow({
     },
   },
 });
+
+FormSubmitActionModel.registerEvent(beforeAction);
+FormSubmitActionModel.registerEvent(afterAction);

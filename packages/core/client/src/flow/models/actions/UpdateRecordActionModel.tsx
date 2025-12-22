@@ -22,6 +22,8 @@ import { ActionModel, ActionSceneEnum } from '../base/ActionModel';
 import { CollectionActionModel } from '../base/CollectionActionModel';
 import { RecordActionModel } from '../base/RecordActionModel';
 import { AssignFormModel } from '../blocks/assign-form/AssignFormModel';
+import { beforeAction } from '../../events/beforeAction';
+import { afterAction } from '../../events/afterAction';
 // import { RemoteFlowModelRenderer } from '../../FlowPage';
 
 const SETTINGS_FLOW_KEY = 'assignSettings';
@@ -221,3 +223,6 @@ UpdateRecordActionModel.registerFlow({
     },
   },
 });
+
+UpdateRecordActionModel.registerEvent(beforeAction);
+UpdateRecordActionModel.registerEvent(afterAction);

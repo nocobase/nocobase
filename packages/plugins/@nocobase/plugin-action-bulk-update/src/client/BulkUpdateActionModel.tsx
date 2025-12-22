@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { ActionModel, ActionSceneEnum, AssignFormModel } from '@nocobase/client';
+import { ActionModel, ActionSceneEnum, afterAction, AssignFormModel, beforeAction } from '@nocobase/client';
 import { tExpr, FlowModelRenderer, useFlowEngine, useFlowSettingsContext } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import React, { useEffect, useRef } from 'react';
@@ -219,3 +219,6 @@ BulkUpdateActionModel.registerFlow({
     },
   },
 });
+
+BulkUpdateActionModel.registerEvent(beforeAction);
+BulkUpdateActionModel.registerEvent(afterAction);
