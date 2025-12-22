@@ -52,6 +52,10 @@ export class PageModel extends FlowModel<PageModelStructure> {
       tabModel.subModels.grid?.mapSubModels('items', (item) => {
         item[method]?.();
       });
+      tabModel.context.defineProperty('tabActive', {
+        value: tabModel.context.pageActive ? method === 'onActive' : false,
+        cache: false,
+      });
     }
   }
 
