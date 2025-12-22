@@ -8,7 +8,6 @@
  */
 
 import { batch, define, observable, observe } from '@formily/reactive';
-import { observer } from '@formily/reactive-react';
 import _ from 'lodash';
 import React from 'react';
 import { uid } from 'uid/secure';
@@ -32,18 +31,10 @@ import type {
   ParentFlowModel,
   PersistOptions,
   ResolveUseResult,
-  RegisteredModelClassName,
-  StepDefinition,
   StepParams,
 } from '../types';
 import { IModelComponentProps, ReadonlyModelProps } from '../types';
-import {
-  FlowExitException,
-  isInheritedFrom,
-  resolveDefaultParams,
-  resolveExpressions,
-  setupRuntimeContextSteps,
-} from '../utils';
+import { isInheritedFrom, setupRuntimeContextSteps } from '../utils';
 // import { FlowExitAllException } from '../utils/exceptions';
 import { Typography } from 'antd/lib';
 import { ModelActionRegistry } from '../action-registry/ModelActionRegistry';
@@ -53,9 +44,10 @@ import { GlobalFlowRegistry } from '../flow-registry/GlobalFlowRegistry';
 import { FlowDefinition } from '../FlowDefinition';
 import { FlowSettingsOpenOptions } from '../flowSettings';
 import type { ScheduleOptions } from '../scheduler/ModelOperationScheduler';
-import type { DispatchEventOptions, EventDefinition, FlowEvent } from '../types';
+import type { DispatchEventOptions, EventDefinition } from '../types';
 import { ForkFlowModel } from './forkFlowModel';
 import type { MenuProps } from 'antd';
+import { observer } from '..';
 
 // 使用 WeakMap 为每个类缓存一个 ModelActionRegistry 实例
 const classActionRegistries = new WeakMap<typeof FlowModel, ModelActionRegistry>();
