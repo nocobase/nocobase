@@ -291,6 +291,7 @@ const isUsableKeyValue = (value: any): boolean => {
   if (value === POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER) return false;
   if (typeof value === 'string') return value.trim() !== '';
   if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'object') return Object.keys(value).length > 0;
   return true;
 };
 
@@ -412,7 +413,7 @@ const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>
   const hasTemplateFilterByTk =
     typeof params.popupTemplateHasFilterByTk === 'boolean'
       ? params.popupTemplateHasFilterByTk
-      : normalizeStr(params.filterByTk) !== '';
+      : isUsableKeyValue((params as any)?.filterByTk);
   const hasTemplateSourceId =
     typeof params.popupTemplateHasSourceId === 'boolean'
       ? params.popupTemplateHasSourceId
@@ -443,8 +444,8 @@ const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>
     if (isUsableKeyValue(raw)) {
       nextInputArgs.filterByTk = raw;
     } else {
-      nextInputArgs.filterByTk =
-        normalizeStr((ctx as any)?.view?.inputArgs?.filterByTk) || POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER;
+      const fallback = (ctx as any)?.view?.inputArgs?.filterByTk;
+      nextInputArgs.filterByTk = isUsableKeyValue(fallback) ? fallback : POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER;
     }
     didOverrideFilterByTk = true;
   }
@@ -470,9 +471,9 @@ const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>
   // 仍需提供一个 truthy 值以保证区块菜单按 record 场景展示（否则只能添加 new 场景区块）。
   if (hasTemplateFilterByTk && !didOverrideFilterByTk) {
     const existing = (nextInputArgs as any).filterByTk;
-    if (!normalizeStr(existing)) {
-      nextInputArgs.filterByTk =
-        normalizeStr((ctx as any)?.view?.inputArgs?.filterByTk) || POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER;
+    if (!isUsableKeyValue(existing)) {
+      const fallback = (ctx as any)?.view?.inputArgs?.filterByTk;
+      nextInputArgs.filterByTk = isUsableKeyValue(fallback) ? fallback : POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER;
       didOverrideFilterByTk = true;
     }
   }
