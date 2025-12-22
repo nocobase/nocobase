@@ -114,12 +114,12 @@ export class PluginUISchemaStorageServer extends Plugin {
       name: 'flowModels',
       actions: {
         findOne: async (ctx, next) => {
-          const { uid, parentId, subKey } = ctx.action.params;
+          const { uid, parentId, subKey, includeAsyncNode = false } = ctx.action.params;
           const repository = ctx.db.getRepository('flowModels') as FlowModelRepository;
           if (uid) {
-            ctx.body = await repository.findModelById(uid);
+            ctx.body = await repository.findModelById(uid, { includeAsyncNode });
           } else if (parentId) {
-            ctx.body = await repository.findModelByParentId(parentId, { subKey });
+            ctx.body = await repository.findModelByParentId(parentId, { subKey, includeAsyncNode });
           }
           await next();
         },
