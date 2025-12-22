@@ -95,7 +95,9 @@ export const buildContextSelectorItems = (metaTree: MetaTreeNode[]): ContextSele
     return [];
   }
 
-  const convertNode = (node: MetaTreeNode): ContextSelectorItem => {
+  const convertNode = (node: MetaTreeNode): ContextSelectorItem | null => {
+    const hidden = !!(typeof node.hidden === 'function' ? node.hidden() : node.hidden);
+    if (hidden) return null;
     const hasChildren = !!(
       node.children &&
       (typeof node.children === 'function' || (Array.isArray(node.children) && node.children.length > 0))
@@ -112,13 +114,15 @@ export const buildContextSelectorItems = (metaTree: MetaTreeNode[]): ContextSele
     };
 
     if (Array.isArray(node.children) && node.children.length > 0) {
-      option.children = node.children.map((child) => convertNode(child));
+      option.children = node.children
+        .map((child) => convertNode(child))
+        .filter((item): item is ContextSelectorItem => item !== null);
     }
 
     return option;
   };
 
-  return metaTree.map((node) => convertNode(node));
+  return metaTree.map((node) => convertNode(node)).filter((item): item is ContextSelectorItem => item !== null);
 };
 
 /**

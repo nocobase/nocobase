@@ -81,7 +81,7 @@ export class EditFormModel extends FormBlockModel {
       <FormComponent model={this} layoutProps={{ colon, labelAlign, labelWidth, labelWrap, layout }}>
         <FlowModelRenderer model={this.subModels.grid} showFlowSettings={false} />
         <DndProvider>
-          <Space>
+          <Space wrap>
             {this.mapSubModels('actions', (action) => {
               if (action.hidden && !isConfigMode) {
                 return;
