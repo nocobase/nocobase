@@ -336,7 +336,7 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
   }
 
   renderItem() {
-    return;
+    return null;
   }
   render() {
     if (!this.collectionField) {
