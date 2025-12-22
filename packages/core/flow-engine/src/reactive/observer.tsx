@@ -8,7 +8,7 @@
  */
 
 import { observer as originalObserver, IObserverOptions, ReactFC } from '@formily/reactive-react';
-import React from 'react';
+import React, { useMemo } from 'react';
 
 type ObserverComponentProps<P, Options extends IObserverOptions> = Options extends {
   forwardRef: true;
@@ -23,7 +23,7 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
   options?: Options,
 ): React.MemoExoticComponent<ReactFC<ObserverComponentProps<P, Options>>> => {
   const ComponentWithDefaultScheduler = (props: any) => {
-    const ObservedComponent = originalObserver(Component, options);
+    const ObservedComponent = useMemo(() => originalObserver(Component, options), []);
     return <ObservedComponent {...props} />;
   };
 
