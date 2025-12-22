@@ -443,7 +443,7 @@ UploadFieldModel.registerFlow({
             return;
           }
 
-          const storageType = fileManagerPlugin.getStorageType(checkData?.data?.storage?.type);
+          const storageType = fileManagerPlugin.getStorageType(checkData?.data?.storage?.type) || {};
 
           const storage = checkData?.data?.storage;
           if (storageType.createUploadCustomRequest) {
