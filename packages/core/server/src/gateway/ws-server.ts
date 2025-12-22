@@ -112,6 +112,7 @@ export class WSServer extends EventEmitter {
 
       const payload = getPayloadByErrorCode(status, {
         app,
+        appName,
         message,
         command,
       });

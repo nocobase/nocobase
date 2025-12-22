@@ -87,7 +87,7 @@ export const errors: AppErrors = {
 
   APP_STOPPED: {
     status: 503,
-    message: ({ app }) => `application ${getAppName(app)} is stopped`,
+    message: ({ app, appName }) => `application ${appName || getAppName(app)} is stopped`,
     maintaining: true,
   },
 

@@ -51,6 +51,7 @@ export type AppStatus =
  */
 export type EnvironmentInfo = {
   name: string;
+  url?: string;
   available?: boolean;
   appVersion?: string;
   lastHeartbeatAt?: number;
@@ -64,6 +65,7 @@ export type AppModelOptions = {
 
 export type AppModel = {
   name: string;
+  cname?: string;
   environments?: string[];
   options: AppModelOptions;
 };
@@ -89,6 +91,7 @@ export type AppOptionsFactory = (appName: string, mainApp: Application, options?
 export interface AppDiscoveryAdapter {
   readonly name: string;
   readonly environmentName?: string;
+  readonly environmentUrl?: string;
   readonly appStatus?: Record<string, AppStatus>;
   readonly lastSeenAt?: Map<string, number>;
 
@@ -119,6 +122,7 @@ export interface AppDiscoveryAdapter {
   addAppModel?(appModel: AppModel): Promise<void>;
   getAppModel?(appName: string): Promise<AppModel>;
   removeAppModel?(appName: string): Promise<void>;
+  getAppNameByCName?(cname: string): Promise<string | null>;
   registerEnvironment?(environment: EnvironmentInfo): Promise<boolean>;
   unregisterEnvironment?(): Promise<void>;
   listEnvironments?(): Promise<EnvironmentInfo[]>;

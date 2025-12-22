@@ -38,13 +38,7 @@ import {
 import { appOptionsFactory } from './app-options-factory';
 import { PubSubManagerPublishOptions } from '../pub-sub-manager';
 import { Transaction, Transactionable } from '@nocobase/database';
-import {
-  createSystemLogger,
-  getLoggerFilePath,
-  getLoggerLevel,
-  getLoggerTransport,
-  SystemLogger,
-} from '@nocobase/logger';
+import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
 
 export type AppDiscoveryAdapterFactory = (context: { supervisor: AppSupervisor }) => AppDiscoveryAdapter;
 export type AppProcessAdapterFactory = (context: { supervisor: AppSupervisor }) => AppProcessAdapter;
@@ -87,8 +81,6 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
     this.logger = createSystemLogger({
       dirname: getLoggerFilePath('main'),
-      transports: getLoggerTransport(),
-      level: getLoggerLevel(),
       filename: 'system',
       seperateError: true,
       defaultMeta: {
@@ -100,6 +92,11 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     this.discoveryAdapterName = this.resolveDiscoveryAdapterName();
     this.processAdapterName = this.resolveProcessAdapterName();
     this.commandAdapterName = this.resolveCommandAdapterName();
+    this.logger.info(`App supervisor initialized`, {
+      discoveryAdapter: this.discoveryAdapterName,
+      processAdapter: this.processAdapterName,
+      commandAdapter: this.commandAdapterName || '',
+    });
     this.discoveryAdapter = this.createDiscoveryAdapter();
     this.processAdapter = this.createProcessAdapter();
     this.commandAdapter = this.createCommandAdapter();
@@ -248,6 +245,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
 
   get environmentName() {
     return this.discoveryAdapter.environmentName;
+  }
+
+  get environmentUrl() {
+    return this.discoveryAdapter.environmentUrl;
   }
 
   getProcessAdapter() {
@@ -450,6 +451,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     return this.discoveryAdapter.removeAppModel(appName);
   }
 
+  async getAppNameByCName(cname: string) {
+    return this.discoveryAdapter.getAppNameByCName(cname);
+  }
+
   async addAutoStartApps(environmentName: string, appName: string[]) {
     if (typeof this.discoveryAdapter.addAutoStartApps !== 'function') {
       return;
@@ -524,6 +529,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
     }
     const registered = await this.discoveryAdapter.registerEnvironment({
       name: this.environmentName,
+      url: this.environmentUrl || '',
       appVersion: mainApp.getPackageVersion(),
       lastHeartbeatAt: Math.floor(Date.now() / 1000),
     });
@@ -622,13 +628,14 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   private bindAppEvents(app: Application) {
-    app.on('afterDestroy', () => {
+    app.on('afterDestroy', async () => {
       delete this.apps[app.name];
       delete this.appStatus[app.name];
       delete this.appErrors[app.name];
       delete this.lastMaintainingMessage[app.name];
       delete this.statusBeforeCommanding[app.name];
       this.lastSeenAt.delete(app.name);
+      await this.setAppStatus(app.name, 'stopped');
     });
 
     app.on('maintainingMessageChanged', async ({ message, maintainingStatus }) => {

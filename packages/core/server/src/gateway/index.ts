@@ -7,13 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import {
-  createSystemLogger,
-  getLoggerFilePath,
-  getLoggerLevel,
-  getLoggerTransport,
-  SystemLogger,
-} from '@nocobase/logger';
+import { createSystemLogger, getLoggerFilePath, SystemLogger } from '@nocobase/logger';
 import { Registry, Toposort, ToposortOptions, uid } from '@nocobase/utils';
 import { createStoragePluginsSymlink } from '@nocobase/utils/plugin-symlink';
 import { Command } from 'commander';
@@ -221,8 +215,6 @@ export class Gateway extends EventEmitter {
     }
     logger = createSystemLogger({
       dirname: getLoggerFilePath(appName),
-      transports: getLoggerTransport(),
-      level: getLoggerLevel(),
       filename: 'system',
       defaultMeta: {
         app: appName,
@@ -341,11 +333,20 @@ export class Gateway extends EventEmitter {
 
     if (appStatus === 'initialized') {
       const appInstance = await AppSupervisor.getInstance().getApp(handleApp);
+      if (!appInstance) {
+        this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
+        return;
+      }
       appInstance.runCommand('start', '--quickstart');
       appStatus = await AppSupervisor.getInstance().getAppStatus(handleApp);
     }
 
     const app = await AppSupervisor.getInstance().getApp(handleApp);
+
+    if (!app) {
+      this.responseErrorWithCode('APP_NOT_FOUND', res, { appName: handleApp });
+      return;
+    }
 
     if (appStatus !== 'running') {
       this.responseErrorWithCode(`${appStatus}`, res, { app, appName: handleApp });

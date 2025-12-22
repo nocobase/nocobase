@@ -35,7 +35,7 @@ export class MainOnlyAdapter implements AppDiscoveryAdapter, AppProcessAdapter {
 
   async bootstrapApp(appName: string) {
     if (appName !== 'main' || !this.app) {
-      await this.supervisor.setAppStatus(appName, 'not_found');
+      this.setAppStatus(appName, 'not_found');
       return;
     }
     const status = this.getAppStatus('main');
