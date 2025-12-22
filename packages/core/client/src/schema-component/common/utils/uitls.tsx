@@ -10,11 +10,11 @@
 import { dayjs, getPickerFormat, Handlebars } from '@nocobase/utils/client';
 import _, { every, findIndex, some } from 'lodash';
 import { replaceVariableValue } from '../../../block-provider/hooks';
+import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 import { VariableOption, VariablesContextType } from '../../../variables/types';
 import { isVariable } from '../../../variables/utils/isVariable';
 import { transformVariableValue } from '../../../variables/utils/transformVariableValue';
 import { inferPickerType } from '../../antd/date-picker/util';
-import { NAMESPACE_UI_SCHEMA } from '../../../i18n/constant';
 
 type VariablesCtx = {
   /** 当前登录的用户 */
@@ -109,12 +109,14 @@ export const conditionAnalyses = async (
   jsonLogic: any,
 ) => {
   const type = Object.keys(ruleGroup)[0] || '$and';
-  const conditions = ruleGroup[type];
+  const conditions = ruleGroup[type] || [];
 
   const results = await Promise.all(
-    conditions.map((condition) =>
-      processCondition(condition, variables, localVariables, variableNameOfLeftCondition, conditionType, jsonLogic),
-    ),
+    conditions
+      .filter(Boolean)
+      .map((condition) =>
+        processCondition(condition, variables, localVariables, variableNameOfLeftCondition, conditionType, jsonLogic),
+      ),
   );
 
   if (type === '$and') {
