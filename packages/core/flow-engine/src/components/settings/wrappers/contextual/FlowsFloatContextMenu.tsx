@@ -154,13 +154,16 @@ const floatContainerStyles = ({ showBackground, showBorder, ctx, toolbarPosition
       border-radius: 2px;
       top: 2px;
       left: 2px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
 
       .title-tag {
         padding: 0 3px;
         border-radius: 2px;
         background: var(--colorSettings);
         color: #fff;
-        display: block;
+        display: inline-flex;
       }
     }
 
@@ -598,9 +601,10 @@ const FlowsFloatContextMenuWithModel: React.FC<ModelProvidedProps> = observer(
 
         {/* 悬浮工具栏 - 使用与 NocoBase 一致的结构 */}
         <div ref={toolbarContainerRef} className="nb-toolbar-container" style={toolbarContainerStyle}>
-          {showTitle && model.title && (
+          {showTitle && (model.title || model.extraTitle) && (
             <div className="nb-toolbar-container-title">
-              <span className="title-tag">{model.title}</span>
+              {model.title && <span className="title-tag">{model.title}</span>}
+              {model.extraTitle && <span className="title-tag">{model.extraTitle}</span>}
             </div>
           )}
           <div

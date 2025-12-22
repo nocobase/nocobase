@@ -59,12 +59,12 @@ describe('FlowModelContext.openView - navigation enforcement', () => {
     expect(dispatchedParams.navigation).toBe(false);
   });
 
-  it('forces options.navigation=false when options.defineMethod exists', async () => {
+  it('forces options.navigation=false when options.defineMethods exists', async () => {
     const { parent, child } = setup();
 
     await (parent.context as any).openView('child-uid', {
       navigation: true,
-      defineMethod: {
+      defineMethods: {
         test: vi.fn(),
       },
     });

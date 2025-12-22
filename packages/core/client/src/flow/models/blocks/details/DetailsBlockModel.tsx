@@ -149,7 +149,7 @@ export class DetailsBlockModel extends CollectionBlockModel<{
               padding: isConfigMode && this.context.themeToken.padding,
             }}
           >
-            <Space>
+            <Space wrap>
               {this.mapSubModels('actions', (action) => {
                 if (action.hidden && !isConfigMode) {
                   return;

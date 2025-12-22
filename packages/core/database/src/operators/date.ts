@@ -76,9 +76,6 @@ export default {
     }
 
     if (Array.isArray(r)) {
-      console.log(11111111, {
-        [Op.and]: [{ [Op.gte]: toDate(r[0], { ctx }) }, { [Op.lt]: toDate(r[1], { ctx }) }],
-      });
       return {
         [Op.and]: [{ [Op.gte]: toDate(r[0], { ctx }) }, { [Op.lt]: toDate(r[1], { ctx }) }],
       };

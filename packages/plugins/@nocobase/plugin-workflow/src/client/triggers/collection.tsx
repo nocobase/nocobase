@@ -130,7 +130,7 @@ export default class extends Trigger {
     changed: {
       type: 'array',
       title: `{{t("Changed fields", { ns: "${NAMESPACE}" })}}`,
-      description: `{{t("Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added or deleted, any field is considered to have been changed.", { ns: "${NAMESPACE}" })}}`,
+      description: `{{t("Triggered only if one of the selected fields changes. If unselected, it means that it will be triggered when any field changes. When record is added, any field is considered to have been changed.", { ns: "${NAMESPACE}" })}}`,
       'x-decorator': 'FormItem',
       'x-component': 'FieldsSelect',
       'x-component-props': {

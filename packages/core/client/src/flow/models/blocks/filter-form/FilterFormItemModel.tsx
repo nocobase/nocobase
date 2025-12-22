@@ -23,7 +23,8 @@ import { getAllDataModels, getDefaultOperator } from '../filter-manager/utils';
 import { FilterFormFieldModel } from './fields';
 
 const getModelFields = async (model: CollectionBlockModel) => {
-  const collection = model.context.collection as Collection;
+  // model.collection 是普通区块，model.context.collection 是图表区块 / 代理区块（如 ReferenceBlockModel）, 为啥不统一？
+  const collection = (model as any).collection || (model.context.collection as Collection);
   const fields = (await model?.getFilterFields?.()) || [];
   return fields
     .map((field: any) => {

@@ -139,21 +139,29 @@ export function createViewMeta(ctx: FlowContext): PropertyMetaFactory {
 export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): PropertyMetaFactory {
   const t = (k: string) => ctx.t(k);
 
+  const isPopupView = (view?: FlowView): boolean => {
+    if (!view) return false;
+    const stack = Array.isArray(view.navigation?.viewStack) ? view.navigation.viewStack : [];
+    return stack.length >= 2;
+  };
+
+  const hasPopupNow = (): boolean => isPopupView(anchorView ?? ctx.view);
+
   // 统一解析锚定视图下的 RecordRef，避免在设置弹窗等二级视图中被误导
   const resolveRecordRef = async (flowCtx: FlowContext): Promise<RecordRef | undefined> => {
     const view = anchorView ?? (flowCtx.view as any);
-    if (view) {
-      const base = await buildPopupRuntime(flowCtx, view);
-      const res = base?.resource;
-      if (res?.collectionName && res.filterByTk != null) {
-        return {
-          collection: res.collectionName,
-          dataSourceKey: res.dataSourceKey || 'main',
-          filterByTk: res.filterByTk,
-          associationName: res.associationName,
-          sourceId: res.sourceId,
-        };
-      }
+    if (!view || !isPopupView(view)) return undefined;
+
+    const base = await buildPopupRuntime(flowCtx, view);
+    const res = base?.resource;
+    if (res?.collectionName && res.filterByTk != null) {
+      return {
+        collection: res.collectionName,
+        dataSourceKey: res.dataSourceKey || 'main',
+        filterByTk: res.filterByTk,
+        associationName: res.associationName,
+        sourceId: res.sourceId,
+      };
     }
     return inferViewRecordRef(flowCtx);
   };
@@ -221,6 +229,7 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
         title: t('Parent popup'),
         disabled: () => !hasParentNow(level),
         disabledReason: () => (!hasParentNow(level) ? t('No parent popup') : undefined),
+        hidden: () => !hasParentNow(level),
         properties: async () => {
           const parentRef = await getParentRecordRef(level);
           const props: Record<string, any> = {};
@@ -277,7 +286,10 @@ export function createPopupMeta(ctx: FlowContext, anchorView?: FlowView): Proper
     const meta: PropertyMeta = {
       type: 'object',
       title: t('Current popup'),
+      disabled: () => !hasPopupNow(),
+      hidden: () => !hasPopupNow(),
       buildVariablesParams: async (c) => {
+        if (!hasPopupNow()) return undefined;
         const ref = await resolveRecordRef(c);
         const inputArgs = c.view?.inputArgs;
         type PopupVariableParams = {
@@ -449,6 +461,31 @@ interface PopupNode {
 export async function buildPopupRuntime(ctx: FlowContext, view: FlowView): Promise<PopupNode | undefined> {
   const nav = view?.navigation;
   const stack = Array.isArray(nav?.viewStack) ? nav.viewStack : [];
+
+  const openerUids = view?.inputArgs?.openerUids;
+  const hasOpener = Array.isArray(openerUids) && openerUids.length > 0;
+  const hasStackPopup = stack.length >= 2;
+  const isPopup = hasStackPopup || hasOpener;
+  if (!isPopup) return undefined;
+
+  // 当没有 navigation 堆栈时，退回当前视图的 inputArgs 作为单节点弹窗上下文
+  if (!stack.length) {
+    const args = view?.inputArgs || {};
+    const hasAny =
+      args.collectionName || args.filterByTk != null || args.sourceId != null || args.associationName || args.viewUid;
+    if (!hasAny) return undefined;
+    return {
+      uid: args.viewUid,
+      resource: {
+        dataSourceKey: args.dataSourceKey || 'main',
+        collectionName: args.collectionName,
+        associationName: args.associationName,
+        filterByTk: args.filterByTk,
+        sourceId: args.sourceId,
+      },
+    };
+  }
+
   const buildNode = async (idx: number): Promise<PopupNode | undefined> => {
     if (idx < 0 || !stack[idx]?.viewUid) return undefined;
     const viewUid = stack[idx].viewUid;

@@ -5,6 +5,33 @@
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.0.0/),
 并且本项目遵循 [语义化版本](https://semver.org/spec/v2.0.0.html)。
 
+## [v1.9.30](https://github.com/nocobase/nocobase/compare/v1.9.29...v1.9.30) - 2025-12-19
+
+### 🚀 优化
+
+- **[工作流]** 优化数据表事件“发生变动的字段”配置项的描述，以避免误解 ([#8216](https://github.com/nocobase/nocobase/pull/8216)) by @mytharcher
+
+### 🐛 修复
+
+- **[cli]** license-kit 适配 DB_PASSWORD 为空的情况 ([#8220](https://github.com/nocobase/nocobase/pull/8220)) by @jiannx
+
+- **[database]** 修复主数据源与外部数据源之间日期字段查询结果不一致的问题 ([#8181](https://github.com/nocobase/nocobase/pull/8181)) by @cgyrock
+
+- **[授权设置]** 修复授权插件显示异常 ([#8214](https://github.com/nocobase/nocobase/pull/8214)) by @jiannx
+
+- **[工作流：审批]**
+  - 修复审批通过时对关系字段创建了新数据的问题 by @mytharcher
+
+  - 修复审批通过时对对多关系字段创建了新数据的问题 by @mytharcher
+
+## [v1.9.29](https://github.com/nocobase/nocobase/compare/v1.9.28...v1.9.29) - 2025-12-18
+
+### 🐛 修复
+
+- **[工作流]** 修复删除工作流版本（非主版本）时的报错 ([#8203](https://github.com/nocobase/nocobase/pull/8203)) by @mytharcher
+
+- **[迁移管理]** 修复用户输入的迁移描述丢失问题，并使用当前时间作为默认迁移描述 by @cgyrock
+
 ## [v1.9.27](https://github.com/nocobase/nocobase/compare/v1.9.26...v1.9.27) - 2025-12-17
 
 ### 🚀 优化
