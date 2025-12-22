@@ -109,7 +109,7 @@ export class DetailsItemModel extends DisplayItemModel<{
     super.onInit(options);
   }
 
-  render() {
+  renderItem() {
     const fieldModel = this.subModels.field as FieldModel;
     const idx = this.context.fieldIndex;
     const record = this.context.record;
