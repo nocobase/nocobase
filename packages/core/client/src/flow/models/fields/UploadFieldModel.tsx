@@ -30,7 +30,7 @@ import React, { useState, useEffect } from 'react';
 import { FieldContext } from '@formily/react';
 import { FieldModel } from '../base';
 import { RecordPickerContent } from './AssociationFieldModel/RecordPickerFieldModel';
-import { matchMimetype } from '../../../schema-component/antd/upload/shared';
+import { matchMimetype, getThumbnailPlaceholderURL } from '../../../schema-component/antd/upload/shared';
 
 export const CardUpload = (props) => {
   const {
@@ -48,7 +48,7 @@ export const CardUpload = (props) => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0); // 用来跟踪当前预览的图片索引
   const { t } = useTranslation();
   useEffect(() => {
-    setFileList(castArray(value || []));
+    setFileList(normalizedFileList(castArray(value || [])));
   }, [value]);
 
   const getBase64 = (file): Promise<string> =>
@@ -99,6 +99,16 @@ export const CardUpload = (props) => {
         link.remove();
       });
   };
+
+  const normalizedFileList = (data) => {
+    return data.map((file) => {
+      return {
+        ...file,
+        thumbUrl: matchMimetype(file, 'image/*') ? file.preview || file.url : getThumbnailPlaceholderURL(file),
+      };
+    });
+  };
+
   return (
     <FieldContext.Provider
       value={
