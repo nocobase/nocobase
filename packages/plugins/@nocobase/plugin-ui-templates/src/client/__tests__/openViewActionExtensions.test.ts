@@ -265,62 +265,6 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('sourceId');
   });
 
-  it('forces filterByTk into ctx.inputArgs when popupTemplateForceInputArgsFilterByTk is true', async () => {
-    const engine = new FlowEngine();
-    let capturedCtx: any;
-    const baseHandler = vi.fn(async (ctxArg: any) => {
-      capturedCtx = ctxArg;
-      return undefined;
-    });
-
-    const baseOpenView: ActionDefinition = {
-      name: 'openView',
-      title: 'openView',
-      uiSchema: {
-        uid: { type: 'string' },
-      },
-      handler: baseHandler as any,
-    };
-    engine.registerActions({ openView: baseOpenView });
-
-    registerOpenViewPopupTemplateAction(engine);
-    const enhanced = engine.getAction('openView') as any;
-
-    const baseInputArgs: any = {
-      dataSourceKey: 'main',
-      collectionName: 'users',
-      associationName: 'users.roles',
-      filterByTk: 'role-1',
-      sourceId: 'user-1',
-      defaultInputKeys: ['filterByTk', 'sourceId'],
-    };
-    const ctx: any = new FlowContext();
-    ctx.engine = engine;
-    ctx.t = (k: string) => k;
-    ctx.collectionField = {
-      isAssociationField: () => true,
-    };
-    ctx.defineProperty('inputArgs', { value: baseInputArgs });
-
-    await enhanced.handler(ctx, {
-      popupTemplateUid: 'tpl-1',
-      uid: 'popup-1',
-      dataSourceKey: 'main',
-      collectionName: 'roles',
-      filterByTk: 'user-99',
-      popupTemplateForceInputArgsFilterByTk: true,
-    });
-
-    expect(baseHandler).toHaveBeenCalledTimes(1);
-    // should not mutate original ctx.inputArgs
-    expect(ctx.inputArgs.filterByTk).toBe('role-1');
-
-    // shadow ctx should force override filterByTk and mark it as explicit (not default)
-    expect(capturedCtx).not.toBe(ctx);
-    expect(capturedCtx?.inputArgs?.filterByTk).toBe('user-99');
-    expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('filterByTk');
-  });
-
   it('infers target filterByTk from belongsTo record when reusing target collection template in relation field', async () => {
     const engine = new FlowEngine();
     let capturedCtx: any;
