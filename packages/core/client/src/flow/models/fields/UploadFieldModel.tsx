@@ -30,36 +30,7 @@ import React, { useState, useEffect } from 'react';
 import { FieldContext } from '@formily/react';
 import { FieldModel } from '../base';
 import { RecordPickerContent } from './AssociationFieldModel/RecordPickerFieldModel';
-import { matchMimetype } from '../../../schema-component/antd/upload/shared';
-
-const extname = (url = '') => {
-  const temp = url.split('/');
-  const filename = temp[temp.length - 1];
-  const filenameWithoutSuffix = filename.split(/#|\?/)[0];
-  return (/\.[^./\\]*$/.exec(filenameWithoutSuffix) || [''])[0];
-};
-
-const isImageFileType = (type: string): boolean => type.indexOf('image/') === 0;
-
-const isImageUrl = (file): boolean => {
-  if (file.type && !file.thumbUrl) {
-    return isImageFileType(file.type);
-  }
-  const url = file.thumbUrl || file.url || '';
-  const extension = extname(url);
-  if (/^data:image\//.test(url) || /(webp|svg|png|gif|jpg|jpeg|jfif|bmp|dpg|ico|heic|heif)$/i.test(extension)) {
-    return true;
-  }
-  if (/^data:/.test(url)) {
-    // other file types of base64
-    return false;
-  }
-  if (extension) {
-    // other file types which have extension
-    return false;
-  }
-  return true;
-};
+import { matchMimetype, getThumbnailPlaceholderURL } from '../../../schema-component/antd/upload/shared';
 
 export const CardUpload = (props) => {
   const {
@@ -129,20 +100,15 @@ export const CardUpload = (props) => {
       });
   };
 
-  const normalizedFileList = (data: Array<any>) => {
+  const normalizedFileList = (data) => {
     return data.map((file) => {
-      const rawUrl = file.url || file.preview || '';
-      const cleanUrl = rawUrl.split('?')[0].split('#')[0];
-      const nameFromUrl = cleanUrl ? cleanUrl.substring(cleanUrl.lastIndexOf('/') + 1) : file.name || file.filename;
-      if (file.thumbUrl) {
-        return file;
-      }
       return {
         ...file,
-        thumbUrl: isImageUrl(file) ? file.url : nameFromUrl, // 保留原逻辑：url 也是纯文件名
+        thumbUrl: matchMimetype(file, 'image/*') ? file.preview || file.url : getThumbnailPlaceholderURL(file),
       };
     });
   };
+
   return (
     <FieldContext.Provider
       value={
@@ -464,6 +430,7 @@ UploadFieldModel.registerFlow({
           // 上传前检查存储策略
           const { data: checkData } = await ctx.api.resource('storages').check({
             fileCollectionName: fileCollection,
+            storageName: collectionField.options.storage,
           });
 
           if (!checkData?.data?.isSupportToUploadFiles) {
@@ -476,6 +443,27 @@ UploadFieldModel.registerFlow({
             return;
           }
 
+          const storageType = fileManagerPlugin.getStorageType(checkData?.data?.storage?.type) || {};
+
+          const storage = checkData?.data?.storage;
+          if (storageType.createUploadCustomRequest) {
+            const customRequest = storageType.createUploadCustomRequest({
+              ...ctx.model.props,
+              api: ctx.api,
+              action: `${fileCollection}:create`,
+              storage,
+            });
+
+            if (typeof customRequest === 'function') {
+              await customRequest({
+                file,
+                onProgress,
+                onSuccess,
+                onError,
+              });
+              return;
+            }
+          }
           // 开始上传
           const { data, errorMessage } = await fileManagerPlugin.uploadFile({
             file,
