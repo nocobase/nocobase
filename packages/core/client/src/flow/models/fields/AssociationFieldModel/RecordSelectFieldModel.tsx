@@ -16,6 +16,7 @@ import {
   FlowModelRenderer,
   useFlowContext,
   FlowModel,
+  useFlowModel,
 } from '@nocobase/flow-engine';
 import { Select, Space, Button, Divider, Tooltip, Tag } from 'antd';
 import { css } from '@emotion/css';
@@ -84,7 +85,7 @@ export function CreateContent({ model, toOne = false }) {
   );
 }
 
-export function LazySelect(props: Readonly<LazySelectProps>) {
+const LazySelect = (props: Readonly<LazySelectProps>) => {
   const {
     fieldNames = { label: 'label', value: 'value' },
     value,
@@ -93,11 +94,16 @@ export function LazySelect(props: Readonly<LazySelectProps>) {
     options,
     quickCreate,
     onChange,
+    allowCreate = true,
     ...others
   } = props;
+  const model: any = useFlowModel();
   const isMultiple = Boolean(multiple && allowMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
   const { t } = useTranslation();
+
+  // console.log(aclCreate);
+
   const QuickAddContent = ({ searchText }) => {
     return (
       <div
@@ -194,7 +200,7 @@ export function LazySelect(props: Readonly<LazySelectProps>) {
           const isFullMatch = realOptions.some((v) => v[fieldNames.label] === others.searchText);
           return (
             <>
-              {quickCreate === 'quickAdd' && others.searchText ? (
+              {quickCreate === 'quickAdd' && allowCreate && others.searchText ? (
                 <>
                   {!(realOptions.length === 0 && others.searchText) && menu}
                   {realOptions.length > 0 && others.searchText && !isFullMatch && <Divider style={{ margin: 0 }} />}
@@ -207,10 +213,14 @@ export function LazySelect(props: Readonly<LazySelectProps>) {
           );
         }}
       />
-      {quickCreate === 'modalAdd' && <Button onClick={others.onModalAddClick}>{t('Add new')}</Button>}
+      {quickCreate === 'modalAdd' && (
+        <Button disabled={!allowCreate} onClick={others.onModalAddClick}>
+          {t('Add new')}
+        </Button>
+      )}
     </Space.Compact>
   );
-}
+};
 
 export class RecordSelectFieldModel extends AssociationFieldModel {
   declare resource: MultiRecordResource;
@@ -465,7 +475,7 @@ RecordSelectFieldModel.registerFlow({
   sort: 200,
   steps: {
     init: {
-      handler(ctx) {
+      async handler(ctx) {
         const resource = ctx.createResource(MultiRecordResource);
         const collectionField = ctx.model.context.collectionField;
         const { target, dataSourceKey, foreignKey } = collectionField;
@@ -492,6 +502,15 @@ RecordSelectFieldModel.registerFlow({
           resource.addFilterGroup(foreignKey, { $or: orFilters });
         }
         ctx.model.resource = resource;
+
+        const aclCreate = await ctx.aclCheck({
+          dataSourceKey: ctx.collectionField.dataSourceKey,
+          resourceName: ctx.collectionField?.target,
+          actionName: 'create',
+        });
+        ctx.model.setProps({
+          allowCreate: !!aclCreate,
+        });
       },
     },
   },

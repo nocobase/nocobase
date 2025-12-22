@@ -37,6 +37,7 @@ export interface LazySelectProps extends Omit<SelectProps<any>, 'mode' | 'option
   onModalAddClick?: (e: any) => void;
   onDropdownAddClick?: (e: any) => void;
   searchText?: string;
+  allowCreate?: boolean;
 }
 
 export interface LabelByFieldProps {
