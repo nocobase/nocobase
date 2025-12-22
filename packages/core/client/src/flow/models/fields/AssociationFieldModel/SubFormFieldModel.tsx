@@ -35,6 +35,9 @@ class FormAssociationFieldModel extends AssociationFieldModel {
         return (this.parent as FormItemModel).fieldPath;
       },
     });
+    this.context.defineProperty('actionName', {
+      get: () => 'view',
+    });
   }
 }
 export const ObjectNester = (props) => {
@@ -148,6 +151,7 @@ const ArrayNester = ({
   allowSelectExistingRecord,
   onSelectExitRecordClick,
   allowDisassociation,
+  allowCreate,
 }: any) => {
   const model: any = useFlowModel();
   const gridModel = model.subModels.grid;
@@ -246,7 +250,11 @@ const ArrayNester = ({
             })}
             <Space>
               {allowAddNew && (
-                <Button type="link" onClick={() => add({ isNew: true })} disabled={disabled}>
+                <Button
+                  type="link"
+                  onClick={() => allowCreate && add({ isNew: true })}
+                  disabled={disabled || !allowCreate}
+                >
                   <PlusOutlined />
                   {t('Add new')}
                 </Button>
