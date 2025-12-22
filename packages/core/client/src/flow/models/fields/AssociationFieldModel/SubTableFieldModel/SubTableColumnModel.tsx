@@ -10,6 +10,7 @@
 import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
 import { observer } from '@formily/react';
+import { capitalize } from 'lodash';
 import {
   DisplayItemModel,
   DragHandler,
@@ -29,6 +30,34 @@ import React, { useRef, useMemo } from 'react';
 import { SubTableFieldModel } from '.';
 import { FieldModel } from '../../../base';
 import { EditFormModel } from '../../../blocks/form/EditFormModel';
+
+function FieldWithoutPermissionPlaceholder({ targetModel }) {
+  const t = targetModel.context.t;
+  const fieldModel = targetModel;
+  const collection = fieldModel.collectionField.collection;
+  const dataSource = collection.dataSource;
+  const name = fieldModel.collectionField.name;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}${name}`;
+  }, []);
+  const { actionName } = fieldModel.forbidden || {};
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
+      {
+        name: nameValue,
+        actionName: t(capitalize(actionName)),
+      },
+    ).replaceAll('&gt;', '>');
+  }, [nameValue, t]);
+  return (
+    <Tooltip title={messageValue}>
+      <LockOutlined style={{ opacity: '0.3' }} />
+    </Tooltip>
+  );
+}
 
 const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
   const flowEngine = useFlowEngine();
@@ -127,15 +156,7 @@ export class SubTableColumnModel<
   static renderMode = ModelRenderMode.RenderFunction;
 
   renderHiddenInConfig() {
-    return (
-      <Tooltip
-        title={this.context.t(
-          'This field has been hidden and you cannot view it (this content is only visible when the UI Editor is activated).',
-        )}
-      >
-        <LockOutlined style={{ opacity: '0.45' }} />
-      </Tooltip>
-    );
+    return <FieldWithoutPermissionPlaceholder targetModel={this} />;
   }
 
   static defineChildren(ctx: FlowModelContext) {
@@ -192,6 +213,9 @@ export class SubTableColumnModel<
         return this.context.collectionField.collection.name;
       },
       cache: false,
+    });
+    this.context.defineProperty('actionName', {
+      get: () => 'view',
     });
     this.emitter.on('onSubModelAdded', (subModel: FieldModel) => {
       if (this.collectionField) {
@@ -269,6 +293,7 @@ export class SubTableColumnModel<
   render(): any {
     return (props) => {
       const { value, id, rowIdx } = props;
+
       return (
         <div
           style={{
@@ -288,6 +313,7 @@ export class SubTableColumnModel<
             const namePath = action.context.fieldPath.split('.').pop();
 
             const fork: any = action.createFork({}, `${id}`);
+
             if (this.props.readPretty) {
               fork.setProps({
                 value: value,
