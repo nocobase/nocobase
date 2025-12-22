@@ -101,9 +101,6 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
   const isMultiple = Boolean(multiple && allowMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
   const { t } = useTranslation();
-
-  // console.log(aclCreate);
-
   const QuickAddContent = ({ searchText }) => {
     return (
       <div
@@ -235,6 +232,7 @@ export class RecordSelectFieldModel extends AssociationFieldModel {
     this.context.defineProperty('collection', {
       get: () => this.context.collectionField?.targetCollection,
     });
+    this.setDataSource([]);
   }
 
   set onPopupScroll(fn) {
