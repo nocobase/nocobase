@@ -33,11 +33,6 @@ export const aclCheck = defineAction({
       recordPkValue: getRecordPkValue(ctx?.record && ctx.collection?.getFilterByTK?.(ctx?.record)),
     });
 
-    if (ctx.fieldPath && !ctx.collectionField) {
-      ctx.model.fieldDeleted = true;
-      ctx.model.hidden = true;
-      ctx.exitAll();
-    }
     if (!ctx.actionName) {
       return;
     }
