@@ -10,7 +10,7 @@
 import { escapeT } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { saveAs } from 'file-saver';
-import { ActionModel, Cascader, ActionSceneEnum } from '@nocobase/client';
+import { ActionModel, Cascader, ActionSceneEnum, beforeAction, afterAction } from '@nocobase/client';
 import { css } from '@emotion/css';
 import { getOptionFields } from './getOptionFields';
 import { NAMESPACE } from '../locale';
@@ -198,3 +198,6 @@ ExportActionModel.registerFlow({
     },
   },
 });
+
+ExportActionModel.registerEvent(beforeAction);
+ExportActionModel.registerEvent(afterAction);
