@@ -335,21 +335,14 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     return allBindings;
   }
 
-  constructor(options) {
-    super(options);
-    this.wrapRender();
+  renderItem() {
+    return;
   }
-
-  private wrapRender() {
-    const originalRender = this.render;
-
-    this.render = (...args: any[]) => {
-      if (!this.collectionField) {
-        return <FieldDeletePlaceholder />;
-      }
-      // 调用子类原本 render
-      return originalRender.apply(this, args);
-    };
+  render() {
+    if (!this.collectionField) {
+      return <FieldDeletePlaceholder />;
+    }
+    return this.renderItem();
   }
 }
 
