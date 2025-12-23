@@ -129,14 +129,25 @@ export const getCollectionNames: ToolOptions = {
   description: '{{t("Retrieve names and titles map of all collections")}}',
   schema: {
     type: 'object',
-    properties: {},
+    properties: {
+      dataSource: {
+        type: 'string',
+        description: 'The data source name to retrieve collections from. Defaults to "main".',
+      },
+    },
     additionalProperties: false,
   },
-  invoke: async (ctx: Context) => {
+  invoke: async (ctx: Context, args: { dataSource?: string }) => {
+    const { dataSource = 'main' } = args || {};
     let names: { name: string; title: string }[] = [];
     try {
-      const collections = await ctx.db.getRepository('collections').find();
-      names = collections.map((collection: { name: string; title: string }) => ({
+      const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
+      if (!ds) {
+        throw new Error(`Data source "${dataSource}" not found`);
+      }
+
+      const collections = ds.collectionManager.getCollections();
+      names = collections.map((collection) => ({
         name: collection.name,
         title: collection.title,
       }));
@@ -152,7 +163,6 @@ export const getCollectionNames: ToolOptions = {
         content: `Failed to retrieve collection names: ${err.message}`,
       };
     }
-
     return {
       status: 'success',
       content: JSON.stringify(names),
@@ -167,6 +177,10 @@ export const getCollectionMetadata: ToolOptions = {
   schema: {
     type: 'object',
     properties: {
+      dataSource: {
+        type: 'string',
+        description: 'The data source name. Defaults to "main".',
+      },
       collectionNames: {
         type: 'array',
         items: {
@@ -181,39 +195,92 @@ export const getCollectionMetadata: ToolOptions = {
   invoke: async (
     ctx: Context,
     args: {
+      dataSource?: string;
       collectionNames: string[];
     },
   ) => {
-    const { collectionNames } = args || {};
+    const { collectionNames, dataSource = 'main' } = args || {};
     if (!collectionNames || !Array.isArray(collectionNames) || collectionNames.length === 0) {
       return {
         status: 'error',
         content: 'No collection names provided or invalid format.',
       };
     }
-    const collections = await ctx.db.getRepository('collections').find({
-      filter: { name: collectionNames },
-      appends: ['fields'],
-    });
-    const metadata = collections.map((collection: any) => {
-      const fields = collection.fields.map((field: any) => {
+
+    try {
+      const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
+      if (!ds) {
         return {
-          name: field.name,
-          type: field.type,
-          interface: field.interface,
-          options: field.options || {},
+          status: 'error',
+          content: `Data source "${dataSource}" not found`,
         };
-      });
+      }
+
+      const metadata = [];
+      for (const name of collectionNames) {
+        const collection = ds.collectionManager.getCollection(name);
+        if (!collection) continue;
+
+        const fields = collection.getFields().map((field) => {
+          return {
+            name: field.name,
+            type: field.type,
+            interface: field.options.interface,
+            options: field.options || {},
+          };
+        });
+        metadata.push({
+          name: collection.name,
+          title: collection.title,
+          fields,
+        });
+      }
       return {
-        name: collection.name,
-        title: collection.title,
-        fields,
+        status: 'success',
+        content: JSON.stringify(metadata),
       };
-    });
-    return {
-      status: 'success',
-      content: JSON.stringify(metadata),
-    };
+    } catch (err) {
+      return {
+        status: 'error',
+        content: `Failed to retrieve metadata: ${err.message}`,
+      };
+    }
+  },
+};
+
+export const getDataSources: ToolOptions = {
+  name: 'getDataSources',
+  title: '{{t("Get data sources")}}',
+  description: '{{t("Retrieve list of all available data sources")}}',
+  schema: {
+    type: 'object',
+    properties: {},
+    additionalProperties: false,
+  },
+  invoke: async (ctx: Context) => {
+    try {
+      const records = await ctx.db.getRepository('dataSources').find();
+      const displayNameMap = new Map(records.map((r) => [r.get('key'), r.get('displayName')]));
+      const dataSources = [];
+      // Add data sources
+      for (const [key, ds] of ctx.app.dataSourceManager.dataSources) {
+        dataSources.push({
+          key: key,
+          displayName: displayNameMap.get(key) || key,
+          type: ds.collectionManager?.db?.sequelize?.getDialect() || 'unknown',
+        });
+      }
+
+      return {
+        status: 'success',
+        content: JSON.stringify(dataSources),
+      };
+    } catch (err) {
+      return {
+        status: 'error',
+        content: `Failed to retrieve data sources: ${err.message}`,
+      };
+    }
   },
 };
 
