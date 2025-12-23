@@ -94,6 +94,90 @@ describe('ReferenceFormGridModel', () => {
     expect(serialized.subModels).toBeUndefined();
   });
 
+  it('bridges host context (record) to referenced grid while keeping scoped engine', async () => {
+    const engine = new FlowEngine();
+    const store: Record<string, any> = {
+      'tpl-root': {
+        uid: 'tpl-root',
+        use: 'DetailsBlockModel',
+        subModels: {
+          grid: {
+            uid: 'tpl-grid',
+            use: 'DetailsGridModel',
+            subKey: 'grid',
+            subType: 'object',
+            subModels: {
+              items: [{ uid: 'tpl-i1', use: 'ItemModel', subKey: 'items', subType: 'array' }],
+            },
+          },
+        },
+      },
+    };
+
+    const clone = (obj: any) => JSON.parse(JSON.stringify(obj));
+    const mockRepository = {
+      findOne: vi.fn(async (query) => {
+        const data = store[query.uid];
+        return data ? clone(data) : null;
+      }),
+      save: vi.fn(async (model) => ({ uid: typeof model?.uid === 'string' ? model.uid : (model?.uid as any) })),
+      destroy: vi.fn(async () => true),
+      move: vi.fn(async () => {}),
+      duplicate: vi.fn(async () => null),
+    };
+
+    class HostDetailsBlockModel extends FlowModel {}
+    class DetailsBlockModel extends FlowModel {}
+    class DetailsGridModel extends FlowModel {}
+    class ItemModel extends FlowModel {}
+
+    engine.setModelRepository(mockRepository as any);
+    engine.registerModels({
+      HostDetailsBlockModel,
+      DetailsBlockModel,
+      DetailsGridModel,
+      ItemModel,
+      ReferenceFormGridModel,
+    });
+
+    const host = engine.createModel<HostDetailsBlockModel>({
+      uid: 'host-details',
+      use: 'HostDetailsBlockModel',
+    });
+    host.context.defineProperty('record', { value: { username: 'nocobase' } });
+
+    const refGrid = engine.createModel({
+      uid: 'host-grid',
+      use: 'ReferenceFormGridModel',
+      parentId: host.uid,
+      subKey: 'grid',
+      subType: 'object',
+      stepParams: {
+        referenceSettings: {
+          useTemplate: {
+            templateUid: 'tpl-1',
+            targetUid: 'tpl-root',
+            targetPath: 'subModels.grid',
+            mode: 'reference',
+          },
+        },
+      },
+    });
+    host.setSubModel('grid', refGrid);
+
+    await refGrid.dispatchEvent('beforeRender', undefined, { useCache: false });
+
+    const items = ((refGrid as any).subModels as any)?.items as FlowModel[];
+    expect(Array.isArray(items)).toBe(true);
+    expect(items.length).toBe(1);
+    expect(items[0].context.record).toEqual({ username: 'nocobase' });
+
+    // 引用渲染应仍使用 scoped engine（避免丢失模型实例/缓存隔离）
+    const scoped = (refGrid as any)._scopedEngine;
+    expect(scoped).toBeTruthy();
+    expect(items[0].context.engine).toBe(scoped);
+  });
+
   it('syncs host extraTitle with reference template info', async () => {
     MockFormBlockModel.define({
       label: '默认block title',

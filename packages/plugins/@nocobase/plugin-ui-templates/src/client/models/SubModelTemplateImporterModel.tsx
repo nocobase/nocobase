@@ -8,20 +8,22 @@
  */
 
 import React from 'react';
-import _ from 'lodash';
 import { Button, Space } from 'antd';
+import { BlockModel, CommonItemModel, FilterFormBlockModel, FormBlockModel } from '@nocobase/client';
 import {
   FlowModel,
   FlowContext,
+  type FlowModelContext,
   createBlockScopedEngine,
   FlowExitException,
   isInheritedFrom,
   type ModelConstructor,
+  type CreateModelOptions,
   tExpr,
 } from '@nocobase/flow-engine';
 import { NAMESPACE, tStr } from '../locale';
 import { renderTemplateSelectLabel, renderTemplateSelectOption } from '../components/TemplateSelectOption';
-import { findRefHostInfoFromAncestors } from '../utils/refHost';
+import { findSelfOrAncestor, findRefHostInfoFromAncestors } from '../utils/refHost';
 import {
   TEMPLATE_LIST_PAGE_SIZE,
   calcHasMore,
@@ -32,30 +34,113 @@ import {
 import { bindInfiniteScrollToFormilySelect, defaultSelectOptionComparator } from '../utils/infiniteSelect';
 
 type ImporterProps = {
-  /** 默认从模板根取片段的路径 */
-  defaultSourcePath?: string;
-  /** 模板根 use 过滤（可选），支持多个候选 */
   expectedRootUse?: string | string[];
-  /** 期望的数据源 key（可选，用于禁用不匹配的模板） */
   expectedDataSourceKey?: string;
-  /** 期望的 collectionName（可选，用于禁用不匹配的模板） */
   expectedCollectionName?: string;
-  /** 默认挂载到当前模型的 subModels 键（可选），否则使用 importer.subKey */
-  defaultMountSubKey?: string;
-  /**
-   * 引入片段时挂载到第几层父级：
-   * - 0：挂载到 importer.parent（默认）
-   * - 1：挂载到 importer.parent.parent
-   * - 2：以此类推
-   */
-  mountToParentLevel?: number;
 };
 
 const FLOW_KEY = 'subModelTemplateImportSettings';
 const GRID_REF_FLOW_KEY = 'referenceSettings';
 const GRID_REF_STEP_KEY = 'useTemplate';
 
-export class SubModelTemplateImporterModel extends FlowModel {
+/** 最大递归深度，防止循环引用或过深嵌套 */
+const MAX_NORMALIZE_DEPTH = 20;
+
+type NormalizeSubModelTemplateImportNode = (
+  node: Record<string, unknown>,
+  ctx: { mountTarget: FlowModel; engine: FlowModel['flowEngine'] },
+) => Record<string, unknown> | undefined;
+
+interface ModelWithGetModelClassName {
+  getModelClassName?: (name: string) => string | undefined;
+}
+
+function resolveMappedFormItemUse(mountTarget: FlowModel): string | undefined {
+  const sources: Array<ModelWithGetModelClassName | undefined> = [
+    mountTarget as FlowModel & ModelWithGetModelClassName,
+    mountTarget.context as ModelWithGetModelClassName | undefined,
+  ];
+  for (const source of sources) {
+    if (typeof source?.getModelClassName === 'function') {
+      const mapped = source.getModelClassName('FormItemModel');
+      if (mapped) return mapped;
+    }
+  }
+  return undefined;
+}
+
+interface NormalizeOptions {
+  normalizeMappedItem?: NormalizeSubModelTemplateImportNode;
+  mountTarget?: FlowModel;
+}
+
+function normalizeGridModelOptionsForMappedFormItemUse(
+  input: unknown,
+  mappedFormItemUse: string,
+  options?: NormalizeOptions,
+  depth = 0,
+) {
+  if (depth > MAX_NORMALIZE_DEPTH) {
+    return;
+  }
+
+  if (Array.isArray(input)) {
+    return input.map((n) => normalizeGridModelOptionsForMappedFormItemUse(n, mappedFormItemUse, options, depth + 1));
+  }
+  if (!input || typeof input !== 'object') {
+    return input;
+  }
+
+  const source = input as Record<string, unknown>;
+  const next: Record<string, unknown> = { ...source };
+
+  if (next.use === 'FormItemModel') {
+    next.use = mappedFormItemUse;
+  }
+
+  if (next.subModels) {
+    const subModels = next.subModels;
+    next.subModels = Object.fromEntries(
+      Object.entries(subModels).map(([k, v]) => [
+        k,
+        normalizeGridModelOptionsForMappedFormItemUse(v, mappedFormItemUse, options, depth + 1),
+      ]),
+    );
+  }
+
+  const { mountTarget, normalizeMappedItem } = options || {};
+  if (mountTarget && typeof normalizeMappedItem === 'function' && next.use === mappedFormItemUse) {
+    const normalized = normalizeMappedItem(next, { mountTarget, engine: mountTarget.flowEngine });
+    if (normalized && typeof normalized === 'object') {
+      return normalized;
+    }
+  }
+
+  return next;
+}
+
+function findBlockModel(model: FlowModel): BlockModel | undefined {
+  if (!model) return;
+  if (model instanceof BlockModel) {
+    return model;
+  }
+  return findBlockModel(model.parent);
+}
+
+function isModelInsideReferenceBlock(model: FlowModel | undefined): boolean {
+  if (!model) return false;
+  return model.parent?.use === 'ReferenceBlockModel';
+}
+
+function resolveExpectedRootUse(blockModel: FlowModel | undefined): string | string[] {
+  // Create/Edit：允许互通
+  if (blockModel?.use === 'CreateFormModel' || blockModel?.use === 'EditFormModel') {
+    return ['CreateFormModel', 'EditFormModel'];
+  }
+  return blockModel?.use || '';
+}
+
+export class SubModelTemplateImporterModel extends CommonItemModel {
   declare props: ImporterProps;
 
   public resolveExpectedResourceInfo(
@@ -77,82 +162,75 @@ export class SubModelTemplateImporterModel extends FlowModel {
   }
 
   async afterAddAsSubModel() {
-    // 作为临时“动作模型”，添加后执行导入逻辑并自清理
+    // 作为临时"动作模型"，添加后执行导入逻辑并自清理
     const parentGrid = this.parent as FlowModel | undefined;
-
-    const mountLevel = this.props?.mountToParentLevel ?? 0;
-    let mountTarget: FlowModel | undefined = parentGrid;
-    for (let i = 0; i < mountLevel; i++) {
-      mountTarget = mountTarget?.parent as FlowModel | undefined;
-    }
-    // mountTarget 兜底：如果按层级拿不到 grid，则继续向上查找
-    let probe: FlowModel | undefined = mountTarget;
-    let hops = 0;
-    while (probe && hops < 5) {
-      if ((probe.subModels as any)?.grid) {
-        mountTarget = probe;
-        break;
-      }
-      probe = probe.parent as FlowModel | undefined;
-      hops++;
-    }
+    const mountTarget = parentGrid?.parent;
 
     // 先自清理：避免被保存为真实字段
     this.remove();
 
     // 注意：GridModel 会在 onSubModelRemoved 中触发 saveStepParams（异步且不 await），
     // 若我们紧接着替换/保存 grid，会与该 save 竞争导致最终落库被覆盖。
-    // 这里显式等待一次同 uid 的保存完成，确保后续 replaceModel/save 不被“旧 grid saveStepParams”覆盖。
-    if (parentGrid?.uid) {
-      await parentGrid.saveStepParams();
-    }
-
-    if (!mountTarget) return;
-
+    // 这里显式等待一次同 uid 的保存完成，确保后续 replaceModel/save 不被"旧 grid saveStepParams"覆盖。
+    await parentGrid.saveStepParams();
     const step = (this.getStepParams(FLOW_KEY, 'selectTemplate') || {}) as Record<string, any>;
     const templateUid = String(step.templateUid || '').trim();
     const targetUid = String(step.targetUid || '').trim();
     const templateName = String(step.templateName || '').trim() || undefined;
     const templateDescription = String(step.templateDescription || '').trim() || undefined;
     const mode = String(step.mode || 'reference');
-    const targetPath = String(step.targetPath || 'subModels.grid').trim() || 'subModels.grid';
-    const mountSubKey = String(step.mountSubKey || 'grid').trim() || 'grid';
 
-    // 仅支持表单 fields（grid）引用
-    if (mountSubKey !== 'grid') {
-      throw new Error(`[block-reference] Only 'grid' mountSubKey is supported (got '${mountSubKey}').`);
-    }
-    if (targetPath !== 'subModels.grid') {
-      throw new Error(`[block-reference] Only 'subModels.grid' targetPath is supported (got '${targetPath}').`);
-    }
-    if (!templateUid) return;
-    if (!targetUid) {
-      throw new Error(
-        `[block-reference] Missing targetUid for template import (templateUid='${templateUid}'). This is required for reference mode.`,
-      );
-    }
-
-    const existingGrid = (mountTarget.subModels as any)?.grid as FlowModel | undefined;
-    if (!existingGrid) {
-      throw new Error(`[block-reference] Cannot mount to '${mountSubKey}': mountTarget has no grid subModel.`);
-    }
+    const existingGrid = mountTarget.subModels?.grid as FlowModel;
 
     if (mode === 'copy') {
       const scoped = createBlockScopedEngine(mountTarget.flowEngine);
       const root = await scoped.loadModel<FlowModel>({ uid: targetUid });
-      const fragment = _.get(root as any, targetPath);
-      const gridModel =
-        fragment instanceof FlowModel ? fragment : _.castArray(fragment).find((m) => m instanceof FlowModel);
+      if (!root) {
+        throw new Error(`[block-reference] Template target root not found: '${targetUid}'.`);
+      }
+
+      const fragment = root.subModels?.grid;
+      let gridModel: FlowModel | undefined;
+      if (fragment instanceof FlowModel) {
+        gridModel = fragment;
+      } else if (Array.isArray(fragment)) {
+        gridModel = fragment.find((m) => m instanceof FlowModel);
+      }
       if (!gridModel) {
-        throw new Error(`[block-reference] Template fragment is invalid: ${targetPath}`);
+        throw new Error('[block-reference] Template fragment is invalid: subModels.grid');
       }
 
       const duplicated = await mountTarget.flowEngine.duplicateModel(gridModel.uid);
+      const duplicatedUid = duplicated.uid;
+
+      // 自定义表单区块可能会对 FormItemModel 做映射：这里按 block 提供的映射将模板字段入口改为目标入口
+      const rawMappedUse = resolveMappedFormItemUse(mountTarget);
+      const mappedUse =
+        rawMappedUse && rawMappedUse !== 'FormItemModel' && mountTarget.flowEngine.getModelClass(rawMappedUse)
+          ? rawMappedUse
+          : undefined;
+
+      type ModelClassWithNormalize = { normalizeSubModelTemplateImportNode?: NormalizeSubModelTemplateImportNode };
+      const mappedClass = mappedUse
+        ? (mountTarget.flowEngine.getModelClass(mappedUse) as ModelClassWithNormalize | undefined)
+        : undefined;
+      const normalizeFn =
+        mappedClass && typeof mappedClass.normalizeSubModelTemplateImportNode === 'function'
+          ? mappedClass.normalizeSubModelTemplateImportNode
+          : undefined;
+
+      const normalized = mappedUse
+        ? normalizeGridModelOptionsForMappedFormItemUse(duplicated, mappedUse, {
+            mountTarget,
+            normalizeMappedItem: normalizeFn,
+          })
+        : duplicated;
+
       // 将复制出的 grid（默认脱离父级）移动到当前表单 grid 位置，避免再走 replaceModel/save 重建整棵树
-      await mountTarget.flowEngine.modelRepository.move(duplicated.uid, existingGrid.uid, 'after');
+      await mountTarget.flowEngine.modelRepository.move(duplicatedUid, existingGrid.uid, 'after');
 
       const newGrid = mountTarget.flowEngine.createModel<FlowModel>({
-        ...(duplicated as any),
+        ...normalized,
         parentId: mountTarget.uid,
         subKey: 'grid',
         subType: 'object',
@@ -165,8 +243,8 @@ export class SubModelTemplateImporterModel extends FlowModel {
       return;
     }
 
-    const nextSettings = { templateUid, templateName, templateDescription, targetUid, targetPath, mode };
-    const isReferenceGrid = existingGrid.use === 'ReferenceFormGridModel';
+    const nextSettings = { templateUid, templateName, templateDescription, targetUid, mode };
+    const isReferenceGrid = typeof existingGrid.use === 'string' && existingGrid.use === 'ReferenceFormGridModel';
     if (isReferenceGrid) {
       existingGrid.setStepParams(GRID_REF_FLOW_KEY, GRID_REF_STEP_KEY, nextSettings);
       await existingGrid.saveStepParams();
@@ -318,7 +396,49 @@ export class SubModelTemplateImporterModel extends FlowModel {
 }
 
 SubModelTemplateImporterModel.define({
-  hide: true,
+  label: tStr('Field template'),
+  sort: -999,
+  hide: (ctx: FlowModelContext) => {
+    // FilterForm 里暂不支持字段模板入口（避免误创建临时模型）
+    const blockModel = findBlockModel(ctx.model);
+    if (blockModel instanceof FilterFormBlockModel) {
+      return true;
+    }
+
+    // 1) 若处于"字段模板引用"内部（当前正在渲染模板 grid），直接隐藏，避免误清空模板侧字段
+    const hostInfo = findRefHostInfoFromAncestors(ctx.model);
+    const hostRef = hostInfo?.ref;
+    if (hostRef && hostRef.mountSubKey === 'grid' && hostRef.mode !== 'copy') {
+      return true;
+    }
+
+    // 2) 若当前区块是 ReferenceBlockModel 渲染的 target，隐藏 "From template"
+    // 因为在 ReferenceBlockModel 内部编辑字段会直接影响被引用的模板
+    if (isModelInsideReferenceBlock(blockModel)) {
+      return true;
+    }
+
+    return blockModel.subModels?.grid?.use === 'ReferenceFormGridModel';
+  },
+  createModelOptions: (ctx: FlowModelContext) => {
+    const blockModel = findBlockModel(ctx.model);
+    const expectedRootUse = resolveExpectedRootUse(blockModel);
+
+    const resourceInit = blockModel?.getStepParams?.('resourceSettings', 'init') || {};
+    const expectedDataSourceKey =
+      typeof resourceInit?.dataSourceKey === 'string' ? resourceInit.dataSourceKey : undefined;
+    const expectedCollectionName =
+      typeof resourceInit?.collectionName === 'string' ? resourceInit.collectionName : undefined;
+
+    return {
+      use: 'SubModelTemplateImporterModel',
+      props: {
+        expectedRootUse,
+        expectedDataSourceKey,
+        expectedCollectionName,
+      },
+    };
+  },
 });
 
 SubModelTemplateImporterModel.registerFlow({
@@ -336,6 +456,15 @@ SubModelTemplateImporterModel.registerFlow({
         const templateUid = (step?.templateUid || '').trim();
         const isNew = !!m.isNew;
         const disableSelect = !isNew && !!templateUid;
+
+        // 固定挂载到 parent.parent（即 grid 的父级 block）
+        const mountTarget = m.parent?.parent;
+
+        // 若当前区块对 FormItemModel 做了映射（自定义入口），默认更安全的 copy 模式
+        const rawMappedUse = mountTarget ? resolveMappedFormItemUse(mountTarget) : undefined;
+        const hasMappedUse =
+          rawMappedUse && rawMappedUse !== 'FormItemModel' && !!mountTarget?.flowEngine?.getModelClass?.(rawMappedUse);
+
         const fetchOptions = (keyword?: string, pagination?: { page?: number; pageSize?: number }) =>
           m.fetchTemplateOptions(ctx as FlowContext, keyword, pagination);
         return {
@@ -378,7 +507,8 @@ SubModelTemplateImporterModel.registerFlow({
               { label: tStr('Reference'), value: 'reference' },
               { label: tStr('Duplicate'), value: 'copy' },
             ],
-            default: step?.mode || 'reference',
+            // 若当前区块对 FormItemModel 做了映射（自定义入口），默认更安全的 copy 模式
+            default: step?.mode || (hasMappedUse ? 'copy' : 'reference'),
           },
           modeDescriptionReference: {
             type: 'void',
@@ -417,16 +547,23 @@ SubModelTemplateImporterModel.registerFlow({
       async beforeParamsSave(ctx, params) {
         const importer = ctx.model as SubModelTemplateImporterModel;
         const parent = importer.parent as FlowModel | undefined;
-        if (!parent) return;
-
-        const mountLevel = importer.props?.mountToParentLevel ?? 0;
-        let mountTarget: FlowModel | undefined = parent;
-        for (let i = 0; i < mountLevel; i++) {
-          mountTarget = mountTarget?.parent as FlowModel | undefined;
+        if (!parent) {
+          throw new Error('[block-reference] Cannot resolve mount target: importer has no parent.');
         }
+
+        // 固定挂载到 parent.parent（即 grid 的父级 block）
+        let mountTarget = parent.parent;
         const api = (ctx as FlowContext).api;
-        const templateUid = (params?.templateUid || '').trim();
-        if (!templateUid) return;
+        if (!mountTarget) {
+          throw new Error(
+            `[block-reference] Cannot resolve mount target from importer parent (uid='${parent.uid}', use='${parent.use}').`,
+          );
+        }
+
+        const templateUid = String(params?.templateUid || '').trim();
+        if (!templateUid) {
+          throw new Error('[block-reference] templateUid is required.');
+        }
 
         if (!api?.resource) {
           throw new Error('[block-reference] ctx.api.resource is required to fetch templates.');
@@ -440,19 +577,13 @@ SubModelTemplateImporterModel.registerFlow({
         }
         const templateName = (tpl?.name || params?.templateName || '').trim();
         const templateDescription = (tpl?.description || params?.templateDescription || '').trim();
-        const mode = params?.mode || 'reference';
-        const targetPath = (importer.props?.defaultSourcePath || 'subModels.grid').trim();
-        const mountSubKey = (importer.props?.defaultMountSubKey || importer.subKey || 'grid').trim();
+        const mode = String(params?.mode || 'reference');
 
-        // 当前仅支持表单 fields（grid）引用
-        if (mountSubKey !== 'grid') {
-          throw new Error(`[block-reference] Only 'grid' mountSubKey is supported (got '${mountSubKey}').`);
-        }
-        if (targetPath !== 'subModels.grid') {
-          throw new Error(`[block-reference] Only 'subModels.grid' targetPath is supported (got '${targetPath}').`);
+        if (mode !== 'reference' && mode !== 'copy') {
+          throw new Error(`[block-reference] Invalid template import mode: '${mode}'.`);
         }
 
-        // 若当前位于“引用片段”内部，则禁止再次 From template，避免误清空模板侧字段
+        // 若当前位于"引用片段"内部，则禁止再次 From template，避免误清空模板侧字段
         const hostInfo = findRefHostInfoFromAncestors(importer);
         const hostRef = hostInfo?.ref;
         if (hostRef && hostRef.mountSubKey === 'grid' && hostRef.mode !== 'copy') {
@@ -470,18 +601,8 @@ SubModelTemplateImporterModel.registerFlow({
         }
 
         // mountTarget 兜底：如果按层级拿不到目标 subModel，则继续向上查找
-        let probe: FlowModel | undefined = mountTarget;
-        let hops = 0;
-        while (probe && hops < 5) {
-          const hasMount = !!(probe.subModels as any)?.[mountSubKey];
-          if (hasMount) {
-            mountTarget = probe;
-            break;
-          }
-          probe = probe.parent as FlowModel | undefined;
-          hops++;
-        }
-        if (!mountTarget) return;
+        mountTarget =
+          findSelfOrAncestor(mountTarget, (m) => !!(m.subModels as Record<string, unknown>)?.grid) || mountTarget;
 
         // 禁止跨数据源/数据表使用字段模板（在 UI 侧禁用的同时，这里做一次硬校验，避免绕过）
         const expectedResource = importer.resolveExpectedResourceInfo(ctx as FlowContext, mountTarget);
@@ -490,14 +611,14 @@ SubModelTemplateImporterModel.registerFlow({
           throw new Error(disabledReason);
         }
 
-        // 引用模式下，如果目标挂载点已有字段（尤其是 grid），需先提示确认
-        if (mode !== 'copy' && mountSubKey === 'grid') {
-          const existingGrid = (mountTarget.subModels as any)?.grid as FlowModel | undefined;
-          if (!existingGrid) {
-            throw new Error(`[block-reference] Cannot mount to '${mountSubKey}': mountTarget has no grid subModel.`);
+        // 引用模式下，如果目标挂载点已有字段，需先提示确认
+        if (mode !== 'copy') {
+          const existingGrid = mountTarget.subModels?.grid;
+          if (!(existingGrid instanceof FlowModel)) {
+            throw new Error('[block-reference] Cannot mount: mountTarget has no grid subModel.');
           }
 
-          const isReferenceGrid = String((existingGrid as any)?.use || '') === 'ReferenceFormGridModel';
+          const isReferenceGrid = typeof existingGrid.use === 'string' && existingGrid.use === 'ReferenceFormGridModel';
 
           // 已经是引用 grid 且引用未变化：直接退出，避免重复确认
           if (isReferenceGrid) {
@@ -512,8 +633,6 @@ SubModelTemplateImporterModel.registerFlow({
                 targetUid,
                 templateName,
                 templateDescription,
-                targetPath,
-                mountSubKey,
                 mode,
               });
               return;
@@ -526,106 +645,106 @@ SubModelTemplateImporterModel.registerFlow({
               .map((name) => mountTarget.flowEngine.getModelClass(name))
               .filter(Boolean) as ModelConstructor[]
           ).filter(Boolean);
-          const shouldFallbackToAnyItem = fieldItemBaseClasses.length === 0;
+          // Details 区块的字段项类型与表单不同，采用"任意 items 都算已有字段"的策略进行确认提示
+          const isDetailsBlock = typeof mountTarget.use === 'string' && mountTarget.use === 'DetailsBlockModel';
+          const isDetailsGrid = typeof existingGrid.use === 'string' && existingGrid.use === 'DetailsGridModel';
+          const shouldFallbackToAnyItem = isDetailsBlock || isDetailsGrid || fieldItemBaseClasses.length === 0;
 
-          const localItemUids: string[] = [];
-          const localFieldItemUids: string[] = [];
-          mountTarget.flowEngine.forEachModel((m: any) => {
-            if (!m || m.uid === mountTarget.uid || m.uid === importer.uid) return;
-            if (m?.parent?.uid !== existingGrid.uid || m.subKey !== 'items') return;
+          const isFieldItem = (m: FlowModel) => {
+            if (shouldFallbackToAnyItem) return true;
+            const ctor = m.constructor as ModelConstructor;
+            return fieldItemBaseClasses.some((Base) => ctor === Base || isInheritedFrom(ctor, Base));
+          };
 
-            localItemUids.push(String(m.uid));
-            if (shouldFallbackToAnyItem) {
-              localFieldItemUids.push(String(m.uid));
-              return;
+          let hasExistingFields = false;
+
+          // 非 reference grid：直接检查 subModels（避免全量扫描引擎）
+          if (!isReferenceGrid) {
+            const items = existingGrid.subModels?.items;
+            const list = Array.isArray(items) ? items : [];
+            for (const item of list) {
+              if (!(item instanceof FlowModel)) continue;
+              if (item.uid === importer.uid) continue;
+              if (isFieldItem(item)) {
+                hasExistingFields = true;
+                break;
+              }
             }
-            const ctor = (m as FlowModel).constructor as ModelConstructor;
-            const isFieldItem = fieldItemBaseClasses.some((Base) => ctor === Base || isInheritedFrom(ctor, Base));
-            if (isFieldItem) {
-              localFieldItemUids.push(String(m.uid));
-            }
-          });
-          const hasExistingFields = localFieldItemUids.length > 0;
+          } else {
+            // reference grid：避免透传模板字段，按当前引擎内的 parent/subKey 关系识别“本地字段”
+            mountTarget.flowEngine.forEachModel((m) => {
+              if (hasExistingFields) return;
+              if (!(m instanceof FlowModel)) return;
+              if (m.uid === mountTarget.uid || m.uid === importer.uid) return;
+              if (m.parent?.uid !== existingGrid.uid || m.subKey !== 'items') return;
+              if (isFieldItem(m)) {
+                hasExistingFields = true;
+              }
+            });
+          }
           if (hasExistingFields) {
             const viewer = (ctx as FlowContext).viewer || mountTarget.context.viewer || importer.context.viewer;
-            const message =
-              (ctx as FlowContext).t?.('Using reference fields will remove existing fields', {
-                ns: [NAMESPACE, 'client'],
-                nsMode: 'fallback',
-              }) || '使用引用字段会将当前已经添加的字段移除，是否继续？';
-
-            // 先关闭 From template 弹窗，再弹二次确认，避免确认框被覆盖
-            const currentView = (ctx as FlowContext).view;
-            if (currentView && typeof currentView.close === 'function') {
-              currentView.close(undefined, true);
-            }
-            // 等待一帧，确保上一个弹窗卸载完成
+            const message = ctx.t('Using reference fields will remove existing fields', {
+              ns: [NAMESPACE, 'client'],
+              nsMode: 'fallback',
+            });
+            ctx.view?.close(undefined, true);
             await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-            const confirmed =
-              viewer && typeof viewer.dialog === 'function'
-                ? await new Promise<boolean>((resolve) => {
-                    let resolved = false;
-                    const resolveOnce = (val: boolean) => {
-                      if (resolved) return;
-                      resolved = true;
-                      resolve(val);
-                    };
-                    viewer.dialog({
-                      title:
-                        (ctx as FlowContext).t?.('Field template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }) ||
-                        'Field template',
-                      width: 520,
-                      destroyOnClose: true,
-                      content: (currentDialog: any) => (
-                        <>
-                          <div style={{ marginBottom: 16 }}>{message}</div>
-                          <currentDialog.Footer>
-                            <Space align="end">
-                              <Button
-                                onClick={() => {
-                                  resolveOnce(false);
-                                  currentDialog.close(undefined, true);
-                                }}
-                              >
-                                {(ctx as FlowContext).t?.('Cancel') || 'Cancel'}
-                              </Button>
-                              <Button
-                                type="primary"
-                                onClick={() => {
-                                  resolveOnce(true);
-                                  currentDialog.close(undefined, true);
-                                }}
-                              >
-                                {(ctx as FlowContext).t?.('Confirm') || 'Confirm'}
-                              </Button>
-                            </Space>
-                          </currentDialog.Footer>
-                        </>
-                      ),
-                      onClose: () => resolveOnce(false),
-                      // 保险：再抬高一些 zIndex
-                      zIndex: typeof viewer.getNextZIndex === 'function' ? viewer.getNextZIndex() + 1000 : undefined,
-                    });
-                  })
-                : window.confirm('使用引用字段会将当前已经添加的字段移除，是否继续？');
+            const confirmed = await new Promise<boolean>((resolve) => {
+              let resolved = false;
+              const resolveOnce = (val: boolean) => {
+                if (resolved) return;
+                resolved = true;
+                resolve(val);
+              };
+              viewer.dialog({
+                title:
+                  (ctx as FlowContext).t?.('Field template', { ns: [NAMESPACE, 'client'], nsMode: 'fallback' }) ||
+                  'Field template',
+                width: 520,
+                destroyOnClose: true,
+                content: (currentDialog: any) => (
+                  <>
+                    <div style={{ marginBottom: 16 }}>{message}</div>
+                    <currentDialog.Footer>
+                      <Space align="end">
+                        <Button
+                          onClick={() => {
+                            resolveOnce(false);
+                            currentDialog.close(undefined, true);
+                          }}
+                        >
+                          {(ctx as FlowContext).t?.('Cancel') || 'Cancel'}
+                        </Button>
+                        <Button
+                          type="primary"
+                          onClick={() => {
+                            resolveOnce(true);
+                            currentDialog.close(undefined, true);
+                          }}
+                        >
+                          {(ctx as FlowContext).t?.('Confirm') || 'Confirm'}
+                        </Button>
+                      </Space>
+                    </currentDialog.Footer>
+                  </>
+                ),
+                onClose: () => resolveOnce(false),
+                zIndex: typeof viewer.getNextZIndex === 'function' ? viewer.getNextZIndex() + 1000 : undefined,
+              });
+            });
             if (!confirmed) {
               throw new FlowExitException(FLOW_KEY, importer.uid, 'User cancelled template import');
             }
           }
-
-          // 仅做确认与参数补全；真正的替换/复制在 afterAddAsSubModel 中执行
         }
 
-        // 将解析后的信息写回 stepParams（afterAddAsSubModel 依赖这些值）
-        // 注意：FlowModel.setStepParams 内部会 clone params，因此不能只改入参对象。
         importer.setStepParams(FLOW_KEY, 'selectTemplate', {
           templateUid,
           targetUid,
           templateName,
           templateDescription,
-          targetPath,
-          mountSubKey,
           mode,
         });
       },

@@ -9,8 +9,7 @@
 
 import React from 'react';
 import _ from 'lodash';
-import { type CreateModelOptions, FlowEngine, FlowModel } from '@nocobase/flow-engine';
-import { FormGridModel } from '@nocobase/client';
+import { type CreateModelOptions, FlowContext, FlowEngine, FlowModel } from '@nocobase/flow-engine';
 import { REF_HOST_CTX_KEY } from '../constants';
 import { NAMESPACE } from '../locale';
 import {
@@ -22,6 +21,9 @@ import {
 
 const SETTINGS_FLOW_KEY = 'referenceSettings';
 const SETTINGS_STEP_KEY = 'useTemplate';
+
+/** 标记已添加 host context bridge，避免重复添加 */
+const BRIDGE_MARKER = Symbol.for('nocobase.refGridHostBridge');
 
 export { REF_HOST_CTX_KEY };
 
@@ -224,10 +226,26 @@ export class ReferenceFormGridModel extends FlowModel {
       };
       root.context.defineProperty(REF_HOST_CTX_KEY, { value: hostInfo });
 
-      const fragment = _.get(root as any, targetPath);
-      const gridModel =
-        fragment instanceof FlowModel ? fragment : _.castArray(fragment).find((m) => m instanceof FlowModel);
-      return gridModel || undefined;
+      const fragment = root.subModels?.grid;
+      let gridModel: FlowModel | undefined;
+      if (fragment instanceof FlowModel) {
+        gridModel = fragment;
+      } else if (Array.isArray(fragment)) {
+        gridModel = fragment.find((m) => m instanceof FlowModel);
+      }
+      // 将宿主区块上下文注入到被引用的 grid：
+      // - Details 区块字段渲染依赖 ctx.record/resource/blockModel 等（定义在宿主 block context 上）；
+      // - 但同时要保留 scoped engine（ctx.engine）指向，避免丢失实例/缓存隔离。
+      // 注意：使用 Symbol 标记避免重复添加 delegate（beforeRender 可能多次触发）
+      const contextWithMarker = gridModel?.context as (FlowContext & { [BRIDGE_MARKER]?: boolean }) | undefined;
+      if (gridModel && host?.context && !contextWithMarker?.[BRIDGE_MARKER]) {
+        const bridge = new FlowContext();
+        bridge.defineProperty('engine', { value: engine });
+        bridge.addDelegate(host.context);
+        gridModel.context.addDelegate(bridge);
+        (gridModel.context as FlowContext & { [BRIDGE_MARKER]?: boolean })[BRIDGE_MARKER] = true;
+      }
+      return gridModel;
     };
 
     let gridModel = await tryResolveTargetGrid();

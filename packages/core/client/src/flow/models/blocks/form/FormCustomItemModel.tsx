@@ -27,9 +27,10 @@ export class FormCustomItemModel extends FlowModel {
           sort: (ModelClass.meta.sort ?? 999) as number,
           searchable: !!ModelClass.meta?.searchable,
           searchPlaceholder: ModelClass.meta?.searchPlaceholder,
+          hide: ModelClass.meta?.hide,
         };
         if (hasChildren) {
-          // 子模型自身定义了 children，作为“子菜单入口”使用；点击展开二级菜单
+          // 子模型自身定义了 children，作为"子菜单入口"使用；点击展开二级菜单
           item.children = (innerCtx: FlowModelContext) => {
             if (typeof ModelClass.defineChildren === 'function') {
               return ModelClass.defineChildren(innerCtx);
@@ -38,7 +39,7 @@ export class FormCustomItemModel extends FlowModel {
           };
         } else {
           // 叶子项：点击直接创建实例
-          item.createModelOptions = { use: name };
+          item.createModelOptions = ModelClass.meta?.createModelOptions || { use: name };
         }
         return item;
       });
