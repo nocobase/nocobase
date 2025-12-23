@@ -8,7 +8,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { FlowEngine } from '@nocobase/flow-engine';
+import { FlowContext, FlowEngine } from '@nocobase/flow-engine';
 import type { ActionDefinition } from '@nocobase/flow-engine';
 import { registerOpenViewPopupTemplateAction } from '../openViewActionExtensions';
 
@@ -43,7 +43,10 @@ describe('openViewActionExtensions (popup template)', () => {
         };
       },
     };
-    const ctx: any = { engine, api, t: (k: string) => k };
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.api = api;
+    ctx.t = (k: string) => k;
     const params: any = { popupTemplateUid: 'tpl-1', uid: 'old' };
 
     await enhanced.beforeParamsSave(ctx, params, {});
@@ -225,19 +228,13 @@ describe('openViewActionExtensions (popup template)', () => {
       sourceId: 'user-1',
       defaultInputKeys: ['filterByTk', 'sourceId'],
     };
-    const ctx: any = {
-      engine,
-      t: (k: string) => k,
-      collectionField: {
-        isAssociationField: () => true,
-      },
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.t = (k: string) => k;
+    ctx.collectionField = {
+      isAssociationField: () => true,
     };
-    // 模拟 FlowRuntimeContext：inputArgs 只有 getter（不可直接赋值）
-    Object.defineProperty(ctx, 'inputArgs', {
-      get: () => baseInputArgs,
-      configurable: true,
-      enumerable: true,
-    });
+    ctx.defineProperty('inputArgs', { value: baseInputArgs });
 
     await enhanced.handler(ctx, {
       popupTemplateUid: 'tpl-1',
@@ -268,6 +265,78 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('sourceId');
   });
 
+  it('infers target filterByTk from belongsTo record when reusing target collection template in relation field', async () => {
+    const engine = new FlowEngine();
+    let capturedCtx: any;
+    const baseHandler = vi.fn(async (ctxArg: any) => {
+      capturedCtx = ctxArg;
+      return undefined;
+    });
+
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: {
+        uid: { type: 'string' },
+      },
+      handler: baseHandler as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    // 模拟 C 表记录（filterTargetKey 是 nanoid），以及 belongsTo D（D 主键为 bigint）
+    const cRecord: any = {
+      cUnique: 'kEOzJ5VIJueYAitvGQPRPN',
+      dId: 123,
+      d: { id: 123 },
+    };
+
+    // 关系字段上下文：inputArgs.filterByTk 来自 C 的 filterTargetKey（string），但目标弹窗需要 D 的 id（number）
+    const baseInputArgs: any = {
+      dataSourceKey: 'main',
+      collectionName: 'c',
+      associationName: 'c.d',
+      filterByTk: cRecord.cUnique,
+    };
+
+    const assocField: any = {
+      isAssociationField: () => true,
+      name: 'd',
+      foreignKey: 'dId',
+      targetKey: 'id',
+      targetCollection: { dataSourceKey: 'main', name: 'd', filterTargetKey: 'id' },
+      collection: { dataSourceKey: 'main', name: 'c' },
+    };
+
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.t = (k: string) => k;
+    ctx.collectionField = assocField;
+    ctx.defineProperty('record', { value: cRecord });
+    ctx.defineProperty('inputArgs', { value: baseInputArgs });
+
+    await enhanced.handler(ctx, {
+      popupTemplateUid: 'tpl-1',
+      uid: 'popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'd',
+      // 配置时误填（来自 C 的 filterTargetKey），运行时应从 belongsTo 的 dId/d.id 推断覆盖
+      filterByTk: cRecord.cUnique,
+      popupTemplateHasFilterByTk: true,
+    });
+
+    expect(baseHandler).toHaveBeenCalledTimes(1);
+    // should not mutate original ctx.inputArgs
+    expect(ctx.inputArgs.filterByTk).toBe(cRecord.cUnique);
+
+    // runtime ctx 应推断出 D 的 filterByTk（bigint id）
+    expect(capturedCtx).not.toBe(ctx);
+    expect(capturedCtx?.inputArgs?.collectionName).toBe('d');
+    expect(capturedCtx?.inputArgs?.filterByTk).toBe(123);
+  });
+
   it('runtime clears filterByTk/sourceId in shadow ctx when template does not provide them', async () => {
     const engine = new FlowEngine();
     let capturedCtx: any;
@@ -296,12 +365,10 @@ describe('openViewActionExtensions (popup template)', () => {
       sourceId: 'source-1',
       defaultInputKeys: ['filterByTk', 'sourceId'],
     };
-    const ctx: any = { engine, t: (k: string) => k };
-    Object.defineProperty(ctx, 'inputArgs', {
-      get: () => baseInputArgs,
-      configurable: true,
-      enumerable: true,
-    });
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.t = (k: string) => k;
+    ctx.defineProperty('inputArgs', { value: baseInputArgs });
 
     await enhanced.handler(ctx, {
       popupTemplateUid: 'tpl-1',
@@ -354,18 +421,13 @@ describe('openViewActionExtensions (popup template)', () => {
       sourceId: 'user-1',
       defaultInputKeys: ['filterByTk', 'sourceId'],
     };
-    const ctx: any = {
-      engine,
-      t: (k: string) => k,
-      collectionField: {
-        isAssociationField: () => true,
-      },
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.t = (k: string) => k;
+    ctx.collectionField = {
+      isAssociationField: () => true,
     };
-    Object.defineProperty(ctx, 'inputArgs', {
-      get: () => baseInputArgs,
-      configurable: true,
-      enumerable: true,
-    });
+    ctx.defineProperty('inputArgs', { value: baseInputArgs });
 
     await enhanced.handler(ctx, {
       popupTemplateUid: 'tpl-1',
@@ -418,12 +480,11 @@ describe('openViewActionExtensions (popup template)', () => {
       collectionName: 'posts',
       defaultInputKeys: ['filterByTk'],
     };
-    const ctx: any = { engine, t: (k: string) => k, view: { inputArgs: {} } };
-    Object.defineProperty(ctx, 'inputArgs', {
-      get: () => baseInputArgs,
-      configurable: true,
-      enumerable: true,
-    });
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.t = (k: string) => k;
+    ctx.view = { inputArgs: {} };
+    ctx.defineProperty('inputArgs', { value: baseInputArgs });
 
     await enhanced.handler(ctx, {
       popupTemplateUid: 'tpl-1',
@@ -495,12 +556,12 @@ describe('openViewActionExtensions (popup template)', () => {
       collectionName: 'users',
       defaultInputKeys: ['filterByTk'],
     };
-    const ctx: any = { engine, api, t: (k: string) => k, view: { inputArgs: {} } };
-    Object.defineProperty(ctx, 'inputArgs', {
-      get: () => baseInputArgs,
-      configurable: true,
-      enumerable: true,
-    });
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.api = api;
+    ctx.t = (k: string) => k;
+    ctx.view = { inputArgs: {} };
+    ctx.defineProperty('inputArgs', { value: baseInputArgs });
 
     await enhanced.handler(ctx, {
       popupTemplateUid: 'tpl-record',
@@ -568,12 +629,11 @@ describe('openViewActionExtensions (popup template)', () => {
       filterByTk: 'record-1',
       defaultInputKeys: ['filterByTk'],
     };
-    const ctx: any = { engine, api, t: (k: string) => k };
-    Object.defineProperty(ctx, 'inputArgs', {
-      get: () => baseInputArgs,
-      configurable: true,
-      enumerable: true,
-    });
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.api = api;
+    ctx.t = (k: string) => k;
+    ctx.defineProperty('inputArgs', { value: baseInputArgs });
 
     await enhanced.handler(ctx, {
       popupTemplateUid: 'tpl-collection',
@@ -616,12 +676,10 @@ describe('openViewActionExtensions (popup template)', () => {
       sourceId: 'source-1',
       defaultInputKeys: ['filterByTk', 'sourceId'],
     };
-    const ctx: any = { engine, t: (k: string) => k };
-    Object.defineProperty(ctx, 'inputArgs', {
-      get: () => baseInputArgs,
-      configurable: true,
-      enumerable: true,
-    });
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.t = (k: string) => k;
+    ctx.defineProperty('inputArgs', { value: baseInputArgs });
 
     await enhanced.handler(ctx, {
       popupTemplateUid: 'tpl-1',
@@ -671,18 +729,13 @@ describe('openViewActionExtensions (popup template)', () => {
       sourceId: 'user-1',
       defaultInputKeys: ['filterByTk', 'sourceId'],
     };
-    const ctx: any = {
-      engine,
-      t: (k: string) => k,
-      collectionField: {
-        isAssociationField: () => true,
-      },
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.t = (k: string) => k;
+    ctx.collectionField = {
+      isAssociationField: () => true,
     };
-    Object.defineProperty(ctx, 'inputArgs', {
-      get: () => baseInputArgs,
-      configurable: true,
-      enumerable: true,
-    });
+    ctx.defineProperty('inputArgs', { value: baseInputArgs });
 
     await enhanced.handler(ctx, {
       popupTemplateContext: true,
@@ -711,6 +764,53 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(capturedCtx?.inputArgs?.sourceId).toBe(null);
     expect(capturedCtx?.inputArgs?.defaultInputKeys || []).toContain('filterByTk');
     expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('sourceId');
+  });
+
+  it('keeps object filterByTk in shadow ctx (composite target key)', async () => {
+    const engine = new FlowEngine();
+    let capturedCtx: any;
+    const baseHandler = vi.fn(async (ctxArg: any) => {
+      capturedCtx = ctxArg;
+      return undefined;
+    });
+
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: {
+        uid: { type: 'string' },
+      },
+      handler: baseHandler as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    const compositeTk = { Code1: 'C1', Code2: 'C2' };
+    const baseInputArgs: any = {
+      dataSourceKey: 'main',
+      collectionName: 'composites',
+      filterByTk: compositeTk,
+      defaultInputKeys: ['filterByTk'],
+    };
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.t = (k: string) => k;
+    ctx.view = { inputArgs: {} };
+    ctx.defineProperty('inputArgs', { value: baseInputArgs });
+
+    await enhanced.handler(ctx, {
+      popupTemplateContext: true,
+      uid: 'popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'composites',
+      filterByTk: 'tpl-filter',
+    });
+
+    expect(baseHandler).toHaveBeenCalledTimes(1);
+    expect(capturedCtx).not.toBe(ctx);
+    expect(capturedCtx?.inputArgs?.filterByTk).toEqual(compositeTk);
   });
 
   it('rejects popup template when dataSourceKey/collectionName mismatches current context', async () => {

@@ -104,9 +104,10 @@ function getFieldValuesInCondition({ linkageRules, formValues }) {
   return linkageRules.map((rule) => {
     const run = (condition) => {
       const type = Object.keys(condition)[0] || '$and';
-      const conditions = condition[type];
+      const conditions = condition[type] || [];
 
       return conditions
+        .filter(Boolean)
         .map((condition) => {
           if ('$and' in condition || '$or' in condition) {
             return run(condition);

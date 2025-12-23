@@ -125,10 +125,6 @@ export class TableColumnModel extends DisplayItemModel {
     await this.dispatchEvent('beforeRender');
   }
   renderHiddenInConfig(): React.ReactNode | undefined {
-    if (this.fieldDeleted) {
-      return <FieldDeletePlaceholder />;
-    }
-
     return this.renderOriginal.call(this);
   }
 
@@ -241,15 +237,16 @@ export class TableColumnModel extends DisplayItemModel {
                   if (this.forbidden) {
                     return <FieldWithoutPermissionPlaceholder />;
                   }
-                  if (!this.fieldDeleted) {
-                    return (
-                      <Tooltip
-                        title={this.context.t('The field is hidden and only visible when the UI Editor is active')}
-                      >
-                        <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record.__index || index)}</div>
-                      </Tooltip>
-                    );
-                  }
+                  return (
+                    <Tooltip
+                      title={this.context.t('The field is hidden and only visible when the UI Editor is active')}
+                    >
+                      <div style={{ opacity: '0.3' }}> {cellRenderer(value, record, record.__index || index)}</div>
+                    </Tooltip>
+                  );
+                }
+                if (!this.collectionField) {
+                  return <FieldDeletePlaceholder />;
                 }
                 return cellRenderer(value, record, record.__index || index);
               })()}
@@ -264,7 +261,7 @@ export class TableColumnModel extends DisplayItemModel {
     super.onInit(options);
   }
 
-  render(): any {
+  renderItem(): any {
     return (value, record, index) => (
       <>
         {this.mapSubModels('field', (field) => {

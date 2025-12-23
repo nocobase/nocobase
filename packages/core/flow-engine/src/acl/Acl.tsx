@@ -89,9 +89,12 @@ export class ACL {
   }
 
   getIgnoreScope = (options: any = {}) => {
-    const { recordPkValue, allowedActions } = options;
+    const { recordPkValue, allowedActions, actionName } = options;
     let ignoreScope = false;
     if (options.ignoreScope) {
+      ignoreScope = true;
+    }
+    if (actionName === 'create') {
       ignoreScope = true;
     }
     if (!recordPkValue || !allowedActions) {
