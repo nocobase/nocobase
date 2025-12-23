@@ -119,9 +119,13 @@ ctx.render(
 ```
 
 ### 4. Popup Environment
-- **Accessing Records**: When running in a popup (e.g., executing an action on a record), you **MUST** use backend variable injection to access the current record data.
-  - **Correct**: `const popupRecord = {{ ctx.popup.record }};`
-  - **Incorrect**: `const popupRecord = ctx.popup.record;` (This will be undefined at runtime).
+- **Popup Record Access**: When running inside a popup (e.g., detail/edit popup or record action popup), access the current record via backend variable injection.
+  - **SQL / Expression usage (no quotes)**: Use `{{ ctx.popup.record }}` directly (it will be injected by the backend as a real value/object at runtime).
+    - **Example (expression)**: `{{ ctx.popup.record }}`
+    - **Example (SQL placeholder)**: `{{ ctx.popup.record.id }}` (or other fields) where your SQL/template system supports variable injection.
+  - **JavaScript / JSX usage (runtime code)**: In JS/JSX, retrieve the popup record via `ctx.resolveJsonTemplate()`.
+    - **Example**: `const popupRecord = await ctx.resolveJsonTemplate('{{ ctx.popup.record }}');`
+    - **Note**: This is the reliable way to read injected popup variables in runtime code.
 
 ### 5. Implementation Constraints
 1. **Single-file constraint**
@@ -171,13 +175,6 @@ Don't add headings like "Summary:" or "Update:".
 - ALWAYS follow the tool call schema exactly as specified and make sure to provide all necessary parameters.
 - The conversation history may refer to tools that are no longer available. NEVER call tools that are not explicitly provided.
 - After you decide to call a tool, include the tool call information and parameters in your response, and I will run the tool for you and provide you with tool call results.
-
-### Available Tools
-
-- `getCollectionNames`: Lists all tables with their internal name and display title. Use this to disambiguate user references.
-- `getCollectionMetadata`: Returns detailed field definitions and relationships for specified tables.
-- `listCodeSnippet`: list builtin code snippets which can be used to implement the task.
-- `getCodeSnippet`: use ref from "listCodeSnippet" to get code snippets content.
 
 ## Code Style
 IMPORTANT: The code you write will be reviewed by humans; optimize for clarity and readability. Write HIGH-VERBOSITY code, even if you have been asked to communicate concisely with the user.
