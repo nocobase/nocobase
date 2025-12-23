@@ -131,7 +131,7 @@ export interface FlowModelRendererProps {
   model?: FlowModel;
   uid?: string;
 
-  fallback?: React.ReactNode; // 渲染失败时的回退内容
+  fallback?: React.ReactNode; // beforeRender 执行期间的回退内容（如 loading 占位）
 
   key?: React.Key;
 
@@ -150,8 +150,8 @@ export interface FlowModelRendererProps {
   /** 传递给 beforeRender 事件的运行时参数 */
   inputArgs?: Record<string, any>;
 
-  /** 是否在最外层包装 FlowErrorFallback 组件，默认 false */
-  showErrorFallback?: boolean; // 默认 false
+  /** 是否在最外层包装 FlowErrorFallback 组件，默认 true */
+  showErrorFallback?: boolean; // 默认 true
 
   /** 设置菜单层级：1=仅当前模型(默认)，2=包含子模型 */
   settingsMenuLevel?: number;
@@ -364,11 +364,13 @@ const FlowModelRendererCore: React.FC<{
  * @param {FlowModelRendererProps} props - The component's props.
  * @param {FlowModel} props.model - The FlowModel instance to render.
  * @param {string} props.uid - The unique identifier for the flow model.
- * @param {boolean} props.showFlowSettings - Whether to show flow settings entry (buttons, menus, etc.).
+ * @param {React.ReactNode} props.fallback - Fallback content while running beforeRender (loading state).
+ * @param {boolean | FlowSettingsRenderConfig} props.showFlowSettings - Whether to show flow settings entry (buttons, menus, etc.).
  * @param {string} props.flowSettingsVariant - The interaction style for flow settings.
  * @param {boolean} props.hideRemoveInSettings - Whether to hide remove button in settings.
  * @param {boolean} props.showTitle - Whether to show model title in the top-left corner of the border.
  * @param {any} props.inputArgs - Runtime arguments to pass to beforeRender event flows.
+ * @param {boolean} props.showErrorFallback - Whether to wrap with FlowErrorFallback ErrorBoundary.
  * @param {number} props.settingsMenuLevel - Settings menu levels: 1=current model only (default), 2=include sub-models.
  * @param {ToolbarItemConfig[]} props.extraToolbarItems - Extra toolbar items to add to this renderer instance.
  * @returns {React.ReactNode | null} The rendered output of the model, or null if the model or its render method is invalid.

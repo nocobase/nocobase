@@ -9,6 +9,9 @@ interface FlowModelRendererProps {
   model?: FlowModel;
   uid?: string;
 
+  /** 执行 beforeRender 期间的回退内容（如 loading 占位） */
+  fallback?: React.ReactNode;
+
   /** 是否显示流设置入口（如按钮、菜单等） */
   showFlowSettings?:
     | boolean
@@ -34,14 +37,23 @@ interface FlowModelRendererProps {
   /** 是否在设置中隐藏移除按钮 */
   hideRemoveInSettings?: boolean; // 默认 false
 
+  /** 是否在边框左上角显示模型 title */
+  showTitle?: boolean; // 默认 false
+
   /** 传递给 beforeRender 事件的运行时参数 */
-  inputArgs?: Record<string, any>
+  inputArgs?: Record<string, any>;
+
+  /** 是否在最外层包装 FlowErrorFallback 组件 */
+  showErrorFallback?: boolean; // 默认 true
 
   /** 设置菜单层级：1=仅当前模型(默认)，2=包含子模型 */
   settingsMenuLevel?: number; // 默认 1
 
   /** 额外的工具栏项目，仅应用于此实例 */
   extraToolbarItems?: ToolbarItemConfig[];
+
+  /** beforeRender 是否使用缓存（默认由模型层决定） */
+  useCache?: boolean;
 }
 ```
 
@@ -49,6 +61,7 @@ interface FlowModelRendererProps {
 
 - **model**: 要渲染的 FlowModel 实例
 - **uid**: 流模型的唯一标识符
+- **fallback**: 执行 `beforeRender` 期间的回退内容（如 loading 占位），默认 `null`
 - **showFlowSettings**: 是否显示流设置入口，如按钮、菜单等
   - `boolean`: 直接开关（默认 `false`）
   - `object`: 细粒度配置（对象形态默认 `enabled: true`）
@@ -61,7 +74,9 @@ interface FlowModelRendererProps {
   - `modal`: 模态框形式（待实现）
   - `drawer`: 抽屉形式（待实现）
 - **hideRemoveInSettings**: 是否在设置中隐藏移除按钮，当设为 `true` 时，流设置菜单中不会显示删除/移除选项
+- **showTitle**: 是否在边框左上角显示模型 title（默认 `false`）
 - **inputArgs**: 运行时参数，传递给 beforeRender 事件
+- **showErrorFallback**: 是否在最外层包裹 `FlowErrorFallback` 错误兜底（默认 `true`）
 - **settingsMenuLevel**: 设置菜单层级，控制设置菜单的显示范围
   - `1`: 仅显示当前模型的设置（默认）
   - `2`: 包含子模型的设置
