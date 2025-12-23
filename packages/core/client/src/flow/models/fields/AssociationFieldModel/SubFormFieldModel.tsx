@@ -190,7 +190,7 @@ const ArrayNester = ({
                 });
                 fork.gridContainerRef = React.createRef<HTMLDivElement>();
                 fork.context.defineProperty('fieldKey', {
-                  get: () => key,
+                  get: () => fieldIndex,
                 });
                 forksRef.current[key] = fork;
               }
