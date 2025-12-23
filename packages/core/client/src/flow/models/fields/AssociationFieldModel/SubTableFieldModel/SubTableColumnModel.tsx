@@ -9,7 +9,6 @@
 
 import { LockOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import { css } from '@emotion/css';
-import { observer } from '@formily/react';
 import {
   DisplayItemModel,
   DragHandler,
@@ -23,6 +22,7 @@ import {
   FormItem,
   ModelRenderMode,
   useFlowEngine,
+  observer,
 } from '@nocobase/flow-engine';
 import { TableColumnProps, Tooltip, Input } from 'antd';
 import React, { useRef, useMemo } from 'react';

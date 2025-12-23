@@ -7,7 +7,7 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { connect, mapProps } from '@formily/react';
+import { connect } from '@formily/react';
 import { Alert, Input } from 'antd';
 import React, { useEffect, useState } from 'react';
 
