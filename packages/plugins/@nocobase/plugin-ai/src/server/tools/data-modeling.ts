@@ -259,14 +259,15 @@ export const getDataSources: ToolOptions = {
   },
   invoke: async (ctx: Context) => {
     try {
-      const dialect = ctx.db.sequelize.getDialect();
+      const records = await ctx.db.getRepository('dataSources').find();
+      const displayNameMap = new Map(records.map((r) => [r.get('key'), r.get('displayName')]));
       const dataSources = [];
       // Add data sources
       for (const [key, ds] of ctx.app.dataSourceManager.dataSources) {
         dataSources.push({
           key: key,
-          displayName: ds.options.displayName || key,
-          type: dialect,
+          displayName: displayNameMap.get(key) || key,
+          type: ds.collectionManager?.db?.sequelize?.getDialect() || 'unknown',
         });
       }
 
