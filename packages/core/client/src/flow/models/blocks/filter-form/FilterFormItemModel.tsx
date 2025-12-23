@@ -229,7 +229,7 @@ export class FilterFormItemModel extends FilterableItemModel<{
     };
   }
 
-  render() {
+  renderItem() {
     const fieldModel = this.subModels.field as FieldModel;
     return (
       <FormItem {...this.props} getValueProps={this.getValueProps.bind(this)}>

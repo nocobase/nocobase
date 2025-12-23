@@ -90,6 +90,7 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
     word: '/file-placeholder/docx-200-200.png',
     xls: '/file-placeholder/xlsx-200-200.png',
     xlsx: '/file-placeholder/xlsx-200-200.png',
+    excel: '/file-placeholder/xlsx-200-200.png',
     ppt: '/file-placeholder/ppt-200-200.png',
     pptx: '/file-placeholder/ppt-200-200.png',
     jpg: '/file-placeholder/image-200-200.png',
@@ -100,7 +101,6 @@ const FilePreview = ({ file, size, showFileName }: { file: any; size: number; sh
   };
 
   const type = getFileType(file);
-
   const fallback = fallbackMap[type] || fallbackMap.default;
   const imageNode = (
     <div

@@ -450,7 +450,7 @@ UploadFieldModel.registerFlow({
             const customRequest = storageType.createUploadCustomRequest({
               ...ctx.model.props,
               api: ctx.api,
-              action: `${fileCollection}:create`,
+              action: `${fileCollection}:create?attachmentField=${collectionField.collectionName}.${collectionField.name}`,
               storage,
             });
 

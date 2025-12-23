@@ -262,11 +262,11 @@ export class SubTableColumnModel<
         title: this.props.title,
         model: this,
       }),
-      render: this.render(),
+      render: this.renderItem(),
       hidden: this.hidden && !this.flowEngine.flowSettings?.enabled,
     };
   }
-  render(): any {
+  renderItem(): any {
     return (props) => {
       const { value, id, rowIdx } = props;
       return (
