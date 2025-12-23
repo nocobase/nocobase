@@ -23,8 +23,20 @@ import { useTranslation } from 'react-i18next';
 import { FormItemModel } from '../../blocks/form/FormItemModel';
 import { AssociationFieldModel } from './AssociationFieldModel';
 import { RecordPickerContent } from './RecordPickerFieldModel';
+import { BlockPlaceholder } from '../../../components/placeholders/BlockPlaceholder';
 
 class FormAssociationFieldModel extends AssociationFieldModel {
+  renderHiddenInConfig() {
+    if (this.forbidden) {
+      return <BlockPlaceholder />;
+    }
+    return (
+      <Tooltip title={this.context.t('The block is hidden and only visible when the UI Editor is active')}>
+        <div style={{ opacity: 0.3 }}>{this.renderOriginal.call(this)}</div>
+      </Tooltip>
+    );
+  }
+
   onInit(options) {
     super.onInit(options);
     this.context.defineProperty('collection', {
@@ -489,6 +501,40 @@ SubFormListFieldModel.registerFlow({
             },
           },
         });
+      },
+    },
+  },
+});
+
+FormAssociationFieldModel.registerFlow({
+  key: 'commentSubFormSettings',
+  steps: {
+    aclCheck: {
+      use: 'aclCheck',
+      async handler(ctx, params) {
+        const result = await ctx.aclCheck({
+          dataSourceKey: ctx.dataSource?.key,
+          resourceName: ctx.collectionField?.target,
+          actionName: ctx.actionName,
+        });
+        console.log(
+          {
+            dataSourceKey: ctx.dataSource?.key,
+            resourceName: ctx.collectionField?.target,
+            actionName: ctx.actionName,
+          },
+          result,
+        );
+        if (!ctx.actionName) {
+          return;
+        }
+        if (!result) {
+          ctx.model.hidden = true;
+          ctx.model.forbidden = {
+            actionName: ctx.actionName,
+          };
+          ctx.exitAll();
+        }
       },
     },
   },

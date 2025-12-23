@@ -16,7 +16,6 @@ import {
   FlowModelRenderer,
   useFlowContext,
   FlowModel,
-  useFlowModel,
 } from '@nocobase/flow-engine';
 import { Select, Space, Button, Divider, Tooltip, Tag } from 'antd';
 import { css } from '@emotion/css';
@@ -97,7 +96,6 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
     allowCreate = true,
     ...others
   } = props;
-  const model: any = useFlowModel();
   const isMultiple = Boolean(multiple && allowMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
   const { t } = useTranslation();
