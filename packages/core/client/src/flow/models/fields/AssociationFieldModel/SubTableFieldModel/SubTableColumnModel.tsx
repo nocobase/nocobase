@@ -59,7 +59,7 @@ function FieldWithoutPermissionPlaceholder({ targetModel }) {
   );
 }
 
-const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, ...others }: any) => {
+const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultValue, disabled, ...others }: any) => {
   const flowEngine = useFlowEngine();
   const ref = useRef(null);
   const field = model.subModels.readPrettyField as FieldModel;
@@ -78,6 +78,9 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
     return <FieldModelRenderer model={model} {...rest} onChange={handelChange} />;
   };
   const handleClick = async (e) => {
+    if (disabled) {
+      return;
+    }
     e.preventDefault();
     e.stopPropagation();
     try {
@@ -99,6 +102,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
     }
   };
   const collectionField = model.context.collectionField;
+
   const content = useMemo(() => {
     if (['textarea', 'richText', 'json', 'markdown', 'vditor'].includes(collectionField.interface)) {
       const inputValue =
@@ -106,7 +110,7 @@ const LargeFieldEdit = observer(({ model, params: { fieldPath, index }, defaultV
           ? JSON.stringify(defaultValue, null, 2)
           : defaultValue ?? '';
 
-      return <Input value={inputValue} />;
+      return <Input value={inputValue} disabled={disabled} />;
     } else {
       return <FlowModelRenderer model={fieldModel} uid={fieldModel?.uid} />;
     }
@@ -292,8 +296,7 @@ export class SubTableColumnModel<
   }
   renderItem(): any {
     return (props) => {
-      const { value, id, rowIdx } = props;
-
+      const { value, id, rowIdx, record } = props;
       return (
         <div
           style={{
@@ -313,7 +316,7 @@ export class SubTableColumnModel<
             const namePath = action.context.fieldPath.split('.').pop();
 
             const fork: any = action.createFork({}, `${id}`);
-
+            console.log(record);
             if (this.props.readPretty) {
               fork.setProps({
                 value: value,
@@ -328,6 +331,7 @@ export class SubTableColumnModel<
                   style={{ marginBottom: 0 }}
                   showLabel={false}
                   initialValue={value}
+                  disabled={this.props.disabled || (!record.isNew && this.props.aclDisabled)}
                 >
                   {fork.constructor.isLargeField ? (
                     <LargeFieldEdit
@@ -337,6 +341,7 @@ export class SubTableColumnModel<
                         index: id,
                       }}
                       defaultValue={value}
+                      disabled={this.props.disabled || (!record.isNew && this.props.aclDisabled)}
                     />
                   ) : (
                     <FieldModelRenderer model={fork} id={[(this.parent as FieldModel).context.fieldPath, rowIdx]} />
@@ -382,6 +387,22 @@ SubTableColumnModel.registerFlow({
     },
     aclCheck: {
       use: 'aclCheck',
+      async handler(ctx, params) {
+        const result = await ctx.aclCheck({
+          dataSourceKey: ctx.dataSource?.key,
+          resourceName: ctx.collectionField?.collectionName,
+          fields: [ctx.collectionField.name],
+          actionName: 'update',
+        });
+        if (!ctx.actionName) {
+          return;
+        }
+        if (!result) {
+          ctx.model.setProps({
+            aclDisabled: true,
+          });
+        }
+      },
     },
     subModel: {
       title: tExpr('Preview field component'),

@@ -234,7 +234,7 @@ const ArrayNester = ({
               return (
                 // key 使用 index 是为了在移除前面行时，能重新渲染后面的行，以更新上下文中的值
                 <div key={index} style={{ marginBottom: 12 }}>
-                  {!disabled && (allowDisassociation || value?.[index]?.isNew) && (
+                  {!disabled && (allowDisassociation || value?.[index]?.isNew || value?.[index]?.isStored) && (
                     <div style={{ textAlign: 'right' }}>
                       <Tooltip title={t('Remove')}>
                         <CloseOutlined
@@ -474,7 +474,7 @@ SubFormListFieldModel.registerFlow({
                   ...selectedRows.map((v) => {
                     return {
                       ...v,
-                      isNew: true,
+                      isStored: true,
                     };
                   }),
                 ];
@@ -512,26 +512,16 @@ FormAssociationFieldModel.registerFlow({
     aclCheck: {
       use: 'aclCheck',
       async handler(ctx, params) {
+        const actionName = ctx.model.parent.context.actionName;
         const result = await ctx.aclCheck({
           dataSourceKey: ctx.dataSource?.key,
           resourceName: ctx.collectionField?.target,
-          actionName: ctx.actionName,
+          actionName: actionName,
         });
-        console.log(
-          {
-            dataSourceKey: ctx.dataSource?.key,
-            resourceName: ctx.collectionField?.target,
-            actionName: ctx.actionName,
-          },
-          result,
-        );
-        if (!ctx.actionName) {
-          return;
-        }
         if (!result) {
           ctx.model.hidden = true;
           ctx.model.forbidden = {
-            actionName: ctx.actionName,
+            actionName: actionName,
           };
           ctx.exitAll();
         }

@@ -29,7 +29,6 @@ export function SubTableField(props) {
     pageSize,
     allowCreate, //acl
   } = props;
-  console.log(allowCreate);
   const [currentPage, setCurrentPage] = useState(1);
   const [currentPageSize, setCurrentPageSize] = useState(pageSize);
   useEffect(() => {
@@ -115,7 +114,7 @@ export function SubTableField(props) {
         fixed: 'right',
         render: (v, record, index) => {
           const pageRowIdx = (currentPage - 1) * currentPageSize + index;
-          if (!allowDisassociation && !record.isNew) {
+          if (!allowDisassociation && !(record.isNew || record.isStored)) {
             return;
           }
           return (

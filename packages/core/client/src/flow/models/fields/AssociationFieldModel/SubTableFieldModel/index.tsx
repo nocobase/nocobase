@@ -314,7 +314,7 @@ SubTableFieldModel.registerFlow({
                   ...selectedRows.map((v) => {
                     return {
                       ...v,
-                      isNew: true,
+                      isStored: true,
                     };
                   }),
                 ];
