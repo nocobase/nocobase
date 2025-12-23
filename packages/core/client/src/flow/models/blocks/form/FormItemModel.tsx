@@ -223,10 +223,26 @@ FormItemModel.registerFlow({
           fields: [ctx.collectionField.name],
           actionName: blockActionName,
         });
-        if (!result && blockActionName === 'update') {
-          ctx.model.setProps({
-            aclDisabled: true,
+        if (blockActionName === 'update') {
+          const resultView = await ctx.aclCheck({
+            dataSourceKey: ctx.dataSource?.key,
+            resourceName: ctx.collectionField?.collectionName,
+            fields: [ctx.collectionField.name],
+            actionName: 'view',
           });
+          if (!resultView) {
+            ctx.model.hidden = true;
+            ctx.model.forbidden = {
+              actionName: 'view',
+            };
+            ctx.exitAll();
+          }
+
+          if (!result) {
+            ctx.model.setProps({
+              aclDisabled: true,
+            });
+          }
         } else if (!result) {
           ctx.model.hidden = true;
           ctx.model.forbidden = {
