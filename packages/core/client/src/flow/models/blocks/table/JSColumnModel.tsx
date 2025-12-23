@@ -94,7 +94,7 @@ export class JSColumnModel extends TableCustomColumnModel {
       </Droppable>
     );
 
-    if (this.hidden && !this.flowEngine.flowSettings.enabled) {
+    if (this.hidden && !this.context.flowSettingsEnabled) {
       return null;
     }
 

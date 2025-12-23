@@ -95,7 +95,7 @@ export enum ModelRenderMode {
 
 export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
   /**
-   * 当 flowSettings.enabled 且 model.hidden 为 true 时用于渲染设置态组件（实例方法，子类可覆盖）。
+   * 当 flowSettingsEnabled 且 model.hidden 为 true 时用于渲染设置态组件（实例方法，子类可覆盖）。
    * 基类默认仅返回一个透明度降低的占位元素
    */
   protected renderHiddenInConfig(): React.ReactNode | undefined {
