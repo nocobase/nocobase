@@ -513,12 +513,17 @@ FormAssociationFieldModel.registerFlow({
       use: 'aclCheck',
       async handler(ctx, params) {
         const actionName = ctx.model.parent.context.actionName;
-        const result = await ctx.aclCheck({
+        const createResult = await ctx.aclCheck({
           dataSourceKey: ctx.dataSource?.key,
           resourceName: ctx.collectionField?.target,
-          actionName: actionName,
+          actionName: 'create',
         });
-        if (!result) {
+        const updateResult = await ctx.aclCheck({
+          dataSourceKey: ctx.dataSource?.key,
+          resourceName: ctx.collectionField?.target,
+          actionName: 'update',
+        });
+        if (!createResult && !updateResult) {
           ctx.model.hidden = true;
           ctx.model.forbidden = {
             actionName: actionName,

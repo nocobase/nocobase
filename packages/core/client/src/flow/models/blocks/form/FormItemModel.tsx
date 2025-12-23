@@ -153,12 +153,13 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     this.context.defineProperty('fieldPathArray', {
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
+    const record = this.context.currentObject || this.context.record || {};
     return (
       <FormItem
         {...mergedProps}
         name={fieldPath}
         validateFirst={true}
-        disabled={this.props.disabled || this.props.aclDisabled}
+        disabled={this.props.disabled || (!record.isNew && this.props.aclDisabled)}
       >
         <FieldModelRenderer model={modelForRender} name={fieldPath} />
       </FormItem>
