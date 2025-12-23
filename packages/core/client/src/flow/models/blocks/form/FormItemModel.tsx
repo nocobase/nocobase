@@ -154,7 +154,12 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
     return (
-      <FormItem {...mergedProps} name={fieldPath} validateFirst={true}>
+      <FormItem
+        {...mergedProps}
+        name={fieldPath}
+        validateFirst={true}
+        disabled={this.props.disabled || this.props.aclDisabled}
+      >
         <FieldModelRenderer model={modelForRender} name={fieldPath} />
       </FormItem>
     );
@@ -210,6 +215,26 @@ FormItemModel.registerFlow({
     },
     aclCheck: {
       use: 'aclCheck',
+      async handler(ctx, params) {
+        const blockActionName = ctx.blockModel.context.actionName;
+        const result = await ctx.aclCheck({
+          dataSourceKey: ctx.dataSource?.key,
+          resourceName: ctx.collectionField?.collectionName,
+          fields: [ctx.collectionField.name],
+          actionName: blockActionName,
+        });
+        if (!result && blockActionName === 'update') {
+          ctx.model.setProps({
+            aclDisabled: true,
+          });
+        } else if (!result) {
+          ctx.model.hidden = true;
+          ctx.model.forbidden = {
+            actionName: blockActionName,
+          };
+          ctx.exitAll();
+        }
+      },
     },
     init: {
       async handler(ctx) {

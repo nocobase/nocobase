@@ -394,9 +394,6 @@ SubTableColumnModel.registerFlow({
           fields: [ctx.collectionField.name],
           actionName: 'update',
         });
-        if (!ctx.actionName) {
-          return;
-        }
         if (!result) {
           ctx.model.setProps({
             aclDisabled: true,
