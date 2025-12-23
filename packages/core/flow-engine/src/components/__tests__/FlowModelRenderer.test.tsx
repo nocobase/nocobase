@@ -87,3 +87,160 @@ describe('FlowModelRenderer', () => {
     unmount();
   });
 });
+
+describe('FlowModelRenderer showFlowSettings.recursive', () => {
+  let flowEngine: FlowEngine;
+
+  function getFloatMenus(container: HTMLElement) {
+    return Array.from(container.querySelectorAll('[data-has-float-menu="true"]'));
+  }
+
+  function hasTestId(el: Element, id: string) {
+    return !!el.querySelector(`[data-testid="${id}"]`);
+  }
+
+  beforeEach(() => {
+    flowEngine = new FlowEngine();
+    flowEngine.flowSettings.forceEnable();
+  });
+
+  const createModel = (uid: string) => {
+    const model = new FlowModel({ uid, flowEngine });
+    model.context.defineProperty('themeToken', { value: { borderRadiusLG: 8 } });
+    model.dispatchEvent = vi.fn().mockResolvedValue([]);
+    return model;
+  };
+
+  const renderWithProvider = (ui: React.ReactNode) => {
+    return render(<FlowEngineProvider engine={flowEngine}>{ui}</FlowEngineProvider>);
+  };
+
+  it('inherits enabled from nearest recursive ancestor; non-recursive explicit override does not affect descendants', async () => {
+    const A = createModel('A');
+    const B = createModel('B');
+    const C = createModel('C');
+
+    C.render = vi.fn().mockReturnValue(<div data-testid="C">C</div>);
+    B.render = vi.fn().mockReturnValue(
+      <div data-testid="B">
+        B
+        <FlowModelRenderer model={C} />
+      </div>,
+    );
+    A.render = vi.fn().mockReturnValue(
+      <div data-testid="A">
+        A
+        <FlowModelRenderer model={B} showFlowSettings={false} />
+      </div>,
+    );
+
+    const { container } = renderWithProvider(<FlowModelRenderer model={A} showFlowSettings={{ recursive: true }} />);
+
+    await waitFor(() => {
+      const menus = getFloatMenus(container);
+      // A (recursive enabled) + C (inherits enabled from A) => 2 menus
+      expect(menus).toHaveLength(2);
+      // outer: A
+      expect(menus.some((m) => hasTestId(m, 'A'))).toBe(true);
+      // B is explicitly disabled, so no "B-only" menu (contains B but not A)
+      expect(menus.some((m) => hasTestId(m, 'B') && !hasTestId(m, 'A'))).toBe(false);
+      // C menu exists (contains C but not A/B)
+      expect(menus.some((m) => hasTestId(m, 'C') && !hasTestId(m, 'A') && !hasTestId(m, 'B'))).toBe(true);
+    });
+  });
+
+  it('descendants follow a child override only when that child sets recursive:true', async () => {
+    const A = createModel('A');
+    const B = createModel('B');
+    const C = createModel('C');
+
+    C.render = vi.fn().mockReturnValue(<div data-testid="C">C</div>);
+    B.render = vi.fn().mockReturnValue(
+      <div data-testid="B">
+        B
+        <FlowModelRenderer model={C} />
+      </div>,
+    );
+    A.render = vi.fn().mockReturnValue(
+      <div data-testid="A">
+        A
+        <FlowModelRenderer model={B} showFlowSettings={{ enabled: false, recursive: true }} />
+      </div>,
+    );
+
+    const { container } = renderWithProvider(<FlowModelRenderer model={A} showFlowSettings={{ recursive: true }} />);
+
+    await waitFor(() => {
+      const menus = getFloatMenus(container);
+      // Only A is enabled; B disables itself and propagates disable to descendants
+      expect(menus).toHaveLength(1);
+      expect(menus.some((m) => hasTestId(m, 'A'))).toBe(true);
+      expect(menus.some((m) => hasTestId(m, 'B') && !hasTestId(m, 'A'))).toBe(false);
+      expect(menus.some((m) => hasTestId(m, 'C') && !hasTestId(m, 'A') && !hasTestId(m, 'B'))).toBe(false);
+    });
+  });
+
+  it('explicit enabled overrides inherited disabled for itself', async () => {
+    const A = createModel('A');
+    const B = createModel('B');
+    const C = createModel('C');
+
+    C.render = vi.fn().mockReturnValue(<div data-testid="C">C</div>);
+    B.render = vi.fn().mockReturnValue(
+      <div data-testid="B">
+        B
+        <FlowModelRenderer model={C} />
+      </div>,
+    );
+    A.render = vi.fn().mockReturnValue(
+      <div data-testid="A">
+        A
+        <FlowModelRenderer model={B} showFlowSettings />
+      </div>,
+    );
+
+    const { container } = renderWithProvider(
+      <FlowModelRenderer model={A} showFlowSettings={{ enabled: false, recursive: true }} />,
+    );
+
+    await waitFor(() => {
+      const menus = getFloatMenus(container);
+      // A is disabled; B explicitly enabled for itself => 1 menu (B only)
+      expect(menus).toHaveLength(1);
+      expect(menus.some((m) => hasTestId(m, 'A'))).toBe(false);
+      expect(menus.some((m) => hasTestId(m, 'B') && !hasTestId(m, 'A'))).toBe(true);
+      expect(menus.some((m) => hasTestId(m, 'C') && !hasTestId(m, 'A') && !hasTestId(m, 'B'))).toBe(false);
+    });
+  });
+
+  it('without any recursive:true ancestor, behavior stays the same (no inheritance)', async () => {
+    const A = createModel('A');
+    const B = createModel('B');
+    const C = createModel('C');
+
+    C.render = vi.fn().mockReturnValue(<div data-testid="C">C</div>);
+    B.render = vi.fn().mockReturnValue(
+      <div data-testid="B">
+        B
+        <FlowModelRenderer model={C} />
+      </div>,
+    );
+    A.render = vi.fn().mockReturnValue(
+      <div data-testid="A">
+        A
+        <FlowModelRenderer model={B} />
+      </div>,
+    );
+
+    const { container } = renderWithProvider(<FlowModelRenderer model={A} showFlowSettings />);
+
+    await waitFor(() => {
+      const menus = getFloatMenus(container);
+      // Only A explicitly enabled; B/C are default (disabled) because there is no recursive inheritance
+      expect(menus).toHaveLength(1);
+      expect(menus.some((m) => hasTestId(m, 'A'))).toBe(true);
+      expect(menus.some((m) => hasTestId(m, 'B') && !hasTestId(m, 'A'))).toBe(false);
+      expect(menus.some((m) => hasTestId(m, 'C') && !hasTestId(m, 'A') && !hasTestId(m, 'B'))).toBe(false);
+    });
+  });
+});

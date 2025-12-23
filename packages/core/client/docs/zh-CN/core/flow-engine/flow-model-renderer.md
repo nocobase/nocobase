@@ -10,7 +10,23 @@ interface FlowModelRendererProps {
   uid?: string;
 
   /** 是否显示流设置入口（如按钮、菜单等） */
-  showFlowSettings?: boolean; // 默认 false
+  showFlowSettings?:
+    | boolean
+    | {
+        /** 是否显示设置入口（对象形态默认 true） */
+        enabled?: boolean;
+        /**
+         * 是否递归影响子 Model 的「是否开启」：
+         * - 仅继承 enabled，不继承 showBorder/style 等外观配置
+         * - 子节点显式配置优先级更高；但仅影响自身，除非也设置 recursive:true
+         */
+        recursive?: boolean;
+        showBackground?: boolean;
+        showBorder?: boolean;
+        showDragHandle?: boolean;
+        style?: React.CSSProperties;
+        toolbarPosition?: 'inside' | 'above' | 'below';
+      }; // 默认 false
 
   /** 流设置的交互风格 */
   flowSettingsVariant?: 'dropdown' | 'contextMenu' | 'modal' | 'drawer'; // 默认 'dropdown'
@@ -34,6 +50,11 @@ interface FlowModelRendererProps {
 - **model**: 要渲染的 FlowModel 实例
 - **uid**: 流模型的唯一标识符
 - **showFlowSettings**: 是否显示流设置入口，如按钮、菜单等
+  - `boolean`: 直接开关（默认 `false`）
+  - `object`: 细粒度配置（对象形态默认 `enabled: true`）
+    - `enabled`: 显式控制当前模型是否显示设置入口
+    - `recursive`: 仅递归继承 enabled；子节点显式配置优先级更高，但默认只影响自身（需要同时 `recursive:true` 才会影响后代）
+    - `showBackground/showBorder/showDragHandle/style/toolbarPosition`: 仅影响当前实例，不会递归继承
 - **flowSettingsVariant**: 流设置的交互风格
   - `dropdown`: 下拉菜单形式（默认）
   - `contextMenu`: 右键上下文菜单
@@ -58,6 +79,15 @@ interface FlowModelRendererProps {
   showFlowSettings 
   flowSettingsVariant={'dropdown'}
 />
+
+// 递归影响子模型是否显示设置入口（仅继承 enabled）
+<FlowModelRenderer model={model} showFlowSettings={{ recursive: true }} />
+
+// 仅关闭当前模型（不影响后代，除非也设置 recursive:true）
+<FlowModelRenderer model={model} showFlowSettings={{ enabled: false }} />
+
+// 关闭并影响后代
+<FlowModelRenderer model={model} showFlowSettings={{ enabled: false, recursive: true }} />
 
 // 显示设置但隐藏移除按钮
 <FlowModelRenderer 

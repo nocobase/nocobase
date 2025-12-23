@@ -43,8 +43,7 @@
  */
 
 import { observer } from '@formily/reactive-react';
-import _ from 'lodash';
-import React, { useEffect } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { FlowModelProvider, useApplyAutoFlows } from '../hooks';
 import { getAutoFlowError, setAutoFlowError } from '../utils';
@@ -53,6 +52,80 @@ import { ToolbarItemConfig } from '../types';
 import { FlowErrorFallback } from './FlowErrorFallback';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
+
+export interface FlowSettingsRenderConfig {
+  /**
+   * 是否显示流程设置入口：
+   * - 当 `showFlowSettings` 为对象时，默认 `true`
+   * - 可以通过 `enabled: false` 显式关闭
+   */
+  enabled?: boolean;
+  /**
+   * 是否将「是否开启」状态递归传递给子级 `FlowModelRenderer`
+   * - 仅影响 enabled 的继承，不继承其它配置（如 showBorder/style 等）
+   */
+  recursive?: boolean;
+  showBackground?: boolean;
+  showBorder?: boolean;
+  showDragHandle?: boolean;
+  /** 自定义工具栏样式 */
+  style?: React.CSSProperties;
+  /**
+   * @default 'inside'
+   */
+  toolbarPosition?: 'inside' | 'above' | 'below';
+}
+
+interface FlowSettingsRecursiveContextValue {
+  enabled: boolean;
+}
+
+const FlowSettingsRecursiveContext = createContext<FlowSettingsRecursiveContextValue | null>(null);
+
+function isFlowSettingsConfig(
+  value: boolean | FlowSettingsRenderConfig | undefined,
+): value is FlowSettingsRenderConfig {
+  return typeof value === 'object' && value !== null;
+}
+
+interface ResolvedFlowSettings {
+  resolved: boolean | FlowSettingsRenderConfig;
+  nextContext: FlowSettingsRecursiveContextValue | null;
+}
+
+/**
+ * 处理 showFlowSettings 的继承逻辑
+ * - 支持从父级 recursive 继承 enabled 状态
+ * - 显式设置的值优先于继承值
+ */
+function useResolvedFlowSettings(
+  showFlowSettings: boolean | FlowSettingsRenderConfig | undefined,
+): ResolvedFlowSettings {
+  const inherited = useContext(FlowSettingsRecursiveContext);
+
+  return useMemo(() => {
+    const isConfig = isFlowSettingsConfig(showFlowSettings);
+    const hasExplicit = showFlowSettings !== undefined;
+
+    // 计算当前节点的 enabled 状态
+    let enabled: boolean;
+    if (hasExplicit) {
+      enabled = isConfig ? showFlowSettings.enabled ?? true : !!showFlowSettings;
+    } else {
+      enabled = inherited?.enabled ?? false;
+    }
+
+    // 计算传递给子级的 context
+    const recursive = isConfig && showFlowSettings.recursive;
+    const nextContext: FlowSettingsRecursiveContextValue | null = recursive ? { enabled } : inherited;
+
+    // 计算最终传递给子组件的 showFlowSettings 值
+    const resolved: boolean | FlowSettingsRenderConfig =
+      enabled && isConfig && hasExplicit ? showFlowSettings : enabled;
+
+    return { resolved, nextContext };
+  }, [showFlowSettings, inherited]);
+}
 
 export interface FlowModelRendererProps {
   model?: FlowModel;
@@ -63,19 +136,7 @@ export interface FlowModelRendererProps {
   key?: React.Key;
 
   /** 是否显示流程设置入口（如按钮、菜单等） */
-  showFlowSettings?:
-    | boolean
-    | {
-        showBackground?: boolean;
-        showBorder?: boolean;
-        showDragHandle?: boolean;
-        /** 自定义工具栏样式 */
-        style?: React.CSSProperties;
-        /**
-         * @default 'inside'
-         */
-        toolbarPosition?: 'inside' | 'above' | 'below';
-      }; // 默认 false
+  showFlowSettings?: boolean | FlowSettingsRenderConfig;
 
   /** 流程设置的交互风格 */
   flowSettingsVariant?: 'dropdown' | 'contextMenu' | 'modal' | 'drawer'; // 默认 'dropdown'
@@ -106,18 +167,7 @@ export interface FlowModelRendererProps {
  */
 const FlowModelRendererWithAutoFlows: React.FC<{
   model: FlowModel;
-  showFlowSettings:
-    | boolean
-    | {
-        showBackground?: boolean;
-        showBorder?: boolean;
-        showDragHandle?: boolean;
-        style?: React.CSSProperties;
-        /**
-         * @default 'inside'
-         */
-        toolbarPosition?: 'inside' | 'above' | 'below';
-      };
+  showFlowSettings: boolean | FlowSettingsRenderConfig;
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
@@ -176,18 +226,7 @@ const FlowModelRendererWithAutoFlows: React.FC<{
  */
 const FlowModelRendererCore: React.FC<{
   model: FlowModel;
-  showFlowSettings:
-    | boolean
-    | {
-        showBackground?: boolean;
-        showBorder?: boolean;
-        showDragHandle?: boolean;
-        style?: React.CSSProperties;
-        /**
-         * @default 'inside'
-         */
-        toolbarPosition?: 'inside' | 'above' | 'below';
-      };
+  showFlowSettings: boolean | FlowSettingsRenderConfig;
   flowSettingsVariant: string;
   hideRemoveInSettings: boolean;
   showTitle: boolean;
@@ -241,6 +280,8 @@ const FlowModelRendererCore: React.FC<{
     }
 
     // 根据 flowSettingsVariant 包装相应的设置组件
+    const config = isFlowSettingsConfig(showFlowSettings) ? showFlowSettings : undefined;
+
     switch (flowSettingsVariant) {
       case 'dropdown':
         return (
@@ -248,13 +289,13 @@ const FlowModelRendererCore: React.FC<{
             showTitle={showTitle}
             model={model}
             showDeleteButton={!hideRemoveInSettings}
-            showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
-            showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
-            showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
+            showBackground={config?.showBackground}
+            showBorder={config?.showBorder}
+            showDragHandle={config?.showDragHandle}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
-            toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
-            toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
+            toolbarStyle={config?.style}
+            toolbarPosition={config?.toolbarPosition}
           >
             {wrapWithErrorBoundary(
               <div key={contentKey}>
@@ -294,13 +335,13 @@ const FlowModelRendererCore: React.FC<{
             showTitle={showTitle}
             model={model}
             showDeleteButton={!hideRemoveInSettings}
-            showBackground={_.isObject(showFlowSettings) ? showFlowSettings.showBackground : undefined}
-            showBorder={_.isObject(showFlowSettings) ? showFlowSettings.showBorder : undefined}
-            showDragHandle={_.isObject(showFlowSettings) ? showFlowSettings.showDragHandle : undefined}
+            showBackground={config?.showBackground}
+            showBorder={config?.showBorder}
+            showDragHandle={config?.showDragHandle}
             settingsMenuLevel={settingsMenuLevel}
             extraToolbarItems={extraToolbarItems}
-            toolbarStyle={_.isObject(showFlowSettings) ? showFlowSettings.style : undefined}
-            toolbarPosition={_.isObject(showFlowSettings) ? showFlowSettings.toolbarPosition : undefined}
+            toolbarStyle={config?.style}
+            toolbarPosition={config?.toolbarPosition}
           >
             {wrapWithErrorBoundary(
               <div key={contentKey}>
@@ -336,7 +377,7 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
   ({
     model,
     fallback = null,
-    showFlowSettings = false,
+    showFlowSettings,
     flowSettingsVariant = 'dropdown',
     hideRemoveInSettings = false,
     showTitle = false,
@@ -346,6 +387,9 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     extraToolbarItems,
     useCache,
   }) => {
+    // Hooks must be called unconditionally before any early returns
+    const { resolved, nextContext } = useResolvedFlowSettings(showFlowSettings);
+
     useEffect(() => {
       if (model?.context) {
         model.context.defineProperty('useCache', {
@@ -355,16 +399,14 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
     }, [model?.context, useCache]);
 
     if (!model || typeof model.render !== 'function') {
-      // 可以选择渲染 null 或者一个错误/提示信息
       console.warn('FlowModelRenderer: Invalid model or render method not found.', model);
       return null;
     }
 
-    // 构建渲染内容：统一在渲染前触发 beforeRender 事件（带缓存）
     const content = (
       <FlowModelRendererWithAutoFlows
         model={model}
-        showFlowSettings={showFlowSettings}
+        showFlowSettings={resolved}
         flowSettingsVariant={flowSettingsVariant}
         hideRemoveInSettings={hideRemoveInSettings}
         showTitle={showTitle}
@@ -376,17 +418,17 @@ export const FlowModelRenderer: React.FC<FlowModelRendererProps> = observer(
       />
     );
 
-    // 当需要错误回退时，将整体包裹在 ErrorBoundary 和 FlowModelProvider 中
-    // 这样既能捕获 useApplyAutoFlows 中抛出的错误，也能在回退组件中获取 model 上下文
     if (showErrorFallback) {
       return (
-        <FlowModelProvider model={model}>
-          <ErrorBoundary FallbackComponent={FlowErrorFallback}>{content}</ErrorBoundary>
-        </FlowModelProvider>
+        <FlowSettingsRecursiveContext.Provider value={nextContext}>
+          <FlowModelProvider model={model}>
+            <ErrorBoundary FallbackComponent={FlowErrorFallback}>{content}</ErrorBoundary>
+          </FlowModelProvider>
+        </FlowSettingsRecursiveContext.Provider>
       );
     }
 
-    return content;
+    return <FlowSettingsRecursiveContext.Provider value={nextContext}>{content}</FlowSettingsRecursiveContext.Provider>;
   },
 );
 
