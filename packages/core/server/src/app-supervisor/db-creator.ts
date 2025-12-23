@@ -9,6 +9,7 @@
 
 import { Predicate } from './condition-registry';
 import type { AppDbCreator, AppDbCreatorOptions } from './types';
+import { loadMariadbDriver, loadMysqlDriver, loadPgModule } from './db-drivers';
 
 async function createMySQLDatabase({
   host,
@@ -46,7 +47,7 @@ async function withPgClient(
   },
   fn: (client: any) => Promise<void>,
 ) {
-  const { Client } = require('pg');
+  const { Client } = loadPgModule();
   const client = new Client(options);
 
   await client.connect();
@@ -72,7 +73,7 @@ export const createDatabase: AppDbCreator = async ({ app }) => {
   const { host, port, username, password, dialect, database } = app.options.database as any;
 
   if (dialect === 'mysql') {
-    const mysql = require('mysql2/promise');
+    const mysql = loadMysqlDriver();
     return createMySQLDatabase({
       host,
       port,
@@ -84,7 +85,7 @@ export const createDatabase: AppDbCreator = async ({ app }) => {
   }
 
   if (dialect === 'mariadb') {
-    const mariadb = require('mariadb');
+    const mariadb = loadMariadbDriver();
     return createMySQLDatabase({
       host,
       port,
@@ -106,7 +107,7 @@ export const createConnection: AppDbCreator = async ({ app }) => {
   const { host, port, username, password, dialect, database, schema } = app.options.database as any;
 
   if (dialect === 'mysql') {
-    const mysql = require('mysql2/promise');
+    const mysql = loadMysqlDriver();
     return createMySQLDatabase({
       host,
       port,
@@ -118,7 +119,7 @@ export const createConnection: AppDbCreator = async ({ app }) => {
   }
 
   if (dialect === 'mariadb') {
-    const mariadb = require('mariadb');
+    const mariadb = loadMariadbDriver();
     return createMySQLDatabase({
       host,
       port,
