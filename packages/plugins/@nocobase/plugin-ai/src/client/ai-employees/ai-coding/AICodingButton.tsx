@@ -110,7 +110,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
             ? {
                 type: 'text',
                 uid: 'available-variables',
-                title: 'Available Variables',
+                title: 'Available variables',
                 content: `You can access the following variables via context:\n${variablesDesc}`,
               }
             : null,
@@ -186,7 +186,7 @@ export const AICodingButton: React.FC<AICodingButtonProps> = ({ uid, scene, lang
               addContextItems({
                 type: 'text',
                 uid: 'available-variables',
-                title: 'Available Variables',
+                title: 'Available variables',
                 content: `You can access the following variables via context:\n${variablesDesc}`,
               });
             }

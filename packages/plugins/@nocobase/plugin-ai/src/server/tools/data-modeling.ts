@@ -141,16 +141,12 @@ export const getCollectionNames: ToolOptions = {
     const { dataSource = 'main' } = args || {};
     let names: { name: string; title: string }[] = [];
     try {
-      let collectionManager = ctx.db;
-      if (dataSource !== 'main') {
-        const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
-        if (!ds) {
-          throw new Error(`Data source "${dataSource}" not found`);
-        }
-        collectionManager = ds.collectionManager;
+      const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
+      if (!ds) {
+        throw new Error(`Data source "${dataSource}" not found`);
       }
 
-      const collections = collectionManager.getCollections();
+      const collections = ds.collectionManager.getCollections();
       names = collections.map((collection) => ({
         name: collection.name,
         title: collection.title,
@@ -167,7 +163,6 @@ export const getCollectionNames: ToolOptions = {
         content: `Failed to retrieve collection names: ${err.message}`,
       };
     }
-
     return {
       status: 'success',
       content: JSON.stringify(names),
@@ -213,21 +208,17 @@ export const getCollectionMetadata: ToolOptions = {
     }
 
     try {
-      let collectionManager = ctx.db;
-      if (dataSource !== 'main') {
-        const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
-        if (!ds) {
-          return {
-            status: 'error',
-            content: `Data source "${dataSource}" not found`,
-          };
-        }
-        collectionManager = ds.collectionManager;
+      const ds = ctx.app.dataSourceManager.dataSources.get(dataSource);
+      if (!ds) {
+        return {
+          status: 'error',
+          content: `Data source "${dataSource}" not found`,
+        };
       }
 
       const metadata = [];
       for (const name of collectionNames) {
-        const collection = collectionManager.getCollection(name);
+        const collection = ds.collectionManager.getCollection(name);
         if (!collection) continue;
 
         const fields = collection.getFields().map((field) => {
@@ -244,7 +235,6 @@ export const getCollectionMetadata: ToolOptions = {
           fields,
         });
       }
-
       return {
         status: 'success',
         content: JSON.stringify(metadata),
@@ -269,20 +259,14 @@ export const getDataSources: ToolOptions = {
   },
   invoke: async (ctx: Context) => {
     try {
+      const dialect = ctx.db.sequelize.getDialect();
       const dataSources = [];
-      // Add main database
-      dataSources.push({
-        key: 'main',
-        displayName: 'Main Database',
-        type: ctx.db.sequelize.getDialect(),
-      });
-
-      // Add external data sources
+      // Add data sources
       for (const [key, ds] of ctx.app.dataSourceManager.dataSources) {
         dataSources.push({
           key: key,
           displayName: ds.options.displayName || key,
-          type: ds.collectionManager.db.sequelize.getDialect(),
+          type: dialect,
         });
       }
 
