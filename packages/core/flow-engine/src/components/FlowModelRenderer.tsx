@@ -76,11 +76,7 @@ export interface FlowSettingsRenderConfig {
   toolbarPosition?: 'inside' | 'above' | 'below';
 }
 
-interface FlowSettingsRecursiveContextValue {
-  enabled: boolean;
-}
-
-const FlowSettingsRecursiveContext = createContext<FlowSettingsRecursiveContextValue | null>(null);
+const FlowSettingsRecursiveContext = createContext<boolean | null>(null);
 
 function isFlowSettingsConfig(
   value: boolean | FlowSettingsRenderConfig | undefined,
@@ -90,7 +86,7 @@ function isFlowSettingsConfig(
 
 interface ResolvedFlowSettings {
   resolved: boolean | FlowSettingsRenderConfig;
-  nextContext: FlowSettingsRecursiveContextValue | null;
+  nextContext: boolean | null;
 }
 
 /**
@@ -112,12 +108,12 @@ function useResolvedFlowSettings(
     if (hasExplicit) {
       enabled = isConfig ? showFlowSettings.enabled ?? true : !!showFlowSettings;
     } else {
-      enabled = inherited?.enabled ?? false;
+      enabled = inherited ?? false;
     }
 
     // 计算传递给子级的 context
     const recursive = isConfig && showFlowSettings.recursive;
-    const nextContext: FlowSettingsRecursiveContextValue | null = recursive ? { enabled } : inherited;
+    const nextContext: boolean | null = recursive ? enabled : inherited;
 
     // 计算最终传递给子组件的 showFlowSettings 值
     const resolved: boolean | FlowSettingsRenderConfig =
