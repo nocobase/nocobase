@@ -117,7 +117,7 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     });
   }
 
-  render() {
+  renderItem() {
     const fieldModel = this.subModels.field as FieldModel;
     // 行索引（来自数组子表单）
     const idx = this.context.fieldIndex;

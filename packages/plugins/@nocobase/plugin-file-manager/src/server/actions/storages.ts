@@ -46,11 +46,11 @@ export async function getBasicInfo(context, next) {
 }
 
 export async function check(context, next) {
-  const { fileCollectionName } = context.action.params;
+  const { fileCollectionName, storageName: storage_name } = context.action.params;
   let storage;
 
   const fileCollection = context.db.getCollection(fileCollectionName || 'attachments');
-  const storageName = fileCollection?.options?.storage;
+  const storageName = storage_name || fileCollection?.options?.storage;
   if (storageName) {
     storage = await context.db.getRepository('storages').findOne({
       where: {

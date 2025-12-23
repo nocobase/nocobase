@@ -68,7 +68,12 @@ export const DaraButton: React.FC<{ ctx: FlowSettingsContext<any> }> = ({ ctx })
           ) && !/return\s*\{/.test(content);
         const isEvents = /chart\.(on|off)\s*\(|ctx\.\w+\s*\(/.test(content) && !/\breturn\s*\{/.test(content);
 
-        if (isSql) return ctx.writeSql(content);
+        if (isSql) {
+          // 从注释中提取数据源
+          const dsMatch = content.match(/^--\s*dataSource:\s*(\S+)/i);
+          const dataSource = dsMatch ? dsMatch[1] : undefined;
+          return ctx.writeSql(content, dataSource);
+        }
         if (isEvents) return ctx.writeChartEvents(content);
         return ctx.writeChartConfig(content);
       } catch (e) {

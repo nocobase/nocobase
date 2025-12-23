@@ -39,15 +39,10 @@ import { CollectionOptions, useCollectionManager_deprecated, useCollection_depre
 import { getVariableValue } from '../../common/getVariableValue';
 import { DataBlock, useFilterBlock } from '../../filter-provider/FilterProvider';
 import { mergeFilter, transformToFilter } from '../../filter-provider/utils';
+import { NAMESPACE_UI_SCHEMA } from '../../i18n/constant';
 import { useTreeParentRecord } from '../../modules/blocks/data-blocks/table/TreeRecordProvider';
 import { useRecord } from '../../record-provider';
-import {
-  removeNullCondition,
-  useActionContext,
-  useColumnSettings,
-  useCompile,
-  useDesignable,
-} from '../../schema-component';
+import { removeNullCondition, useActionContext, useColumnSettings, useCompile } from '../../schema-component';
 import { isSubMode } from '../../schema-component/antd/association-field/util';
 import { replaceVariables } from '../../schema-settings/LinkageRules/bindLinkageRulesToFiled';
 import { useCurrentUserContext } from '../../user';
@@ -59,7 +54,6 @@ import { useBlockRequestContext, useFilterByTk, useParamsFromRecord } from '../B
 import { useOperators } from '../CollectOperators';
 import { useDetailsBlockContext } from '../DetailsBlockProvider';
 import { TableFieldResource } from '../TableFieldProvider';
-import { NAMESPACE_UI_SCHEMA } from '../../i18n/constant';
 
 export * from './useBlockHeightProps';
 export * from './useDataBlockParentRecord';
@@ -1885,9 +1879,9 @@ export const getAppends = ({
     if (s['x-linkage-rules'] && !isSubMode(s)) {
       const collectAppends = (obj) => {
         const type = Object.keys(obj)[0] || '$and';
-        const list = obj[type];
+        const list = obj[type] || [];
 
-        list.forEach((item) => {
+        list.filter(Boolean).forEach((item) => {
           if ('$and' in item || '$or' in item) {
             return collectAppends(item);
           }

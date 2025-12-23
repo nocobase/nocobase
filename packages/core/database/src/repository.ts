@@ -115,7 +115,7 @@ export type CountOptions = Omit<SequelizeCountOptions, 'distinct' | 'where' | 'i
   } & FilterByTk;
 
 export interface FilterByTk {
-  filterByTk?: TargetKey;
+  filterByTk?: TK;
   targetCollection?: string;
 }
 

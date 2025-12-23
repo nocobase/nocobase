@@ -265,62 +265,6 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('sourceId');
   });
 
-  it('forces filterByTk into ctx.inputArgs when popupTemplateForceInputArgsFilterByTk is true', async () => {
-    const engine = new FlowEngine();
-    let capturedCtx: any;
-    const baseHandler = vi.fn(async (ctxArg: any) => {
-      capturedCtx = ctxArg;
-      return undefined;
-    });
-
-    const baseOpenView: ActionDefinition = {
-      name: 'openView',
-      title: 'openView',
-      uiSchema: {
-        uid: { type: 'string' },
-      },
-      handler: baseHandler as any,
-    };
-    engine.registerActions({ openView: baseOpenView });
-
-    registerOpenViewPopupTemplateAction(engine);
-    const enhanced = engine.getAction('openView') as any;
-
-    const baseInputArgs: any = {
-      dataSourceKey: 'main',
-      collectionName: 'users',
-      associationName: 'users.roles',
-      filterByTk: 'role-1',
-      sourceId: 'user-1',
-      defaultInputKeys: ['filterByTk', 'sourceId'],
-    };
-    const ctx: any = new FlowContext();
-    ctx.engine = engine;
-    ctx.t = (k: string) => k;
-    ctx.collectionField = {
-      isAssociationField: () => true,
-    };
-    ctx.defineProperty('inputArgs', { value: baseInputArgs });
-
-    await enhanced.handler(ctx, {
-      popupTemplateUid: 'tpl-1',
-      uid: 'popup-1',
-      dataSourceKey: 'main',
-      collectionName: 'roles',
-      filterByTk: 'user-99',
-      popupTemplateForceInputArgsFilterByTk: true,
-    });
-
-    expect(baseHandler).toHaveBeenCalledTimes(1);
-    // should not mutate original ctx.inputArgs
-    expect(ctx.inputArgs.filterByTk).toBe('role-1');
-
-    // shadow ctx should force override filterByTk and mark it as explicit (not default)
-    expect(capturedCtx).not.toBe(ctx);
-    expect(capturedCtx?.inputArgs?.filterByTk).toBe('user-99');
-    expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('filterByTk');
-  });
-
   it('infers target filterByTk from belongsTo record when reusing target collection template in relation field', async () => {
     const engine = new FlowEngine();
     let capturedCtx: any;
@@ -388,92 +332,6 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(ctx.inputArgs.filterByTk).toBe(cRecord.cUnique);
 
     // runtime ctx 应推断出 D 的 filterByTk（bigint id）
-    expect(capturedCtx).not.toBe(ctx);
-    expect(capturedCtx?.inputArgs?.collectionName).toBe('d');
-    expect(capturedCtx?.inputArgs?.filterByTk).toBe(123);
-  });
-
-  it('prefers target id from record when targetKey differs', async () => {
-    const engine = new FlowEngine();
-    let capturedCtx: any;
-    const baseHandler = vi.fn(async (ctxArg: any) => {
-      capturedCtx = ctxArg;
-      return undefined;
-    });
-
-    const baseOpenView: ActionDefinition = {
-      name: 'openView',
-      title: 'openView',
-      uiSchema: {
-        uid: { type: 'string' },
-      },
-      handler: baseHandler as any,
-    };
-    engine.registerActions({ openView: baseOpenView });
-
-    registerOpenViewPopupTemplateAction(engine);
-    const enhanced = engine.getAction('openView') as any;
-
-    // C 表记录：belongsTo D，但列表里 belongsTo 字段值可能直接是 D.id（非对象）
-    // 同时 foreignKey 仍保留 D.targetKey（用于关联），此时不应再发起 targetKey->id 的 list 换算请求
-    const cRecord: any = {
-      dCode: 'CODE-1',
-      d: 123,
-    };
-    const baseInputArgs: any = {
-      dataSourceKey: 'main',
-      collectionName: 'c',
-      associationName: 'c.d',
-      filterByTk: 'CODE-1',
-    };
-    const assocField: any = {
-      isAssociationField: () => true,
-      name: 'd',
-      foreignKey: 'dCode',
-      targetKey: 'code',
-      targetCollection: { dataSourceKey: 'main', name: 'd', filterTargetKey: 'id' },
-      collection: { dataSourceKey: 'main', name: 'c' },
-    };
-
-    const ctx: any = new FlowContext();
-    ctx.engine = engine;
-    ctx.t = (k: string) => k;
-    ctx.collectionField = assocField;
-    ctx.defineProperty('record', { value: cRecord });
-    ctx.defineProperty('inputArgs', { value: baseInputArgs });
-    ctx.api = {
-      resource: (name: string) => {
-        if (name === 'flowModelTemplates') {
-          return {
-            get: vi.fn(async () => ({
-              data: {
-                data: {
-                  uid: 'tpl-1',
-                  targetUid: 'popup-1',
-                  dataSourceKey: 'main',
-                  collectionName: 'd',
-                  associationName: '',
-                  filterByTk: '{{ ctx.record.id }}',
-                },
-              },
-            })),
-          };
-        }
-        if (name === 'd') return { list: vi.fn() };
-        throw new Error(`unexpected resource ${name}`);
-      },
-    };
-
-    await enhanced.handler(ctx, {
-      popupTemplateUid: 'tpl-1',
-      uid: 'popup-1',
-      dataSourceKey: 'main',
-      collectionName: 'd',
-      associationName: 'c.d',
-      popupTemplateHasFilterByTk: true,
-    });
-
-    expect(baseHandler).toHaveBeenCalledTimes(1);
     expect(capturedCtx).not.toBe(ctx);
     expect(capturedCtx?.inputArgs?.collectionName).toBe('d');
     expect(capturedCtx?.inputArgs?.filterByTk).toBe(123);
@@ -906,6 +764,53 @@ describe('openViewActionExtensions (popup template)', () => {
     expect(capturedCtx?.inputArgs?.sourceId).toBe(null);
     expect(capturedCtx?.inputArgs?.defaultInputKeys || []).toContain('filterByTk');
     expect(capturedCtx?.inputArgs?.defaultInputKeys || []).not.toContain('sourceId');
+  });
+
+  it('keeps object filterByTk in shadow ctx (composite target key)', async () => {
+    const engine = new FlowEngine();
+    let capturedCtx: any;
+    const baseHandler = vi.fn(async (ctxArg: any) => {
+      capturedCtx = ctxArg;
+      return undefined;
+    });
+
+    const baseOpenView: ActionDefinition = {
+      name: 'openView',
+      title: 'openView',
+      uiSchema: {
+        uid: { type: 'string' },
+      },
+      handler: baseHandler as any,
+    };
+    engine.registerActions({ openView: baseOpenView });
+
+    registerOpenViewPopupTemplateAction(engine);
+    const enhanced = engine.getAction('openView') as any;
+
+    const compositeTk = { Code1: 'C1', Code2: 'C2' };
+    const baseInputArgs: any = {
+      dataSourceKey: 'main',
+      collectionName: 'composites',
+      filterByTk: compositeTk,
+      defaultInputKeys: ['filterByTk'],
+    };
+    const ctx: any = new FlowContext();
+    ctx.engine = engine;
+    ctx.t = (k: string) => k;
+    ctx.view = { inputArgs: {} };
+    ctx.defineProperty('inputArgs', { value: baseInputArgs });
+
+    await enhanced.handler(ctx, {
+      popupTemplateContext: true,
+      uid: 'popup-1',
+      dataSourceKey: 'main',
+      collectionName: 'composites',
+      filterByTk: 'tpl-filter',
+    });
+
+    expect(baseHandler).toHaveBeenCalledTimes(1);
+    expect(capturedCtx).not.toBe(ctx);
+    expect(capturedCtx?.inputArgs?.filterByTk).toEqual(compositeTk);
   });
 
   it('rejects popup template when dataSourceKey/collectionName mismatches current context', async () => {

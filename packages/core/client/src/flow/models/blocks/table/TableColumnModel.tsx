@@ -261,7 +261,7 @@ export class TableColumnModel extends DisplayItemModel {
     super.onInit(options);
   }
 
-  render(): any {
+  renderItem(): any {
     return (value, record, index) => (
       <>
         {this.mapSubModels('field', (field) => {
