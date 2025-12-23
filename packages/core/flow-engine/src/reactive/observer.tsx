@@ -9,6 +9,7 @@
 
 import { observer as originalObserver, IObserverOptions, ReactFC } from '@formily/reactive-react';
 import React, { useMemo } from 'react';
+import { useFlowContext } from '../FlowContextProvider';
 
 type ObserverComponentProps<P, Options extends IObserverOptions> = Options extends {
   forwardRef: true;
@@ -23,7 +24,26 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
   options?: Options,
 ): React.MemoExoticComponent<ReactFC<ObserverComponentProps<P, Options>>> => {
   const ComponentWithDefaultScheduler = (props: any) => {
-    const ObservedComponent = useMemo(() => originalObserver(Component, options), []);
+    const ctx = useFlowContext();
+    const ctxRef = React.useRef(ctx);
+    ctxRef.current = ctx;
+    const ObservedComponent = useMemo(
+      () =>
+        originalObserver(Component, {
+          scheduler(updater) {
+            const pageActive = ctxRef.current.pageActive?.value;
+            const tabActive = ctxRef.current.tabActive?.value;
+
+            if (pageActive === false || tabActive === false) {
+              return;
+            }
+
+            updater();
+          },
+          ...options,
+        }),
+      [],
+    );
     return <ObservedComponent {...props} />;
   };
 
