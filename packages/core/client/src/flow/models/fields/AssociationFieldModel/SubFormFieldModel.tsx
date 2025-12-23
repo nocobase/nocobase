@@ -35,9 +35,11 @@ class FormAssociationFieldModel extends AssociationFieldModel {
         return (this.parent as FormItemModel).fieldPath;
       },
     });
-    this.context.defineProperty('actionName', {
-      get: () => 'view',
-    });
+    if (this.parent.context.actionName === 'update') {
+      this.context.defineProperty('actionName', {
+        get: () => 'view',
+      });
+    }
   }
 }
 export const ObjectNester = (props) => {
