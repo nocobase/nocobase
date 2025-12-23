@@ -26,6 +26,7 @@ const PageElementsHolder = React.memo(
   React.forwardRef((props: any, ref: any) => {
     const [elements, patchElement] = usePatchElement();
     React.useImperativeHandle(ref, () => ({ patchElement }), [patchElement]);
+    console.log('[NocoBase] Rendering PageElementsHolder with elements count:', elements.length);
     return <>{elements}</>;
   }),
 );
