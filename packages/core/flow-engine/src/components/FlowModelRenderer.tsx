@@ -52,7 +52,7 @@ import { ToolbarItemConfig } from '../types';
 import { FlowErrorFallback } from './FlowErrorFallback';
 import { FlowsContextMenu } from './settings/wrappers/contextual/FlowsContextMenu';
 import { FlowsFloatContextMenu } from './settings/wrappers/contextual/FlowsFloatContextMenu';
-import { observer } from '../reactive/observer';
+import { observer } from '../reactive';
 
 export interface FlowModelRendererProps {
   model?: FlowModel;
