@@ -7,7 +7,7 @@ class LeafModel extends FlowModel {
   render() {
     return (
       <Card size="small" title="C（未配置 showFlowSettings）">
-        <Typography.Text type="secondary">跟随 B 的递归关闭</Typography.Text>
+        <Typography.Text type="secondary">继承 A 的开启</Typography.Text>
       </Card>
     );
   }
@@ -16,7 +16,7 @@ class LeafModel extends FlowModel {
 class ParentModel extends FlowModel {
   render() {
     return (
-      <Card size="small" title="B（enabled=false, recursive=true）">
+      <Card size="small" title="B（showFlowSettings=false，仅影响自身）">
         <FlowModelRenderer model={(this.subModels as any).child} />
       </Card>
     );
@@ -27,26 +27,26 @@ class RootModel extends FlowModel {
   render() {
     return (
       <Card size="small" title="A（showFlowSettings.recursive=true）">
-        <FlowModelRenderer model={(this.subModels as any).child} showFlowSettings={{ enabled: false, recursive: true }} />
+        <FlowModelRenderer model={(this.subModels as any).child} showFlowSettings={false} />
       </Card>
     );
   }
 }
 
-class PluginShowFlowSettingsRecursiveChildRecursive extends Plugin {
+class PluginShowFlowSettingsRecursive extends Plugin {
   async load() {
     this.flowEngine.flowSettings.forceEnable();
     this.flowEngine.registerModels({ RootModel, ParentModel, LeafModel });
 
     const model = this.flowEngine.createModel({
-      uid: 'show-flow-settings-recursive-child-recursive-root',
+      uid: 'show-flow-settings-recursive-root',
       use: 'RootModel',
       subModels: {
         child: {
-          uid: 'show-flow-settings-recursive-child-recursive-parent',
+          uid: 'show-flow-settings-recursive-parent',
           use: 'ParentModel',
           subModels: {
-            child: { uid: 'show-flow-settings-recursive-child-recursive-leaf', use: 'LeafModel' },
+            child: { uid: 'show-flow-settings-recursive-leaf', use: 'LeafModel' },
           },
         },
       },
@@ -61,7 +61,7 @@ class PluginShowFlowSettingsRecursiveChildRecursive extends Plugin {
 
 const app = new Application({
   router: { type: 'memory', initialEntries: ['/'] },
-  plugins: [PluginShowFlowSettingsRecursiveChildRecursive],
+  plugins: [PluginShowFlowSettingsRecursive],
 });
 
 export default app.getRootComponent();

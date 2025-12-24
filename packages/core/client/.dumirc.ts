@@ -163,6 +163,16 @@ export default defineConfig({
           ],
         },
         {
+          title: 'FlowModelRenderer',
+          type: 'group',
+          children: [
+            {
+              title: '递归控制 Flow Settings（recursive）',
+              link: '/examples/flow-model-renderer',
+            },
+          ],
+        },
+        {
           title: 'FlowDefinition',
           type: 'group',
           children: [

@@ -66,7 +66,10 @@ interface FlowModelRendererProps {
   - `boolean`: 直接开关（默认 `false`）
   - `object`: 细粒度配置（对象形态默认 `enabled: true`）
     - `enabled`: 显式控制当前模型是否显示设置入口
-    - `recursive`: 仅递归继承 enabled；子节点显式配置优先级更高，但默认只影响自身（需要同时 `recursive:true` 才会影响后代）
+    - `recursive`: 仅递归传递 `enabled`（不继承 showBorder/style 等外观配置）
+      - `true`: 将当前节点的 `enabled` 传递给子节点
+      - `false`: 阻断上层递归继承（子节点不再继承 `enabled`）
+      - 未设置: 不改变上层递归继承链（仅影响当前节点）
     - `showBackground/showBorder/showDragHandle/style/toolbarPosition`: 仅影响当前实例，不会递归继承
 - **flowSettingsVariant**: 流设置的交互风格
   - `dropdown`: 下拉菜单形式（默认）
