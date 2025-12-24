@@ -263,7 +263,7 @@ export class SubTableColumnModel<
         model: this,
       }),
       render: this.renderItem(),
-      hidden: this.hidden && !this.flowEngine.flowSettings?.enabled,
+      hidden: this.hidden && !this.context.flowSettingsEnabled,
     };
   }
   renderItem(): any {

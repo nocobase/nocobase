@@ -139,7 +139,7 @@ export class GridCardBlockModel extends CollectionBlockModel<GridBlockModelStruc
   renderComponent() {
     const { columnCount } = this.props;
     const token = this.context.themeToken;
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
     return (
       <>
         <DndProvider>
