@@ -105,6 +105,9 @@ export class Gateway extends EventEmitter {
     try {
       for (const app of apps) {
         try {
+          if (!app) {
+            continue;
+          }
           await app.destroy({ signal });
         } catch (error) {
           const logger = app?.log ?? console;

@@ -287,6 +287,10 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       this.logger.error(`App model ${appName} not found`);
       return;
     }
+    if (!appModel.environments.includes(this.environmentName)) {
+      this.logger.error(`App model ${appName} is not available in environment ${this.environmentName}`);
+      return;
+    }
     const appOptions = appModel.options;
     if (!appOptions) {
       this.logger.error(`App options ${appName} not found`);
@@ -440,6 +444,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async addAppModel(appModel: AppModel) {
+    if (typeof this.discoveryAdapter.addAppModel !== 'function') {
+      return;
+    }
     return this.discoveryAdapter.addAppModel(appModel);
   }
 
@@ -448,6 +455,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async removeAppModel(appName: string) {
+    if (typeof this.discoveryAdapter.removeAppModel !== 'function') {
+      return;
+    }
     return this.discoveryAdapter.removeAppModel(appName);
   }
 
@@ -548,6 +558,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   private normalizeEnvInfo(environment: EnvironmentInfo): EnvironmentInfo {
+    if (typeof environment.available === 'boolean') {
+      return environment;
+    }
     const lastHeartbeatAt = environment.lastHeartbeatAt;
     if (!Number.isFinite(lastHeartbeatAt) || lastHeartbeatAt <= 0) {
       return {
