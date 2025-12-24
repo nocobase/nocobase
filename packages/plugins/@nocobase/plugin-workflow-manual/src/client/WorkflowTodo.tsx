@@ -56,7 +56,7 @@ import WorkflowPlugin, {
 import { NAMESPACE, useLang } from '../locale';
 import { FormBlockProvider } from './instruction/FormBlockProvider';
 import { ManualFormType, manualFormTypes } from './instruction/SchemaConfig';
-import { TaskStatusOptionsMap, TASK_STATUS } from '../common/constants';
+import { TaskStatusOptionsMap, TASK_STATUS, TASK_TYPE_MANUAL } from '../common/constants';
 import { useMobilePage } from '@nocobase/plugin-mobile/client';
 
 function TaskStatusColumn(props) {
@@ -730,6 +730,7 @@ function TodoExtraActions(props) {
 }
 
 export const manualTodo = {
+  key: TASK_TYPE_MANUAL,
   title: `{{t("My manual tasks", { ns: "${NAMESPACE}" })}}`,
   collection: 'workflowManualTasks',
   action: 'listMine',
