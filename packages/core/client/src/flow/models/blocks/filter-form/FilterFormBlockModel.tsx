@@ -131,7 +131,7 @@ export class FilterFormBlockModel extends FilterBlockModel<{
 
   renderComponent() {
     const { colon, labelAlign, labelWidth, labelWrap, layout } = this.props;
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
 
     return (
       <FormComponent
