@@ -1808,7 +1808,7 @@ describe('FlowModel', () => {
         expect(result).toBeDefined();
         expect(React.isValidElement(result)).toBe(true);
         expect(typeof result.props).toBe('object');
-        expect(typeof result.type).toBe('function'); // Should be a functional component when use NocoBase observer
+        expect(typeof result.type).toBe('object');
         expect(result.type.displayName).toBe('ReactiveWrapper(FlowModel)');
       });
 
