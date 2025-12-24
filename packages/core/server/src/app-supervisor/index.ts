@@ -287,7 +287,7 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
       this.logger.error(`App model ${appName} not found`);
       return;
     }
-    if (!appModel.environments.includes(this.environmentName)) {
+    if (appModel.environments && !appModel.environments.includes(this.environmentName)) {
       this.logger.error(`App model ${appName} is not available in environment ${this.environmentName}`);
       return;
     }
@@ -462,6 +462,9 @@ export class AppSupervisor extends EventEmitter implements AsyncEmitter {
   }
 
   async getAppNameByCName(cname: string) {
+    if (typeof this.discoveryAdapter.getAppNameByCName !== 'function') {
+      return null;
+    }
     return this.discoveryAdapter.getAppNameByCName(cname);
   }
 
