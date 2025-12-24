@@ -50,20 +50,23 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
             const tabActive = ctxRef.current?.tabActive?.value;
 
             if (pageActive === false || tabActive === false) {
-              // If there is already a pending updater, do nothing
-              if (pendingDisposerRef.current) {
-                return;
-              }
-
-              // Delay the update until the page and tab become active
-              const disposer = autorun(() => {
-                if (ctxRef.current?.pageActive?.value && ctxRef.current?.tabActive?.value) {
-                  updater();
-                  disposer();
-                  pendingDisposerRef.current = null;
+              // Avoid stack overflow
+              setTimeout(() => {
+                // If there is already a pending updater, do nothing
+                if (pendingDisposerRef.current) {
+                  return;
                 }
+
+                // Delay the update until the page and tab become active
+                const disposer = autorun(() => {
+                  if (ctxRef.current?.pageActive?.value && ctxRef.current?.tabActive?.value) {
+                    updater();
+                    disposer();
+                    pendingDisposerRef.current = null;
+                  }
+                });
+                pendingDisposerRef.current = disposer;
               });
-              pendingDisposerRef.current = disposer;
               return;
             }
 
