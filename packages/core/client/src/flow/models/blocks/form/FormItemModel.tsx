@@ -153,13 +153,13 @@ export class FormItemModel<T extends DefaultStructure = DefaultStructure> extend
     this.context.defineProperty('fieldPathArray', {
       value: [...parentFieldPathArray, ..._.castArray(fieldPath)],
     });
-    const record = this.context.currentObject || this.context.record || {};
+    const record = this.context.currentObject || this.context.record;
     return (
       <FormItem
         {...mergedProps}
         name={fieldPath}
         validateFirst={true}
-        disabled={this.props.disabled || (!record.isNew && this.props.aclDisabled)}
+        disabled={this.props.disabled || (!_.isEmpty(record) && !record.isNew && this.props.aclDisabled)}
       >
         <FieldModelRenderer model={modelForRender} name={fieldPath} />
       </FormItem>
@@ -224,7 +224,9 @@ FormItemModel.registerFlow({
           fields: [ctx.collectionField.name],
           actionName: blockActionName,
         });
+
         if (blockActionName === 'update') {
+          // 编辑表单
           const resultView = await ctx.aclCheck({
             dataSourceKey: ctx.dataSource?.key,
             resourceName: ctx.collectionField?.collectionName,
@@ -244,12 +246,32 @@ FormItemModel.registerFlow({
               aclDisabled: true,
             });
           }
-        } else if (!result) {
-          ctx.model.hidden = true;
-          ctx.model.forbidden = {
-            actionName: blockActionName,
-          };
-          ctx.exitAll();
+        } else if (blockActionName === 'create') {
+          // 新增表单
+          const updateCollectionAclResult = await ctx.aclCheck({
+            dataSourceKey: ctx.dataSource?.key,
+            resourceName: ctx.collectionField?.target || ctx.collectionField?.collectionName,
+            actionName: 'update',
+          });
+
+          const updateFieldAclResult = await ctx.aclCheck({
+            dataSourceKey: ctx.dataSource?.key,
+            resourceName: ctx.collectionField?.target || ctx.collectionField?.collectionName,
+            fields: [ctx.collectionField.name],
+            actionName: 'update',
+          });
+          if (!result) {
+            ctx.model.hidden = true;
+            ctx.model.forbidden = {
+              actionName: blockActionName,
+            };
+            ctx.exitAll();
+          }
+          if (!updateCollectionAclResult || !updateFieldAclResult) {
+            ctx.model.setProps({
+              aclDisabled: true,
+            });
+          }
         }
       },
     },
