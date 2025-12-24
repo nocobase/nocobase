@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.32](https://github.com/nocobase/nocobase/compare/v1.9.31...v1.9.32) - 2025-12-24
+
+### 🎉 New Features
+
+- **[Workflow]** Add new system variables in workflow, including `instanceId` and `genSnowflakeId()` ([#8223](https://github.com/nocobase/nocobase/pull/8223)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]** Fix stack overflow caused by infinite loop in display association fields lazy loading ([#8262](https://github.com/nocobase/nocobase/pull/8262)) by @zhangzhonghe
+
+- **[Action: Import records]** Fix the issue where row index in error message is always 1 when error thrown in import action ([#8244](https://github.com/nocobase/nocobase/pull/8244)) by @mytharcher
+
+- **[Workflow: Manual node]** Fix the issue where error thrown when cancel execution of deleted workflow ([#8258](https://github.com/nocobase/nocobase/pull/8258)) by @mytharcher
+
+- **[Collection field: Sequence]** Fixed an error when the field-sequence repair command encounters a non-existent collection in the current environment. ([#8251](https://github.com/nocobase/nocobase/pull/8251)) by @cgyrock
+
+- **[Action: Import records Pro]** Fix unique check logic which will throw error when the value of unique field is null by @mytharcher
+
+- **[Workflow: Approval]** Fix duplicated rollback of same transaction by @mytharcher
+
+## [v1.9.31](https://github.com/nocobase/nocobase/compare/v1.9.30...v1.9.31) - 2025-12-22
+
+### 🚀 Improvements
+
+- **[Async task manager]** Improved error handling during cleanup tasks by adding exception-catching mechanisms to prevent application crashes ([#8215](https://github.com/nocobase/nocobase/pull/8215)) by @mytharcher
+
+- **[Workflow]** Add original workflow instance to duplicate API ([#8225](https://github.com/nocobase/nocobase/pull/8225)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]** Handle empty linkage rules to prevent errors ([#8239](https://github.com/nocobase/nocobase/pull/8239)) by @zhangzhonghe
+
+- **[Departments]** Fix an issue where aggregate search cannot locate users ([#8222](https://github.com/nocobase/nocobase/pull/8222)) by @2013xile
+
 ## [v1.9.30](https://github.com/nocobase/nocobase/compare/v1.9.29...v1.9.30) - 2025-12-19
 
 ### 🚀 Improvements

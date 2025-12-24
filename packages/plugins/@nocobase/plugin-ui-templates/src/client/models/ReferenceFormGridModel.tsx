@@ -262,6 +262,7 @@ export class ReferenceFormGridModel extends FlowModel {
 
   clearForks() {
     try {
+      this._syncHostExtraTitle(undefined);
       unlinkScopedEngine(this._scopedEngine);
     } finally {
       this._scopedEngine = undefined;

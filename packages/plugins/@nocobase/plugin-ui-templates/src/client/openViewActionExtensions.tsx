@@ -31,6 +31,7 @@ import {
   type PopupTemplateContextFlags,
 } from './utils/templateCompatibility';
 import { mergeSelectOptions } from './utils/infiniteSelect';
+import _ from 'lodash';
 
 type TemplateRow = {
   uid: string;
@@ -291,6 +292,7 @@ const isUsableKeyValue = (value: any): boolean => {
   if (value === POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER) return false;
   if (typeof value === 'string') return value.trim() !== '';
   if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === 'object') return Object.keys(value).length > 0;
   return true;
 };
 
@@ -314,42 +316,23 @@ const resolveAssociationReferenceValues = (
   let filterTargetKeyValue: any | undefined;
   let associationTargetKeyValue: any | undefined;
 
-  if (record && typeof record === 'object') {
-    if (assocName) {
-      const assocValue = (record as any)?.[assocName];
-      if (assocValue !== null && typeof assocValue !== 'undefined') {
-        if (typeof assocValue === 'object') {
-          const filterKeyValue = (assocValue as any)?.[targetFilterKey];
-          if (isUsableKeyValue(filterKeyValue)) {
-            filterTargetKeyValue = filterKeyValue;
-          }
-          if (associationTargetKey) {
-            const targetKeyValue = (assocValue as any)?.[associationTargetKey];
-            if (isUsableKeyValue(targetKeyValue)) {
-              associationTargetKeyValue = targetKeyValue;
-            }
-          }
-        } else if (isUsableKeyValue(assocValue)) {
-          const foreignKeyValue = foreignKey ? (record as any)?.[foreignKey] : undefined;
-          const shouldTreatAsFilterKey =
-            associationTargetKey &&
-            associationTargetKey !== targetFilterKey &&
-            foreignKey &&
-            isUsableKeyValue(foreignKeyValue) &&
-            assocValue !== foreignKeyValue;
-          if (shouldTreatAsFilterKey) {
-            if (!isUsableKeyValue(filterTargetKeyValue)) {
-              filterTargetKeyValue = assocValue;
-            }
-          } else {
-            associationTargetKeyValue = assocValue;
-          }
-        }
+  if (record) {
+    const assocValue = record[assocName];
+    if (assocName && assocValue) {
+      let assocRecord;
+      if (_.isArray(assocValue)) {
+        // 对多
+        assocRecord = _.find(assocValue, { [associationTargetKey]: ctx.inputArgs?.filterByTk });
+      } else {
+        assocRecord = assocValue;
+      }
+      if (assocRecord) {
+        associationTargetKeyValue = assocRecord[targetFilterKey];
       }
     }
 
     if (!associationTargetKeyValue && foreignKey) {
-      const foreignKeyValue = (record as any)?.[foreignKey];
+      const foreignKeyValue = record[foreignKey];
       if (isUsableKeyValue(foreignKeyValue)) {
         associationTargetKeyValue = foreignKeyValue;
       }
@@ -372,7 +355,6 @@ const stripTemplateParams = (params: any) => {
   delete (next as any).popupTemplateContext;
   delete (next as any).popupTemplateHasFilterByTk;
   delete (next as any).popupTemplateHasSourceId;
-  delete (next as any).popupTemplateForceInputArgsFilterByTk;
   // Avoid overriding runtime defaults with null/empty values.
   const isEmptyValue = (v: any) => {
     if (v === null || typeof v === 'undefined') return true;
@@ -412,14 +394,13 @@ const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>
   const hasTemplateFilterByTk =
     typeof params.popupTemplateHasFilterByTk === 'boolean'
       ? params.popupTemplateHasFilterByTk
-      : normalizeStr(params.filterByTk) !== '';
+      : isUsableKeyValue((params as any)?.filterByTk);
   const hasTemplateSourceId =
     typeof params.popupTemplateHasSourceId === 'boolean'
       ? params.popupTemplateHasSourceId
       : normalizeStr(params.sourceId) !== '';
   // sourceId 是否需要保留完全由模板的 popupTemplateHasSourceId 或 sourceId 表达式决定
   const shouldKeepSourceId = hasTemplateSourceId;
-  const forceInputArgsFilterByTk = !!(params as any)?.popupTemplateForceInputArgsFilterByTk;
   const assocField = resolveAssociationFieldFromCtx(ctx);
   const assocTargetCollectionName = normalizeStr(assocField?.targetCollection?.name);
   const tplCollectionName = normalizeStr(params?.collectionName);
@@ -437,19 +418,7 @@ const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>
     didOverrideFilterByTk = true;
   }
 
-  // 强制覆盖：把 params.filterByTk 写入 shadow ctx.inputArgs，避免被"关系字段上下文"的 inputArgs.filterByTk 抢占优先级
-  if (hasTemplateFilterByTk && forceInputArgsFilterByTk) {
-    const raw = (params as any)?.filterByTk;
-    if (isUsableKeyValue(raw)) {
-      nextInputArgs.filterByTk = raw;
-    } else {
-      nextInputArgs.filterByTk =
-        normalizeStr((ctx as any)?.view?.inputArgs?.filterByTk) || POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER;
-    }
-    didOverrideFilterByTk = true;
-  }
-
-  // 自动推断：关系字段上下文复用“目标集合（非关系）弹窗模板”时，确保 filterByTk 使用目标集合的 filterTargetKey
+  // 自动推断：关系字段上下文复用"目标集合（非关系）弹窗模板"时，确保 filterByTk 使用目标集合的 filterTargetKey
   if (hasTemplateFilterByTk && !didOverrideFilterByTk && shouldInferFilterByTkFromAssociation) {
     const info = resolveAssociationReferenceValues(ctx, assocField);
 
@@ -470,9 +439,9 @@ const buildPopupTemplateShadowCtx = async (ctx: any, params: Record<string, any>
   // 仍需提供一个 truthy 值以保证区块菜单按 record 场景展示（否则只能添加 new 场景区块）。
   if (hasTemplateFilterByTk && !didOverrideFilterByTk) {
     const existing = (nextInputArgs as any).filterByTk;
-    if (!normalizeStr(existing)) {
-      nextInputArgs.filterByTk =
-        normalizeStr((ctx as any)?.view?.inputArgs?.filterByTk) || POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER;
+    if (!isUsableKeyValue(existing)) {
+      const fallback = (ctx as any)?.view?.inputArgs?.filterByTk;
+      nextInputArgs.filterByTk = isUsableKeyValue(fallback) ? fallback : POPUP_TEMPLATE_FILTER_BY_TK_PLACEHOLDER;
       didOverrideFilterByTk = true;
     }
   }

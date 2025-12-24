@@ -12,7 +12,8 @@ import { Application, ApplicationOptions, AppSupervisor, Gateway, PluginManager 
 import { uid } from '@nocobase/utils';
 import jwt from 'jsonwebtoken';
 import qs from 'qs';
-import supertest, { SuperAgentTest } from 'supertest';
+import supertest from 'supertest';
+import { SuperAgent, SuperAgentRequest } from 'superagent';
 import { MemoryPubSubAdapter } from './memory-pub-sub-adapter';
 import { MockDataSource } from './mock-data-source';
 import path from 'path';
@@ -73,7 +74,7 @@ interface Resource {
   [name: string]: (params?: ActionParams) => Promise<supertest.Response>;
 }
 
-export interface ExtendedAgent extends SuperAgentTest {
+export interface ExtendedAgent extends SuperAgent<SuperAgentRequest> {
   login: (user: any, roleName?: string) => Promise<ExtendedAgent>;
   loginUsingId: (userId: number, roleName?: string) => Promise<ExtendedAgent>;
   resource: (name: string, resourceOf?: any) => Resource;
