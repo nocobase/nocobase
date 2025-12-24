@@ -23,7 +23,7 @@ import { css } from '@emotion/css';
 import { debounce } from 'lodash';
 import { useRequest } from 'ahooks';
 import { PlusOutlined } from '@ant-design/icons';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SkeletonFallback } from '../../../components/SkeletonFallback';
 import { AssociationFieldModel } from './AssociationFieldModel';
@@ -31,6 +31,7 @@ import { LabelByField, resolveOptions, toSelectValue, type LazySelectProps } fro
 import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
 import { BlockSceneEnum } from '../../base';
 import { ActionWithoutPermission } from '../../base/ActionModel';
+import { EditFormModel } from '../../blocks';
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
@@ -86,6 +87,29 @@ export function CreateContent({ model, toOne = false }) {
   );
 }
 
+const useFieldPermissionMessage = (model, allowEdit) => {
+  const collection = model.context.collectionField?.collection;
+  const dataSource = collection.dataSource;
+  const t = model.context.t;
+  const name = model.context.collectionField?.name || model.fieldPath;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}${name}`;
+  }, []);
+  if (allowEdit) {
+    return null;
+  }
+  const messageValue = t(
+    `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
+    {
+      name: nameValue,
+      actionName: 'Update',
+    },
+  ).replaceAll('&gt;', '>');
+  return messageValue;
+};
+
 const LazySelect = (props: Readonly<LazySelectProps>) => {
   const {
     fieldNames = { label: 'label', value: 'value' },
@@ -96,6 +120,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
     quickCreate,
     onChange,
     allowCreate = true,
+    allowEdit = true,
     ...others
   } = props;
   const isMultiple = Boolean(multiple && allowMultiple);
@@ -115,7 +140,8 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
       </div>
     );
   };
-  console.log(allowCreate, isConfigMode);
+  const fieldAclMessage = useFieldPermissionMessage(model, allowEdit);
+
   return (
     <Space.Compact style={{ width: '100%' }}>
       <Select
@@ -201,7 +227,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
           const isFullMatch = realOptions.some((v) => v[fieldNames.label] === others.searchText);
           return (
             <>
-              {quickCreate === 'quickAdd' && allowCreate && others.searchText ? (
+              {quickCreate === 'quickAdd' && allowCreate && allowEdit && others.searchText ? (
                 <>
                   {!(realOptions.length === 0 && others.searchText) && menu}
                   {realOptions.length > 0 && others.searchText && !isFullMatch && <Divider style={{ margin: 0 }} />}
@@ -215,15 +241,16 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
         }}
       />
       {quickCreate === 'modalAdd' &&
-        (allowCreate || isConfigMode) &&
-        (allowCreate ? (
+        ((allowCreate && allowEdit) || isConfigMode) &&
+        (allowCreate && allowEdit ? (
           <Button onClick={others.onModalAddClick}>{t('Add new')}</Button>
         ) : (
           <ActionWithoutPermission
             forbidden={{ actionName: 'create' }}
             collection={model.collectionField.targetCollection}
+            message={fieldAclMessage}
           >
-            <Button onClick={others.onModalAddClick} style={{ opacity: '0.3' }}>
+            <Button onClick={others.onModalAddClick} disabled={!allowEdit} style={{ opacity: '0.3' }}>
               {t('Add new')}
             </Button>
           </ActionWithoutPermission>
@@ -513,6 +540,21 @@ RecordSelectFieldModel.registerFlow({
           resource.addFilterGroup(foreignKey, { $or: orFilters });
         }
         ctx.model.resource = resource;
+      },
+    },
+    allowEditCheck: {
+      async handler(ctx) {
+        if (ctx.blockModel instanceof EditFormModel) {
+          const aclEdit = await ctx.aclCheck({
+            dataSourceKey: ctx.collectionField.dataSourceKey,
+            resourceName: ctx.collectionField?.collectionName,
+            actionName: 'update',
+            fields: [ctx.collectionField.name],
+          });
+          ctx.model.setProps({
+            allowEdit: !!aclEdit,
+          });
+        }
       },
     },
   },

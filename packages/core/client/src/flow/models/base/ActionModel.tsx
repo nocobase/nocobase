@@ -39,7 +39,7 @@ export function ActionWithoutPermission(props) {
     ).replaceAll('&gt;', '>');
   }, [actionName, nameValue, t]);
 
-  return <Tooltip title={messageValue}>{props.children}</Tooltip>;
+  return <Tooltip title={props.message || messageValue}>{props.children}</Tooltip>;
 }
 
 export type ActionSceneType = 'collection' | 'record' | ActionSceneType[];
