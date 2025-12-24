@@ -8,54 +8,116 @@
 #   ./scripts/gen_rag.sh         # Generate both CN and EN files
 #   ./scripts/gen_rag.sh cn      # Generate CN only
 #   ./scripts/gen_rag.sh en      # Generate EN only
-#   ./scripts/gen_rag.sh all     # Generate both CN and EN files
+#
+# Prerequisites:
+#   - Run `yarn build` first to generate search_index files
 #
 # Output files will be generated in docs/docs/ directory
 
-# Get the docs root directory (parent of scripts/)
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DOCS_ROOT="$(dirname "$SCRIPT_DIR")"
 DOCS_DIR="$DOCS_ROOT/docs"
+DIST_DIR="$DOCS_ROOT/dist/static"
+
+# Domain mapping
+CN_DOMAIN="https://v2.docs.nocobase.com/cn"
+EN_DOMAIN="https://v2.docs.nocobase.com"
 
 generate_rag() {
-    local lang_dir="$DOCS_DIR/$1"
-    local output_file="$DOCS_DIR/nocobase-docs-$1.txt"
-    local lang_name=$2
+    local lang=$1
+    local domain=$2
+    local output_file="$DOCS_DIR/nocobase-docs-$lang.txt"
 
-    if [ ! -d "$lang_dir" ]; then
-        echo "Error: Directory $lang_dir does not exist"
+    # Find search_index file
+    local index_file=$(ls "$DIST_DIR"/search_index.$lang.*.json 2>/dev/null | head -1)
+
+    if [ ! -f "$index_file" ]; then
+        echo "Error: search_index.$lang.*.json not found in $DIST_DIR"
+        echo "Please run 'yarn build' first"
         return 1
     fi
 
-    echo "Generating $lang_name documentation..."
+    echo "Generating $lang documentation from $index_file..."
 
-    # Clear output file
-    > "$output_file"
+    python3 << PYTHON
+import json
+import os
 
-    # Traverse all md/mdx files sorted by directory structure
-    find "$lang_dir" -type f \( -name "*.md" -o -name "*.mdx" \) | sort | while read -r file; do
-        # Get relative path
-        rel_path="${file#$lang_dir/}"
+with open("$index_file", 'r', encoding='utf-8') as f:
+    data = json.load(f)
 
-        # Write separator and file path
-        echo "================================================================================" >> "$output_file"
-        echo "FILE: $rel_path" >> "$output_file"
-        echo "================================================================================" >> "$output_file"
-        echo "" >> "$output_file"
+docs_dir = "$DOCS_DIR"
+domain = "$domain"
+output_file = "$output_file"
+lang = "$lang"
 
-        # Write file content
-        cat "$file" >> "$output_file"
+with open(output_file, 'w', encoding='utf-8') as out:
+    count = 0
+    for entry in sorted(data, key=lambda x: x.get('routePath', '')):
+        route_path = entry.get('routePath', '')
+        title = entry.get('title', '')
 
-        # Add blank lines as separator
-        echo "" >> "$output_file"
-        echo "" >> "$output_file"
-    done
+        # Build URL
+        # routePath is like /cn/ai-employees/... for cn, /en/ai-employees/... for en
+        # We need to strip the lang prefix since domain already includes it
+        if route_path.startswith(f'/{lang}/'):
+            url_path = route_path[len(f'/{lang}'):]
+        elif route_path.startswith(f'/{lang}'):
+            url_path = route_path[len(f'/{lang}'):]
+        else:
+            url_path = route_path
 
-    local file_count=$(grep -c '^FILE:' "$output_file")
+        url = domain + url_path
+
+        # Find corresponding file
+        # CN: routePath = /cn/xxx, file = cn/xxx.md
+        # EN: routePath = /xxx (no /en prefix), file = en/xxx.md
+        if route_path.startswith(f'/{lang}/'):
+            file_base = route_path
+        else:
+            file_base = f'/{lang}{route_path}'
+
+        possible_files = [
+            f"{docs_dir}{file_base}.md",
+            f"{docs_dir}{file_base}.mdx",
+            f"{docs_dir}{file_base}/index.md",
+            f"{docs_dir}{file_base}/index.mdx"
+        ]
+
+        file_path = None
+        for p in possible_files:
+            if os.path.exists(p):
+                file_path = p
+                break
+
+        if not file_path:
+            continue
+
+        # Read file content
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Get relative file path
+        rel_path = file_path.replace(docs_dir + '/', '')
+
+        # Write entry
+        out.write("=" * 80 + "\\n")
+        out.write(f"URL: {url}\\n")
+        out.write(f"FILE: {rel_path}\\n")
+        out.write("=" * 80 + "\\n\\n")
+        out.write(content)
+        out.write("\\n\\n")
+
+        count += 1
+
+print(f"Generated {count} entries")
+PYTHON
+
+    local file_count=$(grep -c '^URL:' "$output_file")
     local file_size=$(du -h "$output_file" | cut -f1)
 
-    echo "✓ $lang_name: docs/nocobase-docs-$1.txt"
-    echo "  Files: $file_count"
+    echo "✓ $lang: docs/nocobase-docs-$lang.txt"
+    echo "  Entries: $file_count"
     echo "  Size: $file_size"
     echo ""
 }
@@ -67,14 +129,14 @@ echo ""
 
 case "${1:-all}" in
     cn)
-        generate_rag "cn" "Chinese"
+        generate_rag "cn" "$CN_DOMAIN"
         ;;
     en)
-        generate_rag "en" "English"
+        generate_rag "en" "$EN_DOMAIN"
         ;;
     all|"")
-        generate_rag "cn" "Chinese"
-        generate_rag "en" "English"
+        generate_rag "cn" "$CN_DOMAIN"
+        generate_rag "en" "$EN_DOMAIN"
         ;;
     *)
         echo "Usage: $0 [cn|en|all]"
