@@ -93,6 +93,8 @@
   "Get code snippet list": "获取代码片段列表",
   "Get collection metadata": "获取数据表元数据",
   "Get collection names": "获取数据表名称",
+  "Get data sources": "获取数据源",
+  "Retrieve list of all available data sources": "获取所有可用数据源列表",
   "Get models list failed, you can enter a model name manually.": "获取模型列表失败，你可以手动输入模型名称。",
   "Greeting message": "问候语",
   "Greeting message placeholder": "开启新对话时发送给用户的开场白",
@@ -129,9 +131,9 @@
   "Parameter name": "参数名",
   "Parameter type": "参数类型",
   "Parameters": "参数",
-  "Characterization": "人物设定",
-  "Characterization description": "AI模型的系统提示词，决定了“我”是谁，遵循哪些要求来工作和完成任务。",
-  "Characterization placeholder": "AI模型的系统提示词，决定了“我”是谁，遵循哪些要求来工作和完成任务。",
+  "Role setting": "人物设定",
+  "Role setting description": "AI 模型的系统提示词，决定了“我”是谁，遵循哪些要求来工作和完成任务。",
+  "Role setting placeholder": "AI 模型的系统提示词，决定了“我”是谁，遵循哪些要求来工作和完成任务。",
   "Personalized prompt": "个性化提示词",
   "Personalized prompt description": "你可以针对当前 AI 员工设置个性化的提示词，将在每轮新对话时发送给大模型",
   "Pick block": "选择区块",
@@ -204,5 +206,7 @@
   "knowledge Base Prompt default": "从知识库检索到的已知信息如下：\n{knowledgeBaseData}\n请参考上述已知信回答用户提问。",
   "please fix the error": "请修复这个错误",
   "please review the code": "请审查这份代码",
-  "references {{index}}": "参考资料 {{index}}"
+  "references {{index}}": "参考资料 {{index}}",
+  "Please complete role setting before submitting": "请先完成人物设定",
+  "Please complete model setting before submitting": "请先完成模型设置"
 }

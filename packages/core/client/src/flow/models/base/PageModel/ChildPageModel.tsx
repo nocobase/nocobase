@@ -37,11 +37,8 @@ export class ChildPageModel extends PageModel {
   render() {
     return (
       <>
-        {this.props.displayTitle && this.props.title ? (
+        {this.props.displayTitle && this.props.title && (
           <PageHeader title={this.props.title} style={this.props.headerStyle} />
-        ) : (
-          this.context.view.type !== 'embed' &&
-          this.props.enableTabs && <div style={{ height: this.context.themeToken.paddingContentVerticalLG }}></div>
         )}
         {this.props.enableTabs ? this.renderTabs() : this.renderFirstTab()}
       </>

@@ -13,7 +13,7 @@ import { LLMProvider } from '../llm-providers/provider';
 import { Database } from '@nocobase/database';
 import { concat } from '@langchain/core/utils/stream';
 import PluginAIServer from '../plugin';
-import { parseVariables } from '../utils';
+import { sendSSEError, parseVariables } from '../utils';
 import { getSystemPrompt } from './prompts';
 import _ from 'lodash';
 import { AIChatContext, AIChatConversation, AIMessage, AIMessageInput } from '../types';
@@ -173,12 +173,17 @@ export class AIEmployee {
 
     this.plugin.aiEmployeesManager.conversationController.delete(this.sessionId);
 
+    // 如果流式过程中发生错误，必须发送错误事件，无论是否有部分内容
+    if (errMsg) {
+      this.sendErrorResponse(errMsg);
+      return;
+    }
+
     const message = gathered?.content;
     const toolCalls = gathered?.tool_calls;
     const skills = this.employee.skillSettings?.skills;
     if (!message && !toolCalls?.length && !signal.aborted && !allowEmpty) {
-      this.ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: errMsg })}\n\n`);
-      this.ctx.res.end();
+      this.sendErrorResponse(errMsg);
       return;
     }
 
@@ -271,7 +276,8 @@ export class AIEmployee {
     return result;
   }
 
-  getDataSources() {
+  // Notice: employee.dataSourceSettings is not used in the current version.
+  getEmployeeDataSourceContext() {
     const dataSourceSettings: {
       collections?: {
         collection: string;
@@ -330,7 +336,7 @@ export class AIEmployee {
     });
 
     let systemMessage = await parseVariables(this.ctx, this.employee.about);
-    const dataSourceMessage = this.getDataSources();
+    const dataSourceMessage = this.getEmployeeDataSourceContext();
     if (dataSourceMessage) {
       systemMessage = `${systemMessage}\n${dataSourceMessage}`;
     }
@@ -583,7 +589,7 @@ export class AIEmployee {
       }
     } catch (err) {
       this.ctx.log.error(err);
-      this.sendErrorResponse('Tool call error');
+      this.sendErrorResponse(err.message || 'Tool call error');
     }
   }
 
@@ -753,8 +759,7 @@ export class AIEmployee {
   }
 
   sendErrorResponse(errorMessage: string) {
-    this.ctx.res.write(`data: ${JSON.stringify({ type: 'error', body: errorMessage })} \n\n`);
-    this.ctx.res.end();
+    sendSSEError(this.ctx, errorMessage);
   }
 
   async processMessages(userMessages: AIMessageInput[], messageId?: string) {

@@ -62,13 +62,6 @@ export class SubTableFieldModel extends AssociationFieldModel {
     return this.context.collection;
   }
 
-  get enableUIConfiguration() {
-    if (typeof this.context.enableUIConfiguration === 'boolean') {
-      return this.context.enableUIConfiguration;
-    }
-    return this.flowEngine.flowSettings.enabled;
-  }
-
   getColumns() {
     const { enableIndexColumn } = this.props;
 
@@ -90,7 +83,7 @@ export class SubTableFieldModel extends AssociationFieldModel {
         ...baseColumns.concat({
           key: '_empty',
         }),
-        this.enableUIConfiguration && {
+        this.context.flowSettingsEnabled && {
           key: 'addColumn',
           fixed: 'right',
           width: 100,

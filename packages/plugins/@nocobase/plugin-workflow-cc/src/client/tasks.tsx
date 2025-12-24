@@ -438,6 +438,7 @@ function TodoExtraActions(props) {
 }
 
 export const ccTodo = {
+  key: TASK_TYPE_CC,
   title: `{{t("CC to me", { ns: "${NAMESPACE}" })}}`,
   collection: 'workflowCcTasks',
   action: 'listMine',

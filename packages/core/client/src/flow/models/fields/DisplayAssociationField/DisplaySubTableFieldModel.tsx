@@ -103,7 +103,7 @@ const DisplayTable = (props) => {
         }),
       ].filter(Boolean),
     ) as any;
-    if (model.enableUIConfiguration) {
+    if (model.context.flowSettingsEnabled) {
       cols.push({
         key: 'addColumn',
         fixed: 'right',
@@ -203,13 +203,6 @@ export class DisplaySubTableFieldModel extends FieldModel {
     });
 
     return baseColumns;
-  }
-
-  get enableUIConfiguration() {
-    if (typeof this.context.enableUIConfiguration === 'boolean') {
-      return this.context.enableUIConfiguration;
-    }
-    return this.flowEngine.flowSettings.enabled;
   }
 
   public render() {

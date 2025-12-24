@@ -207,13 +207,6 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
     this.setProps('highlightedRowKey', null);
   }
 
-  get enableUIConfiguration() {
-    if (typeof this.context.enableUIConfiguration === 'boolean') {
-      return this.context.enableUIConfiguration;
-    }
-    return this.flowEngine.flowSettings.enabled;
-  }
-
   getColumns() {
     const cols = this.mapSubModels('columns', (column) => {
       return column.getColumnProps();
@@ -222,7 +215,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
       .concat({
         key: 'empty',
       });
-    if (this.enableUIConfiguration) {
+    if (this.context.flowSettingsEnabled) {
       cols.push({
         key: 'addColumn',
         fixed: 'right',

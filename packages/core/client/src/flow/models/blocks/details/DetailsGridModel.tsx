@@ -48,7 +48,7 @@ export class DetailsGridModel extends GridModel<{
   };
 
   renderAddSubModelButton() {
-    if (!this.enableUIConfiguration) {
+    if (!this.context.flowSettingsEnabled) {
       return null;
     }
 

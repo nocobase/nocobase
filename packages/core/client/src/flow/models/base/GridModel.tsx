@@ -113,13 +113,6 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     return this._memoItemFlowSettings;
   }
 
-  get enableUIConfiguration() {
-    if (typeof this.context.enableUIConfiguration === 'boolean') {
-      return this.context.enableUIConfiguration;
-    }
-    return this.flowEngine.flowSettings.enabled;
-  }
-
   onMount(): void {
     super.onMount();
     this.emitter.on('onSubModelAdded', (model: FlowModel) => {
@@ -529,7 +522,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
 
   /**
    * 运行态按可见 block 过滤行/列，避免“整行都是 hidden block”但依然保留行间距占位。
-   * - 配置态（flowSettings.enabled）保持原始 rows/sizes 以便拖拽和布局编辑。
+   * - 配置态（flowSettingsEnabled）保持原始 rows/sizes 以便拖拽和布局编辑。
    * - 运行态仅在判断为“整列/整行都不可见”时做过滤，不写回 props/stepParams，布局元数据保持不变。
    */
   private getVisibleLayout() {
@@ -542,7 +535,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
     const baseSizes: Record<string, number[]> = this.context.isMobileLayout ? {} : rawSizes;
 
     // 配置态：不做任何过滤，保持完整布局
-    if (this.flowEngine.flowSettings.enabled) {
+    if (this.context.flowSettingsEnabled) {
       return { rows: baseRows, sizes: baseSizes };
     }
 
@@ -651,7 +644,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
                         model={item}
                         key={`${item.uid}:${fieldKey}:${(item as any)?.use || (item as any)?.constructor?.name || 'm'}`}
                         fallback={baseItem.skeleton || this.itemFallback}
-                        showFlowSettings={this.enableUIConfiguration ? this.getItemFlowSettings() : false}
+                        showFlowSettings={this.context.flowSettingsEnabled ? this.getItemFlowSettings() : false}
                         showErrorFallback
                         settingsMenuLevel={(item as any)?.settingsMenuLevel ?? this.itemSettingsMenuLevel}
                         showTitle
@@ -664,7 +657,7 @@ export class GridModel<T extends { subModels: { items: FlowModel[] } } = Default
             </DndProvider>
           </Space>
         )}
-        {this.enableUIConfiguration && <div style={{ marginBottom: 16 }}>{this.renderAddSubModelButton()}</div>}
+        {this.context.flowSettingsEnabled && <div style={{ marginBottom: 16 }}>{this.renderAddSubModelButton()}</div>}
       </>
     );
   }

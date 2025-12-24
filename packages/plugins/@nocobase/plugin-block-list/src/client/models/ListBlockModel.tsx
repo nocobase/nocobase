@@ -120,61 +120,71 @@ export class ListBlockModel extends CollectionBlockModel<ListBlockModelStructure
     }
   }
 
-  renderComponent() {
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+  renderActions() {
+    const flowSettingsEnabled = !!this.context.flowSettingsEnabled;
+
+    if (!flowSettingsEnabled && !this.hasSubModel('actions')) {
+      return;
+    }
 
     return (
-      <>
-        <DndProvider>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-            <Space>
-              {this.mapSubModels('actions', (action) => {
-                // @ts-ignore
-                if (action.props.position === 'left') {
-                  return (
+      <DndProvider>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+          <Space>
+            {this.mapSubModels('actions', (action) => {
+              // @ts-ignore
+              if (action.props.position === 'left') {
+                return (
+                  <FlowModelRenderer
+                    key={action.uid}
+                    model={action}
+                    showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                  />
+                );
+              }
+
+              return null;
+            })}
+            {/* 占位 */}
+            <span></span>
+          </Space>
+          <Space wrap>
+            {this.mapSubModels('actions', (action) => {
+              if (action.hidden && !flowSettingsEnabled) {
+                return;
+              }
+              // @ts-ignore
+              if (action.props.position !== 'left') {
+                return (
+                  <Droppable model={action} key={action.uid}>
                     <FlowModelRenderer
-                      key={action.uid}
                       model={action}
                       showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
+                      extraToolbarItems={[
+                        {
+                          key: 'drag-handler',
+                          component: DragHandler,
+                          sort: 1,
+                        },
+                      ]}
                     />
-                  );
-                }
+                  </Droppable>
+                );
+              }
 
-                return null;
-              })}
-              {/* 占位 */}
-              <span></span>
-            </Space>
-            <Space wrap>
-              {this.mapSubModels('actions', (action) => {
-                if (action.hidden && !isConfigMode) {
-                  return;
-                }
-                // @ts-ignore
-                if (action.props.position !== 'left') {
-                  return (
-                    <Droppable model={action} key={action.uid}>
-                      <FlowModelRenderer
-                        model={action}
-                        showFlowSettings={{ showBackground: false, showBorder: false, toolbarPosition: 'above' }}
-                        extraToolbarItems={[
-                          {
-                            key: 'drag-handler',
-                            component: DragHandler,
-                            sort: 1,
-                          },
-                        ]}
-                      />
-                    </Droppable>
-                  );
-                }
+              return null;
+            })}
+            {this.renderConfiguireActions()}
+          </Space>
+        </div>
+      </DndProvider>
+    );
+  }
 
-                return null;
-              })}
-              {this.renderConfiguireActions()}
-            </Space>
-          </div>
-        </DndProvider>
+  renderComponent() {
+    return (
+      <>
+        {this.renderActions()}
         <List
           {...this.props}
           pagination={this.pagination()}
