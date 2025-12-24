@@ -158,7 +158,7 @@ interface KeepAliveProps {
 }
 
 const MINIMUM_CACHED_PAGES = 5;
-const MAXIMUM_CACHED_PAGES = 10;
+const MAXIMUM_CACHED_PAGES = 15;
 
 // Evaluate device performance to determine maximum number of cached pages
 // Range: minimum 5, maximum 10
@@ -201,7 +201,7 @@ const getMaxPageCount = () => {
     if (duration < 5) {
       return MAXIMUM_CACHED_PAGES; // Very good performance
     } else if (duration < 15) {
-      return 7; // Average performance
+      return 10; // Average performance
     }
 
     return baseCount;
