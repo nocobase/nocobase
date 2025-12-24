@@ -17,18 +17,18 @@ import { Icon } from '../../../icon/Icon';
 import { ColorPicker } from '../../../schema-component/antd/color-picker';
 import { commonConditionHandler, ConditionBuilder } from '../../components/ConditionBuilder';
 
-function ActionWithoutPermission(props) {
+export function ActionWithoutPermission(props) {
   const { t } = useTranslation();
   const model: any = useFlowModel();
   const blockModel = model.context.blockModel;
-  const dataSource = blockModel.collection.dataSource;
-  const collection = blockModel.collection;
+  const collection = props.collection || blockModel.collection;
+  const dataSource = collection.dataSource;
   const nameValue = useMemo(() => {
     const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} ` : '';
     return `${dataSourcePrefix}${collectionPrefix}`;
   }, []);
-  const { actionName } = model.forbidden;
+  const { actionName } = props?.forbidden || model.forbidden;
   const messageValue = useMemo(() => {
     return t(
       `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for collection "{{name}}"`,
@@ -38,6 +38,7 @@ function ActionWithoutPermission(props) {
       },
     ).replaceAll('&gt;', '>');
   }, [actionName, nameValue, t]);
+
   return <Tooltip title={messageValue}>{props.children}</Tooltip>;
 }
 

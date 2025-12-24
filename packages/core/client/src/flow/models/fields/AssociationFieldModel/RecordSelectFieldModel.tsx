@@ -16,6 +16,7 @@ import {
   FlowModelRenderer,
   useFlowContext,
   FlowModel,
+  useFlowModel,
 } from '@nocobase/flow-engine';
 import { Select, Space, Button, Divider, Tooltip, Tag } from 'antd';
 import { css } from '@emotion/css';
@@ -29,6 +30,7 @@ import { AssociationFieldModel } from './AssociationFieldModel';
 import { LabelByField, resolveOptions, toSelectValue, type LazySelectProps } from './recordSelectShared';
 import { MobileLazySelect } from '../mobile-components/MobileLazySelect';
 import { BlockSceneEnum } from '../../base';
+import { ActionWithoutPermission } from '../../base/ActionModel';
 
 function RemoteModelRenderer({ options }) {
   const ctx = useFlowViewContext();
@@ -98,6 +100,9 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
   } = props;
   const isMultiple = Boolean(multiple && allowMultiple);
   const realOptions = resolveOptions(options, value, isMultiple);
+  const model: any = useFlowModel();
+  const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
+
   const { t } = useTranslation();
   const QuickAddContent = ({ searchText }) => {
     return (
@@ -110,6 +115,7 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
       </div>
     );
   };
+  console.log(allowCreate, isConfigMode);
   return (
     <Space.Compact style={{ width: '100%' }}>
       <Select
@@ -208,11 +214,20 @@ const LazySelect = (props: Readonly<LazySelectProps>) => {
           );
         }}
       />
-      {quickCreate === 'modalAdd' && (
-        <Button disabled={!allowCreate} onClick={others.onModalAddClick}>
-          {t('Add new')}
-        </Button>
-      )}
+      {quickCreate === 'modalAdd' &&
+        (allowCreate || isConfigMode) &&
+        (allowCreate ? (
+          <Button onClick={others.onModalAddClick}>{t('Add new')}</Button>
+        ) : (
+          <ActionWithoutPermission
+            forbidden={{ actionName: 'create' }}
+            collection={model.collectionField.targetCollection}
+          >
+            <Button onClick={others.onModalAddClick} style={{ opacity: '0.3' }}>
+              {t('Add new')}
+            </Button>
+          </ActionWithoutPermission>
+        ))}
     </Space.Compact>
   );
 };
