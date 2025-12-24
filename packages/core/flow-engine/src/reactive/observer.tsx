@@ -8,7 +8,7 @@
  */
 
 import { observer as originalObserver, IObserverOptions, ReactFC } from '@formily/reactive-react';
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import { useFlowContext } from '../FlowContextProvider';
 import { autorun } from '@formily/reactive';
 
@@ -26,8 +26,22 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
 ): React.MemoExoticComponent<ReactFC<ObserverComponentProps<P, Options>>> => {
   const ComponentWithDefaultScheduler = (props: any) => {
     const ctx = useFlowContext();
-    const ctxRef = React.useRef(ctx);
+    const ctxRef = useRef(ctx);
     ctxRef.current = ctx;
+
+    // Store the pending disposer to avoid creating multiple listeners
+    const pendingDisposerRef = useRef<(() => void) | null>(null);
+
+    // Cleanup on unmount
+    useEffect(() => {
+      return () => {
+        if (pendingDisposerRef.current) {
+          pendingDisposerRef.current();
+          pendingDisposerRef.current = null;
+        }
+      };
+    }, []);
+
     const ObservedComponent = useMemo(
       () =>
         originalObserver(Component, {
@@ -36,14 +50,27 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
             const tabActive = ctxRef.current?.tabActive?.value;
 
             if (pageActive === false || tabActive === false) {
+              // If there is already a pending updater, do nothing
+              if (pendingDisposerRef.current) {
+                return;
+              }
+
               // Delay the update until the page and tab become active
               const disposer = autorun(() => {
                 if (ctxRef.current?.pageActive?.value && ctxRef.current?.tabActive?.value) {
                   updater();
                   disposer();
+                  pendingDisposerRef.current = null;
                 }
               });
+              pendingDisposerRef.current = disposer;
               return;
+            }
+
+            // If we are updating immediately, clear any pending disposer
+            if (pendingDisposerRef.current) {
+              pendingDisposerRef.current();
+              pendingDisposerRef.current = null;
             }
 
             updater();
