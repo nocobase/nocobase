@@ -232,7 +232,6 @@ NocoBase 的用户密码使用 scrypt 算法加密后存储，可以有效对抗
 NocoBase 支持完全内网部署，参考
 
 - https://www.nocobase.com/en/blog/load-docker-image
-- [将插件上传到插件目录来安装与升级](/get-started/install-upgrade-plugins#第三方插件)
 
 ### 多环境隔离
 
