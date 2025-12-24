@@ -75,7 +75,7 @@ export function usePage() {
       return null; // Header 组件本身不渲染内容
     };
 
-    const { target, content, preventClose, inheritContext = true, ...restConfig } = config;
+    const { target, content, preventClose, inheritContext = true, inputArgs, ...restConfig } = config;
 
     const ctx = new FlowContext();
     // 为当前视图创建作用域引擎（隔离实例与缓存）
@@ -169,8 +169,9 @@ export function usePage() {
       },
     );
 
+    const key = inputArgs?.viewUid || `page-${uuid}`;
     const page = (
-      <FlowEngineProvider engine={scopedEngine}>
+      <FlowEngineProvider key={key} engine={scopedEngine}>
         <FlowViewContextProvider context={ctx}>
           <PageWithContext />
         </FlowViewContextProvider>
@@ -178,7 +179,7 @@ export function usePage() {
     );
 
     if (target && target instanceof HTMLElement) {
-      closeFunc = holderRef.current?.patchElement(ReactDOM.createPortal(page, target));
+      closeFunc = holderRef.current?.patchElement(ReactDOM.createPortal(page, target, key));
     } else {
       closeFunc = holderRef.current?.patchElement(page);
     }
