@@ -10,6 +10,8 @@
 import { tExpr, MultiRecordResource } from '@nocobase/flow-engine';
 import { ButtonProps } from 'antd';
 import { ActionModel, ActionSceneEnum } from '../base';
+import { beforeAction } from '../../events/beforeAction';
+import { afterAction } from '../../events/afterAction';
 
 export class BulkDeleteActionModel extends ActionModel {
   static scene = ActionSceneEnum.collection;
@@ -57,3 +59,6 @@ BulkDeleteActionModel.registerFlow({
     },
   },
 });
+
+BulkDeleteActionModel.registerEvent(beforeAction);
+BulkDeleteActionModel.registerEvent(afterAction);

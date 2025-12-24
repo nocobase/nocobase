@@ -10,6 +10,8 @@
 import { tExpr } from '@nocobase/flow-engine';
 import type { ButtonProps } from 'antd/es/button';
 import { ActionModel, ActionSceneEnum } from '../base';
+import { beforeAction } from '../../events/beforeAction';
+import { afterAction } from '../../events/afterAction';
 
 export class DeleteActionModel extends ActionModel {
   static scene = ActionSceneEnum.record;
@@ -57,3 +59,6 @@ DeleteActionModel.registerFlow({
     },
   },
 });
+
+DeleteActionModel.registerEvent(beforeAction);
+DeleteActionModel.registerEvent(afterAction);
