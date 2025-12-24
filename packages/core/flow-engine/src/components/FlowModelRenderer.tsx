@@ -112,8 +112,20 @@ function useResolvedFlowSettings(
     }
 
     // 计算传递给子级的 context
-    const recursive = isConfig && showFlowSettings.recursive;
-    const nextContext: boolean | null = recursive ? enabled : inherited;
+    let nextContext: boolean | null;
+    if (!hasExplicit) {
+      nextContext = inherited;
+    } else if (isConfig) {
+      if (showFlowSettings.recursive === true) {
+        nextContext = enabled;
+      } else if (showFlowSettings.recursive === false) {
+        nextContext = null;
+      } else {
+        nextContext = inherited;
+      }
+    } else {
+      nextContext = inherited;
+    }
 
     // 计算最终传递给子组件的 showFlowSettings 值
     const resolved: boolean | FlowSettingsRenderConfig =

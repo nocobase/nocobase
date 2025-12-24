@@ -180,6 +180,37 @@ describe('FlowModelRenderer showFlowSettings.recursive', () => {
     });
   });
 
+  it('explicit recursive:false blocks inheritance for descendants', async () => {
+    const A = createModel('A');
+    const B = createModel('B');
+    const C = createModel('C');
+
+    C.render = vi.fn().mockReturnValue(<div data-testid="C">C</div>);
+    B.render = vi.fn().mockReturnValue(
+      <div data-testid="B">
+        B
+        <FlowModelRenderer model={C} />
+      </div>,
+    );
+    A.render = vi.fn().mockReturnValue(
+      <div data-testid="A">
+        A
+        <FlowModelRenderer model={B} showFlowSettings={{ enabled: false, recursive: false }} />
+      </div>,
+    );
+
+    const { container } = renderWithProvider(<FlowModelRenderer model={A} showFlowSettings={{ recursive: true }} />);
+
+    await waitFor(() => {
+      const menus = getFloatMenus(container);
+      // A (recursive enabled) + B blocks inheritance => only A menu
+      expect(menus).toHaveLength(1);
+      expect(menus.some((m) => hasTestId(m, 'A'))).toBe(true);
+      expect(menus.some((m) => hasTestId(m, 'B') && !hasTestId(m, 'A'))).toBe(false);
+      expect(menus.some((m) => hasTestId(m, 'C') && !hasTestId(m, 'A') && !hasTestId(m, 'B'))).toBe(false);
+    });
+  });
+
   it('explicit enabled overrides inherited disabled for itself', async () => {
     const A = createModel('A');
     const B = createModel('B');
