@@ -13,10 +13,11 @@ import { observer } from '@formily/react';
 import { css } from '@emotion/css';
 import { FlowModel } from '../../../../models';
 import { ToolbarItemConfig } from '../../../../types';
-import { useFlowModelById, useFlowContext } from '../../../../hooks';
+import { useFlowModelById } from '../../../../hooks';
 import { useFlowEngine } from '../../../../provider';
 import { FlowEngine } from '../../../../flowEngine';
 import { getT } from '../../../../utils';
+import { useFlowContext } from '../../../..';
 
 // 检测DOM中直接子元素是否包含button元素的辅助函数
 const detectButtonInDOM = (container: HTMLElement): boolean => {
