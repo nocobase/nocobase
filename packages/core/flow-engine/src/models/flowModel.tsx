@@ -917,7 +917,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
       // 如果需要跳过响应式包装（例如返回渲染函数），也需要包一层以处理 hidden/config 逻辑
       if (this.shouldSkipReactiveWrapping()) {
         const wrappedNonReactive = function (this: any) {
-          const isConfigMode = !!this?.flowEngine?.flowSettings?.enabled;
+          const isConfigMode = !!this?.context?.flowSettingsEnabled;
           if (this.hidden) {
             if (!isConfigMode) return null;
             const rendered = this.renderHiddenInConfig?.();
@@ -971,7 +971,7 @@ export class FlowModel<Structure extends DefaultStructure = DefaultStructure> {
           }, [renderTarget]);
 
           // 处理 hidden 渲染逻辑：
-          const isConfigMode = !!modelInstance?.flowEngine?.flowSettings?.enabled;
+          const isConfigMode = !!modelInstance?.context?.flowSettingsEnabled;
           if (modelInstance.hidden) {
             if (!isConfigMode) {
               return null;

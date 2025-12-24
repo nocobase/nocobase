@@ -16,6 +16,7 @@ import { useFlowModelById } from '../../../../hooks';
 import { useFlowEngine } from '../../../../provider';
 import { FlowEngine } from '../../../../flowEngine';
 import { getT } from '../../../../utils';
+import { useFlowContext } from '../../../..';
 import { observer } from '../../../../reactive';
 
 // 检测DOM中直接子元素是否包含button元素的辅助函数
@@ -389,9 +390,9 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
  * @param props.extraToolbarItems 额外的工具栏项目，仅应用于此实例
  */
 const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = observer((props) => {
-  const flowEngine = useFlowEngine();
+  const { flowSettingsEnabled } = useFlowContext();
   // Only render if flowSettings is enabled
-  if (!flowEngine.flowSettings?.enabled) {
+  if (!flowSettingsEnabled) {
     return <>{props.children}</>;
   }
   if (isModelByIdProps(props)) {

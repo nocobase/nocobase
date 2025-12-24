@@ -55,6 +55,7 @@ const layoutClass = css`
 `;
 
 export interface TaskTypeOptions {
+  key: string;
   title: string;
   collection: string;
   action?: string;
