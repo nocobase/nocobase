@@ -327,6 +327,13 @@ export class CollectionBlockModel<T = DefaultStructure> extends DataBlockModel<T
     throw new Error('createResource method must be implemented in subclasses of CollectionBlockModel');
   }
 
+  refresh() {
+    if (!this.resource) {
+      return super.refresh();
+    }
+    return this.resource.refresh();
+  }
+
   protected defaultBlockTitle() {
     const blockLabel = this.translate(this.constructor['meta']?.label || this.constructor.name);
     const dsName = this.dataSource?.displayName || this.dataSource?.key;
