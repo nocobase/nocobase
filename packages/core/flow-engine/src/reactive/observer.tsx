@@ -24,7 +24,7 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
   Component: ReactFC<P>,
   options?: Options,
 ): React.MemoExoticComponent<ReactFC<ObserverComponentProps<P, Options>>> => {
-  const ComponentWithDefaultScheduler = (props: any) => {
+  const ComponentWithDefaultScheduler = React.memo((props: any) => {
     const ctx = useFlowContext();
     const ctxRef = useRef(ctx);
     ctxRef.current = ctx;
@@ -83,7 +83,9 @@ export const observer = <P, Options extends IObserverOptions = IObserverOptions>
       [],
     );
     return <ObservedComponent {...props} />;
-  };
+  });
+
+  ComponentWithDefaultScheduler.displayName = `ComponentWithDefaultScheduler`;
 
   return ComponentWithDefaultScheduler as React.MemoExoticComponent<ReactFC<ObserverComponentProps<P, Options>>>;
 };
