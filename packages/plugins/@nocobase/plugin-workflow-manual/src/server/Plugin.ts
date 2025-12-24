@@ -58,6 +58,9 @@ export default class extends Plugin {
       execution.workflow =
         workflowPlugin.enabledCache.get(execution.workflowId) || (await execution.getWorkflow({ transaction }));
     }
+    if (!execution.workflow) {
+      return;
+    }
     if (!execution.workflow.nodes) {
       execution.workflow.nodes = await execution.workflow.getNodes({ transaction });
     }
