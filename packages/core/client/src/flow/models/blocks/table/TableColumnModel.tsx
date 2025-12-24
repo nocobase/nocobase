@@ -233,7 +233,7 @@ export class TableColumnModel extends DisplayItemModel {
               {(() => {
                 const err = this['__autoFlowError'];
                 if (err) throw err;
-                if (this.hidden && this.flowEngine.flowSettings?.enabled) {
+                if (this.hidden && this.context.flowSettingsEnabled) {
                   if (this.forbidden) {
                     return <FieldWithoutPermissionPlaceholder />;
                   }
@@ -254,7 +254,7 @@ export class TableColumnModel extends DisplayItemModel {
           </FlowModelProvider>
         );
       },
-      hidden: this.hidden && !this.flowEngine.flowSettings?.enabled,
+      hidden: this.hidden && !this.context.flowSettingsEnabled,
     };
   }
   onInit(options: any): void {

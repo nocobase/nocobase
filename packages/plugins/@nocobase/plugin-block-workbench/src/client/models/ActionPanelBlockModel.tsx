@@ -70,7 +70,7 @@ export class ActionPanelBlockModel extends BlockModel {
     const { layout, ellipsis } = this.props;
 
     const token = this.context.themeToken;
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
 
     return (
       <div id={`model-${this.uid}`} className="action-panel-block">
@@ -285,9 +285,7 @@ export class ActionPanelBlockModel extends BlockModel {
             </div>
           </DndProvider>
         </ConfigProvider>
-        {this.flowEngine?.flowSettings?.enabled && (
-          <div style={{ marginTop: '10px' }}>{this.renderConfigureActions()}</div>
-        )}
+        {this.context.flowSettingsEnabled && <div style={{ marginTop: '10px' }}>{this.renderConfigureActions()}</div>}
       </div>
     );
   }

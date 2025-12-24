@@ -13,7 +13,7 @@ import { observer } from '@formily/react';
 import { css } from '@emotion/css';
 import { FlowModel } from '../../../../models';
 import { ToolbarItemConfig } from '../../../../types';
-import { useFlowModelById } from '../../../../hooks';
+import { useFlowModelById, useFlowContext } from '../../../../hooks';
 import { useFlowEngine } from '../../../../provider';
 import { FlowEngine } from '../../../../flowEngine';
 import { getT } from '../../../../utils';
@@ -389,9 +389,9 @@ const isModelByIdProps = (props: FlowsFloatContextMenuProps): props is ModelById
  * @param props.extraToolbarItems 额外的工具栏项目，仅应用于此实例
  */
 const FlowsFloatContextMenu: React.FC<FlowsFloatContextMenuProps> = observer((props) => {
-  const flowEngine = useFlowEngine();
+  const { flowSettingsEnabled } = useFlowContext();
   // Only render if flowSettings is enabled
-  if (!flowEngine.flowSettings?.enabled) {
+  if (!flowSettingsEnabled) {
     return <>{props.children}</>;
   }
   if (isModelByIdProps(props)) {

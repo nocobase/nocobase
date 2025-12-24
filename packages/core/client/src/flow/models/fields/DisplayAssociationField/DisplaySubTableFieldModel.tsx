@@ -86,7 +86,7 @@ const DisplayTable = (props) => {
   }, [currentPage, currentPageSize, value]);
 
   const getColumns = () => {
-    const isConfigMode = !!model.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!model.context.flowSettingsEnabled;
 
     const cols = adjustColumnOrder(
       [

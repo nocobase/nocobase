@@ -208,7 +208,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
   }
 
   getColumns() {
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
     const cols = this.mapSubModels('columns', (column) => {
       return column.getColumnProps();
     })
@@ -443,7 +443,7 @@ export class TableBlockModel extends CollectionBlockModel<TableBlockModelStructu
 
   renderComponent() {
     const highlightedRowKey = this.props.highlightedRowKey;
-    const isConfigMode = !!this.flowEngine?.flowSettings?.enabled;
+    const isConfigMode = !!this.context.flowSettingsEnabled;
     return !this.columns.value.length ? (
       <Skeleton paragraph={{ rows: 3 }} />
     ) : (
