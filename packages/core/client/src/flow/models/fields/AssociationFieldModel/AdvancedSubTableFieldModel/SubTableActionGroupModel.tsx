@@ -7,6 +7,11 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-export * from './AdvancedSubTableFieldModel';
-export * from './SubTableActionGroupModel';
-export * from './SubTableActionsColumnModel';
+import { ActionGroupModel } from '../../../base/ActionGroupModel';
+import { SubTableEditActionModel } from './actions/SubTableEditActionModel';
+
+export class SubTableActionGroupModel extends ActionGroupModel {}
+
+SubTableActionGroupModel.registerActionModels({
+  SubTableEditActionModel,
+});
