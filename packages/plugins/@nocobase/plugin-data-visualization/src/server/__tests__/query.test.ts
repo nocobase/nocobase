@@ -58,6 +58,7 @@ describe('query', () => {
       ctx = {
         app,
         db,
+        database: db,
       };
     });
 

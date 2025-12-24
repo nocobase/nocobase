@@ -12,7 +12,8 @@ import type { DropdownProps, MenuProps } from 'antd';
 import { App, Dropdown, Modal } from 'antd';
 import React, { startTransition, useCallback, useEffect, useMemo, useState, FC } from 'react';
 import { FlowModel } from '../../../../models';
-import { StepDefinition, StepUIMode } from '../../../../types';
+import type { FlowModelExtraMenuItem } from '../../../../models';
+import type { StepDefinition, StepUIMode } from '../../../../types';
 import {
   getT,
   resolveStepUiSchema,
@@ -23,6 +24,7 @@ import {
 import { useNiceDropdownMaxHeight } from '../../../../hooks';
 import { SwitchWithTitle } from '../component/SwitchWithTitle';
 import { SelectWithTitle } from '../component/SelectWithTitle';
+import type { FlowSettingsContext } from '../../../../flowContext';
 // Type definitions for better type safety
 interface StepInfo {
   stepKey: string;
@@ -39,10 +41,58 @@ interface FlowInfo {
   modelKey?: string;
 }
 
-interface MenuConfig {
-  maxDepth?: number;
-  enablePerformanceOptimization?: boolean;
-}
+const walkSubModels = (rootModel, options, cb) => {
+  const maxDepth = options.maxDepth;
+  const arrayLimit = typeof options.arrayLimit === 'number' ? options.arrayLimit : Number.POSITIVE_INFINITY;
+  const mode = options.mode ?? 'stack';
+
+  const visited = new Set();
+  const stackIds = new Set();
+
+  const walk = (model, depth, modelKey?) => {
+    if (!model || depth > maxDepth) return;
+
+    const run = () => {
+      cb(model, { depth, modelKey });
+      if (depth >= maxDepth) return;
+
+      Object.entries(model.subModels || {}).forEach(([subKey, subModelValue]) => {
+        if (Array.isArray(subModelValue)) {
+          const limit = Number.isFinite(arrayLimit) ? Math.min(subModelValue.length, arrayLimit) : subModelValue.length;
+          for (let index = 0; index < limit; index++) {
+            const subModel = subModelValue[index];
+            if (subModel instanceof FlowModel) {
+              walk(subModel, depth + 1, `${subKey}[${index}]`);
+            }
+          }
+          return;
+        }
+
+        if (subModelValue instanceof FlowModel) {
+          walk(subModelValue, depth + 1, subKey);
+        }
+      });
+    };
+
+    if (mode === 'visited') {
+      if (visited.has(model)) return;
+      visited.add(model);
+      run();
+      return;
+    }
+
+    const modelId = model.uid || `temp-${Date.now()}`;
+    if (stackIds.has(modelId)) return;
+    stackIds.add(modelId);
+    try {
+      run();
+    } finally {
+      stackIds.delete(modelId);
+    }
+  };
+
+  walk(rootModel, 1);
+};
 
 /**
  * Find sub-model by key with validation
@@ -129,10 +179,11 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   flattenSubMenus = true,
 }) => {
   const { message } = App.useApp();
-  const t = getT(model);
+  const t = useMemo(() => getT(model), [model]);
   const [visible, setVisible] = useState(false);
   // 当模型发生子模型替换/增删等变化时，强制刷新菜单数据
   const [refreshTick, setRefreshTick] = useState(0);
+  const [extraMenuItems, setExtraMenuItems] = useState<FlowModelExtraMenuItem[]>([]);
   const handleOpenChange: DropdownProps['onOpenChange'] = useCallback((nextOpen: boolean, info) => {
     if (info.source === 'trigger' || nextOpen) {
       // 当鼠标快速滑过时，终止菜单的渲染，防止卡顿
@@ -142,6 +193,48 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     }
   }, []);
   const dropdownMaxHeight = useNiceDropdownMaxHeight([visible]);
+  useEffect(() => {
+    let mounted = true;
+    const loadExtras = async () => {
+      const allExtras: FlowModelExtraMenuItem[] = [];
+      const modelsToProcess: Array<{ model: FlowModel; modelKey?: string }> = [];
+      walkSubModels(model, { maxDepth: menuLevels, arrayLimit: 50, mode: 'stack' }, (targetModel, { modelKey }) => {
+        modelsToProcess.push({ model: targetModel, modelKey });
+      });
+
+      for (const { model: targetModel, modelKey } of modelsToProcess) {
+        const Cls = targetModel.constructor as typeof FlowModel;
+        const extras = await Cls.getExtraMenuItems?.(targetModel, t);
+        if (extras?.length) {
+          allExtras.push(
+            ...extras.map((item) => ({
+              ...item,
+              key: modelKey ? `${modelKey}:${item.key}` : item.key,
+            })),
+          );
+        }
+      }
+
+      if (mounted) {
+        const seen = new Set<string>();
+        const dedupedExtras = allExtras.filter((item) => {
+          if (seen.has(`${item.key}`)) {
+            return false;
+          }
+          seen.add(`${item.key}`);
+          return true;
+        });
+        setExtraMenuItems(dedupedExtras);
+      }
+    };
+    // 避免 effect 触发 setState 导致循环：仅在 visible 打开时加载一次，关闭后仍保留结果
+    if (visible) {
+      loadExtras();
+    }
+    return () => {
+      mounted = false;
+    };
+  }, [model, menuLevels, t, refreshTick, visible, message]);
 
   // 统一的复制 UID 方法
   const copyUidToClipboard = useCallback(
@@ -265,11 +358,18 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
   const handleMenuClick = useCallback(
     ({ key }: { key: string }) => {
+      const originalKey = key;
       // Handle duplicate key suffixes (e.g., "key-1" -> "key")
       const cleanKey = key.includes('-') && /^(.+)-\d+$/.test(key) ? key.replace(/-\d+$/, '') : key;
 
       if (cleanKey.startsWith('copy-pop-uid:')) {
         handleCopyPopupUid(cleanKey);
+        return;
+      }
+
+      const extra = extraMenuItems.find((it) => it?.key === originalKey || it?.key === cleanKey);
+      if (extra?.onClick) {
+        extra.onClick();
         return;
       }
 
@@ -285,7 +385,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
           break;
       }
     },
-    [handleCopyUid, handleDelete, handleStepConfiguration, handleCopyPopupUid],
+    [handleCopyUid, handleDelete, handleStepConfiguration, handleCopyPopupUid, extraMenuItems],
   );
 
   // 获取单个模型的可配置flows和steps
@@ -382,50 +482,15 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   // 获取可配置的flows和steps
   const getConfigurableFlowsAndSteps = useCallback(async (): Promise<FlowInfo[]> => {
     const result: FlowInfo[] = [];
-    const processedModels = new Set<string>(); // 防止循环引用
+    const modelsToProcess: Array<{ model: FlowModel; modelKey?: string }> = [];
+    walkSubModels(model, { maxDepth: menuLevels, arrayLimit: 50, mode: 'stack' }, (targetModel, { modelKey }) => {
+      modelsToProcess.push({ model: targetModel, modelKey });
+    });
 
-    const processModel = async (targetModel: FlowModel, depth: number, modelKey?: string) => {
-      // 限制递归深度为menuLevels
-      if (depth > menuLevels) {
-        return;
-      }
-
-      // 防止循环引用
-      const modelId = targetModel.uid || `temp-${Date.now()}`;
-      if (processedModels.has(modelId)) {
-        return;
-      }
-      processedModels.add(modelId);
-
-      try {
-        const modelFlows = await getModelConfigurableFlowsAndSteps(targetModel, modelKey);
-        result.push(...modelFlows);
-
-        // 如果需要，处理子模型
-        if (depth < menuLevels && targetModel.subModels) {
-          await Promise.all(
-            Object.entries(targetModel.subModels).map(async ([subKey, subModelValue]) => {
-              if (Array.isArray(subModelValue)) {
-                await Promise.all(
-                  subModelValue.map(async (subModel, index) => {
-                    if (subModel instanceof FlowModel && index < 50) {
-                      // 合理的限制
-                      await processModel(subModel, depth + 1, `${subKey}[${index}]`);
-                    }
-                  }),
-                );
-              } else if (subModelValue instanceof FlowModel) {
-                await processModel(subModelValue, depth + 1, subKey);
-              }
-            }),
-          );
-        }
-      } finally {
-        processedModels.delete(modelId);
-      }
-    };
-
-    await processModel(model, 1);
+    for (const { model: targetModel, modelKey } of modelsToProcess) {
+      const modelFlows = await getModelConfigurableFlowsAndSteps(targetModel, modelKey);
+      result.push(...modelFlows);
+    }
     return result;
   }, [model, menuLevels, getModelConfigurableFlowsAndSteps]);
 
@@ -437,15 +502,9 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       setRefreshTick((v) => v + 1);
     };
 
-    const visited = new Set<FlowModel>();
     const cleanups: Array<() => void> = [];
 
-    const registerListeners = (targetModel?: FlowModel | null, depth = 1) => {
-      if (!targetModel || visited.has(targetModel) || depth > menuLevels) {
-        return;
-      }
-      visited.add(targetModel);
-
+    walkSubModels(model, { maxDepth: menuLevels, mode: 'visited' }, (targetModel, { depth }) => {
       const eventNames = ['onStepParamsChanged'];
       if (depth === 1) {
         eventNames.push('onSubModelAdded', 'onSubModelRemoved', 'onSubModelReplaced');
@@ -455,25 +514,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
         targetModel.emitter?.on(eventName, triggerRebuild);
         cleanups.push(() => targetModel.emitter?.off(eventName, triggerRebuild));
       });
-
-      if (depth >= menuLevels) {
-        return;
-      }
-
-      Object.values(targetModel.subModels || {}).forEach((subModel) => {
-        if (Array.isArray(subModel)) {
-          subModel.forEach((item) => {
-            if (item instanceof FlowModel) {
-              registerListeners(item, depth + 1);
-            }
-          });
-        } else if (subModel instanceof FlowModel) {
-          registerListeners(subModel, depth + 1);
-        }
-      });
-    };
-
-    registerListeners(model);
+    });
 
     return () => {
       cleanups.forEach((dispose) => dispose());
@@ -537,7 +578,7 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
 
             const uniqueKey = generateUniqueKey(baseMenuKey);
             const uiMode = stepInfo.uiMode;
-            const subModel: any = findSubModelByKey(model, stepInfo.modelKey);
+            const subModel = stepInfo.modelKey ? findSubModelByKey(model, stepInfo.modelKey) : null;
             const targetModel = subModel || model;
             const stepParams = targetModel.getStepParams(flow.key, stepInfo.stepKey) || {};
             const itemProps = {
@@ -552,12 +593,12 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               onChange: async (val) => {
                 targetModel.setStepParams(flow.key, stepInfo.stepKey, val);
                 if (typeof stepInfo.step.beforeParamsSave === 'function') {
-                  await stepInfo.step.beforeParamsSave(targetModel.context, val, stepParams);
+                  await stepInfo.step.beforeParamsSave(targetModel.context as FlowSettingsContext, val, stepParams);
                 }
                 await targetModel.saveStepParams();
                 message?.success?.(t('Configuration saved'));
                 if (typeof stepInfo.step.afterParamsSave === 'function') {
-                  await stepInfo.step.afterParamsSave(targetModel.context, val, stepParams);
+                  await stepInfo.step.afterParamsSave(targetModel.context as FlowSettingsContext, val, stepParams);
                 }
               },
               ...((uiMode as any)?.props || {}),
@@ -567,14 +608,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
               key: uniqueKey,
               label: <MenuLabelItem title={t(stepInfo.title)} uiMode={uiMode} itemProps={itemProps} />,
             });
-            // add per-step copy popup uid under each configurable step
-            if (flow.key === 'popupSettings' && baseMenuKey.includes('openView')) {
-              const copyKey = generateUniqueKey(`copy-pop-uid:${baseMenuKey}`);
-              items.push({
-                key: copyKey,
-                label: t('Copy popup UID'),
-              });
-            }
           });
           if (flow.options.divider === 'bottom') {
             items.push({
@@ -617,14 +650,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   key: uniqueKey,
                   label: t(stepInfo.title),
                 });
-
-                if (flow.key === 'popupSettings') {
-                  const copyKey = generateUniqueKey(`copy-pop-uid:${flow.key}:${stepInfo.stepKey}`);
-                  items.push({
-                    key: copyKey,
-                    label: t('Copy popup UID'),
-                  });
-                }
               });
             });
           } else {
@@ -640,14 +665,6 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
                   key: uniqueKey,
                   label: t(stepInfo.title),
                 });
-
-                if (flow.key === 'popupSettings') {
-                  const copyKey = generateUniqueKey(`copy-pop-uid:${modelKey}:${flow.key}:${stepInfo.stepKey}`);
-                  subMenuChildren.push({
-                    key: copyKey,
-                    label: t('Copy popup UID'),
-                  });
-                }
               });
             });
 
@@ -668,7 +685,11 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
   const finalMenuItems = useMemo((): NonNullable<MenuProps['items']> => {
     const items = [...menuItems];
 
-    if (showCopyUidButton || showDeleteButton) {
+    const commonExtras = extraMenuItems
+      .filter((it) => it.group === 'common-actions')
+      .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0));
+
+    if (showCopyUidButton || showDeleteButton || commonExtras.length > 0) {
       items.push({
         type: 'divider',
       });
@@ -679,6 +700,10 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
       //   label: t('Common actions'),
       //   type: 'group' as const,
       // });
+
+      if (commonExtras.length > 0) {
+        items.push(...(commonExtras as MenuProps['items']));
+      }
 
       // 添加复制uid按钮
       if (showCopyUidButton && model.uid) {
@@ -698,10 +723,12 @@ export const DefaultSettingsIcon: React.FC<DefaultSettingsIconProps> = ({
     }
 
     return items;
-  }, [menuItems, showCopyUidButton, showDeleteButton, model.uid, model.destroy, t]);
+  }, [menuItems, showCopyUidButton, showDeleteButton, model.uid, model.destroy, t, extraMenuItems]);
 
   // 如果正在加载或没有可配置的flows且不显示删除按钮和复制UID按钮，不显示菜单
-  if (isLoading || (configurableFlowsAndSteps.length === 0 && !showDeleteButton && !showCopyUidButton)) {
+  const hasExtras = extraMenuItems.some((it) => it.group === 'common-actions');
+
+  if (isLoading || (configurableFlowsAndSteps.length === 0 && !showDeleteButton && !showCopyUidButton && !hasExtras)) {
     return null;
   }
 

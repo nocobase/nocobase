@@ -83,6 +83,8 @@ export interface MetaTreeNode {
   // display?: 'default' | 'flatten' | 'none'; // 显示模式：默认、平铺子菜单、完全隐藏, 用于简化meta树显示层级
   paths: string[];
   parentTitles?: string[]; // 父级标题数组，不包含自身title，第一层可省略
+  // 显示控制：当 hidden 为 true（或函数返回 true）时，不在变量选择器中展示该节点
+  hidden?: boolean | (() => boolean);
   // 变量禁用状态与原因（用于变量选择器 UI 展示）
   disabled?: boolean | (() => boolean);
   disabledReason?: string | (() => string | undefined);
@@ -103,6 +105,8 @@ export interface PropertyMeta {
   disabled?: boolean | (() => boolean);
   // 禁用原因（用于 UI 小问号提示），可为函数
   disabledReason?: string | (() => string | undefined);
+  // 显示控制：当 hidden 为 true（或函数返回 true）时，不在变量选择器中展示该节点
+  hidden?: boolean | (() => boolean);
   // 变量解析参数构造器（用于 variables:resolve 的 contextParams，按属性名归位）。
   // 支持返回 RecordRef 或任意嵌套对象（将被 buildServerContextParams 扁平化，例如 { record: RecordRef } -> 'view.record'）。
   buildVariablesParams?: (
@@ -658,12 +662,13 @@ export class FlowContext {
 
     let node: MetaTreeNode;
 
-    // 计算禁用状态与原因的帮助函数
-    const computeDisabledFromMeta = (m: PropertyMeta): { disabled: boolean; reason?: string } => {
-      if (!m) return { disabled: false };
+    // 计算禁用/隐藏状态与原因的帮助函数
+    const computeStateFromMeta = (m: PropertyMeta): { disabled: boolean; reason?: string; hidden: boolean } => {
+      if (!m) return { disabled: false, hidden: false };
       const disabledVal = typeof m.disabled === 'function' ? m.disabled() : m.disabled;
       const reason = typeof m.disabledReason === 'function' ? m.disabledReason() : m.disabledReason;
-      return { disabled: !!disabledVal, reason };
+      const hiddenVal = typeof m.hidden === 'function' ? m.hidden() : m.hidden;
+      return { disabled: !!disabledVal, reason, hidden: !!hiddenVal };
     };
 
     if (typeof metaOrFactory === 'function') {
@@ -680,12 +685,17 @@ export class FlowContext {
         disabled: () => {
           const maybe = metaOrFactory();
           if (maybe && typeof maybe['then'] === 'function') return false;
-          return computeDisabledFromMeta(maybe as PropertyMeta).disabled;
+          return computeStateFromMeta(maybe as PropertyMeta).disabled;
         },
         disabledReason: () => {
           const maybe = metaOrFactory();
           if (maybe && typeof maybe['then'] === 'function') return undefined;
-          return computeDisabledFromMeta(maybe as PropertyMeta).reason;
+          return computeStateFromMeta(maybe as PropertyMeta).reason;
+        },
+        hidden: () => {
+          const maybe = metaOrFactory();
+          if (maybe && typeof maybe['then'] === 'function') return false;
+          return computeStateFromMeta(maybe as PropertyMeta).hidden;
         },
         // 注意：即便 hasChildren === false，也只是“没有子节点”的 UI 提示；
         // 节点自身依然通过 meta 工厂保持惰性特性（需要时可解析出 title/type 等）。
@@ -726,7 +736,7 @@ export class FlowContext {
     } else {
       // 同步 meta：直接创建节点
       const nodeTitle = metaOrFactory.title;
-      const { disabled, reason } = computeDisabledFromMeta(metaOrFactory);
+      const { disabled, reason, hidden } = computeStateFromMeta(metaOrFactory);
       node = {
         name,
         title: nodeTitle,
@@ -737,6 +747,7 @@ export class FlowContext {
         parentTitles: parentTitles.length > 0 ? parentTitles : undefined,
         disabled,
         disabledReason: reason,
+        hidden,
         children: metaOrFactory.properties
           ? this.#createChildNodes(metaOrFactory.properties, paths, [...parentTitles, nodeTitle], metaOrFactory)
           : undefined,
@@ -1410,12 +1421,22 @@ export class FlowModelContext extends BaseFlowModelContext {
     });
     this.defineMethod('openView', async function (uid: string, options) {
       const opts = { ...options };
-      if (opts.defineProperties || opts.defineMethod) {
+      // NOTE: when custom context is passed, route navigation must be disabled to avoid losing it after refresh.
+      if (opts.defineProperties || opts.defineMethods) {
         opts.navigation = false; // 强制不使用路由导航, 避免刷新页面时丢失上下文
       }
       let model: FlowModel | null = null;
       model = await this.engine.loadModel({ uid });
       if (!model) {
+        const pickDefined = (src: Record<string, any>, keys: string[]) => {
+          const res: Record<string, any> = {};
+          for (const k of keys) {
+            if (typeof src?.[k] !== 'undefined') {
+              res[k] = src[k];
+            }
+          }
+          return res;
+        };
         model = this.engine.createModel({
           uid, // 注意： 新建的 model 应该使用 ${parentModel.uid}-xxx 形式的 uid
           use: 'PopupActionModel',
@@ -1425,24 +1446,13 @@ export class FlowModelContext extends BaseFlowModelContext {
           stepParams: {
             popupSettings: {
               openView: {
-                // 持久化首次传入的关键展示/数据参数，供后续路由与再次打开复用
-                ..._.pick(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
+                // 仅在创建时持久化一份默认配置；运行时以本次 opts 为准，避免多个 opener 互相覆盖。
+                ...pickDefined(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']),
               },
             },
           },
         });
         await model.save();
-      }
-      // 若已存在 openView 配置，则按需合并更新（仅覆盖本次显式传入的字段）
-      if (model.getStepParams('popupSettings')?.openView) {
-        const prevOpenView = model.getStepParams('popupSettings')?.openView || {};
-        const incoming = _.pick(opts, ['dataSourceKey', 'collectionName', 'associationName', 'mode', 'size']);
-        const nextOpenView = { ...prevOpenView, ...incoming };
-        // 仅当有变更时才保存，避免不必要的写入
-        if (!_.isEqual(prevOpenView, nextOpenView)) {
-          model.setStepParams('popupSettings', { openView: nextOpenView });
-          await model.save();
-        }
       }
 
       model.setParent(this.model);
@@ -1473,8 +1483,6 @@ export class FlowModelContext extends BaseFlowModelContext {
         // ...this.model?.['getInputArgs']?.(), // 避免部分关系字段信息丢失, 仿照 ClickableCollectionField 做法
         ...opts,
       });
-      // 清理 pending view，避免污染子模型 context（例如后续直接点击该模型按钮时被遗留 viewUid 干扰）
-      model.context.defineProperty('view', { value: undefined });
     });
     this.defineMethod('getEvents', function (this: BaseFlowModelContext) {
       return this.model.getEvents();

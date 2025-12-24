@@ -78,7 +78,7 @@ const Description = () => {
       style={{
         marginBottom: 16,
       }}
-      message={t('Characterization description')}
+      message={t('Role setting description')}
       type="info"
     />
   );
@@ -110,13 +110,13 @@ export const SystemPrompt: React.FC = () => {
             properties: {
               about: {
                 type: 'string',
-                title: '{{t("Characterization")}}',
+                title: '{{t("Role setting")}}',
                 required: true,
                 'x-decorator': 'FormItem',
                 'x-component': 'Variable.RawTextArea',
                 'x-component-props': {
                   scope: options,
-                  placeholder: t('Characterization placeholder'),
+                  placeholder: t('Role setting placeholder'),
                   autoSize: {
                     minRows: 15,
                   },

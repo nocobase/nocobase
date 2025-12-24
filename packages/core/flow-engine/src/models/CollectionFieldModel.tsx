@@ -7,7 +7,8 @@
  * For more information, please refer to: https://www.nocobase.com/agreement.
  */
 
-import { Card, Form } from 'antd';
+import { Card, Form, Tooltip } from 'antd';
+import { LockOutlined } from '@ant-design/icons';
 import _ from 'lodash';
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,11 +18,12 @@ import { useFlowModel } from '../hooks';
 import { DefaultStructure } from '../types';
 import { escapeT } from '../utils';
 import { FlowModel } from './flowModel';
+import { FormItem } from '../components/FormItem';
 
-export function FieldPlaceholder() {
+export function FieldPlaceholder({ title }) {
   const { t } = useTranslation();
   return (
-    <Form.Item>
+    <FormItem label={title} showLabel={true}>
       <Card
         size="small"
         styles={{
@@ -34,7 +36,7 @@ export function FieldPlaceholder() {
           'This field has been hidden and you cannot view it (this content is only visible when the UI Editor is activated).',
         )}
       </Card>
-    </Form.Item>
+    </FormItem>
   );
 }
 
@@ -42,11 +44,11 @@ export function FieldDeletePlaceholder() {
   const { t } = useTranslation();
   const model: any = useFlowModel();
   const blockModel = model.context.blockModel;
-  const dataSource = blockModel.collection.dataSource;
+  const dataSource = blockModel.collection?.dataSource;
   const collection = blockModel.collection;
   const name = model.fieldPath;
   const nameValue = useMemo(() => {
-    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const dataSourcePrefix = dataSource ? `${t(dataSource.displayName || dataSource.key)} > ` : '';
     const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
     return `${dataSourcePrefix}${collectionPrefix}${name}`;
   }, []);
@@ -64,6 +66,38 @@ export function FieldDeletePlaceholder() {
         }).replaceAll('&gt;', '>')}
       </div>
     </Form.Item>
+  );
+}
+
+function FieldWithoutPermissionPlaceholder() {
+  const { t } = useTranslation();
+  const model: any = useFlowModel();
+  const blockModel = model.context.blockModel;
+  const dataSource = blockModel.collection.dataSource;
+  const collection = blockModel.collection;
+  const name = model.fieldPath;
+  const nameValue = useMemo(() => {
+    const dataSourcePrefix = `${t(dataSource.displayName || dataSource.key)} > `;
+    const collectionPrefix = collection ? `${t(collection.title) || collection.name || collection.tableName} > ` : '';
+    return `${dataSourcePrefix}${collectionPrefix}${name}`;
+  }, []);
+  const { actionName } = model.forbidden;
+  const messageValue = useMemo(() => {
+    return t(
+      `The current user only has the UI configuration permission, but don't have "{{actionName}}" permission for field "{{name}}"`,
+      {
+        name: nameValue,
+        actionName: t(_.capitalize(actionName)),
+      },
+    ).replaceAll('&gt;', '>');
+  }, [nameValue, t]);
+
+  return (
+    <Tooltip title={messageValue}>
+      <FormItem showLabel={true} label={model.context.collectionField.title || name} style={{ opacity: '0.4' }}>
+        <LockOutlined />
+      </FormItem>
+    </Tooltip>
   );
 }
 export interface FieldSettingsInitParams {
@@ -84,13 +118,16 @@ const defaultWhen = () => true;
 
 export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure> extends FlowModel<T> {
   private static _bindings = new Map();
-  fieldDeleted = false;
 
   renderHiddenInConfig(): React.ReactNode | undefined {
-    if (this.fieldDeleted) {
-      return <FieldDeletePlaceholder />;
+    if (this.forbidden) {
+      return <FieldWithoutPermissionPlaceholder />;
     }
-    return <FieldPlaceholder />;
+    return (
+      <Tooltip title={this.context.t('The field is hidden and only visible when the UI Editor is active')}>
+        <div style={{ opacity: 0.3 }}>{this.renderOriginal.call(this)}</div>
+      </Tooltip>
+    );
   }
 
   get title() {
@@ -296,6 +333,16 @@ export class CollectionFieldModel<T extends DefaultStructure = DefaultStructure>
     }
 
     return allBindings;
+  }
+
+  renderItem() {
+    return null;
+  }
+  render() {
+    if (!this.collectionField) {
+      return <FieldDeletePlaceholder />;
+    }
+    return this.renderItem();
   }
 }
 

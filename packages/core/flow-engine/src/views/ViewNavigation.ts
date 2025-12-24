@@ -125,6 +125,7 @@ export class ViewNavigation {
     // 防止重复触发返回操作
     if (location.pathname.endsWith(pathname)) {
       this.ctx.router.navigate(-1);
+      this.viewStack.pop();
     }
   }
 }

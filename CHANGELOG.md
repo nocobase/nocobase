@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [v1.9.31](https://github.com/nocobase/nocobase/compare/v1.9.30...v1.9.31) - 2025-12-22
+
+### 🚀 Improvements
+
+- **[Async task manager]** Improved error handling during cleanup tasks by adding exception-catching mechanisms to prevent application crashes ([#8215](https://github.com/nocobase/nocobase/pull/8215)) by @mytharcher
+
+- **[Workflow]** Add original workflow instance to duplicate API ([#8225](https://github.com/nocobase/nocobase/pull/8225)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[client]** Handle empty linkage rules to prevent errors ([#8239](https://github.com/nocobase/nocobase/pull/8239)) by @zhangzhonghe
+
+- **[Departments]** Fix an issue where aggregate search cannot locate users ([#8222](https://github.com/nocobase/nocobase/pull/8222)) by @2013xile
+
+## [v1.9.30](https://github.com/nocobase/nocobase/compare/v1.9.29...v1.9.30) - 2025-12-19
+
+### 🚀 Improvements
+
+- **[Workflow]** Improve description of `changed` field in collection event ([#8216](https://github.com/nocobase/nocobase/pull/8216)) by @mytharcher
+
+### 🐛 Bug Fixes
+
+- **[cli]** license-kit is compatible with the case where DB_PASSWORD is empty ([#8220](https://github.com/nocobase/nocobase/pull/8220)) by @jiannx
+
+- **[database]** Fix date field query inconsistency between main and external data sources ([#8181](https://github.com/nocobase/nocobase/pull/8181)) by @cgyrock
+
+- **[License settings]** Fix the abnormal display of the licensed plugin ([#8214](https://github.com/nocobase/nocobase/pull/8214)) by @jiannx
+
+- **[Workflow: Approval]**
+  - Fix the issue where approving makes association to creating new record by @mytharcher
+
+  - Fix the issue where approving makes to-many association to creating new records by @mytharcher
+
+## [v1.9.29](https://github.com/nocobase/nocobase/compare/v1.9.28...v1.9.29) - 2025-12-18
+
+### 🐛 Bug Fixes
+
+- **[Workflow]** Fix the issue where error thrown when delete workflow version which is not current ([#8203](https://github.com/nocobase/nocobase/pull/8203)) by @mytharcher
+
+- **[Migration manager]** Fix missing migration description and set the current time as the default by @cgyrock
+
 ## [v1.9.27](https://github.com/nocobase/nocobase/compare/v1.9.26...v1.9.27) - 2025-12-17
 
 ### 🚀 Improvements

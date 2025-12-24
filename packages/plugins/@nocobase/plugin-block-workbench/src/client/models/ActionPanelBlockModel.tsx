@@ -90,16 +90,28 @@ export class ActionPanelBlockModel extends BlockModel {
                     action.renderHiddenInConfig = () => {
                       return (
                         <Tooltip
-                          title={this.context.t(
-                            'The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).',
-                          )}
+                          title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
                         >
-                          <Button disabled style={{ display: 'block' }}>
-                            <Avatar
-                              style={{ backgroundColor: 'rgba(0,0,0,0.04)', color: 'rgba(0,0,0,0.25)' }}
-                              size={48}
-                              icon={<LockOutlined />}
-                            />
+                          <Button onClick={action.onClick.bind(action)}>
+                            <div style={{ width: '5em', opacity: '0.3' }}>
+                              <Avatar style={{ backgroundColor: color }} size={48} icon={<Icon type={icon as any} />} />
+                              <div
+                                style={
+                                  ellipsis
+                                    ? {
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                      }
+                                    : {
+                                        whiteSpace: 'normal',
+                                        wordBreak: 'break-word',
+                                      }
+                                }
+                              >
+                                {title}
+                              </div>
+                            </div>
                           </Button>
                         </Tooltip>
                       );
@@ -137,7 +149,7 @@ export class ActionPanelBlockModel extends BlockModel {
                               border: none !important;
                               box-shadow: none;
                               .ant-btn-icon {
-                                display: ${action.hidden ? 'block' : ' none'};
+                                display: none;
                               }
                             }
                           `}
@@ -176,25 +188,36 @@ export class ActionPanelBlockModel extends BlockModel {
                     action.enableEditType = false;
                     action.renderHiddenInConfig = () => {
                       return (
-                        <Button disabled>
-                          <List.Item
-                            disabled
-                            prefix={
-                              (
-                                <Avatar
-                                  style={{ backgroundColor: 'rgba(0,0,0,0.04)', color: 'rgba(0,0,0,0.25)' }}
-                                  icon={<LockOutlined />}
-                                />
-                              ) as any
-                            }
-                          >
-                            <div style={{ fontSize: '14px' }}>
-                              {this.context.t(
-                                'The current button is hidden and cannot be clicked (this message is only visible when the UI Editor is active).',
-                              )}
-                            </div>
-                          </List.Item>
-                        </Button>
+                        <Tooltip
+                          title={this.context.t('The button is hidden and only visible when the UI Editor is active')}
+                        >
+                          <Button style={{ opacity: '0.3' }} onClick={action.onClick.bind(action)}>
+                            <List.Item
+                              prefix={
+                                (
+                                  <Avatar style={{ backgroundColor: color }} icon={<Icon type={icon as any} />} />
+                                ) as any
+                              }
+                            >
+                              <div
+                                style={
+                                  ellipsis
+                                    ? {
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                        whiteSpace: 'nowrap',
+                                      }
+                                    : {
+                                        whiteSpace: 'normal',
+                                        wordBreak: 'break-word',
+                                      }
+                                }
+                              >
+                                {title}
+                              </div>
+                            </List.Item>
+                          </Button>
+                        </Tooltip>
                       );
                     };
                     action.props.children = (

@@ -682,7 +682,7 @@ TableBlockModel.define({
   group: tExpr('Content'),
   searchable: true,
   searchPlaceholder: tExpr('Search'),
-  createModelOptions: {
+  createModelOptions: () => ({
     use: 'TableBlockModel',
     subModels: {
       columns: [
@@ -691,7 +691,7 @@ TableBlockModel.define({
         },
       ],
     },
-  },
+  }),
   sort: 300,
 });
 
